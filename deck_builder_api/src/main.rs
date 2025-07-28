@@ -11,6 +11,7 @@ use tower_http::cors::CorsLayer;
 use tracing_subscriber;
 
 // Internal crate imports
+mod auth;
 mod handlers;
 mod models;
 mod schema;
