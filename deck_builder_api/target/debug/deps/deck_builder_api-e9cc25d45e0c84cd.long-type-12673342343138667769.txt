@@ -1,1 +1,0 @@
-Salt<'_>: From<Result<SaltString, argon2::password_hash::Error>>
