@@ -1,0 +1,48 @@
+[package]
+name = "deck-builder-api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Web framework
+axum = "0.7"
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+
+# Async runtime
+tokio = { version = "1.0", features = ["full"] }
+
+# Database
+diesel = { version = "2.1", features = ["postgres", "r2d2", "chrono", "uuid"] }
+diesel_migrations = "2.1"
+# Connection Pools - using r2d2 (more mature)
+# bb8 = "0.8" 
+# bb8-diesel = "0.2.1"
+
+# Helps convert to sql string
+strum = { version = "0.24", features = ["derive"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Authentication
+jsonwebtoken = "9.2"
+argon2 = "0.5"
+
+# HTTP client (for MTG API)
+reqwest = { version = "0.11", features = ["json"] }
+
+# Utilities
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+anyhow = "1.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# Environment variables
+dotenvy = "0.15"
+
+[dev-dependencies]
+# Testing
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid"] }

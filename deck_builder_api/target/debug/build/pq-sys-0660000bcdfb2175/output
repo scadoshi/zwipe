@@ -1,0 +1,11 @@
+cargo::rustc-cfg=buildscript_run
+cargo:rustc-link-lib=pq
+cargo:rerun-if-env-changed=PQ_LIB_STATIC
+cargo:rerun-if-env-changed=TARGET
+cargo:rerun-if-env-changed="PQ_LIB_DIR_X86_64_UNKNOWN_LINUX_GNU"
+"PQ_LIB_DIR_X86_64_UNKNOWN_LINUX_GNU" = Err(NotPresent)
+cargo:rerun-if-env-changed="PQ_LIB_DIR"
+"PQ_LIB_DIR" = Err(NotPresent)
+cargo:rerun-if-env-changed=PG_CONFIG_X86_64_UNKNOWN_LINUX_GNU
+cargo:rerun-if-env-changed=PQ_LIB_STATIC_X86_64_UNKNOWN_LINUX_GNU
+cargo:rustc-link-lib=pq

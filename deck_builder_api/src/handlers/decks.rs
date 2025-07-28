@@ -1,0 +1,35 @@
+// External crate imports
+use axum::{extract::State, http::StatusCode, response::Json};
+use diesel::{
+    prelude::*,
+    r2d2::{ConnectionManager, Pool},
+    PgConnection, RunQueryDsl,
+};
+use serde_json::{json, Value};
+
+// Internal crate imports (our code)
+use crate::models::Deck;
+use crate::schema::decks;
+
+// define DbPool from the more complex type
+type DbPool = Pool<ConnectionManager<PgConnection>>;
+
+pub async fn list_decks(State(pool): State<DbPool>) -> Result<Json<Value>, StatusCode> {
+    let mut conn = pool.get().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let user_id_value = 1; // TODO: Extract user_id from JWT token
+
+    let user_decks: Vec<Deck> = decks::table
+        .filter(decks::user_id.eq(user_id_value))
+        .load(&mut conn)
+        .map_err(|e| {
+            eprintln!("Database error loading decks: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    Ok(Json(json!({
+        "decks": user_decks,
+        "user_id": user_id_value,
+        "count": user_decks.len()
+    })))
+}

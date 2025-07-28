@@ -1,0 +1,1 @@
+DieselConnectionManager<PgConnection>: bb8::ManageConnection

@@ -1,0 +1,2 @@
+fn(axum::extract::State<bb8::Pool<DieselConnectionManager<PgConnection>>>) -> impl Future<Output = Result<axum::Json<Value>, {type error}>> {health_check}
+fn(axum::extract::State<bb8::Pool<DieselConnectionManager<PgConnection>>>) -> impl Future<Output = Result<axum::Json<Value>, {type error}>> {health_check}: Handler<_, _>

@@ -1,0 +1,2 @@
+diesel::expression::operators::Eq<decks::columns::format, MtgFormat>
+(std::option::Option<diesel::expression::grouped::Grouped<diesel::expression::operators::Eq<decks::columns::name, diesel::expression::bound::Bound<diesel::sql_types::Text, std::string::String>>>>, std::option::Option<diesel::expression::grouped::Grouped<diesel::expression::operators::Eq<decks::columns::format, MtgFormat>>>, std::option::Option<diesel::expression::grouped::Grouped<diesel::expression::operators::Eq<decks::columns::user_id, diesel::expression::bound::Bound<Integer, i32>>>>)
