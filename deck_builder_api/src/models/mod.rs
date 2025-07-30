@@ -2,6 +2,7 @@
 pub mod card;
 pub mod deck;
 pub mod deck_card;
+pub mod login;
 pub mod types;
 pub mod user;
 
@@ -9,5 +10,6 @@ pub mod user;
 pub use card::*;
 pub use deck::*;
 pub use deck_card::*;
+pub use login::*;
 pub use types::*;
 pub use user::*;

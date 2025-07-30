@@ -6,6 +6,7 @@ use diesel::{
     PgConnection, RunQueryDsl,
 };
 use serde_json::{json, Value};
+use tracing::error;
 
 // Internal crate imports (our code)
 use crate::models::Deck;
@@ -15,7 +16,13 @@ use crate::schema::decks;
 type DbPool = Pool<ConnectionManager<PgConnection>>;
 
 pub async fn list_decks(State(pool): State<DbPool>) -> Result<Json<Value>, StatusCode> {
-    let mut conn = pool.get().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let mut conn = pool.get().map_err(|e| {
+        error!(
+            "Failed to get connection to database connection pool with error: {:?}",
+            e
+        );
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     let user_id_value = 1; // TODO: Extract user_id from JWT token
 
@@ -23,7 +30,7 @@ pub async fn list_decks(State(pool): State<DbPool>) -> Result<Json<Value>, Statu
         .filter(decks::user_id.eq(user_id_value))
         .load(&mut conn)
         .map_err(|e| {
-            eprintln!("Database error loading decks: {:?}", e);
+            error!("Failed to load decks with error: {:?}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 

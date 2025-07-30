@@ -5,6 +5,7 @@ use diesel::{
     sql_query, PgConnection, RunQueryDsl,
 };
 use serde_json::{json, Value};
+use tracing::error;
 
 // define DbPool from the more complex type
 type DbPool = Pool<ConnectionManager<PgConnection>>;
@@ -25,12 +26,19 @@ pub async fn health_check() -> Json<Value> {
 }
 
 pub async fn health_check_deep(State(pool): State<DbPool>) -> Result<Json<Value>, StatusCode> {
-    let mut conn = pool.get().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let mut conn = pool.get().map_err(|e| {
+        error!(
+            "Failed to get connection to database connection pool with error: {:?}",
+            e
+        );
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     // Simple query to verify DB is responsive
-    sql_query("SELECT 1")
-        .execute(&mut conn)
-        .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
+    sql_query("SELECT 1").execute(&mut conn).map_err(|e| {
+        error!("Failed to query database at all with error: {:?}", e);
+        StatusCode::SERVICE_UNAVAILABLE
+    })?;
 
     Ok(Json(json!({
         "status": "healthy",

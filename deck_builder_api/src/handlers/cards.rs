@@ -5,12 +5,19 @@ use diesel::{
     PgConnection,
 };
 use serde_json::{json, Value};
+use tracing::error;
 
 // define DbPool from the more complex type
 type DbPool = Pool<ConnectionManager<PgConnection>>;
 
 pub async fn list_cards(State(pool): State<DbPool>) -> Result<Json<Value>, StatusCode> {
-    let mut _conn = pool.get().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let mut _conn = pool.get().map_err(|e| {
+        error!(
+            "Failed to get connection to database connection pool with error: {:?}",
+            e
+        );
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     // TODO: Query cards table with filters/pagination
     // TODO: SELECT * FROM cards LIMIT 20 OFFSET ?
