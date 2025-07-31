@@ -49,7 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/api/v1",
             Router::new()
                 .route("/auth/login", post(handlers::auth::login))
-                .route("/auth/register", get(handlers::auth::register))
+                .route("/auth/register", post(handlers::auth::register))
                 .route("/cards", get(handlers::cards::list_cards))
                 .route("/decks", get(handlers::decks::list_decks)),
         )
