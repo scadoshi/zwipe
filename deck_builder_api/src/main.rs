@@ -3,6 +3,7 @@ use std::time::Duration;
 
 // External
 use axum::{
+    http::{header, HeaderValue, Method},
     routing::{get, post},
     Router,
 };
@@ -44,11 +45,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/", get(handlers::health::root))
         .route("/health", get(handlers::health::health_check))
         .route("/health/deep", get(handlers::health::health_check_deep))
-        .route("/api/v1/auth/login", post(handlers::auth::login))
-        .route("/api/v1/auth/register", get(handlers::auth::register))
-        .route("/api/v1/cards", get(handlers::cards::list_cards))
-        .route("/api/v1/decks", get(handlers::decks::list_decks))
-        .layer(CorsLayer::permissive()) // TODO: Configure CORS properly
+        .nest(
+            "/api/v1",
+            Router::new()
+                .route("/auth/login", post(handlers::auth::login))
+                .route("/auth/register", get(handlers::auth::register))
+                .route("/cards", get(handlers::cards::list_cards))
+                .route("/decks", get(handlers::decks::list_decks)),
+        )
+        .layer(
+            CorsLayer::new()
+                .allow_origin("http://localhost:8080".parse::<HeaderValue>().unwrap())
+                .allow_methods([Method::GET, Method::POST])
+                .allow_headers([header::CONTENT_TYPE]),
+        )
         .with_state(pool);
 
     let bind_address =
