@@ -6,10 +6,12 @@
 - **MVP focus** - Core functionality first
 
 ## Current Status (Updated)
-- **Complete**: All 4 database models with foreign keys ✅
-- **Complete**: Production-ready API with database integration ✅
-- **Complete**: Connection pooling, error handling, endpoint testing ✅
-- **Next**: User authentication (registration, login, JWT middleware)
+- **Complete**: All 4 database models with foreign keys
+- **Complete**: Production-ready API with database integration
+- **Complete**: Connection pooling, error handling, endpoint testing
+- **Complete**: JWT token generation and validation functions
+- **In Progress**: Authentication endpoints and middleware
+- **Next**: User registration, login endpoints, JWT middleware for protected routes
 - **Tech stack**: Rust + Axum + Diesel + PostgreSQL
 
 ## Key Architecture Decisions
@@ -17,6 +19,7 @@
 - **Endpoint separation** - DB vs non-DB handlers for efficiency
 - **Professional error handling** - Proper HTTP status codes
 - **Import organization** - Categorized by std/external/internal
+- **Domain-driven modules** - Organized auth/ module following handlers/ pattern
 
 ## Decision Framework
 1. Does this serve the core swiping experience?

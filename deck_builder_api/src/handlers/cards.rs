@@ -1,23 +1,19 @@
-// External crate imports
+// External
 use axum::{extract::State, http::StatusCode, response::Json};
 use diesel::{
     r2d2::{ConnectionManager, Pool},
     PgConnection,
 };
 use serde_json::{json, Value};
-use tracing::error;
+
+// Internal
+use crate::utils::connect_to;
 
 // define DbPool from the more complex type
 type DbPool = Pool<ConnectionManager<PgConnection>>;
 
 pub async fn list_cards(State(pool): State<DbPool>) -> Result<Json<Value>, StatusCode> {
-    let mut _conn = pool.get().map_err(|e| {
-        error!(
-            "Failed to get connection to database connection pool with error: {:?}",
-            e
-        );
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
+    let mut _conn = connect_to(pool)?;
 
     // TODO: Query cards table with filters/pagination
     // TODO: SELECT * FROM cards LIMIT 20 OFFSET ?

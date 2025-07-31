@@ -21,3 +21,20 @@ pub fn verify_password(password: &str, hash: &str) -> Result<bool, Error> {
         Err(e) => Err(e),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn hash() {
+        // with some salt the same password
+        // should always generate a unique hash
+        assert_ne!(hash_password("test"), hash_password("test"));
+    }
+
+    #[test]
+    fn verify() {
+        let hash = hash_password("test").expect("failed to hash");
+        assert!(verify_password("test", &hash).expect("failed to verify"));
+    }
+}

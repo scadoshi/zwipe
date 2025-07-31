@@ -18,6 +18,7 @@ mod auth;
 mod handlers;
 mod models;
 mod schema;
+mod utils;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -44,6 +45,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/health", get(handlers::health::health_check))
         .route("/health/deep", get(handlers::health::health_check_deep))
         .route("/api/v1/auth/login", post(handlers::auth::login))
+        .route("/api/v1/auth/register", get(handlers::auth::register))
         .route("/api/v1/cards", get(handlers::cards::list_cards))
         .route("/api/v1/decks", get(handlers::decks::list_decks))
         .layer(CorsLayer::permissive()) // TODO: Configure CORS properly

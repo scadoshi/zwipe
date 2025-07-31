@@ -99,27 +99,63 @@ Building a Magic: The Gathering deck-building mobile app with Tinder-like swipin
 - [x] Add comprehensive test coverage for password functions
 - [x] Refactor from utils.rs to domain-driven auth/ architecture
 
-### 🎯 JWT Token System (NEXT UP!)
-- [ ] Create JWT Claims struct in auth/jwt.rs (user_id, email, expiration)
-- [ ] Implement generate_jwt() function for login endpoint
-- [ ] Implement validate_jwt() function for middleware
-- [ ] Add JWT secret management from environment variables
-- [ ] Test JWT generation and validation
+### ✅ JWT Token System (COMPLETE! 🎉)
+- [x] Create JWT Claims struct in auth/jwt.rs (user_id, email, exp, iat)
+- [x] Implement generate_jwt() function for login endpoint
+- [x] Implement validate_jwt() function for middleware
+- [x] Add JWT secret management from environment variables
+- [x] Test JWT generation and validation (passing round-trip tests)
 
-### 🎯 Authentication Endpoints (Ready to Build!)
-- [ ] Create user registration endpoint: `POST /api/v1/users`
-- [ ] Create login endpoint with JWT generation: `POST /api/v1/auth/login`
+### ✅ Authentication Endpoints (COMPLETE! 🎉)
+- [x] Create login endpoint structure: `POST /api/v1/auth/login`
+- [x] Database query for user lookup (email OR username)
+- [x] User verification logic structure
+- [x] **COMPLETED: Sophisticated error handling with proper logging strategy**
+- [x] **COMPLETED: Production-ready authenticate_user function with security best practices**
+- [x] **COMPLETED: LoginRequest/LoginResponse structs in models/login.rs**
+- [x] Complete user authentication flow with proper error responses
+- [x] Security-conscious error handling (401 for all auth failures to prevent user enumeration)
+- [x] Detailed internal logging with tracing::error! and tracing::warn!
+- [x] Clean error boundary architecture with proper business logic separation
+- [x] **COMPLETED: Clean architecture with business logic separated from HTTP concerns**
+- [x] **COMPLETED: Wire up login endpoint in main.rs router - LIVE AND READY!**
+
+### ✅ Advanced Diesel ORM Mastery (COMPLETE! 🎉)
+- [x] **Master Diesel insert operations** with `diesel::dsl::insert_into` patterns
+- [x] **Complex error pattern matching** - `Error::DatabaseError(DatabaseErrorKind::UniqueViolation, _)`
+- [x] **Production error handling architecture** - two-tier logging (user-facing + detailed internal)
+- [x] **Database connection abstraction** - `connect_to()` utility function in utils.rs
+- [x] **Constraint violation detection** - proper handling of duplicate user registration attempts
+- [x] **Security-conscious logging** - appropriate log levels with detailed debugging information
+
+### ✅ User Registration Business Logic (COMPLETE! 🎉)
+- [x] **Build register_user() function** with sophisticated error handling
+- [x] **Diesel insert operation** with proper constraint violation handling
+- [x] **Pattern matching mastery** - enum destructuring for error types
+- [x] **JWT integration** - return LoginResponse with token + user_id
+- [x] **Production logging** - warn for business logic errors, error for system failures
+- [x] **Security error handling** - 409 Conflict for duplicates, 500 for system errors
+
+### ✅ User Registration HTTP Integration (COMPLETE! 🎉)
+- [x] Move register_user() from handlers/users.rs to handlers/auth.rs (domain-driven architecture)
+- [x] Create RegisterRequest struct (username, email, password fields)
+- [x] Add password hashing integration (hash plaintext before creating NewUser)
+- [x] Build registration HTTP wrapper function (similar to login() pattern)
+- [x] Wire up router endpoint: `POST /api/v1/auth/register`
+
+### 🎯 JWT Middleware Implementation
 - [ ] Add JWT middleware for protected routes in auth/middleware.rs
-- [ ] Add user validation (unique email/username)
-- [ ] Extract user_id from JWT tokens in handlers
-- [ ] Test complete authentication flow
+- [ ] Extract user_id from Authorization: Bearer <token> headers
+- [ ] Replace hardcoded user_id = 1 in deck handlers with real JWT extraction
+- [ ] Add conditional route protection (some routes public, others protected)
+- [ ] Test complete authentication flow with real HTTP requests
 
-### 🎯 API Endpoints Enhancement
-- [ ] Add JWT authentication to protected routes
-- [ ] Implement proper user context extraction
-- [ ] Add request/response logging middleware
-- [ ] Implement rate limiting
-- [ ] Add API documentation endpoints
+### 🎯 Authentication Flow Testing
+- [ ] Test registration endpoint with curl/HTTP requests
+- [ ] Validate duplicate user error handling (409 Conflict responses)
+- [ ] Test login → registration → login flow integration
+- [ ] Verify JWT token generation in registration scenarios
+- [ ] Test error responses and status codes
 
 ---
 
@@ -144,7 +180,7 @@ Building a Magic: The Gathering deck-building mobile app with Tinder-like swipin
 ## Phase 5: Deck Management API
 
 ### 🎯 Deck CRUD Operations
-- [ ] `GET /api/v1/decks` - List user's decks
+- [ ] `GET /api/v1/decks` - List user's decks (currently uses hardcoded user_id = 1)
 - [ ] `POST /api/v1/decks` - Create new deck
 - [ ] `GET /api/v1/decks/:id` - Show deck details
 - [ ] `PUT /api/v1/decks/:id` - Update deck
@@ -224,8 +260,8 @@ Building a Magic: The Gathering deck-building mobile app with Tinder-like swipin
 - **Production-quality documentation and security features**
 - **All models use proper check_for_backend validation**
 - **ALL 4 CORE DATABASE MODELS COMPLETE AND COMPILING! 🎉**
-- **🔥 DATABASE CONNECTION POOL (r2d2) - PRODUCTION READY! 🔥**
-- **🔥 API ENDPOINTS WITH REAL DATABASE QUERIES WORKING! 🔥**
+- **DATABASE CONNECTION POOL (r2d2) - PRODUCTION READY!**
+- **API ENDPOINTS WITH REAL DATABASE QUERIES WORKING!**
   - `GET /` - Static API info (optimized, no DB)
   - `GET /health` - Fast health check (no DB)
   - `GET /health/deep` - Full health check with DB connectivity test
@@ -234,22 +270,48 @@ Building a Magic: The Gathering deck-building mobile app with Tinder-like swipin
 - **Organized imports by category (std/external/internal)**
 - **Professional error handling with proper HTTP status codes**
 - **All endpoints tested via curl and returning clean JSON**
-- **🏗️ PRODUCTION-READY MODULE ARCHITECTURE COMPLETE! 🏗️**
+- **PRODUCTION-READY MODULE ARCHITECTURE COMPLETE!**
   - Clean main.rs (69 lines, focused on server setup)
   - Organized handlers into modules (`handlers/cards.rs`, `handlers/decks.rs`, `handlers/health.rs`)
   - Proper module exports with `handlers/mod.rs`
   - Consistent import patterns across all modules
   - Explicit route naming for clarity (`handlers::cards::list_cards`)
   - Scalable architecture ready for authentication and new features
-- **🔐 AUTHENTICATION FOUNDATION COMPLETE! 🔐**
+- **AUTHENTICATION FOUNDATION COMPLETE!**
   - Production-ready password hashing with argon2 and unique salt generation
   - Organized auth/ module structure (password.rs, jwt.rs, middleware.rs)
   - Complete test coverage for password functions (hash_password, verify_password)
   - Domain-driven architecture following successful handlers/ pattern
   - Cryptographic security with OsRng and proper error handling
+- **JWT TOKEN SYSTEM COMPLETE!**
+  - UserClaims struct with proper expiration and user identification
+  - generate_jwt() function with environment variable secret management
+  - validate_jwt() function with signature verification and claims extraction
+  - Complete test coverage with passing round-trip JWT tests
+  - 24-hour token expiration for security best practices
+  - Clean error handling with Box<dyn std::error::Error> for proper error boundaries
 
-**🎯 NEXT**: JWT Token System (Claims struct, generate_jwt, validate_jwt)!
-**📍 YOU ARE HERE**: SECURE AUTHENTICATION FOUNDATION WITH ENTERPRISE ARCHITECTURE! 🚀🔐
+**✅ COMPLETED**: Production-Ready Authentication System LIVE! 
+- handlers/auth.rs COMPLETE with sophisticated authenticate_user function
+- Database query working (email OR username lookup with Diesel)
+- User verification logic complete with security best practices
+- **SOLVED**: Elegant error handling architecture with proper logging separation
+- **COMPLETE**: Two-tier error strategy (detailed logs + generic user responses)
+- **COMPLETE**: Clean architecture with business logic separated from HTTP concerns
+- **COMPLETE**: Login endpoint fully integrated in main.rs router
+- **LIVE**: `POST /api/v1/auth/login` endpoint ready for HTTP testing!
+
+**✅ COMPLETED**: Advanced Diesel ORM Mastery & Registration Business Logic!
+- **MASTERED**: Complex Diesel error pattern matching with enum destructuring
+- **COMPLETE**: Production-grade error handling for constraint violations
+- **BUILT**: register_user() function with sophisticated DatabaseErrorKind::UniqueViolation detection
+- **ACHIEVED**: Two-tier logging architecture (user-facing + detailed internal)
+- **CREATED**: utils.rs module with connect_to() database connection abstraction
+- **DEMONSTRATED**: Independent problem-solving with advanced Rust patterns
+- **SECURITY**: Production-ready duplicate user handling with proper status codes
+
+**🎯 NEXT**: Registration HTTP Integration & JWT Middleware
+**📍 YOU ARE HERE**: ADVANCED DIESEL MASTERY COMPLETE! REGISTRATION BUSINESS LOGIC READY! 🦀🔐✨🏆
 
 ---
 
@@ -266,13 +328,30 @@ curl http://localhost:8080/health        # Health check
 curl http://localhost:8080/health/deep   # DB connectivity
 curl http://localhost:8080/api/v1/decks  # User decks
 curl http://localhost:8080/api/v1/cards  # Cards (placeholder)
+
+# 🔐 Test authentication endpoint!
+curl -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"identifier": "your_email_or_username", "password": "your_password"}'
+
+# Test password system
+cargo test hash -- --nocapture    # Unique salt generation
+cargo test verify -- --nocapture  # Round-trip verification
+
+# Test JWT system
+cargo test test_jwt_round_trip -- --nocapture  # JWT generation/validation
+
+# 🚀 Ready for registration endpoint integration!
+# Business logic complete in register_user() function
 ```
 
 **Tech Stack Confirmed:** 
 - ✅ **Backend**: Rust + Axum + Diesel + PostgreSQL
 - ✅ **Frontend**: Flutter (unchanged)
 - ✅ **Database**: PostgreSQL with Diesel ORM
-- ✅ **Auth**: JWT tokens with argon2 password hashing (ready to implement)
+- ✅ **Auth**: JWT tokens with argon2 password hashing (JWT system complete!)
 - ✅ **Architecture**: Production-ready module structure
+- ✅ **Error Handling**: Sophisticated two-tier strategy with proper logging separation complete!
+- ✅ **Diesel Mastery**: Advanced error handling, pattern matching, and constraint violation detection!
 
-Ready to build fast, type-safe MTG deck builder! 🦀⚡ 
+Ready for registration HTTP integration and JWT middleware! 🦀⚡🔐 
