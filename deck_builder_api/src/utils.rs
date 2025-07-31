@@ -5,7 +5,7 @@ use diesel::{
 };
 use tracing::error;
 
-// define DbPool from the more complex type
+// define DbPool and PooledConn from the more complex types
 type DbPool = Pool<ConnectionManager<PgConnection>>;
 type PooledConn = PooledConnection<ConnectionManager<PgConnection>>;
 
