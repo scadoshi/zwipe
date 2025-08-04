@@ -1,0 +1,203 @@
+---
+alwaysApply: true
+---
+## Current Development Status
+
+### COMPLETE - Production Ready
+- **Database Foundation**: All 4 core models (User, Card, Deck, DeckCard) with foreign keys
+- **Connection Architecture**: r2d2 connection pooling with PostgreSQL integration
+- **API Infrastructure**: Health checks, error handling, JSON responses
+- **Authentication Core**: JWT token generation/validation, argon2 password hashing
+- **HTTP Authentication**: Registration and login endpoints fully functional
+- **Error Architecture**: Two-tier logging strategy (user-facing + internal)
+- **Module Organization**: Clean handlers/auth separation following domain patterns
+- **Configuration Architecture**: Production-ready AppState with dependency injection
+- **JWT Testing Suite**: Comprehensive test coverage with organized test categories
+- **Performance Optimization**: Zero environment reads during request processing
+- **Testable Design**: Pure functions accepting parameters vs environment coupling
+
+### IN PROGRESS - Current Sprint
+- **JWT Middleware**: Authorization header parsing for route protection
+- **Route Security**: User isolation and protected endpoint implementation
+
+### NEXT PRIORITIES - Immediate Roadmap
+1. **Complete Authentication Flow**: JWT middleware for protected routes
+2. **User Route Isolation**: Replace hardcoded user_id with JWT extraction
+3. **Card Data Integration**: Scryfall API integration and seeding
+4. **Deck CRUD Operations**: Create, update, delete deck functionality
+5. **Card Swiping Logic**: Core deck-building swipe interface
+
+---
+
+## Major Learning Achievements
+
+### Recent Breakthroughs
+- **Configuration Architecture Mastery**: Implemented production-ready dependency injection via AppState pattern
+- **Performance Optimization Analysis**: Identified and resolved repeated environment file read inefficiencies
+- **JWT Testing Architecture**: Built comprehensive test suite with organized categories and edge case coverage
+- **Axum State Extraction Expertise**: Successfully applied State<AppState> pattern across all handlers
+- **Systems Architecture Thinking**: Connected testability concerns to performance optimization insights
+- **Authentication System Achievement**: Built complete registration/login flow with sophisticated error handling
+- **Diesel ORM Advancement**: Advanced pattern matching for database constraint violations
+- **HTTP API Integration**: Successfully wired business logic to production endpoints
+- **Database Investigation Skills**: PostgreSQL sequence behavior analysis and validation
+- **Production Debugging**: Comprehensive testing methodology with cURL and endpoint validation
+
+### Knowledge Solidification
+- **Configuration Patterns**: Dependency injection, startup config loading, testable architecture design
+- **Production vs Prototype**: Successfully evolved from environment-coupled to professionally architected code
+- **4-Struct Pattern**: User, Card, Deck, DeckCard models all following consistent structure
+- **Connection Pooling**: r2d2 integration with proper mutable connection handling
+- **Error Boundary Architecture**: Clean separation between business logic and HTTP concerns
+- **Module System Confidence**: Domain-driven organization with handlers/auth patterns
+- **Testing Methodology**: Organized test categories, comprehensive error scenario coverage
+
+### Skills Demonstrated
+- **Architectural Evolution**: Successfully refactored major architectural patterns for production readiness
+- **Performance Analysis**: Connected architecture decisions to efficiency and scalability concerns
+- **Independent Problem Solving**: Investigated unusual database ID behavior autonomously
+- **Production Testing Methodology**: Comprehensive success/failure scenario validation
+- **Quality Assurance Mindset**: Thorough edge case consideration and constraint verification
+- **Systems Architecture Understanding**: PostgreSQL concurrency, atomicity principles, and config management
+
+---
+
+## Technical Architecture Decisions
+
+### Database & ORM Patterns
+- **r2d2 over bb8**: Chosen for stability and mature Diesel integration
+- **4-Struct Pattern**: Consistent Main/New/Update/Response organization
+- **Foreign Key Relationships**: User→Deck→DeckCard→Card with proper constraints
+- **Custom Enum Types**: MtgFormat with ToSql/FromSql trait implementation
+- **Connection Management**: Mutable connections with proper error handling
+
+### API Design Patterns  
+- **Endpoint Separation**: DB vs non-DB handlers for resource efficiency
+- **Error Response Strategy**: Business logic errors mapped to appropriate HTTP status codes
+- **Route Organization**: Explicit handler references (handlers::cards::list_cards)
+- **Import Structure**: Categorized std/external/internal for code clarity
+- **Domain Modules**: auth/ directory following successful handlers/ pattern
+
+### Security Implementation
+- **Password Security**: argon2 hashing with unique salt generation
+- **JWT Best Practices**: 24-hour expiration, environment variable secrets
+- **Error Security**: Generic user responses to prevent enumeration attacks
+- **Input Validation**: Email normalization, ID range validation
+
+---
+
+## Testing & Validation Status
+
+### API Endpoints Tested
+- `GET /` - Root endpoint (static info) ✅
+- `GET /health` - Shallow health check ✅  
+- `GET /health/deep` - Database connectivity test ✅
+- `GET /api/v1/decks` - User decks query (hardcoded user_id=1) ✅
+- `POST /api/v1/auth/register` - User registration with JWT response ✅
+- `POST /api/v1/auth/login` - User authentication with JWT response ✅
+
+### Database Operations Verified
+- User registration with duplicate constraint handling ✅
+- Password hashing and verification round-trip ✅
+- JWT token generation and validation cycle ✅
+- PostgreSQL sequence behavior investigation ✅
+- Foreign key relationship queries ✅
+
+### Error Handling Validated
+- Duplicate user registration (409 Conflict) ✅
+- Invalid login credentials (401 Unauthorized) ✅
+- Database connection failures (500 Internal Server Error) ✅
+- Constraint violation logging and user response separation ✅
+
+---
+
+## AI Teaching Context
+
+### Learning Approach Preferences
+- **Research Guidance**: Point to specific docs/patterns, let implementation build understanding
+- **Neural Connection Strategy**: Connect new concepts to solidified knowledge nodes
+- **Component-by-Component**: Break complex features into digestible pieces
+- **Explain WHY**: Always provide architectural reasoning to strengthen conceptual pathways
+- **Debugging Guidance**: Guide investigation rather than providing direct answers
+
+### Current Learning Edge
+- **Confident Areas**: Module organization, basic Diesel patterns, error handling concepts
+- **Developing Skills**: Complex query building, middleware implementation, async patterns  
+- **Next Learning Targets**: JWT middleware, route protection, card data integration
+- **Knowledge Gaps**: Advanced Diesel joins, transaction handling, async/await mastery
+
+### Effective Teaching Patterns
+- **Build on 4-Struct Pattern**: Use consistent model structure as foundation
+- **Reference Previous Wins**: Connect to successful authentication implementation
+- **Systems Thinking**: Explain how pieces fit together in larger architecture
+- **Hands-on Validation**: Encourage testing and verification of implementations
+
+---
+
+## Development Context for AIs
+
+### Session Handoff Information
+- **Last Major Achievement**: Complete authentication HTTP API with comprehensive testing
+- **Current Focus**: JWT middleware implementation for route protection  
+- **Knowledge State**: Strong conceptual understanding, implementation practice needed
+- **Learning Velocity**: High - ready for middleware and route security concepts
+- **Debugging Skills**: Excellent - investigates unusual behavior independently
+
+### Quick Start Commands
+```bash
+# Start development server
+cargo run
+
+# Test authentication system
+curl --json '{"username": "testuser", "email": "test@email.com", "password": "pass123"}' \
+  http://localhost:8080/api/v1/auth/register
+
+curl --json '{"identifier": "testuser", "password": "pass123"}' \
+  http://localhost:8080/api/v1/auth/login
+
+# Test current endpoints
+curl http://localhost:8080/health/deep
+curl http://localhost:8080/api/v1/decks
+```
+
+### Development Priorities
+1. **JWT Middleware** - Authorization header parsing and user extraction
+2. **Route Protection** - Apply authentication to sensitive endpoints
+3. **User Isolation** - Replace hardcoded user_id with JWT-extracted values
+4. **Card Integration** - Begin MTG card data seeding and API integration
+
+---
+
+## Update Instructions for AIs
+
+### When to Update This Tracker
+- After major feature completion or breakthrough
+- When project priorities or direction changes
+- Following significant learning achievements or skill demonstration
+- When architecture decisions are made or validated
+- After comprehensive testing phases
+
+### What to Update
+- **Move items** between COMPLETE ↔ IN PROGRESS ↔ NEXT PRIORITIES
+- **Add new achievements** to learning section with specific skills demonstrated  
+- **Update architecture decisions** when new patterns are established
+- **Record testing status** for new endpoints or functionality
+- **Adjust AI teaching context** based on demonstrated knowledge and preferences
+
+### Use This Tracker To
+- **Understand project state** immediately upon session start
+- **Identify current learning edge** and optimal challenge level
+- **Reference past successes** when introducing related concepts  
+- **Maintain development momentum** by building on established patterns
+- **Provide appropriate complexity** based on demonstrated skills
+
+---
+
+**Last Updated**: After authentication system completion, comprehensive HTTP testing, and database behavior investigation
+
+**Current Sprint**: JWT middleware implementation and route protection
+
+**Next Major Milestone**: Complete authentication flow with protected routes and user isolation 
+**Current Sprint**: JWT middleware implementation and route protection
+
+**Next Major Milestone**: Complete authentication flow with protected routes and user isolation 

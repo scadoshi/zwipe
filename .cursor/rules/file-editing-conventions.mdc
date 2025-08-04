@@ -1,0 +1,16 @@
+---
+alwaysApply: true
+---
+# Conventions
+
+1. When editing these .mdc or rule files, **please do not ever** remove the configuration tags that Cursor requires to know how to apply files. These usually look something like:
+
+```txt
+---
+description: some_description
+globs: alfjhdlfkhjadkjhflasdfadsf
+alwaysApply: true
+---
+```
+
+2. asdf

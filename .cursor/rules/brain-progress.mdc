@@ -1,0 +1,192 @@
+---
+alwaysApply: true
+---
+## CONFIDENT - Strong Implementation Ability
+
+### Configuration & Architecture Patterns
+- **Dependency Injection**: Successfully implemented AppState pattern with Axum State extraction
+- **Configuration Management**: Production-ready config loading at startup vs runtime env reads
+- **Performance Optimization**: Identified and resolved repeated file system access inefficiencies
+- **Testable Architecture**: Designed pure functions vs environment-coupled functions
+
+### Axum Web Framework  
+- **State Extraction**: Confidently uses `State<AppState>` pattern across multiple handlers
+- **Handler Architecture**: Solid understanding of handler organization and parameter extraction
+- **Error Responses**: Proficient with `StatusCode` mapping and `Result<Json<Value>, StatusCode>`
+- **Module Architecture**: Strong separation of concerns, domain-driven organization
+- **Routing**: Confident with nested routes and handler organization patterns
+
+### JWT & Authentication Flow
+- **JWT Implementation**: Complete token generation/validation with custom configuration
+- **Password Security**: Solid argon2 hashing implementation and verification
+- **HTTP Auth Flow**: Registration → Login → Token generation fully implemented
+- **Error Architecture**: Advanced two-tier logging strategy (user-facing + internal)
+- **Input Validation**: ID range validation, email normalization, comprehensive error handling
+
+### Error Handling Patterns
+- **Custom Error Types**: Advanced `thiserror` usage with `JwtGenerationError`, `JwtValidationError`
+- **Pattern Matching**: Confident enum destructuring and error type handling
+- **HTTP Status Mapping**: Proficient mapping business logic errors to appropriate status codes
+- **Testing Error Scenarios**: Comprehensive edge case and failure scenario validation
+
+### Testing Architecture
+- **Test Organization**: Clean categorization of test functions by concern
+- **Edge Case Testing**: Thorough validation of error conditions and boundary cases
+- **Environment Testing Challenges**: Understanding of environment coupling vs testable design
+- **Comprehensive Coverage**: Success/failure scenarios, normalization, validation testing
+
+---
+
+## DEVELOPING - Active Learning Paths (Needs Practice)
+
+### Diesel ORM Patterns
+- **Connection Pooling Implementation**: Solid understanding, r2d2 integration complete
+- **Query Building**: `.filter()`, `.select()` - knows patterns, syntax improving
+- **Foreign Key Queries**: `decks::user_id.eq(value)` vs `user_id.eq(value)` - solid understanding
+- **Schema Usage**: Comfortable using schema for Diesel operations
+- **Mutable Connections**: Confident with requirement and patterns
+
+### Advanced Axum Concepts
+- **JWT Middleware**: Authorization header parsing, Bearer token extraction - next learning target
+- **Route Protection**: Conditional middleware application, user isolation - ready to implement
+- **Custom Extractors**: `AuthenticatedUser` patterns for handlers - conceptual understanding
+
+### Database Relationships
+- **Foreign Keys**: Solid understanding of `#[diesel(belongs_to(...))]` relationships
+- **Custom Types**: Good grasp of enum-to-SQL conversion with `ToSql`/`FromSql` implementation  
+- **Complex Queries**: Joins between multiple tables - conceptually strong, syntax developing
+
+### Advanced Database Operations
+- **Transactions**: Conceptual understanding, implementation syntax developing
+- **Connection Management**: Strong connection lifecycle pattern understanding
+- **Performance Optimization**: Query optimization awareness, connection pool tuning experience
+
+### Async Rust
+- **Async Basics**: Improving async/await pattern usage
+- **Tokio Runtime**: Basic implementation understanding, practical usage developing
+
+---
+
+## LEARNING - Recently Introduced (Needs Guidance)
+
+### Advanced Axum Concepts
+- **JWT Middleware**: Authorization header parsing, Bearer token extraction
+- **Route Protection**: Conditional middleware application, user isolation
+- **Custom Extractors**: `AuthenticatedUser` patterns for handlers
+
+### Database Relationships
+- **Foreign Keys**: Roughly knows `#[diesel(belongs_to(...))]` indicates table relationships, would be hard-pressed to implement from memory
+- **Custom Types**: Confused about enum-to-SQL conversion with `ToSql`/`FromSql` implementation
+- **Complex Queries**: Joins between multiple tables - conceptually understands, syntax uncertain
+
+### Advanced Database Operations
+- **Transactions**: Conceptual understanding, implementation syntax unknown
+- **Connection Management**: Learning connection lifecycle patterns
+- **Performance Optimization**: Query optimization, connection pool tuning
+
+### Async Rust
+- **Async Basics**: Not good at async/await patterns yet
+- **Tokio Runtime**: Basic awareness, implementation unclear
+
+---
+
+## UNEXPLORED - Future Learning Areas
+
+### API Design
+- **Pagination**: Large dataset handling, cursor-based pagination
+- **Rate Limiting**: Request throttling, abuse prevention
+- **API Versioning**: Backward compatibility, version management
+
+### MTG-Specific Business Logic
+- **Format Validation**: Standard/Modern legality checking
+- **Deck Rules**: 60-card minimums, 4-card limits, sideboard rules
+- **Card Data Integration**: Scryfall API, image handling, card caching
+
+### Performance & Scaling
+- **Database Optimization**: Query performance, indexing strategy
+- **Connection Tuning**: Pool size optimization, connection lifecycle
+- **Caching**: Redis integration, query result caching
+
+### Advanced Rust Patterns
+- **Async Streaming**: Large dataset handling, async iterators
+- **Error Propagation**: Advanced error handling, error context
+- **Type-Level Programming**: Advanced traits, generic constraints
+
+---
+
+## Learning Neural Network Patterns
+
+### Strengths (Strong Neural Pathways)
+- **Systems Thinking**: Excellent at understanding WHY architectures work - demonstrated with config pattern
+- **Performance Analysis**: Connects architecture decisions to efficiency concerns (env reads → startup config)
+- **Conceptual Grasp**: Strong pattern recognition, successfully applied dependency injection concepts
+- **Debugging Mindset**: Investigates unusual behavior, validates assumptions, thorough testing approach
+- **Quality Focus**: Comprehensive test coverage, considers edge cases and failure scenarios
+- **Architectural Evolution**: Successfully refactored from prototype to production patterns
+- **Honest Assessment**: Openly acknowledges knowledge gaps, asks clarifying questions
+
+### Growth Areas (Developing Pathways)  
+- **Advanced Middleware**: Ready for JWT middleware implementation, concepts understood
+- **Complex Query Syntax**: Strong conceptual understanding, syntax practice continues
+- **Async Programming**: Improving async/await patterns, practical experience growing
+
+### Recent Neural Connection Strengthening
+- **Configuration Patterns**: New strong pathway - dependency injection, AppState, State extraction
+- **Testing Architecture**: Strengthened pathway - organized test suites, comprehensive coverage
+- **Performance Optimization**: New connection - architecture decisions → performance implications
+- **Production Patterns**: Evolved from learning to implementing professional-grade solutions
+
+### Optimal Neural Connection Strategy
+- **Research Guidance**: Point to specific docs/patterns, let him implement and build connections
+- **Connect to Strong Nodes**: Reference confident areas when introducing new concepts
+- **Explain WHY**: Always provide reasoning behind architectural decisions to strengthen pathways
+- **Component-by-Component**: Break complex features into digestible pieces that connect to existing knowledge
+- **Let Him Debug**: Guide investigation rather than providing direct answers to strengthen problem-solving pathways
+
+---
+
+## Quiz Performance Neural Mapping
+
+### Recent Performance Patterns
+- **Module Organization**: 100% - Strong neural pathways for separation of concerns
+- **Type Safety**: 95% - Excellent connections to Rust type system benefits
+- **Diesel Basics**: 85% - Good conceptual pathways, syntax connections developing
+- **Database Relationships**: 95% - Strong understanding of foreign keys and joins conceptually
+- **Implementation Details**: 70% - Conceptual pathways strong, practical implementation connections need strengthening
+
+### Learning Pattern Recognition
+- **Conceptual First**: Builds understanding frameworks before diving into syntax
+- **Honest Uncertainty**: Clearly distinguishes between confident knowledge and areas of uncertainty
+- **Self-Correction**: Strong self-monitoring, catches and corrects reasoning
+- **Practical Application**: Connects abstract concepts to concrete project use cases
+
+---
+
+## Update Instructions for Future AIs
+
+### When to Update This Neural Map
+- After major concept breakthroughs or solidification
+- Following quiz administration and performance analysis
+- When Scotty demonstrates confident understanding of a developing concept
+- When new knowledge gaps are identified
+- After significant implementation achievements that strengthen neural pathways
+
+### How to Update Neural Connections
+- **Move concepts** between CONFIDENT ↔ DEVELOPING ↔ LEARNING ↔ UNEXPLORED
+- **Add specific patterns** he's learned or struggling with
+- **Update performance insights** with learning trend analysis
+- **Note teaching approaches** that strengthen or weaken neural connections
+- **Record new learning preferences** or successful connection strategies
+
+### Use This Neural Map To
+- **Design targeted quizzes** based on current knowledge state and connection strength
+- **Choose appropriate complexity** level that builds on strong neural nodes
+- **Identify knowledge gaps** that need bridging to existing strong areas
+- **Connect new concepts** to his confident knowledge for faster learning
+- **Adjust support level** based on pathway strength in each area
+
+---
+
+**Last Updated**: Based on authentication system completion, quiz results through 2025-07-27, and honest self-assessment of knowledge state
+
+**Next Neural Connection Point**: After JWT middleware implementation and route protection
