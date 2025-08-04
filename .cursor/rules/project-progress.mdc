@@ -9,6 +9,8 @@ alwaysApply: true
 - **API Infrastructure**: Health checks, error handling, JSON responses
 - **Authentication Core**: JWT token generation/validation, argon2 password hashing
 - **HTTP Authentication**: Registration and login endpoints fully functional
+- **JWT Middleware**: Custom extractor pattern with FromRequestParts trait implementation
+- **Route Protection**: Declarative authentication through handler type signatures
 - **Error Architecture**: Two-tier logging strategy (user-facing + internal)
 - **Module Organization**: Clean handlers/auth separation following domain patterns
 - **Configuration Architecture**: Production-ready AppState with dependency injection
@@ -17,8 +19,7 @@ alwaysApply: true
 - **Testable Design**: Pure functions accepting parameters vs environment coupling
 
 ### IN PROGRESS - Current Sprint
-- **JWT Middleware**: Authorization header parsing for route protection
-- **Route Security**: User isolation and protected endpoint implementation
+- **User Route Isolation**: Replace hardcoded user_id with JWT extraction in handlers
 
 ### NEXT PRIORITIES - Immediate Roadmap
 1. **Complete Authentication Flow**: JWT middleware for protected routes
@@ -42,6 +43,11 @@ alwaysApply: true
 - **HTTP API Integration**: Successfully wired business logic to production endpoints
 - **Database Investigation Skills**: PostgreSQL sequence behavior analysis and validation
 - **Production Debugging**: Comprehensive testing methodology with cURL and endpoint validation
+- **JWT Middleware Mastery**: Built JWT middleware from manual approach, then transitioned to elegant structured pattern
+- **HTTP Authentication Flow**: Manual header parsing, Bearer token extraction, JWT validation integration
+- **Custom Extractor Implementation**: FromRequestParts trait implementation with proper error handling
+- **Declarative Security Pattern**: Type-driven authentication through handler signatures
+- **HTTP Status Code Semantics**: 400 vs 401 distinction, proper error response patterns
 
 ### Knowledge Solidification
 - **Configuration Patterns**: Dependency injection, startup config loading, testable architecture design
@@ -193,11 +199,8 @@ curl http://localhost:8080/api/v1/decks
 
 ---
 
-**Last Updated**: After authentication system completion, comprehensive HTTP testing, and database behavior investigation
+**Last Updated**: After JWT middleware implementation breakthrough, custom extractor mastery, and declarative authentication patterns
 
-**Current Sprint**: JWT middleware implementation and route protection
+**Current Sprint**: User isolation implementation and card data integration
 
-**Next Major Milestone**: Complete authentication flow with protected routes and user isolation 
-**Current Sprint**: JWT middleware implementation and route protection
-
-**Next Major Milestone**: Complete authentication flow with protected routes and user isolation 
+**Next Major Milestone**: Complete deck CRUD operations with JWT-protected routes 
