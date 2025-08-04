@@ -3,10 +3,11 @@ use std::{
     fs::{read, File},
     path::Path,
     time::Duration,
-    error::Error as StdError;
+    error::Error as StdError,
 };
 
 // External
+use anyhow::anyhow;
 use axum::{
     http::{header, HeaderValue, Method},
     middleware,
@@ -39,7 +40,8 @@ struct AppState {
 
 impl AppState {
     fn initialize() -> Result<Self, Box<dyn StdError>> {
-        let database_url = std::env::var("DATABASE_URL")?;
+        let database_url = std::env::var("DATABASE_URL")
+            .map_err(|e| anyhow!("DATABASE_URL environment variable must be set. Error: {:?}", e))?;
 
         let connection_manager = ConnectionManager::<PgConnection>::new(database_url);
 
@@ -48,7 +50,8 @@ impl AppState {
             .max_size(10) // maximum pool size of 10
             .idle_timeout(Some(Duration::from_secs(300))) // idle connection timeout of 5 min
             .connection_timeout(Duration::from_secs(5)) // new connection timeout of 5 sec
-            .build(connection_manager)?;
+            .build(connection_manager)
+            .map_err(|e| anyhow!("Failed to build connection. Error: {:?}", e))?;
 
         Ok(Self {
             db_pool,
@@ -58,15 +61,23 @@ impl AppState {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn StdError>> {
+async fn main() {
+    match run().await {
+        Ok(_) => (),
+        Err(e) => eprintln!("Failed to run main. Error: {:?}", e),
+    }
+}
+
+async fn run() -> Result<(), Box<dyn StdError>> {
     tracing_subscriber::fmt::init();
-    dotenvy::dotenv().expect("Failed to load .env file");
+    dotenvy::dotenv()?;
 
     let allowed_origins: Vec<HeaderValue> = std::env::var("ALLOWED_ORIGINS")
-        .expect("ALLOWED_ORIGINS environment variable must be set")
+        .map_err(|e| anyhow!("ALLOWED_ORIGINS environment variable must be set. Error: {:?}", e))?
         .split(",")
-        .map(|x| x.parse().expect("Failed to parse HeaderValue"))
-        .collect();
+        .map(|x| x.parse())
+        .collect::<Result<Vec<HeaderValue>, _>>()
+        .map_err(|e| anyhow!("Failed to collect all values in ALLOWED_ORIGINS list. Error: {:?}", e))?;
 
     // protected routes - these need jwt authentication
     // all handlers here must include `AuthenticatedUser` parameter
@@ -101,11 +112,15 @@ async fn main() -> Result<(), Box<dyn StdError>> {
                 .allow_methods([Method::GET, Method::POST])
                 .allow_headers([header::CONTENT_TYPE]),
         )
-        .with_state(AppState::initialize()?)
+        .with_state(
+            AppState::initialize()
+                .map_err(|e| anyhow!("Failed to initialize AppState. Error: {:?}", e))?
+        )
         .layer(TraceLayer::new_for_http());
 
     let bind_address =
-        std::env::var("BIND_ADDRESS").expect("BIND_ADDRESS environment variable must be set");
+        std::env::var("BIND_ADDRESS")
+        .map_err(|e| anyhow!("BIND_ADDRESS environment variable must be set. Error: {:?}", e))?;
 
     let logo_str = include_str!("../../logos/ansi_shadow.txt");
     println!("{}", "=".repeat(69));
@@ -113,9 +128,12 @@ async fn main() -> Result<(), Box<dyn StdError>> {
     println!("{}", "=".repeat(69));
     println!("deck_builder API Running on {}", bind_address);
 
-    let listener = tokio::net::TcpListener::bind(&bind_address).await?;
+    let listener = tokio::net::TcpListener::bind(&bind_address).await
+        .map_err(|e| anyhow!("failed to bind address to listener with error: {:?}", e))?;
 
-    axum::serve(listener, app).await?;
+    axum::serve(listener, app)
+        .await
+        .map_err(|e| anyhow!("failed to serve app with error: {:?}", e))?;
 
     Ok(())
 }

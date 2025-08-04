@@ -1,7 +1,7 @@
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
+use std::error::Error as StdError;
 use thiserror::Error;
-use std::error::Error as StdError
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct UserClaims {
@@ -76,10 +76,7 @@ pub enum JwtValidationError {
     MissingSecret,
 }
 
-pub fn validate_jwt(
-    token: &str,
-    jwt_secret: &str,
-) -> Result<UserClaims, Box<dyn StdError>> {
+pub fn validate_jwt(token: &str, jwt_secret: &str) -> Result<UserClaims, Box<dyn StdError>> {
     if token.is_empty() || token.split(".").count() != 3 {
         return Err(Box::new(JwtValidationError::InvalidToken(
             token.to_string(),
