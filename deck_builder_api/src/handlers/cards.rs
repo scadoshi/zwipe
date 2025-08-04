@@ -7,12 +7,15 @@ use diesel::{
 use serde_json::{json, Value};
 
 // Internal
-use crate::{utils::connect_to, AppState};
+use crate::{auth::middleware::AuthenticatedUser, utils::connect_to, AppState};
 
 // define DbPool from the more complex type
 type DbPool = Pool<ConnectionManager<PgConnection>>;
 
-pub async fn list_cards(State(app_state): State<AppState>) -> Result<Json<Value>, StatusCode> {
+pub async fn get_cards(
+    State(app_state): State<AppState>,
+    authenticated_user: AuthenticatedUser,
+) -> Result<Json<Value>, StatusCode> {
     let mut _conn = connect_to(app_state.db_pool)?;
 
     // TODO: Query cards table with filters/pagination

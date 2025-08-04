@@ -9,13 +9,16 @@ use serde_json::{json, Value};
 use tracing::error;
 
 // Internal crate imports (our code)
-use crate::{models::Deck, utils::connect_to};
+use crate::{auth::middleware::AuthenticatedUser, models::Deck, utils::connect_to};
 use crate::{schema::decks, AppState};
 
 // define DbPool from the more complex type
 type DbPool = Pool<ConnectionManager<PgConnection>>;
 
-pub async fn list_decks(State(app_state): State<AppState>) -> Result<Json<Value>, StatusCode> {
+pub async fn get_decks(
+    State(app_state): State<AppState>,
+    authenticated_user: AuthenticatedUser,
+) -> Result<Json<Value>, StatusCode> {
     let mut conn = connect_to(app_state.db_pool)?;
 
     let user_id_value = 1; // TODO: Extract user_id from JWT token

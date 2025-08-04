@@ -26,7 +26,7 @@ mod models;
 mod schema;
 mod utils;
 
-use crate::auth::{jwt::JwtConfig, middleware::jwt_authentication};
+use crate::auth::jwt::JwtConfig;
 
 type DbPool = Pool<ConnectionManager<PgConnection>>;
 
@@ -67,6 +67,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map(|x| x.parse().expect("Failed to parse HeaderValue"))
         .collect();
 
+    // Protected Routes - Require JWT Authentication
+    // All handlers in this router MUST include `AuthenticatedUser` parameter
+    // which automatically enforces JWT validation via custom extractor
+    let protected_routes = Router::new().nest(
+        "/api/v1",
+        Router::new()
+            .route("/cards", get(handlers::cards::get_cards))
+            .route("/decks", get(handlers::decks::get_decks)),
+    );
+
+    // Public Routes - No Authentication Required
+    // Health checks and authentication endpoints accessible without tokens
     let public_routes = Router::new()
         .route("/", get(handlers::health::root))
         .route("/health", get(handlers::health::health_check))
@@ -77,16 +89,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .route("/auth/login", post(handlers::auth::login))
                 .route("/auth/register", post(handlers::auth::register)),
         );
-
-    let protected_routes = Router::new()
-        .nest(
-            "/api/v1",
-            Router::new()
-                .route("/cards", get(handlers::cards::list_cards))
-                .route("/decks", get(handlers::decks::list_decks)),
-        )
-        // .layer(middleware::from_fn(jwt_authentication))
-        ;
 
     let app = Router::new()
         .merge(public_routes)

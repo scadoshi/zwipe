@@ -4,10 +4,10 @@ use thiserror::Error;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct UserClaims {
-    user_id: i32,
-    email: String,
-    exp: usize,
-    iat: usize,
+    pub user_id: i32,
+    pub email: String,
+    pub exp: usize,
+    pub iat: usize,
 }
 
 #[derive(Debug, Clone)]
