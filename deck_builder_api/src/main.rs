@@ -3,6 +3,7 @@ use std::{
     fs::{read, File},
     path::Path,
     time::Duration,
+    error::Error as StdError
 };
 
 // External
@@ -37,7 +38,7 @@ struct AppState {
 }
 
 impl AppState {
-    fn initialize() -> Result<Self, Box<dyn std::error::Error>> {
+    fn initialize() -> Result<Self, Box<dyn StdError>> {
         let database_url = std::env::var("DATABASE_URL")?;
 
         let connection_manager = ConnectionManager::<PgConnection>::new(database_url);
@@ -57,7 +58,7 @@ impl AppState {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), Box<dyn StdError>> {
     tracing_subscriber::fmt::init();
     dotenvy::dotenv().expect("Failed to load .env file");
 

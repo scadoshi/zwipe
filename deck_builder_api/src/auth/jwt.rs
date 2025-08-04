@@ -1,6 +1,7 @@
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+use std::error::Error as StdError
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct UserClaims {
@@ -16,7 +17,7 @@ pub struct JwtConfig {
 }
 
 impl JwtConfig {
-    pub fn from_env() -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn from_env() -> Result<Self, Box<dyn StdError>> {
         let secret = std::env::var("JWT_SECRET")?;
         Ok(JwtConfig { secret })
     }
@@ -36,7 +37,7 @@ pub fn generate_jwt(
     user_id: i32,
     email: String,
     jwt_secret: &str,
-) -> Result<String, Box<dyn std::error::Error>> {
+) -> Result<String, Box<dyn StdError>> {
     if user_id < 1 || user_id > 100_000_000 {
         return Err(Box::new(JwtGenerationError::InvalidUserId(user_id)));
     }
@@ -78,7 +79,7 @@ pub enum JwtValidationError {
 pub fn validate_jwt(
     token: &str,
     jwt_secret: &str,
-) -> Result<UserClaims, Box<dyn std::error::Error>> {
+) -> Result<UserClaims, Box<dyn StdError>> {
     if token.is_empty() || token.split(".").count() != 3 {
         return Err(Box::new(JwtValidationError::InvalidToken(
             token.to_string(),
