@@ -1,4 +1,5 @@
 ---
+description: Tracks project development status, learning achievements, and provides development context for AI assistants to understand current progress and guide learning appropriately. Acts as hand off document from one AI chat to the next. Keeps list of backlogged, approaching and high level development tasks.
 alwaysApply: true
 ---
 ## Current Development Status
@@ -27,6 +28,38 @@ alwaysApply: true
 3. **Card Data Integration**: Scryfall API integration and seeding
 4. **Deck CRUD Operations**: Create, update, delete deck functionality
 5. **Card Swiping Logic**: Core deck-building swipe interface
+
+### BACKLOG - Planned Future Work
+**Testing & Quality Assurance:**
+- **Handler Test Suites**: Comprehensive unit tests for auth, health, deck, and card handlers
+- **JWT Middleware Tests**: Security boundary validation, error response testing
+- **Model Test Coverage**: Serialization, Diesel mappings, constraint validation
+- **Integration Test Framework**: Full HTTP request/response testing infrastructure
+- **Utils Module Tests**: Connection pooling and error handling validation
+- **Performance Testing**: Load testing, connection pool optimization
+- **End-to-End Test Suite**: Complete user workflow validation
+
+**Feature Development:**
+- **Advanced Deck Management**: Copy, import/export, deck statistics
+- **Card Search & Filtering**: Advanced search by type, cost, color, format legality
+- **Collection Management**: User card ownership tracking, wishlist functionality
+- **Deck Validation**: Format legality checking, card limit enforcement
+- **Social Features**: Deck sharing, public deck browser, user profiles
+
+**Technical Improvements:**
+- **API Documentation**: OpenAPI/Swagger documentation generation
+- **Rate Limiting**: Request throttling and abuse prevention
+- **Caching Layer**: Redis integration for card data and query optimization
+- **Image Handling**: Card image caching, proxy, and optimization
+- **Monitoring & Logging**: Structured logging, metrics, health monitoring
+- **Database Optimization**: Query performance analysis, indexing strategy
+
+**User Experience:**
+- **Mobile Responsiveness**: Touch-optimized deck building interface
+- **Offline Support**: PWA capabilities for offline deck management
+- **Import/Export**: Support for various deck formats (MTGA, MTGO, etc.)
+- **Deck Analytics**: Mana curve analysis, card type distribution
+- **Advanced Filtering**: Complex search queries, saved filters
 
 ---
 

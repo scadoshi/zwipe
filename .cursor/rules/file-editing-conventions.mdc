@@ -1,4 +1,5 @@
 ---
+description: File editing conventions and rules for maintaining Cursor configuration tags
 alwaysApply: true
 ---
 # Conventions
@@ -8,7 +9,6 @@ alwaysApply: true
 ```txt
 ---
 description: some_description
-globs: alfjhdlfkhjadkjhflasdfadsf
 alwaysApply: true
 ---
 ```
