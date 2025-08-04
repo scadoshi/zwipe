@@ -7,6 +7,8 @@ use diesel::{
 use serde_json::{json, Value};
 use tracing::error;
 
+use crate::{utils::connect_to, AppState};
+
 // define DbPool from the more complex type
 type DbPool = Pool<ConnectionManager<PgConnection>>;
 
@@ -25,14 +27,10 @@ pub async fn health_check() -> Json<Value> {
     }))
 }
 
-pub async fn health_check_deep(State(pool): State<DbPool>) -> Result<Json<Value>, StatusCode> {
-    let mut conn = pool.get().map_err(|e| {
-        error!(
-            "Failed to get connection to database connection pool with error: {:?}",
-            e
-        );
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
+pub async fn health_check_deep(
+    State(app_state): State<AppState>,
+) -> Result<Json<Value>, StatusCode> {
+    let mut conn = connect_to(app_state.db_pool)?;
 
     // Simple query to verify DB is responsive
     sql_query("SELECT 1").execute(&mut conn).map_err(|e| {

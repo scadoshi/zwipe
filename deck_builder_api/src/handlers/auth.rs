@@ -3,9 +3,8 @@ use axum::{extract::State, http::StatusCode, response::Json};
 use diesel::{
     dsl::insert_into,
     prelude::*,
-    r2d2::{ConnectionManager, Pool},
     result::{DatabaseErrorKind, Error::DatabaseError},
-    PgConnection, RunQueryDsl,
+    RunQueryDsl,
 };
 use serde::{Deserialize, Serialize};
 use tracing::{error, warn};
@@ -19,10 +18,8 @@ use crate::{
     models::user,
     schema::users,
     utils::connect_to,
+    AppState,
 };
-
-// define DbPool from the more complex type
-type DbPool = Pool<ConnectionManager<PgConnection>>;
 
 #[derive(Deserialize)]
 pub struct LoginRequest {
@@ -44,11 +41,11 @@ pub struct RegistrationRequest {
 }
 
 pub async fn authenticate_user(
-    pool: DbPool,
+    app_state: AppState,
     identifier: &str,
     password: &str,
 ) -> Result<LoginResponse, StatusCode> {
-    let mut conn = connect_to(pool)?;
+    let mut conn = connect_to(app_state.db_pool)?;
 
     let user = users::table
         .filter(
@@ -69,7 +66,7 @@ pub async fn authenticate_user(
         return Err(StatusCode::UNAUTHORIZED);
     }
 
-    let token = generate_jwt(user.id, user.email).map_err(|e| {
+    let token = generate_jwt(user.id, user.email, &app_state.jwt_config.secret).map_err(|e| {
         error!("Failed to generate json web token. Error: {:?}", e);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
@@ -81,24 +78,24 @@ pub async fn authenticate_user(
 }
 
 pub async fn login(
-    State(pool): State<DbPool>,
+    State(app_state): State<AppState>,
     Json(LoginRequest {
         identifier,
         password,
     }): Json<LoginRequest>,
 ) -> Result<Json<LoginResponse>, StatusCode> {
-    authenticate_user(pool, identifier.as_str(), password.as_str())
+    authenticate_user(app_state, identifier.as_str(), password.as_str())
         .await
         .map(|result| Json(result))
 }
 
 pub async fn register_user(
-    pool: DbPool,
+    app_state: AppState,
     username: &str,
     email: &str,
     password: &str,
 ) -> Result<LoginResponse, StatusCode> {
-    let mut conn = connect_to(pool)?;
+    let mut conn = connect_to(app_state.db_pool)?;
 
     let password_hash = hash_password(password).map_err(|e| {
         error!("Failed to hash password. Error: {:?}", e);
@@ -131,7 +128,7 @@ pub async fn register_user(
             }
         })?;
 
-    let token = generate_jwt(user.id, user.email).map_err(|e| {
+    let token = generate_jwt(user.id, user.email, &app_state.jwt_config.secret).map_err(|e| {
         error!("Failed to generate a json web token. Error: {:?}", e);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
@@ -143,11 +140,11 @@ pub async fn register_user(
 }
 
 pub async fn register(
-    State(pool): State<DbPool>,
+    State(app_state): State<AppState>,
     Json(registration_request): Json<RegistrationRequest>,
 ) -> Result<Json<LoginResponse>, StatusCode> {
     register_user(
-        pool,
+        app_state,
         &registration_request.username,
         &registration_request.email,
         &registration_request.password,

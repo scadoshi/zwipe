@@ -43,6 +43,7 @@ tracing-subscriber = "0.3"
 
 # Environment variables
 dotenvy = "0.15"
+thiserror = "2.0.12"
 
 [dev-dependencies]
 # Testing
