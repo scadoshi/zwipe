@@ -1,9 +1,14 @@
 // Std
-use std::time::Duration;
+use std::{
+    fs::{read, File},
+    path::Path,
+    time::Duration,
+};
 
 // External
 use axum::{
     http::{header, HeaderValue, Method},
+    middleware,
     routing::{get, post},
     Router,
 };
@@ -11,7 +16,7 @@ use diesel::{
     r2d2::{ConnectionManager, Pool},
     PgConnection,
 };
-use tower_http::cors::CorsLayer;
+use tower_http::{cors::CorsLayer, trace::TraceLayer};
 use tracing_subscriber;
 
 // Internal
@@ -21,7 +26,7 @@ mod models;
 mod schema;
 mod utils;
 
-use crate::auth::jwt::JwtConfig;
+use crate::auth::{jwt::JwtConfig, middleware::jwt_authentication};
 
 type DbPool = Pool<ConnectionManager<PgConnection>>;
 
@@ -56,13 +61,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
     dotenvy::dotenv().expect("Failed to load .env file");
 
-    let allowed_origins: Vec<HeaderValue> = std::env::var("")
+    let allowed_origins: Vec<HeaderValue> = std::env::var("ALLOWED_ORIGINS")
         .expect("ALLOWED_ORIGINS environment variable must be set")
         .split(",")
         .map(|x| x.parse().expect("Failed to parse HeaderValue"))
         .collect();
 
-    let app = Router::new()
+    let public_routes = Router::new()
         .route("/", get(handlers::health::root))
         .route("/health", get(handlers::health::health_check))
         .route("/health/deep", get(handlers::health::health_check_deep))
@@ -70,21 +75,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/api/v1",
             Router::new()
                 .route("/auth/login", post(handlers::auth::login))
-                .route("/auth/register", post(handlers::auth::register))
+                .route("/auth/register", post(handlers::auth::register)),
+        );
+
+    let protected_routes = Router::new()
+        .nest(
+            "/api/v1",
+            Router::new()
                 .route("/cards", get(handlers::cards::list_cards))
                 .route("/decks", get(handlers::decks::list_decks)),
         )
+        // .layer(middleware::from_fn(jwt_authentication))
+        ;
+
+    let app = Router::new()
+        .merge(public_routes)
+        .merge(protected_routes)
         .layer(
             CorsLayer::new()
                 .allow_origin(allowed_origins)
                 .allow_methods([Method::GET, Method::POST])
                 .allow_headers([header::CONTENT_TYPE]),
         )
-        .with_state(AppState::initialize()?);
+        .with_state(AppState::initialize()?)
+        .layer(TraceLayer::new_for_http());
 
     let bind_address =
         std::env::var("BIND_ADDRESS").expect("BIND_ADDRESS environment variable must be set");
-    println!("🚀 Deck Builder API starting on {}", bind_address);
+
+    let logo_str = include_str!("../../logos/ansi_shadow.txt");
+    println!("{}", "=".repeat(69));
+    println!("{}", logo_str);
+    println!("{}", "=".repeat(69));
+    println!("deck_builder API Running on {}", bind_address);
 
     let listener = tokio::net::TcpListener::bind(&bind_address).await?;
 
