@@ -49,3 +49,12 @@ impl FromRequestParts<AppState> for AuthenticatedUser {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    // Test valid JWT extraction
+    // Test missing Authorization header (400)
+    // Test malformed Bearer token (400)
+    // Test invalid JWT signature (401)
+    // Test expired JWT (401)
+}
