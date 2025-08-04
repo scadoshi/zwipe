@@ -3,7 +3,7 @@ use std::{
     fs::{read, File},
     path::Path,
     time::Duration,
-    error::Error as StdError
+    error::Error as StdError;
 };
 
 // External
