@@ -12,6 +12,7 @@ alwaysApply: true
 - **HTTP Authentication**: Registration and login endpoints fully functional
 - **JWT Middleware**: Custom extractor pattern with FromRequestParts trait implementation
 - **Route Protection**: Declarative authentication through handler type signatures
+- **User Route Isolation**: JWT token extraction replaces hardcoded user_id - perfect user isolation achieved! 🎯
 - **Error Architecture**: Two-tier logging strategy (user-facing + internal)
 - **Module Organization**: Clean handlers/auth separation following domain patterns
 - **Configuration Architecture**: Production-ready AppState with dependency injection
@@ -20,14 +21,26 @@ alwaysApply: true
 - **Testable Design**: Pure functions accepting parameters vs environment coupling
 
 ### IN PROGRESS - Current Sprint
-- **User Route Isolation**: Replace hardcoded user_id with JWT extraction in handlers
+- **Card Data Integration Research**: Ready to implement Scryfall API integration and card database seeding
 
 ### NEXT PRIORITIES - Immediate Roadmap
-1. **Complete Authentication Flow**: JWT middleware for protected routes
-2. **User Route Isolation**: Replace hardcoded user_id with JWT extraction
-3. **Card Data Integration**: Scryfall API integration and seeding
-4. **Deck CRUD Operations**: Create, update, delete deck functionality
-5. **Card Swiping Logic**: Core deck-building swipe interface
+1. **Card Data Integration**: 🃏 IMMEDIATE NEXT TASK - Research and implement Scryfall API integration
+   - **Research Questions to Answer:**
+     - What's the best Scryfall endpoint for getting bulk card data?
+     - How big is the full MTG card database? (storage considerations)
+     - What card fields are essential for deck building? (name, mana cost, type, etc.)
+     - How should we handle card images? (URLs vs local storage?)
+   - **Research Targets:**
+     - Scryfall API docs: https://scryfall.com/docs/api
+     - `reqwest` crate for async HTTP requests in Rust
+     - Database seeding strategy (bulk vs on-demand)
+     - Card data modeling (current vs needed fields)
+   - **Implementation Path:**
+     - Start small: Get ONE card from Scryfall
+     - Parse JSON response into Card struct
+     - Scale to bulk operations
+2. **Deck CRUD Operations**: Create, update, delete deck functionality
+3. **Card Swiping Logic**: Core deck-building swipe interface
 
 ### BACKLOG - Planned Future Work
 **Testing & Quality Assurance:**
