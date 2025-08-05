@@ -1,16 +1,10 @@
 // Std
-use std::{
-    fs::{read, File},
-    path::Path,
-    time::Duration,
-    error::Error as StdError,
-};
+use std::{error::Error as StdError, time::Duration};
 
 // External
 use anyhow::anyhow;
 use axum::{
     http::{header, HeaderValue, Method},
-    middleware,
     routing::{get, post},
     Router,
 };
@@ -40,8 +34,12 @@ struct AppState {
 
 impl AppState {
     fn initialize() -> Result<Self, Box<dyn StdError>> {
-        let database_url = std::env::var("DATABASE_URL")
-            .map_err(|e| anyhow!("DATABASE_URL environment variable must be set. Error: {:?}", e))?;
+        let database_url = std::env::var("DATABASE_URL").map_err(|e| {
+            anyhow!(
+                "DATABASE_URL environment variable must be set. Error: {:?}",
+                e
+            )
+        })?;
 
         let connection_manager = ConnectionManager::<PgConnection>::new(database_url);
 
@@ -73,11 +71,21 @@ async fn run() -> Result<(), Box<dyn StdError>> {
     dotenvy::dotenv()?;
 
     let allowed_origins: Vec<HeaderValue> = std::env::var("ALLOWED_ORIGINS")
-        .map_err(|e| anyhow!("ALLOWED_ORIGINS environment variable must be set. Error: {:?}", e))?
+        .map_err(|e| {
+            anyhow!(
+                "ALLOWED_ORIGINS environment variable must be set. Error: {:?}",
+                e
+            )
+        })?
         .split(",")
         .map(|x| x.parse())
         .collect::<Result<Vec<HeaderValue>, _>>()
-        .map_err(|e| anyhow!("Failed to collect all values in ALLOWED_ORIGINS list. Error: {:?}", e))?;
+        .map_err(|e| {
+            anyhow!(
+                "Failed to collect all values in ALLOWED_ORIGINS list. Error: {:?}",
+                e
+            )
+        })?;
 
     // protected routes - these need jwt authentication
     // all handlers here must include `AuthenticatedUser` parameter
@@ -114,13 +122,16 @@ async fn run() -> Result<(), Box<dyn StdError>> {
         )
         .with_state(
             AppState::initialize()
-                .map_err(|e| anyhow!("Failed to initialize AppState. Error: {:?}", e))?
+                .map_err(|e| anyhow!("Failed to initialize AppState. Error: {:?}", e))?,
         )
         .layer(TraceLayer::new_for_http());
 
-    let bind_address =
-        std::env::var("BIND_ADDRESS")
-        .map_err(|e| anyhow!("BIND_ADDRESS environment variable must be set. Error: {:?}", e))?;
+    let bind_address = std::env::var("BIND_ADDRESS").map_err(|e| {
+        anyhow!(
+            "BIND_ADDRESS environment variable must be set. Error: {:?}",
+            e
+        )
+    })?;
 
     let logo_str = include_str!("../../logos/ansi_shadow.txt");
     println!("{}", "=".repeat(69));
@@ -128,7 +139,8 @@ async fn run() -> Result<(), Box<dyn StdError>> {
     println!("{}", "=".repeat(69));
     println!("deck_builder API Running on {}", bind_address);
 
-    let listener = tokio::net::TcpListener::bind(&bind_address).await
+    let listener = tokio::net::TcpListener::bind(&bind_address)
+        .await
         .map_err(|e| anyhow!("failed to bind address to listener with error: {:?}", e))?;
 
     axum::serve(listener, app)

@@ -2,7 +2,7 @@ use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::models::{types::MtgFormat, user::User};
+use crate::models::types::MtgFormat;
 use crate::schema::decks;
 
 /// Complete deck data as stored in the database

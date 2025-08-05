@@ -2,7 +2,6 @@ use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::models::{card::Card, deck::Deck};
 use crate::schema::deck_cards;
 
 /// Complete deck_card data as stored in the database
