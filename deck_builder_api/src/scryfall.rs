@@ -1,7 +1,16 @@
 use reqwest::header::{ACCEPT, USER_AGENT};
+use serde::Deserialize;
 
-use crate::models::card::Card;
+use crate::models::card::{Card, NewCard};
 use std::{error::Error as StdError, io::Write};
+
+#[derive(Deserialize, Debug)]
+struct CardSearchResponse {
+    data: Vec<NewCard>,
+    has_more: bool,
+    object: String,
+    total_cards: i32,
+}
 
 pub async fn scryfall_card_search(search_str: &str) -> Result<Vec<Card>, Box<dyn StdError>> {
     let scryfall_card_search_url = "https://api.scryfall.com/cards/search?q=";
