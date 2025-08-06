@@ -12,9 +12,9 @@ pub struct Card {
     pub id: i32,
     pub name: String,
     pub mana_cost: Option<String>,
-    pub card_type: String,
+    pub type_line: String,
     pub rarity: String,
-    pub image_url: String,
+    // pub image_uris: ImageUris,
     pub oracle_text: Option<String>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
@@ -27,9 +27,9 @@ pub struct Card {
 pub struct NewCard {
     pub name: String,
     pub mana_cost: Option<String>,
-    pub card_type: String,
+    pub type_line: String,
     pub rarity: String,
-    pub image_url: String,
+    // pub image_uris: ImageUris,
     pub oracle_text: Option<String>,
 }
 
@@ -40,9 +40,9 @@ pub struct NewCard {
 pub struct UpdateCard {
     pub name: Option<String>,
     pub mana_cost: Option<String>,
-    pub card_type: Option<String>,
+    pub type_line: Option<String>,
     pub rarity: Option<String>,
-    pub image_url: Option<String>,
+    // pub image_uris: Option<ImageUris>,
     pub oracle_text: Option<String>,
 }
 
@@ -52,10 +52,20 @@ pub struct CardResponse {
     pub id: i32,
     pub name: String,
     pub mana_cost: Option<String>,
-    pub card_type: String,
+    pub type_line: String,
     pub rarity: String,
-    pub image_url: String,
+    // pub image_uris: ImageUris,
     pub oracle_text: Option<String>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
+
+// #[derive(Serialize, Deserialize, Debug)]
+// pub struct ImageUris {
+//     small: String,
+//     normal: String,
+//     large: String,
+//     png: String,
+//     art_crop: String,
+//     border_crop: String,
+// }

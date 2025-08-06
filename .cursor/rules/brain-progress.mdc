@@ -93,6 +93,8 @@ alwaysApply: true
 - **HTTP Client Setup**: `reqwest` crate integration with proper headers and error handling
 - **JSON Processing**: `serde_json` parsing and pretty-printing for response analysis
 - **API Research Methodology**: Comprehensive endpoint analysis and field mapping strategies
+- **Struct Mapping**: Successfully implemented complex JSON deserialization to custom Rust structs
+- **Iterative Development**: Strategic field management for incremental feature implementation
 
 ---
 

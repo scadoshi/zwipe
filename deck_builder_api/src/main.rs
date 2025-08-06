@@ -23,7 +23,7 @@ mod schema;
 mod scryfall;
 mod utils;
 
-use crate::{auth::jwt::JwtConfig, scryfall::scryfall_card_search};
+use crate::auth::jwt::JwtConfig;
 
 type DbPool = Pool<ConnectionManager<PgConnection>>;
 
@@ -144,7 +144,7 @@ async fn run() -> Result<(), Box<dyn StdError>> {
         .await
         .map_err(|e| anyhow!("failed to bind address to listener with error: {:?}", e))?;
 
-    let _ = scryfall_card_search("isshin").await?;
+    let _ = scryfall::card_search("satya").await?;
 
     axum::serve(listener, app)
         .await

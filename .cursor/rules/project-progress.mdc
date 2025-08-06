@@ -21,11 +21,12 @@ alwaysApply: true
 - **Testable Design**: Pure functions accepting parameters vs environment coupling
 
 ### IN PROGRESS - Current Sprint
-- **Card Data Integration**: 🃏 Scryfall API research complete, implementing JSON mapping and struct expansion
+- **Card Data Integration**: 🃏 JSON mapping breakthrough achieved, planning database expansion
   - ✅ **Research Complete**: Scryfall API endpoints, bulk data strategy, field mapping analyzed
   - ✅ **Basic HTTP Client**: `reqwest` integration with test card search implementation
-  - 🔄 **Current Task**: Mapping Scryfall JSON to expanded Card struct (30+ new fields identified)
-  - 📋 **Field Expansion Plan**: Documented in `to_do/card_adjustments.md` - extensive struct and migration updates needed
+  - ✅ **JSON Mapping Success**: Scryfall JSON → Vec<NewCard> working with `card_search()` function
+  - 🔄 **Current Task**: Database schema expansion for remaining fields and image URIs table
+  - 📋 **Architecture Decisions**: Separate image URIs table, Scryfall field naming alignment
 
 ### NEXT PRIORITIES - Immediate Roadmap
 1. **Card Struct Expansion**: Implement 30+ new fields from Scryfall API
@@ -91,6 +92,8 @@ alwaysApply: true
 - **HTTP Status Code Semantics**: 400 vs 401 distinction, proper error response patterns
 - **Scryfall API Research Mastery**: Comprehensive analysis of endpoints, bulk data strategy, field mapping
 - **External API Integration**: `reqwest` HTTP client setup with proper headers and async patterns
+- **JSON Mapping Achievement**: Successfully implemented Scryfall JSON → Rust struct deserialization
+- **Incremental Development**: Strategic field exclusion for iterative implementation approach
 
 ### Knowledge Solidification
 - **Configuration Patterns**: Dependency injection, startup config loading, testable architecture design

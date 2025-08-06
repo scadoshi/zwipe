@@ -37,6 +37,10 @@ Fields that I would like to add can be found below:
 - [ ] purchase_uris
 - [ ] related_uris
 
-# date
+## date
 - [ ] released_at
+
+# remove these fields from the `Card` struct 
+
+- [ ] image_url
 
