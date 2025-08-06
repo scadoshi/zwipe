@@ -21,26 +21,21 @@ alwaysApply: true
 - **Testable Design**: Pure functions accepting parameters vs environment coupling
 
 ### IN PROGRESS - Current Sprint
-- **Card Data Integration Research**: Ready to implement Scryfall API integration and card database seeding
+- **Card Data Integration**: 🃏 Scryfall API research complete, implementing JSON mapping and struct expansion
+  - ✅ **Research Complete**: Scryfall API endpoints, bulk data strategy, field mapping analyzed
+  - ✅ **Basic HTTP Client**: `reqwest` integration with test card search implementation
+  - 🔄 **Current Task**: Mapping Scryfall JSON to expanded Card struct (30+ new fields identified)
+  - 📋 **Field Expansion Plan**: Documented in `to_do/card_adjustments.md` - extensive struct and migration updates needed
 
 ### NEXT PRIORITIES - Immediate Roadmap
-1. **Card Data Integration**: 🃏 IMMEDIATE NEXT TASK - Research and implement Scryfall API integration
-   - **Research Questions to Answer:**
-     - What's the best Scryfall endpoint for getting bulk card data?
-     - How big is the full MTG card database? (storage considerations)
-     - What card fields are essential for deck building? (name, mana cost, type, etc.)
-     - How should we handle card images? (URLs vs local storage?)
-   - **Research Targets:**
-     - Scryfall API docs: https://scryfall.com/docs/api
-     - `reqwest` crate for async HTTP requests in Rust
-     - Database seeding strategy (bulk vs on-demand)
-     - Card data modeling (current vs needed fields)
-   - **Implementation Path:**
-     - Start small: Get ONE card from Scryfall
-     - Parse JSON response into Card struct
-     - Scale to bulk operations
-2. **Deck CRUD Operations**: Create, update, delete deck functionality
-3. **Card Swiping Logic**: Core deck-building swipe interface
+1. **Card Struct Expansion**: Implement 30+ new fields from Scryfall API
+   - **Database Migration**: Add new columns for expanded card data
+   - **Struct Updates**: Update Card, NewCard, UpdateCard, CardResponse structs
+   - **JSON Mapping**: Map Scryfall response to expanded Card model
+   - **Complex Types**: Implement image_uris, legalities, purchase_uris nested structs
+2. **Bulk Data Integration**: Implement oracle-cards bulk download and seeding
+3. **Deck CRUD Operations**: Create, update, delete deck functionality
+4. **Card Swiping Logic**: Core deck-building swipe interface
 
 ### BACKLOG - Planned Future Work
 **Testing & Quality Assurance:**
@@ -94,6 +89,8 @@ alwaysApply: true
 - **Custom Extractor Implementation**: FromRequestParts trait implementation with proper error handling
 - **Declarative Security Pattern**: Type-driven authentication through handler signatures
 - **HTTP Status Code Semantics**: 400 vs 401 distinction, proper error response patterns
+- **Scryfall API Research Mastery**: Comprehensive analysis of endpoints, bulk data strategy, field mapping
+- **External API Integration**: `reqwest` HTTP client setup with proper headers and async patterns
 
 ### Knowledge Solidification
 - **Configuration Patterns**: Dependency injection, startup config loading, testable architecture design
@@ -245,8 +242,8 @@ curl http://localhost:8080/api/v1/decks
 
 ---
 
-**Last Updated**: After JWT middleware implementation breakthrough, custom extractor mastery, and declarative authentication patterns
+**Last Updated**: After Scryfall API research completion and card data integration foundation
 
-**Current Sprint**: User isolation implementation and card data integration
+**Current Sprint**: Card struct expansion and JSON mapping implementation
 
-**Next Major Milestone**: Complete deck CRUD operations with JWT-protected routes 
+**Next Major Milestone**: Complete card data seeding with expanded schema and bulk data integration 

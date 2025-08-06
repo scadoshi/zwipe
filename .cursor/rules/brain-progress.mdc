@@ -89,6 +89,11 @@ alwaysApply: true
 - **Async Basics**: Improving async/await pattern usage
 - **Tokio Runtime**: Basic implementation understanding, practical usage developing
 
+### External API Integration
+- **HTTP Client Setup**: `reqwest` crate integration with proper headers and error handling
+- **JSON Processing**: `serde_json` parsing and pretty-printing for response analysis
+- **API Research Methodology**: Comprehensive endpoint analysis and field mapping strategies
+
 ---
 
 ## UNEXPLORED - Future Learning Areas
