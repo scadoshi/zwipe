@@ -20,9 +20,10 @@ mod auth;
 mod handlers;
 mod models;
 mod schema;
+mod scryfall;
 mod utils;
 
-use crate::auth::jwt::JwtConfig;
+use crate::{auth::jwt::JwtConfig, scryfall::scryfall_card_search};
 
 type DbPool = Pool<ConnectionManager<PgConnection>>;
 
@@ -133,15 +134,17 @@ async fn run() -> Result<(), Box<dyn StdError>> {
         )
     })?;
 
-    let logo_str = include_str!("../../logos/ansi_shadow.txt");
-    println!("{}", "=".repeat(69));
-    println!("{}", logo_str);
-    println!("{}", "=".repeat(69));
+    println!(
+        "{}",
+        include_str!("../../logos/deck_builder/ansi_shadow.txt")
+    );
     println!("deck_builder API Running on {}", bind_address);
 
     let listener = tokio::net::TcpListener::bind(&bind_address)
         .await
         .map_err(|e| anyhow!("failed to bind address to listener with error: {:?}", e))?;
+
+    let _ = scryfall_card_search("isshin").await?;
 
     axum::serve(listener, app)
         .await
