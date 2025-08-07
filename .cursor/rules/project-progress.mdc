@@ -25,8 +25,8 @@ alwaysApply: true
   - ✅ **Research Complete**: Scryfall API endpoints, bulk data strategy, field mapping analyzed
   - ✅ **Basic HTTP Client**: `reqwest` integration with test card search implementation
   - ✅ **JSON Mapping Success**: Scryfall JSON → Vec<NewCard> working with `card_search()` function
-  - 🔄 **Current Task**: Database schema expansion for remaining fields and image URIs table
-  - 📋 **Architecture Decisions**: Separate image URIs table, Scryfall field naming alignment
+  - 🔄 **Current Task**: Database schema expansion for remaining fields and image URIs table; implement `Legalities` with `LegalityKind`
+  - 📋 **Architecture Decisions**: Separate image URIs table, Scryfall field naming alignment; treat `legalities` as extensible, per-format optional fields
 
 ### NEXT PRIORITIES - Immediate Roadmap
 1. **Card Struct Expansion**: Implement 30+ new fields from Scryfall API
