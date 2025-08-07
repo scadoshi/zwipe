@@ -1,7 +1,7 @@
 use chrono::{NaiveDate, NaiveDateTime};
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
-use: Option<Uuid>::Uuid;
+use uuid::Uuid;
 
 use crate::schema::cards;
 
