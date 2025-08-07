@@ -1,9 +1,23 @@
 use chrono::{NaiveDate, NaiveDateTime};
-use diesel::prelude::*;
+use diesel::{prelude::*, sql_types::Uuid};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
-use crate::schema::cards;
+use crate::{models::card::related_card::RelatedCard, schema::cards};
+
+pub mod card_face;
+pub mod colors;
+pub mod image_uris;
+pub mod legalities;
+pub mod prices;
+pub mod purchase_uris;
+pub mod related_card;
+use card_face::CardFace;
+use colors::Color;
+use image_uris::ImageUris;
+use legalities::Legalities;
+use prices::Prices;
+use purchase_uris::PurchaseUris;
+use related_card::RelatedCard;
 
 /// Complete card data as stored in the database
 #[derive(Debug, Clone, Queryable, Selectable, Serialize)]
@@ -37,8 +51,8 @@ pub struct Card {
 
     // Gameplay Fields
     // Cards have the following properties relevant to the game rules
-    pub all_parts JSONB,
-    pub card_faces JSONB[],
+    pub all_parts: Option<Vec<RelatedCard>>,
+    pub card_faces: Option<Vec<CardFace>>,
     pub cmc: f32,
     pub color_identity: Option<Vec<String>>,
     pub color_indicator: Option<Vec<String>>,
@@ -48,7 +62,7 @@ pub struct Card {
     pub game_changer: Option<bool>,
     pub hand_modifier: Option<String>,
     pub keywords: Option<Vec<String>>,
-    pub legalities JSONB,
+    pub legalities: Legalities,
     pub life_modifier: Option<String>,
     pub loyalty: Option<String>,
     pub mana_cost: Option<String>,
@@ -56,7 +70,7 @@ pub struct Card {
     pub oracle_text: Option<String>,
     pub penny_rank: Option<i32>,
     pub power: Option<String>,
-    pub produced_mana JSONB,
+    pub produced_mana: Vec<Color>,
     pub reserved: bool,
     pub toughness: Option<String>,
     pub type_line: String,
@@ -82,17 +96,17 @@ pub struct Card {
     pub highres_image: bool,
     pub illustration_id: Option<Uuid>,
     pub image_status: String,
-    pub image_uris JSONB,
+    pub image_uris: ImageUris,
     pub oversized: bool,
-    pub prices JSONB NOT NULL,
+    pub prices: Prices,
     pub printed_name: Option<String>,
     pub printed_text: Option<String>,
     pub printed_type_line: Option<String>,
     pub promo: bool,
     pub promo_types: Option<Vec<String>>,
-    pub purchase_uris JSONB,
+    pub purchase_uris: Option<serde_json::Value>, // fix later
     pub rarity: String,
-    pub related_uris JSONB,
+    pub related_uris: serde_json::Value, // fix later
     pub released_at: NaiveDate,
     pub reprint: bool,
     pub scryfall_set_uri: String,
@@ -110,7 +124,7 @@ pub struct Card {
     pub watermark: Option<String>,
     pub preview_previewed_at: Option<NaiveDate>,
     pub preview_source_uri: Option<String>,
-    pub preview_source: Option<String>
+    pub preview_source: Option<String>,
 }
 
 /// Data required to create a new card in the database

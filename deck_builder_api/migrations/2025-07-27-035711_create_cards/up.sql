@@ -81,7 +81,7 @@ CREATE TABLE cards (
     promo_types VARCHAR[],
     purchase_uris JSONB,
     rarity VARCHAR NOT NULL,
-    related_uris JSONB,
+    related_uris JSONB NOT NULL,
     released_at DATE NOT NULL,
     reprint BOOLEAN NOT NULL,
     scryfall_set_uri VARCHAR NOT NULL,
