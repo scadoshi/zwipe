@@ -5,10 +5,12 @@ use std::io::Write;
 use diesel::{
     deserialize::FromSql,
     pg::Pg,
-    serialize::{IsNull, ToSql},
+    serialize::{IsNull, Output, ToSql},
     sql_types::{Array, Nullable, Text},
+    AsExpression, FromSqlRow,
 };
 use serde::{Deserialize, Serialize};
+type FancyError = Box<dyn std::error::Error + Send + Sync>;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Display)]
 pub enum Color {
@@ -44,24 +46,17 @@ impl FromSql<Text, Pg> for Color {
     }
 }
 
-// impl ToSql<Text, Pg> for Color {
-//     fn to_sql<'b>(
-//         &'b self,
-//         out: &mut diesel::serialize::Output<'b, '_, Pg>,
-//     ) -> diesel::serialize::Result {
-//         match self {
-//             Self::White => out.write_all(b"W")?,
-//             Self::Blue => out.write_all(b"U")?,
-//             Self::Black => out.write_all(b"B")?,
-//             Self::Red => out.write_all(b"R")?,
-//             Self::Green => out.write_all(b"G")?,
-//         }
-//         Ok(IsNull::No)
-//     }
-// }
+impl ToSql<Text, Pg> for Color {
+    fn to_sql<'b>(
+        &'b self,
+        out: &mut diesel::serialize::Output<'b, '_, Pg>,
+    ) -> diesel::serialize::Result {
+        <String as ToSql<Text, Pg>>::to_sql(&self, out)
+    }
+}
 
 impl TryFrom<&str> for Color {
-    type Error = Box<dyn std::error::Error + Send + Sync>;
+    type Error = FancyError;
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value.to_lowercase().as_str() {
             "white" | "w" => Ok(Self::White),
@@ -78,23 +73,31 @@ impl TryFrom<&str> for Color {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Deref, DerefMut, IntoIterator, From)]
-pub struct Colors(Vec<Color>);
-
-impl FromSql<Text, Pg> for Colors {
+#[derive(
+    Debug,
+    Clone,
+    Serialize,
+    Deserialize,
+    Deref,
+    DerefMut,
+    IntoIterator,
+    From,
+    AsExpression,
+    FromSqlRow,
+)]
+#[diesel(sql_type = Array<Nullable<Text>>)]
+pub struct Colors(Vec<Option<Color>>);
+impl FromSql<Array<Nullable<Text>>, Pg> for Colors {
     fn from_sql(
         bytes: <Pg as diesel::backend::Backend>::RawValue<'_>,
     ) -> diesel::deserialize::Result<Self> {
-        let bytes_str: String = <String as FromSql<Text, Pg>>::from_sql(bytes)?.to_lowercase();
-        Ok(Colors(
-            bytes_str
-                .replace("{", "")
-                .replace("}", "")
-                .split(",")
-                .filter(|x| *x != "")
-                .map(|x| Color::try_from(x.replace("'", "").as_str()))
-                .collect::<Result<Vec<Color>, Box<dyn std::error::Error + Send + Sync>>>()?,
-        ))
+        let strings = <Vec<Option<String>> as FromSql<Array<Nullable<Text>>, Pg>>::from_sql(bytes)?;
+        let colors: Result<Vec<Option<Color>>, FancyError> = strings
+            .into_iter()
+            .map(|opt_s| opt_s.map(|s| Color::try_from(s.as_str())).transpose())
+            .collect();
+
+        Ok(Colors(colors?))
     }
 }
 
@@ -103,13 +106,8 @@ impl ToSql<Array<Nullable<Text>>, Pg> for Colors {
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, Pg>,
     ) -> diesel::serialize::Result {
-        let adj = self
-            .0
-            .iter()
-            .map(|x| "'".to_string() + x.to_string().as_ref() + "'")
-            .join(",");
-        let output = "{".to_string() + adj.as_ref() + "}";
-        out.write_all(output.as_bytes())?;
-        Ok(IsNull::No)
+        let array: Vec<Option<String>> = self.iter().map(|x| *x.to_string()).collect();
+        // array.to_sql(out)
+        <Vec<Option<String>> as ToSql<Array<Nullable<Text>>, Pg>>::to_sql(&array, out)
     }
 }
