@@ -1,33 +1,35 @@
-use diesel::sql_types::Uuid;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-use crate::models::card::image_uris::ImageUris;
+use crate::models::card::{image_uris::ImageUris, Card};
 
 /// To be stored against card
 /// against the "card_faces" field
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CardFace {
-    artist: Option<String>,
-    artist_id: Option<Uuid>,
-    cmc: Option<f32>,
-    color_indicator: Option<Vec<String>>,
-    colors: Option<Vec<String>>,
-    defense: Option<String>,
-    flavor_text: Option<String>,
-    illustration_id: Option<Uuid>,
-    image_uris: Option<ImageUris>,
-    layout: Option<String>,
-    loyalty: Option<String>,
-    mana_cost: String,
-    name: String,
-    object: String,
-    oracle_id: Option<Uuid>,
-    oracle_text: Option<String>,
-    power: Option<String>,
-    printed_name: Option<String>,
-    printed_text: Option<String>,
-    printed_type_line: Option<String>,
-    toughness: Option<String>,
-    type_line: Option<String>,
-    watermark: Option<String>,
+    pub artist: Option<String>,
+    pub artist_id: Option<Uuid>,
+    pub cmc: Option<f32>,
+    pub color_indicator: Option<Vec<String>>,
+    pub colors: Option<Vec<String>>,
+    pub defense: Option<String>,
+    pub flavor_text: Option<String>,
+    pub illustration_id: Option<Uuid>,
+    pub image_uris: Option<ImageUris>,
+    pub layout: Option<String>,
+    pub loyalty: Option<String>,
+    pub mana_cost: String,
+    pub name: String,
+    pub object: String,
+    pub oracle_id: Option<Uuid>,
+    pub oracle_text: Option<String>,
+    pub power: Option<String>,
+    pub printed_name: Option<String>,
+    pub printed_text: Option<String>,
+    pub printed_type_line: Option<String>,
+    pub toughness: Option<String>,
+    pub type_line: Option<String>,
+    pub watermark: Option<String>,
 }
+
+impl AppearsOnTable<crate::schema::cards::table> for CardFace {}

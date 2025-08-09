@@ -1,5 +1,5 @@
-use diesel::sql_types::Uuid;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 /// To be stored against card
 /// against the "all_parts" field

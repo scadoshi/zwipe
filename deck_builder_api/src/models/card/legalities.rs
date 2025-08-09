@@ -1,9 +1,8 @@
 use diesel::{
-    deserialize::{self, FromSql, FromSqlRow},
-    dsl::IsNull,
+    deserialize::{self, FromSql},
     pg::Pg,
     serialize::{self, IsNull, Output, ToSql},
-    sql_types::{Text, VarChar},
+    sql_types::VarChar,
 };
 use serde::{Deserialize, Serialize};
 
@@ -36,7 +35,7 @@ pub struct Legalities {
 }
 
 /// Possible legality states for a format.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum LegalityKind {
     #[default]
@@ -50,13 +49,13 @@ impl FromSql<VarChar, Pg> for LegalityKind {
     fn from_sql(
         bytes: <Pg as diesel::backend::Backend>::RawValue<'_>,
     ) -> deserialize::Result<Self> {
-        match String::from_sql(bytes)?.to_lowercase() {
+        match String::from_sql(bytes)?.to_lowercase().as_str() {
             "legal" => Ok(LegalityKind::Legal),
             "not_legal" => Ok(LegalityKind::NotLegal),
             "restricted" => Ok(LegalityKind::Restricted),
             "banned" => Ok(LegalityKind::Banned),
             x => Err(format!(
-                "Failed to conver given value: {:?} to a valid LegalityKind",
+                "Failed to convert given value: {:?} to a valid LegalityKind",
                 x
             )
             .into()),
@@ -72,6 +71,6 @@ impl ToSql<VarChar, Pg> for LegalityKind {
             LegalityKind::Restricted => out.write_all(b"restricted")?,
             LegalityKind::Banned => out.write_all(b"banned")?,
         }
-        Ok(IsNull::No)
+        Ok(serialize::IsNull::No)
     }
 }

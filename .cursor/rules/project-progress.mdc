@@ -21,12 +21,14 @@ alwaysApply: true
 - **Testable Design**: Pure functions accepting parameters vs environment coupling
 
 ### IN PROGRESS - Current Sprint
-- **Card Data Integration**: 🃏 JSON mapping breakthrough achieved, planning database expansion
+- **Card Data Integration**: 🃏 Advanced Diesel custom types implemented
   - ✅ **Research Complete**: Scryfall API endpoints, bulk data strategy, field mapping analyzed
   - ✅ **Basic HTTP Client**: `reqwest` integration with test card search implementation
   - ✅ **JSON Mapping Success**: Scryfall JSON → Vec<NewCard> working with `card_search()` function
-  - 🔄 **Current Task**: Database schema expansion for remaining fields and image URIs table; implement `Legalities` with `LegalityKind`
-  - 📋 **Architecture Decisions**: Separate image URIs table, Scryfall field naming alignment; treat `legalities` as extensible, per-format optional fields
+  - ✅ **Diesel Custom Types**: Color enum with FromSql/ToSql<Text, Pg>, Colors wrapper with Deref
+  - ✅ **Advanced Type System**: Orphan rule navigation, newtype pattern, trait disambiguation
+  - 🔄 **Current Task**: Complete card model Diesel integration, schema expansion validation
+  - 📋 **Architecture Decisions**: Text over VarChar for array compatibility, wrapper types for type safety
 
 ### NEXT PRIORITIES - Immediate Roadmap
 1. **Card Struct Expansion**: Implement 30+ new fields from Scryfall API
@@ -94,6 +96,10 @@ alwaysApply: true
 - **External API Integration**: `reqwest` HTTP client setup with proper headers and async patterns
 - **JSON Mapping Achievement**: Successfully implemented Scryfall JSON → Rust struct deserialization
 - **Incremental Development**: Strategic field exclusion for iterative implementation approach
+- **Advanced Diesel Types**: Complete Color enum with FromSql/ToSql implementation using Text SQL type
+- **NewType Pattern Implementation**: Colors wrapper type with Deref trait for ergonomic Vec<Color> access
+- **Type System Mastery**: Solved orphan rule constraints, trait disambiguation, Send + Sync error types
+- **VarChar → Text Migration**: Resolved array compatibility issues by switching SQL types
 
 ### Knowledge Solidification
 - **Configuration Patterns**: Dependency injection, startup config loading, testable architecture design
@@ -245,8 +251,8 @@ curl http://localhost:8080/api/v1/decks
 
 ---
 
-**Last Updated**: After Scryfall API research completion and card data integration foundation
+**Last Updated**: After implementing advanced Diesel custom types (Color enum, Colors wrapper) with full FromSql/ToSql support and newtype pattern mastery
 
-**Current Sprint**: Card struct expansion and JSON mapping implementation
+**Current Sprint**: Card model Diesel integration completion and schema validation
 
-**Next Major Milestone**: Complete card data seeding with expanded schema and bulk data integration 
+**Next Major Milestone**: Complete card data seeding with validated Diesel models and bulk data integration 

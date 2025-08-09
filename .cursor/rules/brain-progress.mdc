@@ -149,7 +149,10 @@ alwaysApply: true
 - **Authentication Flow**: Solidified pathway - request → validation → handler passing, complete understanding demonstrated
 - **Diesel Custom Types**: Clear understanding that `FromSql<ST, Pg>` requires only `from_sql`; prefer `Option<T>` for NULLs; `ToSql<ST, Pg>` returns `Ok(IsNull::No)` when writing non-NULL values
 - **Scryfall Legalities Modeling**: Recognized open-ended `legalities` map; implemented `Legalities` with optional per-format fields and `LegalityKind` using serde `snake_case`
-- **Color Modeling**: Chosen `enum Color` with `TryFrom<&str>`, `FromSql/ToSql<VarChar, Pg>`; JSON uses names, DB uses single-letter codes (W/U/B/R/G)
+- **Color Modeling**: Chosen `enum Color` with `TryFrom<&str>`, `FromSql/ToSql<Text, Pg>`; JSON uses names, DB uses single-letter codes (W/U/B/R/G)
+- **Diesel Custom Types Advanced**: VarChar → Text migration for array compatibility; fully qualified method calls for trait disambiguation; Send + Sync error type requirements
+- **NewType Pattern Mastery**: Colors(Vec<Color>) wrapper to overcome orphan rule; understands idiomatic Rust patterns vs custom traits; implemented Deref for ergonomics
+- **Type System Deep Understanding**: Orphan rule implications, trait disambiguation with `<Type as Trait>::method()`, wrapper type benefits for type safety
 
 ### Optimal Neural Connection Strategy
 - **Research Guidance**: Point to specific docs/patterns, let him implement and build connections
@@ -203,6 +206,6 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Based on JWT middleware quiz results (5/5) and authentication concept validation
+**Last Updated**: After implementing Diesel custom types (Color enum with Text support, Colors wrapper with Deref), demonstrating advanced type system understanding and idiomatic Rust patterns
 
-**Next Neural Connection Point**: Card struct expansion (images, prices, nested types), bulk data seeding, and advanced Diesel joins/transactions
+**Next Neural Connection Point**: Complete card model Diesel integration, bulk data seeding, and advanced query operations

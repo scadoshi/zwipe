@@ -3,7 +3,7 @@ CREATE TABLE cards (
     -- Those that exist only in my database
     id SERIAL PRIMARY KEY,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
 
     -- Core Card Fields
     -- Cards have the following core properties
@@ -26,18 +26,18 @@ CREATE TABLE cards (
 
     -- Gameplay Fields
     -- Cards have the following properties relevant to the game rules
-    all_parts JSONB,
-    card_faces JSONB[],
+    -- all_parts JSONB,
+    -- card_faces JSONB[],
     cmc FLOAT NOT NULL,
-    color_identity VARCHAR[],
-    color_indicator VARCHAR[],
-    colors VARCHAR[],
+    color_identity TEXT[],
+    color_indicator TEXT[],
+    colors TEXT[],
     defense VARCHAR,
     edhrec_rank INT,
     game_changer BOOLEAN,
     hand_modifier VARCHAR,
-    keywords VARCHAR[],
-    legalities JSONB,
+    keywords TEXT[],
+    -- legalities JSONB,
     life_modifier VARCHAR,
     loyalty VARCHAR,
     mana_cost VARCHAR,
@@ -45,43 +45,43 @@ CREATE TABLE cards (
     oracle_text VARCHAR,
     penny_rank INT,
     power VARCHAR,
-    produced_mana JSONB,
+    produced_mana TEXT[],
     reserved BOOLEAN NOT NULL,
     toughness VARCHAR,
-    type_line VARCHAR NOT NULL
+    type_line VARCHAR NOT NULL,
 
     -- Print Fields
     -- Cards have the following properties unique to their particular re/print
     artist VARCHAR,
     artist_ids UUID[],
-    attraction_lights VARCHAR[],
+    attraction_lights TEXT[],
     booster BOOLEAN NOT NULL,
     border_color VARCHAR NOT NULL,
     card_back_id UUID NOT NULL,
     collector_number VARCHAR NOT NULL,
     content_warning BOOLEAN,
     digital BOOLEAN NOT NULL,
-    finishes VARCHAR[] NOT NULL,
+    finishes TEXT[] NOT NULL,
     flavor_name VARCHAR,
     flavor_text VARCHAR,
-    frame_effects VARCHAR[],
+    frame_effects TEXT[],
     frame VARCHAR NOT NULL,
     full_art BOOLEAN NOT NULL,
-    games VARCHAR[],
+    games TEXT[],
     highres_image BOOLEAN NOT NULL,
     illustration_id UUID,
     image_status VARCHAR NOT NULL,
-    image_uris JSONB,
+    -- image_uris JSONB,
     oversized BOOLEAN NOT NULL,
-    prices JSONB NOT NULL,
+    -- prices JSONB NOT NULL,
     printed_name VARCHAR,
     printed_text VARCHAR,
     printed_type_line VARCHAR,
     promo BOOLEAN NOT NULL,
-    promo_types VARCHAR[],
-    purchase_uris JSONB,
+    promo_types TEXT[],
+    -- purchase_uris JSONB,
     rarity VARCHAR NOT NULL,
-    related_uris JSONB NOT NULL,
+    -- related_uris JSONB NOT NULL,
     released_at DATE NOT NULL,
     reprint BOOLEAN NOT NULL,
     scryfall_set_uri VARCHAR NOT NULL,
@@ -100,15 +100,12 @@ CREATE TABLE cards (
     preview_previewed_at DATE,
     preview_source_uri VARCHAR,
     preview_source VARCHAR
-
-    -- Card Face Objects
-    -- Multiface cards have a card_faces property containing at least two Card Face objects. Those objects have the following properties
-
-    -- 
-    -- 
-
 );
 
 CREATE INDEX idx_cards_name ON cards(name);
 CREATE INDEX idx_cards_type ON cards(type_line);
 CREATE INDEX idx_cards_rarity ON cards(rarity);
+CREATE INDEX idx_cards_scryfall_id ON cards(scryfall_id);
+CREATE INDEX idx_cards_set ON cards(set);
+CREATE INDEX idx_cards_cmc ON cards(cmc);
+CREATE INDEX idx_cards_colors ON cards USING GIN(colors);

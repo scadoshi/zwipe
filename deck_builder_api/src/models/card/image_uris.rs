@@ -1,4 +1,3 @@
-// use diesel::sql_types::Uuid;
 use serde::{Deserialize, Serialize};
 
 /// To be stored against various card objects
