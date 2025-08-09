@@ -6,7 +6,7 @@ use diesel::{
     deserialize::FromSql,
     pg::Pg,
     serialize::{IsNull, ToSql},
-    sql_types::{Array, Text},
+    sql_types::{Array, Nullable, Text},
 };
 use serde::{Deserialize, Serialize};
 
@@ -24,25 +24,25 @@ pub enum Color {
     Green,
 }
 
-// impl FromSql<Text, Pg> for Color {
-//     fn from_sql(
-//         bytes: <Pg as diesel::backend::Backend>::RawValue<'_>,
-//     ) -> diesel::deserialize::Result<Self> {
-//         let bytes_str = <String as FromSql<Text, Pg>>::from_sql(bytes)?;
-//         match bytes_str.as_str() {
-//             "white" | "w" => Ok(Self::White),
-//             "blue" | "u" => Ok(Self::Blue),
-//             "black" | "b" => Ok(Self::Black),
-//             "red" | "r" => Ok(Self::Red),
-//             "green" | "g" => Ok(Self::Green),
-//             x => {
-//                 return Err(
-//                     format!("Failed to convert given value: {:?} into a valid Color", x).into(),
-//                 )
-//             }
-//         }
-//     }
-// }
+impl FromSql<Text, Pg> for Color {
+    fn from_sql(
+        bytes: <Pg as diesel::backend::Backend>::RawValue<'_>,
+    ) -> diesel::deserialize::Result<Self> {
+        let bytes_str = <String as FromSql<Text, Pg>>::from_sql(bytes)?;
+        match bytes_str.as_str() {
+            "white" | "w" => Ok(Self::White),
+            "blue" | "u" => Ok(Self::Blue),
+            "black" | "b" => Ok(Self::Black),
+            "red" | "r" => Ok(Self::Red),
+            "green" | "g" => Ok(Self::Green),
+            x => {
+                return Err(
+                    format!("Failed to convert given value: {:?} into a valid Color", x).into(),
+                )
+            }
+        }
+    }
+}
 
 // impl ToSql<Text, Pg> for Color {
 //     fn to_sql<'b>(
@@ -79,7 +79,7 @@ impl TryFrom<&str> for Color {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Deref, DerefMut, IntoIterator, From)]
-struct Colors(Vec<Color>);
+pub struct Colors(Vec<Color>);
 
 impl FromSql<Text, Pg> for Colors {
     fn from_sql(
@@ -91,13 +91,14 @@ impl FromSql<Text, Pg> for Colors {
                 .replace("{", "")
                 .replace("}", "")
                 .split(",")
+                .filter(|x| *x != "")
                 .map(|x| Color::try_from(x.replace("'", "").as_str()))
                 .collect::<Result<Vec<Color>, Box<dyn std::error::Error + Send + Sync>>>()?,
         ))
     }
 }
 
-impl ToSql<Array<Text>, Pg> for Colors {
+impl ToSql<Array<Nullable<Text>>, Pg> for Colors {
     fn to_sql<'b>(
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, Pg>,

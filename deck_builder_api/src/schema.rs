@@ -37,7 +37,7 @@ diesel::table! {
         oracle_text -> Nullable<Varchar>,
         penny_rank -> Nullable<Int4>,
         power -> Nullable<Varchar>,
-        produced_mana -> Nullable<Jsonb>,
+        produced_mana -> Array<Nullable<Text>>,
         reserved -> Bool,
         toughness -> Nullable<Varchar>,
         type_line -> Varchar,

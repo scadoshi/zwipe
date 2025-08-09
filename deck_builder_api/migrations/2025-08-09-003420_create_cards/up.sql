@@ -45,7 +45,7 @@ CREATE TABLE cards (
     oracle_text VARCHAR,
     penny_rank INT,
     power VARCHAR,
-    produced_mana TEXT[],
+    produced_mana TEXT[] NOT NULL,
     reserved BOOLEAN NOT NULL,
     toughness VARCHAR,
     type_line VARCHAR NOT NULL,
