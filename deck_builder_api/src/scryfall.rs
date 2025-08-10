@@ -7,9 +7,9 @@ use crate::models::card::ScryfallCard;
 #[derive(Deserialize, Debug)]
 struct CardSearchResponse {
     data: Vec<ScryfallCard>,
-    _has_more: bool,
-    _object: String,
-    _total_cards: i32,
+    has_more: bool,
+    object: String,
+    total_cards: i32,
 }
 
 pub async fn card_search(search_str: &str) -> Result<Vec<ScryfallCard>, Box<dyn StdError>> {
@@ -27,8 +27,8 @@ pub async fn card_search(search_str: &str) -> Result<Vec<ScryfallCard>, Box<dyn 
     let card_search_response: CardSearchResponse = serde_json::from_value(body)?;
 
     let mut output = std::fs::File::create("../card_search_result.rs")?;
-    output.write(format!("{:#?}", card_search_response.data).as_ref())?;
-    // output.write(serde_json::to_string_pretty(&body)?.as_ref())?;
+
+    output.write(format!("{:#?}", card_search_response).as_ref())?;
 
     println!("\n(*3*)<(wrote output to a file! go find it!)\n");
 
