@@ -1,15 +1,13 @@
 use derive_more::{Deref, DerefMut, Display, From, IntoIterator};
-use itertools::Itertools;
-use std::io::Write;
-
 use diesel::{
     deserialize::FromSql,
     pg::Pg,
-    serialize::{IsNull, Output, ToSql},
+    serialize::{IsNull, ToSql},
     sql_types::{Array, Nullable, Text},
     AsExpression, FromSqlRow,
 };
 use serde::{Deserialize, Serialize};
+use std::io::Write;
 type FancyError = Box<dyn std::error::Error + Send + Sync>;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Display)]
@@ -51,7 +49,8 @@ impl ToSql<Text, Pg> for Color {
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, Pg>,
     ) -> diesel::serialize::Result {
-        <String as ToSql<Text, Pg>>::to_sql(&self, out)
+        write!(out, "{}", self)?;
+        Ok(IsNull::No)
     }
 }
 
@@ -106,8 +105,17 @@ impl ToSql<Array<Nullable<Text>>, Pg> for Colors {
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, Pg>,
     ) -> diesel::serialize::Result {
-        let array: Vec<Option<String>> = self.iter().map(|x| *x.to_string()).collect();
-        // array.to_sql(out)
-        <Vec<Option<String>> as ToSql<Array<Nullable<Text>>, Pg>>::to_sql(&array, out)
+        write!(out, "{{")?;
+        for (i, opt_color) in self.iter().enumerate() {
+            if i > 0 {
+                write!(out, ",")?;
+            }
+            match opt_color {
+                Some(color) => write!(out, "\"{}\"", color)?,
+                None => write!(out, "NULL")?,
+            }
+        }
+        write!(out, "}}")?;
+        Ok(IsNull::No)
     }
 }
