@@ -1,16 +1,11 @@
-// External
+use crate::{auth::middleware::AuthenticatedUser, AppState};
 use axum::{extract::State, http::StatusCode, response::Json};
 use serde_json::{json, Value};
 
-// Internal
-use crate::{auth::middleware::AuthenticatedUser, utils::connect_to, AppState};
-
 pub async fn get_cards(
-    State(app_state): State<AppState>,
+    State(_app_state): State<AppState>,
     _authenticated_user: AuthenticatedUser,
 ) -> Result<Json<Value>, StatusCode> {
-    let mut _conn = connect_to(app_state.db_pool)?;
-
     // TODO: Query cards table with filters/pagination
     // TODO: SELECT * FROM cards LIMIT 20 OFFSET ?
     // TODO: Add search/filter parameters from query string

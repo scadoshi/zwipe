@@ -96,6 +96,17 @@ alwaysApply: true
 - **Struct Mapping**: Successfully implemented complex JSON deserialization to custom Rust structs
 - **Iterative Development**: Strategic field management for incremental feature implementation
 
+### SQLx Database Operations
+- **Raw SQL Mastery**: Complete migration from Diesel ORM to SQLx for direct SQL control and better performance
+- **Query Macros**: Proficient with `query_as!` macro for compile-time query verification
+- **Connection Pooling**: Native SQLx PgPool implementation with proper configuration
+- **Error Handling**: PostgreSQL error code pattern matching (`23505` for unique violations)
+- **Type System Understanding**: SQLx's distributed type knowledge vs Diesel's centralized schema approach
+- **Custom Type Implementation**: Complete SQLx `Type`, `Encode`, `Decode` traits for Color enum with PostgreSQL integration
+- **Migration System**: SQLx CLI usage, forward-only migration strategy, database recreation workflows
+- **Table Separation Architecture**: Clean separation of concerns with `cards` (profile/meta) vs `scryfall_cards` (external data)
+- **Join Operations**: Comfortable with relational design and SQL joins for maintainable data architecture
+
 ---
 
 ## UNEXPLORED - Future Learning Areas
@@ -147,15 +158,17 @@ alwaysApply: true
 - **HTTP Authentication Semantics**: Strong pathway - 400 vs 401 distinctions, proper error responses, validated understanding
 - **Declarative Security**: Strong pathway - type system enforcement, "rusty" philosophy connection validated
 - **Authentication Flow**: Solidified pathway - request → validation → handler passing, complete understanding demonstrated
-- **Diesel Custom Types Foundation**: Understanding `FromSql<ST, Pg>` trait requirements; `ToSql<ST, Pg>` pattern with `Ok(IsNull::No)`
-- **Scryfall Legalities Modeling**: Recognized open-ended `legalities` map; implemented `Legalities` with optional per-format fields and `LegalityKind` using serde `snake_case`
-- **Color Modeling**: Chosen `enum Color` with `TryFrom<&str>`, `FromSql/ToSql<Text, Pg>`; JSON uses names, DB uses single-letter codes (W/U/B/R/G)
-- **Diesel Array Types Understanding**: VarChar → Text migration for array compatibility; `Array<Nullable<Text>>` mapping to `Vec<Option<Color>>`
-- **NewType Pattern Mastery**: Colors(Vec<Option<Color>>) wrapper to overcome orphan rule; complete understanding of orphan rule constraints
-- **Advanced Lifetime Understanding**: Deep comprehension of temporary value drops, `'static` vs function lifetimes, borrowing vs ownership patterns
-- **PostgreSQL Array Serialization**: Manual PostgreSQL array format writing (`{"W","U",NULL}`) due to Diesel's streaming architecture constraints
-- **Container Transformations**: Strong grasp of `as_ref()`, `transpose()`, and iterator chain patterns for `Option`/`Result` dancing
-- **Type System Mastery**: Trait disambiguation with `<Type as Trait>::method()`, complex iterator type resolution, debugging persistence
+- **SQLx Migration Mastery**: Complete transition from Diesel to SQLx with architectural understanding of ORM vs raw SQL tradeoffs
+- **Database Type System Evolution**: Diesel's centralized schema → SQLx's distributed type knowledge, fundamental paradigm shift mastered
+- **Query Macro Proficiency**: `query_as!` compile-time verification, parameter binding, async error handling patterns established
+- **Model Simplification Strategy**: Eliminated ORM ceremony (NewUser, UpdateUser variants), embraced SQLx's direct approach
+- **Custom Type Implementation**: Complete SQLx traits (`Type`, `Encode`, `Decode`) for Color enum with PostgreSQL integration
+- **Connection Pool Architecture**: Native SQLx PgPool vs r2d2 wrapper, performance and simplicity improvements understood
+- **Error Pattern Evolution**: PostgreSQL error codes, SQLx error types, maintaining security while improving directness
+- **Migration Philosophy Mastery**: Forward-only migration strategy, SQLx CLI proficiency, database lifecycle management
+- **Type System Trait Implementation**: Full qualified path syntax, trait disambiguation, custom enum serialization patterns
+- **Database Architecture Design**: Clean table separation strategy - `cards` (profile/meta) vs `scryfall_cards` (external API data)
+- **Relational Design Mastery**: Foreign key relationships, join operations, normalized data architecture for long-term maintainability
 
 ### Optimal Neural Connection Strategy
 - **Research Guidance**: Point to specific docs/patterns, let him implement and build connections

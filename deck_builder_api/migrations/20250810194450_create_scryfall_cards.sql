@@ -1,28 +1,22 @@
-CREATE TABLE cards (
-    -- My Fields
-    -- Those that exist only in my database
-    id SERIAL PRIMARY KEY,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-
+CREATE TABLE scryfall_cards (
     -- Core Card Fields
     -- Cards have the following core properties
-    arena_id INT,
-    scryfall_id UUID NOT NULL,
+    id UUID PRIMARY KEY,
+    arena_id INT UNIQUE,
     lang VARCHAR NOT NULL,
-    mtgo_id INT,
-    mtgo_foil_id INT,
+    mtgo_id INT UNIQUE,
+    mtgo_foil_id INT UNIQUE,
     multiverse_ids INT[],
-    tcgplayer_id INT,
-    tcgplayer_etched_id INT,
-    cardmarket_id INT,
+    tcgplayer_id INT UNIQUE,
+    tcgplayer_etched_id INT UNIQUE,
+    cardmarket_id INT UNIQUE,
     object VARCHAR NOT NULL,
     layout VARCHAR NOT NULL,
     oracle_id UUID,
     prints_search_uri VARCHAR NOT NULL,
     rulings_uri VARCHAR NOT NULL,
     scryfall_uri VARCHAR NOT NULL,
-    scryfall_api_uri VARCHAR NOT NULL,
+    uri VARCHAR NOT NULL,
 
     -- Gameplay Fields
     -- Cards have the following properties relevant to the game rules
@@ -102,10 +96,10 @@ CREATE TABLE cards (
     preview_source VARCHAR
 );
 
-CREATE INDEX idx_cards_name ON cards(name);
-CREATE INDEX idx_cards_type ON cards(type_line);
-CREATE INDEX idx_cards_rarity ON cards(rarity);
-CREATE INDEX idx_cards_scryfall_id ON cards(scryfall_id);
-CREATE INDEX idx_cards_set ON cards(set);
-CREATE INDEX idx_cards_cmc ON cards(cmc);
-CREATE INDEX idx_cards_colors ON cards USING GIN(colors);
+CREATE INDEX idx_cards_name ON scryfall_cards(name);
+CREATE INDEX idx_cards_type ON scryfall_cards(type_line);
+CREATE INDEX idx_cards_rarity ON scryfall_cards(rarity);
+CREATE INDEX idx_cards_id ON scryfall_cards(id);
+CREATE INDEX idx_cards_set ON scryfall_cards(set);
+CREATE INDEX idx_cards_cmc ON scryfall_cards(cmc);
+CREATE INDEX idx_cards_colors ON scryfall_cards USING GIN(colors);

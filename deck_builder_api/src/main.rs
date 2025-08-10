@@ -8,10 +8,8 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use diesel::{
-    r2d2::{ConnectionManager, Pool},
-    PgConnection,
-};
+
+use sqlx::{postgres::PgPoolOptions, PgPool};
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 use tracing_subscriber;
 
@@ -19,22 +17,18 @@ use tracing_subscriber;
 mod auth;
 mod handlers;
 mod models;
-mod schema;
 mod scryfall;
-mod utils;
 
 use crate::auth::jwt::JwtConfig;
 
-type DbPool = Pool<ConnectionManager<PgConnection>>;
-
 #[derive(Clone)]
 struct AppState {
-    db_pool: DbPool,
+    db_pool: PgPool,
     jwt_config: JwtConfig,
 }
 
 impl AppState {
-    fn initialize() -> Result<Self, Box<dyn StdError>> {
+    async fn initialize() -> Result<Self, Box<dyn StdError>> {
         let database_url = std::env::var("DATABASE_URL").map_err(|e| {
             anyhow!(
                 "DATABASE_URL environment variable must be set. Error: {:?}",
@@ -42,14 +36,13 @@ impl AppState {
             )
         })?;
 
-        let connection_manager = ConnectionManager::<PgConnection>::new(database_url);
-
-        let db_pool = Pool::builder()
-            .min_idle(Some(2)) // minimum 2 idle connections in pool
-            .max_size(10) // maximum pool size of 10
-            .idle_timeout(Some(Duration::from_secs(300))) // idle connection timeout of 5 min
-            .connection_timeout(Duration::from_secs(5)) // new connection timeout of 5 sec
-            .build(connection_manager)
+        let db_pool = PgPoolOptions::new()
+            .min_connections(2) // min 2 idle connections in pool
+            .max_connections(10) // max pool size of 10
+            .idle_timeout(Some(Duration::from_secs(300))) // existing conn times out after 5 min
+            .acquire_timeout(Duration::from_secs(5)) // acquiring new conn times out after 5 sec
+            .connect(&database_url)
+            .await
             .map_err(|e| anyhow!("Failed to build connection. Error: {:?}", e))?;
 
         Ok(Self {
@@ -123,6 +116,7 @@ async fn run() -> Result<(), Box<dyn StdError>> {
         )
         .with_state(
             AppState::initialize()
+                .await
                 .map_err(|e| anyhow!("Failed to initialize AppState. Error: {:?}", e))?,
         )
         .layer(TraceLayer::new_for_http());
@@ -144,7 +138,7 @@ async fn run() -> Result<(), Box<dyn StdError>> {
         .await
         .map_err(|e| anyhow!("failed to bind address to listener with error: {:?}", e))?;
 
-    let _ = scryfall::card_search("satya").await?;
+    let _ = scryfall::card_search("sonic the hedgehog").await?;
 
     axum::serve(listener, app)
         .await

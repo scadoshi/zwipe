@@ -14,8 +14,8 @@ tower-http = { version = "0.5", features = ["cors", "trace"] }
 tokio = { version = "1.0", features = ["full"] }
 
 # Database
-diesel = { version = "2.1", features = ["postgres", "r2d2", "chrono", "128-column-tables", "uuid"] }
-diesel_migrations = "2.1"
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid", "json"] }
+sqlx-macros = "0.8"  
 uuid = { version = "1.0", features = ["v4", "serde"] }
 
 # Helps convert to sql string

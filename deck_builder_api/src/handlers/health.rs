@@ -1,10 +1,10 @@
 // External crate imports
 use axum::{extract::State, http::StatusCode, response::Json};
-use diesel::{sql_query, RunQueryDsl};
 use serde_json::{json, Value};
+use sqlx::query;
 use tracing::error;
 
-use crate::{utils::connect_to, AppState};
+use crate::AppState;
 
 pub async fn root() -> Json<Value> {
     Json(json!({
@@ -24,13 +24,13 @@ pub async fn health_check() -> Json<Value> {
 pub async fn health_check_deep(
     State(app_state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
-    let mut conn = connect_to(app_state.db_pool)?;
-
-    // Simple query to verify DB is responsive
-    sql_query("SELECT 1").execute(&mut conn).map_err(|e| {
-        error!("Failed to query database at all with error: {:?}", e);
-        StatusCode::SERVICE_UNAVAILABLE
-    })?;
+    query("SELECT 1")
+        .fetch_one(&app_state.db_pool)
+        .await
+        .map_err(|e| {
+            error!("Failed to query database at all with error: {:?}", e);
+            StatusCode::SERVICE_UNAVAILABLE
+        })?;
 
     Ok(Json(json!({
         "status": "healthy",

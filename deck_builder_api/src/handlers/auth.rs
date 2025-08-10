@@ -1,12 +1,9 @@
+use std::borrow::Cow;
+
 // External
 use axum::{extract::State, http::StatusCode, response::Json};
-use diesel::{
-    dsl::insert_into,
-    prelude::*,
-    result::{DatabaseErrorKind, Error::DatabaseError},
-    RunQueryDsl,
-};
 use serde::{Deserialize, Serialize};
+use sqlx::query_as;
 use tracing::{error, warn};
 
 // Internal
@@ -15,9 +12,7 @@ use crate::{
         jwt::generate_jwt,
         password::{hash_password, verify_password},
     },
-    models::user,
-    schema::users,
-    utils::connect_to,
+    models::user::User,
     AppState,
 };
 
@@ -45,16 +40,17 @@ pub async fn authenticate_user(
     identifier: &str,
     password: &str,
 ) -> Result<LoginResponse, StatusCode> {
-    let mut conn = connect_to(app_state.db_pool)?;
-
-    let user = users::table
-        .filter(
-            users::email
-                .eq(&identifier)
-                .or(users::username.eq(&identifier)),
-        )
-        .first::<user::User>(&mut conn)
-        .map_err(|_| StatusCode::UNAUTHORIZED)?;
+    let user = query_as!(
+        User,
+        "SELECT * FROM users WHERE email = $1 OR username = $1",
+        identifier
+    )
+    .fetch_one(&app_state.db_pool)
+    .await
+    .map_err(|e| {
+        warn!("Failed authentication for {:?}. Error: {:?}", identifier, e);
+        StatusCode::UNAUTHORIZED
+    })?;
 
     let verified = verify_password(&password, &user.password_hash).map_err(|e| {
         error!("Failed to verify password. Error: {:?}", e);
@@ -95,38 +91,38 @@ pub async fn register_user(
     email: &str,
     password: &str,
 ) -> Result<LoginResponse, StatusCode> {
-    let mut conn = connect_to(app_state.db_pool)?;
-
     let password_hash = hash_password(password).map_err(|e| {
         error!("Failed to hash password. Error: {:?}", e);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    let new_user = user::NewUser {
-        email: email.to_string(),
-        username: username.to_string(),
-        password_hash: password_hash.to_string(),
-    };
-
-    let user = insert_into(users::table)
-        .values(&new_user)
-        .get_result::<user::User>(&mut conn)
-        .map_err(|e| match e {
-            DatabaseError(DatabaseErrorKind::UniqueViolation, database_error_information) => {
-                warn!(
-                    "Failed registration attempt (email={:?}, username={:?}). Error: ({:?}, {:?})",
-                    new_user.username,
-                    new_user.email,
-                    DatabaseErrorKind::UniqueViolation,
-                    database_error_information
-                );
-                StatusCode::CONFLICT
-            }
-            e => {
-                error!("Failed to create user. Error: {:?}", e);
-                StatusCode::INTERNAL_SERVER_ERROR
-            }
-        })?;
+    let user = query_as!(
+        User,
+        "INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING *",
+        username, email, password_hash
+    )
+    .fetch_one(&app_state.db_pool)
+    .await
+    .map_err(|e| match e {
+        sqlx::Error::Database(db_e) if db_e.code() == Some(Cow::from("23505")) => {
+            warn!(
+                "Failed registration attempt for (email={:?}, username={:?}). Error: (code={:?}, message={:?})",
+                username,
+                email,
+                db_e.code(),
+                db_e.message()
+            );
+            StatusCode::CONFLICT
+        }
+        sqlx::Error::Database(db_e) => {
+            error!("Failed to create user. Database error: {:?}", db_e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
+        e => {
+            error!("Failed to create user. Error: {:?}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
+    })?;
 
     let token = generate_jwt(user.id, user.email, &app_state.jwt_config.secret).map_err(|e| {
         error!("Failed to generate a json web token. Error: {:?}", e);

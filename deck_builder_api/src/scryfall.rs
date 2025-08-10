@@ -1,24 +1,24 @@
 use reqwest::header::{ACCEPT, USER_AGENT};
 use serde::Deserialize;
-
-use crate::models::card::NewCard;
 use std::{error::Error as StdError, io::Write};
+
+use crate::models::card::ScryfallCard;
 
 #[derive(Deserialize, Debug)]
 struct CardSearchResponse {
-    data: Vec<NewCard>,
-    has_more: bool,
-    object: String,
-    total_cards: i32,
+    data: Vec<ScryfallCard>,
+    _has_more: bool,
+    _object: String,
+    _total_cards: i32,
 }
 
-pub async fn card_search(search_str: &str) -> Result<Vec<NewCard>, Box<dyn StdError>> {
+pub async fn card_search(search_str: &str) -> Result<Vec<ScryfallCard>, Box<dyn StdError>> {
     let scryfall_card_search_url = "https://api.scryfall.com/cards/search?q=";
     let full_url = scryfall_card_search_url.to_string() + &urlencoding::encode(search_str);
 
     let result = reqwest::Client::new()
         .get(full_url)
-        .header(USER_AGENT, "DeckBuilderAPI/0.1")
+        .header(USER_AGENT, "DeckBuilderAPI/0.0")
         .header(ACCEPT, "*/*")
         .send()
         .await?;
