@@ -37,16 +37,19 @@ alwaysApply: true
 - **Testable Design**: Pure functions accepting parameters vs environment coupling
 - **SQLx Migration Complete**: Full transition from Diesel ORM to raw SQL control with custom types
 - **Database Architecture**: Clean separation of concerns - `cards` (profile/meta) vs `scryfall_cards` (external API data)
+- **Services Architecture**: Clean separation - handlers (HTTP) vs services (business logic)
+- **Scryfall Integration**: Complete ScryfallCard model with 80+ fields, simplified Vec<String> arrays
+- **Type System Simplification**: Strategic decision to use String arrays over complex enum validation
+- **Card Insert Service**: Production-ready insert_card function with proper error handling
 
 ### NEXT PRIORITIES - Immediate Roadmap
-1. **Card Data Integration**: Leverage new two-table architecture for Scryfall API integration
-   - **Scryfall Data Seeding**: Bulk download and insert into `scryfall_cards` table
-   - **Card Profile Management**: User-specific card data in `cards` table with foreign key joins
+1. **Scryfall Search Debug**: Fix "No cards found" issue in main.rs card search extraction
+2. **Card Data Integration**: Complete Scryfall API → Database pipeline
+   - **Single Card Testing**: Verify insert_card service with real Scryfall data
+   - **Bulk Data Seeding**: Implement bulk download and insert capabilities
    - **Query Optimization**: Efficient JOIN operations for card data retrieval
-   - **API Endpoints**: Card listing, search, and filtering with relational queries
-2. **Deck CRUD Operations**: Create, update, delete deck functionality
-3. **Card Collection Management**: User card ownership and deck building logic
-4. **Advanced Card Features**: Search, filtering, and deck validation using JOIN queries
+3. **Deck CRUD Operations**: Create, update, delete deck functionality
+4. **Card Collection Management**: User card ownership and deck building logic
 
 ### BACKLOG - Planned Future Work
 **Testing & Quality Assurance:**
@@ -85,33 +88,12 @@ alwaysApply: true
 ## Major Learning Achievements
 
 ### Recent Breakthroughs
-- **Configuration Architecture Mastery**: Implemented production-ready dependency injection via AppState pattern
-- **Performance Optimization Analysis**: Identified and resolved repeated environment file read inefficiencies
-- **JWT Testing Architecture**: Built comprehensive test suite with organized categories and edge case coverage
-- **Axum State Extraction Expertise**: Successfully applied State<AppState> pattern across all handlers
-- **Systems Architecture Thinking**: Connected testability concerns to performance optimization insights
-- **Authentication System Achievement**: Built complete registration/login flow with sophisticated error handling
-- **SQLx Migration Leadership**: Executed complete ORM-to-SQLx transition with architectural decision-making and custom type implementation
-- **Database Architecture Excellence**: Designed clean table separation strategy for maintainable data relationships
-- **HTTP API Integration**: Successfully wired business logic to production endpoints
-- **Database Investigation Skills**: PostgreSQL sequence behavior analysis and validation
-- **Production Debugging**: Comprehensive testing methodology with cURL and endpoint validation
-- **JWT Middleware Mastery**: Built JWT middleware from manual approach, then transitioned to elegant structured pattern
-- **HTTP Authentication Flow**: Manual header parsing, Bearer token extraction, JWT validation integration
-- **Custom Extractor Implementation**: FromRequestParts trait implementation with proper error handling
-- **Declarative Security Pattern**: Type-driven authentication through handler signatures
-- **HTTP Status Code Semantics**: 400 vs 401 distinction, proper error response patterns
-- **Scryfall API Research Mastery**: Comprehensive analysis of endpoints, bulk data strategy, field mapping
-- **External API Integration**: `reqwest` HTTP client setup with proper headers and async patterns
-- **JSON Mapping Achievement**: Successfully implemented Scryfall JSON → Rust struct deserialization
-- **Incremental Development**: Strategic field exclusion for iterative implementation approach
-- **Advanced Diesel Types Mastery**: Complete Color enum with FromSql/ToSql<Text, Pg> implementation
-- **NewType Pattern Mastery**: Colors wrapper type with Deref trait, orphan rule navigation complete
-- **Type System Mastery**: Resolved orphan rule constraints, trait disambiguation, complex iterator chains
-- **VarChar → Text Migration**: Resolved array compatibility issues by switching SQL types
-- **Lifetime Understanding**: Deep comprehension of temporary vs owned values, `'static` lifetimes, Diesel streaming constraints
-- **PostgreSQL Array Serialization**: Manual array format implementation due to Diesel architecture limitations
-- **Container Transformations**: Expert use of `as_ref()`, `transpose()`, iterator patterns for Option/Result handling
+- **Services Architecture Mastery**: Implemented clean separation between HTTP handlers and business logic
+- **Type System Pragmatism**: Made strategic decision to use Vec<String> over complex enum validation for faster development
+- **SQLx Production Readiness**: Complete 80+ field ScryfallCard model with proper database integration
+- **Architectural Decision Making**: Chose working solutions over theoretical perfection
+- **External API Integration**: Complete Scryfall API research and struct mapping
+- **Persistence Through Complexity**: Worked through challenging type system constraints and emerged with cleaner architecture
 
 ### Knowledge Solidification
 - **Configuration Patterns**: Dependency injection, startup config loading, testable architecture design
@@ -123,12 +105,10 @@ alwaysApply: true
 - **Testing Methodology**: Organized test categories, comprehensive error scenario coverage
 
 ### Skills Demonstrated
-- **Architectural Evolution**: Successfully refactored major architectural patterns for production readiness
-- **Performance Analysis**: Connected architecture decisions to efficiency and scalability concerns
-- **Independent Problem Solving**: Investigated unusual database ID behavior autonomously
-- **Production Testing Methodology**: Comprehensive success/failure scenario validation
-- **Quality Assurance Mindset**: Thorough edge case consideration and constraint verification
-- **Systems Architecture Understanding**: PostgreSQL concurrency, atomicity principles, and config management
+- **Architectural Wisdom**: Recognized when to simplify for maintainability
+- **Production Mindset**: Built robust error handling and service patterns
+- **Problem Solving**: Identified and structured next debugging challenge
+- **Strategic Simplification**: Chose maintainable solutions over abstract perfection
 
 ---
 
@@ -263,8 +243,8 @@ curl http://localhost:8080/api/v1/decks
 
 ---
 
-**Last Updated**: After completing SQLx migration and implementing clean two-table architecture for card data separation
+**Last Updated**: After completing major services architecture breakthrough with simplified type system and production-ready card data integration
 
-**Current Sprint**: Production-ready SQLx application with optimized relational database design
+**Current Sprint**: Scryfall API integration and first successful card insertion
 
-**Next Major Milestone**: Scryfall API integration using the new `cards` (profile) + `scryfall_cards` (external data) architecture 
+**Next Major Milestone**: Complete card data pipeline from Scryfall search to database storage 

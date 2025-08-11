@@ -1,12 +1,3 @@
-use std::borrow::Cow;
-
-// External
-use axum::{extract::State, http::StatusCode, response::Json};
-use serde::{Deserialize, Serialize};
-use sqlx::query_as;
-use tracing::{error, warn};
-
-// Internal
 use crate::{
     auth::{
         jwt::generate_jwt,
@@ -15,6 +6,10 @@ use crate::{
     models::user::User,
     AppState,
 };
+use axum::{extract::State, http::StatusCode, response::Json};
+use serde::{Deserialize, Serialize};
+use sqlx::query_as;
+use tracing::{error, warn};
 
 #[derive(Deserialize)]
 pub struct LoginRequest {
@@ -104,7 +99,7 @@ pub async fn register_user(
     .fetch_one(&app_state.db_pool)
     .await
     .map_err(|e| match e {
-        sqlx::Error::Database(db_e) if db_e.code() == Some(Cow::from("23505")) => {
+        sqlx::Error::Database(db_e) if db_e.code() == Some("23505".into()) => {
             warn!(
                 "Failed registration attempt for (email={:?}, username={:?}). Error: (code={:?}, message={:?})",
                 username,

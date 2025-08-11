@@ -23,7 +23,7 @@ CREATE TABLE scryfall_cards (
     -- all_parts JSONB,
     -- card_faces JSONB[],
     cmc FLOAT NOT NULL,
-    color_identity TEXT[],
+    color_identity TEXT[] NOT NULL,
     color_indicator TEXT[],
     colors TEXT[],
     defense VARCHAR,

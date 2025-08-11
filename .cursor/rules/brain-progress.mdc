@@ -27,6 +27,7 @@ alwaysApply: true
 - **Configuration Management**: Production-ready config loading at startup vs runtime env reads
 - **Performance Optimization**: Identified and resolved repeated file system access inefficiencies
 - **Testable Architecture**: Designed pure functions vs environment-coupled functions
+- **Services Architecture**: Successfully separated HTTP handlers from business logic functions
 
 ### Axum Web Framework  
 - **State Extraction**: Confidently uses `State<AppState>` pattern across multiple handlers
@@ -94,7 +95,13 @@ alwaysApply: true
 - **JSON Processing**: `serde_json` parsing and pretty-printing for response analysis
 - **API Research Methodology**: Comprehensive endpoint analysis and field mapping strategies
 - **Struct Mapping**: Successfully implemented complex JSON deserialization to custom Rust structs
-- **Iterative Development**: Strategic field management for incremental feature implementation
+- **Scryfall API Mastery**: Complete understanding of MTG card data structure and API patterns
+
+### Architectural Decision Making
+- **Simplification Strategy**: Successfully chose working solutions over theoretical perfection
+- **Type System Balance**: Learned when to simplify complex type hierarchies for maintainability
+- **Services Pattern**: Clean separation between HTTP concerns and business logic
+- **Production Mindset**: Focus on working, testable code over abstract type safety
 
 ### SQLx Database Operations
 - **Raw SQL Mastery**: Complete migration from Diesel ORM to SQLx for direct SQL control and better performance
@@ -102,10 +109,11 @@ alwaysApply: true
 - **Connection Pooling**: Native SQLx PgPool implementation with proper configuration
 - **Error Handling**: PostgreSQL error code pattern matching (`23505` for unique violations)
 - **Type System Understanding**: SQLx's distributed type knowledge vs Diesel's centralized schema approach
-- **Custom Type Implementation**: Complete SQLx `Type`, `Encode`, `Decode` traits for Color enum with PostgreSQL integration
 - **Migration System**: SQLx CLI usage, forward-only migration strategy, database recreation workflows
 - **Table Separation Architecture**: Clean separation of concerns with `cards` (profile/meta) vs `scryfall_cards` (external data)
 - **Join Operations**: Comfortable with relational design and SQL joins for maintainable data architecture
+- **Production Models**: Successfully implemented 80+ field ScryfallCard with simplified Vec<String> arrays
+- **Type System Pragmatism**: Strategic decision to use String arrays over complex enum validation
 
 ---
 
@@ -150,25 +158,18 @@ alwaysApply: true
 - **Async Programming**: Improving async/await patterns, practical experience growing
 
 ### Recent Neural Connection Strengthening
-- **Configuration Patterns**: New strong pathway - dependency injection, AppState, State extraction
-- **Testing Architecture**: Strengthened pathway - organized test suites, comprehensive coverage
-- **Performance Optimization**: New connection - architecture decisions → performance implications
-- **Production Patterns**: Evolved from learning to implementing professional-grade solutions
-- **JWT Middleware Patterns**: Strong pathway - manual implementation → structured approach → quiz validation (5/5)
-- **HTTP Authentication Semantics**: Strong pathway - 400 vs 401 distinctions, proper error responses, validated understanding
-- **Declarative Security**: Strong pathway - type system enforcement, "rusty" philosophy connection validated
-- **Authentication Flow**: Solidified pathway - request → validation → handler passing, complete understanding demonstrated
-- **SQLx Migration Mastery**: Complete transition from Diesel to SQLx with architectural understanding of ORM vs raw SQL tradeoffs
-- **Database Type System Evolution**: Diesel's centralized schema → SQLx's distributed type knowledge, fundamental paradigm shift mastered
-- **Query Macro Proficiency**: `query_as!` compile-time verification, parameter binding, async error handling patterns established
-- **Model Simplification Strategy**: Eliminated ORM ceremony (NewUser, UpdateUser variants), embraced SQLx's direct approach
-- **Custom Type Implementation**: Complete SQLx traits (`Type`, `Encode`, `Decode`) for Color enum with PostgreSQL integration
-- **Connection Pool Architecture**: Native SQLx PgPool vs r2d2 wrapper, performance and simplicity improvements understood
-- **Error Pattern Evolution**: PostgreSQL error codes, SQLx error types, maintaining security while improving directness
-- **Migration Philosophy Mastery**: Forward-only migration strategy, SQLx CLI proficiency, database lifecycle management
-- **Type System Trait Implementation**: Full qualified path syntax, trait disambiguation, custom enum serialization patterns
-- **Database Architecture Design**: Clean table separation strategy - `cards` (profile/meta) vs `scryfall_cards` (external API data)
-- **Relational Design Mastery**: Foreign key relationships, join operations, normalized data architecture for long-term maintainability
+- **Services Architecture Mastery**: Successfully separated HTTP handlers from business logic
+- **Type System Wisdom**: Made strategic architectural decision to simplify complex type hierarchies
+- **Production SQL Integration**: Complete 80+ field model implementation with SQLx
+- **External API Mastery**: Full Scryfall API integration from research to implementation
+- **Architectural Pragmatism**: Chose maintainable solutions over theoretical perfection
+- **Persistence Through Complexity**: Worked through challenging type system constraints and emerged with cleaner architecture
+
+### Learning Pattern Recognition
+- **Strategic Simplification**: Recognizes when complexity doesn't add value
+- **Production Focus**: Prioritizes working, maintainable code over abstract perfection
+- **Problem Decomposition**: Breaks complex challenges into manageable pieces
+- **Architectural Thinking**: Connects individual decisions to larger system design
 
 ### Optimal Neural Connection Strategy
 - **Research Guidance**: Point to specific docs/patterns, let him implement and build connections
@@ -222,6 +223,6 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: After completing Colors FromSql/ToSql implementation with advanced lifetime understanding and PostgreSQL array serialization mastery - demonstrating persistence through complex type system challenges and Diesel architecture constraints
+**Last Updated**: After completing major services architecture breakthrough with simplified type system and production-ready card data integration
 
-**Next Neural Connection Point**: Card model integration with expanded fields, bulk data seeding, and practical testing of the Colors implementation
+**Next Learning Edge**: Debugging Scryfall search integration and completing first successful card insertion pipeline

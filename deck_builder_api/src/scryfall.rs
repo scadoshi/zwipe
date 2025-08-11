@@ -2,7 +2,7 @@ use reqwest::header::{ACCEPT, USER_AGENT};
 use serde::Deserialize;
 use std::{error::Error as StdError, io::Write};
 
-use crate::models::card::ScryfallCard;
+use crate::models::card::scryfall_card::ScryfallCard;
 
 #[derive(Deserialize, Debug)]
 struct CardSearchResponse {
