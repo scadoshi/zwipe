@@ -91,7 +91,9 @@ CardSearchResponse {
             attraction_lights: None,
             booster: false,
             border_color: "black",
-            card_back_id: 0aeebaf5-8c7d-4636-9e82-8c27447861f7,
+            card_back_id: Some(
+                0aeebaf5-8c7d-4636-9e82-8c27447861f7,
+            ),
             collector_number: "3",
             content_warning: None,
             digital: false,

@@ -3,7 +3,7 @@ use sqlx::{query_as, PgPool};
 
 pub async fn insert_card(
     // State(app_state): State<AppState>,
-    pg_pool: PgPool,
+    pg_pool: &PgPool,
     scryfall_card: ScryfallCard,
 ) -> Result<CardProfile, sqlx::Error> {
     // add these fields later
@@ -16,7 +16,7 @@ pub async fn insert_card(
     // prices: Prices,
     // purchase_uris,
     // related_uris,
-    query_as!(
+    let sf_card = query_as!(
         ScryfallCard,
         r#"
         INSERT INTO scryfall_cards (
@@ -204,16 +204,25 @@ pub async fn insert_card(
         scryfall_card.preview_source_uri,
         scryfall_card.preview_source,
     )
-    .fetch_one(&pg_pool)
+    .fetch_one(pg_pool)
     .await?;
 
-    query_as!(
+    println!("(*3*)<(added {:?} to the database!)", sf_card.name);
+
+    let card_profile = query_as!(
         CardProfile,
         r"INSERT INTO card_profiles (scryfall_card_id, created_at, updated_at) VALUES ($1, $2, $3) RETURNING *",
         scryfall_card.id,
         chrono::Utc::now().naive_utc(),
         chrono::Utc::now().naive_utc(),
     )
-    .fetch_one(&pg_pool)
-    .await
+    .fetch_one(pg_pool)
+    .await?;
+
+    println!(
+        "(*3*)<(the profile for {:?} can be found at id = {:?})",
+        sf_card.name, card_profile.id
+    );
+
+    Ok(card_profile)
 }

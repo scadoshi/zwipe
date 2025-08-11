@@ -30,7 +30,7 @@ pub async fn card_search(search_str: &str) -> Result<Vec<ScryfallCard>, Box<dyn 
 
     output.write(format!("{:#?}", card_search_response).as_ref())?;
 
-    println!("\n(*3*)<(wrote output to a file! go find it!)\n");
+    println!("(*3*)<(wrote output to a file! go find it!)");
 
-    Ok(Vec::new())
+    Ok(card_search_response.data)
 }

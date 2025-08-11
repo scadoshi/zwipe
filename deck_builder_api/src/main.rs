@@ -19,8 +19,8 @@ mod handlers;
 mod models;
 mod scryfall;
 mod services;
-use crate::auth::jwt::JwtConfig;
 use crate::services::card::insert_card;
+use crate::{auth::jwt::JwtConfig, services::utils::delete_all_cards};
 
 #[derive(Clone)]
 struct AppState {
@@ -88,11 +88,7 @@ async fn run() -> Result<(), Box<dyn StdError>> {
     // supreme rusty
     let protected_routes = Router::new().nest(
         "/api/v1",
-        Router::new()
-            // no sense in getting cards with no filtering
-            // will figure out how to add parameters later
-            // .route("/cards", get(handlers::cards::get_cards))
-            .route("/decks", get(handlers::decks::get_decks)),
+        Router::new().route("/decks", get(handlers::decks::get_decks)),
     );
 
     // public routes - no authentication required
@@ -137,7 +133,7 @@ async fn run() -> Result<(), Box<dyn StdError>> {
 
     println!(
         "{}",
-        include_str!("../../logos/deck_builder/ansi_shadow.txt")
+        include_str!("../../logos/ascii_art/monkey.txt")
     );
     println!("deck_builder API Running on {}", bind_address);
 
@@ -145,16 +141,16 @@ async fn run() -> Result<(), Box<dyn StdError>> {
         .await
         .map_err(|e| anyhow!("failed to bind address to listener with error: {:?}", e))?;
 
-    let result = insert_card(
-        app_state.db_pool,
+    delete_all_cards(&app_state.db_pool).await?;
+    insert_card(
+        &app_state.db_pool,
         scryfall::card_search("satya")
             .await?
-            .first()
-            .ok_or_else(|| anyhow!("No cards found"))?
-            .clone(),
+            .into_iter()
+            .next()
+            .expect("no cards found in search"),
     )
-    .await;
-    println!("{:?}", result);
+    .await?;
 
     axum::serve(listener, app)
         .await

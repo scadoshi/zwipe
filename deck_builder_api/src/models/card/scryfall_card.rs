@@ -75,7 +75,7 @@ pub struct ScryfallCard {
     pub attraction_lights: Option<Vec<String>>,
     pub booster: bool,
     pub border_color: String,
-    pub card_back_id: uuid::Uuid,
+    pub card_back_id: Option<uuid::Uuid>,
     pub collector_number: String,
     pub content_warning: Option<bool>,
     pub digital: bool,
