@@ -15,14 +15,15 @@ use tracing_subscriber;
 
 // Internal
 mod auth;
+mod database;
 mod handlers;
 mod models;
 mod scryfall;
-mod utils;
 use crate::{
     auth::jwt::JwtConfig,
+    database::card::{delete_all_cards, Insert},
+    models::card::scryfall_card::ScryfallCard,
     scryfall::get_oracle_card_dump,
-    utils::card::{delete_all_cards, insert_card},
 };
 
 #[derive(Clone)]
@@ -134,17 +135,18 @@ async fn run() -> Result<(), Box<dyn StdError>> {
         )
     })?;
 
-    println!(
-        "{}",
-        include_str!("../../logos/deck_builder/ansi_shadow.txt")
-    );
-    println!("deck_builder API Running on {}", bind_address);
+    // println!(
+    //     "{}",
+    //     include_str!("../../logos/deck_builder/ansi_shadow.txt")
+    // );
+    println!("deck_builder_api running on {}", bind_address);
 
     let listener = tokio::net::TcpListener::bind(&bind_address)
         .await
         .map_err(|e| anyhow!("failed to bind address to listener with error: {:?}", e))?;
 
     delete_all_cards(&app_state.db_pool).await?;
+
     // insert_card(
     //     &app_state.db_pool,
     //     scryfall::card_search("satya")
@@ -155,7 +157,17 @@ async fn run() -> Result<(), Box<dyn StdError>> {
     // )
     // .await?;
 
-    get_oracle_card_dump().await?;
+    let dump: Vec<ScryfallCard> = get_oracle_card_dump().await?;
+    for (i, card) in dump.into_iter().enumerate() {
+        match card.insert(&app_state.db_pool).await {
+            Err(e) => println!("(*3*)<(failed to insert {:?}\nerror: {:?})", card.name, e),
+            _ => (),
+        }
+
+        if i % 100 == 0 {
+            println!("(*3*)<({} cards inserted!)", i);
+        }
+    }
 
     axum::serve(listener, app)
         .await
