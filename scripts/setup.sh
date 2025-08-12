@@ -89,6 +89,24 @@ if ! command -v sqlx &> /dev/null; then
     cargo install sqlx-cli
 fi
 
+# Check GitHub CLI authentication
+print_status "Checking GitHub authentication..."
+if ! gh auth status &> /dev/null; then
+    print_warning "Not authenticated with GitHub CLI"
+    echo "🔐 You need to authenticate with GitHub to clone the repository."
+    echo "Starting GitHub CLI authentication process..."
+    gh auth login
+    
+    # Verify authentication worked
+    if ! gh auth status &> /dev/null; then
+        print_error "GitHub authentication failed. Please try again manually with 'gh auth login'"
+        exit 1
+    fi
+    print_status "GitHub authentication successful!"
+else
+    print_status "Already authenticated with GitHub CLI"
+fi
+
 # Clone the repository if it doesn't exist
 if [ ! -d "deck-builder" ]; then
     print_status "Cloning deck-builder repository..."
