@@ -1,5 +1,5 @@
 use crate::models::card::{card_profile::CardProfile, scryfall_card::ScryfallCard};
-use sqlx::{query_as, PgPool};
+use sqlx::{query, query_as, PgPool};
 
 pub async fn insert_card(
     // State(app_state): State<AppState>,
@@ -225,4 +225,11 @@ pub async fn insert_card(
     );
 
     Ok(card_profile)
+}
+
+pub async fn delete_all_cards(pg_pool: &PgPool) -> Result<(), sqlx::Error> {
+    query!("DELETE FROM scryfall_cards;")
+        .execute(pg_pool)
+        .await?;
+    Ok(())
 }

@@ -18,9 +18,12 @@ mod auth;
 mod handlers;
 mod models;
 mod scryfall;
-mod services;
-use crate::services::card::insert_card;
-use crate::{auth::jwt::JwtConfig, services::utils::delete_all_cards};
+mod utils;
+use crate::{
+    auth::jwt::JwtConfig,
+    scryfall::get_oracle_card_dump,
+    utils::card::{delete_all_cards, insert_card},
+};
 
 #[derive(Clone)]
 struct AppState {
@@ -133,7 +136,7 @@ async fn run() -> Result<(), Box<dyn StdError>> {
 
     println!(
         "{}",
-        include_str!("../../logos/ascii_art/monkey.txt")
+        include_str!("../../logos/deck_builder/ansi_shadow.txt")
     );
     println!("deck_builder API Running on {}", bind_address);
 
@@ -142,15 +145,17 @@ async fn run() -> Result<(), Box<dyn StdError>> {
         .map_err(|e| anyhow!("failed to bind address to listener with error: {:?}", e))?;
 
     delete_all_cards(&app_state.db_pool).await?;
-    insert_card(
-        &app_state.db_pool,
-        scryfall::card_search("satya")
-            .await?
-            .into_iter()
-            .next()
-            .expect("no cards found in search"),
-    )
-    .await?;
+    // insert_card(
+    //     &app_state.db_pool,
+    //     scryfall::card_search("satya")
+    //         .await?
+    //         .into_iter()
+    //         .next()
+    //         .expect("no cards found in search"),
+    // )
+    // .await?;
+
+    get_oracle_card_dump().await?;
 
     axum::serve(listener, app)
         .await
