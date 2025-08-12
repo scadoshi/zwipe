@@ -1,5 +1,5 @@
 #!/bin/bash
-# full-setup.sh
+# setup.sh
 
 set -e  # Exit on any error
 
@@ -40,7 +40,8 @@ sudo apt install -y build-essential curl git openssl pkg-config
 # Install mold linker
 if ! command -v mold &> /dev/null; then
     print_status "Installing mold linker..."
-    sudo apt install -y mold
+    cargo install mold
+    print_status "Mold linker installed successfully"
 else
     print_status "Mold linker already installed"
 fi
@@ -103,7 +104,15 @@ fi
 print_status "Setting up PostgreSQL user and database..."
 sudo -u postgres psql -c "CREATE USER deck_builder_user WITH PASSWORD 'deck_builder_pass';" 2>/dev/null || print_warning "User might already exist"
 sudo -u postgres psql -c "ALTER USER deck_builder_user CREATEDB;" 2>/dev/null || true
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE postgres TO deck_builder_user;" 2>/dev/null || true
+
+# Create the database and grant proper permissions
+sudo -u postgres psql -c "DROP DATABASE IF EXISTS deck_builder;"
+sudo -u postgres psql -c "CREATE DATABASE deck_builder OWNER deck_builder_user;"
+sudo -u postgres psql -d deck_builder -c "GRANT ALL PRIVILEGES ON SCHEMA public TO deck_builder_user;"
+sudo -u postgres psql -d deck_builder -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO deck_builder_user;"
+sudo -u postgres psql -d deck_builder -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO deck_builder_user;"
+sudo -u postgres psql -d deck_builder -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO deck_builder_user;"
+sudo -u postgres psql -d deck_builder -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO deck_builder_user;"
 
 # Create .env file
 print_status "Creating .env configuration..."
@@ -116,20 +125,11 @@ EOF
 
 # Setup database
 cd deck_builder_api
-print_status "Creating database..."
-sqlx database create
 
 print_status "Running migrations..."
 sqlx migrate run
 
-# Configure mold for Rust builds
-print_status "Configuring mold linker for Rust..."
-mkdir -p .cargo
-cat > .cargo/config.toml << EOF
-[target.x86_64-unknown-linux-gnu]
-linker = "clang"
-rustflags = ["-C", "link-arg=-fuse-ld=mold"]
-EOF
+# Mold configuration already exists in project
 
 # Build the project to ensure everything works
 print_status "Building project with mold..."
@@ -144,9 +144,5 @@ echo "🔑 DB Password: deck_builder_pass"
 echo "🔗 Linker: mold (configured)"
 echo "🐙 GitHub CLI: $(gh --version | head -1)"
 echo ""
-echo "🚀 To start the server:"
-echo "   cd deck-builder/deck_builder_api"
-echo "   cargo run"
-echo ""
-echo "🔍 To test the API:"
-echo "   curl http://localhost:8080/health"
+echo "🚀 Opening Cursor in deck-builder directory..."
+cursor ../
