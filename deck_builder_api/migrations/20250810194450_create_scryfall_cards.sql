@@ -2,12 +2,12 @@ CREATE TABLE scryfall_cards (
     -- Core Card Fields
     -- Cards have the following core properties
     id UUID PRIMARY KEY,
-    arena_id INT UNIQUE,
+    arena_id INT,
     lang VARCHAR NOT NULL,
     mtgo_id INT UNIQUE,
     mtgo_foil_id INT UNIQUE,
     multiverse_ids INT[],
-    tcgplayer_id INT UNIQUE,
+    tcgplayer_id INT,
     tcgplayer_etched_id INT UNIQUE,
     cardmarket_id INT UNIQUE,
     object VARCHAR NOT NULL,
@@ -21,7 +21,7 @@ CREATE TABLE scryfall_cards (
     -- Gameplay Fields
     -- Cards have the following properties relevant to the game rules
     -- all_parts JSONB,
-    -- card_faces JSONB[],
+    -- card_faces JSONB[], (*3*)
     cmc FLOAT NOT NULL,
     color_identity TEXT[] NOT NULL,
     color_indicator TEXT[],
@@ -31,7 +31,7 @@ CREATE TABLE scryfall_cards (
     game_changer BOOLEAN,
     hand_modifier VARCHAR,
     keywords TEXT[],
-    -- legalities JSONB,
+    -- legalities JSONB, (*3*)
     life_modifier VARCHAR,
     loyalty VARCHAR,
     mana_cost VARCHAR,
@@ -65,17 +65,17 @@ CREATE TABLE scryfall_cards (
     highres_image BOOLEAN NOT NULL,
     illustration_id UUID,
     image_status VARCHAR NOT NULL,
-    -- image_uris JSONB,
+    -- image_uris JSONB, (*3*)
     oversized BOOLEAN NOT NULL,
-    -- prices JSONB NOT NULL,
+    -- prices JSONB NOT NULL, (*3*)
     printed_name VARCHAR,
     printed_text VARCHAR,
     printed_type_line VARCHAR,
     promo BOOLEAN NOT NULL,
     promo_types TEXT[],
-    -- purchase_uris JSONB,
+    -- purchase_uris JSONB, (*3*)
     rarity VARCHAR NOT NULL,
-    -- related_uris JSONB NOT NULL,
+    -- related_uris JSONB NOT NULL, (*3*)
     released_at DATE NOT NULL,
     reprint BOOLEAN NOT NULL,
     scryfall_set_uri VARCHAR NOT NULL,
@@ -96,10 +96,10 @@ CREATE TABLE scryfall_cards (
     preview_source VARCHAR
 );
 
-CREATE INDEX idx_cards_name ON scryfall_cards(name);
-CREATE INDEX idx_cards_type ON scryfall_cards(type_line);
-CREATE INDEX idx_cards_rarity ON scryfall_cards(rarity);
-CREATE INDEX idx_cards_id ON scryfall_cards(id);
-CREATE INDEX idx_cards_set ON scryfall_cards(set);
-CREATE INDEX idx_cards_cmc ON scryfall_cards(cmc);
-CREATE INDEX idx_cards_colors ON scryfall_cards USING GIN(colors);
+-- CREATE INDEX idx_cards_name ON scryfall_cards(name);
+-- CREATE INDEX idx_cards_type ON scryfall_cards(type_line);
+-- CREATE INDEX idx_cards_rarity ON scryfall_cards(rarity);
+-- CREATE INDEX idx_cards_id ON scryfall_cards(id);
+-- CREATE INDEX idx_cards_set ON scryfall_cards(set);
+-- CREATE INDEX idx_cards_cmc ON scryfall_cards(cmc);
+-- CREATE INDEX idx_cards_colors ON scryfall_cards USING GIN(colors);

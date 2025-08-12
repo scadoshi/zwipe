@@ -156,8 +156,9 @@ async fn run() -> Result<(), Box<dyn StdError>> {
     //         .expect("no cards found in search"),
     // )
     // .await?;
-
+    
     let dump: Vec<ScryfallCard> = get_oracle_card_dump().await?;
+    let start = std::time::Instant::now();
     for (i, card) in dump.into_iter().enumerate() {
         match card.insert(&app_state.db_pool).await {
             Err(e) => println!("(*3*)<(failed to insert {:?}\nerror: {:?})", card.name, e),
@@ -168,6 +169,7 @@ async fn run() -> Result<(), Box<dyn StdError>> {
             println!("(*3*)<({} cards inserted!)", i);
         }
     }
+    println!("(*3*)<(that took {:?})", start.elapsed());
 
     axum::serve(listener, app)
         .await

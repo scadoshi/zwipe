@@ -67,7 +67,6 @@ impl Insert for ScryfallCard {
                 type_line,
                 artist,
                 artist_ids,
-                attraction_lights,
                 booster,
                 border_color,
                 card_back_id,
@@ -114,7 +113,7 @@ impl Insert for ScryfallCard {
                     $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38,
                     $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56,
                 $57, $58, $59, $60, $61, $62, $63, $64, $65, $66, $67, $68, $69, $70, $71, $72, $73, $74,
-                $75, $76, $77, $78, $79, $80
+                $75, $76, $77, $78, $79
             ) RETURNING *
             "#,
             // Core Card Fields
@@ -166,7 +165,6 @@ impl Insert for ScryfallCard {
             // Cards have the following properties unique to their particular re/print
             self.artist,
             self.artist_ids.as_deref(),
-            self.attraction_lights.as_deref(),
             self.booster,
             self.border_color,
             self.card_back_id,
@@ -216,7 +214,7 @@ impl Insert for ScryfallCard {
         .fetch_one(pg_pool)
         .await?;
     
-        println!("(*3*)<(added {:?} to the database!)", sf_card.name);
+        // println!("(*3*)<(added {:?} to the database!)", sf_card.name);
     
         let card_profile = query_as!(
             CardProfile,
@@ -228,10 +226,10 @@ impl Insert for ScryfallCard {
         .fetch_one(pg_pool)
         .await?;
     
-        println!(
-            "(*3*)<(the profile for {:?} can be found at id = {:?})",
-            sf_card.name, card_profile.id
-        );
+        // println!(
+        //     "(*3*)<(the profile for {:?} can be found at id = {:?})",
+        //     sf_card.name, card_profile.id
+        // );
     
         Ok(card_profile)
     }

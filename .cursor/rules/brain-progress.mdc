@@ -96,6 +96,7 @@ alwaysApply: true
 - **API Research Methodology**: Comprehensive endpoint analysis and field mapping strategies
 - **Struct Mapping**: Successfully implemented complex JSON deserialization to custom Rust structs
 - **Scryfall API Mastery**: Complete understanding of MTG card data structure and API patterns
+- **Custom Serde Deserializers**: Implemented flexible type handling for inconsistent API data (needs comprehension review)
 
 ### Architectural Decision Making
 - **Simplification Strategy**: Successfully chose working solutions over theoretical perfection
@@ -114,6 +115,10 @@ alwaysApply: true
 - **Join Operations**: Comfortable with relational design and SQL joins for maintainable data architecture
 - **Production Models**: Successfully implemented 80+ field ScryfallCard with simplified Vec<String> arrays
 - **Type System Pragmatism**: Strategic decision to use String arrays over complex enum validation
+- **Production Data Pipeline**: Complete Scryfall API → Database integration with 35,400+ card insertions in <5 minutes
+- **Type System Debugging**: Expert-level troubleshooting of JSON deserialization conflicts (attraction_lights integer vs string)
+- **Constraint Management**: Understanding duplicate key patterns and database constraint behavior at scale
+- **Performance Validation**: Demonstrated architecture scales to real-world MTG dataset (~140 cards/second insertion rate)
 
 ---
 
@@ -138,6 +143,12 @@ alwaysApply: true
 - **Async Streaming**: Large dataset handling, async iterators
 - **Error Propagation**: Advanced error handling, error context
 - **Type-Level Programming**: Advanced traits, generic constraints
+
+### Serde Deep Dive (Needs Review Session)
+- **Custom Deserializer Patterns**: Understanding when and how to implement flexible type handling
+- **Serde_with Crate**: Advanced serialization helpers and utilities
+- **Error Handling in Deserializers**: Proper error propagation and user-friendly messages
+- **Performance Implications**: Understanding cost of custom vs standard deserializers
 
 ---
 
@@ -164,6 +175,10 @@ alwaysApply: true
 - **External API Mastery**: Full Scryfall API integration from research to implementation
 - **Architectural Pragmatism**: Chose maintainable solutions over theoretical perfection
 - **Persistence Through Complexity**: Worked through challenging type system constraints and emerged with cleaner architecture
+- **Production Data Scale Mastery**: Successfully processed 35,400+ real MTG cards demonstrating architecture resilience
+- **Type System Conflict Resolution**: Expert debugging of JSON deserialization mismatches using systematic isolation
+- **Performance Psychology**: Built confidence through successful large-scale data processing under time pressure
+- **System Validation**: Confirmed theoretical architecture works with real-world data complexity and scale
 
 ### Learning Pattern Recognition
 - **Strategic Simplification**: Recognizes when complexity doesn't add value
@@ -223,6 +238,6 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: After completing major services architecture breakthrough with simplified type system and production-ready card data integration
+**Last Updated**: After completing MASSIVE production data pipeline milestone - 35,400+ MTG cards successfully inserted in <5 minutes
 
-**Next Learning Edge**: Debugging Scryfall search integration and completing first successful card insertion pipeline
+**Next Learning Edge**: Batch insertion optimization and advanced database constraint handling for production-scale performance

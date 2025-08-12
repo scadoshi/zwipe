@@ -7,6 +7,7 @@ pub struct Card {
     pub scryfall_card_id: i32,
 }
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use uuid::Uuid;
 
 // pub mod card_face;
@@ -44,8 +45,8 @@ pub struct ScryfallCard {
 
     // Gameplay Fields
     // Cards have the following properties relevant to the game rules
-    // pub all_parts: Option<Vec<RelatedCard>>,
-    // pub card_faces: Option<Vec<CardFace>>,
+    // pub all_parts: Option<Vec<RelatedCard>>, (*3*)
+    // pub card_faces: Option<Vec<CardFace>>, (*3*)
     pub cmc: f64,
     pub color_identity: Vec<String>,
     pub color_indicator: Option<Vec<String>>,
@@ -55,7 +56,7 @@ pub struct ScryfallCard {
     pub game_changer: Option<bool>,
     pub hand_modifier: Option<String>,
     pub keywords: Option<Vec<String>>,
-    // pub legalities: Legalities,
+    // pub legalities: Legalities, (*3*)
     pub life_modifier: Option<String>,
     pub loyalty: Option<String>,
     pub mana_cost: Option<String>,
@@ -72,6 +73,7 @@ pub struct ScryfallCard {
     // Cards have the following properties unique to their particular re/print
     pub artist: Option<String>,
     pub artist_ids: Option<Vec<Uuid>>,
+    #[serde(default, deserialize_with = "deserialize_int_or_string_array")]
     pub attraction_lights: Option<Vec<String>>,
     pub booster: bool,
     pub border_color: String,
@@ -89,17 +91,17 @@ pub struct ScryfallCard {
     pub highres_image: bool,
     pub illustration_id: Option<Uuid>,
     pub image_status: String,
-    // pub image_uris: ImageUris,
+    // pub image_uris: ImageUris, (*3*)
     pub oversized: bool,
-    // pub prices: Prices,
+    // pub prices: Prices, (*3*)
     pub printed_name: Option<String>,
     pub printed_text: Option<String>,
     pub printed_type_line: Option<String>,
     pub promo: bool,
     pub promo_types: Option<Vec<String>>,
-    // pub purchase_uris: Option<serde_json::Value>, // fix later
+    // pub purchase_uris: Option<serde_json::Value>, // fix later (*3*)
     pub rarity: String,
-    // pub related_uris: serde_json::Value, // fix later
+    // pub related_uris: serde_json::Value, // fix later (*3*)
     pub released_at: chrono::NaiveDate,
     pub reprint: bool,
     pub scryfall_set_uri: String,
@@ -118,4 +120,15 @@ pub struct ScryfallCard {
     pub preview_previewed_at: Option<chrono::NaiveDate>,
     pub preview_source_uri: Option<String>,
     pub preview_source: Option<String>,
+}
+
+fn deserialize_int_or_string_array<'de, D>(deserializer: D) -> Result<Option<Vec<String>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let value: Option<Value> = Option::deserialize(deserializer)?;
+    match value {
+        Some(Value::Array(arr)) => Ok(Some(arr.into_iter().map(|v| v.to_string()).collect())),
+        _ => Ok(None),
+    }
 }
