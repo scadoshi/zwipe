@@ -35,7 +35,7 @@ sudo apt update
 
 # Install essential build tools
 print_status "Installing essential build tools..."
-sudo apt install -y build-essential curl git openssl pkg-config
+sudo apt install -y build-essential curl git openssl pkg-config ripgrep
 
 # Install mold linker
 if ! command -v mold &> /dev/null; then

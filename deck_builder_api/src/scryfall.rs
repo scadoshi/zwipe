@@ -6,11 +6,10 @@ use serde::Deserialize;
 use serde_json::from_value;
 use std::error::Error as StdError;
 
-use crate::models::card::scryfall_card::ScryfallCard;
+use crate::models::scryfall_card::ScryfallCard;
 
 // this generates a new client every time
-// very slow
-// update later
+// very slow update at some point
 trait Scry {
     async fn scry(&self) -> Result<Response, reqwest::Error>;
 }

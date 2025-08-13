@@ -1,19 +1,15 @@
-// Std
-use std::{error::Error as StdError, time::Duration};
-
-// External
 use anyhow::anyhow;
 use axum::{
     http::{header, HeaderValue, Method},
     routing::{get, post},
     Router,
 };
-
 use sqlx::{postgres::PgPoolOptions, PgPool};
+use std::{collections::HashSet, error::Error as StdError, time::Duration};
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 use tracing_subscriber;
+use uuid::Uuid;
 
-// Internal
 mod auth;
 mod database;
 mod handlers;
@@ -21,8 +17,8 @@ mod models;
 mod scryfall;
 use crate::{
     auth::jwt::JwtConfig,
-    database::card::{delete_all_cards, Insert},
-    models::card::scryfall_card::ScryfallCard,
+    database::card::{self, BulkInsert},
+    models::scryfall_card::ScryfallCard,
     scryfall::get_oracle_card_dump,
 };
 
@@ -145,28 +141,34 @@ async fn run() -> Result<(), Box<dyn StdError>> {
         .await
         .map_err(|e| anyhow!("failed to bind address to listener with error: {:?}", e))?;
 
-    delete_all_cards(&app_state.db_pool).await?;
+    card::delete_all(&app_state.db_pool).await?;
 
-    // insert_card(
-    //     &app_state.db_pool,
-    //     scryfall::card_search("satya")
-    //         .await?
-    //         .into_iter()
-    //         .next()
-    //         .expect("no cards found in search"),
-    // )
-    // .await?;
-    
     let dump: Vec<ScryfallCard> = get_oracle_card_dump().await?;
-    let start = std::time::Instant::now();
-    for (i, card) in dump.into_iter().enumerate() {
-        match card.insert(&app_state.db_pool).await {
-            Err(e) => println!("(*3*)<(failed to insert {:?}\nerror: {:?})", card.name, e),
-            _ => (),
-        }
 
-        if i % 100 == 0 {
-            println!("(*3*)<({} cards inserted!)", i);
+    // Before bulk insert, check for duplicates in your data
+    // If these numbers are different, you have duplicates in your Vec!
+    let unique_ids: HashSet<Uuid> = dump.iter().map(|card| card.id).collect();
+    println!(
+        "Total cards: {}, Unique IDs: {}",
+        dump.len(),
+        unique_ids.len()
+    );
+
+    // bulk import in batches
+    let batch_size = 500;
+    let start = std::time::Instant::now();
+    for (i, chunk) in dump.chunks(batch_size).enumerate() {
+        if i > 0 {
+            print!(",")
+        }
+        print!("{}", i + 1);
+
+        let owned_chunk: Vec<ScryfallCard> = chunk.to_owned();
+        match owned_chunk.bulk_insert(&app_state.db_pool).await {
+            Ok(_) => print!("{}", i + 1),
+            Err(e) => {
+                eprintln!("Batch {} failed: {}", i + 1, e);
+            }
         }
     }
     println!("(*3*)<(that took {:?})", start.elapsed());

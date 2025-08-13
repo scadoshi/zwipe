@@ -1,3 +1,13 @@
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use uuid::Uuid;
+
+// pub mod card_face;
+// pub mod image_uris;
+// pub mod legalities;
+// pub mod prices;
+// pub mod related_card;
+
 /// Card profile data linked to ScryfallCard
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct Card {
@@ -6,9 +16,6 @@ pub struct Card {
     pub updated_at: Option<chrono::NaiveDateTime>,
     pub scryfall_card_id: i32,
 }
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use uuid::Uuid;
 
 // pub mod card_face;
 // pub mod image_uris;
