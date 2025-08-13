@@ -107,15 +107,26 @@ else
     print_status "Already authenticated with GitHub CLI"
 fi
 
-# Clone the repository if it doesn't exist
-if [ ! -d "deck-builder" ]; then
-    print_status "Cloning deck-builder repository..."
-    gh repo clone scadoshi/deck-builder
-    cd deck-builder
-else
+# Determine if we need to clone and where we are
+CURRENT_DIR=$(basename "$(pwd)")
+PARENT_DIR=$(basename "$(dirname "$(pwd)")")
+
+if [[ "$CURRENT_DIR" == "deck-builder" || "$CURRENT_DIR" == "deck_builder_api" || "$PARENT_DIR" == "deck-builder" ]]; then
+    print_status "Already inside deck-builder project, no cloning needed"
+    # Navigate to project root if we're in a subdirectory
+    if [[ "$CURRENT_DIR" == "deck_builder_api" ]]; then
+        cd ..
+    elif [[ "$PARENT_DIR" == "deck-builder" ]]; then
+        cd ..
+    fi
+elif [ -d "deck-builder" ]; then
     print_status "Repository already exists, updating..."
     cd deck-builder
     git pull origin main
+else
+    print_status "Cloning deck-builder repository..."
+    gh repo clone scadoshi/deck-builder
+    cd deck-builder
 fi
 
 # Setup PostgreSQL user and database
