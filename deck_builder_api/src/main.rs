@@ -5,10 +5,10 @@ use axum::{
     Router,
 };
 use sqlx::{postgres::PgPoolOptions, PgPool};
-use std::{collections::HashSet, error::Error as StdError, time::Duration};
+use std::{error::Error as StdError, time::Duration};
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
+use tracing::info;
 use tracing_subscriber;
-use uuid::Uuid;
 
 mod auth;
 mod database;
@@ -38,10 +38,10 @@ impl AppState {
         })?;
 
         let db_pool = PgPoolOptions::new()
-            .min_connections(2) // min 2 idle connections in pool
-            .max_connections(10) // max pool size of 10
-            .idle_timeout(Some(Duration::from_secs(300))) // existing conn times out after 5 min
-            .acquire_timeout(Duration::from_secs(5)) // acquiring new conn times out after 5 sec
+            .min_connections(2)
+            .max_connections(10)
+            .idle_timeout(Some(Duration::from_secs(300)))
+            .acquire_timeout(Duration::from_secs(5))
             .connect(&database_url)
             .await
             .map_err(|e| anyhow!("Failed to build connection. Error: {:?}", e))?;
@@ -62,7 +62,9 @@ async fn main() {
 }
 
 async fn run() -> Result<(), Box<dyn StdError>> {
+    let start = std::time::Instant::now();
     tracing_subscriber::fmt::init();
+    info!("Tracing started at {:.2?}", start.elapsed());
     dotenvy::dotenv()?;
 
     let allowed_origins: Vec<HeaderValue> = std::env::var("ALLOWED_ORIGINS")
@@ -81,6 +83,7 @@ async fn run() -> Result<(), Box<dyn StdError>> {
                 e
             )
         })?;
+    info!("Collected allowed origins at {:.2?}", start.elapsed());
 
     // protected routes - these need jwt authentication
     // all handlers here must include `AuthenticatedUser` parameter
@@ -90,6 +93,7 @@ async fn run() -> Result<(), Box<dyn StdError>> {
         "/api/v1",
         Router::new().route("/decks", get(handlers::decks::get_decks)),
     );
+    info!("Generated protected routes at {:.2?}", start.elapsed());
 
     // public routes - no authentication required
     // health checks and auth endpoints are accessible without tokens
@@ -103,10 +107,12 @@ async fn run() -> Result<(), Box<dyn StdError>> {
                 .route("/auth/login", post(handlers::auth::login))
                 .route("/auth/register", post(handlers::auth::register)),
         );
+    info!("Generated public routes at {:.2?}", start.elapsed());
 
     let app_state = AppState::initialize()
         .await
         .map_err(|e| anyhow!("Failed to initialize AppState. Error: {:?}", e))?;
+    info!("Initialized app state at {:.2?}", start.elapsed());
 
     let app = Router::new()
         .merge(public_routes)
@@ -123,6 +129,7 @@ async fn run() -> Result<(), Box<dyn StdError>> {
                 .map_err(|e| anyhow!("Failed to initialize AppState. Error: {:?}", e))?,
         )
         .layer(TraceLayer::new_for_http());
+    info!("Put router together at {:.2?}", start.elapsed());
 
     let bind_address = std::env::var("BIND_ADDRESS").map_err(|e| {
         anyhow!(
@@ -131,26 +138,35 @@ async fn run() -> Result<(), Box<dyn StdError>> {
         )
     })?;
 
-    // println!(
-    //     "{}",
-    //     include_str!("../../logos/deck_builder/ansi_shadow.txt")
-    // );
-    println!("deck_builder_api running on {}", bind_address);
+    // let logo_path = include_str!("../../logos/deck_builder/ansi_shadow.txt");
+    // println!("{}", logo);
+    info!(
+        "Deck Builder running on {} at {:.2?}",
+        bind_address,
+        start.elapsed()
+    );
 
     let listener = tokio::net::TcpListener::bind(&bind_address)
         .await
         .map_err(|e| anyhow!("failed to bind address to listener with error: {:?}", e))?;
 
     card::delete_all(&app_state.db_pool).await?;
+    info!("Deleted all cards at {:.2?}", start.elapsed());
 
+    info!("Getting dump of oracle cards at {:.2?}", start.elapsed());
     let dump: Vec<ScryfallCard> = get_oracle_card_dump().await?;
-    let start = std::time::Instant::now();
-    dump.batch_insert(500, &app_state.db_pool).await?;
-    println!("(*3*)<(that took {:?})", start.elapsed());
+    let batch_size = 500;
+    info!(
+        "Recieved... Batch inserting by {:?} at {:.2?}",
+        batch_size,
+        start.elapsed()
+    );
+    dump.batch_insert(batch_size, &app_state.db_pool).await?;
+    info!("Cards fully inserted at {:.2?}", start.elapsed());
 
     axum::serve(listener, app)
         .await
-        .map_err(|e| anyhow!("failed to serve app with error: {:?}", e))?;
+        .map_err(|e| anyhow!("Failed to serve application with error: {:?}", e))?;
 
     Ok(())
 }
