@@ -144,33 +144,8 @@ async fn run() -> Result<(), Box<dyn StdError>> {
     card::delete_all(&app_state.db_pool).await?;
 
     let dump: Vec<ScryfallCard> = get_oracle_card_dump().await?;
-
-    // Before bulk insert, check for duplicates in your data
-    // If these numbers are different, you have duplicates in your Vec!
-    let unique_ids: HashSet<Uuid> = dump.iter().map(|card| card.id).collect();
-    println!(
-        "Total cards: {}, Unique IDs: {}",
-        dump.len(),
-        unique_ids.len()
-    );
-
-    // bulk import in batches
-    let batch_size = 500;
     let start = std::time::Instant::now();
-    for (i, chunk) in dump.chunks(batch_size).enumerate() {
-        if i > 0 {
-            print!(",")
-        }
-        print!("{}", i + 1);
-
-        let owned_chunk: Vec<ScryfallCard> = chunk.to_owned();
-        match owned_chunk.bulk_insert(&app_state.db_pool).await {
-            Ok(_) => print!("{}", i + 1),
-            Err(e) => {
-                eprintln!("Batch {} failed: {}", i + 1, e);
-            }
-        }
-    }
+    dump.batch_insert(500, &app_state.db_pool).await?;
     println!("(*3*)<(that took {:?})", start.elapsed());
 
     axum::serve(listener, app)

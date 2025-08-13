@@ -104,7 +104,7 @@ alwaysApply: true
 - **Services Pattern**: Clean separation between HTTP concerns and business logic
 - **Production Mindset**: Focus on working, testable code over abstract type safety
 
-### SQLx Database Operations
+### SQLx Database Operations & Bulk Processing
 - **Raw SQL Mastery**: Complete migration from Diesel ORM to SQLx for direct SQL control and better performance
 - **Query Macros**: Proficient with `query_as!` macro for compile-time query verification
 - **Connection Pooling**: Native SQLx PgPool implementation with proper configuration
@@ -119,6 +119,13 @@ alwaysApply: true
 - **Type System Debugging**: Expert-level troubleshooting of JSON deserialization conflicts (attraction_lights integer vs string)
 - **Constraint Management**: Understanding duplicate key patterns and database constraint behavior at scale
 - **Performance Validation**: Demonstrated architecture scales to real-world MTG dataset (~140 cards/second insertion rate)
+- **🎯 BULK OPERATIONS MASTERY**: Advanced multi-row INSERT statements with parameter binding optimization
+- **🎯 DATABASE CONSTRAINT HANDLING**: Expert implementation of `ON CONFLICT DO NOTHING` for graceful duplicate management
+- **🎯 TRAIT EXTRACTION PATTERNS**: Successfully eliminated code duplication through `BindScryfallCardFields` and `BindCardProfileFields` traits
+- **🎯 QUERY BUILDING OPTIMIZATION**: Dynamic placeholder generation and field count calculation from constants
+- **🎯 BATCH PROCESSING STRATEGY**: Chunked processing with resilient error handling and progress reporting
+- **🎯 PRODUCTION PERFORMANCE TUNING**: Optimized batch sizes (100-500 cards) to avoid PostgreSQL parameter limits (79,000+ parameters)
+- **🎯 OWNERSHIP & LIFETIME MASTERY**: Resolved complex SQLx binding patterns, chose pragmatic cloning over complex iterators
 
 ---
 
@@ -238,6 +245,6 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: After completing MASSIVE production data pipeline milestone - 35,400+ MTG cards successfully inserted in <5 minutes
+**Last Updated**: After completing BULK OPERATIONS MASTERY milestone - advanced multi-row INSERTs with trait extraction patterns
 
-**Next Learning Edge**: Batch insertion optimization and advanced database constraint handling for production-scale performance
+**Next Learning Edge**: Scheduled jobs, database diff logic, and incremental data synchronization systems

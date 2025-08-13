@@ -41,6 +41,7 @@ pub async fn delete_all(pg_pool: &PgPool) -> Result<(), sqlx::Error> {
 
 pub trait BulkInsert {
     async fn bulk_insert(self, pg_pool: &PgPool) -> Result<(), sqlx::Error>;
+    async fn batch_insert(self, batch_size: usize, pg_pool: &PgPool) -> Result<(), sqlx::Error>;
 }
 
 impl BulkInsert for Vec<ScryfallCard> {
@@ -123,6 +124,30 @@ impl BulkInsert for Vec<ScryfallCard> {
         }
         cp_query.execute(pg_pool).await?;
 
+        Ok(())
+    }
+    async fn batch_insert(self, batch_size: usize, pg_pool: &PgPool) -> Result<(), sqlx::Error> {
+        // let mut failed_batches = 0;
+        // let mut total_batches = 0;
+
+        for chunk in self.chunks(batch_size) {
+            // total_batches += 1;
+            let owned_chunk: Vec<ScryfallCard> = chunk.to_owned();
+
+            match owned_chunk.bulk_insert(pg_pool).await {
+                Ok(_) => (),
+                Err(_e) => {
+                    // eprintln!("Batch {} failed: {}", total_batches, _e);
+                    // failed_batches += 1;
+                }
+            }
+        }
+
+        // println!(
+        //     "\nCompleted: {}/{} batches succeeded",
+        //     total_batches - failed_batches,
+        //     total_batches
+        // );
         Ok(())
     }
 }

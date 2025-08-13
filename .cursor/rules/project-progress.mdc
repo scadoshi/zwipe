@@ -45,23 +45,39 @@ alwaysApply: true
 - **Type System Debugging Mastery**: Expert-level resolution of JSON deserialization conflicts (attraction_lights)
 - **Performance Validation**: Demonstrated ~140 cards/second insertion rate with real MTG dataset
 - **Constraint Management**: Understanding duplicate key patterns and database behavior at scale
+- **🎯 BULK OPERATIONS COMPLETE**: Advanced multi-row INSERT statements supporting 35,400+ cards with optimized batching
+- **🎯 DATABASE CONSTRAINT HANDLING**: Production-ready `ON CONFLICT DO NOTHING` implementation for graceful duplicate management
+- **🎯 TRAIT EXTRACTION ARCHITECTURE**: `BindScryfallCardFields` and `BindCardProfileFields` traits eliminating massive code duplication
+- **🎯 DYNAMIC QUERY BUILDING**: Field count calculation from constants, dynamic placeholder generation
+- **🎯 BATCH PROCESSING SYSTEM**: Resilient chunked processing with error recovery and progress reporting
+- **🎯 PRODUCTION PERFORMANCE OPTIMIZATION**: Batch size tuning (100-500 cards) optimized for PostgreSQL parameter limits
 
 ### NEXT PRIORITIES - Immediate Roadmap
-1. **Batch Database Operations**: Optimize insertion performance with bulk INSERT statements
-   - **Multi-row INSERTs**: Replace individual inserts with batched operations (10x+ performance gain)
-   - **Conflict Handling**: Implement `ON CONFLICT DO NOTHING` for graceful duplicate management
-   - **Chunked Processing**: Process cards in 1000-card batches to optimize memory usage
-2. **Advanced Card Data Structures**: Add complex nested fields to ScryfallCard model
+1. **Scheduled Card Update Job**: Automated incremental card data synchronization
+   - **Database Diff Logic**: Query existing card IDs to determine what's missing from Scryfall data
+   - **Incremental Import**: Only fetch and insert new/updated cards, skip existing ones
+   - **Error Logging**: Comprehensive logging for failed imports, network issues, and data conflicts
+   - **Scheduling System**: Configurable intervals for automatic updates (daily/weekly)
+   - **Progress Tracking**: Detailed logging of import statistics and performance metrics
+2. **Card Search & Filtering APIs**: Build production search endpoints
+   - **Basic Search**: Name, type, color filtering with query parameter parsing
+   - **Advanced Filters**: CMC range, format legality, power/toughness ranges
+   - **Text Search**: Oracle text and flavor text full-text search
+   - **Performance Optimization**: Database indexing strategy for search fields
+3. **Deck Management APIs**: Complete CRUD operations for user decks
+   - **Create Deck**: New deck creation with validation
+   - **Update Deck**: Name, description, format changes
+   - **Delete Deck**: Soft delete with cascade handling
+   - **Deck Statistics**: Card count, mana curve, color distribution
+4. **Advanced Card Data Integration**: Add remaining complex nested fields
    - **Card Faces**: Multi-faced card support for transformers/modal cards
    - **Image URIs**: Card image URL management for front-end display
    - **Legalities**: Format legality tracking (Standard, Modern, Commander, etc.)
    - **Prices**: Market price data integration
-3. **Custom Serde Review Session**: Deep dive into custom deserializers (attraction_lights implementation)
+5. **Custom Serde Review Session**: Deep dive into custom deserializers (attraction_lights implementation)
    - **Understanding**: Review `deserialize_int_or_string_array` pattern comprehension
    - **Pattern Recognition**: Learn when and how to implement custom serde deserializers
    - **Best Practices**: Explore serde_with crate and other advanced serialization techniques
-4. **Deck CRUD Operations**: Create, update, delete deck functionality
-5. **Card Collection Management**: User card ownership and deck building logic
 
 ### BACKLOG - Planned Future Work
 **Testing & Quality Assurance:**
