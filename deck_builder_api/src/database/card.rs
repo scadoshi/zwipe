@@ -6,7 +6,6 @@ use sqlx::{postgres::PgArguments, query, query::Query, query_scalar, PgPool, Pos
 use tracing::{info, warn};
 use uuid::Uuid;
 
-#[allow(dead_code)]
 pub trait SingleInsert {
     async fn insert(self, pg_pool: &PgPool) -> Result<(), sqlx::Error>;
 }
@@ -83,7 +82,7 @@ impl MultipleInsert for Vec<ScryfallCard> {
             );
             sc_query_sql.push(')');
         }
-        sc_query_sql.push_str(" ON CONFLICT (id) DO NOTHING");
+        // sc_query_sql.push_str(" ON CONFLICT (id) DO NOTHING");
 
         // build query with all binds
         let mut sc_query = query(sc_query_sql.as_str());
@@ -118,7 +117,7 @@ impl MultipleInsert for Vec<ScryfallCard> {
             );
             cp_query_sql.push(')');
         }
-        cp_query_sql.push_str(" ON CONFLICT (scryfall_card_id) DO NOTHING");
+        // cp_query_sql.push_str(" ON CONFLICT (scryfall_card_id) DO NOTHING");
 
         // build query with all binds
         let mut cp_query = query(cp_query_sql.as_str());
@@ -140,8 +139,35 @@ impl MultipleInsert for Vec<ScryfallCard> {
             match owned_chunk.bulk_insert(pg_pool).await {
                 Ok(_) => (),
                 Err(e) => {
-                    warn!("Batch #{:?} failed with error: {:?}", total_batches, e);
                     failed_batches += 1;
+                    warn!("Batch #{} failed with error: {:?}", total_batches, e);
+                    warn!("Retrying batch #{:?} one card at a time", total_batches);
+
+                    let mut total_card_inserts = 1;
+                    let mut failed_card_inserts = 0;
+                    for card in chunk.to_owned() {
+                        total_card_inserts += 1;
+
+                        let card_name = card.name.clone();
+                        let card_id = card.id.clone();
+
+                        match card.insert(pg_pool).await {
+                            Ok(_) => (),
+                            Err(e) => {
+                                warn!(
+                                    "Card {:?} ({}) in batch #{} failed with error: {:?}",
+                                    card_name, card_id, total_batches, e
+                                );
+                                failed_card_inserts += 1;
+                            }
+                        }
+                    }
+                    info!(
+                        "Batch #{} completed {}/{} inserts",
+                        total_batches,
+                        total_card_inserts - failed_card_inserts,
+                        total_card_inserts
+                    );
                 }
             }
         }
@@ -176,7 +202,7 @@ impl MultipleInsert for Vec<ScryfallCard> {
 }
 
 pub async fn scryfall_sync(pg_pool: &PgPool) -> Result<(), Box<dyn StdError>> {
-    // delete_all(&pg_pool).await?;
+    delete_all(&pg_pool).await?;
     // info!("Deleted all cards ");
     info!("Beginning Scryfall sync");
     info!("Fetching oracle cards");
