@@ -15,8 +15,9 @@ A mobile-first app where users swipe right to add cards to their deck, left to s
 
 ### Tech Stack
 - **Backend**: Rust (Axum framework) + PostgreSQL
-- **Frontend**: Flutter (iOS/Android)
-- **API**: RESTful JSON API between Rust and Flutter
+- **Frontend**: Dioxus (Rust cross-platform) for iOS/Android/Web
+- **API**: RESTful JSON API with shared Rust types
+- **Architecture**: Full-stack Rust with shared models and business logic
 
 ### Core Data Models
 ```
@@ -200,12 +201,12 @@ DeckCard
 - PostgreSQL database setup
 - Card data seeding
 
-### Phase 2: Flutter App Core (3-4 weeks)
-- Flutter project setup
-- Basic UI screens
-- API integration
-- Authentication flow
-- Card swiping interface
+### Phase 2: Dioxus Mobile App (3-4 weeks)
+- Dioxus project setup for mobile targets
+- Shared type definitions with backend
+- Component-based UI architecture
+- API integration with shared HTTP client
+- Card swiping interface with touch gestures
 
 ### Phase 3: MVP Polish (1-2 weeks)
 - Bug fixes and performance optimization
