@@ -224,18 +224,7 @@ pub async fn scryfall_sync(pg_pool: &PgPool) -> Result<(), Box<dyn StdError>> {
     Ok(())
 }
 
-// field stuff below
-//
-// add these fields later
-// will have to build structs for them
-// make sure their order matches what is in mod.rs as you add
-// all_parts,
-// card_faces,
-// legalities
-// image_uris,
-// prices: Prices,
-// purchase_uris,
-// related_uris,
+// fields for use in query field tuples
 const SCRYFALL_CARD_FIELDS: &str = r#"
     arena_id,
     id,
@@ -253,6 +242,8 @@ const SCRYFALL_CARD_FIELDS: &str = r#"
     rulings_uri,
     scryfall_uri,
     uri,
+    all_parts,
+    card_faces,
     cmc,
     color_identity,
     color_indicator,
@@ -262,6 +253,7 @@ const SCRYFALL_CARD_FIELDS: &str = r#"
     game_changer,
     hand_modifier,
     keywords,
+    legalities,
     life_modifier,
     loyalty,
     mana_cost,
@@ -291,7 +283,9 @@ const SCRYFALL_CARD_FIELDS: &str = r#"
     highres_image,
     illustration_id,
     image_status,
+    image_uris,
     oversized,
+    prices,
     printed_name,
     printed_text,
     printed_type_line,
@@ -353,8 +347,8 @@ impl BindScryfallCardFields for Query<'_, Postgres, PgArguments> {
             .bind(card.uri)
             // Gameplay Fields
             // Cards have the following properties relevant to the game rules
-            // scryfall_card.all_parts
-            // scryfall_card.card_faces
+            .bind(card.all_parts)
+            .bind(card.card_faces)
             .bind(card.cmc)
             .bind(card.color_identity)
             .bind(card.color_indicator)
@@ -364,7 +358,7 @@ impl BindScryfallCardFields for Query<'_, Postgres, PgArguments> {
             .bind(card.game_changer)
             .bind(card.hand_modifier)
             .bind(card.keywords)
-            // scryfall_card.legalities
+            .bind(card.legalities)
             .bind(card.life_modifier)
             .bind(card.loyalty)
             .bind(card.mana_cost)
@@ -396,9 +390,9 @@ impl BindScryfallCardFields for Query<'_, Postgres, PgArguments> {
             .bind(card.highres_image)
             .bind(card.illustration_id)
             .bind(card.image_status)
-            // scryfall_card.image_uris
+            .bind(card.image_uris)
             .bind(card.oversized)
-            // scryfall_card.prices: Prices,
+            .bind(card.prices)
             .bind(card.printed_name)
             .bind(card.printed_text)
             .bind(card.printed_type_line)

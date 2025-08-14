@@ -20,8 +20,8 @@ CREATE TABLE scryfall_cards (
 
     -- Gameplay Fields
     -- Cards have the following properties relevant to the game rules
-    -- all_parts JSONB,
-    -- card_faces JSONB[], (*3*)
+    all_parts JSONB[],
+    card_faces JSONB[],
     cmc FLOAT NOT NULL,
     color_identity TEXT[] NOT NULL,
     color_indicator TEXT[],
@@ -31,7 +31,7 @@ CREATE TABLE scryfall_cards (
     game_changer BOOLEAN,
     hand_modifier VARCHAR,
     keywords TEXT[],
-    -- legalities JSONB, (*3*)
+    legalities JSONB NOT NULL,
     life_modifier VARCHAR,
     loyalty VARCHAR,
     mana_cost VARCHAR,
@@ -65,9 +65,9 @@ CREATE TABLE scryfall_cards (
     highres_image BOOLEAN NOT NULL,
     illustration_id UUID,
     image_status VARCHAR NOT NULL,
-    -- image_uris JSONB, (*3*)
+    image_uris JSONB,
     oversized BOOLEAN NOT NULL,
-    -- prices JSONB NOT NULL, (*3*)
+    prices JSONB NOT NULL,
     printed_name VARCHAR,
     printed_text VARCHAR,
     printed_type_line VARCHAR,

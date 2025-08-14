@@ -1,15 +1,12 @@
+pub mod nested_types;
+use nested_types::{RelatedCard, Legalities, Prices, ImageUris, CardFace};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Value};
 use uuid::Uuid;
-
-// pub mod card_face;
-// pub mod image_uris;
-// pub mod legalities;
-// pub mod prices;
-// pub mod related_card;
+use sqlx::{FromRow, types::Json};
 
 /// Card profile data linked to ScryfallCard
-#[derive(Debug, Clone, sqlx::FromRow)]
+#[derive(Debug, Clone, FromRow)]
 pub struct Card {
     pub id: Option<i32>,
     pub created_at: Option<chrono::NaiveDateTime>,
@@ -17,19 +14,8 @@ pub struct Card {
     pub scryfall_card_id: i32,
 }
 
-// pub mod card_face;
-// pub mod image_uris;
-// pub mod legalities;
-// pub mod prices;
-// pub mod related_card;
-
-// - [ ] ImageUris
-// - [ ] Legalities
-// - [ ] Prices
-// - [ ] RelatedCard
-
 /// Card data from scryfall
-#[derive(Debug, Clone, Deserialize, Serialize, sqlx::FromRow)]
+#[derive(Debug, Clone, Deserialize, Serialize, FromRow)]
 pub struct ScryfallCard {
     // Core Card Fields
     // Cards have the following core properties
@@ -52,8 +38,8 @@ pub struct ScryfallCard {
 
     // Gameplay Fields
     // Cards have the following properties relevant to the game rules
-    // pub all_parts: Option<Vec<RelatedCard>>, (*3*)
-    // pub card_faces: Option<Vec<CardFace>>, (*3*)
+    pub all_parts: Option<Vec<Json<RelatedCard>>>,
+    pub card_faces: Option<Vec<Json<CardFace>>>,
     pub cmc: f64,
     pub color_identity: Vec<String>,
     pub color_indicator: Option<Vec<String>>,
@@ -63,7 +49,7 @@ pub struct ScryfallCard {
     pub game_changer: Option<bool>,
     pub hand_modifier: Option<String>,
     pub keywords: Option<Vec<String>>,
-    // pub legalities: Legalities, (*3*)
+    pub legalities: Json<Legalities>,
     pub life_modifier: Option<String>,
     pub loyalty: Option<String>,
     pub mana_cost: Option<String>,
@@ -98,17 +84,17 @@ pub struct ScryfallCard {
     pub highres_image: bool,
     pub illustration_id: Option<Uuid>,
     pub image_status: String,
-    // pub image_uris: ImageUris, (*3*)
+    pub image_uris: Option<Json<ImageUris>>,
     pub oversized: bool,
-    // pub prices: Prices, (*3*)
+    pub prices: Json<Prices>,
     pub printed_name: Option<String>,
     pub printed_text: Option<String>,
     pub printed_type_line: Option<String>,
     pub promo: bool,
     pub promo_types: Option<Vec<String>>,
-    // pub purchase_uris: Option<serde_json::Value>, // fix later (*3*)
+    // pub purchase_uris: Option<serde_json::Value>,
     pub rarity: String,
-    // pub related_uris: serde_json::Value, // fix later (*3*)
+    // pub related_uris: serde_json::Value,
     pub released_at: chrono::NaiveDate,
     pub reprint: bool,
     pub scryfall_set_uri: String,
