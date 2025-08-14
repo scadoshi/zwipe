@@ -1,16 +1,17 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, error::Error as StdError};
 
-use crate::models::scryfall_card::ScryfallCard;
+use crate::{models::scryfall_card::ScryfallCard, scryfall::fetch_oracle_cards};
 use itertools::Itertools;
-use sqlx::{postgres::PgArguments, query, query::Query, PgPool, Postgres};
+use sqlx::{postgres::PgArguments, query, query::Query, query_scalar, PgPool, Postgres};
+use tracing::{info, warn};
 use uuid::Uuid;
 
 #[allow(dead_code)]
-pub trait Insert {
+pub trait SingleInsert {
     async fn insert(self, pg_pool: &PgPool) -> Result<(), sqlx::Error>;
 }
 
-impl Insert for ScryfallCard {
+impl SingleInsert for ScryfallCard {
     async fn insert(self, pg_pool: &PgPool) -> Result<(), sqlx::Error> {
         let scryfall_card_id = self.id.clone();
         let query_sql = format!(
@@ -32,19 +33,21 @@ impl Insert for ScryfallCard {
     }
 }
 
+#[allow(dead_code)]
 pub async fn delete_all(pg_pool: &PgPool) -> Result<(), sqlx::Error> {
-    query!("DELETE FROM scryfall_cards;")
+    query("DELETE FROM scryfall_cards;")
         .execute(pg_pool)
         .await?;
     Ok(())
 }
 
-pub trait BulkInsert {
+pub trait MultipleInsert {
     async fn bulk_insert(self, pg_pool: &PgPool) -> Result<(), sqlx::Error>;
     async fn batch_insert(self, batch_size: usize, pg_pool: &PgPool) -> Result<(), sqlx::Error>;
+    async fn smart_insert(self, batch_size: usize, pg_pool: &PgPool) -> Result<(), sqlx::Error>;
 }
 
-impl BulkInsert for Vec<ScryfallCard> {
+impl MultipleInsert for Vec<ScryfallCard> {
     async fn bulk_insert(self, pg_pool: &PgPool) -> Result<(), sqlx::Error> {
         // for building out value tuples
         let card_count = self.len();
@@ -127,31 +130,76 @@ impl BulkInsert for Vec<ScryfallCard> {
         Ok(())
     }
     async fn batch_insert(self, batch_size: usize, pg_pool: &PgPool) -> Result<(), sqlx::Error> {
-        // let mut failed_batches = 0;
-        // let mut total_batches = 0;
+        let mut failed_batches = 0;
+        let mut total_batches = 0;
 
         for chunk in self.chunks(batch_size) {
-            // total_batches += 1;
+            total_batches += 1;
             let owned_chunk: Vec<ScryfallCard> = chunk.to_owned();
 
             match owned_chunk.bulk_insert(pg_pool).await {
                 Ok(_) => (),
-                Err(_e) => {
-                    // eprintln!("Batch {} failed: {}", total_batches, _e);
-                    // failed_batches += 1;
+                Err(e) => {
+                    warn!("Batch #{:?} failed with error: {:?}", total_batches, e);
+                    failed_batches += 1;
                 }
             }
         }
 
-        // println!(
-        //     "\nCompleted: {}/{} batches succeeded",
-        //     total_batches - failed_batches,
-        //     total_batches
-        // );
+        info!(
+            "Completed {}/{} batches successfully",
+            total_batches - failed_batches,
+            total_batches
+        );
+        Ok(())
+    }
+    async fn smart_insert(self, batch_size: usize, pg_pool: &PgPool) -> Result<(), sqlx::Error> {
+        let existing_ids: Vec<Uuid> = query_scalar("SELECT id FROM scryfall_cards")
+            .fetch_all(pg_pool)
+            .await?;
+
+        let new_cards: Vec<ScryfallCard> = self
+            .into_iter()
+            .filter(|x| !existing_ids.contains(&x.id))
+            .collect();
+        info!("Calculated difference");
+
+        if new_cards.is_empty() {
+            info!("Database up to date");
+            return Ok(());
+        }
+
+        new_cards.batch_insert(batch_size, pg_pool).await?;
+
         Ok(())
     }
 }
 
+pub async fn scryfall_sync(pg_pool: &PgPool) -> Result<(), Box<dyn StdError>> {
+    // delete_all(&pg_pool).await?;
+    // info!("Deleted all cards ");
+    info!("Beginning Scryfall sync");
+    info!("Fetching oracle cards");
+    let bulk_data: Vec<ScryfallCard> = fetch_oracle_cards().await?;
+    info!("Scryfall returned {} cards", bulk_data.len());
+    let scryfall_cards_row_count: i64 = query_scalar("SELECT COUNT(id) FROM scryfall_cards")
+        .fetch_one(pg_pool)
+        .await?;
+    info!("Database has {} cards", scryfall_cards_row_count);
+    let batch_size = 500;
+    info!("Smart inserting by batch size {:?}", batch_size);
+    bulk_data.smart_insert(batch_size, &pg_pool).await?;
+    let scryfall_cards_row_count: i64 = query_scalar("SELECT COUNT(id) FROM scryfall_cards")
+        .fetch_one(pg_pool)
+        .await?;
+    info!("Database now has {} cards", scryfall_cards_row_count);
+
+    info!("Database sync completed");
+    Ok(())
+}
+
+// field stuff below
+//
 // add these fields later
 // will have to build structs for them
 // make sure their order matches what is in mod.rs as you add

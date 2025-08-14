@@ -65,7 +65,7 @@ struct BulkDataObject {
     // uri: String,
 }
 
-pub async fn get_oracle_card_dump() -> Result<Vec<ScryfallCard>, Box<dyn StdError>> {
+pub async fn fetch_oracle_cards() -> Result<Vec<ScryfallCard>, Box<dyn StdError>> {
     Ok(from_value::<Vec<ScryfallCard>>(
         from_value::<BulkDataObject>(
             "https://api.scryfall.com/bulk-data/oracle-cards"

@@ -2,6 +2,7 @@ use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use std::error::Error as StdError;
 use thiserror::Error;
+use tracing::info;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct UserClaims {
@@ -19,6 +20,7 @@ pub struct JwtConfig {
 impl JwtConfig {
     pub fn from_env() -> Result<Self, Box<dyn StdError>> {
         let secret = std::env::var("JWT_SECRET")?;
+        info!("Extracted JSON web token secret from environment");
         Ok(JwtConfig { secret })
     }
 }

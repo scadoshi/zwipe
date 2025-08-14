@@ -15,12 +15,7 @@ mod database;
 mod handlers;
 mod models;
 mod scryfall;
-use crate::{
-    auth::jwt::JwtConfig,
-    database::card::{self, BulkInsert},
-    models::scryfall_card::ScryfallCard,
-    scryfall::get_oracle_card_dump,
-};
+use crate::auth::jwt::JwtConfig;
 
 #[derive(Clone)]
 struct AppState {
@@ -36,6 +31,7 @@ impl AppState {
                 e
             )
         })?;
+        info!("Extracted database URL from environment");
 
         let db_pool = PgPoolOptions::new()
             .min_connections(2)
@@ -45,6 +41,7 @@ impl AppState {
             .connect(&database_url)
             .await
             .map_err(|e| anyhow!("Failed to build connection. Error: {:?}", e))?;
+        info!("Generated database connection pool");
 
         Ok(Self {
             db_pool,
@@ -55,6 +52,8 @@ impl AppState {
 
 #[tokio::main]
 async fn main() {
+    let logo = include_str!("../../logos/deck_builder/ansi_shadow.txt");
+    println!("{}", logo);
     match run().await {
         Ok(_) => (),
         Err(e) => eprintln!("Failed to run main. Error: {:?}", e),
@@ -62,9 +61,8 @@ async fn main() {
 }
 
 async fn run() -> Result<(), Box<dyn StdError>> {
-    let start = std::time::Instant::now();
     tracing_subscriber::fmt::init();
-    info!("Tracing started at {:.2?}", start.elapsed());
+    info!("Tracing started");
     dotenvy::dotenv()?;
 
     let allowed_origins: Vec<HeaderValue> = std::env::var("ALLOWED_ORIGINS")
@@ -83,7 +81,7 @@ async fn run() -> Result<(), Box<dyn StdError>> {
                 e
             )
         })?;
-    info!("Collected allowed origins at {:.2?}", start.elapsed());
+    info!("Collected allowed origins");
 
     // protected routes - these need jwt authentication
     // all handlers here must include `AuthenticatedUser` parameter
@@ -93,7 +91,7 @@ async fn run() -> Result<(), Box<dyn StdError>> {
         "/api/v1",
         Router::new().route("/decks", get(handlers::decks::get_decks)),
     );
-    info!("Generated protected routes at {:.2?}", start.elapsed());
+    info!("Generated protected routes");
 
     // public routes - no authentication required
     // health checks and auth endpoints are accessible without tokens
@@ -107,12 +105,12 @@ async fn run() -> Result<(), Box<dyn StdError>> {
                 .route("/auth/login", post(handlers::auth::login))
                 .route("/auth/register", post(handlers::auth::register)),
         );
-    info!("Generated public routes at {:.2?}", start.elapsed());
+    info!("Generated public routes");
 
     let app_state = AppState::initialize()
         .await
         .map_err(|e| anyhow!("Failed to initialize AppState. Error: {:?}", e))?;
-    info!("Initialized app state at {:.2?}", start.elapsed());
+    info!("Initialized app state");
 
     let app = Router::new()
         .merge(public_routes)
@@ -123,13 +121,9 @@ async fn run() -> Result<(), Box<dyn StdError>> {
                 .allow_methods([Method::GET, Method::POST])
                 .allow_headers([header::CONTENT_TYPE]),
         )
-        .with_state(
-            AppState::initialize()
-                .await
-                .map_err(|e| anyhow!("Failed to initialize AppState. Error: {:?}", e))?,
-        )
+        .with_state(app_state.clone())
         .layer(TraceLayer::new_for_http());
-    info!("Put router together at {:.2?}", start.elapsed());
+    info!("Put router together");
 
     let bind_address = std::env::var("BIND_ADDRESS").map_err(|e| {
         anyhow!(
@@ -138,31 +132,13 @@ async fn run() -> Result<(), Box<dyn StdError>> {
         )
     })?;
 
-    // let logo_path = include_str!("../../logos/deck_builder/ansi_shadow.txt");
-    // println!("{}", logo);
-    info!(
-        "Deck Builder running on {} at {:.2?}",
-        bind_address,
-        start.elapsed()
-    );
+    crate::database::card::scryfall_sync(&app_state.db_pool).await?;
+
+    info!("Deck Builder API running on {}", bind_address);
 
     let listener = tokio::net::TcpListener::bind(&bind_address)
         .await
         .map_err(|e| anyhow!("failed to bind address to listener with error: {:?}", e))?;
-
-    card::delete_all(&app_state.db_pool).await?;
-    info!("Deleted all cards at {:.2?}", start.elapsed());
-
-    info!("Getting dump of oracle cards at {:.2?}", start.elapsed());
-    let dump: Vec<ScryfallCard> = get_oracle_card_dump().await?;
-    let batch_size = 500;
-    info!(
-        "Recieved... Batch inserting by {:?} at {:.2?}",
-        batch_size,
-        start.elapsed()
-    );
-    dump.batch_insert(batch_size, &app_state.db_pool).await?;
-    info!("Cards fully inserted at {:.2?}", start.elapsed());
 
     axum::serve(listener, app)
         .await
