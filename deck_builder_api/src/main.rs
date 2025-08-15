@@ -1,62 +1,26 @@
+mod adapters;
+mod domain;
+
+use crate::adapters::{auth, database};
+
+
 use anyhow::anyhow;
 use axum::{
     http::{header, HeaderValue, Method},
-    routing::{get, post},
+    routin::{get, post},
     Router,
 };
-use sqlx::{postgres::PgPoolOptions, PgPool};
-use std::{error::Error as StdError, time::Duration};
+use sqlx::postgres::PgPoolOptions;
+use std::time::Duration;
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
-use tracing::info;
-use tracing_subscriber;
-
-mod auth;
-mod database;
-mod handlers;
-mod models;
-mod scryfall;
-use crate::auth::jwt::JwtConfig;
-
-#[derive(Clone)]
-struct AppState {
-    db_pool: PgPool,
-    jwt_config: JwtConfig,
-}
-
-impl AppState {
-    async fn initialize() -> Result<Self, Box<dyn StdError>> {
-        let database_url = std::env::var("DATABASE_URL").map_err(|e| {
-            anyhow!(
-                "DATABASE_URL environment variable must be set. Error: {:?}",
-                e
-            )
-        })?;
-        info!("Extracted database URL from environment");
-
-        let db_pool = PgPoolOptions::new()
-            .min_connections(2)
-            .max_connections(10)
-            .idle_timeout(Some(Duration::from_secs(300)))
-            .acquire_timeout(Duration::from_secs(5))
-            .connect(&database_url)
-            .await
-            .map_err(|e| anyhow!("Failed to build connection. Error: {:?}", e))?;
-        info!("Generated database connection pool");
-
-        Ok(Self {
-            db_pool,
-            jwt_config: JwtConfig::from_env()?,
-        })
-    }
-}
+use tracing::{error, info, warn};
 
 #[tokio::main]
 async fn main() {
-    let logo = include_str!("../../logos/deck_builder/ansi_shadow.txt");
-    println!("{}", logo);
+    domain::print_logo();
     match run().await {
         Ok(_) => (),
-        Err(e) => eprintln!("Failed to run main. Error: {:?}", e),
+        Err(e) => error!("Failed to run main. Error: {:?}", e),
     }
 }
 

@@ -1,5 +1,5 @@
 use crate::{
-    auth::{
+    handlers::auth::{
         jwt::generate_jwt,
         password::{hash_password, verify_password},
     },

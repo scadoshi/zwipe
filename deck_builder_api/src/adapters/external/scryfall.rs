@@ -6,7 +6,7 @@ use serde::Deserialize;
 use serde_json::from_value;
 use std::error::Error as StdError;
 
-use crate::models::scryfall_card::ScryfallCard;
+use crate::domain::models::scryfall_card::ScryfallCard;
 
 // this generates a new client every time
 // very slow update at some point
@@ -80,4 +80,27 @@ pub async fn fetch_oracle_cards() -> Result<Vec<ScryfallCard>, Box<dyn StdError>
         .json()
         .await?,
     )?)
+}
+
+pub async fn scryfall_sync(pg_pool: &PgPool) -> Result<(), Box<dyn StdError>> {
+    delete_all(&pg_pool).await?;
+    info!("Deleted all cards ");
+    info!("Beginning Scryfall sync");
+    info!("Fetching oracle cards");
+    let bulk_data: Vec<ScryfallCard> = fetch_oracle_cards().await?;
+    info!("Scryfall returned {} cards", bulk_data.len());
+    let scryfall_cards_row_count: i64 = query_scalar("SELECT COUNT(id) FROM scryfall_cards")
+        .fetch_one(pg_pool)
+        .await?;
+    info!("Database has {} cards", scryfall_cards_row_count);
+    let batch_size = 500;
+    info!("Smart inserting by batch size {:?}", batch_size);
+    bulk_data.smart_insert(batch_size, &pg_pool).await?;
+    let scryfall_cards_row_count: i64 = query_scalar("SELECT COUNT(id) FROM scryfall_cards")
+        .fetch_one(pg_pool)
+        .await?;
+    info!("Database now has {} cards", scryfall_cards_row_count);
+
+    info!("Database sync completed");
+    Ok(())
 }
