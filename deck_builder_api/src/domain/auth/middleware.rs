@@ -9,7 +9,8 @@ use axum_extra::{
     TypedHeader,
 };
 
-use crate::adapters::{auth::jwt::validate_jwt, AppState};
+use crate::adapters::AppState;
+use crate::domain::auth::jwt::validate_jwt;
 
 pub struct AuthenticatedUser {
     pub user_id: i32,

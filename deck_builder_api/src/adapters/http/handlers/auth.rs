@@ -1,6 +1,6 @@
-use crate::adapters::auth::jwt::generate_jwt;
-use crate::adapters::auth::password::{hash_password, verify_password};
 use crate::adapters::AppState;
+use crate::domain::auth::jwt::generate_jwt;
+use crate::domain::auth::password::{hash_password, verify_password};
 use crate::domain::models::user::User;
 
 use axum::{extract::State, http::StatusCode, response::Json};

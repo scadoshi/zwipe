@@ -1,5 +1,7 @@
 mod adapters;
+mod config;
 mod domain;
+mod ports;
 
 use crate::adapters::external::scryfall::scryfall_sync;
 use crate::adapters::http::handlers;

@@ -1,5 +1,5 @@
-use crate::adapters::auth::middleware::AuthenticatedUser;
 use crate::adapters::AppState;
+use crate::domain::auth::middleware::AuthenticatedUser;
 use crate::domain::models::deck::Deck;
 
 use axum::{extract::State, http::StatusCode, response::Json};

@@ -18,9 +18,8 @@ pub struct JwtConfig {
 }
 
 impl JwtConfig {
-    pub fn from_env() -> Result<Self, Box<dyn StdError>> {
+    pub fn from_env() -> Result<Self, std::env::VarError> {
         let secret = std::env::var("JWT_SECRET")?;
-        info!("Extracted JSON web token secret from environment");
         Ok(JwtConfig { secret })
     }
 }
@@ -31,7 +30,7 @@ pub enum JwtGenerationError {
     InvalidUserId(i32),
     #[error("Invalid email: {0}")]
     InvalidEmail(String),
-    #[error("Missing or empty secret")]
+    #[error("Missing secret")]
     MissingSecret,
 }
 
