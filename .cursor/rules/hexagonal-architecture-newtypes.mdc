@@ -1,0 +1,367 @@
+---
+description: Hexagonal architecture and newtype patterns for maintainable, type-safe Rust applications
+alwaysApply: true
+---
+
+# Hexagonal Architecture & Newtype Patterns
+
+## Core Architectural Principles
+
+### Hexagonal Architecture Fundamentals
+- **Domain First**: Business logic lives in the center, independent of external concerns
+- **Ports & Adapters**: Define interfaces (ports) and implementations (adapters) for external dependencies
+- **Dependency Inversion**: Core domain depends only on abstractions, never concrete implementations
+- **Clean Boundaries**: Clear separation between HTTP, database, external APIs, and business logic
+
+### When to Apply Hexagonal Architecture
+✅ **USE for:**
+- Applications with complex business logic
+- Systems requiring multiple external integrations
+- Projects expecting long-term maintenance
+- Teams of 3+ developers
+- Applications that will scale or change dependencies
+
+❌ **AVOID for:**
+- Simple CRUD applications with minimal business logic
+- High-performance systems where nanoseconds matter
+- Solo developer prototypes with no scaling requirements
+
+## Architectural Layers & Responsibilities
+
+### 1. Domain Layer (Center of Hexagon)
+**Location**: `src/domain/`
+**Purpose**: Pure business logic, no external dependencies
+
+```rust
+// Domain models with business rules
+pub struct User {
+    id: UserId,           // Newtype for type safety
+    email: EmailAddress,  // Validated newtype
+    created_at: Timestamp,
+}
+
+// Domain services with business logic
+pub trait UserService {
+    async fn register_user(&self, email: EmailAddress, password: Password) -> Result<User, DomainError>;
+    async fn authenticate(&self, email: EmailAddress, password: Password) -> Result<AuthToken, DomainError>;
+}
+```
+
+**Rules**:
+- No imports from `adapters/` or external crates (except fundamental ones like `serde`, `uuid`)
+- All external data must be converted to domain types at boundaries
+- Use Result types for all fallible operations
+- Define domain errors that map to business scenarios
+
+### 2. Ports Layer (Interfaces)
+**Location**: `src/domain/ports/` or `src/ports/`
+**Purpose**: Define contracts for external dependencies
+
+```rust
+// Repository trait (port)
+#[async_trait]
+pub trait UserRepository {
+    async fn save(&self, user: &User) -> Result<(), RepositoryError>;
+    async fn find_by_email(&self, email: &EmailAddress) -> Result<Option<User>, RepositoryError>;
+}
+
+// External service trait (port)
+#[async_trait]
+pub trait EmailService {
+    async fn send_welcome_email(&self, user: &User) -> Result<(), EmailError>;
+}
+```
+
+### 3. Adapters Layer (Implementations)
+**Location**: `src/adapters/`
+**Purpose**: Implement ports, handle external system details
+
+```rust
+// Database adapter
+pub struct PostgresUserRepository {
+    pool: PgPool,
+}
+
+#[async_trait]
+impl UserRepository for PostgresUserRepository {
+    async fn save(&self, user: &User) -> Result<(), RepositoryError> {
+        // Convert domain User to database representation
+        // Handle database-specific errors
+        // Never let SQLx types leak to domain
+    }
+}
+
+// HTTP adapter
+pub struct AxumUserHandlers<S: UserService> {
+    service: Arc<S>,
+}
+
+impl<S: UserService> AxumUserHandlers<S> {
+    pub async fn register(
+        State(handlers): State<Self>,
+        Json(request): Json<RegisterRequest>
+    ) -> Result<Json<UserResponse>, StatusCode> {
+        // Convert HTTP types to domain types
+        // Call domain service
+        // Convert domain response to HTTP types
+    }
+}
+```
+
+## Newtype Patterns for Type Safety
+
+### Smart Constructors (Validation at Creation)
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EmailAddress(String);
+
+impl EmailAddress {
+    pub fn new(email: String) -> Result<Self, ValidationError> {
+        if email.contains('@') && email.len() > 5 {
+            Ok(EmailAddress(email.to_lowercase()))
+        } else {
+            Err(ValidationError::InvalidEmail)
+        }
+    }
+    
+    // Only provide read access, no mutation
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+```
+
+### ID Types for Domain Safety
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct UserId(Uuid);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]  
+pub struct DeckId(Uuid);
+
+// Compiler prevents mixing up IDs
+fn get_user_decks(user_id: UserId) -> Vec<DeckId> {
+    // get_user_decks(deck_id) <- COMPILE ERROR!
+}
+```
+
+### Validated Primitives
+```rust
+#[derive(Debug, Clone)]
+pub struct Password(String);
+
+impl Password {
+    pub fn new(raw: String) -> Result<Self, ValidationError> {
+        if raw.len() >= 8 {
+            Ok(Password(raw))
+        } else {
+            Err(ValidationError::PasswordTooShort)
+        }
+    }
+    
+    // Never expose raw password
+    pub fn verify(&self, hash: &str) -> bool {
+        // Use argon2 to verify
+    }
+}
+```
+
+## File Organization Pattern
+
+```
+src/
+├── domain/                 # Core business logic
+│   ├── models/            # Domain entities with newtypes
+│   ├── services/          # Business logic implementations  
+│   ├── ports/             # Interface definitions
+│   └── errors.rs          # Domain-specific errors
+├── adapters/              # External system implementations
+│   ├── database/          # Database adapters
+│   ├── http/              # HTTP handlers
+│   ├── external/          # Third-party API clients
+│   └── mod.rs
+├── config.rs              # Application configuration
+└── main.rs                # Dependency injection & startup
+```
+
+## Dependency Injection Pattern
+
+### AppState with Trait Objects
+```rust
+pub struct AppState {
+    pub user_service: Arc<dyn UserService + Send + Sync>,
+    pub deck_service: Arc<dyn DeckService + Send + Sync>,
+}
+
+impl AppState {
+    pub fn new(
+        user_repo: Arc<dyn UserRepository + Send + Sync>,
+        deck_repo: Arc<dyn DeckRepository + Send + Sync>,
+    ) -> Self {
+        Self {
+            user_service: Arc::new(UserServiceImpl::new(user_repo)),
+            deck_service: Arc::new(DeckServiceImpl::new(deck_repo, user_repo)),
+        }
+    }
+}
+```
+
+## Error Handling Strategy
+
+### Domain Errors (Business Logic)
+```rust
+#[derive(Debug, thiserror::Error)]
+pub enum UserDomainError {
+    #[error("Email already registered")]
+    EmailAlreadyExists,
+    #[error("Invalid credentials")]
+    InvalidCredentials,
+    #[error("User not found")]
+    UserNotFound,
+}
+```
+
+### Adapter Errors (Infrastructure)
+```rust
+#[derive(Debug, thiserror::Error)]
+pub enum RepositoryError {
+    #[error("Database connection failed")]
+    ConnectionFailed,
+    #[error("Constraint violation: {0}")]
+    ConstraintViolation(String),
+    #[error("Unexpected error: {0}")]
+    Unexpected(#[from] sqlx::Error),
+}
+```
+
+### HTTP Error Mapping
+```rust
+impl From<UserDomainError> for StatusCode {
+    fn from(err: UserDomainError) -> Self {
+        match err {
+            UserDomainError::EmailAlreadyExists => StatusCode::CONFLICT,
+            UserDomainError::InvalidCredentials => StatusCode::UNAUTHORIZED,
+            UserDomainError::UserNotFound => StatusCode::NOT_FOUND,
+        }
+    }
+}
+```
+
+## Testing Strategy
+
+### Domain Unit Tests (Pure)
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn email_validation_rejects_invalid_format() {
+        let result = EmailAddress::new("invalid".to_string());
+        assert!(result.is_err());
+    }
+    
+    #[tokio::test]
+    async fn user_service_prevents_duplicate_registration() {
+        let mock_repo = MockUserRepository::new();
+        let service = UserServiceImpl::new(Arc::new(mock_repo));
+        
+        // Test business logic without any external dependencies
+    }
+}
+```
+
+### Integration Tests (With Real Adapters)
+```rust
+#[tokio::test]
+async fn user_registration_full_flow() {
+    let pool = test_database().await;
+    let repo = PostgresUserRepository::new(pool);
+    let service = UserServiceImpl::new(Arc::new(repo));
+    
+    // Test with real database
+}
+```
+
+## Learning Application Guidelines
+
+### For User's Current Project (Deck Builder)
+
+1. **Identify Domains**: User management, Card management, Deck management
+2. **Define Ports**: `UserRepository`, `CardRepository`, `DeckRepository`, `ScryfallApiClient`
+3. **Create Newtypes**: `UserId`, `CardId`, `DeckId`, `EmailAddress`, `ManaValue`
+4. **Implement Services**: `UserService`, `DeckService`, `CardSearchService`
+5. **Build Adapters**: PostgreSQL repos, Axum handlers, Scryfall client
+
+### Progressive Implementation Strategy
+
+1. **Start with one domain** (User management is good choice)
+2. **Define domain models with newtypes** for type safety
+3. **Create service trait** with business logic methods
+4. **Implement repository trait** for data persistence
+5. **Build HTTP adapter** that uses service
+6. **Add comprehensive tests** for each layer
+7. **Refactor existing code** to follow patterns
+
+### Teaching Approach Integration
+
+- **Connect to existing knowledge**: Build on solid JWT/auth foundation
+- **Explain architectural WHY**: Help understand benefits of separation
+- **Start simple**: One domain, gradually add complexity
+- **Use type system**: Leverage Rust's strengths for domain modeling
+- **Test-driven**: Write tests to validate understanding
+
+## Common Pitfalls to Avoid
+
+❌ **Don't let external types leak into domain**
+```rust
+// BAD: SQLx types in domain
+pub fn create_user(user: User) -> Result<PgRow, sqlx::Error>
+
+// GOOD: Domain types only
+pub fn create_user(user: User) -> Result<User, DomainError>
+```
+
+❌ **Don't put business logic in adapters**
+```rust
+// BAD: Business rules in HTTP handler
+pub async fn register_user(Json(req): Json<RegisterRequest>) -> Result<Json<UserResponse>, StatusCode> {
+    if req.email.contains("spam") {  // Business logic!
+        return Err(StatusCode::BAD_REQUEST);
+    }
+}
+
+// GOOD: Handler delegates to domain service
+pub async fn register_user(
+    State(service): State<Arc<dyn UserService>>,
+    Json(req): Json<RegisterRequest>
+) -> Result<Json<UserResponse>, StatusCode> {
+    let email = EmailAddress::new(req.email)?;  // Convert to domain type
+    let user = service.register_user(email, req.password).await?;  // Domain handles business logic
+    Ok(Json(UserResponse::from(user)))
+}
+```
+
+❌ **Don't skip validation in newtypes**
+```rust
+// BAD: No validation
+pub struct EmailAddress(pub String);  // Anyone can create invalid email
+
+// GOOD: Smart constructor
+pub struct EmailAddress(String);
+impl EmailAddress {
+    pub fn new(email: String) -> Result<Self, ValidationError> { /* validate */ }
+}
+```
+
+## Success Metrics
+
+- **Testability**: Can test business logic without external dependencies
+- **Maintainability**: Changes to database/HTTP don't affect domain
+- **Type Safety**: Compiler prevents domain modeling errors
+- **Clarity**: Clear separation of concerns, easy to onboard new developers
+- **Flexibility**: Can swap implementations without changing domain
+
+---
+
+**Remember**: Hexagonal architecture is about managing complexity, not adding it. Start simple, refactor as you learn, and always prioritize understanding over perfect implementation.
