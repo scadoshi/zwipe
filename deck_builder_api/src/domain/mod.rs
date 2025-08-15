@@ -1,6 +1,7 @@
 pub mod auth;
 pub mod models;
 pub mod ports;
+pub mod repositories;
 pub mod services;
 
 pub fn print_logo() {

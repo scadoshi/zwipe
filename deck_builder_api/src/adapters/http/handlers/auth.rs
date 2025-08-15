@@ -1,9 +1,12 @@
+use std::str::FromStr;
+
 use crate::adapters::AppState;
 use crate::domain::auth::jwt::generate_jwt;
 use crate::domain::auth::password::{hash_password, verify_password};
-use crate::domain::models::user::User;
+use crate::domain::models::user::{NewUser, NewUserError, User, UserName};
 
 use axum::{extract::State, http::StatusCode, response::Json};
+use email_address::EmailAddress;
 use serde::{Deserialize, Serialize};
 use sqlx::query_as;
 use tracing::{error, warn};
@@ -20,11 +23,20 @@ pub struct LoginResponse {
     pub user_id: i32,
 }
 
-#[derive(Deserialize)]
-pub struct RegistrationRequest {
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct NewUserHttpRequestBody {
     pub username: String,
     pub email: String,
     pub password: String,
+}
+
+impl NewUserHttpRequestBody {
+    fn try_into_domain(self) -> Result<NewUser, NewUserError> {
+        let username = UserName::new(&self.username)?;
+        let email = EmailAddress::from_str(self.email)?;
+
+        Ok(NewUser::new(username, email, self.password))
+    }
 }
 
 pub async fn authenticate_user(

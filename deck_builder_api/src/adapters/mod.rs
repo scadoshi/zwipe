@@ -2,19 +2,23 @@ pub mod database;
 pub mod external;
 pub mod http;
 
+use std::sync::Arc;
+
 use crate::adapters::database::postgres::Postgres;
 use crate::domain::auth::jwt::JwtConfig;
+use crate::domain::repositories::user::UserRepository;
 use anyhow::Context;
 use sqlx::PgPool;
 use tracing::info;
 
-#[derive(Clone)]
-pub struct AppState {
+#[derive(Debug, Clone)]
+pub struct AppState<UR: UserRepository> {
+    user_repo: Arc<UR>,
     pub db_pool: PgPool,
     pub jwt_config: JwtConfig,
 }
 
-impl AppState {
+impl<UR: UserRepository> AppState<UR> {
     pub async fn initialize() -> Result<Self, Box<dyn std::error::Error>> {
         let database_url = std::env::var("DATABASE_URL")
             .context("DATABASE_URL environment variable must be set")?;
