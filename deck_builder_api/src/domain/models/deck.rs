@@ -1,7 +1,7 @@
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
-use crate::models::types::MtgFormat;
+use crate::domain::models::types::MtgFormat;
 
 /// Complete deck data as stored in the database
 #[derive(Debug, Clone, Deserialize, Serialize)]

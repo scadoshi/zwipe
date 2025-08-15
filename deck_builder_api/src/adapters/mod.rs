@@ -1,19 +1,22 @@
 pub mod auth;
 pub mod database;
 pub mod external;
+pub mod http;
 
 use crate::adapters::auth::jwt::JwtConfig;
-use anyhow;
+use crate::adapters::database::new_pool;
+use anyhow::anyhow;
 use sqlx::PgPool;
+use tracing::info;
 
 #[derive(Clone)]
-struct AppState {
-    db_pool: PgPool,
-    jwt_config: JwtConfig,
+pub struct AppState {
+    pub db_pool: PgPool,
+    pub jwt_config: JwtConfig,
 }
 
 impl AppState {
-    async fn initialize() -> Result<Self, anyhow::Error> {
+    pub async fn initialize() -> Result<Self, Box<dyn std::error::Error>> {
         let database_url = std::env::var("DATABASE_URL").map_err(|e| {
             anyhow!(
                 "DATABASE_URL environment variable must be set. Error: {:?}",
@@ -22,9 +25,11 @@ impl AppState {
         })?;
         info!("Extracted database URL from environment");
 
+        let db_pool = new_pool(&database_url).await?;
+        let jwt_config = JwtConfig::from_env()?;
         Ok(Self {
-            db_pool: database::new_pool()?,
-            jwt_config: JwtConfig::from_env()?,
+            db_pool,
+            jwt_config,
         })
     }
 }

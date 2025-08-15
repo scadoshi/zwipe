@@ -4,7 +4,7 @@ use serde_json::{json, Value};
 use sqlx::query;
 use tracing::error;
 
-use crate::AppState;
+use crate::adapters::AppState;
 
 pub async fn root() -> Json<Value> {
     Json(json!({

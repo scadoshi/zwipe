@@ -4,9 +4,14 @@ use reqwest::{
 };
 use serde::Deserialize;
 use serde_json::from_value;
+use sqlx::{query_scalar, PgPool};
 use std::error::Error as StdError;
+use tracing::info;
 
-use crate::domain::models::scryfall_card::ScryfallCard;
+use crate::{
+    adapters::database::card::{delete_all, MultipleInsert},
+    domain::models::scryfall_card::ScryfallCard,
+};
 
 // this generates a new client every time
 // very slow update at some point

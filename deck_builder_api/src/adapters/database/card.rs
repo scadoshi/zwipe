@@ -1,6 +1,8 @@
 use std::{collections::HashSet, error::Error as StdError};
 
-use crate::{models::scryfall_card::ScryfallCard, scryfall::fetch_oracle_cards};
+use crate::{
+    adapters::external::scryfall::fetch_oracle_cards, domain::models::scryfall_card::ScryfallCard,
+};
 use itertools::Itertools;
 use sqlx::{postgres::PgArguments, query, query::Query, query_scalar, PgPool, Postgres};
 use tracing::{info, warn};

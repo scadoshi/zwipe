@@ -1,4 +1,7 @@
-use crate::{auth::middleware::AuthenticatedUser, models::Deck, AppState};
+use crate::adapters::auth::middleware::AuthenticatedUser;
+use crate::adapters::AppState;
+use crate::domain::models::deck::Deck;
+
 use axum::{extract::State, http::StatusCode, response::Json};
 use serde_json::{json, Value};
 use sqlx::query_as;

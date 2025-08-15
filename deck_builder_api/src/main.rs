@@ -1,19 +1,18 @@
 mod adapters;
 mod domain;
 
-use crate::adapters::{auth, database};
-
+use crate::adapters::external::scryfall::scryfall_sync;
+use crate::adapters::http::handlers;
+use crate::adapters::AppState;
 
 use anyhow::anyhow;
 use axum::{
     http::{header, HeaderValue, Method},
-    routin::{get, post},
+    routing::{get, post},
     Router,
 };
-use sqlx::postgres::PgPoolOptions;
-use std::time::Duration;
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
-use tracing::{error, info, warn};
+use tracing::{error, info};
 
 #[tokio::main]
 async fn main() {
@@ -24,7 +23,7 @@ async fn main() {
     }
 }
 
-async fn run() -> Result<(), Box<dyn StdError>> {
+async fn run() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
     info!("Tracing started");
     dotenvy::dotenv()?;
@@ -96,7 +95,7 @@ async fn run() -> Result<(), Box<dyn StdError>> {
         )
     })?;
 
-    crate::database::card::scryfall_sync(&app_state.db_pool).await?;
+    scryfall_sync(&app_state.db_pool).await?;
 
     info!("Deck Builder API running on {}", bind_address);
 
