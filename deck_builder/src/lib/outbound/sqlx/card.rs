@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::{
-    domain::models::scryfall_card::ScryfallCard, inbound::http::scryfall::fetch_oracle_cards,
+    domain::card::models::scryfall_card::ScryfallCard, inbound::http::scryfall::fetch_oracle_cards,
 };
 use itertools::Itertools;
 use sqlx::{postgres::PgArguments, query, query::Query, query_scalar, PgPool, Postgres};

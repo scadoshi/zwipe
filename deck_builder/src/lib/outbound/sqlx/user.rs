@@ -2,8 +2,8 @@ use anyhow::{anyhow, Context};
 use email_address::EmailAddress;
 use sqlx::query_as;
 
-use crate::domain::models::user::{User, UserCreationError, UserCreationRequest, UserId, UserName};
-use crate::domain::ports::repositories::user::UserRepository;
+use crate::domain::user::models::{User, UserCreationError, UserCreationRequest, UserId, UserName};
+use crate::domain::user::ports::UserRepository;
 use crate::outbound::sqlx::postgres::Postgres;
 
 type TempError = Box<dyn std::error::Error>;

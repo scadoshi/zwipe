@@ -1,7 +1,3 @@
-use std::sync::Arc;
-
-use crate::domain::auth::jwt::JwtSecret;
-
 // TODO: Import service traits once they exist
 // use crate::domain::ports::services::{UserService, CardService, DeckService};
 

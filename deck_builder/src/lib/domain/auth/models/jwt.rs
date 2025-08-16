@@ -4,7 +4,7 @@ use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::domain::models::user::UserId;
+use crate::domain::user::models::UserId;
 
 //
 //

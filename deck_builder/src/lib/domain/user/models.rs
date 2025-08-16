@@ -3,7 +3,7 @@ use email_address::{EmailAddress, Options};
 use std::fmt::Display;
 use thiserror::Error;
 
-use crate::domain::auth::password::{HashedPassword, Password};
+use crate::domain::auth::models::password::{HashedPassword, Password};
 //
 //
 //

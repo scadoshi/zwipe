@@ -9,8 +9,8 @@ use axum_extra::{
 };
 use email_address::EmailAddress;
 
-use crate::domain::auth::jwt::{Jwt, JwtSecret, UserClaims};
-use crate::domain::models::user::UserId;
+use crate::domain::auth::models::jwt::{Jwt, JwtSecret, UserClaims};
+use crate::domain::user::models::UserId;
 
 pub struct AuthenticatedUser {
     pub user_id: UserId,
