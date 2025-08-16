@@ -1,5 +1,6 @@
 use anyhow::Context;
 use email_address::{EmailAddress, Options};
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use thiserror::Error;
 
@@ -60,6 +61,30 @@ impl UserId {
             return Err(UserIdError);
         }
         Ok(Self(raw))
+    }
+}
+
+/// ensures we use our newtype validation logic in its constructor
+/// while deserializing
+impl<'de> Deserialize<'de> for UserId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = i32::deserialize(deserializer)?;
+        UserId::new(raw).map_err(serde::de::Error::custom)
+    }
+}
+/// ensuire we send out only the contents of our newtype
+/// wrapper struct as we don't want to send
+/// out a wrapper integer as that wouldn't be expected
+/// by external APIs
+impl Serialize for UserId {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.0.serialize(serializer)
     }
 }
 //

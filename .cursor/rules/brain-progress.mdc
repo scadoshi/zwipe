@@ -60,6 +60,7 @@ alwaysApply: true
 - **Edge Case Testing**: Thorough validation of error conditions and boundary cases
 - **Environment Testing Challenges**: Understanding of environment coupling vs testable design
 - **Comprehensive Coverage**: Success/failure scenarios, normalization, validation testing
+- **Newtype Testing**: Understanding of testing validation at the correct level (newtype vs function)
 
 ### Diesel ORM Patterns
 - **Connection Pooling Implementation**: Solid understanding, r2d2 integration complete
@@ -74,13 +75,15 @@ alwaysApply: true
 
 ### Hexagonal Architecture & Domain Modeling
 - **Basic Hexagonal Concepts**: Understanding ports vs adapters concept, working through practical application
-- **Newtype Patterns**: Successfully implemented basic validation newtypes (JwtSecret, Jwt, UserId) 
+- **Newtype Patterns**: Successfully implemented validation newtypes (JwtSecret, Jwt, UserId, UserName) with comprehensive testing
 - **Domain-Driven Constructors**: Experimenting with business-specific constructors (Bearer → JWT pattern)
 - **Type Safety Boundaries**: Learning how to prevent invalid data through type design
 - **Architectural Decision Making**: Practicing tradeoffs between purity and pragmatism
-- **Domain Model Separation**: Beginning to understand database vs domain representations (DatabaseUser vs User)
+- **Domain Model Separation**: Understanding database vs domain representations (DatabaseUser vs User)
 - **Error Boundary Handling**: Learning defensive programming at module boundaries with TryFrom implementations
 - **Repository Pattern Implementation**: Working through UserRepository trait and PostgresUserRepository implementation
+- **Domain-First Organization**: Successfully reorganized codebase from layer-first to domain-first structure
+- **Testing Best Practices**: Understanding that newtype validation should be tested at newtype level, not function level
 
 ### Password Security & Validation
 - **Advanced Password Policies**: Implemented comprehensive validation rules (length, complexity, uniqueness)
@@ -135,9 +138,9 @@ alwaysApply: true
 - **Production Data Pipeline**: Complete Scryfall API → Database integration with 35,400+ card insertions in <5 minutes
 - **Type System Debugging**: Expert-level troubleshooting of JSON deserialization conflicts (attraction_lights integer vs string)
 - **Constraint Management**: Understanding duplicate key patterns and database constraint behavior at scale
-- **Performance Validation**: Demonstrated architecture scales to real-world MTG dataset (~140 cards/second insertion rate)
+- **Performance Validation**: Demonstrated ~140 cards/second insertion rate with real MTG dataset
 - **🎯 BULK OPERATIONS MASTERY**: Advanced multi-row INSERT statements with parameter binding optimization
-- **🎯 DATABASE CONSTRAINT HANDLING**: Expert implementation of `ON CONFLICT DO NOTHING` for graceful duplicate management
+- **🎯 DATABASE CONSTRAINT HANDLING**: Production-ready `ON CONFLICT DO NOTHING` implementation for graceful duplicate management
 - **🎯 TRAIT EXTRACTION PATTERNS**: Successfully eliminated code duplication through `BindScryfallCardFields` and `BindCardProfileFields` traits
 - **🎯 QUERY BUILDING OPTIMIZATION**: Dynamic placeholder generation and field count calculation from constants
 - **🎯 BATCH PROCESSING STRATEGY**: Chunked processing with resilient error handling and progress reporting
@@ -146,7 +149,7 @@ alwaysApply: true
 - **🏆 COMPLETE SCRYFALL CARD ARCHITECTURE**: Full representation of 80+ field Scryfall Card object in Rust and PostgreSQL
 - **🏆 COMPLEX NESTED TYPES MASTERY**: Prices, Legalities, ImageUris, CardFace, RelatedCard with perfect JSONB serialization
 - **🏆 JSON WRAPPER INTEGRATION**: Expert Json<T> usage in dynamic SQL generation and bulk operations
-- **🏆 PRODUCTION DATA MODELING**: Successfully modeled every field from external API to database storage
+- **🏆 PRODUCTION DATA MODELING**: Every field from Scryfall API successfully integrated to database
 - **🏆 TYPE SYSTEM ARCHITECTURE**: Strategic balance of custom structs vs simplified types for maintainability
 
 ---
@@ -211,10 +214,13 @@ alwaysApply: true
 - **System Validation**: Confirmed theoretical architecture works with real-world data complexity and scale
 - **🎯 HEXAGONAL ARCHITECTURE EXPLORATION**: Beginning to understand domain boundaries, working through ports vs adapters concepts
 - **🎯 NEWTYPE EXPERIMENTATION**: Successfully implemented basic validation newtypes, learning domain-driven patterns
-- **🎯 TYPE SAFETY LEARNING**: Exploring how to use type system for domain validation, still developing understanding
+- **🎯 TYPE SAFETY LEARNING**: Beginning to see how types can enforce domain rules, still developing understanding
 - **🎯 DOMAIN MODEL SEPARATION**: Learning database vs domain representations and boundary validation
 - **🎯 DEFENSIVE PROGRAMMING**: Understanding trust boundaries and validation at module interfaces
 - **🎯 PASSWORD SECURITY ARCHITECTURE**: Implementing comprehensive validation with domain-driven design
+- **🎯 DOMAIN-FIRST ORGANIZATION**: Successfully reorganized codebase from layer-first to domain-first structure
+- **🎯 TESTING BEST PRACTICES**: Understanding that newtype validation should be tested at newtype level, not function level
+- **🎯 COMPREHENSIVE NEWTYPE TESTING**: Implemented thorough test coverage for JwtSecret, Jwt, and UserClaims with proper validation testing
 
 ### Learning Pattern Recognition
 - **Strategic Simplification**: Recognizes when complexity doesn't add value
@@ -275,7 +281,7 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: After implementing hexagonal architecture patterns, password security with newtypes, and domain model separation
+**Last Updated**: After implementing comprehensive newtype testing and domain-first organization
 
 **Next Learning Edge**: Complete UserRepository implementation and service layer architecture
 

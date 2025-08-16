@@ -37,8 +37,7 @@ impl FromRequestParts<JwtSecret> for AuthenticatedUser {
             TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)
                 .await
                 .map_err(|_| StatusCode::BAD_REQUEST)?;
-
-        let jwt: Jwt = Jwt::new(bearer)?;
+        let jwt = Jwt::new(bearer.token()).map_err(|_| StatusCode::BAD_REQUEST)?;
         let claims = jwt.validate(state).map_err(|_| StatusCode::UNAUTHORIZED)?;
 
         Ok(AuthenticatedUser::from(claims))
