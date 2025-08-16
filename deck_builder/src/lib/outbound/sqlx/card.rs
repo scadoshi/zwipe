@@ -1,8 +1,6 @@
 use std::collections::HashSet;
 
-use crate::{
-    domain::card::models::scryfall_card::ScryfallCard, inbound::http::scryfall::fetch_oracle_cards,
-};
+use crate::domain::card::models::scryfall_card::ScryfallCard;
 use itertools::Itertools;
 use sqlx::{postgres::PgArguments, query, query::Query, query_scalar, PgPool, Postgres};
 use tracing::{info, warn};

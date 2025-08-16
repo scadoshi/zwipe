@@ -21,6 +21,7 @@ pub struct Config {
 
 impl Config {
     pub fn from_env() -> anyhow::Result<Self> {
+        dotenvy::dotenv().context("Failed to load environment")?;
         let jwt_secret = JwtSecret::new(load_env(JWT_SECRET_KEY)?);
         let database_url = load_env(DATABASE_URL_KEY)?;
         let bind_address = load_env(BIND_ADDRESS_KEY)?;
@@ -44,5 +45,5 @@ impl Config {
 }
 
 fn load_env(key: &str) -> anyhow::Result<String> {
-    env::var(key).with_context(|| format!("failed to load environment variable {}", key))
+    env::var(key).context(format!("failed to load environment variable {}", key))
 }

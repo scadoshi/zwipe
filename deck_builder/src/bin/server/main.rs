@@ -10,6 +10,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
+use deck_builder::outbound::sqlx::postgres::Postgres;
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 use tracing::{error, info};
 
@@ -22,36 +23,13 @@ async fn main() {
     }
 }
 
-async fn run() -> Result<(), Box<dyn std::error::Error>> {
-    let config = Config::from_env()?;
-
+async fn run() -> Result<(), anyhow::Result<()>> {
     tracing_subscriber::fmt::init();
-    info!("Tracing started");
-    dotenvy::dotenv()?;
+    let config: Config = Config::from_env()?;
+    let postgres = Postgres::new(config.database_url)?;
+    let user_service = crate::domain::user::services::Service::new(postgres);
 
-    // protected routes - these need jwt authentication
-    // all handlers here must include `AuthenticatedUser` parameter
-    // which automatically enforces jwt validation via custom extractor
-    // supreme rusty
-    let protected_routes = Router::new().nest(
-        "/api/v1",
-        Router::new().route("/decks", get(handlers::decks::get_decks)),
-    );
-    info!("Generated protected routes");
-
-    // public routes - no authentication required
-    // health checks and auth endpoints are accessible without tokens
-    let public_routes = Router::new()
-        .route("/", get(handlers::health::root))
-        .route("/health", get(handlers::health::health_check))
-        .route("/health/deep", get(handlers::health::health_check_deep))
-        .nest(
-            "/api/v1",
-            Router::new()
-                .route("/auth/login", post(handlers::auth::login))
-                .route("/auth/register", post(handlers::auth::register)),
-        );
-    info!("Generated public routes");
+    // wall of incorrectness everything below this is incorrect and must be hexarched
 
     let app_state = AppState::initialize()
         .await
@@ -79,7 +57,6 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     })?;
 
     scryfall_sync(&app_state.db_pool).await?;
-
     info!("Deck Builder running on {}", bind_address);
 
     let listener = tokio::net::TcpListener::bind(&bind_address)
