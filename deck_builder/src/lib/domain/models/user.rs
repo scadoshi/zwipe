@@ -1,7 +1,4 @@
-use chrono::NaiveDateTime;
 use email_address::{EmailAddress, Options};
-use serde::{Deserialize, Serialize};
-use sqlx_macros::FromRow;
 use std::fmt::Display;
 use thiserror::Error;
 //
@@ -21,11 +18,12 @@ pub enum UserCreationRequestError {
     InvalidEmail(#[from] email_address::Error),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[derive(Debug, Error)]
 pub enum UserCreationError {
-    #[error("User with name {name} or email {email} already exists")]
-    Duplicate { name: UserName, email: EmailAddress },
-    // continue with more errors as we go
+    #[error("User with name or email already exists")]
+    Duplicate,
+    #[error("Database error: {0}")]
+    DatabaseError(Box<dyn std::error::Error + Send + Sync>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
@@ -62,7 +60,7 @@ pub struct UserId(i32);
 impl UserId {
     pub fn new(raw: i32) -> Result<Self, UserIdError> {
         if raw < 0 || raw > 999_999 {
-            return UserIdError;
+            return Err(UserIdError);
         }
         Ok(Self(raw))
     }
@@ -91,13 +89,9 @@ impl UserCreationRequest {
 //
 //
 //
-#[derive(Debug, Clone, Deserialize, Serialize, FromRow)]
+#[derive(Debug, Clone)]
 pub struct User {
     pub id: i32,
     pub email: String,
     pub username: String,
-    #[serde(skip_serializing)]
-    pub password_hash: String,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
 }

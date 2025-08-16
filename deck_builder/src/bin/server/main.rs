@@ -80,7 +80,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     scryfall_sync(&app_state.db_pool).await?;
 
-    info!("Deck Builder API running on {}", bind_address);
+    info!("Deck Builder running on {}", bind_address);
 
     let listener = tokio::net::TcpListener::bind(&bind_address)
         .await

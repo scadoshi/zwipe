@@ -10,7 +10,7 @@ use tracing::info;
 
 use crate::{
     domain::models::scryfall_card::ScryfallCard,
-    outbound::database::card::{delete_all, MultipleInsert},
+    outbound::sqlx::card::{delete_all, MultipleInsert},
 };
 
 // this generates a new client every time

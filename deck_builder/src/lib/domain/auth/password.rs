@@ -1,24 +1,28 @@
 use argon2::{
-    password_hash::{rand_core::OsRng, Error, SaltString},
-    Argon2, PasswordHash, PasswordHasher, PasswordVerifier,
+    password_hash::{self, rand_core::OsRng, SaltString},
+    Argon2, PasswordHasher, PasswordVerifier,
 };
 
-pub fn hash_password(password: &str) -> Result<String, Error> {
-    let argon2 = Argon2::default();
-    let salt = SaltString::generate(&mut OsRng);
-    argon2
-        .hash_password(password.as_bytes(), &salt)
-        .map(|x| x.to_string())
-}
+#[derive(Debug, Clone, PartialEq)]
+pub struct HashedPassword(String);
 
-pub fn verify_password(password: &str, hash: &str) -> Result<bool, Error> {
-    let argon2 = Argon2::default();
-    let parsed_hash = PasswordHash::new(hash)?;
+impl HashedPassword {
+    pub fn new(password: &str) -> Result<Self, password_hash::Error> {
+        let salt = SaltString::generate(&mut OsRng);
+        let hash = Argon2::default()
+            .hash_password(password.as_bytes(), &salt)
+            .map(|x| x.to_string())?;
+        Ok(Self(hash))
+    }
 
-    match argon2.verify_password(password.as_bytes(), &parsed_hash) {
-        Ok(()) => Ok(true),
-        Err(Error::Password) => Ok(false),
-        Err(e) => Err(e),
+    pub fn verify(&self, password: &str) -> Result<bool, password_hash::Error> {
+        let parsed_hash = argon2::PasswordHash::new(&self.0)?;
+
+        match Argon2::default().verify_password(password.as_bytes(), &parsed_hash) {
+            Ok(()) => Ok(true),
+            Err(password_hash::Error::Password) => Ok(false),
+            Err(e) => Err(e),
+        }
     }
 }
 
@@ -32,72 +36,72 @@ mod tests {
 
     #[test]
     fn test_hash_password_success_creates_valid_hashes() {
-        let result = hash_password("test_password");
+        let result = HashedPassword::new("test_password");
         assert!(result.is_ok());
 
         let hash = result.unwrap();
-        assert!(!hash.is_empty());
+        assert!(!hash.0.is_empty());
 
         // Argon2 hashes should start with $argon2 and have multiple $ delimited sections
-        assert!(hash.starts_with("$argon2"));
-        assert!(hash.matches('$').count() >= 4); // Format: $argon2$variant$params$salt$hash
+        assert!(hash.0.starts_with("$argon2"));
+        assert!(hash.0.matches('$').count() >= 4); // Format: $argon2$variant$params$salt$hash
     }
 
     #[test]
     fn test_hash_password_produces_unique_hashes_with_same_input() {
         let password = "identical_password";
-        let hash1 = hash_password(password).unwrap();
-        let hash2 = hash_password(password).unwrap();
+        let hash1 = HashedPassword::new(password).unwrap();
+        let hash2 = HashedPassword::new(password).unwrap();
 
         // Should be different due to unique salt generation
-        assert_ne!(hash1, hash2);
+        assert_ne!(hash1.0, hash2.0);
     }
 
     #[test]
     fn test_hash_password_produces_different_hashes_for_different_inputs() {
-        let hash1 = hash_password("password1").unwrap();
-        let hash2 = hash_password("password2").unwrap();
+        let hash1 = HashedPassword::new("password1").unwrap();
+        let hash2 = HashedPassword::new("password2").unwrap();
 
-        assert_ne!(hash1, hash2);
+        assert_ne!(hash1.0, hash2.0);
     }
 
     #[test]
     fn test_hash_password_handles_empty_input() {
-        let result = hash_password("");
+        let result = HashedPassword::new("");
         assert!(result.is_ok()); // Empty passwords should be allowed (validation happens elsewhere)
 
         let hash = result.unwrap();
-        assert!(!hash.is_empty());
+        assert!(!hash.0.is_empty());
     }
 
     #[test]
     fn test_hash_password_handles_long_input() {
         let long_password = "a".repeat(1000); // Very long password
-        let result = hash_password(&long_password);
+        let result = HashedPassword::new(&long_password);
         assert!(result.is_ok());
 
         let hash = result.unwrap();
-        assert!(!hash.is_empty());
+        assert!(!hash.0.is_empty());
     }
 
     #[test]
     fn test_hash_password_handles_special_characters() {
         let special_password = "p@ssw0rd!#$%^&*(){}[]|\\:;\"'<>,.?/~`";
-        let result = hash_password(special_password);
+        let result = HashedPassword::new(special_password);
         assert!(result.is_ok());
 
         let hash = result.unwrap();
-        assert!(!hash.is_empty());
+        assert!(!hash.0.is_empty());
     }
 
     #[test]
     fn test_hash_password_handles_unicode_characters() {
         let unicode_password = "пароль🔒日本語";
-        let result = hash_password(unicode_password);
+        let result = HashedPassword::new(unicode_password);
         assert!(result.is_ok());
 
         let hash = result.unwrap();
-        assert!(!hash.is_empty());
+        assert!(!hash.0.is_empty());
     }
 
     // ================================
@@ -107,9 +111,9 @@ mod tests {
     #[test]
     fn test_verify_password_success_with_correct_password() {
         let password = "correct_password";
-        let hash = hash_password(password).unwrap();
+        let hash = HashedPassword::new(password).unwrap();
 
-        let result = verify_password(password, &hash);
+        let result = hash.verify(password);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), true);
     }
@@ -118,9 +122,9 @@ mod tests {
     fn test_verify_password_fails_with_wrong_password() {
         let correct_password = "correct_password";
         let wrong_password = "wrong_password";
-        let hash = hash_password(correct_password).unwrap();
+        let hash = HashedPassword::new(correct_password).unwrap();
 
-        let result = verify_password(wrong_password, &hash);
+        let result = hash.verify(wrong_password);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), false);
     }
@@ -128,54 +132,44 @@ mod tests {
     #[test]
     fn test_verify_password_case_sensitive() {
         let password = "CaseSensitive";
-        let hash = hash_password(password).unwrap();
+        let hash = HashedPassword::new(password).unwrap();
 
         // Exact match should work
-        assert_eq!(verify_password("CaseSensitive", &hash).unwrap(), true);
+        assert_eq!(hash.verify("CaseSensitive").unwrap(), true);
 
         // Different case should fail
-        assert_eq!(verify_password("casesensitive", &hash).unwrap(), false);
-        assert_eq!(verify_password("CASESENSITIVE", &hash).unwrap(), false);
-    }
-
-    #[test]
-    fn test_verify_password_rejects_malformed_hash() {
-        let password = "test_password";
-
-        // Invalid hash formats should return errors
-        assert!(verify_password(password, "not_a_hash").is_err());
-        assert!(verify_password(password, "").is_err());
-        assert!(verify_password(password, "$invalid$hash$format").is_err());
+        assert_eq!(hash.verify("casesensitive").unwrap(), false);
+        assert_eq!(hash.verify("CASESENSITIVE").unwrap(), false);
     }
 
     #[test]
     fn test_verify_password_handles_empty_password_with_valid_hash() {
         let empty_password = "";
-        let hash = hash_password(empty_password).unwrap();
+        let hash = HashedPassword::new(empty_password).unwrap();
 
         // Should successfully verify empty password
-        assert_eq!(verify_password("", &hash).unwrap(), true);
+        assert_eq!(hash.verify("").unwrap(), true);
 
         // Non-empty password should fail against empty password hash
-        assert_eq!(verify_password("non_empty", &hash).unwrap(), false);
+        assert_eq!(hash.verify("non_empty").unwrap(), false);
     }
 
     #[test]
     fn test_verify_password_with_special_characters() {
         let special_password = "p@ssw0rd!#$%";
-        let hash = hash_password(special_password).unwrap();
+        let hash = HashedPassword::new(special_password).unwrap();
 
-        assert_eq!(verify_password(special_password, &hash).unwrap(), true);
-        assert_eq!(verify_password("p@ssw0rd!#$", &hash).unwrap(), false); // Missing %
+        assert_eq!(hash.verify(special_password).unwrap(), true);
+        assert_eq!(hash.verify("p@ssw0rd!#$").unwrap(), false); // Missing %
     }
 
     #[test]
     fn test_verify_password_with_unicode_characters() {
         let unicode_password = "пароль🔒";
-        let hash = hash_password(unicode_password).unwrap();
+        let hash = HashedPassword::new(unicode_password).unwrap();
 
-        assert_eq!(verify_password(unicode_password, &hash).unwrap(), true);
-        assert_eq!(verify_password("пароль", &hash).unwrap(), false); // Missing emoji
+        assert_eq!(hash.verify(unicode_password).unwrap(), true);
+        assert_eq!(hash.verify("пароль").unwrap(), false); // Missing emoji
     }
 
     // ================================
@@ -195,15 +189,12 @@ mod tests {
         ];
 
         for password in test_passwords {
-            let hash = hash_password(&password).unwrap();
-            assert_eq!(verify_password(&password, &hash).unwrap(), true);
+            let hash = HashedPassword::new(&password).unwrap();
+            assert_eq!(hash.verify(&password).unwrap(), true);
 
             // Verify that a slightly different password fails
             let wrong_password = format!("{}x", password);
-            assert_eq!(
-                verify_password(wrong_password.as_str(), &hash).unwrap(),
-                false
-            );
+            assert_eq!(hash.verify(wrong_password.as_str()).unwrap(), false);
         }
     }
 
@@ -214,7 +205,7 @@ mod tests {
 
         // Generate multiple hashes of the same password
         for _ in 0..10 {
-            hashes.push(hash_password(password).unwrap());
+            hashes.push(HashedPassword::new(password).unwrap());
         }
 
         // All hashes should be unique (due to unique salts)
@@ -226,7 +217,7 @@ mod tests {
 
         // But all should verify correctly
         for hash in &hashes {
-            assert_eq!(verify_password(password, hash).unwrap(), true);
+            assert_eq!(hash.verify(password).unwrap(), true);
         }
     }
 
@@ -240,18 +231,18 @@ mod tests {
         let user_password = "user_chosen_password_123!";
 
         // Registration: hash the password
-        let stored_hash = hash_password(user_password).unwrap();
+        let stored_hash = HashedPassword::new(user_password).unwrap();
 
         // Later login attempt: verify the password
-        let login_result = verify_password(user_password, &stored_hash).unwrap();
+        let login_result = stored_hash.verify(user_password).unwrap();
         assert!(login_result);
 
         // Invalid login attempt: wrong password
-        let wrong_login_result = verify_password("wrong_password", &stored_hash).unwrap();
+        let wrong_login_result = stored_hash.verify("wrong_password").unwrap();
         assert!(!wrong_login_result);
 
         // Verify hash format is suitable for database storage
-        assert!(stored_hash.len() > 50); // Reasonable length for storage
-        assert!(stored_hash.is_ascii()); // Safe for database storage
+        assert!(stored_hash.0.len() > 50); // Reasonable length for storage
+        assert!(stored_hash.0.is_ascii()); // Safe for database storage
     }
 }
