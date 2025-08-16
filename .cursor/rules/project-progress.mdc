@@ -72,6 +72,8 @@ alwaysApply: true
 - **🎯 DOMAIN-FIRST ORGANIZATION**: Successfully reorganized codebase from layer-first to domain-first structure
 - **🎯 COMPREHENSIVE NEWTYPE TESTING**: Implemented thorough test coverage for JwtSecret, Jwt, and UserClaims
 - **🎯 TESTING BEST PRACTICES**: Understanding that newtype validation should be tested at newtype level, not function level
+- **🎯 HEXAGONAL LAYER UNDERSTANDING**: Clear grasp of what belongs in domain vs adapters (middleware moved to HTTP layer)
+- **🎯 DOMAIN DOCUMENTATION**: Comprehensive documentation of newtypes explaining purpose, validation rules, and business logic
 
 ### NEXT PRIORITIES - Immediate Roadmap
 1. **Refactor Auth Handlers**: Remove direct SQL queries from auth.rs and use hexagonal architecture
@@ -333,6 +335,10 @@ curl http://localhost:8080/api/v1/decks
 **Current Sprint**: Learning hexagonal architecture principles while implementing JWT authentication with newtypes
 
 **Next Major Milestone**: Complete UserRepository implementation and build first service layer 
+
+**Current Sprint**: Learning hexagonal architecture principles while implementing JWT authentication with newtypes
+
+**Next Major Milestone**: Build first service layer implementation to practice ports vs adapters pattern 
 
 **Current Sprint**: Learning hexagonal architecture principles while implementing JWT authentication with newtypes
 

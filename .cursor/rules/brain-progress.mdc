@@ -84,6 +84,8 @@ alwaysApply: true
 - **Repository Pattern Implementation**: Working through UserRepository trait and PostgresUserRepository implementation
 - **Domain-First Organization**: Successfully reorganized codebase from layer-first to domain-first structure
 - **Testing Best Practices**: Understanding that newtype validation should be tested at newtype level, not function level
+- **Hexagonal Layer Understanding**: Clear grasp of what belongs in domain vs adapters (middleware moved to HTTP layer)
+- **Domain Documentation**: Comprehensive documentation of newtypes explaining purpose, validation rules, and business logic
 
 ### Password Security & Validation
 - **Advanced Password Policies**: Implemented comprehensive validation rules (length, complexity, uniqueness)
@@ -284,6 +286,10 @@ alwaysApply: true
 **Last Updated**: After implementing comprehensive newtype testing and domain-first organization
 
 **Next Learning Edge**: Complete UserRepository implementation and service layer architecture
+
+**Last Updated**: After completing COMPLETE SCRYFALL CARD ARCHITECTURE MASTERY - full 80+ field external API to database representation
+
+**Next Learning Edge**: Card Search APIs, Deck Management CRUD, and user-facing feature development
 
 **Last Updated**: After completing COMPLETE SCRYFALL CARD ARCHITECTURE MASTERY - full 80+ field external API to database representation
 
