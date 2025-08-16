@@ -1,0 +1,10 @@
+use std::future::Future;
+
+use crate::domain::models::user::{User, UserCreationError, UserCreationRequest};
+
+pub trait UserRepository: Send + Sync + Clone + 'static {
+    fn create_user(
+        &self,
+        req: &UserCreationRequest,
+    ) -> impl Future<Output = Result<User, UserCreationError>> + Send;
+}

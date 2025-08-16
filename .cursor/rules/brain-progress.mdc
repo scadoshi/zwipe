@@ -28,6 +28,7 @@ alwaysApply: true
 - **Performance Optimization**: Identified and resolved repeated file system access inefficiencies
 - **Testable Architecture**: Designed pure functions vs environment-coupled functions
 - **Services Architecture**: Successfully separated HTTP handlers from business logic functions
+- **Architectural Pragmatism**: Balances theoretical purity with practical development needs
 
 ### Axum Web Framework  
 - **State Extraction**: Confidently uses `State<AppState>` pattern across multiple handlers
@@ -70,6 +71,13 @@ alwaysApply: true
 ---
 
 ## LEARNING - Recently Introduced (Needs Guidance)
+
+### Hexagonal Architecture & Domain Modeling
+- **Basic Hexagonal Concepts**: Understanding ports vs adapters concept, working through practical application
+- **Newtype Patterns**: Successfully implemented basic validation newtypes (JwtSecret, Jwt, UserId) 
+- **Domain-Driven Constructors**: Experimenting with business-specific constructors (Bearer → JWT pattern)
+- **Type Safety Boundaries**: Learning how to prevent invalid data through type design
+- **Architectural Decision Making**: Practicing tradeoffs between purity and pragmatism
 
 ### Advanced Axum Concepts
 - **Route Security**: User isolation patterns and protected endpoint implementation - next learning target
@@ -191,6 +199,9 @@ alwaysApply: true
 - **Type System Conflict Resolution**: Expert debugging of JSON deserialization mismatches using systematic isolation
 - **Performance Psychology**: Built confidence through successful large-scale data processing under time pressure
 - **System Validation**: Confirmed theoretical architecture works with real-world data complexity and scale
+- **🎯 HEXAGONAL ARCHITECTURE EXPLORATION**: Beginning to understand domain boundaries, working through ports vs adapters concepts
+- **🎯 NEWTYPE EXPERIMENTATION**: Successfully implemented basic validation newtypes, learning domain-driven patterns
+- **🎯 TYPE SAFETY LEARNING**: Exploring how to use type system for domain validation, still developing understanding
 
 ### Learning Pattern Recognition
 - **Strategic Simplification**: Recognizes when complexity doesn't add value
