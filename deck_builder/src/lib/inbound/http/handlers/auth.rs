@@ -1,12 +1,7 @@
-use std::str::FromStr;
-
-use crate::domain::auth::jwt::{generate_jwt, Jwt};
-use crate::domain::auth::password::{hash_password, verify_password};
-use crate::domain::models::user::{User, UserCreationRequest, UserCreationRequestError, UserName};
+use crate::domain::models::user::{User, UserCreationError, UserCreationRequest};
 use crate::inbound::http::app_state::AppState;
 
 use axum::{extract::State, http::StatusCode, response::Json};
-use email_address::EmailAddress;
 use serde::{Deserialize, Serialize};
 use sqlx::query_as;
 use tracing::{error, warn};
@@ -24,18 +19,15 @@ pub struct LoginResponse {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-pub struct NewUserHttpRequestBody {
+pub struct UserCreationHttpRequestBody {
     pub username: String,
     pub email: String,
     pub password: String,
 }
 
-impl NewUserHttpRequestBody {
-    fn try_into_domain(self) -> Result<UserCreationRequest, UserCreationRequestError> {
-        let username = UserName::new(&self.username)?;
-        let email = EmailAddress::from_str(self.email)?;
-
-        Ok(UserCreationRequest::new(username, email, self.password))
+impl UserCreationHttpRequestBody {
+    fn try_into_domain(self) -> Result<UserCreationRequest, UserCreationError> {
+        Ok(UserCreationRequest::new(&self.username, &self.email, &self.password)?)
     }
 }
 

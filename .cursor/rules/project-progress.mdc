@@ -56,34 +56,57 @@ alwaysApply: true
 - **🏆 JSON WRAPPER MASTERY**: Expert Json<T> usage in dynamic bulk INSERT operations
 - **🏆 PRODUCTION DATA MODEL**: Every field from Scryfall API successfully integrated to database
 - **🏆 TYPE SYSTEM ARCHITECTURE**: Strategic custom struct design with maintainable complexity balance
-- **🎯 HEXAGONAL ARCHITECTURE EXPLORATION**: Learning domain boundaries, working through ports vs adapters concepts
-- **🎯 BASIC NEWTYPE IMPLEMENTATION**: Successfully created validation newtypes (JwtSecret, Jwt, UserId)
-- **🎯 DOMAIN-DRIVEN CONSTRUCTOR EXPERIMENTS**: Trying business-specific constructors (Bearer → JWT pattern)
+
+### IN PROGRESS - Hexagonal Architecture Implementation
+- **🎯 HEXAGONAL ARCHITECTURE LEARNING**: Understanding domain boundaries, ports vs adapters concepts
+- **🎯 NEWTYPE PATTERN IMPLEMENTATION**: Successfully created validation newtypes (JwtSecret, Jwt, UserId, UserName)
+- **🎯 DOMAIN-DRIVEN CONSTRUCTOR EXPERIMENTS**: Business-specific constructors (Bearer → JWT pattern)
 - **🎯 TYPE SAFETY LEARNING**: Beginning to understand compiler-enforced domain validation
+- **🎯 PASSWORD SECURITY ARCHITECTURE**: Comprehensive validation with domain-driven design
+  - **Advanced Password Policies**: Length limits, complexity rules, uniqueness checks
+  - **Common Password Detection**: Static list with trait-based checking (IsCommonPassword)
+  - **Domain-Driven Password Types**: Password newtype with validation, HashedPassword for storage
+- **🎯 DOMAIN MODEL SEPARATION**: Learning database vs domain representations (DatabaseUser vs User)
+- **🎯 REPOSITORY PATTERN IMPLEMENTATION**: UserRepository trait and PostgresUserRepository implementation
+- **🎯 ERROR BOUNDARY HANDLING**: Defensive programming at module boundaries with TryFrom implementations
 
 ### NEXT PRIORITIES - Immediate Roadmap
-1. **Scheduled Card Update Job**: Automated incremental card data synchronization
+1. **Refactor Auth Handlers**: Remove direct SQL queries from auth.rs and use hexagonal architecture
+   - **Remove Direct Database Access**: Replace `query_as!` calls with repository pattern
+   - **Use UserService**: Implement service layer for user creation and authentication
+   - **Clean Separation**: Handlers only handle HTTP concerns, delegate business logic to services
+   - **Error Handling**: Proper error propagation from domain through to HTTP responses
+   - **Type Safety**: Use domain types (UserId, EmailAddress, UserName) instead of primitives
+2. **Complete UserRepository Implementation**: Finish PostgresUserRepository with proper error handling
+   - **Database User Conversion**: Complete DatabaseUser to User conversion with validation
+   - **Transaction Handling**: Proper rollback on validation failures
+   - **Error Mapping**: Comprehensive error handling for database vs domain errors
+3. **UserService Layer**: Implement domain service layer following hexagonal patterns
+   - **Business Logic Separation**: Move user creation logic from handlers to service
+   - **Dependency Injection**: Wire UserService into AppState
+   - **Handler Refactoring**: Update auth handlers to use service instead of direct database calls
+4. **Scheduled Card Update Job**: Automated incremental card data synchronization
    - **Database Diff Logic**: Query existing card IDs to determine what's missing from Scryfall data
    - **Incremental Import**: Only fetch and insert new/updated cards, skip existing ones
    - **Error Logging**: Comprehensive logging for failed imports, network issues, and data conflicts
    - **Scheduling System**: Configurable intervals for automatic updates (daily/weekly)
    - **Progress Tracking**: Detailed logging of import statistics and performance metrics
-2. **Card Search & Filtering APIs**: Build production search endpoints
+5. **Card Search & Filtering APIs**: Build production search endpoints
    - **Basic Search**: Name, type, color filtering with query parameter parsing
    - **Advanced Filters**: CMC range, format legality, power/toughness ranges
    - **Text Search**: Oracle text and flavor text full-text search
    - **Performance Optimization**: Database indexing strategy for search fields
-3. **Deck Management APIs**: Complete CRUD operations for user decks
+6. **Deck Management APIs**: Complete CRUD operations for user decks
    - **Create Deck**: New deck creation with validation
    - **Update Deck**: Name, description, format changes
    - **Delete Deck**: Soft delete with cascade handling
    - **Deck Statistics**: Card count, mana curve, color distribution
-4. **~~Advanced Card Data Integration~~**: ✅ **COMPLETED** - All complex nested fields integrated
+7. **~~Advanced Card Data Integration~~**: ✅ **COMPLETED** - All complex nested fields integrated
    - ✅ **Card Faces**: Multi-faced card support with Json<CardFace> arrays
    - ✅ **Image URIs**: Card image URL management with Json<ImageUris> 
    - ✅ **Legalities**: Format legality tracking with Json<Legalities> and custom enums
    - ✅ **Prices**: Market price data with Json<Prices> integration
-5. **~~Custom Serde Review Session~~**: ✅ **COMPLETED** - Custom deserializers mastered
+8. **~~Custom Serde Review Session~~**: ✅ **COMPLETED** - Custom deserializers mastered
    - ✅ **Understanding**: Complete mastery of `deserialize_int_or_string_array` pattern
    - ✅ **Pattern Recognition**: Expert knowledge of when/how to implement custom deserializers
    - ✅ **Best Practices**: Production-ready Json<T> wrapper patterns with SQLx
@@ -142,7 +165,10 @@ alwaysApply: true
 - **🏆 PRODUCTION DATA MODELING**: Every external API field successfully mapped to maintainable database schema
 - **🚀 HEXAGONAL ARCHITECTURE INTRODUCTION**: Started learning domain boundaries, exploring ports vs adapters concepts
 - **🚀 NEWTYPE PATTERN BASICS**: First successful validation newtypes, understanding constructor patterns
-- **🚀 TYPE SYSTEM EXPLORATION**: Beginning to see how types can enforce domain rules
+- **🚀 TYPE SAFETY LEARNING**: Beginning to see how types can enforce domain rules
+- **🎯 PASSWORD SECURITY ARCHITECTURE**: Implemented comprehensive validation with domain-driven design
+- **🎯 DOMAIN MODEL SEPARATION**: Understanding database vs domain representations and boundary validation
+- **🎯 DEFENSIVE PROGRAMMING**: Learning trust boundaries and validation at module interfaces
 
 ### Knowledge Solidification
 - **Configuration Patterns**: Dependency injection, startup config loading, testable architecture design
@@ -157,7 +183,8 @@ alwaysApply: true
 - **Architectural Wisdom**: Recognized when to simplify for maintainability
 - **Production Mindset**: Built robust error handling and service patterns
 - **Problem Solving**: Identified and structured next debugging challenge
-- **Strategic Simplification**: Chose maintainable solutions over abstract perfection
+- **Strategic Simplification**: Chose maintainable solutions over theoretical perfection
+- **Defensive Programming**: Correctly identified trust boundary issues and validation needs
 
 ---
 
@@ -182,6 +209,12 @@ alwaysApply: true
 - **JWT Best Practices**: 24-hour expiration, environment variable secrets
 - **Error Security**: Generic user responses to prevent enumeration attacks
 - **Input Validation**: Email normalization, ID range validation
+
+### Hexagonal Architecture Patterns
+- **Domain Model Separation**: DatabaseUser (raw) vs User (validated) representations
+- **Repository Pattern**: UserRepository trait with PostgresUserRepository implementation
+- **Error Boundary Handling**: TryFrom implementations for defensive programming
+- **Newtype Validation**: Domain types enforce business rules through type system
 
 ---
 
@@ -216,7 +249,7 @@ alwaysApply: true
 - **Research Guidance**: Point to specific docs/patterns, let implementation build understanding
 - **Neural Connection Strategy**: Connect new concepts to solidified knowledge nodes
 - **Component-by-Component**: Break complex features into digestible pieces
-- **Explain WHY**: Always provide architectural reasoning to strengthen conceptual pathways
+- **Explain WHY**: Always provide reasoning behind architectural decisions to strengthen conceptual pathways
 - **Debugging Guidance**: Guide investigation rather than providing direct answers
 
 ### Current Learning Edge
@@ -292,7 +325,15 @@ curl http://localhost:8080/api/v1/decks
 
 ---
 
-**Last Updated**: After beginning hexagonal architecture exploration and basic newtype pattern implementation
+**Last Updated**: After implementing hexagonal architecture patterns, password security with newtypes, and domain model separation
+
+**Current Sprint**: Learning hexagonal architecture principles while implementing JWT authentication with newtypes
+
+**Next Major Milestone**: Complete UserRepository implementation and build first service layer 
+
+**Current Sprint**: Learning hexagonal architecture principles while implementing JWT authentication with newtypes
+
+**Next Major Milestone**: Build first service layer implementation to practice ports vs adapters pattern 
 
 **Current Sprint**: Learning hexagonal architecture principles while implementing JWT authentication with newtypes
 

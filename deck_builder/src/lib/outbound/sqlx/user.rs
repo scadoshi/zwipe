@@ -1,22 +1,33 @@
+use anyhow::{anyhow, Context};
+use email_address::EmailAddress;
+use sqlx::query_as;
+
 use crate::domain::models::user::{User, UserCreationError, UserCreationRequest, UserId, UserName};
 use crate::domain::ports::repositories::user::UserRepository;
 use crate::outbound::sqlx::postgres::Postgres;
-use chrono::{NaiveDate, NaiveDateTime};
-use sqlx::{query_as, FromRow};
-use tracing_subscriber::registry::Data;
 
-#[derive(Debug, Clone, FromRow)]
-pub struct SqlxUserInsert {
+type TempError = Box<dyn std::error::Error>;
+
+#[derive(Debug, Clone)]
+pub struct DatabaseUser {
+    id: i32,
     username: String,
     email: String,
 }
 
-impl From<User> for SqlxUserInsert {
-    fn from(value: User) -> Self {
-        Self {
-            username: value.username.to_string(),
-            email: value.username.to_string(),
-        }
+impl TryFrom<DatabaseUser> for User {
+    type Error = anyhow::Error;
+    fn try_from(value: DatabaseUser) -> Result<Self, Self::Error> {
+        let id = UserId::new(value.id).context("Failed to validate user ID")?;
+        let username = UserName::new(&value.username).context("Failed to validate username")?;
+        let email =
+            EmailAddress::parse_with_options(&value.email, email_address::Options::default())
+                .context("Failed to validate email")?;
+        Ok(Self {
+            id,
+            username,
+            email,
+        })
     }
 }
 
@@ -28,13 +39,14 @@ impl UserRepository for Postgres {
             .pool
             .begin()
             .await
-            .map_err(|e| UserCreationError::DatabaseError(Box::new(e)))?;
+            .map_err(|e| UserCreationError::DatabaseError(anyhow!("{}", e)))?;
 
-        let user: User = query_as!(
-            User,
-            "INSERT INTO users (username, email) VALUES ($1, $2) RETURNING *",
+        let database_user: DatabaseUser = query_as!(
+            DatabaseUser,
+            "INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, username, email",
             req.username.to_string(),
-            req.email.to_string()
+            req.email.to_string(),
+            req.password_hash.to_string(),
         )
         .fetch_one(&mut *tx)
         .await
@@ -44,13 +56,10 @@ impl UserRepository for Postgres {
             {
                 UserCreationError::Duplicate
             }
-            e => UserCreationError::DatabaseError(Box::new(e)),
+            e => UserCreationError::DatabaseError(anyhow!("{}", e)),
         })?;
-
-        //
-        //
-        //
-        //
-        todo!()
+        let user = User::try_from(database_user)
+            .map_err(|e| UserCreationError::ReturnedUserInvalid(anyhow!("{e}")))?;
+        Ok(user)
     }
 }

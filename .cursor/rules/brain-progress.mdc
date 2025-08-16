@@ -78,6 +78,15 @@ alwaysApply: true
 - **Domain-Driven Constructors**: Experimenting with business-specific constructors (Bearer → JWT pattern)
 - **Type Safety Boundaries**: Learning how to prevent invalid data through type design
 - **Architectural Decision Making**: Practicing tradeoffs between purity and pragmatism
+- **Domain Model Separation**: Beginning to understand database vs domain representations (DatabaseUser vs User)
+- **Error Boundary Handling**: Learning defensive programming at module boundaries with TryFrom implementations
+- **Repository Pattern Implementation**: Working through UserRepository trait and PostgresUserRepository implementation
+
+### Password Security & Validation
+- **Advanced Password Policies**: Implemented comprehensive validation rules (length, complexity, uniqueness)
+- **Common Password Detection**: Built static list with trait-based checking (IsCommonPassword)
+- **Domain-Driven Password Types**: Created Password newtype with validation, HashedPassword for storage
+- **Security-First Design**: Understanding that domain should enforce security rules, not just frontend
 
 ### Advanced Axum Concepts
 - **Route Security**: User isolation patterns and protected endpoint implementation - next learning target
@@ -182,6 +191,7 @@ alwaysApply: true
 - **Quality Focus**: Comprehensive test coverage, considers edge cases and failure scenarios
 - **Architectural Evolution**: Successfully refactored from prototype to production patterns
 - **Honest Assessment**: Openly acknowledges knowledge gaps, asks clarifying questions
+- **Defensive Programming Instincts**: Correctly identifies trust boundary issues and validation needs
 
 ### Growth Areas (Developing Pathways)  
 - **Advanced Middleware**: Ready for JWT middleware implementation, concepts understood
@@ -202,12 +212,16 @@ alwaysApply: true
 - **🎯 HEXAGONAL ARCHITECTURE EXPLORATION**: Beginning to understand domain boundaries, working through ports vs adapters concepts
 - **🎯 NEWTYPE EXPERIMENTATION**: Successfully implemented basic validation newtypes, learning domain-driven patterns
 - **🎯 TYPE SAFETY LEARNING**: Exploring how to use type system for domain validation, still developing understanding
+- **🎯 DOMAIN MODEL SEPARATION**: Learning database vs domain representations and boundary validation
+- **🎯 DEFENSIVE PROGRAMMING**: Understanding trust boundaries and validation at module interfaces
+- **🎯 PASSWORD SECURITY ARCHITECTURE**: Implementing comprehensive validation with domain-driven design
 
 ### Learning Pattern Recognition
 - **Strategic Simplification**: Recognizes when complexity doesn't add value
 - **Production Focus**: Prioritizes working, maintainable code over abstract perfection
 - **Problem Decomposition**: Breaks complex challenges into manageable pieces
 - **Architectural Thinking**: Connects individual decisions to larger system design
+- **Security-First Mindset**: Understands that domain should enforce security, not just adapters
 
 ### Optimal Neural Connection Strategy
 - **Research Guidance**: Point to specific docs/patterns, let him implement and build connections
@@ -260,6 +274,10 @@ alwaysApply: true
 - **Adjust support level** based on pathway strength in each area
 
 ---
+
+**Last Updated**: After implementing hexagonal architecture patterns, password security with newtypes, and domain model separation
+
+**Next Learning Edge**: Complete UserRepository implementation and service layer architecture
 
 **Last Updated**: After completing COMPLETE SCRYFALL CARD ARCHITECTURE MASTERY - full 80+ field external API to database representation
 

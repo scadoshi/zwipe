@@ -1,6 +1,9 @@
+use anyhow::Context;
 use email_address::{EmailAddress, Options};
 use std::fmt::Display;
 use thiserror::Error;
+
+use crate::domain::auth::password::{HashedPassword, Password};
 //
 //
 //
@@ -11,19 +14,13 @@ use thiserror::Error;
 pub struct UserNameEmptyError;
 
 #[derive(Debug, Error)]
-pub enum UserCreationRequestError {
-    #[error(transparent)]
-    InvalidUsername(#[from] UserNameEmptyError),
-    #[error(transparent)]
-    InvalidEmail(#[from] email_address::Error),
-}
-
-#[derive(Debug, Error)]
 pub enum UserCreationError {
     #[error("User with name or email already exists")]
     Duplicate,
     #[error("Database error: {0}")]
-    DatabaseError(Box<dyn std::error::Error + Send + Sync>),
+    DatabaseError(anyhow::Error),
+    #[error("User created in database but returned an invalid User: {0}")]
+    ReturnedUserInvalid(anyhow::Error),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
@@ -71,17 +68,26 @@ impl UserId {
 //
 //
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub struct UserCreationRequest {
     pub email: EmailAddress,
     pub username: UserName,
+    pub password_hash: HashedPassword,
 }
 
 impl UserCreationRequest {
-    fn new(username: &str, email: &str) -> Result<Self, UserCreationRequestError> {
-        let username = UserName::new(username)?;
-        let email = EmailAddress::parse_with_options(email, Options::default())?;
-        Ok(UserCreationRequest { email, username })
+    pub fn new(username: &str, email: &str, password: &str) -> Result<Self, anyhow::Error> {
+        let username = UserName::new(username).context("Invalid username")?;
+        let email = EmailAddress::parse_with_options(email, Options::default())
+            .context("Invalid email address")?;
+        let password_hash =
+            HashedPassword::new(Password::new(password).context("Invalid password")?)
+                .context("Failed to hash password")?;
+        Ok(UserCreationRequest {
+            email,
+            username,
+            password_hash,
+        })
     }
 }
 //
@@ -91,7 +97,7 @@ impl UserCreationRequest {
 //
 #[derive(Debug, Clone)]
 pub struct User {
-    pub id: i32,
-    pub email: String,
-    pub username: String,
+    pub id: UserId,
+    pub email: EmailAddress,
+    pub username: UserName,
 }
