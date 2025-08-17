@@ -29,13 +29,15 @@ pub struct UserIdError;
 
 /// Errors that can occur during user creation
 #[derive(Debug, Error)]
-pub enum UserCreationError {
+pub enum UserRegistrationError {
     #[error("User with name or email already exists")]
     Duplicate,
-    #[error("Database error: {0}")]
-    DatabaseError(anyhow::Error),
+    #[error("Database issues: {0}")]
+    DatabaseIssues(anyhow::Error),
     #[error("User created but then database returned an invalid User. DatabaseUser -> User conversion error: {0}")]
     InvalidUserFromDatabase(anyhow::Error),
+    #[error("Failed to generate json web token: {0}")]
+    FailedJwt(anyhow::Error),
 }
 
 /// Errors that can occur during user authentication
@@ -45,10 +47,14 @@ pub enum UserAuthenticationError {
     UserNotFound,
     #[error("Invalid password")]
     InvalidPassword,
-    #[error("Database error: {0}")]
-    DatabaseError(anyhow::Error),
-    #[error("User found but then database returned an invalid HashedPassword. String -> HashedPassword conversion error: {0} ")]
-    InvalidHashFromDatabase(anyhow::Error),
+    #[error("Database issues: {0}")]
+    DatabaseIssues(anyhow::Error),
+    #[error("User found but then database returned an invalid User. DatabaseUserWithPasswordHash -> UserWithPasswordHash conversion error: {0} ")]
+    InvalidUserFromDatabase(anyhow::Error),
+    #[error("Failed to verify password: {0}")]
+    FailedToVerify(anyhow::Error),
+    #[error("Failed to generate json web token: {0}")]
+    FailedJwt(anyhow::Error),
 }
 
 /// Errors that can occur when creating authentication requests
@@ -97,7 +103,7 @@ impl Display for UserName {
 }
 
 /// A validated user ID within the range 0-999,999
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Copy)]
 pub struct UserId(i32);
 
 impl UserId {
@@ -193,12 +199,31 @@ impl UserAuthenticationRequest {
     }
 }
 
+/// For authentication only
+#[derive(Debug, Clone)]
+pub struct UserWithPasswordHash {
+    pub id: UserId,
+    pub username: UserName,
+    pub email: EmailAddress,
+    pub password_hash: HashedPassword,
+}
+
+impl From<UserWithPasswordHash> for User {
+    fn from(value: UserWithPasswordHash) -> Self {
+        Self {
+            id: value.id,
+            username: value.username,
+            email: value.email,
+        }
+    }
+}
+
 /// Successful authentication response containing user data and JWT token
 #[derive(Debug, Clone)]
 pub struct UserAuthenticationSuccessResponse {
     pub user: User,
     pub token: Jwt,
-    pub expires_at: i64,
+    pub expires_at: usize,
 }
 
 impl UserAuthenticationSuccessResponse {
@@ -209,7 +234,7 @@ impl UserAuthenticationSuccessResponse {
     pub fn new(
         user: User,
         token_string: String,
-        expires_at: i64,
+        expires_at: usize,
     ) -> Result<Self, UserAuthenticationSuccessResponseError> {
         let token = Jwt::new(&token_string)
             .map_err(|e| UserAuthenticationSuccessResponseError::JwtError(e))?;
@@ -229,6 +254,6 @@ impl UserAuthenticationSuccessResponse {
 #[derive(Debug, Clone)]
 pub struct User {
     pub id: UserId,
-    pub email: EmailAddress,
     pub username: UserName,
+    pub email: EmailAddress,
 }

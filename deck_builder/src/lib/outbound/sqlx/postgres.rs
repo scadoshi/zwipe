@@ -3,11 +3,11 @@
 // =============================================================================
 
 use anyhow::{anyhow, Context};
-use sqlx::{query_as, query_scalar, PgPool, Transaction};
+use sqlx::{query_as, PgPool, Transaction};
 use tracing::info;
 
-use crate::domain::user::models::{UserAuthenticationError, UserCreationError, UserCreationRequest};
-use crate::outbound::sqlx::user::DatabaseUser;
+use crate::domain::user::models::{UserAuthenticationError, UserRegistrationError, UserCreationRequest};
+use crate::outbound::sqlx::user::{DatabaseUser, DatabaseUserWithPasswordHash};
 
 // =============================================================================
 // CONSTANTS & HELPERS
@@ -80,12 +80,12 @@ impl Postgres {
         Ok(Self { pool })
     }
 
-    /// Saves user to database, database returns a database type, then converts and returns domain type
+    /// Saves user to database
     pub async fn save_user(
         &self,
         tx: &mut Transaction<'_, sqlx::Postgres>,
         req: &UserCreationRequest,
-    ) -> Result<DatabaseUser, UserCreationError> {
+    ) -> Result<DatabaseUser, UserRegistrationError> {
         query_as!(
             DatabaseUser,
             "INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, username, email",
@@ -97,27 +97,28 @@ impl Postgres {
         .await
         .map_err(|e| {
             if e.is_unique_constraint_violation() {
-                return UserCreationError::Duplicate;
+                return UserRegistrationError::Duplicate;
             } 
-            UserCreationError::DatabaseError(anyhow!("{}", e))
+            UserRegistrationError::DatabaseIssues(anyhow!("{}", e))
         })
     }
 
-    /// Gets password hash from database for user with matching username or email, database returns a String, then converts and returns domain type
-    pub async fn get_user_password_hash_with_username_or_email(
+    /// Gets user with password hash from database for user with matching username or email
+    pub async fn get_user_with_password_hash_with_username_or_email(
         &self,
         pool: &PgPool,
         username_or_email: &str,
-    ) -> Result<String, UserAuthenticationError> {
-        query_scalar!(
-            "SELECT password_hash FROM users WHERE username = $1 OR email = $1",
+    ) -> Result<DatabaseUserWithPasswordHash, UserAuthenticationError> {
+        query_as!(
+            DatabaseUserWithPasswordHash,
+            "SELECT id, username, email, password_hash FROM users WHERE username = $1 OR email = $1",
             username_or_email
         )
         .fetch_one(pool)
         .await
         .map_err(|e| match e {
             sqlx::Error::RowNotFound => UserAuthenticationError::UserNotFound,
-            e => UserAuthenticationError::DatabaseError(anyhow!("{e}")),
+            e => UserAuthenticationError::DatabaseIssues(anyhow!("{e}")),
         })
     }
 }

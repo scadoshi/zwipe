@@ -2,14 +2,16 @@
 // IMPORTS
 // =============================================================================
 
+use std::str::FromStr;
+
 use anyhow::{anyhow, Context};
 use email_address::EmailAddress;
 use sqlx_macros::FromRow;
 
 use crate::domain::auth::models::password::HashedPassword;
 use crate::domain::user::models::{
-    User, UserAuthenticationError, UserAuthenticationRequest, UserCreationError,
-    UserCreationRequest, UserId, UserName,
+    User, UserAuthenticationError, UserAuthenticationRequest, UserCreationRequest, UserId,
+    UserName, UserRegistrationError, UserWithPasswordHash,
 };
 use crate::domain::user::ports::UserRepository;
 use crate::outbound::sqlx::postgres::Postgres;
@@ -44,26 +46,54 @@ impl TryFrom<DatabaseUser> for User {
     }
 }
 
+/// Raw database user with password hash record - unvalidated data from PostgreSQL
+#[derive(Debug, Clone, FromRow)]
+pub struct DatabaseUserWithPasswordHash {
+    pub id: i32,
+    pub username: String,
+    pub email: String,
+    pub password_hash: String,
+}
+
+/// Converts database user with password hash to validated domain user with password hash
+impl TryFrom<DatabaseUserWithPasswordHash> for UserWithPasswordHash {
+    type Error = anyhow::Error;
+
+    fn try_from(value: DatabaseUserWithPasswordHash) -> Result<Self, Self::Error> {
+        let id = UserId::new(value.id).context("Failed to validate user ID")?;
+        let username = UserName::new(&value.username).context("Failed to validate username")?;
+        let email = EmailAddress::from_str(&value.email).context("Failed to validate email")?;
+        let password_hash = HashedPassword::new(&value.password_hash)
+            .context("Failed to validate password hash")?;
+        Ok(Self {
+            id,
+            username,
+            email,
+            password_hash,
+        })
+    }
+}
+
 // =============================================================================
 // REPOSITORY IMPLEMENTATION
 // =============================================================================
 
 impl UserRepository for Postgres {
     /// Creates user with transaction safety and domain validation
-    async fn create_user(&self, req: &UserCreationRequest) -> Result<User, UserCreationError> {
+    async fn create_user(&self, req: &UserCreationRequest) -> Result<User, UserRegistrationError> {
         let mut tx = self
             .pool
             .begin()
             .await
-            .map_err(|e| UserCreationError::DatabaseError(anyhow!("{}", e)))?;
+            .map_err(|e| UserRegistrationError::DatabaseIssues(anyhow!("{}", e)))?;
 
         let database_user = self.save_user(&mut tx, req).await?;
 
         let user = User::try_from(database_user)
-            .map_err(|e| UserCreationError::InvalidUserFromDatabase(anyhow!("{e}")))?;
+            .map_err(|e| UserRegistrationError::InvalidUserFromDatabase(anyhow!("{e}")))?;
 
         tx.commit().await.map_err(|e| {
-            UserCreationError::DatabaseError(anyhow!(
+            UserRegistrationError::DatabaseIssues(anyhow!(
                 "Failed to commit PostgreSQL transaction: {e}"
             ))
         });
@@ -72,15 +102,15 @@ impl UserRepository for Postgres {
     }
 
     /// Gets password hash for authentication by username or email
-    async fn get_user_password_hash(
+    async fn get_user_with_password_hash(
         &self,
         req: &UserAuthenticationRequest,
-    ) -> Result<HashedPassword, UserAuthenticationError> {
-        let raw_password_hash = self
-            .get_user_password_hash_with_username_or_email(&self.pool, &req.identifier)
+    ) -> Result<UserWithPasswordHash, UserAuthenticationError> {
+        let database_user_with_password_hash = self
+            .get_user_with_password_hash_with_username_or_email(&self.pool, &req.identifier)
             .await?;
 
-        HashedPassword::new(&raw_password_hash)
-            .map_err(|e| UserAuthenticationError::InvalidHashFromDatabase(anyhow!("{e}")))
+        UserWithPasswordHash::try_from(database_user_with_password_hash)
+            .map_err(|e| UserAuthenticationError::InvalidUserFromDatabase(anyhow!("{e}")))
     }
 }
