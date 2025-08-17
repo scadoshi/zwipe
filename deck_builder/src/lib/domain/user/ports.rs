@@ -1,12 +1,23 @@
 use std::future::Future;
 
-use crate::domain::user::models::{User, UserCreationError, UserCreationRequest};
+use crate::domain::{
+    auth::models::password::HashedPassword,
+    user::models::{
+        User, UserAuthenticationError, UserAuthenticationRequest,
+        UserAuthenticationSuccessResponse, UserCreationError, UserCreationRequest,
+    },
+};
 
 pub trait UserService {
     fn create_user(
         &self,
         req: &UserCreationRequest,
     ) -> impl Future<Output = Result<User, UserCreationError>> + Send;
+
+    fn authenticate_user(
+        &self,
+        req: &UserAuthenticationRequest,
+    ) -> impl Future<Output = Result<UserAuthenticationSuccessResponse, UserAuthenticationError>> + Send;
 }
 
 pub trait UserRepository: Send + Sync + Clone + 'static {
@@ -14,4 +25,9 @@ pub trait UserRepository: Send + Sync + Clone + 'static {
         &self,
         req: &UserCreationRequest,
     ) -> impl Future<Output = Result<User, UserCreationError>> + Send;
+
+    fn get_user_password_hash(
+        &self,
+        req: &UserAuthenticationRequest,
+    ) -> impl Future<Output = Result<HashedPassword, UserAuthenticationError>> + Send;
 }
