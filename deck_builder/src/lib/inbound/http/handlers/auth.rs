@@ -1,5 +1,4 @@
-use crate::domain::models::user::{User, UserCreationError, UserCreationRequest};
-use crate::inbound::http::app_state::AppState;
+use crate::{domain::user::{models::{User, UserCreationError, UserCreationRequest}, ports::UserService}, inbound::http::AppState};
 
 use axum::{extract::State, http::StatusCode, response::Json};
 use serde::{Deserialize, Serialize};
@@ -31,8 +30,8 @@ impl UserCreationHttpRequestBody {
     }
 }
 
-pub async fn authenticate_user(
-    app_state: AppState,
+pub async fn authenticate_user<US: UserService>(
+    State(state): State<AppState<US>>,
     identifier: &str,
     password: &str,
 ) -> Result<LoginResponse, StatusCode> {
@@ -69,8 +68,8 @@ pub async fn authenticate_user(
     })
 }
 
-pub async fn login(
-    State(app_state): State<AppState>,
+pub async fn login<US: UserService>(
+    State(app_state): State<AppState<US>>,
     Json(LoginRequest {
         identifier,
         password,
@@ -133,8 +132,8 @@ pub async fn register_user(
     })
 }
 
-pub async fn register(
-    State(app_state): State<AppState>,
+pub async fn register<US: UserService>(
+    State(app_state): State<AppState<US>>,
     Json(registration_request): Json<UserCreationRequest>,
 ) -> Result<Json<LoginResponse>, StatusCode> {
     register_user(

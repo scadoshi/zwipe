@@ -56,6 +56,7 @@ alwaysApply: true
 - **🏆 JSON WRAPPER MASTERY**: Expert Json<T> usage in dynamic bulk INSERT operations
 - **🏆 PRODUCTION DATA MODEL**: Every field from Scryfall API successfully integrated to database
 - **🏆 TYPE SYSTEM ARCHITECTURE**: Strategic custom struct design with maintainable complexity balance
+- **🎯 HTTP SERVER ARCHITECTURE REFACTORING**: Successfully extracted server configuration from main into dedicated HttpServer module following hexagonal boundaries
 
 ### IN PROGRESS - Hexagonal Architecture Implementation
 - **🎯 HEXAGONAL ARCHITECTURE LEARNING**: Understanding domain boundaries, ports vs adapters concepts
@@ -74,44 +75,51 @@ alwaysApply: true
 - **🎯 TESTING BEST PRACTICES**: Understanding that newtype validation should be tested at newtype level, not function level
 - **🎯 HEXAGONAL LAYER UNDERSTANDING**: Clear grasp of what belongs in domain vs adapters (middleware moved to HTTP layer)
 - **🎯 DOMAIN DOCUMENTATION**: Comprehensive documentation of newtypes explaining purpose, validation rules, and business logic
+- **🎯 GENERIC TYPE SYSTEM MASTERY**: Deep understanding of `impl Trait` vs `T: Trait` differences in web framework contexts
+- **🎯 HTTP HANDLER GENERIC INTEGRATION**: Working through Axum handler compatibility with generic AppState types - handlers need updating for generic type chain
 
 ### NEXT PRIORITIES - Immediate Roadmap
-1. **Refactor Auth Handlers**: Remove direct SQL queries from auth.rs and use hexagonal architecture
+1. **Complete Handler Generic Integration**: Fix Axum handler compatibility with generic AppState types
+   - **Update Handler Signatures**: Modify auth and deck handlers to work with generic `AppState<US>`
+   - **Generic Type Chain**: Ensure entire route → handler → service chain uses consistent generic types
+   - **Type Constraint Resolution**: Fix trait bound errors for `Clone`, `Send`, `Sync` requirements
+   - **Test Generic Integration**: Verify handlers work with concrete service implementations
+2. **Refactor Auth Handlers**: Remove direct SQL queries from auth.rs and use hexagonal architecture
    - **Remove Direct Database Access**: Replace `query_as!` calls with repository pattern
    - **Use UserService**: Implement service layer for user creation and authentication
    - **Clean Separation**: Handlers only handle HTTP concerns, delegate business logic to services
    - **Error Handling**: Proper error propagation from domain through to HTTP responses
    - **Type Safety**: Use domain types (UserId, EmailAddress, UserName) instead of primitives
-2. **Complete UserRepository Implementation**: Finish PostgresUserRepository with proper error handling
+3. **Complete UserRepository Implementation**: Finish PostgresUserRepository with proper error handling
    - **Database User Conversion**: Complete DatabaseUser to User conversion with validation
    - **Transaction Handling**: Proper rollback on validation failures
    - **Error Mapping**: Comprehensive error handling for database vs domain errors
-3. **UserService Layer**: Implement domain service layer following hexagonal patterns
+4. **UserService Layer**: Implement domain service layer following hexagonal patterns
    - **Business Logic Separation**: Move user creation logic from handlers to service
    - **Dependency Injection**: Wire UserService into AppState
    - **Handler Refactoring**: Update auth handlers to use service instead of direct database calls
-4. **Scheduled Card Update Job**: Automated incremental card data synchronization
+5. **Scheduled Card Update Job**: Automated incremental card data synchronization
    - **Database Diff Logic**: Query existing card IDs to determine what's missing from Scryfall data
    - **Incremental Import**: Only fetch and insert new/updated cards, skip existing ones
    - **Error Logging**: Comprehensive logging for failed imports, network issues, and data conflicts
    - **Scheduling System**: Configurable intervals for automatic updates (daily/weekly)
    - **Progress Tracking**: Detailed logging of import statistics and performance metrics
-5. **Card Search & Filtering APIs**: Build production search endpoints
+6. **Card Search & Filtering APIs**: Build production search endpoints
    - **Basic Search**: Name, type, color filtering with query parameter parsing
    - **Advanced Filters**: CMC range, format legality, power/toughness ranges
    - **Text Search**: Oracle text and flavor text full-text search
    - **Performance Optimization**: Database indexing strategy for search fields
-6. **Deck Management APIs**: Complete CRUD operations for user decks
+7. **Deck Management APIs**: Complete CRUD operations for user decks
    - **Create Deck**: New deck creation with validation
    - **Update Deck**: Name, description, format changes
    - **Delete Deck**: Soft delete with cascade handling
    - **Deck Statistics**: Card count, mana curve, color distribution
-7. **~~Advanced Card Data Integration~~**: ✅ **COMPLETED** - All complex nested fields integrated
+8. **~~Advanced Card Data Integration~~**: ✅ **COMPLETED** - All complex nested fields integrated
    - ✅ **Card Faces**: Multi-faced card support with Json<CardFace> arrays
    - ✅ **Image URIs**: Card image URL management with Json<ImageUris> 
    - ✅ **Legalities**: Format legality tracking with Json<Legalities> and custom enums
    - ✅ **Prices**: Market price data with Json<Prices> integration
-8. **~~Custom Serde Review Session~~**: ✅ **COMPLETED** - Custom deserializers mastered
+9. **~~Custom Serde Review Session~~**: ✅ **COMPLETED** - Custom deserializers mastered
    - ✅ **Understanding**: Complete mastery of `deserialize_int_or_string_array` pattern
    - ✅ **Pattern Recognition**: Expert knowledge of when/how to implement custom deserializers
    - ✅ **Best Practices**: Production-ready Json<T> wrapper patterns with SQLx
@@ -174,6 +182,8 @@ alwaysApply: true
 - **🎯 PASSWORD SECURITY ARCHITECTURE**: Implemented comprehensive validation with domain-driven design
 - **🎯 DOMAIN MODEL SEPARATION**: Understanding database vs domain representations and boundary validation
 - **🎯 DEFENSIVE PROGRAMMING**: Learning trust boundaries and validation at module interfaces
+- **🚀 HTTP SERVER ARCHITECTURE REFACTORING**: Successfully extracted server configuration into HttpServer module following hexagonal boundaries
+- **🚀 GENERIC TYPE SYSTEM BREAKTHROUGH**: Deep understanding of `impl Trait` vs `T: Trait` differences for web framework compatibility
 
 ### Knowledge Solidification
 - **Configuration Patterns**: Dependency injection, startup config loading, testable architecture design
@@ -330,24 +340,10 @@ curl http://localhost:8080/api/v1/decks
 
 ---
 
-**Last Updated**: After implementing hexagonal architecture patterns, password security with newtypes, and domain model separation
+**Last Updated**: After implementing HTTP server architecture refactoring and mastering generic type systems with Axum integration
 
-**Current Sprint**: Learning hexagonal architecture principles while implementing JWT authentication with newtypes
+**Current Sprint**: Completing handler generic integration while learning hexagonal architecture with type system mastery
 
-**Next Major Milestone**: Complete UserRepository implementation and build first service layer 
+**Next Major Milestone**: Complete handler refactoring for generic type compatibility, then finish UserRepository implementation
 
-**Current Sprint**: Learning hexagonal architecture principles while implementing JWT authentication with newtypes
-
-**Next Major Milestone**: Build first service layer implementation to practice ports vs adapters pattern 
-
-**Current Sprint**: Learning hexagonal architecture principles while implementing JWT authentication with newtypes
-
-**Next Major Milestone**: Build first service layer implementation to practice ports vs adapters pattern 
-
-**Current Sprint**: Learning hexagonal architecture principles while implementing JWT authentication with newtypes
-
-**Next Major Milestone**: Build first service layer implementation to practice ports vs adapters pattern 
-
-**Current Sprint**: Learning hexagonal architecture principles while implementing JWT authentication with newtypes
-
-**Next Major Milestone**: Build first service layer implementation to practice ports vs adapters pattern 
+**Major Recent Breakthrough**: Understanding the critical difference between `impl Trait` (opaque) vs `T: Trait` (generic) in web framework contexts - this represents a significant advancement in Rust type system mastery for production applications 

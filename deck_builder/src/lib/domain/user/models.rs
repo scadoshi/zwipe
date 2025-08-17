@@ -101,7 +101,7 @@ pub struct UserCreationRequest {
 }
 
 impl UserCreationRequest {
-    pub fn new(username: &str, email: &str, password: &str) -> Result<Self, anyhow::Error> {
+    pub fn new(username: &str, email: &str, password: &str) -> anyhow::Result<Self> {
         let username = UserName::new(username).context("Invalid username")?;
         let email = EmailAddress::parse_with_options(email, Options::default())
             .context("Invalid email address")?;

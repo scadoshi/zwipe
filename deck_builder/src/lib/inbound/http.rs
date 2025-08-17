@@ -1,20 +1,17 @@
-pub mod app_state;
 pub mod handlers;
 pub mod middleware;
-pub mod routes;
 pub mod scryfall;
 
 use std::sync::Arc;
 
 use anyhow::Context;
 use axum::http::{header, HeaderValue, Method};
+use axum::routing::{get, post};
 use axum::Router;
-use axum::routing::post;
 use tokio::net;
 use tower_http::cors::CorsLayer;
 
 use crate::domain::user::ports::UserService;
-use crate::inbound::http::routes::{protected_routes, public_routes};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HttpServerConfig<'a> {
@@ -49,7 +46,7 @@ impl HttpServer {
         };
 
         let router = axum::Router::new()
-            .merge(protected_routes())
+            // .merge(private_routes())
             .merge(public_routes())
             .layer(trace_layer)
             .layer(
@@ -60,8 +57,37 @@ impl HttpServer {
             )
             .with_state(state);
 
-        let listener = net::TcpListener::bind(&config.bind_address)
+        let listener = net::TcpListener::bind(&config.bind_address).await?;
 
-        todo!()
+        Ok(Self { router, listener })
     }
+
+    pub async fn run(self) -> anyhow::Result<()> {
+        tracing::debug!("Listening on {}", self.listener.local_addr().unwrap());
+        axum::serve(self.listener, self.router)
+            .await
+            .context("Received error from running server")?;
+
+        Ok(())
+    }
+}
+
+// pub fn private_routes<US: UserService>() -> Router<AppState<US>> {
+//     Router::new().nest(
+//         "/api/v1",
+//         Router::new().route("/decks", get(handlers::decks::get_decks::<US>)),
+//     )
+// }
+
+pub fn public_routes<US: UserService>() -> Router<AppState<US>> {
+    Router::new()
+        .route("/", get(handlers::health::root))
+        .route("/health", get(handlers::health::health_check))
+        .route("/health/deep", get(handlers::health::health_check_deep))
+        .nest(
+            "/api/v1",
+            Router::new()
+                .route("/auth/login", post(handlers::auth::login::<US>))
+                .route("/auth/register", post(handlers::auth::register::<US>)),
+        )
 }

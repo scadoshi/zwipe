@@ -69,6 +69,13 @@ alwaysApply: true
 - **Schema Usage**: Comfortable using schema for Diesel operations
 - **Mutable Connections**: Confident with requirement and patterns
 
+### HTTP Server Architecture & Type Systems
+- **Server Abstraction**: Successfully extracted server configuration from main into dedicated HttpServer module
+- **Generic Type Understanding**: Deep comprehension of `impl Trait` vs `T: Trait` differences in web framework contexts
+- **Route Organization**: Clean separation of public vs private routes with generic type parameters
+- **Type Inference Patterns**: Understanding when Rust's type inference works vs when explicit generics needed
+- **Hexagonal HTTP Layer**: Proper placement of HTTP concerns in inbound layer following architectural boundaries
+
 ---
 
 ## LEARNING - Recently Introduced (Needs Guidance)
@@ -97,6 +104,13 @@ alwaysApply: true
 - **Route Security**: User isolation patterns and protected endpoint implementation - next learning target
 - **Custom Extractors**: Advanced patterns beyond basic JWT authentication
 - **Advanced Middleware**: Layered middleware composition patterns
+
+### Advanced Generic Type Systems
+- **Opaque vs Concrete Types**: Expert understanding of `impl UserService` vs `US: UserService` trade-offs
+- **Axum Type Constraints**: Learning how web frameworks require concrete generic types throughout chain
+- **Type Inference Fragility**: Understanding when type inference works vs explicit generic parameters needed
+- **Generic Handler Patterns**: Working through handler function signatures with generic state types
+- **Hexagonal Generic Integration**: Learning to maintain type safety across domain boundaries with generics
 
 ### Database Relationships
 - **Foreign Keys**: Solid understanding of `#[diesel(belongs_to(...))]` relationships
@@ -223,6 +237,9 @@ alwaysApply: true
 - **🎯 DOMAIN-FIRST ORGANIZATION**: Successfully reorganized codebase from layer-first to domain-first structure
 - **🎯 TESTING BEST PRACTICES**: Understanding that newtype validation should be tested at newtype level, not function level
 - **🎯 COMPREHENSIVE NEWTYPE TESTING**: Implemented thorough test coverage for JwtSecret, Jwt, and UserClaims with proper validation testing
+- **🎯 HTTP SERVER ARCHITECTURE MASTERY**: Successfully extracted server configuration into dedicated HttpServer module following hexagonal patterns
+- **🎯 GENERIC TYPE SYSTEM BREAKTHROUGH**: Deep understanding of `impl Trait` vs `T: Trait` differences in web framework contexts
+- **🎯 TYPE INFERENCE WISDOM**: Learning when Rust's type inference works vs when explicit generic parameters needed for Axum compatibility
 
 ### Learning Pattern Recognition
 - **Strategic Simplification**: Recognizes when complexity doesn't add value
@@ -283,14 +300,8 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: After implementing comprehensive newtype testing and domain-first organization
+**Last Updated**: After implementing HTTP server architecture refactoring and mastering generic type systems with Axum integration
 
-**Next Learning Edge**: Complete UserRepository implementation and service layer architecture
+**Next Learning Edge**: Complete handler refactoring for generic type compatibility, then finish UserRepository implementation
 
-**Last Updated**: After completing COMPLETE SCRYFALL CARD ARCHITECTURE MASTERY - full 80+ field external API to database representation
-
-**Next Learning Edge**: Card Search APIs, Deck Management CRUD, and user-facing feature development
-
-**Last Updated**: After completing COMPLETE SCRYFALL CARD ARCHITECTURE MASTERY - full 80+ field external API to database representation
-
-**Next Learning Edge**: Card Search APIs, Deck Management CRUD, and user-facing feature development
+**Major Recent Breakthrough**: Understanding the critical difference between `impl Trait` (opaque) vs `T: Trait` (generic) in web framework contexts - this represents a significant advancement in Rust type system mastery for production applications
