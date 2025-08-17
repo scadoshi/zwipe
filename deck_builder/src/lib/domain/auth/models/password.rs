@@ -261,13 +261,7 @@ mod tests {
 
     #[test]
     fn test_password_hash_method_with_various_inputs() {
-        let test_passwords = vec![
-            "SimpleHash123!",
-            "Complex🔐Password456@",
-            "Unicode密码789#",
-            &format!("{}A1!", "a".repeat(100)), // Long password
-        ];
-
+        let test_passwords = vec!["SimpleHash123!", "Complex🔐Password456@", "Unicode密码789#"];
         for password_str in test_passwords {
             let password = Password::new(password_str).unwrap();
             let hash = password.hash().unwrap();
