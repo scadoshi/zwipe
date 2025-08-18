@@ -1,36 +1,50 @@
 use std::future::Future;
 
-use crate::domain::{
-    auth::models::jwt::JwtSecret,
-    user::models::{
-        User, UserAuthenticationError, UserAuthenticationRequest,
-        UserAuthenticationSuccessResponse, UserCreationRequest, UserRegistrationError,
-        UserWithPasswordHash,
-    },
+use crate::domain::user::models::{
+    CreateUserRequest, DeleteUserError, DeleteUserRequest, GetUserError, GetUserRequest,
+    UpdateUserRequest, User, UserError,
 };
 
 pub trait UserRepository: Send + Sync + Clone + 'static {
-    fn create_user(
+    pub fn create_user(
         &self,
-        req: &UserCreationRequest,
-    ) -> impl Future<Output = Result<User, UserRegistrationError>> + Send;
+        req: &CreateUserRequest,
+    ) -> impl Future<Output = Result<User, UserError>> + Send;
 
-    fn get_user_with_password_hash(
+    pub fn get_user(
         &self,
-        req: &UserAuthenticationRequest,
-    ) -> impl Future<Output = Result<UserWithPasswordHash, UserAuthenticationError>> + Send;
+        req: &GetUserRequest,
+    ) -> impl Future<Output = Result<User, GetUserError>> + Send;
+
+    pub fn update_user(
+        &self,
+        req: &UpdateUserRequest,
+    ) -> impl Future<Output = Result<User, UserError>> + Send;
+
+    pub fn delete_user(
+        &self,
+        req: &DeleteUserRequest,
+    ) -> impl Future<Output = Result<(), DeleteUserError>> + Send;
 }
 
-pub trait UserService {
-    fn register_user(
+pub trait UserService: Send + Sync + Clone + 'static {
+    pub fn create_user(
         &self,
-        req: &UserCreationRequest,
-        jwt_secret: JwtSecret,
-    ) -> impl Future<Output = Result<UserAuthenticationSuccessResponse, UserRegistrationError>> + Send;
+        req: &CreateUserRequest,
+    ) -> impl Future<Output = Result<User, UserError>> + Send;
 
-    fn authenticate_user(
+    pub fn get_user(
         &self,
-        req: &UserAuthenticationRequest,
-        jwt_secret: JwtSecret,
-    ) -> impl Future<Output = Result<UserAuthenticationSuccessResponse, UserAuthenticationError>> + Send;
+        req: &GetUserRequest,
+    ) -> impl Future<Output = Result<User, GetUserError>> + Send;
+
+    pub fn update_user(
+        &self,
+        req: &UpdateUserRequest,
+    ) -> impl Future<Output = Result<User, UserError>> + Send;
+
+    pub fn delete_user(
+        &self,
+        req: &DeleteUserRequest,
+    ) -> impl Future<Output = Result<(), DeleteUserError>> + Send;
 }

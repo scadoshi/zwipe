@@ -1,7 +1,7 @@
 CREATE TABLE deck_cards (
-    id SERIAL PRIMARY KEY,
-    deck_id INT NOT NULL,
-    card_profile_id INT NOT NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    deck_id UUID NOT NULL,
+    card_profile_id UUID NOT NULL,
     quantity INT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),

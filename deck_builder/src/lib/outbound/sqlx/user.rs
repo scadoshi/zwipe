@@ -1,7 +1,3 @@
-// =============================================================================
-// IMPORTS
-// =============================================================================
-
 use std::str::FromStr;
 
 use anyhow::{anyhow, Context};
@@ -42,34 +38,6 @@ impl TryFrom<DatabaseUser> for User {
             id,
             username,
             email,
-        })
-    }
-}
-
-/// Raw database user with password hash record - unvalidated data from PostgreSQL
-#[derive(Debug, Clone, FromRow)]
-pub struct DatabaseUserWithPasswordHash {
-    pub id: i32,
-    pub username: String,
-    pub email: String,
-    pub password_hash: String,
-}
-
-/// Converts database user with password hash to validated domain user with password hash
-impl TryFrom<DatabaseUserWithPasswordHash> for UserWithPasswordHash {
-    type Error = anyhow::Error;
-
-    fn try_from(value: DatabaseUserWithPasswordHash) -> Result<Self, Self::Error> {
-        let id = UserId::new(value.id).context("Failed to validate user ID")?;
-        let username = UserName::new(&value.username).context("Failed to validate username")?;
-        let email = EmailAddress::from_str(&value.email).context("Failed to validate email")?;
-        let password_hash = HashedPassword::new(&value.password_hash)
-            .context("Failed to validate password hash")?;
-        Ok(Self {
-            id,
-            username,
-            email,
-            password_hash,
         })
     }
 }

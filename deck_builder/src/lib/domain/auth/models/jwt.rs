@@ -6,10 +6,11 @@ use thiserror::Error;
 
 use crate::domain::user::models::UserId;
 
-/// Error types for JWT secret validation failures.
-///
-/// These errors represent domain-specific validation failures when creating
-/// JWT secrets, ensuring only cryptographically secure secrets are used.
+// =============================================================================
+// ERROR TYPES
+// =============================================================================
+
+/// Errors to return while using new constructor for JwtSecret
 #[derive(Debug, Clone, Error)]
 pub enum JwtSecretError {
     #[error("Secret length must be 32+")]
@@ -18,10 +19,7 @@ pub enum JwtSecretError {
     MissingSecret,
 }
 
-/// Error types for JWT token operations.
-///
-/// These errors represent domain-specific failures in JWT token creation,
-/// validation, and parsing operations.
+/// Errors to return while using new constructor for Jwt
 #[derive(Debug, Clone, Error)]
 pub enum JwtError {
     #[error("Token must be present")]
@@ -32,15 +30,10 @@ pub enum JwtError {
     EncodingError(jsonwebtoken::errors::Error),
 }
 
-/// A validated JWT secret used for token signing and verification.
-///
-/// This newtype ensures that JWT secrets meet minimum security requirements:
-/// - Must be at least 32 characters long for cryptographic strength
-/// - Cannot be empty or missing
-///
-/// The secret is used to sign JWT tokens during generation and verify them
-/// during validation. This prevents the use of weak secrets that could
-/// compromise token security.
+// =============================================================================
+// DOMAIN NEWTYPES
+// =============================================================================
+/// JWT secret with minimum 32-character cryptographic strength requirement
 #[derive(Debug, Clone)]
 pub struct JwtSecret(String);
 
@@ -51,18 +44,6 @@ impl AsRef<[u8]> for JwtSecret {
 }
 
 impl JwtSecret {
-    /// Creates a new JWT secret with validation.
-    ///
-    /// # Arguments
-    /// * `raw` - The raw secret string to validate and store
-    ///
-    /// # Returns
-    /// * `Ok(JwtSecret)` - If the secret meets all validation requirements
-    /// * `Err(JwtSecretError)` - If validation fails (empty or too short)
-    ///
-    /// # Validation Rules
-    /// * Secret must not be empty
-    /// * Secret must be at least 32 characters long
     pub fn new(raw: &str) -> Result<Self, JwtSecretError> {
         if raw.is_empty() {
             return Err(JwtSecretError::MissingSecret);
@@ -74,22 +55,31 @@ impl JwtSecret {
     }
 }
 
-/// So the caller of generate can us the expires_at variable in their handling
+/// User claims embedded in JWT tokens
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
+pub struct UserClaims {
+    pub user_id: UserId,
+    pub email: EmailAddress,
+    pub exp: usize, // expiration timestamp
+    pub iat: usize, // issued at timestamp
+}
+
+// =============================================================================
+// REQUEST/RESPONSE TYPES
+// =============================================================================
+
+/// JWT generation response containing token and expiration time
 #[derive(Debug, Clone)]
 pub struct JwtCreationResponse {
     pub jwt: Jwt,
     pub expires_at: usize,
 }
 
-/// A validated JWT token string.
-///
-/// This newtype ensures that JWT tokens have the correct format before
-/// attempting to validate or decode them. It prevents processing of
-/// obviously malformed tokens.
-///
-/// # Validation Rules
-/// * Token must not be empty
-/// * Token must have exactly 3 parts separated by dots (header.payload.signature)
+// =============================================================================
+// MAIN DOMAIN ENTITIES
+// =============================================================================
+
+/// JWT token with format validation (header.payload.signature)
 #[derive(Debug, Clone, PartialEq)]
 pub struct Jwt(String);
 
@@ -100,26 +90,14 @@ impl Display for Jwt {
 }
 
 impl Jwt {
-    /// Generates a new JWT token for a user.
-    ///
-    /// Creates a JWT token containing user claims with a 24-hour expiration.
-    /// The token is signed using the provided secret for security.
-    ///
-    /// # Arguments
-    /// * `user_id` - The user's unique identifier
-    /// * `email` - The user's email address
-    /// * `secret` - The JWT secret used for signing
-    ///
-    /// # Returns
-    /// * `Ok(Jwt)` - The generated JWT token
-    /// * `Err(JwtError)` - If token generation fails
+    /// Generates JWT token with 24-hour expiration
     pub fn generate(
         user_id: UserId,
         email: EmailAddress,
         secret: JwtSecret,
     ) -> Result<JwtCreationResponse, JwtError> {
         let issued_at = chrono::Utc::now().timestamp() as usize;
-        let expires_at = issued_at + 86400; // adds 24 hours in seconds
+        let expires_at = issued_at + 86400; // 24 hours
 
         let user_claims = UserClaims {
             user_id,
@@ -140,17 +118,6 @@ impl Jwt {
         Ok(JwtCreationResponse { jwt, expires_at })
     }
 
-    /// Creates a new JWT token from a raw string with format validation.
-    ///
-    /// Validates that the token string has the correct JWT format before
-    /// creating the newtype. This prevents processing of obviously malformed tokens.
-    ///
-    /// # Arguments
-    /// * `raw` - The raw JWT token string to validate
-    ///
-    /// # Returns
-    /// * `Ok(Jwt)` - If the token has valid format
-    /// * `Err(JwtError)` - If format validation fails
     pub fn new(raw: &str) -> Result<Self, JwtError> {
         if raw.is_empty() {
             return Err(JwtError::MissingToken);
@@ -161,17 +128,6 @@ impl Jwt {
         Ok(Self(raw.to_string()))
     }
 
-    /// Validates and decodes a JWT token to extract user claims.
-    ///
-    /// Verifies the token's signature using the provided secret and extracts
-    /// the user claims if validation succeeds.
-    ///
-    /// # Arguments
-    /// * `secret` - The JWT secret used to verify the token signature
-    ///
-    /// # Returns
-    /// * `Ok(UserClaims)` - The decoded user claims if validation succeeds
-    /// * `Err(jsonwebtoken::errors::Error)` - If validation fails (expired, invalid signature, etc.)
     pub fn validate(&self, secret: &JwtSecret) -> Result<UserClaims, jsonwebtoken::errors::Error> {
         let token_data = jsonwebtoken::decode::<UserClaims>(
             &self.to_string(),
@@ -180,25 +136,6 @@ impl Jwt {
         )?;
         Ok(token_data.claims)
     }
-}
-
-/// User claims contained within a JWT token.
-///
-/// This struct represents the data embedded in JWT tokens, including
-/// user identification and token metadata. The claims are serialized
-/// to JSON when creating tokens and deserialized when validating them.
-///
-/// # Fields
-/// * `user_id` - The user's unique identifier
-/// * `email` - The user's email address
-/// * `exp` - Token expiration timestamp (Unix timestamp)
-/// * `iat` - Token issued at timestamp (Unix timestamp)
-#[derive(Debug, PartialEq, Deserialize, Serialize)]
-pub struct UserClaims {
-    pub user_id: UserId,
-    pub email: EmailAddress,
-    pub exp: usize,
-    pub iat: usize,
 }
 
 #[cfg(test)]

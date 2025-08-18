@@ -1,12 +1,9 @@
-// =============================================================================
-// IMPORTS
-// =============================================================================
-
 use anyhow::{anyhow, Context};
 use sqlx::{query_as, PgPool, Transaction};
 use tracing::info;
 
-use crate::domain::user::models::{UserAuthenticationError, UserRegistrationError, UserCreationRequest};
+use crate::domain::auth::models::{AuthenticateUserError, RegisterUserError, RegisterUserRequest};
+use crate::domain::user::models::{RegisterUserError};
 use crate::outbound::sqlx::user::{DatabaseUser, DatabaseUserWithPasswordHash};
 
 // =============================================================================
@@ -84,8 +81,8 @@ impl Postgres {
     pub async fn save_user(
         &self,
         tx: &mut Transaction<'_, sqlx::Postgres>,
-        req: &UserCreationRequest,
-    ) -> Result<DatabaseUser, UserRegistrationError> {
+        req: &RegisterUserRequest,
+    ) -> Result<DatabaseUser, RegisterUserError> {
         query_as!(
             DatabaseUser,
             "INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, username, email",
@@ -97,9 +94,9 @@ impl Postgres {
         .await
         .map_err(|e| {
             if e.is_unique_constraint_violation() {
-                return UserRegistrationError::Duplicate;
+                return RegisterUserError::Duplicate;
             } 
-            UserRegistrationError::DatabaseIssues(anyhow!("{}", e))
+            RegisterUserError::DatabaseIssues(anyhow!("{}", e))
         })
     }
 
@@ -108,7 +105,7 @@ impl Postgres {
         &self,
         pool: &PgPool,
         username_or_email: &str,
-    ) -> Result<DatabaseUserWithPasswordHash, UserAuthenticationError> {
+    ) -> Result<DatabaseUserWithPasswordHash, AuthenticateUserError> {
         query_as!(
             DatabaseUserWithPasswordHash,
             "SELECT id, username, email, password_hash FROM users WHERE username = $1 OR email = $1",
@@ -117,8 +114,8 @@ impl Postgres {
         .fetch_one(pool)
         .await
         .map_err(|e| match e {
-            sqlx::Error::RowNotFound => UserAuthenticationError::UserNotFound,
-            e => UserAuthenticationError::DatabaseIssues(anyhow!("{e}")),
+            sqlx::Error::RowNotFound => AuthenticateUserError::UserNotFound,
+            e => AuthenticateUserError::DatabaseIssues(anyhow!("{e}")),
         })
     }
 }

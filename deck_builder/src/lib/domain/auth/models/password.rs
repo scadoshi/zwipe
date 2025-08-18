@@ -142,18 +142,10 @@ impl PasswordPolicy for &str {
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub struct HashedPassword(String);
 
-#[derive(Debug, Error)]
-pub enum HashedPasswordError {
-    #[error("Invalid format")]
-    InvalidFormat,
-}
-
 impl HashedPassword {
-    pub fn new(raw: &str) -> Result<Self, HashedPasswordError> {
-        match argon2::PasswordHash::new(raw) {
-            Ok(_) => Ok(Self(raw.to_string())),
-            Err(_) => Err(HashedPasswordError::InvalidFormat),
-        }
+    pub fn new(raw: &str) -> Result<Self, password_hash::Error> {
+        argon2::PasswordHash::new(raw)?;
+        Ok(Self(raw.to_string()))
     }
 
     pub fn generate(password: Password) -> Result<Self, password_hash::Error> {

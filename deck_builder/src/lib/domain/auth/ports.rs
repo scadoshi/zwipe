@@ -1,6 +1,36 @@
-// # 404 Not Found
-// ## Justification
-// At this point in the project, ports and services for this domain entity are not required.
-// This is because all of the auth that I need at the moment is for the user domain entity to be able to perform basic registration and authentication.
-//
-// You can find those in the ports and services files of the user domain entity. Thank you.
+use std::future::Future;
+
+use crate::domain::{
+    auth::models::{jwt::JwtSecret, UserRegistrationRequest},
+    user::models::{
+        User, UserAuthenticationError, UserAuthenticationRequest,
+        UserAuthenticationSuccessResponse, UserCreationRequest, UserRegistrationError,
+        UserWithPasswordHash,
+    },
+};
+
+pub trait AuthRepository: Send + Sync + 'static {
+    fn create_user_with_password_hash(
+        &self,
+        req: &UserRegistrationRequest,
+    ) -> impl Future<Output = Result<UserAuthenticationSuccessResponse, UserRegistrationError>> + Send;
+
+    fn get_user_with_password_hash(
+        &self,
+        req: &UserAuthenticationRequest,
+    ) -> impl Future<Output = Result<UserAuthenticationSuccessResponse, UserAuthenticationError>> + Send;
+}
+
+pub trait AuthService: Send + Sync + Clone + 'static {
+    fn register_user(
+        &self,
+        req: &UserCreationRequest,
+        jwt_secret: JwtSecret,
+    ) -> impl Future<Output = Result<UserAuthenticationSuccessResponse, UserRegistrationError>> + Send;
+
+    fn authenticate_user(
+        &self,
+        req: &UserAuthenticationRequest,
+        jwt_secret: JwtSecret,
+    ) -> impl Future<Output = Result<UserAuthenticationSuccessResponse, UserAuthenticationError>> + Send;
+}

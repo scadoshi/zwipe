@@ -1,4 +1,10 @@
-use crate::{domain::user::{models::{User, UserCreationRequest}, ports::UserService}, inbound::http::AppState};
+use crate::{
+    domain::user::{
+        models::{User, UserCreationRequest},
+        ports::UserService,
+    },
+    inbound::http::AppState,
+};
 
 use axum::{extract::State, http::StatusCode, response::Json};
 use serde::{Deserialize, Serialize};
@@ -24,7 +30,11 @@ pub struct UserCreationHttpRequestBody {
 
 impl UserCreationHttpRequestBody {
     fn try_into_domain(self) -> Result<UserCreationRequest, UserCreationError> {
-        Ok(UserCreationRequest::new(&self.username, &self.email, &self.password)?)
+        Ok(UserCreationRequest::new(
+            &self.username,
+            &self.email,
+            &self.password,
+        )?)
     }
 }
 
@@ -33,7 +43,7 @@ pub async fn authenticate_user<US: UserService>(
     identifier: &str,
     password: &str,
 ) -> Result<LoginResponse, StatusCode> {
-    todo()!
+    todo!()
 }
 
 pub async fn login<US: UserService>(
