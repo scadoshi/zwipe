@@ -111,10 +111,10 @@ fi
 CURRENT_DIR=$(basename "$(pwd)")
 PARENT_DIR=$(basename "$(dirname "$(pwd)")")
 
-if [[ "$CURRENT_DIR" == "deck-builder" || "$CURRENT_DIR" == "deck_builder_api" || "$PARENT_DIR" == "deck-builder" ]]; then
+if [[ "$CURRENT_DIR" == "deck-builder" || "$CURRENT_DIR" == "deck_builder" || "$PARENT_DIR" == "deck-builder" ]]; then
     print_status "Already inside deck-builder project, no cloning needed"
     # Navigate to project root if we're in a subdirectory
-    if [[ "$CURRENT_DIR" == "deck_builder_api" ]]; then
+    if [[ "$CURRENT_DIR" == "deck_builder" ]]; then
         cd ..
     elif [[ "$PARENT_DIR" == "deck-builder" ]]; then
         cd ..
@@ -145,7 +145,7 @@ sudo -u postgres psql -d deck_builder -c "ALTER DEFAULT PRIVILEGES IN SCHEMA pub
 
 # Create .env file
 print_status "Creating .env configuration..."
-cat > deck_builder_api/.env << EOF
+cat > deck_builder/.env << EOF
 DATABASE_URL=postgres://deck_builder_user:deck_builder_pass@localhost/deck_builder
 ALLOWED_ORIGINS=http://localhost:3000
 BIND_ADDRESS=0.0.0.0:8080
