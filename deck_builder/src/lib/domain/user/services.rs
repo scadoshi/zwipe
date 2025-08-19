@@ -1,6 +1,9 @@
-use anyhow::anyhow;
-
-use crate::domain::user::ports::{UserRepository, UserService};
+use crate::domain::user::{
+    models::{
+        CreateUserError, CreateUserRequest, DeleteUserError, GetUserError, UpdateUserError, User,
+    },
+    ports::{UserRepository, UserService},
+};
 
 #[derive(Debug, Clone)]
 pub struct Service<R>
@@ -19,10 +22,29 @@ where
     }
 }
 
-impl<R> UserService for Service<R> {
-    // service layer impls go here
-    // create user
-    // read user
-    // update user
-    // delete user
+impl<R> UserService for Service<R>
+where
+    R: UserRepository,
+{
+    async fn create_user(&self, req: &CreateUserRequest) -> Result<User, CreateUserError> {
+        self.repo.create_user(req).await
+    }
+
+    async fn get_user(&self, req: &super::models::GetUserRequest) -> Result<User, GetUserError> {
+        self.repo.get_user(req).await
+    }
+
+    async fn update_user(
+        &self,
+        req: &super::models::UpdateUserRequest,
+    ) -> Result<User, UpdateUserError> {
+        self.repo.update_user(req).await
+    }
+
+    async fn delete_user(
+        &self,
+        req: &super::models::DeleteUserRequest,
+    ) -> Result<(), DeleteUserError> {
+        self.repo.delete_user(req).await
+    }
 }

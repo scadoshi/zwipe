@@ -1,57 +1,75 @@
-use anyhow::Context;
-use email_address::{EmailAddress, Options};
-use serde::{Deserialize, Serialize};
-use std::{f64::consts::E, fmt::Display, str::FromStr};
+use email_address::EmailAddress;
+use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
 use uuid::Uuid;
-
-use crate::domain::auth::models::{
-    jwt::{Jwt, JwtError},
-    password::{HashedPassword, Password},
-};
 
 // =============================================================================
 // ERRORS
 // =============================================================================
 
-#[derive(Clone, Debug, Error)]
+#[derive(Debug, Error)]
 pub enum UserNameError {
     #[error("Username must be present")]
     MissingUserName,
 }
 
-// #[derive(Debug, Clone, PartialEq, Eq, Error)]
-// #[error("User ID must be between 0 and 999,999")]
-// pub struct UserIdError;
-
-/// For constructor of UserRequest
-#[derive(Debug, Clone, Error)]
-pub enum UserRequestError {
+/// For constructor of CreateUserRequest
+#[derive(Debug, Error)]
+pub enum CreateUserRequestError {
     #[error(transparent)]
-    InvalidUsername(UserNameEmptyError),
+    InvalidUsername(UserNameError),
     #[error(transparent)]
     InvalidEmail(email_address::Error),
 }
 
-/// Actual errors encountered while creating or updating a user
+/// Actual errors encountered while creating a user
 #[derive(Debug, Error)]
-pub enum UserError {
+pub enum CreateUserError {
+    #[error("User with name or email already exists")]
+    Duplicate,
+    #[error("Database issues: {0}")]
+    DatabaseIssues(anyhow::Error),
+    #[error("User created but database returned invalid User object. DatabaseUser -> User conversion error: {0}")]
+    InvalidUserFromDatabase(anyhow::Error),
+}
+
+/// Actual errors encountered while getting a user
+#[derive(Debug, Error)]
+pub enum GetUserError {
+    #[error("User not found")]
+    NotFound,
+    #[error("Database issues: {0}")]
+    DatabaseIssues(anyhow::Error),
+    #[error("User found but database returned invalid User object. DatabaseUser -> User conversion error: {0}")]
+    InvalidUserFromDatabase(anyhow::Error),
+}
+
+/// For constructor of UpdateUserRequest
+#[derive(Debug, Error)]
+pub enum UpdateUserRequestError {
+    #[error(transparent)]
+    InvalidId(uuid::Error),
+    #[error(transparent)]
+    InvalidUsername(UserNameError),
+    #[error(transparent)]
+    InvalidEmail(email_address::Error),
+}
+
+/// Actual errors encountered while updating a user
+#[derive(Debug, Error)]
+pub enum UpdateUserError {
     #[error("User with name or email already exists")]
     Duplicate,
     #[error("Database issues: {0}")]
     DatabaseIssues(anyhow::Error),
     #[error("User created but database returned invalid User. DatabaseUser -> User conversion error: {0}")]
     InvalidUserFromDatabase(anyhow::Error),
-}
-
-/// Actual errors encountered while getting a user
-#[derive(Debug, Clone, Error)]
-pub enum GetUserError {
     #[error("User not found")]
-    NotFound,
+    UserNotFound,
 }
 
-#[derive(Clone, Debug, Error)]
+/// Actual errors encountered while deleting a user
+#[derive(Debug, Error)]
 pub enum DeleteUserRequestError {
     #[error("Id must be present")]
     MissingId,
@@ -59,51 +77,17 @@ pub enum DeleteUserRequestError {
     FailedUuid(uuid::Error),
 }
 
-#[derive(Debug, Clone, Error)]
+#[derive(Debug, Error)]
 pub enum DeleteUserError {
     #[error("User not found")]
     NotFound,
+    #[error("Database issues: {0}")]
+    DatabaseIssues(anyhow::Error),
 }
 
 // =============================================================================
 // NEWTYPES
 // =============================================================================
-
-// since i am using Uuid for everything now
-// i don't think i need this commenting out for now
-// i may be back
-//
-// /// Validated user ID within range 0-999,999
-// #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Copy)]
-// pub struct UserId(i32);
-
-// impl UserId {
-//     pub fn new(raw: i32) -> Result<Self, UserIdError> {
-//         if raw < 0 || raw > 999_999 {
-//             return Err(UserIdError);
-//         }
-//         Ok(Self(raw))
-//     }
-// }
-
-// impl<'de> Deserialize<'de> for UserId {
-//     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-//     where
-//         D: serde::Deserializer<'de>,
-//     {
-//         let raw = i32::deserialize(deserializer)?;
-//         UserId::new(raw).map_err(serde::de::Error::custom)
-//     }
-// }
-
-// impl Serialize for UserId {
-//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-//     where
-//         S: serde::Serializer,
-//     {
-//         self.0.serialize(serializer)
-//     }
-// }
 
 /// Validated username that cannot be empty or whitespace-only
 #[derive(Clone, Debug)]
@@ -132,18 +116,16 @@ impl Display for UserName {
 
 #[derive(Debug, Clone)]
 pub struct CreateUserRequest {
-    pub email: EmailAddress,
     pub username: UserName,
+    pub email: EmailAddress,
 }
 
 impl CreateUserRequest {
-    pub fn new(
-        username: &str,
-        email: &str,
-        password: &str,
-    ) -> Result<Self, CreateUserRequestError> {
-        let username = UserName::new(username).map_err(|e| UserRequestError::InvalidUsername(e))?;
-        let email = EmailAddress::from_str(email).map_err(|e| UserRequestError::InvalidEmail(e))?;
+    pub fn new(username: &str, email: &str) -> Result<Self, CreateUserRequestError> {
+        let username =
+            UserName::new(username).map_err(|e| CreateUserRequestError::InvalidUsername(e))?;
+        let email =
+            EmailAddress::from_str(email).map_err(|e| CreateUserRequestError::InvalidEmail(e))?;
         Ok(CreateUserRequest { email, username })
     }
 }
@@ -162,25 +144,36 @@ impl GetUserRequest {
 
 #[derive(Debug, Clone)]
 pub struct UpdateUserRequest {
+    pub id: Uuid,
     pub username: Option<UserName>,
     pub email: Option<EmailAddress>,
 }
 
 impl UpdateUserRequest {
-    fn new(username_opt: Option<&str>, email_opt: Option<&str>) -> Result<Self, UserRequestError> {
+    fn new(
+        id: &str,
+        username_opt: Option<&str>,
+        email_opt: Option<&str>,
+    ) -> Result<Self, UpdateUserRequestError> {
+        let id = Uuid::try_parse(id).map_err(|e| UpdateUserRequestError::InvalidId(e))?;
         let username = username_opt
             .map(|username_str| {
-                UserName::new(username_str).map_err(|e| UserRequestError::InvalidUsername(e))
+                UserName::new(username_str).map_err(|e| UpdateUserRequestError::InvalidUsername(e))
             })
             .transpose()?;
 
         let email = email_opt
             .map(|email_str| {
-                EmailAddress::from_str(email_str).map_err(|e| UserRequestError::InvalidEmail(e))
+                EmailAddress::from_str(email_str)
+                    .map_err(|e| UpdateUserRequestError::InvalidEmail(e))
             })
             .transpose()?;
 
-        Ok(Self { username, email })
+        Ok(Self {
+            id,
+            username,
+            email,
+        })
     }
 }
 
@@ -196,6 +189,10 @@ impl DeleteUserRequest {
 
         let id = Uuid::try_parse(trimmed).map_err(|e| DeleteUserRequestError::FailedUuid(e))?;
         Ok(Self(id))
+    }
+
+    pub fn id(&self) -> Uuid {
+        self.0
     }
 }
 

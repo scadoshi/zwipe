@@ -1,21 +1,17 @@
 pub mod jwt;
 pub mod password;
 
-use std::str::FromStr;
-
 use email_address::EmailAddress;
+use std::str::FromStr;
+use thiserror::Error;
+use uuid::Uuid;
 
-use crate::domain::auth::models::password::{HashedPasswordError, Password, PasswordError};
-use crate::domain::user::models::{
-    AuthenticateUserRequestError, AuthenticateUserSuccessResponseError, User, UserId, UserName,
+use crate::domain::auth::models::password::{Password, PasswordError};
+use crate::domain::auth::models::{
+    jwt::{Jwt, JwtError},
+    password::HashedPassword,
 };
-use crate::domain::{
-    auth::models::{
-        jwt::{Jwt, JwtError},
-        password::HashedPassword,
-    },
-    user::models::UserNameEmptyError,
-};
+use crate::domain::user::models::{User, UserName, UserNameError};
 
 // =============================================================================
 // ERROR TYPES
@@ -38,13 +34,13 @@ pub enum RegisterUserError {
 #[derive(Debug, Error)]
 pub enum RegisterUserRequestError {
     #[error(transparent)]
-    InvalidUserName(UserNameEmptyError),
+    InvalidUserName(UserNameError),
     #[error(transparent)]
     InvalidEmail(email_address::Error),
     #[error(transparent)]
     InvalidPassword(PasswordError),
     #[error(transparent)]
-    FailedPasswordHash(password_hash::Error),
+    FailedPasswordHash(argon2::password_hash::Error),
 }
 
 /// Actual errors you might encounter while doing user authentication
@@ -80,11 +76,29 @@ pub enum AuthenticateUserSuccessResponseError {
     JwtError(JwtError),
 }
 
+/// For constructor of ChangePasswordRequest
+#[derive(Debug, Error)]
+pub enum ChangePasswordRequestError {
+    #[error(transparent)]
+    InvalidId(uuid::Error),
+    #[error(transparent)]
+    InvalidPassword(PasswordError),
+    #[error(transparent)]
+    FailedPasswordHash(argon2::password_hash::Error),
+}
+
+/// Actual errors encountered while changing password
+#[derive(Debug, Error)]
+pub enum ChangePasswordError {
+    #[error("User not found")]
+    UserNotFound,
+}
+
 // =============================================================================
 // REQUEST/RESPONSE TYPES
 // =============================================================================
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct RegisterUserRequest {
     pub username: UserName,
     pub email: EmailAddress,
@@ -115,7 +129,7 @@ impl RegisterUserRequest {
 }
 
 /// Authentication request with identifier (email/username) and password
-#[derive(Debug, Clone, PartialEq, Hash)]
+#[derive(Debug)]
 pub struct AuthenticateUserRequest {
     pub identifier: String,
     pub password: String,
@@ -138,7 +152,7 @@ impl AuthenticateUserRequest {
 
 /// Successful authentication response containing user data and JWT token
 /// Registering also uses this
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct AuthenticateUserSuccessResponse {
     pub user: User,
     pub token: Jwt,
@@ -161,14 +175,32 @@ impl AuthenticateUserSuccessResponse {
     }
 }
 
+#[derive(Debug)]
+pub struct ChangePasswordRequest {
+    pub id: Uuid,
+    pub password_hash: HashedPassword,
+}
+
+impl ChangePasswordRequest {
+    fn new(id: &str, new_password: &str) -> Result<Self, ChangePasswordRequestError> {
+        let id = Uuid::try_parse(id).map_err(|e| ChangePasswordRequestError::InvalidId(e))?;
+        let password = Password::new(new_password)
+            .map_err(|e| ChangePasswordRequestError::InvalidPassword(e))?;
+        let password_hash = HashedPassword::generate(password)
+            .map_err(|e| ChangePasswordRequestError::FailedPasswordHash(e))?;
+
+        Ok(Self { id, password_hash })
+    }
+}
+
 // =============================================================================
 // MAIN DOMAIN ENTITIES
 // =============================================================================
 
 /// User entity with password hash for authentication operations
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct UserWithPasswordHash {
-    pub id: UserId,
+    pub id: Uuid,
     pub username: UserName,
     pub email: EmailAddress,
     pub password_hash: HashedPassword,

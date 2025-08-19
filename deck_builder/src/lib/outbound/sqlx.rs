@@ -1,4 +1,4 @@
 pub mod auth;
 pub mod card;
-pub mod postgres;
+pub mod postgresql;
 pub mod user;

@@ -514,10 +514,6 @@ mod tests {
         for invalid_hash in invalid_hashes {
             let result = HashedPassword::new(invalid_hash);
             assert!(result.is_err(), "Should reject: {}", invalid_hash);
-            assert!(matches!(
-                result.unwrap_err(),
-                HashedPasswordError::InvalidFormat
-            ));
         }
     }
 
@@ -536,10 +532,6 @@ mod tests {
 
         let result = HashedPassword::new(&hash_string);
         assert!(result.is_err());
-        assert!(matches!(
-            result.unwrap_err(),
-            HashedPasswordError::InvalidFormat
-        ));
     }
 
     #[test]

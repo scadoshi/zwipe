@@ -1,11 +1,15 @@
 use anyhow::anyhow;
 
-use crate::domain::auth::{
-    models::{
-        jwt::{JwtCreationResponse, JwtSecret},
-        UserAuthenticationError, UserAuthenticationSuccessResponse, UserRegistrationRequest,
+use crate::domain::{
+    auth::{
+        models::{
+            jwt::{Jwt, JwtCreationResponse, JwtSecret},
+            AuthenticateUserError, AuthenticateUserRequest, AuthenticateUserSuccessResponse,
+            RegisterUserError, RegisterUserRequest, UserWithPasswordHash,
+        },
+        ports::{AuthRepository, AuthService},
     },
-    ports::{AuthRepository, AuthService},
+    user::models::User,
 };
 
 #[derive(Debug, Clone)]
@@ -28,22 +32,22 @@ where
 
 impl<R> AuthService for Service<R>
 where
-    R: AuthRepository,
+    R: AuthRepository + Clone,
 {
     async fn register_user(
         &self,
-        req: &UserRegistrationRequest,
+        req: &RegisterUserRequest,
         jwt_secret: JwtSecret,
-    ) -> Result<UserAuthenticationSuccessResponse, UserRegistrationError> {
+    ) -> Result<AuthenticateUserSuccessResponse, RegisterUserError> {
         let user = self.repo.create_user_with_password_hash(req).await?;
 
         let JwtCreationResponse {
             jwt: token,
             expires_at: expires_at,
         } = Jwt::generate(user.id, user.email.clone(), jwt_secret)
-            .map_err(|e| UserRegistrationError::FailedJwt(anyhow!("{e}")))?;
+            .map_err(|e| RegisterUserError::FailedJwt(anyhow!("{e}")))?;
 
-        Ok(UserAuthenticationSuccessResponse {
+        Ok(AuthenticateUserSuccessResponse {
             user,
             token,
             expires_at,
@@ -52,9 +56,9 @@ where
 
     async fn authenticate_user(
         &self,
-        req: &UserAuthenticationRequest,
+        req: &AuthenticateUserRequest,
         jwt_secret: JwtSecret,
-    ) -> Result<UserAuthenticationSuccessResponse, UserAuthenticationError> {
+    ) -> Result<AuthenticateUserSuccessResponse, AuthenticateUserError> {
         let user_with_password_hash: UserWithPasswordHash =
             self.repo.get_user_with_password_hash(req).await?;
 
@@ -63,19 +67,19 @@ where
 
         let verified = password_hash
             .verify(&req.password)
-            .map_err(|e| UserAuthenticationError::FailedToVerify(anyhow!("{e}")))?;
+            .map_err(|e| AuthenticateUserError::FailedToVerify(anyhow!("{e}")))?;
 
         if !verified {
-            return Err(UserAuthenticationError::InvalidPassword);
+            return Err(AuthenticateUserError::InvalidPassword);
         }
 
         let JwtCreationResponse {
             jwt: token,
             expires_at: expires_at,
         } = Jwt::generate(user.id, user.email.clone(), jwt_secret)
-            .map_err(|e| UserAuthenticationError::FailedJwt(anyhow!("{e}")))?;
+            .map_err(|e| AuthenticateUserError::FailedJwt(anyhow!("{e}")))?;
 
-        Ok(UserAuthenticationSuccessResponse {
+        Ok(AuthenticateUserSuccessResponse {
             user,
             token,
             expires_at,

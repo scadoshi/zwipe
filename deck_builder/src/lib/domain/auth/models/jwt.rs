@@ -3,8 +3,7 @@ use std::fmt::Display;
 use email_address::EmailAddress;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-
-use crate::domain::user::models::UserId;
+use uuid::Uuid;
 
 // =============================================================================
 // ERROR TYPES
@@ -58,7 +57,7 @@ impl JwtSecret {
 /// User claims embedded in JWT tokens
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct UserClaims {
-    pub user_id: UserId,
+    pub user_id: Uuid,
     pub email: EmailAddress,
     pub exp: usize, // expiration timestamp
     pub iat: usize, // issued at timestamp
@@ -92,7 +91,7 @@ impl Display for Jwt {
 impl Jwt {
     /// Generates JWT token with 24-hour expiration
     pub fn generate(
-        user_id: UserId,
+        user_id: Uuid,
         email: EmailAddress,
         secret: JwtSecret,
     ) -> Result<JwtCreationResponse, JwtError> {
@@ -242,7 +241,7 @@ mod tests {
 
     #[test]
     fn test_user_claims_serialization_round_trip() {
-        let user_id = UserId::new(42).unwrap();
+        let user_id = uuid::Uuid::new_v4();
         let email = EmailAddress::from_str("test@example.com").unwrap();
         let claims = UserClaims {
             user_id,
@@ -259,20 +258,22 @@ mod tests {
 
     #[test]
     fn test_user_claims_partial_eq_works() {
+        let id1 = uuid::Uuid::new_v4();
+        let id2 = uuid::Uuid::new_v4();
         let claims1 = UserClaims {
-            user_id: UserId::new(1).unwrap(),
+            user_id: id1.clone(),
             email: EmailAddress::from_str("test@example.com").unwrap(),
             exp: 1234567890,
             iat: 1234567890,
         };
         let claims2 = UserClaims {
-            user_id: UserId::new(1).unwrap(),
+            user_id: id1,
             email: EmailAddress::from_str("test@example.com").unwrap(),
             exp: 1234567890,
             iat: 1234567890,
         };
         let claims3 = UserClaims {
-            user_id: UserId::new(2).unwrap(),
+            user_id: id2,
             email: EmailAddress::from_str("test@example.com").unwrap(),
             exp: 1234567890,
             iat: 1234567890,
@@ -288,7 +289,7 @@ mod tests {
 
     #[test]
     fn test_generate_jwt_success_creates_valid_tokens() {
-        let user_id = UserId::new(1).unwrap();
+        let user_id = Uuid::new_v4();
         let email = EmailAddress::from_str("test@email.com").unwrap();
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
@@ -301,7 +302,7 @@ mod tests {
 
     #[test]
     fn test_generate_jwt_produces_consistent_results() {
-        let user_id = UserId::new(1).unwrap();
+        let user_id = Uuid::new_v4();
         let email = EmailAddress::from_str("test@email.com").unwrap();
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
@@ -314,8 +315,8 @@ mod tests {
 
     #[test]
     fn test_generate_jwt_produces_unique_tokens_for_different_users() {
-        let user_id1 = UserId::new(1).unwrap();
-        let user_id2 = UserId::new(2).unwrap();
+        let user_id1 = Uuid::new_v4();
+        let user_id2 = Uuid::new_v4();
         let email1 = EmailAddress::from_str("user1@email.com").unwrap();
         let email2 = EmailAddress::from_str("user2@email.com").unwrap();
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
@@ -327,7 +328,7 @@ mod tests {
 
     #[test]
     fn test_generate_jwt_produces_unique_tokens_for_different_secrets() {
-        let user_id = UserId::new(1).unwrap();
+        let user_id = Uuid::new_v4();
         let email = EmailAddress::from_str("test@email.com").unwrap();
         let secret1 = JwtSecret::new("secret-1-that-is-long-enough-for-validation").unwrap();
         let secret2 = JwtSecret::new("secret-2-that-is-long-enough-for-validation").unwrap();
@@ -341,7 +342,7 @@ mod tests {
 
     #[test]
     fn test_generate_jwt_normalizes_email_input() {
-        let user_id = UserId::new(1).unwrap();
+        let user_id = Uuid::new_v4();
         let email = EmailAddress::from_str("TesT@eMaiL.Com").unwrap();
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
@@ -356,7 +357,7 @@ mod tests {
 
     #[test]
     fn test_validate_jwt_success_returns_correct_claims() {
-        let user_id = UserId::new(42).unwrap();
+        let user_id = Uuid::new_v4();
         let email = EmailAddress::from_str("user@example.com").unwrap();
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
@@ -394,7 +395,7 @@ mod tests {
 
     #[test]
     fn test_validate_jwt_rejects_wrong_secret() {
-        let user_id = UserId::new(1).unwrap();
+        let user_id = Uuid::new_v4();
         let email = EmailAddress::from_str("test@email.com").unwrap();
         let correct_secret =
             JwtSecret::new("correct-secret-that-is-long-enough-for-validation").unwrap();
@@ -412,7 +413,7 @@ mod tests {
 
     #[test]
     fn test_jwt_claims_have_correct_expiration_and_issued_at() {
-        let user_id = UserId::new(1).unwrap();
+        let user_id = Uuid::new_v4();
         let email = EmailAddress::from_str("test@email.com").unwrap();
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
@@ -433,7 +434,7 @@ mod tests {
 
     #[test]
     fn test_jwt_claims_match_input_data() {
-        let user_id = UserId::new(12345).unwrap();
+        let user_id = Uuid::new_v4();
         let email = EmailAddress::from_str("specific@example.com").unwrap();
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
@@ -451,13 +452,12 @@ mod tests {
     // ================================
 
     #[test]
-    fn test_generate_and_validate_round_trip_with_edge_case_user_ids() {
-        let edge_case_user_ids = vec![1, 99_999_999]; // Min and near-max valid IDs
+    fn test_generate_and_validate_round_trip_with_multiple_user_ids() {
+        let user_ids = vec![Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4()]; // Multiple random UUIDs
         let email = EmailAddress::from_str("test@email.com").unwrap();
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        for user_id_raw in edge_case_user_ids {
-            let user_id = UserId::new(user_id_raw).unwrap();
+        for user_id in user_ids {
             let token = Jwt::generate(user_id.clone(), email.clone(), secret.clone())
                 .unwrap()
                 .jwt;
@@ -469,7 +469,7 @@ mod tests {
     #[test]
     fn test_complete_authentication_flow_round_trip() {
         // Simulate a complete auth flow: generate token, validate it, extract claims
-        let original_user_id = UserId::new(1337).unwrap();
+        let original_user_id = Uuid::new_v4();
         let original_email = EmailAddress::from_str("auth@example.com").unwrap();
         let secret = JwtSecret::new("production-grade-secret-that-is-long-enough").unwrap();
 
