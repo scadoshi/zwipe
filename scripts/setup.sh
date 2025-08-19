@@ -153,7 +153,7 @@ JWT_SECRET=$(openssl rand -base64 32)
 EOF
 
 # Setup database
-cd deck_builder_api
+cd deck_builder
 
 print_status "Running migrations..."
 sqlx migrate run
