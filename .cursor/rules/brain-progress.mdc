@@ -78,30 +78,29 @@ alwaysApply: true
 
 ---
 
-## LEARNING - Recently Introduced (Needs Guidance)
+## DEVELOPING - Active Implementation (Working But Learning)
 
 ### Hexagonal Architecture & Domain Modeling
-- **Production Hexagonal Implementation**: Complete ports/adapters pattern with UserRepository/UserService separation
-- **Newtype Patterns**: Successfully implemented validation newtypes (JwtSecret, Jwt, UserId, UserName, HashedPassword) with comprehensive testing
-- **Domain-Driven Constructors**: Business-specific constructors with validation (Bearer → JWT, Password → HashedPassword)
-- **Type Safety Boundaries**: Compiler-enforced domain validation preventing invalid data at boundaries
-- **Architectural Decision Making**: Strategic balance between purity and pragmatism in production code
-- **Domain Model Separation**: Clean DatabaseUser vs User separation with TryFrom validation at boundaries
-- **Error Boundary Handling**: Defensive programming at module boundaries with comprehensive error mapping
-- **Repository Pattern Mastery**: Complete UserRepository trait with PostgresUserRepository implementation
-- **Service Layer Architecture**: Domain services with JWT injection and clean business logic separation
-- **Domain-First Organization**: Successfully reorganized codebase from layer-first to domain-first structure
-- **Testing Best Practices**: Newtype validation tested at appropriate levels with comprehensive coverage
-- **Hexagonal Layer Understanding**: Clear separation - domain (business logic), adapters (infrastructure), inbound (HTTP)
-- **Domain Documentation**: Comprehensive documentation explaining purpose, validation rules, and business context
-- **Transaction Management**: Proper database transaction handling in repository layer with commit/rollback
-- **Error Propagation**: Clean domain error types mapped to HTTP status codes at boundaries
+- **🚀 ENTERPRISE HEXAGONAL MASTERY**: Complete production ports/adapters pattern with perfect domain separation
+- **🚀 DUAL DOMAIN ARCHITECTURE**: Separate Auth and User domains with clear boundaries and responsibilities  
+- **🚀 COMPLETE USER DOMAIN**: Full CRUD operations with production-ready repository implementation
+- **🚀 NEWTYPE PATTERN EXPERTISE**: Comprehensive validation newtypes (JwtSecret, Jwt, UserName, HashedPassword, Password) with business-driven constructors
+- **🚀 UUID MIGRATION MASTERY**: Complete transition from i32 to Uuid for scalable, production-ready IDs
+- **🚀 SMART CONSTRUCTOR PATTERNS**: Domain-driven validation (Bearer → JWT, Password → HashedPassword, email normalization)
+- **🚀 TYPE SAFETY ARCHITECTURE**: Compiler-enforced domain rules preventing invalid data throughout system
+- **🚀 GENERIC SERVICE PATTERN**: Service<R> with dependency injection and proper trait bounds
+- **🚀 ASYNC TRAIT MASTERY**: Future handling across hexagonal boundaries with Send + Sync constraints
+- **🚀 ERROR ARCHITECTURE**: Strategic trait usage (Debug, Clone, Error) without macro over-engineering
+- **🚀 DEFENSIVE PROGRAMMING**: TryFrom implementations at all domain boundaries
+- **🚀 DOMAIN-FIRST ORGANIZATION**: Perfect separation - domain (business logic), ports (interfaces), services (orchestration)
+- **🚀 ARCHITECTURAL DECISION MAKING**: Strategic simplification - no macros until absolutely needed
+- **🚀 PRODUCTION DATABASE PATTERNS**: Advanced SQLx usage with transactions, dynamic queries, proper error mapping
 
-### Password Security & Validation
-- **Advanced Password Policies**: Implemented comprehensive validation rules (length, complexity, uniqueness)
-- **Common Password Detection**: Built static list with trait-based checking (IsCommonPassword)
-- **Domain-Driven Password Types**: Created Password newtype with validation, HashedPassword for storage
-- **Security-First Design**: Understanding that domain should enforce security rules, not just frontend
+### Password Security & Validation Architecture
+- **🏆 ENTERPRISE PASSWORD SECURITY**: Advanced validation (length, complexity, uniqueness, common password detection)
+- **🏆 TRAIT-BASED VALIDATION**: IsCommonPassword trait with static list checking
+- **🏆 CRYPTOGRAPHIC INTEGRATION**: Argon2 hashing with proper salt generation and verification
+- **🏆 DOMAIN-DRIVEN SECURITY**: Password validation enforced at domain layer, not adapter layer
 
 ### Advanced Axum Concepts
 - **Route Security**: User isolation patterns and protected endpoint implementation - next learning target
@@ -231,18 +230,21 @@ alwaysApply: true
 - **Type System Conflict Resolution**: Expert debugging of JSON deserialization mismatches using systematic isolation
 - **Performance Psychology**: Built confidence through successful large-scale data processing under time pressure
 - **System Validation**: Confirmed theoretical architecture works with real-world data complexity and scale
-- **🏆 HEXAGONAL ARCHITECTURE MASTERY**: Production-ready ports/adapters implementation with complete domain separation
-- **🏆 NEWTYPE PATTERN EXPERTISE**: Comprehensive validation newtypes with business-driven constructors and error handling
-- **🏆 TYPE SAFETY ARCHITECTURE**: Compiler-enforced domain rules preventing invalid data throughout system
-- **🏆 DOMAIN MODEL BOUNDARIES**: Perfect separation of database vs domain representations with defensive validation
-- **🏆 DEFENSIVE PROGRAMMING MASTERY**: Trust boundaries and validation at all module interfaces with TryFrom patterns
-- **🏆 PASSWORD SECURITY ARCHITECTURE**: Complete domain-driven password validation and hashing system
-- **🏆 DOMAIN-FIRST ORGANIZATION**: Clean domain-driven codebase organization following hexagonal principles
-- **🏆 TESTING ARCHITECTURE**: Comprehensive test coverage at appropriate levels with newtype validation testing
-- **🏆 SERVICE LAYER DESIGN**: Clean business logic separation with JWT injection and transaction management
-- **🏆 HTTP SERVER ARCHITECTURE MASTERY**: Perfect hexagonal inbound layer with server configuration extraction
-- **🏆 GENERIC TYPE SYSTEM EXPERTISE**: Solid understanding of `impl Trait` vs `T: Trait` for web framework compatibility
-- **🏆 REPOSITORY PATTERN IMPLEMENTATION**: Complete trait-based repository with error mapping and transaction safety
+- **🚀 HEXAGONAL ARCHITECTURE BREAKTHROUGH**: Complete enterprise-level ports/adapters implementation
+- **🚀 DUAL DOMAIN MASTERY**: Successfully separated Auth and User concerns into distinct domains
+- **🚀 UUID ARCHITECTURE DECISION**: Strategic migration from i32 to Uuid for production scalability
+- **🚀 MINIMALIST DESIGN PHILOSOPHY**: Strategic avoidance of macros until absolutely necessary
+- **🚀 TRAIT OPTIMIZATION**: Surgical use of Debug, Clone, Error traits without over-engineering
+- **🚀 GENERIC SERVICE PATTERN**: Advanced Service<R> dependency injection with proper trait bounds
+- **🚀 SECURITY-FIRST DOMAIN DESIGN**: Password validation and JWT security enforced at domain layer
+- **🚀 DEFENSIVE PROGRAMMING MASTERY**: TryFrom at every boundary, trust no external data
+- **🚀 ASYNC TRAIT EXPERTISE**: Complex Future handling across hexagonal boundaries
+- **🚀 ENTERPRISE ERROR ARCHITECTURE**: Strategic error propagation with anyhow integration
+- **🎯 COMPLETE USER REPOSITORY**: Full CRUD implementation with advanced SQLx patterns
+- **🎯 DYNAMIC QUERY BUILDING**: QueryBuilder mastery for flexible UPDATE operations
+- **🎯 PRODUCTION TRANSACTION PATTERNS**: Consistent transaction usage across all write operations
+- **🎯 ADVANCED ERROR MAPPING**: Sophisticated database error to domain error conversion
+- **🎯 UUID CASTING MASTERY**: Expert PostgreSQL type casting (id::text) for flexible queries
 
 ### Learning Pattern Recognition
 - **Strategic Simplification**: Recognizes when complexity doesn't add value
@@ -303,8 +305,8 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: After implementing complete hexagonal architecture with production-ready domain services, repository patterns, and type safety boundaries
+**Last Updated**: After completing full User domain implementation with production-ready repository patterns and advanced SQLx operations
 
-**Next Learning Edge**: HTTP handler integration with hexagonal services and advanced middleware patterns
+**Next Learning Edge**: Auth repository implementation and inbound HTTP handler integration
 
-**Major Recent Achievement**: **HEXAGONAL ARCHITECTURE MASTERY** - Complete production implementation of ports/adapters pattern with domain-driven design, newtype validation, service layer architecture, and defensive programming at all boundaries. This represents mastery of enterprise-level software architecture principles in Rust.
+**Major Recent Achievement**: **🎯 COMPLETE USER DOMAIN MASTERY** - Full CRUD repository implementation with advanced SQLx patterns, dynamic query building, UUID casting, sophisticated error mapping, and consistent transaction usage. Combined with dual-domain hexagonal architecture, this represents enterprise-level database operation mastery with perfect separation of concerns.

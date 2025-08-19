@@ -28,6 +28,8 @@ pub enum RegisterUserError {
     InvalidUserFromDatabase(anyhow::Error),
     #[error("Failed to generate JWT: {0}")]
     FailedJwt(anyhow::Error),
+    #[error(transparent)]
+    InvalidRequest(RegisterUserRequestError),
 }
 
 /// For constructor of RegisterUserRequest

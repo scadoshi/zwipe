@@ -1,7 +1,7 @@
 use crate::{
-    domain::user::{
-        models::{User, UserCreationRequest},
-        ports::UserService,
+    domain::auth::{
+        models::{RegisterUserError, RegisterUserRequest},
+        ports::AuthService,
     },
     inbound::http::AppState,
 };
@@ -22,32 +22,31 @@ pub struct LoginResponse {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-pub struct UserCreationHttpRequestBody {
+pub struct RegisterUserHttpRequest {
     pub username: String,
     pub email: String,
     pub password: String,
 }
 
-impl UserCreationHttpRequestBody {
-    fn try_into_domain(self) -> Result<UserCreationRequest, UserCreationError> {
-        Ok(UserCreationRequest::new(
-            &self.username,
-            &self.email,
-            &self.password,
-        )?)
+impl RegisterUserHttpRequest {
+    fn try_into_domain(self) -> Result<RegisterUserRequest, RegisterUserError> {
+        Ok(
+            RegisterUserRequest::new(&self.username, &self.email, &self.password)
+                .map_err(|e| RegisterUserError::InvalidRequest(e))?,
+        )
     }
 }
 
-pub async fn authenticate_user<US: UserService>(
-    State(state): State<AppState<US>>,
+pub async fn authenticate_user<AS: AuthService>(
+    State(state): State<AppState<AS>>,
     identifier: &str,
     password: &str,
 ) -> Result<LoginResponse, StatusCode> {
     todo!()
 }
 
-pub async fn login<US: UserService>(
-    State(app_state): State<AppState<US>>,
+pub async fn login<AS: AuthService>(
+    State(app_state): State<AppState<AS>>,
     Json(LoginRequest {
         identifier,
         password,
@@ -56,8 +55,8 @@ pub async fn login<US: UserService>(
     todo!()
 }
 
-pub async fn register_user(
-    app_state: AppState,
+pub async fn register_user<AS: AuthService>(
+    app_state: State<AppState<AS>>,
     username: &str,
     email: &str,
     password: &str,
@@ -65,9 +64,9 @@ pub async fn register_user(
     todo!()
 }
 
-pub async fn register<US: UserService>(
-    State(app_state): State<AppState<US>>,
-    Json(registration_request): Json<UserCreationRequest>,
+pub async fn register<AS: AuthService>(
+    State(app_state): State<AppState<AS>>,
+    Json(register_user_request): Json<RegisterUserRequest>,
 ) -> Result<Json<LoginResponse>, StatusCode> {
     todo!()
 }

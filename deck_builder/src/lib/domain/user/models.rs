@@ -31,6 +31,8 @@ pub enum CreateUserError {
     DatabaseIssues(anyhow::Error),
     #[error("User created but database returned invalid User object. DatabaseUser -> User conversion error: {0}")]
     InvalidUserFromDatabase(anyhow::Error),
+    #[error(transparent)]
+    InvalidRequest(CreateUserRequestError),
 }
 
 /// Actual errors encountered while getting a user

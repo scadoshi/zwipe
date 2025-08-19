@@ -4,7 +4,7 @@ use crate::domain::{
     auth::models::{
         jwt::JwtSecret, AuthenticateUserError, AuthenticateUserRequest,
         AuthenticateUserSuccessResponse, ChangePasswordError, ChangePasswordRequest,
-        ChangePasswordRequestError, RegisterUserError, RegisterUserRequest, UserWithPasswordHash,
+        RegisterUserError, RegisterUserRequest, UserWithPasswordHash,
     },
     user::models::User,
 };

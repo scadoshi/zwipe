@@ -11,6 +11,7 @@ use axum::Router;
 use tokio::net;
 use tower_http::cors::CorsLayer;
 
+use crate::domain::auth::ports::AuthService;
 use crate::domain::user::ports::UserService;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -20,8 +21,9 @@ pub struct HttpServerConfig<'a> {
 }
 
 #[derive(Debug, Clone)]
-struct AppState<US: UserService> {
+struct AppState<AS: AuthService, US: UserService> {
     user_service: Arc<US>,
+    auth_service: Arc<AS>,
 }
 
 pub struct HttpServer {
@@ -32,6 +34,7 @@ pub struct HttpServer {
 impl HttpServer {
     pub async fn new(
         user_service: impl UserService,
+        auth_service: impl AuthService,
         config: HttpServerConfig<'_>,
     ) -> anyhow::Result<Self> {
         let trace_layer = tower_http::trace::TraceLayer::new_for_http().make_span_with(
@@ -43,6 +46,7 @@ impl HttpServer {
 
         let state = AppState {
             user_service: Arc::new(user_service),
+            auth_service: Arc::new(auth_service),
         };
 
         let router = axum::Router::new()
@@ -79,7 +83,9 @@ impl HttpServer {
 //     )
 // }
 
-pub fn public_routes<US: UserService>() -> Router<AppState<US>> {
+// fix generics here
+pub fn public_routes<US: UserService>() -> Router<AppState<AS, US>> {
+    // not sure how to build this quite yet haha
     Router::new()
         .route("/", get(handlers::health::root))
         .route("/health", get(handlers::health::health_check))
@@ -87,7 +93,7 @@ pub fn public_routes<US: UserService>() -> Router<AppState<US>> {
         .nest(
             "/api/v1",
             Router::new()
-                .route("/auth/login", post(handlers::auth::login::<US>))
-                .route("/auth/register", post(handlers::auth::register::<US>)),
+                .route("/auth/login", post(handlers::auth::login::<AS>))
+                .route("/auth/register", post(handlers::auth::register::<AS>)),
         )
 }

@@ -5,7 +5,8 @@ use crate::domain::{
         models::{
             jwt::{Jwt, JwtCreationResponse, JwtSecret},
             AuthenticateUserError, AuthenticateUserRequest, AuthenticateUserSuccessResponse,
-            RegisterUserError, RegisterUserRequest, UserWithPasswordHash,
+            ChangePasswordError, ChangePasswordRequest, RegisterUserError, RegisterUserRequest,
+            UserWithPasswordHash,
         },
         ports::{AuthRepository, AuthService},
     },
@@ -84,5 +85,12 @@ where
             token,
             expires_at,
         })
+    }
+
+    async fn change_password(
+        &self,
+        req: &ChangePasswordRequest,
+    ) -> Result<(), ChangePasswordError> {
+        self.repo.change_password(req).await
     }
 }

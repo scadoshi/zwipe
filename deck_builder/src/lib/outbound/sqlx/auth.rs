@@ -7,7 +7,8 @@ use uuid::Uuid;
 
 use crate::domain::auth::models::password::HashedPassword;
 use crate::domain::auth::models::{
-    AuthenticateUserError, ChangePasswordError, ChangePasswordRequest, RegisterUserError, RegisterUserRequest, UserWithPasswordHash
+    AuthenticateUserError, ChangePasswordError, ChangePasswordRequest, RegisterUserError,
+    RegisterUserRequest, UserWithPasswordHash,
 };
 use crate::domain::auth::ports::AuthRepository;
 use crate::domain::user::models::{User, UserName};
@@ -65,9 +66,9 @@ impl AuthRepository for Postgres {
     }
 
     async fn change_password(
-            &self,
-            req: &ChangePasswordRequest,
-        ) -> Result<(), ChangePasswordError> {
-        todo()!
+        &self,
+        req: &ChangePasswordRequest,
+    ) -> Result<(), ChangePasswordError> {
+        todo!()
     }
 }
