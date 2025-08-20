@@ -1,5 +1,6 @@
 pub mod handlers;
 pub mod middleware;
+pub mod responses;
 pub mod scryfall;
 
 use std::sync::Arc;
