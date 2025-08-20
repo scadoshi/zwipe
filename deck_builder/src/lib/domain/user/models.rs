@@ -7,14 +7,14 @@ use uuid::Uuid;
 // ERRORS
 // =============================================================================
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone)]
 pub enum UserNameError {
     #[error("Username must be present")]
     MissingUserName,
 }
 
 /// For constructor of CreateUserRequest
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone)]
 pub enum CreateUserRequestError {
     #[error(transparent)]
     InvalidUsername(UserNameError),
@@ -27,12 +27,12 @@ pub enum CreateUserRequestError {
 pub enum CreateUserError {
     #[error("User with name or email already exists")]
     Duplicate,
-    #[error("Database issues: {0}")]
-    DatabaseIssues(anyhow::Error),
-    #[error("User created but database returned invalid User object. DatabaseUser -> User conversion error: {0}")]
-    InvalidUserFromDatabase(anyhow::Error),
     #[error(transparent)]
     InvalidRequest(CreateUserRequestError),
+    #[error("User created but database returned invalid User object. DatabaseUser -> User conversion error: {0}")]
+    InvalidUserFromDatabase(anyhow::Error),
+    #[error("Database issues: {0}")]
+    DatabaseIssues(anyhow::Error),
 }
 
 /// Actual errors encountered while getting a user

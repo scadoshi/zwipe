@@ -8,12 +8,11 @@ use axum_extra::{
     TypedHeader,
 };
 use email_address::EmailAddress;
+use uuid::Uuid;
 
 use crate::domain::auth::models::jwt::{Jwt, JwtSecret, UserClaims};
-use crate::domain::user::models::UserId;
-
 pub struct AuthenticatedUser {
-    pub user_id: UserId,
+    pub user_id: Uuid,
     pub email: EmailAddress,
 }
 
