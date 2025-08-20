@@ -1,14 +1,18 @@
 use anyhow::anyhow;
-use axum::{http::StatusCode, response::IntoResponse, Json};
+use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
 
-use crate::domain::user::models::{
-    CreateUserError, CreateUserRequest, CreateUserRequestError, DeleteUserError, GetUserError,
-    UpdateUserError, User,
+use crate::{
+    domain::user::models::{
+        CreateUserError, CreateUserRequest, CreateUserRequestError, DeleteUserError,
+        DeleteUserRequest, DeleteUserRequestError, GetUserError, GetUserRequest, UpdateUserError,
+        UpdateUserRequest, UpdateUserRequestError, User,
+    },
+    inbound::http::AppState,
 };
 
 // =================================================
-//                   Errors
+//             All api error mappings
 // =================================================
 
 #[derive(Debug)]
@@ -19,14 +23,18 @@ pub enum ApiError {
 }
 
 impl From<anyhow::Error> for ApiError {
-    fn from(e: anyhow::Error) -> Self {
-        Self::InternalServerError(e.to_string())
+    fn from(value: anyhow::Error) -> Self {
+        Self::InternalServerError(value.to_string())
     }
 }
 
+// =================================================
+//                   Create
+// =================================================
+
 impl From<CreateUserError> for ApiError {
-    fn from(e: CreateUserError) -> Self {
-        match e {
+    fn from(value: CreateUserError) -> Self {
+        match value {
             CreateUserError::Duplicate => {
                 Self::InvalidRequest("User with that username or email already exists".to_string())
             }
@@ -53,9 +61,26 @@ impl From<CreateUserError> for ApiError {
     }
 }
 
+impl From<CreateUserRequestError> for ApiError {
+    fn from(value: CreateUserRequestError) -> Self {
+        match value {
+            CreateUserRequestError::InvalidUsername(e) => {
+                Self::InvalidRequest(format!("Invalid username: {}", e))
+            }
+            CreateUserRequestError::InvalidEmail(e) => {
+                Self::InvalidRequest(format!("Invalid email: {}", e))
+            }
+        }
+    }
+}
+
+// =================================================
+//                   Get
+// =================================================
+
 impl From<GetUserError> for ApiError {
-    fn from(e: GetUserError) -> Self {
-        match e {
+    fn from(value: GetUserError) -> Self {
+        match value {
             GetUserError::NotFound => Self::NotFound("User not found".to_string()),
 
             e => {
@@ -66,9 +91,17 @@ impl From<GetUserError> for ApiError {
     }
 }
 
+//
+// since building the request is infallible we don't handle that
+//
+
+// =================================================
+//                   Update
+// =================================================
+
 impl From<UpdateUserError> for ApiError {
-    fn from(e: UpdateUserError) -> Self {
-        match e {
+    fn from(value: UpdateUserError) -> Self {
+        match value {
             UpdateUserError::Duplicate => {
                 Self::InvalidRequest("User with that username or email already exists".to_string())
             }
@@ -81,9 +114,29 @@ impl From<UpdateUserError> for ApiError {
     }
 }
 
+impl From<UpdateUserRequestError> for ApiError {
+    fn from(value: UpdateUserRequestError) -> Self {
+        match value {
+            UpdateUserRequestError::InvalidId(e) => {
+                Self::InvalidRequest(format!("Invalid ID {}", e))
+            }
+            UpdateUserRequestError::InvalidUsername(e) => {
+                Self::InvalidRequest(format!("Invalid username {}", e))
+            }
+            UpdateUserRequestError::InvalidEmail(e) => {
+                Self::InvalidRequest(format!("Invalid email {}", e))
+            }
+        }
+    }
+}
+
+// =================================================
+//                   Delete
+// =================================================
+
 impl From<DeleteUserError> for ApiError {
-    fn from(e: DeleteUserError) -> Self {
-        match e {
+    fn from(value: DeleteUserError) -> Self {
+        match value {
             DeleteUserError::NotFound => Self::NotFound("User not found".to_string()),
             e => {
                 tracing::error!("{:?}\n{}", e, anyhow!("{e}").backtrace());
@@ -92,6 +145,23 @@ impl From<DeleteUserError> for ApiError {
         }
     }
 }
+
+impl From<DeleteUserRequestError> for ApiError {
+    fn from(value: DeleteUserRequestError) -> Self {
+        match value {
+            DeleteUserRequestError::MissingId => {
+                Self::InvalidRequest("ID must be present".to_string())
+            }
+            DeleteUserRequestError::FailedUuid(e) => {
+                Self::InvalidRequest(format!("Failed to parse Uuid: {}", e))
+            }
+        }
+    }
+}
+
+// =================================================
+//     Turning api error into an actual response
+// =================================================
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> axum::response::Response {
@@ -127,6 +197,10 @@ impl IntoResponse for ApiError {
 //                    Parts
 // =================================================
 
+// =================================================
+//                 Http things
+// =================================================
+
 #[derive(Debug, Serialize, PartialEq)]
 pub struct ApiErrorData {
     pub message: String,
@@ -157,6 +231,10 @@ impl ApiResponseBody<ApiErrorData> {
     }
 }
 
+// =================================================
+//                 Request bodies
+// =================================================
+
 #[derive(Debug, Deserialize)]
 pub struct CreateUserRequestBody {
     username: String,
@@ -170,9 +248,50 @@ impl TryFrom<CreateUserRequestBody> for CreateUserRequest {
     }
 }
 
+#[derive(Debug, Deserialize)]
+pub struct GetUserRequestBody {
+    identifier: String,
+}
+
+impl From<GetUserRequestBody> for GetUserRequest {
+    fn from(value: GetUserRequestBody) -> Self {
+        GetUserRequest::new(&value.identifier)
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateUserRequestBody {
+    id: String,
+    username: Option<String>,
+    email: Option<String>,
+}
+
+impl TryFrom<UpdateUserRequestBody> for UpdateUserRequest {
+    type Error = UpdateUserRequestError;
+    fn try_from(value: UpdateUserRequestBody) -> Result<Self, Self::Error> {
+        UpdateUserRequest::new(&value.id, value.username, value.email)
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct DeleteUserRequestBody {
+    id: String,
+}
+
+impl TryFrom<DeleteUserRequestBody> for DeleteUserRequest {
+    type Error = DeleteUserRequestError;
+    fn try_from(value: DeleteUserRequestBody) -> Result<Self, Self::Error> {
+        DeleteUserRequest::new(&value.id)
+    }
+}
+
+// =================================================
+//                   Response
+// =================================================
+
 /// For returning User data from methods
 /// Create, Get and Update use this
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct UserResponseData {
     id: String,
     username: String,
@@ -212,4 +331,64 @@ impl<T: Serialize + PartialEq> IntoResponse for ApiSuccess<T> {
     fn into_response(self) -> axum::response::Response {
         (self.0, self.1).into_response()
     }
+}
+
+// =================================================
+//                   Functions
+// =================================================
+
+pub async fn create_user(
+    State(state): State<AppState>,
+    Json(body): Json<CreateUserRequestBody>,
+) -> Result<ApiSuccess<UserResponseData>, ApiError> {
+    let domain_req = CreateUserRequest::new(&body.username, &body.email)?;
+
+    state
+        .user_service
+        .create_user(&domain_req)
+        .await
+        .map_err(ApiError::from)
+        .map(|ref user| ApiSuccess::new(StatusCode::CREATED, user.into()))
+}
+
+pub async fn get_user(
+    State(state): State<AppState>,
+    Json(body): Json<GetUserRequestBody>,
+) -> Result<ApiSuccess<UserResponseData>, ApiError> {
+    let domain_req = GetUserRequest::new(&body.identifier);
+
+    state
+        .user_service
+        .get_user(&domain_req)
+        .await
+        .map_err(ApiError::from)
+        .map(|ref user| ApiSuccess::new(StatusCode::OK, user.into()))
+}
+
+pub async fn update_user(
+    State(state): State<AppState>,
+    Json(body): Json<UpdateUserRequestBody>,
+) -> Result<ApiSuccess<UserResponseData>, ApiError> {
+    let domain_req = UpdateUserRequest::new(&body.id, body.username, body.email)?;
+
+    state
+        .user_service
+        .update_user(&domain_req)
+        .await
+        .map_err(ApiError::from)
+        .map(|ref user| ApiSuccess::new(StatusCode::OK, user.into()))
+}
+
+pub async fn delete_user(
+    State(state): State<AppState>,
+    Json(body): Json<DeleteUserRequestBody>,
+) -> Result<ApiSuccess<()>, ApiError> {
+    let domain_req = DeleteUserRequest::new(&body.id)?;
+
+    state
+        .user_service
+        .delete_user(&domain_req)
+        .await
+        .map_err(ApiError::from)
+        .map(|_| ApiSuccess::new(StatusCode::OK, ()))
 }

@@ -73,7 +73,7 @@ pub enum UpdateUserError {
 /// Actual errors encountered while deleting a user
 #[derive(Debug, Error)]
 pub enum DeleteUserRequestError {
-    #[error("Id must be present")]
+    #[error("ID must be present")]
     MissingId,
     #[error("Failed to parse Uuid: {0}")]
     FailedUuid(uuid::Error),
@@ -152,21 +152,21 @@ pub struct UpdateUserRequest {
 }
 
 impl UpdateUserRequest {
-    fn new(
+    pub fn new(
         id: &str,
-        username_opt: Option<&str>,
-        email_opt: Option<&str>,
+        username_opt: Option<String>,
+        email_opt: Option<String>,
     ) -> Result<Self, UpdateUserRequestError> {
         let id = Uuid::try_parse(id).map_err(|e| UpdateUserRequestError::InvalidId(e))?;
         let username = username_opt
             .map(|username_str| {
-                UserName::new(username_str).map_err(|e| UpdateUserRequestError::InvalidUsername(e))
+                UserName::new(&username_str).map_err(|e| UpdateUserRequestError::InvalidUsername(e))
             })
             .transpose()?;
 
         let email = email_opt
             .map(|email_str| {
-                EmailAddress::from_str(email_str)
+                EmailAddress::from_str(&email_str)
                     .map_err(|e| UpdateUserRequestError::InvalidEmail(e))
             })
             .transpose()?;
@@ -183,7 +183,7 @@ impl UpdateUserRequest {
 pub struct DeleteUserRequest(Uuid);
 
 impl DeleteUserRequest {
-    fn new(id: &str) -> Result<Self, DeleteUserRequestError> {
+    pub fn new(id: &str) -> Result<Self, DeleteUserRequestError> {
         let trimmed = id.trim();
         if trimmed.is_empty() {
             return Err(DeleteUserRequestError::MissingId);

@@ -1,4 +1,6 @@
-use std::future::Future;
+use std::fmt::Debug;
+
+use axum::async_trait;
 
 use crate::domain::{
     auth::models::{
@@ -10,37 +12,34 @@ use crate::domain::{
 };
 
 pub trait AuthRepository: Send + Sync + 'static {
-    fn create_user_with_password_hash(
+    async fn create_user_with_password_hash(
         &self,
         req: &RegisterUserRequest,
-    ) -> impl Future<Output = Result<User, RegisterUserError>> + Send;
+    ) -> Result<User, RegisterUserError>;
 
-    fn get_user_with_password_hash(
+    async fn get_user_with_password_hash(
         &self,
         req: &AuthenticateUserRequest,
-    ) -> impl Future<Output = Result<UserWithPasswordHash, AuthenticateUserError>> + Send;
+    ) -> Result<UserWithPasswordHash, AuthenticateUserError>;
 
-    fn change_password(
-        &self,
-        req: &ChangePasswordRequest,
-    ) -> impl Future<Output = Result<(), ChangePasswordError>> + Send;
+    async fn change_password(&self, req: &ChangePasswordRequest)
+        -> Result<(), ChangePasswordError>;
 }
 
-pub trait AuthService: Send + Sync + Clone + 'static {
-    fn register_user(
+#[async_trait]
+pub trait AuthService: Debug + Send + Sync + 'static {
+    async fn register_user(
         &self,
         req: &RegisterUserRequest,
         jwt_secret: JwtSecret,
-    ) -> impl Future<Output = Result<AuthenticateUserSuccessResponse, RegisterUserError>> + Send;
+    ) -> Result<AuthenticateUserSuccessResponse, RegisterUserError>;
 
-    fn authenticate_user(
+    async fn authenticate_user(
         &self,
         req: &AuthenticateUserRequest,
         jwt_secret: JwtSecret,
-    ) -> impl Future<Output = Result<AuthenticateUserSuccessResponse, AuthenticateUserError>> + Send;
+    ) -> Result<AuthenticateUserSuccessResponse, AuthenticateUserError>;
 
-    fn change_password(
-        &self,
-        req: &ChangePasswordRequest,
-    ) -> impl Future<Output = Result<(), ChangePasswordError>> + Send;
+    async fn change_password(&self, req: &ChangePasswordRequest)
+        -> Result<(), ChangePasswordError>;
 }

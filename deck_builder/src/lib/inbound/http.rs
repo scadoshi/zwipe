@@ -22,9 +22,9 @@ pub struct HttpServerConfig<'a> {
 }
 
 #[derive(Debug, Clone)]
-struct AppState<AS: AuthService, US: UserService> {
-    user_service: Arc<US>,
-    auth_service: Arc<AS>,
+struct AppState {
+    user_service: Arc<dyn UserService>,
+    auth_service: Arc<dyn AuthService>,
 }
 
 pub struct HttpServer {
@@ -52,7 +52,7 @@ impl HttpServer {
 
         let router = axum::Router::new()
             // .merge(private_routes())
-            .merge(public_routes())
+            // .merge(public_routes())
             .layer(trace_layer)
             .layer(
                 CorsLayer::new()
@@ -85,16 +85,16 @@ impl HttpServer {
 // }
 
 // fix generics here
-pub fn public_routes<US: UserService>() -> Router<AppState<AS, US>> {
-    // not sure how to build this quite yet haha
-    Router::new()
-        .route("/", get(handlers::health::root))
-        .route("/health", get(handlers::health::health_check))
-        .route("/health/deep", get(handlers::health::health_check_deep))
-        .nest(
-            "/api/v1",
-            Router::new()
-                .route("/auth/login", post(handlers::auth::login::<AS>))
-                .route("/auth/register", post(handlers::auth::register::<AS>)),
-        )
-}
+// pub fn public_routes<US: UserService>() -> Router<AppState> {
+//     // not sure how to build this quite yet haha
+//     Router::new()
+//         .route("/", get(handlers::health::root))
+//         .route("/health", get(handlers::health::health_check))
+//         .route("/health/deep", get(handlers::health::health_check_deep))
+//         .nest(
+//             "/api/v1",
+//             Router::new()
+//                 .route("/auth/login", post(handlers::auth::login))
+//                 .route("/auth/register", post(handlers::auth::register)),
+//         )
+// }

@@ -1,50 +1,29 @@
-use std::future::Future;
+use std::fmt::Debug;
+
+use axum::async_trait;
 
 use crate::domain::user::models::{
     CreateUserError, CreateUserRequest, DeleteUserError, DeleteUserRequest, GetUserError,
     GetUserRequest, UpdateUserError, UpdateUserRequest, User,
 };
 
-pub trait UserRepository: Send + Sync + Clone + 'static {
-    fn create_user(
-        &self,
-        req: &CreateUserRequest,
-    ) -> impl Future<Output = Result<User, CreateUserError>> + Send;
+pub trait UserRepository: Send + Sync + 'static {
+    async fn create_user(&self, req: &CreateUserRequest) -> Result<User, CreateUserError>;
 
-    fn get_user(
-        &self,
-        req: &GetUserRequest,
-    ) -> impl Future<Output = Result<User, GetUserError>> + Send;
+    async fn get_user(&self, req: &GetUserRequest) -> Result<User, GetUserError>;
 
-    fn update_user(
-        &self,
-        req: &UpdateUserRequest,
-    ) -> impl Future<Output = Result<User, UpdateUserError>> + Send;
+    async fn update_user(&self, req: &UpdateUserRequest) -> Result<User, UpdateUserError>;
 
-    fn delete_user(
-        &self,
-        req: &DeleteUserRequest,
-    ) -> impl Future<Output = Result<(), DeleteUserError>> + Send;
+    async fn delete_user(&self, req: &DeleteUserRequest) -> Result<(), DeleteUserError>;
 }
 
-pub trait UserService: Send + Sync + Clone + 'static {
-    fn create_user(
-        &self,
-        req: &CreateUserRequest,
-    ) -> impl Future<Output = Result<User, CreateUserError>> + Send;
+#[async_trait]
+pub trait UserService: Debug + Send + Sync + 'static {
+    async fn create_user(&self, req: &CreateUserRequest) -> Result<User, CreateUserError>;
 
-    fn get_user(
-        &self,
-        req: &GetUserRequest,
-    ) -> impl Future<Output = Result<User, GetUserError>> + Send;
+    async fn get_user(&self, req: &GetUserRequest) -> Result<User, GetUserError>;
 
-    fn update_user(
-        &self,
-        req: &UpdateUserRequest,
-    ) -> impl Future<Output = Result<User, UpdateUserError>> + Send;
+    async fn update_user(&self, req: &UpdateUserRequest) -> Result<User, UpdateUserError>;
 
-    fn delete_user(
-        &self,
-        req: &DeleteUserRequest,
-    ) -> impl Future<Output = Result<(), DeleteUserError>> + Send;
+    async fn delete_user(&self, req: &DeleteUserRequest) -> Result<(), DeleteUserError>;
 }
