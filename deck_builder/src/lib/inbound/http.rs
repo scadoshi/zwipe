@@ -7,8 +7,6 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use axum::http::{header, HeaderValue, Method};
-use axum::routing::{get, post};
-use axum::Router;
 use tokio::net;
 use tower_http::cors::CorsLayer;
 
@@ -22,9 +20,9 @@ pub struct HttpServerConfig<'a> {
 }
 
 #[derive(Debug, Clone)]
-struct AppState {
-    user_service: Arc<dyn UserService>,
-    auth_service: Arc<dyn AuthService>,
+pub struct AppState<AS: AuthService, US: UserService> {
+    pub auth_service: Arc<AS>,
+    pub user_service: Arc<US>,
 }
 
 pub struct HttpServer {
@@ -34,8 +32,8 @@ pub struct HttpServer {
 
 impl HttpServer {
     pub async fn new(
-        user_service: impl UserService,
         auth_service: impl AuthService,
+        user_service: impl UserService,
         config: HttpServerConfig<'_>,
     ) -> anyhow::Result<Self> {
         let trace_layer = tower_http::trace::TraceLayer::new_for_http().make_span_with(
@@ -46,8 +44,8 @@ impl HttpServer {
         );
 
         let state = AppState {
-            user_service: Arc::new(user_service),
             auth_service: Arc::new(auth_service),
+            user_service: Arc::new(user_service),
         };
 
         let router = axum::Router::new()
@@ -62,17 +60,18 @@ impl HttpServer {
             )
             .with_state(state);
 
-        let listener = net::TcpListener::bind(&config.bind_address).await?;
+        let listener = net::TcpListener::bind(&config.bind_address)
+            .await
+            .with_context(|| format!("Failed to listen on {}", config.bind_address))?;
 
         Ok(Self { router, listener })
     }
 
     pub async fn run(self) -> anyhow::Result<()> {
-        tracing::debug!("Listening on {}", self.listener.local_addr().unwrap());
+        tracing::debug!("Running on {}", self.listener.local_addr().unwrap());
         axum::serve(self.listener, self.router)
             .await
             .context("Received error from running server")?;
-
         Ok(())
     }
 }

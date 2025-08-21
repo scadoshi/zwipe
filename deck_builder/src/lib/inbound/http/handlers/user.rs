@@ -3,10 +3,16 @@ use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    domain::user::models::{
-        CreateUserError, CreateUserRequest, CreateUserRequestError, DeleteUserError,
-        DeleteUserRequest, DeleteUserRequestError, GetUserError, GetUserRequest, UpdateUserError,
-        UpdateUserRequest, UpdateUserRequestError, User,
+    domain::{
+        auth::ports::AuthService,
+        user::{
+            models::{
+                CreateUserError, CreateUserRequest, CreateUserRequestError, DeleteUserError,
+                DeleteUserRequest, DeleteUserRequestError, GetUserError, GetUserRequest,
+                UpdateUserError, UpdateUserRequest, UpdateUserRequestError, User,
+            },
+            ports::UserService,
+        },
     },
     inbound::http::AppState,
 };
@@ -337,8 +343,8 @@ impl<T: Serialize + PartialEq> IntoResponse for ApiSuccess<T> {
 //                   Functions
 // =================================================
 
-pub async fn create_user(
-    State(state): State<AppState>,
+pub async fn create_user<AS: AuthService, US: UserService>(
+    State(state): State<AppState<AS, US>>,
     Json(body): Json<CreateUserRequestBody>,
 ) -> Result<ApiSuccess<UserResponseData>, ApiError> {
     let domain_req = CreateUserRequest::new(&body.username, &body.email)?;
@@ -351,8 +357,8 @@ pub async fn create_user(
         .map(|ref user| ApiSuccess::new(StatusCode::CREATED, user.into()))
 }
 
-pub async fn get_user(
-    State(state): State<AppState>,
+pub async fn get_user<AS: AuthService, US: UserService>(
+    State(state): State<AppState<AS, US>>,
     Json(body): Json<GetUserRequestBody>,
 ) -> Result<ApiSuccess<UserResponseData>, ApiError> {
     let domain_req = GetUserRequest::new(&body.identifier);
@@ -365,8 +371,8 @@ pub async fn get_user(
         .map(|ref user| ApiSuccess::new(StatusCode::OK, user.into()))
 }
 
-pub async fn update_user(
-    State(state): State<AppState>,
+pub async fn update_user<AS: AuthService, US: UserService>(
+    State(state): State<AppState<AS, US>>,
     Json(body): Json<UpdateUserRequestBody>,
 ) -> Result<ApiSuccess<UserResponseData>, ApiError> {
     let domain_req = UpdateUserRequest::new(&body.id, body.username, body.email)?;
@@ -379,8 +385,8 @@ pub async fn update_user(
         .map(|ref user| ApiSuccess::new(StatusCode::OK, user.into()))
 }
 
-pub async fn delete_user(
-    State(state): State<AppState>,
+pub async fn delete_user<AS: AuthService, US: UserService>(
+    State(state): State<AppState<AS, US>>,
     Json(body): Json<DeleteUserRequestBody>,
 ) -> Result<ApiSuccess<()>, ApiError> {
     let domain_req = DeleteUserRequest::new(&body.id)?;

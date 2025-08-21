@@ -22,10 +22,7 @@ where
     jwt_secret: JwtSecret,
 }
 
-impl<R> Service<R>
-where
-    R: AuthRepository,
-{
+impl<R: AuthRepository> Service<R> {
     pub fn new(repo: R, jwt_secret: JwtSecret) -> Self {
         Self { repo, jwt_secret }
     }
@@ -44,7 +41,7 @@ where
 
         let JwtCreationResponse {
             jwt: token,
-            expires_at: expires_at,
+            expires_at,
         } = Jwt::generate(user.id, user.email.clone(), jwt_secret)
             .map_err(|e| RegisterUserError::FailedJwt(anyhow!("{e}")))?;
 
@@ -76,7 +73,7 @@ where
 
         let JwtCreationResponse {
             jwt: token,
-            expires_at: expires_at,
+            expires_at,
         } = Jwt::generate(user.id, user.email.clone(), jwt_secret)
             .map_err(|e| AuthenticateUserError::FailedJwt(anyhow!("{e}")))?;
 

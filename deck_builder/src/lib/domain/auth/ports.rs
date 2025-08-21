@@ -1,6 +1,4 @@
-use std::fmt::Debug;
-
-use axum::async_trait;
+use std::future::Future;
 
 use crate::domain::{
     auth::models::{
@@ -11,35 +9,38 @@ use crate::domain::{
     user::models::User,
 };
 
-pub trait AuthRepository: Send + Sync + 'static {
-    async fn create_user_with_password_hash(
+pub trait AuthRepository: Clone + Send + Sync + 'static {
+    fn create_user_with_password_hash(
         &self,
         req: &RegisterUserRequest,
-    ) -> Result<User, RegisterUserError>;
+    ) -> impl Future<Output = Result<User, RegisterUserError>> + Send;
 
-    async fn get_user_with_password_hash(
+    fn get_user_with_password_hash(
         &self,
         req: &AuthenticateUserRequest,
-    ) -> Result<UserWithPasswordHash, AuthenticateUserError>;
+    ) -> impl Future<Output = Result<UserWithPasswordHash, AuthenticateUserError>> + Send;
 
-    async fn change_password(&self, req: &ChangePasswordRequest)
-        -> Result<(), ChangePasswordError>;
+    fn change_password(
+        &self,
+        req: &ChangePasswordRequest,
+    ) -> impl Future<Output = Result<(), ChangePasswordError>> + Send;
 }
 
-#[async_trait]
-pub trait AuthService: Debug + Send + Sync + 'static {
-    async fn register_user(
+pub trait AuthService: Clone + Send + Sync + 'static {
+    fn register_user(
         &self,
         req: &RegisterUserRequest,
         jwt_secret: JwtSecret,
-    ) -> Result<AuthenticateUserSuccessResponse, RegisterUserError>;
+    ) -> impl Future<Output = Result<AuthenticateUserSuccessResponse, RegisterUserError>> + Send;
 
-    async fn authenticate_user(
+    fn authenticate_user(
         &self,
         req: &AuthenticateUserRequest,
         jwt_secret: JwtSecret,
-    ) -> Result<AuthenticateUserSuccessResponse, AuthenticateUserError>;
+    ) -> impl Future<Output = Result<AuthenticateUserSuccessResponse, AuthenticateUserError>> + Send;
 
-    async fn change_password(&self, req: &ChangePasswordRequest)
-        -> Result<(), ChangePasswordError>;
+    fn change_password(
+        &self,
+        req: &ChangePasswordRequest,
+    ) -> impl Future<Output = Result<(), ChangePasswordError>> + Send;
 }

@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use crate::domain::user::{
     models::{
         CreateUserError, CreateUserRequest, DeleteUserError, GetUserError, UpdateUserError, User,
@@ -22,10 +24,7 @@ where
     }
 }
 
-impl<R> UserService for Service<R>
-where
-    R: UserRepository,
-{
+impl<R: UserRepository> UserService for Service<R> {
     async fn create_user(&self, req: &CreateUserRequest) -> Result<User, CreateUserError> {
         self.repo.create_user(req).await
     }

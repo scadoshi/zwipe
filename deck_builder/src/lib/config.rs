@@ -1,6 +1,8 @@
 use anyhow::Context;
 use axum::http::HeaderValue;
 
+use crate::domain::auth::models::jwt::JwtSecret;
+
 const JWT_SECRET_KEY: &str = "JWT_SECRET";
 const DATABASE_URL_KEY: &str = "DATABASE_URL";
 const BIND_ADDRESS_KEY: &str = "BIND_ADDRESS";
@@ -10,19 +12,20 @@ const SCRYFALL_API_BASE_KEY: &str = "SCRYFALL_API_BASE";
 const ALLOWED_ORIGINS_KEY: &str = "ALLOWED_ORIGINS";
 
 pub struct Config {
-    jwt_secret: JwtSecret,
-    database_url: String,
-    bind_address: String,
-    rust_log: String,
-    rust_backtrace: String,
-    scryfall_api_base: String,
-    allowed_origins: Vec<HeaderValue>,
+    pub jwt_secret: JwtSecret,
+    pub database_url: String,
+    pub bind_address: String,
+    pub rust_log: String,
+    pub rust_backtrace: String,
+    pub scryfall_api_base: String,
+    pub allowed_origins: Vec<HeaderValue>,
 }
 
 impl Config {
     pub fn from_env() -> anyhow::Result<Self> {
         dotenvy::dotenv().context("Failed to load environment")?;
-        let jwt_secret = JwtSecret::new(load_env(JWT_SECRET_KEY)?);
+        let jwt_secret =
+            JwtSecret::new(&load_env(JWT_SECRET_KEY)?).context("Invalid jwt secret from env")?;
         let database_url = load_env(DATABASE_URL_KEY)?;
         let bind_address = load_env(BIND_ADDRESS_KEY)?;
         let rust_log = load_env(RUST_LOG_KEY)?;
@@ -45,5 +48,5 @@ impl Config {
 }
 
 fn load_env(key: &str) -> anyhow::Result<String> {
-    env::var(key).context(format!("failed to load environment variable {}", key))
+    std::env::var(key).context(format!("Failed to get variable from env: {}", key))
 }

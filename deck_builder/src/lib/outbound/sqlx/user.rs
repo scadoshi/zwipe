@@ -9,7 +9,7 @@ use crate::domain::user::models::{
     GetUserRequest, UpdateUserError, UpdateUserRequest, User, UserName,
 };
 use crate::domain::user::ports::UserRepository;
-use crate::outbound::sqlx::postgresql::{IsUniqueConstraintViolation, Postgres};
+use crate::outbound::sqlx::postgres::{IsUniqueConstraintViolation, Postgres};
 
 // =============================================================================
 // DATABASE TYPES

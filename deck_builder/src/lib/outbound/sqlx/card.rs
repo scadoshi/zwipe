@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, future::Future};
 
 use crate::domain::card::models::scryfall_card::ScryfallCard;
 use itertools::Itertools;
@@ -7,7 +7,7 @@ use tracing::{info, warn};
 use uuid::Uuid;
 
 pub trait SingleInsert {
-    async fn insert(self, pg_pool: &PgPool) -> Result<(), sqlx::Error>;
+    fn insert(self, pg_pool: &PgPool) -> impl Future<Output = Result<(), sqlx::Error>>;
 }
 
 impl SingleInsert for ScryfallCard {
@@ -41,9 +41,17 @@ pub async fn delete_all(pg_pool: &PgPool) -> Result<(), sqlx::Error> {
 }
 
 pub trait MultipleInsert {
-    async fn bulk_insert(self, pg_pool: &PgPool) -> Result<(), sqlx::Error>;
-    async fn batch_insert(self, batch_size: usize, pg_pool: &PgPool) -> Result<(), sqlx::Error>;
-    async fn smart_insert(self, batch_size: usize, pg_pool: &PgPool) -> Result<(), sqlx::Error>;
+    fn bulk_insert(self, pg_pool: &PgPool) -> impl Future<Output = Result<(), sqlx::Error>>;
+    fn batch_insert(
+        self,
+        batch_size: usize,
+        pg_pool: &PgPool,
+    ) -> impl Future<Output = Result<(), sqlx::Error>>;
+    fn smart_insert(
+        self,
+        batch_size: usize,
+        pg_pool: &PgPool,
+    ) -> impl Future<Output = Result<(), sqlx::Error>>;
 }
 
 impl MultipleInsert for Vec<ScryfallCard> {
