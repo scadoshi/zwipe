@@ -36,7 +36,7 @@ pub enum RegisterUserError {
 #[derive(Debug, Error)]
 pub enum RegisterUserRequestError {
     #[error(transparent)]
-    InvalidUserName(UserNameError),
+    InvalidUsername(UserNameError),
     #[error(transparent)]
     InvalidEmail(email_address::Error),
     #[error(transparent)]
@@ -94,6 +94,8 @@ pub enum ChangePasswordRequestError {
 pub enum ChangePasswordError {
     #[error("User not found")]
     UserNotFound,
+    #[error("Database issues: {0}")]
+    DatabaseIssues(anyhow::Error),
 }
 
 // =============================================================================
@@ -114,7 +116,7 @@ impl RegisterUserRequest {
         password: &str,
     ) -> Result<Self, RegisterUserRequestError> {
         let username =
-            UserName::new(username).map_err(|e| RegisterUserRequestError::InvalidUserName(e))?;
+            UserName::new(username).map_err(|e| RegisterUserRequestError::InvalidUsername(e))?;
         let email =
             EmailAddress::from_str(email).map_err(|e| RegisterUserRequestError::InvalidEmail(e))?;
         let password =
@@ -184,7 +186,7 @@ pub struct ChangePasswordRequest {
 }
 
 impl ChangePasswordRequest {
-    fn new(id: &str, new_password: &str) -> Result<Self, ChangePasswordRequestError> {
+    pub fn new(id: &str, new_password: &str) -> Result<Self, ChangePasswordRequestError> {
         let id = Uuid::try_parse(id).map_err(|e| ChangePasswordRequestError::InvalidId(e))?;
         let password = Password::new(new_password)
             .map_err(|e| ChangePasswordRequestError::InvalidPassword(e))?;
@@ -205,7 +207,7 @@ pub struct UserWithPasswordHash {
     pub id: Uuid,
     pub username: UserName,
     pub email: EmailAddress,
-    pub password_hash: HashedPassword,
+    pub password_hash: Option<HashedPassword>,
 }
 
 impl From<UserWithPasswordHash> for User {

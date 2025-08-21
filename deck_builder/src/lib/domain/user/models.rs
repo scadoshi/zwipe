@@ -1,4 +1,5 @@
 use email_address::EmailAddress;
+use serde::Serialize;
 use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
 use uuid::Uuid;
@@ -92,7 +93,7 @@ pub enum DeleteUserError {
 // =============================================================================
 
 /// Validated username that cannot be empty or whitespace-only
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct UserName(String);
 
 impl UserName {
@@ -104,11 +105,21 @@ impl UserName {
             Ok(Self(trimmed.to_string()))
         }
     }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
 }
 
 impl Display for UserName {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+impl Serialize for UserName {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.as_str())
     }
 }
 
@@ -202,7 +213,7 @@ impl DeleteUserRequest {
 // MAINS
 // =============================================================================
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct User {
     pub id: Uuid,
     pub username: UserName,

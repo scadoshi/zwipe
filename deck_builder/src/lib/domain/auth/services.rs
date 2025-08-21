@@ -14,10 +14,7 @@ use crate::domain::{
 };
 
 #[derive(Debug, Clone)]
-pub struct Service<R>
-where
-    R: AuthRepository,
-{
+pub struct Service<R: AuthRepository> {
     repo: R,
     jwt_secret: JwtSecret,
 }
@@ -28,10 +25,7 @@ impl<R: AuthRepository> Service<R> {
     }
 }
 
-impl<R> AuthService for Service<R>
-where
-    R: AuthRepository + Clone,
-{
+impl<R: AuthRepository + Clone> AuthService for Service<R> {
     async fn register_user(
         &self,
         req: &RegisterUserRequest,
@@ -60,7 +54,11 @@ where
         let user_with_password_hash: UserWithPasswordHash =
             self.repo.get_user_with_password_hash(req).await?;
 
-        let password_hash = user_with_password_hash.password_hash.clone();
+        let password_hash = user_with_password_hash
+            .password_hash
+            .clone()
+            .ok_or(AuthenticateUserError::InvalidPassword)?;
+
         let user: User = user_with_password_hash.into();
 
         let verified = password_hash

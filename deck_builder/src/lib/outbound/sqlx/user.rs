@@ -89,7 +89,6 @@ impl UserRepository for Postgres {
     // =============================================================================
     //
     async fn get_user(&self, req: &GetUserRequest) -> Result<User, GetUserError> {
-        // tries to find user by id first
         let database_user = query_as!(
             DatabaseUser,
             "SELECT id, username, email FROM users WHERE (id::text = $1 OR username = $1 OR email = $1)",

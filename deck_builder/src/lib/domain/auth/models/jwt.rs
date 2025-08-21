@@ -88,6 +88,12 @@ impl Display for Jwt {
     }
 }
 
+impl Serialize for Jwt {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.as_str())
+    }
+}
+
 impl Jwt {
     /// Generates JWT token with 24-hour expiration
     pub fn generate(
@@ -134,6 +140,10 @@ impl Jwt {
             &jsonwebtoken::Validation::default(),
         )?;
         Ok(token_data.claims)
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
     }
 }
 

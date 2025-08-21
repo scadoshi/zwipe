@@ -24,7 +24,7 @@ use crate::{
 #[derive(Debug)]
 pub enum ApiError {
     InternalServerError(String),
-    InvalidRequest(String),
+    UnprocessableEntity(String),
     NotFound(String),
 }
 
@@ -41,20 +41,20 @@ impl From<anyhow::Error> for ApiError {
 impl From<CreateUserError> for ApiError {
     fn from(value: CreateUserError) -> Self {
         match value {
-            CreateUserError::Duplicate => {
-                Self::InvalidRequest("User with that username or email already exists".to_string())
-            }
+            CreateUserError::Duplicate => Self::UnprocessableEntity(
+                "User with that username or email already exists".to_string(),
+            ),
 
             CreateUserError::InvalidRequest(CreateUserRequestError::InvalidUsername(e)) => {
-                Self::InvalidRequest(format!(
+                Self::UnprocessableEntity(format!(
                     "Invalid request: {}",
                     CreateUserRequestError::InvalidUsername(e)
                 ))
             }
 
             CreateUserError::InvalidRequest(CreateUserRequestError::InvalidEmail(e)) => {
-                Self::InvalidRequest(format!(
-                    "Invalid email: {}",
+                Self::UnprocessableEntity(format!(
+                    "Invalid request: {}",
                     CreateUserRequestError::InvalidEmail(e)
                 ))
             }
@@ -71,10 +71,10 @@ impl From<CreateUserRequestError> for ApiError {
     fn from(value: CreateUserRequestError) -> Self {
         match value {
             CreateUserRequestError::InvalidUsername(e) => {
-                Self::InvalidRequest(format!("Invalid username: {}", e))
+                Self::UnprocessableEntity(format!("Invalid username: {}", e))
             }
             CreateUserRequestError::InvalidEmail(e) => {
-                Self::InvalidRequest(format!("Invalid email: {}", e))
+                Self::UnprocessableEntity(format!("Invalid email: {}", e))
             }
         }
     }
@@ -108,9 +108,9 @@ impl From<GetUserError> for ApiError {
 impl From<UpdateUserError> for ApiError {
     fn from(value: UpdateUserError) -> Self {
         match value {
-            UpdateUserError::Duplicate => {
-                Self::InvalidRequest("User with that username or email already exists".to_string())
-            }
+            UpdateUserError::Duplicate => Self::UnprocessableEntity(
+                "User with that username or email already exists".to_string(),
+            ),
             UpdateUserError::UserNotFound => Self::NotFound("User not found".to_string()),
             e => {
                 tracing::error!("{:?}\n{}", e, anyhow!("{e}").backtrace());
@@ -124,13 +124,13 @@ impl From<UpdateUserRequestError> for ApiError {
     fn from(value: UpdateUserRequestError) -> Self {
         match value {
             UpdateUserRequestError::InvalidId(e) => {
-                Self::InvalidRequest(format!("Invalid ID {}", e))
+                Self::UnprocessableEntity(format!("Invalid ID {}", e))
             }
             UpdateUserRequestError::InvalidUsername(e) => {
-                Self::InvalidRequest(format!("Invalid username {}", e))
+                Self::UnprocessableEntity(format!("Invalid username {}", e))
             }
             UpdateUserRequestError::InvalidEmail(e) => {
-                Self::InvalidRequest(format!("Invalid email {}", e))
+                Self::UnprocessableEntity(format!("Invalid email {}", e))
             }
         }
     }
@@ -156,10 +156,10 @@ impl From<DeleteUserRequestError> for ApiError {
     fn from(value: DeleteUserRequestError) -> Self {
         match value {
             DeleteUserRequestError::MissingId => {
-                Self::InvalidRequest("ID must be present".to_string())
+                Self::UnprocessableEntity("ID must be present".to_string())
             }
             DeleteUserRequestError::FailedUuid(e) => {
-                Self::InvalidRequest(format!("Failed to parse Uuid: {}", e))
+                Self::UnprocessableEntity(format!("Failed to parse Uuid: {}", e))
             }
         }
     }
@@ -181,7 +181,7 @@ impl IntoResponse for ApiError {
             )
                 .into_response(),
 
-            ApiError::InvalidRequest(message) => (
+            ApiError::UnprocessableEntity(message) => (
                 StatusCode::UNPROCESSABLE_ENTITY,
                 Json(ApiResponseBody::new_error(
                     StatusCode::UNPROCESSABLE_ENTITY,
@@ -227,7 +227,6 @@ impl<T: Serialize + PartialEq> ApiResponseBody<T> {
     }
 }
 
-// might not need this check later
 impl ApiResponseBody<ApiErrorData> {
     pub fn new_error(status_code: StatusCode, message: String) -> Self {
         Self {
@@ -347,11 +346,11 @@ pub async fn create_user<AS: AuthService, US: UserService>(
     State(state): State<AppState<AS, US>>,
     Json(body): Json<CreateUserRequestBody>,
 ) -> Result<ApiSuccess<UserResponseData>, ApiError> {
-    let domain_req = CreateUserRequest::new(&body.username, &body.email)?;
+    let req = CreateUserRequest::new(&body.username, &body.email)?;
 
     state
         .user_service
-        .create_user(&domain_req)
+        .create_user(&req)
         .await
         .map_err(ApiError::from)
         .map(|ref user| ApiSuccess::new(StatusCode::CREATED, user.into()))
@@ -361,11 +360,11 @@ pub async fn get_user<AS: AuthService, US: UserService>(
     State(state): State<AppState<AS, US>>,
     Json(body): Json<GetUserRequestBody>,
 ) -> Result<ApiSuccess<UserResponseData>, ApiError> {
-    let domain_req = GetUserRequest::new(&body.identifier);
+    let req = GetUserRequest::new(&body.identifier);
 
     state
         .user_service
-        .get_user(&domain_req)
+        .get_user(&req)
         .await
         .map_err(ApiError::from)
         .map(|ref user| ApiSuccess::new(StatusCode::OK, user.into()))
@@ -375,11 +374,11 @@ pub async fn update_user<AS: AuthService, US: UserService>(
     State(state): State<AppState<AS, US>>,
     Json(body): Json<UpdateUserRequestBody>,
 ) -> Result<ApiSuccess<UserResponseData>, ApiError> {
-    let domain_req = UpdateUserRequest::new(&body.id, body.username, body.email)?;
+    let req = UpdateUserRequest::new(&body.id, body.username, body.email)?;
 
     state
         .user_service
-        .update_user(&domain_req)
+        .update_user(&req)
         .await
         .map_err(ApiError::from)
         .map(|ref user| ApiSuccess::new(StatusCode::OK, user.into()))
@@ -389,11 +388,11 @@ pub async fn delete_user<AS: AuthService, US: UserService>(
     State(state): State<AppState<AS, US>>,
     Json(body): Json<DeleteUserRequestBody>,
 ) -> Result<ApiSuccess<()>, ApiError> {
-    let domain_req = DeleteUserRequest::new(&body.id)?;
+    let req = DeleteUserRequest::new(&body.id)?;
 
     state
         .user_service
-        .delete_user(&domain_req)
+        .delete_user(&req)
         .await
         .map_err(ApiError::from)
         .map(|_| ApiSuccess::new(StatusCode::OK, ()))
