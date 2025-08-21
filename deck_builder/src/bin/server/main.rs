@@ -1,12 +1,12 @@
 use std::str::FromStr;
 
-use deck_builder::domain::{self, auth, user};
+use deck_builder::domain::{auth, logo, user};
 use deck_builder::inbound::http::{HttpServer, HttpServerConfig};
 use deck_builder::{config::Config, outbound::sqlx::postgres::Postgres};
 
 #[tokio::main]
 async fn main() {
-    domain::print_logo();
+    logo::print();
     match run().await {
         Ok(_) => (),
         Err(e) => tracing::error!("Failed to run main. Error: {:?}", e),
