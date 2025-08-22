@@ -15,7 +15,7 @@ pub struct Prices {
     pub tix: Option<String>,
 }
 
-/// An object describing the legality of this 
+/// An object describing the legality of this
 /// card across play formats.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Legalities {

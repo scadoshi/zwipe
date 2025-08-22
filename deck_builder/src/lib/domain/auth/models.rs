@@ -24,7 +24,7 @@ pub enum RegisterUserError {
     Duplicate,
     #[error("Database issues: {0}")]
     DatabaseIssues(anyhow::Error),
-    #[error("User created but database returned invalid User. DatabaseUser -> User conversion error: {0}")]
+    #[error("User created but database returned invalid object: {0}")]
     InvalidUserFromDatabase(anyhow::Error),
     #[error("Failed to generate JWT: {0}")]
     FailedJwt(anyhow::Error),
@@ -54,7 +54,7 @@ pub enum AuthenticateUserError {
     InvalidPassword,
     #[error("Database issues: {0}")]
     DatabaseIssues(anyhow::Error),
-    #[error("User found but database returned invalid User. DatabaseUserWithPasswordHash -> UserWithPasswordHash conversion error: {0}")]
+    #[error("User found but database returned invalid object: {0}")]
     InvalidUserFromDatabase(anyhow::Error),
     #[error("Failed to verify password: {0}")]
     FailedToVerify(anyhow::Error),

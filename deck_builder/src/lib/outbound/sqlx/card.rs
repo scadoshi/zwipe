@@ -1,211 +1,233 @@
-use std::{collections::HashSet, future::Future};
-
-use crate::domain::card::models::scryfall_card::ScryfallCard;
+use crate::{
+    domain::card::{
+        models::{scryfall_card::ScryfallCard, CreateCardError},
+        ports::CardRepository,
+    },
+    outbound::sqlx::postgres::Postgres as MyPostgres,
+};
+use anyhow::anyhow;
 use itertools::Itertools;
-use sqlx::{postgres::PgArguments, query, query::Query, query_scalar, PgPool, Postgres};
-use tracing::{info, warn};
+use sqlx::{postgres::PgArguments, query, Postgres};
 use uuid::Uuid;
 
-pub trait SingleInsert {
-    fn insert(self, pg_pool: &PgPool) -> impl Future<Output = Result<(), sqlx::Error>>;
-}
+impl CardRepository for MyPostgres {
+    async fn insert(&self, card: ScryfallCard) -> Result<(), CreateCardError> {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| CreateCardError::DatabaseIssues(anyhow!("{e}")))?;
 
-impl SingleInsert for ScryfallCard {
-    async fn insert(self, pg_pool: &PgPool) -> Result<(), sqlx::Error> {
-        let scryfall_card_id = self.id.clone();
+        let scryfall_card_id = card.id.clone();
+
         let query_sql = format!(
             "INSERT INTO scryfall_cards ({}) VALUES ({})",
             SCRYFALL_CARD_FIELDS,
             (1..=sc_fieldcount()).map(|x| format!("${}", x)).join(",")
         );
+
         query(query_sql.as_str())
             .bind_scryfall_card_fields(self)
-            .execute(pg_pool)
-            .await?;
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| CreateCardError::DatabaseIssues(anyhow!("{e}")))?;
+
         query("INSERT INTO card_profiles (scryfall_card_id, created_at, updated_at) VALUES ($1, $2, $3)")
             .bind(scryfall_card_id)
             .bind(chrono::Utc::now().naive_utc())
             .bind(chrono::Utc::now().naive_utc())
-            .execute(pg_pool)
-            .await?;
+            .execute(&mut *tx)
+            .await.map_err(|e| CreateCardError::DatabaseIssues(anyhow!("{e}")))?;
+
         Ok(())
     }
-}
 
-#[allow(dead_code)]
-pub async fn delete_all(pg_pool: &PgPool) -> Result<(), sqlx::Error> {
-    query("DELETE FROM scryfall_cards;")
-        .execute(pg_pool)
-        .await?;
-    Ok(())
-}
+    async fn bulk_insert(&self, cards: Vec<ScryfallCard>) -> Result<(), anyhow::Error> {
+        //  // for building out value tuples
+        //  let card_count = self.len();
+        //  let sc_fieldcount = sc_fieldcount();
 
-pub trait MultipleInsert {
-    fn bulk_insert(self, pg_pool: &PgPool) -> impl Future<Output = Result<(), sqlx::Error>>;
-    fn batch_insert(
-        self,
+        //  // for inserting into card_profile later
+        //  // HashSet<T> avoids trying dupes
+        //  let card_ids: HashSet<Uuid> = self.iter().map(|x| x.id.to_owned()).collect();
+
+        //  // time to insert into scryfall_card!
+        //  // intializing query sql
+        //  let mut sc_query_sql = format!(
+        //      "INSERT INTO scryfall_cards ({}) VALUES",
+        //      SCRYFALL_CARD_FIELDS
+        //  );
+
+        //  // build value tuples
+        //  // like ($1,$2,$3,...), ($80,$81,$82,...), ...
+        //  for i in 0..card_count {
+        //      let start = 1 + (sc_fieldcount * i);
+        //      let finish = sc_fieldcount + (sc_fieldcount * i);
+
+        //      if i > 0 {
+        //          sc_query_sql.push(',');
+        //      }
+
+        //      sc_query_sql.push('(');
+        //      sc_query_sql.push_str(
+        //          (start..=finish)
+        //              .map(|x| format!("${}", x))
+        //              .join(",")
+        //              .as_str(),
+        //      );
+        //      sc_query_sql.push(')');
+        //  }
+        //  // sc_query_sql.push_str(" ON CONFLICT (id) DO NOTHING");
+
+        //  // build query with all binds
+        //  let mut sc_query = query(sc_query_sql.as_str());
+        //  for card in self {
+        //      sc_query = sc_query.bind_scryfall_card_fields(card);
+        //  }
+        //  sc_query.execute(pg_pool).await?;
+
+        //  // time to inset into card_profile!
+        //  // intializing query sql
+        //  let mut cp_query_sql: String =
+        //      "INSERT INTO card_profiles (scryfall_card_id, created_at, updated_at) VALUES"
+        //          .to_string();
+        //  let cp_field_count = 3;
+
+        //  // build values tuples
+        //  // like ($1,$2,$3), ($4,$5,$6), ...
+        //  for i in 0..card_count {
+        //      let start = 1 + (cp_field_count * i);
+        //      let finish = cp_field_count + (cp_field_count * i);
+
+        //      if i > 0 {
+        //          cp_query_sql.push(',');
+        //      }
+
+        //      cp_query_sql.push('(');
+        //      cp_query_sql.push_str(
+        //          (start..=finish)
+        //              .map(|x| format!("${}", x))
+        //              .join(",")
+        //              .as_str(),
+        //      );
+        //      cp_query_sql.push(')');
+        //  }
+        //  // cp_query_sql.push_str(" ON CONFLICT (scryfall_card_id) DO NOTHING");
+
+        //  // build query with all binds
+        //  let mut cp_query = query(cp_query_sql.as_str());
+        //  for id in card_ids {
+        //      cp_query = cp_query.bind_card_profile_fields(id);
+        //  }
+        //  cp_query.execute(pg_pool).await?;
+
+        //  Ok(())
+        todo!()
+    }
+
+    async fn batch_insert(
+        &self,
+        cards: Vec<ScryfallCard>,
         batch_size: usize,
-        pg_pool: &PgPool,
-    ) -> impl Future<Output = Result<(), sqlx::Error>>;
-    fn smart_insert(
-        self,
+    ) -> Result<(), anyhow::Error> {
+        // let mut failed_batches = 0;
+        // let mut total_batches = 0;
+
+        // for chunk in self.chunks(batch_size) {
+        //     total_batches += 1;
+        //     let owned_chunk: Vec<ScryfallCard> = chunk.to_owned();
+
+        //     match owned_chunk.bulk_insert(pg_pool).await {
+        //         Ok(_) => (),
+        //         Err(e) => {
+        //             failed_batches += 1;
+        //             warn!("Batch #{} failed with error: {:?}", total_batches, e);
+        //             warn!("Retrying batch #{:?} one card at a time", total_batches);
+
+        //             let mut total_card_inserts = 1;
+        //             let mut failed_card_inserts = 0;
+        //             for card in chunk.to_owned() {
+        //                 total_card_inserts += 1;
+
+        //                 let card_name = card.name.clone();
+        //                 let card_id = card.id.clone();
+
+        //                 match card.insert(pg_pool).await {
+        //                     Ok(_) => (),
+        //                     Err(e) => {
+        //                         warn!(
+        //                             "Card {:?} ({}) in batch #{} failed with error: {:?}",
+        //                             card_name, card_id, total_batches, e
+        //                         );
+        //                         failed_card_inserts += 1;
+        //                     }
+        //                 }
+        //             }
+        //             info!(
+        //                 "Batch #{} completed {}/{} inserts",
+        //                 total_batches,
+        //                 total_card_inserts - failed_card_inserts,
+        //                 total_card_inserts
+        //             );
+        //         }
+        //     }
+        // }
+
+        // info!(
+        //     "Completed {}/{} batches successfully",
+        //     total_batches - failed_batches,
+        //     total_batches
+        // );
+        // Ok(())
+        todo!()
+    }
+
+    async fn smart_insert(
+        &self,
+        cards: Vec<ScryfallCard>,
         batch_size: usize,
-        pg_pool: &PgPool,
-    ) -> impl Future<Output = Result<(), sqlx::Error>>;
-}
+    ) -> Result<(), anyhow::Error> {
+        //     let existing_ids: Vec<Uuid> = query_scalar("SELECT id FROM scryfall_cards")
+        //     .fetch_all(pg_pool)
+        //     .await?;
 
-impl MultipleInsert for Vec<ScryfallCard> {
-    async fn bulk_insert(self, pg_pool: &PgPool) -> Result<(), sqlx::Error> {
-        // for building out value tuples
-        let card_count = self.len();
-        let sc_fieldcount = sc_fieldcount();
+        // let new_cards: Vec<ScryfallCard> = self
+        //     .into_iter()
+        //     .filter(|x| !existing_ids.contains(&x.id))
+        //     .collect();
+        // info!("Calculated difference");
 
-        // for inserting into card_profile later
-        // HashSet<T> avoids trying dupes
-        let card_ids: HashSet<Uuid> = self.iter().map(|x| x.id.to_owned()).collect();
+        // if new_cards.is_empty() {
+        //     info!("Database up to date");
+        //     return Ok(());
+        // }
 
-        // time to insert into scryfall_card!
-        // intializing query sql
-        let mut sc_query_sql = format!(
-            "INSERT INTO scryfall_cards ({}) VALUES",
-            SCRYFALL_CARD_FIELDS
-        );
+        // new_cards.batch_insert(batch_size, pg_pool).await?;
 
-        // build value tuples
-        // like ($1,$2,$3,...), ($80,$81,$82,...), ...
-        for i in 0..card_count {
-            let start = 1 + (sc_fieldcount * i);
-            let finish = sc_fieldcount + (sc_fieldcount * i);
-
-            if i > 0 {
-                sc_query_sql.push(',');
-            }
-
-            sc_query_sql.push('(');
-            sc_query_sql.push_str(
-                (start..=finish)
-                    .map(|x| format!("${}", x))
-                    .join(",")
-                    .as_str(),
-            );
-            sc_query_sql.push(')');
-        }
-        // sc_query_sql.push_str(" ON CONFLICT (id) DO NOTHING");
-
-        // build query with all binds
-        let mut sc_query = query(sc_query_sql.as_str());
-        for card in self {
-            sc_query = sc_query.bind_scryfall_card_fields(card);
-        }
-        sc_query.execute(pg_pool).await?;
-
-        // time to inset into card_profile!
-        // intializing query sql
-        let mut cp_query_sql: String =
-            "INSERT INTO card_profiles (scryfall_card_id, created_at, updated_at) VALUES"
-                .to_string();
-        let cp_field_count = 3;
-
-        // build values tuples
-        // like ($1,$2,$3), ($4,$5,$6), ...
-        for i in 0..card_count {
-            let start = 1 + (cp_field_count * i);
-            let finish = cp_field_count + (cp_field_count * i);
-
-            if i > 0 {
-                cp_query_sql.push(',');
-            }
-
-            cp_query_sql.push('(');
-            cp_query_sql.push_str(
-                (start..=finish)
-                    .map(|x| format!("${}", x))
-                    .join(",")
-                    .as_str(),
-            );
-            cp_query_sql.push(')');
-        }
-        // cp_query_sql.push_str(" ON CONFLICT (scryfall_card_id) DO NOTHING");
-
-        // build query with all binds
-        let mut cp_query = query(cp_query_sql.as_str());
-        for id in card_ids {
-            cp_query = cp_query.bind_card_profile_fields(id);
-        }
-        cp_query.execute(pg_pool).await?;
-
-        Ok(())
+        // Ok(())
+        todo!()
     }
-    async fn batch_insert(self, batch_size: usize, pg_pool: &PgPool) -> Result<(), sqlx::Error> {
-        let mut failed_batches = 0;
-        let mut total_batches = 0;
 
-        for chunk in self.chunks(batch_size) {
-            total_batches += 1;
-            let owned_chunk: Vec<ScryfallCard> = chunk.to_owned();
-
-            match owned_chunk.bulk_insert(pg_pool).await {
-                Ok(_) => (),
-                Err(e) => {
-                    failed_batches += 1;
-                    warn!("Batch #{} failed with error: {:?}", total_batches, e);
-                    warn!("Retrying batch #{:?} one card at a time", total_batches);
-
-                    let mut total_card_inserts = 1;
-                    let mut failed_card_inserts = 0;
-                    for card in chunk.to_owned() {
-                        total_card_inserts += 1;
-
-                        let card_name = card.name.clone();
-                        let card_id = card.id.clone();
-
-                        match card.insert(pg_pool).await {
-                            Ok(_) => (),
-                            Err(e) => {
-                                warn!(
-                                    "Card {:?} ({}) in batch #{} failed with error: {:?}",
-                                    card_name, card_id, total_batches, e
-                                );
-                                failed_card_inserts += 1;
-                            }
-                        }
-                    }
-                    info!(
-                        "Batch #{} completed {}/{} inserts",
-                        total_batches,
-                        total_card_inserts - failed_card_inserts,
-                        total_card_inserts
-                    );
-                }
-            }
-        }
-
-        info!(
-            "Completed {}/{} batches successfully",
-            total_batches - failed_batches,
-            total_batches
-        );
-        Ok(())
+    async fn get_card(
+        &self,
+        id: &Uuid,
+    ) -> Result<ScryfallCard, crate::domain::card::models::InvalidUuid> {
+        todo!()
     }
-    async fn smart_insert(self, batch_size: usize, pg_pool: &PgPool) -> Result<(), sqlx::Error> {
-        let existing_ids: Vec<Uuid> = query_scalar("SELECT id FROM scryfall_cards")
-            .fetch_all(pg_pool)
-            .await?;
 
-        let new_cards: Vec<ScryfallCard> = self
-            .into_iter()
-            .filter(|x| !existing_ids.contains(&x.id))
-            .collect();
-        info!("Calculated difference");
+    async fn search_cards(
+        &self,
+        params: crate::domain::card::models::CardSearchParameters,
+    ) -> Result<Vec<ScryfallCard>, crate::domain::card::models::CardNotFound> {
+        todo!()
+    }
 
-        if new_cards.is_empty() {
-            info!("Database up to date");
-            return Ok(());
-        }
-
-        new_cards.batch_insert(batch_size, pg_pool).await?;
-
-        Ok(())
+    async fn delete_all(&self) -> Result<(), anyhow::Error> {
+        //     query("DELETE FROM scryfall_cards;")
+        //     .execute(pg_pool)
+        //     .await?;
+        // Ok(())
+        todo!()
     }
 }
 
@@ -276,7 +298,9 @@ const SCRYFALL_CARD_FIELDS: &str = r#"
     printed_type_line,
     promo,
     promo_types,
+    purchase_uris,
     rarity,
+    related_uris,
     released_at,
     reprint,
     scryfall_set_uri,
@@ -383,9 +407,9 @@ impl BindScryfallCardFields for Query<'_, Postgres, PgArguments> {
             .bind(card.printed_type_line)
             .bind(card.promo)
             .bind(card.promo_types)
-            // scryfall_card.purchase_uris // fix later
+            .bind(card.purchase_uris)
             .bind(card.rarity)
-            // scryfall_card.related_uris // fix later
+            .bind(card.related_uris)
             .bind(card.released_at)
             .bind(card.reprint)
             .bind(card.scryfall_set_uri)

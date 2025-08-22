@@ -1,20 +1,12 @@
-pub mod nested_types;
-use nested_types::{RelatedCard, Legalities, Prices, ImageUris, CardFace};
+pub mod sub_types;
 use serde::{Deserialize, Serialize};
-use serde_json::{Value};
+use serde_json::Value;
+use sqlx::{types::Json, FromRow};
+use sub_types::{CardFace, ImageUris, Legalities, Prices, RelatedCard};
 use uuid::Uuid;
-use sqlx::{FromRow, types::Json};
-
-/// Card profile data linked to ScryfallCard
-#[derive(Debug, Clone, FromRow)]
-pub struct Card {
-    pub id: Option<i32>,
-    pub created_at: Option<chrono::NaiveDateTime>,
-    pub updated_at: Option<chrono::NaiveDateTime>,
-    pub scryfall_card_id: i32,
-}
 
 /// Card data from scryfall
+/// Used for create and get requests
 #[derive(Debug, Clone, Deserialize, Serialize, FromRow)]
 pub struct ScryfallCard {
     // Core Card Fields
@@ -92,9 +84,9 @@ pub struct ScryfallCard {
     pub printed_type_line: Option<String>,
     pub promo: bool,
     pub promo_types: Option<Vec<String>>,
-    // pub purchase_uris: Option<serde_json::Value>,
+    pub purchase_uris: Option<serde_json::Value>,
     pub rarity: String,
-    // pub related_uris: serde_json::Value,
+    pub related_uris: serde_json::Value,
     pub released_at: chrono::NaiveDate,
     pub reprint: bool,
     pub scryfall_set_uri: String,
@@ -114,6 +106,10 @@ pub struct ScryfallCard {
     pub preview_source_uri: Option<String>,
     pub preview_source: Option<String>,
 }
+
+// ==========================
+//      helper
+// ==========================
 
 fn deserialize_int_or_string_array<'de, D>(deserializer: D) -> Result<Option<Vec<String>>, D::Error>
 where

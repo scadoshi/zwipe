@@ -4,9 +4,9 @@ use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
 use uuid::Uuid;
 
-// =============================================================================
-// ERRORS
-// =============================================================================
+// =================================
+//             errors
+// =================================
 
 #[derive(Debug, Error, Clone)]
 pub enum UserNameError {
@@ -42,7 +42,7 @@ pub enum CreateUserError {
     Duplicate,
     #[error(transparent)]
     InvalidRequest(CreateUserRequestError),
-    #[error("User created but database returned invalid User object. DatabaseUser -> User conversion error: {0}")]
+    #[error("User created but database returned invalid object: {0}")]
     InvalidUserFromDatabase(anyhow::Error),
     #[error("Database issues: {0}")]
     DatabaseIssues(anyhow::Error),
@@ -61,7 +61,7 @@ pub enum GetUserError {
     NotFound,
     #[error("Database issues: {0}")]
     DatabaseIssues(anyhow::Error),
-    #[error("User found but database returned invalid User object. DatabaseUser -> User conversion error: {0}")]
+    #[error("User created but database returned invalid object: {0}")]
     InvalidUserFromDatabase(anyhow::Error),
 }
 
@@ -101,7 +101,7 @@ pub enum UpdateUserError {
     Duplicate,
     #[error("Database issues: {0}")]
     DatabaseIssues(anyhow::Error),
-    #[error("User created but database returned invalid User. DatabaseUser -> User conversion error: {0}")]
+    #[error("User updated but database returned invalid object: {0}")]
     InvalidUserFromDatabase(anyhow::Error),
     #[error("User not found")]
     UserNotFound,
@@ -130,9 +130,9 @@ pub enum DeleteUserError {
     DatabaseIssues(anyhow::Error),
 }
 
-// =============================================================================
-// NEWTYPES
-// =============================================================================
+// ================================
+//             newtypes
+// ================================
 
 /// Validated username that cannot be empty or whitespace-only
 #[derive(Clone, Debug, PartialEq)]
@@ -165,9 +165,9 @@ impl Serialize for UserName {
     }
 }
 
-// =============================================================================
-// REQUESTS
-// =============================================================================
+// ===================================
+//                 requests
+// ===================================
 
 #[derive(Debug, Clone)]
 pub struct CreateUserRequest {
@@ -243,9 +243,9 @@ impl DeleteUserRequest {
     }
 }
 
-// =============================================================================
-// MAINS
-// =============================================================================
+// ===================================
+//               main
+// ===================================
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct User {

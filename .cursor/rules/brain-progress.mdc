@@ -261,6 +261,9 @@ alwaysApply: true
 - **🎯 ADVANCED JWT MIDDLEWARE**: Custom FromRequestParts trait implementation with Bearer token parsing and type-safe authentication
 - **🎯 ROUTE PROTECTION UNDERSTANDING**: Clear comprehension of type-based auth vs middleware-based auth trade-offs
 - **🎯 HANDLER SECURITY PATTERNS**: Confident with AuthenticatedUser parameter as compile-time protection mechanism
+- **🚀 HEALTH DOMAIN MASTERY**: Complete production health check system with infallible response patterns and database connectivity validation
+- **🎯 CARD DOMAIN ARCHITECTURE**: Strategic read-only API design with background bulk operations - perfect external API integration pattern
+- **🎯 NON-CRUD DOMAIN ANALYSIS**: Excellent recognition that external API domains need different patterns than user-controlled CRUD
 
 ### Learning Pattern Recognition
 - **Strategic Simplification**: Recognizes when complexity doesn't add value
@@ -321,8 +324,8 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: After completing full User domain pipeline from HTTP handlers to database with comprehensive error handling
+**Last Updated**: After completing Card domain foundation with strategic architecture analysis
 
-**Next Learning Edge**: JWT secret injection, route organization, and production route configuration with existing middleware  
+**Next Learning Edge**: Card repository implementation, route integration, and transition to Deck domain CRUD patterns
 
-**Major Recent Achievement**: **🏆 MIDDLEWARE INTEGRATION UNDERSTANDING** - Complete grasp of Axum's type-based authentication patterns. Understands that AuthenticatedUser parameter in handlers automatically enforces JWT validation through FromRequestParts trait. Ready for route organization and JWT secret injection to complete authentication pipeline. All domains and middleware components built and ready for final wiring.
+**Major Recent Achievement**: **🎯 CARD DOMAIN ARCHITECTURE BREAKTHROUGH** - Demonstrated excellent domain analysis by recognizing that Card domain needs different patterns than standard CRUD. Successfully designed read-only HTTP APIs vs background bulk operations architecture. Built CardSearchParameters with Axum query extraction, comprehensive error types, and proper trait separation. This represents advanced architectural thinking for external API integration scenarios.
