@@ -23,6 +23,18 @@ pub enum CreateUserRequestError {
     InvalidEmail(email_address::Error),
 }
 
+impl From<UserNameError> for CreateUserRequestError {
+    fn from(value: UserNameError) -> Self {
+        CreateUserRequestError::InvalidUsername(value)
+    }
+}
+
+impl From<email_address::Error> for CreateUserRequestError {
+    fn from(value: email_address::Error) -> Self {
+        CreateUserRequestError::InvalidEmail(value)
+    }
+}
+
 /// Actual errors encountered while creating a user
 #[derive(Debug, Error)]
 pub enum CreateUserError {
@@ -34,6 +46,12 @@ pub enum CreateUserError {
     InvalidUserFromDatabase(anyhow::Error),
     #[error("Database issues: {0}")]
     DatabaseIssues(anyhow::Error),
+}
+
+impl From<CreateUserRequestError> for CreateUserError {
+    fn from(value: CreateUserRequestError) -> Self {
+        CreateUserError::InvalidRequest(value)
+    }
 }
 
 /// Actual errors encountered while getting a user
@@ -58,6 +76,24 @@ pub enum UpdateUserRequestError {
     InvalidEmail(email_address::Error),
 }
 
+impl From<uuid::Error> for UpdateUserRequestError {
+    fn from(value: uuid::Error) -> Self {
+        UpdateUserRequestError::InvalidId(value)
+    }
+}
+
+impl From<UserNameError> for UpdateUserRequestError {
+    fn from(value: UserNameError) -> Self {
+        UpdateUserRequestError::InvalidUsername(value)
+    }
+}
+
+impl From<email_address::Error> for UpdateUserRequestError {
+    fn from(value: email_address::Error) -> Self {
+        UpdateUserRequestError::InvalidEmail(value)
+    }
+}
+
 /// Actual errors encountered while updating a user
 #[derive(Debug, Error)]
 pub enum UpdateUserError {
@@ -78,6 +114,12 @@ pub enum DeleteUserRequestError {
     MissingId,
     #[error("Failed to parse Uuid: {0}")]
     FailedUuid(uuid::Error),
+}
+
+impl From<uuid::Error> for DeleteUserRequestError {
+    fn from(value: uuid::Error) -> Self {
+        DeleteUserRequestError::FailedUuid(value)
+    }
 }
 
 #[derive(Debug, Error)]
@@ -135,10 +177,8 @@ pub struct CreateUserRequest {
 
 impl CreateUserRequest {
     pub fn new(username: &str, email: &str) -> Result<Self, CreateUserRequestError> {
-        let username =
-            UserName::new(username).map_err(|e| CreateUserRequestError::InvalidUsername(e))?;
-        let email =
-            EmailAddress::from_str(email).map_err(|e| CreateUserRequestError::InvalidEmail(e))?;
+        let username = UserName::new(username)?;
+        let email = EmailAddress::from_str(email)?;
         Ok(CreateUserRequest { email, username })
     }
 }
@@ -168,18 +208,12 @@ impl UpdateUserRequest {
         username_opt: Option<String>,
         email_opt: Option<String>,
     ) -> Result<Self, UpdateUserRequestError> {
-        let id = Uuid::try_parse(id).map_err(|e| UpdateUserRequestError::InvalidId(e))?;
+        let id = Uuid::try_parse(id)?;
         let username = username_opt
-            .map(|username_str| {
-                UserName::new(&username_str).map_err(|e| UpdateUserRequestError::InvalidUsername(e))
-            })
+            .map(|username_str| UserName::new(&username_str))
             .transpose()?;
-
         let email = email_opt
-            .map(|email_str| {
-                EmailAddress::from_str(&email_str)
-                    .map_err(|e| UpdateUserRequestError::InvalidEmail(e))
-            })
+            .map(|email_str| EmailAddress::from_str(&email_str))
             .transpose()?;
 
         Ok(Self {
@@ -199,8 +233,8 @@ impl DeleteUserRequest {
         if trimmed.is_empty() {
             return Err(DeleteUserRequestError::MissingId);
         }
+        let id = Uuid::try_parse(trimmed)?;
 
-        let id = Uuid::try_parse(trimmed).map_err(|e| DeleteUserRequestError::FailedUuid(e))?;
         Ok(Self(id))
     }
 
