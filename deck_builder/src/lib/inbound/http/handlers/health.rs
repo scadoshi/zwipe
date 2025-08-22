@@ -70,6 +70,7 @@ where
 {
     let result = match state.health_service.check_database().await {
         Ok(_) => "healthy",
+        // add more errors here if we check other things in the future
         Err(_) => "cannot connect to database",
     };
 
