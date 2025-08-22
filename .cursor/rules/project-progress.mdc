@@ -110,15 +110,16 @@ alwaysApply: true
 - **🚀 AUTH HTTP HANDLERS**: Production-ready register, login, change_password endpoints with comprehensive error mapping
 - **🚀 SECURITY-FIRST DESIGN**: All auth errors mapped to prevent information disclosure (UserNotFound → "Invalid credentials")
 - **🚀 JWT MIDDLEWARE FOUNDATION**: Advanced FromRequestParts implementation with Bearer token parsing and type-safe authentication
+- **🚀 ROUTE PROTECTION UNDERSTANDING**: Clear grasp of type-based authentication through handler parameters vs middleware trees
 - **🚀 CONSISTENT PATTERNS**: Auth domain perfectly mirrors User domain architecture and error handling patterns
 
 ### NEXT PRIORITIES - Immediate Roadmap
-1. **🔧 JWT Middleware Integration**: Complete authentication middleware and route protection
-   - **JWT Secret Injection**: Extract JWT secret from environment/config and inject into handlers
-   - **Route Configuration**: Uncomment and implement public/private route separation in http.rs
-   - **Middleware Application**: Apply JWT middleware to protected routes using established FromRequestParts pattern
-   - **AuthenticatedUser Extraction**: Use JWT middleware to replace hardcoded user IDs in handlers
-   - **Bearer Token Parsing**: Leverage existing type-safe JWT parsing with Authorization header extraction
+1. **🔧 Final Route Integration**: Complete JWT secret injection and route organization
+   - **JWT Secret Injection**: Extract JWT secret from environment/config and inject into AppState
+   - **Route Configuration**: Uncomment and wire up public/private route separation in http.rs
+   - **Handler Integration**: Connect existing handlers to routes with proper generic type parameters
+   - **AuthenticatedUser Testing**: Validate JWT middleware works end-to-end with protected handlers
+   - **Production Route Testing**: Test complete auth flow with real routes
 2. **Route Organization & Testing**: Complete HTTP layer integration
    - **AppState Configuration**: Inject services into HTTP handlers via dependency injection
    - **Route Organization**: Clean separation of authenticated vs public routes
@@ -373,8 +374,8 @@ curl http://localhost:8080/api/v1/decks
 
 **Last Updated**: After completing full User domain pipeline from HTTP handlers to database with comprehensive error handling and trait object integration
 
-**Current Sprint**: JWT middleware integration and route configuration for complete authentication flow
+**Current Sprint**: Route organization and JWT secret injection for complete authentication pipeline
 
-**Next Major Milestone**: Wire JWT secret injection into handlers, implement route protection, and achieve full authentication pipeline
+**Next Major Milestone**: Complete route integration, test end-to-end auth flow, and begin deck/card API development
 
-**Major Recent Achievement**: **🏆 DUAL DOMAIN IMPLEMENTATION COMPLETE** - Successfully implemented complete hexagonal pipelines for BOTH User and Auth domains. Auth domain includes: production-ready repository with optional password handling, service layer with JWT generation, comprehensive HTTP handlers with security-first error mapping, and advanced JWT middleware with type-safe Bearer token parsing. Two complete end-to-end pipelines from HTTP to database with consistent patterns. Server compiles and ready for route integration. 
+**Major Recent Achievement**: **🏆 MIDDLEWARE UNDERSTANDING COMPLETE** - Achieved clear comprehension of Axum's type-based authentication patterns. Understands AuthenticatedUser parameter automatically enforces JWT validation through FromRequestParts trait. All components (domains, services, handlers, middleware) are complete and ready for final route wiring and JWT secret injection. 

@@ -103,9 +103,11 @@ alwaysApply: true
 - **🏆 DOMAIN-DRIVEN SECURITY**: Password validation enforced at domain layer, not adapter layer
 
 ### Advanced Axum Concepts
-- **Route Security**: User isolation patterns and protected endpoint implementation - next learning target
-- **Custom Extractors**: Advanced patterns beyond basic JWT authentication
-- **Advanced Middleware**: Layered middleware composition patterns
+- **Route Security**: Strong understanding of type-based authentication through handler parameters
+- **Custom Extractors**: Production-ready FromRequestParts implementation with JWT validation
+- **Route Protection Patterns**: Clear grasp of per-handler vs route-tree middleware approaches
+- **Declarative Authentication**: Confident with AuthenticatedUser parameter enforcing protection
+- **Advanced Middleware**: Ready for route organization and middleware composition patterns
 
 ### Advanced Generic Type Systems
 - **Opaque vs Concrete Types**: Expert understanding of `impl UserService` vs `US: UserService` trade-offs
@@ -257,6 +259,8 @@ alwaysApply: true
 - **🚀 AUTH DOMAIN PIPELINE COMPLETE**: Full repository, service, and HTTP handler implementation with production-ready error handling
 - **🚀 DUAL PIPELINE ARCHITECTURE**: Both User and Auth domains fully implemented with consistent hexagonal patterns
 - **🎯 ADVANCED JWT MIDDLEWARE**: Custom FromRequestParts trait implementation with Bearer token parsing and type-safe authentication
+- **🎯 ROUTE PROTECTION UNDERSTANDING**: Clear comprehension of type-based auth vs middleware-based auth trade-offs
+- **🎯 HANDLER SECURITY PATTERNS**: Confident with AuthenticatedUser parameter as compile-time protection mechanism
 
 ### Learning Pattern Recognition
 - **Strategic Simplification**: Recognizes when complexity doesn't add value
@@ -319,6 +323,6 @@ alwaysApply: true
 
 **Last Updated**: After completing full User domain pipeline from HTTP handlers to database with comprehensive error handling
 
-**Next Learning Edge**: JWT middleware integration, route configuration, and environment-based JWT secret injection  
+**Next Learning Edge**: JWT secret injection, route organization, and production route configuration with existing middleware  
 
-**Major Recent Achievement**: **🏆 DUAL DOMAIN IMPLEMENTATION COMPLETE** - Full end-to-end implementation of BOTH User and Auth domains with complete hexagonal pipelines. Auth domain includes: repository implementation with password handling, service layer with JWT generation, and HTTP handlers with comprehensive error mapping. Successfully built production-ready auth endpoints (register, login, change password) with security-first design. Advanced middleware with JWT bearer token parsing using Rust's type system. Server compiles and ready for route integration.
+**Major Recent Achievement**: **🏆 MIDDLEWARE INTEGRATION UNDERSTANDING** - Complete grasp of Axum's type-based authentication patterns. Understands that AuthenticatedUser parameter in handlers automatically enforces JWT validation through FromRequestParts trait. Ready for route organization and JWT secret injection to complete authentication pipeline. All domains and middleware components built and ready for final wiring.

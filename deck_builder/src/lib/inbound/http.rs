@@ -7,11 +7,14 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use axum::http::{header, HeaderValue, Method};
+use axum::routing::{get, post};
+use axum::Router;
 use tokio::net;
 use tower_http::cors::CorsLayer;
 
 use crate::domain::auth::ports::AuthService;
 use crate::domain::user::ports::UserService;
+use crate::inbound::http::handlers::health::{health_check, root};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HttpServerConfig<'a> {
@@ -76,24 +79,23 @@ impl HttpServer {
     }
 }
 
-// pub fn private_routes<US: UserService>() -> Router<AppState<US>> {
-//     Router::new().nest(
-//         "/api/v1",
-//         Router::new().route("/decks", get(handlers::decks::get_decks::<US>)),
-//     )
-// }
+pub fn private_routes<AS: AuthService, US: UserService>() -> Router<AppState<AS, US>> {
+    Router::new()
+    // .nest(
+    //     "/api/v1",
+    //     Router::new().route("/decks", get(handlers::decks::get_decks::<US>)),
+    // )
+}
 
-// fix generics here
-// pub fn public_routes<US: UserService>() -> Router<AppState> {
-//     // not sure how to build this quite yet haha
-//     Router::new()
-//         .route("/", get(handlers::health::root))
-//         .route("/health", get(handlers::health::health_check))
-//         .route("/health/deep", get(handlers::health::health_check_deep))
-//         .nest(
-//             "/api/v1",
-//             Router::new()
-//                 .route("/auth/login", post(handlers::auth::login))
-//                 .route("/auth/register", post(handlers::auth::register)),
-//         )
-// }
+pub fn public_routes<AS: AuthService, US: UserService>() -> Router<AppState<AS, US>> {
+    Router::new()
+        .route("/", get(root))
+        .route("/health", get(health_check))
+    // .route("/health/deep", get(handlers::health::health_check_deep))
+    // .nest(
+    //     "/api/v1",
+    //     Router::new()
+    //         .route("/auth/login", post(handlers::auth::login))
+    //         .route("/auth/register", post(handlers::auth::register)),
+    // )
+}

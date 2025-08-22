@@ -1,25 +1,20 @@
-// // External crate imports
-// use axum::{extract::State, http::StatusCode, response::Json};
-// use serde_json::{json, Value};
-// use sqlx::query;
-// use tracing::error;
+use axum::Json;
+use serde_json::{json, Value};
 
-// use crate::adapters::AppState;
+pub async fn root() -> Json<Value> {
+    Json(json!({
+        "message": "Deck Builder API",
+        "version": "0.1.0",
+        "status": "ready"
+    }))
+}
 
-// pub async fn root() -> Json<Value> {
-//     Json(json!({
-//         "message": "MTG Deck Builder API",
-//         "version": "0.1.0",
-//         "status": "ready"
-//     }))
-// }
-
-// pub async fn health_check() -> Json<Value> {
-//     Json(json!({
-//         "status": "healthy",
-//         "timestamp": chrono::Utc::now().to_rfc3339()
-//     }))
-// }
+pub async fn health_check() -> Json<Value> {
+    Json(json!({
+        "status": "healthy",
+        "timestamp": chrono::Utc::now().to_rfc3339()
+    }))
+}
 
 // pub async fn health_check_deep(
 //     State(app_state): State<AppState>,
