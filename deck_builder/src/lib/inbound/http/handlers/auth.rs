@@ -17,6 +17,7 @@ use crate::{
             },
             ports::AuthService,
         },
+        health::ports::HealthService,
         user::{models::User, ports::UserService},
     },
     inbound::http::AppState,
@@ -329,10 +330,15 @@ impl<T: Serialize + PartialEq> IntoResponse for ApiSuccess<T> {
 //                   Functions
 // =================================================
 
-pub async fn register_user<AS: AuthService, US: UserService>(
-    State(state): State<AppState<AS, US>>,
+pub async fn register_user<AS, US, HS>(
+    State(state): State<AppState<AS, US, HS>>,
     Json(body): Json<RegisterUserRequestBody>,
-) -> Result<ApiSuccess<AuthenticateUserSuccessResponseData>, ApiError> {
+) -> Result<ApiSuccess<AuthenticateUserSuccessResponseData>, ApiError>
+where
+    AS: AuthService,
+    US: UserService,
+    HS: HealthService,
+{
     let req = RegisterUserRequest::new(&body.username, &body.email, &body.password)?;
 
     state
@@ -343,10 +349,15 @@ pub async fn register_user<AS: AuthService, US: UserService>(
         .map(|response| ApiSuccess::new(StatusCode::CREATED, response.into()))
 }
 
-pub async fn authenticate_user<AS: AuthService, US: UserService>(
-    State(state): State<AppState<AS, US>>,
+pub async fn authenticate_user<AS, US, HS>(
+    State(state): State<AppState<AS, US, HS>>,
     Json(body): Json<AuthenticateUserRequestBody>,
-) -> Result<ApiSuccess<AuthenticateUserSuccessResponseData>, ApiError> {
+) -> Result<ApiSuccess<AuthenticateUserSuccessResponseData>, ApiError>
+where
+    AS: AuthService,
+    US: UserService,
+    HS: HealthService,
+{
     let req = AuthenticateUserRequest::new(&body.identifier, &body.password)?;
 
     state
@@ -357,10 +368,15 @@ pub async fn authenticate_user<AS: AuthService, US: UserService>(
         .map(|response| ApiSuccess::new(StatusCode::OK, response.into()))
 }
 
-pub async fn change_password<AS: AuthService, US: UserService>(
-    State(state): State<AppState<AS, US>>,
+pub async fn change_password<AS, US, HS>(
+    State(state): State<AppState<AS, US, HS>>,
     Json(body): Json<ChangePasswordRequestBody>,
-) -> Result<ApiSuccess<()>, ApiError> {
+) -> Result<ApiSuccess<()>, ApiError>
+where
+    AS: AuthService,
+    US: UserService,
+    HS: HealthService,
+{
     let req = ChangePasswordRequest::new(&body.id, &body.new_password)?;
 
     state

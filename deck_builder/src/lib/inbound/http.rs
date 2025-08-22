@@ -13,8 +13,11 @@ use tokio::net;
 use tower_http::cors::CorsLayer;
 
 use crate::domain::auth::ports::AuthService;
+use crate::domain::health::ports::HealthService;
 use crate::domain::user::ports::UserService;
-use crate::inbound::http::handlers::health::{health_check, root};
+use crate::inbound::http::handlers::health::{
+    are_server_and_database_running, is_server_running, root,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HttpServerConfig<'a> {
@@ -23,9 +26,10 @@ pub struct HttpServerConfig<'a> {
 }
 
 #[derive(Debug, Clone)]
-pub struct AppState<AS: AuthService, US: UserService> {
+pub struct AppState<AS: AuthService, US: UserService, HS: HealthService> {
     pub auth_service: Arc<AS>,
     pub user_service: Arc<US>,
+    pub health_service: Arc<HS>,
 }
 
 pub struct HttpServer {
@@ -37,6 +41,7 @@ impl HttpServer {
     pub async fn new(
         auth_service: impl AuthService,
         user_service: impl UserService,
+        health_service: impl HealthService,
         config: HttpServerConfig<'_>,
     ) -> anyhow::Result<Self> {
         let trace_layer = tower_http::trace::TraceLayer::new_for_http().make_span_with(
@@ -49,11 +54,12 @@ impl HttpServer {
         let state = AppState {
             auth_service: Arc::new(auth_service),
             user_service: Arc::new(user_service),
+            health_service: Arc::new(health_service),
         };
 
         let router = axum::Router::new()
-            // .merge(private_routes())
-            // .merge(public_routes())
+            .merge(private_routes())
+            .merge(public_routes())
             .layer(trace_layer)
             .layer(
                 CorsLayer::new()
@@ -79,7 +85,8 @@ impl HttpServer {
     }
 }
 
-pub fn private_routes<AS: AuthService, US: UserService>() -> Router<AppState<AS, US>> {
+pub fn private_routes<AS: AuthService, US: UserService, HS: HealthService>(
+) -> Router<AppState<AS, US, HS>> {
     Router::new()
     // .nest(
     //     "/api/v1",
@@ -87,11 +94,12 @@ pub fn private_routes<AS: AuthService, US: UserService>() -> Router<AppState<AS,
     // )
 }
 
-pub fn public_routes<AS: AuthService, US: UserService>() -> Router<AppState<AS, US>> {
+pub fn public_routes<AS: AuthService, US: UserService, HS: HealthService>(
+) -> Router<AppState<AS, US, HS>> {
     Router::new()
         .route("/", get(root))
-        .route("/health", get(health_check))
-    // .route("/health/deep", get(handlers::health::health_check_deep))
+        .route("/health/server", get(is_server_running))
+        .route("/health/database", get(are_server_and_database_running))
     // .nest(
     //     "/api/v1",
     //     Router::new()

@@ -16,6 +16,7 @@ use crate::{
             models::jwt::{Jwt, UserClaims},
             ports::AuthService,
         },
+        health::ports::HealthService,
         user::ports::UserService,
     },
     inbound::http::AppState,
@@ -35,11 +36,13 @@ impl From<UserClaims> for AuthenticatedUser {
 }
 
 #[async_trait]
-impl<AS: AuthService, US: UserService> FromRequestParts<AppState<AS, US>> for AuthenticatedUser {
+impl<AS: AuthService, US: UserService, HS: HealthService> FromRequestParts<AppState<AS, US, HS>>
+    for AuthenticatedUser
+{
     type Rejection = StatusCode;
     async fn from_request_parts(
         parts: &mut Parts,
-        state: &AppState<AS, US>,
+        state: &AppState<AS, US, HS>,
     ) -> Result<Self, Self::Rejection> {
         let TypedHeader(Authorization(bearer)) =
             TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)

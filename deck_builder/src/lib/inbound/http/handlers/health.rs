@@ -1,35 +1,77 @@
-use axum::Json;
+use axum::{extract::State, Json};
+use chrono::Utc;
+use serde::Serialize;
 use serde_json::{json, Value};
 
+use crate::{
+    domain::{auth::ports::AuthService, health::ports::HealthService, user::ports::UserService},
+    inbound::http::AppState,
+};
+
+// =======================
+//        root
+// =======================
+
+#[derive(Debug, Serialize)]
+pub struct RootResponse {
+    pub message: String,
+    pub version: String,
+    pub status: String,
+}
+
+impl RootResponse {
+    fn new(message: &str, version: &str, status: &str) -> Self {
+        Self {
+            message: message.to_string(),
+            version: version.to_string(),
+            status: status.to_string(),
+        }
+    }
+}
+
 pub async fn root() -> Json<Value> {
-    Json(json!({
-        "message": "Deck Builder API",
-        "version": "0.1.0",
-        "status": "ready"
-    }))
+    Json(json!(RootResponse::new(
+        "Deck Builder API",
+        "0.1.0",
+        "ready",
+    )))
 }
 
-pub async fn health_check() -> Json<Value> {
-    Json(json!({
-        "status": "healthy",
-        "timestamp": chrono::Utc::now().to_rfc3339()
-    }))
+// =======================
+//           health
+// =======================
+
+#[derive(Debug, Serialize)]
+struct HealthCheckResponse {
+    status: String,
+    timestamp: String,
 }
 
-// pub async fn health_check_deep(
-//     State(app_state): State<AppState>,
-// ) -> Result<Json<Value>, StatusCode> {
-//     query("SELECT 1")
-//         .fetch_one(&app_state.db_pool)
-//         .await
-//         .map_err(|e| {
-//             error!("Failed to query database at all with error: {:?}", e);
-//             StatusCode::SERVICE_UNAVAILABLE
-//         })?;
+impl HealthCheckResponse {
+    fn new(status: &str) -> Self {
+        Self {
+            status: status.to_string(),
+            timestamp: Utc::now().to_rfc3339(),
+        }
+    }
+}
 
-//     Ok(Json(json!({
-//         "status": "healthy",
-//         "database": "connected",
-//         "timestamp": chrono::Utc::now().to_rfc3339()
-//     })))
-// }
+pub async fn is_server_running() -> Json<Value> {
+    Json(json!(HealthCheckResponse::new("healthy")))
+}
+
+pub async fn are_server_and_database_running<AS, US, HS>(
+    State(state): State<AppState<AS, US, HS>>,
+) -> Json<Value>
+where
+    AS: AuthService,
+    US: UserService,
+    HS: HealthService,
+{
+    let result = match state.health_service.check_database().await {
+        Ok(_) => "healthy",
+        Err(_) => "cannot connect to database",
+    };
+
+    Json(json!(HealthCheckResponse::new(result)))
+}
