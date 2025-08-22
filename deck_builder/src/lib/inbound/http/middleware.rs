@@ -10,7 +10,16 @@ use axum_extra::{
 use email_address::EmailAddress;
 use uuid::Uuid;
 
-use crate::domain::auth::models::jwt::{Jwt, JwtSecret, UserClaims};
+use crate::{
+    domain::{
+        auth::{
+            models::jwt::{Jwt, UserClaims},
+            ports::AuthService,
+        },
+        user::ports::UserService,
+    },
+    inbound::http::AppState,
+};
 pub struct AuthenticatedUser {
     pub user_id: Uuid,
     pub email: EmailAddress,
@@ -26,18 +35,20 @@ impl From<UserClaims> for AuthenticatedUser {
 }
 
 #[async_trait]
-impl FromRequestParts<JwtSecret> for AuthenticatedUser {
+impl<AS: AuthService, US: UserService> FromRequestParts<AppState<AS, US>> for AuthenticatedUser {
     type Rejection = StatusCode;
     async fn from_request_parts(
         parts: &mut Parts,
-        state: &JwtSecret,
+        state: &AppState<AS, US>,
     ) -> Result<Self, Self::Rejection> {
         let TypedHeader(Authorization(bearer)) =
             TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)
                 .await
                 .map_err(|_| StatusCode::BAD_REQUEST)?;
         let jwt = Jwt::new(bearer.token()).map_err(|_| StatusCode::BAD_REQUEST)?;
-        let claims = jwt.validate(state).map_err(|_| StatusCode::UNAUTHORIZED)?;
+        let claims = jwt
+            .validate(state.auth_service.jwt_secret())
+            .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
         Ok(AuthenticatedUser::from(claims))
     }

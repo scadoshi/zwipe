@@ -10,11 +10,10 @@ use crate::{
     domain::{
         auth::{
             models::{
-                jwt::{Jwt, JwtSecret},
-                AuthenticateUserError, AuthenticateUserRequest, AuthenticateUserRequestError,
-                AuthenticateUserSuccessResponse, ChangePasswordError, ChangePasswordRequest,
-                ChangePasswordRequestError, RegisterUserError, RegisterUserRequest,
-                RegisterUserRequestError,
+                jwt::Jwt, AuthenticateUserError, AuthenticateUserRequest,
+                AuthenticateUserRequestError, AuthenticateUserSuccessResponse, ChangePasswordError,
+                ChangePasswordRequest, ChangePasswordRequestError, RegisterUserError,
+                RegisterUserRequest, RegisterUserRequestError,
             },
             ports::AuthService,
         },
@@ -333,13 +332,12 @@ impl<T: Serialize + PartialEq> IntoResponse for ApiSuccess<T> {
 pub async fn register_user<AS: AuthService, US: UserService>(
     State(state): State<AppState<AS, US>>,
     Json(body): Json<RegisterUserRequestBody>,
-    jwt_secret: JwtSecret,
 ) -> Result<ApiSuccess<AuthenticateUserSuccessResponseData>, ApiError> {
     let req = RegisterUserRequest::new(&body.username, &body.email, &body.password)?;
 
     state
         .auth_service
-        .register_user(&req, jwt_secret)
+        .register_user(&req)
         .await
         .map_err(ApiError::from)
         .map(|response| ApiSuccess::new(StatusCode::CREATED, response.into()))
@@ -348,13 +346,12 @@ pub async fn register_user<AS: AuthService, US: UserService>(
 pub async fn authenticate_user<AS: AuthService, US: UserService>(
     State(state): State<AppState<AS, US>>,
     Json(body): Json<AuthenticateUserRequestBody>,
-    jwt_secret: JwtSecret,
 ) -> Result<ApiSuccess<AuthenticateUserSuccessResponseData>, ApiError> {
     let req = AuthenticateUserRequest::new(&body.identifier, &body.password)?;
 
     state
         .auth_service
-        .authenticate_user(&req, jwt_secret)
+        .authenticate_user(&req)
         .await
         .map_err(ApiError::from)
         .map(|response| ApiSuccess::new(StatusCode::OK, response.into()))

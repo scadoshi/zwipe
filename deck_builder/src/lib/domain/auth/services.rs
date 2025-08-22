@@ -26,17 +26,20 @@ impl<R: AuthRepository> Service<R> {
 }
 
 impl<R: AuthRepository + Clone> AuthService for Service<R> {
+    fn jwt_secret(&self) -> &JwtSecret {
+        &self.jwt_secret
+    }
+
     async fn register_user(
         &self,
         req: &RegisterUserRequest,
-        jwt_secret: JwtSecret,
     ) -> Result<AuthenticateUserSuccessResponse, RegisterUserError> {
         let user = self.repo.create_user_with_password_hash(req).await?;
 
         let JwtCreationResponse {
             jwt: token,
             expires_at,
-        } = Jwt::generate(user.id, user.email.clone(), jwt_secret)
+        } = Jwt::generate(user.id, user.email.clone(), &self.jwt_secret)
             .map_err(|e| RegisterUserError::FailedJwt(anyhow!("{e}")))?;
 
         Ok(AuthenticateUserSuccessResponse {
@@ -49,7 +52,6 @@ impl<R: AuthRepository + Clone> AuthService for Service<R> {
     async fn authenticate_user(
         &self,
         req: &AuthenticateUserRequest,
-        jwt_secret: JwtSecret,
     ) -> Result<AuthenticateUserSuccessResponse, AuthenticateUserError> {
         let user_with_password_hash: UserWithPasswordHash =
             self.repo.get_user_with_password_hash(req).await?;
@@ -72,7 +74,7 @@ impl<R: AuthRepository + Clone> AuthService for Service<R> {
         let JwtCreationResponse {
             jwt: token,
             expires_at,
-        } = Jwt::generate(user.id, user.email.clone(), jwt_secret)
+        } = Jwt::generate(user.id, user.email.clone(), &self.jwt_secret)
             .map_err(|e| AuthenticateUserError::FailedJwt(anyhow!("{e}")))?;
 
         Ok(AuthenticateUserSuccessResponse {

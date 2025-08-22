@@ -27,16 +27,16 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
 }
 
 pub trait AuthService: Clone + Send + Sync + 'static {
+    fn jwt_secret(&self) -> &JwtSecret;
+
     fn register_user(
         &self,
         req: &RegisterUserRequest,
-        jwt_secret: JwtSecret,
     ) -> impl Future<Output = Result<AuthenticateUserSuccessResponse, RegisterUserError>> + Send;
 
     fn authenticate_user(
         &self,
         req: &AuthenticateUserRequest,
-        jwt_secret: JwtSecret,
     ) -> impl Future<Output = Result<AuthenticateUserSuccessResponse, AuthenticateUserError>> + Send;
 
     fn change_password(

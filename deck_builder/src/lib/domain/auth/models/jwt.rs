@@ -99,7 +99,7 @@ impl Jwt {
     pub fn generate(
         user_id: Uuid,
         email: EmailAddress,
-        secret: JwtSecret,
+        secret: &JwtSecret,
     ) -> Result<JwtCreationResponse, JwtError> {
         let issued_at = chrono::Utc::now().timestamp() as usize;
         let expires_at = issued_at + 86400; // 24 hours
@@ -115,7 +115,7 @@ impl Jwt {
             &jsonwebtoken::encode(
                 &jsonwebtoken::Header::default(),
                 &user_claims,
-                &jsonwebtoken::EncodingKey::from_secret(secret.0.as_ref()),
+                &jsonwebtoken::EncodingKey::from_secret(secret.as_ref()),
             )
             .map_err(|e| JwtError::EncodingError(e))?,
         )?;
@@ -303,7 +303,7 @@ mod tests {
         let email = EmailAddress::from_str("test@email.com").unwrap();
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let result = Jwt::generate(user_id, email, secret);
+        let result = Jwt::generate(user_id, email, &secret);
         assert!(result.is_ok());
         let token = result.unwrap().jwt;
         assert!(!token.to_string().is_empty());
@@ -316,10 +316,10 @@ mod tests {
         let email = EmailAddress::from_str("test@email.com").unwrap();
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token1 = Jwt::generate(user_id.clone(), email.clone(), secret.clone())
+        let token1 = Jwt::generate(user_id.clone(), email.clone(), &secret)
             .unwrap()
             .jwt;
-        let token2 = Jwt::generate(user_id, email, secret).unwrap().jwt;
+        let token2 = Jwt::generate(user_id, email, &secret).unwrap().jwt;
         assert_eq!(token1, token2);
     }
 
@@ -331,8 +331,8 @@ mod tests {
         let email2 = EmailAddress::from_str("user2@email.com").unwrap();
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token1 = Jwt::generate(user_id1, email1, secret.clone()).unwrap().jwt;
-        let token2 = Jwt::generate(user_id2, email2, secret).unwrap().jwt;
+        let token1 = Jwt::generate(user_id1, email1, &secret).unwrap().jwt;
+        let token2 = Jwt::generate(user_id2, email2, &secret).unwrap().jwt;
         assert_ne!(token1, token2);
     }
 
@@ -343,10 +343,10 @@ mod tests {
         let secret1 = JwtSecret::new("secret-1-that-is-long-enough-for-validation").unwrap();
         let secret2 = JwtSecret::new("secret-2-that-is-long-enough-for-validation").unwrap();
 
-        let token1 = Jwt::generate(user_id.clone(), email.clone(), secret1)
+        let token1 = Jwt::generate(user_id.clone(), email.clone(), &secret1)
             .unwrap()
             .jwt;
-        let token2 = Jwt::generate(user_id, email, secret2).unwrap().jwt;
+        let token2 = Jwt::generate(user_id, email, &secret2).unwrap().jwt;
         assert_ne!(token1, token2);
     }
 
@@ -356,7 +356,7 @@ mod tests {
         let email = EmailAddress::from_str("TesT@eMaiL.Com").unwrap();
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token = Jwt::generate(user_id, email, secret.clone()).unwrap().jwt;
+        let token = Jwt::generate(user_id, email, &secret).unwrap().jwt;
         let claims = Jwt::validate(&token, &secret).unwrap();
         assert_eq!(claims.email.to_string(), "test@email.com");
     }
@@ -371,7 +371,7 @@ mod tests {
         let email = EmailAddress::from_str("user@example.com").unwrap();
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token = Jwt::generate(user_id.clone(), email.clone(), secret.clone())
+        let token = Jwt::generate(user_id.clone(), email.clone(), &secret)
             .unwrap()
             .jwt;
         let claims = Jwt::validate(&token, &secret).unwrap();
@@ -412,7 +412,7 @@ mod tests {
         let wrong_secret =
             JwtSecret::new("wrong-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token = Jwt::generate(user_id, email, correct_secret).unwrap().jwt;
+        let token = Jwt::generate(user_id, email, &correct_secret).unwrap().jwt;
         let result = Jwt::validate(&token, &wrong_secret);
         assert!(result.is_err());
     }
@@ -427,7 +427,7 @@ mod tests {
         let email = EmailAddress::from_str("test@email.com").unwrap();
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token = Jwt::generate(user_id, email, secret.clone()).unwrap().jwt;
+        let token = Jwt::generate(user_id, email, &secret).unwrap().jwt;
         let claims = Jwt::validate(&token, &secret).unwrap();
 
         let now = chrono::Utc::now().timestamp() as usize;
@@ -448,7 +448,7 @@ mod tests {
         let email = EmailAddress::from_str("specific@example.com").unwrap();
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token = Jwt::generate(user_id.clone(), email.clone(), secret.clone())
+        let token = Jwt::generate(user_id.clone(), email.clone(), &secret)
             .unwrap()
             .jwt;
         let claims = Jwt::validate(&token, &secret).unwrap();
@@ -468,7 +468,7 @@ mod tests {
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
         for user_id in user_ids {
-            let token = Jwt::generate(user_id.clone(), email.clone(), secret.clone())
+            let token = Jwt::generate(user_id.clone(), email.clone(), &secret)
                 .unwrap()
                 .jwt;
             let claims = Jwt::validate(&token, &secret).unwrap();
@@ -484,13 +484,9 @@ mod tests {
         let secret = JwtSecret::new("production-grade-secret-that-is-long-enough").unwrap();
 
         // Generate token (like during login)
-        let token = Jwt::generate(
-            original_user_id.clone(),
-            original_email.clone(),
-            secret.clone(),
-        )
-        .unwrap()
-        .jwt;
+        let token = Jwt::generate(original_user_id.clone(), original_email.clone(), &secret)
+            .unwrap()
+            .jwt;
 
         // Validate token (like during protected route access)
         let claims = Jwt::validate(&token, &secret).unwrap();
