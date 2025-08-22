@@ -15,6 +15,7 @@ use tower_http::cors::CorsLayer;
 use crate::domain::auth::ports::AuthService;
 use crate::domain::health::ports::HealthService;
 use crate::domain::user::ports::UserService;
+use crate::inbound::http::handlers::auth::{authenticate_user, register_user};
 use crate::inbound::http::handlers::health::{
     are_server_and_database_running, is_server_running, root,
 };
@@ -100,10 +101,10 @@ pub fn public_routes<AS: AuthService, US: UserService, HS: HealthService>(
         .route("/", get(root))
         .route("/health/server", get(is_server_running))
         .route("/health/database", get(are_server_and_database_running))
-    // .nest(
-    //     "/api/v1",
-    //     Router::new()
-    //         .route("/auth/login", post(handlers::auth::login))
-    //         .route("/auth/register", post(handlers::auth::register)),
-    // )
+        .nest(
+            "/api/v1",
+            Router::new()
+                .route("/auth/register", post(register_user))
+                .route("/auth/login", post(authenticate_user)),
+        )
 }
