@@ -3,46 +3,76 @@ use std::future::Future;
 use uuid::Uuid;
 
 use crate::domain::card::models::{
-    scryfall_card::ScryfallCard, CardNotFound, CardSearchParameters, CreateCardError, InvalidUuid,
+    scryfall_card::ScryfallCard, CardNotFound, CardSearchParameters, CreateCardError, GetCardError,
 };
 
 pub trait CardRepository: Clone + Send + Sync + 'static {
+    /// simple single card insert
     fn insert(
         &self,
         card: ScryfallCard,
     ) -> impl Future<Output = Result<(), CreateCardError>> + Send;
 
+    /// for inserting multiple cards
+    /// beware as you can overload the database insertion query
+    /// if you try too many cards at once
+    /// that is what batch_insert is for
     fn bulk_insert(
         &self,
         cards: Vec<ScryfallCard>,
-    ) -> impl Future<Output = Result<(), CreateCardError>>;
+    ) -> impl Future<Output = Result<(), CreateCardError>> + Send;
 
+    /// for inserting multiple cards
+    /// batches them in smaller groups for fewer cards per query inserting
+    /// utilizes bulk_insert internally
     fn batch_insert(
         &self,
         cards: Vec<ScryfallCard>,
         batch_size: usize,
-    ) -> impl Future<Output = Result<(), CreateCardError>>;
+    ) -> impl Future<Output = Result<(), CreateCardError>> + Send;
 
-    fn smart_insert(
+    /// reads inbound cards
+    /// reads database cards
+    /// removes cards from inbound which already exist in database
+    /// intended to insert only new cards
+    fn batch_insert_if_not_exists(
         &self,
         cards: Vec<ScryfallCard>,
         batch_size: usize,
-    ) -> impl Future<Output = Result<(), CreateCardError>>;
+    ) -> impl Future<Output = Result<(), CreateCardError>> + Send;
 
-    fn get_card(&self, id: &Uuid)
-        -> impl Future<Output = Result<ScryfallCard, InvalidUuid>> + Send;
+    /// reads inbound cards
+    /// deletes database's versions of those cards
+    /// inserts all inbound cards
+    /// intended to allow for a refresh of the database
+    /// with card data that is possibly more up to date
+    fn delete_if_exists_and_batch_insert(
+        &self,
+        cards: Vec<ScryfallCard>,
+        batch_size: usize,
+    ) -> impl Future<Output = Result<(), CreateCardError>> + Send;
 
+    /// simple card get by id
+    fn get_card(
+        &self,
+        id: &Uuid,
+    ) -> impl Future<Output = Result<ScryfallCard, GetCardError>> + Send;
+
+    /// simple card search by a list of parameters
     fn search_cards(
         &self,
         params: CardSearchParameters,
     ) -> impl Future<Output = Result<Vec<ScryfallCard>, CardNotFound>> + Send;
 
+    /// delete all cards
     fn delete_all(&self) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
 }
 
 pub trait CardService {
-    fn get_card(&self, id: &Uuid)
-        -> impl Future<Output = Result<ScryfallCard, InvalidUuid>> + Send;
+    fn get_card(
+        &self,
+        id: &Uuid,
+    ) -> impl Future<Output = Result<ScryfallCard, GetCardError>> + Send;
 
     fn search_cards(
         &self,

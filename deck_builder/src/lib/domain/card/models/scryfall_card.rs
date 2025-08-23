@@ -1,13 +1,33 @@
-pub mod sub_types;
+pub mod all_parts;
+pub mod card_faces;
+pub mod image_uris;
+pub mod legalities;
+pub mod prices;
+
+use all_parts::AllParts;
+use card_faces::CardFaces;
+use image_uris::ImageUris;
+use legalities::Legalities;
+use prices::Prices;
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sqlx::{types::Json, FromRow};
-use sub_types::{CardFace, ImageUris, Legalities, Prices, RelatedCard};
 use uuid::Uuid;
+
+use sqlx::FromRow;
+use sqlx::{Decode, Encode, Type};
 
 /// Card data from scryfall
 /// Used for create and get requests
 #[derive(Debug, Clone, Deserialize, Serialize, FromRow)]
+// qualifying usage of FromRow (a sqlx derive macro)
+// in my domain logic (where database logic is usually banned)
+// ...
+// for now i don't want to have to build this giant structure multiple times
+// more maintenance for the little gain that separating these two would have
+// if i ever have to switch database, i can just replace the macro
+// easy peasy
+// thanks bye
 pub struct ScryfallCard {
     // Core Card Fields
     // Cards have the following core properties
@@ -30,8 +50,8 @@ pub struct ScryfallCard {
 
     // Gameplay Fields
     // Cards have the following properties relevant to the game rules
-    pub all_parts: Option<Vec<Json<RelatedCard>>>,
-    pub card_faces: Option<Vec<Json<CardFace>>>,
+    pub all_parts: Option<AllParts>,
+    pub card_faces: Option<CardFaces>,
     pub cmc: f64,
     pub color_identity: Vec<String>,
     pub color_indicator: Option<Vec<String>>,
@@ -41,7 +61,7 @@ pub struct ScryfallCard {
     pub game_changer: Option<bool>,
     pub hand_modifier: Option<String>,
     pub keywords: Option<Vec<String>>,
-    pub legalities: Json<Legalities>,
+    pub legalities: Legalities,
     pub life_modifier: Option<String>,
     pub loyalty: Option<String>,
     pub mana_cost: Option<String>,
@@ -76,9 +96,9 @@ pub struct ScryfallCard {
     pub highres_image: bool,
     pub illustration_id: Option<Uuid>,
     pub image_status: String,
-    pub image_uris: Option<Json<ImageUris>>,
+    pub image_uris: Option<ImageUris>,
     pub oversized: bool,
-    pub prices: Json<Prices>,
+    pub prices: Prices,
     pub printed_name: Option<String>,
     pub printed_text: Option<String>,
     pub printed_type_line: Option<String>,

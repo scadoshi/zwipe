@@ -46,6 +46,25 @@ impl From<sqlx::Error> for CreateCardError {
     }
 }
 
+#[derive(Debug, Error)]
+pub enum GetCardError {
+    #[error("Card not found")]
+    NotFound,
+    #[error("Database issues: {0}")]
+    DatabaseIssues(anyhow::Error),
+    #[error("Card found but database returned invalid object: {0}")]
+    InvalidCardFromDatabase(anyhow::Error),
+}
+
+impl From<sqlx::Error> for GetCardError {
+    fn from(value: sqlx::Error) -> Self {
+        match value {
+            sqlx::Error::RowNotFound => GetCardError::NotFound,
+            e => GetCardError::DatabaseIssues(anyhow!("{e}")),
+        }
+    }
+}
+
 // ================================
 //            search params
 // ================================
