@@ -165,12 +165,20 @@ alwaysApply: true
    - **Update Deck**: Name, description, format changes
    - **Delete Deck**: Soft delete with cascade handling
    - **Deck Statistics**: Card count, mana curve, color distribution
-8. **~~Advanced Card Data Integration~~**: ✅ **COMPLETED** - All complex nested fields integrated
+8. **Image Handling (MVP)**: Card image serving and optimization
+   - **Image Proxy**: Serve Scryfall images through API for consistent access
+   - **Image Caching**: Cache frequently accessed card images
+   - **Image Optimization**: Resize/compress for mobile bandwidth
+9. **Mobile-Optimized Responses (MVP)**: API responses optimized for mobile
+   - **Pagination**: Efficient pagination for large card/deck lists
+   - **Response Size**: Minimize JSON payload sizes
+   - **Batch Operations**: Allow bulk operations to reduce round trips
+10. **~~Advanced Card Data Integration~~**: ✅ **COMPLETED** - All complex nested fields integrated
    - ✅ **Card Faces**: Multi-faced card support with Json<CardFace> arrays
    - ✅ **Image URIs**: Card image URL management with Json<ImageUris> 
    - ✅ **Legalities**: Format legality tracking with Json<Legalities> and custom enums
    - ✅ **Prices**: Market price data with Json<Prices> integration
-9. **~~Custom Serde Review Session~~**: ✅ **COMPLETED** - Custom deserializers mastered
+11. **~~Custom Serde Review Session~~**: ✅ **COMPLETED** - Custom deserializers mastered
    - ✅ **Understanding**: Complete mastery of `deserialize_int_or_string_array` pattern
    - ✅ **Pattern Recognition**: Expert knowledge of when/how to implement custom deserializers
    - ✅ **Best Practices**: Production-ready Json<T> wrapper patterns with SQLx
@@ -193,15 +201,12 @@ alwaysApply: true
 - **Social Features**: Deck sharing, public deck browser, user profiles
 
 **Technical Improvements:**
-- **API Documentation**: OpenAPI/Swagger documentation generation
 - **Rate Limiting**: Request throttling and abuse prevention
 - **Caching Layer**: Redis integration for card data and query optimization
-- **Image Handling**: Card image caching, proxy, and optimization
 - **Monitoring & Logging**: Structured logging, metrics, health monitoring
 - **Database Optimization**: Query performance analysis, indexing strategy
 
-**User Experience:**
-- **Mobile Responsiveness**: Touch-optimized deck building interface
+**Mobile Application Features:**
 - **Offline Support**: PWA capabilities for offline deck management
 - **Import/Export**: Support for various deck formats (MTGA, MTGO, etc.)
 - **Deck Analytics**: Mana curve analysis, card type distribution
