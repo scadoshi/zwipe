@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::{
     domain::card::{
         models::{scryfall_card::ScryfallCard, CreateCardError},
@@ -12,22 +14,20 @@ use uuid::Uuid;
 
 impl CardRepository for MyPostgres {
     async fn insert(&self, card: ScryfallCard) -> Result<(), CreateCardError> {
-        let mut tx = self
-            .pool
-            .begin()
-            .await
-            .map_err(|e| CreateCardError::DatabaseIssues(anyhow!("{e}")))?;
+        let mut tx = self.pool.begin().await?;
 
         let scryfall_card_id = card.id.clone();
 
         let query_sql = format!(
             "INSERT INTO scryfall_cards ({}) VALUES ({})",
             SCRYFALL_CARD_FIELDS,
-            (1..=sc_fieldcount()).map(|x| format!("${}", x)).join(",")
+            (1..=scryfall_card_fieldcount())
+                .map(|x| format!("${}", x))
+                .join(",")
         );
 
         query(query_sql.as_str())
-            .bind_scryfall_card_fields(self)
+            .bind_scryfall_card_fields(card)
             .execute(&mut *tx)
             .await
             .map_err(|e| CreateCardError::DatabaseIssues(anyhow!("{e}")))?;
@@ -42,94 +42,89 @@ impl CardRepository for MyPostgres {
         Ok(())
     }
 
-    async fn bulk_insert(&self, cards: Vec<ScryfallCard>) -> Result<(), anyhow::Error> {
-        //  // for building out value tuples
-        //  let card_count = self.len();
-        //  let sc_fieldcount = sc_fieldcount();
+    async fn bulk_insert(&self, cards: Vec<ScryfallCard>) -> Result<(), CreateCardError> {
+        let mut tx = self.pool.begin().await?;
 
-        //  // for inserting into card_profile later
-        //  // HashSet<T> avoids trying dupes
-        //  let card_ids: HashSet<Uuid> = self.iter().map(|x| x.id.to_owned()).collect();
+        // for building out value tuples
+        let card_count = cards.len();
+        let scryfallcard_field_count = scryfall_card_fieldcount();
 
-        //  // time to insert into scryfall_card!
-        //  // intializing query sql
-        //  let mut sc_query_sql = format!(
-        //      "INSERT INTO scryfall_cards ({}) VALUES",
-        //      SCRYFALL_CARD_FIELDS
-        //  );
+        // for inserting into card_profile later
+        // HashSet<T> avoids trying dupes
+        let card_ids: HashSet<Uuid> = cards.iter().map(|x| x.id.to_owned()).collect();
 
-        //  // build value tuples
-        //  // like ($1,$2,$3,...), ($80,$81,$82,...), ...
-        //  for i in 0..card_count {
-        //      let start = 1 + (sc_fieldcount * i);
-        //      let finish = sc_fieldcount + (sc_fieldcount * i);
+        // time to insert into scryfall_card!
+        // intializing query sql
+        let mut scryfall_card_query_sql = format!(
+            "INSERT INTO scryfall_cards ({}) VALUES",
+            SCRYFALL_CARD_FIELDS
+        );
 
-        //      if i > 0 {
-        //          sc_query_sql.push(',');
-        //      }
+        // build value tuples
+        // like ($1,$2,$3,...), ($80,$81,$82,...), ...
+        for i in 0..card_count {
+            let start = 1 + (scryfallcard_field_count * i);
+            let finish = scryfallcard_field_count + (scryfallcard_field_count * i);
 
-        //      sc_query_sql.push('(');
-        //      sc_query_sql.push_str(
-        //          (start..=finish)
-        //              .map(|x| format!("${}", x))
-        //              .join(",")
-        //              .as_str(),
-        //      );
-        //      sc_query_sql.push(')');
-        //  }
-        //  // sc_query_sql.push_str(" ON CONFLICT (id) DO NOTHING");
+            if i > 0 {
+                scryfall_card_query_sql.push(',');
+            }
 
-        //  // build query with all binds
-        //  let mut sc_query = query(sc_query_sql.as_str());
-        //  for card in self {
-        //      sc_query = sc_query.bind_scryfall_card_fields(card);
-        //  }
-        //  sc_query.execute(pg_pool).await?;
+            scryfall_card_query_sql.push('(');
+            scryfall_card_query_sql.push_str(
+                (start..=finish)
+                    .map(|x| format!("${}", x))
+                    .join(",")
+                    .as_str(),
+            );
+            scryfall_card_query_sql.push(')');
+        }
+        // scryfall_card_query_sql.push_str(" ON CONFLICT (id) DO NOTHING");
 
-        //  // time to inset into card_profile!
-        //  // intializing query sql
-        //  let mut cp_query_sql: String =
-        //      "INSERT INTO card_profiles (scryfall_card_id, created_at, updated_at) VALUES"
-        //          .to_string();
-        //  let cp_field_count = 3;
+        // build query with all binds
+        let mut scryfall_card_query = query(scryfall_card_query_sql.as_str());
+        for card in cards {
+            scryfall_card_query = scryfall_card_query.bind_scryfall_card_fields(card);
+        }
 
-        //  // build values tuples
-        //  // like ($1,$2,$3), ($4,$5,$6), ...
-        //  for i in 0..card_count {
-        //      let start = 1 + (cp_field_count * i);
-        //      let finish = cp_field_count + (cp_field_count * i);
+        scryfall_card_query.execute(&mut *tx).await?;
 
-        //      if i > 0 {
-        //          cp_query_sql.push(',');
-        //      }
+        // time to insert into card_profile!
+        // intializing query sql
+        let mut card_profile_query_sql: String =
+            "INSERT INTO card_profiles (scryfall_card_id) VALUES".to_string();
 
-        //      cp_query_sql.push('(');
-        //      cp_query_sql.push_str(
-        //          (start..=finish)
-        //              .map(|x| format!("${}", x))
-        //              .join(",")
-        //              .as_str(),
-        //      );
-        //      cp_query_sql.push(')');
-        //  }
-        //  // cp_query_sql.push_str(" ON CONFLICT (scryfall_card_id) DO NOTHING");
+        // build values tuples
+        // like ($1), ($2), ...
+        // much simpler than above because we only need to insert a single field
+        for i in 0..card_count {
+            if i > 0 {
+                card_profile_query_sql.push(',');
+            }
 
-        //  // build query with all binds
-        //  let mut cp_query = query(cp_query_sql.as_str());
-        //  for id in card_ids {
-        //      cp_query = cp_query.bind_card_profile_fields(id);
-        //  }
-        //  cp_query.execute(pg_pool).await?;
+            card_profile_query_sql.push('(');
+            card_profile_query_sql.push_str(format!("${}", i + 1).as_str());
+            card_profile_query_sql.push(')');
+        }
+        // card_profile_query_sql.push_str(" ON CONFLICT (scryfall_card_id) DO NOTHING");
 
-        //  Ok(())
-        todo!()
+        // build query with all binds
+        let mut card_profile_query = query(card_profile_query_sql.as_str());
+        for id in card_ids {
+            card_profile_query = card_profile_query.bind_card_profile_fields(id);
+        }
+        card_profile_query.execute(&mut *tx).await?;
+
+        tx.commit().await?;
+
+        Ok(())
     }
 
     async fn batch_insert(
         &self,
         cards: Vec<ScryfallCard>,
         batch_size: usize,
-    ) -> Result<(), anyhow::Error> {
+    ) -> Result<(), CreateCardError> {
         // let mut failed_batches = 0;
         // let mut total_batches = 0;
 
@@ -186,7 +181,7 @@ impl CardRepository for MyPostgres {
         &self,
         cards: Vec<ScryfallCard>,
         batch_size: usize,
-    ) -> Result<(), anyhow::Error> {
+    ) -> Result<(), CreateCardError> {
         //     let existing_ids: Vec<Uuid> = query_scalar("SELECT id FROM scryfall_cards")
         //     .fetch_all(pg_pool)
         //     .await?;
@@ -274,6 +269,7 @@ const SCRYFALL_CARD_FIELDS: &str = r#"
     type_line,
     artist,
     artist_ids,
+    attraction_lights,
     booster,
     border_color,
     card_back_id,
@@ -321,7 +317,7 @@ const SCRYFALL_CARD_FIELDS: &str = r#"
     preview_source
 "#;
 
-fn sc_fieldcount() -> usize {
+fn scryfall_card_fieldcount() -> usize {
     SCRYFALL_CARD_FIELDS
         .lines()
         .filter(|x| x.contains(","))
@@ -333,7 +329,7 @@ trait BindScryfallCardFields {
     fn bind_scryfall_card_fields(self, card: ScryfallCard) -> Self;
 }
 
-impl BindScryfallCardFields for Query<'_, Postgres, PgArguments> {
+impl BindScryfallCardFields for sqlx::query::Query<'_, Postgres, PgArguments> {
     fn bind_scryfall_card_fields(self, card: ScryfallCard) -> Self {
         self
             // Core Card Fields
@@ -383,6 +379,7 @@ impl BindScryfallCardFields for Query<'_, Postgres, PgArguments> {
             // Cards have the following properties unique to their particular re/print
             .bind(card.artist)
             .bind(card.artist_ids)
+            .bind(card.attraction_lights)
             .bind(card.booster)
             .bind(card.border_color)
             .bind(card.card_back_id)
@@ -431,13 +428,11 @@ impl BindScryfallCardFields for Query<'_, Postgres, PgArguments> {
     }
 }
 
-trait BindCardProfileFields {
+trait Bindcard_profileFields {
     fn bind_card_profile_fields(self, scryfall_card_uuid: Uuid) -> Self;
 }
-impl BindCardProfileFields for Query<'_, Postgres, PgArguments> {
+impl Bindcard_profileFields for sqlx::query::Query<'_, Postgres, PgArguments> {
     fn bind_card_profile_fields(self, scryfall_card_id: Uuid) -> Self {
         self.bind(scryfall_card_id)
-            .bind(chrono::Utc::now().naive_utc())
-            .bind(chrono::Utc::now().naive_utc())
     }
 }

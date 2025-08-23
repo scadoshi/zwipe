@@ -1,7 +1,10 @@
 pub mod scryfall_card;
+use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
+
+use crate::outbound::sqlx::postgres::IsUniqueConstraintViolation;
 
 // ===================================
 //              errors
@@ -25,10 +28,22 @@ pub struct CardNotFound;
 pub enum CreateCardError {
     #[error("Error: {0}")]
     Unknown(anyhow::Error),
+    #[error("ID already exists")]
+    UniqueConstraintViolation(anyhow::Error),
     #[error("Database issues: {0}")]
     DatabaseIssues(anyhow::Error),
     #[error("Card created but database returned invalid object: {0}")]
     InvalidCardFromDatabase(anyhow::Error),
+}
+
+impl From<sqlx::Error> for CreateCardError {
+    fn from(value: sqlx::Error) -> Self {
+        if value.is_unique_constraint_violation() {
+            return CreateCardError::UniqueConstraintViolation(anyhow!("{value}"));
+        }
+
+        CreateCardError::DatabaseIssues(anyhow!("{value}"))
+    }
 }
 
 // ================================

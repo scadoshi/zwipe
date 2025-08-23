@@ -3,7 +3,7 @@ use std::future::Future;
 use uuid::Uuid;
 
 use crate::domain::card::models::{
-    scryfall_card::ScryfallCard, CardNotFound, CardSearchParameters, InvalidUuid,
+    scryfall_card::ScryfallCard, CardNotFound, CardSearchParameters, CreateCardError, InvalidUuid,
 };
 
 pub trait CardRepository: Clone + Send + Sync + 'static {
