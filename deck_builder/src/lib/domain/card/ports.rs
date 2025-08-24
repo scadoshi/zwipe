@@ -3,7 +3,8 @@ use std::future::Future;
 use uuid::Uuid;
 
 use crate::domain::card::models::{
-    scryfall_card::ScryfallCard, CardNotFound, CardSearchParameters, CreateCardError, GetCardError,
+    scryfall_card::ScryfallCard, CardSearchParameters, CreateCardError, GetCardError,
+    SearchCardError, SyncResult,
 };
 
 pub trait CardRepository: Clone + Send + Sync + 'static {
@@ -62,7 +63,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     fn search_cards(
         &self,
         params: CardSearchParameters,
-    ) -> impl Future<Output = Result<Vec<ScryfallCard>, CardNotFound>> + Send;
+    ) -> impl Future<Output = Result<Vec<ScryfallCard>, SearchCardError>> + Send;
 
     /// delete all cards
     fn delete_all(&self) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
@@ -77,5 +78,10 @@ pub trait CardService {
     fn search_cards(
         &self,
         params: CardSearchParameters,
-    ) -> impl Future<Output = Result<Vec<ScryfallCard>, CardNotFound>> + Send;
+    ) -> impl Future<Output = Result<Vec<ScryfallCard>, SearchCardError>> + Send;
+
+    fn scryfall_sync(
+        &self,
+        ignore_if_exists: bool,
+    ) -> impl Future<Output = Result<SyncResult, anyhow::Error>> + Send;
 }

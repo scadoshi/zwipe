@@ -1,9 +1,10 @@
 // getting the helper implementations
 pub mod scryfall_card;
-use crate::outbound::sqlx::card::scryfall_card::{
-    all_parts, card_faces, image_uris, legalities, prices,
+use crate::{
+    domain::card::models::{CardSearchParameters, SearchCardError},
+    outbound::sqlx::card::scryfall_card::{all_parts, card_faces, image_uris, legalities, prices},
 };
-use sqlx::{Decode, Encode, Type};
+use sqlx::{query_builder::Separated, Decode, Encode, QueryBuilder, Type};
 
 // other internal
 use crate::{
@@ -316,20 +317,66 @@ impl CardRepository for MyPostgres {
 
     async fn search_cards(
         &self,
-        params: crate::domain::card::models::CardSearchParameters,
-    ) -> Result<Vec<ScryfallCard>, crate::domain::card::models::CardNotFound> {
-        todo!("build search cards function")
+        params: CardSearchParameters,
+    ) -> Result<Vec<ScryfallCard>, SearchCardError> {
+        let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new("SELECT * FROM scryfall_cards");
+
+        // early return with all cards if no filtering is applied
+        if !params.has_filters() {
+            let cards: Vec<ScryfallCard> = qb.build_query_as().fetch_all(&self.pool).await?;
+            return Ok(cards);
+        }
+
+        // otherwise we start looking through the filters
+        let mut sep: Separated<Postgres, &'static str> = qb.separated(" AND ");
+
+        if let Some(name) = params.name {
+            sep.push("name ILIKE $1")
+                .push_bind_unseparated(format!("%{}%", name));
+        }
+
+        if let Some(type_line) = params.type_line {
+            sep.push("type_line ILIKE $1")
+                .push_bind_unseparated(format!("%{}%", type_line));
+        }
+
+        if let Some(set) = params.set {
+            sep.push("set ILIKE $1")
+                .push_bind_unseparated(format!("%{}%", set));
+        }
+
+        if let Some(rarity) = params.rarity {
+            sep.push("rarity ILIKE $1")
+                .push_bind_unseparated(format!("%{}%", rarity));
+        }
+
+        if let Some(cmc) = params.cmc {
+            sep.push("cmc = $1").push_bind_unseparated(cmc);
+        }
+
+        if let Some(color_identity) = params.color_identity {
+            sep.push("color_identity && $1")
+                .push_bind_unseparated(color_identity);
+        }
+
+        if let Some(oracle_text) = params.oracle_text {
+            sep.push("oracle_text ILIKE $1")
+                .push_bind_unseparated(format!("%{}%", oracle_text));
+        }
+
+        let cards: Vec<ScryfallCard> = qb.build_query_as().fetch_all(&self.pool).await?;
+
+        Ok(cards)
     }
 
     // ============================
     //         delete
     // ============================
     async fn delete_all(&self) -> Result<(), anyhow::Error> {
-        //     query("DELETE FROM scryfall_cards;")
-        //     .execute(pg_pool)
-        //     .await?;
-        // Ok(())
-        todo!()
+        query("DELETE FROM scryfall_cards;")
+            .execute(&self.pool)
+            .await?;
+        Ok(())
     }
 }
 

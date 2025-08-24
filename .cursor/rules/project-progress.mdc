@@ -135,26 +135,43 @@ alwaysApply: true
   - **Transparent Serde**: Perfect JSON serialization/deserialization behavior
   - **Module Organization**: Clean separation of domain and adapter type implementations
 
-### IN PROGRESS - Card Domain Implementation 🔄
-- **🔄 COMPILER WARNING INVESTIGATION**: Custom SQLx trait implementations (Decode, Encode, Type) marked as unused despite being required for query_as! macro runtime behavior
-- **🔄 IMPORT SCOPE VALIDATION**: Need to test runtime behavior to confirm custom trait implementations are properly linked
-- **🔄 INBOUND CARD PIPELINE**: Build Scryfall card dump import system before testing get_card functionality
-- **🔄 PENDING**: Complete search_cards repository implementation with proper filtering
-- **🔄 PENDING**: Build CardService layer with delegation to repository
-- **🔄 PENDING**: Create HTTP handlers with Query parameter extraction
-- **🔄 PENDING**: Card route integration into HTTP server
+### COMPLETE - Card Repository Foundation ✅
+- **🎯 CARD REPOSITORY OPERATIONS**: Working get_card, search_cards, and sync operations implemented
+- **🎯 ERROR TYPE ORGANIZATION**: SearchCardError, GetCardError, CreateCardError with domain separation
+- **🎯 SEARCH LOGIC DEVELOPMENT**: QueryBuilder implementation with has_filters() handling for empty vs populated searches
+- **🎯 QUERY BUILDING PATTERNS**: build_query_as() usage for typed results from dynamic queries
+- **🎯 SEARCH PARAMETER MODELING**: CardSearchParameters with pagination and filter detection logic
+- **🎯 SYNC RESULT STRUCTURE**: SyncResult struct designed for metrics tracking (processed, inserted, skipped, duration, errors)
+- **🎯 SERVICE LAYER SCAFFOLDING**: Service<R> pattern established with CardService trait - needs implementation
+- **🎯 SCRYFALL API CLIENT**: Bulk data download functionality with BulkEndpoint enum and error handling
+- **🎯 CONFIGURATION CLEANUP**: Moved SCRYFALL_API_BASE from env to const for cleaner architecture
+- **🎯 DELETE_ALL OPERATION**: Basic truncate operation for database refresh scenarios
+
+### IN PROGRESS - Card Pipeline Integration 🔄
+- **🔄 CARD SERVICE IMPLEMENTATION**: Connect service methods to repository delegation
+- **🔄 SCRYFALL SYNC ORCHESTRATION**: Implement scryfall_sync with parameter-driven strategy selection
+- **🔄 SYNCRESULT REPOSITORY INTEGRATION**: Update batch operations to collect and return metrics (processed, inserted, skipped, errors)
+- **🔄 CUSTOM TYPE RUNTIME VALIDATION**: Test that Decode/Encode/Type implementations work with real Scryfall data
+- **🔄 INBOUND HTTP HANDLERS**: Build Card HTTP endpoints with Query parameter extraction
+- **🔄 ROUTE INTEGRATION**: Connect Card handlers to HTTP server routing
 
 ### NEXT PRIORITIES - Immediate Roadmap
-1. **🔧 Card Import Pipeline**: Build Scryfall data ingestion system
-   - **Scryfall API Client**: Fetch card dump or incremental data from Scryfall API
-   - **Bulk Insert Testing**: Validate existing bulk_insert methods work with real data
-   - **Custom Type Runtime Validation**: Test that Decode/Encode/Type implementations work despite compiler warnings
-   - **Data Integrity Validation**: Ensure complex nested types (Legalities, AllParts, etc.) serialize/deserialize correctly
-2. **🔧 Complete Card Domain Implementation**: Finish read-only card operations
-   - **Card Repository Methods**: Implement get_card and search_cards with SQLx queries
-   - **Card Service Layer**: Simple delegation pattern from service to repository
-   - **Card HTTP Handlers**: Axum handlers with Query parameter extraction
-   - **Card Route Integration**: Add card search endpoints to route configuration
+1. **🔧 Complete Card Service Implementation**: Finish service layer delegation
+   - **Service Method Implementation**: Connect get_card, search_cards, and scryfall_sync to repository
+   - **Scryfall Sync Logic**: Implement parameter-driven sync strategy (ignore_if_exists vs replace_existing)
+   - **Error Mapping**: Proper error propagation from repository to service layer
+   - **Metrics Collection**: SyncResult assembly with timing and count tracking
+   - **Repository SyncResult Integration**: Update repository functions to collect and return SyncResult data during batch operations
+2. **🔧 Card Data Import & Validation**: Test custom SQLx types with real data
+   - **Scryfall Bulk Import**: Use get_bulk() client to fetch all cards from Scryfall API
+   - **Custom Type Runtime Testing**: Validate Decode/Encode/Type implementations work with real nested JSON
+   - **Batch Processing Validation**: Test bulk insert operations with 35,400+ card dataset
+   - **Performance Benchmarking**: Measure insertion rates and identify bottlenecks
+3. **🔧 Inbound HTTP Layer**: Build Card API endpoints
+   - **Card HTTP Handlers**: GET /cards/:id and GET /cards with query parameters
+   - **Query Parameter Extraction**: Axum Query<CardSearchParameters> integration
+   - **Response Serialization**: JSON response formatting with proper error handling
+   - **Route Integration**: Add card endpoints to existing HTTP server configuration
 2. **🔧 Final Route Integration**: Complete JWT secret injection and route organization
    - **JWT Secret Injection**: Extract JWT secret from environment/config and inject into AppState
    - **Route Configuration**: Uncomment and wire up public/private route separation in http.rs
@@ -418,10 +435,10 @@ curl http://localhost:8080/api/v1/decks
 
 ---
 
-**Last Updated**: After completing Card domain foundation with strategic architectural analysis for external API integration
+**Last Updated**: After completing comprehensive Card domain repository implementation with advanced search, sync operations, and Scryfall API client
 
-**Current Sprint**: Card domain implementation and route integration for complete authentication pipeline
+**Current Sprint**: Card service implementation and HTTP layer integration for complete card management pipeline
 
-**Next Major Milestone**: Complete Card read operations, test end-to-end auth flow, and begin Deck CRUD development
+**Next Major Milestone**: Test custom SQLx types with real Scryfall data, complete card HTTP endpoints, and validate end-to-end card operations
 
-**Major Recent Achievement**: **🎯 CARD DOMAIN ARCHITECTURE BREAKTHROUGH** - Demonstrated advanced architectural thinking by recognizing that Card domain requires different patterns than standard CRUD. Successfully designed read-only HTTP APIs vs background bulk operations architecture. Built comprehensive CardSearchParameters, proper error types, and clean trait separation between repository and service layers. This represents excellent domain analysis for external API integration scenarios. 
+**Major Recent Achievement**: **🎯 CARD REPOSITORY FOUNDATION PROGRESS** - Built working Card repository with search logic, error type organization, and QueryBuilder patterns. Implemented SyncResult metrics structure, sync operation scaffolding, and Scryfall API client functionality. Shows strong understanding of dynamic SQL construction and type-safe database patterns. Card pipeline still needs service layer implementation and real-world data testing to complete the integration. 
