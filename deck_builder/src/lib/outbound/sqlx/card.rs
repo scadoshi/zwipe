@@ -1,9 +1,16 @@
 // getting the helper implementations
 pub mod scryfall_card;
+pub mod sync_metrics;
+
 use crate::{
-    domain::card::models::{CardSearchParameters, SearchCardError},
+    domain::card::models::{
+        sync_metrics::{ErrorMetrics, SyncMetrics, SyncType},
+        CardSearchParameters, SearchCardError,
+    },
     outbound::sqlx::card::scryfall_card::{all_parts, card_faces, image_uris, legalities, prices},
 };
+use anyhow::Context;
+use chrono::NaiveDateTime;
 use sqlx::{query_builder::Separated, Decode, Encode, QueryBuilder, Type};
 
 // other internal
@@ -35,6 +42,11 @@ use uuid::Uuid;
 
 /// basic insertions like a single card
 /// or multiple cards with no special batching
+///
+/// This takes a transaction and muts it leaving it uncommitted
+/// practice will be to not commit transactions in this section
+/// might build a newtype eventually to prohibit this strictly
+/// but for now--self discipline!
 pub trait InsertWithTransaction {
     fn insert_with_tx(
         self,
@@ -146,12 +158,18 @@ impl InsertWithTransaction for Vec<ScryfallCard> {
     }
 }
 
+/// For inserting batches of cards
 ///
+/// This takes a transaction and muts it leaving it uncommitted
+/// practice will be to not commit transactions in this section
+/// might build a newtype eventually to prohibit this strictly
+/// but for now--self discipline!
 pub trait BatchInsertWithTransaction {
     fn batch_insert_with_tx(
         self,
         tx: &mut PgTransaction<'_>,
         batch_size: usize,
+        sync_metrics: &mut SyncMetrics,
     ) -> impl Future<Output = Result<(), CreateCardError>> + Send;
 }
 
@@ -160,59 +178,40 @@ impl BatchInsertWithTransaction for Vec<ScryfallCard> {
         self,
         tx: &mut PgTransaction<'_>,
         batch_size: usize,
+        sync_metrics: &mut SyncMetrics,
     ) -> Result<(), CreateCardError> {
-        let mut failed_batches = 0;
-        let mut total_batches = 0;
-
         for chunk in self.chunks(batch_size) {
-            total_batches += 1;
+            // need owned data for inserting
             let owned_chunk: Vec<ScryfallCard> = chunk.to_owned();
-
             match owned_chunk.insert_with_tx(tx).await {
-                Ok(_) => (),
+                Ok(_) => sync_metrics.add_imported_cards_count(batch_size as i32),
                 Err(e) => {
-                    failed_batches += 1;
-                    tracing::warn!("Batch #{} failed with error: {:?}", total_batches, e);
-                    tracing::warn!("Retrying batch #{:?} one card at a time", total_batches);
+                    tracing::warn!("batch failed with error: {:?}\nretrying card by card", e);
 
-                    let mut total_card_inserts = 1;
-                    let mut failed_card_inserts = 0;
                     for card in chunk.to_owned() {
-                        total_card_inserts += 1;
-
                         let card_name = card.name.clone();
                         let card_id = card.id.clone();
 
                         match card.insert_with_tx(tx).await {
-                            Ok(_) => (),
+                            Ok(_) => sync_metrics.add_imported_cards_count(1),
                             Err(e) => {
                                 tracing::warn!(
-                                    "Card {:?} ({}) in batch #{} failed with error: {:?}",
+                                    "card {:?} ({}) failed with error: {:?}",
                                     card_name,
                                     card_id,
-                                    total_batches,
                                     e
                                 );
-                                failed_card_inserts += 1;
+                                sync_metrics.add_error(ErrorMetrics::new(
+                                    card_id,
+                                    card_name,
+                                    e.to_string(),
+                                ));
                             }
                         }
                     }
-                    tracing::info!(
-                        "Batch #{} completed {}/{} inserts",
-                        total_batches,
-                        total_card_inserts - failed_card_inserts,
-                        total_card_inserts
-                    );
                 }
             }
         }
-
-        tracing::info!(
-            "Completed {}/{} batches successfully",
-            total_batches - failed_batches,
-            total_batches
-        );
-
         Ok(())
     }
 }
@@ -220,7 +219,7 @@ impl BatchInsertWithTransaction for Vec<ScryfallCard> {
 // ============================
 //        main
 // ============================
-// transaction commits should be handled at this level!
+// transaction commits should be handled at this level! not the above!
 
 impl CardRepository for MyPostgres {
     // ============================
@@ -244,9 +243,12 @@ impl CardRepository for MyPostgres {
         &self,
         cards: Vec<ScryfallCard>,
         batch_size: usize,
+        sync_metrics: &mut SyncMetrics,
     ) -> Result<(), CreateCardError> {
         let mut tx = self.pool.begin().await?;
-        cards.batch_insert_with_tx(&mut tx, batch_size).await?;
+        cards
+            .batch_insert_with_tx(&mut tx, batch_size, sync_metrics)
+            .await?;
         tx.commit().await?;
         Ok(())
     }
@@ -255,29 +257,32 @@ impl CardRepository for MyPostgres {
         &self,
         cards: Vec<ScryfallCard>,
         batch_size: usize,
+        sync_metrics: &mut SyncMetrics,
     ) -> Result<(), CreateCardError> {
+        tracing::info!("initiating batch insert if not exists process");
+        tracing::info!("received {} cards", cards.len());
         let mut tx = self.pool.begin().await?;
-
         let existing_ids: Vec<Uuid> = query_scalar("SELECT id FROM scryfall_cards")
             .fetch_all(&self.pool)
             .await?;
-
+        tracing::info!(
+            "skipping {} cards because database already has them",
+            existing_ids.len()
+        );
+        sync_metrics.set_skipped_count(existing_ids.len() as i32);
         let new_cards: Vec<ScryfallCard> = cards
             .into_iter()
             .filter(|x| !existing_ids.contains(&x.id))
             .collect();
-
-        tracing::info!("Calculated difference");
-
         if new_cards.is_empty() {
-            tracing::info!("Database up to date");
+            tracing::info!("no new cards to import - database up to date");
             return Ok(());
         }
-
-        new_cards.batch_insert_with_tx(&mut tx, batch_size).await?;
-
+        tracing::info!("importing {} new cards", new_cards.len());
+        new_cards
+            .batch_insert_with_tx(&mut tx, batch_size, sync_metrics)
+            .await?;
         tx.commit().await?;
-
         Ok(())
     }
 
@@ -285,20 +290,23 @@ impl CardRepository for MyPostgres {
         &self,
         cards: Vec<ScryfallCard>,
         batch_size: usize,
+        sync_metrics: &mut SyncMetrics,
     ) -> Result<(), CreateCardError> {
+        tracing::info!("initiating delete if exists and insert process");
+        tracing::info!("received {} cards", cards.len());
         let mut tx = self.pool.begin().await?;
-
         // extract ids for deletion
         let card_ids: Vec<Uuid> = cards.iter().map(|c| c.id).collect();
-
+        tracing::info!("deleting {} cards", card_ids.len());
         // delete the cards (card_profile cascade cascades)
         query("DELETE FROM scryfall_cards WHERE id = ANY($1)")
             .bind(card_ids)
             .execute(&mut *tx)
             .await?;
-
-        cards.batch_insert_with_tx(&mut tx, batch_size).await?;
-
+        tracing::info!("importing {} cards", cards.len());
+        cards
+            .batch_insert_with_tx(&mut tx, batch_size, sync_metrics)
+            .await?;
         tx.commit().await?;
         Ok(())
     }
@@ -377,6 +385,42 @@ impl CardRepository for MyPostgres {
             .execute(&self.pool)
             .await?;
         Ok(())
+    }
+    // ============================
+    //         syncing
+    // ============================
+    async fn record_sync_metrics(&self, sync_metrics: SyncMetrics) -> Result<(), anyhow::Error> {
+        let mut tx = self.pool.begin().await?;
+        query("INSERT INTO scryfall_card_sync_metrics (sync_type, started_at, ended_at, duration_in_seconds, status, total_cards_count, imported_cards_count, skipped_cards_count, error_count, errors) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)")
+            .bind(sync_metrics.sync_type().to_string())
+            .bind(sync_metrics.started_at())
+            .bind(sync_metrics.ended_at())
+            .bind(sync_metrics.duration_in_seconds())
+            .bind(sync_metrics.status().to_string())
+            .bind(sync_metrics.total_cards_count())
+            .bind(sync_metrics.imported_cards_count())
+            .bind(sync_metrics.skipped_cards_count())
+            .bind(sync_metrics.error_count())
+            .bind(sync_metrics.errors())
+            .execute(&mut *tx)
+            .await?;
+        tx.commit().await?;
+        Ok(())
+    }
+
+    async fn get_last_sync_date(
+        &self,
+        sync_type: SyncType,
+    ) -> anyhow::Result<Option<NaiveDateTime>> {
+        let last_sync_date: Option<NaiveDateTime> = query_scalar(
+            "SELECT started_at FROM scryfall_card_sync_metrics WHERE sync_type = $1 ORDER BY started_at DESC LIMIT 1",
+        )
+        .bind(sync_type.to_string())
+        .fetch_optional(&self.pool)
+        .await
+        .context("failed to get last sync date")?;
+
+        Ok(last_sync_date)
     }
 }
 

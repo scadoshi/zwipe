@@ -147,22 +147,35 @@ alwaysApply: true
 - **🎯 CONFIGURATION CLEANUP**: Moved SCRYFALL_API_BASE from env to const for cleaner architecture
 - **🎯 DELETE_ALL OPERATION**: Basic truncate operation for database refresh scenarios
 
+### COMPLETE - Sync Metrics & Background Job Architecture ✅
+- **🎯 SYNC METRICS DOMAIN**: SyncMetrics, SyncType, SyncStatus, ErrorMetrics with controlled mutation patterns
+- **🎯 DATABASE SYNC PERSISTENCE**: scryfall_card_sync_metrics table with schema and migration
+- **🎯 SQLX SYNC REPOSITORY**: record_sync_metrics and get_last_sync_date implementation with transaction handling
+- **🎯 SYNC METRICS INTEGRATION**: Repository-level metrics collection during card insert/batch operations
+- **🎯 CUSTOM SQLX TYPES**: ErrorMetricsVec wrapper with Encode/Decode/Type trait implementations
+- **🎯 SYNC SERVICE ORCHESTRATION**: Card service with scryfall_sync implementation and metrics lifecycle
+- **🎯 SEPARATE SYNC BINARY**: Independent sync job binary with self-managing scheduler logic
+- **🎯 SYNC SCHEDULING LOGIC**: Time-based conditional logic (weekly partial, monthly full) with precedence handling
+- **🎯 CUSTOM TRAIT DESIGN**: WasAgo trait for time-based comparisons and readable business logic
+- **🎯 SYNC COORDINATION**: Sync coordination preventing redundant partial syncs after recent full syncs
+- **🎯 OPERATIONAL TRACING**: Logging throughout sync pipeline with card-level error tracking
+- **🎯 BINARY ARCHITECTURE**: Clean separation between web server and background job processing concerns
+
 ### IN PROGRESS - Card Pipeline Integration 🔄
-- **🔄 CARD SERVICE IMPLEMENTATION**: Connect service methods to repository delegation
-- **🔄 SCRYFALL SYNC ORCHESTRATION**: Implement scryfall_sync with parameter-driven strategy selection
-- **🔄 SYNCRESULT REPOSITORY INTEGRATION**: Update batch operations to collect and return metrics (processed, inserted, skipped, errors)
+- **🔄 CARD SERVICE READ OPERATIONS**: Implement get_card and search_cards delegation to repository
 - **🔄 CUSTOM TYPE RUNTIME VALIDATION**: Test that Decode/Encode/Type implementations work with real Scryfall data
 - **🔄 INBOUND HTTP HANDLERS**: Build Card HTTP endpoints with Query parameter extraction
 - **🔄 ROUTE INTEGRATION**: Connect Card handlers to HTTP server routing
 
 ### NEXT PRIORITIES - Immediate Roadmap
-1. **🔧 Complete Card Service Implementation**: Finish service layer delegation
-   - **Service Method Implementation**: Connect get_card, search_cards, and scryfall_sync to repository
-   - **Scryfall Sync Logic**: Implement parameter-driven sync strategy (ignore_if_exists vs replace_existing)
-   - **Error Mapping**: Proper error propagation from repository to service layer
-   - **Metrics Collection**: SyncResult assembly with timing and count tracking
-   - **Repository SyncResult Integration**: Update repository functions to collect and return SyncResult data during batch operations
-2. **🔧 Card Data Import & Validation**: Test custom SQLx types with real data
+1. **🔧 Card Service Read Operations**: Implement get_card and search_cards delegation
+   - **Service Method Implementation**: Connect get_card and search_cards to repository delegation
+   - **Error Mapping**: Error propagation from repository to service layer
+2. **🔧 Sync Pipeline Testing**: Test the complete sync pipeline with real data
+   - **Database Import Testing**: Use sync job binary to import cards from Scryfall API
+   - **Custom Type Validation**: Verify Decode/Encode/Type implementations work with real nested JSON data
+   - **End-to-End Sync Testing**: Validate complete flow from API → metrics → database
+3. **🔧 Card Data Import & Validation**: Test custom SQLx types with real data
    - **Scryfall Bulk Import**: Use get_bulk() client to fetch all cards from Scryfall API
    - **Custom Type Runtime Testing**: Validate Decode/Encode/Type implementations work with real nested JSON
    - **Batch Processing Validation**: Test bulk insert operations with 35,400+ card dataset
@@ -435,10 +448,10 @@ curl http://localhost:8080/api/v1/decks
 
 ---
 
-**Last Updated**: After completing comprehensive Card domain repository implementation with advanced search, sync operations, and Scryfall API client
+**Last Updated**: After completing comprehensive Sync Metrics architecture and separate sync job binary
 
-**Current Sprint**: Card service implementation and HTTP layer integration for complete card management pipeline
+**Current Sprint**: Card read service implementation and HTTP layer integration for complete card management pipeline
 
-**Next Major Milestone**: Test custom SQLx types with real Scryfall data, complete card HTTP endpoints, and validate end-to-end card operations
+**Next Major Milestone**: Test sync job binary with real data, complete card HTTP endpoints, and validate end-to-end sync operations
 
-**Major Recent Achievement**: **🎯 CARD REPOSITORY FOUNDATION PROGRESS** - Built working Card repository with search logic, error type organization, and QueryBuilder patterns. Implemented SyncResult metrics structure, sync operation scaffolding, and Scryfall API client functionality. Shows strong understanding of dynamic SQL construction and type-safe database patterns. Card pipeline still needs service layer implementation and real-world data testing to complete the integration. 
+**Major Recent Achievement**: **🎯 SYNC INFRASTRUCTURE IMPLEMENTATION** - Built sync metrics tracking system with domain modeling (SyncMetrics, SyncType, SyncStatus, ErrorMetrics). Implemented database persistence with SQLx integration and custom type handling. Created self-managing sync job binary with scheduling logic (weekly partial, monthly full syncs). Developed WasAgo trait for time-based comparisons. Shows good background job architecture with separation of concerns between web server and sync processing. Metrics integration throughout card repository operations with error tracking and operational logging. 

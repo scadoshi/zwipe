@@ -1,4 +1,6 @@
 pub mod scryfall_card;
+pub mod sync_metrics;
+
 use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -153,18 +155,6 @@ pub struct CardSearchResult {
     results: Vec<ScryfallCard>,
     limit: u32,
     offset: u32,
-}
-
-// ================================
-//            card syncs
-// ================================
-
-pub struct SyncResult {
-    pub cards_processed: usize,
-    pub cards_inserted: usize,
-    pub cards_skipped: usize,
-    pub duration: std::time::Duration,
-    pub errors: Vec<String>,
 }
 
 // ================================

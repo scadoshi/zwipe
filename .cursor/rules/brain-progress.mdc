@@ -279,6 +279,14 @@ alwaysApply: true
 - **🚀 METRICS STRUCTURE DESIGN**: SyncResult struct with tracking fields (processed, inserted, skipped, duration, errors)
 - **🚀 SCRYFALL API CLIENT PROGRESS**: Bulk data download functionality with BulkEndpoint enum and error handling patterns
 - **🚀 CONFIGURATION DECISION MAKING**: Good judgment on const vs env variable usage for better code organization
+- **🎯 SYNC METRICS IMPLEMENTATION**: Working sync tracking system with error collection, timing, and status management
+- **🎯 DATABASE SYNC PERSISTENCE**: SQLx implementation for storing sync history with transaction handling
+- **🎯 SYNC JOB BINARY DEVELOPMENT**: Self-managing sync scheduler with time-based decision logic
+- **🎯 CUSTOM TRAIT DEVELOPMENT**: WasAgo trait for clean time-based logic - shows growing comfort with custom trait design
+- **🎯 SCHEDULER LOGIC IMPLEMENTATION**: Conditional sync triggering (weekly partial, monthly full) with precedence handling
+- **🎯 SEPARATE BINARY PATTERNS**: Clean separation of concerns between web server and background job processing
+- **🎯 SYNC METRICS INTEGRATION**: Repository-level metrics collection during database operations
+- **🎯 BUSINESS LOGIC COORDINATION**: Understanding of when partial syncs should/shouldn't run based on recent full syncs
 
 ### Learning Pattern Recognition
 - **Strategic Simplification**: Recognizes when complexity doesn't add value
@@ -339,8 +347,8 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: After completing comprehensive Card domain repository with advanced QueryBuilder patterns and Scryfall API integration
+**Last Updated**: After completing comprehensive Sync Metrics architecture and separate sync job binary implementation
 
-**Next Learning Edge**: Service layer implementation, HTTP handler construction, and real-world data validation with custom SQLx types
+**Next Learning Edge**: Card service layer completion, HTTP handler integration, and real-world sync testing
 
-**Major Recent Achievement**: **🚀 CARD REPOSITORY & API CLIENT PROGRESS** - Built working Card repository implementation with QueryBuilder patterns, search logic, and error type organization. Developed Scryfall API client with bulk data download capabilities and error handling. Shows strong understanding of dynamic SQL construction, parameter validation, and type-safe database patterns. Designed SyncResult metrics system and made good architectural decisions (const vs env). Demonstrates solid progress in database programming and external API integration, though service layer and real-world testing still needed.
+**Major Recent Achievement**: **🎯 SYNC INFRASTRUCTURE IMPLEMENTATION** - Built sync metrics tracking system with error collection, timing, and persistence. Implemented SQLx sync metrics repository with database schema and transaction handling. Created self-managing sync job binary with time-based scheduling logic (weekly partial, monthly full syncs). Developed custom WasAgo trait for time-based comparisons. Shows good architectural separation between web server and background processing concerns. Demonstrates understanding of business logic coordination and background job patterns.

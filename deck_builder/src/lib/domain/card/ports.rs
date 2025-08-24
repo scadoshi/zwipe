@@ -1,10 +1,12 @@
 use std::future::Future;
 
+use chrono::NaiveDateTime;
 use uuid::Uuid;
 
 use crate::domain::card::models::{
-    scryfall_card::ScryfallCard, CardSearchParameters, CreateCardError, GetCardError,
-    SearchCardError, SyncResult,
+    scryfall_card::ScryfallCard,
+    sync_metrics::{SyncMetrics, SyncType},
+    CardSearchParameters, CreateCardError, GetCardError, SearchCardError,
 };
 
 pub trait CardRepository: Clone + Send + Sync + 'static {
@@ -30,6 +32,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         &self,
         cards: Vec<ScryfallCard>,
         batch_size: usize,
+        sync_metrics: &mut SyncMetrics,
     ) -> impl Future<Output = Result<(), CreateCardError>> + Send;
 
     /// reads inbound cards
@@ -40,6 +43,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         &self,
         cards: Vec<ScryfallCard>,
         batch_size: usize,
+        sync_metrics: &mut SyncMetrics,
     ) -> impl Future<Output = Result<(), CreateCardError>> + Send;
 
     /// reads inbound cards
@@ -51,6 +55,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         &self,
         cards: Vec<ScryfallCard>,
         batch_size: usize,
+        sync_metrics: &mut SyncMetrics,
     ) -> impl Future<Output = Result<(), CreateCardError>> + Send;
 
     /// simple card get by id
@@ -67,6 +72,16 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
 
     /// delete all cards
     fn delete_all(&self) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
+
+    fn record_sync_metrics(
+        &self,
+        sync_metrics: SyncMetrics,
+    ) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
+
+    fn get_last_sync_date(
+        &self,
+        sync_type: SyncType,
+    ) -> impl Future<Output = anyhow::Result<Option<NaiveDateTime>>> + Send;
 }
 
 pub trait CardService {
@@ -80,8 +95,11 @@ pub trait CardService {
         params: CardSearchParameters,
     ) -> impl Future<Output = Result<Vec<ScryfallCard>, SearchCardError>> + Send;
 
-    fn scryfall_sync(
+    fn scryfall_sync(&self, sync_type: SyncType)
+        -> impl Future<Output = anyhow::Result<()>> + Send;
+
+    fn get_last_sync_date(
         &self,
-        ignore_if_exists: bool,
-    ) -> impl Future<Output = Result<SyncResult, anyhow::Error>> + Send;
+        sync_type: SyncType,
+    ) -> impl Future<Output = anyhow::Result<Option<NaiveDateTime>>> + Send;
 }

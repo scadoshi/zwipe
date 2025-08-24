@@ -41,6 +41,43 @@ impl BulkEndpoint {
     fn full_url(&self) -> String {
         SCRYFALL_API_BASE.to_string() + self.to_string().as_str()
     }
+
+    /// Gets bulk cards with a BulkEndpoint parameter end returns Vec<ScryfallCard>
+    pub async fn download(&self) -> anyhow::Result<Vec<ScryfallCard>> {
+        let full_url: String = self.full_url();
+        let client = Client::new();
+
+        // First, fetch the bulk data object from the endpoint
+        let bulk_response = full_url
+            .scry(&client)
+            .await
+            .context(format!("failed to scry full_url {}", full_url))?;
+
+        let bulk_json = bulk_response
+            .json()
+            .await
+            .context("failed to parse json from full_url result")?;
+
+        let bulk_data_object =
+            from_value::<BulkDataObject>(bulk_json).context("failed to parse BulkDataObject")?;
+
+        // Then, use the download_uri to fetch the actual card data
+        let cards_response = bulk_data_object
+            .download_uri
+            .scry(&client)
+            .await
+            .context("failed to scry download uri from BulkDataObject")?;
+
+        let cards_json = cards_response
+            .json()
+            .await
+            .context("failed to parse json from download uri result")?;
+
+        let cards = from_value::<Vec<ScryfallCard>>(cards_json)
+            .context("failed to parse Vec<ScryfallCard>")?;
+
+        Ok(cards)
+    }
 }
 
 // ================================
@@ -109,41 +146,4 @@ struct BulkDataObject {
     // bulk_type: String,
     // updated_at: String,
     // uri: String,
-}
-
-/// Gets bulk cards with a BulkEndpoint parameter end returns Vec<ScryfallCard>
-pub async fn get_bulk(bulk_endpoint: BulkEndpoint) -> anyhow::Result<Vec<ScryfallCard>> {
-    let full_url: String = bulk_endpoint.full_url();
-    let client = Client::new();
-
-    // First, fetch the bulk data object from the endpoint
-    let bulk_response = full_url
-        .scry(&client)
-        .await
-        .context(format!("failed to scry full_url {}", full_url))?;
-
-    let bulk_json = bulk_response
-        .json()
-        .await
-        .context("failed to parse json from full_url result")?;
-
-    let bulk_data_object =
-        from_value::<BulkDataObject>(bulk_json).context("failed to parse BulkDataObject")?;
-
-    // Then, use the download_uri to fetch the actual card data
-    let cards_response = bulk_data_object
-        .download_uri
-        .scry(&client)
-        .await
-        .context("failed to scry download uri from BulkDataObject")?;
-
-    let cards_json = cards_response
-        .json()
-        .await
-        .context("failed to parse json from download uri result")?;
-
-    let cards =
-        from_value::<Vec<ScryfallCard>>(cards_json).context("failed to parse Vec<ScryfallCard>")?;
-
-    Ok(cards)
 }

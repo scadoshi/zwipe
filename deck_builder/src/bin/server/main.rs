@@ -18,10 +18,10 @@ async fn run() -> anyhow::Result<()> {
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::from_str(&config.rust_log)?)
         .init();
-    let postgres = Postgres::new(&config.database_url).await?;
-    let auth_service = auth::services::Service::new(postgres.clone(), config.jwt_secret);
-    let user_service = user::services::Service::new(postgres.clone());
-    let health_service = health::services::Service::new(postgres.clone());
+    let db = Postgres::new(&config.database_url).await?;
+    let auth_service = auth::services::Service::new(db.clone(), config.jwt_secret);
+    let user_service = user::services::Service::new(db.clone());
+    let health_service = health::services::Service::new(db.clone());
     let server_config = HttpServerConfig {
         bind_address: &config.bind_address,
         allowed_origins: config.allowed_origins,
