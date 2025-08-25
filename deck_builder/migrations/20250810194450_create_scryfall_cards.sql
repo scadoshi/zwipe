@@ -20,8 +20,8 @@ CREATE TABLE scryfall_cards (
 
     -- Gameplay Fields
     -- Cards have the following properties relevant to the game rules
-    all_parts JSONB NOT NULL DEFAULT '[]'::jsonb,
-    card_faces JSONB NOT NULL DEFAULT '[]'::jsonb,
+    all_parts JSONB DEFAULT '[]'::jsonb,
+    card_faces JSONB DEFAULT '[]'::jsonb,
     cmc FLOAT NOT NULL,
     color_identity TEXT[] NOT NULL,
     color_indicator TEXT[],
