@@ -1,5 +1,5 @@
 pub mod was_ago;
-use std::time::Duration;
+use std::{str::FromStr, time::Duration};
 
 use chrono::NaiveDateTime;
 use was_ago::WasAgo;
@@ -13,6 +13,9 @@ use deck_builder::{
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let config = Config::from_env()?;
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::from_str(&config.rust_log)?)
+        .init();
     let db = Postgres::new(&config.database_url).await?;
     let service = card::services::Service::new(db);
 

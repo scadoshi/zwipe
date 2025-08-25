@@ -206,16 +206,17 @@ impl SyncMetrics {
         // set error count based on what we have collected
         self.error_count = self.errors.len() as i32;
 
-        // report failure if no cards were brought in and errors were encountered
-        if self.total_cards_count > 0 && self.imported_cards_count == 0 && self.error_count > 0 {
-            self.status = SyncStatus::Failure;
-        }
         // report partial if any errors were received
         if self.error_count > 0 {
             self.status = SyncStatus::PartialSuccess;
         } else {
             // if no errors report success
             self.status = SyncStatus::Success;
+        }
+
+        // report failure if no cards were brought in and errors were encountered
+        if self.total_cards_count > 0 && self.imported_cards_count == 0 && self.error_count > 0 {
+            self.status = SyncStatus::Failure;
         }
 
         // add ended at and set duration
