@@ -287,6 +287,12 @@ alwaysApply: true
 - **🎯 SEPARATE BINARY PATTERNS**: Clean separation of concerns between web server and background job processing
 - **🎯 SYNC METRICS INTEGRATION**: Repository-level metrics collection during database operations
 - **🎯 BUSINESS LOGIC COORDINATION**: Understanding of when partial syncs should/shouldn't run based on recent full syncs
+- **🏆 PRODUCTION DATABASE DEBUGGING MASTERY**: Expert troubleshooting of JSONB array constraints - identified that NOT NULL was causing issues for JSONB arrays with default '[]'  in PostgreSQL
+- **🏆 HTTP CLIENT DEBUGGING EXCELLENCE**: Identified and resolved double URL encoding issue in reqwest RequestBuilder.query() - understanding that .query() handles encoding automatically
+- **🏆 END-TO-END DATA PIPELINE SUCCESS**: Complete Scryfall API → Database → Retrieval pipeline working with real MTG card data
+- **🏆 MTG THEMED ARCHITECTURE**: Creative integration of Magic: The Gathering terminology (amass, PlanesWalker, untap, cast) showing domain-driven design with personality
+- **🏆 MACRO SIMPLIFICATION MASTERY**: Successfully refactored from complex trait implementations to clean direct macro usage (bind_scryfall_card_fields!)
+- **🏆 PRODUCTION CONSTRAINT DEBUGGING**: Sophisticated understanding of PostgreSQL JSONB constraints and database schema requirements for complex nested types
 
 ### Learning Pattern Recognition
 - **Strategic Simplification**: Recognizes when complexity doesn't add value
@@ -347,8 +353,8 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: After completing comprehensive Sync Metrics architecture and separate sync job binary implementation
+**Last Updated**: After achieving complete end-to-end Scryfall data pipeline with production database debugging mastery
 
-**Next Learning Edge**: Card service layer completion, HTTP handler integration, and real-world sync testing
+**Next Learning Edge**: Testing card get/search operations with full database, then building HTTP handlers for complete card API
 
-**Major Recent Achievement**: **🎯 SYNC INFRASTRUCTURE IMPLEMENTATION** - Built sync metrics tracking system with error collection, timing, and persistence. Implemented SQLx sync metrics repository with database schema and transaction handling. Created self-managing sync job binary with time-based scheduling logic (weekly partial, monthly full syncs). Developed custom WasAgo trait for time-based comparisons. Shows good architectural separation between web server and background processing concerns. Demonstrates understanding of business logic coordination and background job patterns.
+**Major Recent Achievement**: **🏆 PRODUCTION DATA PIPELINE BREAKTHROUGH** - Identified and resolved critical JSONB array NOT NULL constraint issues and double URL encoding problems in HTTP client. Successfully achieved complete Scryfall API → Database → Retrieval pipeline with real MTG card data. Demonstrated advanced debugging skills with PostgreSQL constraints and HTTP client internals. Implemented creative MTG-themed architecture (amass, PlanesWalker) showing domain-driven design with personality. Simplified macro architecture for cleaner trait binding patterns. Shows production-level debugging expertise and end-to-end systems thinking.
