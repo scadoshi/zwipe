@@ -10,8 +10,9 @@ use crate::{
     outbound::sqlx::card::scryfall_card::{all_parts, card_faces, image_uris, legalities, prices},
 };
 use anyhow::Context;
+use axum_extra::headers::ETag;
 use chrono::NaiveDateTime;
-use sqlx::{query_builder::Separated, Decode, Encode, QueryBuilder, Type};
+use sqlx::{query::Query, query_builder::Separated, Decode, Encode, Execute, QueryBuilder, Type};
 
 // other internal
 use crate::{
@@ -29,6 +30,109 @@ use std::{collections::HashSet, future::Future};
 use itertools::Itertools;
 use sqlx::{postgres::PgArguments, query, query_as, query_scalar, PgTransaction, Postgres};
 use uuid::Uuid;
+
+// ===============================
+//       sorry but the macro has to go first :0000
+// ===============================
+
+macro_rules! bind_scryfall_card_fields {
+    ($query:expr, $card:expr) => {
+        $query
+            // Core Card Fields
+            // Cards have the following core properties
+            .bind($card.arena_id)
+            .bind($card.id)
+            .bind($card.lang)
+            .bind($card.mtgo_id)
+            .bind($card.mtgo_foil_id)
+            .bind($card.multiverse_ids)
+            .bind($card.tcgplayer_id)
+            .bind($card.tcgplayer_etched_id)
+            .bind($card.cardmarket_id)
+            .bind($card.object)
+            .bind($card.layout)
+            .bind($card.oracle_id)
+            .bind($card.prints_search_uri)
+            .bind($card.rulings_uri)
+            .bind($card.scryfall_uri)
+            .bind($card.uri)
+            // Gameplay Fields
+            // Cards have the following properties relevant to the game rules
+            .bind($card.all_parts)
+            .bind($card.card_faces)
+            .bind($card.cmc)
+            .bind($card.color_identity)
+            .bind($card.color_indicator)
+            .bind($card.colors)
+            .bind($card.defense)
+            .bind($card.edhrec_rank)
+            .bind($card.game_changer)
+            .bind($card.hand_modifier)
+            .bind($card.keywords)
+            .bind($card.legalities)
+            .bind($card.life_modifier)
+            .bind($card.loyalty)
+            .bind($card.mana_cost)
+            .bind($card.name)
+            .bind($card.oracle_text)
+            .bind($card.penny_rank)
+            .bind($card.power)
+            .bind($card.produced_mana)
+            .bind($card.reserved)
+            .bind($card.toughness)
+            .bind($card.type_line)
+            // Print Fields
+            // Cards have the following properties unique to their particular re/print
+            .bind($card.artist)
+            .bind($card.artist_ids)
+            .bind($card.attraction_lights)
+            .bind($card.booster)
+            .bind($card.border_color)
+            .bind($card.card_back_id)
+            .bind($card.collector_number)
+            .bind($card.content_warning)
+            .bind($card.digital)
+            .bind($card.finishes)
+            .bind($card.flavor_name)
+            .bind($card.flavor_text)
+            .bind($card.frame_effects)
+            .bind($card.frame)
+            .bind($card.full_art)
+            .bind($card.games)
+            .bind($card.highres_image)
+            .bind($card.illustration_id)
+            .bind($card.image_status)
+            .bind($card.image_uris)
+            .bind($card.oversized)
+            .bind($card.prices)
+            .bind($card.printed_name)
+            .bind($card.printed_text)
+            .bind($card.printed_type_line)
+            .bind($card.promo)
+            .bind($card.promo_types)
+            .bind($card.purchase_uris)
+            .bind($card.rarity)
+            .bind($card.related_uris)
+            .bind($card.released_at)
+            .bind($card.reprint)
+            .bind($card.scryfall_set_uri)
+            .bind($card.set_name)
+            .bind($card.set_search_uri)
+            .bind($card.set_type)
+            .bind($card.set_uri)
+            .bind($card.set)
+            .bind($card.set_id)
+            .bind($card.story_spotlight)
+            .bind($card.textless)
+            .bind($card.variation)
+            .bind($card.variation_of)
+            .bind($card.security_stamp)
+            .bind($card.watermark)
+            .bind($card.preview_previewed_at)
+            .bind($card.preview_source_uri)
+            .bind($card.preview_source)
+    };
+}
 
 // ===============================
 //              helpers
@@ -62,13 +166,12 @@ impl InsertWithTransaction for ScryfallCard {
         let query_sql = format!(
             "INSERT INTO scryfall_cards ({}) VALUES ({})",
             SCRYFALL_CARD_FIELDS,
-            (1..=scryfall_card_fieldcount())
+            (1..=scryfall_card_field_count())
                 .map(|x| format!("${}", x))
                 .join(",")
         );
 
-        query(query_sql.as_str())
-            .bind_scryfall_card_fields(self)
+        bind_scryfall_card_fields!(query(query_sql.as_str()), self)
             .execute(&mut **tx)
             .await?;
 
@@ -86,7 +189,7 @@ impl InsertWithTransaction for Vec<ScryfallCard> {
     async fn insert_with_tx(self, tx: &mut PgTransaction<'_>) -> Result<(), CreateCardError> {
         // for building out value tuples
         let card_count = self.len();
-        let scryfallcard_field_count = scryfall_card_fieldcount();
+        let scryfallcard_field_count = scryfall_card_field_count();
 
         // for inserting into card_profile later
         // HashSet<T> avoids trying dupes
@@ -123,7 +226,7 @@ impl InsertWithTransaction for Vec<ScryfallCard> {
         // build query with all binds
         let mut scryfall_card_query = query(scryfall_card_query_sql.as_str());
         for card in self {
-            scryfall_card_query = scryfall_card_query.bind_scryfall_card_fields(card);
+            scryfall_card_query = bind_scryfall_card_fields!(scryfall_card_query, card);
         }
 
         scryfall_card_query.execute(&mut **tx).await?;
@@ -150,7 +253,7 @@ impl InsertWithTransaction for Vec<ScryfallCard> {
         // build query with all binds
         let mut card_profile_query = query(card_profile_query_sql.as_str());
         for id in card_ids {
-            card_profile_query = card_profile_query.bind_card_profile_fields(id);
+            card_profile_query = card_profile_query.bind(id);
         }
         card_profile_query.execute(&mut **tx).await?;
 
@@ -172,6 +275,8 @@ pub trait BatchInsertWithTransaction {
         sync_metrics: &mut SyncMetrics,
     ) -> impl Future<Output = Result<(), CreateCardError>> + Send;
 }
+
+const PG_TX_ABORT_MSG: &str = "current transaction is aborted";
 
 impl BatchInsertWithTransaction for Vec<ScryfallCard> {
     async fn batch_insert_with_tx(
@@ -195,17 +300,21 @@ impl BatchInsertWithTransaction for Vec<ScryfallCard> {
                         match card.insert_with_tx(tx).await {
                             Ok(_) => sync_metrics.add_imported_cards_count(1),
                             Err(e) => {
-                                tracing::warn!(
-                                    "card {:?} ({}) failed with error: {:?}",
-                                    card_name,
-                                    card_id,
-                                    e
-                                );
-                                sync_metrics.add_error(ErrorMetrics::new(
-                                    card_id,
-                                    card_name,
-                                    e.to_string(),
-                                ));
+                                // ignoring the transaction rollback/abort errors
+                                // they are never root cause
+                                if !e.to_string().contains(PG_TX_ABORT_MSG) {
+                                    tracing::warn!(
+                                        "card {:?} ({}) failed with error: {:?}",
+                                        card_name,
+                                        card_id,
+                                        e
+                                    );
+                                    sync_metrics.add_error(ErrorMetrics::new(
+                                        card_id,
+                                        card_name,
+                                        e.to_string(),
+                                    ));
+                                }
                             }
                         }
                     }
@@ -222,6 +331,40 @@ impl BatchInsertWithTransaction for Vec<ScryfallCard> {
 // transaction commits should be handled at this level! not the above!
 
 impl CardRepository for MyPostgres {
+    // ============================
+    //         testing
+    // ============================
+    /// for testing :)
+    async fn insert_with_card_response(
+        &self,
+        card: ScryfallCard,
+    ) -> Result<ScryfallCard, CreateCardError> {
+        let mut tx = self.pool.begin().await?;
+
+        let scryfall_card_id = card.id.clone();
+
+        let query_sql = format!(
+            "INSERT INTO scryfall_cards ({}) VALUES ({}) RETURNING *",
+            SCRYFALL_CARD_FIELDS,
+            (1..=scryfall_card_field_count())
+                .map(|x| format!("${}", x))
+                .join(",")
+        );
+
+        let card: ScryfallCard = bind_scryfall_card_fields!(query_as(query_sql.as_str()), card)
+            .fetch_one(&mut *tx)
+            .await?;
+
+        query("INSERT INTO card_profiles (scryfall_card_id) VALUES ($1)")
+            .bind(scryfall_card_id)
+            .execute(&mut *tx)
+            .await?;
+
+        tx.commit().await?;
+
+        Ok(card)
+    }
+
     // ============================
     //         create
     // ============================
@@ -515,122 +658,10 @@ const SCRYFALL_CARD_FIELDS: &str = r#"
     preview_source
 "#;
 
-fn scryfall_card_fieldcount() -> usize {
+pub fn scryfall_card_field_count() -> usize {
     SCRYFALL_CARD_FIELDS
         .lines()
         .filter(|x| x.contains(","))
         .count()
         + 1
-}
-
-trait BindScryfallCardFields {
-    fn bind_scryfall_card_fields(self, card: ScryfallCard) -> Self;
-}
-
-impl BindScryfallCardFields for sqlx::query::Query<'_, Postgres, PgArguments> {
-    fn bind_scryfall_card_fields(self, card: ScryfallCard) -> Self {
-        self
-            // Core Card Fields
-            // Cards have the following core properties
-            .bind(card.arena_id)
-            .bind(card.id)
-            .bind(card.lang)
-            .bind(card.mtgo_id)
-            .bind(card.mtgo_foil_id)
-            .bind(card.multiverse_ids)
-            .bind(card.tcgplayer_id)
-            .bind(card.tcgplayer_etched_id)
-            .bind(card.cardmarket_id)
-            .bind(card.object)
-            .bind(card.layout)
-            .bind(card.oracle_id)
-            .bind(card.prints_search_uri)
-            .bind(card.rulings_uri)
-            .bind(card.scryfall_uri)
-            .bind(card.uri)
-            // Gameplay Fields
-            // Cards have the following properties relevant to the game rules
-            .bind(card.all_parts)
-            .bind(card.card_faces)
-            .bind(card.cmc)
-            .bind(card.color_identity)
-            .bind(card.color_indicator)
-            .bind(card.colors)
-            .bind(card.defense)
-            .bind(card.edhrec_rank)
-            .bind(card.game_changer)
-            .bind(card.hand_modifier)
-            .bind(card.keywords)
-            .bind(card.legalities)
-            .bind(card.life_modifier)
-            .bind(card.loyalty)
-            .bind(card.mana_cost)
-            .bind(card.name)
-            .bind(card.oracle_text)
-            .bind(card.penny_rank)
-            .bind(card.power)
-            .bind(card.produced_mana)
-            .bind(card.reserved)
-            .bind(card.toughness)
-            .bind(card.type_line)
-            // Print Fields
-            // Cards have the following properties unique to their particular re/print
-            .bind(card.artist)
-            .bind(card.artist_ids)
-            .bind(card.attraction_lights)
-            .bind(card.booster)
-            .bind(card.border_color)
-            .bind(card.card_back_id)
-            .bind(card.collector_number)
-            .bind(card.content_warning)
-            .bind(card.digital)
-            .bind(card.finishes)
-            .bind(card.flavor_name)
-            .bind(card.flavor_text)
-            .bind(card.frame_effects)
-            .bind(card.frame)
-            .bind(card.full_art)
-            .bind(card.games)
-            .bind(card.highres_image)
-            .bind(card.illustration_id)
-            .bind(card.image_status)
-            .bind(card.image_uris)
-            .bind(card.oversized)
-            .bind(card.prices)
-            .bind(card.printed_name)
-            .bind(card.printed_text)
-            .bind(card.printed_type_line)
-            .bind(card.promo)
-            .bind(card.promo_types)
-            .bind(card.purchase_uris)
-            .bind(card.rarity)
-            .bind(card.related_uris)
-            .bind(card.released_at)
-            .bind(card.reprint)
-            .bind(card.scryfall_set_uri)
-            .bind(card.set_name)
-            .bind(card.set_search_uri)
-            .bind(card.set_type)
-            .bind(card.set_uri)
-            .bind(card.set)
-            .bind(card.set_id)
-            .bind(card.story_spotlight)
-            .bind(card.textless)
-            .bind(card.variation)
-            .bind(card.variation_of)
-            .bind(card.security_stamp)
-            .bind(card.watermark)
-            .bind(card.preview_previewed_at)
-            .bind(card.preview_source_uri)
-            .bind(card.preview_source)
-    }
-}
-
-trait BindCardProfileFields {
-    fn bind_card_profile_fields(self, scryfall_card_uuid: Uuid) -> Self;
-}
-impl BindCardProfileFields for sqlx::query::Query<'_, Postgres, PgArguments> {
-    fn bind_card_profile_fields(self, scryfall_card_id: Uuid) -> Self {
-        self.bind(scryfall_card_id)
-    }
 }
