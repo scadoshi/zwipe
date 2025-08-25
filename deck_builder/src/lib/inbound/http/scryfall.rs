@@ -1,12 +1,10 @@
-use std::fmt::Display;
-
 use anyhow::Context;
 use reqwest::{
     header::{ACCEPT, USER_AGENT},
-    Client, Response,
+    Client, RequestBuilder, Response,
 };
 use serde::Deserialize;
-use serde_json::from_value;
+use serde_json::{from_value, Value};
 
 use crate::domain::card::models::scryfall_card::ScryfallCard;
 
@@ -16,115 +14,17 @@ use crate::domain::card::models::scryfall_card::ScryfallCard;
 const USER_AGENT_VALUE: &str = "DeckBuilderAPI/0.0";
 const ACCEPT_VALUE: &str = "*/*";
 const SCRYFALL_API_BASE: &str = "https://api.scryfall.com";
+const CARDS_SEARCH_ENDPOINT: &str = "/cards/search";
 
-pub enum BulkEndpoint {
-    OracleCards,
-    UniqueArtwork,
-    DefaultCards,
-    AllCards,
-    Rulings,
+/// scryfall returns this when you search for a card
+/// what you want is in the data field ;)
+#[derive(Deserialize, Debug)]
+struct CardSearchResponse {
+    data: Vec<ScryfallCard>,
+    // has_more: bool,
+    // object: String,
+    // total_cards: i32,
 }
-
-impl Display for BulkEndpoint {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            BulkEndpoint::OracleCards => write!(f, "/bulk-data/oracle-cards"),
-            BulkEndpoint::UniqueArtwork => write!(f, "/bulk-data/unique-artworks"),
-            BulkEndpoint::DefaultCards => write!(f, "/bulk-data/default-cards"),
-            BulkEndpoint::AllCards => write!(f, "/bulk-data/all-cards"),
-            BulkEndpoint::Rulings => write!(f, "/bulk-data/rulings"),
-        }
-    }
-}
-
-impl BulkEndpoint {
-    fn full_url(&self) -> String {
-        SCRYFALL_API_BASE.to_string() + self.to_string().as_str()
-    }
-
-    /// Gets bulk cards with a BulkEndpoint parameter end returns Vec<ScryfallCard>
-    pub async fn download(&self) -> anyhow::Result<Vec<ScryfallCard>> {
-        let full_url: String = self.full_url();
-        let client = Client::new();
-
-        // First, fetch the bulk data object from the endpoint
-        let bulk_response = full_url
-            .scry(&client)
-            .await
-            .context(format!("failed to scry full_url {}", full_url))?;
-
-        let bulk_json = bulk_response
-            .json()
-            .await
-            .context("failed to parse json from full_url result")?;
-
-        let bulk_data_object =
-            from_value::<BulkDataObject>(bulk_json).context("failed to parse BulkDataObject")?;
-
-        // Then, use the download_uri to fetch the actual card data
-        let cards_response = bulk_data_object
-            .download_uri
-            .scry(&client)
-            .await
-            .context("failed to scry download uri from BulkDataObject")?;
-
-        let cards_json = cards_response
-            .json()
-            .await
-            .context("failed to parse json from download uri result")?;
-
-        let cards = from_value::<Vec<ScryfallCard>>(cards_json)
-            .context("failed to parse Vec<ScryfallCard>")?;
-
-        Ok(cards)
-    }
-}
-
-// ================================
-//          helper functions
-// ================================
-trait Scry {
-    async fn scry(&self, client: &Client) -> Result<Response, reqwest::Error>;
-}
-impl Scry for &str {
-    async fn scry(&self, client: &Client) -> Result<Response, reqwest::Error> {
-        client
-            .get(*self)
-            .header(USER_AGENT, USER_AGENT_VALUE)
-            .header(ACCEPT, ACCEPT_VALUE)
-            .send()
-            .await
-    }
-}
-
-impl Scry for String {
-    async fn scry(&self, client: &Client) -> Result<Response, reqwest::Error> {
-        <&str as Scry>::scry(&self.as_str(), client).await
-    }
-}
-
-// =================================================
-//  this is old but might use later
-// =================================================
-
-// #[derive(Deserialize, Debug)]
-// struct CardSearchResponse {
-//     data: Vec<ScryfallCard>,
-//     has_more: bool,
-//     object: String,
-//     total_cards: i32,
-// }
-
-// pub async fn card_search(search_str: &str) -> Result<Vec<ScryfallCard>, Box<dyn StdError>> {
-//     Ok(from_value::<CardSearchResponse>(
-//         ("https://api.scryfall.com/cards/search?q=".to_string() + &urlencoding::encode(search_str))
-//             .scry()
-//             .await?
-//             .json()
-//             .await?,
-//     )?
-//     .data)
-// }
 
 // ============================================
 /// when you hit Scryfall's bulk data endpoint
@@ -146,4 +46,136 @@ struct BulkDataObject {
     // bulk_type: String,
     // updated_at: String,
     // uri: String,
+}
+
+// ================================
+//          helpers
+// ================================
+
+/// for building scryfall based requests
+/// yes these use magic the gathering terms
+
+#[derive(Debug)]
+/// ensures we have a RequestBuilder appropriate for making calls on the Scryfall API
+pub struct PlanesWalker(RequestBuilder);
+
+impl PlanesWalker {
+    /// main constructor - equates to new
+    fn untap(client: &mut Client, full_url: &str) -> Self {
+        Self(
+            client
+                .get(full_url)
+                .header(USER_AGENT, USER_AGENT_VALUE)
+                .header(ACCEPT, ACCEPT_VALUE),
+        )
+    }
+    /// for sending requests
+    async fn cast(self) -> Result<Response, reqwest::Error> {
+        self.0.send().await
+    }
+
+    #[allow(dead_code)]
+    // adding the "q" parameter with value input (meant for the tutor function)
+    fn tutor_for(self, search_str: &str) -> Self {
+        PlanesWalker(self.0.query(&[("q", search_str)]))
+    }
+
+    #[allow(dead_code)]
+    // for searching for a single card
+    pub async fn tutor(client: &mut Client, search_str: &str) -> anyhow::Result<Vec<ScryfallCard>> {
+        let url = SCRYFALL_API_BASE.to_string() + CARDS_SEARCH_ENDPOINT;
+        let teferi = PlanesWalker::untap(client, &url);
+
+        let get_result = teferi
+            .tutor_for(search_str)
+            .cast()
+            .await
+            .context("failed to get on cards search endpoint")?;
+        let get_json = get_result
+            .json()
+            .await
+            .context("faile to parse json from get result")?;
+        tracing::debug!("card response was {:#?}", get_json);
+        let card_search_response: CardSearchResponse =
+            serde_json::from_value(get_json).context("failed to parse CardSearchResponse")?;
+        Ok(card_search_response.data)
+    }
+}
+
+#[allow(dead_code)]
+trait CreatePlanesWalker {
+    /// for getting a RequestBuilder ready with Scryfall API URL + endpoint
+    fn into_planeswalker(&mut self, endpoint: &str) -> PlanesWalker;
+}
+
+impl CreatePlanesWalker for Client {
+    fn into_planeswalker(&mut self, endpoint: &str) -> PlanesWalker {
+        PlanesWalker::untap(self, endpoint)
+    }
+}
+
+// ================================================
+//              bulk endpoint ergonomics
+// ================================================
+// fyi i am not sure if all of these endpoints return the same data types
+// i have only tested with OracleCards for now (*3*)
+
+pub enum BulkEndpoint {
+    OracleCards,
+    UniqueArtwork,
+    DefaultCards,
+    AllCards,
+    Rulings,
+}
+
+impl BulkEndpoint {
+    fn resolve(&self) -> String {
+        match self {
+            BulkEndpoint::OracleCards => "/bulk-data/oracle-cards".to_string(),
+            BulkEndpoint::UniqueArtwork => "/bulk-data/unique-artworks".to_string(),
+            BulkEndpoint::DefaultCards => "/bulk-data/default-cards".to_string(),
+            BulkEndpoint::AllCards => "/bulk-data/all-cards".to_string(),
+            BulkEndpoint::Rulings => "/bulk-data/rulings".to_string(),
+        }
+    }
+}
+
+impl BulkEndpoint {
+    /// gets bulk cards with a BulkEndpoint parameter end returns Vec<ScryfallCard>
+    pub async fn amass(&self) -> anyhow::Result<Vec<ScryfallCard>> {
+        // first get the bulk data object with our main url
+        let url = SCRYFALL_API_BASE.to_string() + &self.resolve();
+        let urza = PlanesWalker::untap(&mut Client::new(), &url);
+
+        let bulk_response = urza
+            .cast()
+            .await
+            .context("failed to get bulk response with planeswalker")?;
+
+        let bulk_json: Value = bulk_response
+            .json()
+            .await
+            .context("failed to parse json from main uri result")?;
+
+        let bulk_data_object =
+            from_value::<BulkDataObject>(bulk_json).context("failed to parse BulkDataObject")?;
+
+        // then use the download_uri to fetch the actual card data
+        let tezzeret = PlanesWalker::untap(&mut Client::new(), &bulk_data_object.download_uri);
+
+        let cards_response = tezzeret
+            .cast()
+            .await
+            .context("failed to get download response with planeswalker")?;
+
+        let cards_json: Value = cards_response
+            .json()
+            .await
+            .context("failed to parse json from download uri result")?;
+
+        let cards: Vec<ScryfallCard> =
+            from_value(cards_json).context("failed to parse Vec<ScryfallCard>")?;
+
+        Ok(cards)
+    }
 }
