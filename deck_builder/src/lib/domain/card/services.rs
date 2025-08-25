@@ -5,12 +5,28 @@ use crate::{
         models::{
             scryfall_card::ScryfallCard,
             sync_metrics::{SyncMetrics, SyncType},
-            GetCardError, SearchCardError,
+            CardSearchParameters, CreateCardError, GetCardError, SearchCardError,
         },
         ports::{CardRepository, CardService},
     },
     inbound::http::scryfall::BulkEndpoint,
+    outbound::sqlx::card::scryfall_card_field_count,
 };
+
+// ===================================
+//      smart calc batch size
+// ===================================
+const POSTGRESQL_PARAMETER_HARD_LIMIT: usize = 65_535;
+
+fn batch_size() -> usize {
+    // take the limit, divide by two (for safety)
+    // max number of cards in that window
+    POSTGRESQL_PARAMETER_HARD_LIMIT / 2 / scryfall_card_field_count()
+}
+
+// ===================================
+//          service <3
+// ===================================
 
 #[derive(Debug, Clone)]
 pub struct Service<R>
@@ -30,24 +46,32 @@ where
 }
 
 impl<R: CardRepository> CardService for Service<R> {
+    async fn insert_with_card_response(
+        &self,
+        card: ScryfallCard,
+    ) -> Result<ScryfallCard, CreateCardError> {
+        self.repo.insert_with_card_response(card).await
+    }
+
     async fn get_card(&self, id: &uuid::Uuid) -> Result<ScryfallCard, GetCardError> {
-        todo!()
+        self.repo.get_card(id).await
     }
 
     async fn search_cards(
         &self,
-        params: super::models::CardSearchParameters,
+        params: CardSearchParameters,
     ) -> Result<Vec<ScryfallCard>, SearchCardError> {
-        todo!()
+        self.repo.search_cards(params).await
     }
 
     async fn scryfall_sync(&self, sync_type: SyncType) -> anyhow::Result<()> {
         let mut sync_metrics = SyncMetrics::new(sync_type.clone());
 
-        // just going to hard code these for now
-        let batch_size = 500;
+        let batch_size = batch_size();
+
+        // just going to hard code this for now
         let bulk_endpoint = BulkEndpoint::OracleCards;
-        let cards = bulk_endpoint.download().await?;
+        let cards = bulk_endpoint.amass().await?;
 
         sync_metrics.set_total_cards_count(cards.len() as i32);
 

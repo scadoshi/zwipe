@@ -10,7 +10,13 @@ use crate::domain::card::models::{
 };
 
 pub trait CardRepository: Clone + Send + Sync + 'static {
-    /// simple single card insert
+    /// for testing :)
+    fn insert_with_card_response(
+        &self,
+        card: ScryfallCard,
+    ) -> impl Future<Output = Result<ScryfallCard, CreateCardError>>;
+
+    /// simple single card insert with no return value
     fn insert(
         &self,
         card: ScryfallCard,
@@ -85,6 +91,12 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
 }
 
 pub trait CardService {
+    /// for testing :)
+    fn insert_with_card_response(
+        &self,
+        card: ScryfallCard,
+    ) -> impl Future<Output = Result<ScryfallCard, CreateCardError>>;
+
     fn get_card(
         &self,
         id: &Uuid,
