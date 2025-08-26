@@ -15,22 +15,19 @@ use serde_json::Value;
 use uuid::Uuid;
 
 use sqlx::FromRow;
-// use sqlx::{Decode, Encode, Type};
 
-/// Card data from scryfall
-/// Used for create and get requests
+/// card data from scryfall
+/// used for create and get requests
 #[derive(Debug, Clone, Deserialize, Serialize, FromRow)]
 // qualifying usage of FromRow (a sqlx derive macro)
 // in my domain logic (where database logic is usually banned)
-// ...
+// 
 // for now i don't want to have to build this giant structure multiple times
 // more maintenance for the little gain that separating these two would have
 // if i ever have to switch database, i can just replace the macro
-// easy peasy
-// thanks bye
 pub struct ScryfallCard {
-    // Core Card Fields
-    // Cards have the following core properties
+    // core card fields
+    // cards have the following core properties
     pub arena_id: Option<i32>,
     pub id: uuid::Uuid,
     pub lang: String,
@@ -48,8 +45,8 @@ pub struct ScryfallCard {
     pub scryfall_uri: String,
     pub uri: String,
 
-    // Gameplay Fields
-    // Cards have the following properties relevant to the game rules
+    // gameplay fields
+    // cards have the following properties relevant to the game rules
     pub all_parts: Option<AllParts>,
     pub card_faces: Option<CardFaces>,
     pub cmc: f64,
@@ -74,8 +71,8 @@ pub struct ScryfallCard {
     pub toughness: Option<String>,
     pub type_line: String,
 
-    // Print Fields
-    // Cards have the following properties unique to their particular re/print
+    // print fields
+    // cards have the following properties unique to their particular re/print
     pub artist: Option<String>,
     pub artist_ids: Option<Vec<Uuid>>,
     #[serde(default, deserialize_with = "deserialize_int_or_string_array")]
@@ -127,10 +124,11 @@ pub struct ScryfallCard {
     pub preview_source: Option<String>,
 }
 
-// ==========================
-//      helper
-// ==========================
-
+/// for deserializing fields
+/// which contain string array
+/// whether the given was string or int
+/// 
+/// used on a single field in ScryfallCard
 fn deserialize_int_or_string_array<'de, D>(deserializer: D) -> Result<Option<Vec<String>>, D::Error>
 where
     D: serde::Deserializer<'de>,
