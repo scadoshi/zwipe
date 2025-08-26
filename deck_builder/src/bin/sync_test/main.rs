@@ -24,7 +24,7 @@ async fn main() -> anyhow::Result<()> {
         .context("failed to get card")?
         .clone();
 
-    let card: ScryfallCard = service.insert_with_card_response(card).await?;
+    let _card: ScryfallCard = service.insert(card).await?;
 
     tracing::info!("success!");
 

@@ -1,8 +1,9 @@
 use std::str::FromStr;
 
+use deck_builder::config::Config;
 use deck_builder::domain::{auth, health, logo, user};
 use deck_builder::inbound::http::{HttpServer, HttpServerConfig};
-use deck_builder::{config::Config, outbound::sqlx::postgres::Postgres};
+use deck_builder::outbound::sqlx::postgres::Postgres;
 
 #[tokio::main]
 async fn main() {

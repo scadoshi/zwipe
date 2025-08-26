@@ -6,10 +6,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::{
-    domain::card::models::scryfall_card::ScryfallCard,
-    outbound::sqlx::postgres::IsUniqueConstraintViolation,
-};
+use crate::outbound::sqlx::postgres::IsUniqueConstraintViolation;
 
 // ===================================
 //              errors
@@ -151,11 +148,11 @@ impl CardSearchParameters {
     }
 }
 
-pub struct CardSearchResult {
-    results: Vec<ScryfallCard>,
-    limit: u32,
-    offset: u32,
-}
+// pub struct CardSearchResult {
+//     results: Vec<ScryfallCard>,
+//     limit: u32,
+//     offset: u32,
+// }
 
 // ================================
 //            main

@@ -1,31 +1,28 @@
 use chrono::NaiveDateTime;
 
-use crate::{
-    domain::card::{
-        models::{
-            scryfall_card::ScryfallCard,
-            sync_metrics::{SyncMetrics, SyncType},
-            CardSearchParameters, CreateCardError, GetCardError, SearchCardError,
-        },
-        ports::{CardRepository, CardService},
+use crate::domain::card::{
+    models::{
+        scryfall_card::ScryfallCard,
+        sync_metrics::{SyncMetrics, SyncType},
+        CardSearchParameters, CreateCardError, GetCardError, SearchCardError,
     },
-    inbound::http::scryfall::BulkEndpoint,
-    outbound::sqlx::card::scryfall_card_field_count,
+    ports::{CardRepository, CardService},
 };
+use crate::inbound::http::scryfall::BulkEndpoint;
+use crate::outbound::sqlx::card::scryfall_card_field_count;
 
 // ===================================
-//      smart calc batch size
+//      batch size optimization
 // ===================================
+
 const POSTGRESQL_PARAMETER_HARD_LIMIT: usize = 65_535;
 
 fn batch_size() -> usize {
-    // take the limit, divide by two (for safety)
-    // max number of cards in that window
     POSTGRESQL_PARAMETER_HARD_LIMIT / 2 / scryfall_card_field_count()
 }
 
 // ===================================
-//          service <3
+//          the service (*3*)
 // ===================================
 
 #[derive(Debug, Clone)]
@@ -46,11 +43,8 @@ where
 }
 
 impl<R: CardRepository> CardService for Service<R> {
-    async fn insert_with_card_response(
-        &self,
-        card: ScryfallCard,
-    ) -> Result<ScryfallCard, CreateCardError> {
-        self.repo.insert_with_card_response(card).await
+    async fn insert(&self, card: ScryfallCard) -> Result<ScryfallCard, CreateCardError> {
+        self.repo.insert_returning_card(card).await
     }
 
     async fn get_card(&self, id: &uuid::Uuid) -> Result<ScryfallCard, GetCardError> {

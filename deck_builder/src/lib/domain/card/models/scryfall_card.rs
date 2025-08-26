@@ -15,7 +15,7 @@ use serde_json::Value;
 use uuid::Uuid;
 
 use sqlx::FromRow;
-use sqlx::{Decode, Encode, Type};
+// use sqlx::{Decode, Encode, Type};
 
 /// Card data from scryfall
 /// Used for create and get requests

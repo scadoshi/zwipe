@@ -98,12 +98,18 @@ pub struct ErrorMetrics {
 }
 
 impl ErrorMetrics {
-    pub fn new(card_id: Uuid, card_name: String, error: String) -> Self {
-        Self {
-            card_id,
-            card_name,
-            error,
-        }
+    pub fn new(card_id: Uuid, card_name: &str, error: &str) -> Self {
+        ErrorMetrics { card_id, card_name: card_name.to_string(), error: error.to_string() }
+    }
+}
+
+impl std::fmt::Display for ErrorMetrics {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "name: {} | id: {} | error: \"{}\"",
+            self.card_name, self.card_id, self.error
+        )
     }
 }
 
@@ -132,12 +138,9 @@ impl<'de> Deserialize<'de> for ErrorMetricsVec {
 //            main
 // ====================================
 
-/// stores metrics about a scryfall-database sync
+/// stores metrics about a scryfall database card sync
 ///
-/// not going to pub the fields and
-/// instead going to build helper functions
-/// to update in a more controlled manner
-/// design patterns woot
+/// keeping fields for more controlled design pattern
 #[derive(Debug)]
 pub struct SyncMetrics {
     sync_type: SyncType,
@@ -153,11 +156,7 @@ pub struct SyncMetrics {
 }
 
 impl SyncMetrics {
-    // =============
-    //  constructor
-    // =============
-
-    /// sets up a new instance of SyncMetrics
+    /// constructs SyncMetrics
     /// with sensible defaults
     pub fn new(sync_type: SyncType) -> Self {
         Self {
@@ -174,9 +173,7 @@ impl SyncMetrics {
         }
     }
 
-    // =============
-    //  adjustors
-    // =============
+    // for mutating SyncMetrics
     pub fn set_total_cards_count(&mut self, count: i32) {
         self.total_cards_count = count;
     }
@@ -203,19 +200,17 @@ impl SyncMetrics {
     }
 
     pub fn mark_as_completed(&mut self) {
-        // set error count based on what we have collected
         self.error_count = self.errors.len() as i32;
 
-        // report partial if any errors were received
+        // any errors received => partial
         if self.error_count > 0 {
             self.status = SyncStatus::PartialSuccess;
         } else {
-            // if no errors report success
             self.status = SyncStatus::Success;
         }
 
-        // report failure if no cards were brought in and errors were encountered
-        if self.total_cards_count > 0 && self.imported_cards_count == 0 && self.error_count > 0 {
+        // if we meant to insert cards and none were => failure
+        if self.total_cards_count > 0 && self.imported_cards_count == 0 {
             self.status = SyncStatus::Failure;
         }
 
@@ -226,10 +221,7 @@ impl SyncMetrics {
         }
     }
 
-    // ===============================
-    //  getters - they clone for now
-    // ===============================
-
+    // for getting from SyncMetrics
     pub fn sync_type(&self) -> SyncType {
         self.sync_type.clone()
     }
