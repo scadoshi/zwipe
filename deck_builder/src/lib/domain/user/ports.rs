@@ -8,43 +8,43 @@ use crate::domain::user::models::{
 pub trait UserRepository: Clone + Send + Sync + 'static {
     fn create_user(
         &self,
-        req: &CreateUserRequest,
+        request: &CreateUserRequest,
     ) -> impl Future<Output = Result<User, CreateUserError>> + Send;
 
     fn get_user(
         &self,
-        req: &GetUserRequest,
+        request: &GetUserRequest,
     ) -> impl Future<Output = Result<User, GetUserError>> + Send;
 
     fn update_user(
         &self,
-        req: &UpdateUserRequest,
+        request: &UpdateUserRequest,
     ) -> impl Future<Output = Result<User, UpdateUserError>> + Send;
 
     fn delete_user(
         &self,
-        req: &DeleteUserRequest,
+        request: &DeleteUserRequest,
     ) -> impl Future<Output = Result<(), DeleteUserError>> + Send;
 }
 
 pub trait UserService: Clone + Send + Sync + 'static {
     fn create_user(
         &self,
-        req: &CreateUserRequest,
+        request: &CreateUserRequest,
     ) -> impl Future<Output = Result<User, CreateUserError>> + Send;
 
     fn get_user(
         &self,
-        req: &GetUserRequest,
+        request: &GetUserRequest,
     ) -> impl Future<Output = Result<User, GetUserError>> + Send;
 
     fn update_user(
         &self,
-        req: &UpdateUserRequest,
+        request: &UpdateUserRequest,
     ) -> impl Future<Output = Result<User, UpdateUserError>> + Send;
 
     fn delete_user(
         &self,
-        req: &DeleteUserRequest,
+        request: &DeleteUserRequest,
     ) -> impl Future<Output = Result<(), DeleteUserError>> + Send;
 }

@@ -1,15 +1,20 @@
+// internal
 mod common_passwords;
 use common_passwords::IsCommonPassword;
-
+// std
 use std::collections::HashSet;
-
+// external
 use thiserror::Error;
-
 use argon2::{
     password_hash::{self, rand_core::OsRng, SaltString},
     Argon2, PasswordHasher, PasswordVerifier,
 };
 
+// ===============
+//     errors
+// ===============
+
+/// errors encountered while constructing `Password`
 #[derive(Debug, Clone, Error)]
 pub enum PasswordError {
     #[error("Password must be at least 8 characters long")]
@@ -34,6 +39,8 @@ pub enum PasswordError {
     TooFewUniqueChars(TooFewUniqueChars),
 }
 
+/// error for when there are too many 
+/// repeated letters in given password
 #[derive(Debug, Clone, Error)]
 #[error("Password must not contain more than {} repeated characters", 0)]
 pub struct TooManyRepeats(u8);
@@ -44,6 +51,8 @@ impl From<TooManyRepeats> for PasswordError {
     }
 }
 
+/// error for when there are too few
+/// characters in given password
 #[derive(Debug, Clone, Error)]
 #[error("Password must contain at least {} unique characters", 0)]
 pub struct TooFewUniqueChars(u8);
@@ -54,8 +63,10 @@ impl From<TooFewUniqueChars> for PasswordError {
     }
 }
 
+/// password must include one of these
 const SYMBOLS: &str = r#"~!@#$%^&*()_+=[]{}\/?|:;<>,."#;
 
+/// wraps validated password
 #[derive(Debug, Clone)]
 pub struct Password(String);
 
@@ -70,6 +81,7 @@ impl Password {
     }
 }
 
+/// enables password policy validation 
 trait PasswordPolicy {
     fn min_unique_char_requirement(&self, at_least: u8) -> Result<(), TooFewUniqueChars>;
     fn max_repeat_char_requirement(&self, at_most: u8) -> Result<(), TooManyRepeats>;
@@ -139,6 +151,10 @@ impl PasswordPolicy for &str {
     }
 }
 
+/// wraps validated password hash
+/// 
+/// called `HashedPassword` as to 
+/// not conflict with `argon2::PasswordHash` 
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub struct HashedPassword(String);
 

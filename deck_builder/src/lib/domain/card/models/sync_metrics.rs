@@ -1,26 +1,22 @@
+// std
 use std::fmt::Display;
-
+// external
 use anyhow::anyhow;
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-// ===================================
-//              parts (*3*)
-// ===================================
+// ===============
+//     parts
+// ===============
 
 /// represents the type of sync which occured
 /// in this entry of SyncMetrics
 ///
-///  - Partial: incremental addition of only cards
-/// the database did not already have
-/// - Full: comprehensive refresh of all cards
-/// supplied to sync function (involves
-/// removing all cards from database from
-/// given data and then inserting back in)
-///     - intention is to ensure card data
-///     in database is up to date in case
-///     anything in scryfall changes
+///  - **Partial**: incremental addition of new cards
+/// that do not exist in database
+/// - **Full**: comprehensive refresh of all given cards
+/// even if already exists in database
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SyncType {
@@ -48,11 +44,7 @@ impl TryFrom<&str> for SyncType {
     }
 }
 
-/// high level status of the sync
-///
-/// technically in progress only ever lives in memory
-/// (at least i dont intend on persisting that status)
-/// but need something to set to while it is running in memory
+/// for tracking sync status
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SyncStatus {
@@ -86,10 +78,8 @@ impl TryFrom<&str> for SyncStatus {
     }
 }
 
-/// tracks error specifics while syncing cards
-/// not your typical rust error type
-/// meant more to contain information so we can narrow down what happened in post
-/// hopefully will never need this XD
+/// tracks and persists error metrics for
+/// errors encountered while inserting card data
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ErrorMetrics {
     pub card_id: Uuid,
@@ -99,7 +89,11 @@ pub struct ErrorMetrics {
 
 impl ErrorMetrics {
     pub fn new(card_id: Uuid, card_name: &str, error: &str) -> Self {
-        ErrorMetrics { card_id, card_name: card_name.to_string(), error: error.to_string() }
+        ErrorMetrics {
+            card_id,
+            card_name: card_name.to_string(),
+            error: error.to_string(),
+        }
     }
 }
 
@@ -113,6 +107,8 @@ impl std::fmt::Display for ErrorMetrics {
     }
 }
 
+/// wrapped version of `Vec<ErrorMetrics>`
+/// so we can implement the likes of encode, decode, type
 #[derive(Debug, Clone)]
 pub struct ErrorMetricsVec(Vec<ErrorMetrics>);
 
@@ -134,13 +130,13 @@ impl<'de> Deserialize<'de> for ErrorMetricsVec {
     }
 }
 
-// ====================================
-//            main
-// ====================================
+// ===============
+//     main
+// ===============
 
 /// stores metrics about a scryfall database card sync
 ///
-/// keeping fields for more controlled design pattern
+/// keeping fields private for more controlled design pattern
 #[derive(Debug)]
 pub struct SyncMetrics {
     sync_type: SyncType,

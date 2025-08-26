@@ -6,9 +6,10 @@ use uuid::Uuid;
 use crate::domain::card::models::{
     scryfall_card::ScryfallCard,
     sync_metrics::{SyncMetrics, SyncType},
-    CardSearchParameters, CreateCardError, GetCardError, SearchCardError,
+    SearchCardRequest, CreateCardError, GetCardError, SearchCardError,
 };
 
+/// enables card related database operations
 pub trait CardRepository: Clone + Send + Sync + 'static {
     /// simple card insert with returning card
     fn insert_returning_card(
@@ -78,10 +79,10 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         id: &Uuid,
     ) -> impl Future<Output = Result<ScryfallCard, GetCardError>> + Send;
 
-    /// simple card search by a list of parameters
+    /// simple card search by a given parameters
     fn search_cards(
         &self,
-        params: CardSearchParameters,
+        request: SearchCardRequest,
     ) -> impl Future<Output = Result<Vec<ScryfallCard>, SearchCardError>> + Send;
 
     /// delete all cards
@@ -100,6 +101,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = anyhow::Result<Option<NaiveDateTime>>> + Send;
 }
 
+/// orchestrates card related operations
 pub trait CardService {
     /// inserts card into database responding with card
     ///
@@ -118,7 +120,7 @@ pub trait CardService {
     /// gets cards matching parameters
     fn search_cards(
         &self,
-        params: CardSearchParameters,
+        request: SearchCardRequest,
     ) -> impl Future<Output = Result<Vec<ScryfallCard>, SearchCardError>> + Send;
 
     /// - syncs database with scryfall bulk data

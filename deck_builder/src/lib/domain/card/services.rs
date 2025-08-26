@@ -1,30 +1,30 @@
-use chrono::NaiveDateTime;
-
+// internal
 use crate::domain::card::{
     models::{
         scryfall_card::ScryfallCard,
         sync_metrics::{SyncMetrics, SyncType},
-        CardSearchParameters, CreateCardError, GetCardError, SearchCardError,
+        SearchCardRequest, CreateCardError, GetCardError, SearchCardError,
     },
     ports::{CardRepository, CardService},
 };
 use crate::inbound::http::scryfall::BulkEndpoint;
 use crate::outbound::sqlx::card::scryfall_card_field_count;
+// external
+use chrono::NaiveDateTime;
 
-// ===================================
-//      batch size optimization
-// ===================================
-
+/// postgresql will have issues if there are more 
+/// parameters than this in any single query
 const POSTGRESQL_PARAMETER_HARD_LIMIT: usize = 65_535;
 
+/// calculates batch size based on limit
+/// based on the number of fields that `ScryfallCard` has
+/// 
+/// limits to half of maximum to keep queries running quickly
 fn batch_size() -> usize {
     POSTGRESQL_PARAMETER_HARD_LIMIT / 2 / scryfall_card_field_count()
 }
 
-// ===================================
-//          the service (*3*)
-// ===================================
-
+/// structure which implements `CardService`
 #[derive(Debug, Clone)]
 pub struct Service<R>
 where
@@ -53,9 +53,9 @@ impl<R: CardRepository> CardService for Service<R> {
 
     async fn search_cards(
         &self,
-        params: CardSearchParameters,
+        request: SearchCardRequest,
     ) -> Result<Vec<ScryfallCard>, SearchCardError> {
-        self.repo.search_cards(params).await
+        self.repo.search_cards(request).await
     }
 
     async fn scryfall_sync(&self, sync_type: SyncType) -> anyhow::Result<()> {

@@ -1,5 +1,7 @@
+// internal
 use crate::domain::health::ports::{HealthRepository, HealthService};
 
+/// structure which implements `HealthService`
 #[derive(Debug, Clone)]
 pub struct Service<R: HealthRepository> {
     repo: R,

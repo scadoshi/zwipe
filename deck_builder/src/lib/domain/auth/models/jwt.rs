@@ -1,15 +1,16 @@
+// std
 use std::fmt::Display;
-
+// external
 use email_address::EmailAddress;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
 
-// =============================================================================
-// ERROR TYPES
-// =============================================================================
+// ===============
+//     errors
+// ===============
 
-/// Errors to return while using new constructor for JwtSecret
+/// errors encountered while constructing `JwtSecret`
 #[derive(Debug, Clone, Error)]
 pub enum JwtSecretError {
     #[error("Secret length must be 32+")]
@@ -18,7 +19,7 @@ pub enum JwtSecretError {
     MissingSecret,
 }
 
-/// Errors to return while using new constructor for Jwt
+/// errors enountered while constructing `Jwt`
 #[derive(Debug, Clone, Error)]
 pub enum JwtError {
     #[error("Token must be present")]
@@ -29,10 +30,11 @@ pub enum JwtError {
     EncodingError(jsonwebtoken::errors::Error),
 }
 
-// =============================================================================
-// DOMAIN NEWTYPES
-// =============================================================================
-/// JWT secret with minimum 32-character cryptographic strength requirement
+// ===============
+//     newtypes
+// ===============
+
+/// validates a jwt with length requirements
 #[derive(Debug, Clone)]
 pub struct JwtSecret(String);
 
@@ -54,7 +56,7 @@ impl JwtSecret {
     }
 }
 
-/// User claims embedded in JWT tokens
+/// user claims embedded in jwt
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct UserClaims {
     pub user_id: Uuid,
@@ -63,22 +65,23 @@ pub struct UserClaims {
     pub iat: usize, // issued at timestamp
 }
 
-// =============================================================================
-// REQUEST/RESPONSE TYPES
-// =============================================================================
+// ===============
+//  response type
+// ===============
 
-/// JWT generation response containing token and expiration time
+/// jwt generation response containing token and expiration time
 #[derive(Debug, Clone)]
 pub struct JwtCreationResponse {
     pub jwt: Jwt,
     pub expires_at: usize,
 }
 
-// =============================================================================
-// MAIN DOMAIN ENTITIES
-// =============================================================================
+// ===============
+//     main
+// ===============
 
-/// JWT token with format validation (header.payload.signature)
+/// jwt token with format validation 
+/// (header.payload.signature)
 #[derive(Debug, Clone, PartialEq)]
 pub struct Jwt(String);
 
@@ -95,7 +98,7 @@ impl Serialize for Jwt {
 }
 
 impl Jwt {
-    /// Generates JWT token with 24-hour expiration
+    /// generates jwt token with 24 hour expiration
     pub fn generate(
         user_id: Uuid,
         email: EmailAddress,
@@ -123,6 +126,7 @@ impl Jwt {
         Ok(JwtCreationResponse { jwt, expires_at })
     }
 
+    /// constructor
     pub fn new(raw: &str) -> Result<Self, JwtError> {
         if raw.is_empty() {
             return Err(JwtError::MissingToken);
@@ -133,6 +137,7 @@ impl Jwt {
         Ok(Self(raw.to_string()))
     }
 
+    /// validates jwt checking if expired, malformed, etc.
     pub fn validate(&self, secret: &JwtSecret) -> Result<UserClaims, jsonwebtoken::errors::Error> {
         let token_data = jsonwebtoken::decode::<UserClaims>(
             &self.to_string(),

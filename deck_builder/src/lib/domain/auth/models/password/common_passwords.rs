@@ -1,8 +1,10 @@
-use once_cell::sync::Lazy;
+// std
 use std::collections::HashSet;
+// external
+use once_cell::sync::Lazy;
 
+/// common passwords from various breach databases
 const COMMON_PASSWORDS_LIST: &[&str] = &[
-    // Top most common passwords from various breach databases
     "password",
     "123456",
     "123456789",
@@ -171,13 +173,16 @@ const COMMON_PASSWORDS_LIST: &[&str] = &[
     "hockey",
 ];
 
+/// uses above `&str` constant to get unique passwords
 pub static COMMON_PASSWORDS: Lazy<HashSet<&'static str>> =
     Lazy::new(|| COMMON_PASSWORDS_LIST.iter().cloned().collect());
 
+/// for checking common passwords
 pub trait IsCommonPassword {
     fn is_common_password(&self) -> bool;
 }
 
+/// checks if included in common password list case insensitively
 impl IsCommonPassword for &str {
     fn is_common_password(&self) -> bool {
         COMMON_PASSWORDS.contains(self) || COMMON_PASSWORDS.contains(self.to_lowercase().as_str())

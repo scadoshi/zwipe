@@ -1,9 +1,9 @@
+// external
 use serde::{Deserialize, Serialize};
-// use serde_json::Value;
 use uuid::Uuid;
 
-/// To be stored against card
-/// against the "all_parts" field
+/// stores related card information in ScryfallCard
+/// against all_cards field
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RelatedCard {
     pub id: Uuid,

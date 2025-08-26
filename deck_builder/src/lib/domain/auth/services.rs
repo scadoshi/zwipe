@@ -32,9 +32,9 @@ impl<R: AuthRepository + Clone> AuthService for Service<R> {
 
     async fn register_user(
         &self,
-        req: &RegisterUserRequest,
+        request: &RegisterUserRequest,
     ) -> Result<AuthenticateUserSuccessResponse, RegisterUserError> {
-        let user = self.repo.create_user_with_password_hash(req).await?;
+        let user = self.repo.create_user_with_password_hash(request).await?;
 
         let JwtCreationResponse {
             jwt: token,
@@ -51,10 +51,10 @@ impl<R: AuthRepository + Clone> AuthService for Service<R> {
 
     async fn authenticate_user(
         &self,
-        req: &AuthenticateUserRequest,
+        request: &AuthenticateUserRequest,
     ) -> Result<AuthenticateUserSuccessResponse, AuthenticateUserError> {
         let user_with_password_hash: UserWithPasswordHash =
-            self.repo.get_user_with_password_hash(req).await?;
+            self.repo.get_user_with_password_hash(request).await?;
 
         let password_hash = user_with_password_hash
             .password_hash
@@ -64,7 +64,7 @@ impl<R: AuthRepository + Clone> AuthService for Service<R> {
         let user: User = user_with_password_hash.into();
 
         let verified = password_hash
-            .verify(&req.password)
+            .verify(&request.password)
             .map_err(|e| AuthenticateUserError::FailedToVerify(anyhow!("{e}")))?;
 
         if !verified {
@@ -86,8 +86,8 @@ impl<R: AuthRepository + Clone> AuthService for Service<R> {
 
     async fn change_password(
         &self,
-        req: &ChangePasswordRequest,
+        request: &ChangePasswordRequest,
     ) -> Result<(), ChangePasswordError> {
-        self.repo.change_password(req).await
+        self.repo.change_password(request).await
     }
 }

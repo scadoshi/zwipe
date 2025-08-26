@@ -1,10 +1,12 @@
+// internal
+use crate::domain::card::models::scryfall_card::image_uris::ImageUris;
+// external
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::domain::card::models::scryfall_card::image_uris::ImageUris;
 
-/// To be stored against card
-/// against the "card_faces" field
+/// stores card face data against ScryfallCard
+/// against card_faces field
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CardFace {
     pub artist: Option<String>,

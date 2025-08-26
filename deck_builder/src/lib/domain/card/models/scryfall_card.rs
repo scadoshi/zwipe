@@ -21,10 +21,10 @@ use sqlx::FromRow;
 #[derive(Debug, Clone, Deserialize, Serialize, FromRow)]
 // qualifying usage of FromRow (a sqlx derive macro)
 // in my domain logic (where database logic is usually banned)
-// 
+//
 // for now i don't want to have to build this giant structure multiple times
 // more maintenance for the little gain that separating these two would have
-// if i ever have to switch database, i can just replace the macro
+// if i ever have to switch database, i can just replace the derive macro
 pub struct ScryfallCard {
     // core card fields
     // cards have the following core properties
@@ -124,10 +124,8 @@ pub struct ScryfallCard {
     pub preview_source: Option<String>,
 }
 
-/// for deserializing fields
-/// which contain string array
-/// whether the given was string or int
-/// 
+/// for deserializing `INT[]`, `TEXT[]` or `VARCHAR[]` into `Vec<String>`
+///
 /// used on a single field in ScryfallCard
 fn deserialize_int_or_string_array<'de, D>(deserializer: D) -> Result<Option<Vec<String>>, D::Error>
 where

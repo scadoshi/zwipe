@@ -141,7 +141,7 @@ impl BulkEndpoint {
 }
 
 impl BulkEndpoint {
-    /// gets bulk cards with a BulkEndpoint parameter end returns Vec<ScryfallCard>
+    /// gets bulk cards with a BulkEndpoint parameter end returns `Vec<ScryfallCard>`
     pub async fn amass(&self) -> anyhow::Result<Vec<ScryfallCard>> {
         // first get the bulk data object with our main url
         let url = SCRYFALL_API_BASE.to_string() + &self.resolve();

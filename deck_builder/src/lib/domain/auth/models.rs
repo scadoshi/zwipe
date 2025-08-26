@@ -1,23 +1,25 @@
+// internal
 pub mod jwt;
 pub mod password;
-
-use email_address::EmailAddress;
-use std::str::FromStr;
-use thiserror::Error;
-use uuid::Uuid;
-
 use crate::domain::auth::models::password::{Password, PasswordError};
 use crate::domain::auth::models::{
     jwt::{Jwt, JwtError},
     password::HashedPassword,
 };
 use crate::domain::user::models::{User, UserName, UserNameError};
+// std
+use std::str::FromStr;
+// external
+use email_address::EmailAddress;
+use thiserror::Error;
+use uuid::Uuid;
 
-// =============================================================================
-// ERROR TYPES
-// =============================================================================
 
-/// Actual errors encountered while registering a user
+// ===============
+//     errors
+// ===============
+
+/// errors encountered while registering a user
 #[derive(Debug, Error)]
 pub enum RegisterUserError {
     #[error("User with name or email already exists")]
@@ -32,7 +34,7 @@ pub enum RegisterUserError {
     InvalidRequest(RegisterUserRequestError),
 }
 
-/// For constructor of RegisterUserRequest
+/// errors encountered while constructing `RegisterUserRequest`
 #[derive(Debug, Error)]
 pub enum RegisterUserRequestError {
     #[error(transparent)]
@@ -45,7 +47,7 @@ pub enum RegisterUserRequestError {
     FailedPasswordHash(argon2::password_hash::Error),
 }
 
-/// Actual errors you might encounter while doing user authentication
+/// errors encountered while authenticating a user
 #[derive(Debug, Error)]
 pub enum AuthenticateUserError {
     #[error("User not found")]
@@ -62,7 +64,7 @@ pub enum AuthenticateUserError {
     FailedJwt(anyhow::Error),
 }
 
-/// For constructor of AuthenticateUserRequest
+/// errors encountered while constructing `AuthenticateUserRequest`
 #[derive(Debug, Error)]
 pub enum AuthenticateUserRequestError {
     #[error("Identifier must be present")]
@@ -71,14 +73,14 @@ pub enum AuthenticateUserRequestError {
     MissingPassword,
 }
 
-/// For constructor of AuthenticateUserSuccessResponse
+/// errors encountered while constructing `AuthenticateUserSuccessResponseError`
 #[derive(Debug, Error)]
 pub enum AuthenticateUserSuccessResponseError {
     #[error(transparent)]
     JwtError(JwtError),
 }
 
-/// For constructor of ChangePasswordRequest
+/// errors encountered while constructing `ChangePasswordRequestError`
 #[derive(Debug, Error)]
 pub enum ChangePasswordRequestError {
     #[error(transparent)]
@@ -89,7 +91,7 @@ pub enum ChangePasswordRequestError {
     FailedPasswordHash(argon2::password_hash::Error),
 }
 
-/// Actual errors encountered while changing password
+/// errors encountered while changing password
 #[derive(Debug, Error)]
 pub enum ChangePasswordError {
     #[error("User not found")]
@@ -98,9 +100,9 @@ pub enum ChangePasswordError {
     DatabaseIssues(anyhow::Error),
 }
 
-// =============================================================================
-// REQUEST/RESPONSE TYPES
-// =============================================================================
+// ========================
+//  request/response types
+// ========================
 
 #[derive(Debug)]
 pub struct RegisterUserRequest {

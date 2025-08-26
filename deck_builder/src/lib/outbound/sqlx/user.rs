@@ -51,7 +51,7 @@ impl UserRepository for Postgres {
     //                                   CREATE
     // =============================================================================
     //
-    async fn create_user(&self, req: &CreateUserRequest) -> Result<User, CreateUserError> {
+    async fn create_user(&self, request: &CreateUserRequest) -> Result<User, CreateUserError> {
         let mut tx = self
             .pool
             .begin()
@@ -61,8 +61,8 @@ impl UserRepository for Postgres {
         let database_user = query_as!(
             DatabaseUser,
             "INSERT INTO users (username, email) VALUES ($1, $2) RETURNING id, username, email",
-            req.username.to_string(),
-            req.email.to_string(),
+            request.username.to_string(),
+            request.email.to_string(),
         )
         .fetch_one(&mut *tx)
         .await
@@ -88,11 +88,11 @@ impl UserRepository for Postgres {
     //                                     GET
     // =============================================================================
     //
-    async fn get_user(&self, req: &GetUserRequest) -> Result<User, GetUserError> {
+    async fn get_user(&self, request: &GetUserRequest) -> Result<User, GetUserError> {
         let database_user = query_as!(
             DatabaseUser,
             "SELECT id, username, email FROM users WHERE (id::text = $1 OR username = $1 OR email = $1)",
-            req.identifier
+            request.identifier
         )
         .fetch_one(&self.pool)
         .await
@@ -112,7 +112,7 @@ impl UserRepository for Postgres {
     //                                     UPDATE
     // =============================================================================
     //
-    async fn update_user(&self, req: &UpdateUserRequest) -> Result<User, UpdateUserError> {
+    async fn update_user(&self, request: &UpdateUserRequest) -> Result<User, UpdateUserError> {
         let mut tx = self
             .pool
             .begin()
@@ -121,16 +121,16 @@ impl UserRepository for Postgres {
 
         let mut query_builder = QueryBuilder::new("UPDATE users SET ");
 
-        if let Some(username) = &req.username {
+        if let Some(username) = &request.username {
             query_builder.push(format!("username = {}", username));
         }
-        if let Some(email) = &req.email {
+        if let Some(email) = &request.email {
             query_builder.push(format!("email = {}", email));
         }
 
         query_builder
             .push("WHERE id = $1 RETURNING id, username, email")
-            .push_bind(req.id);
+            .push_bind(request.id);
 
         let database_user: DatabaseUser = query_builder
             .build_query_as()
@@ -157,14 +157,14 @@ impl UserRepository for Postgres {
     //                                  DELETE
     // =============================================================================
     //
-    async fn delete_user(&self, req: &DeleteUserRequest) -> Result<(), DeleteUserError> {
+    async fn delete_user(&self, request: &DeleteUserRequest) -> Result<(), DeleteUserError> {
         let mut tx = self
             .pool
             .begin()
             .await
             .map_err(|e| DeleteUserError::DatabaseIssues(anyhow!("{e}")))?;
 
-        let result = query!("DELETE FROM users WHERE id = $1", req.id())
+        let result = query!("DELETE FROM users WHERE id = $1", request.id())
             .execute(&mut *tx)
             .await
             .map_err(|e| DeleteUserError::DatabaseIssues(anyhow!("{e}")))?;

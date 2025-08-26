@@ -8,10 +8,13 @@ use uuid::Uuid;
 
 use crate::outbound::sqlx::postgres::IsUniqueConstraintViolation;
 
-// ===================================
-//              errors
-// ===================================
+// ===============
+//     errors
+// ===============
 
+/// represents when an error is encountered
+/// while creating a Uuid from string
+/// usually with the try_parse function
 #[derive(Debug, Error)]
 #[error("Failed to parse Uuid")]
 pub struct InvalidUuid(uuid::Error);
@@ -22,10 +25,9 @@ impl From<uuid::Error> for InvalidUuid {
     }
 }
 
+/// for errors encountered while creating cards
 #[derive(Debug, Error)]
 pub enum CreateCardError {
-    #[error("Error: {0}")]
-    Unknown(anyhow::Error),
     #[error("ID already exists")]
     UniqueConstraintViolation(anyhow::Error),
     #[error("Database issues: {0}")]
@@ -44,6 +46,7 @@ impl From<sqlx::Error> for CreateCardError {
     }
 }
 
+/// for errors encountered while getting cards
 #[derive(Debug, Error)]
 pub enum GetCardError {
     #[error("Card not found")]
@@ -63,6 +66,9 @@ impl From<sqlx::Error> for GetCardError {
     }
 }
 
+/// for errors encountered while searching cards
+/// - NotFound is not a possible enumeration of this
+/// because a search request should just return an empty vec
 #[derive(Debug, Error)]
 pub enum SearchCardError {
     #[error("Database issues: {0}")]
@@ -77,12 +83,14 @@ impl From<sqlx::Error> for SearchCardError {
     }
 }
 
-// ================================
-//            search params
-// ================================
+// ===============
+//     parts
+// ===============
 
+/// for collecting search parameters
+/// while searching for a card
 #[derive(Debug, Serialize, Deserialize)]
-pub struct CardSearchParameters {
+pub struct SearchCardRequest {
     pub name: Option<String>,
     pub type_line: Option<String>,
     pub set: Option<String>,
@@ -94,7 +102,7 @@ pub struct CardSearchParameters {
     pub offset: Option<u32>,
 }
 
-impl Default for CardSearchParameters {
+impl Default for SearchCardRequest {
     fn default() -> Self {
         Self {
             name: None,
@@ -110,7 +118,7 @@ impl Default for CardSearchParameters {
     }
 }
 
-impl CardSearchParameters {
+impl SearchCardRequest {
     pub fn new(
         name: Option<String>,
         type_line: Option<String>,
@@ -148,15 +156,15 @@ impl CardSearchParameters {
     }
 }
 
-// pub struct CardSearchResult {
+// pub struct SearchCardResult {
 //     results: Vec<ScryfallCard>,
 //     limit: u32,
 //     offset: u32,
 // }
 
-// ================================
-//            main
-// ================================
+// ===============
+//     main
+// ===============
 
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct CardProfile {
@@ -166,4 +174,4 @@ pub struct CardProfile {
     pub scryfall_card_id: Uuid,
 }
 
-// also ScryfallCard but that has its own file
+// also `ScryfallCard` but that has its own file

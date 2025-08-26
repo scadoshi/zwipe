@@ -12,17 +12,17 @@ use crate::domain::{
 pub trait AuthRepository: Clone + Send + Sync + 'static {
     fn create_user_with_password_hash(
         &self,
-        req: &RegisterUserRequest,
+        request: &RegisterUserRequest,
     ) -> impl Future<Output = Result<User, RegisterUserError>> + Send;
 
     fn get_user_with_password_hash(
         &self,
-        req: &AuthenticateUserRequest,
+        request: &AuthenticateUserRequest,
     ) -> impl Future<Output = Result<UserWithPasswordHash, AuthenticateUserError>> + Send;
 
     fn change_password(
         &self,
-        req: &ChangePasswordRequest,
+        request: &ChangePasswordRequest,
     ) -> impl Future<Output = Result<(), ChangePasswordError>> + Send;
 }
 
@@ -31,16 +31,16 @@ pub trait AuthService: Clone + Send + Sync + 'static {
 
     fn register_user(
         &self,
-        req: &RegisterUserRequest,
+        request: &RegisterUserRequest,
     ) -> impl Future<Output = Result<AuthenticateUserSuccessResponse, RegisterUserError>> + Send;
 
     fn authenticate_user(
         &self,
-        req: &AuthenticateUserRequest,
+        request: &AuthenticateUserRequest,
     ) -> impl Future<Output = Result<AuthenticateUserSuccessResponse, AuthenticateUserError>> + Send;
 
     fn change_password(
         &self,
-        req: &ChangePasswordRequest,
+        request: &ChangePasswordRequest,
     ) -> impl Future<Output = Result<(), ChangePasswordError>> + Send;
 }

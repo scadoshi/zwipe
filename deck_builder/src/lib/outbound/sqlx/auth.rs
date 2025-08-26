@@ -63,7 +63,7 @@ impl AuthRepository for Postgres {
     //
     async fn create_user_with_password_hash(
         &self,
-        req: &RegisterUserRequest,
+        request: &RegisterUserRequest,
     ) -> Result<User, RegisterUserError> {
         let mut tx = self
             .pool
@@ -74,9 +74,9 @@ impl AuthRepository for Postgres {
         let database_user = query_as!(
             DatabaseUser, 
             "INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, username, email", 
-            req.username.to_string(), 
-            req.email.to_string(), 
-            req.password_hash.to_string()
+            request.username.to_string(), 
+            request.email.to_string(), 
+            request.password_hash.to_string()
         ).fetch_one(&mut *tx).await.map_err(|e| {
             if e.is_unique_constraint_violation() {
                 return RegisterUserError::Duplicate;
@@ -101,13 +101,13 @@ impl AuthRepository for Postgres {
     //
     async fn get_user_with_password_hash(
         &self,
-        req: &AuthenticateUserRequest,
+        request: &AuthenticateUserRequest,
     ) -> Result<UserWithPasswordHash, AuthenticateUserError> {
 
         let database_user: DatabaseUserWithPasswordHash = query_as!(
             DatabaseUserWithPasswordHash,
             "SELECT id, username, email, password_hash FROM users WHERE (username = $1 OR email = $1)",
-            req.identifier
+            request.identifier
         )
         .fetch_one(&self.pool)
         .await
@@ -129,7 +129,7 @@ impl AuthRepository for Postgres {
     //
     async fn change_password(
         &self,
-        req: &ChangePasswordRequest,
+        request: &ChangePasswordRequest,
     ) -> Result<(), ChangePasswordError> {
         let mut tx = self
             .pool
@@ -139,8 +139,8 @@ impl AuthRepository for Postgres {
 
         query!(
             "UPDATE users SET password_hash = $1 WHERE id = $2", 
-            req.password_hash.to_string(), 
-            req.id
+            request.password_hash.to_string(), 
+            request.id
         )
         .execute(&mut *tx)
         .await

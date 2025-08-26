@@ -1,7 +1,9 @@
+// external
 use serde::{Deserialize, Serialize};
 
-/// An object describing the legality of this
-/// card across play formats.
+/// stores legality of ScryfallCard 
+/// across various formats
+/// against the legalities field
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Legalities {
     pub standard: Option<LegalityKind>,
@@ -29,7 +31,7 @@ pub struct Legalities {
     pub historicbrawl: Option<LegalityKind>,
 }
 
-/// Possible legality states for a format.
+/// possible legality kinds
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum LegalityKind {
