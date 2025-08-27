@@ -72,16 +72,16 @@ impl HttpServer {
 
         let listener = net::TcpListener::bind(&config.bind_address)
             .await
-            .with_context(|| format!("Failed to listen on {}", config.bind_address))?;
+            .with_context(|| format!("failed to listen on {}", config.bind_address))?;
 
         Ok(Self { router, listener })
     }
 
     pub async fn run(self) -> anyhow::Result<()> {
-        tracing::debug!("Running on {}", self.listener.local_addr().unwrap());
+        tracing::debug!("server running on {}", self.listener.local_addr().unwrap());
         axum::serve(self.listener, self.router)
             .await
-            .context("Received error from running server")?;
+            .context("received error from running server")?;
         Ok(())
     }
 }

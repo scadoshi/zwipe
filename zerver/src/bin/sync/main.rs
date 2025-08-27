@@ -19,6 +19,7 @@ async fn main() -> anyhow::Result<()> {
     let db = Postgres::new(&config.database_url).await?;
     let service = card::services::Service::new(db);
 
+    tracing::info!("running sync service");
     loop {
         let last_partial: Option<NaiveDateTime> =
             service.get_last_sync_date(SyncType::Partial).await?;

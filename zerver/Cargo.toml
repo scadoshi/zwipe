@@ -16,8 +16,8 @@ name = "zync"
 path = "src/bin/sync/main.rs"
 
 [[bin]]
-name = "zync_one"
-path = "src/bin/sync/main.rs"
+name = "zync_test"
+path = "src/bin/sync_test/main.rs"
 
 [dependencies]
 
