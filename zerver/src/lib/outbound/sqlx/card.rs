@@ -1,16 +1,18 @@
-// helper impls
+// helpers
 pub mod scryfall_card;
 pub mod sync_metrics;
+
 // internal
 use crate::domain::card::{
     models::{
         scryfall_card::ScryfallCard,
         sync_metrics::{ErrorMetrics, SyncMetrics, SyncType},
-        SearchCardRequest, CreateCardError, GetCardError, SearchCardError,
+        CreateCardError, GetCardError, SearchCardError, SearchCardRequest,
     },
     ports::CardRepository,
 };
 use crate::outbound::sqlx::postgres::Postgres as MyPostgres;
+
 // external
 use anyhow::Context;
 use chrono::NaiveDateTime;
@@ -18,6 +20,7 @@ use itertools::Itertools;
 use sqlx::{query, query_as, query_scalar, PgTransaction, Postgres, Transaction};
 use sqlx::{query_builder::Separated, QueryBuilder};
 use uuid::Uuid;
+
 // std
 use std::{collections::HashSet, future::Future};
 
@@ -136,28 +139,31 @@ macro_rules! bind_scryfall_card_fields {
 ///
 /// this takes a transaction and mutates
 /// leaving commitment for higher level functions
-pub trait InsertWithTransaction {
+pub trait InsertWithTransaction
+where
+    Self: Sized,
+{
     fn insert_with_tx(
         self,
         tx: &mut PgTransaction<'_>,
-    ) -> impl Future<Output = Result<(), CreateCardError>> + Send;
+    ) -> impl Future<Output = Result<Self, CreateCardError>> + Send;
 }
 
 /// for inserting a single card given a transaction
 impl InsertWithTransaction for ScryfallCard {
-    async fn insert_with_tx(self, tx: &mut PgTransaction<'_>) -> Result<(), CreateCardError> {
+    async fn insert_with_tx(self, tx: &mut PgTransaction<'_>) -> Result<Self, CreateCardError> {
         let scryfall_card_id = self.id.clone();
 
         let query_sql = format!(
-            "INSERT INTO scryfall_cards ({}) VALUES ({})",
+            "INSERT INTO scryfall_cards ({}) VALUES ({}) RETURNING *",
             SCRYFALL_CARD_FIELDS,
             (1..=scryfall_card_field_count())
                 .map(|x| format!("${}", x))
                 .join(",")
         );
 
-        bind_scryfall_card_fields!(query(query_sql.as_str()), self)
-            .execute(&mut **tx)
+        let card: ScryfallCard = bind_scryfall_card_fields!(query_as(query_sql.as_str()), self)
+            .fetch_one(&mut **tx)
             .await?;
 
         query("INSERT INTO card_profiles (scryfall_card_id) VALUES ($1)")
@@ -165,13 +171,13 @@ impl InsertWithTransaction for ScryfallCard {
             .execute(&mut **tx)
             .await?;
 
-        Ok(())
+        Ok(card)
     }
 }
 
 /// for inserting multiple cards given a transaction
 impl InsertWithTransaction for Vec<ScryfallCard> {
-    async fn insert_with_tx(self, tx: &mut PgTransaction<'_>) -> Result<(), CreateCardError> {
+    async fn insert_with_tx(self, tx: &mut PgTransaction<'_>) -> Result<Self, CreateCardError> {
         // for building out value tuples
         let card_count = self.len();
         let scryfallcard_field_count = scryfall_card_field_count();
@@ -206,14 +212,16 @@ impl InsertWithTransaction for Vec<ScryfallCard> {
             );
             scryfall_card_query_sql.push(')');
         }
+        scryfall_card_query_sql.push_str(" RETURNING *");
 
         // build query with all binds
-        let mut scryfall_card_query = query(scryfall_card_query_sql.as_str());
+        let mut scryfall_card_query = query_as(scryfall_card_query_sql.as_str());
         for card in self {
             scryfall_card_query = bind_scryfall_card_fields!(scryfall_card_query, card);
         }
+
         // execute
-        scryfall_card_query.execute(&mut **tx).await?;
+        let cards: Vec<ScryfallCard> = scryfall_card_query.fetch_all(&mut **tx).await?;
 
         // time to insert into card_profile!
         // intializing query sql
@@ -241,7 +249,7 @@ impl InsertWithTransaction for Vec<ScryfallCard> {
         // execute
         card_profile_query.execute(&mut **tx).await?;
 
-        Ok(())
+        Ok(cards)
     }
 }
 
@@ -249,13 +257,16 @@ impl InsertWithTransaction for Vec<ScryfallCard> {
 ///
 /// this takes a transaction and mutates
 /// leaving commitment for higher level functions
-pub trait BatchInsertWithTransaction {
+pub trait BatchInsertWithTransaction
+where
+    Self: Sized,
+{
     fn batch_insert_with_tx(
         self,
         tx: &mut PgTransaction<'_>,
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
-    ) -> impl Future<Output = Result<(), CreateCardError>> + Send;
+    ) -> impl Future<Output = Result<Self, CreateCardError>> + Send;
 }
 
 const POSTGRES_TX_ABORT_MESSAGE: &str = "current transaction is aborted";
@@ -276,9 +287,9 @@ async fn insert_card_by_card(
         match card.insert_with_tx(tx).await {
             Ok(_) => sync_metrics.add_imported_cards_count(1),
             Err(e) => {
-                let error = ErrorMetrics::new(card_id, &card_name, &e.to_string());
                 // ignore tx abort messages as they are never root cause
                 if !e.to_string().contains(POSTGRES_TX_ABORT_MESSAGE) {
+                    let error = ErrorMetrics::new(card_id, &card_name, &e.to_string());
                     tracing::warn!("insertion failure => {}", error);
                     sync_metrics.add_error(error);
                 }
@@ -293,57 +304,33 @@ impl BatchInsertWithTransaction for Vec<ScryfallCard> {
         tx: &mut PgTransaction<'_>,
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
-    ) -> Result<(), CreateCardError> {
+    ) -> Result<Self, CreateCardError> {
+        let mut cards: Vec<ScryfallCard> = Vec::new();
         for chunk in self.chunks(batch_size) {
             match chunk.to_owned().insert_with_tx(tx).await {
-                Ok(_) => sync_metrics.add_imported_cards_count(batch_size as i32),
+                Ok(inserted) => {
+                    cards.extend(inserted);
+                    sync_metrics.add_imported_cards_count(batch_size as i32);
+                }
                 Err(e) => {
                     tracing::warn!("batch failed with error: {:?}\nretrying card by card", e);
                     insert_card_by_card(chunk.to_owned(), tx, sync_metrics).await;
                 }
             }
         }
-        Ok(())
+
+        Ok(cards)
     }
 }
 
 // tx commits should be handled at this level
 // rather than above
 impl CardRepository for MyPostgres {
-    async fn insert_returning_card(
-        &self,
-        card: ScryfallCard,
-    ) -> Result<ScryfallCard, CreateCardError> {
+    async fn insert(&self, card: ScryfallCard) -> Result<ScryfallCard, CreateCardError> {
         let mut tx = self.pool.begin().await?;
-
-        let scryfall_card_id = card.id.clone();
-
-        let query_sql = format!(
-            "INSERT INTO scryfall_cards ({}) VALUES ({}) RETURNING *",
-            SCRYFALL_CARD_FIELDS,
-            (1..=scryfall_card_field_count())
-                .map(|x| format!("${}", x))
-                .join(",")
-        );
-
-        let card: ScryfallCard = bind_scryfall_card_fields!(query_as(query_sql.as_str()), card)
-            .fetch_one(&mut *tx)
-            .await?;
-
-        query("INSERT INTO card_profiles (scryfall_card_id) VALUES ($1)")
-            .bind(scryfall_card_id)
-            .execute(&mut *tx)
-            .await?;
-
+        let card = card.insert_with_tx(&mut tx).await?;
         tx.commit().await?;
-
         Ok(card)
-    }
-    async fn insert(&self, card: ScryfallCard) -> Result<(), CreateCardError> {
-        let mut tx = self.pool.begin().await?;
-        card.insert_with_tx(&mut tx).await?;
-        tx.commit().await?;
-        Ok(())
     }
     async fn bulk_insert(&self, cards: Vec<ScryfallCard>) -> Result<(), CreateCardError> {
         let mut tx = self.pool.begin().await?;
@@ -369,7 +356,7 @@ impl CardRepository for MyPostgres {
         cards: Vec<ScryfallCard>,
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
-    ) -> Result<(), CreateCardError> {
+    ) -> Result<Vec<ScryfallCard>, CreateCardError> {
         tracing::info!("initiating batch insert if not exists process");
         tracing::info!("received {} cards", cards.len());
         let mut tx = self.pool.begin().await?;
@@ -387,21 +374,21 @@ impl CardRepository for MyPostgres {
             .collect();
         if new_cards.is_empty() {
             tracing::info!("no new cards to import - database up to date");
-            return Ok(());
+            return Ok(Vec::new());
         }
         tracing::info!("importing {} new cards", new_cards.len());
-        new_cards
+        let cards: Vec<ScryfallCard> = new_cards
             .batch_insert_with_tx(&mut tx, batch_size, sync_metrics)
             .await?;
         tx.commit().await?;
-        Ok(())
+        Ok(cards)
     }
     async fn delete_if_exists_and_batch_insert(
         &self,
         cards: Vec<ScryfallCard>,
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
-    ) -> Result<(), CreateCardError> {
+    ) -> Result<Vec<ScryfallCard>, CreateCardError> {
         tracing::info!("initiating delete if exists and insert process");
         tracing::info!("received {} cards", cards.len());
         let mut tx = self.pool.begin().await?;
@@ -414,11 +401,11 @@ impl CardRepository for MyPostgres {
             .execute(&mut *tx)
             .await?;
         tracing::info!("importing {} cards", cards.len());
-        cards
+        let cards: Vec<ScryfallCard> = cards
             .batch_insert_with_tx(&mut tx, batch_size, sync_metrics)
             .await?;
         tx.commit().await?;
-        Ok(())
+        Ok(cards)
     }
     async fn get_card(&self, id: &Uuid) -> Result<ScryfallCard, GetCardError> {
         let card: ScryfallCard = query_as("SELECT * FROM scryfall_cards WHERE id = $1")

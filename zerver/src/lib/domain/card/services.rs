@@ -3,7 +3,7 @@ use crate::domain::card::{
     models::{
         scryfall_card::ScryfallCard,
         sync_metrics::{SyncMetrics, SyncType},
-        SearchCardRequest, CreateCardError, GetCardError, SearchCardError,
+        CreateCardError, GetCardError, SearchCardError, SearchCardRequest,
     },
     ports::{CardRepository, CardService},
 };
@@ -12,13 +12,13 @@ use crate::outbound::sqlx::card::scryfall_card_field_count;
 // external
 use chrono::NaiveDateTime;
 
-/// postgresql will have issues if there are more 
+/// postgresql will have issues if there are more
 /// parameters than this in any single query
 const POSTGRESQL_PARAMETER_HARD_LIMIT: usize = 65_535;
 
 /// calculates batch size based on limit
 /// based on the number of fields that `ScryfallCard` has
-/// 
+///
 /// limits to half of maximum to keep queries running quickly
 fn batch_size() -> usize {
     POSTGRESQL_PARAMETER_HARD_LIMIT / 2 / scryfall_card_field_count()
@@ -44,7 +44,7 @@ where
 
 impl<R: CardRepository> CardService for Service<R> {
     async fn insert(&self, card: ScryfallCard) -> Result<ScryfallCard, CreateCardError> {
-        self.repo.insert_returning_card(card).await
+        self.repo.insert(card).await
     }
 
     async fn get_card(&self, id: &uuid::Uuid) -> Result<ScryfallCard, GetCardError> {

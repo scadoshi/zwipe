@@ -6,22 +6,16 @@ use uuid::Uuid;
 use crate::domain::card::models::{
     scryfall_card::ScryfallCard,
     sync_metrics::{SyncMetrics, SyncType},
-    SearchCardRequest, CreateCardError, GetCardError, SearchCardError,
+    CreateCardError, GetCardError, SearchCardError, SearchCardRequest,
 };
 
 /// enables card related database operations
 pub trait CardRepository: Clone + Send + Sync + 'static {
-    /// simple card insert with returning card
-    fn insert_returning_card(
-        &self,
-        card: ScryfallCard,
-    ) -> impl Future<Output = Result<ScryfallCard, CreateCardError>>;
-
-    /// simple card insert with no return
+    /// simple card insert
     fn insert(
         &self,
         card: ScryfallCard,
-    ) -> impl Future<Output = Result<(), CreateCardError>> + Send;
+    ) -> impl Future<Output = Result<ScryfallCard, CreateCardError>> + Send;
 
     /// for inserting as many cards as you want (*3*)
     /// - postgres limits parameter counts but that is handled else where
@@ -55,7 +49,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         cards: Vec<ScryfallCard>,
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
-    ) -> impl Future<Output = Result<(), CreateCardError>> + Send;
+    ) -> impl Future<Output = Result<Vec<ScryfallCard>, CreateCardError>> + Send;
 
     /// intends to refresh cards in database with the given list of cards
     ///
@@ -71,7 +65,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         cards: Vec<ScryfallCard>,
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
-    ) -> impl Future<Output = Result<(), CreateCardError>> + Send;
+    ) -> impl Future<Output = Result<Vec<ScryfallCard>, CreateCardError>> + Send;
 
     /// simple card get by id
     fn get_card(
