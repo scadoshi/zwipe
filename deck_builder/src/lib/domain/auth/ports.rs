@@ -9,6 +9,7 @@ use crate::domain::{
     user::models::User,
 };
 
+/// enables auth related database operations
 pub trait AuthRepository: Clone + Send + Sync + 'static {
     fn create_user_with_password_hash(
         &self,
@@ -26,6 +27,7 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = Result<(), ChangePasswordError>> + Send;
 }
 
+/// orchestrates auth related operations
 pub trait AuthService: Clone + Send + Sync + 'static {
     fn jwt_secret(&self) -> &JwtSecret;
 

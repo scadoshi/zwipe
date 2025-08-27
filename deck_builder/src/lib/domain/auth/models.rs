@@ -134,7 +134,7 @@ impl RegisterUserRequest {
     }
 }
 
-/// Authentication request with identifier (email/username) and password
+/// authentication request with identifier (email/username) and password
 #[derive(Debug)]
 pub struct AuthenticateUserRequest {
     pub identifier: String,
@@ -156,8 +156,9 @@ impl AuthenticateUserRequest {
     }
 }
 
-/// Successful authentication response containing user data and JWT token
-/// Registering also uses this
+/// successful authentication response containing user data and JWT token
+/// 
+/// authentication and register user requeast use this
 #[derive(Debug)]
 pub struct AuthenticateUserSuccessResponse {
     pub user: User,
@@ -181,6 +182,8 @@ impl AuthenticateUserSuccessResponse {
     }
 }
 
+/// change password request 
+/// with idenifier and new password hash
 #[derive(Debug)]
 pub struct ChangePasswordRequest {
     pub id: Uuid,
@@ -199,11 +202,12 @@ impl ChangePasswordRequest {
     }
 }
 
-// =============================================================================
-// MAIN DOMAIN ENTITIES
-// =============================================================================
+// ===============
+//     main
+// ===============
 
-/// User entity with password hash for authentication operations
+/// user entity with password hash 
+/// for authentication operations
 #[derive(Debug)]
 pub struct UserWithPasswordHash {
     pub id: Uuid,
