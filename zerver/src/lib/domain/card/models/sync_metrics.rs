@@ -1,5 +1,5 @@
 // std
-use std::fmt::Display;
+use std::{fmt::Display, ops::Deref};
 // external
 use anyhow::anyhow;
 use chrono::NaiveDateTime;
@@ -110,9 +110,9 @@ impl std::fmt::Display for ErrorMetrics {
 /// wrapped version of `Vec<ErrorMetrics>`
 /// so we can implement the likes of encode, decode, type
 #[derive(Debug, Clone)]
-pub struct ErrorMetricsVec(Vec<ErrorMetrics>);
+pub struct VecErrorMetrics(Vec<ErrorMetrics>);
 
-impl Serialize for ErrorMetricsVec {
+impl Serialize for VecErrorMetrics {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -121,12 +121,19 @@ impl Serialize for ErrorMetricsVec {
     }
 }
 
-impl<'de> Deserialize<'de> for ErrorMetricsVec {
+impl<'de> Deserialize<'de> for VecErrorMetrics {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
-        Vec::<ErrorMetrics>::deserialize(deserializer).map(ErrorMetricsVec)
+        Vec::<ErrorMetrics>::deserialize(deserializer).map(VecErrorMetrics)
+    }
+}
+
+impl Deref for VecErrorMetrics {
+    type Target = Vec<ErrorMetrics>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -137,16 +144,16 @@ impl<'de> Deserialize<'de> for ErrorMetricsVec {
 /// stores metrics about a scryfall database card sync
 ///
 /// keeping fields private for more controlled design pattern
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct SyncMetrics {
     sync_type: SyncType,
     started_at: NaiveDateTime,
     ended_at: Option<NaiveDateTime>,
-    duration_in_seconds: i64,
+    duration_in_seconds: i32,
     status: SyncStatus,
-    total_cards_count: i32,
-    imported_cards_count: i32,
-    skipped_cards_count: i32,
+    received: i32,
+    imported: i32,
+    skipped: i32,
     error_count: i32,
     errors: Vec<ErrorMetrics>,
 }
@@ -154,40 +161,68 @@ pub struct SyncMetrics {
 impl SyncMetrics {
     /// constructs SyncMetrics
     /// with sensible defaults
-    pub fn new(sync_type: SyncType) -> Self {
+    pub fn generate(sync_type: SyncType) -> Self {
         Self {
             sync_type,
             started_at: chrono::Utc::now().naive_utc(),
             ended_at: None,
             duration_in_seconds: 0,
             status: SyncStatus::InProgress,
-            total_cards_count: 0,
-            imported_cards_count: 0,
-            skipped_cards_count: 0,
+            received: 0,
+            imported: 0,
+            skipped: 0,
             error_count: 0,
             errors: Vec::new(),
         }
     }
 
+    /// constructs SyncMetrics
+    /// out of raw types
+    pub fn new(
+        sync_type: SyncType,
+        started_at: NaiveDateTime,
+        ended_at: Option<NaiveDateTime>,
+        duration_in_seconds: i32,
+        status: SyncStatus,
+        received: i32,
+        imported: i32,
+        skipped: i32,
+        error_count: i32,
+        errors: Vec<ErrorMetrics>,
+    ) -> Self {
+        Self {
+            sync_type,
+            started_at,
+            ended_at,
+            duration_in_seconds,
+            status,
+            received,
+            imported,
+            skipped,
+            error_count,
+            errors,
+        }
+    }
+
     // for mutating SyncMetrics
-    pub fn set_total_cards_count(&mut self, count: i32) {
-        self.total_cards_count = count;
+    pub fn set_received(&mut self, count: i32) {
+        self.received = count;
     }
 
-    pub fn set_imported_cards_count(&mut self, count: i32) {
-        self.imported_cards_count = count;
+    pub fn set_imported(&mut self, count: i32) {
+        self.imported = count;
     }
 
-    pub fn add_imported_cards_count(&mut self, count: i32) {
-        self.imported_cards_count += count;
+    pub fn add_imported(&mut self, count: i32) {
+        self.imported += count;
     }
 
-    pub fn set_skipped_count(&mut self, count: i32) {
-        self.skipped_cards_count = count;
+    pub fn set_skipped(&mut self, count: i32) {
+        self.skipped = count;
     }
 
-    pub fn add_skipped_count(&mut self, count: i32) {
-        self.skipped_cards_count += count;
+    pub fn add_skipped(&mut self, count: i32) {
+        self.skipped += count;
     }
 
     pub fn add_error(&mut self, error: ErrorMetrics) {
@@ -198,22 +233,11 @@ impl SyncMetrics {
     pub fn mark_as_completed(&mut self) {
         self.error_count = self.errors.len() as i32;
 
-        // any errors received => partial
-        if self.error_count > 0 {
-            self.status = SyncStatus::PartialSuccess;
-        } else {
-            self.status = SyncStatus::Success;
-        }
+        self.evaluate_status();
 
-        // if we meant to insert cards and none were => failure
-        if self.total_cards_count > 0 && self.imported_cards_count == 0 {
-            self.status = SyncStatus::Failure;
-        }
-
-        // add ended at and set duration
         self.ended_at = Some(chrono::Utc::now().naive_utc());
         if let Some(ended_at) = self.ended_at {
-            self.duration_in_seconds = (ended_at - self.started_at).num_seconds();
+            self.duration_in_seconds = (ended_at - self.started_at).num_seconds() as i32;
         }
     }
 
@@ -227,25 +251,40 @@ impl SyncMetrics {
     pub fn ended_at(&self) -> Option<NaiveDateTime> {
         self.ended_at.clone()
     }
-    pub fn duration_in_seconds(&self) -> i64 {
+    pub fn duration_in_seconds(&self) -> i32 {
         self.duration_in_seconds
     }
     pub fn status(&self) -> SyncStatus {
         self.status.clone()
     }
-    pub fn total_cards_count(&self) -> i32 {
-        self.total_cards_count
+    pub fn received(&self) -> i32 {
+        self.received
     }
-    pub fn imported_cards_count(&self) -> i32 {
-        self.imported_cards_count
+    pub fn imported(&self) -> i32 {
+        self.imported
     }
-    pub fn skipped_cards_count(&self) -> i32 {
-        self.skipped_cards_count
+    pub fn skipped(&self) -> i32 {
+        self.skipped
     }
     pub fn error_count(&self) -> i32 {
         self.error_count
     }
-    pub fn errors(&self) -> ErrorMetricsVec {
-        ErrorMetricsVec(self.errors.clone())
+    pub fn errors(&self) -> VecErrorMetrics {
+        VecErrorMetrics(self.errors.clone())
+    }
+
+    // helpers
+    fn evaluate_status(&mut self) {
+        self.status = SyncStatus::Failure;
+
+        let intended_to_import = self.received - self.skipped;
+
+        if self.imported as f32 >= intended_to_import as f32 * 0.7 && self.error_count > 0 {
+            self.status = SyncStatus::PartialSuccess;
+        }
+
+        if self.imported >= intended_to_import && self.error_count == 0 {
+            self.status = SyncStatus::Success;
+        }
     }
 }

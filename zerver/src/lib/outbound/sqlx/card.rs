@@ -3,15 +3,18 @@ pub mod scryfall_card;
 pub mod sync_metrics;
 
 // internal
-use crate::domain::card::{
-    models::{
-        scryfall_card::ScryfallCard,
-        sync_metrics::{ErrorMetrics, SyncMetrics, SyncType},
-        CreateCardError, GetCardError, SearchCardError, SearchCardRequest,
-    },
-    ports::CardRepository,
-};
 use crate::outbound::sqlx::postgres::Postgres as MyPostgres;
+use crate::{
+    domain::card::{
+        models::{
+            scryfall_card::ScryfallCard,
+            sync_metrics::{ErrorMetrics, SyncMetrics, SyncType},
+            CreateCardError, GetCardError, SearchCardError, SearchCardRequest,
+        },
+        ports::CardRepository,
+    },
+    outbound::sqlx::card::sync_metrics::DatabaseSyncMetrics,
+};
 
 // external
 use anyhow::Context;
@@ -285,7 +288,7 @@ async fn insert_card_by_card(
         let card_id = card.id.clone();
 
         match card.insert_with_tx(tx).await {
-            Ok(_) => sync_metrics.add_imported_cards_count(1),
+            Ok(_) => sync_metrics.add_imported(1),
             Err(e) => {
                 // ignore tx abort messages as they are never root cause
                 if !e.to_string().contains(POSTGRES_TX_ABORT_MESSAGE) {
@@ -309,8 +312,9 @@ impl BatchInsertWithTransaction for Vec<ScryfallCard> {
         for chunk in self.chunks(batch_size) {
             match chunk.to_owned().insert_with_tx(tx).await {
                 Ok(inserted) => {
+                    let inserted_count = inserted.len() as i32;
                     cards.extend(inserted);
-                    sync_metrics.add_imported_cards_count(batch_size as i32);
+                    sync_metrics.add_imported(inserted_count);
                 }
                 Err(e) => {
                     tracing::warn!("batch failed with error: {:?}\nretrying card by card", e);
@@ -370,7 +374,7 @@ impl CardRepository for MyPostgres {
             "skipping {} cards because database already has them",
             existing_ids.len()
         );
-        sync_metrics.set_skipped_count(existing_ids.len() as i32);
+        sync_metrics.set_skipped(existing_ids.len() as i32);
         let new_cards: Vec<ScryfallCard> = cards
             .into_iter()
             .filter(|x| !existing_ids.contains(&x.id))
@@ -471,29 +475,36 @@ impl CardRepository for MyPostgres {
 
         Ok(cards)
     }
-    async fn delete_all(&self) -> Result<(), anyhow::Error> {
-        query("DELETE FROM scryfall_cards;")
-            .execute(&self.pool)
+    async fn delete_all(&self) -> Result<Vec<ScryfallCard>, anyhow::Error> {
+        let cards: Vec<ScryfallCard> = query_as("DELETE FROM scryfall_cards RETURNING *;")
+            .fetch_all(&self.pool)
             .await?;
-        Ok(())
+        Ok(cards)
     }
-    async fn record_sync_metrics(&self, sync_metrics: SyncMetrics) -> Result<(), anyhow::Error> {
+    async fn record_sync_metrics(
+        &self,
+        sync_metrics: SyncMetrics,
+    ) -> Result<SyncMetrics, anyhow::Error> {
         let mut tx = self.pool.begin().await?;
-        query("INSERT INTO scryfall_card_sync_metrics (sync_type, started_at, ended_at, duration_in_seconds, status, total_cards_count, imported_cards_count, skipped_cards_count, error_count, errors) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)")
+        let query_sql = "INSERT INTO scryfall_card_sync_metrics".to_string()
+         + " (sync_type, started_at, ended_at, duration_in_seconds, status, received, imported, skipped, error_count, errors)"
+         + " VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *";
+        let database_sync_metrics: DatabaseSyncMetrics = query_as(&query_sql)
             .bind(sync_metrics.sync_type().to_string())
             .bind(sync_metrics.started_at())
             .bind(sync_metrics.ended_at())
             .bind(sync_metrics.duration_in_seconds())
             .bind(sync_metrics.status().to_string())
-            .bind(sync_metrics.total_cards_count())
-            .bind(sync_metrics.imported_cards_count())
-            .bind(sync_metrics.skipped_cards_count())
+            .bind(sync_metrics.received())
+            .bind(sync_metrics.imported())
+            .bind(sync_metrics.skipped())
             .bind(sync_metrics.error_count())
             .bind(sync_metrics.errors())
-            .execute(&mut *tx)
+            .fetch_one(&mut *tx)
             .await?;
+        let sync_metrics: SyncMetrics = database_sync_metrics.try_into()?;
         tx.commit().await?;
-        Ok(())
+        Ok(sync_metrics)
     }
     async fn get_last_sync_date(
         &self,

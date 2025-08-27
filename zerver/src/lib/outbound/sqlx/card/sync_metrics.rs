@@ -1,18 +1,25 @@
+use std::ops::Deref;
+
+use chrono::NaiveDateTime;
 use sqlx::{encode::IsNull, types::JsonValue, Decode, Encode, Postgres, Type};
+use sqlx_macros::FromRow;
+use uuid::Uuid;
 
-use crate::domain::card::models::sync_metrics::{ErrorMetrics, ErrorMetricsVec};
+use crate::domain::card::models::sync_metrics::{
+    ErrorMetrics, SyncMetrics, SyncStatus, SyncType, VecErrorMetrics,
+};
 
-// ====================================================
-//    database compatibility for new types
-// ====================================================
+// ======================================
+//  database compatibility for new types
+// ======================================
 
-// ===========================
-//        error metrics
-// ===========================
+// ===============
+//  error metrics
+// ===============
 
-// ===================================
-//       impls for individual
-// ===================================
+// ======================
+//  impls for individual
+// ======================
 
 impl TryFrom<ErrorMetrics> for JsonValue {
     type Error = serde_json::Error;
@@ -70,28 +77,28 @@ impl Encode<'_, Postgres> for ErrorMetrics {
     }
 }
 
-// ===================================
-//     impls for wrapped vec
-// ===================================
+// =======================
+//  impls for wrapped vec
+// =======================
 
-impl TryFrom<ErrorMetricsVec> for JsonValue {
+impl TryFrom<VecErrorMetrics> for JsonValue {
     type Error = serde_json::Error;
-    fn try_from(value: ErrorMetricsVec) -> Result<Self, Self::Error> {
+    fn try_from(value: VecErrorMetrics) -> Result<Self, Self::Error> {
         serde_json::to_value(value)
     }
 }
 
-impl Decode<'_, Postgres> for ErrorMetricsVec {
+impl Decode<'_, Postgres> for VecErrorMetrics {
     fn decode(
         value: <Postgres as sqlx::Database>::ValueRef<'_>,
     ) -> Result<Self, sqlx::error::BoxDynError> {
         let json_value = <JsonValue as Decode<Postgres>>::decode(value)?;
-        let error_metrics_vec: ErrorMetricsVec = serde_json::from_value(json_value)?;
+        let error_metrics_vec: VecErrorMetrics = serde_json::from_value(json_value)?;
         Ok(error_metrics_vec)
     }
 }
 
-impl Type<Postgres> for ErrorMetricsVec {
+impl Type<Postgres> for VecErrorMetrics {
     fn compatible(ty: &<Postgres as sqlx::Database>::TypeInfo) -> bool {
         <JsonValue as Type<Postgres>>::compatible(ty)
     }
@@ -101,7 +108,7 @@ impl Type<Postgres> for ErrorMetricsVec {
     }
 }
 
-impl Encode<'_, Postgres> for ErrorMetricsVec {
+impl Encode<'_, Postgres> for VecErrorMetrics {
     fn encode(
         self,
         buf: &mut <Postgres as sqlx::Database>::ArgumentBuffer<'_>,
@@ -127,5 +134,47 @@ impl Encode<'_, Postgres> for ErrorMetricsVec {
 
     fn size_hint(&self) -> usize {
         0
+    }
+}
+
+// ==============
+//  sync metrics
+// ==============
+
+#[derive(Debug, FromRow)]
+pub struct DatabaseSyncMetrics {
+    #[sqlx(rename = "id")]
+    _id: Uuid,
+    sync_type: String,
+    started_at: NaiveDateTime,
+    ended_at: Option<NaiveDateTime>,
+    duration_in_seconds: i32,
+    status: String,
+    received: i32,
+    imported: i32,
+    skipped: i32,
+    error_count: i32,
+    errors: VecErrorMetrics,
+}
+
+impl TryFrom<DatabaseSyncMetrics> for SyncMetrics {
+    type Error = anyhow::Error;
+    fn try_from(value: DatabaseSyncMetrics) -> anyhow::Result<Self> {
+        let sync_type = SyncType::try_from(value.sync_type.as_str())?;
+        let status = SyncStatus::try_from(value.status.as_str())?;
+        let errors: Vec<ErrorMetrics> = value.errors.deref().to_vec();
+
+        Ok(Self::new(
+            sync_type,
+            value.started_at,
+            value.ended_at,
+            value.duration_in_seconds,
+            status,
+            value.received,
+            value.imported,
+            value.skipped,
+            value.error_count,
+            errors,
+        ))
     }
 }

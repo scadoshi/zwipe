@@ -80,13 +80,13 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = Result<Vec<ScryfallCard>, SearchCardError>> + Send;
 
     /// delete all cards
-    fn delete_all(&self) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
+    fn delete_all(&self) -> impl Future<Output = Result<Vec<ScryfallCard>, anyhow::Error>> + Send;
 
     /// saves sync_metrics to database
     fn record_sync_metrics(
         &self,
         sync_metrics: SyncMetrics,
-    ) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
+    ) -> impl Future<Output = Result<SyncMetrics, anyhow::Error>> + Send;
 
     /// gets last sync date from database
     fn get_last_sync_date(

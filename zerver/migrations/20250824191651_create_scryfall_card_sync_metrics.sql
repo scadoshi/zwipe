@@ -5,9 +5,9 @@ CREATE TABLE scryfall_card_sync_metrics (
     ended_at TIMESTAMP,
     duration_in_seconds INT NOT NULL,
     status TEXT NOT NULL,
-    total_cards_count INT NOT NULL,
-    imported_cards_count INT NOT NULL,
-    skipped_cards_count INT NOT NULL,
+    received INT NOT NULL,
+    imported INT NOT NULL,
+    skipped INT NOT NULL,
     error_count INT NOT NULL,
     errors JSONB NOT NULL DEFAULT '[]'::jsonb
 );

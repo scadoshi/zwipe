@@ -59,7 +59,7 @@ impl<R: CardRepository> CardService for Service<R> {
     }
 
     async fn scryfall_sync(&self, sync_type: SyncType) -> anyhow::Result<()> {
-        let mut sync_metrics = SyncMetrics::new(sync_type.clone());
+        let mut sync_metrics = SyncMetrics::generate(sync_type.clone());
 
         let batch_size = batch_size();
 
@@ -67,7 +67,7 @@ impl<R: CardRepository> CardService for Service<R> {
         let bulk_endpoint = BulkEndpoint::OracleCards;
         let cards = bulk_endpoint.amass().await?;
 
-        sync_metrics.set_total_cards_count(cards.len() as i32);
+        sync_metrics.set_received(cards.len() as i32);
 
         match sync_type {
             SyncType::Full => {
@@ -84,7 +84,9 @@ impl<R: CardRepository> CardService for Service<R> {
 
         sync_metrics.mark_as_completed();
 
-        self.repo.record_sync_metrics(sync_metrics).await?;
+        let sync_metrics = self.repo.record_sync_metrics(sync_metrics).await?;
+
+        tracing::info!("{:#?}", sync_metrics);
 
         Ok(())
     }
