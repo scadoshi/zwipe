@@ -1,4 +1,4 @@
-# Deck Builder 🃏
+# Zwipe 🃏
 
 A mobile-first Magic: The Gathering deck building app with a **Tinder-like swiping interface**. Swipe right to add cards to your deck, left to skip - making deck building fun and intuitive.
 
