@@ -23,7 +23,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     fn bulk_insert(
         &self,
         cards: Vec<ScryfallCard>,
-    ) -> impl Future<Output = Result<(), CreateCardError>> + Send;
+    ) -> impl Future<Output = Result<Vec<ScryfallCard>, CreateCardError>> + Send;
 
     /// for inserting as many cards as you want in batches (*3*)
     /// - chunks into given batch size
@@ -33,7 +33,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         cards: Vec<ScryfallCard>,
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
-    ) -> impl Future<Output = Result<(), CreateCardError>> + Send;
+    ) -> impl Future<Output = Result<Vec<ScryfallCard>, CreateCardError>> + Send;
 
     /// intends to incrementally update database with only new cards
     ///

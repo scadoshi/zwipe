@@ -332,24 +332,27 @@ impl CardRepository for MyPostgres {
         tx.commit().await?;
         Ok(card)
     }
-    async fn bulk_insert(&self, cards: Vec<ScryfallCard>) -> Result<(), CreateCardError> {
+    async fn bulk_insert(
+        &self,
+        cards: Vec<ScryfallCard>,
+    ) -> Result<Vec<ScryfallCard>, CreateCardError> {
         let mut tx = self.pool.begin().await?;
-        cards.insert_with_tx(&mut tx).await?;
+        let cards = cards.insert_with_tx(&mut tx).await?;
         tx.commit().await?;
-        Ok(())
+        Ok(cards)
     }
     async fn batch_insert(
         &self,
         cards: Vec<ScryfallCard>,
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
-    ) -> Result<(), CreateCardError> {
+    ) -> Result<Vec<ScryfallCard>, CreateCardError> {
         let mut tx = self.pool.begin().await?;
-        cards
+        let cards = cards
             .batch_insert_with_tx(&mut tx, batch_size, sync_metrics)
             .await?;
         tx.commit().await?;
-        Ok(())
+        Ok(cards)
     }
     async fn batch_insert_if_not_exists(
         &self,
