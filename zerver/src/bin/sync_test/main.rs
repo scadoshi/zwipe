@@ -2,6 +2,7 @@
 use zwipe::{
     config::Config,
     domain::card::{self, models::scryfall_card::ScryfallCard, ports::CardService},
+    domain::logo,
     inbound::http::scryfall::PlanesWalker,
     outbound::sqlx::postgres::Postgres,
 };
@@ -12,6 +13,7 @@ use std::str::FromStr;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    logo::print();
     let config = Config::from_env()?;
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::from_str(&config.rust_log)?)

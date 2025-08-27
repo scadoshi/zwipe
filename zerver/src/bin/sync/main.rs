@@ -4,6 +4,7 @@ use was_ago::WasAgo;
 use zwipe::{
     config::Config,
     domain::card::{self, models::sync_metrics::SyncType, ports::CardService},
+    domain::logo,
     outbound::sqlx::postgres::Postgres,
 };
 // external
@@ -12,6 +13,7 @@ use std::{str::FromStr, time::Duration};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    logo::print();
     let config = Config::from_env()?;
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::from_str(&config.rust_log)?)
