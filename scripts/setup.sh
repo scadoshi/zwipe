@@ -3,7 +3,7 @@
 
 set -e  # Exit on any error
 
-echo "🚀 Full deck-builder development environment setup"
+echo "🚀 Full zwipe development environment setup"
 
 # Colors for output
 RED='\033[0;31m'
@@ -111,49 +111,54 @@ fi
 CURRENT_DIR=$(basename "$(pwd)")
 PARENT_DIR=$(basename "$(dirname "$(pwd)")")
 
-if [[ "$CURRENT_DIR" == "deck-builder" || "$CURRENT_DIR" == "deck_builder" || "$PARENT_DIR" == "deck-builder" ]]; then
-    print_status "Already inside deck-builder project, no cloning needed"
+if [[ "$CURRENT_DIR" == "zwipe" || "$CURRENT_DIR" == "zerver" || "$PARENT_DIR" == "zwipe" ]]; then
+    print_status "Already inside zwipe project, no cloning needed"
     # Navigate to project root if we're in a subdirectory
-    if [[ "$CURRENT_DIR" == "deck_builder" ]]; then
+    if [[ "$CURRENT_DIR" == "zerver" ]]; then
         cd ..
-    elif [[ "$PARENT_DIR" == "deck-builder" ]]; then
+    elif [[ "$PARENT_DIR" == "zwipe" ]]; then
         cd ..
     fi
-elif [ -d "deck-builder" ]; then
+elif [ -d "zwipe" ]; then
     print_status "Repository already exists, updating..."
-    cd deck-builder
+    cd zwipe
     git pull origin main
 else
-    print_status "Cloning deck-builder repository..."
-    gh repo clone scadoshi/deck-builder
-    cd deck-builder
+    print_status "Cloning zwipe repository..."
+    gh repo clone scadoshi/zwipe
+    cd zwipe
 fi
 
 # Setup PostgreSQL user and database
 print_status "Setting up PostgreSQL user and database..."
-sudo -u postgres psql -c "CREATE USER deck_builder_user WITH PASSWORD 'deck_builder_pass';" 2>/dev/null || print_warning "User might already exist"
-sudo -u postgres psql -c "ALTER USER deck_builder_user CREATEDB;" 2>/dev/null || true
+sudo -u postgres psql -c "CREATE USER zwiper WITH PASSWORD 'pazzword';" 2>/dev/null || print_warning "User might already exist"
+sudo -u postgres psql -c "ALTER USER zwiper CREATEDB;" 2>/dev/null || true
 
 # Create the database and grant proper permissions
-sudo -u postgres psql -c "DROP DATABASE IF EXISTS deck_builder;"
-sudo -u postgres psql -c "CREATE DATABASE deck_builder OWNER deck_builder_user;"
-sudo -u postgres psql -d deck_builder -c "GRANT ALL PRIVILEGES ON SCHEMA public TO deck_builder_user;"
-sudo -u postgres psql -d deck_builder -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO deck_builder_user;"
-sudo -u postgres psql -d deck_builder -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO deck_builder_user;"
-sudo -u postgres psql -d deck_builder -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO deck_builder_user;"
-sudo -u postgres psql -d deck_builder -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO deck_builder_user;"
+sudo -u postgres psql -c "DROP DATABASE IF EXISTS zerver;"
+sudo -u postgres psql -c "CREATE DATABASE zerver OWNER zwiper;"
+sudo -u postgres psql -d zerver -c "GRANT ALL PRIVILEGES ON SCHEMA public TO zwiper;"
+sudo -u postgres psql -d zerver -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO zwiper;"
+sudo -u postgres psql -d zerver -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO zwiper;"
+sudo -u postgres psql -d zerver -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO zwiper;"
+sudo -u postgres psql -d zerver -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO zwiper;"
 
 # Create .env file
 print_status "Creating .env configuration..."
-cat > deck_builder/.env << EOF
-DATABASE_URL=postgres://deck_builder_user:deck_builder_pass@localhost/deck_builder
-ALLOWED_ORIGINS=http://localhost:3000
-BIND_ADDRESS=0.0.0.0:8080
+cat > zerver/.env << EOF
+# App State
 JWT_SECRET=$(openssl rand -base64 32)
+DATABASE_URL=postgres://zwiper:pazzword@localhost/zerver
+BIND_ADDRESS=127.0.0.1:3000
+# CORS Configuration
+ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+# Rust
+RUST_LOG=info
+RUST_BACKTRACE=0
 EOF
 
 # Setup database
-cd deck_builder
+cd zerver
 
 print_status "Running migrations..."
 sqlx migrate run
@@ -167,11 +172,11 @@ cargo build
 print_status "🎉 Setup complete!"
 echo ""
 echo "📂 Project location: $(pwd)"
-echo "🗄️  Database: deck_builder"
-echo "👤 DB User: deck_builder_user"
-echo "🔑 DB Password: deck_builder_pass"
+echo "🗄️  Database: zerver"
+echo "👤 DB User: zwiper"
+echo "🔑 DB Password: pazzword"
 echo "🔗 Linker: mold (configured)"
 echo "🐙 GitHub CLI: $(gh --version | head -1)"
 echo ""
-echo "🚀 Opening Cursor in deck-builder directory..."
+echo "🚀 Opening Cursor in zwipe directory..."
 cursor ../
