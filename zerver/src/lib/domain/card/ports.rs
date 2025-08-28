@@ -76,7 +76,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// simple card search by a given parameters
     fn search_cards(
         &self,
-        request: SearchCardRequest,
+        request: &SearchCardRequest,
     ) -> impl Future<Output = Result<Vec<ScryfallCard>, SearchCardError>> + Send;
 
     /// delete all cards

@@ -53,7 +53,7 @@ impl<R: CardRepository> CardService for Service<R> {
 
     async fn search_cards(
         &self,
-        request: SearchCardRequest,
+        request: &SearchCardRequest,
     ) -> Result<Vec<ScryfallCard>, SearchCardError> {
         self.repo.search_cards(request).await
     }

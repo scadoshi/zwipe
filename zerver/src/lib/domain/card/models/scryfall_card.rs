@@ -1,11 +1,13 @@
 // internal
 pub mod all_parts;
 pub mod card_faces;
+pub mod colors;
 pub mod image_uris;
 pub mod legalities;
 pub mod prices;
 use all_parts::AllParts;
 use card_faces::CardFaces;
+use colors::Colors;
 use image_uris::ImageUris;
 use legalities::Legalities;
 use prices::Prices;
@@ -50,9 +52,9 @@ pub struct ScryfallCard {
     pub all_parts: Option<AllParts>,
     pub card_faces: Option<CardFaces>,
     pub cmc: f64,
-    pub color_identity: Vec<String>,
-    pub color_indicator: Option<Vec<String>>,
-    pub colors: Option<Vec<String>>,
+    pub color_identity: Colors,
+    pub color_indicator: Option<Colors>,
+    pub colors: Option<Colors>,
     pub defense: Option<String>,
     pub edhrec_rank: Option<i32>,
     pub game_changer: Option<bool>,

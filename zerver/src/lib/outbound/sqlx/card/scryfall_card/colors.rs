@@ -1,5 +1,5 @@
 // internal
-use crate::domain::card::models::scryfall_card::all_parts::{AllParts, RelatedCard};
+use crate::domain::card::models::scryfall_card::colors::{Color, Colors};
 // external
 use sqlx::{encode::IsNull, types::JsonValue, Decode, Encode, Postgres, Type};
 
@@ -7,24 +7,24 @@ use sqlx::{encode::IsNull, types::JsonValue, Decode, Encode, Postgres, Type};
 //  singular
 // ==========
 
-impl TryFrom<RelatedCard> for JsonValue {
+impl TryFrom<Color> for JsonValue {
     type Error = serde_json::Error;
-    fn try_from(value: RelatedCard) -> Result<Self, Self::Error> {
+    fn try_from(value: Color) -> Result<Self, Self::Error> {
         serde_json::to_value(value)
     }
 }
 
-impl Decode<'_, Postgres> for RelatedCard {
+impl Decode<'_, Postgres> for Color {
     fn decode(
         value: <Postgres as sqlx::Database>::ValueRef<'_>,
     ) -> Result<Self, sqlx::error::BoxDynError> {
         let json_value = <JsonValue as Decode<Postgres>>::decode(value)?;
-        let related_card: RelatedCard = serde_json::from_value(json_value)?;
+        let related_card: Color = serde_json::from_value(json_value)?;
         Ok(related_card)
     }
 }
 
-impl Type<Postgres> for RelatedCard {
+impl Type<Postgres> for Color {
     fn compatible(ty: &<Postgres as sqlx::Database>::TypeInfo) -> bool {
         <JsonValue as Type<Postgres>>::compatible(ty)
     }
@@ -34,7 +34,7 @@ impl Type<Postgres> for RelatedCard {
     }
 }
 
-impl Encode<'_, Postgres> for RelatedCard {
+impl Encode<'_, Postgres> for Color {
     fn encode(
         self,
         buf: &mut <Postgres as sqlx::Database>::ArgumentBuffer<'_>,
@@ -67,24 +67,24 @@ impl Encode<'_, Postgres> for RelatedCard {
 //  plural
 // ========
 
-impl TryFrom<AllParts> for JsonValue {
+impl TryFrom<Colors> for JsonValue {
     type Error = serde_json::Error;
-    fn try_from(value: AllParts) -> Result<Self, Self::Error> {
+    fn try_from(value: Colors) -> Result<Self, Self::Error> {
         serde_json::to_value(value)
     }
 }
 
-impl Decode<'_, Postgres> for AllParts {
+impl Decode<'_, Postgres> for Colors {
     fn decode(
         value: <Postgres as sqlx::Database>::ValueRef<'_>,
     ) -> Result<Self, sqlx::error::BoxDynError> {
         let json_value = <JsonValue as Decode<Postgres>>::decode(value)?;
-        let related_card: AllParts = serde_json::from_value(json_value)?;
+        let related_card: Colors = serde_json::from_value(json_value)?;
         Ok(related_card)
     }
 }
 
-impl Type<Postgres> for AllParts {
+impl Type<Postgres> for Colors {
     fn compatible(ty: &<Postgres as sqlx::Database>::TypeInfo) -> bool {
         <JsonValue as Type<Postgres>>::compatible(ty)
     }
@@ -94,7 +94,7 @@ impl Type<Postgres> for AllParts {
     }
 }
 
-impl Encode<'_, Postgres> for AllParts {
+impl Encode<'_, Postgres> for Colors {
     fn encode(
         self,
         buf: &mut <Postgres as sqlx::Database>::ArgumentBuffer<'_>,

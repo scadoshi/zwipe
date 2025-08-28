@@ -424,7 +424,7 @@ impl CardRepository for MyPostgres {
     }
     async fn search_cards(
         &self,
-        request: SearchCardRequest,
+        request: &SearchCardRequest,
     ) -> Result<Vec<ScryfallCard>, SearchCardError> {
         let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new("SELECT * FROM scryfall_cards");
 
@@ -437,22 +437,22 @@ impl CardRepository for MyPostgres {
         // otherwise we start looking through the filters
         let mut sep: Separated<Postgres, &'static str> = qb.separated(" AND ");
 
-        if let Some(name) = request.name {
+        if let Some(name) = &request.name {
             sep.push("name ILIKE $1")
                 .push_bind_unseparated(format!("%{}%", name));
         }
 
-        if let Some(type_line) = request.type_line {
+        if let Some(type_line) = &request.type_line {
             sep.push("type_line ILIKE $1")
                 .push_bind_unseparated(format!("%{}%", type_line));
         }
 
-        if let Some(set) = request.set {
+        if let Some(set) = &request.set {
             sep.push("set ILIKE $1")
                 .push_bind_unseparated(format!("%{}%", set));
         }
 
-        if let Some(rarity) = request.rarity {
+        if let Some(rarity) = &request.rarity {
             sep.push("rarity ILIKE $1")
                 .push_bind_unseparated(format!("%{}%", rarity));
         }
@@ -461,12 +461,12 @@ impl CardRepository for MyPostgres {
             sep.push("cmc = $1").push_bind_unseparated(cmc);
         }
 
-        if let Some(color_identity) = request.color_identity {
+        if let Some(color_identity) = &request.color_identity {
             sep.push("color_identity && $1")
                 .push_bind_unseparated(color_identity);
         }
 
-        if let Some(oracle_text) = request.oracle_text {
+        if let Some(oracle_text) = &request.oracle_text {
             sep.push("oracle_text ILIKE $1")
                 .push_bind_unseparated(format!("%{}%", oracle_text));
         }
