@@ -29,13 +29,13 @@ async fn main() -> anyhow::Result<()> {
         let last_full: Option<NaiveDateTime> = service.get_last_sync_date(SyncType::Full).await?;
 
         if last_full.is_none() || last_full.unwrap().was_a_month_ago() {
-            service.scryfall_sync(SyncType::Full).await?;
+            let _sync_metrics = service.scryfall_sync(SyncType::Full).await?;
         }
 
         if (last_partial.is_none() || last_partial.unwrap().was_a_week_ago())
             && (last_full.is_none() || last_full.unwrap().was_a_week_ago())
         {
-            service.scryfall_sync(SyncType::Partial).await?;
+            let _sync_metrics = service.scryfall_sync(SyncType::Partial).await?;
         }
 
         let one_hour: Duration = Duration::from_secs(3600);

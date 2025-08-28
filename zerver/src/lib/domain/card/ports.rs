@@ -117,11 +117,13 @@ pub trait CardService: Clone + Send + Sync + 'static {
         request: &SearchCardRequest,
     ) -> impl Future<Output = Result<Vec<ScryfallCard>, SearchCardError>> + Send;
 
-    /// - syncs database with scryfall bulk data
-    fn scryfall_sync(&self, sync_type: SyncType)
-        -> impl Future<Output = anyhow::Result<()>> + Send;
+    /// syncs database with scryfall bulk data
+    fn scryfall_sync(
+        &self,
+        sync_type: SyncType,
+    ) -> impl Future<Output = anyhow::Result<SyncMetrics>> + Send;
 
-    /// - gets last sync date from database
+    /// gets last sync date from database
     fn get_last_sync_date(
         &self,
         sync_type: SyncType,

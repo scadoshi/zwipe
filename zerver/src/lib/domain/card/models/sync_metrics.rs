@@ -6,9 +6,9 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-// ===============
-//     parts
-// ===============
+// =======
+//  parts
+// =======
 
 /// represents the type of sync which occured
 /// in this entry of SyncMetrics
@@ -137,9 +137,9 @@ impl Deref for VecErrorMetrics {
     }
 }
 
-// ===============
-//     main
-// ===============
+// ======
+//  main
+// ======
 
 /// stores metrics about a scryfall database card sync
 ///

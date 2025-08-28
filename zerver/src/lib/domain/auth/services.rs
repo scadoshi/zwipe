@@ -1,5 +1,4 @@
-use anyhow::anyhow;
-
+// internal
 use crate::domain::{
     auth::{
         models::{
@@ -12,7 +11,10 @@ use crate::domain::{
     },
     user::models::User,
 };
+// external
+use anyhow::anyhow;
 
+/// structure which implements `AuthService`
 #[derive(Debug, Clone)]
 pub struct Service<R: AuthRepository> {
     repo: R,

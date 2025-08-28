@@ -15,9 +15,9 @@ use serde::Serialize;
 use thiserror::Error;
 use uuid::Uuid;
 
-// ===============
-//     errors
-// ===============
+// ========
+//  errors
+// ========
 
 /// errors encountered while registering a user
 #[derive(Debug, Error)]
@@ -202,9 +202,9 @@ impl ChangePasswordRequest {
     }
 }
 
-// ===============
-//     main
-// ===============
+// ======
+//  main
+// ======
 
 /// user entity with password hash
 /// for authentication operations

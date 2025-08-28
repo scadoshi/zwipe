@@ -1,5 +1,7 @@
+// external
 use chrono::{Duration, NaiveDateTime};
 
+/// for seeing how long ago something was
 pub trait WasAgo {
     fn was_a_week_ago(&self) -> bool;
     fn was_a_month_ago(&self) -> bool;

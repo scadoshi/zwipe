@@ -4,15 +4,15 @@ use common_passwords::IsCommonPassword;
 // std
 use std::collections::HashSet;
 // external
-use thiserror::Error;
 use argon2::{
     password_hash::{self, rand_core::OsRng, SaltString},
     Argon2, PasswordHasher, PasswordVerifier,
 };
+use thiserror::Error;
 
-// ===============
-//     errors
-// ===============
+// ========
+//  errors
+// ========
 
 /// errors encountered while constructing `Password`
 #[derive(Debug, Clone, Error)]
@@ -39,7 +39,7 @@ pub enum PasswordError {
     TooFewUniqueChars(TooFewUniqueChars),
 }
 
-/// error for when there are too many 
+/// error for when there are too many
 /// repeated letters in given password
 #[derive(Debug, Clone, Error)]
 #[error("Password must not contain more than {} repeated characters", 0)]
@@ -81,7 +81,7 @@ impl Password {
     }
 }
 
-/// enables password policy validation 
+/// enables password policy validation
 trait PasswordPolicy {
     fn min_unique_char_requirement(&self, at_least: u8) -> Result<(), TooFewUniqueChars>;
     fn max_repeat_char_requirement(&self, at_most: u8) -> Result<(), TooManyRepeats>;
@@ -152,9 +152,9 @@ impl PasswordPolicy for &str {
 }
 
 /// wraps validated password hash
-/// 
-/// called `HashedPassword` as to 
-/// not conflict with `argon2::PasswordHash` 
+///
+/// called `HashedPassword` as to
+/// not conflict with `argon2::PasswordHash`
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub struct HashedPassword(String);
 
@@ -191,9 +191,9 @@ impl HashedPassword {
 mod tests {
     use super::*;
 
-    // ================================
-    // Password Hashing Tests
-    // ================================
+    // ==================
+    //  password hashing
+    // ==================
 
     #[test]
     fn test_hash_password_success_creates_valid_hashes() {
@@ -206,12 +206,12 @@ mod tests {
 
         // Argon2 hashes should start with $argon2 and have multiple $ delimited sections
         assert!(hash.0.starts_with("$argon2"));
-        assert!(hash.0.matches('$').count() >= 4); // Format: $argon2$variant$params$salt$hash
+        assert!(hash.0.matches('$').count() >= 4); // format: $argon2$variant$params$salt$hash
     }
 
-    // ================================
-    // Password.hash() Ergonomic API Tests
-    // ================================
+    // =================================
+    //  `Password`.hash() ergonomic api
+    // =================================
 
     #[test]
     fn test_password_hash_method_creates_valid_hashes() {
@@ -360,9 +360,9 @@ mod tests {
         assert!(!hash.0.is_empty());
     }
 
-    // ================================
-    // Password Verification Tests
-    // ================================
+    // =======================
+    //  password verification
+    // =======================
 
     #[test]
     fn test_verify_password_success_with_correct_password() {
@@ -444,9 +444,9 @@ mod tests {
         assert_eq!(hash.verify("Пароль1🔒").unwrap(), false); // Missing !
     }
 
-    // ================================
-    // Security & Edge Case Tests
-    // ================================
+    // =======================
+    //  security & edge cases
+    // =======================
 
     #[test]
     fn test_hash_verification_round_trip_with_various_inputs() {
@@ -493,9 +493,9 @@ mod tests {
         }
     }
 
-    // ================================
-    // HashedPassword Constructor Tests
-    // ================================
+    // =============================
+    //  `HashedPassword` constructor
+    // =============================
 
     #[test]
     fn test_hashed_password_new_accepts_valid_argon2_hash() {
@@ -586,9 +586,9 @@ mod tests {
         }
     }
 
-    // ================================
-    // Integration Tests
-    // ================================
+    // =============
+    //  integration
+    // =============
 
     #[test]
     fn test_complete_password_authentication_flow() {

@@ -6,9 +6,9 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
 
-// ===============
-//     errors
-// ===============
+// ========
+//  errors
+// ========
 
 /// errors encountered while constructing `JwtSecret`
 #[derive(Debug, Clone, Error)]
@@ -30,9 +30,9 @@ pub enum JwtError {
     EncodingError(jsonwebtoken::errors::Error),
 }
 
-// ===============
-//     newtypes
-// ===============
+// ==========
+//  newtypes
+// ==========
 
 /// validates a jwt with length requirements
 #[derive(Debug, Clone)]
@@ -76,11 +76,11 @@ pub struct JwtCreationResponse {
     pub expires_at: usize,
 }
 
-// ===============
-//     main
-// ===============
+// ======
+//  main
+// ======
 
-/// jwt token with format validation 
+/// jwt token with format validation
 /// (header.payload.signature)
 #[derive(Debug, Clone, PartialEq)]
 pub struct Jwt(String);
@@ -158,9 +158,9 @@ mod tests {
 
     use super::*;
 
-    // ================================
-    // JwtSecret Tests
-    // ================================
+    // ==================
+    //  `JwtSecret` test
+    // ==================
 
     #[test]
     fn test_jwt_secret_new_accepts_valid_secret() {
@@ -202,9 +202,9 @@ mod tests {
         assert_eq!(bytes, b"test-secret-that-is-long-enough-for-validation");
     }
 
-    // ================================
-    // Jwt Tests
-    // ================================
+    // =============
+    //  `Jwt` tests
+    // =============
 
     #[test]
     fn test_jwt_new_accepts_valid_token() {
@@ -250,9 +250,9 @@ mod tests {
         assert_ne!(token1, token3);
     }
 
-    // ================================
-    // UserClaims Tests
-    // ================================
+    // ====================
+    //  `UserClaims` tests
+    // ====================
 
     #[test]
     fn test_user_claims_serialization_round_trip() {
@@ -298,9 +298,9 @@ mod tests {
         assert_ne!(claims1, claims3);
     }
 
-    // ================================
-    // JWT Generation Tests
-    // ================================
+    // ========================
+    //  `JWT` generation tests
+    // ========================
 
     #[test]
     fn test_generate_jwt_success_creates_valid_tokens() {
@@ -366,9 +366,9 @@ mod tests {
         assert_eq!(claims.email.to_string(), "test@email.com");
     }
 
-    // ================================
-    // JWT Validation Tests
-    // ================================
+    // ========================
+    //  `JWT` validation tests
+    // ========================
 
     #[test]
     fn test_validate_jwt_success_returns_correct_claims() {
@@ -422,9 +422,9 @@ mod tests {
         assert!(result.is_err());
     }
 
-    // ================================
-    // JWT Claims Tests
-    // ================================
+    // ====================
+    //  `JWT` claims tests
+    // ====================
 
     #[test]
     fn test_jwt_claims_have_correct_expiration_and_issued_at() {
@@ -462,9 +462,9 @@ mod tests {
         assert_eq!(claims.email, email);
     }
 
-    // ================================
-    // Integration Tests
-    // ================================
+    // ===================
+    //  integration tests
+    // ===================
 
     #[test]
     fn test_generate_and_validate_round_trip_with_multiple_user_ids() {

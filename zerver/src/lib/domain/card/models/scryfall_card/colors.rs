@@ -1,5 +1,8 @@
+// external
 use serde::{Deserialize, Serialize};
 
+/// stores color information in ScryfallCard
+/// against various color related fields
 #[derive(Debug, Clone, PartialEq)]
 pub enum Color {
     White,

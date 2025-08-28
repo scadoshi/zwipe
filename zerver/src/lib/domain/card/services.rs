@@ -58,7 +58,7 @@ impl<R: CardRepository> CardService for Service<R> {
         self.repo.search_cards(request).await
     }
 
-    async fn scryfall_sync(&self, sync_type: SyncType) -> anyhow::Result<()> {
+    async fn scryfall_sync(&self, sync_type: SyncType) -> anyhow::Result<SyncMetrics> {
         let mut sync_metrics = SyncMetrics::generate(sync_type.clone());
 
         let batch_size = batch_size();
@@ -86,9 +86,9 @@ impl<R: CardRepository> CardService for Service<R> {
 
         let sync_metrics = self.repo.record_sync_metrics(sync_metrics).await?;
 
-        tracing::info!("{:#?}", sync_metrics);
+        tracing::info!("{:?}", sync_metrics);
 
-        Ok(())
+        Ok(sync_metrics)
     }
 
     async fn get_last_sync_date(
