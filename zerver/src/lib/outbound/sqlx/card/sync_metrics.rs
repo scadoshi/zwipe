@@ -9,17 +9,13 @@ use crate::domain::card::models::sync_metrics::{
     ErrorMetrics, SyncMetrics, SyncStatus, SyncType, VecErrorMetrics,
 };
 
-// ======================================
-//  database compatibility for new types
-// ======================================
-
 // ===============
 //  error metrics
 // ===============
 
-// ======================
-//  impls for individual
-// ======================
+// ==========
+//  singular
+// ==========
 
 impl TryFrom<ErrorMetrics> for JsonValue {
     type Error = serde_json::Error;
@@ -77,9 +73,9 @@ impl Encode<'_, Postgres> for ErrorMetrics {
     }
 }
 
-// =======================
-//  impls for wrapped vec
-// =======================
+// ========
+//  plural
+// ========
 
 impl TryFrom<VecErrorMetrics> for JsonValue {
     type Error = serde_json::Error;
@@ -145,11 +141,11 @@ impl Encode<'_, Postgres> for VecErrorMetrics {
 pub struct DatabaseSyncMetrics {
     #[sqlx(rename = "id")]
     _id: Uuid,
+    status: String,
     sync_type: String,
     started_at: NaiveDateTime,
     ended_at: Option<NaiveDateTime>,
     duration_in_seconds: i32,
-    status: String,
     received: i32,
     imported: i32,
     skipped: i32,

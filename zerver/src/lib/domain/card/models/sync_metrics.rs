@@ -147,10 +147,10 @@ impl Deref for VecErrorMetrics {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SyncMetrics {
     sync_type: SyncType,
+    status: SyncStatus,
     started_at: NaiveDateTime,
     ended_at: Option<NaiveDateTime>,
     duration_in_seconds: i32,
-    status: SyncStatus,
     received: i32,
     imported: i32,
     skipped: i32,
@@ -164,10 +164,10 @@ impl SyncMetrics {
     pub fn generate(sync_type: SyncType) -> Self {
         Self {
             sync_type,
+            status: SyncStatus::InProgress,
             started_at: chrono::Utc::now().naive_utc(),
             ended_at: None,
             duration_in_seconds: 0,
-            status: SyncStatus::InProgress,
             received: 0,
             imported: 0,
             skipped: 0,
