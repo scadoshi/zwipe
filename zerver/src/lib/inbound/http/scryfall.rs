@@ -8,30 +8,26 @@ use serde_json::{from_value, Value};
 
 use crate::domain::card::models::scryfall_card::ScryfallCard;
 
-// ==================================================
-//       to use in scryfall requests
-// ==================================================
-const USER_AGENT_VALUE: &str = "DeckBuilderAPI/0.0";
+// ==============================
+//  equip onto scryfall requests
+// ==============================
+const USER_AGENT_VALUE: &str = "zwipe/0.0";
 const ACCEPT_VALUE: &str = "*/*";
 const SCRYFALL_API_BASE: &str = "https://api.scryfall.com";
 const CARDS_SEARCH_ENDPOINT: &str = "/cards/search";
 
-/// scryfall returns this when you search for a card
-/// what you want is in the data field ;)
+/// scryfall returns this
+/// when you search for a card
 #[derive(Deserialize, Debug)]
-struct CardSearchResponse {
+struct ScryfallCardSearchResponse {
     data: Vec<ScryfallCard>,
     // has_more: bool,
     // object: String,
     // total_cards: i32,
 }
 
-// ============================================
-/// when you hit Scryfall's bulk data endpoint
-/// you get this instead of the cards
-/// download the cards with the download uri
-// ============================================
-
+/// scryfall returns this
+/// when you get bulk data
 #[derive(Deserialize, Debug)]
 struct BulkDataObject {
     // content_encoding: String,
@@ -48,19 +44,20 @@ struct BulkDataObject {
     // uri: String,
 }
 
-// ================================
-//          helpers
-// ================================
+// =========
+//  helpers
+// =========
 
-/// for building scryfall based requests
-/// yes these use magic the gathering terms
+// for building scryfall based requests
+// yes these use magic the gathering terms
 
 #[derive(Debug)]
-/// ensures we have a RequestBuilder appropriate for making calls on the Scryfall API
+/// ensures we have a `RequestBuilder` appropriate
+/// for making calls on the Scryfall API
 pub struct PlanesWalker(RequestBuilder);
 
 impl PlanesWalker {
-    /// main constructor - equates to new
+    /// main constructor
     fn untap(client: &mut Client, full_url: &str) -> Self {
         Self(
             client
@@ -74,14 +71,14 @@ impl PlanesWalker {
         self.0.send().await
     }
 
-    #[allow(dead_code)]
-    // adding the "q" parameter with value input (meant for the tutor function)
+    /// adding the "q" parameter with value input
+    /// (meant for the tutor function)
     fn tutor_for(self, search_str: &str) -> Self {
         PlanesWalker(self.0.query(&[("q", search_str)]))
     }
 
     #[allow(dead_code)]
-    // for searching for a single card
+    /// for searching for a single card
     pub async fn tutor(client: &mut Client, search_str: &str) -> anyhow::Result<Vec<ScryfallCard>> {
         let url = SCRYFALL_API_BASE.to_string() + CARDS_SEARCH_ENDPOINT;
         let teferi = PlanesWalker::untap(client, &url);
@@ -96,15 +93,15 @@ impl PlanesWalker {
             .await
             .context("failed to parse json from get result")?;
         // tracing::debug!("card response was {:#?}", get_json);
-        let card_search_response: CardSearchResponse =
+        let card_search_response: ScryfallCardSearchResponse =
             serde_json::from_value(get_json).context("failed to parse CardSearchResponse")?;
         Ok(card_search_response.data)
     }
 }
 
+/// for getting a `RequestBuilder` ready with scryfall api url + endpoint
 #[allow(dead_code)]
 trait CreatePlanesWalker {
-    /// for getting a RequestBuilder ready with Scryfall API URL + endpoint
     fn into_planeswalker(&mut self, endpoint: &str) -> PlanesWalker;
 }
 
@@ -114,11 +111,11 @@ impl CreatePlanesWalker for Client {
     }
 }
 
-// ================================================
-//              bulk endpoint ergonomics
-// ================================================
-// fyi i am not sure if all of these endpoints return the same data types
-// i have only tested with OracleCards for now (*3*)
+// ==========================
+//  bulk endpoint ergonomics
+// ==========================
+// not sure if every endpoints returns consistent types
+// only tested `OracleCards` for now (*3*)
 
 pub enum BulkEndpoint {
     OracleCards,

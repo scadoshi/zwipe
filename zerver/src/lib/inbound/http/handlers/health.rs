@@ -1,16 +1,20 @@
+// internal
+use crate::{
+    domain::{
+        auth::ports::AuthService, card::ports::CardService, health::ports::HealthService,
+        user::ports::UserService,
+    },
+    inbound::http::AppState,
+};
+// external
 use axum::{extract::State, Json};
 use chrono::Utc;
 use serde::Serialize;
 use serde_json::{json, Value};
 
-use crate::{
-    domain::{auth::ports::AuthService, health::ports::HealthService, user::ports::UserService},
-    inbound::http::AppState,
-};
-
-// =======================
-//        root
-// =======================
+// ======
+//  root
+// ======
 
 #[derive(Debug, Serialize)]
 pub struct RootResponse {
@@ -37,9 +41,9 @@ pub async fn root() -> Json<Value> {
     )))
 }
 
-// =======================
-//           health
-// =======================
+// =========
+//  health
+// =========
 
 #[derive(Debug, Serialize)]
 struct HealthCheckResponse {
@@ -60,13 +64,14 @@ pub async fn is_server_running() -> Json<Value> {
     Json(json!(HealthCheckResponse::new("healthy")))
 }
 
-pub async fn are_server_and_database_running<AS, US, HS>(
-    State(state): State<AppState<AS, US, HS>>,
+pub async fn are_server_and_database_running<AS, US, HS, CS>(
+    State(state): State<AppState<AS, US, HS, CS>>,
 ) -> Json<Value>
 where
     AS: AuthService,
     US: UserService,
     HS: HealthService,
+    CS: CardService,
 {
     let result = match state.health_service.check_database().await {
         Ok(_) => "healthy",

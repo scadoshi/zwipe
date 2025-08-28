@@ -18,7 +18,7 @@ use sqlx::FromRow;
 
 /// card data from scryfall
 /// used for create and get requests
-#[derive(Debug, Clone, Deserialize, Serialize, FromRow)]
+#[derive(Debug, Clone, Deserialize, Serialize, FromRow, PartialEq)]
 // qualifying usage of FromRow (a sqlx derive macro)
 // in my domain logic (where database logic is usually banned)
 //

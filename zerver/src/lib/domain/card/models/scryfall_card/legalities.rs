@@ -1,10 +1,10 @@
 // external
 use serde::{Deserialize, Serialize};
 
-/// stores legality of ScryfallCard 
+/// stores legality of ScryfallCard
 /// across various formats
 /// against the legalities field
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub struct Legalities {
     pub standard: Option<LegalityKind>,
     pub future: Option<LegalityKind>,

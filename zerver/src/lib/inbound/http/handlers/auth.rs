@@ -1,44 +1,27 @@
-// =================================================
-//             All api error mappings
-// =================================================
-
-use anyhow::anyhow;
-use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
-use serde::{Deserialize, Serialize};
-
-use crate::{
-    domain::{
-        auth::{
-            models::{
-                jwt::Jwt, AuthenticateUserError, AuthenticateUserRequest,
-                AuthenticateUserRequestError, AuthenticateUserSuccessResponse, ChangePasswordError,
-                ChangePasswordRequest, ChangePasswordRequestError, RegisterUserError,
-                RegisterUserRequest, RegisterUserRequestError,
-            },
-            ports::AuthService,
+// internal
+use crate::domain::{
+    auth::{
+        models::{
+            AuthenticateUserError, AuthenticateUserRequest, AuthenticateUserRequestError,
+            AuthenticateUserSuccessResponse, ChangePasswordError, ChangePasswordRequest,
+            ChangePasswordRequestError, RegisterUserError, RegisterUserRequest,
+            RegisterUserRequestError,
         },
-        health::ports::HealthService,
-        user::{models::User, ports::UserService},
+        ports::AuthService,
     },
-    inbound::http::AppState,
+    card::ports::CardService,
+    health::ports::HealthService,
+    user::ports::UserService,
 };
+use crate::inbound::http::{ApiError, ApiSuccess, AppState};
+// external
+use anyhow::anyhow;
+use axum::{extract::State, http::StatusCode, Json};
+use serde::Deserialize;
 
-#[derive(Debug)]
-pub enum ApiError {
-    InternalServerError(String),
-    Unauthorized(String),
-    UnprocessableEntity(String),
-}
-
-impl From<anyhow::Error> for ApiError {
-    fn from(value: anyhow::Error) -> Self {
-        Self::InternalServerError(value.to_string())
-    }
-}
-
-// =================================================
-//                   Create / Register
-// =================================================
+// ==========
+//  register
+// ==========
 
 impl From<RegisterUserError> for ApiError {
     fn from(value: RegisterUserError) -> Self {
@@ -89,9 +72,43 @@ impl From<RegisterUserRequestError> for ApiError {
     }
 }
 
-// =================================================
-//                   Get / Authorize
-// =================================================
+#[derive(Debug, Deserialize)]
+pub struct RegisterUserRequestBody {
+    username: String,
+    email: String,
+    password: String,
+}
+
+impl TryFrom<RegisterUserRequestBody> for RegisterUserRequest {
+    type Error = RegisterUserRequestError;
+    fn try_from(value: RegisterUserRequestBody) -> Result<Self, Self::Error> {
+        RegisterUserRequest::new(&value.username, &value.email, &value.password)
+    }
+}
+
+pub async fn register_user<AS, US, HS, CS>(
+    State(state): State<AppState<AS, US, HS, CS>>,
+    Json(body): Json<RegisterUserRequestBody>,
+) -> Result<ApiSuccess<AuthenticateUserSuccessResponse>, ApiError>
+where
+    AS: AuthService,
+    US: UserService,
+    HS: HealthService,
+    CS: CardService,
+{
+    let req = RegisterUserRequest::new(&body.username, &body.email, &body.password)?;
+
+    state
+        .auth_service
+        .register_user(&req)
+        .await
+        .map_err(ApiError::from)
+        .map(|response| ApiSuccess::new(StatusCode::CREATED, response.into()))
+}
+
+// ==============
+//  authenticate
+// ==============
 
 impl From<AuthenticateUserError> for ApiError {
     fn from(value: AuthenticateUserError) -> Self {
@@ -125,9 +142,42 @@ impl From<AuthenticateUserRequestError> for ApiError {
     }
 }
 
-// =================================================
-//            Update / Change password
-// =================================================
+#[derive(Debug, Deserialize)]
+pub struct AuthenticateUserRequestBody {
+    identifier: String,
+    password: String,
+}
+
+impl TryFrom<AuthenticateUserRequestBody> for AuthenticateUserRequest {
+    type Error = AuthenticateUserRequestError;
+    fn try_from(value: AuthenticateUserRequestBody) -> Result<Self, Self::Error> {
+        AuthenticateUserRequest::new(&value.identifier, &value.password)
+    }
+}
+
+pub async fn authenticate_user<AS, US, HS, CS>(
+    State(state): State<AppState<AS, US, HS, CS>>,
+    Json(body): Json<AuthenticateUserRequestBody>,
+) -> Result<ApiSuccess<AuthenticateUserSuccessResponse>, ApiError>
+where
+    AS: AuthService,
+    US: UserService,
+    HS: HealthService,
+    CS: CardService,
+{
+    let req = AuthenticateUserRequest::new(&body.identifier, &body.password)?;
+
+    state
+        .auth_service
+        .authenticate_user(&req)
+        .await
+        .map_err(ApiError::from)
+        .map(|response| ApiSuccess::new(StatusCode::OK, response.into()))
+}
+
+// =================
+//  change password
+// =================
 
 impl From<ChangePasswordError> for ApiError {
     fn from(value: ChangePasswordError) -> Self {
@@ -160,111 +210,6 @@ impl From<ChangePasswordRequestError> for ApiError {
     }
 }
 
-// =================================================
-//     Turning api error into an actual response
-// =================================================
-
-impl IntoResponse for ApiError {
-    fn into_response(self) -> axum::response::Response {
-        match self {
-            ApiError::InternalServerError(_) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ApiResponseBody::new_error(
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Internal server error".to_string(),
-                )),
-            )
-                .into_response(),
-
-            ApiError::UnprocessableEntity(message) => (
-                StatusCode::UNPROCESSABLE_ENTITY,
-                Json(ApiResponseBody::new_error(
-                    StatusCode::UNPROCESSABLE_ENTITY,
-                    message,
-                )),
-            )
-                .into_response(),
-
-            ApiError::Unauthorized(message) => (
-                StatusCode::UNAUTHORIZED,
-                Json(ApiResponseBody::new_error(
-                    StatusCode::UNAUTHORIZED,
-                    message,
-                )),
-            )
-                .into_response(),
-        }
-    }
-}
-
-// =================================================
-//                    Parts
-// =================================================
-
-// =================================================
-//                 Http things
-// =================================================
-
-#[derive(Debug, Serialize, PartialEq)]
-pub struct ApiErrorData {
-    pub message: String,
-}
-
-#[derive(Debug, PartialEq, Serialize)]
-pub struct ApiResponseBody<T: Serialize + PartialEq> {
-    status_code: u16,
-    data: T,
-}
-
-impl<T: Serialize + PartialEq> ApiResponseBody<T> {
-    fn new(status_code: StatusCode, data: T) -> Self {
-        ApiResponseBody {
-            status_code: status_code.as_u16(),
-            data,
-        }
-    }
-}
-
-impl ApiResponseBody<ApiErrorData> {
-    pub fn new_error(status_code: StatusCode, message: String) -> Self {
-        Self {
-            status_code: status_code.as_u16(),
-            data: ApiErrorData { message },
-        }
-    }
-}
-
-// =================================================
-//                 Request bodies
-// =================================================
-
-#[derive(Debug, Deserialize)]
-pub struct RegisterUserRequestBody {
-    username: String,
-    email: String,
-    password: String,
-}
-
-impl TryFrom<RegisterUserRequestBody> for RegisterUserRequest {
-    type Error = RegisterUserRequestError;
-    fn try_from(value: RegisterUserRequestBody) -> Result<Self, Self::Error> {
-        RegisterUserRequest::new(&value.username, &value.email, &value.password)
-    }
-}
-
-#[derive(Debug, Deserialize)]
-pub struct AuthenticateUserRequestBody {
-    identifier: String,
-    password: String,
-}
-
-impl TryFrom<AuthenticateUserRequestBody> for AuthenticateUserRequest {
-    type Error = AuthenticateUserRequestError;
-    fn try_from(value: AuthenticateUserRequestBody) -> Result<Self, Self::Error> {
-        AuthenticateUserRequest::new(&value.identifier, &value.password)
-    }
-}
-
 #[derive(Debug, Deserialize)]
 pub struct ChangePasswordRequestBody {
     id: String,
@@ -278,104 +223,15 @@ impl TryFrom<ChangePasswordRequestBody> for ChangePasswordRequest {
     }
 }
 
-// =================================================
-//                   Response
-// =================================================
-
-/// For returning User data from methods
-/// Register uses this
-#[derive(Debug, Serialize, PartialEq)]
-pub struct AuthenticateUserSuccessResponseData {
-    user: User,
-    token: Jwt,
-    expires_at: usize,
-}
-
-impl From<AuthenticateUserSuccessResponse> for AuthenticateUserSuccessResponseData {
-    fn from(value: AuthenticateUserSuccessResponse) -> Self {
-        Self {
-            user: value.user,
-            token: value.token,
-            expires_at: value.expires_at,
-        }
-    }
-}
-
-// =================================================
-//                   ApiSuccess
-// =================================================
-
-#[derive(Debug)]
-pub struct ApiSuccess<T: Serialize + PartialEq>(StatusCode, Json<ApiResponseBody<T>>);
-
-impl<T: Serialize + PartialEq> PartialEq for ApiSuccess<T> {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0 && self.1 .0 == other.1 .0
-    }
-}
-
-impl<T: Serialize + PartialEq> ApiSuccess<T> {
-    fn new(status: StatusCode, data: T) -> Self {
-        ApiSuccess(status, Json(ApiResponseBody::new(status, data)))
-    }
-}
-
-impl<T: Serialize + PartialEq> IntoResponse for ApiSuccess<T> {
-    fn into_response(self) -> axum::response::Response {
-        (self.0, self.1).into_response()
-    }
-}
-
-// =================================================
-//                   Functions
-// =================================================
-
-pub async fn register_user<AS, US, HS>(
-    State(state): State<AppState<AS, US, HS>>,
-    Json(body): Json<RegisterUserRequestBody>,
-) -> Result<ApiSuccess<AuthenticateUserSuccessResponseData>, ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-{
-    let req = RegisterUserRequest::new(&body.username, &body.email, &body.password)?;
-
-    state
-        .auth_service
-        .register_user(&req)
-        .await
-        .map_err(ApiError::from)
-        .map(|response| ApiSuccess::new(StatusCode::CREATED, response.into()))
-}
-
-pub async fn authenticate_user<AS, US, HS>(
-    State(state): State<AppState<AS, US, HS>>,
-    Json(body): Json<AuthenticateUserRequestBody>,
-) -> Result<ApiSuccess<AuthenticateUserSuccessResponseData>, ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-{
-    let req = AuthenticateUserRequest::new(&body.identifier, &body.password)?;
-
-    state
-        .auth_service
-        .authenticate_user(&req)
-        .await
-        .map_err(ApiError::from)
-        .map(|response| ApiSuccess::new(StatusCode::OK, response.into()))
-}
-
-pub async fn change_password<AS, US, HS>(
-    State(state): State<AppState<AS, US, HS>>,
+pub async fn change_password<AS, US, HS, CS>(
+    State(state): State<AppState<AS, US, HS, CS>>,
     Json(body): Json<ChangePasswordRequestBody>,
 ) -> Result<ApiSuccess<()>, ApiError>
 where
     AS: AuthService,
     US: UserService,
     HS: HealthService,
+    CS: CardService,
 {
     let req = ChangePasswordRequest::new(&body.id, &body.new_password)?;
 

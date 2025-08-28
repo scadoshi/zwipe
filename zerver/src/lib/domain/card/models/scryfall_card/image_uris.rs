@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 /// stores image uri data against ScryfallCard and CardFace
 /// against image_uris field
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ImageUris {
     pub small: Option<String>,
     pub normal: Option<String>,

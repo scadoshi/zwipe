@@ -11,9 +11,9 @@ use crate::domain::user::models::{User, UserName, UserNameError};
 use std::str::FromStr;
 // external
 use email_address::EmailAddress;
+use serde::Serialize;
 use thiserror::Error;
 use uuid::Uuid;
-
 
 // ===============
 //     errors
@@ -157,9 +157,9 @@ impl AuthenticateUserRequest {
 }
 
 /// successful authentication response containing user data and JWT token
-/// 
+///
 /// authentication and register user requeast use this
-#[derive(Debug)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct AuthenticateUserSuccessResponse {
     pub user: User,
     pub token: Jwt,
@@ -182,7 +182,7 @@ impl AuthenticateUserSuccessResponse {
     }
 }
 
-/// change password request 
+/// change password request
 /// with idenifier and new password hash
 #[derive(Debug)]
 pub struct ChangePasswordRequest {
@@ -206,7 +206,7 @@ impl ChangePasswordRequest {
 //     main
 // ===============
 
-/// user entity with password hash 
+/// user entity with password hash
 /// for authentication operations
 #[derive(Debug)]
 pub struct UserWithPasswordHash {

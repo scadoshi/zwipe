@@ -96,7 +96,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
 }
 
 /// orchestrates card related operations
-pub trait CardService {
+pub trait CardService: Clone + Send + Sync + 'static {
     /// inserts card into database responding with card
     ///
     /// not exposed - more for internal unit testing
@@ -114,7 +114,7 @@ pub trait CardService {
     /// gets cards matching parameters
     fn search_cards(
         &self,
-        request: SearchCardRequest,
+        request: &SearchCardRequest,
     ) -> impl Future<Output = Result<Vec<ScryfallCard>, SearchCardError>> + Send;
 
     /// - syncs database with scryfall bulk data

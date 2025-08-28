@@ -4,10 +4,9 @@ use crate::domain::card::models::scryfall_card::image_uris::ImageUris;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-
 /// stores card face data against ScryfallCard
 /// against card_faces field
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CardFace {
     pub artist: Option<String>,
     pub artist_id: Option<Uuid>,
@@ -34,7 +33,7 @@ pub struct CardFace {
     pub watermark: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct CardFaces(Vec<CardFace>);
 
 impl Serialize for CardFaces {

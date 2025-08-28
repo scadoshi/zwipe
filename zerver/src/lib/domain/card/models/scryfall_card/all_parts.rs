@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 /// stores related card information in ScryfallCard
 /// against all_cards field
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct RelatedCard {
     pub id: Uuid,
     pub object: String,
@@ -14,7 +14,7 @@ pub struct RelatedCard {
     pub uri: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct AllParts(Vec<RelatedCard>);
 
 impl Serialize for AllParts {
