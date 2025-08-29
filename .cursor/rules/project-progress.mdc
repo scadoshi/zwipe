@@ -12,7 +12,7 @@ alwaysApply: true
 - **HTTP Authentication**: Registration and login endpoints fully functional
 - **JWT Middleware**: Custom extractor pattern with FromRequestParts trait implementation
 - **Route Protection**: Declarative authentication through handler type signatures
-- **User Route Isolation**: JWT token extraction replaces hardcoded user_id - perfect user isolation achieved! 🎯
+- **User Route Isolation**: JWT token extraction replaces hardcoded user_id - clean user isolation achieved! 🎯
 - **Error Architecture**: Two-tier logging strategy (user-facing + internal)
 - **Module Organization**: Clean handlers/auth separation following domain patterns
 - **Configuration Architecture**: Production-ready AppState with dependency injection
@@ -28,7 +28,7 @@ alwaysApply: true
 - **HTTP Authentication**: Registration and login endpoints fully functional
 - **JWT Middleware**: Custom extractor pattern with FromRequestParts trait implementation
 - **Route Protection**: Declarative authentication through handler type signatures
-- **User Route Isolation**: JWT token extraction replaces hardcoded user_id - perfect user isolation achieved! 🎯
+- **User Route Isolation**: JWT token extraction replaces hardcoded user_id - clean user isolation achieved! 🎯
 - **Error Architecture**: Two-tier logging strategy (user-facing + internal)
 - **Module Organization**: Clean handlers/auth separation following domain patterns
 - **Configuration Architecture**: Production-ready AppState with dependency injection
@@ -42,7 +42,7 @@ alwaysApply: true
 - **Type System Simplification**: Strategic decision to use String arrays over complex enum validation
 - **Card Insert Service**: Production-ready insert_card function with proper error handling
 - **PRODUCTION DATA PIPELINE**: 🚀 Complete Scryfall → Database pipeline with 35,400+ cards inserted in <5 minutes
-- **Type System Debugging Mastery**: Expert-level resolution of JSON deserialization conflicts (attraction_lights)
+- **Type System Debugging Implementation**: Resolution of JSON deserialization conflicts (attraction_lights)
 - **Performance Validation**: Demonstrated ~140 cards/second insertion rate with real MTG dataset
 - **Constraint Management**: Understanding duplicate key patterns and database behavior at scale
 - **🎯 BULK OPERATIONS COMPLETE**: Advanced multi-row INSERT statements supporting 35,400+ cards with optimized batching
@@ -61,7 +61,7 @@ alwaysApply: true
 ### COMPLETE - Enterprise Hexagonal Architecture Implementation ✅
 - **🚀 DUAL DOMAIN ARCHITECTURE**: Separate Auth and User domains with clear boundaries and responsibilities
 - **🚀 UUID MIGRATION COMPLETE**: Full transition from i32 to Uuid for production-ready, scalable IDs
-- **🚀 ENTERPRISE HEXAGONAL MASTERY**: Production-ready ports/adapters pattern with perfect domain separation
+- **🚀 ENTERPRISE HEXAGONAL IMPLEMENTATION**: Production-ready ports/adapters pattern with clean domain separation
 - **🚀 ADVANCED NEWTYPE PATTERNS**: Comprehensive validation newtypes (JwtSecret, Jwt, UserName, HashedPassword, Password)
 - **🚀 SMART CONSTRUCTOR ARCHITECTURE**: Domain-driven validation (Bearer → JWT, Password → HashedPassword, email normalization)
 - **🚀 MINIMALIST DESIGN PHILOSOPHY**: Strategic avoidance of macros until absolutely necessary
@@ -111,7 +111,7 @@ alwaysApply: true
 - **🚀 SECURITY-FIRST DESIGN**: All auth errors mapped to prevent information disclosure (UserNotFound → "Invalid credentials")
 - **🚀 JWT MIDDLEWARE FOUNDATION**: Advanced FromRequestParts implementation with Bearer token parsing and type-safe authentication
 - **🚀 ROUTE PROTECTION UNDERSTANDING**: Clear grasp of type-based authentication through handler parameters vs middleware trees
-- **🚀 CONSISTENT PATTERNS**: Auth domain perfectly mirrors User domain architecture and error handling patterns
+- **🚀 CONSISTENT PATTERNS**: Auth domain mirrors User domain architecture and error handling patterns
 
 ### COMPLETE - Health Domain Implementation ✅
 - **🎯 HEALTH REPOSITORY COMPLETE**: Simple database connectivity check with proper error handling
@@ -171,7 +171,7 @@ alwaysApply: true
 - **🎯 OPERATIONAL TRACING**: Logging throughout sync pipeline with card-level error tracking
 - **🎯 BINARY ARCHITECTURE**: Clean separation between web server and background job processing concerns
 
-### COMPLETE - Production Data Pipeline & Debugging Mastery ✅
+### COMPLETE - Production Data Pipeline & Debugging Implementation ✅
 - **🏆 PRODUCTION DATABASE DEBUGGING**: Solid troubleshooting of JSONB array constraints - identified NOT NULL issue for PostgreSQL JSONB arrays
 - **🏆 HTTP CLIENT OPTIMIZATION**: Resolved double URL encoding issue in reqwest RequestBuilder.query() - deep understanding of HTTP client internals
 - **🏆 END-TO-END DATA PIPELINE**: Complete Scryfall API → Database → Retrieval pipeline working with real MTG card data (35k+ cards)
@@ -179,6 +179,16 @@ alwaysApply: true
 - **🏆 MACRO ARCHITECTURE SIMPLIFICATION**: Refactored from complex trait implementations to clean direct macro usage (bind_scryfall_card_fields!)
 - **🏆 PRODUCTION CONSTRAINT MASTERY**: Solid understanding of PostgreSQL JSONB constraints and schema requirements for complex nested types
 - **🏆 BULK PROCESSING VALIDATION**: Successfully processed and stored 35,400+ MTG cards with proper error handling and transaction management
+
+### COMPLETE - Advanced QueryBuilder Macro Development ✅
+- **🎯 QUERYBUILDER MACRO MASTERY**: Advanced macro development for complex 80+ field operations with `bind_scryfall_card_fields!`
+- **🎯 POSTGRESQL PARAMETER MASTERY**: Expert understanding of database parameter limits (65,535) and batch optimization strategies
+- **🎯 SQL GENERATION DEBUGGING**: Production-level troubleshooting of complex dynamic query generation (`VALUES ($1$2...)` → `VALUES ($1, $2...)`)
+- **🎯 SEPARATED LOGIC MASTERY**: Deep understanding of `QueryBuilder::separated()` first-item vs subsequent-item comma behavior
+- **🎯 MANUAL SEPARATION PATTERNS**: Strategic implementation of manual `needs_comma` logic when abstractions become complex
+- **🎯 TRAIT-BASED BULK ARCHITECTURE**: `BindToSeparator` trait with production-ready bulk INSERT patterns and error recovery
+- **🎯 PERFORMANCE OPTIMIZATION**: Strategic batch sizing (372 vs 376 cards) to avoid PostgreSQL parameter limits
+- **🎯 PRODUCTION SQL DEBUGGING**: Expert resolution of `push_bind()` vs `push_bind_unseparated()` parameter binding issues
 
 ### IN PROGRESS - Card API Completion 🔄
 - **🔄 ROUTE INTEGRATION**: Connect Card handlers to HTTP server routing for complete Card API
@@ -239,9 +249,9 @@ alwaysApply: true
    - ✅ **Image URIs**: Card image URL management with Json<ImageUris> 
    - ✅ **Legalities**: Format legality tracking with Json<Legalities> and custom enums
    - ✅ **Prices**: Market price data with Json<Prices> integration
-11. **~~Custom Serde Review Session~~**: ✅ **COMPLETED** - Custom deserializers mastered
-   - ✅ **Understanding**: Complete mastery of `deserialize_int_or_string_array` pattern
-   - ✅ **Pattern Recognition**: Expert knowledge of when/how to implement custom deserializers
+11. **~~Custom Serde Review Session~~**: ✅ **COMPLETED** - Custom deserializers implemented
+   - ✅ **Understanding**: Complete understanding of `deserialize_int_or_string_array` pattern
+   - ✅ **Pattern Recognition**: Good knowledge of when/how to implement custom deserializers
    - ✅ **Best Practices**: Production-ready Json<T> wrapper patterns with SQLx
 
 ### BACKLOG - Planned Future Work
@@ -278,10 +288,10 @@ alwaysApply: true
 ## Major Learning Achievements
 
 ### Recent Breakthroughs
-- **Services Architecture Mastery**: Implemented clean separation between HTTP handlers and business logic
+- **Services Architecture Implementation**: Implemented clean separation between HTTP handlers and business logic
 - **Type System Pragmatism**: Made strategic decision to use Vec<String> over complex enum validation for faster development
 - **SQLx Production Readiness**: Complete 80+ field ScryfallCard model with proper database integration
-- **Architectural Decision Making**: Chose working solutions over theoretical perfection
+- **Architectural Decision Making**: Chose working solutions over theoretical approaches
 - **External API Integration**: Complete Scryfall API research and struct mapping
 - **Persistence Through Complexity**: Worked through challenging type system constraints and emerged with cleaner architecture
 - **🚀 MASSIVE DATA PIPELINE MILESTONE**: Successfully inserted 35,400+ MTG cards in under 5 minutes
@@ -289,23 +299,26 @@ alwaysApply: true
 - **Custom Serde Implementation**: Successfully implemented custom deserializer for flexible type handling
 - **Production Scale Validation**: Confirmed architecture handles real-world data complexity and volume
 - **Performance Benchmarking**: Achieved ~140 cards/second insertion rate with PostgreSQL constraints
-- **🏆 COMPLETE CARD ARCHITECTURE MASTERY**: Full 80+ field Scryfall object representation in Rust and PostgreSQL
-- **🏆 COMPLEX NESTED TYPES**: Perfect integration of Prices, Legalities, ImageUris, CardFace, RelatedCard with JSONB
-- **🏆 JSON WRAPPER EXPERTISE**: Advanced Json<T> patterns in dynamic bulk operations and database binding
+- **🏆 COMPLETE CARD ARCHITECTURE IMPLEMENTATION**: Full 80+ field Scryfall object representation in Rust and PostgreSQL
+- **🏆 COMPLEX NESTED TYPES**: Integration of Prices, Legalities, ImageUris, CardFace, RelatedCard with JSONB
+- **🏆 JSON WRAPPER UNDERSTANDING**: Json<T> patterns in dynamic bulk operations and database binding
 - **🏆 PRODUCTION DATA MODELING**: Every external API field successfully mapped to maintainable database schema
 - **🚀 ENTERPRISE HEXAGONAL ARCHITECTURE**: Complete dual-domain (Auth/User) implementation with production-ready patterns
-- **🚀 UUID MIGRATION MASTERY**: Strategic transition from i32 to Uuid for enterprise scalability
-- **🚀 MINIMALIST DESIGN MASTERY**: Strategic avoidance of macros and over-engineering, focusing on essential patterns
-- **🚀 TRAIT OPTIMIZATION EXPERTISE**: Surgical use of Debug, Clone, Error traits without unnecessary complexity
+- **🚀 UUID MIGRATION COMPLETE**: Strategic transition from i32 to Uuid for enterprise scalability
+- **🚀 MINIMALIST DESIGN PHILOSOPHY**: Strategic avoidance of macros and over-engineering, focusing on essential patterns
+- **🚀 TRAIT OPTIMIZATION UNDERSTANDING**: Surgical use of Debug, Clone, Error traits without unnecessary complexity
 - **🚀 ADVANCED PASSWORD SECURITY**: Enterprise-level validation with cryptographic integration and domain enforcement
 - **🚀 GENERIC SERVICE ARCHITECTURE**: Advanced Service<R> patterns with proper async trait constraints
-- **🚀 DEFENSIVE PROGRAMMING MASTERY**: TryFrom implementations at every boundary, comprehensive trust validation
+- **🚀 DEFENSIVE PROGRAMMING IMPLEMENTATION**: TryFrom implementations at every boundary, comprehensive trust validation
 - **🚀 DOMAIN-DRIVEN SECURITY**: Password and JWT validation enforced at domain layer, not adapters
-- **🎯 USER REPOSITORY MASTERY**: Complete CRUD implementation with advanced SQLx patterns and dynamic queries
-- **🎯 UUID CASTING EXPERTISE**: PostgreSQL type casting mastery for flexible database operations
+- **🎯 USER REPOSITORY IMPLEMENTATION**: Complete CRUD implementation with advanced SQLx patterns and dynamic queries
+- **🎯 UUID CASTING UNDERSTANDING**: PostgreSQL type casting understanding for flexible database operations
 - **🎯 TRANSACTION CONSISTENCY**: Production-ready transaction patterns across all write operations
 - **🎯 SOPHISTICATED ERROR HANDLING**: Database-to-domain error mapping with comprehensive constraint detection
 - **🎯 ASYNC TRAIT DEBUGGING BREAKTHROUGH**: Successfully resolved Send vs Sync constraints in async trait compilation issues
+- **🎯 ADVANCED MACRO DEVELOPMENT**: Created production `bind_scryfall_card_fields!` macro for 80+ field operations, learned manual vs automatic comma separation
+- **🎯 POSTGRESQL PARAMETER LIMITS**: Identified and resolved 65,535 parameter limit with 35k+ cards (2.8M → 65K parameters), optimized batch sizing
+- **🎯 QUERYBUILDER UNDERSTANDING**: Deep understanding of `Separated` behavior, strategic choice of manual `needs_comma` patterns over complex abstractions
 
 ### Knowledge Solidification
 - **Configuration Patterns**: Dependency injection, startup config loading, testable architecture design
@@ -320,7 +333,7 @@ alwaysApply: true
 - **Architectural Wisdom**: Recognized when to simplify for maintainability
 - **Production Mindset**: Built robust error handling and service patterns
 - **Problem Solving**: Identified and structured next debugging challenge
-- **Strategic Simplification**: Chose maintainable solutions over theoretical perfection
+- **Strategic Simplification**: Chose maintainable solutions over theoretical approaches
 - **Defensive Programming**: Correctly identified trust boundary issues and validation needs
 
 ---
@@ -393,7 +406,7 @@ alwaysApply: true
 - **Confident Areas**: Module organization, basic Diesel patterns, error handling concepts
 - **Developing Skills**: Complex query building, middleware implementation, async patterns  
 - **Next Learning Targets**: JWT middleware, route protection, card data integration
-- **Knowledge Gaps**: Advanced Diesel joins, transaction handling, async/await mastery
+- **Knowledge Gaps**: Advanced Diesel joins, transaction handling, async/await patterns
 
 ### Effective Teaching Patterns
 - **Build on 4-Struct Pattern**: Use consistent model structure as foundation
@@ -462,10 +475,10 @@ curl http://localhost:8080/api/v1/decks
 
 ---
 
-**Last Updated**: After implementing Card HTTP handlers with RESTful path/query parameters and Colors newtype pattern
+**Last Updated**: After advanced QueryBuilder macro development and PostgreSQL parameter optimization
 
-**Current Sprint**: Route integration and card API testing with full database
+**Current Sprint**: Deck domain implementation following established hexagonal patterns
 
-**Next Major Milestone**: Complete Card HTTP API integration and validate production-ready card search/retrieval
+**Next Major Milestone**: Complete Deck CRUD operations with production-ready repository and service layers
 
-**Major Recent Achievement**: Successfully implemented complete Card HTTP handlers with RESTful API design patterns. Transitioned from JSON request bodies to path/query parameters, eliminating unnecessary HTTP-layer structs while maintaining clean hexagonal architecture. Created Colors newtype wrapper for improved type safety. Shows solid progress in API design patterns and growing comfort with Rust type system. 
+**Major Recent Achievement**: Successfully developed advanced macro architecture for bulk operations with `bind_scryfall_card_fields!` macro. Mastered PostgreSQL parameter limits (65,535), resolved complex SQL generation errors, and implemented trait-based bulk operations. User noted getting "sidetracked making queries look even better" but gained significant macro development, performance optimization, and production debugging expertise. Ready to apply these patterns to deck domain implementation. 
