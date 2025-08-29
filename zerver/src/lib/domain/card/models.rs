@@ -39,7 +39,6 @@ impl From<sqlx::Error> for CreateCardError {
         if value.is_unique_constraint_violation() {
             return CreateCardError::UniqueConstraintViolation(anyhow!("{value}"));
         }
-
         CreateCardError::DatabaseIssues(anyhow!("{value}"))
     }
 }
