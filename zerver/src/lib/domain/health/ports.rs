@@ -1,6 +1,4 @@
-// internal
 use crate::domain::health::models::HealthCheckFailed;
-// std
 use std::future::Future;
 
 /// enables health check related database operations

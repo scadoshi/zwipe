@@ -1,8 +1,6 @@
-// std
-use std::fmt::Display;
-// external
 use email_address::EmailAddress;
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -13,18 +11,18 @@ use uuid::Uuid;
 /// errors encountered while constructing `JwtSecret`
 #[derive(Debug, Clone, Error)]
 pub enum JwtSecretError {
-    #[error("Secret length must be 32+")]
+    #[error("secret length must be 32+")]
     TooShort,
-    #[error("Secret must be present")]
+    #[error("secret must be present")]
     MissingSecret,
 }
 
 /// errors enountered while constructing `Jwt`
 #[derive(Debug, Clone, Error)]
 pub enum JwtError {
-    #[error("Token must be present")]
+    #[error("token must be present")]
     MissingToken,
-    #[error("Invalid token format")]
+    #[error("invalid token format")]
     InvalidFormat,
     #[error(transparent)]
     EncodingError(jsonwebtoken::errors::Error),
@@ -312,7 +310,7 @@ mod tests {
         assert!(result.is_ok());
         let token = result.unwrap().jwt;
         assert!(!token.to_string().is_empty());
-        assert_eq!(token.to_string().split('.').count(), 3); // JWT has 3 parts
+        assert_eq!(token.to_string().split('.').count(), 3); // `JWT` has 3 parts
     }
 
     #[test]

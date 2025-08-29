@@ -1,17 +1,15 @@
-// internal
+use std::str::FromStr;
 use zwipe::config::Config;
 use zwipe::domain::{auth, card, health, logo, user};
 use zwipe::inbound::http::{HttpServer, HttpServerConfig};
 use zwipe::outbound::sqlx::postgres::Postgres;
-// external
-use std::str::FromStr;
 
 #[tokio::main]
 async fn main() {
     logo::print();
     match run().await {
         Ok(_) => (),
-        Err(e) => tracing::error!("Main failed: {:?}", e),
+        Err(e) => tracing::error!("main failed: {:?}", e),
     }
 }
 

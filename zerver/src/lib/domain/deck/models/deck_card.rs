@@ -1,14 +1,9 @@
-use chrono::NaiveDateTime;
-use serde::{Deserialize, Serialize};
-use sqlx_macros::FromRow;
+use uuid::Uuid;
 
-/// Complete deck_card data as stored in the database
-#[derive(Debug, Clone, Deserialize, Serialize, FromRow)]
+#[derive(Debug)]
 pub struct DeckCard {
-    pub id: i32,
-    pub deck_id: i32,
-    pub card_id: i32,
+    pub id: Uuid,
+    pub deck_id: Uuid,
+    pub card_id: Uuid,
     pub quantity: i32,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
 }

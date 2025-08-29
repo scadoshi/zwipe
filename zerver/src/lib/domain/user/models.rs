@@ -4,17 +4,17 @@ use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
 use uuid::Uuid;
 
-// =================================
-//             errors
-// =================================
+// ========
+//  errors
+// ========
 
 #[derive(Debug, Error, Clone)]
 pub enum UserNameError {
-    #[error("Username must be present")]
+    #[error("username must be present")]
     MissingUserName,
 }
 
-/// For constructor of CreateUserRequest
+/// for constructor of `CreateUserRequest`
 #[derive(Debug, Error, Clone)]
 pub enum CreateUserRequestError {
     #[error(transparent)]
@@ -35,16 +35,16 @@ impl From<email_address::Error> for CreateUserRequestError {
     }
 }
 
-/// Actual errors encountered while creating a user
+/// actual errors encountered while creating a user
 #[derive(Debug, Error)]
 pub enum CreateUserError {
-    #[error("User with name or email already exists")]
+    #[error("user with name or email already exists")]
     Duplicate,
     #[error(transparent)]
     InvalidRequest(CreateUserRequestError),
-    #[error("User created but database returned invalid object: {0}")]
+    #[error("user created but database returned invalid object: {0}")]
     InvalidUserFromDatabase(anyhow::Error),
-    #[error("Database issues: {0}")]
+    #[error("database issues: {0}")]
     DatabaseIssues(anyhow::Error),
 }
 
@@ -54,18 +54,18 @@ impl From<CreateUserRequestError> for CreateUserError {
     }
 }
 
-/// Actual errors encountered while getting a user
+/// actual errors encountered while getting a user
 #[derive(Debug, Error)]
 pub enum GetUserError {
-    #[error("User not found")]
+    #[error("user not found")]
     NotFound,
-    #[error("Database issues: {0}")]
+    #[error("database issues: {0}")]
     DatabaseIssues(anyhow::Error),
-    #[error("User created but database returned invalid object: {0}")]
+    #[error("user created but database returned invalid object: {0}")]
     InvalidUserFromDatabase(anyhow::Error),
 }
 
-/// For constructor of UpdateUserRequest
+/// for constructor of `UpdateUserRequest`
 #[derive(Debug, Error)]
 pub enum UpdateUserRequestError {
     #[error(transparent)]
@@ -94,25 +94,25 @@ impl From<email_address::Error> for UpdateUserRequestError {
     }
 }
 
-/// Actual errors encountered while updating a user
+/// actual errors encountered while updating a user
 #[derive(Debug, Error)]
 pub enum UpdateUserError {
-    #[error("User with name or email already exists")]
+    #[error("user with name or email already exists")]
     Duplicate,
-    #[error("Database issues: {0}")]
+    #[error("database issues: {0}")]
     DatabaseIssues(anyhow::Error),
-    #[error("User updated but database returned invalid object: {0}")]
+    #[error("user updated but database returned invalid object: {0}")]
     InvalidUserFromDatabase(anyhow::Error),
-    #[error("User not found")]
+    #[error("user not found")]
     UserNotFound,
 }
 
-/// Actual errors encountered while deleting a user
+/// actual errors encountered while deleting a user
 #[derive(Debug, Error)]
 pub enum DeleteUserRequestError {
-    #[error("ID must be present")]
+    #[error("id must be present")]
     MissingId,
-    #[error("Failed to parse Uuid: {0}")]
+    #[error("failed to parse `Uuid`: {0}")]
     FailedUuid(uuid::Error),
 }
 
@@ -124,17 +124,17 @@ impl From<uuid::Error> for DeleteUserRequestError {
 
 #[derive(Debug, Error)]
 pub enum DeleteUserError {
-    #[error("User not found")]
+    #[error("user not found")]
     NotFound,
-    #[error("Database issues: {0}")]
+    #[error("database issues: {0}")]
     DatabaseIssues(anyhow::Error),
 }
 
-// ================================
-//             newtypes
-// ================================
+// ==========
+//  newtypes
+// ==========
 
-/// Validated username that cannot be empty or whitespace-only
+/// validated username that cannot be empty or whitespace-only
 #[derive(Clone, Debug, PartialEq)]
 pub struct UserName(String);
 
@@ -165,9 +165,9 @@ impl Serialize for UserName {
     }
 }
 
-// ===================================
-//                 requests
-// ===================================
+// ==========
+//  requests
+// ==========
 
 #[derive(Debug, Clone)]
 pub struct CreateUserRequest {
@@ -243,9 +243,9 @@ impl DeleteUserRequest {
     }
 }
 
-// ===================================
-//               main
-// ===================================
+// ======
+//  main
+// ======
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct User {

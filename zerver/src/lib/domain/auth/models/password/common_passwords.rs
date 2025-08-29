@@ -1,6 +1,4 @@
-// std
 use std::collections::HashSet;
-// external
 use once_cell::sync::Lazy;
 
 /// common passwords from various breach databases

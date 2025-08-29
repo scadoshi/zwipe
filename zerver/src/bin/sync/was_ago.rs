@@ -1,4 +1,3 @@
-// external
 use chrono::{Duration, NaiveDateTime};
 
 /// for seeing how long ago something was

@@ -1,4 +1,3 @@
-// external
 use serde::{Deserialize, Serialize};
 
 /// stores price data for ScryfallCard

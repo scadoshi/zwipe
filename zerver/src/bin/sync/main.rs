@@ -1,4 +1,3 @@
-// internal
 pub mod was_ago;
 use was_ago::WasAgo;
 use zwipe::{
@@ -7,7 +6,6 @@ use zwipe::{
     domain::logo,
     outbound::sqlx::postgres::Postgres,
 };
-// external
 use chrono::NaiveDateTime;
 use std::{str::FromStr, time::Duration};
 

@@ -1,4 +1,3 @@
-// internal
 use crate::domain::{
     auth::{
         models::{
@@ -14,7 +13,6 @@ use crate::domain::{
     user::ports::UserService,
 };
 use crate::inbound::http::{ApiError, ApiSuccess, AppState};
-// external
 use anyhow::anyhow;
 use axum::{extract::State, http::StatusCode, Json};
 use serde::Deserialize;
@@ -27,19 +25,19 @@ impl From<RegisterUserError> for ApiError {
     fn from(value: RegisterUserError) -> Self {
         match value {
             RegisterUserError::Duplicate => Self::UnprocessableEntity(
-                "User with that username or email already exists".to_string(),
+                "user with that username or email already exists".to_string(),
             ),
 
             RegisterUserError::InvalidRequest(RegisterUserRequestError::InvalidUsername(e)) => {
                 Self::UnprocessableEntity(format!(
-                    "Invalid request: {}",
+                    "invalid request: {}",
                     RegisterUserRequestError::InvalidUsername(e)
                 ))
             }
 
             RegisterUserError::InvalidRequest(RegisterUserRequestError::InvalidEmail(e)) => {
                 Self::UnprocessableEntity(format!(
-                    "Invalid request: {}",
+                    "invalid request: {}",
                     RegisterUserRequestError::InvalidEmail(e)
                 ))
             }
@@ -56,13 +54,13 @@ impl From<RegisterUserRequestError> for ApiError {
     fn from(value: RegisterUserRequestError) -> Self {
         match value {
             RegisterUserRequestError::InvalidUsername(e) => {
-                Self::UnprocessableEntity(format!("Invalid username: {}", e))
+                Self::UnprocessableEntity(format!("invalid username: {}", e))
             }
             RegisterUserRequestError::InvalidEmail(e) => {
-                Self::UnprocessableEntity(format!("Invalid email: {}", e))
+                Self::UnprocessableEntity(format!("invalid email: {}", e))
             }
             RegisterUserRequestError::InvalidPassword(e) => {
-                Self::UnprocessableEntity(format!("Invalid password {}", e))
+                Self::UnprocessableEntity(format!("invalid password {}", e))
             }
             e => {
                 tracing::error!("{:?}\n{}", e, anyhow!("{e}").backtrace());
@@ -114,11 +112,11 @@ impl From<AuthenticateUserError> for ApiError {
     fn from(value: AuthenticateUserError) -> Self {
         match value {
             AuthenticateUserError::UserNotFound => {
-                Self::Unauthorized("Invalid credentials".to_string())
+                Self::Unauthorized("invalid credentials".to_string())
             }
 
             AuthenticateUserError::InvalidPassword => {
-                Self::Unauthorized("Invalid credentials".to_string())
+                Self::Unauthorized("invalid credentials".to_string())
             }
 
             e => {
@@ -133,10 +131,10 @@ impl From<AuthenticateUserRequestError> for ApiError {
     fn from(value: AuthenticateUserRequestError) -> Self {
         match value {
             AuthenticateUserRequestError::MissingIdentifier => {
-                Self::UnprocessableEntity("Username or email must be present".to_string())
+                Self::UnprocessableEntity("username or email must be present".to_string())
             }
             AuthenticateUserRequestError::MissingPassword => {
-                Self::UnprocessableEntity("Password must be present".to_string())
+                Self::UnprocessableEntity("password must be present".to_string())
             }
         }
     }
@@ -183,7 +181,7 @@ impl From<ChangePasswordError> for ApiError {
     fn from(value: ChangePasswordError) -> Self {
         match value {
             ChangePasswordError::UserNotFound => {
-                Self::UnprocessableEntity("User not found".to_string())
+                Self::UnprocessableEntity("user not found".to_string())
             }
             e => {
                 tracing::error!("{:?}\n{}", e, anyhow!("{e}").backtrace());
@@ -197,10 +195,10 @@ impl From<ChangePasswordRequestError> for ApiError {
     fn from(value: ChangePasswordRequestError) -> Self {
         match value {
             ChangePasswordRequestError::InvalidId(e) => {
-                Self::UnprocessableEntity(format!("Invalid ID {}", e))
+                Self::UnprocessableEntity(format!("invalid id {}", e))
             }
             ChangePasswordRequestError::InvalidPassword(e) => {
-                Self::UnprocessableEntity(format!("Invalid password {}", e))
+                Self::UnprocessableEntity(format!("invalid password {}", e))
             }
             e => {
                 tracing::error!("{:?}\n{}", e, anyhow!("{e}").backtrace());

@@ -1,4 +1,3 @@
-// internal
 pub mod jwt;
 pub mod password;
 use crate::domain::auth::models::password::{Password, PasswordError};
@@ -7,11 +6,9 @@ use crate::domain::auth::models::{
     password::HashedPassword,
 };
 use crate::domain::user::models::{User, UserName, UserNameError};
-// std
-use std::str::FromStr;
-// external
 use email_address::EmailAddress;
 use serde::Serialize;
+use std::str::FromStr;
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -22,13 +19,13 @@ use uuid::Uuid;
 /// errors encountered while registering a user
 #[derive(Debug, Error)]
 pub enum RegisterUserError {
-    #[error("User with name or email already exists")]
+    #[error("user with name or email already exists")]
     Duplicate,
-    #[error("Database issues: {0}")]
+    #[error("database issues: {0}")]
     DatabaseIssues(anyhow::Error),
-    #[error("User created but database returned invalid object: {0}")]
+    #[error("user created but database returned invalid object: {0}")]
     InvalidUserFromDatabase(anyhow::Error),
-    #[error("Failed to generate JWT: {0}")]
+    #[error("failed to generate `JWT`: {0}")]
     FailedJwt(anyhow::Error),
     #[error(transparent)]
     InvalidRequest(RegisterUserRequestError),
@@ -50,26 +47,26 @@ pub enum RegisterUserRequestError {
 /// errors encountered while authenticating a user
 #[derive(Debug, Error)]
 pub enum AuthenticateUserError {
-    #[error("User not found")]
+    #[error("user not found")]
     UserNotFound,
-    #[error("Invalid password")]
+    #[error("invalid password")]
     InvalidPassword,
-    #[error("Database issues: {0}")]
+    #[error("database issues: {0}")]
     DatabaseIssues(anyhow::Error),
-    #[error("User found but database returned invalid object: {0}")]
+    #[error("user found but database returned invalid object: {0}")]
     InvalidUserFromDatabase(anyhow::Error),
-    #[error("Failed to verify password: {0}")]
+    #[error("failed to verify password: {0}")]
     FailedToVerify(anyhow::Error),
-    #[error("Failed to generate JWT: {0}")]
+    #[error("failed to generate `JWT`: {0}")]
     FailedJwt(anyhow::Error),
 }
 
 /// errors encountered while constructing `AuthenticateUserRequest`
 #[derive(Debug, Error)]
 pub enum AuthenticateUserRequestError {
-    #[error("Identifier must be present")]
+    #[error("identifier must be present")]
     MissingIdentifier,
-    #[error("Password must be present")]
+    #[error("password must be present")]
     MissingPassword,
 }
 
@@ -94,9 +91,9 @@ pub enum ChangePasswordRequestError {
 /// errors encountered while changing password
 #[derive(Debug, Error)]
 pub enum ChangePasswordError {
-    #[error("User not found")]
+    #[error("user not found")]
     UserNotFound,
-    #[error("Database issues: {0}")]
+    #[error("database issues: {0}")]
     DatabaseIssues(anyhow::Error),
 }
 

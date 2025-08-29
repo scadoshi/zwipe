@@ -1,8 +1,6 @@
-// helpers
 pub mod scryfall_card;
 pub mod sync_metrics;
 
-// internal
 use crate::outbound::sqlx::postgres::Postgres as MyPostgres;
 use crate::{
     domain::card::{
@@ -16,19 +14,16 @@ use crate::{
     outbound::sqlx::card::sync_metrics::DatabaseSyncMetrics,
 };
 
-// external
 use anyhow::Context;
 use chrono::NaiveDateTime;
 use itertools::Itertools;
 use sqlx::{query, query_as, query_scalar, PgTransaction, Postgres, Transaction};
 use sqlx::{query_builder::Separated, QueryBuilder};
+use std::{collections::HashSet, future::Future};
 use uuid::Uuid;
 
-// std
-use std::{collections::HashSet, future::Future};
-
 /// for binding all of the card fields
-/// onto a Query or QueryAs
+/// onto a `Query` or `QueryAs`
 macro_rules! bind_scryfall_card_fields {
     ($query:expr, $card:expr) => {
         $query
@@ -132,7 +127,7 @@ macro_rules! bind_scryfall_card_fields {
 //         helpers (*3*)
 // ===============================
 //
-// allows redundant operations within CardRepository
+// allows redundant operations within `CardRepository`
 // without having to create new transactions
 // these should **not** commit the transaction
 // that is the responsibility of higher level functions
@@ -437,38 +432,51 @@ impl CardRepository for MyPostgres {
         // otherwise we start looking through the filters
         let mut sep: Separated<Postgres, &'static str> = qb.separated(" AND ");
 
+        let mut param_index = 1;
+
         if let Some(name) = &request.name {
-            sep.push("name ILIKE $1")
-                .push_bind_unseparated(format!("%{}%", name));
+            sep.push(format!("name ILIKE ${}", param_index));
+            sep.push_bind_unseparated(format!("%{}%", name));
+            param_index += 1;
         }
-
         if let Some(type_line) = &request.type_line {
-            sep.push("type_line ILIKE $1")
-                .push_bind_unseparated(format!("%{}%", type_line));
+            sep.push(format!("type_line ILIKE ${}", param_index));
+            sep.push_bind_unseparated(format!("%{}%", type_line));
+            param_index += 1;
         }
-
         if let Some(set) = &request.set {
-            sep.push("set ILIKE $1")
-                .push_bind_unseparated(format!("%{}%", set));
+            sep.push(format!("set ILIKE ${}", param_index));
+            sep.push_bind_unseparated(format!("%{}%", set));
+            param_index += 1;
         }
-
         if let Some(rarity) = &request.rarity {
-            sep.push("rarity ILIKE $1")
-                .push_bind_unseparated(format!("%{}%", rarity));
+            sep.push(format!("rarity ILIKE ${}", param_index));
+            sep.push_bind_unseparated(format!("%{}%", rarity));
+            param_index += 1;
         }
-
         if let Some(cmc) = request.cmc {
-            sep.push("cmc = $1").push_bind_unseparated(cmc);
+            sep.push(format!("cmc = ${}", param_index));
+            sep.push_bind_unseparated(cmc);
+            param_index += 1;
         }
-
         if let Some(color_identity) = &request.color_identity {
-            sep.push("color_identity && $1")
-                .push_bind_unseparated(color_identity);
+            sep.push(format!("color_identity && ${}", param_index));
+            sep.push_bind_unseparated(color_identity);
+            param_index += 1;
         }
-
         if let Some(oracle_text) = &request.oracle_text {
-            sep.push("oracle_text ILIKE $1")
-                .push_bind_unseparated(format!("%{}%", oracle_text));
+            sep.push(format!("oracle_text ILIKE ${}", param_index));
+            sep.push_bind_unseparated(format!("%{}%", oracle_text));
+            param_index += 1;
+        }
+        if let Some(limit) = request.limit {
+            qb.push(format!(" LIMIT ${}", param_index));
+            qb.push_bind(limit as i32);
+            param_index += 1;
+        }
+        if let Some(offset) = request.offset {
+            qb.push(format!(" OFFSET ${}", param_index));
+            qb.push_bind(offset as i32);
         }
 
         let cards: Vec<ScryfallCard> = qb.build_query_as().fetch_all(&self.pool).await?;

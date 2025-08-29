@@ -15,11 +15,12 @@ use crate::domain::user::models::{User, UserName};
 use crate::outbound::sqlx::postgres::{IsUniqueConstraintViolation, Postgres};
 use crate::outbound::sqlx::user::DatabaseUser;
 
-// =============================================================================
-// DATABASE TYPES
-// =============================================================================
+// ==========
+//  db types
+// ==========
 
-/// Raw database user with password hash record - unvalidated data from PostgreSQL
+/// raw database user with password hash record 
+/// (unvalidated data from `PostgreSQL`)
 #[derive(Debug, Clone, FromRow)]
 pub struct DatabaseUserWithPasswordHash {
     pub id: String,
@@ -28,18 +29,19 @@ pub struct DatabaseUserWithPasswordHash {
     pub password_hash: Option<String>,
 }
 
-/// Converts database user with password hash to validated domain user with password hash
+/// converts database user with password hash
+/// to validated domain user with password hash
 impl TryFrom<DatabaseUserWithPasswordHash> for UserWithPasswordHash {
     type Error = anyhow::Error;
 
     fn try_from(value: DatabaseUserWithPasswordHash) -> Result<Self, Self::Error> {
-        let id = Uuid::try_parse(&value.id).context("Failed to validate user ID")?;
-        let username = UserName::new(&value.username).context("Failed to validate username")?;
-        let email = EmailAddress::from_str(&value.email).context("Failed to validate email")?;
+        let id = Uuid::try_parse(&value.id).context("failed to validate user id")?;
+        let username = UserName::new(&value.username).context("failed to validate username")?;
+        let email = EmailAddress::from_str(&value.email).context("failed to validate email")?;
 
         let password_hash: Option<HashedPassword> = value
             .password_hash
-            .map(|password_hash| HashedPassword::new(&password_hash).context("Failed to create validate password hash"))
+            .map(|password_hash| HashedPassword::new(&password_hash).context("failed to create validate password hash"))
             .transpose()?;
 
         Ok(Self {
@@ -51,16 +53,10 @@ impl TryFrom<DatabaseUserWithPasswordHash> for UserWithPasswordHash {
     }
 }
 
-// =============================================================================
-// REPOSITORY IMPLEMENTATION
-// =============================================================================
-
 impl AuthRepository for Postgres {
-    //
-    // ============================================
-    //          Create
-    // ============================================
-    //
+    // ========
+    //  create
+    // ========
     async fn create_user_with_password_hash(
         &self,
         request: &RegisterUserRequest,
@@ -94,11 +90,9 @@ impl AuthRepository for Postgres {
 
         Ok(user)
     }
-    //
-    // ============================================
-    //                   Get
-    // ============================================
-    //
+    // =====
+    //  get
+    // =====
     async fn get_user_with_password_hash(
         &self,
         request: &AuthenticateUserRequest,
@@ -112,7 +106,7 @@ impl AuthRepository for Postgres {
         .fetch_one(&self.pool)
         .await
         .map_err(|e| match e {
-            sqlx::Error::RowNotFound => AuthenticateUserError::UserNotFound,
+            sqlx::Error::RowNotFound => AuthenticateUserError::UserNotFound, 
             e => AuthenticateUserError::DatabaseIssues(anyhow!("{e}")),
         })?;
 
@@ -122,11 +116,9 @@ impl AuthRepository for Postgres {
 
         Ok(user)
     }
-    //
-    // ============================================
-    //                           Update
-    // ============================================
-    //
+    // ========
+    //  update                           
+    // ========
     async fn change_password(
         &self,
         request: &ChangePasswordRequest,

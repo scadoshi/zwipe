@@ -1,4 +1,3 @@
-// internal
 pub mod all_parts;
 pub mod card_faces;
 pub mod colors;
@@ -11,7 +10,6 @@ use colors::Colors;
 use image_uris::ImageUris;
 use legalities::Legalities;
 use prices::Prices;
-// external
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;

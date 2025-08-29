@@ -1,4 +1,3 @@
-// external
 use serde::{Deserialize, Serialize};
 
 /// stores image uri data against ScryfallCard and CardFace

@@ -1,22 +1,20 @@
 pub mod scryfall_card;
 pub mod sync_metrics;
-
+use crate::outbound::sqlx::postgres::IsUniqueConstraintViolation;
 use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::outbound::sqlx::postgres::IsUniqueConstraintViolation;
-
-// ===============
-//     errors
-// ===============
+// ========
+//  errors
+// ========
 
 /// represents when an error is encountered
-/// while creating a Uuid from string
+/// while creating a `Uuid` from string
 /// usually with the try_parse function
 #[derive(Debug, Error)]
-#[error("Failed to parse Uuid")]
+#[error("failed to parse `Uuid`")]
 pub struct InvalidUuid(uuid::Error);
 
 impl From<uuid::Error> for InvalidUuid {
@@ -28,11 +26,11 @@ impl From<uuid::Error> for InvalidUuid {
 /// for errors encountered while creating cards
 #[derive(Debug, Error)]
 pub enum CreateCardError {
-    #[error("ID already exists")]
+    #[error("id already exists")]
     UniqueConstraintViolation(anyhow::Error),
-    #[error("Database issues: {0}")]
+    #[error("database issues: {0}")]
     DatabaseIssues(anyhow::Error),
-    #[error("Card created but database returned invalid object: {0}")]
+    #[error("card created but database returned invalid object: {0}")]
     InvalidCardFromDatabase(anyhow::Error),
 }
 
@@ -49,11 +47,11 @@ impl From<sqlx::Error> for CreateCardError {
 /// for errors encountered while getting cards
 #[derive(Debug, Error)]
 pub enum GetCardError {
-    #[error("Card not found")]
+    #[error("card not found")]
     NotFound,
-    #[error("Database issues: {0}")]
+    #[error("database issues: {0}")]
     DatabaseIssues(anyhow::Error),
-    #[error("Card found but database returned invalid object: {0}")]
+    #[error("card found but database returned invalid object: {0}")]
     InvalidCardFromDatabase(anyhow::Error),
 }
 
@@ -71,9 +69,9 @@ impl From<sqlx::Error> for GetCardError {
 /// because a search request should just return an empty vec
 #[derive(Debug, Error)]
 pub enum SearchCardError {
-    #[error("Database issues: {0}")]
+    #[error("database issues: {0}")]
     DatabaseIssues(anyhow::Error),
-    #[error("Card found but database returned invalid object: {0}")]
+    #[error("card found but database returned invalid object: {0}")]
     InvalidCardFromDatabase(anyhow::Error),
 }
 
@@ -83,9 +81,9 @@ impl From<sqlx::Error> for SearchCardError {
     }
 }
 
-// ===============
-//     parts
-// ===============
+// =======
+//  parts
+// =======
 
 /// for collecting search parameters
 /// while searching for a card
@@ -112,8 +110,8 @@ impl Default for SearchCardRequest {
             cmc: None,
             color_identity: None,
             oracle_text: None,
-            limit: Some(20), // Default page size
-            offset: Some(0), // Start at beginning
+            limit: Some(20), // default page size
+            offset: Some(0), // start at beginning
         }
     }
 }
@@ -155,16 +153,9 @@ impl SearchCardRequest {
             || self.offset.is_some()
     }
 }
-
-// pub struct SearchCardResult {
-//     results: Vec<ScryfallCard>,
-//     limit: u32,
-//     offset: u32,
-// }
-
-// ===============
-//     main
-// ===============
+// ======
+//  main
+// ======
 
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct CardProfile {

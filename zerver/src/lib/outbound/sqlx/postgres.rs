@@ -1,10 +1,6 @@
-// =============================================================================
-// CONSTANTS & HELPERS
-// =============================================================================
-
 use anyhow::Context;
 
-/// PostgreSQL error code for unique constraint violations
+/// postgresql error code for unique constraint violations
 const UNIQUE_CONSTRAINT_VIOLATION_CODE: &str = "23505";
 
 pub trait IsUniqueConstraintViolation {
@@ -24,15 +20,15 @@ impl IsUniqueConstraintViolation for sqlx::Error {
     }
 }
 
-// =============================================================================
-// CONFIGURATION TYPES
-// =============================================================================
+// =========
+//   config
+// =========
 
-/// PostgreSQL connection pool with production-ready defaults
+/// postgresql connection pool with production-ready defaults
 pub struct PostgresPoolOptions(sqlx::postgres::PgPoolOptions);
 
 impl PostgresPoolOptions {
-    /// Creates pool options with optimized settings for production workloads
+    /// creates pool options with optimized settings for production workloads
     pub fn new() -> Self {
         Self(
             sqlx::postgres::PgPoolOptions::new()
@@ -48,23 +44,23 @@ impl PostgresPoolOptions {
     }
 }
 
-// =============================================================================
-// DATABASE CONNECTION
-// =============================================================================
+// =====================
+//  database connection
+// =====================
 
-/// PostgreSQL database adapter with connection pooling
+/// postgresql database adapter with connection pooling
 #[derive(Debug, Clone)]
 pub struct Postgres {
     pub pool: sqlx::PgPool,
 }
 
 impl Postgres {
-    /// Creates new PostgreSQL connection with optimized pool settings
+    /// creates new postgresql connection with optimized pool settings
     pub async fn new(path: &str) -> anyhow::Result<Self> {
         let pool = PostgresPoolOptions::new()
             .connect(path)
             .await
-            .context(format!("Failed to open database at {}", path))?;
+            .context(format!("failed to open database at {}", path))?;
 
         Ok(Self { pool })
     }

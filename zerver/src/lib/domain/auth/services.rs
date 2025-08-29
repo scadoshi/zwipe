@@ -1,4 +1,3 @@
-// internal
 use crate::domain::{
     auth::{
         models::{
@@ -11,7 +10,6 @@ use crate::domain::{
     },
     user::models::User,
 };
-// external
 use anyhow::anyhow;
 
 /// structure which implements `AuthService`

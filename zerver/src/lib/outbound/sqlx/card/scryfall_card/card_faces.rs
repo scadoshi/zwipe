@@ -1,9 +1,9 @@
 use crate::domain::card::models::scryfall_card::card_faces::{CardFace, CardFaces};
 use sqlx::{encode::IsNull, types::JsonValue, Decode, Encode, Postgres, Type};
 
-// ===================================
-//       impls for individual
-// ===================================
+// ==========
+//  singular
+// ==========
 
 impl TryFrom<CardFace> for JsonValue {
     type Error = serde_json::Error;
@@ -61,9 +61,9 @@ impl Encode<'_, Postgres> for CardFace {
     }
 }
 
-// ===================================
-//     impls for wrapped vec
-// ===================================
+// ========
+//  plural
+// ========
 
 impl TryFrom<CardFaces> for JsonValue {
     type Error = serde_json::Error;

@@ -1,4 +1,3 @@
-// internal
 use crate::{
     domain::{
         auth::ports::AuthService,
@@ -14,7 +13,6 @@ use crate::{
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, ApiSuccess, AppState},
 };
-// external
 use anyhow::anyhow;
 use axum::{
     extract::{Path, Query, State},

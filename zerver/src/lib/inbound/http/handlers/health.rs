@@ -1,4 +1,3 @@
-// internal
 use crate::{
     domain::{
         auth::ports::AuthService, card::ports::CardService, health::ports::HealthService,
@@ -6,7 +5,6 @@ use crate::{
     },
     inbound::http::AppState,
 };
-// external
 use axum::{extract::State, Json};
 use chrono::Utc;
 use serde::Serialize;

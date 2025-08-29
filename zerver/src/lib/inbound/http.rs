@@ -1,4 +1,3 @@
-// internal
 pub mod handlers;
 pub mod middleware;
 pub mod responses;
@@ -12,9 +11,7 @@ use crate::inbound::http::handlers::cards::{get_card, search_cards};
 use crate::inbound::http::handlers::health::{
     are_server_and_database_running, is_server_running, root,
 };
-// std
 use std::sync::Arc;
-// external
 use anyhow::Context;
 use axum::http::{header, HeaderValue, Method, StatusCode};
 use axum::response::IntoResponse;

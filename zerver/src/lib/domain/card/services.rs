@@ -1,4 +1,3 @@
-// internal
 use crate::domain::card::{
     models::{
         scryfall_card::ScryfallCard,
@@ -9,7 +8,6 @@ use crate::domain::card::{
 };
 use crate::inbound::http::scryfall::BulkEndpoint;
 use crate::outbound::sqlx::card::scryfall_card_field_count;
-// external
 use chrono::NaiveDateTime;
 
 /// postgresql will have issues if there are more

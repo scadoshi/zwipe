@@ -1,4 +1,3 @@
-// internal
 use zwipe::{
     config::Config,
     domain::card::{self, models::scryfall_card::ScryfallCard, ports::CardService},
@@ -6,7 +5,6 @@ use zwipe::{
     inbound::http::scryfall::PlanesWalker,
     outbound::sqlx::postgres::Postgres,
 };
-// external
 use anyhow::Context;
 use reqwest::Client;
 use std::str::FromStr;

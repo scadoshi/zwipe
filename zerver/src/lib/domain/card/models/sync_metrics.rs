@@ -1,6 +1,4 @@
-// std
 use std::{fmt::Display, ops::Deref};
-// external
 use anyhow::anyhow;
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};

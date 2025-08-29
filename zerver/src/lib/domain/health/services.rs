@@ -1,4 +1,3 @@
-// internal
 use crate::domain::health::ports::{HealthRepository, HealthService};
 
 /// structure which implements `HealthService`

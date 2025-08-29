@@ -1,6 +1,4 @@
-// internal
 use crate::domain::card::models::scryfall_card::all_parts::{AllParts, RelatedCard};
-// external
 use sqlx::{encode::IsNull, types::JsonValue, Decode, Encode, Postgres, Type};
 
 // ==========

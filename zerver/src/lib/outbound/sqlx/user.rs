@@ -11,11 +11,12 @@ use crate::domain::user::models::{
 use crate::domain::user::ports::UserRepository;
 use crate::outbound::sqlx::postgres::{IsUniqueConstraintViolation, Postgres};
 
-// =============================================================================
-// DATABASE TYPES
-// =============================================================================
+// ===========
+//   db types
+// ===========
 
-/// Raw database user record - unvalidated data from PostgreSQL
+/// raw database user record
+/// (unvalidated data from `PostgreSQL`)
 #[derive(Debug, Clone, FromRow)]
 pub struct DatabaseUser {
     pub id: String,
@@ -23,16 +24,16 @@ pub struct DatabaseUser {
     pub email: String,
 }
 
-/// Converts database user to validated domain user
+/// converts database user to validated domain user
 impl TryFrom<DatabaseUser> for User {
     type Error = anyhow::Error;
 
     fn try_from(value: DatabaseUser) -> Result<Self, Self::Error> {
-        let id = Uuid::try_parse(&value.id).context("Failed to validate user ID")?;
-        let username = UserName::new(&value.username).context("Failed to validate username")?;
+        let id = Uuid::try_parse(&value.id).context("failed to validate user id")?;
+        let username = UserName::new(&value.username).context("failed to validate username")?;
         let email =
             EmailAddress::parse_with_options(&value.email, email_address::Options::default())
-                .context("Failed to validate email")?;
+                .context("failed to validate email")?;
         Ok(Self {
             id,
             username,
@@ -41,16 +42,10 @@ impl TryFrom<DatabaseUser> for User {
     }
 }
 
-// =============================================================================
-//                          REPOSITORY IMPLEMENTATION
-// =============================================================================
-
 impl UserRepository for Postgres {
-    //
-    // =============================================================================
-    //                                   CREATE
-    // =============================================================================
-    //
+    // ========
+    //  create
+    // ========
     async fn create_user(&self, request: &CreateUserRequest) -> Result<User, CreateUserError> {
         let mut tx = self
             .pool
@@ -83,11 +78,9 @@ impl UserRepository for Postgres {
 
         Ok(user)
     }
-    //
-    // =============================================================================
-    //                                     GET
-    // =============================================================================
-    //
+    // =====
+    //  get
+    // =====
     async fn get_user(&self, request: &GetUserRequest) -> Result<User, GetUserError> {
         let database_user = query_as!(
             DatabaseUser,
@@ -107,11 +100,9 @@ impl UserRepository for Postgres {
 
         Ok(user)
     }
-    //
-    // =============================================================================
-    //                                     UPDATE
-    // =============================================================================
-    //
+    // ========
+    //  update
+    // ========
     async fn update_user(&self, request: &UpdateUserRequest) -> Result<User, UpdateUserError> {
         let mut tx = self
             .pool
@@ -119,28 +110,37 @@ impl UserRepository for Postgres {
             .await
             .map_err(|e| UpdateUserError::DatabaseIssues(anyhow!("{e}")))?;
 
-        let mut query_builder = QueryBuilder::new("UPDATE users SET ");
-
+        let mut qb = QueryBuilder::new("UPDATE users SET ");
+        let mut sep = qb.separated(", ");
+        let mut updates = 0;
         if let Some(username) = &request.username {
-            query_builder.push(format!("username = {}", username));
+            sep.push("username = ")
+                .push_bind_unseparated(username.to_string());
+            updates += 1;
         }
         if let Some(email) = &request.email {
-            query_builder.push(format!("email = {}", email));
+            sep.push("email = ")
+                .push_bind_unseparated(email.to_string());
+            updates += 1;
+        }
+        if updates > 0 {
+            let now = chrono::Utc::now().naive_utc();
+            sep.push("updated_at =").push_bind_unseparated(now);
         }
 
-        query_builder
-            .push("WHERE id = $1 RETURNING id, username, email")
-            .push_bind(request.id);
+        qb.push(" WHERE id = ")
+            .push_bind(request.id)
+            .push(" RETURNING id, username, email");
 
-        let database_user: DatabaseUser = query_builder
-            .build_query_as()
-            .fetch_one(&mut *tx)
-            .await
-            .map_err(|e| match e {
-                e if e.is_unique_constraint_violation() => UpdateUserError::Duplicate,
-                sqlx::Error::RowNotFound => UpdateUserError::UserNotFound,
-                e => UpdateUserError::DatabaseIssues(anyhow!("{e}")),
-            })?;
+        let database_user: DatabaseUser =
+            qb.build_query_as()
+                .fetch_one(&mut *tx)
+                .await
+                .map_err(|e| match e {
+                    e if e.is_unique_constraint_violation() => UpdateUserError::Duplicate,
+                    sqlx::Error::RowNotFound => UpdateUserError::UserNotFound,
+                    e => UpdateUserError::DatabaseIssues(anyhow!("{e}")),
+                })?;
 
         let user: User = database_user
             .try_into()
@@ -152,11 +152,9 @@ impl UserRepository for Postgres {
 
         Ok(user)
     }
-    //
-    // =============================================================================
-    //                                  DELETE
-    // =============================================================================
-    //
+    // ========
+    //  delete
+    // ========
     async fn delete_user(&self, request: &DeleteUserRequest) -> Result<(), DeleteUserError> {
         let mut tx = self
             .pool

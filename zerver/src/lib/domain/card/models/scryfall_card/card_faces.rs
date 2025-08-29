@@ -1,6 +1,4 @@
-// internal
 use crate::domain::card::models::scryfall_card::image_uris::ImageUris;
-// external
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

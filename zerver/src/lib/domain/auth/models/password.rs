@@ -1,13 +1,10 @@
-// internal
 mod common_passwords;
-use common_passwords::IsCommonPassword;
-// std
-use std::collections::HashSet;
-// external
 use argon2::{
     password_hash::{self, rand_core::OsRng, SaltString},
     Argon2, PasswordHasher, PasswordVerifier,
 };
+use common_passwords::IsCommonPassword;
+use std::collections::HashSet;
 use thiserror::Error;
 
 // ========
@@ -17,21 +14,21 @@ use thiserror::Error;
 /// errors encountered while constructing `Password`
 #[derive(Debug, Clone, Error)]
 pub enum PasswordError {
-    #[error("Password must be at least 8 characters long")]
+    #[error("password must be at least 8 characters long")]
     TooShort,
-    #[error("Password must not exceed 128 characters")]
+    #[error("password must not exceed 128 characters")]
     TooLong,
-    #[error("Password must have at least one uppercase character")]
+    #[error("password must have at least one uppercase character")]
     MissingUpperCase,
-    #[error("Password must have at least one lowercase character")]
+    #[error("password must have at least one lowercase character")]
     MissingLowerCase,
-    #[error("Password must have at least one number")]
+    #[error("password must have at least one number")]
     MissingNumber,
-    #[error("Password must have at least one symbol from {}", 0)]
+    #[error("password must have at least one symbol from {}", 0)]
     MissingSymbol(String),
-    #[error("Password must not contain whitespace characters")]
+    #[error("password must not contain whitespace characters")]
     ContainsWhitespace,
-    #[error("Password is too common and not secure")]
+    #[error("password is too common and not secure")]
     CommonPassword,
     #[error(transparent)]
     TooManyRepeats(TooManyRepeats),
@@ -42,7 +39,7 @@ pub enum PasswordError {
 /// error for when there are too many
 /// repeated letters in given password
 #[derive(Debug, Clone, Error)]
-#[error("Password must not contain more than {} repeated characters", 0)]
+#[error("password must not contain more than {} repeated characters", 0)]
 pub struct TooManyRepeats(u8);
 
 impl From<TooManyRepeats> for PasswordError {
@@ -54,7 +51,7 @@ impl From<TooManyRepeats> for PasswordError {
 /// error for when there are too few
 /// characters in given password
 #[derive(Debug, Clone, Error)]
-#[error("Password must contain at least {} unique characters", 0)]
+#[error("password must contain at least {} unique characters", 0)]
 pub struct TooFewUniqueChars(u8);
 
 impl From<TooFewUniqueChars> for PasswordError {
@@ -493,9 +490,9 @@ mod tests {
         }
     }
 
-    // =============================
+    // ==============================
     //  `HashedPassword` constructor
-    // =============================
+    // ==============================
 
     #[test]
     fn test_hashed_password_new_accepts_valid_argon2_hash() {
