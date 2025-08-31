@@ -1,4 +1,7 @@
-use crate::domain::{card::models::scryfall_card::ScryfallCard, deck::models::deck::Deck};
+use crate::domain::{
+    card::models::{scryfall_card::ScryfallCard, CardProfile},
+    deck::models::deck::Deck,
+};
 
 pub mod deck;
 pub mod deck_card;
@@ -8,13 +11,19 @@ pub mod deck_card;
 // ======
 
 #[derive(Debug, Clone)]
+pub struct Card {
+    card_profile: CardProfile,
+    scryfall_card: ScryfallCard,
+}
+
+#[derive(Debug, Clone)]
 pub struct DeckWithCards {
     deck: Deck,
-    cards: Vec<ScryfallCard>,
+    cards: Vec<Card>,
 }
 
 impl DeckWithCards {
-    pub fn new(deck: Deck, cards: Vec<ScryfallCard>) -> Self {
+    pub fn new(deck: Deck, cards: Vec<Card>) -> Self {
         Self { deck, cards }
     }
 }

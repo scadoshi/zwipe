@@ -34,7 +34,7 @@ where
 
 impl<R: DeckRepository> DeckService for Service<R> {
     async fn create_deck(&self, request: &CreateDeckRequest) -> Result<Deck, CreateDeckError> {
-        todo!()
+        self.repo.create_deck(request).await
     }
 
     async fn get_deck(&self, request: &GetDeckRequest) -> Result<DeckWithCards, GetDeckError> {
