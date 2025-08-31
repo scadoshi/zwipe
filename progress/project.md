@@ -217,6 +217,7 @@ alwaysApply: true
    - **DeckWithCards Operations**: Implement get_deck_with_cards() combining deck + scryfall cards
    - **Business Logic Integration**: Add deck validation rules and card composition logic
    - **Service Testing**: Validate service layer orchestration and error handling
+   - **⚠️ CRITICAL ARCHITECTURE NOTE**: Use Service<DR, CS> pattern with dual generics (DeckRepository + CardService), NOT combined DeckCardService or repository-to-repository calls. This maintains domain separation while enabling service orchestration.
 2. **🔧 Deck HTTP Handler Implementation**: Build REST API for deck management
    - **Complete CRUD Handlers**: GET, POST, PUT, DELETE endpoints for deck operations
    - **DeckCard Management**: Add/remove/update card quantity endpoints
@@ -294,6 +295,16 @@ alwaysApply: true
 - **Import/Export**: Support for various deck formats (MTGA, MTGO, etc.)
 - **Deck Analytics**: Mana curve analysis, card type distribution
 - **Advanced Filtering**: Complex search queries, saved filters
+
+---
+
+## Architectural Decision Guidelines
+
+### Service Layer Patterns ⚠️
+- **✅ CORRECT**: Service<DeckRepository, CardService> - Dual generics enabling cross-domain orchestration
+- **❌ AVOID**: DeckCardService - Violates single responsibility and domain boundaries
+- **❌ AVOID**: Repository-to-repository calls - Breaks hexagonal architecture principles
+- **PRINCIPLE**: Services orchestrate, repositories persist. Keep domain boundaries clean through composition, not combination.
 
 ---
 
