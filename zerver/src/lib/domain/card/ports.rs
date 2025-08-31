@@ -73,6 +73,12 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         id: &Uuid,
     ) -> impl Future<Output = Result<ScryfallCard, GetCardError>> + Send;
 
+    /// simple cards get by ids
+    fn get_cards(
+        &self,
+        ids: &Vec<Uuid>,
+    ) -> impl Future<Output = Result<Vec<ScryfallCard>, GetCardError>> + Send;
+
     /// simple card search by a given parameters
     fn search_cards(
         &self,

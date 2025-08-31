@@ -1,7 +1,7 @@
 pub mod scryfall_card;
 pub mod sync_metrics;
 
-use crate::outbound::sqlx::postgres::{IsUniqueConstraintViolation, Postgres as MyPostgres};
+use crate::outbound::sqlx::postgres::{IsConstraintViolation, Postgres as MyPostgres};
 use crate::{
     domain::card::{
         models::{
@@ -408,6 +408,13 @@ impl CardRepository for MyPostgres {
             .await?;
 
         Ok(card)
+    }
+    async fn get_cards(&self, ids: &Vec<Uuid>) -> Result<Vec<ScryfallCard>, GetCardError> {
+        let cards: Vec<ScryfallCard> = query_as("SELECT * FROM scryfall_cards WHERE id = ANY($1)")
+            .bind(ids)
+            .fetch_all(&self.pool)
+            .await?;
+        Ok(cards)
     }
     async fn search_cards(
         &self,

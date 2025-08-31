@@ -12,7 +12,7 @@ use crate::domain::auth::models::{
 };
 use crate::domain::auth::ports::AuthRepository;
 use crate::domain::user::models::{User, UserName};
-use crate::outbound::sqlx::postgres::{IsUniqueConstraintViolation, Postgres};
+use crate::outbound::sqlx::postgres::{IsConstraintViolation, Postgres};
 use crate::outbound::sqlx::user::DatabaseUser;
 
 // ==========
