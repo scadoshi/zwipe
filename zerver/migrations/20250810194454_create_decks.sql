@@ -7,7 +7,9 @@ CREATE TABLE decks (
     CONSTRAINT fk_user
         FOREIGN KEY (user_id)
         REFERENCES users (id)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+    CONSTRAINT unique_deck_name_per_user
+        UNIQUE(user_id, name)
 );
 
 CREATE INDEX idx_decks_user_id ON decks(user_id);

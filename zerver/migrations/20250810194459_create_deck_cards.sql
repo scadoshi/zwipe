@@ -12,7 +12,8 @@ CREATE TABLE deck_cards (
     CONSTRAINT fk_card_profile
         FOREIGN KEY (card_profile_id)
         REFERENCES card_profiles (id)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+    CONSTRAINT positive_quantity CHECK (quantity > 0)
 );
 
 CREATE INDEX idx_deck_cards_card_id ON deck_cards(card_profile_id);
