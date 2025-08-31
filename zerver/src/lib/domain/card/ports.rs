@@ -6,7 +6,8 @@ use uuid::Uuid;
 use crate::domain::card::models::{
     scryfall_card::ScryfallCard,
     sync_metrics::{SyncMetrics, SyncType},
-    CreateCardError, GetCardError, SearchCardError, SearchCardRequest,
+    CardProfile, CreateScryfallCardError, GetScryfallCardError, SearchScryfallCardError,
+    SearchScryfallCardRequest,
 };
 
 /// enables card related database operations
@@ -15,7 +16,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     fn insert(
         &self,
         card: ScryfallCard,
-    ) -> impl Future<Output = Result<ScryfallCard, CreateCardError>> + Send;
+    ) -> impl Future<Output = Result<ScryfallCard, CreateScryfallCardError>> + Send;
 
     /// for inserting as many cards as you want (*3*)
     /// - postgres limits parameter counts but that is handled else where
@@ -23,7 +24,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     fn bulk_insert(
         &self,
         cards: Vec<ScryfallCard>,
-    ) -> impl Future<Output = Result<Vec<ScryfallCard>, CreateCardError>> + Send;
+    ) -> impl Future<Output = Result<Vec<ScryfallCard>, CreateScryfallCardError>> + Send;
 
     /// for inserting as many cards as you want in batches (*3*)
     /// - chunks into given batch size
@@ -33,7 +34,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         cards: Vec<ScryfallCard>,
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
-    ) -> impl Future<Output = Result<Vec<ScryfallCard>, CreateCardError>> + Send;
+    ) -> impl Future<Output = Result<Vec<ScryfallCard>, CreateScryfallCardError>> + Send;
 
     /// intends to incrementally update database with only new cards
     ///
@@ -49,7 +50,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         cards: Vec<ScryfallCard>,
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
-    ) -> impl Future<Output = Result<Vec<ScryfallCard>, CreateCardError>> + Send;
+    ) -> impl Future<Output = Result<Vec<ScryfallCard>, CreateScryfallCardError>> + Send;
 
     /// intends to refresh cards in database with the given list of cards
     ///
@@ -65,25 +66,37 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         cards: Vec<ScryfallCard>,
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
-    ) -> impl Future<Output = Result<Vec<ScryfallCard>, CreateCardError>> + Send;
+    ) -> impl Future<Output = Result<Vec<ScryfallCard>, CreateScryfallCardError>> + Send;
 
-    /// simple card get by id
-    fn get_card(
+    /// gets scryfall card with a uuid
+    fn get_scryfall_card(
         &self,
-        id: &Uuid,
-    ) -> impl Future<Output = Result<ScryfallCard, GetCardError>> + Send;
+        scryfall_card_id: &Uuid,
+    ) -> impl Future<Output = Result<ScryfallCard, GetScryfallCardError>> + Send;
 
-    /// simple cards get by ids
-    fn get_cards(
+    /// gets scryfall cards with a list of uuids
+    fn get_scryfall_cards(
         &self,
-        ids: &Vec<Uuid>,
-    ) -> impl Future<Output = Result<Vec<ScryfallCard>, GetCardError>> + Send;
+        scryfall_card_ids: &Vec<Uuid>,
+    ) -> impl Future<Output = Result<Vec<ScryfallCard>, GetScryfallCardError>> + Send;
 
     /// simple card search by a given parameters
     fn search_cards(
         &self,
-        request: &SearchCardRequest,
-    ) -> impl Future<Output = Result<Vec<ScryfallCard>, SearchCardError>> + Send;
+        request: &SearchScryfallCardRequest,
+    ) -> impl Future<Output = Result<Vec<ScryfallCard>, SearchScryfallCardError>> + Send;
+
+    /// gets card profile with a uuid
+    fn get_card_profile(
+        &self,
+        card_profile_id: &Uuid,
+    ) -> impl Future<Output = Result<CardProfile, GetScryfallCardError>> + Send;
+
+    /// gets card profiles with a list of uuids
+    fn get_card_profiles(
+        &self,
+        card_profile_ids: &Vec<Uuid>,
+    ) -> impl Future<Output = Result<Vec<CardProfile>, GetScryfallCardError>> + Send;
 
     /// delete all cards
     fn delete_all(&self) -> impl Future<Output = Result<Vec<ScryfallCard>, anyhow::Error>> + Send;
@@ -105,23 +118,42 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
 pub trait CardService: Clone + Send + Sync + 'static {
     /// inserts card into database responding with card
     ///
-    /// not exposed - more for internal unit testing
+    /// this is not exposed because it is
+    /// more for internal unit testing
     fn insert(
         &self,
         card: ScryfallCard,
-    ) -> impl Future<Output = Result<ScryfallCard, CreateCardError>>;
+    ) -> impl Future<Output = Result<ScryfallCard, CreateScryfallCardError>>;
 
-    /// simple get by id
-    fn get_card(
+    /// gets scryfall card with a uuid
+    fn get_scryfall_card(
         &self,
-        id: &Uuid,
-    ) -> impl Future<Output = Result<ScryfallCard, GetCardError>> + Send;
+        scryfall_card_id: &Uuid,
+    ) -> impl Future<Output = Result<ScryfallCard, GetScryfallCardError>> + Send;
+
+    /// gets scryfall cards with a list of uuids
+    fn get_scryfall_cards(
+        &self,
+        scryfall_card_ids: &Vec<Uuid>,
+    ) -> impl Future<Output = Result<Vec<ScryfallCard>, GetScryfallCardError>> + Send;
 
     /// gets cards matching parameters
-    fn search_cards(
+    fn search_scryfall_cards(
         &self,
-        request: &SearchCardRequest,
-    ) -> impl Future<Output = Result<Vec<ScryfallCard>, SearchCardError>> + Send;
+        request: &SearchScryfallCardRequest,
+    ) -> impl Future<Output = Result<Vec<ScryfallCard>, SearchScryfallCardError>> + Send;
+
+    /// gets card profile with a uuid
+    fn get_card_profile(
+        &self,
+        card_profile_id: &Uuid,
+    ) -> impl Future<Output = Result<CardProfile, GetScryfallCardError>> + Send;
+
+    /// gets card profiles with a list of uuids
+    fn get_card_profiles(
+        &self,
+        card_profile_ids: &Vec<Uuid>,
+    ) -> impl Future<Output = Result<Vec<CardProfile>, GetScryfallCardError>> + Send;
 
     /// syncs database with scryfall bulk data
     fn scryfall_sync(

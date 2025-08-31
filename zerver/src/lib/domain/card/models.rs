@@ -24,23 +24,23 @@ impl From<uuid::Error> for InvalidUuid {
 
 /// for errors encountered while creating cards
 #[derive(Debug, Error)]
-pub enum CreateCardError {
+pub enum CreateScryfallCardError {
     #[error("id already exists")]
     UniqueConstraintViolation(anyhow::Error),
     #[error(transparent)]
     Database(DatabaseError),
-    #[error("card created but database returned invalid object: {0}")]
+    #[error("scryfall card created but database returned invalid object: {0}")]
     InvalidCardFromDatabase(anyhow::Error),
 }
 
 /// for errors encountered while getting cards
 #[derive(Debug, Error)]
-pub enum GetCardError {
+pub enum GetScryfallCardError {
     #[error("card not found")]
     NotFound,
     #[error(transparent)]
     Database(DatabaseError),
-    #[error("card found but database returned invalid object: {0}")]
+    #[error("scryfall card found but database returned invalid object: {0}")]
     InvalidCardFromDatabase(anyhow::Error),
 }
 
@@ -48,11 +48,17 @@ pub enum GetCardError {
 /// - NotFound is not a possible enumeration of this
 /// because a search request should just return an empty vec
 #[derive(Debug, Error)]
-pub enum SearchCardError {
+pub enum SearchScryfallCardError {
     #[error(transparent)]
     Database(DatabaseError),
-    #[error("card found but database returned invalid object: {0}")]
+    #[error("scryfall card found but database returned invalid object: {0}")]
     InvalidCardFromDatabase(anyhow::Error),
+}
+
+#[derive(Debug, Error)]
+pub enum GetCardProfileError {
+    #[error("card profile not found at id {0}")]
+    NotFound(Uuid),
 }
 
 // =======
@@ -62,7 +68,7 @@ pub enum SearchCardError {
 /// for collecting search parameters
 /// while searching for a card
 #[derive(Debug, Serialize, Deserialize)]
-pub struct SearchCardRequest {
+pub struct SearchScryfallCardRequest {
     pub name: Option<String>,
     pub type_line: Option<String>,
     pub set: Option<String>,
@@ -74,7 +80,7 @@ pub struct SearchCardRequest {
     pub offset: Option<u32>,
 }
 
-impl Default for SearchCardRequest {
+impl Default for SearchScryfallCardRequest {
     fn default() -> Self {
         Self {
             name: None,
@@ -90,7 +96,7 @@ impl Default for SearchCardRequest {
     }
 }
 
-impl SearchCardRequest {
+impl SearchScryfallCardRequest {
     pub fn new(
         name: Option<String>,
         type_line: Option<String>,
@@ -131,11 +137,9 @@ impl SearchCardRequest {
 //  main
 // ======
 
-#[derive(Debug, Clone, sqlx::FromRow)]
+#[derive(Debug, Clone)]
 pub struct CardProfile {
     pub id: Uuid,
-    pub created_at: Option<chrono::NaiveDateTime>,
-    pub updated_at: Option<chrono::NaiveDateTime>,
     pub scryfall_card_id: Uuid,
 }
 
