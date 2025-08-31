@@ -26,18 +26,10 @@ pub enum CreateDeckRequestError {
 pub enum CreateDeckError {
     #[error("deck with name and user_id combination already exists")]
     Duplicate,
-    #[error(transparent)]
-    InvalidRequest(CreateDeckRequestError),
     #[error("deck created but database returned invalid object {0}")]
     InvalidDeckFromDatabase(anyhow::Error),
     #[error(transparent)]
     Database(DatabaseError),
-}
-
-impl From<CreateDeckRequestError> for CreateDeckError {
-    fn from(value: CreateDeckRequestError) -> Self {
-        CreateDeckError::InvalidRequest(value)
-    }
 }
 
 #[derive(Debug, Error)]
@@ -56,6 +48,8 @@ pub enum UpdateDeckRequestError {
     InvalidName(DeckNameError),
     #[error(transparent)]
     InvalidId(uuid::Error),
+    #[error("must update at least one field")]
+    NothingToUpdate,
 }
 
 impl From<DeckNameError> for UpdateDeckRequestError {
@@ -72,14 +66,14 @@ impl From<uuid::Error> for UpdateDeckRequestError {
 
 #[derive(Debug, Error)]
 pub enum UpdateDeckError {
-    #[error("deck with name and user_id combination already exists")]
+    #[error("deck with name and user id combination already exists")]
     Duplicate,
+    #[error("deck not found")]
+    NotFound,
     #[error(transparent)]
     Database(DatabaseError),
     #[error("deck updated but database returned invalid object: {0}")]
     InvalidDeckFromDatabase(anyhow::Error),
-    #[error("deck not found")]
-    NotFound,
 }
 
 /// actual errors encountered while deleting a deck
@@ -144,17 +138,22 @@ impl CreateDeckRequest {
 }
 
 #[derive(Debug, Clone)]
-pub struct GetDeckRequest {
-    pub identifier: String,
-}
+pub struct GetDeckRequest(String);
 
 impl GetDeckRequest {
     pub fn new(identifier: &str) -> Self {
-        let identifier = identifier.to_string();
-        Self { identifier }
+        Self(identifier.to_string())
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
     }
 }
 
+/// for updating deck profiles.
+/// though name is the only field
+/// i am still leaving as an `Option<T>`
+/// to leave room for future additions
 #[derive(Debug, Clone)]
 pub struct UpdateDeckRequest {
     pub id: Uuid,
@@ -163,6 +162,9 @@ pub struct UpdateDeckRequest {
 
 impl UpdateDeckRequest {
     pub fn new(id: &str, name_opt: Option<&str>) -> Result<Self, UpdateDeckRequestError> {
+        if name_opt.is_none() {
+            return Err(UpdateDeckRequestError::NothingToUpdate);
+        }
         let id = Uuid::try_parse(id)?;
         let name = name_opt
             .map(|name_str| DeckName::new(name_str))
@@ -172,22 +174,24 @@ impl UpdateDeckRequest {
 }
 
 #[derive(Debug, Clone)]
-pub struct DeleteDeckRequest {
-    pub id: Uuid,
-}
+pub struct DeleteDeckRequest(Uuid);
 
 impl DeleteDeckRequest {
     pub fn new(id: &str) -> Result<Self, uuid::Error> {
         let trimmed = id.trim();
         let id = Uuid::try_parse(trimmed)?;
-        Ok(Self { id })
+        Ok(Self(id))
+    }
+
+    pub fn id(&self) -> Uuid {
+        self.0
     }
 }
 
 // ======
 //  main
 // ======
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Deck {
     pub id: Uuid,
     pub name: DeckName,
