@@ -4,6 +4,8 @@ use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
 use uuid::Uuid;
 
+use crate::domain::DatabaseError;
+
 // ========
 //  errors
 // ========
@@ -44,8 +46,8 @@ pub enum CreateUserError {
     InvalidRequest(CreateUserRequestError),
     #[error("user created but database returned invalid object: {0}")]
     InvalidUserFromDatabase(anyhow::Error),
-    #[error("database issues: {0}")]
-    DatabaseIssues(anyhow::Error),
+    #[error(transparent)]
+    Database(DatabaseError),
 }
 
 impl From<CreateUserRequestError> for CreateUserError {
@@ -59,9 +61,9 @@ impl From<CreateUserRequestError> for CreateUserError {
 pub enum GetUserError {
     #[error("user not found")]
     NotFound,
-    #[error("database issues: {0}")]
-    DatabaseIssues(anyhow::Error),
-    #[error("user created but database returned invalid object: {0}")]
+    #[error(transparent)]
+    Database(DatabaseError),
+    #[error("user found but database returned invalid object: {0}")]
     InvalidUserFromDatabase(anyhow::Error),
 }
 
@@ -99,35 +101,21 @@ impl From<email_address::Error> for UpdateUserRequestError {
 pub enum UpdateUserError {
     #[error("user with name or email already exists")]
     Duplicate,
-    #[error("database issues: {0}")]
-    DatabaseIssues(anyhow::Error),
+    #[error(transparent)]
+    Database(DatabaseError),
     #[error("user updated but database returned invalid object: {0}")]
     InvalidUserFromDatabase(anyhow::Error),
     #[error("user not found")]
-    UserNotFound,
+    NotFound,
 }
 
 /// actual errors encountered while deleting a user
 #[derive(Debug, Error)]
-pub enum DeleteUserRequestError {
-    #[error("id must be present")]
-    MissingId,
-    #[error("failed to parse `Uuid`: {0}")]
-    FailedUuid(uuid::Error),
-}
-
-impl From<uuid::Error> for DeleteUserRequestError {
-    fn from(value: uuid::Error) -> Self {
-        DeleteUserRequestError::FailedUuid(value)
-    }
-}
-
-#[derive(Debug, Error)]
 pub enum DeleteUserError {
     #[error("user not found")]
     NotFound,
-    #[error("database issues: {0}")]
-    DatabaseIssues(anyhow::Error),
+    #[error(transparent)]
+    Database(DatabaseError),
 }
 
 // ==========
@@ -179,7 +167,7 @@ impl CreateUserRequest {
     pub fn new(username: &str, email: &str) -> Result<Self, CreateUserRequestError> {
         let username = UserName::new(username)?;
         let email = EmailAddress::from_str(email)?;
-        Ok(CreateUserRequest { email, username })
+        Ok(Self { email, username })
     }
 }
 
@@ -191,7 +179,7 @@ pub struct GetUserRequest {
 impl GetUserRequest {
     pub fn new(identifier: &str) -> Self {
         let identifier = identifier.to_string();
-        GetUserRequest { identifier }
+        Self { identifier }
     }
 }
 
@@ -228,13 +216,9 @@ impl UpdateUserRequest {
 pub struct DeleteUserRequest(Uuid);
 
 impl DeleteUserRequest {
-    pub fn new(id: &str) -> Result<Self, DeleteUserRequestError> {
+    pub fn new(id: &str) -> Result<Self, uuid::Error> {
         let trimmed = id.trim();
-        if trimmed.is_empty() {
-            return Err(DeleteUserRequestError::MissingId);
-        }
         let id = Uuid::try_parse(trimmed)?;
-
         Ok(Self(id))
     }
 

@@ -6,8 +6,8 @@ use crate::{
         user::{
             models::{
                 CreateUserError, CreateUserRequest, CreateUserRequestError, DeleteUserError,
-                DeleteUserRequest, DeleteUserRequestError, GetUserError, GetUserRequest,
-                UpdateUserError, UpdateUserRequest, UpdateUserRequestError, User,
+                DeleteUserRequest, GetUserError, GetUserRequest, UpdateUserError,
+                UpdateUserRequest, UpdateUserRequestError, User,
             },
             ports::UserService,
         },
@@ -148,7 +148,7 @@ impl From<UpdateUserError> for ApiError {
             UpdateUserError::Duplicate => Self::UnprocessableEntity(
                 "user with that username or email already exists".to_string(),
             ),
-            UpdateUserError::UserNotFound => Self::NotFound("user not found".to_string()),
+            UpdateUserError::NotFound => Self::NotFound("user not found".to_string()),
             e => {
                 tracing::error!("{:?}\n{}", e, anyhow!("{e}").backtrace());
                 Self::InternalServerError("internal server error".to_string())
@@ -223,16 +223,9 @@ impl From<DeleteUserError> for ApiError {
     }
 }
 
-impl From<DeleteUserRequestError> for ApiError {
-    fn from(value: DeleteUserRequestError) -> Self {
-        match value {
-            DeleteUserRequestError::MissingId => {
-                Self::UnprocessableEntity("id must be present".to_string())
-            }
-            DeleteUserRequestError::FailedUuid(e) => {
-                Self::UnprocessableEntity(format!("failed to parse Uuid: {}", e))
-            }
-        }
+impl From<uuid::Error> for ApiError {
+    fn from(value: uuid::Error) -> Self {
+        Self::UnprocessableEntity(format!("failed to parse `Uuid`: {}", value))
     }
 }
 
@@ -242,7 +235,7 @@ pub struct DeleteUserRequestBody {
 }
 
 impl TryFrom<DeleteUserRequestBody> for DeleteUserRequest {
-    type Error = DeleteUserRequestError;
+    type Error = uuid::Error;
     fn try_from(value: DeleteUserRequestBody) -> Result<Self, Self::Error> {
         DeleteUserRequest::new(&value.id)
     }

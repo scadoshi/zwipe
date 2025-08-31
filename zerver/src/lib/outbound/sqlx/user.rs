@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use email_address::EmailAddress;
 use sqlx::{query, query_as, QueryBuilder};
 use sqlx_macros::FromRow;
@@ -51,7 +51,7 @@ impl UserRepository for Postgres {
             .pool
             .begin()
             .await
-            .map_err(|e| CreateUserError::DatabaseIssues(anyhow!("{e}")))?;
+            .map_err(|e| CreateUserError::Database(e.into()))?;
 
         let database_user = query_as!(
             DatabaseUser,
@@ -65,16 +65,16 @@ impl UserRepository for Postgres {
             if e.is_unique_constraint_violation() {
                 return CreateUserError::Duplicate;
             }
-            CreateUserError::DatabaseIssues(anyhow!("{e}"))
+            CreateUserError::Database(e.into())
         })?;
 
         let user: User = database_user
             .try_into()
-            .map_err(|e| CreateUserError::InvalidUserFromDatabase(anyhow!("{e}")))?;
+            .map_err(|e| CreateUserError::InvalidUserFromDatabase(e))?;
 
         tx.commit()
             .await
-            .map_err(|e| CreateUserError::DatabaseIssues(anyhow!("{e}")))?;
+            .map_err(|e| CreateUserError::Database(e.into()))?;
 
         Ok(user)
     }
@@ -91,12 +91,12 @@ impl UserRepository for Postgres {
         .await
         .map_err(|e| match e {
             sqlx::Error::RowNotFound => GetUserError::NotFound,
-            e => GetUserError::DatabaseIssues(anyhow!("{e}")),
+            e => GetUserError::Database(e.into()),
         })?;
 
         let user: User = database_user
             .try_into()
-            .map_err(|e| GetUserError::InvalidUserFromDatabase(anyhow!("{e}")))?;
+            .map_err(|e| GetUserError::InvalidUserFromDatabase(e))?;
 
         Ok(user)
     }
@@ -108,7 +108,7 @@ impl UserRepository for Postgres {
             .pool
             .begin()
             .await
-            .map_err(|e| UpdateUserError::DatabaseIssues(anyhow!("{e}")))?;
+            .map_err(|e| UpdateUserError::Database(e.into()))?;
 
         let mut qb = QueryBuilder::new("UPDATE users SET ");
         let mut sep = qb.separated(", ");
@@ -139,16 +139,16 @@ impl UserRepository for Postgres {
                 .map_err(|e| match e {
                     e if e.is_unique_constraint_violation() => UpdateUserError::Duplicate,
                     sqlx::Error::RowNotFound => UpdateUserError::UserNotFound,
-                    e => UpdateUserError::DatabaseIssues(anyhow!("{e}")),
+                    e => UpdateUserError::Database(e.into()),
                 })?;
 
         let user: User = database_user
             .try_into()
-            .map_err(|e| UpdateUserError::InvalidUserFromDatabase(anyhow!("{e}")))?;
+            .map_err(|e| UpdateUserError::InvalidUserFromDatabase(e))?;
 
         tx.commit()
             .await
-            .map_err(|e| UpdateUserError::DatabaseIssues(anyhow!("{e}")))?;
+            .map_err(|e| UpdateUserError::Database(e.into()))?;
 
         Ok(user)
     }
@@ -160,12 +160,12 @@ impl UserRepository for Postgres {
             .pool
             .begin()
             .await
-            .map_err(|e| DeleteUserError::DatabaseIssues(anyhow!("{e}")))?;
+            .map_err(|e| DeleteUserError::Database(e.into()))?;
 
         let result = query!("DELETE FROM users WHERE id = $1", request.id())
             .execute(&mut *tx)
             .await
-            .map_err(|e| DeleteUserError::DatabaseIssues(anyhow!("{e}")))?;
+            .map_err(|e| DeleteUserError::Database(e.into()))?;
 
         if result.rows_affected() == 0 {
             return Err(DeleteUserError::NotFound);
@@ -173,7 +173,7 @@ impl UserRepository for Postgres {
 
         tx.commit()
             .await
-            .map_err(|e| DeleteUserError::DatabaseIssues(anyhow!("{e}")))?;
+            .map_err(|e| DeleteUserError::Database(e.into()))?;
 
         Ok(())
     }

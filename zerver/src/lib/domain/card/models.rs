@@ -1,7 +1,6 @@
 pub mod scryfall_card;
 pub mod sync_metrics;
-use crate::outbound::sqlx::postgres::IsUniqueConstraintViolation;
-use anyhow::anyhow;
+use crate::domain::DatabaseError;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
@@ -28,19 +27,10 @@ impl From<uuid::Error> for InvalidUuid {
 pub enum CreateCardError {
     #[error("id already exists")]
     UniqueConstraintViolation(anyhow::Error),
-    #[error("database issues: {0}")]
-    DatabaseIssues(anyhow::Error),
+    #[error(transparent)]
+    Database(DatabaseError),
     #[error("card created but database returned invalid object: {0}")]
     InvalidCardFromDatabase(anyhow::Error),
-}
-
-impl From<sqlx::Error> for CreateCardError {
-    fn from(value: sqlx::Error) -> Self {
-        if value.is_unique_constraint_violation() {
-            return CreateCardError::UniqueConstraintViolation(anyhow!("{value}"));
-        }
-        CreateCardError::DatabaseIssues(anyhow!("{value}"))
-    }
 }
 
 /// for errors encountered while getting cards
@@ -48,19 +38,10 @@ impl From<sqlx::Error> for CreateCardError {
 pub enum GetCardError {
     #[error("card not found")]
     NotFound,
-    #[error("database issues: {0}")]
-    DatabaseIssues(anyhow::Error),
+    #[error(transparent)]
+    Database(DatabaseError),
     #[error("card found but database returned invalid object: {0}")]
     InvalidCardFromDatabase(anyhow::Error),
-}
-
-impl From<sqlx::Error> for GetCardError {
-    fn from(value: sqlx::Error) -> Self {
-        match value {
-            sqlx::Error::RowNotFound => GetCardError::NotFound,
-            e => GetCardError::DatabaseIssues(anyhow!("{e}")),
-        }
-    }
 }
 
 /// for errors encountered while searching cards
@@ -68,16 +49,10 @@ impl From<sqlx::Error> for GetCardError {
 /// because a search request should just return an empty vec
 #[derive(Debug, Error)]
 pub enum SearchCardError {
-    #[error("database issues: {0}")]
-    DatabaseIssues(anyhow::Error),
+    #[error(transparent)]
+    Database(DatabaseError),
     #[error("card found but database returned invalid object: {0}")]
     InvalidCardFromDatabase(anyhow::Error),
-}
-
-impl From<sqlx::Error> for SearchCardError {
-    fn from(value: sqlx::Error) -> Self {
-        SearchCardError::DatabaseIssues(anyhow!("{value}"))
-    }
 }
 
 // =======

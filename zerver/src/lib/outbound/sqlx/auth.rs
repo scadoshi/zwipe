@@ -65,7 +65,7 @@ impl AuthRepository for Postgres {
             .pool
             .begin()
             .await
-            .map_err(|e| RegisterUserError::DatabaseIssues(anyhow!("{e}")))?;
+            .map_err(|e| RegisterUserError::Database(e.into()))?;
 
         let database_user = query_as!(
             DatabaseUser, 
@@ -77,7 +77,7 @@ impl AuthRepository for Postgres {
             if e.is_unique_constraint_violation() {
                 return RegisterUserError::Duplicate;
             }
-            RegisterUserError::DatabaseIssues(anyhow!("{e}"))
+            RegisterUserError::Database(e.into())
         })?;
 
         let user: User = database_user
@@ -86,7 +86,7 @@ impl AuthRepository for Postgres {
 
         tx.commit()
             .await
-            .map_err(|e| RegisterUserError::DatabaseIssues(anyhow!("{e}")))?;
+            .map_err(|e| RegisterUserError::Database(e.into()))?;
 
         Ok(user)
     }
@@ -107,7 +107,7 @@ impl AuthRepository for Postgres {
         .await
         .map_err(|e| match e {
             sqlx::Error::RowNotFound => AuthenticateUserError::UserNotFound, 
-            e => AuthenticateUserError::DatabaseIssues(anyhow!("{e}")),
+            e => AuthenticateUserError::Database(e.into()),
         })?;
 
         let user: UserWithPasswordHash = database_user
@@ -127,7 +127,7 @@ impl AuthRepository for Postgres {
             .pool
             .begin()
             .await
-            .map_err(|e| ChangePasswordError::DatabaseIssues(anyhow!("{e}")))?;
+            .map_err(|e| ChangePasswordError::Database(e.into()))?;
 
         query!(
             "UPDATE users SET password_hash = $1 WHERE id = $2", 
@@ -138,12 +138,12 @@ impl AuthRepository for Postgres {
         .await
         .map_err(|e| match e {
             sqlx::Error::RowNotFound => ChangePasswordError::UserNotFound,
-            e => ChangePasswordError::DatabaseIssues(anyhow!("{e}")),
+            e => ChangePasswordError::Database(e.into()),
         })?;
 
         tx.commit()
             .await
-            .map_err(|e| ChangePasswordError::DatabaseIssues(anyhow!("{e}")))?;
+            .map_err(|e| ChangePasswordError::Database(e.into()))?;
 
         Ok(())
     }

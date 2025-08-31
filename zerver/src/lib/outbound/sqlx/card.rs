@@ -1,7 +1,7 @@
 pub mod scryfall_card;
 pub mod sync_metrics;
 
-use crate::outbound::sqlx::postgres::Postgres as MyPostgres;
+use crate::outbound::sqlx::postgres::{IsUniqueConstraintViolation, Postgres as MyPostgres};
 use crate::{
     domain::card::{
         models::{
@@ -14,7 +14,7 @@ use crate::{
     outbound::sqlx::card::sync_metrics::DatabaseSyncMetrics,
 };
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use chrono::NaiveDateTime;
 use sqlx::{query, query_as, query_scalar, PgTransaction, Postgres, Transaction};
 use sqlx::{query_builder::Separated, QueryBuilder};
@@ -125,11 +125,35 @@ macro_rules! bind_scryfall_card_fields {
     };
 }
 
-// ===============================
-//         helpers (*3*)
-// ===============================
-//
-// allows redundant operations within `CardRepository`
+// ===============
+//  helpers (*3*)
+// ===============
+
+impl From<sqlx::Error> for CreateCardError {
+    fn from(value: sqlx::Error) -> Self {
+        if value.is_unique_constraint_violation() {
+            return CreateCardError::UniqueConstraintViolation(anyhow!("{value}"));
+        }
+        CreateCardError::Database(value.into())
+    }
+}
+
+impl From<sqlx::Error> for GetCardError {
+    fn from(value: sqlx::Error) -> Self {
+        match value {
+            sqlx::Error::RowNotFound => GetCardError::NotFound,
+            e => GetCardError::Database(e.into()),
+        }
+    }
+}
+
+impl From<sqlx::Error> for SearchCardError {
+    fn from(value: sqlx::Error) -> Self {
+        SearchCardError::Database(value.into())
+    }
+}
+
+// below allows redundant operations within `CardRepository`
 // without having to create new transactions
 // these should **not** commit the transaction
 // that is the responsibility of higher level functions

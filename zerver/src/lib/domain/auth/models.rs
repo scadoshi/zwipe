@@ -6,6 +6,7 @@ use crate::domain::auth::models::{
     password::HashedPassword,
 };
 use crate::domain::user::models::{User, UserName, UserNameError};
+use crate::domain::DatabaseError;
 use email_address::EmailAddress;
 use serde::Serialize;
 use std::str::FromStr;
@@ -21,8 +22,8 @@ use uuid::Uuid;
 pub enum RegisterUserError {
     #[error("user with name or email already exists")]
     Duplicate,
-    #[error("database issues: {0}")]
-    DatabaseIssues(anyhow::Error),
+    #[error(transparent)]
+    Database(DatabaseError),
     #[error("user created but database returned invalid object: {0}")]
     InvalidUserFromDatabase(anyhow::Error),
     #[error("failed to generate `JWT`: {0}")]
@@ -51,8 +52,8 @@ pub enum AuthenticateUserError {
     UserNotFound,
     #[error("invalid password")]
     InvalidPassword,
-    #[error("database issues: {0}")]
-    DatabaseIssues(anyhow::Error),
+    #[error(transparent)]
+    Database(DatabaseError),
     #[error("user found but database returned invalid object: {0}")]
     InvalidUserFromDatabase(anyhow::Error),
     #[error("failed to verify password: {0}")]
@@ -93,8 +94,8 @@ pub enum ChangePasswordRequestError {
 pub enum ChangePasswordError {
     #[error("user not found")]
     UserNotFound,
-    #[error("database issues: {0}")]
-    DatabaseIssues(anyhow::Error),
+    #[error(transparent)]
+    Database(DatabaseError),
 }
 
 // ========================
