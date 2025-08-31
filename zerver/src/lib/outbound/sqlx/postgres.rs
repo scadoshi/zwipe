@@ -2,16 +2,28 @@ use anyhow::Context;
 
 /// postgresql error code for unique constraint violations
 const UNIQUE_CONSTRAINT_VIOLATION_CODE: &str = "23505";
+const CHECK_CONSTRAINT_VIOLATION_CODE: &str = "23514";
 
-pub trait IsUniqueConstraintViolation {
+pub trait IsConstraintViolation {
     fn is_unique_constraint_violation(&self) -> bool;
+    fn is_check_constraint_violation(&self) -> bool;
 }
 
-impl IsUniqueConstraintViolation for sqlx::Error {
+impl IsConstraintViolation for sqlx::Error {
     fn is_unique_constraint_violation(&self) -> bool {
         if let sqlx::Error::Database(e) = self {
             if let Some(code) = e.code() {
                 if code == UNIQUE_CONSTRAINT_VIOLATION_CODE {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+    fn is_check_constraint_violation(&self) -> bool {
+        if let sqlx::Error::Database(e) = self {
+            if let Some(code) = e.code() {
+                if code == CHECK_CONSTRAINT_VIOLATION_CODE {
                     return true;
                 }
             }
