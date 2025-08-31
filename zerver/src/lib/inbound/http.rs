@@ -7,17 +7,17 @@ use crate::domain::card::ports::CardService;
 use crate::domain::health::ports::HealthService;
 use crate::domain::user::ports::UserService;
 use crate::inbound::http::handlers::auth::{authenticate_user, register_user};
-use crate::inbound::http::handlers::cards::{get_card, search_cards};
+use crate::inbound::http::handlers::cards::{get_scryfall_card, search_scryfall_cards};
 use crate::inbound::http::handlers::health::{
     are_server_and_database_running, is_server_running, root,
 };
-use std::sync::Arc;
 use anyhow::Context;
 use axum::http::{header, HeaderValue, Method, StatusCode};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde::Serialize;
+use std::sync::Arc;
 use tokio::net;
 use tower_http::cors::CorsLayer;
 
@@ -233,8 +233,8 @@ where
     Router::new().nest(
         "/api/v1",
         Router::new()
-            .route("/cards/:id", get(get_card))
-            .route("/cards/search", get(search_cards)),
+            .route("/cards/:id", get(get_scryfall_card))
+            .route("/cards/search", get(search_scryfall_cards)),
     )
 }
 
