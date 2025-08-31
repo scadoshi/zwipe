@@ -292,6 +292,26 @@ impl DeckRepository for Postgres {
 
         Ok(deck_card)
     }
+
+    async fn get_deck_cards(
+        &self,
+        request: &GetDeckRequest,
+    ) -> Result<Vec<DeckCard>, GetDeckCardError> {
+        let database_deck_cards = query_as!(
+            DatabaseDeckCard,
+            "SELECT id, deck_id, card_profile_id, quantity FROM deck_cards WHERE deck_id::text = $1",
+            request.as_str()
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let deck_cards: Vec<DeckCard> = database_deck_cards
+            .into_iter()
+            .map(|x| x.try_into())
+            .collect::<Result<Vec<DeckCard>, ToDeckCardError>>()?;
+
+        Ok(deck_cards)
+    }
     // ========
     //  update
     // ========
