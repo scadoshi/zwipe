@@ -1,15 +1,99 @@
-use anyhow::Context;
 use email_address::EmailAddress;
 use sqlx::{query, query_as, QueryBuilder};
 use sqlx_macros::FromRow;
+use thiserror::Error;
 use uuid::Uuid;
 
 use crate::domain::user::models::{
     CreateUserError, CreateUserRequest, DeleteUserError, DeleteUserRequest, GetUserError,
-    GetUserRequest, UpdateUserError, UpdateUserRequest, User, UserName,
+    GetUserRequest, UpdateUserError, UpdateUserRequest, User, UserName, UserNameError,
 };
 use crate::domain::user::ports::UserRepository;
-use crate::outbound::sqlx::postgres::{IsUniqueConstraintViolation, Postgres};
+use crate::outbound::sqlx::postgres::{IsConstraintViolation, Postgres};
+
+// ========
+//  errors
+// ========
+
+#[derive(Debug, Error)]
+pub enum ToUserError {
+    #[error(transparent)]
+    InvalidId(uuid::Error),
+    #[error(transparent)]
+    InvalidUsername(UserNameError),
+    #[error(transparent)]
+    InvalidEmail(email_address::Error),
+}
+
+impl From<uuid::Error> for ToUserError {
+    fn from(value: uuid::Error) -> Self {
+        Self::InvalidId(value)
+    }
+}
+
+impl From<UserNameError> for ToUserError {
+    fn from(value: UserNameError) -> Self {
+        Self::InvalidUsername(value)
+    }
+}
+
+impl From<email_address::Error> for ToUserError {
+    fn from(value: email_address::Error) -> Self {
+        Self::InvalidEmail(value)
+    }
+}
+
+impl From<sqlx::Error> for CreateUserError {
+    fn from(value: sqlx::Error) -> Self {
+        match value {
+            e if e.is_unique_constraint_violation() => Self::Duplicate,
+            e => Self::Database(e.into()),
+        }
+    }
+}
+
+impl From<ToUserError> for CreateUserError {
+    fn from(value: ToUserError) -> Self {
+        Self::InvalidUserFromDatabase(value.into())
+    }
+}
+
+impl From<sqlx::Error> for UpdateUserError {
+    fn from(value: sqlx::Error) -> Self {
+        match value {
+            sqlx::Error::RowNotFound => Self::NotFound,
+            e if e.is_unique_constraint_violation() => Self::Duplicate,
+            e => Self::Database(e.into()),
+        }
+    }
+}
+
+impl From<ToUserError> for UpdateUserError {
+    fn from(value: ToUserError) -> Self {
+        Self::InvalidUserFromDatabase(value.into())
+    }
+}
+
+impl From<sqlx::Error> for GetUserError {
+    fn from(value: sqlx::Error) -> Self {
+        match value {
+            sqlx::Error::RowNotFound => Self::NotFound,
+            e => Self::Database(e.into()),
+        }
+    }
+}
+
+impl From<ToUserError> for GetUserError {
+    fn from(value: ToUserError) -> Self {
+        Self::InvalidUserFromDatabase(value.into())
+    }
+}
+
+impl From<sqlx::Error> for DeleteUserError {
+    fn from(value: sqlx::Error) -> Self {
+        Self::Database(value.into())
+    }
+}
 
 // ===========
 //   db types
@@ -26,14 +110,13 @@ pub struct DatabaseUser {
 
 /// converts database user to validated domain user
 impl TryFrom<DatabaseUser> for User {
-    type Error = anyhow::Error;
+    type Error = ToUserError;
 
     fn try_from(value: DatabaseUser) -> Result<Self, Self::Error> {
-        let id = Uuid::try_parse(&value.id).context("failed to validate user id")?;
-        let username = UserName::new(&value.username).context("failed to validate username")?;
+        let id = Uuid::try_parse(&value.id)?;
+        let username = UserName::new(&value.username)?;
         let email =
-            EmailAddress::parse_with_options(&value.email, email_address::Options::default())
-                .context("failed to validate email")?;
+            EmailAddress::parse_with_options(&value.email, email_address::Options::default())?;
         Ok(Self {
             id,
             username,
@@ -47,11 +130,7 @@ impl UserRepository for Postgres {
     //  create
     // ========
     async fn create_user(&self, request: &CreateUserRequest) -> Result<User, CreateUserError> {
-        let mut tx = self
-            .pool
-            .begin()
-            .await
-            .map_err(|e| CreateUserError::Database(e.into()))?;
+        let mut tx = self.pool.begin().await?;
 
         let database_user = query_as!(
             DatabaseUser,
@@ -60,21 +139,11 @@ impl UserRepository for Postgres {
             request.email.to_string(),
         )
         .fetch_one(&mut *tx)
-        .await
-        .map_err(|e| {
-            if e.is_unique_constraint_violation() {
-                return CreateUserError::Duplicate;
-            }
-            CreateUserError::Database(e.into())
-        })?;
+        .await?;
 
-        let user: User = database_user
-            .try_into()
-            .map_err(|e| CreateUserError::InvalidUserFromDatabase(e))?;
+        let user: User = database_user.try_into()?;
 
-        tx.commit()
-            .await
-            .map_err(|e| CreateUserError::Database(e.into()))?;
+        tx.commit().await?;
 
         Ok(user)
     }
@@ -85,18 +154,12 @@ impl UserRepository for Postgres {
         let database_user = query_as!(
             DatabaseUser,
             "SELECT id, username, email FROM users WHERE (id::text = $1 OR username = $1 OR email = $1)",
-            request.identifier
+            request.as_str()
         )
         .fetch_one(&self.pool)
-        .await
-        .map_err(|e| match e {
-            sqlx::Error::RowNotFound => GetUserError::NotFound,
-            e => GetUserError::Database(e.into()),
-        })?;
+        .await?;
 
-        let user: User = database_user
-            .try_into()
-            .map_err(|e| GetUserError::InvalidUserFromDatabase(e))?;
+        let user: User = database_user.try_into()?;
 
         Ok(user)
     }
@@ -104,51 +167,30 @@ impl UserRepository for Postgres {
     //  update
     // ========
     async fn update_user(&self, request: &UpdateUserRequest) -> Result<User, UpdateUserError> {
-        let mut tx = self
-            .pool
-            .begin()
-            .await
-            .map_err(|e| UpdateUserError::Database(e.into()))?;
+        let mut tx = self.pool.begin().await?;
 
         let mut qb = QueryBuilder::new("UPDATE users SET ");
         let mut sep = qb.separated(", ");
-        let mut updates = 0;
         if let Some(username) = &request.username {
             sep.push("username = ")
                 .push_bind_unseparated(username.to_string());
-            updates += 1;
         }
         if let Some(email) = &request.email {
             sep.push("email = ")
                 .push_bind_unseparated(email.to_string());
-            updates += 1;
         }
-        if updates > 0 {
-            let now = chrono::Utc::now().naive_utc();
-            sep.push("updated_at =").push_bind_unseparated(now);
-        }
+        let now = chrono::Utc::now().naive_utc();
+        sep.push("updated_at = ").push_bind_unseparated(now);
 
         qb.push(" WHERE id = ")
             .push_bind(request.id)
             .push(" RETURNING id, username, email");
 
-        let database_user: DatabaseUser =
-            qb.build_query_as()
-                .fetch_one(&mut *tx)
-                .await
-                .map_err(|e| match e {
-                    e if e.is_unique_constraint_violation() => UpdateUserError::Duplicate,
-                    sqlx::Error::RowNotFound => UpdateUserError::NotFound,
-                    e => UpdateUserError::Database(e.into()),
-                })?;
+        let database_user: DatabaseUser = qb.build_query_as().fetch_one(&mut *tx).await?;
 
-        let user: User = database_user
-            .try_into()
-            .map_err(|e| UpdateUserError::InvalidUserFromDatabase(e))?;
+        let user: User = database_user.try_into()?;
 
-        tx.commit()
-            .await
-            .map_err(|e| UpdateUserError::Database(e.into()))?;
+        tx.commit().await?;
 
         Ok(user)
     }
@@ -156,24 +198,17 @@ impl UserRepository for Postgres {
     //  delete
     // ========
     async fn delete_user(&self, request: &DeleteUserRequest) -> Result<(), DeleteUserError> {
-        let mut tx = self
-            .pool
-            .begin()
-            .await
-            .map_err(|e| DeleteUserError::Database(e.into()))?;
+        let mut tx = self.pool.begin().await?;
 
         let result = query!("DELETE FROM users WHERE id = $1", request.id())
             .execute(&mut *tx)
-            .await
-            .map_err(|e| DeleteUserError::Database(e.into()))?;
+            .await?;
 
         if result.rows_affected() == 0 {
             return Err(DeleteUserError::NotFound);
         }
 
-        tx.commit()
-            .await
-            .map_err(|e| DeleteUserError::Database(e.into()))?;
+        tx.commit().await?;
 
         Ok(())
     }

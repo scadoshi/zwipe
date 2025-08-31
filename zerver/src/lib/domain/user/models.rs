@@ -42,18 +42,10 @@ impl From<email_address::Error> for CreateUserRequestError {
 pub enum CreateUserError {
     #[error("user with name or email already exists")]
     Duplicate,
-    #[error(transparent)]
-    InvalidRequest(CreateUserRequestError),
     #[error("user created but database returned invalid object: {0}")]
     InvalidUserFromDatabase(anyhow::Error),
     #[error(transparent)]
     Database(DatabaseError),
-}
-
-impl From<CreateUserRequestError> for CreateUserError {
-    fn from(value: CreateUserRequestError) -> Self {
-        CreateUserError::InvalidRequest(value)
-    }
 }
 
 /// actual errors encountered while getting a user
@@ -72,6 +64,8 @@ pub enum GetUserError {
 pub enum UpdateUserRequestError {
     #[error(transparent)]
     InvalidId(uuid::Error),
+    #[error("must update at least one field")]
+    NothingToUpdate,
     #[error(transparent)]
     InvalidUsername(UserNameError),
     #[error(transparent)]
@@ -101,12 +95,12 @@ impl From<email_address::Error> for UpdateUserRequestError {
 pub enum UpdateUserError {
     #[error("user with name or email already exists")]
     Duplicate,
+    #[error("user not found")]
+    NotFound,
     #[error(transparent)]
     Database(DatabaseError),
     #[error("user updated but database returned invalid object: {0}")]
     InvalidUserFromDatabase(anyhow::Error),
-    #[error("user not found")]
-    NotFound,
 }
 
 /// actual errors encountered while deleting a user
@@ -172,14 +166,15 @@ impl CreateUserRequest {
 }
 
 #[derive(Debug, Clone)]
-pub struct GetUserRequest {
-    pub identifier: String,
-}
+pub struct GetUserRequest(String);
 
 impl GetUserRequest {
     pub fn new(identifier: &str) -> Self {
-        let identifier = identifier.to_string();
-        Self { identifier }
+        Self(identifier.to_string())
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
     }
 }
 
@@ -193,14 +188,18 @@ pub struct UpdateUserRequest {
 impl UpdateUserRequest {
     pub fn new(
         id: &str,
-        username_opt: Option<String>,
-        email_opt: Option<String>,
+        username: Option<String>,
+        email: Option<String>,
     ) -> Result<Self, UpdateUserRequestError> {
+        if username.is_none() && email.is_none() {
+            return Err(UpdateUserRequestError::NothingToUpdate);
+        }
+
         let id = Uuid::try_parse(id)?;
-        let username = username_opt
+        let username = username
             .map(|username_str| UserName::new(&username_str))
             .transpose()?;
-        let email = email_opt
+        let email = email
             .map(|email_str| EmailAddress::from_str(&email_str))
             .transpose()?;
 

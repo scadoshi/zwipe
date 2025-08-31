@@ -33,20 +33,6 @@ impl From<CreateUserError> for ApiError {
                 "user with that username or email already exists".to_string(),
             ),
 
-            CreateUserError::InvalidRequest(CreateUserRequestError::InvalidUsername(e)) => {
-                Self::UnprocessableEntity(format!(
-                    "invalid request: {}",
-                    CreateUserRequestError::InvalidUsername(e)
-                ))
-            }
-
-            CreateUserError::InvalidRequest(CreateUserRequestError::InvalidEmail(e)) => {
-                Self::UnprocessableEntity(format!(
-                    "invalid request: {}",
-                    CreateUserRequestError::InvalidEmail(e)
-                ))
-            }
-
             e => {
                 tracing::error!("{:?}\n{}", e, anyhow!("{e}").backtrace());
                 Self::InternalServerError("internal server error".to_string())
@@ -149,6 +135,9 @@ impl From<UpdateUserError> for ApiError {
                 "user with that username or email already exists".to_string(),
             ),
             UpdateUserError::NotFound => Self::NotFound("user not found".to_string()),
+            UpdateUserError::NothingToUpdate => {
+                Self::UnprocessableEntity("must update at least one field".to_string())
+            }
             e => {
                 tracing::error!("{:?}\n{}", e, anyhow!("{e}").backtrace());
                 Self::InternalServerError("internal server error".to_string())
