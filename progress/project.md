@@ -147,6 +147,20 @@ alwaysApply: true
 - **🎯 CONFIGURATION CLEANUP**: Moved SCRYFALL_API_BASE from env to const for cleaner architecture
 - **🎯 DELETE_ALL OPERATION**: Basic truncate operation for database refresh scenarios
 
+### COMPLETE - Deck Domain Implementation ✅
+- **🚀 COMPLETE DECK CRUD OPERATIONS**: Full create, read, update, delete for both Deck and DeckCard entities
+- **🚀 ADVANCED NEWTYPE PATTERNS**: DeckName, Quantity, AddQuantity with smart constructors and business rule enforcement
+- **🚀 COMPOSITE CONSTRAINT ARCHITECTURE**: Database-level unique constraint for deck name per user combination
+- **🚀 CHECK CONSTRAINT VALIDATION**: Positive quantity constraints with PostgreSQL error code mapping (23514)
+- **🚀 LAYERED VALIDATION STRATEGY**: Application logic + database constraints for comprehensive data integrity
+- **🚀 ENHANCED CONSTRAINT DETECTION**: IsConstraintViolation trait supporting both unique and check constraint violations
+- **🚀 PROPER DOMAIN BOUNDARIES**: Validation moved from repository to domain constructors for clean separation of concerns
+- **🚀 RELATIONSHIP ENTITY MODELING**: DeckCard as junction table with quantity management and explicit operations
+- **🚀 BUSINESS RULE ENFORCEMENT**: Explicit create/update/delete operations instead of magic deletion logic
+- **🚀 TRANSACTION MANAGEMENT**: Proper transaction handling with automatic rollback on validation failures
+- **🚀 COMPREHENSIVE ERROR HIERARCHY**: Domain-specific errors with proper HTTP status code mapping paths
+- **🚀 DEFENSIVE PROGRAMMING**: TryFrom implementations at all database boundaries with comprehensive validation
+
 ### COMPLETE - Card HTTP Handlers ✅
 - **🎯 CARD HTTP IMPLEMENTATION**: Complete get_card and search_cards HTTP handlers with proper error mapping
 - **🎯 RESTFUL API DESIGN**: Transitioned from JSON request bodies to path/query parameters for cleaner API
@@ -195,31 +209,26 @@ alwaysApply: true
 - **🔄 CARD READ OPERATIONS TESTING**: Test get_card and search_cards with full database of 35k+ cards
 
 ### NEXT PRIORITIES - Immediate Roadmap
-1. **🔧 Card Read Operations Testing**: Test card retrieval with full database
-   - **Get Card Testing**: Validate get_card works with real 35k+ card database
-   - **Search Testing**: Test search_cards with various filter combinations and pagination
-   - **Performance Validation**: Measure query performance with production dataset
-3. **🔧 Card Data Import & Validation**: Test custom SQLx types with real data
-   - **Scryfall Bulk Import**: Use get_bulk() client to fetch all cards from Scryfall API
-   - **Custom Type Runtime Testing**: Validate Decode/Encode/Type implementations work with real nested JSON
-   - **Batch Processing Validation**: Test bulk insert operations with 35,400+ card dataset
-   - **Performance Benchmarking**: Measure insertion rates and identify bottlenecks
-3. **🔧 Inbound HTTP Layer**: Build Card API endpoints
-   - **Card HTTP Handlers**: GET /cards/:id and GET /cards with query parameters
-   - **Query Parameter Extraction**: Axum Query<CardSearchParameters> integration
-   - **Response Serialization**: JSON response formatting with proper error handling
-   - **Route Integration**: Add card endpoints to existing HTTP server configuration
-2. **🔧 Final Route Integration**: Complete JWT secret injection and route organization
-   - **JWT Secret Injection**: Extract JWT secret from environment/config and inject into AppState
-   - **Route Configuration**: Uncomment and wire up public/private route separation in http.rs
-   - **Handler Integration**: Connect existing handlers to routes with proper generic type parameters
-   - **AuthenticatedUser Testing**: Validate JWT middleware works end-to-end with protected handlers
-   - **Production Route Testing**: Test complete auth flow with real routes
-3. **Route Organization & Testing**: Complete HTTP layer integration
-   - **AppState Configuration**: Inject services into HTTP handlers via dependency injection
-   - **Route Organization**: Clean separation of authenticated vs public routes
-   - **Generic Type Integration**: Ensure handler compatibility with Service<R> patterns
-   - **End-to-End Testing**: Validate complete hexagonal flow from HTTP to database
+1. **🔧 Deck Service Layer Implementation**: Build orchestration layer for deck operations
+   - **DeckService Implementation**: Complete service layer with repository delegation
+   - **DeckWithCards Operations**: Implement get_deck_with_cards() combining deck + scryfall cards
+   - **Business Logic Integration**: Add deck validation rules and card composition logic
+   - **Service Testing**: Validate service layer orchestration and error handling
+2. **🔧 Deck HTTP Handler Implementation**: Build REST API for deck management
+   - **Complete CRUD Handlers**: GET, POST, PUT, DELETE endpoints for deck operations
+   - **DeckCard Management**: Add/remove/update card quantity endpoints
+   - **Authentication Integration**: User-scoped deck operations with JWT middleware
+   - **Request/Response Mapping**: HTTP JSON to domain type conversion with proper validation
+   - **Error Mapping**: Domain errors to appropriate HTTP status codes
+3. **🔧 Card Service Layer Completion**: Finish card domain service implementation
+   - **CardService Implementation**: Complete service layer that's currently scaffolded
+   - **Search Orchestration**: Business logic for card search and filtering
+   - **Cache Integration**: Consider caching layer for frequently accessed cards
+4. **🔧 Route Integration & Testing**: Complete HTTP layer integration
+   - **AppState Enhancement**: Inject deck and enhanced card services
+   - **Route Organization**: Add deck routes to public/private route separation
+   - **End-to-End Testing**: Validate complete deck workflow from HTTP to database
+   - **Integration Testing**: Test deck + card interactions through HTTP layer
 5. **Scheduled Card Update Job**: Automated incremental card data synchronization
    - **Database Diff Logic**: Query existing card IDs to determine what's missing from Scryfall data
    - **Incremental Import**: Only fetch and insert new/updated cards, skip existing ones
@@ -475,10 +484,10 @@ curl http://localhost:8080/api/v1/decks
 
 ---
 
-**Last Updated**: After advanced QueryBuilder macro development and PostgreSQL parameter optimization
+**Last Updated**: After complete deck domain implementation with advanced constraint handling
 
-**Current Sprint**: Deck domain implementation following established hexagonal patterns
+**Current Sprint**: Service layer implementation and HTTP handler development
 
-**Next Major Milestone**: Complete Deck CRUD operations with production-ready repository and service layers
+**Next Major Milestone**: Complete deck and card service layers with HTTP API integration
 
-**Major Recent Achievement**: Successfully developed advanced macro architecture for bulk operations with `bind_scryfall_card_fields!` macro. Mastered PostgreSQL parameter limits (65,535), resolved complex SQL generation errors, and implemented trait-based bulk operations. User noted getting "sidetracked making queries look even better" but gained significant macro development, performance optimization, and production debugging expertise. Ready to apply these patterns to deck domain implementation. 
+**Major Recent Achievement**: Successfully implemented complete deck domain with production-ready CRUD operations, advanced constraint handling (unique + check constraints), and proper domain boundary enforcement. Achieved layered validation strategy with application logic + database constraints. Corrected architectural boundary violations by moving validation from repository to domain constructors. Ready to build service orchestration layer and HTTP API integration. 

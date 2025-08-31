@@ -135,9 +135,6 @@ impl From<UpdateUserError> for ApiError {
                 "user with that username or email already exists".to_string(),
             ),
             UpdateUserError::NotFound => Self::NotFound("user not found".to_string()),
-            UpdateUserError::NothingToUpdate => {
-                Self::UnprocessableEntity("must update at least one field".to_string())
-            }
             e => {
                 tracing::error!("{:?}\n{}", e, anyhow!("{e}").backtrace());
                 Self::InternalServerError("internal server error".to_string())
@@ -157,6 +154,9 @@ impl From<UpdateUserRequestError> for ApiError {
             }
             UpdateUserRequestError::InvalidEmail(e) => {
                 Self::UnprocessableEntity(format!("invalid email {}", e))
+            }
+            UpdateUserRequestError::NothingToUpdate => {
+                Self::UnprocessableEntity("must update at least one field".to_string())
             }
         }
     }

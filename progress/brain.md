@@ -85,9 +85,9 @@ alwaysApply: true
 
 ### Hexagonal Architecture & Domain Modeling
 - **🚀 ENTERPRISE HEXAGONAL IMPLEMENTATION**: Complete production ports/adapters pattern with clean domain separation
-- **🚀 DUAL DOMAIN ARCHITECTURE**: Separate Auth and User domains with clear boundaries and responsibilities  
-- **🚀 COMPLETE USER DOMAIN**: Full CRUD operations with production-ready repository implementation
-- **🚀 NEWTYPE PATTERN UNDERSTANDING**: Comprehensive validation newtypes (JwtSecret, Jwt, UserName, HashedPassword, Password) with business-driven constructors
+- **🚀 MULTI-DOMAIN ARCHITECTURE**: Separate Auth, User, and Deck domains with clear boundaries and responsibilities  
+- **🚀 COMPLETE CRUD DOMAINS**: Full operations for User and Deck entities with production-ready repository implementations
+- **🚀 ADVANCED NEWTYPE PATTERNS**: Comprehensive validation newtypes (JwtSecret, Jwt, UserName, HashedPassword, Password, DeckName, Quantity, AddQuantity) with business-driven constructors
 - **🎯 COLORS NEWTYPE IMPLEMENTATION**: Successfully created Colors(Vec<Color>) wrapper for better type safety and validation
 - **🚀 UUID MIGRATION COMPLETE**: Complete transition from i32 to Uuid for scalable, production-ready IDs
 - **🚀 SMART CONSTRUCTOR PATTERNS**: Domain-driven validation (Bearer → JWT, Password → HashedPassword, email normalization)
@@ -99,6 +99,9 @@ alwaysApply: true
 - **🚀 DOMAIN-FIRST ORGANIZATION**: Clean separation - domain (business logic), ports (interfaces), services (orchestration)
 - **🚀 ARCHITECTURAL DECISION MAKING**: Strategic simplification - no macros until absolutely needed
 - **🚀 PRODUCTION DATABASE PATTERNS**: Advanced SQLx usage with transactions, dynamic queries, proper error mapping
+- **🚀 RELATIONSHIP ENTITY MODELING**: DeckCard junction table with proper business rules and explicit operations
+- **🚀 DOMAIN BOUNDARY ENFORCEMENT**: Validation at domain constructors, not repository layer - proper separation of concerns
+- **🚀 BUSINESS RULE ARCHITECTURE**: Explicit create/update/delete operations with clear business semantics
 
 ### Password Security & Validation Architecture
 - **🏆 ENTERPRISE PASSWORD SECURITY**: Advanced validation (length, complexity, uniqueness, common password detection)
@@ -120,9 +123,12 @@ alwaysApply: true
 - **Generic Handler Patterns**: Working through handler function signatures with generic state types
 - **Hexagonal Generic Integration**: Learning to maintain type safety across domain boundaries with generics
 
-### Database Relationships
-- **Foreign Keys**: Solid understanding of `#[diesel(belongs_to(...))]` relationships
-- **Custom Types**: Good grasp of enum-to-SQL conversion with `ToSql`/`FromSql` implementation  
+### Database Relationships & Constraints
+- **Foreign Keys**: Solid understanding of relationship modeling and CASCADE behavior
+- **Composite Constraints**: Production-ready unique constraints across multiple columns
+- **CHECK Constraints**: Advanced constraint validation with PostgreSQL error code mapping
+- **Constraint Violation Handling**: Expert error detection and domain error mapping (23505, 23514)
+- **Layered Validation**: Strategic application logic + database constraint protection
 - **Complex Queries**: Joins between multiple tables - conceptually strong, syntax developing
 
 ### Advanced Database Operations
@@ -191,6 +197,10 @@ alwaysApply: true
 - **🎯 POSTGRESQL PARAMETER OPTIMIZATION**: Identified and resolved 65,535 parameter limit issues, optimized batch sizes from 2.8M to 65K parameters
 - **🎯 SQL SYNTAX DEBUGGING**: Resolution of complex dynamic query generation errors (`VALUES ($1$2...)` → `VALUES ($1, $2...)`)
 - **🎯 TRAIT-BASED BULK OPERATIONS**: `BindToSeparator` trait with production-ready bulk INSERT patterns and manual comma handling
+- **🎯 DATABASE CONSTRAINT ARCHITECTURE**: Advanced constraint violation detection with IsConstraintViolation trait
+- **🎯 CONSTRAINT ERROR MAPPING**: Expert PostgreSQL error code handling (23505 unique, 23514 check constraints)
+- **🎯 LAYERED VALIDATION STRATEGY**: Application logic + database constraints for comprehensive data protection
+- **🎯 TRANSACTION ROLLBACK UNDERSTANDING**: Automatic transaction rollback on validation failures without explicit rollback calls
 
 ---
 
@@ -308,6 +318,11 @@ alwaysApply: true
 - **🏆 MTG THEMED ARCHITECTURE**: Creative integration of Magic: The Gathering terminology (amass, PlanesWalker, untap, cast) showing domain-driven design with personality
 - **🏆 MACRO SIMPLIFICATION IMPLEMENTATION**: Successfully refactored from complex trait implementations to clean direct macro usage (bind_scryfall_card_fields!)
 - **🏆 PRODUCTION CONSTRAINT DEBUGGING**: Sophisticated understanding of PostgreSQL JSONB constraints and database schema requirements for complex nested types
+- **🎯 COMPLETE DECK DOMAIN IMPLEMENTATION**: Full CRUD operations for Deck and DeckCard with proper relationship modeling
+- **🎯 CONSTRAINT-DRIVEN ARCHITECTURE**: Strategic use of database constraints for business rule enforcement
+- **🎯 DOMAIN BOUNDARY CORRECTION**: Fixed architectural violation by moving validation from repository to domain constructors
+- **🎯 JUNCTION TABLE MASTERY**: Proper modeling of many-to-many relationships with business logic (quantities, explicit operations)
+- **🎯 LAYERED ERROR HANDLING**: Comprehensive error hierarchy from domain validation through database constraints to HTTP responses
 
 ### Learning Pattern Recognition
 - **Strategic Simplification**: Recognizes when complexity doesn't add value
@@ -368,8 +383,8 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: After advanced QueryBuilder macro development and PostgreSQL parameter optimization
+**Last Updated**: After complete deck domain implementation with advanced constraint handling and architectural corrections
 
-**Next Learning Edge**: Deck domain implementation following established hexagonal patterns
+**Next Learning Edge**: Service layer orchestration and HTTP API integration
 
-**Major Recent Achievement**: Successfully developed advanced macro architecture for 80+ field bulk operations with `bind_scryfall_card_fields!`. Learned `QueryBuilder::separated()` vs manual parameter handling, resolved PostgreSQL parameter limits (65,535), and implemented production-ready trait-based bulk operations. User noted getting "sidetracked making queries look even better" but gained significant macro development and performance optimization experience.
+**Major Recent Achievement**: Successfully implemented complete deck domain with production-ready CRUD operations, advanced constraint handling (unique + check constraints), and proper domain boundary enforcement. Mastered layered validation strategy with application logic + database constraints. Corrected architectural boundary violations by moving validation from repository to domain constructors. Demonstrated strong architectural instincts by recognizing and fixing separation of concerns issues. Ready for service layer orchestration and HTTP API integration.
