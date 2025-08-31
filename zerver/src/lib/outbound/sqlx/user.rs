@@ -138,7 +138,7 @@ impl UserRepository for Postgres {
                 .await
                 .map_err(|e| match e {
                     e if e.is_unique_constraint_violation() => UpdateUserError::Duplicate,
-                    sqlx::Error::RowNotFound => UpdateUserError::UserNotFound,
+                    sqlx::Error::RowNotFound => UpdateUserError::NotFound,
                     e => UpdateUserError::Database(e.into()),
                 })?;
 
