@@ -323,6 +323,9 @@ alwaysApply: true
 - **🎯 DOMAIN BOUNDARY CORRECTION**: Fixed architectural violation by moving validation from repository to domain constructors
 - **🎯 JUNCTION TABLE MASTERY**: Proper modeling of many-to-many relationships with business logic (quantities, explicit operations)
 - **🎯 LAYERED ERROR HANDLING**: Comprehensive error hierarchy from domain validation through database constraints to HTTP responses
+- **🎯 SERVICE ORCHESTRATION DESIGN**: DeckService trait designed for multi-query orchestration with cross-domain data composition
+- **🎯 REPOSITORY RESPONSIBILITY CLARITY**: Focused repository methods enabling service layer composition rather than complex JOIN queries
+- **🎯 CROSS-DOMAIN MODEL INTEGRATION**: DeckWithCards design bridging Deck and Card domains for rich API responses
 
 ### Learning Pattern Recognition
 - **Strategic Simplification**: Recognizes when complexity doesn't add value

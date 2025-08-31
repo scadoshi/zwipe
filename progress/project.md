@@ -160,6 +160,9 @@ alwaysApply: true
 - **🚀 TRANSACTION MANAGEMENT**: Proper transaction handling with automatic rollback on validation failures
 - **🚀 COMPREHENSIVE ERROR HIERARCHY**: Domain-specific errors with proper HTTP status code mapping paths
 - **🚀 DEFENSIVE PROGRAMMING**: TryFrom implementations at all database boundaries with comprehensive validation
+- **🚀 SERVICE LAYER ARCHITECTURE**: DeckService trait designed for orchestration with DeckWithCards return types
+- **🚀 MULTI-QUERY ORCHESTRATION DESIGN**: Repository methods designed for focused operations with service layer composition
+- **🚀 CROSS-DOMAIN INTEGRATION**: DeckWithCards model bridges Deck and Card domains for rich API responses
 
 ### COMPLETE - Card HTTP Handlers ✅
 - **🎯 CARD HTTP IMPLEMENTATION**: Complete get_card and search_cards HTTP handlers with proper error mapping
