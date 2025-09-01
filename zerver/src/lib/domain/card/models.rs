@@ -13,7 +13,7 @@ use uuid::Uuid;
 /// while creating a `Uuid` from string
 /// usually with the try_parse function
 #[derive(Debug, Error)]
-#[error("failed to parse `Uuid`")]
+#[error("invalid id: {0}")]
 pub struct InvalidUuid(uuid::Error);
 
 impl From<uuid::Error> for InvalidUuid {
@@ -22,9 +22,37 @@ impl From<uuid::Error> for InvalidUuid {
     }
 }
 
+#[derive(Debug, Error)]
+pub enum GetCardsRequestError {
+    #[error("invalid id: {0}")]
+    InvalidUuid(uuid::Error),
+    #[error("no ids provided")]
+    MissingIds,
+}
+
+impl From<uuid::Error> for GetCardsRequestError {
+    fn from(value: uuid::Error) -> Self {
+        Self::InvalidUuid(value)
+    }
+}
+
+#[derive(Debug, Error)]
+pub enum GetCardProfilesRequestError {
+    #[error("invalid id: {0}")]
+    InvalidUuid(uuid::Error),
+    #[error("no ids provided")]
+    MissingIds,
+}
+
+impl From<uuid::Error> for GetCardProfilesRequestError {
+    fn from(value: uuid::Error) -> Self {
+        Self::InvalidUuid(value)
+    }
+}
+
 /// for errors encountered while creating cards
 #[derive(Debug, Error)]
-pub enum CreateScryfallCardError {
+pub enum CreateCardError {
     #[error("id already exists")]
     UniqueConstraintViolation(anyhow::Error),
     #[error(transparent)]
@@ -35,7 +63,7 @@ pub enum CreateScryfallCardError {
 
 /// for errors encountered while getting cards
 #[derive(Debug, Error)]
-pub enum GetScryfallCardError {
+pub enum GetCardError {
     #[error("card not found")]
     NotFound,
     #[error(transparent)]
@@ -48,7 +76,7 @@ pub enum GetScryfallCardError {
 /// - NotFound is not a possible enumeration of this
 /// because a search request should just return an empty vec
 #[derive(Debug, Error)]
-pub enum SearchScryfallCardError {
+pub enum SearchCardError {
     #[error(transparent)]
     Database(DatabaseError),
     #[error("scryfall card found but database returned invalid object: {0}")]
@@ -57,18 +85,20 @@ pub enum SearchScryfallCardError {
 
 #[derive(Debug, Error)]
 pub enum GetCardProfileError {
-    #[error("card profile not found at id {0}")]
-    NotFound(Uuid),
+    #[error("card profile not found")]
+    NotFound,
+    #[error(transparent)]
+    Database(DatabaseError),
+    #[error("card profile found but database returned invalid object: {0}")]
+    InvalidCardProfileFromDatabase(anyhow::Error),
 }
 
-// =======
-//  parts
-// =======
+// ==========
+//  requests
+// ==========
 
-/// for collecting search parameters
-/// while searching for a card
 #[derive(Debug, Serialize, Deserialize)]
-pub struct SearchScryfallCardRequest {
+pub struct SearchCardRequest {
     pub name: Option<String>,
     pub type_line: Option<String>,
     pub set: Option<String>,
@@ -80,7 +110,7 @@ pub struct SearchScryfallCardRequest {
     pub offset: Option<u32>,
 }
 
-impl Default for SearchScryfallCardRequest {
+impl Default for SearchCardRequest {
     fn default() -> Self {
         Self {
             name: None,
@@ -96,7 +126,7 @@ impl Default for SearchScryfallCardRequest {
     }
 }
 
-impl SearchScryfallCardRequest {
+impl SearchCardRequest {
     pub fn new(
         name: Option<String>,
         type_line: Option<String>,
@@ -133,6 +163,68 @@ impl SearchScryfallCardRequest {
             || self.offset.is_some()
     }
 }
+
+pub struct GetCardRequest(Uuid);
+
+impl GetCardRequest {
+    pub fn new(id: &str) -> Result<Self, InvalidUuid> {
+        Ok(Self(Uuid::try_parse(id)?))
+    }
+
+    pub fn id(&self) -> &Uuid {
+        &self.0
+    }
+}
+pub struct GetCardsRequest(Vec<Uuid>);
+
+impl GetCardsRequest {
+    pub fn new(ids: Vec<&str>) -> Result<Self, GetCardsRequestError> {
+        if ids.is_empty() {
+            return Err(GetCardsRequestError::MissingIds);
+        }
+        Ok(Self(
+            ids.into_iter()
+                .map(|x| Uuid::try_parse(x))
+                .collect::<Result<Vec<Uuid>, uuid::Error>>()?,
+        ))
+    }
+
+    pub fn ids(&self) -> &Vec<Uuid> {
+        &self.0
+    }
+}
+
+pub struct GetCardProfileRequest(Uuid);
+
+impl GetCardProfileRequest {
+    pub fn new(id: &str) -> Result<Self, InvalidUuid> {
+        Ok(Self(Uuid::try_parse(id)?))
+    }
+
+    pub fn id(&self) -> &Uuid {
+        &self.0
+    }
+}
+
+pub struct GetCardProfilesRequest(Vec<Uuid>);
+
+impl GetCardProfilesRequest {
+    pub fn new(ids: Vec<&str>) -> Result<Self, GetCardProfilesRequestError> {
+        if ids.is_empty() {
+            return Err(GetCardProfilesRequestError::MissingIds);
+        }
+        Ok(Self(
+            ids.into_iter()
+                .map(|x| Uuid::try_parse(x))
+                .collect::<Result<Vec<Uuid>, uuid::Error>>()?,
+        ))
+    }
+
+    pub fn ids(&self) -> &Vec<Uuid> {
+        &self.0
+    }
+}
+
 // ======
 //  main
 // ======

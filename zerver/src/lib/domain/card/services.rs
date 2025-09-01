@@ -2,8 +2,9 @@ use crate::domain::card::{
     models::{
         scryfall_card::ScryfallCard,
         sync_metrics::{SyncMetrics, SyncType},
-        CreateScryfallCardError, GetScryfallCardError, SearchScryfallCardError,
-        SearchScryfallCardRequest,
+        CardProfile, CreateCardError, GetCardError, GetCardProfileError, GetCardProfileRequest,
+        GetCardProfilesRequest, GetCardRequest, GetCardsRequest, SearchCardError,
+        SearchCardRequest,
     },
     ports::{CardRepository, CardService},
 };
@@ -42,43 +43,40 @@ where
 }
 
 impl<R: CardRepository> CardService for Service<R> {
-    async fn insert(&self, card: ScryfallCard) -> Result<ScryfallCard, CreateScryfallCardError> {
+    async fn insert(&self, card: ScryfallCard) -> Result<ScryfallCard, CreateCardError> {
         self.repo.insert(card).await
     }
 
-    async fn get_scryfall_card(
-        &self,
-        scryfall_card_id: &uuid::Uuid,
-    ) -> Result<ScryfallCard, GetScryfallCardError> {
-        todo!()
+    async fn get_card(&self, request: &GetCardRequest) -> Result<ScryfallCard, GetCardError> {
+        self.repo.get_card(request).await
     }
 
-    async fn get_scryfall_cards(
+    async fn get_cards(
         &self,
-        scryfall_card_ids: &Vec<uuid::Uuid>,
-    ) -> Result<Vec<ScryfallCard>, GetScryfallCardError> {
-        todo!()
+        request: &GetCardsRequest,
+    ) -> Result<Vec<ScryfallCard>, GetCardError> {
+        self.repo.get_cards(request).await
     }
 
     async fn search_scryfall_cards(
         &self,
-        request: &SearchScryfallCardRequest,
-    ) -> Result<Vec<ScryfallCard>, SearchScryfallCardError> {
+        request: &SearchCardRequest,
+    ) -> Result<Vec<ScryfallCard>, SearchCardError> {
         self.repo.search_cards(request).await
     }
 
     async fn get_card_profile(
         &self,
-        card_profile_id: &uuid::Uuid,
-    ) -> Result<super::models::CardProfile, GetScryfallCardError> {
-        todo!()
+        request: &GetCardProfileRequest,
+    ) -> Result<CardProfile, GetCardProfileError> {
+        self.repo.get_card_profile(request).await
     }
 
     async fn get_card_profiles(
         &self,
-        card_profile_ids: &Vec<uuid::Uuid>,
-    ) -> Result<Vec<super::models::CardProfile>, GetScryfallCardError> {
-        todo!()
+        request: &GetCardProfilesRequest,
+    ) -> Result<Vec<CardProfile>, GetCardProfileError> {
+        self.repo.get_card_profiles(request).await
     }
 
     async fn scryfall_sync(&self, sync_type: SyncType) -> anyhow::Result<SyncMetrics> {
