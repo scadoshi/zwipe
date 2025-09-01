@@ -56,7 +56,7 @@ where
 {
     state
         .card_service
-        .get_scryfall_card(&id)
+        .get_card(&id)
         .await
         .map_err(ApiError::from)
         .map(|card| ApiSuccess::new(StatusCode::OK, card))
