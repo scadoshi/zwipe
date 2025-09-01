@@ -1,22 +1,46 @@
 use sqlx_macros::FromRow;
+use thiserror::Error;
 use uuid::Uuid;
 
-use crate::domain::card::models::CardProfile;
+use crate::domain::card::models::{CardProfile, GetCardProfileError};
+
+// ========
+//  errors
+// ========
+
+#[derive(Debug, Error)]
+pub enum ToCardProfileError {
+    #[error("invalid card profile id: {0}")]
+    InvalidId(uuid::Error),
+    #[error("invalid card id: {0}")]
+    InvalidCardId(uuid::Error),
+}
+
+// ======
+//  main
+// ======
 
 #[derive(Debug, Clone, FromRow)]
 pub struct DatabaseCardProfile {
-    id: String,
-    scryfall_card_id: String,
+    pub id: String,
+    pub scryfall_card_id: String,
 }
 
 impl TryFrom<DatabaseCardProfile> for CardProfile {
-    type Error = uuid::Error;
+    type Error = ToCardProfileError;
     fn try_from(value: DatabaseCardProfile) -> Result<Self, Self::Error> {
-        let id = Uuid::try_parse(&value.id)?;
-        let scryfall_card_id = Uuid::try_parse(&value.scryfall_card_id)?;
+        let id = Uuid::try_parse(&value.id).map_err(|e| Self::Error::InvalidId(e))?;
+        let scryfall_card_id =
+            Uuid::try_parse(&value.scryfall_card_id).map_err(|e| Self::Error::InvalidCardId(e))?;
         Ok(Self {
             id,
             scryfall_card_id,
         })
+    }
+}
+
+impl From<ToCardProfileError> for GetCardProfileError {
+    fn from(value: ToCardProfileError) -> Self {
+        Self::InvalidCardProfileFromDatabase(value.into())
     }
 }
