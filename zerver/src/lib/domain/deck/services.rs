@@ -1,40 +1,53 @@
 use std::fmt::Debug;
 
-use crate::domain::deck::{
-    models::{
-        deck::{
-            CreateDeckError, CreateDeckRequest, Deck, DeleteDeckError, DeleteDeckRequest,
-            GetDeckError, GetDeckRequest, UpdateDeckError, UpdateDeckRequest,
+use crate::domain::{
+    card::ports::CardRepository,
+    deck::{
+        models::{
+            deck::{
+                CreateDeckError, CreateDeckRequest, Deck, DeleteDeckError, DeleteDeckRequest,
+                GetDeckError, GetDeckRequest, UpdateDeckError, UpdateDeckRequest,
+            },
+            deck_card::{
+                CreateDeckCardError, DeckCard, DeleteDeckCardError, DeleteDeckCardRequest,
+                GetDeckCardError, GetDeckCardRequest, UpdateDeckCardError,
+            },
+            DeckWithCards,
         },
-        deck_card::{
-            CreateDeckCardError, DeckCard, DeleteDeckCardError, DeleteDeckCardRequest,
-            GetDeckCardError, GetDeckCardRequest, UpdateDeckCardError,
-        },
-        DeckWithCards,
+        ports::{DeckRepository, DeckService},
     },
-    ports::{DeckRepository, DeckService},
 };
 
 #[derive(Debug, Clone)]
-pub struct Service<R>
+pub struct Service<DR, CR>
 where
-    R: DeckRepository,
+    DR: DeckRepository,
+    CR: CardRepository,
 {
-    repo: R,
+    deck_repo: DR,
+    card_repo: CR,
 }
 
-impl<R> Service<R>
+impl<DR, CR> Service<DR, CR>
 where
-    R: DeckRepository,
+    DR: DeckRepository,
+    CR: CardRepository,
 {
-    pub fn new(repo: R) -> Self {
-        Self { repo }
+    pub fn new(deck_repo: DR, card_repo: CR) -> Self {
+        Self {
+            deck_repo,
+            card_repo,
+        }
     }
 }
 
-impl<R: DeckRepository> DeckService for Service<R> {
+impl<DR, CR> DeckService for Service<DR, CR>
+where
+    DR: DeckRepository,
+    CR: CardRepository,
+{
     async fn create_deck(&self, request: &CreateDeckRequest) -> Result<Deck, CreateDeckError> {
-        self.repo.create_deck(request).await
+        self.deck_repo.create_deck(request).await
     }
 
     async fn get_deck(&self, request: &GetDeckRequest) -> Result<DeckWithCards, GetDeckError> {
