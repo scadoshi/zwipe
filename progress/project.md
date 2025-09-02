@@ -164,6 +164,17 @@ alwaysApply: true
 - **🚀 MULTI-QUERY ORCHESTRATION DESIGN**: Repository methods designed for focused operations with service layer composition
 - **🚀 CROSS-DOMAIN INTEGRATION**: DeckWithCards model bridges Deck and Card domains for rich API responses
 
+### COMPLETE - Deck Service Layer Implementation ✅
+- **🎯 DUAL-GENERIC SERVICE PATTERN**: Service<DeckRepository, CardRepository> following hexagonal architecture guidelines
+- **🎯 CROSS-DOMAIN ORCHESTRATION**: Complete get_deck implementation with Deck → DeckCards → CardProfiles → ScryfallData flow
+- **🎯 HASHMAP JOIN OPTIMIZATION**: O(1) card lookup performance using HashMap for scryfall data matching
+- **🎯 REQUEST CONVERSION PATTERNS**: Clean Into trait usage for cross-domain request building
+- **🎯 DEFENSIVE DATA JOINING**: filter_map pattern handling potential missing card references gracefully
+- **🎯 SERVICE DELEGATION**: Proper delegation to repository layer for single-domain operations
+- **🎯 FULLCARD COMPOSITION**: FullCard struct combining CardProfile and ScryfallData for rich responses
+- **🎯 DOMAIN MODEL CLARIFICATION**: Strategic rename ScryfallCard → ScryfallData to distinguish raw API data from composed Card entity
+- **🎯 API NAMING CONSISTENCY**: Prepared foundation for Card entity as primary public interface with ScryfallData as internal data layer
+
 ### COMPLETE - Card HTTP Handlers ✅
 - **🎯 CARD HTTP IMPLEMENTATION**: Complete get_card and search_cards HTTP handlers with proper error mapping
 - **🎯 RESTFUL API DESIGN**: Transitioned from JSON request bodies to path/query parameters for cleaner API
@@ -211,13 +222,12 @@ alwaysApply: true
 - **🔄 ROUTE INTEGRATION**: Connect Card handlers to HTTP server routing for complete Card API
 - **🔄 CARD READ OPERATIONS TESTING**: Test get_card and search_cards with full database of 35k+ cards
 
-### NEXT PRIORITIES - Immediate Roadmap
-1. **🔧 Deck Service Layer Implementation**: Build orchestration layer for deck operations
-   - **DeckService Implementation**: Complete service layer with repository delegation
-   - **DeckWithCards Operations**: Implement get_deck_with_cards() combining deck + scryfall cards
-   - **Business Logic Integration**: Add deck validation rules and card composition logic
-   - **Service Testing**: Validate service layer orchestration and error handling
-   - **⚠️ CRITICAL ARCHITECTURE NOTE**: Use Service<DR, CS> pattern with dual generics (DeckRepository + CardService), NOT combined DeckCardService or repository-to-repository calls. This maintains domain separation while enabling service orchestration.
+### IN PROGRESS - Current Development 🔄
+1. **🔧 Card Service Refactoring**: Rebuild card service for composed Card entity
+   - **Card Entity Implementation**: Build Card struct combining CardProfile + ScryfallData
+   - **API Method Renaming**: get_scryfall_data_batch() for internal access, get_card()/get_cards() for public API
+   - **Service Layer Composition**: CardService returns full Card entities instead of raw ScryfallData
+   - **Repository Method Cleanup**: Rename awkward get_scryfall_datas() to proper plural forms
 2. **🔧 Deck HTTP Handler Implementation**: Build REST API for deck management
    - **Complete CRUD Handlers**: GET, POST, PUT, DELETE endpoints for deck operations
    - **DeckCard Management**: Add/remove/update card quantity endpoints
@@ -498,10 +508,10 @@ curl http://localhost:8080/api/v1/decks
 
 ---
 
-**Last Updated**: After complete deck domain implementation with advanced constraint handling
+**Last Updated**: After deck service orchestration implementation with cross-domain composition
 
-**Current Sprint**: Service layer implementation and HTTP handler development
+**Current Sprint**: HTTP handler development and API integration
 
-**Next Major Milestone**: Complete deck and card service layers with HTTP API integration
+**Next Major Milestone**: Complete deck HTTP handlers and route integration
 
-**Major Recent Achievement**: Successfully implemented complete deck domain with production-ready CRUD operations, advanced constraint handling (unique + check constraints), and proper domain boundary enforcement. Achieved layered validation strategy with application logic + database constraints. Corrected architectural boundary violations by moving validation from repository to domain constructors. Ready to build service orchestration layer and HTTP API integration. 
+**Major Recent Achievement**: Implemented production-ready deck service orchestration with dual-generic Service<DeckRepository, CardRepository> pattern. Successfully built cross-domain data composition flow: Deck → DeckCards → CardProfiles → ScryfallCards → FullCard → DeckWithCards. Used HashMap join optimization for O(1) card lookup performance. Demonstrated solid understanding of service layer responsibilities vs repository delegation. Ready for HTTP handler implementation and API integration. 

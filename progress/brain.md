@@ -326,6 +326,14 @@ alwaysApply: true
 - **🎯 SERVICE ORCHESTRATION DESIGN**: DeckService trait designed for multi-query orchestration with cross-domain data composition
 - **🎯 REPOSITORY RESPONSIBILITY CLARITY**: Focused repository methods enabling service layer composition rather than complex JOIN queries
 - **🎯 CROSS-DOMAIN MODEL INTEGRATION**: DeckWithCards design bridging Deck and Card domains for rich API responses
+- **🎯 SERVICE ORCHESTRATION IMPLEMENTATION**: Complete dual-generic Service<DeckRepository, CardRepository> pattern with cross-domain data composition
+- **🎯 HASHMAP JOIN PATTERNS**: Efficient O(1) card lookup using HashMap for performance optimization in service layer
+- **🎯 REQUEST CONVERSION ARCHITECTURE**: Into trait implementations for clean cross-domain request building (DeckCards → GetCardProfilesRequest)
+- **🎯 DEFENSIVE DATA COMPOSITION**: filter_map patterns for graceful handling of potential data inconsistencies in joins
+- **🎯 SERVICE DELEGATION UNDERSTANDING**: Clear separation between orchestration (service) and persistence (repository) responsibilities
+- **🎯 DOMAIN MODEL ARCHITECTURE**: Strategic ScryfallCard → ScryfallData rename to clarify raw API data vs composed Card entity distinction
+- **🎯 API NAMING PATTERNS**: Understanding of proper plural naming conventions (get_scryfall_data_batch vs get_scryfall_datas)
+- **🎯 LAYERED ENTITY DESIGN**: Foundation for Card entity as public interface with ScryfallData as internal data layer
 
 ### Learning Pattern Recognition
 - **Strategic Simplification**: Recognizes when complexity doesn't add value
@@ -386,8 +394,8 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: After complete deck domain implementation with advanced constraint handling and architectural corrections
+**Last Updated**: After deck service orchestration implementation with cross-domain data composition
 
-**Next Learning Edge**: Service layer orchestration and HTTP API integration
+**Next Learning Edge**: HTTP handler development and API integration patterns
 
-**Major Recent Achievement**: Successfully implemented complete deck domain with production-ready CRUD operations, advanced constraint handling (unique + check constraints), and proper domain boundary enforcement. Mastered layered validation strategy with application logic + database constraints. Corrected architectural boundary violations by moving validation from repository to domain constructors. Demonstrated strong architectural instincts by recognizing and fixing separation of concerns issues. Ready for service layer orchestration and HTTP API integration.
+**Major Recent Achievement**: Implemented working deck service orchestration with dual-generic Service<DeckRepository, CardRepository> architecture. Built complete cross-domain data flow using HashMap join optimization and defensive programming patterns. Demonstrated solid understanding of service layer orchestration vs repository delegation. Successfully composed complex data structures (DeckWithCards) while maintaining clean domain boundaries. Ready for HTTP handler implementation and route integration.
