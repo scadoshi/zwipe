@@ -1,4 +1,4 @@
-CREATE TABLE scryfall_card_sync_metrics (
+CREATE TABLE scryfall_data_sync_metrics (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     sync_type TEXT NOT NULL,
     started_at TIMESTAMP NOT NULL,

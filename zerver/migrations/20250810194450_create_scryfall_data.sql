@@ -96,10 +96,10 @@ CREATE TABLE scryfall_data (
     preview_source VARCHAR
 );
 
-CREATE INDEX idx_cards_name ON scryfall_data(name);
-CREATE INDEX idx_cards_type ON scryfall_data(type_line);
-CREATE INDEX idx_cards_rarity ON scryfall_data(rarity);
-CREATE INDEX idx_cards_id ON scryfall_data(id);
-CREATE INDEX idx_cards_set ON scryfall_data(set);
-CREATE INDEX idx_cards_cmc ON scryfall_data(cmc);
-CREATE INDEX idx_cards_colors ON scryfall_data USING GIN(colors);
+CREATE INDEX idx_scryfall_data_name ON scryfall_data(name);
+CREATE INDEX idx_scryfall_data_type ON scryfall_data(type_line);
+CREATE INDEX idx_scryfall_data_rarity ON scryfall_data(rarity);
+CREATE INDEX idx_scryfall_data_id ON scryfall_data(id);
+CREATE INDEX idx_scryfall_data_set ON scryfall_data(set);
+CREATE INDEX idx_scryfall_data_cmc ON scryfall_data(cmc);
+CREATE INDEX idx_scryfall_data_colors ON scryfall_data USING GIN(colors);

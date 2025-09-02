@@ -317,7 +317,7 @@ impl InsertWithTransaction for ScryfallData {
     ) -> Result<Self, CreateScryfallDataError> {
         let scryfall_data_id = self.id.clone();
 
-        let mut qb = QueryBuilder::new("INSERT INTO scryfall_datas (");
+        let mut qb = QueryBuilder::new("INSERT INTO scryfall_data (");
         qb.push(scryfall_data_fields()).push(") VALUES ");
         bind_scryfall_data_fields!(qb, self);
         qb.push(" RETURNING *");
@@ -358,7 +358,7 @@ impl InsertWithTransaction for Vec<ScryfallData> {
     ) -> Result<Self, CreateScryfallDataError> {
         let card_ids: HashSet<Uuid> = self.iter().map(|x| x.id.to_owned()).collect();
 
-        let mut qb = QueryBuilder::new("INSERT INTO scryfall_datas (");
+        let mut qb = QueryBuilder::new("INSERT INTO scryfall_data (");
         qb.push(scryfall_data_fields()).push(") VALUES ");
 
         self.bind_to(&mut qb);
@@ -493,7 +493,7 @@ impl CardRepository for MyPostgres {
         tracing::info!("initiating batch insert if not exists process");
         tracing::info!("received {} cards", cards.len());
         let mut tx = self.pool.begin().await?;
-        let existing_ids: Vec<Uuid> = query_scalar("SELECT id FROM scryfall_datas")
+        let existing_ids: Vec<Uuid> = query_scalar("SELECT id FROM scryfall_data")
             .fetch_all(&self.pool)
             .await?;
         tracing::info!(
@@ -529,7 +529,7 @@ impl CardRepository for MyPostgres {
         let card_ids: Vec<Uuid> = cards.iter().map(|c| c.id).collect();
         tracing::info!("deleting {} cards", card_ids.len());
         // delete the cards (card_profile cascade cascades)
-        query("DELETE FROM scryfall_datas WHERE id = ANY($1)")
+        query("DELETE FROM scryfall_data WHERE id = ANY($1)")
             .bind(card_ids)
             .execute(&mut *tx)
             .await?;
@@ -544,7 +544,7 @@ impl CardRepository for MyPostgres {
         &self,
         request: &GetScryfallDataRequest,
     ) -> Result<ScryfallData, GetScryfallDataError> {
-        let scryfall_data: ScryfallData = query_as("SELECT * FROM scryfall_datas WHERE id = $1")
+        let scryfall_data: ScryfallData = query_as("SELECT * FROM scryfall_data WHERE id = $1")
             .bind(request.id())
             .fetch_one(&self.pool)
             .await?;
@@ -555,7 +555,7 @@ impl CardRepository for MyPostgres {
         &self,
         request: &GetScryfallDatasRequest,
     ) -> Result<Vec<ScryfallData>, GetScryfallDataError> {
-        let cards: Vec<ScryfallData> = query_as("SELECT * FROM scryfall_datas WHERE id = ANY($1)")
+        let cards: Vec<ScryfallData> = query_as("SELECT * FROM scryfall_data WHERE id = ANY($1)")
             .bind(request.ids())
             .fetch_all(&self.pool)
             .await?;
@@ -565,7 +565,7 @@ impl CardRepository for MyPostgres {
         &self,
         request: &SearchScryfallDataRequest,
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
-        let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new("SELECT * FROM scryfall_datas");
+        let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new("SELECT * FROM scryfall_data");
 
         // early return with all cards if no filtering is applied
         if !request.has_filters() {
@@ -663,7 +663,7 @@ impl CardRepository for MyPostgres {
         Ok(card_profiles)
     }
     async fn delete_all(&self) -> Result<Vec<ScryfallData>, anyhow::Error> {
-        let cards: Vec<ScryfallData> = query_as("DELETE FROM scryfall_datas RETURNING *;")
+        let cards: Vec<ScryfallData> = query_as("DELETE FROM scryfall_data RETURNING *;")
             .fetch_all(&self.pool)
             .await?;
         Ok(cards)

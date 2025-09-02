@@ -71,15 +71,15 @@ where
             .get_card_profiles(&get_card_profile_request)
             .await?;
         let get_cards_request: GetScryfallDatasRequest = card_profiles.clone().into();
-        let scryfall_datas = self.card_repo.get_cards(&get_cards_request).await?;
-        let scryfall_datas_map: HashMap<Uuid, ScryfallData> = scryfall_datas
+        let scryfall_data = self.card_repo.get_cards(&get_cards_request).await?;
+        let scryfall_data_map: HashMap<Uuid, ScryfallData> = scryfall_data
             .into_iter()
             .map(|scryfall_data| (scryfall_data.id.to_owned(), scryfall_data))
             .collect();
         let cards: Vec<FullCard> = card_profiles
             .into_iter()
             .filter_map(|card_profile| {
-                scryfall_datas_map
+                scryfall_data_map
                     .get(&card_profile.scryfall_data_id)
                     .map(|scryfall_data| FullCard::new(card_profile, scryfall_data.clone()))
             })
