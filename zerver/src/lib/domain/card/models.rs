@@ -1,6 +1,6 @@
 pub mod scryfall_card;
 pub mod sync_metrics;
-use crate::domain::DatabaseError;
+use crate::domain::{deck::models::deck_card::DeckCard, DatabaseError};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
@@ -164,6 +164,7 @@ impl SearchCardRequest {
     }
 }
 
+#[derive(Debug)]
 pub struct GetCardRequest(Uuid);
 
 impl GetCardRequest {
@@ -175,6 +176,23 @@ impl GetCardRequest {
         &self.0
     }
 }
+
+impl<'de> Deserialize<'de> for GetCardRequest {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let id = String::deserialize(deserializer).map_err(|e| {
+            serde::de::Error::custom(format!(
+                "failed to deserialize into string: {}",
+                e.to_string()
+            ))
+        })?;
+        GetCardRequest::new(&id)
+            .map_err(|e| serde::de::Error::custom(format!("invalid uuid: {}", e.to_string())))
+    }
+}
+
 pub struct GetCardsRequest(Vec<Uuid>);
 
 impl GetCardsRequest {
@@ -191,6 +209,13 @@ impl GetCardsRequest {
 
     pub fn ids(&self) -> &Vec<Uuid> {
         &self.0
+    }
+}
+
+impl From<Vec<CardProfile>> for GetCardsRequest {
+    fn from(value: Vec<CardProfile>) -> Self {
+        let ids: Vec<Uuid> = value.into_iter().map(|x| x.scryfall_card_id).collect();
+        Self(ids)
     }
 }
 
@@ -222,6 +247,13 @@ impl GetCardProfilesRequest {
 
     pub fn ids(&self) -> &Vec<Uuid> {
         &self.0
+    }
+}
+
+impl From<Vec<DeckCard>> for GetCardProfilesRequest {
+    fn from(value: Vec<DeckCard>) -> Self {
+        let ids: Vec<Uuid> = value.into_iter().map(|x| x.card_profile_id).collect();
+        Self(ids)
     }
 }
 

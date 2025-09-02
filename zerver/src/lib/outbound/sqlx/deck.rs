@@ -265,8 +265,9 @@ impl DeckRepository for Postgres {
     async fn get_deck(&self, request: &GetDeckRequest) -> Result<Deck, GetDeckError> {
         let database_deck = query_as!(
             DatabaseDeck,
-            "SELECT id, name, user_id FROM decks WHERE (id::text = $1 OR name = $1)",
-            request.as_str()
+            "SELECT id, name, user_id FROM decks WHERE user_id = $1 AND (id::text = $2 OR name = $2)",
+            request.user_id,
+            request.identifier
         )
         .fetch_one(&self.pool)
         .await?;
@@ -282,8 +283,8 @@ impl DeckRepository for Postgres {
     ) -> Result<DeckCard, GetDeckCardError> {
         let database_deck_card = query_as!(
             DatabaseDeckCard,
-            "SELECT id, deck_id, card_profile_id, quantity FROM deck_cards WHERE id::text = $1",
-            request.as_str()
+            "SELECT id, deck_id, card_profile_id, quantity FROM deck_cards WHERE id = $1",
+            request.deck_id
         )
         .fetch_one(&self.pool)
         .await?;
@@ -295,12 +296,12 @@ impl DeckRepository for Postgres {
 
     async fn get_deck_cards(
         &self,
-        request: &GetDeckRequest,
+        request: &GetDeckCardRequest,
     ) -> Result<Vec<DeckCard>, GetDeckCardError> {
         let database_deck_cards = query_as!(
             DatabaseDeckCard,
-            "SELECT id, deck_id, card_profile_id, quantity FROM deck_cards WHERE deck_id::text = $1",
-            request.as_str()
+            "SELECT id, deck_id, card_profile_id, quantity FROM deck_cards WHERE deck_id = $1",
+            request.deck_id
         )
         .fetch_all(&self.pool)
         .await?;
