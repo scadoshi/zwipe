@@ -1,5 +1,5 @@
 use crate::domain::{
-    card::models::{scryfall_card::ScryfallCard, CardProfile},
+    card::models::{card_profile::CardProfile, scryfall_data::ScryfallData},
     deck::models::deck::Deck,
 };
 
@@ -13,14 +13,14 @@ pub mod deck_card;
 #[derive(Debug, Clone)]
 pub struct FullCard {
     card_profile: CardProfile,
-    scryfall_card: ScryfallCard,
+    scryfall_data: ScryfallData,
 }
 
 impl FullCard {
-    pub fn new(card_profile: CardProfile, scryfall_card: ScryfallCard) -> Self {
+    pub fn new(card_profile: CardProfile, scryfall_data: ScryfallData) -> Self {
         Self {
             card_profile,
-            scryfall_card,
+            scryfall_data,
         }
     }
 }

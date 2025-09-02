@@ -1,6 +1,6 @@
 use zwipe::{
     config::Config,
-    domain::card::{self, models::scryfall_card::ScryfallCard, ports::CardService},
+    domain::card::{self, models::scryfall_data::ScryfallData, ports::CardService},
     domain::logo,
     inbound::http::scryfall::PlanesWalker,
     outbound::sqlx::postgres::Postgres,
@@ -28,7 +28,7 @@ async fn main() -> anyhow::Result<()> {
         .context("failed to get card")?
         .clone();
     tracing::info!("found {:?}", card.name);
-    let _inserted_card: ScryfallCard = service.insert(card).await?;
+    let _inserted_card: ScryfallData = service.insert(card).await?;
     tracing::info!("successfully inserted into database");
     Ok(())
 }

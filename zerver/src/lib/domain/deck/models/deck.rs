@@ -5,7 +5,7 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::domain::{
-    card::models::{GetCardError, GetCardProfileError},
+    card::models::{card_profile::GetCardProfileError, scryfall_data::GetScryfallDataError},
     deck::models::deck_card::GetDeckCardError,
     DatabaseError,
 };
@@ -57,7 +57,7 @@ pub enum GetDeckError {
     #[error(transparent)]
     GetCardProfileError(GetCardProfileError),
     #[error(transparent)]
-    GetCardError(GetCardError),
+    GetScryfallDataError(GetScryfallDataError),
 }
 
 impl From<GetDeckCardError> for GetDeckError {
@@ -72,9 +72,9 @@ impl From<GetCardProfileError> for GetDeckError {
     }
 }
 
-impl From<GetCardError> for GetDeckError {
-    fn from(value: GetCardError) -> Self {
-        Self::GetCardError(value)
+impl From<GetScryfallDataError> for GetDeckError {
+    fn from(value: GetScryfallDataError) -> Self {
+        Self::GetScryfallDataError(value)
     }
 }
 

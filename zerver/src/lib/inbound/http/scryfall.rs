@@ -6,7 +6,7 @@ use reqwest::{
 use serde::Deserialize;
 use serde_json::{from_value, Value};
 
-use crate::domain::card::models::scryfall_card::ScryfallCard;
+use crate::domain::card::models::scryfall_data::ScryfallData;
 
 // ==============================
 //  equip onto scryfall requests
@@ -19,8 +19,8 @@ const CARDS_SEARCH_ENDPOINT: &str = "/cards/search";
 /// scryfall returns this
 /// when you search for a card
 #[derive(Deserialize, Debug)]
-struct ScryfallCardSearchResponse {
-    data: Vec<ScryfallCard>,
+struct ScryfallDataSearchResponse {
+    data: Vec<ScryfallData>,
     // has_more: bool,
     // object: String,
     // total_cards: i32,
@@ -79,7 +79,7 @@ impl PlanesWalker {
 
     #[allow(dead_code)]
     /// for searching for a single card
-    pub async fn tutor(client: &mut Client, search_str: &str) -> anyhow::Result<Vec<ScryfallCard>> {
+    pub async fn tutor(client: &mut Client, search_str: &str) -> anyhow::Result<Vec<ScryfallData>> {
         let url = SCRYFALL_API_BASE.to_string() + CARDS_SEARCH_ENDPOINT;
         let teferi = PlanesWalker::untap(client, &url);
 
@@ -93,7 +93,7 @@ impl PlanesWalker {
             .await
             .context("failed to parse json from get result")?;
         // tracing::debug!("card response was {:#?}", get_json);
-        let card_search_response: ScryfallCardSearchResponse =
+        let card_search_response: ScryfallDataSearchResponse =
             serde_json::from_value(get_json).context("failed to parse CardSearchResponse")?;
         Ok(card_search_response.data)
     }
@@ -138,8 +138,8 @@ impl BulkEndpoint {
 }
 
 impl BulkEndpoint {
-    /// gets bulk cards with a BulkEndpoint parameter end returns `Vec<ScryfallCard>`
-    pub async fn amass(&self) -> anyhow::Result<Vec<ScryfallCard>> {
+    /// gets bulk cards with a BulkEndpoint parameter end returns `Vec<ScryfallData>`
+    pub async fn amass(&self) -> anyhow::Result<Vec<ScryfallData>> {
         // first get the bulk data object with our main url
         let url = SCRYFALL_API_BASE.to_string() + &self.resolve();
         let urza = PlanesWalker::untap(&mut Client::new(), &url);
@@ -170,8 +170,8 @@ impl BulkEndpoint {
             .await
             .context("failed to parse json from download uri result")?;
 
-        let cards: Vec<ScryfallCard> =
-            from_value(cards_json).context("failed to parse Vec<ScryfallCard>")?;
+        let cards: Vec<ScryfallData> =
+            from_value(cards_json).context("failed to parse Vec<ScryfallData>")?;
 
         Ok(cards)
     }

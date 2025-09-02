@@ -2,9 +2,9 @@ use crate::{
     domain::{
         auth::ports::AuthService,
         card::{
-            models::{
-                scryfall_card::ScryfallCard, GetCardError, GetCardRequest, InvalidUuid,
-                SearchCardError, SearchCardRequest,
+            models::scryfall_data::{
+                GetScryfallDataError, GetScryfallDataRequest, ScryfallData,
+                SearchScryfallDataError, SearchScryfallDataRequest,
             },
             ports::CardService,
         },
@@ -24,10 +24,10 @@ use serde::Deserialize;
 //  get
 // =====
 
-impl From<GetCardError> for ApiError {
-    fn from(value: GetCardError) -> Self {
+impl From<GetScryfallDataError> for ApiError {
+    fn from(value: GetScryfallDataError) -> Self {
         match value {
-            GetCardError::NotFound => Self::NotFound("card not found".to_string()),
+            GetScryfallDataError::NotFound => Self::NotFound("card not found".to_string()),
             e => {
                 tracing::error!("{:?}\n{}", e, anyhow!("{e}").backtrace());
                 Self::InternalServerError("internal server error".to_string())
@@ -36,17 +36,11 @@ impl From<GetCardError> for ApiError {
     }
 }
 
-impl From<InvalidUuid> for ApiError {
-    fn from(_value: InvalidUuid) -> Self {
-        Self::UnprocessableEntity("failed to parse Uuid".to_string())
-    }
-}
-
 pub async fn get_card<AS, US, HS, CS>(
     State(state): State<AppState<AS, US, HS, CS>>,
-    Path(request): Path<GetCardRequest>,
+    Path(request): Path<GetScryfallDataRequest>,
     _: AuthenticatedUser,
-) -> Result<ApiSuccess<ScryfallCard>, ApiError>
+) -> Result<ApiSuccess<ScryfallData>, ApiError>
 where
     AS: AuthService,
     US: UserService,
@@ -65,8 +59,8 @@ where
 //  search
 // ========
 
-impl From<SearchCardError> for ApiError {
-    fn from(value: SearchCardError) -> Self {
+impl From<SearchScryfallDataError> for ApiError {
+    fn from(value: SearchScryfallDataError) -> Self {
         tracing::error!("{:?}\n{}", value, anyhow!("{value}").backtrace());
         Self::InternalServerError("internal server error".to_string())
     }
@@ -85,14 +79,14 @@ pub struct SearchCardQueryParams {
     offset: Option<u32>,
 }
 
-impl TryFrom<SearchCardQueryParams> for SearchCardRequest {
-    type Error = SearchCardError;
+impl TryFrom<SearchCardQueryParams> for SearchScryfallDataRequest {
+    type Error = SearchScryfallDataError;
     fn try_from(params: SearchCardQueryParams) -> Result<Self, Self::Error> {
         let color_identity = params
             .color_identity
             .map(|s| s.split(',').map(|c| c.trim().to_string()).collect());
 
-        Ok(SearchCardRequest::new(
+        Ok(SearchScryfallDataRequest::new(
             params.name,
             params.type_line,
             params.set,
@@ -110,18 +104,18 @@ pub async fn search_cards<AS, US, HS, CS>(
     State(state): State<AppState<AS, US, HS, CS>>,
     Query(params): Query<SearchCardQueryParams>,
     _: AuthenticatedUser,
-) -> Result<ApiSuccess<Vec<ScryfallCard>>, ApiError>
+) -> Result<ApiSuccess<Vec<ScryfallData>>, ApiError>
 where
     AS: AuthService,
     US: UserService,
     HS: HealthService,
     CS: CardService,
 {
-    let request = SearchCardRequest::try_from(params)?;
+    let request = SearchScryfallDataRequest::try_from(params)?;
 
     state
         .card_service
-        .search_scryfall_cards(&request)
+        .search_scryfall_datas(&request)
         .await
         .map_err(ApiError::from)
         .map(|cards| ApiSuccess::new(StatusCode::OK, cards))

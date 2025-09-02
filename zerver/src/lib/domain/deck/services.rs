@@ -4,7 +4,10 @@ use uuid::Uuid;
 
 use crate::domain::{
     card::{
-        models::{scryfall_card::ScryfallCard, GetCardProfilesRequest, GetCardsRequest},
+        models::{
+            card_profile::GetCardProfilesRequest,
+            scryfall_data::{GetScryfallDatasRequest, ScryfallData},
+        },
         ports::CardRepository,
     },
     deck::{
@@ -67,18 +70,18 @@ where
             .card_repo
             .get_card_profiles(&get_card_profile_request)
             .await?;
-        let get_cards_request: GetCardsRequest = card_profiles.clone().into();
-        let scryfall_cards = self.card_repo.get_cards(&get_cards_request).await?;
-        let scryfall_cards_map: HashMap<Uuid, ScryfallCard> = scryfall_cards
+        let get_cards_request: GetScryfallDatasRequest = card_profiles.clone().into();
+        let scryfall_datas = self.card_repo.get_cards(&get_cards_request).await?;
+        let scryfall_datas_map: HashMap<Uuid, ScryfallData> = scryfall_datas
             .into_iter()
-            .map(|scryfall_card| (scryfall_card.id.to_owned(), scryfall_card))
+            .map(|scryfall_data| (scryfall_data.id.to_owned(), scryfall_data))
             .collect();
         let cards: Vec<FullCard> = card_profiles
             .into_iter()
             .filter_map(|card_profile| {
-                scryfall_cards_map
-                    .get(&card_profile.scryfall_card_id)
-                    .map(|scryfall_card| FullCard::new(card_profile, scryfall_card.clone()))
+                scryfall_datas_map
+                    .get(&card_profile.scryfall_data_id)
+                    .map(|scryfall_data| FullCard::new(card_profile, scryfall_data.clone()))
             })
             .collect();
         let deck_with_cards = DeckWithCards::new(deck, cards);

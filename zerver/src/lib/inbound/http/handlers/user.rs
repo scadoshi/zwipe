@@ -212,12 +212,6 @@ impl From<DeleteUserError> for ApiError {
     }
 }
 
-impl From<uuid::Error> for ApiError {
-    fn from(value: uuid::Error) -> Self {
-        Self::UnprocessableEntity(format!("failed to parse `Uuid`: {}", value))
-    }
-}
-
 #[derive(Debug, Deserialize)]
 pub struct DeleteUserRequestBody {
     id: String,
