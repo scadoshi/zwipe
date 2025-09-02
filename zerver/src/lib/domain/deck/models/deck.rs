@@ -4,7 +4,11 @@ use serde::Serialize;
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::domain::DatabaseError;
+use crate::domain::{
+    card::models::{GetCardError, GetCardProfileError},
+    deck::models::deck_card::GetDeckCardError,
+    DatabaseError,
+};
 
 // ========
 //  errors
@@ -33,6 +37,14 @@ pub enum CreateDeckError {
 }
 
 #[derive(Debug, Error)]
+pub enum GetDeckRequestError {
+    #[error(transparent)]
+    InvalidUserId(uuid::Error),
+    #[error("identifier must contain something")]
+    MissingIdentifier,
+}
+
+#[derive(Debug, Error)]
 pub enum GetDeckError {
     #[error("deck not found")]
     NotFound,
@@ -40,6 +52,30 @@ pub enum GetDeckError {
     Database(DatabaseError),
     #[error("deck found but database returned invalid object: {0}")]
     InvalidDeckFromDatabase(anyhow::Error),
+    #[error(transparent)]
+    GetDeckCardError(GetDeckCardError),
+    #[error(transparent)]
+    GetCardProfileError(GetCardProfileError),
+    #[error(transparent)]
+    GetCardError(GetCardError),
+}
+
+impl From<GetDeckCardError> for GetDeckError {
+    fn from(value: GetDeckCardError) -> Self {
+        Self::GetDeckCardError(value)
+    }
+}
+
+impl From<GetCardProfileError> for GetDeckError {
+    fn from(value: GetCardProfileError) -> Self {
+        Self::GetCardProfileError(value)
+    }
+}
+
+impl From<GetCardError> for GetDeckError {
+    fn from(value: GetCardError) -> Self {
+        Self::GetCardError(value)
+    }
 }
 
 #[derive(Debug, Error)]
@@ -138,15 +174,24 @@ impl CreateDeckRequest {
 }
 
 #[derive(Debug, Clone)]
-pub struct GetDeckRequest(String);
+pub struct GetDeckRequest {
+    pub identifier: String,
+    pub user_id: Uuid,
+}
 
 impl GetDeckRequest {
-    pub fn new(identifier: &str) -> Self {
-        Self(identifier.to_string())
-    }
+    pub fn new(identifier: &str, user_id: &str) -> Result<Self, GetDeckRequestError> {
+        if identifier.is_empty() {
+            return Err(GetDeckRequestError::MissingIdentifier);
+        }
 
-    pub fn as_str(&self) -> &str {
-        &self.0
+        let user_id =
+            Uuid::try_parse(user_id).map_err(|e| GetDeckRequestError::InvalidUserId(e))?;
+
+        Ok(Self {
+            identifier: identifier.to_string(),
+            user_id,
+        })
     }
 }
 

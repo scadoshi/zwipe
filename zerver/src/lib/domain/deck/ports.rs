@@ -1,19 +1,16 @@
 use std::future::Future;
 
-use crate::domain::{
-    card::models::CardProfile,
-    deck::models::{
-        deck::{
-            CreateDeckError, CreateDeckRequest, Deck, DeleteDeckError, DeleteDeckRequest,
-            GetDeckError, GetDeckRequest, UpdateDeckError, UpdateDeckRequest,
-        },
-        deck_card::{
-            CreateDeckCardError, CreateDeckCardRequest, DeckCard, DeleteDeckCardError,
-            DeleteDeckCardRequest, GetDeckCardError, GetDeckCardRequest, UpdateDeckCardError,
-            UpdateDeckCardRequest,
-        },
-        DeckWithCards,
+use crate::domain::deck::models::{
+    deck::{
+        CreateDeckError, CreateDeckRequest, Deck, DeleteDeckError, DeleteDeckRequest, GetDeckError,
+        GetDeckRequest, UpdateDeckError, UpdateDeckRequest,
     },
+    deck_card::{
+        CreateDeckCardError, CreateDeckCardRequest, DeckCard, DeleteDeckCardError,
+        DeleteDeckCardRequest, GetDeckCardError, GetDeckCardRequest, UpdateDeckCardError,
+        UpdateDeckCardRequest,
+    },
+    DeckWithCards,
 };
 
 /// enables deck related database operations
@@ -40,7 +37,7 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
 
     fn get_deck_cards(
         &self,
-        request: &GetDeckRequest,
+        request: &GetDeckCardRequest,
     ) -> impl Future<Output = Result<Vec<DeckCard>, GetDeckCardError>> + Send;
 
     fn update_deck(
@@ -79,7 +76,7 @@ pub trait DeckService: Clone + Send + Sync + 'static {
     fn update_deck(
         &self,
         request: &UpdateDeckRequest,
-    ) -> impl Future<Output = Result<DeckWithCards, UpdateDeckError>> + Send;
+    ) -> impl Future<Output = Result<Deck, UpdateDeckError>> + Send;
 
     fn delete_deck(
         &self,

@@ -1,7 +1,7 @@
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::domain::DatabaseError;
+use crate::domain::{deck::models::deck::Deck, DatabaseError};
 
 // ========
 //  errors
@@ -39,6 +39,18 @@ pub enum CreateDeckCardError {
     InvalidDeckCardFromDatabase(anyhow::Error),
     #[error(transparent)]
     Database(DatabaseError),
+}
+
+#[derive(Debug, Error)]
+pub enum GetDeckCardsRequestError {
+    #[error(transparent)]
+    InvalidDeckId(uuid::Error),
+}
+
+impl From<uuid::Error> for GetDeckCardsRequestError {
+    fn from(value: uuid::Error) -> Self {
+        Self::InvalidDeckId(value)
+    }
 }
 
 #[derive(Debug, Error)]
@@ -159,15 +171,22 @@ impl CreateDeckCardRequest {
 }
 
 #[derive(Debug, Clone)]
-pub struct GetDeckCardRequest(String);
+pub struct GetDeckCardRequest {
+    pub deck_id: Uuid,
+}
 
 impl GetDeckCardRequest {
-    pub fn new(identifier: &str) -> Self {
-        Self(identifier.to_string())
+    pub fn new(deck_id: &str) -> Result<Self, GetDeckCardsRequestError> {
+        let deck_id = Uuid::try_parse(deck_id)?;
+        Ok(Self { deck_id })
     }
+}
 
-    pub fn as_str(&self) -> &str {
-        &self.0
+impl From<&Deck> for GetDeckCardRequest {
+    fn from(value: &Deck) -> Self {
+        GetDeckCardRequest {
+            deck_id: value.id.to_owned(),
+        }
     }
 }
 
