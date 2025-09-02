@@ -1,15 +1,19 @@
 use crate::domain::card::{
     models::{
-        scryfall_card::ScryfallCard,
+        card_profile::{
+            CardProfile, GetCardProfileError, GetCardProfileRequest, GetCardProfilesRequest,
+        },
+        scryfall_data::{
+            CreateScryfallDataError, GetScryfallDataError, GetScryfallDataRequest,
+            GetScryfallDatasRequest, ScryfallData, SearchScryfallDataError,
+            SearchScryfallDataRequest,
+        },
         sync_metrics::{SyncMetrics, SyncType},
-        CardProfile, CreateCardError, GetCardError, GetCardProfileError, GetCardProfileRequest,
-        GetCardProfilesRequest, GetCardRequest, GetCardsRequest, SearchCardError,
-        SearchCardRequest,
     },
     ports::{CardRepository, CardService},
 };
 use crate::inbound::http::scryfall::BulkEndpoint;
-use crate::outbound::sqlx::card::scryfall_card_field_count;
+use crate::outbound::sqlx::card::scryfall_data_field_count;
 use chrono::NaiveDateTime;
 
 /// postgresql will have issues if there are more
@@ -17,11 +21,11 @@ use chrono::NaiveDateTime;
 const POSTGRESQL_PARAMETER_HARD_LIMIT: usize = 65_535;
 
 /// calculates batch size based on limit
-/// based on the number of fields that `ScryfallCard` has
+/// based on the number of fields that `ScryfallData` has
 ///
 /// limits to half of maximum to keep queries running quickly
 fn batch_size() -> usize {
-    POSTGRESQL_PARAMETER_HARD_LIMIT / 2 / scryfall_card_field_count()
+    POSTGRESQL_PARAMETER_HARD_LIMIT / 2 / scryfall_data_field_count()
 }
 
 /// structure which implements `CardService`
@@ -43,25 +47,28 @@ where
 }
 
 impl<R: CardRepository> CardService for Service<R> {
-    async fn insert(&self, card: ScryfallCard) -> Result<ScryfallCard, CreateCardError> {
+    async fn insert(&self, card: ScryfallData) -> Result<ScryfallData, CreateScryfallDataError> {
         self.repo.insert(card).await
     }
 
-    async fn get_card(&self, request: &GetCardRequest) -> Result<ScryfallCard, GetCardError> {
+    async fn get_card(
+        &self,
+        request: &GetScryfallDataRequest,
+    ) -> Result<ScryfallData, GetScryfallDataError> {
         self.repo.get_card(request).await
     }
 
     async fn get_cards(
         &self,
-        request: &GetCardsRequest,
-    ) -> Result<Vec<ScryfallCard>, GetCardError> {
+        request: &GetScryfallDatasRequest,
+    ) -> Result<Vec<ScryfallData>, GetScryfallDataError> {
         self.repo.get_cards(request).await
     }
 
-    async fn search_scryfall_cards(
+    async fn search_scryfall_datas(
         &self,
-        request: &SearchCardRequest,
-    ) -> Result<Vec<ScryfallCard>, SearchCardError> {
+        request: &SearchScryfallDataRequest,
+    ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
         self.repo.search_cards(request).await
     }
 
