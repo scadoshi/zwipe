@@ -101,7 +101,7 @@ impl From<uuid::Error> for UpdateDeckProfileRequestError {
 }
 
 #[derive(Debug, Error)]
-pub enum UpdateDeckError {
+pub enum UpdateDeckProfileError {
     #[error("deck with name and user id combination already exists")]
     Duplicate,
     #[error("deck not found")]

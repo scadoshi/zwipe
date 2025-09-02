@@ -6,7 +6,8 @@ use crate::domain::{
     card::{
         models::{
             card_profile::GetCardProfilesRequest,
-            scryfall_data::{GetScryfallDatasRequest, ScryfallData},
+            scryfall_data::{GetMultipleScryfallDataRequest, ScryfallData},
+            Card,
         },
         ports::CardRepository,
     },
@@ -14,8 +15,8 @@ use crate::domain::{
         models::{
             deck::{
                 CreateDeckError, CreateDeckRequest, Deck, DeckProfile, DeleteDeckError,
-                DeleteDeckRequest, GetDeckError, GetDeckRequest, UpdateDeckError,
-                UpdateDeckRequest,
+                DeleteDeckRequest, GetDeckError, GetDeckRequest, UpdateDeckProfileError,
+                UpdateDeckProfileRequest,
             },
             deck_card::{
                 CreateDeckCardError, CreateDeckCardRequest, DeckCard, DeleteDeckCardError,
@@ -61,9 +62,16 @@ where
         self.deck_repo.create_deck(request).await
     }
 
+    async fn get_deck_profile(
+        &self,
+        request: &GetDeckRequest,
+    ) -> Result<DeckProfile, GetDeckError> {
+        self.deck_repo.get_deck_profile(request).await
+    }
+
     async fn get_deck(&self, request: &GetDeckRequest) -> Result<Deck, GetDeckError> {
-        let deck = self.deck_repo.get_deck(request).await?;
-        let get_deck_card_request = GetDeckCardRequest::from(&deck);
+        let deck_profile = self.deck_repo.get_deck_profile(request).await?;
+        let get_deck_card_request = GetDeckCardRequest::from(&deck_profile);
         let deck_cards = self
             .deck_repo
             .get_deck_cards(&get_deck_card_request)
@@ -73,29 +81,29 @@ where
             .card_repo
             .get_card_profiles(&get_card_profile_request)
             .await?;
-        let get_cards_request: GetScryfallDatasRequest = card_profiles.clone().into();
+        let get_cards_request: GetMultipleScryfallDataRequest = card_profiles.clone().into();
         let scryfall_data = self.card_repo.get_cards(&get_cards_request).await?;
         let scryfall_data_map: HashMap<Uuid, ScryfallData> = scryfall_data
             .into_iter()
             .map(|scryfall_data| (scryfall_data.id.to_owned(), scryfall_data))
             .collect();
-        let cards: Vec<FullCard> = card_profiles
+        let cards: Vec<Card> = card_profiles
             .into_iter()
             .filter_map(|card_profile| {
                 scryfall_data_map
                     .get(&card_profile.scryfall_data_id)
-                    .map(|scryfall_data| FullCard::new(card_profile, scryfall_data.clone()))
+                    .map(|scryfall_data| Card::new(card_profile, scryfall_data.clone()))
             })
             .collect();
-        let deck = Deck::new(deck, cards);
-        Ok(deck_with_cards)
+        let deck = Deck::new(deck_profile, cards);
+        Ok(deck)
     }
 
     async fn update_deck_profile(
         &self,
-        request: &UpdateDeckRequest,
-    ) -> Result<DeckProfile, UpdateDeckError> {
-        self.deck_repo.update_deck(request).await
+        request: &UpdateDeckProfileRequest,
+    ) -> Result<DeckProfile, UpdateDeckProfileError> {
+        self.deck_repo.update_deck_profile(request).await
     }
 
     async fn delete_deck(&self, request: &DeleteDeckRequest) -> Result<(), DeleteDeckError> {

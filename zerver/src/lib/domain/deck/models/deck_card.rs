@@ -1,7 +1,7 @@
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::domain::{deck::models::deck::Deck, DatabaseError};
+use crate::domain::{deck::models::deck::DeckProfile, DatabaseError};
 
 // ========
 //  errors
@@ -182,7 +182,7 @@ impl GetDeckCardRequest {
     }
 }
 
-impl From<&Deck> for GetDeckCardRequest {
+impl From<&DeckProfile> for GetDeckCardRequest {
     fn from(value: &DeckProfile) -> Self {
         GetDeckCardRequest {
             deck_id: value.id.to_owned(),

@@ -4,8 +4,8 @@ use crate::domain::card::{
             CardProfile, GetCardProfileError, GetCardProfileRequest, GetCardProfilesRequest,
         },
         scryfall_data::{
-            CreateScryfallDataError, GetScryfallDataError, GetScryfallDataRequest,
-            GetScryfallDatasRequest, ScryfallData, SearchScryfallDataError,
+            CreateScryfallDataError, GetMultipleScryfallDataRequest, GetScryfallDataError,
+            GetScryfallDataRequest, ScryfallData, SearchScryfallDataError,
             SearchScryfallDataRequest,
         },
         sync_metrics::{SyncMetrics, SyncType},
@@ -60,7 +60,7 @@ impl<R: CardRepository> CardService for Service<R> {
 
     async fn get_cards(
         &self,
-        request: &GetScryfallDatasRequest,
+        request: &GetMultipleScryfallDataRequest,
     ) -> Result<Vec<ScryfallData>, GetScryfallDataError> {
         self.repo.get_cards(request).await
     }

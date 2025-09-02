@@ -7,9 +7,9 @@ use crate::{
     domain::deck::{
         models::{
             deck::{
-                CreateDeckError, CreateDeckRequest, Deck, DeckName, DeckNameError, DeckProfile,
-                DeleteDeckError, DeleteDeckRequest, GetDeckError, GetDeckRequest, UpdateDeckError,
-                UpdateDeckRequest,
+                CreateDeckError, CreateDeckRequest, DeckName, DeckNameError, DeckProfile,
+                DeleteDeckError, DeleteDeckRequest, GetDeckError, GetDeckRequest,
+                UpdateDeckProfileError, UpdateDeckProfileRequest,
             },
             deck_card::{
                 CreateDeckCardError, CreateDeckCardRequest, DeckCard, DeleteDeckCardError,
@@ -42,7 +42,7 @@ impl From<ToDeckError> for CreateDeckError {
     }
 }
 
-impl From<ToDeckError> for UpdateDeckError {
+impl From<ToDeckError> for UpdateDeckProfileError {
     fn from(value: ToDeckError) -> Self {
         Self::InvalidDeckFromDatabase(value.into())
     }
@@ -72,7 +72,7 @@ impl From<sqlx::Error> for GetDeckError {
     }
 }
 
-impl From<sqlx::Error> for UpdateDeckError {
+impl From<sqlx::Error> for UpdateDeckProfileError {
     fn from(value: sqlx::Error) -> Self {
         match value {
             e if e.is_unique_constraint_violation() => Self::Duplicate,
@@ -237,7 +237,7 @@ impl DeckRepository for Postgres {
 
         tx.commit().await?;
 
-        Ok(deck)
+        Ok(deck_profile)
     }
 
     async fn create_deck_card(

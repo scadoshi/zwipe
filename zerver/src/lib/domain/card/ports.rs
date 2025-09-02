@@ -7,10 +7,12 @@ use crate::domain::card::models::{
         CardProfile, GetCardProfileError, GetCardProfileRequest, GetCardProfilesRequest,
     },
     scryfall_data::{
-        CreateScryfallDataError, GetScryfallDataError, GetScryfallDataRequest,
-        GetScryfallDatasRequest, ScryfallData, SearchScryfallDataError, SearchScryfallDataRequest,
+        CreateCardError, CreateScryfallDataError, GetMultipleScryfallDataRequest,
+        GetScryfallDataError, GetScryfallDataRequest, ScryfallData, SearchCardError,
+        SearchCardRequest, SearchScryfallDataError, SearchScryfallDataRequest,
     },
     sync_metrics::{SyncMetrics, SyncType},
+    Card,
 };
 
 /// enables card related database operations
@@ -18,7 +20,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// simple card insert
     fn insert(
         &self,
-        card: ScryfallData,
+        scryfall_data: &ScryfallData,
     ) -> impl Future<Output = Result<ScryfallData, CreateScryfallDataError>> + Send;
 
     /// for inserting as many cards as you want (*3*)
@@ -26,7 +28,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// - hence the privateness
     fn bulk_insert(
         &self,
-        cards: Vec<ScryfallData>,
+        multiple_scryfall_data: &[ScryfallData],
     ) -> impl Future<Output = Result<Vec<ScryfallData>, CreateScryfallDataError>> + Send;
 
     /// for inserting as many cards as you want in batches (*3*)
@@ -34,7 +36,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// - uses bulk_insert internally
     fn batch_insert(
         &self,
-        cards: Vec<ScryfallData>,
+        multiple_scryfall_data: &[ScryfallData],
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
     ) -> impl Future<Output = Result<Vec<ScryfallData>, CreateScryfallDataError>> + Send;
@@ -50,7 +52,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// transactions keep it atomic!
     fn batch_insert_if_not_exists(
         &self,
-        cards: Vec<ScryfallData>,
+        multiple_scryfall_data: &[ScryfallData],
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
     ) -> impl Future<Output = Result<Vec<ScryfallData>, CreateScryfallDataError>> + Send;
@@ -66,28 +68,28 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// transactions keep it atomic!
     fn delete_if_exists_and_batch_insert(
         &self,
-        cards: Vec<ScryfallData>,
+        multiple_scryfall_data: &[ScryfallData],
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
     ) -> impl Future<Output = Result<Vec<ScryfallData>, CreateScryfallDataError>> + Send;
 
     /// gets scryfall card with a uuid
-    fn get_card(
+    fn get_scryfall_data(
         &self,
         request: &GetScryfallDataRequest,
     ) -> impl Future<Output = Result<ScryfallData, GetScryfallDataError>> + Send;
 
     /// gets scryfall cards with a list of uuids
-    fn get_cards(
+    fn get_multiple_scryfall_data(
         &self,
-        request: &GetScryfallDatasRequest,
+        request: &GetMultipleScryfallDataRequest,
     ) -> impl Future<Output = Result<Vec<ScryfallData>, GetScryfallDataError>> + Send;
 
-    /// simple card search by a given parameters
+    /// search for cards given parameters
     fn search_cards(
         &self,
-        request: &SearchScryfallDataRequest,
-    ) -> impl Future<Output = Result<Vec<ScryfallData>, SearchScryfallDataError>> + Send;
+        request: &SearchCardRequest,
+    ) -> impl Future<Output = Result<Vec<Card>, SearchCardError>> + Send;
 
     /// gets card profile with a uuid
     fn get_card_profile(
@@ -100,9 +102,6 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         &self,
         request: &GetCardProfilesRequest,
     ) -> impl Future<Output = Result<Vec<CardProfile>, GetCardProfileError>> + Send;
-
-    /// delete all cards
-    fn delete_all(&self) -> impl Future<Output = Result<Vec<ScryfallData>, anyhow::Error>> + Send;
 
     /// saves sync_metrics to database
     fn record_sync_metrics(
@@ -125,26 +124,26 @@ pub trait CardService: Clone + Send + Sync + 'static {
     /// more for internal unit testing
     fn insert(
         &self,
-        card: ScryfallData,
-    ) -> impl Future<Output = Result<ScryfallData, CreateScryfallDataError>>;
+        scryfall_data: ScryfallData,
+    ) -> impl Future<Output = Result<Card, CreateCardError>>;
 
-    /// gets scryfall card with a uuid
-    fn get_card(
+    /// gets scryfall data with a uuid
+    fn get_scryfall_data(
         &self,
         request: &GetScryfallDataRequest,
     ) -> impl Future<Output = Result<ScryfallData, GetScryfallDataError>> + Send;
 
     /// gets scryfall cards with a list of uuids
-    fn get_cards(
+    fn get_multiple_scryfall_data(
         &self,
-        request: &GetScryfallDatasRequest,
+        request: &GetMultipleScryfallDataRequest,
     ) -> impl Future<Output = Result<Vec<ScryfallData>, GetScryfallDataError>> + Send;
 
     /// gets cards matching parameters
-    fn search_scryfall_datas(
+    fn search_cards(
         &self,
-        request: &SearchScryfallDataRequest,
-    ) -> impl Future<Output = Result<Vec<ScryfallData>, SearchScryfallDataError>> + Send;
+        request: &SearchCardRequest,
+    ) -> impl Future<Output = Result<Vec<Card>, SearchCardError>> + Send;
 
     /// gets card profile with a uuid
     fn get_card_profile(

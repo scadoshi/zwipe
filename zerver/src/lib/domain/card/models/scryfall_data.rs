@@ -40,23 +40,25 @@ impl From<uuid::Error> for GetMultipleScryfallDataRequestError {
 
 /// for errors encountered while creating cards
 #[derive(Debug, Error)]
-pub enum CreateScryfallDataError {
+pub enum CreateCardError {
     #[error("id already exists")]
     UniqueConstraintViolation(anyhow::Error),
     #[error(transparent)]
     Database(DatabaseError),
-    #[error("scryfall card created but database returned invalid object: {0}")]
+    #[error("scryfall data inserted but database returned invalid object: {0}")]
     InvalidScryfallDataFromDatabase(anyhow::Error),
+    #[error("card profile created but database returned invalid object: {0}")]
+    InvalidCardProfileFromDatabase(anyhow::Error),
 }
 
-/// for errors encountered while getting cards
+/// for errors encountered while getting scryfall data
 #[derive(Debug, Error)]
 pub enum GetScryfallDataError {
-    #[error("card not found")]
+    #[error("scryfall data not found")]
     NotFound,
     #[error(transparent)]
     Database(DatabaseError),
-    #[error("scryfall card found but database returned invalid object: {0}")]
+    #[error("scryfall data found but database returned invalid object: {0}")]
     InvalidScryfallDataFromDatabase(anyhow::Error),
 }
 
@@ -64,10 +66,12 @@ pub enum GetScryfallDataError {
 /// - NotFound is not a possible enumeration of this
 /// because a search request should just return an empty vec
 #[derive(Debug, Error)]
-pub enum SearchScryfallDataError {
+pub enum SearchCardError {
     #[error(transparent)]
     Database(DatabaseError),
-    #[error("scryfall card found but database returned invalid object: {0}")]
+    #[error("card profile found but database returned invalid object: {0}")]
+    InvalidCardProfileFromDatabase(anyhow::Error),
+    #[error("scryfall data found but database returned invalid object: {0}")]
     InvalidScryfallDataFromDatabase(anyhow::Error),
 }
 
@@ -131,7 +135,7 @@ impl From<Vec<CardProfile>> for GetMultipleScryfallDataRequest {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct SearchScryfallDataRequest {
+pub struct SearchCardRequest {
     pub name: Option<String>,
     pub type_line: Option<String>,
     pub set: Option<String>,
@@ -143,7 +147,7 @@ pub struct SearchScryfallDataRequest {
     pub offset: Option<u32>,
 }
 
-impl Default for SearchScryfallDataRequest {
+impl Default for SearchCardRequest {
     fn default() -> Self {
         Self {
             name: None,
@@ -159,7 +163,7 @@ impl Default for SearchScryfallDataRequest {
     }
 }
 
-impl SearchScryfallDataRequest {
+impl SearchCardRequest {
     pub fn new(
         name: Option<String>,
         type_line: Option<String>,
