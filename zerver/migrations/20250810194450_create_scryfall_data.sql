@@ -1,4 +1,4 @@
-CREATE TABLE scryfall_cards (
+CREATE TABLE scryfall_data (
     -- Core Card Fields
     -- Cards have the following core properties
     id UUID PRIMARY KEY,
@@ -96,10 +96,10 @@ CREATE TABLE scryfall_cards (
     preview_source VARCHAR
 );
 
-CREATE INDEX idx_cards_name ON scryfall_cards(name);
-CREATE INDEX idx_cards_type ON scryfall_cards(type_line);
-CREATE INDEX idx_cards_rarity ON scryfall_cards(rarity);
-CREATE INDEX idx_cards_id ON scryfall_cards(id);
-CREATE INDEX idx_cards_set ON scryfall_cards(set);
-CREATE INDEX idx_cards_cmc ON scryfall_cards(cmc);
-CREATE INDEX idx_cards_colors ON scryfall_cards USING GIN(colors);
+CREATE INDEX idx_cards_name ON scryfall_data(name);
+CREATE INDEX idx_cards_type ON scryfall_data(type_line);
+CREATE INDEX idx_cards_rarity ON scryfall_data(rarity);
+CREATE INDEX idx_cards_id ON scryfall_data(id);
+CREATE INDEX idx_cards_set ON scryfall_data(set);
+CREATE INDEX idx_cards_cmc ON scryfall_data(cmc);
+CREATE INDEX idx_cards_colors ON scryfall_data USING GIN(colors);
