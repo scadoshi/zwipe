@@ -183,7 +183,7 @@ impl GetDeckCardRequest {
 }
 
 impl From<&Deck> for GetDeckCardRequest {
-    fn from(value: &Deck) -> Self {
+    fn from(value: &DeckProfile) -> Self {
         GetDeckCardRequest {
             deck_id: value.id.to_owned(),
         }

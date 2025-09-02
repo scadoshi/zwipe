@@ -13,14 +13,14 @@ use crate::domain::{
     deck::{
         models::{
             deck::{
-                CreateDeckError, CreateDeckRequest, Deck, DeleteDeckError, DeleteDeckRequest,
-                GetDeckError, GetDeckRequest, UpdateDeckError, UpdateDeckRequest,
+                CreateDeckError, CreateDeckRequest, Deck, DeckProfile, DeleteDeckError,
+                DeleteDeckRequest, GetDeckError, GetDeckRequest, UpdateDeckError,
+                UpdateDeckRequest,
             },
             deck_card::{
                 CreateDeckCardError, CreateDeckCardRequest, DeckCard, DeleteDeckCardError,
                 DeleteDeckCardRequest, GetDeckCardError, GetDeckCardRequest, UpdateDeckCardError,
             },
-            DeckWithCards, FullCard,
         },
         ports::{DeckRepository, DeckService},
     },
@@ -54,11 +54,14 @@ where
     DR: DeckRepository,
     CR: CardRepository,
 {
-    async fn create_deck(&self, request: &CreateDeckRequest) -> Result<Deck, CreateDeckError> {
+    async fn create_deck(
+        &self,
+        request: &CreateDeckRequest,
+    ) -> Result<DeckProfile, CreateDeckError> {
         self.deck_repo.create_deck(request).await
     }
 
-    async fn get_deck(&self, request: &GetDeckRequest) -> Result<DeckWithCards, GetDeckError> {
+    async fn get_deck(&self, request: &GetDeckRequest) -> Result<Deck, GetDeckError> {
         let deck = self.deck_repo.get_deck(request).await?;
         let get_deck_card_request = GetDeckCardRequest::from(&deck);
         let deck_cards = self
@@ -84,11 +87,14 @@ where
                     .map(|scryfall_data| FullCard::new(card_profile, scryfall_data.clone()))
             })
             .collect();
-        let deck_with_cards = DeckWithCards::new(deck, cards);
+        let deck = Deck::new(deck, cards);
         Ok(deck_with_cards)
     }
 
-    async fn update_deck(&self, request: &UpdateDeckRequest) -> Result<Deck, UpdateDeckError> {
+    async fn update_deck_profile(
+        &self,
+        request: &UpdateDeckRequest,
+    ) -> Result<DeckProfile, UpdateDeckError> {
         self.deck_repo.update_deck(request).await
     }
 

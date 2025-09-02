@@ -25,14 +25,14 @@ use crate::domain::{card::models::card_profile::CardProfile, DatabaseError};
 // =======
 
 #[derive(Debug, Error)]
-pub enum GetScryfallDatasRequestError {
+pub enum GetMultipleScryfallDataRequestError {
     #[error("invalid id: {0}")]
     InvalidUuid(uuid::Error),
     #[error("no ids provided")]
     MissingIds,
 }
 
-impl From<uuid::Error> for GetScryfallDatasRequestError {
+impl From<uuid::Error> for GetMultipleScryfallDataRequestError {
     fn from(value: uuid::Error) -> Self {
         Self::InvalidUuid(value)
     }
@@ -104,12 +104,12 @@ impl<'de> Deserialize<'de> for GetScryfallDataRequest {
     }
 }
 
-pub struct GetScryfallDatasRequest(Vec<Uuid>);
+pub struct GetMultipleScryfallDataRequest(Vec<Uuid>);
 
-impl GetScryfallDatasRequest {
-    pub fn new(ids: Vec<&str>) -> Result<Self, GetScryfallDatasRequestError> {
+impl GetMultipleScryfallDataRequest {
+    pub fn new(ids: Vec<&str>) -> Result<Self, GetMultipleScryfallDataRequestError> {
         if ids.is_empty() {
-            return Err(GetScryfallDatasRequestError::MissingIds);
+            return Err(GetMultipleScryfallDataRequestError::MissingIds);
         }
         Ok(Self(
             ids.into_iter()
@@ -123,7 +123,7 @@ impl GetScryfallDatasRequest {
     }
 }
 
-impl From<Vec<CardProfile>> for GetScryfallDatasRequest {
+impl From<Vec<CardProfile>> for GetMultipleScryfallDataRequest {
     fn from(value: Vec<CardProfile>) -> Self {
         let ids: Vec<Uuid> = value.into_iter().map(|x| x.scryfall_data_id).collect();
         Self(ids)

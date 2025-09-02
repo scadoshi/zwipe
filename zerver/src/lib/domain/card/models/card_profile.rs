@@ -7,6 +7,16 @@ use uuid::Uuid;
 // ========
 
 #[derive(Debug, Error)]
+pub enum GetCardProfileError {
+    #[error("card profile not found")]
+    NotFound,
+    #[error(transparent)]
+    Database(DatabaseError),
+    #[error("card profile found but database returned invalid object: {0}")]
+    InvalidCardProfileFromDatabase(anyhow::Error),
+}
+
+#[derive(Debug, Error)]
 pub enum GetCardProfilesRequestError {
     #[error("invalid id: {0}")]
     InvalidUuid(uuid::Error),
@@ -18,16 +28,6 @@ impl From<uuid::Error> for GetCardProfilesRequestError {
     fn from(value: uuid::Error) -> Self {
         Self::InvalidUuid(value)
     }
-}
-
-#[derive(Debug, Error)]
-pub enum GetCardProfileError {
-    #[error("card profile not found")]
-    NotFound,
-    #[error(transparent)]
-    Database(DatabaseError),
-    #[error("card profile found but database returned invalid object: {0}")]
-    InvalidCardProfileFromDatabase(anyhow::Error),
 }
 
 // ==========

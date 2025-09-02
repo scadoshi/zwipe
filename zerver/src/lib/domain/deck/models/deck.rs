@@ -5,7 +5,7 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::domain::{
-    card::models::{card_profile::GetCardProfileError, scryfall_data::GetScryfallDataError},
+    card::models::{card_profile::GetCardProfileError, scryfall_data::GetScryfallDataError, Card},
     deck::models::deck_card::GetDeckCardError,
     DatabaseError,
 };
@@ -28,7 +28,7 @@ pub enum CreateDeckRequestError {
 
 #[derive(Debug, Error)]
 pub enum CreateDeckError {
-    #[error("deck with name and user_id combination already exists")]
+    #[error("deck with name and user id combination already exists")]
     Duplicate,
     #[error("deck created but database returned invalid object {0}")]
     InvalidDeckFromDatabase(anyhow::Error),
@@ -79,7 +79,7 @@ impl From<GetScryfallDataError> for GetDeckError {
 }
 
 #[derive(Debug, Error)]
-pub enum UpdateDeckRequestError {
+pub enum UpdateDeckProfileRequestError {
     #[error(transparent)]
     InvalidName(DeckNameError),
     #[error(transparent)]
@@ -88,13 +88,13 @@ pub enum UpdateDeckRequestError {
     NothingToUpdate,
 }
 
-impl From<DeckNameError> for UpdateDeckRequestError {
+impl From<DeckNameError> for UpdateDeckProfileRequestError {
     fn from(value: DeckNameError) -> Self {
         Self::InvalidName(value)
     }
 }
 
-impl From<uuid::Error> for UpdateDeckRequestError {
+impl From<uuid::Error> for UpdateDeckProfileRequestError {
     fn from(value: uuid::Error) -> Self {
         Self::InvalidId(value)
     }
@@ -200,15 +200,15 @@ impl GetDeckRequest {
 /// i am still leaving as an `Option<T>`
 /// to leave room for future additions
 #[derive(Debug, Clone)]
-pub struct UpdateDeckRequest {
+pub struct UpdateDeckProfileRequest {
     pub id: Uuid,
     pub name: Option<DeckName>,
 }
 
-impl UpdateDeckRequest {
-    pub fn new(id: &str, name_opt: Option<&str>) -> Result<Self, UpdateDeckRequestError> {
+impl UpdateDeckProfileRequest {
+    pub fn new(id: &str, name_opt: Option<&str>) -> Result<Self, UpdateDeckProfileRequestError> {
         if name_opt.is_none() {
-            return Err(UpdateDeckRequestError::NothingToUpdate);
+            return Err(UpdateDeckProfileRequestError::NothingToUpdate);
         }
         let id = Uuid::try_parse(id)?;
         let name = name_opt
@@ -236,9 +236,25 @@ impl DeleteDeckRequest {
 // ======
 //  main
 // ======
+
 #[derive(Debug, Clone)]
-pub struct Deck {
+pub struct DeckProfile {
     pub id: Uuid,
     pub name: DeckName,
     pub user_id: Uuid,
+}
+
+#[derive(Debug, Clone)]
+pub struct Deck {
+    deck_profile: DeckProfile,
+    cards: Vec<Card>,
+}
+
+impl Deck {
+    pub fn new(deck_profile: DeckProfile, cards: Vec<Card>) -> Self {
+        Self {
+            deck_profile,
+            cards,
+        }
+    }
 }

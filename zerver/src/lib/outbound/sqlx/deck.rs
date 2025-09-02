@@ -7,8 +7,8 @@ use crate::{
     domain::deck::{
         models::{
             deck::{
-                CreateDeckError, CreateDeckRequest, Deck, DeckName, DeckNameError, DeleteDeckError,
-                DeleteDeckRequest, GetDeckError, GetDeckRequest, UpdateDeckError,
+                CreateDeckError, CreateDeckRequest, Deck, DeckName, DeckNameError, DeckProfile,
+                DeleteDeckError, DeleteDeckRequest, GetDeckError, GetDeckRequest, UpdateDeckError,
                 UpdateDeckRequest,
             },
             deck_card::{
@@ -165,17 +165,17 @@ impl From<sqlx::Error> for DeleteDeckCardError {
 /// raw database deck record
 /// (unvalidated data from `PostgreSQL`)
 #[derive(Debug, Clone, FromRow)]
-pub struct DatabaseDeck {
+pub struct DatabaseDeckProfile {
     pub id: String,
     pub name: String,
     pub user_id: String,
 }
 
 /// converts database deck to validated domain deck
-impl TryFrom<DatabaseDeck> for Deck {
+impl TryFrom<DatabaseDeckProfile> for DeckProfile {
     type Error = ToDeckError;
 
-    fn try_from(value: DatabaseDeck) -> Result<Self, Self::Error> {
+    fn try_from(value: DatabaseDeckProfile) -> Result<Self, Self::Error> {
         let id = Uuid::try_parse(&value.id).map_err(|e| ToDeckError::InvalidId(e.into()))?;
         let name = DeckName::new(&value.name).map_err(|e| ToDeckError::InvalidName(e.into()))?;
         let user_id =
@@ -218,11 +218,14 @@ impl DeckRepository for Postgres {
     // ========
     //  create
     // ========
-    async fn create_deck(&self, request: &CreateDeckRequest) -> Result<Deck, CreateDeckError> {
+    async fn create_deck(
+        &self,
+        request: &CreateDeckRequest,
+    ) -> Result<DeckProfile, CreateDeckError> {
         let mut tx = self.pool.begin().await?;
 
-        let database_deck = query_as!(
-            DatabaseDeck,
+        let database_deck_profile = query_as!(
+            DatabaseDeckProfile,
             "INSERT INTO decks (name, user_id) VALUES ($1, $2) RETURNING id, name, user_id",
             request.name.to_string(),
             request.user_id
@@ -230,7 +233,7 @@ impl DeckRepository for Postgres {
         .fetch_one(&mut *tx)
         .await?;
 
-        let deck: Deck = database_deck.try_into()?;
+        let deck_profile: DeckProfile = database_deck_profile.try_into()?;
 
         tx.commit().await?;
 
@@ -262,9 +265,12 @@ impl DeckRepository for Postgres {
     // =====
     //  get
     // =====
-    async fn get_deck(&self, request: &GetDeckRequest) -> Result<Deck, GetDeckError> {
-        let database_deck = query_as!(
-            DatabaseDeck,
+    async fn get_deck_profile(
+        &self,
+        request: &GetDeckRequest,
+    ) -> Result<DeckProfile, GetDeckError> {
+        let database_deck_profile = query_as!(
+            DatabaseDeckProfile,
             "SELECT id, name, user_id FROM decks WHERE user_id = $1 AND (id::text = $2 OR name = $2)",
             request.user_id,
             request.identifier
@@ -272,9 +278,9 @@ impl DeckRepository for Postgres {
         .fetch_one(&self.pool)
         .await?;
 
-        let deck: Deck = database_deck.try_into()?;
+        let deck_profile: DeckProfile = database_deck_profile.try_into()?;
 
-        Ok(deck)
+        Ok(deck_profile)
     }
 
     async fn get_deck_card(
@@ -316,7 +322,10 @@ impl DeckRepository for Postgres {
     // ========
     //  update
     // ========
-    async fn update_deck(&self, request: &UpdateDeckRequest) -> Result<Deck, UpdateDeckError> {
+    async fn update_deck_profile(
+        &self,
+        request: &UpdateDeckProfileRequest,
+    ) -> Result<DeckProfile, UpdateDeckProfileError> {
         let mut tx = self.pool.begin().await?;
 
         let mut qb = QueryBuilder::new("UPDATE decks SET ");
@@ -333,13 +342,13 @@ impl DeckRepository for Postgres {
             .push_bind(request.id)
             .push(" RETURNING id, name, user_id");
 
-        let database_deck: DatabaseDeck = qb.build_query_as().fetch_one(&mut *tx).await?;
+        let database_deck: DatabaseDeckProfile = qb.build_query_as().fetch_one(&mut *tx).await?;
 
-        let deck: Deck = database_deck.try_into()?;
+        let deck_profile: DeckProfile = database_deck.try_into()?;
 
         tx.commit().await?;
 
-        Ok(deck)
+        Ok(deck_profile)
     }
 
     async fn update_deck_card(
