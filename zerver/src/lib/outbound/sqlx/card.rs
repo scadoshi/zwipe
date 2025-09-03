@@ -550,19 +550,22 @@ impl CardRepository for MyPostgres {
         Ok(cards)
     }
 
-    async fn get_scryfall_data(
+    async fn get_card(
         &self,
         request: &GetScryfallDataRequest,
-    ) -> Result<ScryfallData, GetScryfallDataError> {
+    ) -> Result<Card, GetScryfallDataError> {
         let scryfall_data: ScryfallData = query_as("SELECT * FROM scryfall_data WHERE id = $1")
             .bind(request.id())
             .fetch_one(&self.pool)
             .await?;
 
-        Ok(scryfall_data)
+        let self.get_card_profile(request)
+
+        Ok(card)
+        todo!()
     }
 
-    async fn get_multiple_scryfall_data(
+    async fn get_cards(
         &self,
         request: &GetMultipleScryfallDataRequest,
     ) -> Result<Vec<ScryfallData>, GetScryfallDataError> {
