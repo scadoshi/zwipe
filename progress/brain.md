@@ -334,6 +334,11 @@ alwaysApply: true
 - **🎯 DOMAIN MODEL ARCHITECTURE**: Strategic ScryfallCard → ScryfallData rename to clarify raw API data vs composed Card entity distinction
 - **🎯 API NAMING PATTERNS**: Understanding of proper plural naming conventions (get_scryfall_data_batch vs get_scryfall_datas)
 - **🎯 LAYERED ENTITY DESIGN**: Foundation for Card entity as public interface with ScryfallData as internal data layer
+- **🎯 DOMAIN NAMING CONVENTION REFACTORING**: Comprehensive type name standardization using Operation/OperationError/InvalidOperation pattern for maximum API ergonomics
+- **🎯 CARD ENTITY ARCHITECTURE REDESIGN**: Card composition model with ScryfallData (external) + CardProfile (domain) for clean data separation
+- **🎯 DECK ORCHESTRATION PLANNING**: Deck containing Vec<Card> + DeckProfile with DeckCard junction table for relationship management
+- **🎯 SERVICE API DESIGN**: Clear service responsibilities - Card (CRUD operations) vs Deck (composition + relationship management)
+- **🎯 ERGONOMIC TYPE SYSTEM**: Prioritizing shortest meaningful names that clearly indicate purpose (GetCard vs GetCardRequest)
 
 ### Learning Pattern Recognition
 - **Strategic Simplification**: Recognizes when complexity doesn't add value
@@ -394,8 +399,8 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: After deck service orchestration implementation with cross-domain data composition
+**Last Updated**: During comprehensive domain type system refactoring with focus on ergonomic naming conventions
 
-**Next Learning Edge**: HTTP handler development and API integration patterns
+**Next Learning Edge**: Type system refactoring completion, compilation error resolution, refined service implementation
 
-**Major Recent Achievement**: Implemented working deck service orchestration with dual-generic Service<DeckRepository, CardRepository> architecture. Built complete cross-domain data flow using HashMap join optimization and defensive programming patterns. Demonstrated solid understanding of service layer orchestration vs repository delegation. Successfully composed complex data structures (DeckWithCards) while maintaining clean domain boundaries. Ready for HTTP handler implementation and route integration.
+**Major Recent Achievement**: Initiated ambitious domain-wide naming convention refactoring using Operation/OperationError/InvalidOperation pattern for maximum ergonomics. Redesigned Card entity architecture with clean ScryfallData + CardProfile composition. Planned sophisticated Deck orchestration with Vec<Card> + DeckProfile composition and DeckCard junction table management. Demonstrated strong architectural thinking with clear service boundaries: Card service (CRUD) vs Deck service (composition + relationships). Shows growing confidence in domain design and willingness to refactor for long-term maintainability over short-term convenience.
