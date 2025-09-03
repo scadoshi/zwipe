@@ -7,7 +7,6 @@ use uuid::Uuid;
 use crate::domain::{
     card::models::{card_profile::GetCardProfileError, scryfall_data::GetScryfallDataError, Card},
     deck::models::deck_card::GetDeckCardError,
-    DatabaseError,
 };
 
 // ========
@@ -15,15 +14,15 @@ use crate::domain::{
 // ========
 
 #[derive(Debug, Error)]
-pub enum DeckNameError {
+pub enum InvalidDeckname {
     #[error("deck name must be present")]
     MissingDeckName,
 }
 
 #[derive(Debug, Error)]
-pub enum CreateDeckRequestError {
+pub enum InvalidCreateDeck {
     #[error(transparent)]
-    InvalidName(DeckNameError),
+    InvalidDeckName(InvalidDeckname),
 }
 
 #[derive(Debug, Error)]
@@ -33,11 +32,11 @@ pub enum CreateDeckError {
     #[error("deck created but database returned invalid object {0}")]
     InvalidDeckFromDatabase(anyhow::Error),
     #[error(transparent)]
-    Database(DatabaseError),
+    Database(anyhow::Error),
 }
 
 #[derive(Debug, Error)]
-pub enum GetDeckRequestError {
+pub enum InvalidGetDeck {
     #[error(transparent)]
     InvalidUserId(uuid::Error),
     #[error("identifier must contain something")]
@@ -48,10 +47,16 @@ pub enum GetDeckRequestError {
 pub enum GetDeckError {
     #[error("deck not found")]
     NotFound,
+
     #[error(transparent)]
-    Database(DatabaseError),
-    #[error("deck found but database returned invalid object: {0}")]
-    InvalidDeckFromDatabase(anyhow::Error),
+    Database(anyhow::Error),
+
+    #[error("deck card found but database returned invalid object: {0}")]
+    InvalidDeckCardFromDatabase(anyhow::Error),
+    #[error("card profile found but database returned invalid object: {0}")]
+    InvalidCardProfileFromDatabase(anyhow::Error),
+    // #[error("scryfall data found but database returned invalid object: {0}")]
+    // InvalidScryfallDataFromDatabase(anyhow::Error),
     #[error(transparent)]
     GetDeckCardError(GetDeckCardError),
     #[error(transparent)]
@@ -79,22 +84,22 @@ impl From<GetScryfallDataError> for GetDeckError {
 }
 
 #[derive(Debug, Error)]
-pub enum UpdateDeckProfileRequestError {
+pub enum InvalidUpdateDeckProfile {
     #[error(transparent)]
-    InvalidName(DeckNameError),
+    InvalidDeckName(InvalidDeckname),
     #[error(transparent)]
     InvalidId(uuid::Error),
     #[error("must update at least one field")]
     NothingToUpdate,
 }
 
-impl From<DeckNameError> for UpdateDeckProfileRequestError {
-    fn from(value: DeckNameError) -> Self {
-        Self::InvalidName(value)
+impl From<InvalidDeckname> for InvalidUpdateDeckProfile {
+    fn from(value: InvalidDeckname) -> Self {
+        Self::InvalidDeckName(value)
     }
 }
 
-impl From<uuid::Error> for UpdateDeckProfileRequestError {
+impl From<uuid::Error> for InvalidUpdateDeckProfile {
     fn from(value: uuid::Error) -> Self {
         Self::InvalidId(value)
     }
@@ -107,18 +112,17 @@ pub enum UpdateDeckProfileError {
     #[error("deck not found")]
     NotFound,
     #[error(transparent)]
-    Database(DatabaseError),
+    Database(anyhow::Error),
     #[error("deck updated but database returned invalid object: {0}")]
     InvalidDeckFromDatabase(anyhow::Error),
 }
 
-/// actual errors encountered while deleting a deck
 #[derive(Debug, Error)]
 pub enum DeleteDeckError {
     #[error("deck not found")]
     NotFound,
     #[error(transparent)]
-    Database(DatabaseError),
+    Database(anyhow::Error),
 }
 
 // ==========
@@ -129,9 +133,9 @@ pub enum DeleteDeckError {
 pub struct DeckName(String);
 
 impl DeckName {
-    pub fn new(name: &str) -> Result<Self, DeckNameError> {
+    pub fn new(name: &str) -> Result<Self, InvalidDeckname> {
         if name.is_empty() {
-            return Err(DeckNameError::MissingDeckName);
+            return Err(InvalidDeckname::MissingDeckName);
         }
         Ok(Self(name.to_string()))
     }
@@ -161,32 +165,31 @@ impl Serialize for DeckName {
 // ==========
 
 #[derive(Debug, Clone)]
-pub struct CreateDeckRequest {
+pub struct CreateDeckProfile {
     pub name: DeckName,
     pub user_id: Uuid,
 }
 
-impl CreateDeckRequest {
-    pub fn new(name: &str, user_id: Uuid) -> Result<Self, DeckNameError> {
+impl CreateDeckProfile {
+    pub fn new(name: &str, user_id: Uuid) -> Result<Self, InvalidDeckname> {
         let name = DeckName::new(name)?;
         Ok(Self { name, user_id })
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct GetDeckRequest {
+pub struct GetDeck {
     pub identifier: String,
     pub user_id: Uuid,
 }
 
-impl GetDeckRequest {
-    pub fn new(identifier: &str, user_id: &str) -> Result<Self, GetDeckRequestError> {
+impl GetDeck {
+    pub fn new(identifier: &str, user_id: &str) -> Result<Self, InvalidGetDeck> {
         if identifier.is_empty() {
-            return Err(GetDeckRequestError::MissingIdentifier);
+            return Err(InvalidGetDeck::MissingIdentifier);
         }
 
-        let user_id =
-            Uuid::try_parse(user_id).map_err(|e| GetDeckRequestError::InvalidUserId(e))?;
+        let user_id = Uuid::try_parse(user_id).map_err(|e| InvalidGetDeck::InvalidUserId(e))?;
 
         Ok(Self {
             identifier: identifier.to_string(),
@@ -200,15 +203,15 @@ impl GetDeckRequest {
 /// i am still leaving as an `Option<T>`
 /// to leave room for future additions
 #[derive(Debug, Clone)]
-pub struct UpdateDeckProfileRequest {
+pub struct UpdateDeckProfile {
     pub id: Uuid,
     pub name: Option<DeckName>,
 }
 
-impl UpdateDeckProfileRequest {
-    pub fn new(id: &str, name_opt: Option<&str>) -> Result<Self, UpdateDeckProfileRequestError> {
+impl UpdateDeckProfile {
+    pub fn new(id: &str, name_opt: Option<&str>) -> Result<Self, InvalidUpdateDeckProfile> {
         if name_opt.is_none() {
-            return Err(UpdateDeckProfileRequestError::NothingToUpdate);
+            return Err(InvalidUpdateDeckProfile::NothingToUpdate);
         }
         let id = Uuid::try_parse(id)?;
         let name = name_opt
@@ -219,9 +222,9 @@ impl UpdateDeckProfileRequest {
 }
 
 #[derive(Debug, Clone)]
-pub struct DeleteDeckRequest(Uuid);
+pub struct DeleteDeck(Uuid);
 
-impl DeleteDeckRequest {
+impl DeleteDeck {
     pub fn new(id: &str) -> Result<Self, uuid::Error> {
         let trimmed = id.trim();
         let id = Uuid::try_parse(trimmed)?;

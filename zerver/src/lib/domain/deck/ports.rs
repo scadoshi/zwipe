@@ -2,13 +2,12 @@ use std::future::Future;
 
 use crate::domain::deck::models::{
     deck::{
-        CreateDeckError, CreateDeckRequest, Deck, DeckProfile, DeleteDeckError, DeleteDeckRequest,
-        GetDeckError, GetDeckRequest, UpdateDeckProfileError, UpdateDeckProfileRequest,
+        CreateDeckError, CreateDeckProfile, Deck, DeckProfile, DeleteDeck, DeleteDeckError,
+        GetDeck, GetDeckError, UpdateDeckProfile, UpdateDeckProfileError,
     },
     deck_card::{
-        CreateDeckCardError, CreateDeckCardRequest, DeckCard, DeleteDeckCardError,
-        DeleteDeckCardRequest, GetDeckCardError, GetDeckCardRequest, UpdateDeckCardError,
-        UpdateDeckCardRequest,
+        CreateDeckCard, CreateDeckCardError, DeckCard, DeleteDeckCard, DeleteDeckCardError,
+        GetDeckCard, GetDeckCardError, UpdateDeckCard, UpdateDeckCardError,
     },
 };
 
@@ -16,47 +15,47 @@ use crate::domain::deck::models::{
 pub trait DeckRepository: Clone + Send + Sync + 'static {
     fn create_deck(
         &self,
-        request: &CreateDeckRequest,
+        request: &CreateDeckProfile,
     ) -> impl Future<Output = Result<DeckProfile, CreateDeckError>> + Send;
 
     fn create_deck_card(
         &self,
-        request: &CreateDeckCardRequest,
+        request: &CreateDeckCard,
     ) -> impl Future<Output = Result<DeckCard, CreateDeckCardError>> + Send;
 
     fn get_deck_profile(
         &self,
-        request: &GetDeckRequest,
+        request: &GetDeck,
     ) -> impl Future<Output = Result<DeckProfile, GetDeckError>> + Send;
 
     fn get_deck_card(
         &self,
-        request: &GetDeckCardRequest,
+        request: &GetDeckCard,
     ) -> impl Future<Output = Result<DeckCard, GetDeckCardError>> + Send;
 
     fn get_deck_cards(
         &self,
-        request: &GetDeckCardRequest,
+        request: &GetDeckCard,
     ) -> impl Future<Output = Result<Vec<DeckCard>, GetDeckCardError>> + Send;
 
     fn update_deck_profile(
         &self,
-        request: &UpdateDeckProfileRequest,
+        request: &UpdateDeckProfile,
     ) -> impl Future<Output = Result<DeckProfile, UpdateDeckProfileError>> + Send;
 
     fn update_deck_card(
         &self,
-        request: &UpdateDeckCardRequest,
+        request: &UpdateDeckCard,
     ) -> impl Future<Output = Result<DeckCard, UpdateDeckCardError>> + Send;
 
     fn delete_deck(
         &self,
-        request: &DeleteDeckRequest,
+        request: &DeleteDeck,
     ) -> impl Future<Output = Result<(), DeleteDeckError>> + Send;
 
     fn delete_deck_card(
         &self,
-        request: &DeleteDeckCardRequest,
+        request: &DeleteDeckCard,
     ) -> impl Future<Output = Result<(), DeleteDeckCardError>> + Send;
 }
 
@@ -64,46 +63,41 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
 pub trait DeckService: Clone + Send + Sync + 'static {
     fn create_deck(
         &self,
-        request: &CreateDeckRequest,
+        request: &CreateDeckProfile,
     ) -> impl Future<Output = Result<DeckProfile, CreateDeckError>> + Send;
-
-    fn get_deck_profile(
-        &self,
-        request: &GetDeckRequest,
-    ) -> impl Future<Output = Result<DeckProfile, GetDeckError>> + Send;
 
     fn get_deck(
         &self,
-        request: &GetDeckRequest,
+        request: &GetDeck,
     ) -> impl Future<Output = Result<Deck, GetDeckError>> + Send;
 
     fn update_deck_profile(
         &self,
-        request: &UpdateDeckProfileRequest,
+        request: &UpdateDeckProfile,
     ) -> impl Future<Output = Result<DeckProfile, UpdateDeckProfileError>> + Send;
 
     fn delete_deck(
         &self,
-        request: &DeleteDeckRequest,
+        request: &DeleteDeck,
     ) -> impl Future<Output = Result<(), DeleteDeckError>> + Send;
 
     fn create_deck_card(
         &self,
-        request: &CreateDeckCardRequest,
+        request: &CreateDeckCard,
     ) -> impl Future<Output = Result<DeckCard, CreateDeckCardError>> + Send;
 
     fn get_deck_card(
         &self,
-        request: &GetDeckCardRequest,
+        request: &GetDeckCard,
     ) -> impl Future<Output = Result<DeckCard, GetDeckCardError>> + Send;
 
     fn update_deck_card(
         &self,
-        request: &UpdateDeckCardRequest,
+        request: &UpdateDeckCard,
     ) -> impl Future<Output = Result<DeckCard, UpdateDeckCardError>> + Send;
 
     fn delete_deck_card(
         &self,
-        request: &DeleteDeckCardRequest,
+        request: &DeleteDeckCard,
     ) -> impl Future<Output = Result<(), DeleteDeckCardError>> + Send;
 }

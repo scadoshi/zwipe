@@ -3,25 +3,19 @@ use std::future::Future;
 use chrono::NaiveDateTime;
 
 use crate::domain::card::models::{
-    card_profile::{
-        CardProfile, GetCardProfileError, GetCardProfileRequest, GetCardProfilesRequest,
-    },
-    scryfall_data::{
-        CreateCardError, CreateScryfallDataError, GetMultipleScryfallDataRequest,
-        GetScryfallDataError, GetScryfallDataRequest, ScryfallData, SearchCardError,
-        SearchCardRequest, SearchScryfallDataError, SearchScryfallDataRequest,
-    },
+    card_profile::{CardProfile, GetCardProfileError},
+    scryfall_data::ScryfallData,
     sync_metrics::{SyncMetrics, SyncType},
-    Card,
+    Card, CreateCardError,
 };
 
 /// enables card related database operations
 pub trait CardRepository: Clone + Send + Sync + 'static {
-    /// simple card insert
+    /// single card creation
     fn insert(
         &self,
-        scryfall_data: &ScryfallData,
-    ) -> impl Future<Output = Result<ScryfallData, CreateScryfallDataError>> + Send;
+        sfd: &ScryfallData,
+    ) -> impl Future<Output = Result<Card, CreateCardError>> + Send;
 
     /// for inserting as many cards as you want (*3*)
     /// - postgres limits parameter counts but that is handled else where
@@ -29,7 +23,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     fn bulk_insert(
         &self,
         multiple_scryfall_data: &[ScryfallData],
-    ) -> impl Future<Output = Result<Vec<ScryfallData>, CreateScryfallDataError>> + Send;
+    ) -> impl Future<Output = Result<Vec<Card>, CreateCardError>> + Send;
 
     /// for inserting as many cards as you want in batches (*3*)
     /// - chunks into given batch size
@@ -39,7 +33,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         multiple_scryfall_data: &[ScryfallData],
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
-    ) -> impl Future<Output = Result<Vec<ScryfallData>, CreateScryfallDataError>> + Send;
+    ) -> impl Future<Output = Result<Vec<Card>, CreateCardError>> + Send;
 
     /// intends to incrementally update database with only new cards
     ///
@@ -55,7 +49,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         multiple_scryfall_data: &[ScryfallData],
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
-    ) -> impl Future<Output = Result<Vec<ScryfallData>, CreateScryfallDataError>> + Send;
+    ) -> impl Future<Output = Result<Vec<Card>, CreateCardError>> + Send;
 
     /// intends to refresh cards in database with the given list of cards
     ///
@@ -71,18 +65,18 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         multiple_scryfall_data: &[ScryfallData],
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
-    ) -> impl Future<Output = Result<Vec<ScryfallData>, CreateScryfallDataError>> + Send;
+    ) -> impl Future<Output = Result<Vec<Card>, CreateCardError>> + Send;
 
     /// gets scryfall card with a uuid
-    fn get_scryfall_data(
+    fn get_card(
         &self,
         request: &GetScryfallDataRequest,
     ) -> impl Future<Output = Result<ScryfallData, GetScryfallDataError>> + Send;
 
-    /// gets scryfall cards with a list of uuids
-    fn get_multiple_scryfall_data(
+    /// gets cards with a list of uuids
+    fn get_cards(
         &self,
-        request: &GetMultipleScryfallDataRequest,
+        request: &GetCardRequest,
     ) -> impl Future<Output = Result<Vec<ScryfallData>, GetScryfallDataError>> + Send;
 
     /// search for cards given parameters

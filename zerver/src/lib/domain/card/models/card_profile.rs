@@ -1,4 +1,5 @@
-use crate::domain::{deck::models::deck_card::DeckCard, DatabaseError};
+use crate::domain::deck::models::deck_card::DeckCard;
+use serde::Serialize;
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -11,20 +12,20 @@ pub enum GetCardProfileError {
     #[error("card profile not found")]
     NotFound,
     #[error(transparent)]
-    Database(DatabaseError),
+    Database(anyhow::Error),
     #[error("card profile found but database returned invalid object: {0}")]
     InvalidCardProfileFromDatabase(anyhow::Error),
 }
 
 #[derive(Debug, Error)]
-pub enum GetCardProfilesRequestError {
+pub enum InvalidGetCardProfile {
     #[error("invalid id: {0}")]
     InvalidUuid(uuid::Error),
     #[error("no ids provided")]
     MissingIds,
 }
 
-impl From<uuid::Error> for GetCardProfilesRequestError {
+impl From<uuid::Error> for InvalidGetCardProfile {
     fn from(value: uuid::Error) -> Self {
         Self::InvalidUuid(value)
     }
@@ -34,9 +35,9 @@ impl From<uuid::Error> for GetCardProfilesRequestError {
 //  requests
 // ==========
 
-pub struct GetCardProfileRequest(Uuid);
+pub struct GetCardProfile(Uuid);
 
-impl GetCardProfileRequest {
+impl GetCardProfile {
     pub fn new(id: &str) -> Result<Self, uuid::Error> {
         Ok(Self(Uuid::try_parse(id)?))
     }
@@ -46,12 +47,12 @@ impl GetCardProfileRequest {
     }
 }
 
-pub struct GetCardProfilesRequest(Vec<Uuid>);
+pub struct GetCardProfiles(Vec<Uuid>);
 
-impl GetCardProfilesRequest {
-    pub fn new(ids: Vec<&str>) -> Result<Self, GetCardProfilesRequestError> {
+impl GetCardProfiles {
+    pub fn new(ids: Vec<&str>) -> Result<Self, InvalidGetCardProfile> {
         if ids.is_empty() {
-            return Err(GetCardProfilesRequestError::MissingIds);
+            return Err(InvalidGetCardProfile::MissingIds);
         }
         Ok(Self(
             ids.into_iter()
@@ -65,10 +66,14 @@ impl GetCardProfilesRequest {
     }
 }
 
-impl From<Vec<DeckCard>> for GetCardProfilesRequest {
-    fn from(value: Vec<DeckCard>) -> Self {
-        let ids: Vec<Uuid> = value.into_iter().map(|x| x.card_profile_id).collect();
-        Self(ids)
+impl From<&[DeckCard]> for GetCardProfiles {
+    fn from(value: &[DeckCard]) -> Self {
+        Self(
+            value
+                .into_iter()
+                .map(|x| x.card_profile_id.to_owned())
+                .collect(),
+        )
     }
 }
 
@@ -76,7 +81,7 @@ impl From<Vec<DeckCard>> for GetCardProfilesRequest {
 //  main
 // ======
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct CardProfile {
     pub id: Uuid,
     pub scryfall_data_id: Uuid,

@@ -3,8 +3,8 @@ use crate::{
         auth::ports::AuthService,
         card::{
             models::scryfall_data::{
-                GetScryfallDataError, GetScryfallDataRequest, ScryfallData,
-                SearchScryfallDataError, SearchScryfallDataRequest,
+                GetScryfallDataError, GetScryfallDataRequest, ScryfallData, SearchCardError,
+                SearchCardRequest,
             },
             ports::CardService,
         },
@@ -49,7 +49,7 @@ where
 {
     state
         .card_service
-        .get_card(&request)
+        .get_scryfall_data(&request)
         .await
         .map_err(ApiError::from)
         .map(|card| ApiSuccess::new(StatusCode::OK, card))
@@ -59,8 +59,8 @@ where
 //  search
 // ========
 
-impl From<SearchScryfallDataError> for ApiError {
-    fn from(value: SearchScryfallDataError) -> Self {
+impl From<SearchCardError> for ApiError {
+    fn from(value: SearchCardError) -> Self {
         tracing::error!("{:?}\n{}", value, anyhow!("{value}").backtrace());
         Self::InternalServerError("internal server error".to_string())
     }
@@ -79,14 +79,14 @@ pub struct SearchCardQueryParams {
     offset: Option<u32>,
 }
 
-impl TryFrom<SearchCardQueryParams> for SearchScryfallDataRequest {
-    type Error = SearchScryfallDataError;
+impl TryFrom<SearchCardQueryParams> for SearchCardRequest {
+    type Error = SearchCardError;
     fn try_from(params: SearchCardQueryParams) -> Result<Self, Self::Error> {
         let color_identity = params
             .color_identity
             .map(|s| s.split(',').map(|c| c.trim().to_string()).collect());
 
-        Ok(SearchScryfallDataRequest::new(
+        Ok(SearchCardRequest::new(
             params.name,
             params.type_line,
             params.set,
@@ -111,11 +111,11 @@ where
     HS: HealthService,
     CS: CardService,
 {
-    let request = SearchScryfallDataRequest::try_from(params)?;
+    let request = SearchCardRequest::try_from(params)?;
 
     state
         .card_service
-        .search_scryfall_datas(&request)
+        .search_cards(&request)
         .await
         .map_err(ApiError::from)
         .map(|cards| ApiSuccess::new(StatusCode::OK, cards))

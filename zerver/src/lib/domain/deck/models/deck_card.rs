@@ -1,7 +1,7 @@
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::domain::{deck::models::deck::DeckProfile, DatabaseError};
+use crate::domain::deck::models::deck::DeckProfile;
 
 // ========
 //  errors
@@ -13,10 +13,10 @@ pub struct InvalidQuantity;
 
 #[derive(Debug, Error)]
 #[error("must be less or greater than 0")]
-pub struct InvalidAddQuanity;
+pub struct InvalidUpdateQuanity;
 
 #[derive(Debug, Error)]
-pub enum CreateDeckCardRequestError {
+pub enum InvalidCreateDeckCard {
     #[error(transparent)]
     InvalidDeckId(uuid::Error),
     #[error(transparent)]
@@ -25,7 +25,7 @@ pub enum CreateDeckCardRequestError {
     InvalidQuantity(InvalidQuantity),
 }
 
-impl From<InvalidQuantity> for CreateDeckCardRequestError {
+impl From<InvalidQuantity> for InvalidCreateDeckCard {
     fn from(value: InvalidQuantity) -> Self {
         Self::InvalidQuantity(value)
     }
@@ -33,21 +33,21 @@ impl From<InvalidQuantity> for CreateDeckCardRequestError {
 
 #[derive(Debug, Error)]
 pub enum CreateDeckCardError {
-    #[error("card with that id already exists in that deck")]
+    #[error("card and deck combination already exists")]
     Duplicate,
     #[error("deck card created but database returned invalid object {0}")]
     InvalidDeckCardFromDatabase(anyhow::Error),
     #[error(transparent)]
-    Database(DatabaseError),
+    Database(anyhow::Error),
 }
 
 #[derive(Debug, Error)]
-pub enum GetDeckCardsRequestError {
+pub enum InvalidGetDeckCards {
     #[error(transparent)]
     InvalidDeckId(uuid::Error),
 }
 
-impl From<uuid::Error> for GetDeckCardsRequestError {
+impl From<uuid::Error> for InvalidGetDeckCards {
     fn from(value: uuid::Error) -> Self {
         Self::InvalidDeckId(value)
     }
@@ -58,27 +58,27 @@ pub enum GetDeckCardError {
     #[error("deck card not found")]
     NotFound,
     #[error(transparent)]
-    Database(DatabaseError),
+    Database(anyhow::Error),
     #[error("deck card found but database returned invalid object: {0}")]
     InvalidDeckCardFromDatabase(anyhow::Error),
 }
 
 #[derive(Debug, Error)]
-pub enum UpdateDeckCardRequestError {
+pub enum InvalidUpdateDeckCard {
     #[error(transparent)]
     InvalidId(uuid::Error),
     #[error(transparent)]
-    InvalidAddQuantity(InvalidAddQuanity),
+    InvalidAddQuantity(InvalidUpdateQuanity),
 }
 
-impl From<uuid::Error> for UpdateDeckCardRequestError {
+impl From<uuid::Error> for InvalidUpdateDeckCard {
     fn from(value: uuid::Error) -> Self {
         Self::InvalidId(value)
     }
 }
 
-impl From<InvalidAddQuanity> for UpdateDeckCardRequestError {
-    fn from(value: InvalidAddQuanity) -> Self {
+impl From<InvalidUpdateQuanity> for InvalidUpdateDeckCard {
+    fn from(value: InvalidUpdateQuanity) -> Self {
         Self::InvalidAddQuantity(value)
     }
 }
@@ -90,7 +90,7 @@ pub enum UpdateDeckCardError {
     #[error("resulting quantity must remain greater than 0")]
     InvalidResultingQuantity,
     #[error(transparent)]
-    Database(DatabaseError),
+    Database(anyhow::Error),
     #[error("deck card updated but database returned invalid object: {0}")]
     InvalidDeckCardFromDatabase(anyhow::Error),
 }
@@ -100,7 +100,7 @@ pub enum DeleteDeckCardError {
     #[error("deck card not found")]
     NotFound,
     #[error(transparent)]
-    Database(DatabaseError),
+    Database(anyhow::Error),
 }
 
 // ==========
@@ -124,12 +124,12 @@ impl Quantity {
 }
 
 #[derive(Debug, Clone)]
-pub struct AddQuantity(i32);
+pub struct UpdateQuantity(i32);
 
-impl AddQuantity {
-    pub fn new(add_quantity: i32) -> Result<Self, InvalidAddQuanity> {
+impl UpdateQuantity {
+    pub fn new(add_quantity: i32) -> Result<Self, InvalidUpdateQuanity> {
         if add_quantity == 0 {
-            return Err(InvalidAddQuanity);
+            return Err(InvalidUpdateQuanity);
         }
         Ok(Self(add_quantity))
     }
@@ -144,22 +144,22 @@ impl AddQuantity {
 // ==========
 
 #[derive(Debug, Clone)]
-pub struct CreateDeckCardRequest {
+pub struct CreateDeckCard {
     pub deck_id: Uuid,
     pub card_profile_id: Uuid,
     pub quantity: Quantity,
 }
 
-impl CreateDeckCardRequest {
+impl CreateDeckCard {
     pub fn new(
         deck_id: &str,
         card_profile_id: &str,
         quantity: i32,
-    ) -> Result<Self, CreateDeckCardRequestError> {
+    ) -> Result<Self, InvalidCreateDeckCard> {
         let deck_id =
-            Uuid::try_parse(deck_id).map_err(|e| CreateDeckCardRequestError::InvalidDeckId(e))?;
+            Uuid::try_parse(deck_id).map_err(|e| InvalidCreateDeckCard::InvalidDeckId(e))?;
         let card_profile_id = Uuid::try_parse(card_profile_id)
-            .map_err(|e| CreateDeckCardRequestError::InvalidCardId(e))?;
+            .map_err(|e| InvalidCreateDeckCard::InvalidCardId(e))?;
         let quantity = Quantity::new(quantity)?;
 
         Ok(Self {
@@ -171,43 +171,46 @@ impl CreateDeckCardRequest {
 }
 
 #[derive(Debug, Clone)]
-pub struct GetDeckCardRequest {
+pub struct GetDeckCard {
     pub deck_id: Uuid,
 }
 
-impl GetDeckCardRequest {
-    pub fn new(deck_id: &str) -> Result<Self, GetDeckCardsRequestError> {
+impl GetDeckCard {
+    pub fn new(deck_id: &str) -> Result<Self, InvalidGetDeckCards> {
         let deck_id = Uuid::try_parse(deck_id)?;
         Ok(Self { deck_id })
     }
 }
 
-impl From<&DeckProfile> for GetDeckCardRequest {
+impl From<&DeckProfile> for GetDeckCard {
     fn from(value: &DeckProfile) -> Self {
-        GetDeckCardRequest {
+        GetDeckCard {
             deck_id: value.id.to_owned(),
         }
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct UpdateDeckCardRequest {
+pub struct UpdateDeckCard {
     pub id: Uuid,
-    pub add_quantity: AddQuantity,
+    pub update_quantity: UpdateQuantity,
 }
 
-impl UpdateDeckCardRequest {
-    pub fn new(id: &str, add_quantity: i32) -> Result<Self, UpdateDeckCardRequestError> {
+impl UpdateDeckCard {
+    pub fn new(id: &str, add_quantity: i32) -> Result<Self, InvalidUpdateDeckCard> {
         let id = Uuid::try_parse(id)?;
-        let add_quantity = AddQuantity::new(add_quantity)?;
-        Ok(Self { id, add_quantity })
+        let update_quantity = UpdateQuantity::new(add_quantity)?;
+        Ok(Self {
+            id,
+            update_quantity,
+        })
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct DeleteDeckCardRequest(Uuid);
+pub struct DeleteDeckCard(Uuid);
 
-impl DeleteDeckCardRequest {
+impl DeleteDeckCard {
     pub fn new(id: &str) -> Result<Self, uuid::Error> {
         let id = Uuid::try_parse(id)?;
         Ok(Self(id))
