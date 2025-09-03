@@ -81,7 +81,7 @@ impl From<&[DeckCard]> for GetCardProfiles {
 //  main
 // ======
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct CardProfile {
     pub id: Uuid,
     pub scryfall_data_id: Uuid,

@@ -4,7 +4,10 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::domain::card::models::{card_profile::CardProfile, scryfall_data::ScryfallData};
+use crate::domain::{
+    card::models::{card_profile::CardProfile, scryfall_data::ScryfallData},
+    deck::models::deck_card::DeckCard,
+};
 
 pub mod card_profile;
 pub mod scryfall_data;
@@ -194,7 +197,7 @@ impl SearchCard {
 //  main
 // ======
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct Card {
     card_profile: CardProfile,
     scryfall_data: ScryfallData,

@@ -1,14 +1,9 @@
 use crate::domain::card::{
     models::{
-        card_profile::{
-            CardProfile, GetCardProfileError, GetCardProfileRequest, GetCardProfilesRequest,
-        },
-        scryfall_data::{
-            CreateScryfallDataError, GetMultipleScryfallDataRequest, GetScryfallDataError,
-            GetScryfallDataRequest, ScryfallData, SearchScryfallDataError,
-            SearchScryfallDataRequest,
-        },
+        card_profile::{CardProfile, GetCardProfile, GetCardProfileError, GetCardProfiles},
+        scryfall_data::ScryfallData,
         sync_metrics::{SyncMetrics, SyncType},
+        Card, CreateCardError, GetCard, GetCardError, GetCards, SearchCard, SearchCardError,
     },
     ports::{CardRepository, CardService},
 };
@@ -47,41 +42,32 @@ where
 }
 
 impl<R: CardRepository> CardService for Service<R> {
-    async fn insert(&self, card: ScryfallData) -> Result<ScryfallData, CreateScryfallDataError> {
-        self.repo.insert(card).await
+    async fn insert(&self, scryfall_data: ScryfallData) -> Result<Card, CreateCardError> {
+        self.repo.insert(&scryfall_data).await
     }
 
-    async fn get_card(
-        &self,
-        request: &GetScryfallDataRequest,
-    ) -> Result<ScryfallData, GetScryfallDataError> {
+    async fn get_card(&self, request: &GetCard) -> Result<Card, GetCardError> {
         self.repo.get_card(request).await
     }
 
-    async fn get_cards(
-        &self,
-        request: &GetMultipleScryfallDataRequest,
-    ) -> Result<Vec<ScryfallData>, GetScryfallDataError> {
+    async fn get_cards(&self, request: &GetCards) -> Result<Vec<Card>, GetCardError> {
         self.repo.get_cards(request).await
     }
 
-    async fn search_scryfall_datas(
-        &self,
-        request: &SearchScryfallDataRequest,
-    ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
+    async fn search_cards(&self, request: &SearchCard) -> Result<Vec<Card>, SearchCardError> {
         self.repo.search_cards(request).await
     }
 
     async fn get_card_profile(
         &self,
-        request: &GetCardProfileRequest,
+        request: &GetCardProfile,
     ) -> Result<CardProfile, GetCardProfileError> {
         self.repo.get_card_profile(request).await
     }
 
     async fn get_card_profiles(
         &self,
-        request: &GetCardProfilesRequest,
+        request: &GetCardProfiles,
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
         self.repo.get_card_profiles(request).await
     }
@@ -93,19 +79,23 @@ impl<R: CardRepository> CardService for Service<R> {
 
         // just going to hard code this for now
         let bulk_endpoint = BulkEndpoint::OracleCards;
-        let cards = bulk_endpoint.amass().await?;
+        let scryfall_data = bulk_endpoint.amass().await?;
 
-        sync_metrics.set_received(cards.len() as i32);
+        sync_metrics.set_received(scryfall_data.len() as i32);
 
         match sync_type {
             SyncType::Full => {
                 self.repo
-                    .delete_if_exists_and_batch_insert(cards, batch_size, &mut sync_metrics)
+                    .delete_if_exists_and_batch_insert(
+                        &scryfall_data,
+                        batch_size,
+                        &mut sync_metrics,
+                    )
                     .await?;
             }
             SyncType::Partial => {
                 self.repo
-                    .batch_insert_if_not_exists(cards, batch_size, &mut sync_metrics)
+                    .batch_insert_if_not_exists(&scryfall_data, batch_size, &mut sync_metrics)
                     .await?;
             }
         };

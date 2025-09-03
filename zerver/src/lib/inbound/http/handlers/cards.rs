@@ -2,9 +2,9 @@ use crate::{
     domain::{
         auth::ports::AuthService,
         card::{
-            models::scryfall_data::{
-                GetScryfallDataError, GetScryfallDataRequest, ScryfallData, SearchCardError,
-                SearchCardRequest,
+            models::{
+                scryfall_data::GetScryfallDataError, Card, GetCard, GetCardError, SearchCard,
+                SearchCardError,
             },
             ports::CardService,
         },
@@ -24,10 +24,10 @@ use serde::Deserialize;
 //  get
 // =====
 
-impl From<GetScryfallDataError> for ApiError {
-    fn from(value: GetScryfallDataError) -> Self {
+impl From<GetCardError> for ApiError {
+    fn from(value: GetCardError) -> Self {
         match value {
-            GetScryfallDataError::NotFound => Self::NotFound("card not found".to_string()),
+            GetCardError::NotFound => Self::NotFound("card not found".to_string()),
             e => {
                 tracing::error!("{:?}\n{}", e, anyhow!("{e}").backtrace());
                 Self::InternalServerError("internal server error".to_string())
@@ -38,9 +38,9 @@ impl From<GetScryfallDataError> for ApiError {
 
 pub async fn get_card<AS, US, HS, CS>(
     State(state): State<AppState<AS, US, HS, CS>>,
-    Path(request): Path<GetScryfallDataRequest>,
+    Path(request): Path<GetCard>,
     _: AuthenticatedUser,
-) -> Result<ApiSuccess<ScryfallData>, ApiError>
+) -> Result<ApiSuccess<Card>, ApiError>
 where
     AS: AuthService,
     US: UserService,
@@ -49,7 +49,7 @@ where
 {
     state
         .card_service
-        .get_scryfall_data(&request)
+        .get_card(&request)
         .await
         .map_err(ApiError::from)
         .map(|card| ApiSuccess::new(StatusCode::OK, card))
@@ -67,7 +67,7 @@ impl From<SearchCardError> for ApiError {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct SearchCardQueryParams {
+pub struct SearchCardRawParameters {
     name: Option<String>,
     type_line: Option<String>,
     set: Option<String>,
@@ -79,14 +79,14 @@ pub struct SearchCardQueryParams {
     offset: Option<u32>,
 }
 
-impl TryFrom<SearchCardQueryParams> for SearchCardRequest {
+impl TryFrom<SearchCardRawParameters> for SearchCard {
     type Error = SearchCardError;
-    fn try_from(params: SearchCardQueryParams) -> Result<Self, Self::Error> {
+    fn try_from(params: SearchCardRawParameters) -> Result<Self, Self::Error> {
         let color_identity = params
             .color_identity
             .map(|s| s.split(',').map(|c| c.trim().to_string()).collect());
 
-        Ok(SearchCardRequest::new(
+        Ok(SearchCard::new(
             params.name,
             params.type_line,
             params.set,
@@ -102,16 +102,16 @@ impl TryFrom<SearchCardQueryParams> for SearchCardRequest {
 
 pub async fn search_cards<AS, US, HS, CS>(
     State(state): State<AppState<AS, US, HS, CS>>,
-    Query(params): Query<SearchCardQueryParams>,
+    Query(params): Query<SearchCardRawParameters>,
     _: AuthenticatedUser,
-) -> Result<ApiSuccess<Vec<ScryfallData>>, ApiError>
+) -> Result<ApiSuccess<Vec<Card>>, ApiError>
 where
     AS: AuthService,
     US: UserService,
     HS: HealthService,
     CS: CardService,
 {
-    let request = SearchCardRequest::try_from(params)?;
+    let request = SearchCard::try_from(params)?;
 
     state
         .card_service

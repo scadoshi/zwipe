@@ -5,7 +5,9 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::domain::{
-    card::models::{card_profile::GetCardProfileError, scryfall_data::GetScryfallDataError, Card},
+    card::models::{
+        card_profile::GetCardProfileError, scryfall_data::GetScryfallDataError, Card, GetCardError,
+    },
     deck::models::deck_card::GetDeckCardError,
 };
 
@@ -55,6 +57,8 @@ pub enum GetDeckError {
     InvalidDeckCardFromDatabase(anyhow::Error),
     #[error("card profile found but database returned invalid object: {0}")]
     InvalidCardProfileFromDatabase(anyhow::Error),
+    #[error("deck profile found but database returned invalid object: {0}")]
+    InvalidDeckProfileFromDatabase(anyhow::Error),
     // #[error("scryfall data found but database returned invalid object: {0}")]
     // InvalidScryfallDataFromDatabase(anyhow::Error),
     #[error(transparent)]
@@ -63,6 +67,8 @@ pub enum GetDeckError {
     GetCardProfileError(GetCardProfileError),
     #[error(transparent)]
     GetScryfallDataError(GetScryfallDataError),
+    #[error(transparent)]
+    GetCardError(GetCardError),
 }
 
 impl From<GetDeckCardError> for GetDeckError {
@@ -80,6 +86,12 @@ impl From<GetCardProfileError> for GetDeckError {
 impl From<GetScryfallDataError> for GetDeckError {
     fn from(value: GetScryfallDataError) -> Self {
         Self::GetScryfallDataError(value)
+    }
+}
+
+impl From<GetCardError> for GetDeckError {
+    fn from(value: GetCardError) -> Self {
+        Self::GetCardError(value)
     }
 }
 

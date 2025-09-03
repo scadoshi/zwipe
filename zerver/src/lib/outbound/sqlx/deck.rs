@@ -48,9 +48,9 @@ impl From<ToDeckError> for UpdateDeckProfileError {
     }
 }
 
-impl From<ToDeckError> for GetDeckError {
+impl From<ToDeckProfileError> for GetDeckError {
     fn from(value: ToDeckError) -> Self {
-        Self::InvalidDeckFromDatabase(value.into())
+        Self::InvalidDeckProfileFromDatabase(value.into())
     }
 }
 

@@ -4,8 +4,6 @@ use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::domain::DatabaseError;
-
 // ========
 //  errors
 // ========
@@ -45,7 +43,7 @@ pub enum CreateUserError {
     #[error("user created but database returned invalid object: {0}")]
     InvalidUserFromDatabase(anyhow::Error),
     #[error(transparent)]
-    Database(DatabaseError),
+    Database(anyhow::Error),
 }
 
 /// actual errors encountered while getting a user
@@ -54,7 +52,7 @@ pub enum GetUserError {
     #[error("user not found")]
     NotFound,
     #[error(transparent)]
-    Database(DatabaseError),
+    Database(anyhow::Error),
     #[error("user found but database returned invalid object: {0}")]
     InvalidUserFromDatabase(anyhow::Error),
 }
@@ -98,7 +96,7 @@ pub enum UpdateUserError {
     #[error("user not found")]
     NotFound,
     #[error(transparent)]
-    Database(DatabaseError),
+    Database(anyhow::Error),
     #[error("user updated but database returned invalid object: {0}")]
     InvalidUserFromDatabase(anyhow::Error),
 }
@@ -109,7 +107,7 @@ pub enum DeleteUserError {
     #[error("user not found")]
     NotFound,
     #[error(transparent)]
-    Database(DatabaseError),
+    Database(anyhow::Error),
 }
 
 // ==========

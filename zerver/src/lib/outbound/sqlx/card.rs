@@ -3,13 +3,10 @@ pub mod scryfall_data;
 pub mod sync_metrics;
 
 use crate::domain::card::models::card_profile::{
-    CardProfile, GetCardProfileError, GetCardProfileRequest, GetCardProfilesRequest,
+    CardProfile, GetCardProfileError, GetCardProfiles,
 };
-use crate::domain::card::models::scryfall_data::{
-    CreateCardError, CreateCardError, GetMultipleScryfallDataRequest, GetScryfallDataError,
-    GetScryfallDataRequest, SearchScryfallDataError, SearchScryfallDataRequest,
-};
-use crate::domain::card::models::Card;
+use crate::domain::card::models::scryfall_data::GetScryfallDataError;
+use crate::domain::card::models::{Card, CreateCardError, SearchCardError};
 use crate::outbound::sqlx::card::card_profile::{DatabaseCardProfile, ToCardProfileError};
 use crate::outbound::sqlx::postgres::{IsConstraintViolation, Postgres as MyPostgres};
 use crate::{
@@ -272,9 +269,9 @@ impl From<sqlx::Error> for GetScryfallDataError {
     }
 }
 
-impl From<sqlx::Error> for SearchScryfallDataError {
+impl From<sqlx::Error> for SearchCardError {
     fn from(value: sqlx::Error) -> Self {
-        SearchScryfallDataError::Database(value.into())
+        SearchCardError::Database(value.into())
     }
 }
 
@@ -660,14 +657,15 @@ impl CardRepository for MyPostgres {
 
     async fn get_card_profiles(
         &self,
-        request: &GetCardProfilesRequest,
+        request: &GetCardProfiles,
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
-        let database_card_profiles: Vec<DatabaseCardProfile> = query_as::<DatabaseCardProfile>(
-            "SELECT id, scryfall_data_id FROM card_profiles WHERE id = ANY($1)",
-        )
-        .bind(request.ids())
-        .fetch_all(&self.pool)
-        .await?;
+        let database_card_profiles: Vec<DatabaseCardProfile> =
+            query_as::<Postgres, DatabaseCardProfile>(
+                "SELECT id, scryfall_data_id FROM card_profiles WHERE id = ANY($1)",
+            )
+            .bind(request.ids())
+            .fetch_all(&self.pool)
+            .await?;
 
         let card_profiles = database_card_profiles
             .into_iter()

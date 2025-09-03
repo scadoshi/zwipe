@@ -2,18 +2,18 @@ use std::fmt::Debug;
 
 use crate::domain::{
     card::{
-        models::{card_profile::GetCardProfiles, Card, GetCards, Sleeve},
+        models::{card_profile::GetCardProfiles, GetCards},
         ports::CardRepository,
     },
     deck::{
         models::{
             deck::{
-                CreateDeckError, CreateDeckProfile, Deck, DeckProfile, DeleteDeckError, GetDeck,
-                GetDeckError, UpdateDeckProfileError,
+                CreateDeckError, CreateDeckProfile, Deck, DeckProfile, DeleteDeck, DeleteDeckError,
+                GetDeck, GetDeckError, UpdateDeckProfile, UpdateDeckProfileError,
             },
             deck_card::{
-                CreateDeckCardError, DeckCard, DeleteDeckCardError, GetDeckCardError,
-                UpdateDeckCardError,
+                CreateDeckCard, CreateDeckCardError, DeckCard, DeleteDeckCard, DeleteDeckCardError,
+                GetDeckCard, GetDeckCardError, UpdateDeckCardError,
             },
         },
         ports::{DeckRepository, DeckService},
@@ -65,13 +65,11 @@ where
         let gdcr = GetDeckCard::from(&deck_profile);
         let deck_cards = self.deck_repo.get_deck_cards(&gdcr).await?;
 
-        let gcpr: GetCardProfiles = deck_cards.into();
+        let gcpr = GetCardProfiles::from(deck_cards.as_slice());
         let card_profiles = self.card_repo.get_card_profiles(&gcpr).await?;
 
-        let gmsfdr: GetCards = card_profiles.clone().into();
-        let scryfall_data = self.card_repo.get_multiple_scryfall_data(&gmsfdr).await?;
-
-        let cards: Vec<Card> = scryfall_data.sleeve(card_profiles);
+        let gmsfdr = GetCards::from(card_profiles.as_slice());
+        let cards = self.card_repo.get_cards(&gmsfdr).await?;
 
         let deck = Deck::new(deck_profile, cards);
 

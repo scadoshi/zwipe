@@ -3,10 +3,10 @@ use std::future::Future;
 use chrono::NaiveDateTime;
 
 use crate::domain::card::models::{
-    card_profile::{CardProfile, GetCardProfileError},
+    card_profile::{CardProfile, GetCardProfile, GetCardProfileError, GetCardProfiles},
     scryfall_data::ScryfallData,
     sync_metrics::{SyncMetrics, SyncType},
-    Card, CreateCardError,
+    Card, CreateCardError, GetCard, GetCardError, GetCards, SearchCard, SearchCardError,
 };
 
 /// enables card related database operations
@@ -70,31 +70,31 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// gets scryfall card with a uuid
     fn get_card(
         &self,
-        request: &GetScryfallDataRequest,
-    ) -> impl Future<Output = Result<ScryfallData, GetScryfallDataError>> + Send;
+        request: &GetCard,
+    ) -> impl Future<Output = Result<Card, GetCardError>> + Send;
 
     /// gets cards with a list of uuids
     fn get_cards(
         &self,
-        request: &GetCardRequest,
-    ) -> impl Future<Output = Result<Vec<ScryfallData>, GetScryfallDataError>> + Send;
+        request: &GetCards,
+    ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
 
     /// search for cards given parameters
     fn search_cards(
         &self,
-        request: &SearchCardRequest,
+        request: &SearchCard,
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardError>> + Send;
 
     /// gets card profile with a uuid
     fn get_card_profile(
         &self,
-        request: &GetCardProfileRequest,
+        request: &GetCardProfile,
     ) -> impl Future<Output = Result<CardProfile, GetCardProfileError>> + Send;
 
     /// gets card profiles with a list of uuids
     fn get_card_profiles(
         &self,
-        request: &GetCardProfilesRequest,
+        request: &GetCardProfiles,
     ) -> impl Future<Output = Result<Vec<CardProfile>, GetCardProfileError>> + Send;
 
     /// saves sync_metrics to database
@@ -122,33 +122,33 @@ pub trait CardService: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = Result<Card, CreateCardError>>;
 
     /// gets scryfall data with a uuid
-    fn get_scryfall_data(
+    fn get_card(
         &self,
-        request: &GetScryfallDataRequest,
-    ) -> impl Future<Output = Result<ScryfallData, GetScryfallDataError>> + Send;
+        request: &GetCard,
+    ) -> impl Future<Output = Result<Card, GetCardError>> + Send;
 
     /// gets scryfall cards with a list of uuids
-    fn get_multiple_scryfall_data(
+    fn get_cards(
         &self,
-        request: &GetMultipleScryfallDataRequest,
-    ) -> impl Future<Output = Result<Vec<ScryfallData>, GetScryfallDataError>> + Send;
+        request: &GetCards,
+    ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
 
     /// gets cards matching parameters
     fn search_cards(
         &self,
-        request: &SearchCardRequest,
+        request: &SearchCard,
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardError>> + Send;
 
     /// gets card profile with a uuid
     fn get_card_profile(
         &self,
-        request: &GetCardProfileRequest,
+        request: &GetCardProfile,
     ) -> impl Future<Output = Result<CardProfile, GetCardProfileError>> + Send;
 
     /// gets card profiles with a list of uuids
     fn get_card_profiles(
         &self,
-        request: &GetCardProfilesRequest,
+        request: &GetCardProfiles,
     ) -> impl Future<Output = Result<Vec<CardProfile>, GetCardProfileError>> + Send;
 
     /// syncs database with scryfall bulk data

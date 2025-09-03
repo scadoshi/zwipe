@@ -2,7 +2,10 @@ use sqlx_macros::FromRow;
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::domain::card::models::card_profile::{CardProfile, GetCardProfileError};
+use crate::domain::card::models::{
+    card_profile::{CardProfile, GetCardProfileError},
+    CreateCardError,
+};
 
 // ========
 //  errors
@@ -14,6 +17,18 @@ pub enum ToCardProfileError {
     InvalidId(uuid::Error),
     #[error("invalid card id: {0}")]
     InvalidCardId(uuid::Error),
+}
+
+impl From<ToCardProfileError> for GetCardProfileError {
+    fn from(value: ToCardProfileError) -> Self {
+        Self::InvalidCardProfileFromDatabase(value.into())
+    }
+}
+
+impl From<ToCardProfileError> for CreateCardError {
+    fn from(value: ToCardProfileError) -> Self {
+        Self::InvalidCardProfileFromDatabase(value.into())
+    }
 }
 
 // ======
@@ -36,11 +51,5 @@ impl TryFrom<DatabaseCardProfile> for CardProfile {
             id,
             scryfall_data_id,
         })
-    }
-}
-
-impl From<ToCardProfileError> for GetCardProfileError {
-    fn from(value: ToCardProfileError) -> Self {
-        Self::InvalidCardProfileFromDatabase(value.into())
     }
 }
