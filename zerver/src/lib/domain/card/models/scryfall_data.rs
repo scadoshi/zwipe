@@ -32,6 +32,12 @@ pub enum GetScryfallDataError {
     // InvalidScryfallDataFromDatabase(anyhow::Error),
 }
 
+#[derive(Debug, Error)]
+pub enum SearchScryfallDataError {
+    #[error(transparent)]
+    Database(anyhow::Error),
+}
+
 // ======
 //  main
 // ======

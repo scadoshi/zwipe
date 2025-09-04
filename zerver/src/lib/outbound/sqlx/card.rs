@@ -3,10 +3,12 @@ pub mod scryfall_data;
 pub mod sync_metrics;
 
 use crate::domain::card::models::card_profile::{
-    CardProfile, GetCardProfileError, GetCardProfiles,
+    CardProfile, GetCardProfile, GetCardProfileError, GetCardProfiles,
 };
-use crate::domain::card::models::scryfall_data::GetScryfallDataError;
-use crate::domain::card::models::{Card, CreateCardError, SearchCardError};
+use crate::domain::card::models::scryfall_data::{GetScryfallDataError, SearchScryfallDataError};
+use crate::domain::card::models::{
+    Card, CreateCardError, GetCard, GetCardError, GetCards, SearchCard, SearchCardError, Sleeve,
+};
 use crate::outbound::sqlx::card::card_profile::{DatabaseCardProfile, ToCardProfileError};
 use crate::outbound::sqlx::postgres::{IsConstraintViolation, Postgres as MyPostgres};
 use crate::{
@@ -143,108 +145,195 @@ pub fn scryfall_data_field_count() -> usize {
         .count()
 }
 
-/// for pushing all of the scryfall data fields
+/// for pushing all scryfall data fields
 /// onto a `QueryBuilder``
-macro_rules! bind_scryfall_data_fields {
-    ($qb:expr, $card:expr) => {
-        $qb.push("(");
-        let mut inner_sep = $qb.separated(", ");
-        inner_sep
-            // core card fields
-            // cards have the following core properties
-            .push_bind($card.arena_id)
-            .push_bind($card.id)
-            .push_bind($card.lang)
-            .push_bind($card.mtgo_id)
-            .push_bind($card.mtgo_foil_id)
-            .push_bind($card.multiverse_ids)
-            .push_bind($card.tcgplayer_id)
-            .push_bind($card.tcgplayer_etched_id)
-            .push_bind($card.cardmarket_id)
-            .push_bind($card.object)
-            .push_bind($card.layout)
-            .push_bind($card.oracle_id)
-            .push_bind($card.prints_search_uri)
-            .push_bind($card.rulings_uri)
-            .push_bind($card.scryfall_uri)
-            .push_bind($card.uri)
-            // gameplay fields
-            // cards have the following properties relevant to the game rules
-            .push_bind($card.all_parts)
-            .push_bind($card.card_faces)
-            .push_bind($card.cmc)
-            .push_bind($card.color_identity)
-            .push_bind($card.color_indicator)
-            .push_bind($card.colors)
-            .push_bind($card.defense)
-            .push_bind($card.edhrec_rank)
-            .push_bind($card.game_changer)
-            .push_bind($card.hand_modifier)
-            .push_bind($card.keywords)
-            .push_bind($card.legalities)
-            .push_bind($card.life_modifier)
-            .push_bind($card.loyalty)
-            .push_bind($card.mana_cost)
-            .push_bind($card.name)
-            .push_bind($card.oracle_text)
-            .push_bind($card.penny_rank)
-            .push_bind($card.power)
-            .push_bind($card.produced_mana)
-            .push_bind($card.reserved)
-            .push_bind($card.toughness)
-            .push_bind($card.type_line)
-            // print fields
-            // cards have the following properties unique to their particular re/print
-            .push_bind($card.artist)
-            .push_bind($card.artist_ids)
-            .push_bind($card.attraction_lights)
-            .push_bind($card.booster)
-            .push_bind($card.border_color)
-            .push_bind($card.card_back_id)
-            .push_bind($card.collector_number)
-            .push_bind($card.content_warning)
-            .push_bind($card.digital)
-            .push_bind($card.finishes)
-            .push_bind($card.flavor_name)
-            .push_bind($card.flavor_text)
-            .push_bind($card.frame_effects)
-            .push_bind($card.frame)
-            .push_bind($card.full_art)
-            .push_bind($card.games)
-            .push_bind($card.highres_image)
-            .push_bind($card.illustration_id)
-            .push_bind($card.image_status)
-            .push_bind($card.image_uris)
-            .push_bind($card.oversized)
-            .push_bind($card.prices)
-            .push_bind($card.printed_name)
-            .push_bind($card.printed_text)
-            .push_bind($card.printed_type_line)
-            .push_bind($card.promo)
-            .push_bind($card.promo_types)
-            .push_bind($card.purchase_uris)
-            .push_bind($card.rarity)
-            .push_bind($card.related_uris)
-            .push_bind($card.released_at)
-            .push_bind($card.reprint)
-            .push_bind($card.scryfall_set_uri)
-            .push_bind($card.set_name)
-            .push_bind($card.set_search_uri)
-            .push_bind($card.set_type)
-            .push_bind($card.set_uri)
-            .push_bind($card.set)
-            .push_bind($card.set_id)
-            .push_bind($card.story_spotlight)
-            .push_bind($card.textless)
-            .push_bind($card.variation)
-            .push_bind($card.variation_of)
-            .push_bind($card.security_stamp)
-            .push_bind($card.watermark)
-            .push_bind($card.preview_previewed_at)
-            .push_bind($card.preview_source_uri)
-            .push_bind($card.preview_source);
-        $qb.push(")");
-    };
+
+pub trait BindScryfallDataFields {
+    fn bind_scryfall_fields(&mut self, card: &ScryfallData);
+}
+
+impl BindScryfallDataFields for QueryBuilder<'_, Postgres> {
+    fn bind_scryfall_fields(&mut self, card: &ScryfallData) {
+        self.push("(");
+        // core card fields
+        // cards have the following core properties
+        self.push_bind(card.arena_id);
+        self.push(", ");
+        self.push_bind(card.id);
+        self.push(", ");
+        self.push_bind(card.lang.clone());
+        self.push(", ");
+        self.push_bind(card.mtgo_id);
+        self.push(", ");
+        self.push_bind(card.mtgo_foil_id);
+        self.push(", ");
+        self.push_bind(card.multiverse_ids.clone());
+        self.push(", ");
+        self.push_bind(card.tcgplayer_id);
+        self.push(", ");
+        self.push_bind(card.tcgplayer_etched_id);
+        self.push(", ");
+        self.push_bind(card.cardmarket_id);
+        self.push(", ");
+        self.push_bind(card.object.clone());
+        self.push(", ");
+        self.push_bind(card.layout.clone());
+        self.push(", ");
+        self.push_bind(card.oracle_id);
+        self.push(", ");
+        self.push_bind(card.prints_search_uri.clone());
+        self.push(", ");
+        self.push_bind(card.rulings_uri.clone());
+        self.push(", ");
+        self.push_bind(card.scryfall_uri.clone());
+        self.push(", ");
+        self.push_bind(card.uri.clone());
+        self.push(", ");
+        // gameplay fields
+        // cards have the following properties relevant to the game rules
+        self.push_bind(card.all_parts.clone());
+        self.push(", ");
+        self.push_bind(card.card_faces.clone());
+        self.push(", ");
+        self.push_bind(card.cmc);
+        self.push(", ");
+        self.push_bind(card.color_identity.clone());
+        self.push(", ");
+        self.push_bind(card.color_indicator.clone());
+        self.push(", ");
+        self.push_bind(card.defense.clone());
+        self.push(", ");
+        self.push_bind(card.edhrec_rank);
+        self.push(", ");
+        self.push_bind(card.game_changer);
+        self.push(", ");
+        self.push_bind(card.hand_modifier.clone());
+        self.push(", ");
+        self.push_bind(card.keywords.clone());
+        self.push(", ");
+        self.push_bind(card.legalities.clone());
+        self.push(", ");
+        self.push_bind(card.life_modifier.clone());
+        self.push(", ");
+        self.push_bind(card.loyalty.clone());
+        self.push(", ");
+        self.push_bind(card.mana_cost.clone());
+        self.push(", ");
+        self.push_bind(card.name.clone());
+        self.push(", ");
+        self.push_bind(card.oracle_text.clone());
+        self.push(", ");
+        self.push_bind(card.penny_rank);
+        self.push(", ");
+        self.push_bind(card.power.clone());
+        self.push(", ");
+        self.push_bind(card.produced_mana.clone());
+        self.push(", ");
+        self.push_bind(card.reserved);
+        self.push(", ");
+        self.push_bind(card.toughness.clone());
+        self.push(", ");
+        self.push_bind(card.type_line.clone());
+        self.push(", ");
+        // print fields
+        // cards have the following properties unique to their particular re/print
+        self.push_bind(card.artist.clone());
+        self.push(", ");
+        self.push_bind(card.artist_ids.clone());
+        self.push(", ");
+        self.push_bind(card.attraction_lights.clone());
+        self.push(", ");
+        self.push_bind(card.booster);
+        self.push(", ");
+        self.push_bind(card.border_color.clone());
+        self.push(", ");
+        self.push_bind(card.card_back_id);
+        self.push(", ");
+        self.push_bind(card.collector_number.clone());
+        self.push(", ");
+        self.push_bind(card.content_warning);
+        self.push(", ");
+        self.push_bind(card.digital);
+        self.push(", ");
+        self.push_bind(card.finishes.clone());
+        self.push(", ");
+        self.push_bind(card.flavor_name.clone());
+        self.push(", ");
+        self.push_bind(card.flavor_text.clone());
+        self.push(", ");
+        self.push_bind(card.frame_effects.clone());
+        self.push(", ");
+        self.push_bind(card.frame.clone());
+        self.push(", ");
+        self.push_bind(card.full_art);
+        self.push(", ");
+        self.push_bind(card.games.clone());
+        self.push(", ");
+        self.push_bind(card.highres_image);
+        self.push(", ");
+        self.push_bind(card.illustration_id);
+        self.push(", ");
+        self.push_bind(card.image_status.clone());
+        self.push(", ");
+        self.push_bind(card.image_uris.clone());
+        self.push(", ");
+        self.push_bind(card.oversized);
+        self.push(", ");
+        self.push_bind(card.prices.clone());
+        self.push(", ");
+        self.push_bind(card.printed_name.clone());
+        self.push(", ");
+        self.push_bind(card.printed_text.clone());
+        self.push(", ");
+        self.push_bind(card.printed_type_line.clone());
+        self.push(", ");
+        self.push_bind(card.promo);
+        self.push(", ");
+        self.push_bind(card.promo_types.clone());
+        self.push(", ");
+        self.push_bind(card.purchase_uris.clone());
+        self.push(", ");
+        self.push_bind(card.rarity.clone());
+        self.push(", ");
+        self.push_bind(card.related_uris.clone());
+        self.push(", ");
+        self.push_bind(card.released_at);
+        self.push(", ");
+        self.push_bind(card.reprint);
+        self.push(", ");
+        self.push_bind(card.scryfall_set_uri.clone());
+        self.push(", ");
+        self.push_bind(card.set_name.clone());
+        self.push(", ");
+        self.push_bind(card.set_search_uri.clone());
+        self.push(", ");
+        self.push_bind(card.set_type.clone());
+        self.push(", ");
+        self.push_bind(card.set_uri.clone());
+        self.push(", ");
+        self.push_bind(card.set.clone());
+        self.push(", ");
+        self.push_bind(card.set_id);
+        self.push(", ");
+        self.push_bind(card.story_spotlight);
+        self.push(", ");
+        self.push_bind(card.textless);
+        self.push(", ");
+        self.push_bind(card.variation);
+        self.push(", ");
+        self.push_bind(card.variation_of);
+        self.push(", ");
+        self.push_bind(card.security_stamp.clone());
+        self.push(", ");
+        self.push_bind(card.watermark.clone());
+        self.push(", ");
+        self.push_bind(card.preview_previewed_at);
+        self.push(", ");
+        self.push_bind(card.preview_source_uri.clone());
+        self.push(", ");
+        self.push_bind(card.preview_source.clone());
+        self.push(")");
+    }
 }
 
 // =========
@@ -266,12 +355,6 @@ impl From<sqlx::Error> for GetScryfallDataError {
             sqlx::Error::RowNotFound => GetScryfallDataError::NotFound,
             e => GetScryfallDataError::Database(e.into()),
         }
-    }
-}
-
-impl From<sqlx::Error> for SearchCardError {
-    fn from(value: sqlx::Error) -> Self {
-        SearchCardError::Database(value.into())
     }
 }
 
@@ -297,23 +380,23 @@ impl From<sqlx::Error> for GetCardProfileError {
 ///
 /// this takes a transaction and mutates
 /// leaving commitment for higher level functions
-pub trait InsertWithTransaction
+pub trait InsertCardWithTx
 where
     Self: Sized,
 {
     fn insert_with_tx(
-        self,
+        &self,
         tx: &mut PgTransaction<'_>,
     ) -> impl Future<Output = Result<Card, CreateCardError>> + Send;
 }
 
 /// for inserting a single card given a transaction
-impl InsertWithTransaction for ScryfallData {
-    async fn insert_with_tx(self, tx: &mut PgTransaction<'_>) -> Result<Card, CreateCardError> {
+impl InsertCardWithTx for ScryfallData {
+    async fn insert_with_tx(&self, tx: &mut PgTransaction<'_>) -> Result<Card, CreateCardError> {
         let scryfall_data_id = self.id.clone();
         let mut sfd_qb = QueryBuilder::new("INSERT INTO scryfall_data (");
         sfd_qb.push(scryfall_data_fields()).push(") VALUES ");
-        bind_scryfall_data_fields!(sfd_qb, self);
+        sfd_qb.bind_scryfall_fields(self);
         sfd_qb.push(" RETURNING *");
         let scryfall_data: ScryfallData = sfd_qb
             .build_query_as::<ScryfallData>()
@@ -333,33 +416,48 @@ impl InsertWithTransaction for ScryfallData {
 }
 
 trait BindToSeparator {
-    fn bind_to(self, qb: &mut QueryBuilder<'_, Postgres>);
+    fn bind_to(&self, qb: &mut QueryBuilder<'_, Postgres>);
 }
 
 impl BindToSeparator for Vec<ScryfallData> {
-    fn bind_to(self, qb: &mut QueryBuilder<'_, Postgres>) {
+    fn bind_to(&self, qb: &mut QueryBuilder<'_, Postgres>) {
         let mut needs_comma = false;
         for card in self {
             if needs_comma {
                 qb.push(", ");
             }
-            bind_scryfall_data_fields!(qb, card);
+            qb.bind_scryfall_fields(card);
             needs_comma = true;
         }
     }
 }
 
+pub trait InsertCardsWithTx
+where
+    Self: Sized,
+{
+    fn insert_with_tx(
+        &self,
+        tx: &mut PgTransaction<'_>,
+    ) -> impl Future<Output = Result<Vec<Card>, CreateCardError>> + Send;
+}
+
 /// for inserting multiple cards given a transaction
-impl InsertWithTransaction for Vec<ScryfallData> {
-    async fn insert_with_tx(self, tx: &mut PgTransaction<'_>) -> Result<Self, CreateCardError> {
+impl InsertCardsWithTx for &[ScryfallData] {
+    async fn insert_with_tx(
+        &self,
+        tx: &mut PgTransaction<'_>,
+    ) -> Result<Vec<Card>, CreateCardError> {
         let scryfall_data_ids: HashSet<Uuid> = self.iter().map(|sfd| sfd.id.to_owned()).collect();
 
         let mut sfd_qb = QueryBuilder::new("INSERT INTO scryfall_data (");
         sfd_qb.push(scryfall_data_fields()).push(") VALUES ");
 
-        self.dedup_by_key(|sfd| sfd.id.clone()).bind_to(&mut sfd_qb);
+        let mut sfds: Vec<ScryfallData> = self.to_vec();
+        sfds.dedup_by_key(|sfd| sfd.id.clone());
+        sfds.bind_to(&mut sfd_qb);
 
-        let multiple_scryfall_data: Vec<ScryfallData> = sfd_qb
+        let sfds: Vec<ScryfallData> = sfd_qb
             .build_query_as::<ScryfallData>()
             .fetch_all(&mut **tx)
             .await?;
@@ -377,14 +475,17 @@ impl InsertWithTransaction for Vec<ScryfallData> {
             needs_comma = true;
         }
 
-        let database_card_profiles: Vec<DatabaseCardProfile> = cp_qb
+        let dcps = cp_qb
             .build_query_as::<DatabaseCardProfile>()
             .fetch_all(&mut **tx)
             .await?;
 
-        let card_profiles: Vec<CardProfile> = database_card_profiles.try_into()?;
+        let cps = dcps
+            .into_iter()
+            .map(|dcp| dcp.try_into())
+            .collect::<Result<Vec<CardProfile>, ToCardProfileError>>()?;
 
-        let cards: Vec<Card> = multiple_scryfall_data.sleeve(card_profiles);
+        let cards: Vec<Card> = sfds.sleeve(cps);
 
         Ok(cards)
     }
@@ -394,7 +495,7 @@ impl InsertWithTransaction for Vec<ScryfallData> {
 ///
 /// this takes a transaction and mutates
 /// leaving commitment for higher level functions
-pub trait BatchInsertWithTransaction
+pub trait BatchInsertWithTx
 where
     Self: Sized,
 {
@@ -403,7 +504,7 @@ where
         tx: &mut PgTransaction<'_>,
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
-    ) -> impl Future<Output = Result<Self, CreateCardError>> + Send;
+    ) -> impl Future<Output = Result<Vec<Card>, CreateCardError>> + Send;
 }
 
 /// for inserting cards in a batch card by card
@@ -433,16 +534,17 @@ async fn insert_card_by_card(
     }
 }
 
-impl BatchInsertWithTransaction for Vec<ScryfallData> {
+impl BatchInsertWithTx for &[ScryfallData] {
     async fn batch_insert_with_tx(
         self,
         tx: &mut PgTransaction<'_>,
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
-    ) -> Result<Self, CreateCardError> {
-        let mut cards: Vec<ScryfallData> = Vec::new();
+    ) -> Result<Vec<Card>, CreateCardError> {
+        let mut cards: Vec<Card> = Vec::new();
+
         for chunk in self.chunks(batch_size) {
-            match chunk.to_owned().insert_with_tx(tx).await {
+            match chunk.insert_with_tx(tx).await {
                 Ok(inserted) => {
                     let inserted_count = inserted.len() as i32;
                     cards.extend(inserted);
@@ -461,29 +563,29 @@ impl BatchInsertWithTransaction for Vec<ScryfallData> {
 
 // tx commits should be handled at this level rather than above
 impl CardRepository for MyPostgres {
-    async fn insert(&self, scryfall_data: ScryfallData) -> Result<Card, CreateCardError> {
+    async fn insert(&self, scryfall_data: &ScryfallData) -> Result<Card, CreateCardError> {
         let mut tx = self.pool.begin().await?;
-        let scryfall_data = scryfall_data.insert_with_tx(&mut tx).await?;
+        let card = scryfall_data.insert_with_tx(&mut tx).await?;
         tx.commit().await?;
         Ok(card)
     }
 
     async fn bulk_insert(
         &self,
-        multiple_scryfall_data: Vec<ScryfallData>,
-    ) -> Result<Vec<ScryfallData>, CreateCardError> {
+        scryfall_data: &[ScryfallData],
+    ) -> Result<Vec<Card>, CreateCardError> {
         let mut tx = self.pool.begin().await?;
-        let cards = cards.insert_with_tx(&mut tx).await?;
+        let cards = scryfall_data.insert_with_tx(&mut tx).await?;
         tx.commit().await?;
         Ok(cards)
     }
 
     async fn batch_insert(
         &self,
-        cards: Vec<ScryfallData>,
+        cards: &[ScryfallData],
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
-    ) -> Result<Vec<ScryfallData>, CreateCardError> {
+    ) -> Result<Vec<Card>, CreateCardError> {
         let mut tx = self.pool.begin().await?;
         let cards = cards
             .batch_insert_with_tx(&mut tx, batch_size, sync_metrics)
@@ -494,34 +596,42 @@ impl CardRepository for MyPostgres {
 
     async fn batch_insert_if_not_exists(
         &self,
-        cards: Vec<ScryfallData>,
+        scryfall_data: &[ScryfallData],
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
-    ) -> Result<Vec<ScryfallData>, CreateCardError> {
+    ) -> Result<Vec<Card>, CreateCardError> {
         tracing::info!("initiating batch insert if not exists process");
-        tracing::info!("received {} cards", cards.len());
+        tracing::info!("received {} cards", scryfall_data.len());
         let mut tx = self.pool.begin().await?;
+
         let existing_ids: Vec<Uuid> = query_scalar("SELECT id FROM scryfall_data")
             .fetch_all(&self.pool)
             .await?;
+
         tracing::info!(
             "skipping {} cards because database already has them",
             existing_ids.len()
         );
         sync_metrics.set_skipped(existing_ids.len() as i32);
-        let new_cards: Vec<ScryfallData> = cards
-            .into_iter()
-            .filter(|x| !existing_ids.contains(&x.id))
+
+        let new_data: Vec<ScryfallData> = scryfall_data
+            .iter()
+            .filter(|sfd| !existing_ids.contains(&sfd.id))
+            .map(|sfd| sfd.clone())
             .collect();
-        if new_cards.is_empty() {
-            tracing::info!("no new cards to import - database up to date");
+
+        if new_data.is_empty() {
+            tracing::info!("no new cards to import so database is up to date");
             return Ok(Vec::new());
         }
-        tracing::info!("importing {} new cards", new_cards.len());
-        let cards: Vec<ScryfallData> = new_cards
+
+        tracing::info!("importing {} new cards", new_data.len());
+        let cards: Vec<Card> = new_data
             .batch_insert_with_tx(&mut tx, batch_size, sync_metrics)
             .await?;
+
         tx.commit().await?;
+
         Ok(cards)
     }
 
@@ -530,124 +640,147 @@ impl CardRepository for MyPostgres {
         cards: &[ScryfallData],
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
-    ) -> Result<Vec<ScryfallData>, CreateCardError> {
+    ) -> Result<Vec<Card>, CreateCardError> {
         tracing::info!("initiating delete if exists and insert process");
         tracing::info!("received {} cards", cards.len());
+
         let mut tx = self.pool.begin().await?;
+
         // extract ids for deletion
         let card_ids: Vec<Uuid> = cards.iter().map(|c| c.id).collect();
+
         tracing::info!("deleting {} cards", card_ids.len());
+
         // delete the cards (card_profile cascade cascades)
         query("DELETE FROM scryfall_data WHERE id = ANY($1)")
             .bind(card_ids)
             .execute(&mut *tx)
             .await?;
+
         tracing::info!("importing {} cards", cards.len());
-        let cards: Vec<ScryfallData> = cards
+
+        let cards: Vec<Card> = cards
             .batch_insert_with_tx(&mut tx, batch_size, sync_metrics)
             .await?;
+
         tx.commit().await?;
+
         Ok(cards)
     }
 
-    async fn get_card(
+    async fn get_scryfall_data(
         &self,
-        request: &GetScryfallDataRequest,
-    ) -> Result<Card, GetScryfallDataError> {
+        request: &GetCard,
+    ) -> Result<ScryfallData, GetScryfallDataError> {
         let scryfall_data: ScryfallData = query_as("SELECT * FROM scryfall_data WHERE id = $1")
             .bind(request.id())
             .fetch_one(&self.pool)
             .await?;
 
-        let self.get_card_profile(request)
-
-        Ok(card)
-        todo!()
+        Ok(scryfall_data)
     }
 
-    async fn get_cards(
+    async fn get_multiple_scryfall_data(
         &self,
-        request: &GetMultipleScryfallDataRequest,
+        request: &GetCards,
     ) -> Result<Vec<ScryfallData>, GetScryfallDataError> {
-        let cards: Vec<ScryfallData> = query_as("SELECT * FROM scryfall_data WHERE id = ANY($1)")
-            .bind(request.ids())
-            .fetch_all(&self.pool)
-            .await?;
-        Ok(cards)
+        let scryfall_data: Vec<ScryfallData> =
+            query_as("SELECT * FROM scryfall_data WHERE id = ANY($1)")
+                .bind(request.ids())
+                .fetch_all(&self.pool)
+                .await?;
+
+        Ok(scryfall_data)
     }
 
-    async fn search_cards(
+    async fn search_scryfall_data(
         &self,
-        request: &SearchScryfallDataRequest,
+        request: &SearchCard,
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
         let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new("SELECT * FROM scryfall_data");
-
-        // early return with all cards if no filtering is applied
-        if !request.has_filters() {
-            let cards: Vec<ScryfallData> = qb.build_query_as().fetch_all(&self.pool).await?;
-            return Ok(cards);
-        }
-
-        // otherwise we start looking through the filters
         let mut sep: Separated<Postgres, &'static str> = qb.separated(" AND ");
 
-        let mut param_index = 1;
+        let mut n = 1;
 
         if let Some(name) = &request.name {
-            sep.push(format!("name ILIKE ${}", param_index));
+            sep.push(format!("name ILIKE ${}", n));
             sep.push_bind_unseparated(format!("%{}%", name));
-            param_index += 1;
+            n += 1;
         }
         if let Some(type_line) = &request.type_line {
-            sep.push(format!("type_line ILIKE ${}", param_index));
+            sep.push(format!("type_line ILIKE ${}", n));
             sep.push_bind_unseparated(format!("%{}%", type_line));
-            param_index += 1;
+            n += 1;
         }
         if let Some(set) = &request.set {
-            sep.push(format!("set ILIKE ${}", param_index));
+            sep.push(format!("set ILIKE ${}", n));
             sep.push_bind_unseparated(format!("%{}%", set));
-            param_index += 1;
+            n += 1;
         }
         if let Some(rarity) = &request.rarity {
-            sep.push(format!("rarity ILIKE ${}", param_index));
+            sep.push(format!("rarity ILIKE ${}", n));
             sep.push_bind_unseparated(format!("%{}%", rarity));
-            param_index += 1;
+            n += 1;
         }
         if let Some(cmc) = request.cmc {
-            sep.push(format!("cmc = ${}", param_index));
+            sep.push(format!("cmc = ${}", n));
             sep.push_bind_unseparated(cmc);
-            param_index += 1;
+            n += 1;
         }
         if let Some(color_identity) = &request.color_identity {
-            sep.push(format!("color_identity && ${}", param_index));
+            sep.push(format!("color_identity && ${}", n));
             sep.push_bind_unseparated(color_identity);
-            param_index += 1;
+            n += 1;
         }
         if let Some(oracle_text) = &request.oracle_text {
-            sep.push(format!("oracle_text ILIKE ${}", param_index));
+            sep.push(format!("oracle_text  ILIKE ${}", n));
             sep.push_bind_unseparated(format!("%{}%", oracle_text));
-            param_index += 1;
+            n += 1;
         }
         if let Some(limit) = request.limit {
-            qb.push(format!(" LIMIT ${}", param_index));
+            qb.push(format!(" LIMIT ${}", n));
             qb.push_bind(limit as i32);
-            param_index += 1;
+            n += 1;
         }
         if let Some(offset) = request.offset {
-            qb.push(format!(" OFFSET ${}", param_index));
+            qb.push(format!(" OFFSET ${}", n));
             qb.push_bind(offset as i32);
         }
 
-        let cards: Vec<ScryfallData> = qb.build_query_as().fetch_all(&self.pool).await?;
+        let scryfall_data: Vec<ScryfallData> = qb.build_query_as().fetch_all(&self.pool).await?;
 
+        Ok(scryfall_data)
+    }
+
+    async fn get_card(&self, request: &GetCard) -> Result<Card, GetCardError> {
+        let scryfall_data = self.get_scryfall_data(request).await?;
+        let get_card_profile = GetCardProfile::from(&scryfall_data);
+        let card_profile = self.get_card_profile(&get_card_profile).await?;
+        let card = Card::new(card_profile, scryfall_data);
+        Ok(card)
+    }
+
+    async fn get_cards(&self, request: &GetCards) -> Result<Vec<Card>, GetCardError> {
+        let scryfall_data = self.get_multiple_scryfall_data(request).await?;
+        let get_card_profiles = GetCardProfiles::from(scryfall_data.as_slice());
+        let card_profiles = self.get_card_profiles(&get_card_profiles).await?;
+        let cards = scryfall_data.sleeve(card_profiles);
+        Ok(cards)
+    }
+
+    async fn search_cards(&self, request: &SearchCard) -> Result<Vec<Card>, SearchCardError> {
+        let scryfall_data = self.search_scryfall_data(request).await?;
+        let get_card_profiles = GetCardProfiles::from(scryfall_data.as_slice());
+        let card_profiles = self.get_card_profiles(&get_card_profiles).await?;
+        let cards = scryfall_data.sleeve(card_profiles);
         Ok(cards)
     }
 
     async fn get_card_profile(
         &self,
-        request: &GetCardProfileRequest,
+        request: &GetCardProfile,
     ) -> Result<CardProfile, GetCardProfileError> {
-        let database_card_profile: DatabaseCardProfileCardProfile =
+        let database_card_profile: DatabaseCardProfile =
             query_as("SELECT id, scryfall_data_id FROM card_profiles WHERE id = $1")
                 .bind(request.id())
                 .fetch_one(&self.pool)
@@ -680,7 +813,7 @@ impl CardRepository for MyPostgres {
 
     async fn record_sync_metrics(
         &self,
-        sync_metrics: SyncMetrics,
+        sync_metrics: &SyncMetrics,
     ) -> Result<SyncMetrics, anyhow::Error> {
         let mut tx = self.pool.begin().await?;
         let query_sql = "INSERT INTO scryfall_data_sync_metrics".to_string()
@@ -705,7 +838,7 @@ impl CardRepository for MyPostgres {
     }
     async fn get_last_sync_date(
         &self,
-        sync_type: SyncType,
+        sync_type: &SyncType,
     ) -> anyhow::Result<Option<NaiveDateTime>> {
         let last_sync_date: Option<NaiveDateTime> = query_scalar(
             "SELECT started_at FROM scryfall_data_sync_metrics WHERE sync_type = $1 ORDER BY started_at DESC LIMIT 1",

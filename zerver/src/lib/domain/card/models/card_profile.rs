@@ -1,4 +1,4 @@
-use crate::domain::deck::models::deck_card::DeckCard;
+use crate::domain::{card::models::scryfall_data::ScryfallData, deck::models::deck_card::DeckCard};
 use serde::Serialize;
 use thiserror::Error;
 use uuid::Uuid;
@@ -47,6 +47,12 @@ impl GetCardProfile {
     }
 }
 
+impl From<&ScryfallData> for GetCardProfile {
+    fn from(value: &ScryfallData) -> Self {
+        GetCardProfile(value.id.clone())
+    }
+}
+
 pub struct GetCardProfiles(Vec<Uuid>);
 
 impl GetCardProfiles {
@@ -71,9 +77,15 @@ impl From<&[DeckCard]> for GetCardProfiles {
         Self(
             value
                 .into_iter()
-                .map(|x| x.card_profile_id.to_owned())
+                .map(|dc| dc.card_profile_id.to_owned())
                 .collect(),
         )
+    }
+}
+
+impl From<&[ScryfallData]> for GetCardProfiles {
+    fn from(value: &[ScryfallData]) -> Self {
+        Self(value.into_iter().map(|sfd| sfd.id.to_owned()).collect())
     }
 }
 

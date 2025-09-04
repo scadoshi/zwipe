@@ -7,14 +7,12 @@ use crate::{
     domain::deck::{
         models::{
             deck::{
-                CreateDeckError, CreateDeckRequest, DeckName, DeckNameError, DeckProfile,
-                DeleteDeckError, DeleteDeckRequest, GetDeckError, GetDeckRequest,
-                UpdateDeckProfileError, UpdateDeckProfileRequest,
+                CreateDeckError, DeckName, DeckProfile, DeleteDeckError, GetDeckError,
+                InvalidDeckname, UpdateDeckProfileError,
             },
             deck_card::{
-                CreateDeckCardError, CreateDeckCardRequest, DeckCard, DeleteDeckCardError,
-                DeleteDeckCardRequest, GetDeckCardError, GetDeckCardRequest, InvalidQuantity,
-                Quantity, UpdateDeckCardError, UpdateDeckCardRequest,
+                CreateDeckCardError, DeckCard, DeleteDeckCardError, GetDeckCardError,
+                InvalidQuantity, Quantity, UpdateDeckCardError,
             },
         },
         ports::DeckRepository,
@@ -31,7 +29,7 @@ pub enum ToDeckError {
     #[error("invalid deck id: {0}")]
     InvalidId(uuid::Error),
     #[error(transparent)]
-    InvalidName(DeckNameError),
+    InvalidDeckName(InvalidDeckname),
     #[error("invalid user id: {0}")]
     InvalidUserId(uuid::Error),
 }
