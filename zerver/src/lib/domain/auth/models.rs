@@ -23,23 +23,21 @@ pub enum RegisterUserError {
     Duplicate,
     #[error(transparent)]
     Database(anyhow::Error),
+    #[error("failed to generate `Jwt`: {0}")]
+    FailedJwt(anyhow::Error),
     #[error("user created but database returned invalid object: {0}")]
     InvalidUserFromDatabase(anyhow::Error),
-    #[error("failed to generate `JWT`: {0}")]
-    FailedJwt(anyhow::Error),
-    #[error(transparent)]
-    InvalidRequest(RegisterUserRequestError),
 }
 
 /// errors encountered while constructing `RegisterUserRequest`
 #[derive(Debug, Error)]
-pub enum RegisterUserRequestError {
+pub enum InvalidRegisterUser {
     #[error(transparent)]
-    InvalidUsername(UserNameError),
+    UserNameError(UserNameError),
     #[error(transparent)]
-    InvalidEmail(email_address::Error),
+    EmailAddressError(email_address::Error),
     #[error(transparent)]
-    InvalidPassword(PasswordError),
+    PasswordError(PasswordError),
     #[error(transparent)]
     FailedPasswordHash(argon2::password_hash::Error),
 }
@@ -63,27 +61,27 @@ pub enum AuthenticateUserError {
 
 /// errors encountered while constructing `AuthenticateUserRequest`
 #[derive(Debug, Error)]
-pub enum AuthenticateUserRequestError {
+pub enum InvalidAuthenticateUser {
     #[error("identifier must be present")]
     MissingIdentifier,
     #[error("password must be present")]
     MissingPassword,
 }
 
-/// errors encountered while constructing `AuthenticateUserSuccessResponseError`
+/// errors encountered while constructing `AuthenticateUserSuccessError`
 #[derive(Debug, Error)]
-pub enum AuthenticateUserSuccessResponseError {
+pub enum InvalidAuthenticateUserSuccess {
     #[error(transparent)]
     JwtError(JwtError),
 }
 
 /// errors encountered while constructing `ChangePasswordRequestError`
 #[derive(Debug, Error)]
-pub enum ChangePasswordRequestError {
+pub enum InvalidChangePassword {
     #[error(transparent)]
     InvalidId(uuid::Error),
     #[error(transparent)]
-    InvalidPassword(PasswordError),
+    PasswordError(PasswordError),
     #[error(transparent)]
     FailedPasswordHash(argon2::password_hash::Error),
 }
@@ -102,28 +100,24 @@ pub enum ChangePasswordError {
 // ========================
 
 #[derive(Debug)]
-pub struct RegisterUserRequest {
+pub struct RegisterUser {
     pub username: UserName,
     pub email: EmailAddress,
     pub password_hash: HashedPassword,
 }
 
-impl RegisterUserRequest {
-    pub fn new(
-        username: &str,
-        email: &str,
-        password: &str,
-    ) -> Result<Self, RegisterUserRequestError> {
+impl RegisterUser {
+    pub fn new(username: &str, email: &str, password: &str) -> Result<Self, InvalidRegisterUser> {
         let username =
-            UserName::new(username).map_err(|e| RegisterUserRequestError::InvalidUsername(e))?;
+            UserName::new(username).map_err(|e| InvalidRegisterUser::UserNameError(e))?;
         let email =
-            EmailAddress::from_str(email).map_err(|e| RegisterUserRequestError::InvalidEmail(e))?;
+            EmailAddress::from_str(email).map_err(|e| InvalidRegisterUser::EmailAddressError(e))?;
         let password =
-            Password::new(password).map_err(|e| RegisterUserRequestError::InvalidPassword(e))?;
+            Password::new(password).map_err(|e| InvalidRegisterUser::PasswordError(e))?;
         let password_hash = HashedPassword::generate(password)
-            .map_err(|e| RegisterUserRequestError::FailedPasswordHash(e))?;
+            .map_err(|e| InvalidRegisterUser::FailedPasswordHash(e))?;
 
-        Ok(RegisterUserRequest {
+        Ok(RegisterUser {
             username,
             email,
             password_hash,
@@ -133,20 +127,20 @@ impl RegisterUserRequest {
 
 /// authentication request with identifier (email/username) and password
 #[derive(Debug)]
-pub struct AuthenticateUserRequest {
+pub struct AuthenticateUser {
     pub identifier: String,
     pub password: String,
 }
 
-impl AuthenticateUserRequest {
-    pub fn new(identifier: &str, password: &str) -> Result<Self, AuthenticateUserRequestError> {
+impl AuthenticateUser {
+    pub fn new(identifier: &str, password: &str) -> Result<Self, InvalidAuthenticateUser> {
         if identifier.is_empty() {
-            return Err(AuthenticateUserRequestError::MissingIdentifier);
+            return Err(InvalidAuthenticateUser::MissingIdentifier);
         }
         if password.is_empty() {
-            return Err(AuthenticateUserRequestError::MissingPassword);
+            return Err(InvalidAuthenticateUser::MissingPassword);
         }
-        Ok(AuthenticateUserRequest {
+        Ok(AuthenticateUser {
             identifier: identifier.to_string(),
             password: password.to_string(),
         })
@@ -157,21 +151,21 @@ impl AuthenticateUserRequest {
 ///
 /// authentication and register user requeast use this
 #[derive(Debug, Serialize, PartialEq)]
-pub struct AuthenticateUserSuccessResponse {
+pub struct AuthenticateUserSuccess {
     pub user: User,
     pub token: Jwt,
     pub expires_at: usize,
 }
 
-impl AuthenticateUserSuccessResponse {
+impl AuthenticateUserSuccess {
     pub fn new(
         user: User,
         token_string: String,
         expires_at: usize,
-    ) -> Result<Self, AuthenticateUserSuccessResponseError> {
-        let token = Jwt::new(&token_string)
-            .map_err(|e| AuthenticateUserSuccessResponseError::JwtError(e))?;
-        Ok(AuthenticateUserSuccessResponse {
+    ) -> Result<Self, InvalidAuthenticateUserSuccess> {
+        let token =
+            Jwt::new(&token_string).map_err(|e| InvalidAuthenticateUserSuccess::JwtError(e))?;
+        Ok(AuthenticateUserSuccess {
             user,
             token,
             expires_at,
@@ -182,18 +176,18 @@ impl AuthenticateUserSuccessResponse {
 /// change password request
 /// with idenifier and new password hash
 #[derive(Debug)]
-pub struct ChangePasswordRequest {
+pub struct ChangePassword {
     pub id: Uuid,
     pub password_hash: HashedPassword,
 }
 
-impl ChangePasswordRequest {
-    pub fn new(id: &str, new_password: &str) -> Result<Self, ChangePasswordRequestError> {
-        let id = Uuid::try_parse(id).map_err(|e| ChangePasswordRequestError::InvalidId(e))?;
-        let password = Password::new(new_password)
-            .map_err(|e| ChangePasswordRequestError::InvalidPassword(e))?;
+impl ChangePassword {
+    pub fn new(id: &str, new_password: &str) -> Result<Self, InvalidChangePassword> {
+        let id = Uuid::try_parse(id).map_err(|e| InvalidChangePassword::InvalidId(e))?;
+        let password =
+            Password::new(new_password).map_err(|e| InvalidChangePassword::PasswordError(e))?;
         let password_hash = HashedPassword::generate(password)
-            .map_err(|e| ChangePasswordRequestError::FailedPasswordHash(e))?;
+            .map_err(|e| InvalidChangePassword::FailedPasswordHash(e))?;
 
         Ok(Self { id, password_hash })
     }
