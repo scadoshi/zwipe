@@ -9,7 +9,7 @@ use crate::domain::card::models::scryfall_data::{GetScryfallDataError, SearchScr
 use crate::domain::card::models::{
     Card, CreateCardError, GetCard, GetCardError, GetCards, SearchCard, SearchCardError, Sleeve,
 };
-use crate::outbound::sqlx::card::card_profile::{DatabaseCardProfile, ToCardProfileError};
+use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
 use crate::outbound::sqlx::postgres::{IsConstraintViolation, Postgres as MyPostgres};
 use crate::{
     domain::card::{
@@ -200,6 +200,8 @@ impl BindScryfallDataFields for QueryBuilder<'_, Postgres> {
         self.push_bind(card.color_identity.clone());
         self.push(", ");
         self.push_bind(card.color_indicator.clone());
+        self.push(", ");
+        self.push_bind(card.colors.clone());
         self.push(", ");
         self.push_bind(card.defense.clone());
         self.push(", ");
@@ -403,12 +405,14 @@ impl InsertCardWithTx for ScryfallData {
             .fetch_one(&mut **tx)
             .await?;
 
-        let database_card_profile: DatabaseCardProfile =
-            query_as("INSERT INTO card_profiles (scryfall_data_id) VALUES ($1)")
-                .bind(scryfall_data_id)
-                .fetch_one(&mut **tx)
-                .await?;
-        let card_profile: CardProfile = database_card_profile.try_into()?;
+        let database_card_profile: DatabaseCardProfile = query_as(
+            "INSERT INTO card_profiles (scryfall_data_id) VALUES ($1) RETURNING id, scryfall_data_id",
+        )
+        .bind(scryfall_data_id)
+        .fetch_one(&mut **tx)
+        .await?;
+
+        let card_profile: CardProfile = database_card_profile.into();
 
         let card = Card::new(card_profile, scryfall_data);
         Ok(card)
@@ -453,11 +457,11 @@ impl InsertCardsWithTx for &[ScryfallData] {
         let mut sfd_qb = QueryBuilder::new("INSERT INTO scryfall_data (");
         sfd_qb.push(scryfall_data_fields()).push(") VALUES ");
 
-        let mut sfds: Vec<ScryfallData> = self.to_vec();
-        sfds.dedup_by_key(|sfd| sfd.id.clone());
-        sfds.bind_to(&mut sfd_qb);
+        let mut sfd: Vec<ScryfallData> = self.to_vec();
+        sfd.dedup_by_key(|sfd| sfd.id.clone());
+        sfd.bind_to(&mut sfd_qb);
 
-        let sfds: Vec<ScryfallData> = sfd_qb
+        let sfd: Vec<ScryfallData> = sfd_qb
             .build_query_as::<ScryfallData>()
             .fetch_all(&mut **tx)
             .await?;
@@ -475,17 +479,17 @@ impl InsertCardsWithTx for &[ScryfallData] {
             needs_comma = true;
         }
 
-        let dcps = cp_qb
+        cp_qb.push(" RETURNING id, scryfall_data_id");
+
+        let cps: Vec<CardProfile> = cp_qb
             .build_query_as::<DatabaseCardProfile>()
             .fetch_all(&mut **tx)
-            .await?;
-
-        let cps = dcps
+            .await?
             .into_iter()
-            .map(|dcp| dcp.try_into())
-            .collect::<Result<Vec<CardProfile>, ToCardProfileError>>()?;
+            .map(|dcp| dcp.into())
+            .collect();
 
-        let cards: Vec<Card> = sfds.sleeve(cps);
+        let cards: Vec<Card> = sfd.sleeve(cps);
 
         Ok(cards)
     }
@@ -780,13 +784,13 @@ impl CardRepository for MyPostgres {
         &self,
         request: &GetCardProfile,
     ) -> Result<CardProfile, GetCardProfileError> {
-        let database_card_profile: DatabaseCardProfile =
-            query_as("SELECT id, scryfall_data_id FROM card_profiles WHERE id = $1")
-                .bind(request.id())
-                .fetch_one(&self.pool)
-                .await?;
-
-        let card_profile = database_card_profile.try_into()?;
+        let card_profile: CardProfile = query_as::<Postgres, DatabaseCardProfile>(
+            "SELECT id, scryfall_data_id FROM card_profiles WHERE id = $1",
+        )
+        .bind(request.id())
+        .fetch_one(&self.pool)
+        .await?
+        .into();
 
         Ok(card_profile)
     }
@@ -795,18 +799,15 @@ impl CardRepository for MyPostgres {
         &self,
         request: &GetCardProfiles,
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
-        let database_card_profiles: Vec<DatabaseCardProfile> =
-            query_as::<Postgres, DatabaseCardProfile>(
-                "SELECT id, scryfall_data_id FROM card_profiles WHERE id = ANY($1)",
-            )
-            .bind(request.ids())
-            .fetch_all(&self.pool)
-            .await?;
-
-        let card_profiles = database_card_profiles
-            .into_iter()
-            .map(|x| x.try_into())
-            .collect::<Result<Vec<CardProfile>, ToCardProfileError>>()?;
+        let card_profiles: Vec<CardProfile> = query_as::<Postgres, DatabaseCardProfile>(
+            "SELECT id, scryfall_data_id FROM card_profiles WHERE id = ANY($1)",
+        )
+        .bind(request.ids())
+        .fetch_all(&self.pool)
+        .await?
+        .into_iter()
+        .map(|dcp| dcp.into())
+        .collect();
 
         Ok(card_profiles)
     }

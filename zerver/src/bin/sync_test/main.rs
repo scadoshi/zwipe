@@ -1,13 +1,15 @@
-use zwipe::{
-    config::Config,
-    domain::card::{self, models::scryfall_data::ScryfallData, ports::CardService},
-    domain::logo,
-    inbound::http::scryfall::PlanesWalker,
-    outbound::sqlx::postgres::Postgres,
-};
 use anyhow::Context;
 use reqwest::Client;
 use std::str::FromStr;
+use zwipe::{
+    config::Config,
+    domain::{
+        card::{self, models::Card, ports::CardService},
+        logo,
+    },
+    inbound::http::scryfall::PlanesWalker,
+    outbound::sqlx::postgres::Postgres,
+};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -28,7 +30,7 @@ async fn main() -> anyhow::Result<()> {
         .context("failed to get card")?
         .clone();
     tracing::info!("found {:?}", card.name);
-    let _inserted_card: ScryfallData = service.insert(card).await?;
+    let _inserted_card: Card = service.insert(card).await?;
     tracing::info!("successfully inserted into database");
     Ok(())
 }

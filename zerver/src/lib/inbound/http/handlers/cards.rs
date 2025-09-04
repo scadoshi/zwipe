@@ -73,6 +73,12 @@ impl From<SearchCardError> for ApiError {
     }
 }
 
+impl From<InvalidSearchCard> for ApiError {
+    fn from(value: InvalidSearchCard) -> Self {
+        Self::UnprocessableEntity(format!("invalid request: {}", value))
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct SearchCardRawParameters {
     name: Option<String>,
