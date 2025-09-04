@@ -218,35 +218,33 @@ alwaysApply: true
 - **🎯 PERFORMANCE OPTIMIZATION**: Strategic batch sizing (372 vs 376 cards) to avoid PostgreSQL parameter limits
 - **🎯 PRODUCTION SQL DEBUGGING**: Expert resolution of `push_bind()` vs `push_bind_unseparated()` parameter binding issues
 
-### IN PROGRESS - Card API Completion 🔄
-- **🔄 ROUTE INTEGRATION**: Connect Card handlers to HTTP server routing for complete Card API
-- **🔄 CARD READ OPERATIONS TESTING**: Test get_card and search_cards with full database of 35k+ cards
+### COMPLETE - The Great Domain Refactor ✅
+- **🏆 ERGONOMIC NAMING CONVENTION**: Comprehensive domain-wide refactoring implementing Operation/OperationError/InvalidOperation pattern
+- **🏆 CARD & DECK DOMAINS COMPLETE**: Full refactoring of Card and Deck domains with optimized queries and consistent naming
+- **🏆 TYPE SYSTEM OPTIMIZATION**: Strategic renaming for maximum API ergonomics and developer experience
+- **🏆 QUERY OPTIMIZATION**: Performance improvements and cleaner SQL patterns throughout refactored domains
+- **🏆 ARCHITECTURAL CONSISTENCY**: Unified patterns across refactored domains maintaining hexagonal principles
+- **🏆 MAINTAINABILITY FOCUS**: Long-term code quality improvements prioritizing clarity and ease of use
 
-### IN PROGRESS - Domain Type System Refactoring 🔄
-1. **🔧 Naming Convention Standardization**: Comprehensive refactoring for ergonomic type names
-   - **Operation Pattern**: `GetCardRequest` → `GetCard`, `CreateDeckRequest` → `CreateDeck`
-   - **Error Pattern**: `GetCardRequestError` → `InvalidGetCard`, `CreateDeckRequestError` → `InvalidCreateDeck`
-   - **Clarity Focus**: Shortest meaningful names showing exact purpose (operation vs error vs validation error)
-   - **Domain Consistency**: Apply pattern across Card, Deck, User, Auth domains uniformly
-2. **🔧 Card Entity Architecture Refinement**: Enhanced Card composition model
-   - **Card Entity**: Card struct combining CardProfile (domain data) + ScryfallData (external API data)
-   - **Service Layer Design**: CardService returns full Card entities for rich API responses
-   - **Repository Separation**: CardProfile repo + ScryfallData repo with service orchestration
-   - **API Method Clarity**: create_card/create_cards, get_card, search_cards, delete_card
-3. **🔧 Deck Orchestration Architecture**: Complex multi-domain service design
-   - **Deck Composition**: Deck containing Vec<Card> + DeckProfile for complete frontend objects
-   - **DeckCard Junction**: Backend relationship management hidden from frontend API
+### IN PROGRESS - Domain Refactor Completion 🔄
+- **🔧 USER DOMAIN CLEANUP**: Apply ergonomic naming patterns to User domain (GetUser, CreateUser, UpdateUser, DeleteUser)
+- **🔧 AUTH DOMAIN CLEANUP**: Apply consistent naming to Auth domain (Register, Login, ChangePassword patterns)
+- **🔧 ERROR TYPE STANDARDIZATION**: Implement InvalidOperation pattern for User and Auth validation errors
+- **🔧 COMPILATION VERIFICATION**: Ensure all refactored domains compile and maintain functionality
+
+### NEXT PRIORITIES - Service & HTTP Layer Completion 🎯
+1. **🔧 Card Service Implementation**: Complete CardService layer with refined domain models
+   - **Enhanced Card Entity**: Implement Card composition (ScryfallData + CardProfile)
+   - **Service Methods**: get_card, search_cards with rich response objects
+   - **Cross-Repository Orchestration**: Coordinate between CardProfile and ScryfallData repositories
+2. **🔧 Deck Service Implementation**: Complete DeckService with cross-domain orchestration
+   - **Deck Composition**: Implement Deck containing Vec<Card> + DeckProfile
    - **Service Methods**: create_deck → DeckProfile, get_deck → full Deck with cards
-   - **Card Relationships**: add_card_to_deck, remove_card_from_deck (one-at-a-time MVP)
-3. **🔧 Card Service Layer Completion**: Finish card domain service implementation
-   - **CardService Implementation**: Complete service layer that's currently scaffolded
-   - **Search Orchestration**: Business logic for card search and filtering
-   - **Cache Integration**: Consider caching layer for frequently accessed cards
-4. **🔧 Route Integration & Testing**: Complete HTTP layer integration
-   - **AppState Enhancement**: Inject deck and enhanced card services
-   - **Route Organization**: Add deck routes to public/private route separation
-   - **End-to-End Testing**: Validate complete deck workflow from HTTP to database
-   - **Integration Testing**: Test deck + card interactions through HTTP layer
+   - **Card Relationships**: add_card_to_deck, remove_card_from_deck operations
+3. **🔧 HTTP Layer Integration**: Connect refined services to HTTP handlers
+   - **AppState Enhancement**: Integrate completed Card and Deck services
+   - **Route Organization**: Complete public/private route separation
+   - **End-to-End Testing**: Validate complete workflows from HTTP to database
 5. **Scheduled Card Update Job**: Automated incremental card data synchronization
    - **Database Diff Logic**: Query existing card IDs to determine what's missing from Scryfall data
    - **Incremental Import**: Only fetch and insert new/updated cards, skip existing ones
@@ -512,10 +510,10 @@ curl http://localhost:8080/api/v1/decks
 
 ---
 
-**Last Updated**: During comprehensive domain type system refactoring for ergonomic naming conventions
+**Last Updated**: After completing The Great Domain Refactor for Card and Deck domains
 
-**Current Sprint**: Domain naming standardization and Card/Deck service architecture refinement
+**Current Sprint**: User/Auth domain cleanup and service layer implementation
 
-**Next Major Milestone**: Complete type refactoring, resolve compilation errors, implement refined service methods
+**Next Major Milestone**: Complete domain refactoring, implement Card/Deck services, integrate HTTP layer
 
-**Major Recent Achievement**: Initiated comprehensive naming convention refactoring across all domains using Operation/OperationError/InvalidOperation pattern for maximum ergonomics. Redesigned Card entity architecture with ScryfallData + CardProfile composition. Planned Deck orchestration with Vec<Card> + DeckProfile for rich frontend objects. Established clear service responsibilities: Card service (create/get/search/delete), Deck service (create_deck → DeckProfile, get_deck → full Deck, card relationship management). Architecture prioritizes API ergonomics and clear domain boundaries while maintaining hexagonal principles. 
+**Major Recent Achievement**: Successfully completed comprehensive domain refactoring for Card and Deck domains implementing Operation/OperationError/InvalidOperation naming pattern. Achieved type system optimization with ergonomic API design, query performance improvements, and architectural consistency. Card and Deck domains now feature clean naming conventions, optimized database queries, and maintainable code structure. Ready to apply same refactoring patterns to User and Auth domains, then proceed to service layer implementation and HTTP integration. 
