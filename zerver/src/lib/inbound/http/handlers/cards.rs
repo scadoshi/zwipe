@@ -3,8 +3,8 @@ use crate::{
         auth::ports::AuthService,
         card::{
             models::{
-                scryfall_data::GetScryfallDataError, Card, GetCard, GetCardError, SearchCard,
-                SearchCardError,
+                card_profile::GetCardProfileError, scryfall_data::GetScryfallDataError, Card,
+                GetCard, GetCardError, InvalidSearchCard, SearchCard, SearchCardError,
             },
             ports::CardService,
         },
@@ -27,7 +27,14 @@ use serde::Deserialize;
 impl From<GetCardError> for ApiError {
     fn from(value: GetCardError) -> Self {
         match value {
-            GetCardError::NotFound => Self::NotFound("card not found".to_string()),
+            GetCardError::GetCardProfileError(GetCardProfileError::NotFound) => {
+                Self::NotFound("card profile not found".to_string())
+            }
+
+            GetCardError::GetScryfallDataError(GetScryfallDataError::NotFound) => {
+                Self::NotFound("scryfall data not found".to_string())
+            }
+
             e => {
                 tracing::error!("{:?}\n{}", e, anyhow!("{e}").backtrace());
                 Self::InternalServerError("internal server error".to_string())
@@ -80,13 +87,13 @@ pub struct SearchCardRawParameters {
 }
 
 impl TryFrom<SearchCardRawParameters> for SearchCard {
-    type Error = SearchCardError;
+    type Error = InvalidSearchCard;
     fn try_from(params: SearchCardRawParameters) -> Result<Self, Self::Error> {
         let color_identity = params
             .color_identity
             .map(|s| s.split(',').map(|c| c.trim().to_string()).collect());
 
-        Ok(SearchCard::new(
+        SearchCard::new(
             params.name,
             params.type_line,
             params.set,
@@ -96,7 +103,7 @@ impl TryFrom<SearchCardRawParameters> for SearchCard {
             params.oracle_text,
             params.limit,
             params.offset,
-        ))
+        )
     }
 }
 

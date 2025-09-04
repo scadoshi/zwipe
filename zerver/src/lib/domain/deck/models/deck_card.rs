@@ -134,7 +134,7 @@ impl UpdateQuantity {
         Ok(Self(add_quantity))
     }
 
-    pub fn add_quantity(&self) -> i32 {
+    pub fn value(&self) -> i32 {
         self.0
     }
 }
