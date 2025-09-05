@@ -5,7 +5,6 @@ use crate::domain::{
     health::ports::HealthService, user::ports::UserService,
 };
 use crate::inbound::http::handlers::auth::change_password;
-use crate::inbound::http::handlers::user::{create_user, delete_user, get_user, update_user};
 use crate::inbound::http::handlers::{
     auth::{authenticate_user, register_user},
     card::{get_card, search_cards},
@@ -16,8 +15,7 @@ use anyhow::{anyhow, Context};
 use axum::http::{header, HeaderValue, Method, StatusCode};
 use axum::response::IntoResponse;
 use axum::routing::{delete, get, post, put};
-use axum::{Json, Router};
-use serde::Serialize;
+use axum::Router;
 use std::sync::Arc;
 use tokio::net;
 use tower_http::cors::CorsLayer;
@@ -51,33 +49,17 @@ impl IntoResponse for ApiError {
         match self {
             ApiError::InternalServerError(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(HttpResponse::new_error(
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Internal server error".to_string(),
-                )),
+                "internal server error".to_string(),
             )
                 .into_response(),
 
-            ApiError::UnprocessableEntity(message) => (
-                StatusCode::UNPROCESSABLE_ENTITY,
-                Json(HttpResponse::new_error(
-                    StatusCode::UNPROCESSABLE_ENTITY,
-                    message,
-                )),
-            )
-                .into_response(),
+            ApiError::UnprocessableEntity(message) => {
+                (StatusCode::UNPROCESSABLE_ENTITY, message).into_response()
+            }
 
-            ApiError::Unauthorized(message) => (
-                StatusCode::UNAUTHORIZED,
-                Json(HttpResponse::new_error(StatusCode::UNAUTHORIZED, message)),
-            )
-                .into_response(),
+            ApiError::Unauthorized(message) => (StatusCode::UNAUTHORIZED, message).into_response(),
 
-            ApiError::NotFound(message) => (
-                StatusCode::NOT_FOUND,
-                Json(HttpResponse::new_error(StatusCode::NOT_FOUND, message)),
-            )
-                .into_response(),
+            ApiError::NotFound(message) => (StatusCode::NOT_FOUND, message).into_response(),
         }
     }
 }
@@ -93,39 +75,6 @@ where
     fn log_500(self) -> ApiError {
         tracing::error!("{:?}\n{}", self, anyhow!("{self}").backtrace());
         ApiError::InternalServerError("internal server error".to_string())
-    }
-}
-
-// =============
-//  http things
-// =============
-
-#[derive(Debug, Serialize, PartialEq)]
-pub struct HttpError {
-    pub message: String,
-}
-
-#[derive(Debug, PartialEq, Serialize)]
-pub struct HttpResponse<T: Serialize + PartialEq> {
-    status_code: u16,
-    data: T,
-}
-
-impl<T: Serialize + PartialEq> HttpResponse<T> {
-    fn new(status_code: StatusCode, data: T) -> Self {
-        HttpResponse {
-            status_code: status_code.as_u16(),
-            data,
-        }
-    }
-}
-
-impl HttpResponse<HttpError> {
-    pub fn new_error(status_code: StatusCode, message: String) -> Self {
-        Self {
-            status_code: status_code.as_u16(),
-            data: HttpError { message },
-        }
     }
 }
 

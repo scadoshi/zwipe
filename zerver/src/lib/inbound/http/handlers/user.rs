@@ -12,7 +12,7 @@ use crate::{
             ports::UserService,
         },
     },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+    inbound::http::{ApiError, AppState, Log500},
 };
 use axum::{
     extract::{Path, State},

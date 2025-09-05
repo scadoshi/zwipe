@@ -357,6 +357,8 @@ alwaysApply: true
 - **🎯 ARCHITECTURAL DECISION MAKING**: Strategic analysis of user domain vs auth domain responsibilities, proper security boundary placement
 - **🎯 ROUTE ORGANIZATION UNDERSTANDING**: Clean separation of public vs private routes with proper authentication requirements
 - **🎯 HTTP RESPONSE SIMPLIFICATION**: Eliminated unnecessary abstraction layers, adopted direct Axum response patterns
+- **🎯 AXUM RESPONSE TYPES**: Understanding of plain text vs JSON response trade-offs, strategic choice of simple error messages
+- **🎯 ABSTRACTION ELIMINATION**: Successful removal of HttpResponse<T> wrapper in favor of direct (StatusCode, String) patterns
 
 ### Learning Pattern Recognition
 - **Strategic Simplification**: Recognizes when complexity doesn't add value

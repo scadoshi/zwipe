@@ -248,26 +248,35 @@ alwaysApply: true
 - **🎯 DEAD CODE ELIMINATION**: Identified and removed unused user handlers, empty server.rs file, redundant response types
 - **🎯 LOG500 TRAIT CONSISTENCY**: Standardized error logging patterns across all handlers with one manual case corrected
 - **🎯 RESTFUL PARAMETER DESIGN**: Confirmed proper REST patterns using path parameters for resource identification with request bodies for updates
+- **🎯 HTTP RESPONSE SIMPLIFICATION**: Eliminated HttpResponse<T> wrapper, adopted direct Axum (StatusCode, String) error responses
+- **🎯 ABSTRACTION LAYER REDUCTION**: Removed unnecessary JSON wrappers in favor of plain text error messages for cleaner API responses
 
-### IN PROGRESS - Deck Card Management API 🔄
-- **🔧 DECK CARD ROUTE DESIGN**: Plan nested resource routes for card management within decks
-- **🔧 DECK CARD HTTP HANDLERS**: Implement add/remove/update card operations with proper validation
-- **🔧 QUANTITY MANAGEMENT**: Handle card quantities with business rule validation
-- **🔧 INTEGRATION TESTING**: End-to-end testing of complete deck + card workflows
+### IN PROGRESS - Domain Architecture Completion 🔄
+- **🔧 DECK CARD HTTP LAYER**: Build complete deck card management API with nested resource routes
+- **🔧 AUTH DOMAIN EXPANSION**: Move username/email updates and account deletion to auth domain for security consistency
+- **🔧 USER DOMAIN SIMPLIFICATION**: Clean user pipeline to read-only operations, remove create/update/delete mutations
+- **🔧 SECURITY BOUNDARY CONSOLIDATION**: Centralize all user lifecycle operations in auth domain
 
-### NEXT PRIORITIES - Deck Card API Completion 🎯
-1. **🔧 Deck Card HTTP Routes**: Design and implement card management endpoints
-   - **POST /api/decks/:deck_id/cards**: Add cards to deck with quantity validation
-   - **PUT /api/decks/:deck_id/cards/:card_id**: Update card quantity in deck
-   - **DELETE /api/decks/:deck_id/cards/:card_id**: Remove cards from deck
-2. **🔧 Deck Card Handlers**: Complete HTTP handler implementation
-   - **Request Validation**: Proper deck_id and card_id validation from path parameters
-   - **Business Logic Integration**: Connect to existing DeckService card operations
-   - **Error Handling**: Comprehensive error mapping for card-specific operations
-3. **🔧 Complete Deck Management Workflow**: End-to-end deck + card management
-   - **Integration Testing**: Test complete deck creation → card addition → deck retrieval flow
-   - **Performance Validation**: Ensure efficient card lookup and quantity management
-   - **API Documentation**: Document complete deck management API surface
+### NEXT PRIORITIES - Domain Architecture Completion 🎯
+1. **🔧 Deck Card HTTP Layer Implementation**
+   - **POST /api/deck/:deck_id/cards**: Add cards to deck with quantity validation
+   - **PUT /api/deck/:deck_id/cards/:card_id**: Update card quantity in deck
+   - **DELETE /api/deck/:deck_id/cards/:card_id**: Remove cards from deck
+   - **Nested Resource Routes**: Proper RESTful design with authentication requirements
+   - **Request Validation**: Path parameter validation and business logic integration
+
+2. **🔧 Auth Domain Security Operations**
+   - **POST /api/auth/update-username**: Move username updates from user domain to auth
+   - **POST /api/auth/update-email**: Move email updates from user domain to auth  
+   - **POST /api/auth/delete-account**: Account deletion with proper validation and cleanup
+   - **Security Consistency**: All user mutations centralized in auth domain for security
+
+3. **🔧 User Domain Pipeline Cleanup**
+   - **Remove create_user**: Auth handles registration exclusively
+   - **Remove update_user**: Auth handles all profile mutations
+   - **Remove delete_user**: Auth handles account deletion
+   - **Keep get_user**: Read-only profile access for client needs
+   - **Domain Simplification**: User becomes read-only profile service
 5. **Scheduled Card Update Job**: Automated incremental card data synchronization
    - **Database Diff Logic**: Query existing card IDs to determine what's missing from Scryfall data
    - **Incremental Import**: Only fetch and insert new/updated cards, skip existing ones
@@ -533,10 +542,10 @@ curl http://localhost:8080/api/v1/decks
 
 ---
 
-**Last Updated**: After completing comprehensive HTTP module refactoring and cleanup
+**Last Updated**: After completing HTTP response simplification and abstraction layer reduction
 
-**Current Sprint**: Auth domain completion (username/email updates, account deletion) and deck card management API
+**Current Sprint**: Domain architecture completion - deck card HTTP layer, auth domain expansion, user domain simplification
 
-**Next Major Milestone**: Complete auth operations, implement deck card management endpoints, card quantity validation
+**Next Major Milestone**: Complete deck card management API, centralize user operations in auth domain, establish clean security boundaries
 
-**Major Recent Achievement**: Successfully completed comprehensive HTTP module refactoring eliminating unnecessary abstractions and standardizing response patterns. Removed ApiSuccess<T> wrapper in favor of direct (StatusCode, Json<T>) returns, resolved Axum Handler trait issues through proper parameter ordering, and made strategic architectural decisions about domain boundaries. Established clean route organization with proper authentication requirements and eliminated dead code. HTTP layer now features consistent, efficient patterns with proper security boundaries and clean separation of concerns. Ready to complete auth domain operations and proceed with deck card management API implementation. 
+**Major Recent Achievement**: Successfully completed comprehensive HTTP module refactoring and response simplification. Eliminated ApiSuccess<T> and HttpResponse<T> wrappers in favor of direct Axum response patterns, adopting plain text error messages over JSON for cleaner API responses. Resolved Axum Handler trait issues through proper parameter ordering, and established clean route organization with proper authentication requirements. HTTP layer now features minimal, efficient patterns with direct (StatusCode, String) error responses and clean separation of concerns. Ready to implement deck card management API, expand auth domain with username/email updates and account deletion, and simplify user domain to read-only operations for optimal security architecture. 
