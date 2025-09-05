@@ -8,12 +8,12 @@ use crate::{
             },
             ports::CardService,
         },
+        deck::ports::DeckService,
         health::ports::HealthService,
         user::ports::UserService,
     },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, ApiSuccess, AppState},
+    inbound::http::{middleware::AuthenticatedUser, ApiError, ApiSuccess, AppState, Log500},
 };
-use anyhow::anyhow;
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
@@ -35,16 +35,13 @@ impl From<GetCardError> for ApiError {
                 Self::NotFound("scryfall data not found".to_string())
             }
 
-            e => {
-                tracing::error!("{:?}\n{}", e, anyhow!("{e}").backtrace());
-                Self::InternalServerError("internal server error".to_string())
-            }
+            e => e.log_500(),
         }
     }
 }
 
-pub async fn get_card<AS, US, HS, CS>(
-    State(state): State<AppState<AS, US, HS, CS>>,
+pub async fn get_card<AS, US, HS, CS, DS>(
+    State(state): State<AppState<AS, US, HS, CS, DS>>,
     Path(request): Path<GetCard>,
     _: AuthenticatedUser,
 ) -> Result<ApiSuccess<Card>, ApiError>
@@ -53,6 +50,7 @@ where
     US: UserService,
     HS: HealthService,
     CS: CardService,
+    DS: DeckService,
 {
     state
         .card_service
@@ -68,8 +66,7 @@ where
 
 impl From<SearchCardError> for ApiError {
     fn from(value: SearchCardError) -> Self {
-        tracing::error!("{:?}\n{}", value, anyhow!("{value}").backtrace());
-        Self::InternalServerError("internal server error".to_string())
+        value.log_500()
     }
 }
 
@@ -113,8 +110,8 @@ impl TryFrom<SearchCardRawParameters> for SearchCard {
     }
 }
 
-pub async fn search_cards<AS, US, HS, CS>(
-    State(state): State<AppState<AS, US, HS, CS>>,
+pub async fn search_cards<AS, US, HS, CS, DS>(
+    State(state): State<AppState<AS, US, HS, CS, DS>>,
     Query(params): Query<SearchCardRawParameters>,
     _: AuthenticatedUser,
 ) -> Result<ApiSuccess<Vec<Card>>, ApiError>
@@ -123,6 +120,7 @@ where
     US: UserService,
     HS: HealthService,
     CS: CardService,
+    DS: DeckService,
 {
     let request = SearchCard::try_from(params)?;
 

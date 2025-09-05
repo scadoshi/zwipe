@@ -2,6 +2,7 @@ use crate::{
     domain::{
         auth::ports::AuthService,
         card::ports::CardService,
+        deck::ports::DeckService,
         health::ports::HealthService,
         user::{
             models::{
@@ -11,9 +12,8 @@ use crate::{
             ports::UserService,
         },
     },
-    inbound::http::{ApiError, ApiSuccess, AppState},
+    inbound::http::{ApiError, ApiSuccess, AppState, Log500},
 };
-use anyhow::anyhow;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -32,10 +32,7 @@ impl From<CreateUserError> for ApiError {
                 "user with that username or email already exists".to_string(),
             ),
 
-            e => {
-                tracing::error!("{:?}\n{}", e, anyhow!("{e}").backtrace());
-                Self::InternalServerError("internal server error".to_string())
-            }
+            e => e.log_500(),
         }
     }
 }
@@ -66,8 +63,8 @@ impl TryFrom<HttpCreateUser> for CreateUser {
     }
 }
 
-pub async fn create_user<AS, US, HS, CS>(
-    State(state): State<AppState<AS, US, HS, CS>>,
+pub async fn create_user<AS, US, HS, CS, DS>(
+    State(state): State<AppState<AS, US, HS, CS, DS>>,
     Json(body): Json<HttpCreateUser>,
 ) -> Result<ApiSuccess<HttpUser>, ApiError>
 where
@@ -75,12 +72,13 @@ where
     US: UserService,
     HS: HealthService,
     CS: CardService,
+    DS: DeckService,
 {
-    let req = CreateUser::new(&body.username, &body.email)?;
+    let request = CreateUser::new(&body.username, &body.email)?;
 
     state
         .user_service
-        .create_user(&req)
+        .create_user(&request)
         .await
         .map_err(ApiError::from)
         .map(|ref user| ApiSuccess::new(StatusCode::CREATED, user.into()))
@@ -95,16 +93,13 @@ impl From<GetUserError> for ApiError {
         match value {
             GetUserError::NotFound => Self::NotFound("user not found".to_string()),
 
-            e => {
-                tracing::error!("{:?}\n{}", e, anyhow!("{e}").backtrace());
-                Self::InternalServerError("internal server error".to_string())
-            }
+            e => e.log_500(),
         }
     }
 }
 
-pub async fn get_user<AS, US, HS, CS>(
-    State(state): State<AppState<AS, US, HS, CS>>,
+pub async fn get_user<AS, US, HS, CS, DS>(
+    State(state): State<AppState<AS, US, HS, CS, DS>>,
     Path(identifier): Path<String>,
 ) -> Result<ApiSuccess<HttpUser>, ApiError>
 where
@@ -112,12 +107,13 @@ where
     US: UserService,
     HS: HealthService,
     CS: CardService,
+    DS: DeckService,
 {
-    let req = GetUser::new(&identifier);
+    let request = GetUser::new(&identifier);
 
     state
         .user_service
-        .get_user(&req)
+        .get_user(&request)
         .await
         .map_err(ApiError::from)
         .map(|ref user| ApiSuccess::new(StatusCode::OK, user.into()))
@@ -134,10 +130,7 @@ impl From<UpdateUserError> for ApiError {
                 "user with that username or email already exists".to_string(),
             ),
             UpdateUserError::NotFound => Self::NotFound("user not found".to_string()),
-            e => {
-                tracing::error!("{:?}\n{}", e, anyhow!("{e}").backtrace());
-                Self::InternalServerError("internal server error".to_string())
-            }
+            e => e.log_500(),
         }
     }
 }
@@ -160,34 +153,35 @@ impl From<InvalidUpdateUser> for ApiError {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct UpdateUserBody {
+pub struct HttpUpdateUser {
     id: String,
     username: Option<String>,
     email: Option<String>,
 }
 
-impl TryFrom<UpdateUserBody> for UpdateUser {
+impl TryFrom<HttpUpdateUser> for UpdateUser {
     type Error = InvalidUpdateUser;
-    fn try_from(value: UpdateUserBody) -> Result<Self, Self::Error> {
+    fn try_from(value: HttpUpdateUser) -> Result<Self, Self::Error> {
         UpdateUser::new(&value.id, value.username, value.email)
     }
 }
 
-pub async fn update_user<AS, US, HS, CS>(
-    State(state): State<AppState<AS, US, HS, CS>>,
-    Json(body): Json<UpdateUserBody>,
+pub async fn update_user<AS, US, HS, CS, DS>(
+    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    Json(body): Json<HttpUpdateUser>,
 ) -> Result<ApiSuccess<HttpUser>, ApiError>
 where
     AS: AuthService,
     US: UserService,
     HS: HealthService,
     CS: CardService,
+    DS: DeckService,
 {
-    let req = UpdateUser::new(&body.id, body.username, body.email)?;
+    let request = UpdateUser::new(&body.id, body.username, body.email)?;
 
     state
         .user_service
-        .update_user(&req)
+        .update_user(&request)
         .await
         .map_err(ApiError::from)
         .map(|ref user| ApiSuccess::new(StatusCode::OK, user.into()))
@@ -201,41 +195,37 @@ impl From<DeleteUserError> for ApiError {
     fn from(value: DeleteUserError) -> Self {
         match value {
             DeleteUserError::NotFound => Self::NotFound("user not found".to_string()),
-            e => {
-                tracing::error!("{:?}\n{}", e, anyhow!("{e}").backtrace());
-                Self::InternalServerError("internal server error".to_string())
-            }
+            e => e.log_500(),
         }
     }
 }
 
 #[derive(Debug, Deserialize)]
-pub struct DeleteUserBody {
-    id: String,
-}
+pub struct HttpDeleteUser(String);
 
-impl TryFrom<DeleteUserBody> for DeleteUser {
+impl TryFrom<HttpDeleteUser> for DeleteUser {
     type Error = uuid::Error;
-    fn try_from(value: DeleteUserBody) -> Result<Self, Self::Error> {
-        DeleteUser::new(&value.id)
+    fn try_from(value: HttpDeleteUser) -> Result<Self, Self::Error> {
+        DeleteUser::new(&value.0)
     }
 }
 
-pub async fn delete_user<AS, US, HS, CS>(
-    State(state): State<AppState<AS, US, HS, CS>>,
-    Json(body): Json<DeleteUserBody>,
+pub async fn delete_user<AS, US, HS, CS, DS>(
+    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    Path(request): Path<HttpDeleteUser>,
 ) -> Result<ApiSuccess<()>, ApiError>
 where
     AS: AuthService,
     US: UserService,
     HS: HealthService,
     CS: CardService,
+    DS: DeckService,
 {
-    let req = DeleteUser::new(&body.id)?;
+    let request = DeleteUser::new(&request.0)?;
 
     state
         .user_service
-        .delete_user(&req)
+        .delete_user(&request)
         .await
         .map_err(ApiError::from)
         .map(|_| ApiSuccess::new(StatusCode::OK, ()))

@@ -17,6 +17,7 @@ use crate::{
             ports::AuthService,
         },
         card::ports::CardService,
+        deck::ports::DeckService,
         health::ports::HealthService,
         user::ports::UserService,
     },
@@ -37,17 +38,18 @@ impl From<UserClaims> for AuthenticatedUser {
 }
 
 #[async_trait]
-impl<AS, US, HS, CS> FromRequestParts<AppState<AS, US, HS, CS>> for AuthenticatedUser
+impl<AS, US, HS, CS, DS> FromRequestParts<AppState<AS, US, HS, CS, DS>> for AuthenticatedUser
 where
     AS: AuthService,
     US: UserService,
     HS: HealthService,
     CS: CardService,
+    DS: DeckService,
 {
     type Rejection = StatusCode;
     async fn from_request_parts(
         parts: &mut Parts,
-        state: &AppState<AS, US, HS, CS>,
+        state: &AppState<AS, US, HS, CS, DS>,
     ) -> Result<Self, Self::Rejection> {
         let TypedHeader(Authorization(bearer)) =
             TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)

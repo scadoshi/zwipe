@@ -28,8 +28,6 @@ pub enum GetScryfallDataError {
     NotFound,
     #[error(transparent)]
     Database(anyhow::Error),
-    // #[error("scryfall data found but database returned invalid object {0}")]
-    // InvalidScryfallDataFromDatabase(anyhow::Error),
 }
 
 #[derive(Debug, Error)]

@@ -82,7 +82,7 @@ impl AuthRepository for Postgres {
 
         let user: User = database_user
             .try_into()
-            .map_err(|e| RegisterUserError::InvalidUserFromDatabase(anyhow!("{e}")))?;
+            .map_err(|e| RegisterUserError::UserFromDb(anyhow!("{e}")))?;
 
         tx.commit()
             .await
@@ -112,7 +112,7 @@ impl AuthRepository for Postgres {
 
         let user: UserWithPasswordHash = database_user
             .try_into()
-            .map_err(|e| AuthenticateUserError::InvalidUserFromDatabase(anyhow!("{e}")))?;
+            .map_err(|e| AuthenticateUserError::UserFromDb(anyhow!("{e}")))?;
 
         Ok(user)
     }

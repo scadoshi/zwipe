@@ -26,7 +26,7 @@ pub enum RegisterUserError {
     #[error("failed to generate `Jwt`: {0}")]
     FailedJwt(anyhow::Error),
     #[error("user created but database returned invalid object: {0}")]
-    InvalidUserFromDatabase(anyhow::Error),
+    UserFromDb(anyhow::Error),
 }
 
 /// errors encountered while constructing `RegisterUserRequest`
@@ -52,7 +52,7 @@ pub enum AuthenticateUserError {
     #[error(transparent)]
     Database(anyhow::Error),
     #[error("user found but database returned invalid object: {0}")]
-    InvalidUserFromDatabase(anyhow::Error),
+    UserFromDb(anyhow::Error),
     #[error("failed to verify password: {0}")]
     FailedToVerify(anyhow::Error),
     #[error("failed to generate `JWT`: {0}")]

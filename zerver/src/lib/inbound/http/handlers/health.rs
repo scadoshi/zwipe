@@ -1,7 +1,7 @@
 use crate::{
     domain::{
-        auth::ports::AuthService, card::ports::CardService, health::ports::HealthService,
-        user::ports::UserService,
+        auth::ports::AuthService, card::ports::CardService, deck::ports::DeckService,
+        health::ports::HealthService, user::ports::UserService,
     },
     inbound::http::AppState,
 };
@@ -62,14 +62,15 @@ pub async fn is_server_running() -> Json<Value> {
     Json(json!(HealthCheckResponse::new("healthy")))
 }
 
-pub async fn are_server_and_database_running<AS, US, HS, CS>(
-    State(state): State<AppState<AS, US, HS, CS>>,
+pub async fn are_server_and_database_running<AS, US, HS, CS, DS>(
+    State(state): State<AppState<AS, US, HS, CS, DS>>,
 ) -> Json<Value>
 where
     AS: AuthService,
     US: UserService,
     HS: HealthService,
     CS: CardService,
+    DS: DeckService,
 {
     let result = match state.health_service.check_database().await {
         Ok(_) => "healthy",

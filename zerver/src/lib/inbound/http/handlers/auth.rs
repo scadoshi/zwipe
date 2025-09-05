@@ -1,17 +1,21 @@
-use crate::domain::{
-    auth::{
-        models::{
-            AuthenticateUser, AuthenticateUserError, AuthenticateUserSuccess, ChangePassword,
-            ChangePasswordError, InvalidAuthenticateUser, InvalidChangePassword,
-            InvalidRegisterUser, RegisterUser, RegisterUserError,
-        },
-        ports::AuthService,
-    },
-    card::ports::CardService,
-    health::ports::HealthService,
-    user::ports::UserService,
-};
+use crate::domain::deck::ports::DeckService;
 use crate::inbound::http::{ApiError, ApiSuccess, AppState};
+use crate::{
+    domain::{
+        auth::{
+            models::{
+                AuthenticateUser, AuthenticateUserError, AuthenticateUserSuccess, ChangePassword,
+                ChangePasswordError, InvalidAuthenticateUser, InvalidChangePassword,
+                InvalidRegisterUser, RegisterUser, RegisterUserError,
+            },
+            ports::AuthService,
+        },
+        card::ports::CardService,
+        health::ports::HealthService,
+        user::ports::UserService,
+    },
+    inbound::http::Log500,
+};
 use anyhow::anyhow;
 use axum::{extract::State, http::StatusCode, Json};
 use serde::Deserialize;
@@ -27,10 +31,7 @@ impl From<RegisterUserError> for ApiError {
                 "user with that username or email already exists".to_string(),
             ),
 
-            e => {
-                tracing::error!("{:?}\n{}", e, anyhow!("{e}").backtrace());
-                Self::InternalServerError("Internal server error".to_string())
-            }
+            e => e.log_500(),
         }
     }
 }
@@ -47,10 +48,7 @@ impl From<InvalidRegisterUser> for ApiError {
             InvalidRegisterUser::Password(e) => {
                 Self::UnprocessableEntity(format!("invalid password {}", e))
             }
-            e => {
-                tracing::error!("{:?}\n{}", e, anyhow!("{e}").backtrace());
-                Self::InternalServerError("Internal server error".to_string())
-            }
+            e => e.log_500(),
         }
     }
 }
@@ -69,8 +67,8 @@ impl TryFrom<RegisterUserBody> for RegisterUser {
     }
 }
 
-pub async fn register_user<AS, US, HS, CS>(
-    State(state): State<AppState<AS, US, HS, CS>>,
+pub async fn register_user<AS, US, HS, CS, DS>(
+    State(state): State<AppState<AS, US, HS, CS, DS>>,
     Json(body): Json<RegisterUserBody>,
 ) -> Result<ApiSuccess<AuthenticateUserSuccess>, ApiError>
 where
@@ -78,6 +76,7 @@ where
     US: UserService,
     HS: HealthService,
     CS: CardService,
+    DS: DeckService,
 {
     let req = RegisterUser::new(&body.username, &body.email, &body.password)?;
 
@@ -104,10 +103,7 @@ impl From<AuthenticateUserError> for ApiError {
                 Self::Unauthorized("invalid credentials".to_string())
             }
 
-            e => {
-                tracing::error!("{:?}\n{}", e, anyhow!("{e}").backtrace());
-                Self::InternalServerError("Internal server error".to_string())
-            }
+            e => e.log_500(),
         }
     }
 }
@@ -138,8 +134,8 @@ impl TryFrom<HttpAuthenticateUser> for AuthenticateUser {
     }
 }
 
-pub async fn authenticate_user<AS, US, HS, CS>(
-    State(state): State<AppState<AS, US, HS, CS>>,
+pub async fn authenticate_user<AS, US, HS, CS, DS>(
+    State(state): State<AppState<AS, US, HS, CS, DS>>,
     Json(body): Json<HttpAuthenticateUser>,
 ) -> Result<ApiSuccess<AuthenticateUserSuccess>, ApiError>
 where
@@ -147,6 +143,7 @@ where
     US: UserService,
     HS: HealthService,
     CS: CardService,
+    DS: DeckService,
 {
     let req = AuthenticateUser::new(&body.identifier, &body.password)?;
 
@@ -185,10 +182,7 @@ impl From<InvalidChangePassword> for ApiError {
             InvalidChangePassword::PasswordError(e) => {
                 Self::UnprocessableEntity(format!("invalid password {}", e))
             }
-            e => {
-                tracing::error!("{:?}\n{}", e, anyhow!("{e}").backtrace());
-                Self::InternalServerError("Internal server error".to_string())
-            }
+            e => e.log_500(),
         }
     }
 }
@@ -206,8 +200,8 @@ impl TryFrom<HttpChangePassword> for ChangePassword {
     }
 }
 
-pub async fn change_password<AS, US, HS, CS>(
-    State(state): State<AppState<AS, US, HS, CS>>,
+pub async fn change_password<AS, US, HS, CS, DS>(
+    State(state): State<AppState<AS, US, HS, CS, DS>>,
     Json(body): Json<HttpChangePassword>,
 ) -> Result<ApiSuccess<()>, ApiError>
 where
@@ -215,6 +209,7 @@ where
     US: UserService,
     HS: HealthService,
     CS: CardService,
+    DS: DeckService,
 {
     let req = ChangePassword::new(&body.id, &body.new_password)?;
 
