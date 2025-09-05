@@ -36,7 +36,7 @@ pub enum CreateDeckCardError {
     #[error("card and deck combination already exists")]
     Duplicate,
     #[error("deck card created but database returned invalid object {0}")]
-    InvalidDeckCardFromDatabase(anyhow::Error),
+    DeckCardFromDb(anyhow::Error),
     #[error(transparent)]
     Database(anyhow::Error),
 }
@@ -60,7 +60,7 @@ pub enum GetDeckCardError {
     #[error(transparent)]
     Database(anyhow::Error),
     #[error("deck card found but database returned invalid object: {0}")]
-    InvalidDeckCardFromDatabase(anyhow::Error),
+    DeckCardFromDb(anyhow::Error),
 }
 
 #[derive(Debug, Error)]
@@ -92,7 +92,7 @@ pub enum UpdateDeckCardError {
     #[error(transparent)]
     Database(anyhow::Error),
     #[error("deck card updated but database returned invalid object: {0}")]
-    InvalidDeckCardFromDatabase(anyhow::Error),
+    DeckCardFromDb(anyhow::Error),
 }
 
 #[derive(Debug, Error)]

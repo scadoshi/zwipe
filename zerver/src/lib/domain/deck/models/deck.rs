@@ -5,9 +5,7 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::domain::{
-    card::models::{
-        card_profile::GetCardProfileError, scryfall_data::GetScryfallDataError, Card, GetCardError,
-    },
+    card::models::{card_profile::GetCardProfileError, Card, GetCardError},
     deck::models::deck_card::GetDeckCardError,
 };
 
@@ -22,13 +20,27 @@ pub enum InvalidDeckname {
 }
 
 #[derive(Debug, Error)]
-pub enum InvalidCreateDeck {
+pub enum InvalidCreateDeckProfile {
     #[error(transparent)]
     DeckName(InvalidDeckname),
+    #[error(transparent)]
+    UserId(uuid::Error),
+}
+
+impl From<uuid::Error> for InvalidCreateDeckProfile {
+    fn from(value: uuid::Error) -> Self {
+        Self::UserId(value)
+    }
+}
+
+impl From<InvalidDeckname> for InvalidCreateDeckProfile {
+    fn from(value: InvalidDeckname) -> Self {
+        Self::DeckName(value)
+    }
 }
 
 #[derive(Debug, Error)]
-pub enum CreateDeckError {
+pub enum CreateDeckProfileError {
     #[error("deck with name and user id combination already exists")]
     Duplicate,
     #[error("deck created but database returned invalid object {0}")]
@@ -40,35 +52,41 @@ pub enum CreateDeckError {
 #[derive(Debug, Error)]
 pub enum InvalidGetDeck {
     #[error(transparent)]
-    UserId(uuid::Error),
-    #[error("identifier must contain something")]
-    MissingIdentifier,
+    Id(uuid::Error),
+}
+
+impl From<uuid::Error> for InvalidGetDeck {
+    fn from(value: uuid::Error) -> Self {
+        Self::Id(value)
+    }
+}
+
+#[derive(Debug, Error)]
+pub enum GetDeckProfileError {
+    #[error("deck profile not found")]
+    NotFound,
+    #[error(transparent)]
+    Database(anyhow::Error),
+    #[error("deck profile found but database returned invalid object: {0}")]
+    DeckProfileFromDb(anyhow::Error),
 }
 
 #[derive(Debug, Error)]
 pub enum GetDeckError {
-    #[error("deck not found")]
-    NotFound,
-
     #[error(transparent)]
-    Database(anyhow::Error),
-
-    #[error("deck card found but database returned invalid object: {0}")]
-    DeckCardFromDb(anyhow::Error),
-    #[error("card profile found but database returned invalid object: {0}")]
-    CardProfileFromDb(anyhow::Error),
-    #[error("deck profile found but database returned invalid object: {0}")]
-    DeckProfileFromDb(anyhow::Error),
-    // #[error("scryfall data found but database returned invalid object: {0}")]
-    // InvalidScryfallDataFromDatabase(anyhow::Error),
+    GetDeckProfileError(GetDeckProfileError),
     #[error(transparent)]
     GetDeckCardError(GetDeckCardError),
     #[error(transparent)]
     GetCardProfileError(GetCardProfileError),
     #[error(transparent)]
-    GetScryfallDataError(GetScryfallDataError),
-    #[error(transparent)]
     GetCardError(GetCardError),
+}
+
+impl From<GetDeckProfileError> for GetDeckError {
+    fn from(value: GetDeckProfileError) -> Self {
+        Self::GetDeckProfileError(value)
+    }
 }
 
 impl From<GetDeckCardError> for GetDeckError {
@@ -80,12 +98,6 @@ impl From<GetDeckCardError> for GetDeckError {
 impl From<GetCardProfileError> for GetDeckError {
     fn from(value: GetCardProfileError) -> Self {
         Self::GetCardProfileError(value)
-    }
-}
-
-impl From<GetScryfallDataError> for GetDeckError {
-    fn from(value: GetScryfallDataError) -> Self {
-        Self::GetScryfallDataError(value)
     }
 }
 
@@ -126,7 +138,7 @@ pub enum UpdateDeckProfileError {
     #[error(transparent)]
     Database(anyhow::Error),
     #[error("deck updated but database returned invalid object: {0}")]
-    InvalidDeckFromDatabase(anyhow::Error),
+    DeckFromDb(anyhow::Error),
 }
 
 #[derive(Debug, Error)]
@@ -141,7 +153,7 @@ pub enum DeleteDeckError {
 //  newtypes
 // ==========
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DeckName(String);
 
 impl DeckName {
@@ -183,30 +195,24 @@ pub struct CreateDeckProfile {
 }
 
 impl CreateDeckProfile {
-    pub fn new(name: &str, user_id: Uuid) -> Result<Self, InvalidDeckname> {
+    pub fn new(name: &str, user_id: &str) -> Result<Self, InvalidCreateDeckProfile> {
         let name = DeckName::new(name)?;
+        let user_id = Uuid::try_parse(user_id)?;
         Ok(Self { name, user_id })
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct GetDeck {
-    pub identifier: String,
-    pub user_id: Uuid,
-}
+pub struct GetDeck(Uuid);
 
 impl GetDeck {
-    pub fn new(identifier: &str, user_id: &str) -> Result<Self, InvalidGetDeck> {
-        if identifier.is_empty() {
-            return Err(InvalidGetDeck::MissingIdentifier);
-        }
+    pub fn new(id: &str) -> Result<Self, InvalidGetDeck> {
+        let id = Uuid::try_parse(id)?;
+        Ok(Self(id))
+    }
 
-        let user_id = Uuid::try_parse(user_id).map_err(|e| InvalidGetDeck::UserId(e))?;
-
-        Ok(Self {
-            identifier: identifier.to_string(),
-            user_id,
-        })
+    pub fn id(&self) -> Uuid {
+        self.0
     }
 }
 
@@ -221,14 +227,12 @@ pub struct UpdateDeckProfile {
 }
 
 impl UpdateDeckProfile {
-    pub fn new(id: &str, name_opt: Option<&str>) -> Result<Self, InvalidUpdateDeckProfile> {
-        if name_opt.is_none() {
+    pub fn new(id: &str, name: Option<&str>) -> Result<Self, InvalidUpdateDeckProfile> {
+        if name.is_none() {
             return Err(InvalidUpdateDeckProfile::NothingToUpdate);
         }
         let id = Uuid::try_parse(id)?;
-        let name = name_opt
-            .map(|name_str| DeckName::new(name_str))
-            .transpose()?;
+        let name = name.map(|name_str| DeckName::new(name_str)).transpose()?;
         Ok(Self { id, name })
     }
 }
@@ -252,14 +256,14 @@ impl DeleteDeck {
 //  main
 // ======
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct DeckProfile {
     pub id: Uuid,
     pub name: DeckName,
     pub user_id: Uuid,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct Deck {
     deck_profile: DeckProfile,
     cards: Vec<Card>,

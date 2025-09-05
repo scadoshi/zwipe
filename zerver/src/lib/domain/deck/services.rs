@@ -8,8 +8,9 @@ use crate::domain::{
     deck::{
         models::{
             deck::{
-                CreateDeckError, CreateDeckProfile, Deck, DeckProfile, DeleteDeck, DeleteDeckError,
-                GetDeck, GetDeckError, UpdateDeckProfile, UpdateDeckProfileError,
+                CreateDeckProfile, CreateDeckProfileError, Deck, DeckProfile, DeleteDeck,
+                DeleteDeckError, GetDeck, GetDeckError, GetDeckProfileError, UpdateDeckProfile,
+                UpdateDeckProfileError,
             },
             deck_card::{
                 CreateDeckCard, CreateDeckCardError, DeckCard, DeleteDeckCard, DeleteDeckCardError,
@@ -48,28 +49,31 @@ where
     DR: DeckRepository,
     CR: CardRepository,
 {
-    async fn create_deck(
+    async fn create_deck_profile(
         &self,
         request: &CreateDeckProfile,
-    ) -> Result<DeckProfile, CreateDeckError> {
-        self.deck_repo.create_deck(request).await
+    ) -> Result<DeckProfile, CreateDeckProfileError> {
+        self.deck_repo.create_deck_profile(request).await
     }
 
-    async fn get_deck_profile(&self, request: &GetDeck) -> Result<DeckProfile, GetDeckError> {
+    async fn get_deck_profile(
+        &self,
+        request: &GetDeck,
+    ) -> Result<DeckProfile, GetDeckProfileError> {
         self.deck_repo.get_deck_profile(request).await
     }
 
     async fn get_deck(&self, request: &GetDeck) -> Result<Deck, GetDeckError> {
         let deck_profile = self.deck_repo.get_deck_profile(request).await?;
 
-        let gdcr = GetDeckCard::from(&deck_profile);
-        let deck_cards = self.deck_repo.get_deck_cards(&gdcr).await?;
+        let gdc = GetDeckCard::from(&deck_profile);
+        let deck_cards = self.deck_repo.get_deck_cards(&gdc).await?;
 
-        let gcpr = GetCardProfiles::from(deck_cards.as_slice());
-        let card_profiles = self.card_repo.get_card_profiles(&gcpr).await?;
+        let gcp = GetCardProfiles::from(deck_cards.as_slice());
+        let card_profiles = self.card_repo.get_card_profiles(&gcp).await?;
 
-        let gmsfdr = GetCards::from(card_profiles.as_slice());
-        let cards = self.card_repo.get_cards(&gmsfdr).await?;
+        let gcs = GetCards::from(card_profiles.as_slice());
+        let cards = self.card_repo.get_cards(&gcs).await?;
 
         let deck = Deck::new(deck_profile, cards);
 

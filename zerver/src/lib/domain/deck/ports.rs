@@ -2,8 +2,8 @@ use std::future::Future;
 
 use crate::domain::deck::models::{
     deck::{
-        CreateDeckError, CreateDeckProfile, Deck, DeckProfile, DeleteDeck, DeleteDeckError,
-        GetDeck, GetDeckError, UpdateDeckProfile, UpdateDeckProfileError,
+        CreateDeckProfile, CreateDeckProfileError, Deck, DeckProfile, DeleteDeck, DeleteDeckError,
+        GetDeck, GetDeckError, GetDeckProfileError, UpdateDeckProfile, UpdateDeckProfileError,
     },
     deck_card::{
         CreateDeckCard, CreateDeckCardError, DeckCard, DeleteDeckCard, DeleteDeckCardError,
@@ -13,10 +13,10 @@ use crate::domain::deck::models::{
 
 /// enables deck related database operations
 pub trait DeckRepository: Clone + Send + Sync + 'static {
-    fn create_deck(
+    fn create_deck_profile(
         &self,
         request: &CreateDeckProfile,
-    ) -> impl Future<Output = Result<DeckProfile, CreateDeckError>> + Send;
+    ) -> impl Future<Output = Result<DeckProfile, CreateDeckProfileError>> + Send;
 
     fn create_deck_card(
         &self,
@@ -26,7 +26,7 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
     fn get_deck_profile(
         &self,
         request: &GetDeck,
-    ) -> impl Future<Output = Result<DeckProfile, GetDeckError>> + Send;
+    ) -> impl Future<Output = Result<DeckProfile, GetDeckProfileError>> + Send;
 
     fn get_deck_card(
         &self,
@@ -61,10 +61,10 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
 
 /// orchestrates deck related operations
 pub trait DeckService: Clone + Send + Sync + 'static {
-    fn create_deck(
+    fn create_deck_profile(
         &self,
         request: &CreateDeckProfile,
-    ) -> impl Future<Output = Result<DeckProfile, CreateDeckError>> + Send;
+    ) -> impl Future<Output = Result<DeckProfile, CreateDeckProfileError>> + Send;
 
     fn create_deck_card(
         &self,
@@ -74,7 +74,7 @@ pub trait DeckService: Clone + Send + Sync + 'static {
     fn get_deck_profile(
         &self,
         request: &GetDeck,
-    ) -> impl Future<Output = Result<DeckProfile, GetDeckError>> + Send;
+    ) -> impl Future<Output = Result<DeckProfile, GetDeckProfileError>> + Send;
 
     fn get_deck(
         &self,
