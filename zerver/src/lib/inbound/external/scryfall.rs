@@ -158,9 +158,9 @@ impl BulkEndpoint {
             from_value::<BulkDataObject>(bulk_json).context("failed to parse BulkDataObject")?;
 
         // then use the download_uri to fetch the actual card data
-        let tezzeret = PlanesWalker::untap(&mut Client::new(), &bulk_data_object.download_uri);
+        let karn = PlanesWalker::untap(&mut Client::new(), &bulk_data_object.download_uri);
 
-        let cards_response = tezzeret
+        let cards_response = karn
             .cast()
             .await
             .context("failed to get download response with planeswalker")?;
