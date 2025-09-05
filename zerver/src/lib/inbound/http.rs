@@ -1,14 +1,15 @@
 pub mod handlers;
 pub mod middleware;
-pub mod scryfall;
 use crate::domain::{
     auth::ports::AuthService, card::ports::CardService, deck::ports::DeckService,
     health::ports::HealthService, user::ports::UserService,
 };
+use crate::inbound::http::handlers::auth::change_password;
+use crate::inbound::http::handlers::user::{create_user, delete_user, get_user, update_user};
 use crate::inbound::http::handlers::{
     auth::{authenticate_user, register_user},
-    cards::{get_card, search_cards},
-    decks::{create_deck_profile, delete_deck, get_deck, update_deck_profile},
+    card::{get_card, search_cards},
+    deck::{create_deck_profile, delete_deck, get_deck, update_deck_profile},
     health::{are_server_and_database_running, is_server_running, root},
 };
 use anyhow::{anyhow, Context};
@@ -92,31 +93,6 @@ where
     fn log_500(self) -> ApiError {
         tracing::error!("{:?}\n{}", self, anyhow!("{self}").backtrace());
         ApiError::InternalServerError("internal server error".to_string())
-    }
-}
-
-// =========
-//  success
-// =========
-
-#[derive(Debug)]
-pub struct ApiSuccess<T: Serialize + PartialEq>(StatusCode, Json<HttpResponse<T>>);
-
-impl<T: Serialize + PartialEq> PartialEq for ApiSuccess<T> {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0 && self.1 .0 == other.1 .0
-    }
-}
-
-impl<T: Serialize + PartialEq> ApiSuccess<T> {
-    fn new(status: StatusCode, data: T) -> Self {
-        ApiSuccess(status, Json(HttpResponse::new(status, data)))
-    }
-}
-
-impl<T: Serialize + PartialEq> IntoResponse for ApiSuccess<T> {
-    fn into_response(self) -> axum::response::Response {
-        (self.0, self.1).into_response()
     }
 }
 
@@ -255,19 +231,31 @@ where
     Router::new().nest(
         "/api",
         Router::new()
+            // .nest(
+            //     "/user",
+            //     Router::new()
+            //         .route("", post(create_user))
+            //         .route("/:id", get(get_user))
+            //         .route("", put(update_user))
+            //         .route("/:id", delete(delete_user)),
+            // )
             .nest(
-                "/cards",
+                "/card",
                 Router::new()
                     .route("/:id", get(get_card))
                     .route("/search", get(search_cards)),
             )
             .nest(
-                "/decks",
+                "/deck",
                 Router::new()
                     .route("", post(create_deck_profile))
                     .route("/:id", get(get_deck))
                     .route("/:id", put(update_deck_profile))
                     .route("/:id", delete(delete_deck)),
+            )
+            .nest(
+                "/auth",
+                Router::new().route("/changepassword", post(change_password)),
             ),
     )
 }
@@ -286,8 +274,11 @@ where
         .route("/health/database", get(are_server_and_database_running))
         .nest(
             "/api",
-            Router::new()
-                .route("/auth/register", post(register_user))
-                .route("/auth/login", post(authenticate_user)),
+            Router::new().nest(
+                "/auth",
+                Router::new()
+                    .route("/register", post(register_user))
+                    .route("/login", post(authenticate_user)),
+            ),
         )
 }

@@ -1,5 +1,5 @@
 pub mod auth;
-pub mod cards;
-pub mod decks;
+pub mod card;
+pub mod deck;
 pub mod health;
 pub mod user;

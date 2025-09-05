@@ -7,7 +7,7 @@ use crate::domain::card::{
     },
     ports::{CardRepository, CardService},
 };
-use crate::inbound::http::scryfall::BulkEndpoint;
+use crate::inbound::external::scryfall::BulkEndpoint;
 use crate::outbound::sqlx::card::scryfall_data_field_count;
 use chrono::NaiveDateTime;
 

@@ -7,7 +7,7 @@ use zwipe::{
         card::{self, models::Card, ports::CardService},
         logo,
     },
-    inbound::http::scryfall::PlanesWalker,
+    inbound::external::scryfall::PlanesWalker,
     outbound::sqlx::postgres::Postgres,
 };
 
