@@ -12,11 +12,12 @@ use crate::{
         health::ports::HealthService,
         user::ports::UserService,
     },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, ApiSuccess, AppState, Log500},
+    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
 };
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
+    Json,
 };
 use serde::Deserialize;
 
@@ -44,7 +45,7 @@ pub async fn get_card<AS, US, HS, CS, DS>(
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Path(request): Path<GetCard>,
     _: AuthenticatedUser,
-) -> Result<ApiSuccess<Card>, ApiError>
+) -> Result<(StatusCode, Json<Card>), ApiError>
 where
     AS: AuthService,
     US: UserService,
@@ -57,7 +58,7 @@ where
         .get_card(&request)
         .await
         .map_err(ApiError::from)
-        .map(|card| ApiSuccess::new(StatusCode::OK, card))
+        .map(|card| (StatusCode::OK, Json(card)))
 }
 
 // ========
@@ -114,7 +115,7 @@ pub async fn search_cards<AS, US, HS, CS, DS>(
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Query(params): Query<SearchCardRawParameters>,
     _: AuthenticatedUser,
-) -> Result<ApiSuccess<Vec<Card>>, ApiError>
+) -> Result<(StatusCode, Json<Vec<Card>>), ApiError>
 where
     AS: AuthService,
     US: UserService,
@@ -129,5 +130,5 @@ where
         .search_cards(&request)
         .await
         .map_err(ApiError::from)
-        .map(|cards| ApiSuccess::new(StatusCode::OK, cards))
+        .map(|cards| (StatusCode::OK, Json(cards)))
 }

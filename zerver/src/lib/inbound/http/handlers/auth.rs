@@ -1,5 +1,6 @@
 use crate::domain::deck::ports::DeckService;
-use crate::inbound::http::{ApiError, ApiSuccess, AppState};
+use crate::inbound::http::middleware::AuthenticatedUser;
+use crate::inbound::http::{ApiError, AppState};
 use crate::{
     domain::{
         auth::{
@@ -16,7 +17,6 @@ use crate::{
     },
     inbound::http::Log500,
 };
-use anyhow::anyhow;
 use axum::{extract::State, http::StatusCode, Json};
 use serde::Deserialize;
 
@@ -70,7 +70,7 @@ impl TryFrom<RegisterUserBody> for RegisterUser {
 pub async fn register_user<AS, US, HS, CS, DS>(
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Json(body): Json<RegisterUserBody>,
-) -> Result<ApiSuccess<AuthenticateUserSuccess>, ApiError>
+) -> Result<(StatusCode, Json<AuthenticateUserSuccess>), ApiError>
 where
     AS: AuthService,
     US: UserService,
@@ -85,7 +85,7 @@ where
         .register_user(&req)
         .await
         .map_err(ApiError::from)
-        .map(|response| ApiSuccess::new(StatusCode::CREATED, response.into()))
+        .map(|response| (StatusCode::CREATED, response.into()))
 }
 
 // ==============
@@ -137,7 +137,7 @@ impl TryFrom<HttpAuthenticateUser> for AuthenticateUser {
 pub async fn authenticate_user<AS, US, HS, CS, DS>(
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Json(body): Json<HttpAuthenticateUser>,
-) -> Result<ApiSuccess<AuthenticateUserSuccess>, ApiError>
+) -> Result<(StatusCode, Json<AuthenticateUserSuccess>), ApiError>
 where
     AS: AuthService,
     US: UserService,
@@ -152,7 +152,7 @@ where
         .authenticate_user(&req)
         .await
         .map_err(ApiError::from)
-        .map(|response| ApiSuccess::new(StatusCode::OK, response.into()))
+        .map(|response| (StatusCode::OK, response.into()))
 }
 
 // =================
@@ -165,10 +165,7 @@ impl From<ChangePasswordError> for ApiError {
             ChangePasswordError::UserNotFound => {
                 Self::UnprocessableEntity("user not found".to_string())
             }
-            e => {
-                tracing::error!("{:?}\n{}", e, anyhow!("{e}").backtrace());
-                Self::InternalServerError("Internal server error".to_string())
-            }
+            e => e.log_500(),
         }
     }
 }
@@ -201,9 +198,10 @@ impl TryFrom<HttpChangePassword> for ChangePassword {
 }
 
 pub async fn change_password<AS, US, HS, CS, DS>(
+    _: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Json(body): Json<HttpChangePassword>,
-) -> Result<ApiSuccess<()>, ApiError>
+) -> Result<(StatusCode, Json<()>), ApiError>
 where
     AS: AuthService,
     US: UserService,
@@ -218,5 +216,5 @@ where
         .change_password(&req)
         .await
         .map_err(ApiError::from)
-        .map(|_| ApiSuccess::new(StatusCode::OK, ()))
+        .map(|_| (StatusCode::OK, Json(())))
 }

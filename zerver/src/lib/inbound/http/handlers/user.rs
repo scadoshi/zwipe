@@ -12,7 +12,7 @@ use crate::{
             ports::UserService,
         },
     },
-    inbound::http::{ApiError, ApiSuccess, AppState, Log500},
+    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
 };
 use axum::{
     extract::{Path, State},
@@ -66,7 +66,7 @@ impl TryFrom<HttpCreateUser> for CreateUser {
 pub async fn create_user<AS, US, HS, CS, DS>(
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Json(body): Json<HttpCreateUser>,
-) -> Result<ApiSuccess<HttpUser>, ApiError>
+) -> Result<(StatusCode, Json<HttpUser>), ApiError>
 where
     AS: AuthService,
     US: UserService,
@@ -81,7 +81,7 @@ where
         .create_user(&request)
         .await
         .map_err(ApiError::from)
-        .map(|ref user| ApiSuccess::new(StatusCode::CREATED, user.into()))
+        .map(|user| (StatusCode::CREATED, Json(user.into())))
 }
 
 // =====
@@ -101,7 +101,7 @@ impl From<GetUserError> for ApiError {
 pub async fn get_user<AS, US, HS, CS, DS>(
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Path(identifier): Path<String>,
-) -> Result<ApiSuccess<HttpUser>, ApiError>
+) -> Result<(StatusCode, Json<HttpUser>), ApiError>
 where
     AS: AuthService,
     US: UserService,
@@ -116,7 +116,7 @@ where
         .get_user(&request)
         .await
         .map_err(ApiError::from)
-        .map(|ref user| ApiSuccess::new(StatusCode::OK, user.into()))
+        .map(|user| (StatusCode::OK, Json(user.into())))
 }
 
 // ========
@@ -169,7 +169,7 @@ impl TryFrom<HttpUpdateUser> for UpdateUser {
 pub async fn update_user<AS, US, HS, CS, DS>(
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Json(body): Json<HttpUpdateUser>,
-) -> Result<ApiSuccess<HttpUser>, ApiError>
+) -> Result<(StatusCode, Json<HttpUser>), ApiError>
 where
     AS: AuthService,
     US: UserService,
@@ -184,7 +184,7 @@ where
         .update_user(&request)
         .await
         .map_err(ApiError::from)
-        .map(|ref user| ApiSuccess::new(StatusCode::OK, user.into()))
+        .map(|user| (StatusCode::OK, Json(user.into())))
 }
 
 // ========
@@ -213,7 +213,7 @@ impl TryFrom<HttpDeleteUser> for DeleteUser {
 pub async fn delete_user<AS, US, HS, CS, DS>(
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Path(request): Path<HttpDeleteUser>,
-) -> Result<ApiSuccess<()>, ApiError>
+) -> Result<(StatusCode, Json<()>), ApiError>
 where
     AS: AuthService,
     US: UserService,
@@ -228,7 +228,7 @@ where
         .delete_user(&request)
         .await
         .map_err(ApiError::from)
-        .map(|_| ApiSuccess::new(StatusCode::OK, ()))
+        .map(|_| (StatusCode::OK, Json(())))
 }
 
 // ==========
@@ -245,8 +245,8 @@ pub struct HttpUser {
     email: String,
 }
 
-impl From<&User> for HttpUser {
-    fn from(user: &User) -> Self {
+impl From<User> for HttpUser {
+    fn from(user: User) -> Self {
         Self {
             id: user.id.to_string(),
             username: user.username.to_string(),

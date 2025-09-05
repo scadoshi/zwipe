@@ -30,8 +30,12 @@ use crate::{
         health::ports::HealthService,
         user::ports::UserService,
     },
-    inbound::http::{ApiError, ApiSuccess, AppState, Log500},
+    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
 };
+
+// ============
+//  http types
+// ============
 
 #[derive(Debug, Serialize, PartialEq)]
 pub struct HttpDeckProfile {
@@ -102,9 +106,10 @@ impl TryFrom<HttpCreateDeckProfile> for CreateDeckProfile {
 }
 
 pub async fn create_deck_profile<AS, US, HS, CS, DS>(
+    _: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Json(body): Json<HttpCreateDeckProfile>,
-) -> Result<ApiSuccess<HttpDeckProfile>, ApiError>
+) -> Result<(StatusCode, Json<HttpDeckProfile>), ApiError>
 where
     AS: AuthService,
     US: UserService,
@@ -119,7 +124,7 @@ where
         .create_deck_profile(&request)
         .await
         .map_err(ApiError::from)
-        .map(|ref deck_profile| ApiSuccess::new(StatusCode::OK, deck_profile.into()))
+        .map(|deck_profile| (StatusCode::CREATED, Json(deck_profile.into())))
 }
 
 // =====
@@ -177,7 +182,8 @@ impl From<InvalidGetDeck> for ApiError {
 pub async fn get_deck<AS, US, HS, CS, DS>(
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Path(id): Path<String>,
-) -> Result<ApiSuccess<Deck>, ApiError>
+    _: AuthenticatedUser,
+) -> Result<(StatusCode, Json<Deck>), ApiError>
 where
     AS: AuthService,
     US: UserService,
@@ -192,7 +198,7 @@ where
         .get_deck(&request)
         .await
         .map_err(ApiError::from)
-        .map(|ref deck| ApiSuccess::new(StatusCode::OK, deck.clone()))
+        .map(|deck| (StatusCode::OK, Json(deck)))
 }
 
 // ========
@@ -235,10 +241,11 @@ pub struct HttpUpdateDeckProfileBody {
 }
 
 pub async fn update_deck_profile<AS, US, HS, CS, DS>(
+    _: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Path(id): Path<String>,
     Json(body): Json<HttpUpdateDeckProfileBody>,
-) -> Result<ApiSuccess<HttpDeckProfile>, ApiError>
+) -> Result<(StatusCode, Json<HttpDeckProfile>), ApiError>
 where
     AS: AuthService,
     US: UserService,
@@ -253,7 +260,7 @@ where
         .update_deck_profile(&request)
         .await
         .map_err(ApiError::from)
-        .map(|ref deck_profile| ApiSuccess::new(StatusCode::OK, deck_profile.into()))
+        .map(|deck_profile| (StatusCode::OK, Json(deck_profile.into())))
 }
 
 // ========
@@ -272,7 +279,8 @@ impl From<DeleteDeckError> for ApiError {
 pub async fn delete_deck<AS, US, HS, CS, DS>(
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Path(id): Path<String>,
-) -> Result<ApiSuccess<()>, ApiError>
+    _: AuthenticatedUser,
+) -> Result<(StatusCode, ()), ApiError>
 where
     AS: AuthService,
     US: UserService,
@@ -287,5 +295,5 @@ where
         .delete_deck(&request)
         .await
         .map_err(ApiError::from)
-        .map(|_| ApiSuccess::new(StatusCode::OK, ()))
+        .map(|_| (StatusCode::OK, ()))
 }
