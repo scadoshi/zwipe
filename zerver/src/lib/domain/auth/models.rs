@@ -33,11 +33,11 @@ pub enum RegisterUserError {
 #[derive(Debug, Error)]
 pub enum InvalidRegisterUser {
     #[error(transparent)]
-    UserNameError(UserNameError),
+    Username(UserNameError),
     #[error(transparent)]
-    EmailAddressError(email_address::Error),
+    Email(email_address::Error),
     #[error(transparent)]
-    PasswordError(PasswordError),
+    Password(PasswordError),
     #[error(transparent)]
     FailedPasswordHash(argon2::password_hash::Error),
 }
@@ -108,12 +108,9 @@ pub struct RegisterUser {
 
 impl RegisterUser {
     pub fn new(username: &str, email: &str, password: &str) -> Result<Self, InvalidRegisterUser> {
-        let username =
-            UserName::new(username).map_err(|e| InvalidRegisterUser::UserNameError(e))?;
-        let email =
-            EmailAddress::from_str(email).map_err(|e| InvalidRegisterUser::EmailAddressError(e))?;
-        let password =
-            Password::new(password).map_err(|e| InvalidRegisterUser::PasswordError(e))?;
+        let username = UserName::new(username).map_err(|e| InvalidRegisterUser::Username(e))?;
+        let email = EmailAddress::from_str(email).map_err(|e| InvalidRegisterUser::Email(e))?;
+        let password = Password::new(password).map_err(|e| InvalidRegisterUser::Password(e))?;
         let password_hash = HashedPassword::generate(password)
             .map_err(|e| InvalidRegisterUser::FailedPasswordHash(e))?;
 

@@ -29,16 +29,16 @@ use crate::{
 #[derive(Debug, Error)]
 pub enum ToDeckProfileError {
     #[error("invalid deck id: {0}")]
-    InvalidId(uuid::Error),
+    Id(uuid::Error),
     #[error(transparent)]
-    InvalidDeckName(InvalidDeckname),
+    DeckName(InvalidDeckname),
     #[error("invalid user id: {0}")]
-    InvalidUserId(uuid::Error),
+    UserId(uuid::Error),
 }
 
 impl From<ToDeckProfileError> for CreateDeckError {
     fn from(value: ToDeckProfileError) -> Self {
-        Self::InvalidDeckFromDatabase(value.into())
+        Self::DeckFromDb(value.into())
     }
 }
 
@@ -50,7 +50,7 @@ impl From<ToDeckProfileError> for UpdateDeckProfileError {
 
 impl From<ToDeckProfileError> for GetDeckError {
     fn from(value: ToDeckProfileError) -> Self {
-        Self::InvalidDeckProfileFromDatabase(value.into())
+        Self::DeckProfileFromDb(value.into())
     }
 }
 
@@ -176,11 +176,11 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
     type Error = ToDeckProfileError;
 
     fn try_from(value: DatabaseDeckProfile) -> Result<Self, Self::Error> {
-        let id = Uuid::try_parse(&value.id).map_err(|e| ToDeckProfileError::InvalidId(e.into()))?;
-        let name = DeckName::new(&value.name)
-            .map_err(|e| ToDeckProfileError::InvalidDeckName(e.into()))?;
-        let user_id = Uuid::try_parse(&value.user_id)
-            .map_err(|e| ToDeckProfileError::InvalidUserId(e.into()))?;
+        let id = Uuid::try_parse(&value.id).map_err(|e| ToDeckProfileError::Id(e.into()))?;
+        let name =
+            DeckName::new(&value.name).map_err(|e| ToDeckProfileError::DeckName(e.into()))?;
+        let user_id =
+            Uuid::try_parse(&value.user_id).map_err(|e| ToDeckProfileError::UserId(e.into()))?;
         Ok(Self { id, name, user_id })
     }
 }

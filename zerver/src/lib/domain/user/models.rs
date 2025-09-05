@@ -11,27 +11,27 @@ use uuid::Uuid;
 #[derive(Debug, Error, Clone)]
 pub enum UserNameError {
     #[error("username must be present")]
-    MissingUserName,
+    NotFound,
 }
 
-/// for constructor of `CreateUserRequest`
+/// for constructor of `CreateUser`
 #[derive(Debug, Error, Clone)]
-pub enum CreateUserRequestError {
+pub enum InvalidCreateUser {
     #[error(transparent)]
-    InvalidUsername(UserNameError),
+    Username(UserNameError),
     #[error(transparent)]
-    InvalidEmail(email_address::Error),
+    Email(email_address::Error),
 }
 
-impl From<UserNameError> for CreateUserRequestError {
+impl From<UserNameError> for InvalidCreateUser {
     fn from(value: UserNameError) -> Self {
-        CreateUserRequestError::InvalidUsername(value)
+        InvalidCreateUser::Username(value)
     }
 }
 
-impl From<email_address::Error> for CreateUserRequestError {
+impl From<email_address::Error> for InvalidCreateUser {
     fn from(value: email_address::Error) -> Self {
-        CreateUserRequestError::InvalidEmail(value)
+        InvalidCreateUser::Email(value)
     }
 }
 
@@ -41,7 +41,7 @@ pub enum CreateUserError {
     #[error("user with name or email already exists")]
     Duplicate,
     #[error("user created but database returned invalid object: {0}")]
-    InvalidUserFromDatabase(anyhow::Error),
+    UserFromDb(anyhow::Error),
     #[error(transparent)]
     Database(anyhow::Error),
 }
@@ -54,37 +54,37 @@ pub enum GetUserError {
     #[error(transparent)]
     Database(anyhow::Error),
     #[error("user found but database returned invalid object: {0}")]
-    InvalidUserFromDatabase(anyhow::Error),
+    UserFromDb(anyhow::Error),
 }
 
-/// for constructor of `UpdateUserRequest`
+/// for constructor of `UpdateUser`
 #[derive(Debug, Error)]
-pub enum UpdateUserRequestError {
+pub enum InvalidUpdateUser {
     #[error(transparent)]
-    InvalidId(uuid::Error),
+    Id(uuid::Error),
     #[error("must update at least one field")]
-    NothingToUpdate,
+    NoUpdates,
     #[error(transparent)]
-    InvalidUsername(UserNameError),
+    Username(UserNameError),
     #[error(transparent)]
-    InvalidEmail(email_address::Error),
+    Email(email_address::Error),
 }
 
-impl From<uuid::Error> for UpdateUserRequestError {
+impl From<uuid::Error> for InvalidUpdateUser {
     fn from(value: uuid::Error) -> Self {
-        UpdateUserRequestError::InvalidId(value)
+        InvalidUpdateUser::Id(value)
     }
 }
 
-impl From<UserNameError> for UpdateUserRequestError {
+impl From<UserNameError> for InvalidUpdateUser {
     fn from(value: UserNameError) -> Self {
-        UpdateUserRequestError::InvalidUsername(value)
+        InvalidUpdateUser::Username(value)
     }
 }
 
-impl From<email_address::Error> for UpdateUserRequestError {
+impl From<email_address::Error> for InvalidUpdateUser {
     fn from(value: email_address::Error) -> Self {
-        UpdateUserRequestError::InvalidEmail(value)
+        InvalidUpdateUser::Email(value)
     }
 }
 
@@ -98,7 +98,7 @@ pub enum UpdateUserError {
     #[error(transparent)]
     Database(anyhow::Error),
     #[error("user updated but database returned invalid object: {0}")]
-    InvalidUserFromDatabase(anyhow::Error),
+    UserFromDb(anyhow::Error),
 }
 
 /// actual errors encountered while deleting a user
@@ -122,7 +122,7 @@ impl UserName {
     pub fn new(raw: &str) -> Result<Self, UserNameError> {
         let trimmed = raw.trim();
         if trimmed.is_empty() {
-            Err(UserNameError::MissingUserName)
+            Err(UserNameError::NotFound)
         } else {
             Ok(Self(trimmed.to_string()))
         }
@@ -150,13 +150,13 @@ impl Serialize for UserName {
 // ==========
 
 #[derive(Debug, Clone)]
-pub struct CreateUserRequest {
+pub struct CreateUser {
     pub username: UserName,
     pub email: EmailAddress,
 }
 
-impl CreateUserRequest {
-    pub fn new(username: &str, email: &str) -> Result<Self, CreateUserRequestError> {
+impl CreateUser {
+    pub fn new(username: &str, email: &str) -> Result<Self, InvalidCreateUser> {
         let username = UserName::new(username)?;
         let email = EmailAddress::from_str(email)?;
         Ok(Self { email, username })
@@ -164,9 +164,9 @@ impl CreateUserRequest {
 }
 
 #[derive(Debug, Clone)]
-pub struct GetUserRequest(String);
+pub struct GetUser(String);
 
-impl GetUserRequest {
+impl GetUser {
     pub fn new(identifier: &str) -> Self {
         Self(identifier.to_string())
     }
@@ -177,20 +177,20 @@ impl GetUserRequest {
 }
 
 #[derive(Debug, Clone)]
-pub struct UpdateUserRequest {
+pub struct UpdateUser {
     pub id: Uuid,
     pub username: Option<UserName>,
     pub email: Option<EmailAddress>,
 }
 
-impl UpdateUserRequest {
+impl UpdateUser {
     pub fn new(
         id: &str,
         username: Option<String>,
         email: Option<String>,
-    ) -> Result<Self, UpdateUserRequestError> {
+    ) -> Result<Self, InvalidUpdateUser> {
         if username.is_none() && email.is_none() {
-            return Err(UpdateUserRequestError::NothingToUpdate);
+            return Err(InvalidUpdateUser::NoUpdates);
         }
 
         let id = Uuid::try_parse(id)?;
@@ -210,9 +210,9 @@ impl UpdateUserRequest {
 }
 
 #[derive(Debug, Clone)]
-pub struct DeleteUserRequest(Uuid);
+pub struct DeleteUser(Uuid);
 
-impl DeleteUserRequest {
+impl DeleteUser {
     pub fn new(id: &str) -> Result<Self, uuid::Error> {
         let trimmed = id.trim();
         let id = Uuid::try_parse(trimmed)?;

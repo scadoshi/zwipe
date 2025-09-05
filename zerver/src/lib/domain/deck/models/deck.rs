@@ -18,13 +18,13 @@ use crate::domain::{
 #[derive(Debug, Error)]
 pub enum InvalidDeckname {
     #[error("deck name must be present")]
-    MissingDeckName,
+    Missing,
 }
 
 #[derive(Debug, Error)]
 pub enum InvalidCreateDeck {
     #[error(transparent)]
-    InvalidDeckName(InvalidDeckname),
+    DeckName(InvalidDeckname),
 }
 
 #[derive(Debug, Error)]
@@ -32,7 +32,7 @@ pub enum CreateDeckError {
     #[error("deck with name and user id combination already exists")]
     Duplicate,
     #[error("deck created but database returned invalid object {0}")]
-    InvalidDeckFromDatabase(anyhow::Error),
+    DeckFromDb(anyhow::Error),
     #[error(transparent)]
     Database(anyhow::Error),
 }
@@ -40,7 +40,7 @@ pub enum CreateDeckError {
 #[derive(Debug, Error)]
 pub enum InvalidGetDeck {
     #[error(transparent)]
-    InvalidUserId(uuid::Error),
+    UserId(uuid::Error),
     #[error("identifier must contain something")]
     MissingIdentifier,
 }
@@ -54,11 +54,11 @@ pub enum GetDeckError {
     Database(anyhow::Error),
 
     #[error("deck card found but database returned invalid object: {0}")]
-    InvalidDeckCardFromDatabase(anyhow::Error),
+    DeckCardFromDb(anyhow::Error),
     #[error("card profile found but database returned invalid object: {0}")]
-    InvalidCardProfileFromDatabase(anyhow::Error),
+    CardProfileFromDb(anyhow::Error),
     #[error("deck profile found but database returned invalid object: {0}")]
-    InvalidDeckProfileFromDatabase(anyhow::Error),
+    DeckProfileFromDb(anyhow::Error),
     // #[error("scryfall data found but database returned invalid object: {0}")]
     // InvalidScryfallDataFromDatabase(anyhow::Error),
     #[error(transparent)]
@@ -147,7 +147,7 @@ pub struct DeckName(String);
 impl DeckName {
     pub fn new(name: &str) -> Result<Self, InvalidDeckname> {
         if name.is_empty() {
-            return Err(InvalidDeckname::MissingDeckName);
+            return Err(InvalidDeckname::Missing);
         }
         Ok(Self(name.to_string()))
     }
@@ -201,7 +201,7 @@ impl GetDeck {
             return Err(InvalidGetDeck::MissingIdentifier);
         }
 
-        let user_id = Uuid::try_parse(user_id).map_err(|e| InvalidGetDeck::InvalidUserId(e))?;
+        let user_id = Uuid::try_parse(user_id).map_err(|e| InvalidGetDeck::UserId(e))?;
 
         Ok(Self {
             identifier: identifier.to_string(),

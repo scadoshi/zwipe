@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::domain::auth::models::password::HashedPassword;
 use crate::domain::auth::models::{
-    AuthenticateUserError, AuthenticateUserRequest, ChangePasswordError, ChangePasswordRequest, RegisterUserError, RegisterUserRequest, UserWithPasswordHash
+    AuthenticateUser, AuthenticateUserError, ChangePassword, ChangePasswordError, RegisterUser, RegisterUserError, UserWithPasswordHash
 };
 use crate::domain::auth::ports::AuthRepository;
 use crate::domain::user::models::{User, UserName};
@@ -59,7 +59,7 @@ impl AuthRepository for Postgres {
     // ========
     async fn create_user_with_password_hash(
         &self,
-        request: &RegisterUserRequest,
+        request: &RegisterUser,
     ) -> Result<User, RegisterUserError> {
         let mut tx = self
             .pool
@@ -95,7 +95,7 @@ impl AuthRepository for Postgres {
     // =====
     async fn get_user_with_password_hash(
         &self,
-        request: &AuthenticateUserRequest,
+        request: &AuthenticateUser,
     ) -> Result<UserWithPasswordHash, AuthenticateUserError> {
 
         let database_user: DatabaseUserWithPasswordHash = query_as!(
@@ -121,7 +121,7 @@ impl AuthRepository for Postgres {
     // ========
     async fn change_password(
         &self,
-        request: &ChangePasswordRequest,
+        request: &ChangePassword,
     ) -> Result<(), ChangePasswordError> {
         let mut tx = self
             .pool

@@ -2,9 +2,8 @@ use crate::domain::{
     auth::{
         models::{
             jwt::{Jwt, JwtCreationResponse, JwtSecret},
-            AuthenticateUserError, AuthenticateUserRequest, AuthenticateUserSuccessResponse,
-            ChangePasswordError, ChangePasswordRequest, RegisterUserError, RegisterUserRequest,
-            UserWithPasswordHash,
+            AuthenticateUser, AuthenticateUserError, AuthenticateUserSuccess, ChangePassword,
+            ChangePasswordError, RegisterUser, RegisterUserError, UserWithPasswordHash,
         },
         ports::{AuthRepository, AuthService},
     },
@@ -32,8 +31,8 @@ impl<R: AuthRepository + Clone> AuthService for Service<R> {
 
     async fn register_user(
         &self,
-        request: &RegisterUserRequest,
-    ) -> Result<AuthenticateUserSuccessResponse, RegisterUserError> {
+        request: &RegisterUser,
+    ) -> Result<AuthenticateUserSuccess, RegisterUserError> {
         let user = self.repo.create_user_with_password_hash(request).await?;
 
         let JwtCreationResponse {
@@ -42,7 +41,7 @@ impl<R: AuthRepository + Clone> AuthService for Service<R> {
         } = Jwt::generate(user.id, user.email.clone(), &self.jwt_secret)
             .map_err(|e| RegisterUserError::FailedJwt(anyhow!("{e}")))?;
 
-        Ok(AuthenticateUserSuccessResponse {
+        Ok(AuthenticateUserSuccess {
             user,
             token,
             expires_at,
@@ -51,8 +50,8 @@ impl<R: AuthRepository + Clone> AuthService for Service<R> {
 
     async fn authenticate_user(
         &self,
-        request: &AuthenticateUserRequest,
-    ) -> Result<AuthenticateUserSuccessResponse, AuthenticateUserError> {
+        request: &AuthenticateUser,
+    ) -> Result<AuthenticateUserSuccess, AuthenticateUserError> {
         let user_with_password_hash: UserWithPasswordHash =
             self.repo.get_user_with_password_hash(request).await?;
 
@@ -77,17 +76,14 @@ impl<R: AuthRepository + Clone> AuthService for Service<R> {
         } = Jwt::generate(user.id, user.email.clone(), &self.jwt_secret)
             .map_err(|e| AuthenticateUserError::FailedJwt(anyhow!("{e}")))?;
 
-        Ok(AuthenticateUserSuccessResponse {
+        Ok(AuthenticateUserSuccess {
             user,
             token,
             expires_at,
         })
     }
 
-    async fn change_password(
-        &self,
-        request: &ChangePasswordRequest,
-    ) -> Result<(), ChangePasswordError> {
+    async fn change_password(&self, request: &ChangePassword) -> Result<(), ChangePasswordError> {
         self.repo.change_password(request).await
     }
 }

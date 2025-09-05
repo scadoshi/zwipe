@@ -1,10 +1,9 @@
 use crate::domain::{
     auth::{
         models::{
-            AuthenticateUserError, AuthenticateUserRequest, AuthenticateUserRequestError,
-            AuthenticateUserSuccessResponse, ChangePasswordError, ChangePasswordRequest,
-            ChangePasswordRequestError, RegisterUserError, RegisterUserRequest,
-            RegisterUserRequestError,
+            AuthenticateUser, AuthenticateUserError, AuthenticateUserSuccess, ChangePassword,
+            ChangePasswordError, InvalidAuthenticateUser, InvalidChangePassword,
+            InvalidRegisterUser, RegisterUser, RegisterUserError,
         },
         ports::AuthService,
     },
@@ -28,20 +27,6 @@ impl From<RegisterUserError> for ApiError {
                 "user with that username or email already exists".to_string(),
             ),
 
-            RegisterUserError::InvalidRequest(RegisterUserRequestError::InvalidUsername(e)) => {
-                Self::UnprocessableEntity(format!(
-                    "invalid request: {}",
-                    RegisterUserRequestError::InvalidUsername(e)
-                ))
-            }
-
-            RegisterUserError::InvalidRequest(RegisterUserRequestError::InvalidEmail(e)) => {
-                Self::UnprocessableEntity(format!(
-                    "invalid request: {}",
-                    RegisterUserRequestError::InvalidEmail(e)
-                ))
-            }
-
             e => {
                 tracing::error!("{:?}\n{}", e, anyhow!("{e}").backtrace());
                 Self::InternalServerError("Internal server error".to_string())
@@ -50,16 +35,16 @@ impl From<RegisterUserError> for ApiError {
     }
 }
 
-impl From<RegisterUserRequestError> for ApiError {
-    fn from(value: RegisterUserRequestError) -> Self {
+impl From<InvalidRegisterUser> for ApiError {
+    fn from(value: InvalidRegisterUser) -> Self {
         match value {
-            RegisterUserRequestError::InvalidUsername(e) => {
+            InvalidRegisterUser::Username(e) => {
                 Self::UnprocessableEntity(format!("invalid username: {}", e))
             }
-            RegisterUserRequestError::InvalidEmail(e) => {
+            InvalidRegisterUser::Email(e) => {
                 Self::UnprocessableEntity(format!("invalid email: {}", e))
             }
-            RegisterUserRequestError::InvalidPassword(e) => {
+            InvalidRegisterUser::Password(e) => {
                 Self::UnprocessableEntity(format!("invalid password {}", e))
             }
             e => {
@@ -71,30 +56,30 @@ impl From<RegisterUserRequestError> for ApiError {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct RegisterUserRequestBody {
+pub struct RegisterUserBody {
     username: String,
     email: String,
     password: String,
 }
 
-impl TryFrom<RegisterUserRequestBody> for RegisterUserRequest {
-    type Error = RegisterUserRequestError;
-    fn try_from(value: RegisterUserRequestBody) -> Result<Self, Self::Error> {
-        RegisterUserRequest::new(&value.username, &value.email, &value.password)
+impl TryFrom<RegisterUserBody> for RegisterUser {
+    type Error = InvalidRegisterUser;
+    fn try_from(value: RegisterUserBody) -> Result<Self, Self::Error> {
+        RegisterUser::new(&value.username, &value.email, &value.password)
     }
 }
 
 pub async fn register_user<AS, US, HS, CS>(
     State(state): State<AppState<AS, US, HS, CS>>,
-    Json(body): Json<RegisterUserRequestBody>,
-) -> Result<ApiSuccess<AuthenticateUserSuccessResponse>, ApiError>
+    Json(body): Json<RegisterUserBody>,
+) -> Result<ApiSuccess<AuthenticateUserSuccess>, ApiError>
 where
     AS: AuthService,
     US: UserService,
     HS: HealthService,
     CS: CardService,
 {
-    let req = RegisterUserRequest::new(&body.username, &body.email, &body.password)?;
+    let req = RegisterUser::new(&body.username, &body.email, &body.password)?;
 
     state
         .auth_service
@@ -127,13 +112,13 @@ impl From<AuthenticateUserError> for ApiError {
     }
 }
 
-impl From<AuthenticateUserRequestError> for ApiError {
-    fn from(value: AuthenticateUserRequestError) -> Self {
+impl From<InvalidAuthenticateUser> for ApiError {
+    fn from(value: InvalidAuthenticateUser) -> Self {
         match value {
-            AuthenticateUserRequestError::MissingIdentifier => {
+            InvalidAuthenticateUser::MissingIdentifier => {
                 Self::UnprocessableEntity("username or email must be present".to_string())
             }
-            AuthenticateUserRequestError::MissingPassword => {
+            InvalidAuthenticateUser::MissingPassword => {
                 Self::UnprocessableEntity("password must be present".to_string())
             }
         }
@@ -141,29 +126,29 @@ impl From<AuthenticateUserRequestError> for ApiError {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct AuthenticateUserRequestBody {
+pub struct HttpAuthenticateUser {
     identifier: String,
     password: String,
 }
 
-impl TryFrom<AuthenticateUserRequestBody> for AuthenticateUserRequest {
-    type Error = AuthenticateUserRequestError;
-    fn try_from(value: AuthenticateUserRequestBody) -> Result<Self, Self::Error> {
-        AuthenticateUserRequest::new(&value.identifier, &value.password)
+impl TryFrom<HttpAuthenticateUser> for AuthenticateUser {
+    type Error = InvalidAuthenticateUser;
+    fn try_from(value: HttpAuthenticateUser) -> Result<Self, Self::Error> {
+        AuthenticateUser::new(&value.identifier, &value.password)
     }
 }
 
 pub async fn authenticate_user<AS, US, HS, CS>(
     State(state): State<AppState<AS, US, HS, CS>>,
-    Json(body): Json<AuthenticateUserRequestBody>,
-) -> Result<ApiSuccess<AuthenticateUserSuccessResponse>, ApiError>
+    Json(body): Json<HttpAuthenticateUser>,
+) -> Result<ApiSuccess<AuthenticateUserSuccess>, ApiError>
 where
     AS: AuthService,
     US: UserService,
     HS: HealthService,
     CS: CardService,
 {
-    let req = AuthenticateUserRequest::new(&body.identifier, &body.password)?;
+    let req = AuthenticateUser::new(&body.identifier, &body.password)?;
 
     state
         .auth_service
@@ -191,13 +176,13 @@ impl From<ChangePasswordError> for ApiError {
     }
 }
 
-impl From<ChangePasswordRequestError> for ApiError {
-    fn from(value: ChangePasswordRequestError) -> Self {
+impl From<InvalidChangePassword> for ApiError {
+    fn from(value: InvalidChangePassword) -> Self {
         match value {
-            ChangePasswordRequestError::InvalidId(e) => {
+            InvalidChangePassword::InvalidId(e) => {
                 Self::UnprocessableEntity(format!("invalid id {}", e))
             }
-            ChangePasswordRequestError::InvalidPassword(e) => {
+            InvalidChangePassword::PasswordError(e) => {
                 Self::UnprocessableEntity(format!("invalid password {}", e))
             }
             e => {
@@ -209,21 +194,21 @@ impl From<ChangePasswordRequestError> for ApiError {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct ChangePasswordRequestBody {
+pub struct HttpChangePassword {
     id: String,
     new_password: String,
 }
 
-impl TryFrom<ChangePasswordRequestBody> for ChangePasswordRequest {
-    type Error = ChangePasswordRequestError;
-    fn try_from(value: ChangePasswordRequestBody) -> Result<Self, Self::Error> {
-        ChangePasswordRequest::new(&value.id, &value.new_password)
+impl TryFrom<HttpChangePassword> for ChangePassword {
+    type Error = InvalidChangePassword;
+    fn try_from(value: HttpChangePassword) -> Result<Self, Self::Error> {
+        ChangePassword::new(&value.id, &value.new_password)
     }
 }
 
 pub async fn change_password<AS, US, HS, CS>(
     State(state): State<AppState<AS, US, HS, CS>>,
-    Json(body): Json<ChangePasswordRequestBody>,
+    Json(body): Json<HttpChangePassword>,
 ) -> Result<ApiSuccess<()>, ApiError>
 where
     AS: AuthService,
@@ -231,7 +216,7 @@ where
     HS: HealthService,
     CS: CardService,
 {
-    let req = ChangePasswordRequest::new(&body.id, &body.new_password)?;
+    let req = ChangePassword::new(&body.id, &body.new_password)?;
 
     state
         .auth_service

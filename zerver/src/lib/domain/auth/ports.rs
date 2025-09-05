@@ -2,9 +2,8 @@ use std::future::Future;
 
 use crate::domain::{
     auth::models::{
-        jwt::JwtSecret, AuthenticateUserError, AuthenticateUserRequest,
-        AuthenticateUserSuccessResponse, ChangePasswordError, ChangePasswordRequest,
-        RegisterUserError, RegisterUserRequest, UserWithPasswordHash,
+        jwt::JwtSecret, AuthenticateUser, AuthenticateUserError, AuthenticateUserSuccess,
+        ChangePassword, ChangePasswordError, RegisterUser, RegisterUserError, UserWithPasswordHash,
     },
     user::models::User,
 };
@@ -13,17 +12,17 @@ use crate::domain::{
 pub trait AuthRepository: Clone + Send + Sync + 'static {
     fn create_user_with_password_hash(
         &self,
-        request: &RegisterUserRequest,
+        request: &RegisterUser,
     ) -> impl Future<Output = Result<User, RegisterUserError>> + Send;
 
     fn get_user_with_password_hash(
         &self,
-        request: &AuthenticateUserRequest,
+        request: &AuthenticateUser,
     ) -> impl Future<Output = Result<UserWithPasswordHash, AuthenticateUserError>> + Send;
 
     fn change_password(
         &self,
-        request: &ChangePasswordRequest,
+        request: &ChangePassword,
     ) -> impl Future<Output = Result<(), ChangePasswordError>> + Send;
 }
 
@@ -33,16 +32,16 @@ pub trait AuthService: Clone + Send + Sync + 'static {
 
     fn register_user(
         &self,
-        request: &RegisterUserRequest,
-    ) -> impl Future<Output = Result<AuthenticateUserSuccessResponse, RegisterUserError>> + Send;
+        request: &RegisterUser,
+    ) -> impl Future<Output = Result<AuthenticateUserSuccess, RegisterUserError>> + Send;
 
     fn authenticate_user(
         &self,
-        request: &AuthenticateUserRequest,
-    ) -> impl Future<Output = Result<AuthenticateUserSuccessResponse, AuthenticateUserError>> + Send;
+        request: &AuthenticateUser,
+    ) -> impl Future<Output = Result<AuthenticateUserSuccess, AuthenticateUserError>> + Send;
 
     fn change_password(
         &self,
-        request: &ChangePasswordRequest,
+        request: &ChangePassword,
     ) -> impl Future<Output = Result<(), ChangePasswordError>> + Send;
 }

@@ -5,8 +5,8 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::domain::user::models::{
-    CreateUserError, CreateUserRequest, DeleteUserError, DeleteUserRequest, GetUserError,
-    GetUserRequest, UpdateUserError, UpdateUserRequest, User, UserName, UserNameError,
+    CreateUser, CreateUserError, DeleteUser, DeleteUserError, GetUser, GetUserError, UpdateUser,
+    UpdateUserError, User, UserName, UserNameError,
 };
 use crate::domain::user::ports::UserRepository;
 use crate::outbound::sqlx::postgres::{IsConstraintViolation, Postgres};
@@ -18,28 +18,28 @@ use crate::outbound::sqlx::postgres::{IsConstraintViolation, Postgres};
 #[derive(Debug, Error)]
 pub enum ToUserError {
     #[error(transparent)]
-    InvalidId(uuid::Error),
+    Id(uuid::Error),
     #[error(transparent)]
-    InvalidUsername(UserNameError),
+    Username(UserNameError),
     #[error(transparent)]
-    InvalidEmail(email_address::Error),
+    Email(email_address::Error),
 }
 
 impl From<uuid::Error> for ToUserError {
     fn from(value: uuid::Error) -> Self {
-        Self::InvalidId(value)
+        Self::Id(value)
     }
 }
 
 impl From<UserNameError> for ToUserError {
     fn from(value: UserNameError) -> Self {
-        Self::InvalidUsername(value)
+        Self::Username(value)
     }
 }
 
 impl From<email_address::Error> for ToUserError {
     fn from(value: email_address::Error) -> Self {
-        Self::InvalidEmail(value)
+        Self::Email(value)
     }
 }
 
@@ -54,7 +54,7 @@ impl From<sqlx::Error> for CreateUserError {
 
 impl From<ToUserError> for CreateUserError {
     fn from(value: ToUserError) -> Self {
-        Self::InvalidUserFromDatabase(value.into())
+        Self::UserFromDb(value.into())
     }
 }
 
@@ -70,7 +70,7 @@ impl From<sqlx::Error> for UpdateUserError {
 
 impl From<ToUserError> for UpdateUserError {
     fn from(value: ToUserError) -> Self {
-        Self::InvalidUserFromDatabase(value.into())
+        Self::UserFromDb(value.into())
     }
 }
 
@@ -85,7 +85,7 @@ impl From<sqlx::Error> for GetUserError {
 
 impl From<ToUserError> for GetUserError {
     fn from(value: ToUserError) -> Self {
-        Self::InvalidUserFromDatabase(value.into())
+        Self::UserFromDb(value.into())
     }
 }
 
@@ -129,7 +129,7 @@ impl UserRepository for Postgres {
     // ========
     //  create
     // ========
-    async fn create_user(&self, request: &CreateUserRequest) -> Result<User, CreateUserError> {
+    async fn create_user(&self, request: &CreateUser) -> Result<User, CreateUserError> {
         let mut tx = self.pool.begin().await?;
 
         let database_user = query_as!(
@@ -150,7 +150,7 @@ impl UserRepository for Postgres {
     // =====
     //  get
     // =====
-    async fn get_user(&self, request: &GetUserRequest) -> Result<User, GetUserError> {
+    async fn get_user(&self, request: &GetUser) -> Result<User, GetUserError> {
         let database_user = query_as!(
             DatabaseUser,
             "SELECT id, username, email FROM users WHERE (id::text = $1 OR username = $1 OR email = $1)",
@@ -166,7 +166,7 @@ impl UserRepository for Postgres {
     // ========
     //  update
     // ========
-    async fn update_user(&self, request: &UpdateUserRequest) -> Result<User, UpdateUserError> {
+    async fn update_user(&self, request: &UpdateUser) -> Result<User, UpdateUserError> {
         let mut tx = self.pool.begin().await?;
 
         let mut qb = QueryBuilder::new("UPDATE users SET ");
@@ -197,7 +197,7 @@ impl UserRepository for Postgres {
     // ========
     //  delete
     // ========
-    async fn delete_user(&self, request: &DeleteUserRequest) -> Result<(), DeleteUserError> {
+    async fn delete_user(&self, request: &DeleteUser) -> Result<(), DeleteUserError> {
         let mut tx = self.pool.begin().await?;
 
         let result = query!("DELETE FROM users WHERE id = $1", request.id())

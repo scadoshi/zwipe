@@ -24,9 +24,9 @@ pub enum CreateCardError {
     #[error(transparent)]
     Database(anyhow::Error),
     #[error("scryfall data inserted but database returned invalid object: {0}")]
-    InvalidScryfallDataFromDatabase(anyhow::Error),
+    ScryfallDataFromDb(anyhow::Error),
     #[error("card profile created but database returned invalid object: {0}")]
-    InvalidCardProfileFromDatabase(anyhow::Error),
+    CardProfileFromDb(anyhow::Error),
 }
 
 #[derive(Debug, Error)]
@@ -52,21 +52,21 @@ impl From<GetCardProfileError> for GetCardError {
 #[derive(Debug, Error)]
 pub enum InvalidGetCards {
     #[error("invalid id: {0}")]
-    InvalidUuid(uuid::Error),
+    Uuid(uuid::Error),
     #[error("no ids provided")]
     MissingIds,
 }
 
 impl From<uuid::Error> for InvalidGetCards {
     fn from(value: uuid::Error) -> Self {
-        Self::InvalidUuid(value)
+        Self::Uuid(value)
     }
 }
 
 #[derive(Debug, Error)]
 pub enum InvalidSearchCard {
-    #[error("must include at least one parameter")]
-    NothingToSearch,
+    #[error("at least one parameter must be some")]
+    NoneParameters,
 }
 
 #[derive(Debug, Error)]
@@ -184,7 +184,7 @@ impl SearchCard {
             || color_identity.is_none()
             || oracle_text.is_none()
         {
-            return Err(InvalidSearchCard::NothingToSearch);
+            return Err(InvalidSearchCard::NoneParameters);
         }
 
         let limit = match limit {

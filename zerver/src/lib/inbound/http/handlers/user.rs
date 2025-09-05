@@ -5,9 +5,8 @@ use crate::{
         health::ports::HealthService,
         user::{
             models::{
-                CreateUserError, CreateUserRequest, CreateUserRequestError, DeleteUserError,
-                DeleteUserRequest, GetUserError, GetUserRequest, UpdateUserError,
-                UpdateUserRequest, UpdateUserRequestError, User,
+                CreateUser, CreateUserError, DeleteUser, DeleteUserError, GetUser, GetUserError,
+                InvalidCreateUser, InvalidUpdateUser, UpdateUser, UpdateUserError, User,
             },
             ports::UserService,
         },
@@ -41,13 +40,13 @@ impl From<CreateUserError> for ApiError {
     }
 }
 
-impl From<CreateUserRequestError> for ApiError {
-    fn from(value: CreateUserRequestError) -> Self {
+impl From<InvalidCreateUser> for ApiError {
+    fn from(value: InvalidCreateUser) -> Self {
         match value {
-            CreateUserRequestError::InvalidUsername(e) => {
+            InvalidCreateUser::Username(e) => {
                 Self::UnprocessableEntity(format!("invalid username: {}", e))
             }
-            CreateUserRequestError::InvalidEmail(e) => {
+            InvalidCreateUser::Email(e) => {
                 Self::UnprocessableEntity(format!("invalid email: {}", e))
             }
         }
@@ -55,29 +54,29 @@ impl From<CreateUserRequestError> for ApiError {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct CreateUserRequestBody {
+pub struct HttpCreateUser {
     username: String,
     email: String,
 }
 
-impl TryFrom<CreateUserRequestBody> for CreateUserRequest {
-    type Error = CreateUserRequestError;
-    fn try_from(value: CreateUserRequestBody) -> Result<Self, Self::Error> {
-        CreateUserRequest::new(&value.username, &value.email)
+impl TryFrom<HttpCreateUser> for CreateUser {
+    type Error = InvalidCreateUser;
+    fn try_from(value: HttpCreateUser) -> Result<Self, Self::Error> {
+        CreateUser::new(&value.username, &value.email)
     }
 }
 
 pub async fn create_user<AS, US, HS, CS>(
     State(state): State<AppState<AS, US, HS, CS>>,
-    Json(body): Json<CreateUserRequestBody>,
-) -> Result<ApiSuccess<UserResponseData>, ApiError>
+    Json(body): Json<HttpCreateUser>,
+) -> Result<ApiSuccess<HttpUser>, ApiError>
 where
     AS: AuthService,
     US: UserService,
     HS: HealthService,
     CS: CardService,
 {
-    let req = CreateUserRequest::new(&body.username, &body.email)?;
+    let req = CreateUser::new(&body.username, &body.email)?;
 
     state
         .user_service
@@ -107,14 +106,14 @@ impl From<GetUserError> for ApiError {
 pub async fn get_user<AS, US, HS, CS>(
     State(state): State<AppState<AS, US, HS, CS>>,
     Path(identifier): Path<String>,
-) -> Result<ApiSuccess<UserResponseData>, ApiError>
+) -> Result<ApiSuccess<HttpUser>, ApiError>
 where
     AS: AuthService,
     US: UserService,
     HS: HealthService,
     CS: CardService,
 {
-    let req = GetUserRequest::new(&identifier);
+    let req = GetUser::new(&identifier);
 
     state
         .user_service
@@ -143,19 +142,17 @@ impl From<UpdateUserError> for ApiError {
     }
 }
 
-impl From<UpdateUserRequestError> for ApiError {
-    fn from(value: UpdateUserRequestError) -> Self {
+impl From<InvalidUpdateUser> for ApiError {
+    fn from(value: InvalidUpdateUser) -> Self {
         match value {
-            UpdateUserRequestError::InvalidId(e) => {
-                Self::UnprocessableEntity(format!("invalid ID {}", e))
-            }
-            UpdateUserRequestError::InvalidUsername(e) => {
+            InvalidUpdateUser::Id(e) => Self::UnprocessableEntity(format!("invalid ID {}", e)),
+            InvalidUpdateUser::Username(e) => {
                 Self::UnprocessableEntity(format!("invalid username {}", e))
             }
-            UpdateUserRequestError::InvalidEmail(e) => {
+            InvalidUpdateUser::Email(e) => {
                 Self::UnprocessableEntity(format!("invalid email {}", e))
             }
-            UpdateUserRequestError::NothingToUpdate => {
+            InvalidUpdateUser::NoUpdates => {
                 Self::UnprocessableEntity("must update at least one field".to_string())
             }
         }
@@ -163,30 +160,30 @@ impl From<UpdateUserRequestError> for ApiError {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct UpdateUserRequestBody {
+pub struct UpdateUserBody {
     id: String,
     username: Option<String>,
     email: Option<String>,
 }
 
-impl TryFrom<UpdateUserRequestBody> for UpdateUserRequest {
-    type Error = UpdateUserRequestError;
-    fn try_from(value: UpdateUserRequestBody) -> Result<Self, Self::Error> {
-        UpdateUserRequest::new(&value.id, value.username, value.email)
+impl TryFrom<UpdateUserBody> for UpdateUser {
+    type Error = InvalidUpdateUser;
+    fn try_from(value: UpdateUserBody) -> Result<Self, Self::Error> {
+        UpdateUser::new(&value.id, value.username, value.email)
     }
 }
 
 pub async fn update_user<AS, US, HS, CS>(
     State(state): State<AppState<AS, US, HS, CS>>,
-    Json(body): Json<UpdateUserRequestBody>,
-) -> Result<ApiSuccess<UserResponseData>, ApiError>
+    Json(body): Json<UpdateUserBody>,
+) -> Result<ApiSuccess<HttpUser>, ApiError>
 where
     AS: AuthService,
     US: UserService,
     HS: HealthService,
     CS: CardService,
 {
-    let req = UpdateUserRequest::new(&body.id, body.username, body.email)?;
+    let req = UpdateUser::new(&body.id, body.username, body.email)?;
 
     state
         .user_service
@@ -213,20 +210,20 @@ impl From<DeleteUserError> for ApiError {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct DeleteUserRequestBody {
+pub struct DeleteUserBody {
     id: String,
 }
 
-impl TryFrom<DeleteUserRequestBody> for DeleteUserRequest {
+impl TryFrom<DeleteUserBody> for DeleteUser {
     type Error = uuid::Error;
-    fn try_from(value: DeleteUserRequestBody) -> Result<Self, Self::Error> {
-        DeleteUserRequest::new(&value.id)
+    fn try_from(value: DeleteUserBody) -> Result<Self, Self::Error> {
+        DeleteUser::new(&value.id)
     }
 }
 
 pub async fn delete_user<AS, US, HS, CS>(
     State(state): State<AppState<AS, US, HS, CS>>,
-    Json(body): Json<DeleteUserRequestBody>,
+    Json(body): Json<DeleteUserBody>,
 ) -> Result<ApiSuccess<()>, ApiError>
 where
     AS: AuthService,
@@ -234,7 +231,7 @@ where
     HS: HealthService,
     CS: CardService,
 {
-    let req = DeleteUserRequest::new(&body.id)?;
+    let req = DeleteUser::new(&body.id)?;
 
     state
         .user_service
@@ -252,13 +249,13 @@ where
 ///
 /// create, get and update use this
 #[derive(Debug, Serialize, PartialEq)]
-pub struct UserResponseData {
+pub struct HttpUser {
     id: String,
     username: String,
     email: String,
 }
 
-impl From<&User> for UserResponseData {
+impl From<&User> for HttpUser {
     fn from(user: &User) -> Self {
         Self {
             id: user.id.to_string(),

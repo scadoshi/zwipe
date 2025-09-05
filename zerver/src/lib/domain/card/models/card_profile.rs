@@ -14,20 +14,20 @@ pub enum GetCardProfileError {
     #[error(transparent)]
     Database(anyhow::Error),
     #[error("card profile found but database returned invalid object: {0}")]
-    InvalidCardProfileFromDatabase(anyhow::Error),
+    CardProfileFromDb(anyhow::Error),
 }
 
 #[derive(Debug, Error)]
 pub enum InvalidGetCardProfile {
     #[error("invalid id: {0}")]
-    InvalidUuid(uuid::Error),
+    Uuid(uuid::Error),
     #[error("no ids provided")]
     MissingIds,
 }
 
 impl From<uuid::Error> for InvalidGetCardProfile {
     fn from(value: uuid::Error) -> Self {
-        Self::InvalidUuid(value)
+        Self::Uuid(value)
     }
 }
 

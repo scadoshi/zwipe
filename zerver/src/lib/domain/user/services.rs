@@ -2,8 +2,8 @@ use std::fmt::Debug;
 
 use crate::domain::user::{
     models::{
-        CreateUserError, CreateUserRequest, DeleteUserError, DeleteUserRequest, GetUserError,
-        GetUserRequest, UpdateUserError, UpdateUserRequest, User,
+        CreateUser, CreateUserError, DeleteUser, DeleteUserError, GetUser, GetUserError,
+        UpdateUser, UpdateUserError, User,
     },
     ports::{UserRepository, UserService},
 };
@@ -26,19 +26,19 @@ where
 }
 
 impl<R: UserRepository> UserService for Service<R> {
-    async fn create_user(&self, request: &CreateUserRequest) -> Result<User, CreateUserError> {
+    async fn create_user(&self, request: &CreateUser) -> Result<User, CreateUserError> {
         self.repo.create_user(request).await
     }
 
-    async fn get_user(&self, request: &GetUserRequest) -> Result<User, GetUserError> {
+    async fn get_user(&self, request: &GetUser) -> Result<User, GetUserError> {
         self.repo.get_user(request).await
     }
 
-    async fn update_user(&self, request: &UpdateUserRequest) -> Result<User, UpdateUserError> {
+    async fn update_user(&self, request: &UpdateUser) -> Result<User, UpdateUserError> {
         self.repo.update_user(request).await
     }
 
-    async fn delete_user(&self, request: &DeleteUserRequest) -> Result<(), DeleteUserError> {
+    async fn delete_user(&self, request: &DeleteUser) -> Result<(), DeleteUserError> {
         self.repo.delete_user(request).await
     }
 }
