@@ -4,17 +4,21 @@ pub mod responses;
 pub mod scryfall;
 use crate::domain::auth::ports::AuthService;
 use crate::domain::card::ports::CardService;
+use crate::domain::deck::ports::DeckService;
 use crate::domain::health::ports::HealthService;
 use crate::domain::user::ports::UserService;
 use crate::inbound::http::handlers::auth::{authenticate_user, register_user};
 use crate::inbound::http::handlers::cards::{get_card, search_cards};
+use crate::inbound::http::handlers::decks::{
+    create_deck_profile, delete_deck, get_deck, update_deck_profile,
+};
 use crate::inbound::http::handlers::health::{
     are_server_and_database_running, is_server_running, root,
 };
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use axum::http::{header, HeaderValue, Method, StatusCode};
 use axum::response::IntoResponse;
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post, put};
 use axum::{Json, Router};
 use serde::Serialize;
 use std::sync::Arc;
@@ -34,17 +38,19 @@ pub struct HttpServerConfig<'a> {
 
 /// contains services
 #[derive(Debug, Clone)]
-pub struct AppState<AS, US, HS, CS>
+pub struct AppState<AS, US, HS, CS, DS>
 where
     AS: AuthService,
     US: UserService,
     HS: HealthService,
     CS: CardService,
+    DS: DeckService,
 {
     pub auth_service: Arc<AS>,
     pub user_service: Arc<US>,
     pub health_service: Arc<HS>,
     pub card_service: Arc<CS>,
+    pub deck_service: Arc<DS>,
 }
 
 /// server with a router and a listener
@@ -60,6 +66,7 @@ impl HttpServer {
         user_service: impl UserService,
         health_service: impl HealthService,
         card_service: impl CardService,
+        deck_service: impl DeckService,
         config: HttpServerConfig<'_>,
     ) -> anyhow::Result<Self> {
         let trace_layer = tower_http::trace::TraceLayer::new_for_http().make_span_with(
@@ -74,6 +81,7 @@ impl HttpServer {
             user_service: Arc::new(user_service),
             health_service: Arc::new(health_service),
             card_service: Arc::new(card_service),
+            deck_service: Arc::new(deck_service),
         };
 
         let router = axum::Router::new()
@@ -83,7 +91,7 @@ impl HttpServer {
             .layer(
                 CorsLayer::new()
                     .allow_origin(config.allowed_origins)
-                    .allow_methods([Method::GET, Method::POST])
+                    .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
                     .allow_headers([header::CONTENT_TYPE]),
             )
             .with_state(state);
@@ -167,6 +175,20 @@ impl IntoResponse for ApiError {
     }
 }
 
+trait Log500 {
+    fn log_500(self) -> ApiError;
+}
+
+impl<E> Log500 for E
+where
+    E: std::error::Error,
+{
+    fn log_500(self) -> ApiError {
+        tracing::error!("{:?}\n{}", self, anyhow!("{self}").backtrace());
+        ApiError::InternalServerError("internal server error".to_string())
+    }
+}
+
 // =============
 //  api success
 // =============
@@ -229,34 +251,48 @@ impl ApiResponseBody<ApiErrorData> {
 //  routes
 // ========
 
-pub fn private_routes<AS, US, HS, CS>() -> Router<AppState<AS, US, HS, CS>>
+pub fn private_routes<AS, US, HS, CS, DS>() -> Router<AppState<AS, US, HS, CS, DS>>
 where
     AS: AuthService,
     US: UserService,
     HS: HealthService,
     CS: CardService,
+    DS: DeckService,
 {
     Router::new().nest(
-        "/api/v1",
+        "/api",
         Router::new()
-            .route("/cards/:id", get(get_card))
-            .route("/cards/search", get(search_cards)),
+            .nest(
+                "/cards",
+                Router::new()
+                    .route("/:id", get(get_card))
+                    .route("/search", get(search_cards)),
+            )
+            .nest(
+                "/decks",
+                Router::new()
+                    .route("", post(create_deck_profile))
+                    .route("/:id", get(get_deck))
+                    .route("/:id", put(update_deck_profile))
+                    .route("/:id", delete(delete_deck)),
+            ),
     )
 }
 
-pub fn public_routes<AS, US, HS, CS>() -> Router<AppState<AS, US, HS, CS>>
+pub fn public_routes<AS, US, HS, CS, DS>() -> Router<AppState<AS, US, HS, CS, DS>>
 where
     AS: AuthService,
     US: UserService,
     HS: HealthService,
     CS: CardService,
+    DS: DeckService,
 {
     Router::new()
         .route("/", get(root))
         .route("/health/server", get(is_server_running))
         .route("/health/database", get(are_server_and_database_running))
         .nest(
-            "/api/v1",
+            "/api",
             Router::new()
                 .route("/auth/register", post(register_user))
                 .route("/auth/login", post(authenticate_user)),
