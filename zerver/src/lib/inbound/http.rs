@@ -1,19 +1,15 @@
 pub mod handlers;
 pub mod middleware;
-pub mod responses;
 pub mod scryfall;
-use crate::domain::auth::ports::AuthService;
-use crate::domain::card::ports::CardService;
-use crate::domain::deck::ports::DeckService;
-use crate::domain::health::ports::HealthService;
-use crate::domain::user::ports::UserService;
-use crate::inbound::http::handlers::auth::{authenticate_user, register_user};
-use crate::inbound::http::handlers::cards::{get_card, search_cards};
-use crate::inbound::http::handlers::decks::{
-    create_deck_profile, delete_deck, get_deck, update_deck_profile,
+use crate::domain::{
+    auth::ports::AuthService, card::ports::CardService, deck::ports::DeckService,
+    health::ports::HealthService, user::ports::UserService,
 };
-use crate::inbound::http::handlers::health::{
-    are_server_and_database_running, is_server_running, root,
+use crate::inbound::http::handlers::{
+    auth::{authenticate_user, register_user},
+    cards::{get_card, search_cards},
+    decks::{create_deck_profile, delete_deck, get_deck, update_deck_profile},
+    health::{are_server_and_database_running, is_server_running, root},
 };
 use anyhow::{anyhow, Context};
 use axum::http::{header, HeaderValue, Method, StatusCode};
@@ -24,6 +20,138 @@ use serde::Serialize;
 use std::sync::Arc;
 use tokio::net;
 use tower_http::cors::CorsLayer;
+
+// =======
+//  error
+// =======
+
+#[derive(Debug)]
+pub enum ApiError {
+    InternalServerError(String),
+    UnprocessableEntity(String),
+    Unauthorized(String),
+    NotFound(String),
+}
+
+impl From<anyhow::Error> for ApiError {
+    fn from(value: anyhow::Error) -> Self {
+        Self::InternalServerError(value.to_string())
+    }
+}
+
+impl From<uuid::Error> for ApiError {
+    fn from(value: uuid::Error) -> Self {
+        Self::UnprocessableEntity(format!("failed to parse `Uuid`: {}", value))
+    }
+}
+
+impl IntoResponse for ApiError {
+    fn into_response(self) -> axum::response::Response {
+        match self {
+            ApiError::InternalServerError(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(HttpResponse::new_error(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Internal server error".to_string(),
+                )),
+            )
+                .into_response(),
+
+            ApiError::UnprocessableEntity(message) => (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                Json(HttpResponse::new_error(
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    message,
+                )),
+            )
+                .into_response(),
+
+            ApiError::Unauthorized(message) => (
+                StatusCode::UNAUTHORIZED,
+                Json(HttpResponse::new_error(StatusCode::UNAUTHORIZED, message)),
+            )
+                .into_response(),
+
+            ApiError::NotFound(message) => (
+                StatusCode::NOT_FOUND,
+                Json(HttpResponse::new_error(StatusCode::NOT_FOUND, message)),
+            )
+                .into_response(),
+        }
+    }
+}
+
+trait Log500 {
+    fn log_500(self) -> ApiError;
+}
+
+impl<E> Log500 for E
+where
+    E: std::error::Error,
+{
+    fn log_500(self) -> ApiError {
+        tracing::error!("{:?}\n{}", self, anyhow!("{self}").backtrace());
+        ApiError::InternalServerError("internal server error".to_string())
+    }
+}
+
+// =========
+//  success
+// =========
+
+#[derive(Debug)]
+pub struct ApiSuccess<T: Serialize + PartialEq>(StatusCode, Json<HttpResponse<T>>);
+
+impl<T: Serialize + PartialEq> PartialEq for ApiSuccess<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0 && self.1 .0 == other.1 .0
+    }
+}
+
+impl<T: Serialize + PartialEq> ApiSuccess<T> {
+    fn new(status: StatusCode, data: T) -> Self {
+        ApiSuccess(status, Json(HttpResponse::new(status, data)))
+    }
+}
+
+impl<T: Serialize + PartialEq> IntoResponse for ApiSuccess<T> {
+    fn into_response(self) -> axum::response::Response {
+        (self.0, self.1).into_response()
+    }
+}
+
+// =============
+//  http things
+// =============
+
+#[derive(Debug, Serialize, PartialEq)]
+pub struct HttpError {
+    pub message: String,
+}
+
+#[derive(Debug, PartialEq, Serialize)]
+pub struct HttpResponse<T: Serialize + PartialEq> {
+    status_code: u16,
+    data: T,
+}
+
+impl<T: Serialize + PartialEq> HttpResponse<T> {
+    fn new(status_code: StatusCode, data: T) -> Self {
+        HttpResponse {
+            status_code: status_code.as_u16(),
+            data,
+        }
+    }
+}
+
+impl HttpResponse<HttpError> {
+    pub fn new_error(status_code: StatusCode, message: String) -> Self {
+        Self {
+            status_code: status_code.as_u16(),
+            data: HttpError { message },
+        }
+    }
+}
 
 // ========
 //  server
@@ -109,141 +237,6 @@ impl HttpServer {
             .await
             .context("received error from running server")?;
         Ok(())
-    }
-}
-
-// ===========
-//  api error
-// ===========
-
-#[derive(Debug)]
-pub enum ApiError {
-    InternalServerError(String),
-    UnprocessableEntity(String),
-    Unauthorized(String),
-    NotFound(String),
-}
-
-impl From<anyhow::Error> for ApiError {
-    fn from(value: anyhow::Error) -> Self {
-        Self::InternalServerError(value.to_string())
-    }
-}
-
-impl From<uuid::Error> for ApiError {
-    fn from(value: uuid::Error) -> Self {
-        Self::UnprocessableEntity(format!("failed to parse `Uuid`: {}", value))
-    }
-}
-
-impl IntoResponse for ApiError {
-    fn into_response(self) -> axum::response::Response {
-        match self {
-            ApiError::InternalServerError(_) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ApiResponseBody::new_error(
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Internal server error".to_string(),
-                )),
-            )
-                .into_response(),
-
-            ApiError::UnprocessableEntity(message) => (
-                StatusCode::UNPROCESSABLE_ENTITY,
-                Json(ApiResponseBody::new_error(
-                    StatusCode::UNPROCESSABLE_ENTITY,
-                    message,
-                )),
-            )
-                .into_response(),
-
-            ApiError::Unauthorized(message) => (
-                StatusCode::UNAUTHORIZED,
-                Json(ApiResponseBody::new_error(
-                    StatusCode::UNAUTHORIZED,
-                    message,
-                )),
-            )
-                .into_response(),
-
-            ApiError::NotFound(message) => (
-                StatusCode::NOT_FOUND,
-                Json(ApiResponseBody::new_error(StatusCode::NOT_FOUND, message)),
-            )
-                .into_response(),
-        }
-    }
-}
-
-trait Log500 {
-    fn log_500(self) -> ApiError;
-}
-
-impl<E> Log500 for E
-where
-    E: std::error::Error,
-{
-    fn log_500(self) -> ApiError {
-        tracing::error!("{:?}\n{}", self, anyhow!("{self}").backtrace());
-        ApiError::InternalServerError("internal server error".to_string())
-    }
-}
-
-// =============
-//  api success
-// =============
-
-#[derive(Debug)]
-pub struct ApiSuccess<T: Serialize + PartialEq>(StatusCode, Json<ApiResponseBody<T>>);
-
-impl<T: Serialize + PartialEq> PartialEq for ApiSuccess<T> {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0 && self.1 .0 == other.1 .0
-    }
-}
-
-impl<T: Serialize + PartialEq> ApiSuccess<T> {
-    fn new(status: StatusCode, data: T) -> Self {
-        ApiSuccess(status, Json(ApiResponseBody::new(status, data)))
-    }
-}
-
-impl<T: Serialize + PartialEq> IntoResponse for ApiSuccess<T> {
-    fn into_response(self) -> axum::response::Response {
-        (self.0, self.1).into_response()
-    }
-}
-
-// =============
-//  http things
-// =============
-
-#[derive(Debug, Serialize, PartialEq)]
-pub struct ApiErrorData {
-    pub message: String,
-}
-
-#[derive(Debug, PartialEq, Serialize)]
-pub struct ApiResponseBody<T: Serialize + PartialEq> {
-    status_code: u16,
-    data: T,
-}
-
-impl<T: Serialize + PartialEq> ApiResponseBody<T> {
-    fn new(status_code: StatusCode, data: T) -> Self {
-        ApiResponseBody {
-            status_code: status_code.as_u16(),
-            data,
-        }
-    }
-}
-
-impl ApiResponseBody<ApiErrorData> {
-    pub fn new_error(status_code: StatusCode, message: String) -> Self {
-        Self {
-            status_code: status_code.as_u16(),
-            data: ApiErrorData { message },
-        }
     }
 }
 
