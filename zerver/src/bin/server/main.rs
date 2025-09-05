@@ -1,6 +1,6 @@
 use std::str::FromStr;
 use zwipe::config::Config;
-use zwipe::domain::{auth, card, health, logo, user};
+use zwipe::domain::{auth, card, deck, health, logo, user};
 use zwipe::inbound::http::{HttpServer, HttpServerConfig};
 use zwipe::outbound::sqlx::postgres::Postgres;
 
@@ -23,6 +23,7 @@ async fn run() -> anyhow::Result<()> {
     let user_service = user::services::Service::new(db.clone());
     let health_service = health::services::Service::new(db.clone());
     let card_service = card::services::Service::new(db.clone());
+    let deck_service = deck::services::Service::new(db.clone(), db.clone());
     let server_config = HttpServerConfig {
         bind_address: &config.bind_address,
         allowed_origins: config.allowed_origins,
@@ -32,6 +33,7 @@ async fn run() -> anyhow::Result<()> {
         user_service,
         health_service,
         card_service,
+        deck_service,
         server_config,
     )
     .await?;
