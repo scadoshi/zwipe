@@ -7,8 +7,8 @@ use crate::{
     domain::deck::{
         models::{
             deck::{
-                CreateDeckError, CreateDeckProfile, DeckName, DeckProfile, DeleteDeck,
-                DeleteDeckError, GetDeck, GetDeckError, InvalidDeckname, UpdateDeckProfile,
+                CreateDeckProfile, CreateDeckProfileError, DeckName, DeckProfile, DeleteDeck,
+                DeleteDeckError, GetDeck, GetDeckProfileError, InvalidDeckname, UpdateDeckProfile,
                 UpdateDeckProfileError,
             },
             deck_card::{
@@ -36,7 +36,7 @@ pub enum ToDeckProfileError {
     UserId(uuid::Error),
 }
 
-impl From<ToDeckProfileError> for CreateDeckError {
+impl From<ToDeckProfileError> for CreateDeckProfileError {
     fn from(value: ToDeckProfileError) -> Self {
         Self::DeckFromDb(value.into())
     }
@@ -44,17 +44,17 @@ impl From<ToDeckProfileError> for CreateDeckError {
 
 impl From<ToDeckProfileError> for UpdateDeckProfileError {
     fn from(value: ToDeckProfileError) -> Self {
-        Self::InvalidDeckFromDatabase(value.into())
+        Self::DeckFromDb(value.into())
     }
 }
 
-impl From<ToDeckProfileError> for GetDeckError {
+impl From<ToDeckProfileError> for GetDeckProfileError {
     fn from(value: ToDeckProfileError) -> Self {
-        Self::DeckProfileFromDb(value.into())
+        GetDeckProfileError::DeckProfileFromDb(value.into())
     }
 }
 
-impl From<sqlx::Error> for CreateDeckError {
+impl From<sqlx::Error> for CreateDeckProfileError {
     fn from(value: sqlx::Error) -> Self {
         match value {
             e if e.is_unique_constraint_violation() => Self::Duplicate,
@@ -63,7 +63,7 @@ impl From<sqlx::Error> for CreateDeckError {
     }
 }
 
-impl From<sqlx::Error> for GetDeckError {
+impl From<sqlx::Error> for GetDeckProfileError {
     fn from(value: sqlx::Error) -> Self {
         match value {
             sqlx::Error::RowNotFound => Self::NotFound,
@@ -108,19 +108,19 @@ impl From<InvalidQuantity> for ToDeckCardError {
 
 impl From<ToDeckCardError> for CreateDeckCardError {
     fn from(value: ToDeckCardError) -> Self {
-        Self::InvalidDeckCardFromDatabase(value.into())
+        Self::DeckCardFromDb(value.into())
     }
 }
 
 impl From<ToDeckCardError> for GetDeckCardError {
     fn from(value: ToDeckCardError) -> Self {
-        Self::InvalidDeckCardFromDatabase(value.into())
+        Self::DeckCardFromDb(value.into())
     }
 }
 
 impl From<ToDeckCardError> for UpdateDeckCardError {
     fn from(value: ToDeckCardError) -> Self {
-        Self::InvalidDeckCardFromDatabase(value.into())
+        Self::DeckCardFromDb(value.into())
     }
 }
 
@@ -219,10 +219,10 @@ impl DeckRepository for Postgres {
     // ========
     //  create
     // ========
-    async fn create_deck(
+    async fn create_deck_profile(
         &self,
         request: &CreateDeckProfile,
-    ) -> Result<DeckProfile, CreateDeckError> {
+    ) -> Result<DeckProfile, CreateDeckProfileError> {
         let mut tx = self.pool.begin().await?;
 
         let database_deck_profile = query_as!(
@@ -266,12 +266,14 @@ impl DeckRepository for Postgres {
     // =====
     //  get
     // =====
-    async fn get_deck_profile(&self, request: &GetDeck) -> Result<DeckProfile, GetDeckError> {
+    async fn get_deck_profile(
+        &self,
+        request: &GetDeck,
+    ) -> Result<DeckProfile, GetDeckProfileError> {
         let database_deck_profile = query_as!(
             DatabaseDeckProfile,
-            "SELECT id, name, user_id FROM decks WHERE user_id = $1 AND (id::text = $2 OR name = $2)",
-            request.user_id,
-            request.identifier
+            "SELECT id, name, user_id FROM decks WHERE id = $1",
+            request.id()
         )
         .fetch_one(&self.pool)
         .await?;
