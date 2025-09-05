@@ -352,6 +352,11 @@ alwaysApply: true
 - **🚀 PATH PARAMETER EXTRACTION OPTIMIZATION**: Streamlined Axum parameter handling eliminating unnecessary wrapper types for better performance
 - **🚀 COMPREHENSIVE HTTP ERROR ARCHITECTURE**: Domain error to HTTP status code mapping with proper user-facing vs internal error separation
 - **🚀 PRODUCTION CORS CONFIGURATION**: Complete cross-origin setup supporting all required HTTP methods for web application integration
+- **🎯 HTTP MODULE CLEANUP MASTERY**: Comprehensive refactoring eliminating ApiSuccess wrapper, standardizing (StatusCode, Json<T>) patterns
+- **🎯 AXUM PARAMETER ORDERING**: Successfully resolved Handler trait issues by understanding extractor parameter order requirements
+- **🎯 ARCHITECTURAL DECISION MAKING**: Strategic analysis of user domain vs auth domain responsibilities, proper security boundary placement
+- **🎯 ROUTE ORGANIZATION UNDERSTANDING**: Clean separation of public vs private routes with proper authentication requirements
+- **🎯 HTTP RESPONSE SIMPLIFICATION**: Eliminated unnecessary abstraction layers, adopted direct Axum response patterns
 
 ### Learning Pattern Recognition
 - **Strategic Simplification**: Recognizes when complexity doesn't add value
