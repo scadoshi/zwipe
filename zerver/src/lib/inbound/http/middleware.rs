@@ -24,14 +24,14 @@ use crate::{
     inbound::http::AppState,
 };
 pub struct AuthenticatedUser {
-    pub user_id: Uuid,
+    pub id: Uuid,
     pub email: EmailAddress,
 }
 
 impl From<UserClaims> for AuthenticatedUser {
     fn from(value: UserClaims) -> Self {
         Self {
-            user_id: value.user_id,
+            id: value.user_id,
             email: value.email,
         }
     }

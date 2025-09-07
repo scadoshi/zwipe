@@ -4,7 +4,10 @@ use crate::domain::{
     auth::ports::AuthService, card::ports::CardService, deck::ports::DeckService,
     health::ports::HealthService, user::ports::UserService,
 };
-use crate::inbound::http::handlers::auth::change_password;
+use crate::inbound::http::handlers::auth::{
+    change_email, change_password, change_username, delete_user,
+};
+use crate::inbound::http::handlers::user::get_user;
 use crate::inbound::http::handlers::{
     auth::{authenticate_user, register_user},
     card::{get_card, search_cards},
@@ -180,14 +183,15 @@ where
     Router::new().nest(
         "/api",
         Router::new()
-            // .nest(
-            //     "/user",
-            //     Router::new()
-            //         .route("", post(create_user))
-            //         .route("/:id", get(get_user))
-            //         .route("", put(update_user))
-            //         .route("/:id", delete(delete_user)),
-            // )
+            .nest(
+                "/user",
+                Router::new()
+                    .route("", get(get_user))
+                    .route("/change-password", put(change_password))
+                    .route("/change-username", put(change_username))
+                    .route("/change-email", put(change_email))
+                    .route("/delete-user", delete(delete_user)),
+            )
             .nest(
                 "/card",
                 Router::new()
@@ -201,10 +205,6 @@ where
                     .route("/:id", get(get_deck))
                     .route("/:id", put(update_deck_profile))
                     .route("/:id", delete(delete_deck)),
-            )
-            .nest(
-                "/auth",
-                Router::new().route("/changepassword", post(change_password)),
             ),
     )
 }
