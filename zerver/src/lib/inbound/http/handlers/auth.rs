@@ -1,4 +1,9 @@
+use crate::domain::auth::models::{
+    ChangeEmail, ChangeEmailError, ChangeUsername, ChangeUsernameError, DeleteUser,
+    DeleteUserError, InvalidChangeEmail, InvalidChangeUsername,
+};
 use crate::domain::deck::ports::DeckService;
+use crate::domain::user::models::User;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState};
 use crate::{
@@ -173,9 +178,6 @@ impl From<ChangePasswordError> for ApiError {
 impl From<InvalidChangePassword> for ApiError {
     fn from(value: InvalidChangePassword) -> Self {
         match value {
-            InvalidChangePassword::InvalidId(e) => {
-                Self::UnprocessableEntity(format!("invalid id {}", e))
-            }
             InvalidChangePassword::PasswordError(e) => {
                 Self::UnprocessableEntity(format!("invalid password {}", e))
             }
@@ -186,19 +188,12 @@ impl From<InvalidChangePassword> for ApiError {
 
 #[derive(Debug, Deserialize)]
 pub struct HttpChangePassword {
-    id: String,
+    current_password: String,
     new_password: String,
 }
 
-impl TryFrom<HttpChangePassword> for ChangePassword {
-    type Error = InvalidChangePassword;
-    fn try_from(value: HttpChangePassword) -> Result<Self, Self::Error> {
-        ChangePassword::new(&value.id, &value.new_password)
-    }
-}
-
 pub async fn change_password<AS, US, HS, CS, DS>(
-    _: AuthenticatedUser,
+    user: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Json(body): Json<HttpChangePassword>,
 ) -> Result<(StatusCode, Json<()>), ApiError>
@@ -209,11 +204,151 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let req = ChangePassword::new(&body.id, &body.new_password)?;
+    let request = ChangePassword::new(user.id, &body.current_password, &body.new_password)?;
 
     state
         .auth_service
-        .change_password(&req)
+        .change_password(&request)
+        .await
+        .map_err(ApiError::from)
+        .map(|_| (StatusCode::OK, Json(())))
+}
+
+// =================
+//  change username
+// =================
+
+impl From<ChangeUsernameError> for ApiError {
+    fn from(value: ChangeUsernameError) -> Self {
+        match value {
+            ChangeUsernameError::UserNotFound => Self::NotFound("user not found".to_string()),
+            e => e.log_500(),
+        }
+    }
+}
+
+impl From<InvalidChangeUsername> for ApiError {
+    fn from(value: InvalidChangeUsername) -> Self {
+        match value {
+            InvalidChangeUsername::InvalidId(e) => {
+                Self::UnprocessableEntity(format!("invalid id: {}", e))
+            }
+            InvalidChangeUsername::InvalidUsername(e) => {
+                Self::UnprocessableEntity(format!("invalid username: {}", e))
+            }
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct HttpChangeUsername {
+    username: String,
+}
+
+pub async fn change_username<AS, US, HS, CS, DS>(
+    user: AuthenticatedUser,
+    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    Json(body): Json<HttpChangeUsername>,
+) -> Result<(StatusCode, Json<User>), ApiError>
+where
+    AS: AuthService,
+    US: UserService,
+    HS: HealthService,
+    CS: CardService,
+    DS: DeckService,
+{
+    let request = ChangeUsername::new(user.id, &body.username)?;
+
+    state
+        .auth_service
+        .change_username(&request)
+        .await
+        .map_err(ApiError::from)
+        .map(|user| (StatusCode::OK, Json(user)))
+}
+
+// ==============
+//  change email
+// ==============
+
+impl From<ChangeEmailError> for ApiError {
+    fn from(value: ChangeEmailError) -> Self {
+        match value {
+            ChangeEmailError::UserNotFound => Self::NotFound("user not found".to_string()),
+            e => e.log_500(),
+        }
+    }
+}
+
+impl From<InvalidChangeEmail> for ApiError {
+    fn from(value: InvalidChangeEmail) -> Self {
+        match value {
+            InvalidChangeEmail::InvalidId(e) => {
+                Self::UnprocessableEntity(format!("invalid id: {}", e))
+            }
+            InvalidChangeEmail::InvalidEmail(e) => {
+                Self::UnprocessableEntity(format!("invalid email: {}", e))
+            }
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct HttpChangeEmail {
+    email: String,
+}
+
+pub async fn change_email<AS, US, HS, CS, DS>(
+    user: AuthenticatedUser,
+    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    Json(body): Json<HttpChangeEmail>,
+) -> Result<(StatusCode, Json<User>), ApiError>
+where
+    AS: AuthService,
+    US: UserService,
+    HS: HealthService,
+    CS: CardService,
+    DS: DeckService,
+{
+    let request = ChangeEmail::new(user.id, &body.email)?;
+
+    state
+        .auth_service
+        .change_email(&request)
+        .await
+        .map_err(ApiError::from)
+        .map(|user| (StatusCode::OK, Json(user)))
+}
+
+// ========
+//  delete
+// ========
+
+impl From<DeleteUserError> for ApiError {
+    fn from(value: DeleteUserError) -> Self {
+        match value {
+            DeleteUserError::NotFound => Self::NotFound("user not found".to_string()),
+            e => e.log_500(),
+        }
+    }
+}
+
+pub async fn delete_user<AS, US, HS, CS, DS>(
+    user: AuthenticatedUser,
+    State(state): State<AppState<AS, US, HS, CS, DS>>,
+) -> Result<(StatusCode, Json<()>), ApiError>
+where
+    AS: AuthService,
+    US: UserService,
+    HS: HealthService,
+    CS: CardService,
+    DS: DeckService,
+{
+    let request = DeleteUser::from(user.id);
+
+    state
+        .auth_service
+        .delete_user(&request)
         .await
         .map_err(ApiError::from)
         .map(|_| (StatusCode::OK, Json(())))

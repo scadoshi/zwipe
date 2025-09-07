@@ -2,8 +2,10 @@ use crate::domain::{
     auth::{
         models::{
             jwt::{Jwt, JwtCreationResponse, JwtSecret},
-            AuthenticateUser, AuthenticateUserError, AuthenticateUserSuccess, ChangePassword,
-            ChangePasswordError, RegisterUser, RegisterUserError, UserWithPasswordHash,
+            AuthenticateUser, AuthenticateUserError, AuthenticateUserSuccess, ChangeEmail,
+            ChangeEmailError, ChangePassword, ChangePasswordError, ChangeUsername,
+            ChangeUsernameError, DeleteUser, DeleteUserError, RegisterUser, RegisterUserError,
+            UserWithPasswordHash,
         },
         ports::{AuthRepository, AuthService},
     },
@@ -55,16 +57,13 @@ impl<R: AuthRepository + Clone> AuthService for Service<R> {
         let user_with_password_hash: UserWithPasswordHash =
             self.repo.get_user_with_password_hash(request).await?;
 
-        let password_hash = user_with_password_hash
-            .password_hash
-            .clone()
-            .ok_or(AuthenticateUserError::InvalidPassword)?;
+        let password_hash = user_with_password_hash.password_hash.clone();
 
         let user: User = user_with_password_hash.into();
 
         let verified = password_hash
             .verify(&request.password)
-            .map_err(|e| AuthenticateUserError::FailedToVerify(anyhow!("{e}")))?;
+            .map_err(|e| AuthenticateUserError::FailedToVerify(e.into()))?;
 
         if !verified {
             return Err(AuthenticateUserError::InvalidPassword);
@@ -84,6 +83,19 @@ impl<R: AuthRepository + Clone> AuthService for Service<R> {
     }
 
     async fn change_password(&self, request: &ChangePassword) -> Result<(), ChangePasswordError> {
+        let _ = self.authenticate_user(&request.into()).await?;
         self.repo.change_password(request).await
+    }
+
+    async fn change_username(&self, request: &ChangeUsername) -> Result<User, ChangeUsernameError> {
+        self.repo.change_username(request).await
+    }
+
+    async fn change_email(&self, request: &ChangeEmail) -> Result<User, ChangeEmailError> {
+        self.repo.change_email(request).await
+    }
+
+    async fn delete_user(&self, request: &DeleteUser) -> Result<(), DeleteUserError> {
+        self.repo.delete_user(request).await
     }
 }

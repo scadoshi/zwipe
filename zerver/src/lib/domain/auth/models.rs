@@ -5,7 +5,7 @@ use crate::domain::auth::models::{
     jwt::{Jwt, JwtError},
     password::HashedPassword,
 };
-use crate::domain::user::models::{User, UserName, UserNameError};
+use crate::domain::user::models::{User, Username, UsernameError};
 use email_address::EmailAddress;
 use serde::Serialize;
 use std::str::FromStr;
@@ -33,13 +33,37 @@ pub enum RegisterUserError {
 #[derive(Debug, Error)]
 pub enum InvalidRegisterUser {
     #[error(transparent)]
-    Username(UserNameError),
+    Username(UsernameError),
     #[error(transparent)]
     Email(email_address::Error),
     #[error(transparent)]
     Password(PasswordError),
     #[error(transparent)]
     FailedPasswordHash(argon2::password_hash::Error),
+}
+
+impl From<UsernameError> for InvalidRegisterUser {
+    fn from(value: UsernameError) -> Self {
+        Self::Username(value)
+    }
+}
+
+impl From<email_address::Error> for InvalidRegisterUser {
+    fn from(value: email_address::Error) -> Self {
+        Self::Email(value)
+    }
+}
+
+impl From<PasswordError> for InvalidRegisterUser {
+    fn from(value: PasswordError) -> Self {
+        Self::Password(value)
+    }
+}
+
+impl From<argon2::password_hash::Error> for InvalidRegisterUser {
+    fn from(value: argon2::password_hash::Error) -> Self {
+        Self::FailedPasswordHash(value)
+    }
 }
 
 /// errors encountered while authenticating a user
@@ -79,8 +103,6 @@ pub enum InvalidAuthenticateUserSuccess {
 #[derive(Debug, Error)]
 pub enum InvalidChangePassword {
     #[error(transparent)]
-    InvalidId(uuid::Error),
-    #[error(transparent)]
     PasswordError(PasswordError),
     #[error(transparent)]
     FailedPasswordHash(argon2::password_hash::Error),
@@ -93,6 +115,91 @@ pub enum ChangePasswordError {
     UserNotFound,
     #[error(transparent)]
     Database(anyhow::Error),
+    #[error(transparent)]
+    AuthenticateUserError(AuthenticateUserError),
+}
+
+impl From<AuthenticateUserError> for ChangePasswordError {
+    fn from(value: AuthenticateUserError) -> Self {
+        Self::AuthenticateUserError(value)
+    }
+}
+
+impl From<sqlx::Error> for ChangePasswordError {
+    fn from(value: sqlx::Error) -> Self {
+        match value {
+            sqlx::Error::RowNotFound => Self::UserNotFound,
+            e => Self::Database(e.into()),
+        }
+    }
+}
+
+#[derive(Debug, Error)]
+pub enum InvalidChangeUsername {
+    #[error(transparent)]
+    InvalidId(uuid::Error),
+    #[error(transparent)]
+    InvalidUsername(UsernameError),
+}
+
+impl From<uuid::Error> for InvalidChangeUsername {
+    fn from(value: uuid::Error) -> Self {
+        Self::InvalidId(value)
+    }
+}
+
+impl From<UsernameError> for InvalidChangeUsername {
+    fn from(value: UsernameError) -> Self {
+        Self::InvalidUsername(value)
+    }
+}
+
+#[derive(Debug, Error)]
+pub enum ChangeUsernameError {
+    #[error("user not found")]
+    UserNotFound,
+    #[error(transparent)]
+    Database(anyhow::Error),
+    #[error("user updated but database returned invalid object: {0}")]
+    UserFromDb(anyhow::Error),
+}
+
+#[derive(Debug, Error)]
+pub enum InvalidChangeEmail {
+    #[error(transparent)]
+    InvalidId(uuid::Error),
+    #[error(transparent)]
+    InvalidEmail(email_address::Error),
+}
+
+impl From<uuid::Error> for InvalidChangeEmail {
+    fn from(value: uuid::Error) -> Self {
+        Self::InvalidId(value)
+    }
+}
+
+impl From<email_address::Error> for InvalidChangeEmail {
+    fn from(value: email_address::Error) -> Self {
+        Self::InvalidEmail(value)
+    }
+}
+
+#[derive(Debug, Error)]
+pub enum ChangeEmailError {
+    #[error("user not found")]
+    UserNotFound,
+    #[error(transparent)]
+    Database(anyhow::Error),
+    #[error("user updated but database returned invalid object: {0}")]
+    UserFromDb(anyhow::Error),
+}
+
+#[derive(Debug, Error)]
+pub enum DeleteUserError {
+    #[error("user not found")]
+    NotFound,
+    #[error(transparent)]
+    Database(anyhow::Error),
 }
 
 // ========================
@@ -101,18 +208,17 @@ pub enum ChangePasswordError {
 
 #[derive(Debug)]
 pub struct RegisterUser {
-    pub username: UserName,
+    pub username: Username,
     pub email: EmailAddress,
     pub password_hash: HashedPassword,
 }
 
 impl RegisterUser {
     pub fn new(username: &str, email: &str, password: &str) -> Result<Self, InvalidRegisterUser> {
-        let username = UserName::new(username).map_err(|e| InvalidRegisterUser::Username(e))?;
-        let email = EmailAddress::from_str(email).map_err(|e| InvalidRegisterUser::Email(e))?;
-        let password = Password::new(password).map_err(|e| InvalidRegisterUser::Password(e))?;
-        let password_hash = HashedPassword::generate(password)
-            .map_err(|e| InvalidRegisterUser::FailedPasswordHash(e))?;
+        let username = Username::new(username)?;
+        let email = EmailAddress::from_str(email)?;
+        let password = Password::new(password)?;
+        let password_hash = HashedPassword::generate(password)?;
 
         Ok(RegisterUser {
             username,
@@ -141,6 +247,15 @@ impl AuthenticateUser {
             identifier: identifier.to_string(),
             password: password.to_string(),
         })
+    }
+}
+
+impl From<&ChangePassword> for AuthenticateUser {
+    fn from(value: &ChangePassword) -> Self {
+        Self {
+            identifier: value.user_id.to_string(),
+            password: value.current_password.to_owned(),
+        }
     }
 }
 
@@ -174,19 +289,75 @@ impl AuthenticateUserSuccess {
 /// with idenifier and new password hash
 #[derive(Debug)]
 pub struct ChangePassword {
-    pub id: Uuid,
+    pub user_id: Uuid,
+    pub current_password: String,
     pub password_hash: HashedPassword,
 }
 
 impl ChangePassword {
-    pub fn new(id: &str, new_password: &str) -> Result<Self, InvalidChangePassword> {
-        let id = Uuid::try_parse(id).map_err(|e| InvalidChangePassword::InvalidId(e))?;
+    pub fn new(
+        user_id: Uuid,
+        current_password: &str,
+        new_password: &str,
+    ) -> Result<Self, InvalidChangePassword> {
         let password =
             Password::new(new_password).map_err(|e| InvalidChangePassword::PasswordError(e))?;
+        let current_password = current_password.to_string();
         let password_hash = HashedPassword::generate(password)
             .map_err(|e| InvalidChangePassword::FailedPasswordHash(e))?;
 
-        Ok(Self { id, password_hash })
+        Ok(Self {
+            user_id,
+            current_password,
+            password_hash,
+        })
+    }
+}
+
+#[derive(Debug)]
+pub struct ChangeUsername {
+    pub user_id: Uuid,
+    pub username: Username,
+}
+
+impl ChangeUsername {
+    pub fn new(user_id: Uuid, username: &str) -> Result<Self, InvalidChangeUsername> {
+        let username = Username::new(username)?;
+        Ok(Self { user_id, username })
+    }
+}
+
+#[derive(Debug)]
+pub struct ChangeEmail {
+    pub user_id: Uuid,
+    pub email: EmailAddress,
+}
+
+impl ChangeEmail {
+    pub fn new(user_id: Uuid, email: &str) -> Result<Self, InvalidChangeEmail> {
+        let email = EmailAddress::from_str(email)?;
+        Ok(Self { user_id, email })
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct DeleteUser(Uuid);
+
+impl DeleteUser {
+    pub fn new(id: &str) -> Result<Self, uuid::Error> {
+        let trimmed = id.trim();
+        let id = Uuid::try_parse(trimmed)?;
+        Ok(Self(id))
+    }
+
+    pub fn id(&self) -> Uuid {
+        self.0
+    }
+}
+
+impl From<Uuid> for DeleteUser {
+    fn from(value: Uuid) -> Self {
+        Self(value)
     }
 }
 
@@ -199,9 +370,9 @@ impl ChangePassword {
 #[derive(Debug)]
 pub struct UserWithPasswordHash {
     pub id: Uuid,
-    pub username: UserName,
+    pub username: Username,
     pub email: EmailAddress,
-    pub password_hash: Option<HashedPassword>,
+    pub password_hash: HashedPassword,
 }
 
 impl From<UserWithPasswordHash> for User {

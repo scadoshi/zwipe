@@ -3,7 +3,9 @@ use std::future::Future;
 use crate::domain::{
     auth::models::{
         jwt::JwtSecret, AuthenticateUser, AuthenticateUserError, AuthenticateUserSuccess,
-        ChangePassword, ChangePasswordError, RegisterUser, RegisterUserError, UserWithPasswordHash,
+        ChangeEmail, ChangeEmailError, ChangePassword, ChangePasswordError, ChangeUsername,
+        ChangeUsernameError, DeleteUser, DeleteUserError, RegisterUser, RegisterUserError,
+        UserWithPasswordHash,
     },
     user::models::User,
 };
@@ -24,6 +26,21 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
         &self,
         request: &ChangePassword,
     ) -> impl Future<Output = Result<(), ChangePasswordError>> + Send;
+
+    fn change_username(
+        &self,
+        request: &ChangeUsername,
+    ) -> impl Future<Output = Result<User, ChangeUsernameError>> + Send;
+
+    fn change_email(
+        &self,
+        request: &ChangeEmail,
+    ) -> impl Future<Output = Result<User, ChangeEmailError>> + Send;
+
+    fn delete_user(
+        &self,
+        request: &DeleteUser,
+    ) -> impl Future<Output = Result<(), DeleteUserError>> + Send;
 }
 
 /// orchestrates auth related operations
@@ -44,4 +61,19 @@ pub trait AuthService: Clone + Send + Sync + 'static {
         &self,
         request: &ChangePassword,
     ) -> impl Future<Output = Result<(), ChangePasswordError>> + Send;
+
+    fn change_username(
+        &self,
+        request: &ChangeUsername,
+    ) -> impl Future<Output = Result<User, ChangeUsernameError>> + Send;
+
+    fn change_email(
+        &self,
+        request: &ChangeEmail,
+    ) -> impl Future<Output = Result<User, ChangeEmailError>> + Send;
+
+    fn delete_user(
+        &self,
+        request: &DeleteUser,
+    ) -> impl Future<Output = Result<(), DeleteUserError>> + Send;
 }

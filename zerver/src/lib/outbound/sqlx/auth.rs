@@ -1,19 +1,125 @@
 use std::str::FromStr;
 
-use anyhow::{anyhow, Context};
 use email_address::EmailAddress;
 use sqlx::{query, query_as};
 use sqlx_macros::FromRow;
 use uuid::Uuid;
+use thiserror::Error;
 
 use crate::domain::auth::models::password::HashedPassword;
 use crate::domain::auth::models::{
-    AuthenticateUser, AuthenticateUserError, ChangePassword, ChangePasswordError, RegisterUser, RegisterUserError, UserWithPasswordHash
+    AuthenticateUser, AuthenticateUserError, ChangeEmail, ChangeEmailError, ChangePassword, ChangePasswordError, ChangeUsername, ChangeUsernameError, DeleteUser, DeleteUserError, RegisterUser, RegisterUserError, UserWithPasswordHash
 };
 use crate::domain::auth::ports::AuthRepository;
-use crate::domain::user::models::{User, UserName};
+use crate::domain::user::models::{User, Username, UsernameError};
 use crate::outbound::sqlx::postgres::{IsConstraintViolation, Postgres};
-use crate::outbound::sqlx::user::DatabaseUser;
+use crate::outbound::sqlx::user::{DatabaseUser, ToUserError};
+
+// ========
+//  errors
+// ========
+
+#[derive(Debug, Error)]
+pub enum ToUserWithPasswordHashError {
+    #[error(transparent)]
+    InvalidId(uuid::Error),
+    #[error(transparent)]
+    InvalidUsername(UsernameError),
+    #[error(transparent)]
+    InvalidEmail(email_address::Error),
+    #[error(transparent)]
+    InvalidPasswordHash(argon2::password_hash::Error),
+}
+
+impl From<argon2::password_hash::Error> for ToUserWithPasswordHashError {
+    fn from(value: argon2::password_hash::Error) -> Self {
+        Self::InvalidPasswordHash(value)
+    }
+}
+
+impl From<uuid::Error> for ToUserWithPasswordHashError {
+    fn from(value: uuid::Error) -> Self {
+        Self::InvalidId(value)
+    }
+}
+
+impl From<UsernameError> for ToUserWithPasswordHashError {
+    fn from(value: UsernameError) -> Self {
+        Self::InvalidUsername(value)
+    }
+}
+
+impl From<email_address::Error> for ToUserWithPasswordHashError {
+    fn from(value: email_address::Error) -> Self {
+        Self::InvalidEmail(value)
+    }
+}
+
+impl From<ToUserError> for RegisterUserError {
+    fn from(value: ToUserError) -> Self {
+        Self::UserFromDb(value.into())
+    }
+}
+
+impl From<ToUserWithPasswordHashError> for AuthenticateUserError {
+    fn from(value: ToUserWithPasswordHashError) -> Self {
+        Self::UserFromDb(value.into())
+    }
+}
+
+impl From<ToUserError> for AuthenticateUserError {
+    fn from(value: ToUserError) -> Self {
+        Self::UserFromDb(value.into())
+    }
+}
+
+impl From<sqlx::Error> for RegisterUserError {
+    fn from(value: sqlx::Error) -> Self {
+        match value {
+            e if e.is_unique_constraint_violation() => Self::Duplicate,
+            e => Self::Database(e.into()),
+        }
+    }
+}
+
+impl From<sqlx::Error> for AuthenticateUserError {
+    fn from(value: sqlx::Error) -> Self {
+        match value {
+            sqlx::Error::RowNotFound => Self::UserNotFound,
+            e => Self::Database(e.into()),
+        }
+    }
+}
+
+impl From<sqlx::Error> for ChangeUsernameError {
+    fn from(value: sqlx::Error) -> Self {
+        Self::Database(value.into())
+    }
+}
+
+impl From<ToUserError> for ChangeUsernameError {
+    fn from(value: ToUserError) -> Self {
+        Self::UserFromDb(value.into())
+    }
+}
+
+impl From<sqlx::Error> for ChangeEmailError {
+    fn from(value: sqlx::Error) -> Self {
+        Self::Database(value.into())
+    }
+}
+
+impl From<ToUserError> for ChangeEmailError {
+    fn from(value: ToUserError) -> Self {
+        Self::UserFromDb(value.into())
+    }
+}
+
+impl From<sqlx::Error> for DeleteUserError {
+    fn from(value: sqlx::Error) -> Self {
+        Self::Database(value.into())
+    }
+}
 
 // ==========
 //  db types
@@ -26,23 +132,20 @@ pub struct DatabaseUserWithPasswordHash {
     pub id: String,
     pub username: String,
     pub email: String,
-    pub password_hash: Option<String>,
+    pub password_hash: String,
 }
 
 /// converts database user with password hash
 /// to validated domain user with password hash
 impl TryFrom<DatabaseUserWithPasswordHash> for UserWithPasswordHash {
-    type Error = anyhow::Error;
+    type Error = ToUserWithPasswordHashError;
 
     fn try_from(value: DatabaseUserWithPasswordHash) -> Result<Self, Self::Error> {
-        let id = Uuid::try_parse(&value.id).context("failed to validate user id")?;
-        let username = UserName::new(&value.username).context("failed to validate username")?;
-        let email = EmailAddress::from_str(&value.email).context("failed to validate email")?;
+        let id = Uuid::try_parse(&value.id)?;
+        let username = Username::new(&value.username)?;
+        let email = EmailAddress::from_str(&value.email)?;
 
-        let password_hash: Option<HashedPassword> = value
-            .password_hash
-            .map(|password_hash| HashedPassword::new(&password_hash).context("failed to create validate password hash"))
-            .transpose()?;
+        let password_hash = HashedPassword::new(&value.password_hash)?;
 
         Ok(Self {
             id,
@@ -64,8 +167,7 @@ impl AuthRepository for Postgres {
         let mut tx = self
             .pool
             .begin()
-            .await
-            .map_err(|e| RegisterUserError::Database(e.into()))?;
+            .await?;
 
         let database_user = query_as!(
             DatabaseUser, 
@@ -73,20 +175,12 @@ impl AuthRepository for Postgres {
             request.username.to_string(), 
             request.email.to_string(), 
             request.password_hash.to_string()
-        ).fetch_one(&mut *tx).await.map_err(|e| {
-            if e.is_unique_constraint_violation() {
-                return RegisterUserError::Duplicate;
-            }
-            RegisterUserError::Database(e.into())
-        })?;
+        ).fetch_one(&mut *tx).await?;
 
         let user: User = database_user
-            .try_into()
-            .map_err(|e| RegisterUserError::UserFromDb(anyhow!("{e}")))?;
+            .try_into()?;
 
-        tx.commit()
-            .await
-            .map_err(|e| RegisterUserError::Database(e.into()))?;
+        tx.commit().await?;
 
         Ok(user)
     }
@@ -100,19 +194,13 @@ impl AuthRepository for Postgres {
 
         let database_user: DatabaseUserWithPasswordHash = query_as!(
             DatabaseUserWithPasswordHash,
-            "SELECT id, username, email, password_hash FROM users WHERE (username = $1 OR email = $1)",
+            "SELECT id, username, email, password_hash FROM users WHERE (id::text = $1 OR username = $1 OR email = $1)",
             request.identifier
         )
         .fetch_one(&self.pool)
-        .await
-        .map_err(|e| match e {
-            sqlx::Error::RowNotFound => AuthenticateUserError::UserNotFound, 
-            e => AuthenticateUserError::Database(e.into()),
-        })?;
+        .await?;
 
-        let user: UserWithPasswordHash = database_user
-            .try_into()
-            .map_err(|e| AuthenticateUserError::UserFromDb(anyhow!("{e}")))?;
+        let user: UserWithPasswordHash = database_user.try_into()?;
 
         Ok(user)
     }
@@ -126,13 +214,12 @@ impl AuthRepository for Postgres {
         let mut tx = self
             .pool
             .begin()
-            .await
-            .map_err(|e| ChangePasswordError::Database(e.into()))?;
+            .await?;
 
         query!(
             "UPDATE users SET password_hash = $1 WHERE id = $2", 
             request.password_hash.to_string(), 
-            request.id
+            request.user_id
         )
         .execute(&mut *tx)
         .await
@@ -147,4 +234,65 @@ impl AuthRepository for Postgres {
 
         Ok(())
     }
+
+    async fn change_username(
+            &self,
+            request: &ChangeUsername,
+        ) -> Result<User, ChangeUsernameError> {
+        let mut tx = self.pool.begin().await?;
+
+        let database_user = query_as!(
+            DatabaseUser, 
+            "UPDATE users SET username = $1 WHERE id = $2 RETURNING id, username, email", 
+            request.username.to_string(), 
+            request.user_id
+        ).fetch_one(&mut *tx).await?;
+
+        let user: User = database_user.try_into()?;
+
+        tx.commit().await?;
+
+        Ok(user)
+    }
+
+    async fn change_email(
+            &self,
+            request: &ChangeEmail,
+        ) -> Result<User, ChangeEmailError> {
+        let mut tx = self.pool.begin().await?;
+
+        let database_user = query_as!(
+            DatabaseUser, 
+            "UPDATE users SET email = $1 WHERE id = $2 RETURNING id, username, email", 
+            request.email.to_string(), 
+            request.user_id
+        ).fetch_one(&mut *tx).await?;
+
+        let user: User = database_user.try_into()?;
+
+        tx.commit().await?;
+        
+        Ok(user)
+    }
+
+    // ========
+    //  delete
+    // ========
+    async fn delete_user(&self, request: &DeleteUser) -> Result<(), DeleteUserError> {
+        let mut tx = self.pool.begin().await?;
+
+        let result = query!("DELETE FROM users WHERE id = $1", request.id())
+            .execute(&mut *tx)
+            .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(DeleteUserError::NotFound);
+        }
+
+        tx.commit().await?;
+
+        Ok(())
+    }
 }
+
+
