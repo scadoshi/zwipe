@@ -113,6 +113,8 @@ alwaysApply: true
 - **🏆 TRAIT-BASED VALIDATION**: IsCommonPassword trait with static list checking
 - **🏆 CRYPTOGRAPHIC INTEGRATION**: Argon2 hashing with salt generation and verification
 - **🏆 DOMAIN-DRIVEN SECURITY**: Password validation enforced at domain layer, not adapter layer
+- **🚀 CURRENT PASSWORD VERIFICATION**: Secure password change implementation requiring current password authentication
+- **🚀 AUTH DOMAIN CONSOLIDATION**: Centralized all user lifecycle operations in auth domain for consistent security control
 
 ### Advanced Axum Concepts
 - **Route Security**: Strong understanding of type-based authentication through handler parameters
@@ -359,6 +361,10 @@ alwaysApply: true
 - **🎯 HTTP RESPONSE SIMPLIFICATION**: Eliminated unnecessary abstraction layers, adopted direct Axum response patterns
 - **🎯 AXUM RESPONSE TYPES**: Understanding of plain text vs JSON response trade-offs, strategic choice of simple error messages
 - **🎯 ABSTRACTION ELIMINATION**: Successful removal of HttpResponse<T> wrapper in favor of direct (StatusCode, String) patterns
+- **🚀 RESTFUL API SECURITY**: Implemented AuthenticatedUser-based operations to prevent privilege escalation
+- **🚀 DECK OWNERSHIP VALIDATION**: Added user ownership checks to prevent unauthorized deck access
+- **🚀 GENERIC ERROR RESPONSES**: Implemented information disclosure prevention through consistent "not found" error messages
+- **🚀 SECURITY-FIRST ENDPOINT DESIGN**: All sensitive operations require proper authentication and authorization
 
 ### Learning Pattern Recognition
 - **Strategic Simplification**: Recognizes when complexity doesn't add value
@@ -419,8 +425,8 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: After completing The Great Domain Refactor for Card and Deck domains
+**Last Updated**: After completing auth domain security enhancement and RESTful API standardization
 
-**Next Learning Edge**: User/Auth domain refactoring completion, service layer implementation, HTTP integration
+**Next Learning Edge**: Deck card HTTP layer implementation with nested resource routes
 
-**Major Recent Achievement**: Successfully completed comprehensive domain refactoring for Card and Deck domains implementing Operation/OperationError/InvalidOperation naming pattern. Achieved significant type system optimization with ergonomic API design, database query performance improvements, and architectural consistency. Card and Deck domains now feature clean naming conventions, optimized queries, and maintainable code structure. Demonstrated strong refactoring discipline and architectural thinking with clear service boundaries. Ready to apply proven refactoring patterns to User and Auth domains, then proceed to service layer implementation and HTTP integration. Shows excellent balance of theoretical architecture knowledge with practical implementation skills.
+**Major Recent Achievement**: Successfully completed comprehensive auth domain security enhancement with production-ready authentication patterns. Implemented current password verification for password changes, centralized all user lifecycle operations in auth domain, and established AuthenticatedUser-based security throughout the system. Added deck ownership validation and generic error responses to prevent information disclosure. All endpoints now follow proper RESTful patterns with path parameters and comprehensive security controls. Demonstrates solid understanding of security principles including defense-in-depth, principle of least privilege, and information hiding. Ready to implement deck card management API with nested resource routes building on established security foundation.

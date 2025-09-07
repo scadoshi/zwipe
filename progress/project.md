@@ -251,11 +251,18 @@ alwaysApply: true
 - **🎯 HTTP RESPONSE SIMPLIFICATION**: Eliminated HttpResponse<T> wrapper, adopted direct Axum (StatusCode, String) error responses
 - **🎯 ABSTRACTION LAYER REDUCTION**: Removed unnecessary JSON wrappers in favor of plain text error messages for cleaner API responses
 
+### COMPLETE - Auth Domain Security Enhancement ✅
+- **🚀 AUTH DOMAIN EXPANSION**: Successfully moved username/email updates and account deletion to auth domain
+- **🚀 USER DOMAIN SIMPLIFICATION**: Cleaned user pipeline to read-only operations, removed create/update/delete mutations
+- **🚀 SECURITY BOUNDARY CONSOLIDATION**: Centralized all user lifecycle operations in auth domain
+- **🚀 RESTFUL API STANDARDIZATION**: Refactored endpoints to use path parameters instead of ID in request bodies
+- **🚀 AUTHENTICATED USER SECURITY**: All user operations now use AuthenticatedUser ID to prevent privilege escalation
+- **🚀 CURRENT PASSWORD VERIFICATION**: Implemented secure password change requiring current password verification
+- **🚀 DECK OWNERSHIP VALIDATION**: Added user ownership checks to prevent unauthorized deck access
+- **🚀 GENERIC ERROR RESPONSES**: Implemented "not found" responses to prevent information disclosure
+
 ### IN PROGRESS - Domain Architecture Completion 🔄
 - **🔧 DECK CARD HTTP LAYER**: Build complete deck card management API with nested resource routes
-- **🔧 AUTH DOMAIN EXPANSION**: Move username/email updates and account deletion to auth domain for security consistency
-- **🔧 USER DOMAIN SIMPLIFICATION**: Clean user pipeline to read-only operations, remove create/update/delete mutations
-- **🔧 SECURITY BOUNDARY CONSOLIDATION**: Centralize all user lifecycle operations in auth domain
 
 ### NEXT PRIORITIES - Domain Architecture Completion 🎯
 1. **🔧 Deck Card HTTP Layer Implementation**
@@ -542,10 +549,10 @@ curl http://localhost:8080/api/v1/decks
 
 ---
 
-**Last Updated**: After completing HTTP response simplification and abstraction layer reduction
+**Last Updated**: After completing auth domain security enhancement and RESTful API standardization
 
-**Current Sprint**: Domain architecture completion - deck card HTTP layer, auth domain expansion, user domain simplification
+**Current Sprint**: Deck card HTTP layer implementation with nested resource routes
 
-**Next Major Milestone**: Complete deck card management API, centralize user operations in auth domain, establish clean security boundaries
+**Next Major Milestone**: Complete deck card management API with proper authentication and validation
 
-**Major Recent Achievement**: Successfully completed comprehensive HTTP module refactoring and response simplification. Eliminated ApiSuccess<T> and HttpResponse<T> wrappers in favor of direct Axum response patterns, adopting plain text error messages over JSON for cleaner API responses. Resolved Axum Handler trait issues through proper parameter ordering, and established clean route organization with proper authentication requirements. HTTP layer now features minimal, efficient patterns with direct (StatusCode, String) error responses and clean separation of concerns. Ready to implement deck card management API, expand auth domain with username/email updates and account deletion, and simplify user domain to read-only operations for optimal security architecture. 
+**Major Recent Achievement**: Successfully completed auth domain security enhancement with comprehensive RESTful API standardization. Moved all user lifecycle operations (username/email changes, account deletion) to auth domain for centralized security control. Implemented AuthenticatedUser-based operations to prevent privilege escalation, added current password verification for password changes, and established deck ownership validation. All endpoints now use proper RESTful patterns with path parameters and generic error responses to prevent information disclosure. Auth domain now provides production-ready security with defense-in-depth approach. Ready to implement deck card management API with nested resource routes. 
