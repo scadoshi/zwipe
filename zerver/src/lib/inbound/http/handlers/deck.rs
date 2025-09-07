@@ -85,9 +85,6 @@ impl From<InvalidCreateDeckProfile> for ApiError {
             InvalidCreateDeckProfile::DeckName(e) => {
                 Self::UnprocessableEntity(format!("invalid deck name: {}", e))
             }
-            InvalidCreateDeckProfile::UserId(e) => {
-                Self::UnprocessableEntity(format!("invalid user id: {}", e))
-            }
         }
     }
 }
@@ -95,18 +92,10 @@ impl From<InvalidCreateDeckProfile> for ApiError {
 #[derive(Debug, Deserialize)]
 pub struct HttpCreateDeckProfile {
     pub name: String,
-    pub user_id: String,
-}
-
-impl TryFrom<HttpCreateDeckProfile> for CreateDeckProfile {
-    type Error = InvalidCreateDeckProfile;
-    fn try_from(value: HttpCreateDeckProfile) -> Result<Self, Self::Error> {
-        CreateDeckProfile::new(&value.name, &value.user_id)
-    }
 }
 
 pub async fn create_deck_profile<AS, US, HS, CS, DS>(
-    _: AuthenticatedUser,
+    user: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Json(body): Json<HttpCreateDeckProfile>,
 ) -> Result<(StatusCode, Json<HttpDeckProfile>), ApiError>
@@ -117,7 +106,7 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let request = CreateDeckProfile::new(&body.name, &body.user_id)?;
+    let request = CreateDeckProfile::new(&body.name, user.id)?;
 
     state
         .deck_service
@@ -134,6 +123,10 @@ where
 impl From<GetDeckError> for ApiError {
     fn from(value: GetDeckError) -> Self {
         match value {
+            GetDeckError::DeckNotOwnedByUser => {
+                Self::NotFound("deck profile not found".to_string())
+            }
+
             GetDeckError::GetCardError(gce) => match gce {
                 GetCardError::GetCardProfileError(gcpe) => match gcpe {
                     GetCardProfileError::NotFound => {
@@ -174,12 +167,15 @@ impl From<GetDeckError> for ApiError {
 impl From<InvalidGetDeck> for ApiError {
     fn from(value: InvalidGetDeck) -> Self {
         match value {
-            InvalidGetDeck::Id(e) => Self::UnprocessableEntity(format!("invalid id: {}", e)),
+            InvalidGetDeck::InvalidDeckId(e) => {
+                Self::UnprocessableEntity(format!("invalid deck id: {}", e))
+            }
         }
     }
 }
 
 pub async fn get_deck<AS, US, HS, CS, DS>(
+    user: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Path(id): Path<String>,
     _: AuthenticatedUser,
@@ -191,7 +187,7 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let request = GetDeck::new(&id)?;
+    let request = GetDeck::new(&id, &user.id)?;
 
     state
         .deck_service
@@ -225,7 +221,7 @@ impl From<InvalidUpdateDeckProfile> for ApiError {
             InvalidUpdateDeckProfile::InvalidDeckName(e) => {
                 Self::UnprocessableEntity(format!("invalid deck name: {}", e))
             }
-            InvalidUpdateDeckProfile::InvalidId(e) => {
+            InvalidUpdateDeckProfile::InvalidDeckId(e) => {
                 Self::UnprocessableEntity(format!("invalid id: {}", e))
             }
             InvalidUpdateDeckProfile::NothingToUpdate => {
@@ -241,9 +237,9 @@ pub struct HttpUpdateDeckProfileBody {
 }
 
 pub async fn update_deck_profile<AS, US, HS, CS, DS>(
-    _: AuthenticatedUser,
+    user: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
-    Path(id): Path<String>,
+    Path(deck_id): Path<String>,
     Json(body): Json<HttpUpdateDeckProfileBody>,
 ) -> Result<(StatusCode, Json<HttpDeckProfile>), ApiError>
 where
@@ -253,7 +249,7 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let request = UpdateDeckProfile::new(&id, body.name.as_deref())?;
+    let request = UpdateDeckProfile::new(&deck_id, body.name.as_deref(), user.id)?;
 
     state
         .deck_service

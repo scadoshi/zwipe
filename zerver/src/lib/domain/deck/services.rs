@@ -66,6 +66,10 @@ where
     async fn get_deck(&self, request: &GetDeck) -> Result<Deck, GetDeckError> {
         let deck_profile = self.deck_repo.get_deck_profile(request).await?;
 
+        if deck_profile.user_id != request.user_id {
+            return Err(GetDeckError::DeckNotOwnedByUser);
+        }
+
         let gdc = GetDeckCard::from(&deck_profile);
         let deck_cards = self.deck_repo.get_deck_cards(&gdc).await?;
 
@@ -84,6 +88,8 @@ where
         &self,
         request: &UpdateDeckProfile,
     ) -> Result<DeckProfile, UpdateDeckProfileError> {
+        let get_deck = GetDeck::from(request);
+        let _deck_profile = self.get_deck_profile(&get_deck).await?;
         self.deck_repo.update_deck_profile(request).await
     }
 

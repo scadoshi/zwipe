@@ -23,14 +23,6 @@ pub enum InvalidDeckname {
 pub enum InvalidCreateDeckProfile {
     #[error(transparent)]
     DeckName(InvalidDeckname),
-    #[error(transparent)]
-    UserId(uuid::Error),
-}
-
-impl From<uuid::Error> for InvalidCreateDeckProfile {
-    fn from(value: uuid::Error) -> Self {
-        Self::UserId(value)
-    }
 }
 
 impl From<InvalidDeckname> for InvalidCreateDeckProfile {
@@ -52,12 +44,12 @@ pub enum CreateDeckProfileError {
 #[derive(Debug, Error)]
 pub enum InvalidGetDeck {
     #[error(transparent)]
-    Id(uuid::Error),
+    InvalidDeckId(uuid::Error),
 }
 
 impl From<uuid::Error> for InvalidGetDeck {
     fn from(value: uuid::Error) -> Self {
-        Self::Id(value)
+        Self::InvalidDeckId(value)
     }
 }
 
@@ -73,6 +65,8 @@ pub enum GetDeckProfileError {
 
 #[derive(Debug, Error)]
 pub enum GetDeckError {
+    #[error("deck does not belong to authenticated user")]
+    DeckNotOwnedByUser,
     #[error(transparent)]
     GetDeckProfileError(GetDeckProfileError),
     #[error(transparent)]
@@ -112,7 +106,7 @@ pub enum InvalidUpdateDeckProfile {
     #[error(transparent)]
     InvalidDeckName(InvalidDeckname),
     #[error(transparent)]
-    InvalidId(uuid::Error),
+    InvalidDeckId(uuid::Error),
     #[error("must update at least one field")]
     NothingToUpdate,
 }
@@ -125,7 +119,7 @@ impl From<InvalidDeckname> for InvalidUpdateDeckProfile {
 
 impl From<uuid::Error> for InvalidUpdateDeckProfile {
     fn from(value: uuid::Error) -> Self {
-        Self::InvalidId(value)
+        Self::InvalidDeckId(value)
     }
 }
 
@@ -139,6 +133,14 @@ pub enum UpdateDeckProfileError {
     Database(anyhow::Error),
     #[error("deck updated but database returned invalid object: {0}")]
     DeckFromDb(anyhow::Error),
+    #[error(transparent)]
+    GetDeckProfileError(GetDeckProfileError),
+}
+
+impl From<GetDeckProfileError> for UpdateDeckProfileError {
+    fn from(value: GetDeckProfileError) -> Self {
+        Self::GetDeckProfileError(value)
+    }
 }
 
 #[derive(Debug, Error)]
@@ -195,24 +197,35 @@ pub struct CreateDeckProfile {
 }
 
 impl CreateDeckProfile {
-    pub fn new(name: &str, user_id: &str) -> Result<Self, InvalidCreateDeckProfile> {
+    pub fn new(name: &str, user_id: Uuid) -> Result<Self, InvalidCreateDeckProfile> {
         let name = DeckName::new(name)?;
-        let user_id = Uuid::try_parse(user_id)?;
         Ok(Self { name, user_id })
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct GetDeck(Uuid);
+pub struct GetDeck {
+    pub deck_id: Uuid,
+    pub user_id: Uuid,
+}
 
 impl GetDeck {
-    pub fn new(id: &str) -> Result<Self, InvalidGetDeck> {
-        let id = Uuid::try_parse(id)?;
-        Ok(Self(id))
-    }
+    pub fn new(deck_id: &str, user_id: &Uuid) -> Result<Self, InvalidGetDeck> {
+        let deck_id = Uuid::try_parse(deck_id)?;
 
-    pub fn id(&self) -> Uuid {
-        self.0
+        Ok(Self {
+            deck_id,
+            user_id: user_id.clone(),
+        })
+    }
+}
+
+impl From<&UpdateDeckProfile> for GetDeck {
+    fn from(value: &UpdateDeckProfile) -> Self {
+        Self {
+            deck_id: value.deck_id.clone(),
+            user_id: value.user_id.clone(),
+        }
     }
 }
 
@@ -222,18 +235,29 @@ impl GetDeck {
 /// to leave room for future additions
 #[derive(Debug, Clone)]
 pub struct UpdateDeckProfile {
-    pub id: Uuid,
+    pub deck_id: Uuid,
     pub name: Option<DeckName>,
+    pub user_id: Uuid,
 }
 
 impl UpdateDeckProfile {
-    pub fn new(id: &str, name: Option<&str>) -> Result<Self, InvalidUpdateDeckProfile> {
+    pub fn new(
+        deck_id: &str,
+        name: Option<&str>,
+        user_id: Uuid,
+    ) -> Result<Self, InvalidUpdateDeckProfile> {
         if name.is_none() {
             return Err(InvalidUpdateDeckProfile::NothingToUpdate);
         }
-        let id = Uuid::try_parse(id)?;
+
+        let deck_id = Uuid::try_parse(deck_id)?;
+
         let name = name.map(|name_str| DeckName::new(name_str)).transpose()?;
-        Ok(Self { id, name })
+        Ok(Self {
+            deck_id,
+            name,
+            user_id,
+        })
     }
 }
 

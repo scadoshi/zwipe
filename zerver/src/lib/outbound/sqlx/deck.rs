@@ -273,7 +273,7 @@ impl DeckRepository for Postgres {
         let database_deck_profile = query_as!(
             DatabaseDeckProfile,
             "SELECT id, name, user_id FROM decks WHERE id = $1",
-            request.id()
+            request.deck_id
         )
         .fetch_one(&self.pool)
         .await?;
@@ -336,7 +336,7 @@ impl DeckRepository for Postgres {
         sep.push("updated_at = ").push_bind_unseparated(now);
 
         qb.push(" WHERE id = ")
-            .push_bind(request.id)
+            .push_bind(request.deck_id)
             .push(" RETURNING id, name, user_id");
 
         let database_deck: DatabaseDeckProfile = qb.build_query_as().fetch_one(&mut *tx).await?;
