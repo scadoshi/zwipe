@@ -1,6 +1,22 @@
 # Zwipe 🃏
 
+```
+▎▎▉▉▉▉▉▉▉            ▎▎▉▉
+  ▎▎▉▉▉▉▉▉▎▎▉▉    ▎▎▉▉▎▎▉▉▎▎▉▉▉▉▉▉ ▎▎▉▉▉▉▉▉▉
+      ▎▎▉▉ ▎▎▉▉    ▎▎▉▉    ▎▎▉▉▉▉▉▉ ▎▎▉▉ ▎▎▉▉
+     ▎▎▉▉   ▎▎▉▉▎▎▉▉▎▎▉▉▎▎▉▉▎▎▉▉ ▎▎▉▉▎▎▉▉▉▉▉▉▉
+    ▎▎▉▉     ▎▎▉▉▎▎▉▉▎▎▉▉▎▎▉▉▎▎▉▉ ▎▎▉▉▎▎▉▉
+   ▎▎▉▉▉▉▉▉▉▉ ▎▎▉▉▉▉▉▉▉▉  ▎▎▉▉▎▎▉▉▉▉▉▉ ▎▎▉▉▉ ▎▎▉▉
+    ▎▎▉▉▉▉▉▉▉▉ ▎▎▉▉▎▎▉▉    ▎▎▉▉▎▎▉▉▉▉   ▎▎▉▉▉▉▉▉
+                                ▎▎▉▉
+                                 ▎▎▉▉
+                                  ▎▎▉▉
+                                   ▎▎▉▉
+```
+
 A mobile-first Magic: The Gathering deck building app with a **Tinder-like swiping interface**. Swipe right to add cards to your deck, left to skip - making deck building fun and intuitive.
+
+**🦀 This is primarily a learning project** designed to develop production-ready Rust skills for professional work in the Rust ecosystem, with the hope of becoming a real application someday.
 
 ## 🎯 What This App Does
 
@@ -33,55 +49,67 @@ A mobile-first Magic: The Gathering deck building app with a **Tinder-like swipi
 
 ### Current Implementation Status
 
-✅ **Complete - User Domain Pipeline**
-- Full CRUD operations (Create, Read, Update, Delete)
-- Comprehensive error handling with request/operation separation
-- Type-safe API design with proper HTTP status mapping
-- Enterprise-level hexagonal architecture
+✅ **Complete - Enterprise Hexagonal Architecture**
+- Production-ready ports/adapters pattern with clean domain separation
+- Multi-domain architecture (Auth, User, Card, Deck domains)
+- Advanced newtype patterns with smart constructors
+- Comprehensive error handling with dual-layer mapping
 
-✅ **Complete - Authentication System**  
-- JWT token generation and validation
-- Argon2 password hashing with salt
-- Custom middleware for route protection
-- Production-ready security boundaries
+✅ **Complete - Authentication & Security System**  
+- JWT token generation/validation with custom middleware
+- Argon2 password hashing with enterprise-level validation
+- Route protection through type-based authentication
+- User ownership validation and privilege escalation prevention
 
 ✅ **Complete - Card Data Integration**
 - 35,400+ MTG cards from Scryfall API
-- Complex nested types (prices, legalities, card faces)
-- Bulk operations with optimized batching
-- JSONB storage for flexible card data
+- Complex nested types (prices, legalities, card faces, image URIs)
+- Bulk operations with optimized batching and composite key architecture
+- JSONB storage with custom SQLx type implementations
 
-🚧 **In Progress - Auth HTTP Handlers**
-- Registration and login endpoints
-- Following established User domain patterns
-- Comprehensive error mapping
+✅ **Complete - Deck Management System**
+- Full deck CRUD operations with proper relationship modeling
+- Deck card management with composite key architecture
+- Nested resource API endpoints with RESTful design
+- Cross-domain service orchestration with HashMap join optimization
+
+✅ **Complete - Production HTTP API**
+- Complete REST API with proper HTTP semantics
+- Comprehensive error mapping and status code handling
+- Tuple path parameter extraction for multi-parameter routes
+- Background sync job with metrics tracking
 
 🔄 **Next - Mobile Frontend**
 - Dioxus mobile app development
-- Card swiping interface
-- Offline-capable deck building
+- Card swiping interface implementation
+- Offline-capable deck building with sync
 
-## 🎓 Learning-Focused Development
+## 🎓 Learning-Focused Development & Portfolio Project
 
-This project **prioritizes learning over speed**, featuring:
+This project serves as both a **learning laboratory** and **portfolio demonstration** for advancing Rust development skills with the goal of working professionally in the Rust ecosystem.
 
-### 📚 Documentation & Progress Tracking
-- **[Learning Progress](/.cursor/rules/brain-progress.mdc)**: Neural pathway mapping for Rust/web development concepts
-- **[Project Status](/.cursor/rules/project-progress.mdc)**: Detailed implementation progress and architecture decisions
-- **[Core Decisions](/core_decisions/)**: Technical strategy documents and trade-off analysis
-- **[Quizzes](/quizzes/)**: Regular knowledge assessments to solidify learning
+### 🎯 Learning Philosophy
+Rather than rushing to market, this project **prioritizes deep learning and clean architecture** to build industry-ready skills. You'll see a deliberate mix of:
+- **Enterprise patterns** for portfolio demonstration (hexagonal architecture, comprehensive error handling)
+- **Pragmatic choices** for learning efficiency (strategic simplification over theoretical purity)
+- **Production-ready practices** that employers value (type safety, security-first design, thorough documentation)
 
-### 🤖 AI-Assisted Learning
-- AI assistants help update progress documentation
-- Learning-focused code reviews and architecture discussions  
-- Quiz generation based on implemented concepts
-- Pattern recognition and best practice guidance
+### 🤖 AI-Enhanced Learning Management
+The project leverages AI assistants to optimize the learning experience:
 
-### 🧠 Knowledge Tracking
-The project maintains detailed learning maps across confidence levels:
-- **Confident**: Could teach others (Rust fundamentals, basic web dev)
-- **Developing**: Successfully implemented but still learning (hexagonal architecture, advanced error handling)
-- **Learning**: Recently introduced concepts needing guidance
+- **[Learning Progress Tracking](/progress/brain.md)**: Detailed neural pathway mapping across confidence levels (Confident → Developing → Learning → Unexplored)
+- **[Project Status Management](/progress/project.md)**: Implementation progress with architectural decisions and learning achievements
+- **[Architecture Guidelines](/.cursor/rules/)**: Hexagonal patterns and learning optimization strategies
+- **Guided Development**: AI helps maintain focus on learning objectives while building production-quality code
+
+### 🧠 Skill Development Tracking
+The project maintains granular learning maps to demonstrate growth:
+- **Confident**: Ready to teach others and use in production
+- **Developing**: Successfully implemented but still expanding understanding  
+- **Learning**: Recently introduced concepts with guided practice
+- **Unexplored**: Future learning targets identified
+
+This approach creates a **living portfolio** that shows not just what was built, but **how skills were systematically developed** - valuable for technical interviews and demonstrating learning ability to potential employers.
 
 ## 🚀 Quick Start
 
@@ -94,33 +122,18 @@ The project maintains detailed learning maps across confidence levels:
 ```bash
 # Clone and setup
 git clone <repository-url>
-cd deck-builder
+cd zwipe
 
-# Database setup
-createdb deck_builder
-cd deck_builder
-sqlx migrate run
+# Setup using provided scripts
+./scripts/dev_env_init/
 
-# Environment setup
-cp .env.example .env
-# Edit .env with your database URL and JWT secret
+# Available binaries
+cargo run --bin zerver    # Main API server (Zwipe Server)
+cargo run --bin zync      # Background card sync job (Zwipe Sync)  
+cargo run --bin zync_test # Sync testing utility
 
-# Run the server
-cargo run --bin server
-```
-
-### Test the API
-```bash
 # Health check
-curl http://localhost:8080/health
-
-# Register a user
-curl --json '{"username": "player1", "email": "player1@example.com", "password": "secure123"}' \
-  http://localhost:8080/api/v1/auth/register
-
-# Create a user (alternative endpoint)
-curl --json '{"username": "player2", "email": "player2@example.com"}' \
-  http://localhost:8080/api/v1/users
+curl http://localhost:3000/health/database
 ```
 
 ## 🏛️ Architecture Highlights
@@ -128,10 +141,11 @@ curl --json '{"username": "player2", "email": "player2@example.com"}' \
 ### Hexagonal Architecture (Ports & Adapters)
 ```
 📁 Domain Layer (Business Logic)
-├── User domain: CRUD operations with validation
-├── Auth domain: JWT + password security  
-├── Card domain: MTG card data management
-└── Deck domain: Deck building logic
+├── Auth domain: JWT + password security + user lifecycle
+├── User domain: Read-only user profile access
+├── Card domain: MTG card data management + search
+├── Deck domain: Deck building + card management
+└── Health domain: System monitoring
 
 📁 Ports Layer (Interfaces)
 ├── Repository traits for data access
@@ -139,9 +153,9 @@ curl --json '{"username": "player2", "email": "player2@example.com"}' \
 └── Clean dependency boundaries
 
 📁 Adapters Layer (Implementation)
-├── HTTP handlers (Axum)
-├── Database operations (SQLx)
-├── External APIs (Scryfall)
+├── HTTP handlers (Axum) with nested resource routes
+├── Database operations (SQLx) with composite keys
+├── External APIs (Scryfall) with sync jobs
 └── Future: Mobile client (Dioxus)
 ```
 
@@ -212,6 +226,6 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**Built with Rust 🦀 | Powered by Learning 🧠 | Mobile-First 📱**
+**Built with Rust 🦀 | Powered by Learning 🧠 | Portfolio-Ready 📋**
 
-*This project demonstrates enterprise-grade Rust development with hexagonal architecture, comprehensive error handling, and production-ready patterns - all while maintaining a focus on learning and knowledge transfer.*
+*This project demonstrates enterprise-grade Rust development with hexagonal architecture, comprehensive error handling, and production-ready patterns - all developed through AI-guided learning to build industry-relevant skills. The codebase serves as both a learning laboratory and a portfolio piece showcasing systematic skill development in the Rust ecosystem.*
