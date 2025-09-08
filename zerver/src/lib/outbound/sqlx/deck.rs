@@ -12,9 +12,7 @@ use crate::{
                 UpdateDeckProfileError,
             },
             deck_card::{
-                CreateDeckCard, CreateDeckCardError, DeckCard, DeleteDeckCard, DeleteDeckCardError,
-                GetDeckCard, GetDeckCardError, InvalidQuantity, Quantity, UpdateDeckCard,
-                UpdateDeckCardError,
+                CreateDeckCard, CreateDeckCardError, DeckCard, DeleteDeckCard, DeleteDeckCardError, GetDeckCardError, InvalidQuantity, Quantity, UpdateDeckCard, UpdateDeckCardError
             },
         },
         ports::DeckRepository,
@@ -189,7 +187,6 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
 /// (unvalidated data from `PostgreSQL`)
 #[derive(Debug, Clone, FromRow)]
 pub struct DatabaseDeckCard {
-    pub id: String,
     pub deck_id: String,
     pub card_profile_id: String,
     pub quantity: i32,
@@ -200,14 +197,12 @@ impl TryFrom<DatabaseDeckCard> for DeckCard {
     type Error = ToDeckCardError;
 
     fn try_from(value: DatabaseDeckCard) -> Result<Self, Self::Error> {
-        let id = Uuid::try_parse(&value.id).map_err(|e| ToDeckCardError::InvalidId(e.into()))?;
         let deck_id = Uuid::try_parse(&value.deck_id)
             .map_err(|e| ToDeckCardError::InvalidDeckId(e.into()))?;
         let card_profile_id = Uuid::try_parse(&value.card_profile_id)
             .map_err(|e| ToDeckCardError::InvalidCardId(e.into()))?;
         let quantity = Quantity::new(value.quantity)?;
         Ok(Self {
-            id,
             deck_id,
             card_profile_id,
             quantity,
@@ -249,7 +244,7 @@ impl DeckRepository for Postgres {
 
         let database_deck_card = query_as!(
             DatabaseDeckCard,
-            "INSERT INTO deck_cards (deck_id, card_profile_id, quantity) VALUES ($1, $2, $3) RETURNING id, deck_id, card_profile_id, quantity",
+            "INSERT INTO deck_cards (deck_id, card_profile_id, quantity) VALUES ($1, $2, $3) RETURNING deck_id, card_profile_id, quantity",
             request.deck_id,
             request.card_profile_id,
             request.quantity.quantity()
@@ -283,27 +278,13 @@ impl DeckRepository for Postgres {
         Ok(deck_profile)
     }
 
-    async fn get_deck_card(&self, request: &GetDeckCard) -> Result<DeckCard, GetDeckCardError> {
-        let database_deck_card = query_as!(
-            DatabaseDeckCard,
-            "SELECT id, deck_id, card_profile_id, quantity FROM deck_cards WHERE id = $1",
-            request.deck_id
-        )
-        .fetch_one(&self.pool)
-        .await?;
-
-        let deck_card: DeckCard = database_deck_card.try_into()?;
-
-        Ok(deck_card)
-    }
-
     async fn get_deck_cards(
         &self,
-        request: &GetDeckCard,
+        request: &GetDeck,
     ) -> Result<Vec<DeckCard>, GetDeckCardError> {
         let database_deck_cards = query_as!(
             DatabaseDeckCard,
-            "SELECT id, deck_id, card_profile_id, quantity FROM deck_cards WHERE deck_id = $1",
+            "SELECT deck_id, card_profile_id, quantity FROM deck_cards WHERE deck_id = $1",
             request.deck_id
         )
         .fetch_all(&self.pool)
@@ -356,8 +337,10 @@ impl DeckRepository for Postgres {
 
         let database_deck_card = query_as!(
             DatabaseDeckCard,
-            "UPDATE deck_cards SET quantity = quantity + $1 RETURNING id, deck_id, card_profile_id, quantity",
-            request.update_quantity.value()
+            "UPDATE deck_cards SET quantity = quantity + $1 WHERE deck_id = $2 AND card_profile_id = $3 RETURNING deck_id, card_profile_id, quantity",
+            request.update_quantity.value(),
+            request.deck_id, 
+            request.card_profile_id
         )
         .fetch_one(&mut *tx)
         .await?;
@@ -390,7 +373,7 @@ impl DeckRepository for Postgres {
     async fn delete_deck_card(&self, request: &DeleteDeckCard) -> Result<(), DeleteDeckCardError> {
         let mut tx = self.pool.begin().await?;
 
-        let result = query!("DELETE FROM deck_cards WHERE id = $1", request.id())
+        let result = query!("DELETE FROM deck_cards WHERE deck_id = $1 AND card_profile_id = $2", request.deck_id, request.card_profile_id)
             .execute(&mut *tx)
             .await?;
 
