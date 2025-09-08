@@ -7,6 +7,9 @@ use crate::domain::{
 use crate::inbound::http::handlers::auth::{
     change_email, change_password, change_username, delete_user,
 };
+use crate::inbound::http::handlers::deck_card::{
+    create_deck_card, delete_deck_card, update_deck_card,
+};
 use crate::inbound::http::handlers::user::get_user;
 use crate::inbound::http::handlers::{
     auth::{authenticate_user, register_user},
@@ -195,16 +198,23 @@ where
             .nest(
                 "/card",
                 Router::new()
-                    .route("/:id", get(get_card))
+                    .route("/:card_profile_id", get(get_card))
                     .route("/search", get(search_cards)),
             )
             .nest(
                 "/deck",
                 Router::new()
                     .route("", post(create_deck_profile))
-                    .route("/:id", get(get_deck))
-                    .route("/:id", put(update_deck_profile))
-                    .route("/:id", delete(delete_deck)),
+                    .route("/:deck_id", get(get_deck))
+                    .route("/:deck_id", put(update_deck_profile))
+                    .route("/:deck_id", delete(delete_deck))
+                    .nest(
+                        "/:deck_id/card",
+                        Router::new()
+                            .route("", post(create_deck_card))
+                            .route("/:card_profile_id", put(update_deck_card))
+                            .route("/:card_profile_id", delete(delete_deck_card)),
+                    ),
             ),
     )
 }
