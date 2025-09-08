@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::domain::{
     card::models::{card_profile::GetCardProfileError, Card, GetCardError},
-    deck::models::deck_card::GetDeckCardError,
+    deck::models::deck_card::{CreateDeckCard, DeleteDeckCard, GetDeckCardError, UpdateDeckCard},
 };
 
 // ========
@@ -15,8 +15,10 @@ use crate::domain::{
 
 #[derive(Debug, Error)]
 pub enum InvalidDeckname {
-    #[error("deck name must be present")]
-    Missing,
+    #[error("deck name minimum length is 1 character")]
+    TooShort,
+    #[error("deck name maximum length is 64 characters")]
+    TooLong,
 }
 
 #[derive(Debug, Error)]
@@ -44,12 +46,12 @@ pub enum CreateDeckProfileError {
 #[derive(Debug, Error)]
 pub enum InvalidGetDeck {
     #[error(transparent)]
-    InvalidDeckId(uuid::Error),
+    DeckId(uuid::Error),
 }
 
 impl From<uuid::Error> for InvalidGetDeck {
     fn from(value: uuid::Error) -> Self {
-        Self::InvalidDeckId(value)
+        Self::DeckId(value)
     }
 }
 
@@ -61,12 +63,12 @@ pub enum GetDeckProfileError {
     Database(anyhow::Error),
     #[error("deck profile found but database returned invalid object: {0}")]
     DeckProfileFromDb(anyhow::Error),
+    #[error("deck does not belong to authenticated user")]
+    DeckNotOwnedByUser,
 }
 
 #[derive(Debug, Error)]
 pub enum GetDeckError {
-    #[error("deck does not belong to authenticated user")]
-    DeckNotOwnedByUser,
     #[error(transparent)]
     GetDeckProfileError(GetDeckProfileError),
     #[error(transparent)]
@@ -104,22 +106,22 @@ impl From<GetCardError> for GetDeckError {
 #[derive(Debug, Error)]
 pub enum InvalidUpdateDeckProfile {
     #[error(transparent)]
-    InvalidDeckName(InvalidDeckname),
+    DeckName(InvalidDeckname),
     #[error(transparent)]
-    InvalidDeckId(uuid::Error),
+    DeckId(uuid::Error),
     #[error("must update at least one field")]
-    NothingToUpdate,
+    NoUpdates,
 }
 
 impl From<InvalidDeckname> for InvalidUpdateDeckProfile {
     fn from(value: InvalidDeckname) -> Self {
-        Self::InvalidDeckName(value)
+        Self::DeckName(value)
     }
 }
 
 impl From<uuid::Error> for InvalidUpdateDeckProfile {
     fn from(value: uuid::Error) -> Self {
-        Self::InvalidDeckId(value)
+        Self::DeckId(value)
     }
 }
 
@@ -161,8 +163,13 @@ pub struct DeckName(String);
 impl DeckName {
     pub fn new(name: &str) -> Result<Self, InvalidDeckname> {
         if name.is_empty() {
-            return Err(InvalidDeckname::Missing);
+            return Err(InvalidDeckname::TooShort);
         }
+
+        if name.len() > 64 {
+            return Err(InvalidDeckname::TooLong);
+        }
+
         Ok(Self(name.to_string()))
     }
 
@@ -220,8 +227,44 @@ impl GetDeck {
     }
 }
 
+impl From<&DeckProfile> for GetDeck {
+    fn from(value: &DeckProfile) -> Self {
+        Self {
+            deck_id: value.id.clone(),
+            user_id: value.user_id.clone(),
+        }
+    }
+}
+
 impl From<&UpdateDeckProfile> for GetDeck {
     fn from(value: &UpdateDeckProfile) -> Self {
+        Self {
+            deck_id: value.deck_id.clone(),
+            user_id: value.user_id.clone(),
+        }
+    }
+}
+
+impl From<&CreateDeckCard> for GetDeck {
+    fn from(value: &CreateDeckCard) -> Self {
+        Self {
+            deck_id: value.deck_id.clone(),
+            user_id: value.user_id.clone(),
+        }
+    }
+}
+
+impl From<&UpdateDeckCard> for GetDeck {
+    fn from(value: &UpdateDeckCard) -> Self {
+        Self {
+            deck_id: value.deck_id.clone(),
+            user_id: value.user_id.clone(),
+        }
+    }
+}
+
+impl From<&DeleteDeckCard> for GetDeck {
+    fn from(value: &DeleteDeckCard) -> Self {
         Self {
             deck_id: value.deck_id.clone(),
             user_id: value.user_id.clone(),
@@ -247,7 +290,7 @@ impl UpdateDeckProfile {
         user_id: Uuid,
     ) -> Result<Self, InvalidUpdateDeckProfile> {
         if name.is_none() {
-            return Err(InvalidUpdateDeckProfile::NothingToUpdate);
+            return Err(InvalidUpdateDeckProfile::NoUpdates);
         }
 
         let deck_id = Uuid::try_parse(deck_id)?;

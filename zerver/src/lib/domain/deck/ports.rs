@@ -7,7 +7,7 @@ use crate::domain::deck::models::{
     },
     deck_card::{
         CreateDeckCard, CreateDeckCardError, DeckCard, DeleteDeckCard, DeleteDeckCardError,
-        GetDeckCard, GetDeckCardError, UpdateDeckCard, UpdateDeckCardError,
+        GetDeckCardError, UpdateDeckCard, UpdateDeckCardError,
     },
 };
 
@@ -28,14 +28,9 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         request: &GetDeck,
     ) -> impl Future<Output = Result<DeckProfile, GetDeckProfileError>> + Send;
 
-    fn get_deck_card(
-        &self,
-        request: &GetDeckCard,
-    ) -> impl Future<Output = Result<DeckCard, GetDeckCardError>> + Send;
-
     fn get_deck_cards(
         &self,
-        request: &GetDeckCard,
+        request: &GetDeck,
     ) -> impl Future<Output = Result<Vec<DeckCard>, GetDeckCardError>> + Send;
 
     fn update_deck_profile(
@@ -80,11 +75,6 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         &self,
         request: &GetDeck,
     ) -> impl Future<Output = Result<Deck, GetDeckError>> + Send;
-
-    fn get_deck_card(
-        &self,
-        request: &GetDeckCard,
-    ) -> impl Future<Output = Result<DeckCard, GetDeckCardError>> + Send;
 
     fn update_deck_profile(
         &self,

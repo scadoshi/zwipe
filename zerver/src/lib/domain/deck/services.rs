@@ -14,7 +14,7 @@ use crate::domain::{
             },
             deck_card::{
                 CreateDeckCard, CreateDeckCardError, DeckCard, DeleteDeckCard, DeleteDeckCardError,
-                GetDeckCard, GetDeckCardError, UpdateDeckCardError,
+                UpdateDeckCardError,
             },
         },
         ports::{DeckRepository, DeckService},
@@ -60,18 +60,17 @@ where
         &self,
         request: &GetDeck,
     ) -> Result<DeckProfile, GetDeckProfileError> {
-        self.deck_repo.get_deck_profile(request).await
+        let deck_profile = self.deck_repo.get_deck_profile(request).await?;
+        if request.user_id != deck_profile.user_id {
+            return Err(GetDeckProfileError::DeckNotOwnedByUser);
+        }
+        Ok(deck_profile)
     }
 
     async fn get_deck(&self, request: &GetDeck) -> Result<Deck, GetDeckError> {
         let deck_profile = self.deck_repo.get_deck_profile(request).await?;
-
-        if deck_profile.user_id != request.user_id {
-            return Err(GetDeckError::DeckNotOwnedByUser);
-        }
-
-        let gdc = GetDeckCard::from(&deck_profile);
-        let deck_cards = self.deck_repo.get_deck_cards(&gdc).await?;
+        let gd = GetDeck::from(&deck_profile);
+        let deck_cards = self.deck_repo.get_deck_cards(&gd).await?;
 
         let gcp = GetCardProfiles::from(deck_cards.as_slice());
         let card_profiles = self.card_repo.get_card_profiles(&gcp).await?;
@@ -101,21 +100,20 @@ where
         &self,
         request: &CreateDeckCard,
     ) -> Result<DeckCard, CreateDeckCardError> {
+        let _deck_profile = self.get_deck_profile(&request.into()).await?;
         self.deck_repo.create_deck_card(request).await
-    }
-
-    async fn get_deck_card(&self, request: &GetDeckCard) -> Result<DeckCard, GetDeckCardError> {
-        self.deck_repo.get_deck_card(request).await
     }
 
     async fn update_deck_card(
         &self,
         request: &super::models::deck_card::UpdateDeckCard,
     ) -> Result<DeckCard, UpdateDeckCardError> {
+        let _deck_profile = self.get_deck_profile(&request.into()).await?;
         self.deck_repo.update_deck_card(request).await
     }
 
     async fn delete_deck_card(&self, request: &DeleteDeckCard) -> Result<(), DeleteDeckCardError> {
+        let _deck_profile = self.get_deck_profile(&request.into()).await?;
         self.deck_repo.delete_deck_card(request).await
     }
 }
