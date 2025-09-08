@@ -123,10 +123,6 @@ where
 impl From<GetDeckError> for ApiError {
     fn from(value: GetDeckError) -> Self {
         match value {
-            GetDeckError::DeckNotOwnedByUser => {
-                Self::NotFound("deck profile not found".to_string())
-            }
-
             GetDeckError::GetCardError(gce) => match gce {
                 GetCardError::GetCardProfileError(gcpe) => match gcpe {
                     GetCardProfileError::NotFound => {
@@ -167,7 +163,7 @@ impl From<GetDeckError> for ApiError {
 impl From<InvalidGetDeck> for ApiError {
     fn from(value: InvalidGetDeck) -> Self {
         match value {
-            InvalidGetDeck::InvalidDeckId(e) => {
+            InvalidGetDeck::DeckId(e) => {
                 Self::UnprocessableEntity(format!("invalid deck id: {}", e))
             }
         }
@@ -197,9 +193,9 @@ where
         .map(|deck| (StatusCode::OK, Json(deck)))
 }
 
-// ========
-//  update
-// ========
+// =====================
+//  update deck profile
+// =====================
 
 impl From<UpdateDeckProfileError> for ApiError {
     fn from(value: UpdateDeckProfileError) -> Self {
@@ -218,13 +214,13 @@ impl From<UpdateDeckProfileError> for ApiError {
 impl From<InvalidUpdateDeckProfile> for ApiError {
     fn from(value: InvalidUpdateDeckProfile) -> Self {
         match value {
-            InvalidUpdateDeckProfile::InvalidDeckName(e) => {
+            InvalidUpdateDeckProfile::DeckName(e) => {
                 Self::UnprocessableEntity(format!("invalid deck name: {}", e))
             }
-            InvalidUpdateDeckProfile::InvalidDeckId(e) => {
+            InvalidUpdateDeckProfile::DeckId(e) => {
                 Self::UnprocessableEntity(format!("invalid id: {}", e))
             }
-            InvalidUpdateDeckProfile::NothingToUpdate => {
+            InvalidUpdateDeckProfile::NoUpdates => {
                 Self::UnprocessableEntity("must update at least one field".to_string())
             }
         }
@@ -276,7 +272,7 @@ pub async fn delete_deck<AS, US, HS, CS, DS>(
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Path(id): Path<String>,
     _: AuthenticatedUser,
-) -> Result<(StatusCode, ()), ApiError>
+) -> Result<StatusCode, ApiError>
 where
     AS: AuthService,
     US: UserService,
@@ -291,5 +287,5 @@ where
         .delete_deck(&request)
         .await
         .map_err(ApiError::from)
-        .map(|_| (StatusCode::OK, ()))
+        .map(|_| StatusCode::NO_CONTENT)
 }

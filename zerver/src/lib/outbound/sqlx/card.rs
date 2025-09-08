@@ -677,7 +677,7 @@ impl CardRepository for MyPostgres {
         request: &GetCard,
     ) -> Result<ScryfallData, GetScryfallDataError> {
         let scryfall_data: ScryfallData = query_as("SELECT * FROM scryfall_data WHERE id = $1")
-            .bind(request.id())
+            .bind(request.card_profile_id())
             .fetch_one(&self.pool)
             .await?;
 

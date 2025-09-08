@@ -4,7 +4,7 @@ use sqlx_macros::FromRow;
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::domain::user::models::{GetUser, GetUserError, User, Username, UsernameError};
+use crate::domain::user::models::{GetUser, GetUserError, InvalidUsername, User, Username};
 use crate::domain::user::ports::UserRepository;
 use crate::outbound::sqlx::postgres::Postgres;
 
@@ -17,7 +17,7 @@ pub enum ToUserError {
     #[error(transparent)]
     Id(uuid::Error),
     #[error(transparent)]
-    Username(UsernameError),
+    Username(InvalidUsername),
     #[error(transparent)]
     Email(email_address::Error),
 }
@@ -28,8 +28,8 @@ impl From<uuid::Error> for ToUserError {
     }
 }
 
-impl From<UsernameError> for ToUserError {
-    fn from(value: UsernameError) -> Self {
+impl From<InvalidUsername> for ToUserError {
+    fn from(value: InvalidUsername) -> Self {
         Self::Username(value)
     }
 }

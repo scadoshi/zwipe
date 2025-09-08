@@ -178,7 +178,7 @@ impl From<ChangePasswordError> for ApiError {
 impl From<InvalidChangePassword> for ApiError {
     fn from(value: InvalidChangePassword) -> Self {
         match value {
-            InvalidChangePassword::PasswordError(e) => {
+            InvalidChangePassword::Password(e) => {
                 Self::UnprocessableEntity(format!("invalid password {}", e))
             }
             e => e.log_500(),
@@ -230,10 +230,8 @@ impl From<ChangeUsernameError> for ApiError {
 impl From<InvalidChangeUsername> for ApiError {
     fn from(value: InvalidChangeUsername) -> Self {
         match value {
-            InvalidChangeUsername::InvalidId(e) => {
-                Self::UnprocessableEntity(format!("invalid id: {}", e))
-            }
-            InvalidChangeUsername::InvalidUsername(e) => {
+            InvalidChangeUsername::Id(e) => Self::UnprocessableEntity(format!("invalid id: {}", e)),
+            InvalidChangeUsername::Username(e) => {
                 Self::UnprocessableEntity(format!("invalid username: {}", e))
             }
         }
@@ -283,10 +281,8 @@ impl From<ChangeEmailError> for ApiError {
 impl From<InvalidChangeEmail> for ApiError {
     fn from(value: InvalidChangeEmail) -> Self {
         match value {
-            InvalidChangeEmail::InvalidId(e) => {
-                Self::UnprocessableEntity(format!("invalid id: {}", e))
-            }
-            InvalidChangeEmail::InvalidEmail(e) => {
+            InvalidChangeEmail::Id(e) => Self::UnprocessableEntity(format!("invalid id: {}", e)),
+            InvalidChangeEmail::Email(e) => {
                 Self::UnprocessableEntity(format!("invalid email: {}", e))
             }
         }
@@ -336,7 +332,7 @@ impl From<DeleteUserError> for ApiError {
 pub async fn delete_user<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
-) -> Result<(StatusCode, Json<()>), ApiError>
+) -> Result<StatusCode, ApiError>
 where
     AS: AuthService,
     US: UserService,
@@ -351,5 +347,5 @@ where
         .delete_user(&request)
         .await
         .map_err(ApiError::from)
-        .map(|_| (StatusCode::OK, Json(())))
+        .map(|_| StatusCode::NO_CONTENT)
 }

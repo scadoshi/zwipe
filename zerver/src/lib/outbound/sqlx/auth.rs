@@ -11,7 +11,7 @@ use crate::domain::auth::models::{
     AuthenticateUser, AuthenticateUserError, ChangeEmail, ChangeEmailError, ChangePassword, ChangePasswordError, ChangeUsername, ChangeUsernameError, DeleteUser, DeleteUserError, RegisterUser, RegisterUserError, UserWithPasswordHash
 };
 use crate::domain::auth::ports::AuthRepository;
-use crate::domain::user::models::{User, Username, UsernameError};
+use crate::domain::user::models::{User, Username, InvalidUsername};
 use crate::outbound::sqlx::postgres::{IsConstraintViolation, Postgres};
 use crate::outbound::sqlx::user::{DatabaseUser, ToUserError};
 
@@ -24,7 +24,7 @@ pub enum ToUserWithPasswordHashError {
     #[error(transparent)]
     InvalidId(uuid::Error),
     #[error(transparent)]
-    InvalidUsername(UsernameError),
+    InvalidUsername(InvalidUsername),
     #[error(transparent)]
     InvalidEmail(email_address::Error),
     #[error(transparent)]
@@ -43,8 +43,8 @@ impl From<uuid::Error> for ToUserWithPasswordHashError {
     }
 }
 
-impl From<UsernameError> for ToUserWithPasswordHashError {
-    fn from(value: UsernameError) -> Self {
+impl From<InvalidUsername> for ToUserWithPasswordHashError {
+    fn from(value: InvalidUsername) -> Self {
         Self::InvalidUsername(value)
     }
 }

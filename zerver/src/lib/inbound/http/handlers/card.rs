@@ -43,7 +43,7 @@ impl From<GetCardError> for ApiError {
 
 pub async fn get_card<AS, US, HS, CS, DS>(
     State(state): State<AppState<AS, US, HS, CS, DS>>,
-    Path(request): Path<GetCard>,
+    Path(card_profile_id): Path<String>,
     _: AuthenticatedUser,
 ) -> Result<(StatusCode, Json<Card>), ApiError>
 where
@@ -53,6 +53,8 @@ where
     CS: CardService,
     DS: DeckService,
 {
+    let request = GetCard::new(&card_profile_id)?;
+
     state
         .card_service
         .get_card(&request)
