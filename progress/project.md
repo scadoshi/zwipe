@@ -1,562 +1,229 @@
 ---
-description: Tracks project development status, learning achievements, and provides development context for AI assistants to understand current progress and guide learning appropriately. Acts as hand off document from one AI chat to the next. Keeps list of backlogged, approaching and high level development tasks.
+description: Tracks project development status and provides development context for AI assistants to understand current progress and guide next steps appropriately
 alwaysApply: true
 ---
-## Current Development Status
 
-### COMPLETE - Production Ready
-- **Database Foundation**: All 4 core models (User, Card, Deck, DeckCard) with foreign keys
-- **Connection Architecture**: r2d2 connection pooling with PostgreSQL integration
-- **API Infrastructure**: Health checks, error handling, JSON responses
-- **Authentication Core**: JWT token generation/validation, argon2 password hashing
-- **HTTP Authentication**: Registration and login endpoints fully functional
-- **JWT Middleware**: Custom extractor pattern with FromRequestParts trait implementation
-- **Route Protection**: Declarative authentication through handler type signatures
-- **User Route Isolation**: JWT token extraction replaces hardcoded user_id - clean user isolation achieved! 🎯
-- **Error Architecture**: Two-tier logging strategy (user-facing + internal)
-- **Module Organization**: Clean handlers/auth separation following domain patterns
-- **Configuration Architecture**: Production-ready AppState with dependency injection
-- **JWT Testing Suite**: Comprehensive test coverage with organized test categories
-- **Performance Optimization**: Zero environment reads during request processing
-- **Testable Design**: Pure functions accepting parameters vs environment coupling
+## Update Instructions for AI Assistants
 
-### COMPLETE - Production Ready
-- **Database Foundation**: All 5 core tables (User, Card, ScryfallCard, Deck, DeckCard) with proper foreign keys
-- **Connection Architecture**: SQLx native connection pooling with PostgreSQL integration
-- **API Infrastructure**: Health checks, error handling, JSON responses
-- **Authentication Core**: JWT token generation/validation, argon2 password hashing
-- **HTTP Authentication**: Registration and login endpoints fully functional
-- **JWT Middleware**: Custom extractor pattern with FromRequestParts trait implementation
-- **Route Protection**: Declarative authentication through handler type signatures
-- **User Route Isolation**: JWT token extraction replaces hardcoded user_id - clean user isolation achieved! 🎯
-- **Error Architecture**: Two-tier logging strategy (user-facing + internal)
-- **Module Organization**: Clean handlers/auth separation following domain patterns
-- **Configuration Architecture**: Production-ready AppState with dependency injection
-- **JWT Testing Suite**: Comprehensive test coverage with organized test categories
-- **Performance Optimization**: Zero environment reads during request processing
-- **Testable Design**: Pure functions accepting parameters vs environment coupling
-- **SQLx Migration Complete**: Full transition from Diesel ORM to raw SQL control with custom types
-- **Database Architecture**: Clean separation of concerns - `cards` (profile/meta) vs `scryfall_cards` (external API data)
-- **Services Architecture**: Clean separation - handlers (HTTP) vs services (business logic)
-- **Scryfall Integration**: Complete ScryfallCard model with 80+ fields, simplified Vec<String> arrays
-- **Type System Simplification**: Strategic decision to use String arrays over complex enum validation
-- **Card Insert Service**: Production-ready insert_card function with proper error handling
-- **PRODUCTION DATA PIPELINE**: 🚀 Complete Scryfall → Database pipeline with 35,400+ cards inserted in <5 minutes
-- **Type System Debugging Implementation**: Resolution of JSON deserialization conflicts (attraction_lights)
-- **Performance Validation**: Demonstrated ~140 cards/second insertion rate with real MTG dataset
-- **Constraint Management**: Understanding duplicate key patterns and database behavior at scale
-- **🎯 BULK OPERATIONS COMPLETE**: Advanced multi-row INSERT statements supporting 35,400+ cards with optimized batching
-- **🎯 DATABASE CONSTRAINT HANDLING**: Production-ready `ON CONFLICT DO NOTHING` implementation for graceful duplicate management
-- **🎯 TRAIT EXTRACTION ARCHITECTURE**: `BindScryfallCardFields` and `BindCardProfileFields` traits eliminating massive code duplication
-- **🎯 DYNAMIC QUERY BUILDING**: Field count calculation from constants, dynamic placeholder generation
-- **🎯 BATCH PROCESSING SYSTEM**: Resilient chunked processing with error recovery and progress reporting
-- **🎯 PRODUCTION PERFORMANCE OPTIMIZATION**: Batch size tuning (100-500 cards) optimized for PostgreSQL parameter limits
-- **🏆 COMPLETE SCRYFALL CARD ARCHITECTURE**: Full 80+ field Scryfall Card object representation in Rust and PostgreSQL
-- **🏆 COMPLEX NESTED TYPES INTEGRATION**: Prices, Legalities, ImageUris, CardFace, RelatedCard with JSONB storage
-- **🏆 JSON WRAPPER MASTERY**: Expert Json<T> usage in dynamic bulk INSERT operations
-- **🏆 PRODUCTION DATA MODEL**: Every field from Scryfall API successfully integrated to database
-- **🏆 TYPE SYSTEM ARCHITECTURE**: Strategic custom struct design with maintainable complexity balance
-- **🎯 HTTP SERVER ARCHITECTURE REFACTORING**: Successfully extracted server configuration from main into dedicated HttpServer module following hexagonal boundaries
+**Status Categories**: COMPLETE = Production-ready implementation. IN PROGRESS = Currently working on. NEXT = Planned immediate priorities. BACKLOG = Future planned work.
 
-### COMPLETE - Enterprise Hexagonal Architecture Implementation ✅
-- **🚀 DUAL DOMAIN ARCHITECTURE**: Separate Auth and User domains with clear boundaries and responsibilities
-- **🚀 UUID MIGRATION COMPLETE**: Full transition from i32 to Uuid for production-ready, scalable IDs
-- **🚀 ENTERPRISE HEXAGONAL IMPLEMENTATION**: Production-ready ports/adapters pattern with clean domain separation
-- **🚀 ADVANCED NEWTYPE PATTERNS**: Comprehensive validation newtypes (JwtSecret, Jwt, UserName, HashedPassword, Password)
-- **🚀 SMART CONSTRUCTOR ARCHITECTURE**: Domain-driven validation (Bearer → JWT, Password → HashedPassword, email normalization)
-- **🚀 MINIMALIST DESIGN PHILOSOPHY**: Strategic avoidance of macros until absolutely necessary
-- **🚀 TRAIT OPTIMIZATION**: Surgical use of Debug, Clone, Error traits without over-engineering
-- **🚀 GENERIC SERVICE PATTERN**: Service<R> with dependency injection and proper trait bounds (Send + Sync + Clone + 'static)
-- **🚀 ASYNC TRAIT MASTERY**: Complex Future handling across hexagonal boundaries with proper constraints
-- **🚀 ENTERPRISE PASSWORD SECURITY**: Complete domain-driven security implementation
-  - **Advanced Password Validation**: Length, complexity, uniqueness, common password detection
-  - **Trait-Based Security**: IsCommonPassword trait with static list checking
-  - **Cryptographic Integration**: Argon2 hashing with proper salt generation and verification
-  - **Domain-Enforced Security**: Password validation at domain layer, not adapter layer
-- **🚀 DEFENSIVE PROGRAMMING MASTERY**: TryFrom implementations at all domain boundaries, trust no external data
-- **🚀 ERROR ARCHITECTURE**: Strategic error propagation with anyhow integration and proper trait usage
-- **🚀 DOMAIN-FIRST ORGANIZATION**: Perfect separation - domain (business logic), ports (interfaces), services (orchestration)
-- **🚀 TYPE SAFETY ARCHITECTURE**: Compiler-enforced domain rules preventing invalid data throughout system
-- **🚀 COMPREHENSIVE TESTING**: Complete test coverage for all newtypes and domain validation logic
+**When to Update**: After major feature completions, architectural decisions, or priority changes. Move items between categories as development progresses.
 
-### COMPLETE - User Domain Implementation ✅
-- **🎯 COMPLETE USER REPOSITORY**: Full CRUD operations with production-ready SQLx implementation
-- **🎯 ADVANCED QUERY PATTERNS**: Dynamic QueryBuilder for flexible UPDATE operations
-- **🎯 UUID CASTING MASTERY**: PostgreSQL type casting (id::text) for flexible user lookup by ID/username/email
-- **🎯 PRODUCTION TRANSACTION PATTERNS**: Consistent transaction usage across all write operations
-- **🎯 SOPHISTICATED ERROR MAPPING**: Database errors properly mapped to domain error types
-- **🎯 DEFENSIVE VALIDATION**: TryFrom<DatabaseUser> for User with comprehensive validation
-- **🎯 CONSTRAINT HANDLING**: Unique constraint violation detection and proper error responses
-- **🎯 ROW AFFECTED CHECKING**: Proper handling of DELETE operations with user-not-found detection
-- **🎯 DOMAIN SERVICE ARCHITECTURE**: Clean Service<R> pattern with repository delegation
-- **🎯 COMPLETE USER MODELS**: Request/response types, error hierarchies, and newtype validation
+**Development Strategy**: Focus on completing current priorities before starting new work. Maintain clean architecture and comprehensive error handling throughout.
 
-### COMPLETE - User HTTP Pipeline Implementation ✅
-- **🏆 FULL CRUD HTTP HANDLERS**: Complete create, get, update, delete user endpoints with proper status codes
-- **🏆 COMPREHENSIVE ERROR ARCHITECTURE**: Dual-layer error handling with request validation vs operation errors
-- **🏆 TYPE-SAFE REQUEST CONVERSION**: TryFrom patterns for HTTP JSON to domain type conversion
-- **🏆 PRODUCTION ERROR MAPPING**: All domain errors mapped to appropriate HTTP status codes (400/404/422/500)
-- **🏆 CONSISTENT API RESPONSES**: ApiSuccess and ApiError wrappers with standardized JSON structure
-- **🏆 DEFENSIVE PROGRAMMING**: Complete validation at HTTP boundary with proper error propagation
-- **🏆 END-TO-END PIPELINE**: Perfect hexagonal flow from HTTP request → domain validation → service call → database → HTTP response
-- **🏆 TRAIT OBJECT INTEGRATION**: Successfully resolved dyn compatibility issues and implemented clean AppState pattern
-- **🎯 ASYNC TRAIT COMPILATION RESOLUTION**: Battled lifetime and trait constraints, successfully transitioned from #[async_trait] to impl Future patterns
-- **🎯 SERVER COMPILATION SUCCESS**: Server now compiles and runs with "Listening on 127.0.0.1:3000" after resolving complex async trait issues
+---
 
-### COMPLETE - Auth Domain Implementation ✅
-- **🚀 AUTH REPOSITORY COMPLETE**: Full create_user_with_password_hash, get_user_with_password_hash, change_password implementation
-- **🚀 OPTIONAL PASSWORD HANDLING**: Secure handling of Option<HashedPassword> with proper error mapping
-- **🚀 AUTH SERVICE LAYER**: Complete registration, authentication, and password change with JWT generation
-- **🚀 AUTH HTTP HANDLERS**: Production-ready register, login, change_password endpoints with comprehensive error mapping
-- **🚀 SECURITY-FIRST DESIGN**: All auth errors mapped to prevent information disclosure (UserNotFound → "Invalid credentials")
-- **🚀 JWT MIDDLEWARE FOUNDATION**: Advanced FromRequestParts implementation with Bearer token parsing and type-safe authentication
-- **🚀 ROUTE PROTECTION UNDERSTANDING**: Clear grasp of type-based authentication through handler parameters vs middleware trees
-- **🚀 CONSISTENT PATTERNS**: Auth domain mirrors User domain architecture and error handling patterns
+**Last Updated**: After completing auth domain security consolidation and user domain cleanup
 
-### COMPLETE - Health Domain Implementation ✅
-- **🎯 HEALTH REPOSITORY COMPLETE**: Simple database connectivity check with proper error handling
-- **🎯 HEALTH SERVICE LAYER**: Clean delegation pattern with Service<R> architecture
-- **🎯 HEALTH HTTP HANDLERS**: Both shallow (`is_server_running`) and deep (`are_server_and_database_running`) health checks
-- **🎯 INFALLIBLE RESPONSE PATTERN**: Always returns 200 OK with status messages rather than HTTP error codes
-- **🎯 PRODUCTION HEALTH ARCHITECTURE**: Load balancer-friendly health check design
-- **🎯 HEXAGONAL INTEGRATION**: Complete ports/adapters pattern with AppState integration
+**Current Focus**: Production-ready system hardening and optimization
 
-### COMPLETE - Card Repository Foundation ✅
-- **🎯 CARD DOMAIN ARCHITECTURE**: Strategic read-only API design - background bulk operations vs user-facing search
-- **🎯 CARD SEARCH PARAMETERS**: Complete CardSearchParameters with Axum Query extraction and pagination
-- **🎯 CARD ERROR ARCHITECTURE**: Comprehensive error types (CreateCardError, InvalidUuid, CardNotFound)
-- **🎯 CARD REPOSITORY TRAIT**: Background operations (insert, bulk_insert, smart_insert) + read operations (get_card, search_cards)
-- **🎯 CARD SERVICE TRAIT**: Read-only API layer - get_card and search_cards for HTTP consumers
-- **🎯 SQLX ADAPTER FOUNDATION**: Complete SQLx implementation with proper type imports and transaction handling
-- **🎯 GET_CARD IMPLEMENTATION**: Working get_card method with proper error handling
-- **🎯 CUSTOM SQLX TYPE INTEGRATION**: Successfully implemented custom types to replace Json<T> wrappers
-  - **Orphan Rule Navigation**: Worked around Rust orphan rule with wrapper types (AllParts, CardFaces, etc.)
-  - **Trait Implementation**: Complete SQLx trait suite (Decode, Encode, Type) for custom types
-  - **Transparent Serde**: Perfect JSON serialization/deserialization behavior
-  - **Module Organization**: Clean separation of domain and adapter type implementations
+**Recent Achievement**: Successfully completed comprehensive auth domain security enhancement, moving all user lifecycle operations (username/email updates, account deletion) to auth domain for centralized security control. Simplified user domain to read-only profile access only. All user mutations now properly secured and validated.
 
-### COMPLETE - Card Repository Foundation ✅
-- **🎯 CARD REPOSITORY OPERATIONS**: Working get_card, search_cards, and sync operations implemented
-- **🎯 ERROR TYPE ORGANIZATION**: SearchCardError, GetCardError, CreateCardError with domain separation
-- **🎯 SEARCH LOGIC DEVELOPMENT**: QueryBuilder implementation with has_filters() handling for empty vs populated searches
-- **🎯 QUERY BUILDING PATTERNS**: build_query_as() usage for typed results from dynamic queries
-- **🎯 SEARCH PARAMETER MODELING**: CardSearchParameters with pagination and filter detection logic
-- **🎯 SYNC RESULT STRUCTURE**: SyncResult struct designed for metrics tracking (processed, inserted, skipped, duration, errors)
-- **🎯 SERVICE LAYER SCAFFOLDING**: Service<R> pattern established with CardService trait - needs implementation
-- **🎯 SCRYFALL API CLIENT**: Bulk data download functionality with BulkEndpoint enum and error handling
-- **🎯 CONFIGURATION CLEANUP**: Moved SCRYFALL_API_BASE from env to const for cleaner architecture
-- **🎯 DELETE_ALL OPERATION**: Basic truncate operation for database refresh scenarios
+### 🎯 Currently Working On (Top 3)
+1. **Production Security Hardening** - Rate limiting, request throttling, and abuse prevention
+2. **Performance Optimization** - Query optimization, connection pool tuning, and database indexing
+3. **Monitoring & Observability** - Structured logging, metrics collection, and health monitoring
 
-### COMPLETE - Deck Domain Implementation ✅
-- **🚀 COMPLETE DECK CRUD OPERATIONS**: Full create, read, update, delete for both Deck and DeckCard entities
-- **🚀 ADVANCED NEWTYPE PATTERNS**: DeckName, Quantity, AddQuantity with smart constructors and business rule enforcement
-- **🚀 COMPOSITE CONSTRAINT ARCHITECTURE**: Database-level unique constraint for deck name per user combination
-- **🚀 CHECK CONSTRAINT VALIDATION**: Positive quantity constraints with PostgreSQL error code mapping (23514)
-- **🚀 LAYERED VALIDATION STRATEGY**: Application logic + database constraints for comprehensive data integrity
-- **🚀 ENHANCED CONSTRAINT DETECTION**: IsConstraintViolation trait supporting both unique and check constraint violations
-- **🚀 PROPER DOMAIN BOUNDARIES**: Validation moved from repository to domain constructors for clean separation of concerns
-- **🚀 RELATIONSHIP ENTITY MODELING**: DeckCard as junction table with quantity management and explicit operations
-- **🚀 BUSINESS RULE ENFORCEMENT**: Explicit create/update/delete operations instead of magic deletion logic
-- **🚀 TRANSACTION MANAGEMENT**: Proper transaction handling with automatic rollback on validation failures
-- **🚀 COMPREHENSIVE ERROR HIERARCHY**: Domain-specific errors with proper HTTP status code mapping paths
-- **🚀 DEFENSIVE PROGRAMMING**: TryFrom implementations at all database boundaries with comprehensive validation
-- **🚀 SERVICE LAYER ARCHITECTURE**: DeckService trait designed for orchestration with DeckWithCards return types
-- **🚀 MULTI-QUERY ORCHESTRATION DESIGN**: Repository methods designed for focused operations with service layer composition
-- **🚀 CROSS-DOMAIN INTEGRATION**: DeckWithCards model bridges Deck and Card domains for rich API responses
+### 🤔 Next Immediate Priorities (Top 3)
+1. **Advanced Card Search Features** - CMC range, format legality, power/toughness filtering
+2. **Deck Validation System** - Format legality checking and card limit enforcement
+3. **Image Handling Pipeline** - Card image serving, caching, and mobile optimization
 
-### COMPLETE - Deck Service Layer Implementation ✅
-- **🎯 DUAL-GENERIC SERVICE PATTERN**: Service<DeckRepository, CardRepository> following hexagonal architecture guidelines
-- **🎯 CROSS-DOMAIN ORCHESTRATION**: Complete get_deck implementation with Deck → DeckCards → CardProfiles → ScryfallData flow
-- **🎯 HASHMAP JOIN OPTIMIZATION**: O(1) card lookup performance using HashMap for scryfall data matching
-- **🎯 REQUEST CONVERSION PATTERNS**: Clean Into trait usage for cross-domain request building
-- **🎯 DEFENSIVE DATA JOINING**: filter_map pattern handling potential missing card references gracefully
-- **🎯 SERVICE DELEGATION**: Proper delegation to repository layer for single-domain operations
-- **🎯 FULLCARD COMPOSITION**: FullCard struct combining CardProfile and ScryfallData for rich responses
-- **🎯 DOMAIN MODEL CLARIFICATION**: Strategic rename ScryfallCard → ScryfallData to distinguish raw API data from composed Card entity
-- **🎯 API NAMING CONSISTENCY**: Prepared foundation for Card entity as primary public interface with ScryfallData as internal data layer
+---
 
-### COMPLETE - Card HTTP Handlers ✅
-- **🎯 CARD HTTP IMPLEMENTATION**: Complete get_card and search_cards HTTP handlers with proper error mapping
-- **🎯 RESTFUL API DESIGN**: Transitioned from JSON request bodies to path/query parameters for cleaner API
-- **🎯 PATH PARAMETER EXTRACTION**: Using Path<Uuid> for get_card endpoint with automatic validation
-- **🎯 QUERY PARAMETER HANDLING**: SearchCardQueryParams with TryFrom conversion to domain SearchCardRequest
-- **🎯 COLOR IDENTITY PARSING**: Comma-separated string parsing for complex query parameters
-- **🎯 HTTP LAYER SIMPLIFICATION**: Eliminated unnecessary request body structs (GetCardRequestBody, GetUserRequestBody)
-- **🎯 AUTHENTICATION DECISIONS**: Strategic choice to make card endpoints public (no auth required)
-- **🎯 COLORS NEWTYPE IMPLEMENTATION**: Successfully created Colors(Vec<Color>) wrapper for better type safety
+## COMPLETE - Production Ready ✅
 
-### COMPLETE - Sync Metrics & Background Job Architecture ✅
-- **🎯 SYNC METRICS DOMAIN**: SyncMetrics, SyncType, SyncStatus, ErrorMetrics with controlled mutation patterns
-- **🎯 DATABASE SYNC PERSISTENCE**: scryfall_card_sync_metrics table with schema and migration
-- **🎯 SQLX SYNC REPOSITORY**: record_sync_metrics and get_last_sync_date implementation with transaction handling
-- **🎯 SYNC METRICS INTEGRATION**: Repository-level metrics collection during card insert/batch operations
-- **🎯 CUSTOM SQLX TYPES**: ErrorMetricsVec wrapper with Encode/Decode/Type trait implementations
-- **🎯 SYNC SERVICE ORCHESTRATION**: Card service with scryfall_sync implementation and metrics lifecycle
-- **🎯 SEPARATE SYNC BINARY**: Independent sync job binary with self-managing scheduler logic
-- **🎯 SYNC SCHEDULING LOGIC**: Time-based conditional logic (weekly partial, monthly full) with precedence handling
-- **🎯 CUSTOM TRAIT DESIGN**: WasAgo trait for time-based comparisons and readable business logic
-- **🎯 SYNC COORDINATION**: Sync coordination preventing redundant partial syncs after recent full syncs
-- **🎯 OPERATIONAL TRACING**: Logging throughout sync pipeline with card-level error tracking
-- **🎯 BINARY ARCHITECTURE**: Clean separation between web server and background job processing concerns
+### 🏗️ Core Architecture & Infrastructure
+- **Hexagonal Architecture**: Complete ports/adapters pattern with clean domain separation
+- **Multi-Domain Design**: Separate Auth, User, Card, Deck, and Health domains with clear boundaries
+- **Database Foundation**: PostgreSQL with SQLx, connection pooling, migrations, and constraint management
+- **Configuration Management**: Production-ready AppState with dependency injection patterns
+- **Error Architecture**: Two-tier error handling (user-facing vs internal) with comprehensive domain error mapping
+- **Security Infrastructure**: JWT middleware, password hashing, authentication flow, and route protection
 
-### COMPLETE - Production Data Pipeline & Debugging Implementation ✅
-- **🏆 PRODUCTION DATABASE DEBUGGING**: Solid troubleshooting of JSONB array constraints - identified NOT NULL issue for PostgreSQL JSONB arrays
-- **🏆 HTTP CLIENT OPTIMIZATION**: Resolved double URL encoding issue in reqwest RequestBuilder.query() - deep understanding of HTTP client internals
-- **🏆 END-TO-END DATA PIPELINE**: Complete Scryfall API → Database → Retrieval pipeline working with real MTG card data (35k+ cards)
-- **🏆 MTG THEMED ARCHITECTURE**: Creative domain-driven design with Magic terminology (amass, PlanesWalker, untap, cast)
-- **🏆 MACRO ARCHITECTURE SIMPLIFICATION**: Refactored from complex trait implementations to clean direct macro usage (bind_scryfall_card_fields!)
-- **🏆 PRODUCTION CONSTRAINT MASTERY**: Solid understanding of PostgreSQL JSONB constraints and schema requirements for complex nested types
-- **🏆 BULK PROCESSING VALIDATION**: Successfully processed and stored 35,400+ MTG cards with proper error handling and transaction management
+### 🔐 Authentication & Security System
+- **Complete Auth Domain**: Registration, login, password changes, and user lifecycle operations
+- **JWT Implementation**: Token generation/validation with custom extractors and middleware
+- **Password Security**: Argon2 hashing, salt generation, common password detection, complexity validation
+- **Route Protection**: Type-safe authentication through handler parameters and middleware
+- **Security Boundaries**: Information disclosure prevention and generic error responses
 
-### COMPLETE - Advanced QueryBuilder Macro Development ✅
-- **🎯 QUERYBUILDER MACRO MASTERY**: Advanced macro development for complex 80+ field operations with `bind_scryfall_card_fields!`
-- **🎯 POSTGRESQL PARAMETER MASTERY**: Expert understanding of database parameter limits (65,535) and batch optimization strategies
-- **🎯 SQL GENERATION DEBUGGING**: Production-level troubleshooting of complex dynamic query generation (`VALUES ($1$2...)` → `VALUES ($1, $2...)`)
-- **🎯 SEPARATED LOGIC MASTERY**: Deep understanding of `QueryBuilder::separated()` first-item vs subsequent-item comma behavior
-- **🎯 MANUAL SEPARATION PATTERNS**: Strategic implementation of manual `needs_comma` logic when abstractions become complex
-- **🎯 TRAIT-BASED BULK ARCHITECTURE**: `BindToSeparator` trait with production-ready bulk INSERT patterns and error recovery
-- **🎯 PERFORMANCE OPTIMIZATION**: Strategic batch sizing (372 vs 376 cards) to avoid PostgreSQL parameter limits
-- **🎯 PRODUCTION SQL DEBUGGING**: Expert resolution of `push_bind()` vs `push_bind_unseparated()` parameter binding issues
+### 💾 Database & Data Management
+- **SQLx Integration**: Raw SQL control with compile-time query verification and custom type integration
+- **Advanced Query Patterns**: Dynamic QueryBuilder, bulk operations, transaction management
+- **Constraint Handling**: PostgreSQL error code mapping, unique/check constraint violations
+- **Production Data Pipeline**: Scryfall API integration with 35,400+ card processing capability
+- **Composite Key Architecture**: Natural primary keys eliminating surrogate IDs where appropriate
 
-### COMPLETE - The Great Domain Refactor ✅
-- **🏆 ERGONOMIC NAMING CONVENTION**: Comprehensive domain-wide refactoring implementing Operation/OperationError/InvalidOperation pattern
-- **🏆 CARD & DECK DOMAINS COMPLETE**: Full refactoring of Card and Deck domains with optimized queries and consistent naming
-- **🏆 TYPE SYSTEM OPTIMIZATION**: Strategic renaming for maximum API ergonomics and developer experience
-- **🏆 QUERY OPTIMIZATION**: Performance improvements and cleaner SQL patterns throughout refactored domains
-- **🏆 ARCHITECTURAL CONSISTENCY**: Unified patterns across refactored domains maintaining hexagonal principles
-- **🏆 MAINTAINABILITY FOCUS**: Long-term code quality improvements prioritizing clarity and ease of use
+### 📡 HTTP API & RESTful Design
+- **Complete CRUD APIs**: User, Auth, Card, Deck, and DeckCard endpoints with proper HTTP semantics
+- **RESTful Patterns**: Nested resource routes, path parameter extraction, status code precision
+- **Advanced Middleware**: Custom extractors, type-safe authentication, generic handler patterns
+- **Error Mapping**: Domain errors to appropriate HTTP status codes with information disclosure prevention
+- **CORS Configuration**: Complete cross-origin setup for web application integration
 
-### COMPLETE - Deck HTTP API Implementation ✅
-- **🚀 COMPLETE DECK CRUD ENDPOINTS**: Full REST API with proper HTTP verbs and status codes
-  - **POST /api/decks**: Create new deck with validation and duplicate constraint handling
-  - **GET /api/decks/:id**: Retrieve deck with full card composition via service orchestration
-  - **PUT /api/decks/:id**: Update deck profile with path parameter extraction
-  - **DELETE /api/decks/:id**: Delete deck with proper cascading behavior
-- **🚀 AXUM HANDLER TRAIT RESOLUTION**: Fixed complex trait bound issues with path parameter extraction
-- **🚀 RESTFUL API DESIGN**: Proper HTTP method usage, eliminated routing conflicts, clean URL structure
-- **🚀 COMPREHENSIVE ERROR MAPPING**: Domain errors properly mapped to HTTP status codes (400/404/422/500)
-- **🚀 CORS CONFIGURATION**: Complete CORS setup supporting all required HTTP methods
-- **🚀 PATH PARAMETER OPTIMIZATION**: Streamlined parameter extraction eliminating unnecessary wrapper types
+### 🎮 Domain-Specific Implementation
+- **Card Management**: Complete Scryfall integration, search functionality, bulk data processing
+- **Deck Management**: Full CRUD operations with card composition, cross-domain orchestration, and nested resource API
+- **Auth Domain Security**: Complete user lifecycle operations (username/email updates, account deletion) centralized for security
+- **User Domain Simplification**: Read-only profile access, all mutations moved to auth domain for proper security boundaries
+- **Health Monitoring**: Database connectivity checks and system health endpoints
 
-### COMPLETE - HTTP Module Refactoring & Cleanup ✅
-- **🎯 APISUCCESS ELIMINATION**: Removed unnecessary ApiSuccess<T> wrapper, simplified to direct (StatusCode, Json<T>) returns
-- **🎯 HANDLER PATTERN STANDARDIZATION**: Consistent response patterns across all handlers with proper status code usage
-- **🎯 AXUM EXTRACTOR ORDERING**: Resolved Handler trait compilation issues through correct parameter ordering (AuthenticatedUser before Json<T>)
-- **🎯 ROUTE SECURITY ARCHITECTURE**: Strategic placement of authentication requirements on all private endpoints
-- **🎯 DOMAIN BOUNDARY ANALYSIS**: Architectural decision to keep user operations in auth domain for security consistency
-- **🎯 SCRYFALL CLIENT REORGANIZATION**: Moved external HTTP client from inbound/http to inbound/external for better separation
-- **🎯 DEAD CODE ELIMINATION**: Identified and removed unused user handlers, empty server.rs file, redundant response types
-- **🎯 LOG500 TRAIT CONSISTENCY**: Standardized error logging patterns across all handlers with one manual case corrected
-- **🎯 RESTFUL PARAMETER DESIGN**: Confirmed proper REST patterns using path parameters for resource identification with request bodies for updates
-- **🎯 HTTP RESPONSE SIMPLIFICATION**: Eliminated HttpResponse<T> wrapper, adopted direct Axum (StatusCode, String) error responses
-- **🎯 ABSTRACTION LAYER REDUCTION**: Removed unnecessary JSON wrappers in favor of plain text error messages for cleaner API responses
+---
 
-### COMPLETE - Auth Domain Security Enhancement ✅
-- **🚀 AUTH DOMAIN EXPANSION**: Successfully moved username/email updates and account deletion to auth domain
-- **🚀 USER DOMAIN SIMPLIFICATION**: Cleaned user pipeline to read-only operations, removed create/update/delete mutations
-- **🚀 SECURITY BOUNDARY CONSOLIDATION**: Centralized all user lifecycle operations in auth domain
-- **🚀 RESTFUL API STANDARDIZATION**: Refactored endpoints to use path parameters instead of ID in request bodies
-- **🚀 AUTHENTICATED USER SECURITY**: All user operations now use AuthenticatedUser ID to prevent privilege escalation
-- **🚀 CURRENT PASSWORD VERIFICATION**: Implemented secure password change requiring current password verification
-- **🚀 DECK OWNERSHIP VALIDATION**: Added user ownership checks to prevent unauthorized deck access
-- **🚀 GENERIC ERROR RESPONSES**: Implemented "not found" responses to prevent information disclosure
+## NEXT PRIORITIES 🎯
 
-### COMPLETE - Deck Card HTTP API Implementation ✅
-- **🎯 COMPLETE DECK CARD CRUD ENDPOINTS**: Full nested resource API with proper RESTful design
-  - **POST /api/deck/{deck_id}/card**: Add cards to deck with quantity validation and composite key architecture
-  - **PUT /api/deck/{deck_id}/card/{card_profile_id}**: Update card quantity with path parameter extraction
-  - **DELETE /api/deck/{deck_id}/card/{card_profile_id}**: Remove cards from deck with proper status codes
-- **🎯 NESTED RESOURCE ARCHITECTURE**: Clean hierarchical URL structure reflecting deck-card relationships
-- **🎯 COMPOSITE KEY IMPLEMENTATION**: Removed surrogate IDs, using deck_id + card_profile_id as natural composite key
-- **🎯 PATH PARAMETER CONSISTENCY**: Route parameters aligned with domain model field names throughout pipeline
-- **🎯 RESTFUL STATUS CODES**: Proper HTTP semantics (CREATED, OK, NO_CONTENT) with corrected delete responses
-- **🎯 PARAMETER EXTRACTION PATTERNS**: Tuple path extraction for multi-parameter routes with type-safe validation
-- **🎯 OWNERSHIP VALIDATION**: DRY security through existing get_deck_profile validation patterns
-- **🎯 ERROR MAPPING CONSISTENCY**: Comprehensive domain error to HTTP status code mapping with information disclosure prevention
+### 🚀 Production System Hardening
+- **Rate Limiting Implementation**: Request throttling, abuse prevention, and API protection
+- **Performance Optimization**: Query optimization, connection pool tuning, database indexing
+- **Monitoring & Observability**: Structured logging, metrics collection, health monitoring
+- **Caching Layer**: Redis integration for card data and query optimization
 
-### NEXT PRIORITIES - Domain Architecture Completion 🎯
+### 🎮 Advanced MTG Features
+- **Enhanced Card Search**: CMC range, format legality, power/toughness filtering
+- **Deck Validation System**: Format legality checking, card limit enforcement
+- **Collection Management**: User card ownership tracking, wishlist functionality
+- **Deck Analytics**: Mana curve analysis, card type distribution
 
-1. **🔧 Auth Domain Security Operations**
-   - **POST /api/auth/update-username**: Move username updates from user domain to auth
-   - **POST /api/auth/update-email**: Move email updates from user domain to auth  
-   - **POST /api/auth/delete-account**: Account deletion with proper validation and cleanup
-   - **Security Consistency**: All user mutations centralized in auth domain for security
+---
 
-2. **🔧 User Domain Pipeline Cleanup**
-   - **Remove create_user**: Auth handles registration exclusively
-   - **Remove update_user**: Auth handles all profile mutations
-   - **Remove delete_user**: Auth handles account deletion
-   - **Keep get_user**: Read-only profile access for client needs
-   - **Domain Simplification**: User becomes read-only profile service
-5. **Scheduled Card Update Job**: Automated incremental card data synchronization
-   - **Database Diff Logic**: Query existing card IDs to determine what's missing from Scryfall data
-   - **Incremental Import**: Only fetch and insert new/updated cards, skip existing ones
-   - **Error Logging**: Comprehensive logging for failed imports, network issues, and data conflicts
-   - **Scheduling System**: Configurable intervals for automatic updates (daily/weekly)
-   - **Progress Tracking**: Detailed logging of import statistics and performance metrics
-6. **Card Search & Filtering APIs**: Build production search endpoints
-   - **Basic Search**: Name, type, color filtering with query parameter parsing
-   - **Advanced Filters**: CMC range, format legality, power/toughness ranges
-   - **Text Search**: Oracle text and flavor text full-text search
-   - **Performance Optimization**: Database indexing strategy for search fields
-7. **Deck Management APIs**: Complete CRUD operations for user decks
-   - **Create Deck**: New deck creation with validation
-   - **Update Deck**: Name, description, format changes
-   - **Delete Deck**: Soft delete with cascade handling
-   - **Deck Statistics**: Card count, mana curve, color distribution
-8. **Image Handling (MVP)**: Card image serving and optimization
-   - **Image Proxy**: Serve Scryfall images through API for consistent access
-   - **Image Caching**: Cache frequently accessed card images
-   - **Image Optimization**: Resize/compress for mobile bandwidth
-9. **Mobile-Optimized Responses (MVP)**: API responses optimized for mobile
-   - **Pagination**: Efficient pagination for large card/deck lists
-   - **Response Size**: Minimize JSON payload sizes
-   - **Batch Operations**: Allow bulk operations to reduce round trips
-10. **~~Advanced Card Data Integration~~**: ✅ **COMPLETED** - All complex nested fields integrated
-   - ✅ **Card Faces**: Multi-faced card support with Json<CardFace> arrays
-   - ✅ **Image URIs**: Card image URL management with Json<ImageUris> 
-   - ✅ **Legalities**: Format legality tracking with Json<Legalities> and custom enums
-   - ✅ **Prices**: Market price data with Json<Prices> integration
-11. **~~Custom Serde Review Session~~**: ✅ **COMPLETED** - Custom deserializers implemented
-   - ✅ **Understanding**: Complete understanding of `deserialize_int_or_string_array` pattern
-   - ✅ **Pattern Recognition**: Good knowledge of when/how to implement custom deserializers
-   - ✅ **Best Practices**: Production-ready Json<T> wrapper patterns with SQLx
+## DETAILED IMPLEMENTATION HISTORY 📚
+*Complete log of trials, tribulations, and breakthroughs*
 
-### BACKLOG - Planned Future Work
-**Testing & Quality Assurance:**
+### 🏗️ Foundation & Architecture (Early Development)
+- **Database Foundation**: Established 5 core tables (User, Card, ScryfallCard, Deck, DeckCard) with proper foreign key relationships
+- **Connection Architecture**: Started with Diesel r2d2, later migrated to SQLx native pooling for better performance
+- **Hexagonal Architecture**: Implemented complete ports/adapters pattern with clean domain separation across all domains
+- **Multi-Domain Design**: Separated Auth, User, Card, Deck, and Health domains with clear boundaries and responsibilities
+- **UUID Migration**: Strategic transition from i32 to Uuid for enterprise-grade scalability
+- **Configuration Management**: Production-ready AppState with dependency injection patterns
+
+### 🔐 Authentication & Security Implementation
+- **JWT Implementation**: Complete token generation/validation with custom configuration and extractors
+- **Password Security**: Argon2 hashing with salt generation, common password detection, complexity validation
+- **Auth Domain**: Registration, login, password changes, and comprehensive user lifecycle operations
+- **Route Protection**: Type-safe authentication through handler parameters and custom middleware
+- **Security Boundaries**: Information disclosure prevention and generic error responses to prevent enumeration attacks
+- **Current Password Verification**: Secure password change implementation requiring current password authentication
+- **AuthenticatedUser Security**: All operations use AuthenticatedUser ID to prevent privilege escalation
+
+### 💾 Database Evolution & Challenges
+- **Diesel to SQLx Migration**: Complete transition from Diesel ORM to raw SQL control with custom type integration
+- **Advanced Query Patterns**: Dynamic QueryBuilder, bulk operations, transaction management
+- **Constraint Handling**: PostgreSQL error code mapping (23505 unique, 23514 check), unique/check constraint violations
+- **Custom SQLx Types**: Successfully implemented custom types to replace Json<T> wrappers, navigated Rust orphan rule
+- **JSONB Mastery**: Complex nested types (Prices, Legalities, ImageUris, CardFace) with JSONB storage
+- **Production Debugging**: Solid troubleshooting of JSONB array constraints, identified NOT NULL issues
+
+### 🎮 Scryfall Integration & Data Pipeline Trials
+- **API Research**: Comprehensive endpoint analysis and field mapping for 80+ field ScryfallCard model
+- **Bulk Data Processing**: Production-scale processing of 35,400+ MTG cards with resilient error handling
+- **Performance Optimization**: Achieved ~140 cards/second insertion rate, optimized batch sizes for PostgreSQL parameter limits
+- **HTTP Client Debugging**: Resolved double URL encoding issue in reqwest RequestBuilder.query()
+- **Custom Serde Implementation**: Flexible type handling for inconsistent API data (attraction_lights integer vs string)
+- **Advanced Macro Development**: Created production `bind_scryfall_card_fields!` macro for 80+ field operations
+- **PostgreSQL Parameter Mastery**: Expert understanding of 65,535 parameter limits, batch optimization strategies
+
+### 🏛️ Domain Architecture & Service Layer Evolution
+- **User Domain Implementation**: Complete CRUD operations with production-ready SQLx implementation and advanced query patterns
+- **Deck Domain Implementation**: Full create, read, update, delete for both Deck and DeckCard entities with composite constraints
+- **Card Domain Architecture**: Strategic read-only API design with background bulk operations vs user-facing search
+- **Health Domain**: Simple but production-ready database connectivity checks and system health endpoints
+- **Service Layer Patterns**: Service<R> and dual-generic Service<DR, CR> with dependency injection and proper trait bounds
+- **Cross-Domain Orchestration**: DeckService coordinating between multiple repositories with HashMap join optimization
+- **The Great Domain Refactor**: Comprehensive Operation/OperationError/InvalidOperation naming pattern implementation
+
+### 📡 HTTP API Development & RESTful Design Challenges
+- **Axum Handler Evolution**: From basic handlers to complex generic state types with trait bound resolution
+- **RESTful API Design**: Transitioned from JSON request bodies to path/query parameters for cleaner API design
+- **Error Architecture**: Sophisticated ApiError with domain error mapping and two-tier error handling
+- **CORS Configuration**: Complete cross-origin setup supporting all required HTTP methods
+- **HTTP Module Refactoring**: Eliminated ApiSuccess wrapper, standardized response patterns, removed dead code
+- **Path Parameter Extraction**: Advanced tuple extraction patterns for multi-parameter routes
+- **Nested Resource Routes**: Hierarchical URL structure reflecting proper parent-child relationships
+
+### 🔧 Advanced Implementation Challenges & Breakthroughs
+- **Async Trait Compilation**: Battled lifetime and trait constraints, transitioned from #[async_trait] to impl Future patterns
+- **QueryBuilder Macro Development**: Advanced macro for 80+ field operations with manual comma separation logic
+- **Composite Key Architecture**: Removed surrogate IDs in favor of natural deck_id + card_profile_id composite keys
+- **Sync Metrics & Background Jobs**: Independent sync binary with time-based scheduling and metrics tracking
+- **Production Data Pipeline**: End-to-end Scryfall API → Database → Retrieval pipeline with real MTG card data
+- **Security Enhancement**: Auth domain expansion, user domain simplification, ownership validation patterns
+- **Auth Domain Security Consolidation**: Successfully moved all user lifecycle operations to auth domain for centralized security
+- **User Domain Cleanup**: Simplified user domain to read-only profile access, removed all mutation operations
+- **Production Security Architecture**: Complete security boundary establishment with proper authentication and authorization
+
+---
+
+## BACKLOG - Future Development 📋
+
+### 🧪 Testing & Quality Assurance
 - **Handler Test Suites**: Comprehensive unit tests for auth, health, deck, and card handlers
 - **JWT Middleware Tests**: Security boundary validation, error response testing
-- **Model Test Coverage**: Serialization, Diesel mappings, constraint validation
 - **Integration Test Framework**: Full HTTP request/response testing infrastructure
-- **Utils Module Tests**: Connection pooling and error handling validation
 - **Performance Testing**: Load testing, connection pool optimization
 - **End-to-End Test Suite**: Complete user workflow validation
 
-**Feature Development:**
-- **Advanced Deck Management**: Copy, import/export, deck statistics
-- **Card Search & Filtering**: Advanced search by type, cost, color, format legality
-- **Collection Management**: User card ownership tracking, wishlist functionality
-- **Deck Validation**: Format legality checking, card limit enforcement
-- **Social Features**: Deck sharing, public deck browser, user profiles
-
-**Technical Improvements:**
-- **Rate Limiting**: Request throttling and abuse prevention
+### 🚀 Production Features
+- **Rate Limiting**: Request throttling and abuse prevention mechanisms
 - **Caching Layer**: Redis integration for card data and query optimization
-- **Monitoring & Logging**: Structured logging, metrics, health monitoring
+- **Monitoring & Logging**: Structured logging, metrics collection, health monitoring
 - **Database Optimization**: Query performance analysis, indexing strategy
+- **Image Handling**: Card image serving, caching, and mobile optimization
 
-**Mobile Application Features:**
-- **Offline Support**: PWA capabilities for offline deck management
-- **Import/Export**: Support for various deck formats (MTGA, MTGO, etc.)
+### 🎮 MTG-Specific Features
+- **Advanced Card Search**: CMC range, format legality, power/toughness filtering
+- **Deck Validation**: Format legality checking, card limit enforcement
+- **Collection Management**: User card ownership tracking, wishlist functionality
 - **Deck Analytics**: Mana curve analysis, card type distribution
+- **Import/Export**: Support for various deck formats (MTGA, MTGO, etc.)
+
+### 📱 Mobile Application Features
+- **Offline Support**: PWA capabilities for offline deck management
 - **Advanced Filtering**: Complex search queries, saved filters
+- **Social Features**: Deck sharing, public deck browser, user profiles
+- **Real-time Updates**: WebSocket integration for live deck collaboration
 
 ---
 
 ## Architectural Decision Guidelines
 
-### Service Layer Patterns ⚠️
-- **✅ CORRECT**: Service<DeckRepository, CardService> - Dual generics enabling cross-domain orchestration
-- **❌ AVOID**: DeckCardService - Violates single responsibility and domain boundaries
-- **❌ AVOID**: Repository-to-repository calls - Breaks hexagonal architecture principles
-- **PRINCIPLE**: Services orchestrate, repositories persist. Keep domain boundaries clean through composition, not combination.
+### ✅ Established Patterns
+- **Service Layer**: Service<R> and Service<DR, CR> for single and cross-domain operations
+- **Error Handling**: Two-tier strategy (user-facing vs internal) with comprehensive domain error mapping
+- **Security**: AuthenticatedUser-based operations, information disclosure prevention
+- **Database**: Composite keys where natural, SQLx with custom types, transaction consistency
+- **HTTP**: RESTful design with path parameters, nested resources, proper status codes
+
+### ⚠️ Key Principles
+- **Services orchestrate, repositories persist** - Keep domain boundaries clean through composition
+- **Domain-first security** - Validation at domain layer, not adapter layer
+- **Defensive programming** - TryFrom at all boundaries, trust no external data
+- **Strategic simplification** - Choose maintainable solutions over theoretical approaches
 
 ---
 
-## Major Learning Achievements
+## Development Context for AI Assistants
 
-### Recent Breakthroughs
-- **Services Architecture Implementation**: Implemented clean separation between HTTP handlers and business logic
-- **Type System Pragmatism**: Made strategic decision to use Vec<String> over complex enum validation for faster development
-- **SQLx Production Readiness**: Complete 80+ field ScryfallCard model with proper database integration
-- **Architectural Decision Making**: Chose working solutions over theoretical approaches
-- **External API Integration**: Complete Scryfall API research and struct mapping
-- **Persistence Through Complexity**: Worked through challenging type system constraints and emerged with cleaner architecture
-- **🚀 MASSIVE DATA PIPELINE MILESTONE**: Successfully inserted 35,400+ MTG cards in under 5 minutes
-- **Type System Conflict Resolution**: Expert debugging of attraction_lights integer vs string mismatch
-- **Custom Serde Implementation**: Successfully implemented custom deserializer for flexible type handling
-- **Production Scale Validation**: Confirmed architecture handles real-world data complexity and volume
-- **Performance Benchmarking**: Achieved ~140 cards/second insertion rate with PostgreSQL constraints
-- **🏆 COMPLETE CARD ARCHITECTURE IMPLEMENTATION**: Full 80+ field Scryfall object representation in Rust and PostgreSQL
-- **🏆 COMPLEX NESTED TYPES**: Integration of Prices, Legalities, ImageUris, CardFace, RelatedCard with JSONB
-- **🏆 JSON WRAPPER UNDERSTANDING**: Json<T> patterns in dynamic bulk operations and database binding
-- **🏆 PRODUCTION DATA MODELING**: Every external API field successfully mapped to maintainable database schema
-- **🚀 ENTERPRISE HEXAGONAL ARCHITECTURE**: Complete dual-domain (Auth/User) implementation with production-ready patterns
-- **🚀 UUID MIGRATION COMPLETE**: Strategic transition from i32 to Uuid for enterprise scalability
-- **🚀 MINIMALIST DESIGN PHILOSOPHY**: Strategic avoidance of macros and over-engineering, focusing on essential patterns
-- **🚀 TRAIT OPTIMIZATION UNDERSTANDING**: Surgical use of Debug, Clone, Error traits without unnecessary complexity
-- **🚀 ADVANCED PASSWORD SECURITY**: Enterprise-level validation with cryptographic integration and domain enforcement
-- **🚀 GENERIC SERVICE ARCHITECTURE**: Advanced Service<R> patterns with proper async trait constraints
-- **🚀 DEFENSIVE PROGRAMMING IMPLEMENTATION**: TryFrom implementations at every boundary, comprehensive trust validation
-- **🚀 DOMAIN-DRIVEN SECURITY**: Password and JWT validation enforced at domain layer, not adapters
-- **🎯 USER REPOSITORY IMPLEMENTATION**: Complete CRUD implementation with advanced SQLx patterns and dynamic queries
-- **🎯 UUID CASTING UNDERSTANDING**: PostgreSQL type casting understanding for flexible database operations
-- **🎯 TRANSACTION CONSISTENCY**: Production-ready transaction patterns across all write operations
-- **🎯 SOPHISTICATED ERROR HANDLING**: Database-to-domain error mapping with comprehensive constraint detection
-- **🎯 ASYNC TRAIT DEBUGGING BREAKTHROUGH**: Successfully resolved Send vs Sync constraints in async trait compilation issues
-- **🎯 ADVANCED MACRO DEVELOPMENT**: Created production `bind_scryfall_card_fields!` macro for 80+ field operations, learned manual vs automatic comma separation
-- **🎯 POSTGRESQL PARAMETER LIMITS**: Identified and resolved 65,535 parameter limit with 35k+ cards (2.8M → 65K parameters), optimized batch sizing
-- **🎯 QUERYBUILDER UNDERSTANDING**: Deep understanding of `Separated` behavior, strategic choice of manual `needs_comma` patterns over complex abstractions
+### 🎯 Current Session Focus
+- **Auth Domain Security**: Centralizing user lifecycle operations
+- **User Domain Cleanup**: Simplifying to read-only operations
+- **Production Hardening**: Comprehensive security and performance optimization
 
-### Knowledge Solidification
-- **Configuration Patterns**: Dependency injection, startup config loading, testable architecture design
-- **Production vs Prototype**: Successfully evolved from environment-coupled to professionally architected code
-- **4-Struct Pattern**: User, Card, Deck, DeckCard models all following consistent structure
-- **Connection Pooling**: r2d2 integration with proper mutable connection handling
-- **Error Boundary Architecture**: Clean separation between business logic and HTTP concerns
-- **Module System Confidence**: Domain-driven organization with handlers/auth patterns
-- **Testing Methodology**: Organized test categories, comprehensive error scenario coverage
+### 📚 Learning Context
+- **Architecture Understanding**: Solid grasp of hexagonal patterns and service layer design
+- **Implementation Confidence**: Strong SQLx, HTTP, and security implementation skills
+- **Current Edge**: Advanced type systems, production deployment, monitoring
 
-### Skills Demonstrated
-- **Architectural Wisdom**: Recognized when to simplify for maintainability
-- **Production Mindset**: Built robust error handling and service patterns
-- **Problem Solving**: Identified and structured next debugging challenge
-- **Strategic Simplification**: Chose maintainable solutions over theoretical approaches
-- **Defensive Programming**: Correctly identified trust boundary issues and validation needs
-
----
-
-## Technical Architecture Decisions
-
-### Database & ORM Patterns
-- **r2d2 over bb8**: Chosen for stability and mature Diesel integration
-- **4-Struct Pattern**: Consistent Main/New/Update/Response organization
-- **Foreign Key Relationships**: User→Deck→DeckCard→Card with proper constraints
-- **Custom Enum Types**: MtgFormat with ToSql/FromSql trait implementation
-- **Connection Management**: Mutable connections with proper error handling
-
-### API Design Patterns  
-- **Endpoint Separation**: DB vs non-DB handlers for resource efficiency
-- **Error Response Strategy**: Business logic errors mapped to appropriate HTTP status codes
-- **Route Organization**: Explicit handler references (handlers::cards::list_cards)
-- **Import Structure**: Categorized std/external/internal for code clarity
-- **Domain Modules**: auth/ directory following successful handlers/ pattern
-
-### Security Implementation
-- **Password Security**: argon2 hashing with unique salt generation
-- **JWT Best Practices**: 24-hour expiration, environment variable secrets
-- **Error Security**: Generic user responses to prevent enumeration attacks
-- **Input Validation**: Email normalization, ID range validation
-
-### Hexagonal Architecture Patterns
-- **Domain Model Separation**: DatabaseUser (raw) vs User (validated) representations
-- **Repository Pattern**: UserRepository trait with PostgresUserRepository implementation
-- **Error Boundary Handling**: TryFrom implementations for defensive programming
-- **Newtype Validation**: Domain types enforce business rules through type system
-
----
-
-## Testing & Validation Status
-
-### API Endpoints Tested
-- `GET /` - Root endpoint (static info) ✅
-- `GET /health` - Shallow health check ✅  
-- `GET /health/deep` - Database connectivity test ✅
-- `GET /api/v1/decks` - User decks query (hardcoded user_id=1) ✅
-- `POST /api/v1/auth/register` - User registration with JWT response ✅
-- `POST /api/v1/auth/login` - User authentication with JWT response ✅
-
-### Database Operations Verified
-- User registration with duplicate constraint handling ✅
-- Password hashing and verification round-trip ✅
-- JWT token generation and validation cycle ✅
-- PostgreSQL sequence behavior investigation ✅
-- Foreign key relationship queries ✅
-
-### Error Handling Validated
-- Duplicate user registration (409 Conflict) ✅
-- Invalid login credentials (401 Unauthorized) ✅
-- Database connection failures (500 Internal Server Error) ✅
-- Constraint violation logging and user response separation ✅
-
----
-
-## AI Teaching Context
-
-### Learning Approach Preferences
-- **Research Guidance**: Point to specific docs/patterns, let implementation build understanding
-- **Neural Connection Strategy**: Connect new concepts to solidified knowledge nodes
-- **Component-by-Component**: Break complex features into digestible pieces
-- **Explain WHY**: Always provide reasoning behind architectural decisions to strengthen conceptual pathways
-- **Debugging Guidance**: Guide investigation rather than providing direct answers
-
-### Current Learning Edge
-- **Confident Areas**: Module organization, basic Diesel patterns, error handling concepts
-- **Developing Skills**: Complex query building, middleware implementation, async patterns  
-- **Next Learning Targets**: JWT middleware, route protection, card data integration
-- **Knowledge Gaps**: Advanced Diesel joins, transaction handling, async/await patterns
-
-### Effective Teaching Patterns
-- **Build on 4-Struct Pattern**: Use consistent model structure as foundation
-- **Reference Previous Wins**: Connect to successful authentication implementation
-- **Systems Thinking**: Explain how pieces fit together in larger architecture
-- **Hands-on Validation**: Encourage testing and verification of implementations
-
----
-
-## Development Context for AIs
-
-### Session Handoff Information
-- **Last Major Achievement**: Complete authentication HTTP API with comprehensive testing
-- **Current Focus**: JWT middleware implementation for route protection  
-- **Knowledge State**: Strong conceptual understanding, implementation practice needed
-- **Learning Velocity**: High - ready for middleware and route security concepts
-- **Debugging Skills**: Excellent - investigates unusual behavior independently
-
-### Quick Start Commands
+### 🛠️ Development Commands
 ```bash
 # Start development server
-cargo run
-
-# Test authentication system
-curl --json '{"username": "testuser", "email": "test@email.com", "password": "pass123"}' \
-  http://localhost:8080/api/v1/auth/register
-
-curl --json '{"identifier": "testuser", "password": "pass123"}' \
-  http://localhost:8080/api/v1/auth/login
+cargo run --bin server
 
 # Test current endpoints
-curl http://localhost:8080/health/deep
-curl http://localhost:8080/api/v1/decks
-```
+curl http://localhost:3000/health/database
+curl -H "Authorization: Bearer <token>" http://localhost:3000/api/user
 
-### Development Priorities
-1. **JWT Middleware** - Authorization header parsing and user extraction
-2. **Route Protection** - Apply authentication to sensitive endpoints
-3. **User Isolation** - Replace hardcoded user_id with JWT-extracted values
-4. **Card Integration** - Begin MTG card data seeding and API integration
-
----
-
-## Update Instructions for AIs
-
-### When to Update This Tracker
-- After major feature completion or breakthrough
-- When project priorities or direction changes
-- Following significant learning achievements or skill demonstration
-- When architecture decisions are made or validated
-- After comprehensive testing phases
-
-### What to Update
-- **Move items** between COMPLETE ↔ IN PROGRESS ↔ NEXT PRIORITIES
-- **Add new achievements** to learning section with specific skills demonstrated  
-- **Update architecture decisions** when new patterns are established
-- **Record testing status** for new endpoints or functionality
-- **Adjust AI teaching context** based on demonstrated knowledge and preferences
-
-### Use This Tracker To
-- **Understand project state** immediately upon session start
-- **Identify current learning edge** and optimal challenge level
-- **Reference past successes** when introducing related concepts  
-- **Maintain development momentum** by building on established patterns
-- **Provide appropriate complexity** based on demonstrated skills
-
----
-
-**Last Updated**: After completing deck card HTTP API implementation with nested resource routes
-
-**Current Sprint**: Auth domain security operations consolidation  
-
-**Next Major Milestone**: Complete auth domain centralization with user lifecycle operations
-
-**Major Recent Achievement**: Successfully completed deck card HTTP API implementation with production-ready nested resource routes. Implemented composite key architecture removing surrogate IDs in favor of natural deck_id + card_profile_id keys. Built complete CRUD operations with proper RESTful design, tuple path parameter extraction, and consistent error handling. All endpoints follow proper HTTP semantics with corrected status codes and comprehensive domain error mapping. Architecture demonstrates solid understanding of RESTful principles, nested resource relationships, and security through existing ownership validation patterns. 
+# Run sync job
+cargo run --bin sync
+``` 
