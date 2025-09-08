@@ -65,8 +65,8 @@ impl From<uuid::Error> for InvalidGetCards {
 
 #[derive(Debug, Error)]
 pub enum InvalidSearchCard {
-    #[error("at least one parameter must be some")]
-    NoneParameters,
+    #[error("must include at least one parameter")]
+    MissingParameters,
 }
 
 #[derive(Debug, Error)]
@@ -97,11 +97,11 @@ impl From<GetCardProfileError> for SearchCardError {
 pub struct GetCard(Uuid);
 
 impl GetCard {
-    pub fn new(id: &str) -> Result<Self, uuid::Error> {
-        Ok(Self(Uuid::try_parse(id)?))
+    pub fn new(card_profile_id: &str) -> Result<Self, uuid::Error> {
+        Ok(Self(Uuid::try_parse(card_profile_id)?))
     }
 
-    pub fn id(&self) -> &Uuid {
+    pub fn card_profile_id(&self) -> &Uuid {
         &self.0
     }
 }
@@ -184,7 +184,7 @@ impl SearchCard {
             || color_identity.is_none()
             || oracle_text.is_none()
         {
-            return Err(InvalidSearchCard::NoneParameters);
+            return Err(InvalidSearchCard::MissingParameters);
         }
 
         let limit = match limit {

@@ -5,7 +5,7 @@ use crate::domain::auth::models::{
     jwt::{Jwt, JwtError},
     password::HashedPassword,
 };
-use crate::domain::user::models::{User, Username, UsernameError};
+use crate::domain::user::models::{InvalidUsername, User, Username};
 use email_address::EmailAddress;
 use serde::Serialize;
 use std::str::FromStr;
@@ -33,7 +33,7 @@ pub enum RegisterUserError {
 #[derive(Debug, Error)]
 pub enum InvalidRegisterUser {
     #[error(transparent)]
-    Username(UsernameError),
+    Username(InvalidUsername),
     #[error(transparent)]
     Email(email_address::Error),
     #[error(transparent)]
@@ -42,8 +42,8 @@ pub enum InvalidRegisterUser {
     FailedPasswordHash(argon2::password_hash::Error),
 }
 
-impl From<UsernameError> for InvalidRegisterUser {
-    fn from(value: UsernameError) -> Self {
+impl From<InvalidUsername> for InvalidRegisterUser {
+    fn from(value: InvalidUsername) -> Self {
         Self::Username(value)
     }
 }
@@ -103,7 +103,7 @@ pub enum InvalidAuthenticateUserSuccess {
 #[derive(Debug, Error)]
 pub enum InvalidChangePassword {
     #[error(transparent)]
-    PasswordError(PasswordError),
+    Password(PasswordError),
     #[error(transparent)]
     FailedPasswordHash(argon2::password_hash::Error),
 }
@@ -137,20 +137,20 @@ impl From<sqlx::Error> for ChangePasswordError {
 #[derive(Debug, Error)]
 pub enum InvalidChangeUsername {
     #[error(transparent)]
-    InvalidId(uuid::Error),
+    Id(uuid::Error),
     #[error(transparent)]
-    InvalidUsername(UsernameError),
+    Username(InvalidUsername),
 }
 
 impl From<uuid::Error> for InvalidChangeUsername {
     fn from(value: uuid::Error) -> Self {
-        Self::InvalidId(value)
+        Self::Id(value)
     }
 }
 
-impl From<UsernameError> for InvalidChangeUsername {
-    fn from(value: UsernameError) -> Self {
-        Self::InvalidUsername(value)
+impl From<InvalidUsername> for InvalidChangeUsername {
+    fn from(value: InvalidUsername) -> Self {
+        Self::Username(value)
     }
 }
 
@@ -167,20 +167,20 @@ pub enum ChangeUsernameError {
 #[derive(Debug, Error)]
 pub enum InvalidChangeEmail {
     #[error(transparent)]
-    InvalidId(uuid::Error),
+    Id(uuid::Error),
     #[error(transparent)]
-    InvalidEmail(email_address::Error),
+    Email(email_address::Error),
 }
 
 impl From<uuid::Error> for InvalidChangeEmail {
     fn from(value: uuid::Error) -> Self {
-        Self::InvalidId(value)
+        Self::Id(value)
     }
 }
 
 impl From<email_address::Error> for InvalidChangeEmail {
     fn from(value: email_address::Error) -> Self {
-        Self::InvalidEmail(value)
+        Self::Email(value)
     }
 }
 
@@ -301,7 +301,7 @@ impl ChangePassword {
         new_password: &str,
     ) -> Result<Self, InvalidChangePassword> {
         let password =
-            Password::new(new_password).map_err(|e| InvalidChangePassword::PasswordError(e))?;
+            Password::new(new_password).map_err(|e| InvalidChangePassword::Password(e))?;
         let current_password = current_password.to_string();
         let password_hash = HashedPassword::generate(password)
             .map_err(|e| InvalidChangePassword::FailedPasswordHash(e))?;

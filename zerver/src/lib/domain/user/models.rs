@@ -9,7 +9,7 @@ use uuid::Uuid;
 // ========
 
 #[derive(Debug, Error, Clone)]
-pub enum UsernameError {
+pub enum InvalidUsername {
     #[error("length must be greater than 0")]
     TooShort,
     #[error("length must be less than 21")]
@@ -34,15 +34,15 @@ pub enum GetUserError {
 pub struct Username(String);
 
 impl Username {
-    pub fn new(raw: &str) -> Result<Self, UsernameError> {
+    pub fn new(raw: &str) -> Result<Self, InvalidUsername> {
         let trimmed = raw.trim();
 
         if trimmed.is_empty() {
-            return Err(UsernameError::TooShort);
+            return Err(InvalidUsername::TooShort);
         }
 
         if trimmed.len() > 20 {
-            return Err(UsernameError::TooLong);
+            return Err(InvalidUsername::TooLong);
         }
 
         Ok(Self(trimmed.to_string()))
