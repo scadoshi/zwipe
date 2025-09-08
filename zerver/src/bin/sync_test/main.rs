@@ -22,7 +22,7 @@ async fn main() -> anyhow::Result<()> {
     let db = Postgres::new(&config.database_url).await?;
     tracing::info!("database connection established");
     let service = card::services::Service::new(db);
-    let card_search_string = "starscream";
+    let card_search_string = "satya";
     tracing::info!("searching for {:?}", card_search_string);
     let card = PlanesWalker::tutor(&mut Client::new(), card_search_string)
         .await?

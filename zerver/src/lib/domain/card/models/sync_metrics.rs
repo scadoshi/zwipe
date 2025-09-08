@@ -1,7 +1,7 @@
-use std::{fmt::Display, ops::Deref};
 use anyhow::anyhow;
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
+use std::{fmt::Display, ops::Deref};
 use uuid::Uuid;
 
 // =======
@@ -15,7 +15,7 @@ use uuid::Uuid;
 /// that do not exist in database
 /// - **Full**: comprehensive refresh of all given cards
 /// even if already exists in database
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum SyncType {
     Partial,
@@ -277,11 +277,11 @@ impl SyncMetrics {
 
         let intended_to_import = self.received - self.skipped;
 
-        if self.imported as f32 >= intended_to_import as f32 * 0.7 && self.error_count > 0 {
+        if self.imported as f32 >= intended_to_import as f32 * 0.7 {
             self.status = SyncStatus::PartialSuccess;
         }
 
-        if self.imported >= intended_to_import && self.error_count == 0 {
+        if self.imported == intended_to_import && self.error_count == 0 {
             self.status = SyncStatus::Success;
         }
     }

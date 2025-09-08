@@ -460,6 +460,7 @@ impl InsertCardsWithTx for &[ScryfallData] {
         let mut sfd: Vec<ScryfallData> = self.to_vec();
         sfd.dedup_by_key(|sfd| sfd.id.clone());
         sfd.bind_to(&mut sfd_qb);
+        sfd_qb.push(" RETURNING *;");
 
         let sfd: Vec<ScryfallData> = sfd_qb
             .build_query_as::<ScryfallData>()
@@ -550,9 +551,9 @@ impl BatchInsertWithTx for &[ScryfallData] {
         for chunk in self.chunks(batch_size) {
             match chunk.insert_with_tx(tx).await {
                 Ok(inserted) => {
-                    let inserted_count = inserted.len() as i32;
+                    let inserted_count = inserted.len();
                     cards.extend(inserted);
-                    sync_metrics.add_imported(inserted_count);
+                    sync_metrics.add_imported(inserted_count as i32);
                 }
                 Err(e) => {
                     tracing::warn!("batch failed with error: {:?}\nretrying card by card", e);
@@ -839,7 +840,7 @@ impl CardRepository for MyPostgres {
     }
     async fn get_last_sync_date(
         &self,
-        sync_type: &SyncType,
+        sync_type: SyncType,
     ) -> anyhow::Result<Option<NaiveDateTime>> {
         let last_sync_date: Option<NaiveDateTime> = query_scalar(
             "SELECT started_at FROM scryfall_data_sync_metrics WHERE sync_type = $1 ORDER BY started_at DESC LIMIT 1",

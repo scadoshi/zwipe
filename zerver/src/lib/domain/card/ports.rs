@@ -124,7 +124,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// gets last sync date from database
     fn get_last_sync_date(
         &self,
-        sync_type: &SyncType,
+        sync_type: SyncType,
     ) -> impl Future<Output = anyhow::Result<Option<NaiveDateTime>>> + Send;
 }
 
@@ -172,12 +172,12 @@ pub trait CardService: Clone + Send + Sync + 'static {
     /// syncs database with scryfall bulk data
     fn scryfall_sync(
         &self,
-        sync_type: &SyncType,
+        sync_type: SyncType,
     ) -> impl Future<Output = anyhow::Result<SyncMetrics>> + Send;
 
     /// gets last sync date from database
     fn get_last_sync_date(
         &self,
-        sync_type: &SyncType,
+        sync_type: SyncType,
     ) -> impl Future<Output = anyhow::Result<Option<NaiveDateTime>>> + Send;
 }
