@@ -261,24 +261,28 @@ alwaysApply: true
 - **🚀 DECK OWNERSHIP VALIDATION**: Added user ownership checks to prevent unauthorized deck access
 - **🚀 GENERIC ERROR RESPONSES**: Implemented "not found" responses to prevent information disclosure
 
-### IN PROGRESS - Domain Architecture Completion 🔄
-- **🔧 DECK CARD HTTP LAYER**: Build complete deck card management API with nested resource routes
+### COMPLETE - Deck Card HTTP API Implementation ✅
+- **🎯 COMPLETE DECK CARD CRUD ENDPOINTS**: Full nested resource API with proper RESTful design
+  - **POST /api/deck/{deck_id}/card**: Add cards to deck with quantity validation and composite key architecture
+  - **PUT /api/deck/{deck_id}/card/{card_profile_id}**: Update card quantity with path parameter extraction
+  - **DELETE /api/deck/{deck_id}/card/{card_profile_id}**: Remove cards from deck with proper status codes
+- **🎯 NESTED RESOURCE ARCHITECTURE**: Clean hierarchical URL structure reflecting deck-card relationships
+- **🎯 COMPOSITE KEY IMPLEMENTATION**: Removed surrogate IDs, using deck_id + card_profile_id as natural composite key
+- **🎯 PATH PARAMETER CONSISTENCY**: Route parameters aligned with domain model field names throughout pipeline
+- **🎯 RESTFUL STATUS CODES**: Proper HTTP semantics (CREATED, OK, NO_CONTENT) with corrected delete responses
+- **🎯 PARAMETER EXTRACTION PATTERNS**: Tuple path extraction for multi-parameter routes with type-safe validation
+- **🎯 OWNERSHIP VALIDATION**: DRY security through existing get_deck_profile validation patterns
+- **🎯 ERROR MAPPING CONSISTENCY**: Comprehensive domain error to HTTP status code mapping with information disclosure prevention
 
 ### NEXT PRIORITIES - Domain Architecture Completion 🎯
-1. **🔧 Deck Card HTTP Layer Implementation**
-   - **POST /api/deck/:deck_id/cards**: Add cards to deck with quantity validation
-   - **PUT /api/deck/:deck_id/cards/:card_id**: Update card quantity in deck
-   - **DELETE /api/deck/:deck_id/cards/:card_id**: Remove cards from deck
-   - **Nested Resource Routes**: Proper RESTful design with authentication requirements
-   - **Request Validation**: Path parameter validation and business logic integration
 
-2. **🔧 Auth Domain Security Operations**
+1. **🔧 Auth Domain Security Operations**
    - **POST /api/auth/update-username**: Move username updates from user domain to auth
    - **POST /api/auth/update-email**: Move email updates from user domain to auth  
    - **POST /api/auth/delete-account**: Account deletion with proper validation and cleanup
    - **Security Consistency**: All user mutations centralized in auth domain for security
 
-3. **🔧 User Domain Pipeline Cleanup**
+2. **🔧 User Domain Pipeline Cleanup**
    - **Remove create_user**: Auth handles registration exclusively
    - **Remove update_user**: Auth handles all profile mutations
    - **Remove delete_user**: Auth handles account deletion
@@ -549,10 +553,10 @@ curl http://localhost:8080/api/v1/decks
 
 ---
 
-**Last Updated**: After completing auth domain security enhancement and RESTful API standardization
+**Last Updated**: After completing deck card HTTP API implementation with nested resource routes
 
-**Current Sprint**: Deck card HTTP layer implementation with nested resource routes
+**Current Sprint**: Auth domain security operations consolidation  
 
-**Next Major Milestone**: Complete deck card management API with proper authentication and validation
+**Next Major Milestone**: Complete auth domain centralization with user lifecycle operations
 
-**Major Recent Achievement**: Successfully completed auth domain security enhancement with comprehensive RESTful API standardization. Moved all user lifecycle operations (username/email changes, account deletion) to auth domain for centralized security control. Implemented AuthenticatedUser-based operations to prevent privilege escalation, added current password verification for password changes, and established deck ownership validation. All endpoints now use proper RESTful patterns with path parameters and generic error responses to prevent information disclosure. Auth domain now provides production-ready security with defense-in-depth approach. Ready to implement deck card management API with nested resource routes. 
+**Major Recent Achievement**: Successfully completed deck card HTTP API implementation with production-ready nested resource routes. Implemented composite key architecture removing surrogate IDs in favor of natural deck_id + card_profile_id keys. Built complete CRUD operations with proper RESTful design, tuple path parameter extraction, and consistent error handling. All endpoints follow proper HTTP semantics with corrected status codes and comprehensive domain error mapping. Architecture demonstrates solid understanding of RESTful principles, nested resource relationships, and security through existing ownership validation patterns. 

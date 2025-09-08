@@ -365,6 +365,12 @@ alwaysApply: true
 - **🚀 DECK OWNERSHIP VALIDATION**: Added user ownership checks to prevent unauthorized deck access
 - **🚀 GENERIC ERROR RESPONSES**: Implemented information disclosure prevention through consistent "not found" error messages
 - **🚀 SECURITY-FIRST ENDPOINT DESIGN**: All sensitive operations require proper authentication and authorization
+- **🎯 DECK CARD HTTP API IMPLEMENTATION**: Complete nested resource API with composite key architecture and proper RESTful design
+- **🎯 COMPOSITE KEY MASTERY**: Removed surrogate IDs in favor of natural deck_id + card_profile_id composite keys for cleaner data model
+- **🎯 TUPLE PATH EXTRACTION**: Advanced Axum parameter extraction patterns with Path<(String, String)> for multi-parameter routes
+- **🎯 NESTED RESOURCE ROUTES**: Hierarchical URL structure properly reflecting parent-child relationships in RESTful design
+- **🎯 HTTP STATUS CODE PRECISION**: Corrected status code usage throughout handlers (NO_CONTENT for deletes, OK for updates)
+- **🎯 PARAMETER NAMING CONSISTENCY**: Aligned route parameter names with domain model fields throughout entire request pipeline
 
 ### Learning Pattern Recognition
 - **Strategic Simplification**: Recognizes when complexity doesn't add value
@@ -425,8 +431,8 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: After completing auth domain security enhancement and RESTful API standardization
+**Last Updated**: After completing deck card HTTP API implementation with nested resource routes
 
-**Next Learning Edge**: Deck card HTTP layer implementation with nested resource routes
+**Next Learning Edge**: Auth domain security operations consolidation
 
-**Major Recent Achievement**: Successfully completed comprehensive auth domain security enhancement with production-ready authentication patterns. Implemented current password verification for password changes, centralized all user lifecycle operations in auth domain, and established AuthenticatedUser-based security throughout the system. Added deck ownership validation and generic error responses to prevent information disclosure. All endpoints now follow proper RESTful patterns with path parameters and comprehensive security controls. Demonstrates solid understanding of security principles including defense-in-depth, principle of least privilege, and information hiding. Ready to implement deck card management API with nested resource routes building on established security foundation.
+**Major Recent Achievement**: Successfully completed deck card HTTP API implementation with solid RESTful design principles. Implemented composite key architecture eliminating surrogate IDs, built complete nested resource routes with proper hierarchical structure, and established tuple path parameter extraction patterns. Corrected HTTP status code usage throughout handlers and aligned parameter naming consistency across the entire request pipeline. Demonstrates growing understanding of RESTful API design, natural key relationships, and proper HTTP semantics. Architecture shows good separation of concerns with security validation through existing ownership patterns.
