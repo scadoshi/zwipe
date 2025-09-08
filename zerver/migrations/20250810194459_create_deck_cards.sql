@@ -1,5 +1,4 @@
 CREATE TABLE deck_cards (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     deck_id UUID NOT NULL,
     card_profile_id UUID NOT NULL,
     quantity INT NOT NULL,
@@ -13,8 +12,6 @@ CREATE TABLE deck_cards (
         FOREIGN KEY (card_profile_id)
         REFERENCES card_profiles (id)
         ON DELETE CASCADE,
+    CONSTRAINT deck_card_unique UNIQUE (deck_id, card_profile_id),
     CONSTRAINT positive_quantity CHECK (quantity > 0)
 );
-
-CREATE INDEX idx_deck_cards_card_id ON deck_cards(card_profile_id);
-CREATE INDEX idx_deck_cards_deck_id ON deck_cards(deck_id);
