@@ -189,7 +189,7 @@ where
             .nest(
                 "/user",
                 Router::new()
-                    .route("", get(get_user))
+                    .route("/", get(get_user))
                     .route("/change-password", put(change_password))
                     .route("/change-username", put(change_username))
                     .route("/change-email", put(change_email))
@@ -204,14 +204,14 @@ where
             .nest(
                 "/deck",
                 Router::new()
-                    .route("", post(create_deck_profile))
+                    .route("/", post(create_deck_profile))
                     .route("/:deck_id", get(get_deck))
                     .route("/:deck_id", put(update_deck_profile))
                     .route("/:deck_id", delete(delete_deck))
                     .nest(
                         "/:deck_id/card",
                         Router::new()
-                            .route("", post(create_deck_card))
+                            .route("/", post(create_deck_card))
                             .route("/:card_profile_id", put(update_deck_card))
                             .route("/:card_profile_id", delete(delete_deck_card)),
                     ),
