@@ -405,10 +405,11 @@ impl InsertCardWithTx for ScryfallData {
             .fetch_one(&mut **tx)
             .await?;
 
-        let database_card_profile: DatabaseCardProfile = query_as(
+        let database_card_profile = query_as!(
+            DatabaseCardProfile,
             "INSERT INTO card_profiles (scryfall_data_id) VALUES ($1) RETURNING id, scryfall_data_id",
+            scryfall_data_id
         )
-        .bind(scryfall_data_id)
         .fetch_one(&mut **tx)
         .await?;
 
@@ -609,7 +610,7 @@ impl CardRepository for MyPostgres {
         tracing::info!("received {} cards", scryfall_data.len());
         let mut tx = self.pool.begin().await?;
 
-        let existing_ids: Vec<Uuid> = query_scalar("SELECT id FROM scryfall_data")
+        let existing_ids: Vec<Uuid> = query_scalar!("SELECT id FROM scryfall_data")
             .fetch_all(&self.pool)
             .await?;
 
@@ -657,8 +658,7 @@ impl CardRepository for MyPostgres {
         tracing::info!("deleting {} cards", card_ids.len());
 
         // delete the cards (card_profile cascade cascades)
-        query("DELETE FROM scryfall_data WHERE id = ANY($1)")
-            .bind(card_ids)
+        query!("DELETE FROM scryfall_data WHERE id = ANY($1)", &card_ids)
             .execute(&mut *tx)
             .await?;
 
@@ -785,10 +785,11 @@ impl CardRepository for MyPostgres {
         &self,
         request: &GetCardProfile,
     ) -> Result<CardProfile, GetCardProfileError> {
-        let card_profile: CardProfile = query_as::<Postgres, DatabaseCardProfile>(
+        let card_profile: CardProfile = query_as!(
+            DatabaseCardProfile,
             "SELECT id, scryfall_data_id FROM card_profiles WHERE id = $1",
+            request.id()
         )
-        .bind(request.id())
         .fetch_one(&self.pool)
         .await?
         .into();
@@ -800,10 +801,11 @@ impl CardRepository for MyPostgres {
         &self,
         request: &GetCardProfiles,
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
-        let card_profiles: Vec<CardProfile> = query_as::<Postgres, DatabaseCardProfile>(
+        let card_profiles: Vec<CardProfile> = query_as!(
+            DatabaseCardProfile,
             "SELECT id, scryfall_data_id FROM card_profiles WHERE id = ANY($1)",
+            request.ids()
         )
-        .bind(request.ids())
         .fetch_all(&self.pool)
         .await?
         .into_iter()
@@ -842,10 +844,10 @@ impl CardRepository for MyPostgres {
         &self,
         sync_type: SyncType,
     ) -> anyhow::Result<Option<NaiveDateTime>> {
-        let last_sync_date: Option<NaiveDateTime> = query_scalar(
+        let last_sync_date: Option<NaiveDateTime> = query_scalar!(
             "SELECT started_at FROM scryfall_data_sync_metrics WHERE sync_type = $1 ORDER BY started_at DESC LIMIT 1",
+            sync_type.to_string()
         )
-        .bind(sync_type.to_string())
         .fetch_optional(&self.pool)
         .await
         .context("failed to get last sync date")?;
