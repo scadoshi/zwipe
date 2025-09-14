@@ -3,8 +3,12 @@ use crate::{
         auth::ports::AuthService,
         card::{
             models::{
-                card_profile::GetCardProfileError, scryfall_data::GetScryfallDataError, Card,
-                GetCard, GetCardError, InvalidSearchCard, SearchCard, SearchCardError,
+                card_profile::GetCardProfileError,
+                scryfall_data::{
+                    colors::{Color, Colors},
+                    GetScryfallDataError,
+                },
+                Card, GetCard, GetCardError, InvalidSearchCard, SearchCard, SearchCardError,
             },
             ports::CardService,
         },
@@ -86,7 +90,13 @@ pub struct SearchCardRawParameters {
     set: Option<String>,
     rarity: Option<String>,
     cmc: Option<f64>,
+    cmc_range: Option<(f64, f64)>,
+    power: Option<i32>,
+    power_range: Option<(i32, i32)>,
+    toughness: Option<i32>,
+    toughness_range: Option<(i32, i32)>,
     color_identity: Option<String>,
+    color_identity_contains: Option<String>,
     oracle_text: Option<String>,
     limit: Option<u32>,
     offset: Option<u32>,
@@ -95,9 +105,17 @@ pub struct SearchCardRawParameters {
 impl TryFrom<SearchCardRawParameters> for SearchCard {
     type Error = InvalidSearchCard;
     fn try_from(params: SearchCardRawParameters) -> Result<Self, Self::Error> {
-        let color_identity = params
-            .color_identity
-            .map(|s| s.split(',').map(|c| c.trim().to_string()).collect());
+        let color_identity: Option<Colors> = params.color_identity.map(|s| {
+            s.split(',')
+                .filter_map(|c| Color::try_from(c).ok())
+                .collect()
+        });
+
+        let color_identity_contains: Option<Colors> = params.color_identity_contains.map(|s| {
+            s.split(',')
+                .filter_map(|c| Color::try_from(c).ok())
+                .collect()
+        });
 
         SearchCard::new(
             params.name,
@@ -105,7 +123,13 @@ impl TryFrom<SearchCardRawParameters> for SearchCard {
             params.set,
             params.rarity,
             params.cmc,
+            params.cmc_range,
+            params.power,
+            params.power_range,
+            params.toughness,
+            params.toughness_range,
             color_identity,
+            color_identity_contains,
             params.oracle_text,
             params.limit,
             params.offset,

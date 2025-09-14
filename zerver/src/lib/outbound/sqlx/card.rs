@@ -732,9 +732,62 @@ impl CardRepository for MyPostgres {
             sep.push_bind_unseparated(cmc);
             n += 1;
         }
-        if let Some(color_identity) = &request.color_identity {
+        if let Some(cmc_range) = request.cmc_range {
+            let lower = cmc_range.0.min(cmc_range.1);
+            let higher = cmc_range.0.max(cmc_range.1);
+            sep.push(format!("cmc between ${} and ${}", n, n + 1));
+            sep.push_bind_unseparated(lower);
+            sep.push_bind_unseparated(higher);
+            n += 2;
+        }
+        if let Some(power) = request.power {
+            sep.push(format!("power ~ '^\\d+$' AND CAST(power AS INT) = ${}", n));
+            sep.push_bind_unseparated(power);
+            n += 1;
+        }
+        if let Some(power_range) = request.power_range {
+            let lower = power_range.0.min(power_range.1);
+            let higher = power_range.0.max(power_range.1);
+            sep.push(format!(
+                "power ~ '^\\d+$' AND CAST(power AS INT) between ${} AND ${}",
+                n,
+                n + 1
+            ));
+            sep.push_bind_unseparated(lower);
+            sep.push_bind_unseparated(higher);
+            n += 2;
+        }
+        if let Some(toughness) = request.toughness {
+            sep.push(format!(
+                "toughness ~ '^\\d+$' AND CAST(toughness AS INT) = ${}",
+                n
+            ));
+            sep.push_bind_unseparated(toughness);
+            n += 1;
+        }
+        if let Some(toughness_range) = request.toughness_range {
+            let lower = toughness_range.0.min(toughness_range.1);
+            let higher = toughness_range.0.max(toughness_range.1);
+            sep.push(format!(
+                "toughness ~ '^\\d+$' AND CAST(toughness AS INT) between ${} AND ${}",
+                n,
+                n + 1
+            ));
+            sep.push_bind_unseparated(lower);
+            sep.push_bind_unseparated(higher);
+            n += 2;
+        }
+        if let Some(colors) = &request.color_identity {
+            sep.push(format!(
+                "color_identity @> ${} AND color_identity <@ ${}",
+                n, n
+            ));
+            sep.push_bind_unseparated(colors);
+            n += 1;
+        }
+        if let Some(colors) = &request.color_identity_contains {
             sep.push(format!("color_identity && ${}", n));
-            sep.push_bind_unseparated(color_identity);
+            sep.push_bind_unseparated(colors);
             n += 1;
         }
         if let Some(oracle_text) = &request.oracle_text {
