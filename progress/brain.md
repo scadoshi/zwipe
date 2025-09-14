@@ -15,18 +15,18 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: After completing deck card HTTP API implementation with nested resource routes
+**Last Updated**: After implementing comprehensive card search features and preparing for frontend development
 
-**Next Learning Focus**: Auth domain security operations consolidation
+**Next Learning Focus**: Dioxus frontend development and component architecture
 
-**Recent Achievement**: Successfully completed deck card HTTP API implementation with solid RESTful design principles. Implemented composite key architecture eliminating surrogate IDs, built complete nested resource routes with proper hierarchical structure, and established tuple path parameter extraction patterns. Demonstrates growing understanding of RESTful API design and proper HTTP semantics.
+**Recent Achievement**: Successfully implemented advanced card search system with power/toughness ranges, dual color identity search modes, and comprehensive input sanitization. Mastered PostgreSQL array operators and regex validation patterns. Demonstrated solid understanding of defensive programming with filter_map for input cleaning. Ready to transition from backend expertise to frontend development with Dioxus.
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **Auth Domain Security Consolidation** - Centralizing user lifecycle operations for consistent security control
-2. **Advanced Generic Type Systems** - Understanding opaque vs concrete types in service architecture  
-3. **Production Middleware Patterns** - Advanced route protection and middleware composition
-4. **Complex Database Transactions** - Multi-table operations with proper rollback handling
-5. **Performance Optimization** - Query optimization and connection pool tuning
+1. **Frontend Development** - Dioxus components, state management, and API integration patterns
+2. **Deck Analytics Architecture** - Frontend calculation of mana curves, color breakdowns, and type distributions
+3. **Advanced UI Components** - Card displays, search interfaces, and deck builder interactions
+4. **Real-time User Interactions** - Form handling, API calls, and responsive state updates
+5. **Production Frontend Patterns** - Error handling, loading states, and user experience optimization
 
 ### 🤔 Current Uncertainties (Top 5)
 1. **Generic Service Architecture** - Why Service<R> pattern is structured this way, trait object trade-offs
@@ -116,7 +116,8 @@ alwaysApply: true
 - **Nested Resource Routes**: Hierarchical /api/deck/{deck_id}/card/{card_profile_id} patterns
 - **Tuple Path Extraction**: Path<(String, String)> for multi-parameter routes
 - **Composite Key Architecture**: Natural primary keys eliminating surrogate IDs
-- **Advanced Search Patterns**: Complex query building with CMC range filtering, multiple search parameters
+- **Comprehensive Search System**: CMC/power/toughness ranges, dual color identity modes, input sanitization
+- **PostgreSQL Advanced Queries**: Regex validation, array operators (@>, <@, &&), dynamic query building
 - **RESTful Patterns**: Proper HTTP verb usage, status code precision, parameter naming consistency
 
 ---
