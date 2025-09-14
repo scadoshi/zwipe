@@ -25,7 +25,7 @@ alwaysApply: true
 3. **Monitoring & Observability** - Structured logging, metrics collection, and health monitoring
 
 ### 🤔 Next Immediate Priorities (Top 3)
-1. **Advanced Card Search Features** - CMC range, format legality, power/toughness filtering
+1. **Advanced Card Search Features** - Format legality, power/toughness filtering, advanced search operators
 2. **Deck Validation System** - Format legality checking and card limit enforcement
 3. **Image Handling Pipeline** - Card image serving, caching, and mobile optimization
 
@@ -63,7 +63,7 @@ alwaysApply: true
 - **CORS Configuration**: Complete cross-origin setup for web application integration
 
 ### 🎮 Domain-Specific Implementation
-- **Card Management**: Complete Scryfall integration, search functionality, bulk data processing
+- **Card Management**: Complete Scryfall integration, advanced search functionality with CMC range filtering, bulk data processing
 - **Deck Management**: Full CRUD operations with card composition, cross-domain orchestration, and nested resource API
 - **Auth Domain Security**: Complete user lifecycle operations (username/email updates, account deletion) centralized for security
 - **User Domain Simplification**: Read-only profile access, all mutations moved to auth domain for proper security boundaries
@@ -80,7 +80,7 @@ alwaysApply: true
 - **Caching Layer**: Redis integration for card data and query optimization
 
 ### 🎮 Advanced MTG Features
-- **Enhanced Card Search**: CMC range, format legality, power/toughness filtering
+- **Enhanced Card Search**: Format legality, power/toughness filtering, advanced search operators
 - **Deck Validation System**: Format legality checking, card limit enforcement
 - **Collection Management**: User card ownership tracking, wishlist functionality
 - **Deck Analytics**: Mana curve analysis, card type distribution
@@ -172,7 +172,7 @@ alwaysApply: true
 - **Image Handling**: Card image serving, caching, and mobile optimization
 
 ### 🎮 MTG-Specific Features
-- **Advanced Card Search**: CMC range, format legality, power/toughness filtering
+- **Advanced Card Search**: Format legality, power/toughness filtering, advanced search operators
 - **Deck Validation**: Format legality checking, card limit enforcement
 - **Collection Management**: User card ownership tracking, wishlist functionality
 - **Deck Analytics**: Mana curve analysis, card type distribution

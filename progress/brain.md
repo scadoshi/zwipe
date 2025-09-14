@@ -91,7 +91,7 @@ alwaysApply: true
 - **Connection Pooling**: Production-ready pool configuration with optimized settings
 - **Error Handling**: Custom IsConstraintViolation trait with PostgreSQL error code mapping
 - **Transaction Management**: Consistent transaction usage across all write operations
-- **Query Building**: Dynamic QueryBuilder patterns, bulk operations with parameter optimization
+- **Advanced Query Building**: Dynamic QueryBuilder with range filtering, complex search parameters, bulk operations
 - **Custom Type Integration**: Complex domain types with SQLx traits (Decode, Encode, Type)
 - **Migration & Schema Management**: Forward-only migrations, database recreation workflows
 - **Bulk Data Processing**: Production-scale processing (35,400+ cards) with resilient error handling
@@ -116,7 +116,7 @@ alwaysApply: true
 - **Nested Resource Routes**: Hierarchical /api/deck/{deck_id}/card/{card_profile_id} patterns
 - **Tuple Path Extraction**: Path<(String, String)> for multi-parameter routes
 - **Composite Key Architecture**: Natural primary keys eliminating surrogate IDs
-- **Search & Pagination**: Complex query building with multiple filter parameters
+- **Advanced Search Patterns**: Complex query building with CMC range filtering, multiple search parameters
 - **RESTful Patterns**: Proper HTTP verb usage, status code precision, parameter naming consistency
 
 ---
