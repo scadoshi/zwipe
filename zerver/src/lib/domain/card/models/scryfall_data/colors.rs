@@ -1,4 +1,9 @@
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+#[error("invalid color")]
+pub struct InvalidColor;
 
 /// stores color information in ScryfallData
 /// against various color related fields
@@ -33,12 +38,26 @@ impl<'de> Deserialize<'de> for Color {
     {
         let s = String::deserialize(deserializer)?;
         match s.to_lowercase().as_str() {
-            "w" | "white" => Ok(Self::White),
-            "u" | "blue" => Ok(Self::Blue),
-            "b" | "black" => Ok(Self::Black),
-            "r" | "red" => Ok(Self::Red),
-            "g" | "green" => Ok(Self::Green),
+            "w" => Ok(Self::White),
+            "u" => Ok(Self::Blue),
+            "b" => Ok(Self::Black),
+            "r" => Ok(Self::Red),
+            "g" => Ok(Self::Green),
             _ => Err(serde::de::Error::custom(format!("invalid color: {}", s))),
+        }
+    }
+}
+
+impl TryFrom<&str> for Color {
+    type Error = InvalidColor;
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value.to_lowercase().as_str() {
+            "w" => Ok(Self::White),
+            "u" => Ok(Self::Blue),
+            "b" => Ok(Self::Black),
+            "r" => Ok(Self::Red),
+            "g" => Ok(Self::Green),
+            _ => Err(InvalidColor),
         }
     }
 }
@@ -61,5 +80,11 @@ impl<'de> Deserialize<'de> for Colors {
         D: serde::Deserializer<'de>,
     {
         Vec::<Color>::deserialize(deserializer).map(Colors)
+    }
+}
+
+impl FromIterator<Color> for Colors {
+    fn from_iter<T: IntoIterator<Item = Color>>(iter: T) -> Self {
+        Colors(iter.into_iter().collect())
     }
 }
