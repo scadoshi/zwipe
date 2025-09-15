@@ -24,6 +24,7 @@ use crate::inbound::http::handlers::{
     deck::{create_deck_profile, delete_deck, get_deck, update_deck_profile},
     health::{are_server_and_database_running, is_server_running, root},
 };
+#[cfg(feature = "zerver")]
 use anyhow::{anyhow, Context};
 #[cfg(feature = "zerver")]
 use axum::http::{header, HeaderValue, Method, StatusCode};

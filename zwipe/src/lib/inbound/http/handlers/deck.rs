@@ -6,8 +6,11 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 
+use crate::domain::deck::models::deck::DeckProfile;
+
+#[cfg(feature = "zerver")]
 use crate::domain::deck::models::deck::{
-    Deck, DeckProfile, InvalidCreateDeckProfile, InvalidGetDeck, InvalidUpdateDeckProfile,
+    Deck, InvalidCreateDeckProfile, InvalidGetDeck, InvalidUpdateDeckProfile,
 };
 
 #[cfg(feature = "zerver")]
