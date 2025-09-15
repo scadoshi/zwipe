@@ -13,21 +13,21 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: After implementing comprehensive card search features and planning frontend development
+**Last Updated**: After implementing shared models architecture and feature flag system for frontend development
 
-**Current Focus**: Frontend development and deck analytics implementation
+**Current Focus**: Dioxus frontend development with shared domain models
 
-**Recent Achievement**: Successfully implemented advanced card search system with power/toughness ranges, dual color identity search modes (exact match vs contains), and comprehensive input sanitization. Added PostgreSQL regex validation for numeric creature stats and proper array operators for color filtering. Ready to begin Dioxus frontend development starting with login page.
+**Recent Achievement**: Successfully resolved shared models architecture dilemma by implementing feature flags in zwipe library. Completed granular feature gating with `#[cfg(feature = "zerver")]` for server-only code. Auth domain fully configured with proper frontend/backend separation. Ready to build Dioxus login component using shared HTTP types.
 
 ### 🎯 Currently Working On (Top 3)
-1. **Frontend Development** - Dioxus login page and basic UI components
-2. **Deck Analytics Implementation** - Mana curve, color breakdown, type distribution calculations
-3. **Advanced Search Features** - Remaining search filters and optimization
+1. **Dioxus Login Component** - Basic login form using shared HttpLoginUser types from zwipe domain
+2. **Frontend Architecture Setup** - Component structure, services, state management patterns
+3. **Granular Feature Flags** - Completing feature gating for remaining domains (card, deck, user)
 
 ### 🤔 Next Immediate Priorities (Top 3)
-1. **Core Frontend Pages** - Dashboard, deck list, deck builder interface
-2. **Real-time Deck Metrics** - Frontend calculation of mana curves and card distributions
-3. **Production System Hardening** - Rate limiting, monitoring, and performance optimization
+1. **Core Frontend Components** - Login, register, dashboard, deck list interfaces
+2. **Frontend-Backend Integration** - HTTP client service, JWT token management, error handling
+3. **Deck Analytics Frontend** - Real-time calculation of mana curves and card distributions
 
 ---
 
@@ -68,6 +68,7 @@ alwaysApply: true
 - **Auth Domain Security**: Complete user lifecycle operations (username/email updates, account deletion) centralized for security
 - **User Domain Simplification**: Read-only profile access, all mutations moved to auth domain for proper security boundaries
 - **Health Monitoring**: Database connectivity checks and system health endpoints
+- **Shared Models Architecture**: Feature flag system enabling frontend-backend code sharing through zwipe library
 
 ---
 
@@ -132,6 +133,8 @@ alwaysApply: true
 - **Service Layer Patterns**: Service<R> and dual-generic Service<DR, CR> with dependency injection and proper trait bounds
 - **Cross-Domain Orchestration**: DeckService coordinating between multiple repositories with HashMap join optimization
 - **The Great Domain Refactor**: Comprehensive Operation/OperationError/InvalidOperation naming pattern implementation
+- **Shared Models Architecture Decision**: Resolved frontend-backend code sharing through feature flags in zwipe library
+- **Feature Flag Implementation**: Granular `#[cfg(feature = "zerver")]` gating for server-only code while preserving domain models for frontend
 
 ### 📡 HTTP API Development & RESTful Design Challenges
 - **Axum Handler Evolution**: From basic handlers to complex generic state types with trait bound resolution

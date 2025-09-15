@@ -15,25 +15,25 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: After implementing comprehensive card search features and preparing for frontend development
+**Last Updated**: After resolving shared models architecture and implementing feature flag system
 
-**Next Learning Focus**: Dioxus frontend development and component architecture
+**Next Learning Focus**: Dioxus frontend development with shared domain models integration
 
-**Recent Achievement**: Successfully implemented advanced card search system with power/toughness ranges, dual color identity search modes, and comprehensive input sanitization. Mastered PostgreSQL array operators and regex validation patterns. Demonstrated solid understanding of defensive programming with filter_map for input cleaning. Ready to transition from backend expertise to frontend development with Dioxus.
+**Recent Achievement**: Successfully navigated complex architectural decision about shared models between frontend and backend. Chose pragmatic approach of using feature flags in zwipe library rather than separate shared crate. Implemented granular `#[cfg(feature = "zerver")]` gating throughout auth domain. Gained deep understanding of Rust feature flag patterns and architectural trade-offs. Ready to build Dioxus login component using shared HTTP types.
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **Frontend Development** - Dioxus components, state management, and API integration patterns
-2. **Deck Analytics Architecture** - Frontend calculation of mana curves, color breakdowns, and type distributions
-3. **Advanced UI Components** - Card displays, search interfaces, and deck builder interactions
-4. **Real-time User Interactions** - Form handling, API calls, and responsive state updates
-5. **Production Frontend Patterns** - Error handling, loading states, and user experience optimization
+1. **Dioxus Login Component** - Building first frontend component using shared domain models from zwipe
+2. **Frontend HTTP Client** - Service layer for API calls, JWT token management, error handling
+3. **Component Architecture** - Organizing Dioxus components following clean architecture principles
+4. **State Management** - Frontend state patterns, form handling, and reactive updates
+5. **Frontend-Backend Integration** - Connecting Dioxus UI to existing REST API endpoints
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Generic Service Architecture** - Why Service<R> pattern is structured this way, trait object trade-offs
-2. **Proc Macros** - Deep procedural macro implementation (staying away until necessary)
-3. **Advanced Async Patterns** - Complex Future handling and async streaming
-4. **Type-Level Programming** - Advanced trait constraints and generic programming
-5. **Production Deployment** - Containerization, monitoring, and scaling strategies
+1. **Dioxus Patterns** - Best practices for component organization, state management, and routing
+2. **Frontend Error Handling** - How to handle API errors, network failures, and validation errors in UI
+3. **Mobile Responsiveness** - Dioxus patterns for mobile-first design and touch interactions
+4. **Frontend Testing** - Testing strategies for Dioxus components and user interactions
+5. **Production Deployment** - Building and deploying Dioxus mobile apps to app stores
 
 ---
 
@@ -131,6 +131,13 @@ alwaysApply: true
 - **Dependency Injection Theory**: Understand the purpose but not fully confident in the architectural reasoning
 - **Service Layer Separation**: Clear on what services do, less clear on why they're structured this way
 - *Note: Understand the "what" and "why" conceptually, but "how" implementation details still developing*
+
+### 🎯 Feature Flag Architecture & Shared Models
+- **Cargo Feature Flags**: Optional dependencies, feature-gated compilation, granular module control
+- **Architectural Decision Making**: Evaluated multiple approaches for frontend-backend code sharing
+- **Pragmatic Architecture**: Choosing workflow efficiency over theoretical purity when appropriate
+- **Granular Feature Gating**: `#[cfg(feature = "zerver")]` patterns for fine-grained access control
+- **Library Design**: Understanding when to separate concerns vs when to keep related code together
 
 ### 🏗️ Advanced Architecture Patterns
 - **Configuration Management**: Production-ready config loading at startup vs runtime env reads
