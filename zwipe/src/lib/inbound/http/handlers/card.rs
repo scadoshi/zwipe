@@ -1,15 +1,18 @@
+// frontend accessible
+use crate::domain::card::models::{
+    scryfall_data::colors::{Color, Colors},
+    InvalidSearchCard, SearchCard,
+};
+
+// server only
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
         auth::ports::AuthService,
         card::{
             models::{
-                card_profile::GetCardProfileError,
-                scryfall_data::{
-                    colors::{Color, Colors},
-                    GetScryfallDataError,
-                },
-                Card, GetCard, GetCardError, InvalidSearchCard, SearchCard, SearchCardError,
+                card_profile::GetCardProfileError, scryfall_data::GetScryfallDataError, Card,
+                GetCard, GetCardError, SearchCardError,
             },
             ports::CardService,
         },

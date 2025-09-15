@@ -13,11 +13,12 @@ use legalities::Legalities;
 use prices::Prices;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use thiserror::Error;
-use uuid::Uuid;
 // =]:^{O
 #[cfg(feature = "zerver")]
 use sqlx::FromRow;
+#[cfg(feature = "zerver")]
+use thiserror::Error;
+use uuid::Uuid;
 
 // =======
 //  error

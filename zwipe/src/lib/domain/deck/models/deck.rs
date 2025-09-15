@@ -24,14 +24,12 @@ pub enum InvalidDeckname {
     TooLong,
 }
 
-#[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum InvalidCreateDeckProfile {
     #[error(transparent)]
     DeckName(InvalidDeckname),
 }
 
-#[cfg(feature = "zerver")]
 impl From<InvalidDeckname> for InvalidCreateDeckProfile {
     fn from(value: InvalidDeckname) -> Self {
         Self::DeckName(value)
@@ -49,14 +47,12 @@ pub enum CreateDeckProfileError {
     Database(anyhow::Error),
 }
 
-#[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum InvalidGetDeck {
     #[error(transparent)]
     DeckId(uuid::Error),
 }
 
-#[cfg(feature = "zerver")]
 impl From<uuid::Error> for InvalidGetDeck {
     fn from(value: uuid::Error) -> Self {
         Self::DeckId(value)
@@ -119,7 +115,6 @@ impl From<GetCardError> for GetDeckError {
     }
 }
 
-#[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum InvalidUpdateDeckProfile {
     #[error(transparent)]
@@ -130,14 +125,12 @@ pub enum InvalidUpdateDeckProfile {
     NoUpdates,
 }
 
-#[cfg(feature = "zerver")]
 impl From<InvalidDeckname> for InvalidUpdateDeckProfile {
     fn from(value: InvalidDeckname) -> Self {
         Self::DeckName(value)
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<uuid::Error> for InvalidUpdateDeckProfile {
     fn from(value: uuid::Error) -> Self {
         Self::DeckId(value)
@@ -221,13 +214,11 @@ impl Serialize for DeckName {
 // ==========
 
 #[derive(Debug, Clone)]
-#[cfg(feature = "zerver")]
 pub struct CreateDeckProfile {
     pub name: DeckName,
     pub user_id: Uuid,
 }
 
-#[cfg(feature = "zerver")]
 impl CreateDeckProfile {
     pub fn new(name: &str, user_id: Uuid) -> Result<Self, InvalidCreateDeckProfile> {
         let name = DeckName::new(name)?;
@@ -236,13 +227,11 @@ impl CreateDeckProfile {
 }
 
 #[derive(Debug, Clone)]
-#[cfg(feature = "zerver")]
 pub struct GetDeck {
     pub deck_id: Uuid,
     pub user_id: Uuid,
 }
 
-#[cfg(feature = "zerver")]
 impl GetDeck {
     pub fn new(deck_id: &str, user_id: &Uuid) -> Result<Self, InvalidGetDeck> {
         let deck_id = Uuid::try_parse(deck_id)?;
@@ -309,14 +298,12 @@ impl From<&DeleteDeckCard> for GetDeck {
 /// i am still leaving as an `Option<T>`
 /// to leave room for future additions
 #[derive(Debug, Clone)]
-#[cfg(feature = "zerver")]
 pub struct UpdateDeckProfile {
     pub deck_id: Uuid,
     pub name: Option<DeckName>,
     pub user_id: Uuid,
 }
 
-#[cfg(feature = "zerver")]
 impl UpdateDeckProfile {
     pub fn new(
         deck_id: &str,
@@ -339,10 +326,8 @@ impl UpdateDeckProfile {
 }
 
 #[derive(Debug, Clone)]
-#[cfg(feature = "zerver")]
 pub struct DeleteDeck(Uuid);
 
-#[cfg(feature = "zerver")]
 impl DeleteDeck {
     pub fn new(id: &str) -> Result<Self, uuid::Error> {
         let trimmed = id.trim();

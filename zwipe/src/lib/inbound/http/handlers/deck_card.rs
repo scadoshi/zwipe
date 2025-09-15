@@ -6,6 +6,8 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 
+use crate::domain::deck::models::deck_card::DeckCard;
+
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
@@ -13,7 +15,7 @@ use crate::{
         card::ports::CardService,
         deck::{
             models::deck_card::{
-                CreateDeckCard, CreateDeckCardError, DeckCard, DeleteDeckCard, DeleteDeckCardError,
+                CreateDeckCard, CreateDeckCardError, DeleteDeckCard, DeleteDeckCardError,
                 InvalidCreateDeckCard, InvalidDeleteDeckCard, InvalidUpdateDeckCard,
                 UpdateDeckCard, UpdateDeckCardError,
             },

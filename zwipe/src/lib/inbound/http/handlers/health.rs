@@ -8,7 +8,6 @@ use crate::{
 };
 #[cfg(feature = "zerver")]
 use axum::{extract::State, Json};
-#[cfg(feature = "zerver")]
 use chrono::Utc;
 use serde::Serialize;
 use serde_json::{json, Value};

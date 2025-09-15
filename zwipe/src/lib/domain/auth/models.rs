@@ -1,12 +1,17 @@
 pub mod jwt;
 pub mod password;
-
+#[cfg(feature = "zerver")]
 use crate::domain::auth::models::jwt::{Jwt, JwtError};
 #[cfg(feature = "zerver")]
 use crate::domain::auth::models::password::HashedPassword;
-use crate::domain::auth::models::password::{Password, PasswordError};
-use crate::domain::user::models::{InvalidUsername, User, Username};
+#[cfg(feature = "zerver")]
+use crate::domain::auth::models::password::Password;
+use crate::domain::auth::models::password::PasswordError;
+#[cfg(feature = "zerver")]
+use crate::domain::user::models::User;
+use crate::domain::user::models::{InvalidUsername, Username};
 use email_address::EmailAddress;
+#[cfg(feature = "zerver")]
 use serde::Serialize;
 use std::str::FromStr;
 use thiserror::Error;
@@ -30,7 +35,6 @@ pub enum RegisterUserError {
     UserFromDb(anyhow::Error),
 }
 
-#[cfg(feature = "zerver")]
 /// errors encountered while constructing `RegisterUserRequest`
 #[derive(Debug, Error)]
 pub enum InvalidRegisterUser {
@@ -44,21 +48,18 @@ pub enum InvalidRegisterUser {
     FailedPasswordHash(anyhow::Error),
 }
 
-#[cfg(feature = "zerver")]
 impl From<InvalidUsername> for InvalidRegisterUser {
     fn from(value: InvalidUsername) -> Self {
         Self::Username(value)
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<email_address::Error> for InvalidRegisterUser {
     fn from(value: email_address::Error) -> Self {
         Self::Email(value)
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<PasswordError> for InvalidRegisterUser {
     fn from(value: PasswordError) -> Self {
         Self::Password(value)
@@ -83,7 +84,6 @@ pub enum AuthenticateUserError {
     FailedJwt(anyhow::Error),
 }
 
-#[cfg(feature = "zerver")]
 /// errors encountered while constructing `AuthenticateUserRequest`
 #[derive(Debug, Error)]
 pub enum InvalidAuthenticateUser {
@@ -101,7 +101,6 @@ pub enum InvalidAuthenticateUserSuccess {
     JwtError(JwtError),
 }
 
-#[cfg(feature = "zerver")]
 /// errors encountered while constructing `ChangePasswordRequestError`
 #[derive(Debug, Error)]
 pub enum InvalidChangePassword {
@@ -140,7 +139,6 @@ impl From<sqlx::Error> for ChangePasswordError {
     }
 }
 
-#[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum InvalidChangeUsername {
     #[error(transparent)]
@@ -149,14 +147,12 @@ pub enum InvalidChangeUsername {
     Username(InvalidUsername),
 }
 
-#[cfg(feature = "zerver")]
 impl From<uuid::Error> for InvalidChangeUsername {
     fn from(value: uuid::Error) -> Self {
         Self::Id(value)
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<InvalidUsername> for InvalidChangeUsername {
     fn from(value: InvalidUsername) -> Self {
         Self::Username(value)
@@ -174,7 +170,6 @@ pub enum ChangeUsernameError {
     UserFromDb(anyhow::Error),
 }
 
-#[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum InvalidChangeEmail {
     #[error(transparent)]
@@ -183,14 +178,12 @@ pub enum InvalidChangeEmail {
     Email(email_address::Error),
 }
 
-#[cfg(feature = "zerver")]
 impl From<uuid::Error> for InvalidChangeEmail {
     fn from(value: uuid::Error) -> Self {
         Self::Id(value)
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<email_address::Error> for InvalidChangeEmail {
     fn from(value: email_address::Error) -> Self {
         Self::Email(value)
@@ -246,7 +239,6 @@ impl RegisterUser {
     }
 }
 
-#[cfg(feature = "zerver")]
 /// authentication request with identifier (email/username) and password
 #[derive(Debug)]
 pub struct AuthenticateUser {
@@ -254,7 +246,6 @@ pub struct AuthenticateUser {
     pub password: String,
 }
 
-#[cfg(feature = "zerver")]
 impl AuthenticateUser {
     pub fn new(identifier: &str, password: &str) -> Result<Self, InvalidAuthenticateUser> {
         if identifier.is_empty() {
@@ -317,7 +308,6 @@ pub struct ChangePassword {
     pub current_password: String,
     pub password_hash: HashedPassword,
 }
-
 #[cfg(feature = "zerver")]
 impl ChangePassword {
     pub fn new(
@@ -339,14 +329,12 @@ impl ChangePassword {
     }
 }
 
-#[cfg(feature = "zerver")]
 #[derive(Debug)]
 pub struct ChangeUsername {
     pub user_id: Uuid,
     pub username: Username,
 }
 
-#[cfg(feature = "zerver")]
 impl ChangeUsername {
     pub fn new(user_id: Uuid, username: &str) -> Result<Self, InvalidChangeUsername> {
         let username = Username::new(username)?;
@@ -354,14 +342,12 @@ impl ChangeUsername {
     }
 }
 
-#[cfg(feature = "zerver")]
 #[derive(Debug)]
 pub struct ChangeEmail {
     pub user_id: Uuid,
     pub email: EmailAddress,
 }
 
-#[cfg(feature = "zerver")]
 impl ChangeEmail {
     pub fn new(user_id: Uuid, email: &str) -> Result<Self, InvalidChangeEmail> {
         let email = EmailAddress::from_str(email)?;
@@ -369,11 +355,9 @@ impl ChangeEmail {
     }
 }
 
-#[cfg(feature = "zerver")]
 #[derive(Debug, Clone)]
 pub struct DeleteUser(Uuid);
 
-#[cfg(feature = "zerver")]
 impl DeleteUser {
     pub fn new(id: &str) -> Result<Self, uuid::Error> {
         let trimmed = id.trim();
@@ -386,7 +370,6 @@ impl DeleteUser {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<Uuid> for DeleteUser {
     fn from(value: Uuid) -> Self {
         Self(value)

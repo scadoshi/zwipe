@@ -110,11 +110,9 @@ impl From<GetCardProfileError> for SearchCardError {
 //  requests
 // ==========
 
-#[cfg(feature = "zerver")]
 #[derive(Debug)]
 pub struct GetCard(Uuid);
 
-#[cfg(feature = "zerver")]
 impl GetCard {
     pub fn new(card_profile_id: &str) -> Result<Self, uuid::Error> {
         Ok(Self(Uuid::try_parse(card_profile_id)?))
@@ -125,7 +123,6 @@ impl GetCard {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl<'de> Deserialize<'de> for GetCard {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where

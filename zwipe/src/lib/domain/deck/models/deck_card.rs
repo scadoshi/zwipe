@@ -16,7 +16,6 @@ pub struct InvalidQuantity;
 #[error("must be less or greater than 0")]
 pub struct InvalidUpdateQuanity;
 
-#[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum InvalidCreateDeckCard {
     #[error(transparent)]
@@ -27,7 +26,6 @@ pub enum InvalidCreateDeckCard {
     Quantity(InvalidQuantity),
 }
 
-#[cfg(feature = "zerver")]
 impl From<InvalidQuantity> for InvalidCreateDeckCard {
     fn from(value: InvalidQuantity) -> Self {
         Self::Quantity(value)
@@ -83,7 +81,6 @@ pub enum InvalidUpdateDeckCard {
     UpdateQuantity(InvalidUpdateQuanity),
 }
 
-#[cfg(feature = "zerver")]
 impl From<InvalidUpdateQuanity> for InvalidUpdateDeckCard {
     fn from(value: InvalidUpdateQuanity) -> Self {
         Self::UpdateQuantity(value)
@@ -179,7 +176,6 @@ impl UpdateQuantity {
 // ==========
 
 #[derive(Debug, Clone)]
-#[cfg(feature = "zerver")]
 pub struct CreateDeckCard {
     pub deck_id: Uuid,
     pub card_profile_id: Uuid,
@@ -187,7 +183,6 @@ pub struct CreateDeckCard {
     pub user_id: Uuid,
 }
 
-#[cfg(feature = "zerver")]
 impl CreateDeckCard {
     pub fn new(
         deck_id: &str,
@@ -210,7 +205,6 @@ impl CreateDeckCard {
 }
 
 #[derive(Debug, Clone)]
-#[cfg(feature = "zerver")]
 pub struct UpdateDeckCard {
     pub deck_id: Uuid,
     pub card_profile_id: Uuid,
@@ -218,7 +212,6 @@ pub struct UpdateDeckCard {
     pub user_id: Uuid,
 }
 
-#[cfg(feature = "zerver")]
 impl UpdateDeckCard {
     pub fn new(
         deck_id: &str,
@@ -240,14 +233,12 @@ impl UpdateDeckCard {
 }
 
 #[derive(Debug, Clone)]
-#[cfg(feature = "zerver")]
 pub struct DeleteDeckCard {
     pub deck_id: Uuid,
     pub card_profile_id: Uuid,
     pub user_id: Uuid,
 }
 
-#[cfg(feature = "zerver")]
 impl DeleteDeckCard {
     pub fn new(
         deck_id: &str,

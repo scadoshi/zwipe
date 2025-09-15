@@ -1,5 +1,7 @@
+#[cfg(feature = "zerver")]
 use crate::domain::{card::models::scryfall_data::ScryfallData, deck::models::deck_card::DeckCard};
 use serde::Serialize;
+#[cfg(feature = "zerver")]
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -20,7 +22,7 @@ pub enum GetCardProfileError {
 
 #[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
-pub enum InvalidGetCardProfile {
+pub enum InvalidGetCardProfiles {
     #[error("invalid id: {0}")]
     Uuid(uuid::Error),
     #[error("no ids provided")]
@@ -28,7 +30,7 @@ pub enum InvalidGetCardProfile {
 }
 
 #[cfg(feature = "zerver")]
-impl From<uuid::Error> for InvalidGetCardProfile {
+impl From<uuid::Error> for InvalidGetCardProfiles {
     fn from(value: uuid::Error) -> Self {
         Self::Uuid(value)
     }
@@ -64,9 +66,9 @@ pub struct GetCardProfiles(Vec<Uuid>);
 
 #[cfg(feature = "zerver")]
 impl GetCardProfiles {
-    pub fn new(ids: Vec<&str>) -> Result<Self, InvalidGetCardProfile> {
+    pub fn new(ids: Vec<&str>) -> Result<Self, InvalidGetCardProfiles> {
         if ids.is_empty() {
-            return Err(InvalidGetCardProfile::MissingIds);
+            return Err(InvalidGetCardProfiles::MissingIds);
         }
         Ok(Self(
             ids.into_iter()

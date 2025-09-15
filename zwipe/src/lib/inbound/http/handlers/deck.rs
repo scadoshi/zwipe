@@ -6,6 +6,10 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 
+use crate::domain::deck::models::deck::{
+    Deck, DeckProfile, InvalidCreateDeckProfile, InvalidGetDeck, InvalidUpdateDeckProfile,
+};
+
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
@@ -20,10 +24,9 @@ use crate::{
         deck::{
             models::{
                 deck::{
-                    CreateDeckProfile, CreateDeckProfileError, Deck, DeckProfile, DeleteDeck,
-                    DeleteDeckError, GetDeck, GetDeckError, GetDeckProfileError,
-                    InvalidCreateDeckProfile, InvalidGetDeck, InvalidUpdateDeckProfile,
-                    UpdateDeckProfile, UpdateDeckProfileError,
+                    CreateDeckProfile, CreateDeckProfileError, DeleteDeck, DeleteDeckError,
+                    GetDeck, GetDeckError, GetDeckProfileError, UpdateDeckProfile,
+                    UpdateDeckProfileError,
                 },
                 deck_card::GetDeckCardError,
             },
@@ -262,7 +265,9 @@ pub struct HttpUpdateDeckProfileBody {
 
 impl HttpUpdateDeckProfileBody {
     pub fn new(name: Option<&str>) -> Self {
-        Self { name: name.map(|name| name.to_string()) }
+        Self {
+            name: name.map(|name| name.to_string()),
+        }
     }
 }
 

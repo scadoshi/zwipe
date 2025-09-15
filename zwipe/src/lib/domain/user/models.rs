@@ -71,10 +71,8 @@ impl Serialize for Username {
 // ==========
 
 #[derive(Debug, Clone)]
-#[cfg(feature = "zerver")]
 pub struct GetUser(Uuid);
 
-#[cfg(feature = "zerver")]
 impl GetUser {
     pub fn new(id: &str) -> Result<Self, uuid::Error> {
         Ok(Self(Uuid::try_parse(id)?))
@@ -85,7 +83,6 @@ impl GetUser {
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<Uuid> for GetUser {
     fn from(value: Uuid) -> Self {
         Self(value)
