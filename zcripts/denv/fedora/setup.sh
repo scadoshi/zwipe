@@ -39,6 +39,15 @@ print_status "Installing essential build tools..."
 sudo dnf5 install -y gcc gcc-c++ make cmake autoconf automake libtool
 sudo dnf5 install -y curl git openssl openssl-devel pkg-config ripgrep
 
+# Install Dioxus desktop dependencies (following official Dioxus/Tauri requirements)
+print_status "Installing Dioxus desktop dependencies..."
+# Core WebKit and build dependencies (Fedora package names)
+sudo dnf5 install -y webkit2gtk4.1-devel curl wget file openssl-devel
+# Additional Dioxus/Tauri specific dependencies for Fedora
+sudo dnf5 install -y libxdo-devel libappindicator-gtk3-devel librsvg2-devel
+# GTK development libraries
+sudo dnf5 install -y gtk3-devel glib2-devel
+
 # Install mold linker
 if ! command -v mold &> /dev/null; then
     print_status "Installing mold linker..."
@@ -105,10 +114,29 @@ else
     fi
 fi
 
+# Install cargo-binstall for efficient binary installation
+if ! command -v cargo-binstall &> /dev/null; then
+    print_status "Installing cargo-binstall..."
+    curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+    source $HOME/.cargo/env
+    print_status "cargo-binstall installed successfully"
+else
+    print_status "cargo-binstall already installed"
+fi
+
 # Install sqlx-cli if not present
 if ! command -v sqlx &> /dev/null; then
     print_status "Installing sqlx-cli..."
-    cargo install sqlx-cli
+    cargo binstall sqlx-cli --no-confirm
+fi
+
+# Install Dioxus CLI if not present
+if ! command -v dx &> /dev/null; then
+    print_status "Installing Dioxus CLI..."
+    cargo binstall dioxus-cli --no-confirm
+    print_status "Dioxus CLI installed successfully"
+else
+    print_status "Dioxus CLI already installed"
 fi
 
 # Check GitHub CLI authentication
@@ -185,8 +213,20 @@ print_status "Running migrations..."
 sqlx migrate run
 
 # Build the project to ensure everything works
-print_status "Building project with mold..."
+print_status "Building backend project with mold..."
 cargo build
+
+# Build and test Dioxus frontend
+print_status "Setting up Dioxus frontend..."
+cd ../zwiper
+
+# Test Dioxus desktop build (for mobile app development on Linux)
+print_status "Testing Dioxus desktop build..."
+if dx build --platform desktop; then
+    print_status "Dioxus desktop build successful"
+else
+    print_warning "Dioxus desktop build failed, but CLI is installed. You can debug with 'dx build --platform desktop'"
+fi
 
 print_status "🎉 Setup complete!"
 echo ""
@@ -196,6 +236,17 @@ echo "👤 DB User: $CURRENT_USER"
 echo "🔐 Auth: peer (no password needed)"
 echo "🔗 Linker: mold (configured)"
 echo "🐙 GitHub CLI: $(gh --version | head -1)"
+echo "📱 Dioxus CLI: $(dx --version)"
+echo ""
+echo "🚀 To start development:"
+echo "   Backend:  cd zerver && cargo run"
+echo "   Frontend: cd zwiper && dx serve --platform desktop"
+echo ""
+echo "💡 Mobile development on Linux:"
+echo "   - Primary: dx serve --platform desktop (mobile app via desktop window)"
+echo "   - Resize window to mobile dimensions (390x844 iPhone, 412x915 Android)"
+echo "   - Alternative: dx serve --platform web (for browser testing)"
+echo "   - True mobile: Use your Mac setup with dx serve --platform mobile"
 echo ""
 echo "🚀 Opening Cursor in zwipe directory..."
 cursor ../

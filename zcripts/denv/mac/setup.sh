@@ -105,10 +105,34 @@ else
     fi
 fi
 
+# Install cargo-binstall for efficient binary installation
+if ! command -v cargo-binstall &> /dev/null; then
+    print_status "Installing cargo-binstall..."
+    # Try homebrew first (faster), then fallback to curl
+    if command -v brew &> /dev/null; then
+        brew install cargo-binstall
+    else
+        curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+        source $HOME/.cargo/env
+    fi
+    print_status "cargo-binstall installed successfully"
+else
+    print_status "cargo-binstall already installed"
+fi
+
 # Install sqlx-cli if not present
 if ! command -v sqlx &> /dev/null; then
     print_status "Installing sqlx-cli..."
-    cargo install sqlx-cli
+    cargo binstall sqlx-cli --no-confirm
+fi
+
+# Install Dioxus CLI if not present
+if ! command -v dx &> /dev/null; then
+    print_status "Installing Dioxus CLI..."
+    cargo binstall dioxus-cli --no-confirm
+    print_status "Dioxus CLI installed successfully"
+else
+    print_status "Dioxus CLI already installed"
 fi
 
 # Check GitHub CLI authentication
@@ -185,8 +209,20 @@ print_status "Running migrations..."
 sqlx migrate run
 
 # Build the project to ensure everything works
-print_status "Building project..."
+print_status "Building backend project..."
 cargo build
+
+# Build and test Dioxus frontend
+print_status "Setting up Dioxus frontend..."
+cd ../zwiper
+
+# Test Dioxus mobile build
+print_status "Testing Dioxus mobile build..."
+if dx build --platform mobile; then
+    print_status "Dioxus mobile build successful"
+else
+    print_warning "Dioxus mobile build failed, but CLI is installed. You can debug with 'dx build --platform mobile' or try 'dx build --platform desktop' as fallback"
+fi
 
 print_status "🎉 Setup complete!"
 echo ""
@@ -196,6 +232,17 @@ echo "👤 DB User: $CURRENT_USER"
 echo "🔐 Auth: peer (no password needed)"
 echo "🔗 Linker: system default (optimized for macOS)"
 echo "🐙 GitHub CLI: $(gh --version | head -1)"
+echo "📱 Dioxus CLI: $(dx --version)"
+echo ""
+echo "🚀 To start development:"
+echo "   Backend:  cd zerver && cargo run"
+echo "   Frontend: cd zwiper && dx serve --platform mobile"
+echo ""
+echo "💡 Mobile development options:"
+echo "   - Primary: dx serve --platform mobile (native mobile experience)"
+echo "   - Fallback: dx serve --platform desktop (if mobile doesn't work)"
+echo "   - Web testing: dx serve --platform web"
+echo "   - iOS testing: Perfect for your Mac setup with true iOS emulation"
 echo ""
 echo "🚀 Opening Cursor in zwipe directory..."
 # Try cursor command, fallback if not available
