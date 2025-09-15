@@ -1,0 +1,5 @@
+{
+    "rust-analyzer.cargo.features": [],
+    "rust-analyzer.checkOnSave.features": [],
+    "rust-analyzer.cargo.allFeatures": false
+}
