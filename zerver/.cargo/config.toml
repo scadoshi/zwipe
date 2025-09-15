@@ -1,8 +1,8 @@
 # macOS Native Linker (ACTIVE - uncommented for current use)
 # Uses Apple's optimized linker - fastest and most compatible for macOS
-[target.aarch64-apple-darwin]  # Apple Silicon (M1/M2/M3)
-linker = "clang"
-rustflags = []
+# [target.aarch64-apple-darwin]  # Apple Silicon (M1/M2/M3)
+# linker = "clang"
+# rustflags = []
 
 # Linker configurations for x86_64-unknown-linux-gnu
 # Use ONE section at a time. Comment out others.
@@ -11,8 +11,8 @@ rustflags = []
 # - GNU ld: Stable, use for release (cargo build --release).
 
 # GNU ld (Release, stable, slower)
-# [target.x86_64-unknown-linux-gnu]
-# rustflags = []
+[target.x86_64-unknown-linux-gnu]
+rustflags = []
 
 # lld (Development, faster, less stable)
 # [target.x86_64-unknown-linux-gnu]
