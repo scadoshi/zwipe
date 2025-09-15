@@ -1,4 +1,3 @@
-#[cfg(feature = "zerver")]
 use once_cell::sync::Lazy;
 use std::collections::HashSet;
 
@@ -173,7 +172,6 @@ const COMMON_PASSWORDS_LIST: &[&str] = &[
 ];
 
 /// uses above `&str` constant to get unique passwords
-#[cfg(feature = "zerver")]
 pub static COMMON_PASSWORDS: Lazy<HashSet<&'static str>> =
     Lazy::new(|| COMMON_PASSWORDS_LIST.iter().cloned().collect());
 
