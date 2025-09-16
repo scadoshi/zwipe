@@ -46,8 +46,8 @@ body {
 #navbar {
     display: flex;
     flex-direction: row;
-  }
-  
+}
+
 #navbar a {
     color: #ffffff;
     margin-right: 20px;
@@ -63,10 +63,9 @@ body {
 /* Blog page */
 #blog {
     margin-top: 50px;
-  }
-  
+}
+
 #blog a {
     color: #ffffff;
     margin-top: 50px;
 }
-
