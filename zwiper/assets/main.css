@@ -1,71 +1,195 @@
-/* App-wide styling */
-body {
-    background-color: #0f1116;
-    color: #ffffff;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    margin: 20px;
-}
+/* Import Cascadia Code font */
+@import url('https://fonts.googleapis.com/css2?family=Cascadia+Code:wght@200;300;400;500;600;700&display=swap');
 
-#hero {
+/* Reset and base styles */
+* {
     margin: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-#links {
-    width: 400px;
-    text-align: left;
-    font-size: x-large;
-    color: white;
-    display: flex;
-    flex-direction: column;
-}
-
-#links a {
-    color: white;
-    text-decoration: none;
-    margin-top: 20px;
-    margin: 10px 0px;
-    border: white 1px solid;
-    border-radius: 5px;
-    padding: 10px;
-}
-
-#links a:hover {
-    background-color: #1f1f1f;
-    cursor: pointer;
-}
-
-#header {
-    max-width: 1200px;
-}
-
-/* Navbar */
-#navbar {
-    display: flex;
-    flex-direction: row;
-}
-
-#navbar a {
+body {
+    background-color: #000000;
     color: #ffffff;
-    margin-right: 20px;
+    font-family: 'Cascadia Code', monospace;
+    font-weight: 300;
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+/* Container styles */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Card-like containers */
+.card {
+    background-color: #111111;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+    border: 1px solid #222222;
+}
+
+/* App Layout */
+.app-layout {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.app-header {
+    padding: 20px 20px 0px 20px;
+    text-align: center;
+}
+
+.app-content {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 20px;
+    padding-top: 40px;
+}
+
+.ascii-logo {
+    font-family: 'Cascadia Code', 'Courier New', monospace;
+    font-size: clamp(0.5rem, 2.5vw, 1.4rem);
+    color: #ffffff;
+    line-height: 1.0;
+    white-space: pre;
+    margin: 0;
+    padding: 0;
+    max-width: 100%;
+    font-weight: 400;
+    letter-spacing: 0;
+    word-spacing: 0;
+    text-align: left;
+    display: inline-block;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+    .ascii-logo {
+        font-size: clamp(0.4rem, 2.2vw, 1.0rem);
+        padding: 0 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .ascii-logo {
+        font-size: clamp(0.3rem, 1.8vw, 0.75rem);
+        padding: 0 10px;
+        line-height: 1.1;
+    }
+}
+
+
+/* Login form */
+.login-container {
+    max-width: 400px;
+    margin: 0 auto;
+    background: none;
+    padding: 32px;
+}
+
+.login-container h2 {
+    text-align: center;
+    margin-bottom: 48px;
+    font-size: 1.8rem;
+    font-weight: 300;
+    color: #ffffff;
+    letter-spacing: 0.3em;
+}
+
+.form-group {
+    margin-bottom: 32px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 12px;
+    font-weight: 300;
+    color: #ffffff;
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 16px 20px;
+    background: none;
+    border: 1px solid #ffffff;
+    border-radius: 12px;
+    color: #ffffff;
+    font-family: 'Cascadia Code', monospace;
+    font-size: 1rem;
+    font-weight: 300;
+    transition: all 0.2s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    background-color: #ffffff;
+    color: #000000;
+    border-color: #ffffff;
+}
+
+.form-group input::placeholder {
+    color: #888888;
+    font-weight: 300;
+}
+
+/* Buttons */
+button {
+    width: 100%;
+    padding: 16px 0;
+    background: none;
+    color: #ffffff;
+    border: 1px solid #ffffff;
+    border-radius: 12px;
+    font-family: 'Cascadia Code', monospace;
+    font-weight: 300;
+    font-size: 1rem;
+    letter-spacing: 0.2em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 16px;
+}
+
+button:hover {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+/* Links */
+a {
+    color: #4a9eff;
     text-decoration: none;
+    font-weight: 400;
     transition: color 0.2s ease;
 }
 
-#navbar a:hover {
-    cursor: pointer;
-    color: #91a4d2;
+a:hover {
+    color: #6bb6ff;
 }
 
-/* Blog page */
-#blog {
-    margin-top: 50px;
+/* Utility classes */
+.text-center {
+    text-align: center;
 }
 
-#blog a {
-    color: #ffffff;
-    margin-top: 50px;
+.mt-4 {
+    margin-top: 16px;
+}
+
+.mb-4 {
+    margin-bottom: 16px;
 }
