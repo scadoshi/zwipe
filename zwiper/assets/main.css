@@ -15,7 +15,7 @@ body {
     font-weight: 300;
     line-height: 1.6;
     min-height: 100vh;
-    padding: 20px;
+    padding: 1rem;
 }
 
 /* Container styles */
@@ -27,7 +27,7 @@ body {
 /* Card-like containers */
 .card {
     background-color: #111111;
-    border-radius: 12px;
+    border-radius: 1rem;
     padding: 24px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
     border: 1px solid #222222;
@@ -41,7 +41,7 @@ body {
 }
 
 .app-header {
-    padding: 20px 20px 0px 20px;
+    padding: 1rem 1rem 0px 1rem;
     text-align: center;
 }
 
@@ -50,7 +50,7 @@ body {
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    padding: 20px;
+    padding: 1rem;
     padding-top: 40px;
 }
 
@@ -75,14 +75,14 @@ body {
 @media (max-width: 768px) {
     .ascii-logo {
         font-size: clamp(0.4rem, 2.2vw, 1.0rem);
-        padding: 0 15px;
+        padding: 0 1rem;
     }
 }
 
 @media (max-width: 480px) {
     .ascii-logo {
         font-size: clamp(0.3rem, 1.8vw, 0.75rem);
-        padding: 0 10px;
+        padding: 0 1rem;
         line-height: 1.1;
     }
 }
@@ -111,19 +111,19 @@ body {
 
 .form-group label {
     display: block;
-    margin-bottom: 12px;
+    margin-bottom: 1rem;
     font-weight: 300;
     color: #ffffff;
-    font-size: 0.9rem;
+    font-size: 1rem;
     letter-spacing: 0.1em;
 }
 
 .form-group input {
     width: 100%;
-    padding: 16px 20px;
+    padding: 1rem 1rem;
     background: none;
     border: 1px solid #ffffff;
-    border-radius: 12px;
+    border-radius: 1rem;
     color: #ffffff;
     font-family: 'Cascadia Code', monospace;
     font-size: 1rem;
@@ -143,53 +143,33 @@ body {
     font-weight: 300;
 }
 
+.form-group input:hover {
+    transform: translateY(-2px);
+}
+
 /* Buttons */
 button {
     width: 100%;
-    padding: 16px 0;
+    padding: 1rem 0;
     background: none;
     color: #ffffff;
     border: 1px solid #ffffff;
-    border-radius: 12px;
+    border-radius: 1rem;
     font-family: 'Cascadia Code', monospace;
     font-weight: 300;
     font-size: 1rem;
     letter-spacing: 0.2em;
     cursor: pointer;
     transition: all 0.2s ease;
-    margin-top: 16px;
+    margin-top: 1rem;
 }
 
 button:hover {
     background-color: #ffffff;
     color: #000000;
+    transform: translateY(-2px);
 }
 
 button:active {
     transform: scale(0.98);
-}
-
-/* Links */
-a {
-    color: #4a9eff;
-    text-decoration: none;
-    font-weight: 400;
-    transition: color 0.2s ease;
-}
-
-a:hover {
-    color: #6bb6ff;
-}
-
-/* Utility classes */
-.text-center {
-    text-align: center;
-}
-
-.mt-4 {
-    margin-top: 16px;
-}
-
-.mb-4 {
-    margin-bottom: 16px;
 }
