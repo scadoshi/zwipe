@@ -14,6 +14,7 @@ path = "src/lib/lib.rs"
 zwipe = { path = "../zerver", default-features = false }
 dioxus = { version = "0.6.0", features = ["router"] }
 reqwest = "0.12.23"
+serde_json = "1.0.145"
 
 [features]
 default = ["mobile"]

@@ -11,7 +11,7 @@ pub fn Login() -> Element {
 
             form {
                 onsubmit : move |_| {
-                    println!("need to build this still");
+                    println!("please log me in");
                 },
 
                 div {
@@ -53,7 +53,7 @@ pub fn Login() -> Element {
 
                 button {
                     onclick : move |_| {
-                        println!("need to build this still");
+                        println!("please make my profile");
                     },
                     r#type : "submit",
                     class : "register",
