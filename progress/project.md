@@ -19,15 +19,21 @@ alwaysApply: true
 
 **Recent Achievement**: Successfully completed frontend validation refinement across ALL domains. Implemented granular feature flag system enabling frontend access to validation types, HTTP request/response structures, and domain models while maintaining server-only security boundaries. Frontend and backend compilation both working perfectly. Ready for full-scale Dioxus frontend development with shared types from zwipe library.
 
-### 🎯 Currently Working On (Top 3)
-1. **Dioxus Frontend Components** - Login, register, dashboard using shared HTTP types and validation from zwipe
-2. **Frontend-Backend Integration** - HTTP client service connecting Dioxus UI to existing REST API endpoints
-3. **Beautiful Mobile UI** - Modern, responsive design with real-time validation feedback
+**Current Decision**: Implementing frontend real-time validation using shared newtypes (Password, Username, EmailAddress) for immediate UX feedback while maintaining backend security validation. Creating RegisterUserRaw type for frontend validation without password hashing - secure pattern that keeps raw passwords ephemeral and maintains defense-in-depth strategy.
 
-### 🤔 Next Immediate Priorities (Top 3)
-1. **Core Frontend Components** - Login, register, dashboard, deck list interfaces
-2. **Frontend-Backend Integration** - HTTP client service, JWT token management, error handling
-3. **Deck Analytics Frontend** - Real-time calculation of mana curves and card distributions
+### 🎯 Currently Working On (Top 5)
+1. **Frontend Validation Architecture** - RegisterUserRaw type with real-time validation using shared newtypes
+2. **Authentication HTTP Service** - zwiper auth functions with validation + network separation 
+3. **Real-time Form Validation** - Immediate feedback in Dioxus components using shared validation logic
+4. **JWT Storage Strategy** - Secure mobile token storage without SQLite overhead
+5. **Login/Register Components** - Beautiful mobile UI with instant validation feedback
+
+### 🤔 Next Immediate Priorities (Top 5)
+1. **RegisterUserRaw Implementation** - Frontend-safe validation type with ephemeral password handling
+2. **AuthService HTTP Client** - Separate validation and network request functions for clean architecture
+3. **Dioxus Form Components** - Real-time validation integration with shared newtypes
+4. **Mobile Storage Layer** - Platform-specific secure JWT storage (Keychain/Keystore)
+5. **Error Handling Strategy** - Frontend error types and user-friendly error messages
 
 ---
 
