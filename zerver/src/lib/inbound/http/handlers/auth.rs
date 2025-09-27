@@ -1,3 +1,4 @@
+use crate::domain::auth::models::{AuthenticateUser, RawRegisterUser};
 #[cfg(feature = "zerver")]
 use crate::domain::auth::models::{
     ChangeEmail, ChangeEmailError, ChangeUsername, ChangeUsernameError, DeleteUser,
@@ -16,7 +17,7 @@ use crate::{
     domain::{
         auth::{
             models::{
-                AuthenticateUser, AuthenticateUserError, AuthenticateUserSuccess, ChangePassword,
+                AuthenticateUserError, AuthenticateUserSuccess, ChangePassword,
                 ChangePasswordError, InvalidAuthenticateUser, InvalidChangePassword,
                 InvalidRegisterUser, RegisterUser, RegisterUserError,
             },
@@ -30,7 +31,7 @@ use crate::{
 };
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 // ==========
 //  register
@@ -67,7 +68,7 @@ impl From<InvalidRegisterUser> for ApiError {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct HttpRegisterUser {
     username: String,
     email: String,
@@ -89,6 +90,16 @@ impl TryFrom<HttpRegisterUser> for RegisterUser {
     type Error = InvalidRegisterUser;
     fn try_from(value: HttpRegisterUser) -> Result<Self, Self::Error> {
         RegisterUser::new(&value.username, &value.email, &value.password)
+    }
+}
+
+impl From<RawRegisterUser> for HttpRegisterUser {
+    fn from(value: RawRegisterUser) -> Self {
+        Self::new(
+            &value.username.to_string(),
+            &value.email.to_string(),
+            &value.password.read().to_string(),
+        )
     }
 }
 
@@ -142,14 +153,14 @@ impl From<InvalidAuthenticateUser> for ApiError {
             InvalidAuthenticateUser::MissingIdentifier => {
                 Self::UnprocessableEntity("username or email must be present".to_string())
             }
-            InvalidAuthenticateUser::MissingPassword => {
-                Self::UnprocessableEntity("password must be present".to_string())
+            InvalidAuthenticateUser::Password(_) => {
+                Self::UnprocessableEntity("invalid username, email or password".to_string())
             }
         }
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct HttpAuthenticateUser {
     identifier: String,
     password: String,
@@ -160,6 +171,15 @@ impl HttpAuthenticateUser {
         Self {
             identifier: identifier.to_string(),
             password: password.to_string(),
+        }
+    }
+}
+
+impl From<AuthenticateUser> for HttpAuthenticateUser {
+    fn from(value: AuthenticateUser) -> Self {
+        Self {
+            identifier: value.identifier,
+            password: value.password,
         }
     }
 }
@@ -222,7 +242,7 @@ impl From<InvalidChangePassword> for ApiError {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct HttpChangePassword {
     current_password: String,
     new_password: String,
@@ -286,7 +306,7 @@ impl From<InvalidChangeUsername> for ApiError {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct HttpChangeUsername {
     username: String,
 }
@@ -294,7 +314,7 @@ pub struct HttpChangeUsername {
 impl HttpChangeUsername {
     pub fn new(username: &str) -> Self {
         Self {
-            username: username.to_string()
+            username: username.to_string(),
         }
     }
 }
@@ -348,7 +368,7 @@ impl From<InvalidChangeEmail> for ApiError {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct HttpChangeEmail {
     email: String,
 }
@@ -356,7 +376,7 @@ pub struct HttpChangeEmail {
 impl HttpChangeEmail {
     pub fn new(email: &str) -> Self {
         Self {
-            email: email.to_string()
+            email: email.to_string(),
         }
     }
 }
