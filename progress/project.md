@@ -13,27 +13,27 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: After completing comprehensive frontend validation refinement and feature flag architecture
+**Last Updated**: After implementing complete frontend validation architecture and HTTP client infrastructure
 
-**Current Focus**: Dioxus frontend component development with full backend integration
+**Current Focus**: Completing HTTP request implementation and mobile app integration
 
-**Recent Achievement**: Successfully completed frontend validation refinement across ALL domains. Implemented granular feature flag system enabling frontend access to validation types, HTTP request/response structures, and domain models while maintaining server-only security boundaries. Frontend and backend compilation both working perfectly. Ready for full-scale Dioxus frontend development with shared types from zwipe library.
+**Recent Achievement**: Successfully implemented complete frontend validation architecture with RawRegisterUser type for secure ephemeral password validation. Built AuthClient with AppConfig integration for clean HTTP client management. Enhanced backend authentication with fast-fail password policies to prevent invalid requests. Established clean separation between validation functions and network request functions for optimal architecture.
 
-**Current Decision**: Implementing frontend real-time validation using shared newtypes (Password, Username, EmailAddress) for immediate UX feedback while maintaining backend security validation. Creating RegisterUserRaw type for frontend validation without password hashing - secure pattern that keeps raw passwords ephemeral and maintains defense-in-depth strategy.
+**Current Decision**: AuthClient contains full AppConfig for maximum flexibility and consistent patterns across future clients (CardClient, DeckClient). Fast-fail validation prevents network requests for passwords that could never match database hashes, optimizing both performance and user experience.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Frontend Validation Architecture** - RegisterUserRaw type with real-time validation using shared newtypes
-2. **Authentication HTTP Service** - zwiper auth functions with validation + network separation 
-3. **Real-time Form Validation** - Immediate feedback in Dioxus components using shared validation logic
-4. **JWT Storage Strategy** - Secure mobile token storage without SQLite overhead
-5. **Login/Register Components** - Beautiful mobile UI with instant validation feedback
+1. **HTTP Request Implementation** - Completing register_user and authenticate_user network functions
+2. **Response Parsing & Error Handling** - JSON parsing and ApiError handling for frontend
+3. **JWT Token Storage** - Secure mobile token storage without SQLite overhead
+4. **Dioxus Component Integration** - Connect validation and HTTP functions to UI components
+5. **Mobile App Testing** - End-to-end authentication flow testing
 
 ### 🤔 Next Immediate Priorities (Top 5)
-1. **RegisterUserRaw Implementation** - Frontend-safe validation type with ephemeral password handling
-2. **AuthService HTTP Client** - Separate validation and network request functions for clean architecture
-3. **Dioxus Form Components** - Real-time validation integration with shared newtypes
-4. **Mobile Storage Layer** - Platform-specific secure JWT storage (Keychain/Keystore)
-5. **Error Handling Strategy** - Frontend error types and user-friendly error messages
+1. **Complete HTTP Functions** - Finish register_user and authenticate_user request/response handling
+2. **Error Type Mapping** - Frontend-friendly error types from backend ApiError responses
+3. **Token Storage Service** - Platform-specific secure JWT storage implementation
+4. **Real-time Form Validation** - Integrate validation functions into Dioxus login/register components
+5. **Mobile UI Polish** - Beautiful responsive design with validation feedback
 
 ---
 
@@ -76,6 +76,9 @@ alwaysApply: true
 - **Health Monitoring**: Database connectivity checks and system health endpoints
 - **Shared Models Architecture**: Complete feature flag system enabling frontend-backend code sharing through zwipe library
 - **Frontend Validation Refinement**: Granular feature gating across ALL domains with perfect frontend/backend compilation separation
+- **Frontend Validation Architecture**: RawRegisterUser type with ephemeral password handling and shared newtype validation
+- **HTTP Client Infrastructure**: AuthClient with AppConfig integration and clean validation/network separation
+- **Fast-fail Authentication**: Enhanced password validation preventing invalid network requests
 
 ---
 
