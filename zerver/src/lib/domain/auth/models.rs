@@ -4,9 +4,7 @@ pub mod password;
 use crate::domain::auth::models::jwt::{Jwt, JwtError};
 #[cfg(feature = "zerver")]
 use crate::domain::auth::models::password::HashedPassword;
-#[cfg(feature = "zerver")]
-use crate::domain::auth::models::password::Password;
-use crate::domain::auth::models::password::PasswordError;
+use crate::domain::auth::models::password::{InvalidPassword, Password};
 #[cfg(feature = "zerver")]
 use crate::domain::user::models::User;
 use crate::domain::user::models::{InvalidUsername, Username};
@@ -22,7 +20,6 @@ use uuid::Uuid;
 // ========
 
 #[cfg(feature = "zerver")]
-/// errors encountered while registering a user
 #[derive(Debug, Error)]
 pub enum RegisterUserError {
     #[error("user with name or email already exists")]
@@ -35,7 +32,34 @@ pub enum RegisterUserError {
     UserFromDb(anyhow::Error),
 }
 
-/// errors encountered while constructing `RegisterUserRequest`
+#[derive(Debug, Error)]
+pub enum InvalidRawRegisterUser {
+    #[error(transparent)]
+    Username(InvalidUsername),
+    #[error(transparent)]
+    Email(email_address::Error),
+    #[error(transparent)]
+    Password(InvalidPassword),
+}
+
+impl From<InvalidUsername> for InvalidRawRegisterUser {
+    fn from(value: InvalidUsername) -> Self {
+        Self::Username(value)
+    }
+}
+
+impl From<email_address::Error> for InvalidRawRegisterUser {
+    fn from(value: email_address::Error) -> Self {
+        Self::Email(value)
+    }
+}
+
+impl From<InvalidPassword> for InvalidRawRegisterUser {
+    fn from(value: InvalidPassword) -> Self {
+        Self::Password(value)
+    }
+}
+
 #[derive(Debug, Error)]
 pub enum InvalidRegisterUser {
     #[error(transparent)]
@@ -43,7 +67,7 @@ pub enum InvalidRegisterUser {
     #[error(transparent)]
     Email(email_address::Error),
     #[error(transparent)]
-    Password(PasswordError),
+    Password(InvalidPassword),
     #[error("failed to hash password: {0}")]
     FailedPasswordHash(anyhow::Error),
 }
@@ -60,8 +84,8 @@ impl From<email_address::Error> for InvalidRegisterUser {
     }
 }
 
-impl From<PasswordError> for InvalidRegisterUser {
-    fn from(value: PasswordError) -> Self {
+impl From<InvalidPassword> for InvalidRegisterUser {
+    fn from(value: InvalidPassword) -> Self {
         Self::Password(value)
     }
 }
@@ -89,8 +113,14 @@ pub enum AuthenticateUserError {
 pub enum InvalidAuthenticateUser {
     #[error("identifier must be present")]
     MissingIdentifier,
-    #[error("password must be present")]
-    MissingPassword,
+    #[error(transparent)]
+    Password(InvalidPassword),
+}
+
+impl From<InvalidPassword> for InvalidAuthenticateUser {
+    fn from(value: InvalidPassword) -> Self {
+        Self::Password(value)
+    }
 }
 
 #[cfg(feature = "zerver")]
@@ -105,7 +135,7 @@ pub enum InvalidAuthenticateUserSuccess {
 #[derive(Debug, Error)]
 pub enum InvalidChangePassword {
     #[error(transparent)]
-    Password(PasswordError),
+    Password(InvalidPassword),
     #[error("failed to hash password: {0}")]
     FailedPasswordHash(anyhow::Error),
 }
@@ -214,6 +244,30 @@ pub enum DeleteUserError {
 //  request/response types
 // ========================
 
+#[derive(Debug)]
+pub struct RawRegisterUser {
+    pub username: Username,
+    pub email: EmailAddress,
+    pub password: Password,
+}
+
+impl RawRegisterUser {
+    pub fn new(
+        username: &str,
+        email: &str,
+        password: &str,
+    ) -> Result<Self, InvalidRawRegisterUser> {
+        let username = Username::new(username)?;
+        let email = EmailAddress::from_str(email)?;
+        let password = Password::new(password)?;
+        Ok(Self {
+            username,
+            email,
+            password,
+        })
+    }
+}
+
 #[cfg(feature = "zerver")]
 #[derive(Debug)]
 pub struct RegisterUser {
@@ -251,12 +305,10 @@ impl AuthenticateUser {
         if identifier.is_empty() {
             return Err(InvalidAuthenticateUser::MissingIdentifier);
         }
-        if password.is_empty() {
-            return Err(InvalidAuthenticateUser::MissingPassword);
-        }
+        let password = Password::new(password)?;
         Ok(AuthenticateUser {
             identifier: identifier.to_string(),
-            password: password.to_string(),
+            password: password.read().to_string(),
         })
     }
 }

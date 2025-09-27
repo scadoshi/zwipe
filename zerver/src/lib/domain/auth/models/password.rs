@@ -14,7 +14,7 @@ use thiserror::Error;
 
 /// errors encountered while constructing `Password`
 #[derive(Debug, Clone, Error)]
-pub enum PasswordError {
+pub enum InvalidPassword {
     #[error("password must be at least 8 characters long")]
     TooShort,
     #[error("password must not exceed 128 characters")]
@@ -43,9 +43,9 @@ pub enum PasswordError {
 #[error("password must not contain more than {} repeated characters", 0)]
 pub struct TooManyRepeats(u8);
 
-impl From<TooManyRepeats> for PasswordError {
+impl From<TooManyRepeats> for InvalidPassword {
     fn from(value: TooManyRepeats) -> Self {
-        PasswordError::TooManyRepeats(value)
+        InvalidPassword::TooManyRepeats(value)
     }
 }
 
@@ -55,9 +55,9 @@ impl From<TooManyRepeats> for PasswordError {
 #[error("password must contain at least {} unique characters", 0)]
 pub struct TooFewUniqueChars(u8);
 
-impl From<TooFewUniqueChars> for PasswordError {
+impl From<TooFewUniqueChars> for InvalidPassword {
     fn from(value: TooFewUniqueChars) -> Self {
-        PasswordError::TooFewUniqueChars(value)
+        InvalidPassword::TooFewUniqueChars(value)
     }
 }
 
@@ -69,7 +69,7 @@ const SYMBOLS: &str = r#"~!@#$%^&*()_+=[]{}\/?|:;<>,."#;
 pub struct Password(String);
 
 impl Password {
-    pub fn new(raw: &str) -> Result<Self, PasswordError> {
+    pub fn new(raw: &str) -> Result<Self, InvalidPassword> {
         raw.meets_all_requirements()?;
         Ok(Password(raw.to_string()))
     }
@@ -78,13 +78,17 @@ impl Password {
     pub fn hash(self) -> Result<HashedPassword, password_hash::Error> {
         HashedPassword::generate(self)
     }
+
+    pub fn read(&self) -> &str {
+        &self.0
+    }
 }
 
 /// enables password policy validation
 trait PasswordPolicy {
     fn min_unique_char_requirement(&self, at_least: u8) -> Result<(), TooFewUniqueChars>;
     fn max_repeat_char_requirement(&self, at_most: u8) -> Result<(), TooManyRepeats>;
-    fn meets_all_requirements(&self) -> Result<(), PasswordError>;
+    fn meets_all_requirements(&self) -> Result<(), InvalidPassword>;
 }
 
 impl PasswordPolicy for &str {
@@ -119,32 +123,32 @@ impl PasswordPolicy for &str {
 
         Ok(())
     }
-    fn meets_all_requirements(&self) -> Result<(), PasswordError> {
+    fn meets_all_requirements(&self) -> Result<(), InvalidPassword> {
         if self.len() < 8 {
-            return Err(PasswordError::TooShort);
+            return Err(InvalidPassword::TooShort);
         }
         if self.len() > 128 {
-            return Err(PasswordError::TooLong);
+            return Err(InvalidPassword::TooLong);
         }
         if !self.chars().any(|x| x.is_uppercase()) {
-            return Err(PasswordError::MissingUpperCase);
+            return Err(InvalidPassword::MissingUpperCase);
         }
         if !self.chars().any(|x| x.is_lowercase()) {
-            return Err(PasswordError::MissingLowerCase);
+            return Err(InvalidPassword::MissingLowerCase);
         }
         if !self.chars().any(|x| x.is_numeric()) {
-            return Err(PasswordError::MissingNumber);
+            return Err(InvalidPassword::MissingNumber);
         }
         if !self.chars().any(|x| SYMBOLS.contains(x)) {
-            return Err(PasswordError::MissingSymbol(SYMBOLS.to_string()));
+            return Err(InvalidPassword::MissingSymbol(SYMBOLS.to_string()));
         }
         if self.chars().any(|x| x.is_whitespace()) {
-            return Err(PasswordError::ContainsWhitespace);
+            return Err(InvalidPassword::ContainsWhitespace);
         }
         self.min_unique_char_requirement(6)?;
         self.max_repeat_char_requirement(3)?;
         if self.is_common_password() {
-            return Err(PasswordError::CommonPassword);
+            return Err(InvalidPassword::CommonPassword);
         }
         Ok(())
     }
@@ -168,7 +172,7 @@ impl HashedPassword {
     pub fn generate(password: Password) -> Result<Self, password_hash::Error> {
         let salt = SaltString::generate(&mut OsRng);
         let hash = Argon2::default()
-            .hash_password(password.0.as_bytes(), &salt)
+            .hash_password(password.read().as_bytes(), &salt)
             .map(|x| x.to_string())?;
         Ok(Self(hash))
     }
@@ -325,7 +329,7 @@ mod tests {
     fn test_password_validation_rejects_empty_input() {
         let result = Password::new("");
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), PasswordError::TooShort));
+        assert!(matches!(result.unwrap_err(), InvalidPassword::TooShort));
     }
 
     #[test]
@@ -402,26 +406,26 @@ mod tests {
     #[test]
     fn test_password_validation_various_failures() {
         // Test all validation rules
-        assert!(matches!(Password::new(""), Err(PasswordError::TooShort)));
+        assert!(matches!(Password::new(""), Err(InvalidPassword::TooShort)));
         assert!(matches!(
             Password::new("short"),
-            Err(PasswordError::TooShort)
+            Err(InvalidPassword::TooShort)
         ));
         assert!(matches!(
             Password::new("nouppercase123!"),
-            Err(PasswordError::MissingUpperCase)
+            Err(InvalidPassword::MissingUpperCase)
         ));
         assert!(matches!(
             Password::new("NOLOWERCASE123!"),
-            Err(PasswordError::MissingLowerCase)
+            Err(InvalidPassword::MissingLowerCase)
         ));
         assert!(matches!(
             Password::new("NoNumbers!"),
-            Err(PasswordError::MissingNumber)
+            Err(InvalidPassword::MissingNumber)
         ));
         assert!(matches!(
             Password::new("NoSymbols123"),
-            Err(PasswordError::MissingSymbol(_))
+            Err(InvalidPassword::MissingSymbol(_))
         ));
     }
 
