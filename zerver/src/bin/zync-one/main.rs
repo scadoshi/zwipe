@@ -4,8 +4,8 @@ use std::str::FromStr;
 use zwipe::{
     config::Config,
     domain::{
+        ascii_logo,
         card::{self, models::Card, ports::CardService},
-        logo,
     },
     inbound::external::scryfall::PlanesWalker,
     outbound::sqlx::postgres::Postgres,
@@ -13,7 +13,7 @@ use zwipe::{
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    logo::print();
+    ascii_logo::print();
     let config = Config::from_env()?;
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::from_str(&config.rust_log)?)

@@ -13,11 +13,11 @@ path = "src/lib/lib.rs"
 
 [[bin]]
 name = "zerver"
-path = "src/bin/server/main.rs"
+path = "src/bin/zerver/main.rs"
 
 [[bin]]
 name = "zync"
-path = "src/bin/sync/main.rs"
+path = "src/bin/zync/main.rs"
 
 [[bin]]
 name = "zync-one"
