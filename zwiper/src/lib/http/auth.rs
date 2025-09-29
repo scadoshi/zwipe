@@ -8,7 +8,7 @@ use zwipe::{
     inbound::http::handlers::auth::{HttpAuthenticateUser, HttpRegisterUser},
 };
 
-use reqwest::{Client, Url};
+use reqwest::Client;
 
 use crate::config::AppConfig;
 
