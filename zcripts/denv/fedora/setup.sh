@@ -157,26 +157,53 @@ else
     print_status "Already authenticated with GitHub CLI"
 fi
 
-# Determine if we need to clone and where we are
-CURRENT_DIR=$(basename "$(pwd)")
-PARENT_DIR=$(basename "$(dirname "$(pwd)")")
+# Function to find project root reliably
+find_project_root() {
+    local current_dir="$(pwd)"
+    local original_dir="$current_dir"
 
-if [[ "$CURRENT_DIR" == "zwipe" || "$CURRENT_DIR" == "zerver" || "$PARENT_DIR" == "zwipe" ]]; then
-    print_status "Already inside zwipe project, no cloning needed"
-    # Navigate to project root if we're in a subdirectory
-    if [[ "$CURRENT_DIR" == "zerver" ]]; then
-        cd ..
-    elif [[ "$PARENT_DIR" == "zwipe" ]]; then
-        cd ..
+    # Walk up directory tree looking for project root indicators
+    while [[ "$(basename "$current_dir")" != "/" ]]; do
+        # Check if this looks like the project root
+        if [[ -f "$current_dir/zerver/Cargo.toml" && -f "$current_dir/zwiper/Cargo.toml" ]]; then
+            echo "$current_dir"
+            return 0
+        fi
+
+        # Check if this is the zwipe directory itself
+        if [[ "$(basename "$current_dir")" == "zwipe" ]]; then
+            echo "$current_dir"
+            return 0
+        fi
+
+        current_dir="$(dirname "$current_dir")"
+    done
+
+    # If we didn't find it, check if zwipe exists in original location
+    if [[ -d "$original_dir/zwipe" ]]; then
+        echo "$original_dir/zwipe"
+        return 0
     fi
-elif [ -d "zwipe" ]; then
-    print_status "Repository already exists, updating..."
-    cd zwipe
-    git pull origin main
+
+    # Default: assume we're in project root or will clone
+    echo "$original_dir"
+    return 1
+}
+
+# Determine project root and navigate there
+PROJECT_ROOT=$(find_project_root)
+PROJECT_ROOT_FOUND=$?
+
+if [[ $PROJECT_ROOT_FOUND -eq 0 ]]; then
+    print_status "Found project root at: $PROJECT_ROOT"
+    cd "$PROJECT_ROOT"
 else
+    print_status "Project not found locally, will clone repository"
     print_status "Cloning zwipe repository..."
     gh repo clone scadoshi/zwipe
-    cd zwipe
+    PROJECT_ROOT="$(pwd)/zwipe"
+    cd "$PROJECT_ROOT"
+    print_status "Cloned to: $PROJECT_ROOT"
 fi
 
 # Setup PostgreSQL database
@@ -194,7 +221,7 @@ sudo -u postgres psql -c "CREATE DATABASE zerver OWNER $CURRENT_USER;"
 
 # Create .env file
 print_status "Creating .env configuration..."
-cat > zerver/.env << EOF
+cat > "$PROJECT_ROOT/zerver/.env" << EOF
 # App State
 JWT_SECRET=$(openssl rand -base64 32)
 DATABASE_URL=postgres:///zerver?user=$CURRENT_USER
