@@ -45,7 +45,6 @@ use tower_http::cors::CorsLayer;
 //  error
 // =======
 
-#[cfg(feature = "zerver")]
 #[derive(Debug)]
 pub enum ApiError {
     InternalServerError(String),
