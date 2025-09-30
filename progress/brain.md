@@ -15,25 +15,25 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: After completing comprehensive frontend validation refinement and feature flag architecture
+**Last Updated**: After implementing secure Dioxus component validation with UX-focused error handling
 
-**Next Learning Focus**: Dioxus component development with full backend integration using shared types
+**Next Learning Focus**: HTTP request implementation and backend API integration in Dioxus components
 
-**Recent Achievement**: Successfully completed frontend validation refinement across ALL domains (auth, card, deck, user). Mastered granular feature flag architecture enabling frontend access to validation types, HTTP request/response structures, and domain models while maintaining server-only security boundaries. Both frontend and backend compilation working perfectly. Gained expertise in sophisticated Rust feature flag patterns and architectural decision-making. Ready for full-scale Dioxus frontend development.
+**Recent Achievement**: Successfully implemented secure login component with generic "invalid credentials" error messaging to prevent user enumeration attacks. Built smart registration form with real-time validation that only activates after first submit attempt, preventing annoying initial typing errors. Mastered Dioxus state management with Signal types and conditional rendering. Integrated shared domain types (Username, EmailAddress, Password) seamlessly into frontend components. Established solid patterns for validation state management and error display timing in Dioxus.
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **Dioxus Component Development** - Login, register, dashboard components using shared types from zwipe library
-2. **Beautiful Mobile UI** - Modern, responsive design with real-time validation feedback using frontend validation types
-3. **Frontend HTTP Client** - Service layer connecting Dioxus to REST API using shared HTTP request/response types
-4. **Real-time Validation** - Immediate user feedback using frontend-accessible validation constructors
-5. **Production-Ready Frontend** - Complete mobile app with backend integration and beautiful UX
+1. **HTTP Request Implementation** - Building actual network calls in http.rs to connect forms to backend
+2. **Backend API Integration** - Connecting Dioxus validation to real authentication endpoints
+3. **Response Handling** - Parsing JSON responses and mapping backend errors to frontend UI
+4. **JWT Token Management** - Storing and using authentication tokens in mobile app
+5. **Complete Auth Flow** - End-to-end login/register to dashboard navigation with real backend
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Dioxus Patterns** - Best practices for component organization, state management, and routing
-2. **Frontend Error Handling** - How to handle API errors, network failures, and validation errors in UI
-3. **Mobile Responsiveness** - Dioxus patterns for mobile-first design and touch interactions
-4. **Frontend Testing** - Testing strategies for Dioxus components and user interactions
-5. **Production Deployment** - Building and deploying Dioxus mobile apps to app stores
+1. **HTTP Client Implementation** - Best patterns for making requests from Dioxus components to backend
+2. **Error Response Mapping** - Converting backend ApiError responses to user-friendly frontend messages
+3. **Token Storage** - Secure JWT storage and management in mobile Dioxus apps
+4. **Async State Management** - Handling loading states, network errors, and async operations in Dioxus
+5. **Navigation Flow** - Proper routing and state management after successful authentication
 
 ---
 
@@ -86,6 +86,16 @@ alwaysApply: true
 ### ⚙️ Basic Implementation Patterns
 - **Environment Setup**: .env files, configuration management
 - **macro_rules!**: Basic declarative macro creation and usage
+
+### 🎨 Dioxus Component Development & State Management
+- **Component Architecture**: Function components with RSX macro for HTML-like syntax
+- **State Management**: Signal types for reactive state with use_signal() patterns
+- **Conditional Rendering**: Dynamic UI based on state with if expressions in RSX
+- **Form Handling**: Input binding, event handlers (oninput, onsubmit), and form validation
+- **Error Display Timing**: UX-focused validation that activates after first submit attempt
+- **Security-Focused UI**: Generic error messaging to prevent information disclosure
+- **Domain Type Integration**: Using shared backend types (Username, EmailAddress, Password) in frontend components
+- **Navigation**: use_navigator() for programmatic routing between components
 
 ### 💾 SQLx Database Operations & Advanced Patterns
 - **Connection Pooling**: Production-ready pool configuration with optimized settings

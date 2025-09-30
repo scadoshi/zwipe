@@ -13,20 +13,20 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: After implementing complete frontend validation architecture and HTTP client infrastructure
+**Last Updated**: After implementing Dioxus component validation with security-focused error handling
 
-**Current Focus**: Completing HTTP request implementation and mobile app integration
+**Current Focus**: HTTP request implementation and backend integration for authentication flow
 
-**Recent Achievement**: Successfully implemented complete frontend validation architecture with RawRegisterUser type for secure ephemeral password validation. Built AuthClient with AppConfig integration for clean HTTP client management. Enhanced backend authentication with fast-fail password policies to prevent invalid requests. Established clean separation between validation functions and network request functions for optimal architecture.
+**Recent Achievement**: Successfully implemented secure login validation with generic error messaging to prevent user enumeration attacks. Built smart registration form with real-time validation that activates only after first submit attempt, preventing annoying initial typing errors. Integrated shared domain types (Username, EmailAddress, Password) into Dioxus components for consistent validation. Established UX-focused validation patterns with different security approaches for login vs registration flows.
 
 **Current Decision**: AuthClient contains full AppConfig for maximum flexibility and consistent patterns across future clients (CardClient, DeckClient). Fast-fail validation prevents network requests for passwords that could never match database hashes, optimizing both performance and user experience.
 
 ### 🎯 Currently Working On (Top 5)
-1. **HTTP Request Implementation** - Completing register_user and authenticate_user network functions
-2. **Response Parsing & Error Handling** - JSON parsing and ApiError handling for frontend
-3. **JWT Token Storage** - Secure mobile token storage without SQLite overhead
-4. **Dioxus Component Integration** - Connect validation and HTTP functions to UI components
-5. **Mobile App Testing** - End-to-end authentication flow testing
+1. **HTTP Request Implementation** - Building register_user and authenticate_user network functions in http.rs
+2. **Backend Integration** - Connecting Dioxus validation to actual API endpoints
+3. **Response Parsing & Error Handling** - JSON parsing and ApiError mapping for frontend
+4. **JWT Token Storage** - Secure mobile token storage implementation
+5. **End-to-End Auth Flow** - Complete login/register to dashboard navigation
 
 ### 🤔 Next Immediate Priorities (Top 5)
 1. **Complete HTTP Functions** - Finish register_user and authenticate_user request/response handling
@@ -79,6 +79,8 @@ alwaysApply: true
 - **Frontend Validation Architecture**: RawRegisterUser type with ephemeral password handling and shared newtype validation
 - **HTTP Client Infrastructure**: AuthClient with AppConfig integration and clean validation/network separation
 - **Fast-fail Authentication**: Enhanced password validation preventing invalid network requests
+- **Dioxus Component Validation**: Secure login with generic error messaging and smart registration with real-time validation
+- **UX-Focused Error Handling**: Security-first login validation vs user-friendly registration feedback patterns
 
 ---
 
