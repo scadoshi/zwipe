@@ -173,3 +173,43 @@ button:hover {
 button:active {
     transform: scale(0.98);
 }
+
+/* Swipe Navigation Styles */
+.swipe-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    touch-action: pan-y;
+    /* Prevent vertical scrolling during horizontal swipe */
+}
+
+.swipe-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+}
+
+.swipe-screen.active {
+    transform: translateX(0);
+}
+
+.swipe-screen.prev {
+    transform: translateX(-100%);
+}
+
+.swipe-screen.next {
+    transform: translateX(100%);
+}
+
+.swipe-container:active {
+    cursor: grab;
+}
+
+.swipe-container.dragging {
+    cursor: grabbing;
+}

@@ -1,3 +1,4 @@
+pub mod animations;
 pub mod components;
 pub mod config;
 pub mod http;

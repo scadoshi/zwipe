@@ -10,9 +10,9 @@ use uuid::Uuid;
 
 #[derive(Debug, Error, Clone)]
 pub enum InvalidUsername {
-    #[error("length must be greater than 0")]
+    #[error("must be greater than 0 characters")]
     TooShort,
-    #[error("length must be less than 21")]
+    #[error("must not exceed 20 characters")]
     TooLong,
 }
 

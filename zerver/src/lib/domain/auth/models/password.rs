@@ -12,22 +12,21 @@ use thiserror::Error;
 //  errors
 // ========
 
-/// errors encountered while constructing `Password`
 #[derive(Debug, Clone, Error)]
 pub enum InvalidPassword {
-    #[error("password must be at least 8 characters long")]
+    #[error("must be at least 8 characters long")]
     TooShort,
-    #[error("password must not exceed 128 characters")]
+    #[error("must not exceed 128 characters")]
     TooLong,
-    #[error("password must have at least one uppercase character")]
+    #[error("must have at least one uppercase letter")]
     MissingUpperCase,
-    #[error("password must have at least one lowercase character")]
+    #[error("must have at least one lowercase letter")]
     MissingLowerCase,
-    #[error("password must have at least one number")]
+    #[error("must have at least one number")]
     MissingNumber,
-    #[error("password must have at least one symbol from {0}")]
+    #[error("must have at least one symbol from {0}")]
     MissingSymbol(String),
-    #[error("password must not contain whitespace characters")]
+    #[error("must not contain whitespace characters")]
     ContainsWhitespace,
     #[error("password is too common and not secure")]
     CommonPassword,
@@ -40,7 +39,7 @@ pub enum InvalidPassword {
 /// error for when there are too many
 /// repeated letters in given password
 #[derive(Debug, Clone, Error)]
-#[error("password must not contain more than {0} repeated characters")]
+#[error("must not contain more than {0} repeated characters")]
 pub struct TooManyRepeats(u8);
 
 impl From<TooManyRepeats> for InvalidPassword {
@@ -52,7 +51,7 @@ impl From<TooManyRepeats> for InvalidPassword {
 /// error for when there are too few
 /// characters in given password
 #[derive(Debug, Clone, Error)]
-#[error("password must contain at least {0} unique characters")]
+#[error("must contain at least {0} unique characters")]
 pub struct TooFewUniqueChars(u8);
 
 impl From<TooFewUniqueChars> for InvalidPassword {
