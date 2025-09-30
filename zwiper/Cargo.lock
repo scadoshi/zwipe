@@ -5888,6 +5888,7 @@ name = "zwiper"
 version = "0.1.0"
 dependencies = [
  "dioxus",
+ "email_address",
  "reqwest",
  "serde_json",
  "zwipe",
