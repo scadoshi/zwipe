@@ -25,7 +25,7 @@ pub enum InvalidPassword {
     MissingLowerCase,
     #[error("password must have at least one number")]
     MissingNumber,
-    #[error("password must have at least one symbol from {}", 0)]
+    #[error("password must have at least one symbol from {0}")]
     MissingSymbol(String),
     #[error("password must not contain whitespace characters")]
     ContainsWhitespace,
@@ -40,7 +40,7 @@ pub enum InvalidPassword {
 /// error for when there are too many
 /// repeated letters in given password
 #[derive(Debug, Clone, Error)]
-#[error("password must not contain more than {} repeated characters", 0)]
+#[error("password must not contain more than {0} repeated characters")]
 pub struct TooManyRepeats(u8);
 
 impl From<TooManyRepeats> for InvalidPassword {
@@ -52,7 +52,7 @@ impl From<TooManyRepeats> for InvalidPassword {
 /// error for when there are too few
 /// characters in given password
 #[derive(Debug, Clone, Error)]
-#[error("password must contain at least {} unique characters", 0)]
+#[error("password must contain at least {0} unique characters")]
 pub struct TooFewUniqueChars(u8);
 
 impl From<TooFewUniqueChars> for InvalidPassword {
@@ -124,12 +124,6 @@ impl PasswordPolicy for &str {
         Ok(())
     }
     fn meets_all_requirements(&self) -> Result<(), InvalidPassword> {
-        if self.len() < 8 {
-            return Err(InvalidPassword::TooShort);
-        }
-        if self.len() > 128 {
-            return Err(InvalidPassword::TooLong);
-        }
         if !self.chars().any(|x| x.is_uppercase()) {
             return Err(InvalidPassword::MissingUpperCase);
         }
@@ -144,6 +138,12 @@ impl PasswordPolicy for &str {
         }
         if self.chars().any(|x| x.is_whitespace()) {
             return Err(InvalidPassword::ContainsWhitespace);
+        }
+        if self.len() < 8 {
+            return Err(InvalidPassword::TooShort);
+        }
+        if self.len() > 128 {
+            return Err(InvalidPassword::TooLong);
         }
         self.min_unique_char_requirement(6)?;
         self.max_repeat_char_requirement(3)?;
