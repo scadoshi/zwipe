@@ -11,12 +11,12 @@ use dioxus::prelude::*;
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
 pub enum Route {
+    #[route("/")]
+    #[redirect("/", || Route::Home {})]
+    Home {},
     #[layout(Layout)]
     #[route("/login")]
     Login {},
     #[route("/register")]
     Register {},
-    #[route("/")]
-    #[redirect("/", || Route::Home {})]
-    Home {},
 }

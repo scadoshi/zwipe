@@ -15,6 +15,8 @@ body {
     line-height: 1.6;
     min-height: 100vh;
     padding: 1rem;
+    overflow: hidden;
+
 }
 
 .container {
@@ -39,15 +41,6 @@ body {
 .app-header {
     padding: 1rem 1rem 0px 1rem;
     text-align: center;
-}
-
-.app-content {
-    flex: 1;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    padding: 1rem;
-    padding-top: 40px;
 }
 
 .ascii-logo {
@@ -214,13 +207,8 @@ button:active {
     cursor: grabbing;
 }
 
-.home-directions {
-    text-align: center;
-    letter-spacing: .1rem;
-}
-
 .home-direction-arrow {
-    font-size: 3rem;
+    font-size: 2rem;
 }
 
 .home-direction-arrow:hover {
@@ -229,4 +217,15 @@ button:active {
 
 .app-layout header {
     cursor: pointer;
+}
+
+.home {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 1rem;
+    letter-spacing: .1rem;
+    min-height: 100vh;
 }
