@@ -2,6 +2,7 @@ use dioxus::prelude::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum SwipePosition {
+    Home,
     Login,
     Register,
 }

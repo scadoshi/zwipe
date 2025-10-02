@@ -17,6 +17,6 @@ pub enum Route {
     #[route("/register")]
     Register {},
     #[route("/")]
-    #[redirect("/", || Route::Login {})]
+    #[redirect("/", || Route::Home {})]
     Home {},
 }

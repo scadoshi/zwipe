@@ -213,3 +213,12 @@ button:active {
 .swipe-container.dragging {
     cursor: grabbing;
 }
+
+.home-directions {
+    text-align: center;
+    letter-spacing: .1rem;
+}
+
+.home-direction-arrow {
+    font-size: 3rem;
+}
