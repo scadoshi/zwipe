@@ -222,3 +222,11 @@ button:active {
 .home-direction-arrow {
     font-size: 3rem;
 }
+
+.home-direction-arrow:hover {
+    cursor: pointer;
+}
+
+.app-layout header {
+    cursor: pointer;
+}
