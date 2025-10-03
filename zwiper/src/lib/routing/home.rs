@@ -3,10 +3,7 @@ use zwipe::domain::ascii_logo;
 
 use crate::{
     routing::Route,
-    swipe::{
-        self, handle_onmousedown, handle_onmousemove, handle_onmouseup, handle_ontouchend,
-        handle_ontouchmove, handle_ontouchstart,
-    },
+    swipe::{self, OnMouse, OnTouch},
 };
 
 #[component]
@@ -18,15 +15,20 @@ pub fn Home() -> Element {
     rsx! {
         div { class : "swipe-able",
 
-            style : format!("transform: translateY({}px);", -swipe_state.read().dy),
+            style : format!(
+                "transform: translateY({}px);
+                transition: transform {}s;",
+                -swipe_state.read().dy(),
+                swipe_state.read().transition_seconds
+            ),
 
-            ontouchstart : move |e: Event<TouchData>| handle_ontouchstart(e, &mut swipe_state),
-            ontouchmove : move |e: Event<TouchData>| handle_ontouchmove(e, &mut swipe_state),
-            ontouchend : move |e: Event<TouchData>| handle_ontouchend(e, &mut swipe_state),
+            ontouchstart : move |e: Event<TouchData>| swipe_state.handle_ontouchstart(e),
+            ontouchmove : move |e: Event<TouchData>| swipe_state.handle_ontouchmove(e),
+            ontouchend : move |e: Event<TouchData>| swipe_state.handle_ontouchend(e),
 
-            onmousedown : move |e: Event<MouseData>| handle_onmousedown(e, &mut swipe_state),
-            onmousemove : move |e: Event<MouseData>| handle_onmousemove(e, &mut swipe_state),
-            onmouseup : move |e: Event<MouseData>| handle_onmouseup(e, &mut swipe_state),
+            onmousedown : move |e: Event<MouseData>| swipe_state.handle_onmousedown(e),
+            onmousemove : move |e: Event<MouseData>| swipe_state.handle_onmousemove(e),
+            onmouseup : move |e: Event<MouseData>| swipe_state.handle_onmouseup(e),
 
             div { class : "home-screen",
                 div {
