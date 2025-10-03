@@ -31,9 +31,9 @@ alwaysApply: true
 ### 🤔 Next Immediate Priorities (Top 5)
 1. **Complete Swipe Interface** - Implement detection logic and visual feedback for screen transitions
 2. **Cross-Platform Consistency** - Ensure swipe behavior matches between touch and mouse events
-3. **Complete HTTP Functions** - Finish register_user and authenticate_user request/response handling
-4. **Error Type Mapping** - Frontend-friendly error types from backend ApiError responses
-5. **Token Storage Service** - Platform-specific secure JWT storage implementation
+3. **Refactor Event Handlers** - Extract touch and mouse event handlers into reusable functions for any swipeable component
+4. **Full-Screen Swipe Area** - Configure swipe-able class to expand across entire screen for universal swipe detection
+5. **Complete HTTP Functions** - Finish register_user and authenticate_user request/response handling
 
 ---
 
