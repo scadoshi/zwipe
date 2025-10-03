@@ -9,7 +9,7 @@ title = "zwiper"
 [web.resource]
 
 # Additional CSS style files
-style = []
+style = ["/main.css"]
 
 # Additional JavaScript files
 script = []
