@@ -78,7 +78,6 @@ button:active {
     height: 100vh;
     z-index: 9999;
     user-select: none;
-    transition: transform 0.3s ease;
 }
 
 /* logo */
