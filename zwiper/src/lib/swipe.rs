@@ -1,4 +1,4 @@
-use dioxus::prelude::*;
+use dioxus::html::geometry::ClientPoint;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Place {
@@ -10,24 +10,30 @@ pub enum Place {
 #[derive(Debug, Clone)]
 pub struct State {
     pub place: Place,
-    pub start: Option<(i64, i64)>,
+    pub start: Option<ClientPoint>,
+    pub current: Option<ClientPoint>,
+    pub dx: f64,
+    pub dy: f64,
     pub moving: bool,
-    pub distance: f64,
 }
 
 impl State {
     pub fn new() -> Self {
         Self {
             place: Place::Home,
-            moving: false,
-            distance: 0.0,
             start: None,
+            current: None,
+            dx: 0.0,
+            dy: 0.0,
+            moving: false,
         }
     }
 
     pub fn reset(&mut self) {
         self.moving = false;
-        self.distance = 0.0;
         self.start = None;
+        self.current = None;
+        self.dx = 0.0;
+        self.dy = 0.0;
     }
 }
