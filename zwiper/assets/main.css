@@ -1,6 +1,6 @@
-/* Import Cascadia Code font */
 @import url('https://fonts.googleapis.com/css2?family=Cascadia+Code:wght@200;300;400;500;600;700&display=swap');
 
+/* general */
 * {
     margin: 0;
     padding: 0;
@@ -14,34 +14,62 @@ body {
     font-weight: 300;
     line-height: 1.6;
     min-height: 100vh;
-    padding: 1rem;
+    max-width: 100vh;
     overflow: hidden;
-
 }
 
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.card {
-    background-color: #111111;
+button {
+    width: 100%;
+    padding: 1rem 0;
+    background: none;
+    color: #ffffff;
+    border: 1px solid #ffffff;
     border-radius: 1rem;
-    padding: 24px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
-    border: 1px solid #222222;
+    font-family: 'Cascadia Code', monospace;
+    font-weight: 300;
+    font-size: 1rem;
+    letter-spacing: 0.2em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 1rem;
 }
 
-.app-layout {
+button:hover {
+    background-color: #ffffff;
+    color: #000000;
+    transform: translateY(-2px);
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+/* main layout */
+.main-layout {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
 }
 
-.app-header {
+.main-header {
     padding: 1rem 1rem 0px 1rem;
     text-align: center;
 }
+
+.main-layout header {
+    cursor: pointer;
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    letter-spacing: .1rem;
+}
+
+/* logo */
 
 .ascii-logo {
     font-family: 'Cascadia Code', 'Courier New', monospace;
@@ -61,25 +89,31 @@ body {
     overflow-x: hidden;
 }
 
-@media (max-width: 768px) {
-    .ascii-logo {
-        font-size: clamp(0.4rem, 2.2vw, 1.0rem);
-        padding: 0 1rem;
-    }
+/* home */
+
+.home-screen {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 1rem;
+    letter-spacing: .1rem;
+    min-height: 100vh;
 }
 
-@media (max-width: 480px) {
-    .ascii-logo {
-        font-size: clamp(0.3rem, 1.8vw, 0.75rem);
-        padding: 0 1rem;
-        line-height: 1.1;
-    }
+.home-direction-arrow {
+    font-size: 2rem;
 }
+
+.home-direction-arrow:hover {
+    cursor: pointer;
+}
+
+/* inputs */
 
 .form-container {
-    max-width: 25rem;
-    margin: 0 auto;
-    background: none;
+    max-width: 20rem !important;
     padding: 2rem;
 }
 
@@ -96,6 +130,7 @@ body {
     font-weight: 300;
     color: #d13b3b;
     letter-spacing: 0.1em;
+    padding-bottom: 1rem;
 }
 
 .form-group {
@@ -139,93 +174,4 @@ body {
 
 .form-group input:hover {
     transform: translateY(-2px);
-}
-
-button {
-    width: 100%;
-    padding: 1rem 0;
-    background: none;
-    color: #ffffff;
-    border: 1px solid #ffffff;
-    border-radius: 1rem;
-    font-family: 'Cascadia Code', monospace;
-    font-weight: 300;
-    font-size: 1rem;
-    letter-spacing: 0.2em;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    margin-top: 1rem;
-}
-
-button:hover {
-    background-color: #ffffff;
-    color: #000000;
-    transform: translateY(-2px);
-}
-
-button:active {
-    transform: scale(0.98);
-}
-
-/* Swipe Navigation Styles */
-.swipe-container {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    touch-action: pan-y;
-    /* Prevent vertical scrolling during horizontal swipe */
-}
-
-.swipe-screen {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: transform;
-}
-
-.swipe-screen.active {
-    transform: translateX(0);
-}
-
-.swipe-screen.prev {
-    transform: translateX(-100%);
-}
-
-.swipe-screen.next {
-    transform: translateX(100%);
-}
-
-.swipe-container:active {
-    cursor: grab;
-}
-
-.swipe-container.dragging {
-    cursor: grabbing;
-}
-
-.home-direction-arrow {
-    font-size: 2rem;
-}
-
-.home-direction-arrow:hover {
-    cursor: pointer;
-}
-
-.app-layout header {
-    cursor: pointer;
-}
-
-.home {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    padding: 1rem;
-    letter-spacing: .1rem;
-    min-height: 100vh;
 }

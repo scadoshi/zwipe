@@ -84,16 +84,17 @@ pub fn Register() -> Element {
                     }
                 },
 
-                if *submit_clicked.read() {
-                    if let Some(error) = username_error.read().as_ref() {
-                        div { class : "form-error",
-                            "{error}"
+                div { class : "form-group",
+                    label { r#for : "username" }
+
+                    if *submit_clicked.read() {
+                        if let Some(error) = username_error.read().as_ref() {
+                            div { class : "form-error",
+                                "{error}"
+                            }
                         }
                     }
-                }
 
-                div { class : "form-group",
-                    label { r#for : "username", ""}
                     input {
                         id : "username",
                         r#type : "text",
@@ -103,7 +104,6 @@ pub fn Register() -> Element {
                         spellcheck : "false",
                         oninput : move |event| {
                             username.set(event.value());
-                            // Validate in real-time after first submission attempt
                             if *submit_clicked.read() {
                                 match Username::new(&event.value()) {
                                     Ok(_) => username_error.set(None),
@@ -114,17 +114,17 @@ pub fn Register() -> Element {
                     }
                 }
 
+                div { class : "form-group",
+                    label { r#for : "email" }
 
-                if *submit_clicked.read() {
-                    if let Some(error) = email_error.read().as_ref() {
-                        div { class : "form-error",
-                            "{error}"
+                    if *submit_clicked.read() {
+                        if let Some(error) = email_error.read().as_ref() {
+                            div { class : "form-error",
+                                "{error}"
+                            }
                         }
                     }
-                }
 
-                div { class : "form-group",
-                    label { r#for : "email", ""}
                     input {
                         id : "email",
                         r#type : "text",
@@ -144,16 +144,17 @@ pub fn Register() -> Element {
                     }
                 }
 
-                if *submit_clicked.read() {
-                    if let Some(error) = password_error.read().as_ref() {
-                        div { class : "form-error",
-                            "{error}"
-                        }
-                    }
-                }
-
                 div { class : "form-group",
                     label { r#for : "password", "" }
+
+                    if *submit_clicked.read() {
+                        if let Some(error) = password_error.read().as_ref() {
+                            div { class : "form-error",
+                                "{error}"
+                            }
+                        }
+                    }
+
                     input {
                         id : "password",
                         r#type : "password",
@@ -163,7 +164,6 @@ pub fn Register() -> Element {
                         spellcheck : "false",
                         oninput : move |event| {
                             password.set(event.value());
-                            // Validate in real-time after first submission attempt
                             if *submit_clicked.read() {
                                 match Password::new(&event.value()) {
                                     Ok(_) => password_error.set(None),
