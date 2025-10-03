@@ -1,7 +1,6 @@
 use once_cell::sync::Lazy;
 use std::collections::HashSet;
 
-/// common passwords from various breach databases
 const COMMON_PASSWORDS_LIST: &[&str] = &[
     "password",
     "123456",

@@ -1,3 +1,4 @@
+pub mod bad_words;
 pub mod jwt;
 pub mod password;
 #[cfg(feature = "zerver")]

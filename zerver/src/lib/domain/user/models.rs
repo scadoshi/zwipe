@@ -4,16 +4,22 @@ use std::fmt::Display;
 use thiserror::Error;
 use uuid::Uuid;
 
+use crate::domain::auth::models::bad_words::ContainsBadWord;
+
 // ========
 //  errors
 // ========
 
 #[derive(Debug, Error, Clone)]
 pub enum InvalidUsername {
-    #[error("must be greater than 0 characters")]
+    #[error("must be at least 3 characters long")]
     TooShort,
     #[error("must not exceed 20 characters")]
     TooLong,
+    #[error("cannot contain whitespace")]
+    Whitespace,
+    #[error("no naughty bad words please")]
+    BadWord,
 }
 
 #[cfg(feature = "zerver")]
@@ -38,7 +44,15 @@ impl Username {
     pub fn new(raw: &str) -> Result<Self, InvalidUsername> {
         let trimmed = raw.trim();
 
-        if trimmed.is_empty() {
+        if trimmed.contains_bad_word() {
+            return Err(InvalidUsername::BadWord);
+        }
+
+        if trimmed.chars().any(|c| c.is_whitespace()) {
+            return Err(InvalidUsername::Whitespace);
+        }
+
+        if trimmed.len() < 3 {
             return Err(InvalidUsername::TooShort);
         }
 
