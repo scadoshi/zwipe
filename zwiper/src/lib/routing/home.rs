@@ -1,7 +1,13 @@
-use dioxus::{html::input_data::MouseButton, prelude::*};
+use dioxus::prelude::*;
 use zwipe::domain::ascii_logo;
 
-use crate::{routing::Route, swipe};
+use crate::{
+    routing::Route,
+    swipe::{
+        self, handle_onmousedown, handle_onmousemove, handle_onmouseup, handle_ontouchend,
+        handle_ontouchmove, handle_ontouchstart,
+    },
+};
 
 #[component]
 pub fn Home() -> Element {
@@ -12,90 +18,21 @@ pub fn Home() -> Element {
     rsx! {
         div { class : "swipe-able",
 
-            ontouchstart : move |e: Event<TouchData>| {
-                if let Some(t) = e.touches().into_iter().next() {
-                    swipe_state.with_mut(|ss| {
-                        ss.start = Some(t.client_coordinates());
-                        ss.current = ss.start.clone();
-                    });
+            style : format!("transform: translateY({}px);", -swipe_state.read().dy),
 
-                    println!("starting at {:?}", swipe_state.read().start);
-                }
+            ontouchstart : move |e: Event<TouchData>| handle_ontouchstart(e, &mut swipe_state),
+            ontouchmove : move |e: Event<TouchData>| handle_ontouchmove(e, &mut swipe_state),
+            ontouchend : move |e: Event<TouchData>| handle_ontouchend(e, &mut swipe_state),
 
-            },
-
-            ontouchmove : move |e: Event<TouchData>| {
-                if let Some(t) = e.touches().into_iter().next() {
-                    swipe_state.with_mut(|ss| {
-                        ss.moving = true;
-                        ss.current = Some(t.client_coordinates());
-                        if let Some(start) = ss.start {
-                            if let Some(current) = ss.current {
-                                ss.dx = start.x - current.x;
-                                ss.dy = start.y - current.y;
-                            }
-                        }
-                    });
-
-                    let ss = swipe_state.read();
-                    println!("moving at {:?}", ss.current);
-                    println!("dx={:?}, dy={:?}", ss.dx, ss.dy);
-                }
-            },
-
-            ontouchend : move |e: Event<TouchData>| {
-                swipe_state.with_mut(|ss| {
-                    ss.moving = false;
-                    if let Some(t) = e.touches().into_iter().next() {
-                        ss.current = Some(t.client_coordinates());
-                    }
-                });
-                let ss = swipe_state.read();
-                println!("ending at {:?}", ss.current);
-            },
-
-            onmousedown : move |e: Event<MouseData>| {
-                    swipe_state.with_mut(|ss| {
-                        ss.start = Some(e.client_coordinates());
-                        ss.current = ss.start.clone();
-                    });
-
-                    println!("starting at {:?}", swipe_state.read().start);
-            },
-
-            onmousemove : move |e: Event<MouseData>| {
-                if e.held_buttons().contains(MouseButton::Primary) {
-                    swipe_state.with_mut(|ss| {
-                    ss.moving = true;
-                    ss.current = Some(e.client_coordinates());
-                    if let Some(start) = ss.start {
-                        if let Some(current) = ss.current {
-                            ss.dx = start.x - current.x;
-                            ss.dy = start.y - current.y;
-                        }
-                    }
-                    });
-
-                    let ss = swipe_state.read();
-                    println!("moving at {:?}", ss.current);
-                    println!("dx={:?}, dy={:?}", ss.dx, ss.dy);
-                }
-            },
-
-            onmouseup : move |e: Event<MouseData>| {
-                swipe_state.with_mut(|ss| {
-                    ss.moving = false;
-                    ss.current = Some(e.client_coordinates());
-                });
-                let ss = swipe_state.read();
-                println!("ending at {:?}", ss.current);
-            },
+            onmousedown : move |e: Event<MouseData>| handle_onmousedown(e, &mut swipe_state),
+            onmousemove : move |e: Event<MouseData>| handle_onmousemove(e, &mut swipe_state),
+            onmouseup : move |e: Event<MouseData>| handle_onmouseup(e, &mut swipe_state),
 
             div { class : "home-screen",
                 div {
-                    onclick : move |_| {
-                        navigator.push(Route::Login {});
-                    },
+                    // onclick : move |_| {
+                    //     navigator.push(Route::Login {});
+                    // },
                     class : "home-direction-arrow",
                     "↑"
                 },
@@ -107,9 +44,9 @@ pub fn Home() -> Element {
                 p { "swipe ", b { "down" }, " to ", b { "create profile" } },
 
                 div {
-                    onclick : move |_| {
-                        navigator.push(Route::Register {});
-                    },
+                    // onclick : move |_| {
+                    //     navigator.push(Route::Register {});
+                    // },
                     class : "home-direction-arrow",
                     "↓"
                 }
