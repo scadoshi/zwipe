@@ -69,6 +69,18 @@ button:active {
     letter-spacing: .1rem;
 }
 
+/* swipe */
+.swipe-able {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    user-select: none;
+    transition: transform 0.3s ease;
+}
+
 /* logo */
 
 .ascii-logo {
