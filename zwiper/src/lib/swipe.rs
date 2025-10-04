@@ -119,10 +119,10 @@ impl State {
             let from_previous = current.point.x - previous.point.x;
 
             let milliseconds = (current.time - previous.time).as_seconds_f64() / 1000.0;
-            let direction = if current.point.x < previous.point.x {
-                Dir::Left
-            } else {
+            let direction = if from_start > 0.0 {
                 Dir::Right
+            } else {
+                Dir::Left
             };
             return Delta::new(from_start, from_previous, Some(direction), milliseconds);
         }
@@ -139,11 +139,7 @@ impl State {
             let from_previous = current.point.y - previous.point.y;
 
             let milliseconds = (current.time - previous.time).as_seconds_f64() / 1000.0;
-            let direction = if current.point.y < previous.point.y {
-                Dir::Up
-            } else {
-                Dir::Down
-            };
+            let direction = if from_start > 0.0 { Dir::Down } else { Dir::Up };
             return Delta::new(from_start, from_previous, Some(direction), milliseconds);
         }
         Delta::default()
@@ -286,53 +282,61 @@ impl OnTouch for Signal<State> {
     }
 }
 
-// pub trait OnMouse {
-//     fn onmousedown(&mut self, e: Event<MouseData>);
-//     fn onmousemove(&mut self, e: Event<MouseData>);
-//     fn onmouseup(&mut self, e: Event<MouseData>, allowed: &[Dir]);
-// }
+pub trait OnMouse {
+    fn onmousedown(&mut self, e: Event<MouseData>);
+    fn onmousemove(&mut self, e: Event<MouseData>);
+    fn onmouseup(&mut self, e: Event<MouseData>, allowed: &[Dir]);
+}
 
-// impl OnMouse for Signal<State> {
-//     fn onmousedown(&mut self, e: Event<MouseData>) {
-//         self.with_mut(|ss| {
-//             ss.set_transition_seconds();
-//             let time_point = TimePoint::new(e.client_coordinates(), Utc::now().naive_utc());
-//             ss.current = Some(time_point.clone());
-//             ss.previous = Some(time_point);
-//         });
-//         println!(
-//             "mousedown => {:?}",
-//             self.read()
-//                 .current
-//                 .as_ref()
-//                 .expect("failed to get touchstart timepoint")
-//         );
-//     }
+impl OnMouse for Signal<State> {
+    fn onmousedown(&mut self, e: Event<MouseData>) {
+        self.with_mut(|ss| {
+            ss.set_transition_seconds();
 
-//     fn onmousemove(&mut self, e: Event<MouseData>) {
-//         if e.held_buttons().contains(MouseButton::Primary) {
-//             self.with_mut(|ss| {
-//                 let time_point = TimePoint::new(e.client_coordinates(), Utc::now().naive_utc());
-//                 ss.previous = ss.current.clone();
-//                 ss.current = Some(time_point);
-//             });
-//         }
-//     }
+            let point = e.client_coordinates();
+            let time_point = TimePoint::new(point.clone(), Utc::now().naive_utc());
 
-//     fn onmouseup(&mut self, e: Event<MouseData>, allowed: &[Dir]) {
-//         self.with_mut(|ss| {
-//             let time_point = TimePoint::new(e.client_coordinates(), Utc::now().naive_utc());
-//             ss.previous = ss.current.clone();
-//             ss.current = Some(time_point);
-//             ss.resolve_direction(allowed);
-//         });
-//         println!(
-//             "mouseup => {:?}",
-//             self.read()
-//                 .current
-//                 .as_ref()
-//                 .expect("failed to get touchend timepoint")
-//         );
-//         self.with_mut(|ss| ss.reset());
-//     }
-// }
+            ss.start = Some(point);
+            ss.current = Some(time_point.clone());
+            ss.previous = Some(time_point);
+        });
+        println!(
+            "mousedown => {:?}",
+            self.read()
+                .current
+                .as_ref()
+                .expect("failed to get mousedown timepoint")
+        );
+    }
+
+    fn onmousemove(&mut self, e: Event<MouseData>) {
+        if e.held_buttons().contains(MouseButton::Primary) {
+            self.with_mut(|ss| {
+                let time_point = TimePoint::new(e.client_coordinates(), Utc::now().naive_utc());
+                ss.previous = ss.current.clone();
+                ss.current = Some(time_point);
+            });
+        }
+    }
+
+    fn onmouseup(&mut self, e: Event<MouseData>, allowed: &[Dir]) {
+        self.with_mut(|ss| {
+            ss.set_transition_seconds();
+
+            let time_point = TimePoint::new(e.client_coordinates(), Utc::now().naive_utc());
+
+            ss.previous = ss.current.clone();
+            ss.current = Some(time_point);
+
+            ss.set_direction(allowed);
+        });
+        println!(
+            "mouseup => {:?}",
+            self.read()
+                .current
+                .as_ref()
+                .expect("failed to get mouseup timepoint")
+        );
+        self.with_mut(|ss| ss.reset());
+    }
+}

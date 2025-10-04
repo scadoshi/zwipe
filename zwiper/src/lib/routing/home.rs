@@ -29,9 +29,9 @@ pub fn Home() -> Element {
                 println!("direction => {:?}", swipe_state.read().previous_swipe);
             },
 
-            // onmousedown : move |e: Event<MouseData>| swipe_state.onmousedown(e),
-            // onmousemove : move |e: Event<MouseData>| swipe_state.onmousemove(e),
-            // onmouseup : move |e: Event<MouseData>| swipe_state.onmouseup(e, &[Dir::Up, Dir::Down]),
+            onmousedown : move |e: Event<MouseData>| swipe_state.onmousedown(e),
+            onmousemove : move |e: Event<MouseData>| swipe_state.onmousemove(e),
+            onmouseup : move |e: Event<MouseData>| swipe_state.onmouseup(e, &[Dir::Up, Dir::Down]),
 
             div { class : "home-screen",
 
