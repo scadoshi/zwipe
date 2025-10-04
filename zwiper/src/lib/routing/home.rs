@@ -3,7 +3,7 @@ use zwipe::domain::ascii_logo;
 
 use crate::{
     routing::Route,
-    swipe::{self, OnMouse, OnTouch},
+    swipe::{self, Direction as Dir, /* OnMouse ,*/ OnTouch},
 };
 
 #[component]
@@ -18,17 +18,20 @@ pub fn Home() -> Element {
             style : format!(
                 "transform: translateY({}px);
                 transition: transform {}s;",
-                -swipe_state.read().dy(),
+                swipe_state.read().dy().from_start,
                 swipe_state.read().transition_seconds
             ),
 
             ontouchstart : move |e: Event<TouchData>| swipe_state.ontouchstart(e),
             ontouchmove : move |e: Event<TouchData>| swipe_state.ontouchmove(e),
-            ontouchend : move |e: Event<TouchData>| swipe_state.ontouchend(e),
+            ontouchend : move |e: Event<TouchData>| {
+                swipe_state.ontouchend(e, &[Dir::Up, Dir::Down]);
+                println!("direction => {:?}", swipe_state.read().previous_swipe);
+            },
 
-            onmousedown : move |e: Event<MouseData>| swipe_state.onmousedown(e),
-            onmousemove : move |e: Event<MouseData>| swipe_state.onmousemove(e),
-            onmouseup : move |e: Event<MouseData>| swipe_state.onmouseup(e),
+            // onmousedown : move |e: Event<MouseData>| swipe_state.onmousedown(e),
+            // onmousemove : move |e: Event<MouseData>| swipe_state.onmousemove(e),
+            // onmouseup : move |e: Event<MouseData>| swipe_state.onmouseup(e, &[Dir::Up, Dir::Down]),
 
             div { class : "home-screen",
 
