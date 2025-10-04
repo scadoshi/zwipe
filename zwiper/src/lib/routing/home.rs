@@ -3,7 +3,7 @@ use zwipe::domain::ascii_logo;
 
 use crate::{
     routing::Route,
-    swipe::{self, Direction as Dir, /* OnMouse ,*/ OnTouch},
+    swipe::{self, Direction as Dir, OnMouse, OnTouch},
 };
 
 #[component]
