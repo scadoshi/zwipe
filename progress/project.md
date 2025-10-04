@@ -13,27 +13,27 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: After organizing swipe functions into State impl and trait-based event handlers
+**Last Updated**: After completing swipe detection with velocity and direction calculation
 
-**Current Focus**: Implementing velocity and direction change detection for swipe navigation
+**Current Focus**: Building threshold-based screen rendering for swipe-to-reveal navigation
 
-**Recent Achievement**: Organized swipe functions into State impl for better encapsulation. Built touch and mouse event handlers as traits for improved organization and self-documentation. Cleaned up state variables to focus on essential position tracking for direction and velocity calculations.
+**Recent Achievement**: Built complete swipe detection system with Delta struct tracking distance and velocity. Implemented direction resolution based on both distance thresholds (50px) and velocity thresholds (3.0 px/ms). Created OnTouch and OnMouse trait implementations with proper state management. Debugged coordinate system quirks (positive Y = down in browser). Successfully detecting up/down swipes with visual feedback via CSS transforms.
 
-**Current Decision**: AuthClient contains full AppConfig for maximum flexibility and consistent patterns across future clients (CardClient, DeckClient). Fast-fail validation prevents network requests for passwords that could never match database hashes, optimizing both performance and user experience.
+**Current Decision**: Direction determination uses `from_start` (total displacement) rather than point-to-point comparisons to avoid micro-movement false positives. State reset happens in `ontouchend` after direction calculation to preserve data for CSS transitions. Speed calculated from `from_previous` delta per event for responsive velocity tracking.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Swipe Detection Logic** - Implementing threshold-based swipe detection for screen transitions
-2. **Visual Swipe Feedback** - Adding CSS transforms for smooth screen movement during swipe
-3. **Screen Transition Logic** - Connecting swipe detection to actual route navigation
-4. **Cross-Platform Testing** - Ensuring swipe works consistently on mobile and desktop
-5. **HTTP Request Implementation** - Building register_user and authenticate_user network functions in http.rs
+1. **Threshold-Based Screen Rendering** - Conditionally render next screen when swipe distance exceeds threshold
+2. **Progressive Reveal Animation** - Slide new screens into view during swipe (like pulling down a page)
+3. **Route Navigation Integration** - Connect detected swipe direction to actual screen transitions (Home ↔ Login ↔ Register)
+4. **Full-Screen Swipeable UI** - Extend swipe detection across entire interface for fluid navigation
+5. **Cross-Platform Refinement** - Fine-tune thresholds for consistent feel between touch and mouse
 
 ### 🤔 Next Immediate Priorities (Top 5)
-1. **Complete Swipe Interface** - Implement detection logic and visual feedback for screen transitions
-2. **Cross-Platform Consistency** - Ensure swipe behavior matches between touch and mouse events
-3. **Refactor Event Handlers** - Extract touch and mouse event handlers into reusable functions for any swipeable component
-4. **Full-Screen Swipe Area** - Configure swipe-able class to expand across entire screen for universal swipe detection
-5. **Complete HTTP Functions** - Finish register_user and authenticate_user request/response handling
+1. **Implement Swipe-to-Reveal Logic** - Render target screen at threshold, animate based on swipe progress
+2. **Connect to Navigator** - Use detected direction to push routes (Up → Login, Down → Register)
+3. **Snap-Back vs Commit** - Handle partial swipes (snap back) vs committed swipes (complete transition)
+4. **Optimize Transitions** - Smooth animations tied to swipe velocity for natural feel
+5. **Reusable Swipe Components** - Extract patterns for other swipeable screens beyond Home
 
 ---
 
@@ -81,6 +81,9 @@ alwaysApply: true
 - **Fast-fail Authentication**: Enhanced password validation preventing invalid network requests
 - **Dioxus Component Validation**: Secure login with generic error messaging and smart registration with real-time validation
 - **UX-Focused Error Handling**: Security-first login validation vs user-friendly registration feedback patterns
+- **Swipe Detection System**: Complete touch and mouse event handling with Delta struct for distance/velocity tracking
+- **Direction Resolution**: Threshold-based detection using 50px distance OR 3.0 px/ms velocity with allowed-direction filtering
+- **Cross-Platform Input**: OnTouch and OnMouse traits with proper coordinate system handling and state management
 
 ---
 

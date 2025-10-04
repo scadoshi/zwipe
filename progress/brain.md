@@ -15,25 +15,25 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: After organizing swipe functions into State impl and trait-based event handlers
+**Last Updated**: After completing swipe detection with velocity and direction calculation
 
-**Next Learning Focus**: Implementing velocity calculation and direction change detection for swipe navigation
+**Next Learning Focus**: Building conditional rendering and progressive reveal animations for swipe-to-reveal navigation
 
-**Recent Achievement**: Organized swipe detection functions into State impl for better encapsulation and cleaner API design. Implemented trait-based event handlers for touch and mouse events, improving code organization and self-documentation. Cleaned up state structure by removing unnecessary variables and focusing on essential position tracking needed for direction and velocity calculations.
+**Recent Achievement**: Built complete swipe detection system with Delta struct for tracking distance and velocity calculations. Implemented direction resolution using distance (50px) and velocity (3.0 px/ms) thresholds. Created OnTouch and OnMouse trait implementations with proper state management patterns. Debugged coordinate system differences (positive Y = downward in browser). Successfully integrated CSS transforms with reactive Dioxus signals for real-time visual feedback during swipes.
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **Swipe Detection Logic** - Implementing threshold-based swipe detection for screen transitions
-2. **Visual Swipe Feedback** - Adding CSS transforms for smooth screen movement during swipe
-3. **Screen Transition Logic** - Connecting swipe detection to actual route navigation
-4. **Cross-Platform Testing** - Ensuring swipe works consistently on mobile and desktop
-5. **HTTP Request Implementation** - Building actual network calls in http.rs to connect forms to backend
+1. **Conditional Screen Rendering** - Triggering next screen render when swipe passes threshold
+2. **Progressive Reveal Animation** - Sliding screens into view based on swipe progress for fluid transitions
+3. **Swipe-to-Navigation Integration** - Connecting direction detection to actual route changes
+4. **Threshold Fine-Tuning** - Balancing distance vs velocity for natural-feeling swipe interactions
+5. **Reusable Swipe Patterns** - Abstracting swipe logic for any screen-to-screen transition
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Swipe Threshold Calculation** - Determining appropriate distance and velocity thresholds for swipe detection
-2. **Screen Transition Animation** - Smooth transitions between routes based on swipe direction and thresholds
-3. **Cross-Platform Swipe Consistency** - Fine-tuning swipe sensitivity between touch and mouse events
-4. **Navigation Logic Integration** - Connecting swipe detection to actual route changes
-5. **CSS Performance Optimization** - Ensuring smooth animations during rapid swipe gestures
+1. **Conditional Rendering Strategy** - When/how to render target screen during mid-swipe for performance
+2. **Animation Coordination** - Synchronizing CSS transforms with Dioxus component lifecycle
+3. **Snap-Back vs Commit Logic** - Handling partial swipes that don't meet thresholds
+4. **Z-Index Layer Management** - Stacking screens during progressive reveal without flicker
+5. **Signal Update Performance** - Ensuring smooth 60fps during rapid ontouchmove updates
 
 ---
 
@@ -96,6 +96,10 @@ alwaysApply: true
 - **Security-Focused UI**: Generic error messaging to prevent information disclosure
 - **Domain Type Integration**: Using shared backend types (Username, EmailAddress, Password) in frontend components
 - **Navigation**: use_navigator() for programmatic routing between components
+- **Touch/Mouse Events**: ontouchstart/move/end and onmousedown/move/up with ClientPoint coordinates
+- **Event Data Access**: touches() vs touches_changed() for active vs ending touches
+- **CSS Transform Integration**: Dynamic inline styles with signal-driven values for animations
+- **Trait-Based Handlers**: Custom traits for Signal<State> to organize event handling logic
 
 ### 💾 SQLx Database Operations & Advanced Patterns
 - **Connection Pooling**: Production-ready pool configuration with optimized settings
@@ -133,6 +137,17 @@ alwaysApply: true
 ---
 
 ## DEVELOPING - Active Implementation (Working But Learning) 🔧
+
+### 🎮 Swipe Detection & Gesture Handling
+- **Custom State Structures**: Delta struct with distance, direction, and time tracking for velocity calculations
+- **Coordinate System Understanding**: Browser coordinate quirks (positive Y = down, positive X = right)
+- **Direction Resolution Logic**: Threshold-based detection using distance OR velocity with magnitude comparison
+- **Event Handler Patterns**: Trait implementations for Signal types with proper state mutation
+- **TimePoint Tracking**: Combining ClientPoint coordinates with timestamps for velocity computation
+- **Speed Calculation**: Pixels per millisecond from consecutive position updates with division-by-zero guards
+- **from_start vs from_previous**: Using total displacement for direction vs incremental deltas for velocity
+- **State Reset Timing**: Preserving state through handler execution for CSS transform data access
+- *Note: Understanding patterns but still refining threshold values and animation coordination*
 
 ### 🏗️ Service Architecture & Dependency Injection
 - **Generic Service Patterns**: Service<R> and Service<DR, CR> implementations across domains
