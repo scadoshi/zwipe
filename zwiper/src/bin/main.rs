@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use zwiper::routing::Route;
+use zwiper::screens::Screen;
 
 const FAVICON: Asset = asset!("/assets/favicon/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
@@ -13,6 +13,6 @@ fn App() -> Element {
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
-        Router::<Route> {}
+        Router::<Screen> {}
     }
 }

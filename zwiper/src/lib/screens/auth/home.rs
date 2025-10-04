@@ -2,17 +2,18 @@ use dioxus::prelude::*;
 use zwipe::domain::ascii_logo;
 
 use crate::{
-    routing::Route,
+    screens::auth::{login::Login, register::Register},
     swipe::{self, Direction as Dir, OnMouse, OnTouch},
 };
 
 #[component]
 pub fn Home() -> Element {
-    let navigator = use_navigator();
     let ascii_logo = ascii_logo::logo();
     let mut swipe_state = use_signal(|| swipe::State::new());
 
     rsx! {
+        Login {swipe_state}
+
         div { class : "swipe-able",
 
             style : format!(
@@ -52,5 +53,7 @@ pub fn Home() -> Element {
                 }
             }
         }
+
+        Register {swipe_state}
     }
 }
