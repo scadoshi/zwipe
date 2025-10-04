@@ -22,19 +22,17 @@ pub fn Home() -> Element {
                 swipe_state.read().transition_seconds
             ),
 
-            ontouchstart : move |e: Event<TouchData>| swipe_state.handle_ontouchstart(e),
-            ontouchmove : move |e: Event<TouchData>| swipe_state.handle_ontouchmove(e),
-            ontouchend : move |e: Event<TouchData>| swipe_state.handle_ontouchend(e),
+            ontouchstart : move |e: Event<TouchData>| swipe_state.ontouchstart(e),
+            ontouchmove : move |e: Event<TouchData>| swipe_state.ontouchmove(e),
+            ontouchend : move |e: Event<TouchData>| swipe_state.ontouchend(e),
 
-            onmousedown : move |e: Event<MouseData>| swipe_state.handle_onmousedown(e),
-            onmousemove : move |e: Event<MouseData>| swipe_state.handle_onmousemove(e),
-            onmouseup : move |e: Event<MouseData>| swipe_state.handle_onmouseup(e),
+            onmousedown : move |e: Event<MouseData>| swipe_state.onmousedown(e),
+            onmousemove : move |e: Event<MouseData>| swipe_state.onmousemove(e),
+            onmouseup : move |e: Event<MouseData>| swipe_state.onmouseup(e),
 
             div { class : "home-screen",
+
                 div {
-                    // onclick : move |_| {
-                    //     navigator.push(Route::Login {});
-                    // },
                     class : "home-direction-arrow",
                     "↑"
                 },
@@ -46,9 +44,6 @@ pub fn Home() -> Element {
                 p { "swipe ", b { "down" }, " to ", b { "create profile" } },
 
                 div {
-                    // onclick : move |_| {
-                    //     navigator.push(Route::Register {});
-                    // },
                     class : "home-direction-arrow",
                     "↓"
                 }
