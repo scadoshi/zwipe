@@ -86,7 +86,7 @@ button:active {
     font-family: 'Cascadia Code', 'Courier New', monospace;
     font-size: clamp(0.5rem, 2.5vw, 1.4rem);
     color: #ffffff;
-    line-height: 1.3;
+    line-height: 1.2;
     white-space: pre;
     margin: 0;
     padding: 0;
