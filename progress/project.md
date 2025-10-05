@@ -13,27 +13,27 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: After completing swipe detection with velocity and direction calculation
+**Last Updated**: After implementing swipe-based navigation and submission system
 
-**Current Focus**: Building threshold-based screen rendering for swipe-to-reveal navigation
+**Current Focus**: Frontend functionality complete for auth flow - ready for backend API integration
 
-**Recent Achievement**: Built complete swipe detection system with Delta struct tracking distance and velocity. Implemented direction resolution based on both distance thresholds (50px) and velocity thresholds (3.0 px/ms). Created OnTouch and OnMouse trait implementations with proper state management. Debugged coordinate system quirks (positive Y = down in browser). Successfully detecting up/down swipes with visual feedback via CSS transforms.
+**Recent Achievement**: Completed multi-screen swipe navigation with position tracking using BasicPoint (x,y coordinates). Built swipe-to-submit detection by tracking previous_swipe separately from position updates. Implemented always-render architecture for auth screens (Login/Home/Register) with calc-based transform positioning. Added ASCII logo entrance animation and simplified UI hints. Cleaned up CSS removing unused flexbox complexity from form screens.
 
-**Current Decision**: Direction determination uses `from_start` (total displacement) rather than point-to-point comparisons to avoid micro-movement false positives. State reset happens in `ontouchend` after direction calculation to preserve data for CSS transitions. Speed calculated from `from_previous` delta per event for responsive velocity tracking.
+**Current Decision**: Swipe navigation uses position state (i32 coordinates) for screen tracking, while previous_swipe captures all detected swipes including disallowed ones for submission triggers. Forms use simple centered boxes with basic spacing rather than complex flexbox layouts. Auth screens render simultaneously with CSS transforms controlling visibility.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Threshold-Based Screen Rendering** - Conditionally render next screen when swipe distance exceeds threshold
-2. **Progressive Reveal Animation** - Slide new screens into view during swipe (like pulling down a page)
-3. **Route Navigation Integration** - Connect detected swipe direction to actual screen transitions (Home ↔ Login ↔ Register)
-4. **Full-Screen Swipeable UI** - Extend swipe detection across entire interface for fluid navigation
-5. **Cross-Platform Refinement** - Fine-tune thresholds for consistent feel between touch and mouse
+1. **Backend API Integration** - Connect swipe-to-submit to actual registration/login endpoints
+2. **JWT Token Storage** - Handle authentication tokens after successful login
+3. **Loading States** - Show feedback during async API calls from swipe submission
+4. **Error Handling** - Display API errors to users after failed submissions
+5. **Post-Auth Navigation** - Transition to main app screens after successful authentication
 
 ### 🤔 Next Immediate Priorities (Top 5)
-1. **Implement Swipe-to-Reveal Logic** - Render target screen at threshold, animate based on swipe progress
-2. **Connect to Navigator** - Use detected direction to push routes (Up → Login, Down → Register)
-3. **Snap-Back vs Commit** - Handle partial swipes (snap back) vs committed swipes (complete transition)
-4. **Optimize Transitions** - Smooth animations tied to swipe velocity for natural feel
-5. **Reusable Swipe Components** - Extract patterns for other swipeable screens beyond Home
+1. **HTTP Client Calls** - Wire up AuthClient to login/register swipe handlers
+2. **Token Management** - Store JWT and include in subsequent authenticated requests
+3. **Success Navigation** - Route to deck management after successful auth
+4. **Network Error UX** - Handle offline/timeout scenarios gracefully
+5. **Main App Swipe Navigation** - Extend swipe patterns to deck browsing/management screens
 
 ---
 
@@ -84,6 +84,10 @@ alwaysApply: true
 - **Swipe Detection System**: Complete touch and mouse event handling with Delta struct for distance/velocity tracking
 - **Direction Resolution**: Threshold-based detection using 50px distance OR 3.0 px/ms velocity with allowed-direction filtering
 - **Cross-Platform Input**: OnTouch and OnMouse traits with proper coordinate system handling and state management
+- **Multi-Screen Navigation**: Position-based screen tracking with BasicPoint coordinates enabling vertical/horizontal swipe navigation
+- **Swipe-to-Submit Pattern**: Detection of disallowed swipe directions to trigger form submissions without buttons
+- **Always-Render Architecture**: All auth screens render simultaneously with CSS calc transforms controlling visibility
+- **Minimal UI Approach**: Arrow-in-title hints and simplified CSS removing unnecessary flexbox complexity
 
 ---
 
