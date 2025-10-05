@@ -21,6 +21,8 @@ body {
 /* swipe */
 .swipe-able {
     position: fixed;
+    top: 0;
+    left: 0;
     width: 100vw;
     height: 100vh;
     z-index: 9999;
@@ -38,7 +40,8 @@ body {
     line-height: 1.2;
     white-space: pre;
     text-align: left;
-    padding: 2rem;
+    padding: 1rem;
+    margin: 2rem;
     animation: ascii-logo-spacing 1s forwards;
 }
 
@@ -58,6 +61,8 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
+    height: 100vh;
+    width: 100vw;
     letter-spacing: .1rem;
 }
 
@@ -67,10 +72,7 @@ body {
     flex-direction: column;
     justify-content: flex-end;
     align-items: center;
-}
-
-.home-up-arrow {
-    font-size: 2rem;
+    font-size: 1.2rem;
 }
 
 .home-down-hint {
@@ -79,21 +81,25 @@ body {
     flex-direction: column;
     justify-content: flex-start;
     align-items: center;
+    font-size: 1.2rem;
 }
 
-.home-down-arrow {
+/* arrows */
+
+.up-arrow,
+.down-arrow {
     font-size: 2rem;
 }
 
 /* forms */
 
 .form-container {
-    max-width: 20rem !important;
+    width: 20rem;
     padding: 2rem;
 }
 
 .form-container h2 {
-    text-align: center;
+    text-align: left;
     margin-bottom: 1rem;
     font-weight: 300;
     color: #ffffff;
