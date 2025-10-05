@@ -3,7 +3,7 @@ use zwipe::domain::ascii_logo;
 
 use crate::{
     screens::auth::{login::Login, register::Register},
-    swipe::{self, Direction as Dir, OnMouse, OnTouch},
+    swipe::{self, Direction as Dir, OnMouse, OnTouch, VH_GAP},
 };
 
 #[component]
@@ -17,9 +17,10 @@ pub fn Home() -> Element {
         div { class : "swipe-able",
 
             style : format!(
-                "transform: translateY({}px);
+                "transform: translateY(calc({}px + {}vh));
                 transition: transform {}s;",
                 swipe_state.read().dy().from_start,
+                swipe_state.read().position.y * VH_GAP,
                 swipe_state.read().transition_seconds
             ),
 
@@ -36,21 +37,17 @@ pub fn Home() -> Element {
 
             div { class : "home-screen",
 
-                div {
-                    class : "home-direction-arrow",
-                    "↑"
+                div { class : "home-up-hint",
+                    p { class : "home-up-arrow", "↑" },
+                    p { "swipe ", b { "up" }, " to ", b { "log in" } },
                 },
 
-                p { "swipe ", b { "up" }, " to ", b { "log in" } },
-                br {}, br {},
                 pre { class: "ascii-logo", "{ascii_logo}" },
-                br {}, br {},
-                p { "swipe ", b { "down" }, " to ", b { "create profile" } },
 
-                div {
-                    class : "home-direction-arrow",
-                    "↓"
-                }
+                div { class : "home-down-hint",
+                    p { "swipe ", b { "down" }, " to ", b { "create profile" } },
+                    p { class : "home-down-arrow", "↓" },
+                },
             }
         }
 

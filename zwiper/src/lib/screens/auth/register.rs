@@ -1,10 +1,9 @@
 use std::str::FromStr;
 
+use crate::swipe::{self, Direction as Dir, OnMouse, OnTouch, VH_GAP};
 use dioxus::prelude::*;
 use email_address::EmailAddress;
 use zwipe::domain::{auth::models::password::Password, user::models::Username};
-
-use crate::{screens::Screen, swipe};
 
 pub trait EmailErrorAdjustment {
     fn adjusted_string(&self) -> String;
@@ -58,11 +57,24 @@ pub fn Register(swipe_state: Signal<swipe::State>) -> Element {
         div { class : "swipe-able",
 
             style : format!(
-                "transform: translateY(calc({}px + 100vh));
+                "transform: translateY(calc({}px + {}vh + {}vh));
                 transition: transform {}s;",
                 swipe_state.read().dy().from_start,
+                VH_GAP,
+                swipe_state.read().position.y * VH_GAP,
                 swipe_state.read().transition_seconds
             ),
+
+            ontouchstart : move |e: Event<TouchData>| swipe_state.ontouchstart(e),
+            ontouchmove : move |e: Event<TouchData>| swipe_state.ontouchmove(e),
+            ontouchend : move |e: Event<TouchData>| {
+                swipe_state.ontouchend(e, &[Dir::Up, Dir::Down]);
+                println!("direction => {:?}", swipe_state.read().previous_swipe);
+            },
+
+            onmousedown : move |e: Event<MouseData>| swipe_state.onmousedown(e),
+            onmousemove : move |e: Event<MouseData>| swipe_state.onmousemove(e),
+            onmouseup : move |e: Event<MouseData>| swipe_state.onmouseup(e, &[Dir::Up, Dir::Down]),
 
             div { class : "form-container",
                 h2 { "create profile" }

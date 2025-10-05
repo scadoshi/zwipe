@@ -1,15 +1,17 @@
 use chrono::{NaiveDateTime, Utc};
 use dioxus::{
-    html::{geometry::ClientPoint, input_data::MouseButton},
+    html::{
+        geometry::{
+            euclid::{Point2D, UnknownUnit},
+            ClientPoint,
+        },
+        input_data::MouseButton,
+    },
     prelude::*,
 };
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum Screen {
-    Home,
-    Login,
-    Register,
-}
+pub const VH_GAP: i32 = 75;
+type BasicPoint = Point2D<i32, UnknownUnit>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Direction {
@@ -18,23 +20,33 @@ pub enum Direction {
     Up,
     Down,
 }
+
+impl Direction {
+    pub fn as_i32(&self) -> i32 {
+        match self {
+            Dir::Left | Dir::Up => -1,
+            Dir::Right | Dir::Down => 1,
+        }
+    }
+}
+
 use Direction as Dir;
 
 #[derive(Debug, Clone)]
 pub struct Delta {
     pub from_start: f64,
+    pub direction_from_start: Option<Dir>,
     pub from_previous: f64,
-    pub direction: Option<Dir>,
-    pub milliseconds: f64,
+    pub milliseconds_from_previous: f64,
 }
 
 impl Default for Delta {
     fn default() -> Self {
         Self {
             from_start: 0.0,
+            direction_from_start: None,
             from_previous: 0.0,
-            direction: None,
-            milliseconds: 0.0,
+            milliseconds_from_previous: 0.0,
         }
     }
 }
@@ -43,22 +55,22 @@ impl Delta {
     pub fn new(
         from_start: f64,
         from_previous: f64,
-        direction: Option<Dir>,
-        milliseconds: f64,
+        direction_from_start: Option<Dir>,
+        milliseconds_from_previous: f64,
     ) -> Self {
         Self {
             from_start,
             from_previous,
-            direction,
-            milliseconds,
+            direction_from_start,
+            milliseconds_from_previous,
         }
     }
 
     pub fn speed(&self) -> Option<f64> {
-        if self.milliseconds < 0.001 {
+        if self.milliseconds_from_previous < 0.001 {
             return None;
         }
-        Some(self.from_previous / self.milliseconds)
+        Some(self.from_previous / self.milliseconds_from_previous)
     }
 }
 
@@ -76,8 +88,6 @@ impl TimePoint {
 
 #[derive(Debug, Clone)]
 pub struct State {
-    // screen state
-    pub screen: Screen,
     // for screen placement rendering
     pub start: Option<ClientPoint>,
     // for direction and speed calculation
@@ -89,17 +99,19 @@ pub struct State {
     pub transition_seconds: f64,
     // what direction the last swipe resolved to
     pub previous_swipe: Option<Dir>,
+    // determines screen displacement
+    pub position: BasicPoint,
 }
 
 impl State {
     pub fn new() -> Self {
         Self {
-            screen: Screen::Home,
             start: None,
             current: None,
             previous: None,
             transition_seconds: 0.0,
             previous_swipe: None,
+            position: BasicPoint::new(0, 0),
         }
     }
 
@@ -118,13 +130,19 @@ impl State {
             let from_start = current.point.x - start.x;
             let from_previous = current.point.x - previous.point.x;
 
-            let milliseconds = (current.time - previous.time).as_seconds_f64() / 1000.0;
-            let direction = if from_start > 0.0 {
+            let milliseconds_from_previous =
+                (current.time - previous.time).as_seconds_f64() / 1000.0;
+            let direction_from_start = if from_start > 0.0 {
                 Dir::Right
             } else {
                 Dir::Left
             };
-            return Delta::new(from_start, from_previous, Some(direction), milliseconds);
+            return Delta::new(
+                from_start,
+                from_previous,
+                Some(direction_from_start),
+                milliseconds_from_previous,
+            );
         }
         Delta::default()
     }
@@ -138,9 +156,15 @@ impl State {
             let from_start = current.point.y - start.y;
             let from_previous = current.point.y - previous.point.y;
 
-            let milliseconds = (current.time - previous.time).as_seconds_f64() / 1000.0;
-            let direction = if from_start > 0.0 { Dir::Down } else { Dir::Up };
-            return Delta::new(from_start, from_previous, Some(direction), milliseconds);
+            let milliseconds_from_previous =
+                (current.time - previous.time).as_seconds_f64() / 1000.0;
+            let direction_from_start = if from_start > 0.0 { Dir::Down } else { Dir::Up };
+            return Delta::new(
+                from_start,
+                from_previous,
+                Some(direction_from_start),
+                milliseconds_from_previous,
+            );
         }
         Delta::default()
     }
@@ -149,23 +173,23 @@ impl State {
         let mut s = 0.0;
         let md = self.dx().from_start.abs() + self.dy().from_start.abs();
         if md > 0.0 {
-            s = 0.2;
+            s = 0.1;
         }
         if md > 25.0 {
-            s = 0.3;
+            s = 0.2;
         }
         if md > 50.0 {
-            s = 0.4;
+            s = 0.3;
         }
         if md > 100.0 {
-            s = 0.5;
+            s = 0.4;
         }
         self.transition_seconds = s;
     }
 
-    pub fn set_direction(&mut self, allowed: &[Dir]) {
-        const SPEED_THRESHOLD: f64 = 3.0;
-        const DISTANCE_THRESHOLD: f64 = 50.0;
+    pub fn resolve_swipe_direction(&mut self, allowed: &[Dir]) {
+        const SPEED_THRESHOLD: f64 = 5.0;
+        const DISTANCE_THRESHOLD: f64 = 200.0;
 
         if allowed.is_empty() {
             return;
@@ -178,20 +202,20 @@ impl State {
         let mut y_dir = None;
 
         if dx.from_start.abs() > DISTANCE_THRESHOLD {
-            x_dir = dx.direction.clone();
+            x_dir = dx.direction_from_start.clone();
         }
         if let Some(speed) = dx.speed() {
             if speed.abs() > SPEED_THRESHOLD {
-                x_dir = dx.direction.clone();
+                x_dir = dx.direction_from_start.clone();
             }
         }
 
         if dy.from_start.abs() > DISTANCE_THRESHOLD {
-            y_dir = dy.direction.clone();
+            y_dir = dy.direction_from_start.clone();
         }
         if let Some(speed) = dy.speed() {
             if speed.abs() > SPEED_THRESHOLD {
-                y_dir = dy.direction.clone();
+                y_dir = dy.direction_from_start.clone();
             }
         }
 
@@ -199,18 +223,22 @@ impl State {
         match (x_dir, y_dir) {
             (Some(x), Some(y)) => {
                 if allow(&x) && (dx.from_start.abs() > dy.from_start.abs() || !allow(&y)) {
+                    self.position.x += x.as_i32();
                     self.previous_swipe = Some(x);
                 } else if allow(&y) && (dy.from_start.abs() > dx.from_start.abs() || !allow(&x)) {
+                    self.position.y += y.as_i32();
                     self.previous_swipe = Some(y);
                 }
             }
             (Some(x), None) => {
                 if allow(&x) {
+                    self.position.x += x.as_i32();
                     self.previous_swipe = Some(x);
                 }
             }
             (None, Some(y)) => {
                 if allow(&y) {
+                    self.position.y += y.as_i32();
                     self.previous_swipe = Some(y);
                 }
             }
@@ -268,7 +296,7 @@ impl OnTouch for Signal<State> {
                 ss.previous = ss.current.clone();
                 ss.current = Some(time_point);
 
-                ss.set_direction(allowed);
+                ss.resolve_swipe_direction(allowed);
             });
             println!(
                 "touchend => {:?}",
@@ -328,7 +356,7 @@ impl OnMouse for Signal<State> {
             ss.previous = ss.current.clone();
             ss.current = Some(time_point);
 
-            ss.set_direction(allowed);
+            ss.resolve_swipe_direction(allowed);
         });
         println!(
             "mouseup => {:?}",

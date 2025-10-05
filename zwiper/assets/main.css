@@ -18,107 +18,71 @@ body {
     overflow: hidden;
 }
 
-button {
-    width: 100%;
-    padding: 1rem 0;
-    background: none;
-    color: #ffffff;
-    border: 1px solid #ffffff;
-    border-radius: 1rem;
-    font-family: 'Cascadia Code', monospace;
-    font-weight: 300;
-    font-size: 1rem;
-    letter-spacing: 0.2em;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    margin-top: 1rem;
-}
-
-button:hover {
-    background-color: #ffffff;
-    color: #000000;
-    transform: translateY(-2px);
-}
-
-button:active {
-    transform: scale(0.98);
-}
-
-/* main layout */
-.main-layout {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
-
-.main-header {
-    padding: 1rem 1rem 0px 1rem;
-    text-align: center;
-}
-
-.main-layout header {
-    cursor: pointer;
-}
-
-.main-content {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    letter-spacing: .1rem;
-}
-
 /* swipe */
 .swipe-able {
     position: fixed;
-    top: 0;
-    left: 0;
     width: 100vw;
     height: 100vh;
     z-index: 9999;
     user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* logo */
 
 .ascii-logo {
-    font-family: 'Cascadia Code', 'Courier New', monospace;
+    font-family: 'Cascadia Code', monospace;
     font-size: clamp(0.5rem, 2.5vw, 1.4rem);
-    color: #ffffff;
     line-height: 1.2;
     white-space: pre;
-    margin: 0;
-    padding: 0;
-    max-width: 100%;
-    font-weight: 400;
-    letter-spacing: 0;
-    word-spacing: 0;
     text-align: left;
-    display: inline-block;
-    box-sizing: border-box;
-    overflow-x: hidden;
+    padding: 2rem;
+    animation: ascii-logo-spacing 1s forwards;
+}
+
+@keyframes ascii-logo-spacing {
+    from {
+        letter-spacing: 10px;
+    }
+
+    to {
+        letter-spacing: 0;
+    }
 }
 
 /* home */
 
 .home-screen {
-    flex: 1;
     display: flex;
-    align-items: center;
-    justify-content: center;
     flex-direction: column;
-    padding: 1rem;
+    align-items: center;
     letter-spacing: .1rem;
-    min-height: 100vh;
 }
 
-.home-direction-arrow {
+.home-up-hint {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.home-up-arrow {
     font-size: 2rem;
 }
 
-.home-direction-arrow:hover {
-    cursor: pointer;
+.home-down-hint {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.home-down-arrow {
+    font-size: 2rem;
 }
 
 /* forms */
@@ -148,18 +112,9 @@ button:active {
     text-align: center;
 }
 
-.form-group label {
-    display: block;
-    margin-bottom: 1rem;
-    font-weight: 300;
-    color: #ffffff;
-    font-size: 1rem;
-    letter-spacing: 0.1em;
-}
-
 .form-group input {
     width: 100%;
-    margin-bottom: 1rem;
+    margin-bottom: 2rem;
     padding: 1rem 1rem;
     background: none;
     border: 1px solid #ffffff;
