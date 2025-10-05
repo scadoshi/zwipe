@@ -43,6 +43,9 @@ impl EmailErrorAdjustment for email_address::Error {
 
 #[component]
 pub fn Register(swipe_state: Signal<swipe::State>) -> Element {
+    const MOVE_SWIPES: [Dir; 1] = [Dir::Down];
+    const SUBMIT_SWIPE: Dir = Dir::Up;
+
     let mut username = use_signal(|| String::new());
     let mut email = use_signal(|| String::new());
     let mut password = use_signal(|| String::new());
@@ -53,34 +56,36 @@ pub fn Register(swipe_state: Signal<swipe::State>) -> Element {
     let mut email_error: Signal<Option<String>> = use_signal(|| None);
     let mut password_error: Signal<Option<String>> = use_signal(|| None);
 
-    let mut attempt_submit = move || {
-        submit_attempted.set(true);
-        match Username::new(&username.read()) {
-            Ok(_) => username_error.set(None),
-            Err(e) => username_error.set(Some(e.to_string())),
-        }
+    let mut maybe_submit = move || {
+        if swipe_state.read().previous_swipe == Some(SUBMIT_SWIPE) {
+            submit_attempted.set(true);
 
-        match EmailAddress::from_str(&email.read()) {
-            Ok(_) => email_error.set(None),
-            Err(e) => {
-                email_error.set(Some(e.adjusted_string()));
+            if let Err(e) = Username::new(&username.read()) {
+                username_error.set(Some(e.to_string()));
+            } else {
+                username_error.set(None)
+            }
+
+            if let Err(e) = EmailAddress::from_str(&email.read()) {
+                email_error.set(Some(e.to_string()));
+            } else {
+                email_error.set(None);
+            }
+
+            if let Err(e) = Password::new(&password.read()) {
+                password_error.set(Some(e.to_string()))
+            } else {
+                password_error.set(None);
+            }
+
+            if username_error.read().is_none()
+                && email_error.read().is_none()
+                && password_error.read().is_none()
+            {
+                println!("please make my account");
             }
         }
-
-        match Password::new(&password.read()) {
-            Ok(_) => password_error.set(None),
-            Err(e) => password_error.set(Some(e.to_string())),
-        }
-
-        if username_error.read().is_none()
-            && email_error.read().is_none()
-            && password_error.read().is_none()
-        {
-            println!("please make my account");
-        }
     };
-
-    const ALLOWED_DIRECTIONS: [Dir; 1] = [Dir::Down];
 
     rsx! {
         div { class : "swipe-able",
@@ -97,19 +102,15 @@ pub fn Register(swipe_state: Signal<swipe::State>) -> Element {
             ontouchstart : move |e: Event<TouchData>| swipe_state.ontouchstart(e),
             ontouchmove : move |e: Event<TouchData>| swipe_state.ontouchmove(e),
             ontouchend : move |e: Event<TouchData>| {
-                swipe_state.ontouchend(e, &ALLOWED_DIRECTIONS);
-                if swipe_state.read().previous_swipe == Some(Dir::Up) {
-                    attempt_submit();
-                }
+                swipe_state.ontouchend(e, &MOVE_SWIPES);
+                maybe_submit();
             },
 
             onmousedown : move |e: Event<MouseData>| swipe_state.onmousedown(e),
             onmousemove : move |e: Event<MouseData>| swipe_state.onmousemove(e),
             onmouseup : move |e: Event<MouseData>| {
-                swipe_state.onmouseup(e, &ALLOWED_DIRECTIONS);
-                if swipe_state.read().previous_swipe == Some(Dir::Up) {
-                    attempt_submit();
-                }
+                swipe_state.onmouseup(e, &MOVE_SWIPES);
+                maybe_submit();
             },
 
             div { class : "form-container",
