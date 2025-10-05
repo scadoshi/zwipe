@@ -188,6 +188,7 @@ impl State {
     }
 
     pub fn resolve_swipe_direction(&mut self, allowed: &[Dir]) {
+        const SPEED_CHECK_MIN_DIST: f64 = 10.0;
         const SPEED_THRESHOLD: f64 = 5.0;
         const DISTANCE_THRESHOLD: f64 = 200.0;
 
@@ -204,18 +205,22 @@ impl State {
         if dx.from_start.abs() > DISTANCE_THRESHOLD {
             x_dir = dx.direction_from_start.clone();
         }
-        if let Some(speed) = dx.speed() {
-            if speed.abs() > SPEED_THRESHOLD {
-                x_dir = dx.direction_from_start.clone();
+        if dx.from_start.abs() > SPEED_CHECK_MIN_DIST {
+            if let Some(speed) = dx.speed() {
+                if speed.abs() > SPEED_THRESHOLD {
+                    x_dir = dx.direction_from_start.clone();
+                }
             }
         }
 
         if dy.from_start.abs() > DISTANCE_THRESHOLD {
             y_dir = dy.direction_from_start.clone();
         }
-        if let Some(speed) = dy.speed() {
-            if speed.abs() > SPEED_THRESHOLD {
-                y_dir = dy.direction_from_start.clone();
+        if dy.from_start.abs() > SPEED_CHECK_MIN_DIST {
+            if let Some(speed) = dy.speed() {
+                if speed.abs() > SPEED_THRESHOLD {
+                    y_dir = dy.direction_from_start.clone();
+                }
             }
         }
 
@@ -247,7 +252,7 @@ impl State {
                 }
                 self.previous_swipe = Some(y);
             }
-            (None, None) => (),
+            (None, None) => self.previous_swipe = None,
         }
         println!("swipe dir => {:?}", self.previous_swipe);
     }
