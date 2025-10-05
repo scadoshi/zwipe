@@ -7,31 +7,34 @@ use zwipe::domain::{auth::models::password::Password, user::models::Username};
 
 #[component]
 pub fn Login(swipe_state: Signal<swipe::State>) -> Element {
+    const MOVE_SWIPES: [Dir; 1] = [Dir::Up];
+    const SUBMIT_SWIPE: Dir = Dir::Down;
+
     let mut username_or_email = use_signal(|| String::new());
     let mut password = use_signal(|| String::new());
-    let mut invalid_credentials = use_signal(|| false);
 
-    let mut attempt_submit = move || {
-        let valid_identifier = match (
-            Username::new(&username_or_email.read()),
-            EmailAddress::from_str(&username_or_email.read()),
-        ) {
-            (Ok(_), _) | (_, Ok(_)) => true,
-            (Err(_), Err(_)) => false,
-        };
+    let mut submit_attempted: Signal<bool> = use_signal(|| false);
 
+    let valid_credentials = move || {
+        let valid_username_or_email = Username::new(&username_or_email.read()).is_ok()
+            || EmailAddress::from_str(&username_or_email.read()).is_ok();
         let valid_password = Password::new(&password.read()).is_ok();
-
-        if !valid_identifier || !valid_password {
-            invalid_credentials.set(true);
-            return;
+        if valid_username_or_email && valid_password {
+            true
+        } else {
+            false
         }
-
-        invalid_credentials.set(false);
-        println!("please log me in");
     };
 
-    const ALLOWED_DIRECTIONS: [Dir; 1] = [Dir::Up];
+    let mut maybe_submit = move || {
+        if swipe_state.read().previous_swipe == Some(SUBMIT_SWIPE) {
+            submit_attempted.set(true);
+
+            if valid_credentials() {
+                println!("please log me in");
+            }
+        }
+    };
 
     rsx! {
         div { class : "swipe-able",
@@ -48,26 +51,22 @@ pub fn Login(swipe_state: Signal<swipe::State>) -> Element {
             ontouchstart : move |e: Event<TouchData>| swipe_state.ontouchstart(e),
             ontouchmove : move |e: Event<TouchData>| swipe_state.ontouchmove(e),
             ontouchend : move |e: Event<TouchData>| {
-                swipe_state.ontouchend(e, &ALLOWED_DIRECTIONS);
-                if swipe_state.read().previous_swipe == Some(Dir::Down) {
-                    attempt_submit();
-                }
+                swipe_state.ontouchend(e, &MOVE_SWIPES);
+                maybe_submit();
             },
 
             onmousedown : move |e: Event<MouseData>| swipe_state.onmousedown(e),
             onmousemove : move |e: Event<MouseData>| swipe_state.onmousemove(e),
             onmouseup : move |e: Event<MouseData>| {
-                swipe_state.onmouseup(e, &ALLOWED_DIRECTIONS);
-                if swipe_state.read().previous_swipe == Some(Dir::Down) {
-                    attempt_submit()
-                }
+                swipe_state.onmouseup(e, &MOVE_SWIPES);
+                maybe_submit();
             },
 
             div { class : "form-container",
 
                 h2 { "login ↑"}
 
-                if *invalid_credentials.read() {
+                if *submit_attempted.read() && !valid_credentials() {
                     div { class : "form-error",
                         "invalid credentials"
                     }
