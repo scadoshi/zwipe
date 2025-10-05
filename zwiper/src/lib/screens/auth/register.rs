@@ -47,11 +47,40 @@ pub fn Register(swipe_state: Signal<swipe::State>) -> Element {
     let mut email = use_signal(|| String::new());
     let mut password = use_signal(|| String::new());
 
-    let mut submit_clicked: Signal<bool> = use_signal(|| false);
+    let mut submit_attempted: Signal<bool> = use_signal(|| false);
 
     let mut username_error: Signal<Option<String>> = use_signal(|| None);
     let mut email_error: Signal<Option<String>> = use_signal(|| None);
     let mut password_error: Signal<Option<String>> = use_signal(|| None);
+
+    let mut attempt_submit = move || {
+        submit_attempted.set(true);
+        match Username::new(&username.read()) {
+            Ok(_) => username_error.set(None),
+            Err(e) => username_error.set(Some(e.to_string())),
+        }
+
+        match EmailAddress::from_str(&email.read()) {
+            Ok(_) => email_error.set(None),
+            Err(e) => {
+                email_error.set(Some(e.adjusted_string()));
+            }
+        }
+
+        match Password::new(&password.read()) {
+            Ok(_) => password_error.set(None),
+            Err(e) => password_error.set(Some(e.to_string())),
+        }
+
+        if username_error.read().is_none()
+            && email_error.read().is_none()
+            && password_error.read().is_none()
+        {
+            println!("please make my account");
+        }
+    };
+
+    const ALLOWED_DIRECTIONS: [Dir; 1] = [Dir::Down];
 
     rsx! {
         div { class : "swipe-able",
@@ -68,46 +97,29 @@ pub fn Register(swipe_state: Signal<swipe::State>) -> Element {
             ontouchstart : move |e: Event<TouchData>| swipe_state.ontouchstart(e),
             ontouchmove : move |e: Event<TouchData>| swipe_state.ontouchmove(e),
             ontouchend : move |e: Event<TouchData>| {
-                swipe_state.ontouchend(e, &[Dir::Up, Dir::Down]);
-                println!("direction => {:?}", swipe_state.read().previous_swipe);
+                swipe_state.ontouchend(e, &ALLOWED_DIRECTIONS);
+                if swipe_state.read().previous_swipe == Some(Dir::Up) {
+                    attempt_submit();
+                }
             },
 
             onmousedown : move |e: Event<MouseData>| swipe_state.onmousedown(e),
             onmousemove : move |e: Event<MouseData>| swipe_state.onmousemove(e),
-            onmouseup : move |e: Event<MouseData>| swipe_state.onmouseup(e, &[Dir::Up, Dir::Down]),
+            onmouseup : move |e: Event<MouseData>| {
+                swipe_state.onmouseup(e, &ALLOWED_DIRECTIONS);
+                if swipe_state.read().previous_swipe == Some(Dir::Up) {
+                    attempt_submit();
+                }
+            },
 
             div { class : "form-container",
-                h2 { "create profile" }
+                h2 { "create profile ↓" }
 
                 form {
-                    onsubmit : move |_| {
-                        submit_clicked.set(true);
-                        match Username::new(&username.read()) {
-                            Ok(_) => username_error.set(None),
-                            Err(e) => username_error.set(Some(e.to_string())),
-                        }
-
-                        match EmailAddress::from_str(&email.read()) {
-                            Ok(_) => email_error.set(None),
-                            Err(e) => {
-                                email_error.set(Some(e.adjusted_string()));
-                            }
-                        }
-
-                        match Password::new(&password.read()) {
-                            Ok(_) => password_error.set(None),
-                            Err(e) => password_error.set(Some(e.to_string())),
-                        }
-
-                        if username_error.read().is_none() && email_error.read().is_none() && password_error.read().is_none() {
-                            println!("please make my account");
-                        }
-                    },
-
                     div { class : "form-group",
                         label { r#for : "username" }
 
-                        if *submit_clicked.read() {
+                        if *submit_attempted.read() {
                             if let Some(error) = username_error.read().as_ref() {
                                 div { class : "form-error",
                                     "{error}"
@@ -124,7 +136,7 @@ pub fn Register(swipe_state: Signal<swipe::State>) -> Element {
                             spellcheck : "false",
                             oninput : move |event| {
                                 username.set(event.value());
-                                if *submit_clicked.read() {
+                                if *submit_attempted.read() {
                                     match Username::new(&event.value()) {
                                         Ok(_) => username_error.set(None),
                                         Err(e) => username_error.set(Some(e.to_string())),
@@ -137,7 +149,7 @@ pub fn Register(swipe_state: Signal<swipe::State>) -> Element {
                     div { class : "form-group",
                         label { r#for : "email" }
 
-                        if *submit_clicked.read() {
+                        if *submit_attempted.read() {
                             if let Some(error) = email_error.read().as_ref() {
                                 div { class : "form-error",
                                     "{error}"
@@ -154,7 +166,7 @@ pub fn Register(swipe_state: Signal<swipe::State>) -> Element {
                             spellcheck : "false",
                             oninput : move |event| {
                                 email.set(event.value());
-                                if *submit_clicked.read() {
+                                if *submit_attempted.read() {
                                     match EmailAddress::from_str(&event.value()) {
                                         Ok(_) => email_error.set(None),
                                         Err(e) => email_error.set(Some(e.adjusted_string())),
@@ -167,7 +179,7 @@ pub fn Register(swipe_state: Signal<swipe::State>) -> Element {
                     div { class : "form-group",
                         label { r#for : "password", "" }
 
-                        if *submit_clicked.read() {
+                        if *submit_attempted.read() {
                             if let Some(error) = password_error.read().as_ref() {
                                 div { class : "form-error",
                                     "{error}"
@@ -184,7 +196,7 @@ pub fn Register(swipe_state: Signal<swipe::State>) -> Element {
                             spellcheck : "false",
                             oninput : move |event| {
                                 password.set(event.value());
-                                if *submit_clicked.read() {
+                                if *submit_attempted.read() {
                                     match Password::new(&event.value()) {
                                         Ok(_) => password_error.set(None),
                                         Err(e) => password_error.set(Some(e.to_string())),
