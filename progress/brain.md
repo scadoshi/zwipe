@@ -15,25 +15,25 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: After completing swipe detection with velocity and direction calculation
+**Last Updated**: After implementing multi-screen swipe navigation and swipe-to-submit functionality
 
-**Next Learning Focus**: Building conditional rendering and progressive reveal animations for swipe-to-reveal navigation
+**Next Learning Focus**: Backend API integration for auth flow and async error handling in Dioxus
 
-**Recent Achievement**: Built complete swipe detection system with Delta struct for tracking distance and velocity calculations. Implemented direction resolution using distance (50px) and velocity (3.0 px/ms) thresholds. Created OnTouch and OnMouse trait implementations with proper state management patterns. Debugged coordinate system differences (positive Y = downward in browser). Successfully integrated CSS transforms with reactive Dioxus signals for real-time visual feedback during swipes.
+**Recent Achievement**: Implemented working multi-screen navigation using position tracking (BasicPoint with x/y coordinates). Built swipe-to-submit by detecting disallowed swipe directions and calling validation closures. Used CSS calc() to position three screens (Login/Home/Register) with transform offsets. Added ASCII logo entrance animation. Debugged CSS centering issues and simplified form layouts by removing unnecessary flexbox. Implemented always-render pattern where all screens exist in DOM with transforms controlling visibility.
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **Conditional Screen Rendering** - Triggering next screen render when swipe passes threshold
-2. **Progressive Reveal Animation** - Sliding screens into view based on swipe progress for fluid transitions
-3. **Swipe-to-Navigation Integration** - Connecting direction detection to actual route changes
-4. **Threshold Fine-Tuning** - Balancing distance vs velocity for natural-feeling swipe interactions
-5. **Reusable Swipe Patterns** - Abstracting swipe logic for any screen-to-screen transition
+1. **HTTP Client Integration** - Connecting swipe submissions to backend auth endpoints
+2. **Async State Management** - Handling loading/error states during API calls in Dioxus
+3. **JWT Token Storage** - Managing authentication tokens after successful login
+4. **API Error Display** - Showing network/validation errors from backend to users
+5. **Post-Auth Routing** - Navigating to main app after successful authentication
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Conditional Rendering Strategy** - When/how to render target screen during mid-swipe for performance
-2. **Animation Coordination** - Synchronizing CSS transforms with Dioxus component lifecycle
-3. **Snap-Back vs Commit Logic** - Handling partial swipes that don't meet thresholds
-4. **Z-Index Layer Management** - Stacking screens during progressive reveal without flicker
-5. **Signal Update Performance** - Ensuring smooth 60fps during rapid ontouchmove updates
+1. **Async Closure Patterns** - How to call async HTTP functions from sync event handlers
+2. **Token Persistence** - Best practices for storing JWT in Dioxus web apps
+3. **Loading State UX** - Showing submission feedback without breaking swipe animation
+4. **Error Recovery** - Handling failed submissions while keeping form state intact
+5. **Navigator Integration** - Programmatic routing after successful API responses
 
 ---
 
@@ -100,6 +100,9 @@ alwaysApply: true
 - **Event Data Access**: touches() vs touches_changed() for active vs ending touches
 - **CSS Transform Integration**: Dynamic inline styles with signal-driven values for animations
 - **Trait-Based Handlers**: Custom traits for Signal<State> to organize event handling logic
+- **CSS Calc Transforms**: Combining pixel deltas with viewport units for responsive screen positioning
+- **Animation Timing**: CSS transition-duration tied to swipe distance for natural-feeling motion
+- **Inline Event Handlers**: Placing logic directly in ontouchend/onmouseup for submission detection
 
 ### 💾 SQLx Database Operations & Advanced Patterns
 - **Connection Pooling**: Production-ready pool configuration with optimized settings
@@ -138,16 +141,16 @@ alwaysApply: true
 
 ## DEVELOPING - Active Implementation (Working But Learning) 🔧
 
-### 🎮 Swipe Detection & Gesture Handling
-- **Custom State Structures**: Delta struct with distance, direction, and time tracking for velocity calculations
-- **Coordinate System Understanding**: Browser coordinate quirks (positive Y = down, positive X = right)
-- **Direction Resolution Logic**: Threshold-based detection using distance OR velocity with magnitude comparison
-- **Event Handler Patterns**: Trait implementations for Signal types with proper state mutation
-- **TimePoint Tracking**: Combining ClientPoint coordinates with timestamps for velocity computation
-- **Speed Calculation**: Pixels per millisecond from consecutive position updates with division-by-zero guards
-- **from_start vs from_previous**: Using total displacement for direction vs incremental deltas for velocity
-- **State Reset Timing**: Preserving state through handler execution for CSS transform data access
-- *Note: Understanding patterns but still refining threshold values and animation coordination*
+### 🎮 Swipe-Based Navigation & Gestures
+- **Position Tracking**: BasicPoint (i32 x/y) for screen coordinates independent of swipe detection
+- **Multi-Screen Architecture**: Always-render pattern with CSS transforms controlling visibility
+- **Swipe-to-Submit Pattern**: Detecting disallowed swipes (previous_swipe) to trigger form submissions
+- **Transform Calculations**: CSS calc() with pixel deltas and viewport-height offsets for screen positioning
+- **Direction Resolution**: Separate tracking of detected swipe vs allowed navigation for dual-purpose gestures
+- **Event Handler Closures**: Extracting validation logic into reusable closures callable from multiple handlers
+- **Coordinate System**: Browser coordinates (positive Y down) with proper delta calculations
+- **State Management**: Decoupled position updates from swipe detection for flexible interaction patterns
+- *Note: Working implementation but animation timing and threshold values may need refinement*
 
 ### 🏗️ Service Architecture & Dependency Injection
 - **Generic Service Patterns**: Service<R> and Service<DR, CR> implementations across domains
