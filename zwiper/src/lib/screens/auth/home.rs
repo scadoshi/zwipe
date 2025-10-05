@@ -26,10 +26,7 @@ pub fn Home() -> Element {
 
             ontouchstart : move |e: Event<TouchData>| swipe_state.ontouchstart(e),
             ontouchmove : move |e: Event<TouchData>| swipe_state.ontouchmove(e),
-            ontouchend : move |e: Event<TouchData>| {
-                swipe_state.ontouchend(e, &[Dir::Up, Dir::Down]);
-                println!("direction => {:?}", swipe_state.read().previous_swipe);
-            },
+            ontouchend : move |e: Event<TouchData>| swipe_state.ontouchend(e, &[Dir::Up, Dir::Down]),
 
             onmousedown : move |e: Event<MouseData>| swipe_state.onmousedown(e),
             onmousemove : move |e: Event<MouseData>| swipe_state.onmousemove(e),
