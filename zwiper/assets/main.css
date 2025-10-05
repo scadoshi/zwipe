@@ -16,6 +16,7 @@ body {
     min-height: 100vh;
     max-width: 100vh;
     overflow: hidden;
+    user-select: none;
 }
 
 /* swipe */
