@@ -38,15 +38,15 @@ pub fn Home() -> Element {
             div { class : "home-screen",
 
                 div { class : "home-up-hint",
-                    p { class : "home-up-arrow", "↑" },
-                    p { "swipe ", b { "up" }, " to ", b { "log in" } },
+                    p { class : "up-arrow", "↑" },
+                    p { "log in" },
                 },
 
                 pre { class: "ascii-logo", "{ascii_logo}" },
 
                 div { class : "home-down-hint",
-                    p { "swipe ", b { "down" }, " to ", b { "create profile" } },
-                    p { class : "home-down-arrow", "↓" },
+                    p { "create profile" },
+                    p { class : "down-arrow", "↓" },
                 },
             }
         }
