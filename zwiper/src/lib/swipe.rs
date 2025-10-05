@@ -222,28 +222,34 @@ impl State {
         let allow = move |dir: &Dir| allowed.contains(dir);
         match (x_dir, y_dir) {
             (Some(x), Some(y)) => {
-                if allow(&x) && (dx.from_start.abs() > dy.from_start.abs() || !allow(&y)) {
-                    self.position.x += x.as_i32();
-                    self.previous_swipe = Some(x);
-                } else if allow(&y) && (dy.from_start.abs() > dx.from_start.abs() || !allow(&x)) {
-                    self.position.y += y.as_i32();
-                    self.previous_swipe = Some(y);
+                let winner = if dx.from_start.abs() > dy.from_start.abs() {
+                    x
+                } else {
+                    y
+                };
+                if allow(&winner) {
+                    match winner {
+                        Dir::Up | Dir::Down => self.position.y += winner.as_i32(),
+                        Dir::Left | Dir::Right => self.position.x += winner.as_i32(),
+                    }
                 }
+                self.previous_swipe = Some(winner);
             }
             (Some(x), None) => {
                 if allow(&x) {
                     self.position.x += x.as_i32();
-                    self.previous_swipe = Some(x);
                 }
+                self.previous_swipe = Some(x);
             }
             (None, Some(y)) => {
                 if allow(&y) {
                     self.position.y += y.as_i32();
-                    self.previous_swipe = Some(y);
                 }
+                self.previous_swipe = Some(y);
             }
             (None, None) => (),
         }
+        println!("swipe dir => {:?}", self.previous_swipe);
     }
 }
 
