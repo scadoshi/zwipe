@@ -41,7 +41,7 @@ pub fn Home() -> Element {
                     p { "login" },
                 },
 
-                pre { class: "ascii-logo", "{ascii_logo}" },
+                div { class: "ascii-logo",  "{ascii_logo}" },
 
                 div { class : "home-down-hint",
                     p { "create profile" },
