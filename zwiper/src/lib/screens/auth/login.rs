@@ -1,4 +1,4 @@
-use std::{ops::Deref, str::FromStr};
+use std::str::FromStr;
 
 use crate::{
     http::auth::{authenticate_user, validate_authenticate_user, AuthClient},
