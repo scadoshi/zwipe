@@ -187,12 +187,12 @@ impl State {
         self.transition_seconds = s;
     }
 
-    pub fn resolve_swipe_direction(&mut self, allowed: &[Dir]) {
+    pub fn resolve_swipe_direction(&mut self, swipe_moves: &[Dir]) {
         const SPEED_CHECK_MIN_DIST: f64 = 10.0;
         const SPEED_THRESHOLD: f64 = 5.0;
         const DISTANCE_THRESHOLD: f64 = 200.0;
 
-        if allowed.is_empty() {
+        if swipe_moves.is_empty() {
             return;
         }
 
@@ -224,7 +224,7 @@ impl State {
             }
         }
 
-        let allow = move |dir: &Dir| allowed.contains(dir);
+        let allow = move |dir: &Dir| swipe_moves.contains(dir);
         match (x_dir, y_dir) {
             (Some(x), Some(y)) => {
                 let winner = if dx.from_start.abs() > dy.from_start.abs() {
@@ -256,126 +256,97 @@ impl State {
         }
         println!("swipe dir => {:?}", self.previous_swipe);
     }
+
+    // functionality shared by ontouch- and onmouse-
+    pub fn onswipestart(&mut self, point: ClientPoint) {
+        self.set_transition_seconds();
+        let time_point = TimePoint::new(point.clone(), Utc::now().naive_utc());
+        self.start = Some(point);
+        self.current = Some(time_point.clone());
+        self.previous = Some(time_point);
+        println!(
+            "swipe start => {:?}",
+            self.current
+                .as_ref()
+                .expect("failed to get swipe start timepoint")
+        );
+    }
+
+    pub fn onswipemove(&mut self, point: ClientPoint) {
+        let time_point = TimePoint::new(point, Utc::now().naive_utc());
+        self.previous = self.current.clone();
+        self.current = Some(time_point);
+    }
+
+    pub fn onswipeend(&mut self, point: ClientPoint, swipe_moves: &[Dir]) {
+        self.set_transition_seconds();
+        let time_point = TimePoint::new(point, Utc::now().naive_utc());
+        self.previous = self.current.clone();
+        self.current = Some(time_point);
+        self.resolve_swipe_direction(swipe_moves);
+        println!(
+            "swipe end => {:?}",
+            self.current
+                .as_ref()
+                .expect("failed to get swipe end timepoint")
+        );
+        self.reset();
+    }
 }
 
+// wiring event for touch interactions to swipe behavior
 pub trait OnTouch {
     fn ontouchstart(&mut self, e: Event<TouchData>);
     fn ontouchmove(&mut self, e: Event<TouchData>);
-    fn ontouchend(&mut self, e: Event<TouchData>, allowed: &[Dir]);
+    fn ontouchend(&mut self, e: Event<TouchData>, swipe_moves: &[Dir]);
 }
 
 impl OnTouch for Signal<State> {
     fn ontouchstart(&mut self, e: Event<TouchData>) {
         if let Some(t) = e.touches().into_iter().next() {
-            self.with_mut(|ss| {
-                ss.set_transition_seconds();
-
-                let point = t.client_coordinates();
-                let time_point = TimePoint::new(point.clone(), Utc::now().naive_utc());
-
-                ss.start = Some(point);
-                ss.current = Some(time_point.clone());
-                ss.previous = Some(time_point);
-            });
-            println!(
-                "touchstart => {:?}",
-                self.read()
-                    .current
-                    .as_ref()
-                    .expect("failed to get touchstart timepoint")
-            );
+            let point = t.client_coordinates();
+            self.with_mut(|ss| ss.onswipestart(point));
         }
     }
 
     fn ontouchmove(&mut self, e: Event<TouchData>) {
         if let Some(t) = e.touches().into_iter().next() {
-            self.with_mut(|ss| {
-                let time_point = TimePoint::new(t.client_coordinates(), Utc::now().naive_utc());
-                ss.previous = ss.current.clone();
-                ss.current = Some(time_point);
-            });
+            let point = t.client_coordinates();
+            self.with_mut(|ss| ss.onswipemove(point));
         }
     }
 
-    fn ontouchend(&mut self, e: Event<TouchData>, allowed: &[Dir]) {
+    fn ontouchend(&mut self, e: Event<TouchData>, swipe_moves: &[Dir]) {
         if let Some(t) = e.touches_changed().into_iter().next() {
-            self.with_mut(|ss| {
-                ss.set_transition_seconds();
-
-                let time_point = TimePoint::new(t.client_coordinates(), Utc::now().naive_utc());
-
-                ss.previous = ss.current.clone();
-                ss.current = Some(time_point);
-
-                ss.resolve_swipe_direction(allowed);
-            });
-            println!(
-                "touchend => {:?}",
-                self.read()
-                    .current
-                    .as_ref()
-                    .expect("failed to get touchend timepoint")
-            );
-            self.with_mut(|ss| ss.reset());
+            let point = t.client_coordinates();
+            self.with_mut(|ss| ss.onswipeend(point, swipe_moves));
         }
     }
 }
 
+// wiring event for mouse interactions to swipe behavior
+// only used while developing on desktop emulation
 pub trait OnMouse {
     fn onmousedown(&mut self, e: Event<MouseData>);
     fn onmousemove(&mut self, e: Event<MouseData>);
-    fn onmouseup(&mut self, e: Event<MouseData>, allowed: &[Dir]);
+    fn onmouseup(&mut self, e: Event<MouseData>, swipe_moves: &[Dir]);
 }
 
 impl OnMouse for Signal<State> {
     fn onmousedown(&mut self, e: Event<MouseData>) {
-        self.with_mut(|ss| {
-            ss.set_transition_seconds();
-
-            let point = e.client_coordinates();
-            let time_point = TimePoint::new(point.clone(), Utc::now().naive_utc());
-
-            ss.start = Some(point);
-            ss.current = Some(time_point.clone());
-            ss.previous = Some(time_point);
-        });
-        println!(
-            "mousedown => {:?}",
-            self.read()
-                .current
-                .as_ref()
-                .expect("failed to get mousedown timepoint")
-        );
+        let point = e.client_coordinates();
+        self.with_mut(|ss| ss.onswipestart(point));
     }
 
     fn onmousemove(&mut self, e: Event<MouseData>) {
         if e.held_buttons().contains(MouseButton::Primary) {
-            self.with_mut(|ss| {
-                let time_point = TimePoint::new(e.client_coordinates(), Utc::now().naive_utc());
-                ss.previous = ss.current.clone();
-                ss.current = Some(time_point);
-            });
+            let point = e.client_coordinates();
+            self.with_mut(|ss| ss.onswipemove(point));
         }
     }
 
-    fn onmouseup(&mut self, e: Event<MouseData>, allowed: &[Dir]) {
-        self.with_mut(|ss| {
-            ss.set_transition_seconds();
-
-            let time_point = TimePoint::new(e.client_coordinates(), Utc::now().naive_utc());
-
-            ss.previous = ss.current.clone();
-            ss.current = Some(time_point);
-
-            ss.resolve_swipe_direction(allowed);
-        });
-        println!(
-            "mouseup => {:?}",
-            self.read()
-                .current
-                .as_ref()
-                .expect("failed to get mouseup timepoint")
-        );
-        self.with_mut(|ss| ss.reset());
+    fn onmouseup(&mut self, e: Event<MouseData>, swipe_moves: &[Dir]) {
+        let point = e.client_coordinates();
+        self.with_mut(|ss| ss.onswipeend(point, swipe_moves));
     }
 }
