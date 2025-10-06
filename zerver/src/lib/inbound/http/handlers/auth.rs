@@ -133,14 +133,9 @@ where
 impl From<AuthenticateUserError> for ApiError {
     fn from(value: AuthenticateUserError) -> Self {
         match value {
-            AuthenticateUserError::UserNotFound => {
+            AuthenticateUserError::UserNotFound | AuthenticateUserError::InvalidPassword => {
                 Self::Unauthorized("invalid credentials".to_string())
             }
-
-            AuthenticateUserError::InvalidPassword => {
-                Self::Unauthorized("invalid credentials".to_string())
-            }
-
             e => e.log_500(),
         }
     }
@@ -148,15 +143,8 @@ impl From<AuthenticateUserError> for ApiError {
 
 #[cfg(feature = "zerver")]
 impl From<InvalidAuthenticateUser> for ApiError {
-    fn from(value: InvalidAuthenticateUser) -> Self {
-        match value {
-            InvalidAuthenticateUser::MissingIdentifier => {
-                Self::UnprocessableEntity("username or email must be present".to_string())
-            }
-            InvalidAuthenticateUser::Password(_) => {
-                Self::UnprocessableEntity("invalid username, email or password".to_string())
-            }
-        }
+    fn from(_value: InvalidAuthenticateUser) -> Self {
+        Self::UnprocessableEntity("invalid credentials".to_string())
     }
 }
 
