@@ -1,7 +1,9 @@
 pub mod bad_words;
 pub mod jwt;
 pub mod password;
-use crate::domain::auth::models::jwt::{Jwt, JwtError};
+use crate::domain::auth::models::jwt::Jwt;
+#[cfg(feature = "zerver")]
+use crate::domain::auth::models::jwt::JwtError;
 #[cfg(feature = "zerver")]
 use crate::domain::auth::models::password::HashedPassword;
 use crate::domain::auth::models::password::{InvalidPassword, Password};
