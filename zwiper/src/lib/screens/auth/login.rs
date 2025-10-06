@@ -1,6 +1,9 @@
-use std::str::FromStr;
+use std::{ops::Deref, str::FromStr};
 
-use crate::swipe::{self, Direction as Dir, OnMouse, OnTouch, VH_GAP};
+use crate::{
+    http::auth::{authenticate_user, validate_authenticate_user, AuthClient},
+    swipe::{self, Direction as Dir, OnMouse, OnTouch, VH_GAP},
+};
 use dioxus::prelude::*;
 use email_address::EmailAddress;
 use zwipe::domain::{auth::models::password::Password, user::models::Username};
@@ -10,10 +13,14 @@ pub fn Login(swipe_state: Signal<swipe::State>) -> Element {
     const MOVE_SWIPES: [Dir; 1] = [Dir::Up];
     const SUBMIT_SWIPE: Dir = Dir::Down;
 
+    let auth_client = use_signal(|| AuthClient::default());
+
     let mut username_or_email = use_signal(|| String::new());
     let mut password = use_signal(|| String::new());
 
     let mut submit_attempted: Signal<bool> = use_signal(|| false);
+
+    let mut submission_error: Signal<Option<String>> = use_signal(|| None);
 
     let valid_credentials = move || {
         let valid_username_or_email = Username::new(&username_or_email.read()).is_ok()
@@ -26,12 +33,23 @@ pub fn Login(swipe_state: Signal<swipe::State>) -> Element {
         }
     };
 
-    let mut maybe_submit = move || {
+    let maybe_submit = move || async move {
         if swipe_state.read().previous_swipe == Some(SUBMIT_SWIPE) {
             submit_attempted.set(true);
 
             if valid_credentials() {
-                println!("please log me in");
+                // let auth_client_clone = auth_client.read().clone();
+                // let's try this without cloning for a sec
+                match validate_authenticate_user(&*username_or_email.read(), &*password.read()) {
+                    Ok(request) => match authenticate_user(request, &auth_client.read()).await {
+                        Ok(s) => {
+                            println!("authenticated user => {:#?}", s.user);
+                            println!("token => {:?}", s.token)
+                        }
+                        Err(e) => submission_error.set(Some(e.to_string())),
+                    },
+                    Err(e) => submission_error.set(Some(e.to_string())),
+                }
             }
         }
     };
@@ -52,14 +70,14 @@ pub fn Login(swipe_state: Signal<swipe::State>) -> Element {
             ontouchmove : move |e: Event<TouchData>| swipe_state.ontouchmove(e),
             ontouchend : move |e: Event<TouchData>| {
                 swipe_state.ontouchend(e, &MOVE_SWIPES);
-                maybe_submit();
+                spawn(maybe_submit());
             },
 
             onmousedown : move |e: Event<MouseData>| swipe_state.onmousedown(e),
             onmousemove : move |e: Event<MouseData>| swipe_state.onmousemove(e),
             onmouseup : move |e: Event<MouseData>| {
                 swipe_state.onmouseup(e, &MOVE_SWIPES);
-                maybe_submit();
+                spawn(maybe_submit());
             },
 
             div { class : "form-container",
@@ -100,6 +118,12 @@ pub fn Login(swipe_state: Signal<swipe::State>) -> Element {
                             oninput : move |event| {
                                 password.set(event.value());
                             }
+                        }
+                    }
+
+                    if let Some(error) = submission_error.read().as_deref() {
+                        div { class: "form-error",
+                                { format!("{}", error) }
                         }
                     }
                 }
