@@ -128,14 +128,8 @@ impl<'de> Deserialize<'de> for GetCard {
     where
         D: serde::Deserializer<'de>,
     {
-        let id = String::deserialize(deserializer).map_err(|e| {
-            serde::de::Error::custom(format!(
-                "failed to deserialize into string: {}",
-                e.to_string()
-            ))
-        })?;
-        GetCard::new(&id)
-            .map_err(|e| serde::de::Error::custom(format!("invalid uuid: {}", e.to_string())))
+        let id = String::deserialize(deserializer)?;
+        GetCard::new(&id).map_err(serde::de::Error::custom)
     }
 }
 

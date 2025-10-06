@@ -1,5 +1,5 @@
 use email_address::EmailAddress;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use thiserror::Error;
 use uuid::Uuid;
@@ -80,6 +80,16 @@ impl Serialize for Username {
     }
 }
 
+impl<'de> Deserialize<'de> for Username {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = String::deserialize(deserializer)?;
+        Username::new(raw.as_str()).map_err(serde::de::Error::custom)
+    }
+}
+
 // ==========
 //  requests
 // ==========
@@ -107,7 +117,7 @@ impl From<Uuid> for GetUser {
 //  main
 // ======
 
-#[derive(Debug, Clone, Serialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, PartialEq, Deserialize)]
 pub struct User {
     pub id: Uuid,
     pub username: Username,

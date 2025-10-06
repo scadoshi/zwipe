@@ -1,17 +1,13 @@
 pub mod bad_words;
 pub mod jwt;
 pub mod password;
-#[cfg(feature = "zerver")]
 use crate::domain::auth::models::jwt::{Jwt, JwtError};
 #[cfg(feature = "zerver")]
 use crate::domain::auth::models::password::HashedPassword;
 use crate::domain::auth::models::password::{InvalidPassword, Password};
-#[cfg(feature = "zerver")]
-use crate::domain::user::models::User;
-use crate::domain::user::models::{InvalidUsername, Username};
+use crate::domain::user::models::{InvalidUsername, User, Username};
 use email_address::EmailAddress;
-#[cfg(feature = "zerver")]
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use thiserror::Error;
 use uuid::Uuid;
@@ -324,11 +320,10 @@ impl From<&ChangePassword> for AuthenticateUser {
     }
 }
 
-#[cfg(feature = "zerver")]
 /// successful authentication response containing user data and JWT token
 ///
 /// authentication and register user requeast use this
-#[derive(Debug, Serialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq, Deserialize)]
 pub struct AuthenticateUserSuccess {
     pub user: User,
     pub token: Jwt,

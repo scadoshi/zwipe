@@ -104,6 +104,16 @@ impl Serialize for Jwt {
     }
 }
 
+impl<'de> Deserialize<'de> for Jwt {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = String::deserialize(deserializer)?;
+        Jwt::new(raw.as_str()).map_err(serde::de::Error::custom)
+    }
+}
+
 #[cfg(feature = "zerver")]
 impl Jwt {
     pub fn generate(
@@ -144,7 +154,6 @@ impl Jwt {
 }
 
 impl Jwt {
-    /// constructor
     pub fn new(raw: &str) -> Result<Self, JwtError> {
         if raw.is_empty() {
             return Err(JwtError::MissingToken);
