@@ -46,7 +46,7 @@ pub enum RegisterUserError {
     SomethingWentWrong,
     #[error("network error")]
     Network(reqwest::Error),
-    #[error("invalid request: {0}")]
+    #[error("{0}")]
     InvalidRequest(String),
 }
 
@@ -109,7 +109,7 @@ pub enum AuthenticateUserError {
     SomethingWentWrong,
     #[error("network error")]
     Network(reqwest::Error),
-    #[error("invalid request: {0}")]
+    #[error("{0}")]
     InvalidRequest(String),
 }
 
