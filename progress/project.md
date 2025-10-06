@@ -13,27 +13,27 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: After implementing swipe-based navigation and submission system
+**Last Updated**: After completing frontend-backend HTTP integration
 
-**Current Focus**: Frontend functionality complete for auth flow - ready for backend API integration
+**Current Focus**: Authentication flow complete - frontend successfully communicating with backend
 
-**Recent Achievement**: Completed multi-screen swipe navigation with position tracking using BasicPoint (x,y coordinates). Built swipe-to-submit detection by tracking previous_swipe separately from position updates. Implemented always-render architecture for auth screens (Login/Home/Register) with calc-based transform positioning. Added ASCII logo entrance animation and simplified UI hints. Cleaned up CSS removing unused flexbox complexity from form screens.
+**Recent Achievement**: Built complete HTTP client integration for authentication. AuthClient with reqwest making successful POST requests to backend /api/auth/register and /api/auth/login endpoints. Implemented custom error types mapping status codes to user-facing messages. Got async/spawn patterns working in Dioxus event handlers. Frontend mobile simulator now successfully sends auth requests and receives JWT tokens from backend. Implemented custom Deserialize for newtypes maintaining validation through serialization boundaries.
 
-**Current Decision**: Swipe navigation uses position state (i32 coordinates) for screen tracking, while previous_swipe captures all detected swipes including disallowed ones for submission triggers. Forms use simple centered boxes with basic spacing rather than complex flexbox layouts. Auth screens render simultaneously with CSS transforms controlling visibility.
+**Current Decision**: HTTP client uses status code branching (200/201/401/422/500) to map backend responses. Async work spawned from sync event handlers using spawn(). AuthClient stored in Signal for cheap cloning across async boundaries. API paths constructed with /api/auth prefix matching backend route structure. Error types distinguish between network failures, invalid credentials, and server errors for appropriate user feedback.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Backend API Integration** - Connect swipe-to-submit to actual registration/login endpoints
-2. **JWT Token Storage** - Handle authentication tokens after successful login
-3. **Loading States** - Show feedback during async API calls from swipe submission
-4. **Error Handling** - Display API errors to users after failed submissions
-5. **Post-Auth Navigation** - Transition to main app screens after successful authentication
+1. **JWT Token Storage** - Persist authentication tokens after successful login/registration
+2. **Loading State UX** - Visual feedback during async API calls (spinner, disabled inputs)
+3. **Post-Auth Navigation** - Transition to deck management screens after successful authentication
+4. **Token Attachment** - Include Authorization header in subsequent authenticated requests
+5. **Network Error Handling** - Graceful offline/timeout scenarios without breaking UI
 
 ### 🤔 Next Immediate Priorities (Top 5)
-1. **HTTP Client Calls** - Wire up AuthClient to login/register swipe handlers
-2. **Token Management** - Store JWT and include in subsequent authenticated requests
-3. **Success Navigation** - Route to deck management after successful auth
-4. **Network Error UX** - Handle offline/timeout scenarios gracefully
-5. **Main App Swipe Navigation** - Extend swipe patterns to deck browsing/management screens
+1. **Global Auth State** - Shared authentication status across all components
+2. **Authenticated HTTP Calls** - Pattern for including JWT in card/deck API requests
+3. **Token Expiration** - Handle expired tokens and re-authentication flow
+4. **Main App Screens** - Deck browsing/management UI with swipe navigation
+5. **Card Display Components** - Render card data from backend search/deck endpoints
 
 ---
 
@@ -88,6 +88,11 @@ alwaysApply: true
 - **Swipe-to-Submit Pattern**: Detection of disallowed swipe directions to trigger form submissions without buttons
 - **Always-Render Architecture**: All auth screens render simultaneously with CSS calc transforms controlling visibility
 - **Minimal UI Approach**: Arrow-in-title hints and simplified CSS removing unnecessary flexbox complexity
+- **Frontend-Backend HTTP Integration**: Complete authentication flow with reqwest POST requests to /api/auth endpoints
+- **Async Dioxus Patterns**: spawn() for calling async HTTP functions from sync event handlers
+- **HTTP Error Handling**: Custom error types mapping status codes (401/422/500) to user-facing messages
+- **Response Deserialization**: JSON to AuthenticateUserSuccess with custom Deserialize maintaining newtype validation
+- **Signal Async Patterns**: Proper cloning of Signals and client instances for async block move semantics
 
 ---
 
