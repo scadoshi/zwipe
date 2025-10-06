@@ -36,7 +36,7 @@ pub fn Home() -> Element {
 
                 div { class : "home-up-hint",
                     p { class : "up-arrow", "↑" },
-                    p { "log in" },
+                    p { "login" },
                 },
 
                 pre { class: "ascii-logo", "{ascii_logo}" },
