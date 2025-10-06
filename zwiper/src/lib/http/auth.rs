@@ -8,7 +8,10 @@ use zwipe::{
         AuthenticateUser, AuthenticateUserSuccess, InvalidAuthenticateUser, InvalidRawRegisterUser,
         RawRegisterUser,
     },
-    inbound::http::handlers::auth::{HttpAuthenticateUser, HttpRegisterUser},
+    inbound::http::{
+        handlers::auth::{HttpAuthenticateUser, HttpRegisterUser},
+        routes::{login_route, register_route},
+    },
 };
 
 #[derive(Debug, Clone)]
@@ -72,7 +75,7 @@ pub async fn register_user(
     auth_client: &AuthClient,
 ) -> Result<AuthenticateUserSuccess, RegisterUserError> {
     let mut url = auth_client.app_config.backend_url.clone();
-    url.set_path("/api/auth/register");
+    url.set_path(&register_route());
     let response = auth_client
         .client
         .post(url)
@@ -134,7 +137,7 @@ pub async fn authenticate_user(
     auth_client: &AuthClient,
 ) -> Result<AuthenticateUserSuccess, AuthenticateUserError> {
     let mut url = auth_client.app_config.backend_url.clone();
-    url.set_path("/api/auth/login");
+    url.set_path(&login_route());
     let response = auth_client
         .client
         .post(url)
