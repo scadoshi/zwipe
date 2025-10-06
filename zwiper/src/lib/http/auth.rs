@@ -1,3 +1,5 @@
+use std::sync::OnceLock;
+
 use crate::config::AppConfig;
 use reqwest::{Client, StatusCode};
 use thiserror::Error;
@@ -15,11 +17,19 @@ pub struct AuthClient {
     app_config: AppConfig,
 }
 
-impl Default for AuthClient {
-    fn default() -> Self {
-        let app_config = AppConfig::default();
-        let client = Client::new();
-        Self { client, app_config }
+impl AuthClient {
+    pub fn new() -> Self {
+        static CONFIG: OnceLock<AppConfig> = OnceLock::new();
+        let app_config = CONFIG
+            .get_or_init(|| {
+                AppConfig::from_env()
+                    .expect("failed to initialize app config—ensure BACKEND_URL is avaiable in env")
+            })
+            .clone();
+        Self {
+            client: Client::new(),
+            app_config,
+        }
     }
 }
 
@@ -49,7 +59,6 @@ impl From<serde_json::Error> for RegisterUserError {
     }
 }
 
-// might not need this at all
 pub fn validate_register_user(
     username: &str,
     email: &str,
@@ -113,11 +122,6 @@ impl From<serde_json::Error> for AuthenticateUserError {
     }
 }
 
-// might not need this at all
-// as each part is being validated separately (e.g. username, email, etc.)
-// so those errors can be placed around the ui as needed
-// but this might be a good final boss
-// think about it
 pub fn validate_authenticate_user(
     identifier: &str,
     password: &str,
