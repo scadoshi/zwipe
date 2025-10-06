@@ -22,7 +22,7 @@ alwaysApply: true
 **Current Decision**: Implementing rotating refresh tokens (more secure than non-rotating). Separate refresh_tokens table with token hashing, expiration, and revocation tracking. Frontend stores both access_token and refresh_token in secure storage via use_persistent. Refresh only on 401 (not every request) for performance. Auto-login flow: check stored tokens → verify with backend → route to main app or auth screens.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Refresh Token Infrastructure** - Backend table, hashing, rotation logic, /api/auth/refresh endpoint
+1. **Refresh Token Infrastructure** - Backend table, hashing, rotation logic, /api/auth/refresh endpoint (Note: Will need cleanup job for expired tokens)
 2. **Token Response Updates** - Return both access_token and refresh_token from login/register
 3. **Persistent Token Storage** - use_persistent for secure mobile storage of both tokens
 4. **Loading Screen Flow** - Auto-login attempt on app start with token validation
@@ -203,6 +203,7 @@ alwaysApply: true
 - **Monitoring & Logging**: Structured logging, metrics collection, health monitoring
 - **Database Optimization**: Query performance analysis, indexing strategy
 - **Image Handling**: Card image serving, caching, and mobile optimization
+- **Token Cleanup Job**: Scheduled job to remove expired/revoked refresh tokens (weekly via sync binary)
 
 ### 🎮 MTG-Specific Features
 - **Advanced Card Search**: Format legality, power/toughness filtering, advanced search operators
