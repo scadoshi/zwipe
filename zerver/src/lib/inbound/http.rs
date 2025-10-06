@@ -1,28 +1,11 @@
 pub mod handlers;
 #[cfg(feature = "zerver")]
 pub mod middleware;
-
+pub mod routes;
 #[cfg(feature = "zerver")]
 use crate::domain::{
     auth::ports::AuthService, card::ports::CardService, deck::ports::DeckService,
     health::ports::HealthService, user::ports::UserService,
-};
-#[cfg(feature = "zerver")]
-use crate::inbound::http::handlers::auth::{
-    change_email, change_password, change_username, delete_user,
-};
-#[cfg(feature = "zerver")]
-use crate::inbound::http::handlers::deck_card::{
-    create_deck_card, delete_deck_card, update_deck_card,
-};
-#[cfg(feature = "zerver")]
-use crate::inbound::http::handlers::user::get_user;
-#[cfg(feature = "zerver")]
-use crate::inbound::http::handlers::{
-    auth::{authenticate_user, register_user},
-    card::{get_card, search_cards},
-    deck::{create_deck_profile, delete_deck, get_deck, update_deck_profile},
-    health::{are_server_and_database_running, is_server_running, root},
 };
 #[cfg(feature = "zerver")]
 use anyhow::{anyhow, Context};
@@ -30,10 +13,6 @@ use anyhow::{anyhow, Context};
 use axum::http::{header, HeaderValue, Method, StatusCode};
 #[cfg(feature = "zerver")]
 use axum::response::IntoResponse;
-#[cfg(feature = "zerver")]
-use axum::routing::{delete, get, post, put};
-#[cfg(feature = "zerver")]
-use axum::Router;
 #[cfg(feature = "zerver")]
 use std::sync::Arc;
 #[cfg(feature = "zerver")]
@@ -152,6 +131,8 @@ impl HttpServer {
         deck_service: impl DeckService,
         config: HttpServerConfig<'_>,
     ) -> anyhow::Result<Self> {
+        use crate::inbound::http::routes::{private_routes, public_routes};
+
         let trace_layer = tower_http::trace::TraceLayer::new_for_http().make_span_with(
             |request: &axum::extract::Request<_>| {
                 let uri = request.uri().to_string();
@@ -193,77 +174,4 @@ impl HttpServer {
             .context("received error from running server")?;
         Ok(())
     }
-}
-
-// ========
-//  routes
-// ========
-
-#[cfg(feature = "zerver")]
-pub fn private_routes<AS, US, HS, CS, DS>() -> Router<AppState<AS, US, HS, CS, DS>>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
-    Router::new().nest(
-        "/api",
-        Router::new()
-            .nest(
-                "/user",
-                Router::new()
-                    .route("/", get(get_user))
-                    .route("/change-password", put(change_password))
-                    .route("/change-username", put(change_username))
-                    .route("/change-email", put(change_email))
-                    .route("/delete-user", delete(delete_user)),
-            )
-            .nest(
-                "/card",
-                Router::new()
-                    .route("/:card_profile_id", get(get_card))
-                    .route("/search", get(search_cards)),
-            )
-            .nest(
-                "/deck",
-                Router::new()
-                    .route("/", post(create_deck_profile))
-                    .route("/:deck_id", get(get_deck))
-                    .route("/:deck_id", put(update_deck_profile))
-                    .route("/:deck_id", delete(delete_deck))
-                    .nest(
-                        "/:deck_id/card",
-                        Router::new()
-                            .route("/", post(create_deck_card))
-                            .route("/:card_profile_id", put(update_deck_card))
-                            .route("/:card_profile_id", delete(delete_deck_card)),
-                    ),
-            ),
-    )
-}
-
-#[cfg(feature = "zerver")]
-pub fn public_routes<AS, US, HS, CS, DS>() -> Router<AppState<AS, US, HS, CS, DS>>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
-    Router::new()
-        .route("/", get(root))
-        .route("/health/server", get(is_server_running))
-        .route("/health/database", get(are_server_and_database_running))
-        .nest(
-            "/api",
-            Router::new().nest(
-                "/auth",
-                Router::new()
-                    .route("/register", post(register_user))
-                    .route("/login", post(authenticate_user)),
-            ),
-        )
 }
