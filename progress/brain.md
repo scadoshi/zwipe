@@ -15,25 +15,25 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: After implementing loading states and route function architecture
+**Last Updated**: Planning refresh token system and persistent authentication
 
-**Next Learning Focus**: Token persistence, global auth state, and post-authentication routing
+**Next Learning Focus**: Refresh token infrastructure, use_persistent hook, and auto-login flow
 
-**Recent Achievement**: Implemented complete loading state UX with spinning card animations and automatic error clearing on retry. Built route function architecture in backend for frontend imports ensuring single source of truth. Consolidated swipe detection methods for consistent behavior. Resolved WSL2 display server issues. Established environment configuration pattern with OnceLock for efficient loading.
+**Recent Achievement**: Designed complete refresh token architecture understanding rotating vs non-rotating strategies. Learned about use_persistent hook for cross-platform secure storage (iOS Keychain/Android KeyStore). Clarified JWT structure (self-contained with exp claim), token refresh flow (only on 401), and mobile storage best practices. Understood why refreshing on every request is overkill (performance + no security benefit).
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **JWT Token Storage** - Persisting authentication tokens after successful login
-2. **Post-Auth Routing** - Navigating to main app screens after successful authentication
-3. **Global Auth State** - Sharing authentication status across components
-4. **Token Inclusion** - Attaching JWT to authenticated API requests
-5. **Token Expiration** - Handling expired tokens and re-authentication flow
+1. **Refresh Token Backend** - Database table, token hashing, rotation logic, expiration tracking
+2. **Refresh Endpoint** - /api/auth/refresh that takes refresh token, returns new access + refresh
+3. **use_persistent Integration** - Storing both tokens securely with Dioxus abstraction
+4. **Auto-Login Flow** - Loading screen that checks tokens on app start and routes appropriately
+5. **401 Refresh Pattern** - Automatic token refresh and request retry on expired access tokens
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Token Persistence** - Best practices for storing JWT in Dioxus (Signal vs localStorage vs other)
-2. **Global Auth State** - Sharing authentication status across components without prop drilling
-3. **Token Refresh** - Handling expired tokens and automatic renewal
-4. **Authenticated Requests** - Pattern for including Authorization headers in subsequent requests
-5. **Router Integration** - How to protect routes that require authentication
+1. **JWT Decoding** - Using jsonwebtoken crate to read exp claim client-side
+2. **Refresh Token Hashing** - Best practices for storing refresh tokens in database
+3. **Token Rotation Implementation** - Invalidating old refresh token when issuing new one
+4. **Loading Screen UX** - Balancing fast auto-login with good user experience
+5. **Request Retry Logic** - Clean pattern for retry-after-refresh without code duplication
 
 ---
 
@@ -220,6 +220,15 @@ alwaysApply: true
 ---
 
 ## LEARNING - Recently Introduced, Needs Guidance 📚
+
+### 🔐 Refresh Token Architecture & Mobile Security
+- **Rotating vs Non-Rotating Tokens**: Security tradeoffs between token refresh strategies
+- **Refresh Token Database Design**: Separate table with hashing, expiration, revocation tracking
+- **Token Refresh Flow**: Access token expiration detection and automatic refresh on 401
+- **Mobile Secure Storage**: use_persistent abstraction over iOS Keychain/Android KeyStore
+- **JWT Structure Understanding**: Self-contained tokens with exp/iat claims readable client-side
+- **Auto-Login Patterns**: App start flow with token validation and routing decisions
+- **Request Retry Logic**: Refreshing tokens and retrying failed requests transparently
 
 ### 🔮 Advanced Rust Patterns
 - **Advanced Async Patterns**: Complex Future handling, async streaming, async iterators

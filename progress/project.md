@@ -13,20 +13,20 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: After implementing loading states and route function architecture
+**Last Updated**: Planning refresh token system and persistent authentication
 
-**Current Focus**: Authentication UX complete with loading states and error handling
+**Current Focus**: Building production-ready token persistence with rotating refresh tokens
 
-**Recent Achievement**: Implemented loading state UX with spinning card animations during HTTP requests. Errors clear automatically on successful retry. Created route function architecture in backend routes.rs for frontend to import (register_route(), login_route(), etc.) ensuring single source of truth for API paths. Consolidated swipe detection with shared onswipestart/move/end methods for consistent touch/mouse behavior. Resolved WSL2 display server issues. Established separate .env files for frontend (BACKEND_URL) and backend (full config) with OnceLock caching for efficient environment loading.
+**Recent Achievement**: Designed complete refresh token architecture with rotating tokens for mobile security. Identified use_persistent hook for secure token storage (iOS Keychain/Android KeyStore). Planned auto-login flow with loading screen, token validation, and automatic refresh on 401 responses. Determined rotating refresh token strategy (new access + refresh on every refresh call) over non-rotating for enhanced security.
 
-**Current Decision**: Route paths exported as functions rather than constants to avoid token repetition while preserving nested route structure readability. Loading states activate before async work, clear after completion. Errors cleared on successful submission. AuthClient initialization uses OnceLock for one-time config loading. Spinning card CSS animation provides visual feedback without disrupting swipe navigation.
+**Current Decision**: Implementing rotating refresh tokens (more secure than non-rotating). Separate refresh_tokens table with token hashing, expiration, and revocation tracking. Frontend stores both access_token and refresh_token in secure storage via use_persistent. Refresh only on 401 (not every request) for performance. Auto-login flow: check stored tokens → verify with backend → route to main app or auth screens.
 
 ### 🎯 Currently Working On (Top 5)
-1. **JWT Token Storage** - Persist authentication tokens after successful login/registration
-2. **Post-Auth Navigation** - Transition to deck management screens after successful authentication
-3. **Token Attachment** - Include Authorization header in subsequent authenticated requests
-4. **Global Auth State** - Shared authentication status across all components
-5. **Token Expiration** - Handle expired tokens and re-authentication flow
+1. **Refresh Token Infrastructure** - Backend table, hashing, rotation logic, /api/auth/refresh endpoint
+2. **Token Response Updates** - Return both access_token and refresh_token from login/register
+3. **Persistent Token Storage** - use_persistent for secure mobile storage of both tokens
+4. **Loading Screen Flow** - Auto-login attempt on app start with token validation
+5. **Authenticated Request Pattern** - Automatic token refresh on 401 with request retry
 
 ### 🤔 Next Immediate Priorities (Top 5)
 1. **Global Auth State** - Shared authentication status across all components
