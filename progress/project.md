@@ -13,20 +13,20 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: After completing frontend-backend HTTP integration
+**Last Updated**: After implementing loading states and route function architecture
 
-**Current Focus**: Authentication flow complete - frontend successfully communicating with backend
+**Current Focus**: Authentication UX complete with loading states and error handling
 
-**Recent Achievement**: Built complete HTTP client integration for authentication. AuthClient with reqwest making successful POST requests to backend /api/auth/register and /api/auth/login endpoints. Implemented custom error types mapping status codes to user-facing messages. Got async/spawn patterns working in Dioxus event handlers. Frontend mobile simulator now successfully sends auth requests and receives JWT tokens from backend. Implemented custom Deserialize for newtypes maintaining validation through serialization boundaries.
+**Recent Achievement**: Implemented loading state UX with spinning card animations during HTTP requests. Errors clear automatically on successful retry. Created route function architecture in backend routes.rs for frontend to import (register_route(), login_route(), etc.) ensuring single source of truth for API paths. Consolidated swipe detection with shared onswipestart/move/end methods for consistent touch/mouse behavior. Resolved WSL2 display server issues. Established separate .env files for frontend (BACKEND_URL) and backend (full config) with OnceLock caching for efficient environment loading.
 
-**Current Decision**: HTTP client uses status code branching (200/201/401/422/500) to map backend responses. Async work spawned from sync event handlers using spawn(). AuthClient stored in Signal for cheap cloning across async boundaries. API paths constructed with /api/auth prefix matching backend route structure. Error types distinguish between network failures, invalid credentials, and server errors for appropriate user feedback.
+**Current Decision**: Route paths exported as functions rather than constants to avoid token repetition while preserving nested route structure readability. Loading states activate before async work, clear after completion. Errors cleared on successful submission. AuthClient initialization uses OnceLock for one-time config loading. Spinning card CSS animation provides visual feedback without disrupting swipe navigation.
 
 ### 🎯 Currently Working On (Top 5)
 1. **JWT Token Storage** - Persist authentication tokens after successful login/registration
-2. **Loading State UX** - Visual feedback during async API calls (spinner, disabled inputs)
-3. **Post-Auth Navigation** - Transition to deck management screens after successful authentication
-4. **Token Attachment** - Include Authorization header in subsequent authenticated requests
-5. **Network Error Handling** - Graceful offline/timeout scenarios without breaking UI
+2. **Post-Auth Navigation** - Transition to deck management screens after successful authentication
+3. **Token Attachment** - Include Authorization header in subsequent authenticated requests
+4. **Global Auth State** - Shared authentication status across all components
+5. **Token Expiration** - Handle expired tokens and re-authentication flow
 
 ### 🤔 Next Immediate Priorities (Top 5)
 1. **Global Auth State** - Shared authentication status across all components
@@ -93,6 +93,11 @@ alwaysApply: true
 - **HTTP Error Handling**: Custom error types mapping status codes (401/422/500) to user-facing messages
 - **Response Deserialization**: JSON to AuthenticateUserSuccess with custom Deserialize maintaining newtype validation
 - **Signal Async Patterns**: Proper cloning of Signals and client instances for async block move semantics
+- **Loading State UX**: Spinning card animation during HTTP requests with automatic error clearing on successful retry
+- **Route Function Architecture**: Backend route paths exported as functions for frontend import (single source of truth)
+- **Swipe Abstraction**: Consolidated onswipestart/move/end methods for identical touch/mouse behavior
+- **Environment Configuration**: Separate .env files with OnceLock caching for efficient config loading
+- **WSL2 Display Resolution**: Resolved GUI rendering issues in development environment
 
 ---
 

@@ -15,25 +15,25 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: After completing frontend-backend HTTP integration for authentication
+**Last Updated**: After implementing loading states and route function architecture
 
-**Next Learning Focus**: Token persistence, loading states, and post-authentication routing
+**Next Learning Focus**: Token persistence, global auth state, and post-authentication routing
 
-**Recent Achievement**: Successfully integrated frontend Dioxus app with backend Axum API. Built complete HTTP client system with AuthClient, implemented custom error types for network/status code handling, got async/spawn patterns working in Dioxus event handlers. Frontend mobile simulator now successfully sends registration/login requests to backend and receives JWT tokens. Implemented custom Deserialize for newtypes to maintain validation through HTTP boundaries. Resolved Signal cloning and async closure move semantics.
+**Recent Achievement**: Implemented complete loading state UX with spinning card animations and automatic error clearing on retry. Built route function architecture in backend for frontend imports ensuring single source of truth. Consolidated swipe detection methods for consistent behavior. Resolved WSL2 display server issues. Established environment configuration pattern with OnceLock for efficient loading.
 
 ### 🎯 Currently Working Towards (Top 5)
 1. **JWT Token Storage** - Persisting authentication tokens after successful login
-2. **Loading States** - Visual feedback during async API calls from swipe submission
-3. **Post-Auth Routing** - Navigating to main app screens after successful authentication
+2. **Post-Auth Routing** - Navigating to main app screens after successful authentication
+3. **Global Auth State** - Sharing authentication status across components
 4. **Token Inclusion** - Attaching JWT to authenticated API requests
-5. **Offline/Network Error UX** - Graceful handling of connection failures
+5. **Token Expiration** - Handling expired tokens and re-authentication flow
 
 ### 🤔 Current Uncertainties (Top 5)
 1. **Token Persistence** - Best practices for storing JWT in Dioxus (Signal vs localStorage vs other)
-2. **Loading State UX** - Showing submission feedback without disrupting swipe animations
-3. **Global Auth State** - Sharing authentication status across components
-4. **Token Refresh** - Handling expired tokens and automatic renewal
-5. **Authenticated Requests** - Pattern for including Authorization headers in subsequent requests
+2. **Global Auth State** - Sharing authentication status across components without prop drilling
+3. **Token Refresh** - Handling expired tokens and automatic renewal
+4. **Authenticated Requests** - Pattern for including Authorization headers in subsequent requests
+5. **Router Integration** - How to protect routes that require authentication
 
 ---
 
@@ -55,6 +55,7 @@ alwaysApply: true
 - **Separation of Concerns**: Balancing responsibility with abstraction levels
 - **YAGNI vs Future Planning**: Build for future but stay realistic about current needs
 - **DRY Balance**: Code reuse without over-abstraction
+- **Pragmatic API Design**: Route functions over constants when it preserves readability without adding ceremony
 
 ### 🔒 Security & Authentication
 - **JWT Security Flow**: Complete token generation/validation with proper configuration
@@ -106,6 +107,10 @@ alwaysApply: true
 - **Async Event Patterns**: Using spawn() to call async functions from sync event handlers
 - **Signal Cloning**: Understanding when to clone Signals vs values for move semantics in async blocks
 - **HTTP Client Integration**: Building AuthClient with reqwest, handling network errors and response deserialization
+- **Loading State Management**: is_loading Signal controlling spinner visibility during async operations
+- **Conditional Error Display**: Showing errors only when present, clearing on successful retry
+- **CSS Animation Integration**: Spinning card animation for visual feedback during HTTP requests
+- **Route Function Pattern**: Exporting backend routes as functions for frontend import consistency
 
 ### 💾 SQLx Database Operations & Advanced Patterns
 - **Connection Pooling**: Production-ready pool configuration with optimized settings
@@ -153,7 +158,10 @@ alwaysApply: true
 - **Signal Move Semantics**: Cloning Signals and client instances for async block capture
 - **Custom Deserialize Implementation**: Newtype validation through HTTP boundaries using manual deserialize impls
 - **API Endpoint Construction**: URL path building with set_path() for RESTful routes
-- *Note: Working end-to-end but token storage and loading states not yet implemented*
+- **Loading State Implementation**: Spinner activation/deactivation around async operations
+- **Error Recovery UX**: Automatic error clearing on successful retry
+- **OnceLock Configuration**: One-time config loading cached across AuthClient instances
+- *Note: Working end-to-end but token storage and global auth state not yet implemented*
 
 ### 🎮 Swipe-Based Navigation & Gestures
 - **Position Tracking**: BasicPoint (i32 x/y) for screen coordinates independent of swipe detection
@@ -164,7 +172,8 @@ alwaysApply: true
 - **Event Handler Closures**: Extracting validation logic into reusable closures callable from multiple handlers
 - **Coordinate System**: Browser coordinates (positive Y down) with proper delta calculations
 - **State Management**: Decoupled position updates from swipe detection for flexible interaction patterns
-- *Note: Working implementation but animation timing and threshold values may need refinement*
+- **Abstraction Patterns**: Consolidated onswipestart/move/end for identical touch/mouse behavior
+- *Note: Working implementation with consistent cross-platform behavior*
 
 ### 🏗️ Service Architecture & Dependency Injection
 - **Generic Service Patterns**: Service<R> and Service<DR, CR> implementations across domains
@@ -187,6 +196,9 @@ alwaysApply: true
 ### 🏗️ Advanced Architecture Patterns
 - **Configuration Management**: Production-ready config loading at startup vs runtime env reads
 - **Performance Optimization**: Resolved repeated file system access inefficiencies
+- **OnceLock Pattern**: Thread-safe one-time initialization for expensive config operations
+- **Separate Environment Files**: Frontend/backend .env separation for deployment flexibility
+- **Environment Variable Strategy**: Backend uses full config, frontend only gets necessary values
 
 ### 🧪 Testing & Validation
 - **Test Organization**: Clean categorization of test functions by concern
