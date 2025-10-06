@@ -14,7 +14,7 @@ pub fn Register(swipe_state: Signal<swipe::State>) -> Element {
     const MOVE_SWIPES: [Dir; 1] = [Dir::Down];
     const SUBMIT_SWIPE: Dir = Dir::Up;
 
-    let auth_client = use_signal(|| AuthClient::default());
+    let auth_client = use_signal(|| AuthClient::new());
 
     let mut username = use_signal(|| String::new());
     let mut email = use_signal(|| String::new());
