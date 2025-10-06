@@ -8,6 +8,8 @@ use crate::{
 
 #[component]
 pub fn Home() -> Element {
+    const MOVE_SWIPES: [Dir; 2] = [Dir::Up, Dir::Down];
+
     let ascii_logo = ascii_logo::logo();
     let mut swipe_state = use_signal(|| swipe::State::new());
 
@@ -26,11 +28,11 @@ pub fn Home() -> Element {
 
             ontouchstart : move |e: Event<TouchData>| swipe_state.ontouchstart(e),
             ontouchmove : move |e: Event<TouchData>| swipe_state.ontouchmove(e),
-            ontouchend : move |e: Event<TouchData>| swipe_state.ontouchend(e, &[Dir::Up, Dir::Down]),
+            ontouchend : move |e: Event<TouchData>| swipe_state.ontouchend(e, &MOVE_SWIPES),
 
             onmousedown : move |e: Event<MouseData>| swipe_state.onmousedown(e),
             onmousemove : move |e: Event<MouseData>| swipe_state.onmousemove(e),
-            onmouseup : move |e: Event<MouseData>| swipe_state.onmouseup(e, &[Dir::Up, Dir::Down]),
+            onmouseup : move |e: Event<MouseData>| swipe_state.onmouseup(e, &MOVE_SWIPES),
 
             div { class : "home-screen",
 
