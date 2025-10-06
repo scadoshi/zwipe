@@ -43,12 +43,27 @@ body {
     text-align: left;
     padding: 1rem;
     margin: 2rem;
-    animation: ascii-logo-spacing 1s forwards;
+    animation: ascii-logo-first_load 1s forwards;
 }
 
-@keyframes ascii-logo-spacing {
+@keyframes ascii-logo-first_load {
     from {
         letter-spacing: 10px;
+    }
+
+    to {
+        letter-spacing: 0;
+    }
+}
+
+
+.ascii-logo .loader {
+    animation: ascii-logo-loader 1s infinite alternate;
+}
+
+@keyframes ascii-logo-loader {
+    from {
+        letter-spacing: 1px;
     }
 
     to {
@@ -149,7 +164,7 @@ body {
     transform: translateY(-2px);
 }
 
-/* other */
+/* spinner */
 
 .spinning-card {
     border: 3px solid #888888;
