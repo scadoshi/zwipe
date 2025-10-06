@@ -15,25 +15,25 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: After implementing multi-screen swipe navigation and swipe-to-submit functionality
+**Last Updated**: After completing frontend-backend HTTP integration for authentication
 
-**Next Learning Focus**: Backend API integration for auth flow and async error handling in Dioxus
+**Next Learning Focus**: Token persistence, loading states, and post-authentication routing
 
-**Recent Achievement**: Implemented working multi-screen navigation using position tracking (BasicPoint with x/y coordinates). Built swipe-to-submit by detecting disallowed swipe directions and calling validation closures. Used CSS calc() to position three screens (Login/Home/Register) with transform offsets. Added ASCII logo entrance animation. Debugged CSS centering issues and simplified form layouts by removing unnecessary flexbox. Implemented always-render pattern where all screens exist in DOM with transforms controlling visibility.
+**Recent Achievement**: Successfully integrated frontend Dioxus app with backend Axum API. Built complete HTTP client system with AuthClient, implemented custom error types for network/status code handling, got async/spawn patterns working in Dioxus event handlers. Frontend mobile simulator now successfully sends registration/login requests to backend and receives JWT tokens. Implemented custom Deserialize for newtypes to maintain validation through HTTP boundaries. Resolved Signal cloning and async closure move semantics.
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **HTTP Client Integration** - Connecting swipe submissions to backend auth endpoints
-2. **Async State Management** - Handling loading/error states during API calls in Dioxus
-3. **JWT Token Storage** - Managing authentication tokens after successful login
-4. **API Error Display** - Showing network/validation errors from backend to users
-5. **Post-Auth Routing** - Navigating to main app after successful authentication
+1. **JWT Token Storage** - Persisting authentication tokens after successful login
+2. **Loading States** - Visual feedback during async API calls from swipe submission
+3. **Post-Auth Routing** - Navigating to main app screens after successful authentication
+4. **Token Inclusion** - Attaching JWT to authenticated API requests
+5. **Offline/Network Error UX** - Graceful handling of connection failures
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Async Closure Patterns** - How to call async HTTP functions from sync event handlers
-2. **Token Persistence** - Best practices for storing JWT in Dioxus web apps
-3. **Loading State UX** - Showing submission feedback without breaking swipe animation
-4. **Error Recovery** - Handling failed submissions while keeping form state intact
-5. **Navigator Integration** - Programmatic routing after successful API responses
+1. **Token Persistence** - Best practices for storing JWT in Dioxus (Signal vs localStorage vs other)
+2. **Loading State UX** - Showing submission feedback without disrupting swipe animations
+3. **Global Auth State** - Sharing authentication status across components
+4. **Token Refresh** - Handling expired tokens and automatic renewal
+5. **Authenticated Requests** - Pattern for including Authorization headers in subsequent requests
 
 ---
 
@@ -103,6 +103,9 @@ alwaysApply: true
 - **CSS Calc Transforms**: Combining pixel deltas with viewport units for responsive screen positioning
 - **Animation Timing**: CSS transition-duration tied to swipe distance for natural-feeling motion
 - **Inline Event Handlers**: Placing logic directly in ontouchend/onmouseup for submission detection
+- **Async Event Patterns**: Using spawn() to call async functions from sync event handlers
+- **Signal Cloning**: Understanding when to clone Signals vs values for move semantics in async blocks
+- **HTTP Client Integration**: Building AuthClient with reqwest, handling network errors and response deserialization
 
 ### 💾 SQLx Database Operations & Advanced Patterns
 - **Connection Pooling**: Production-ready pool configuration with optimized settings
@@ -140,6 +143,17 @@ alwaysApply: true
 ---
 
 ## DEVELOPING - Active Implementation (Working But Learning) 🔧
+
+### 🌐 Frontend-Backend HTTP Integration
+- **HTTP Client Architecture**: AuthClient with reqwest for POST requests, proper header configuration
+- **Error Type Design**: Custom RegisterUserError and AuthenticateUserError with status code mapping
+- **Response Flow Understanding**: HTTP bytes → JSON deserialization → domain types
+- **Status Code Handling**: Branching on 200/201/401/422/500 to map server responses to user-facing errors
+- **Async Patterns in Dioxus**: spawn() for calling async functions from sync event handlers
+- **Signal Move Semantics**: Cloning Signals and client instances for async block capture
+- **Custom Deserialize Implementation**: Newtype validation through HTTP boundaries using manual deserialize impls
+- **API Endpoint Construction**: URL path building with set_path() for RESTful routes
+- *Note: Working end-to-end but token storage and loading states not yet implemented*
 
 ### 🎮 Swipe-Based Navigation & Gestures
 - **Position Tracking**: BasicPoint (i32 x/y) for screen coordinates independent of swipe detection
