@@ -20,7 +20,8 @@ pub fn Register(swipe_state: Signal<swipe::State>) -> Element {
     let mut email = use_signal(|| String::new());
     let mut password = use_signal(|| String::new());
 
-    let mut submit_attempted: Signal<bool> = use_signal(|| false);
+    let mut submit_attempted = use_signal(|| false);
+    let mut is_loading = use_signal(|| false);
 
     let mut username_error: Signal<Option<String>> = use_signal(|| None);
     let mut email_error: Signal<Option<String>> = use_signal(|| None);
@@ -31,6 +32,7 @@ pub fn Register(swipe_state: Signal<swipe::State>) -> Element {
     let maybe_submit = move || async move {
         if swipe_state.read().previous_swipe == Some(SUBMIT_SWIPE) {
             submit_attempted.set(true);
+            is_loading.set(true);
 
             if let Err(e) = Username::new(&username.read()) {
                 username_error.set(Some(e.to_string()));
@@ -57,6 +59,7 @@ pub fn Register(swipe_state: Signal<swipe::State>) -> Element {
                 match validate_register_user(&*username.read(), &*email.read(), &*password.read()) {
                     Ok(request) => match register_user(request, &auth_client.read()).await {
                         Ok(s) => {
+                            submission_error.set(None);
                             println!("authenticated user => {:#?}", s.user);
                             println!("token => {:?}", s.token)
                         }
@@ -65,6 +68,7 @@ pub fn Register(swipe_state: Signal<swipe::State>) -> Element {
                     Err(e) => submission_error.set(Some(e.to_string())),
                 }
             }
+            is_loading.set(false);
         }
     };
 
@@ -188,9 +192,11 @@ pub fn Register(swipe_state: Signal<swipe::State>) -> Element {
                         }
                     }
 
-                    if let Some(error) = submission_error.read().as_ref() {
+                    if *is_loading.read() {
+                        div { class : "spinning-card" }
+                    } else if let Some(error) = submission_error.read().as_deref() {
                         div { class: "form-error",
-                                { format!("{}", error) }
+                            { format!("{}", error) }
                         }
                     }
                 }

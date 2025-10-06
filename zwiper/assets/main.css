@@ -148,3 +148,28 @@ body {
 .form-group input:hover {
     transform: translateY(-2px);
 }
+
+/* other */
+
+.spinning-card {
+    border: 3px solid #888888;
+    border-radius: .2rem;
+    width: 1.25rem;
+    height: 1.75rem;
+    animation: spin .5s linear infinite;
+    margin: 0 auto;
+    margin-bottom: 3rem;
+    display: flex;
+    justify-content: center;
+    align-self: center;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}

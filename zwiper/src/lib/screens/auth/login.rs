@@ -1,12 +1,17 @@
 use std::str::FromStr;
 
 use crate::{
-    http::auth::{authenticate_user, validate_authenticate_user, AuthClient},
+    http::auth::{
+        authenticate_user, validate_authenticate_user, AuthClient, AuthenticateUserError,
+    },
     swipe::{self, Direction as Dir, OnMouse, OnTouch, VH_GAP},
 };
 use dioxus::prelude::*;
 use email_address::EmailAddress;
-use zwipe::domain::{auth::models::password::Password, user::models::Username};
+use zwipe::domain::{
+    auth::models::{password::Password, InvalidAuthenticateUser},
+    user::models::Username,
+};
 
 #[component]
 pub fn Login(swipe_state: Signal<swipe::State>) -> Element {
@@ -19,7 +24,7 @@ pub fn Login(swipe_state: Signal<swipe::State>) -> Element {
     let mut password = use_signal(|| String::new());
 
     let mut submit_attempted: Signal<bool> = use_signal(|| false);
-
+    let mut is_loading = use_signal(|| false);
     let mut submission_error: Signal<Option<String>> = use_signal(|| None);
 
     let valid_credentials = move || {
@@ -36,13 +41,13 @@ pub fn Login(swipe_state: Signal<swipe::State>) -> Element {
     let maybe_submit = move || async move {
         if swipe_state.read().previous_swipe == Some(SUBMIT_SWIPE) {
             submit_attempted.set(true);
+            is_loading.set(true);
 
             if valid_credentials() {
-                // let auth_client_clone = auth_client.read().clone();
-                // let's try this without cloning for a sec
                 match validate_authenticate_user(&*username_or_email.read(), &*password.read()) {
                     Ok(request) => match authenticate_user(request, &auth_client.read()).await {
                         Ok(s) => {
+                            submission_error.set(None);
                             println!("authenticated user => {:#?}", s.user);
                             println!("token => {:?}", s.token)
                         }
@@ -50,7 +55,10 @@ pub fn Login(swipe_state: Signal<swipe::State>) -> Element {
                     },
                     Err(e) => submission_error.set(Some(e.to_string())),
                 }
+            } else {
+                submission_error.set(Some(AuthenticateUserError::Unauthorized.to_string()));
             }
+            is_loading.set(false);
         }
     };
 
@@ -82,13 +90,15 @@ pub fn Login(swipe_state: Signal<swipe::State>) -> Element {
 
             div { class : "form-container",
 
-                h2 { "login ↑"}
-
-                if *submit_attempted.read() && !valid_credentials() {
-                    div { class : "form-error",
-                        "invalid credentials"
+                if *is_loading.read() {
+                    div { class : "spinning-card" }
+                } else if let Some(error) = submission_error.read().as_deref() {
+                    div { class: "form-error",
+                        { format!("{}", error) }
                     }
                 }
+
+                h2 { "login ↑"}
 
                 form {
                     div { class : "form-group",
@@ -118,12 +128,6 @@ pub fn Login(swipe_state: Signal<swipe::State>) -> Element {
                             oninput : move |event| {
                                 password.set(event.value());
                             }
-                        }
-                    }
-
-                    if let Some(error) = submission_error.read().as_deref() {
-                        div { class: "form-error",
-                                { format!("{}", error) }
                         }
                     }
                 }
