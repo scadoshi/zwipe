@@ -24,10 +24,7 @@ impl AuthClient {
     pub fn new() -> Self {
         static CONFIG: OnceLock<AppConfig> = OnceLock::new();
         let app_config = CONFIG
-            .get_or_init(|| {
-                AppConfig::from_env()
-                    .expect("failed to initialize app config—ensure BACKEND_URL is avaiable in env")
-            })
+            .get_or_init(|| AppConfig::from_env().expect("failed to initialize app config"))
             .clone();
         Self {
             client: Client::new(),
