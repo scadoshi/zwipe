@@ -1,4 +1,4 @@
-use crate::domain::auth::models::jwt::JwtSecret;
+use crate::domain::auth::models::access_token::JwtSecret;
 use anyhow::Context;
 use axum::http::HeaderValue;
 

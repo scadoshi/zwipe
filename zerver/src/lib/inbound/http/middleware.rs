@@ -16,7 +16,7 @@ use uuid::Uuid;
 use crate::{
     domain::{
         auth::{
-            models::jwt::{Jwt, UserClaims},
+            models::access_token::{AccessToken, UserClaims},
             ports::AuthService,
         },
         card::ports::CardService,
@@ -59,8 +59,8 @@ where
             TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)
                 .await
                 .map_err(|_| StatusCode::BAD_REQUEST)?;
-        let jwt = Jwt::new(bearer.token()).map_err(|_| StatusCode::BAD_REQUEST)?;
-        let claims = jwt
+        let access_token = AccessToken::new(bearer.token()).map_err(|_| StatusCode::BAD_REQUEST)?;
+        let claims = access_token
             .validate(state.auth_service.jwt_secret())
             .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
