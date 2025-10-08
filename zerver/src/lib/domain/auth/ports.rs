@@ -2,10 +2,14 @@ use std::future::Future;
 
 use crate::domain::{
     auth::models::{
-        jwt::JwtSecret, AuthenticateUser, AuthenticateUserError, AuthenticateUserSuccess,
-        ChangeEmail, ChangeEmailError, ChangePassword, ChangePasswordError, ChangeUsername,
-        ChangeUsernameError, DeleteUser, DeleteUserError, RegisterUser, RegisterUserError,
-        UserWithPasswordHash,
+        access_token::JwtSecret,
+        session::{
+            CreateSession, CreateSessionError, RefreshSession, RefreshSessionError, RevokeSessions,
+            RevokeSessionsError, Session,
+        },
+        AuthenticateUser, AuthenticateUserError, ChangeEmail, ChangeEmailError, ChangePassword,
+        ChangePasswordError, ChangeUsername, ChangeUsernameError, DeleteUser, DeleteUserError,
+        RegisterUser, RegisterUserError, UserWithPasswordHash,
     },
     user::models::User,
 };
@@ -16,6 +20,21 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
         &self,
         request: &RegisterUser,
     ) -> impl Future<Output = Result<User, RegisterUserError>> + Send;
+
+    fn create_session(
+        &self,
+        request: &CreateSession,
+    ) -> impl Future<Output = Result<Session, CreateSessionError>> + Send;
+
+    fn refresh_session(
+        &self,
+        request: &RefreshSession,
+    ) -> impl Future<Output = Result<Session, RefreshSessionError>> + Send;
+
+    fn revoke_sessions(
+        &self,
+        request: &RevokeSessions,
+    ) -> impl Future<Output = Result<(), RevokeSessionsError>> + Send;
 
     fn get_user_with_password_hash(
         &self,
@@ -50,12 +69,27 @@ pub trait AuthService: Clone + Send + Sync + 'static {
     fn register_user(
         &self,
         request: &RegisterUser,
-    ) -> impl Future<Output = Result<AuthenticateUserSuccess, RegisterUserError>> + Send;
+    ) -> impl Future<Output = Result<Session, RegisterUserError>> + Send;
 
     fn authenticate_user(
         &self,
         request: &AuthenticateUser,
-    ) -> impl Future<Output = Result<AuthenticateUserSuccess, AuthenticateUserError>> + Send;
+    ) -> impl Future<Output = Result<Session, AuthenticateUserError>> + Send;
+
+    fn create_session(
+        &self,
+        request: &CreateSession,
+    ) -> impl Future<Output = Result<Session, CreateSessionError>> + Send;
+
+    fn refresh_session(
+        &self,
+        request: &CreateSession,
+    ) -> impl Future<Output = Result<Session, RefreshSessionError>> + Send;
+
+    fn revoke_sessions(
+        &self,
+        request: &CreateSession,
+    ) -> impl Future<Output = Result<Session, RevokeSessionsError>> + Send;
 
     fn change_password(
         &self,
