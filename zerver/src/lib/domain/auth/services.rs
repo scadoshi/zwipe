@@ -1,11 +1,11 @@
 use crate::domain::{
     auth::{
         models::{
-            jwt::{Jwt, JwtCreationResponse, JwtSecret},
-            AuthenticateUser, AuthenticateUserError, AuthenticateUserSuccess, ChangeEmail,
-            ChangeEmailError, ChangePassword, ChangePasswordError, ChangeUsername,
-            ChangeUsernameError, DeleteUser, DeleteUserError, RegisterUser, RegisterUserError,
-            UserWithPasswordHash,
+            access_token::{AccessToken, AccessTokenCreationResponse, JwtSecret},
+            session::Session,
+            AuthenticateUser, AuthenticateUserError, ChangeEmail, ChangeEmailError, ChangePassword,
+            ChangePasswordError, ChangeUsername, ChangeUsernameError, DeleteUser, DeleteUserError,
+            RegisterUser, RegisterUserError, UserWithPasswordHash,
         },
         ports::{AuthRepository, AuthService},
     },
@@ -31,21 +31,18 @@ impl<R: AuthRepository + Clone> AuthService for Service<R> {
         &self.jwt_secret
     }
 
-    async fn register_user(
-        &self,
-        request: &RegisterUser,
-    ) -> Result<AuthenticateUserSuccess, RegisterUserError> {
+    async fn register_user(&self, request: &RegisterUser) -> Result<Session, RegisterUserError> {
         let user = self.repo.create_user_with_password_hash(request).await?;
 
-        let JwtCreationResponse {
-            jwt: token,
+        let AccessTokenCreationResponse {
+            access_token,
             expires_at,
-        } = Jwt::generate(user.id, user.email.clone(), &self.jwt_secret)
-            .map_err(|e| RegisterUserError::FailedJwt(anyhow!("{e}")))?;
+        } = AccessToken::generate(user.id, user.email.clone(), &self.jwt_secret)
+            .map_err(|e| RegisterUserError::FailedAccessToken(anyhow!("{e}")))?;
 
-        Ok(AuthenticateUserSuccess {
+        Ok(Session {
             user,
-            token,
+            access_token,
             expires_at,
         })
     }
@@ -53,7 +50,7 @@ impl<R: AuthRepository + Clone> AuthService for Service<R> {
     async fn authenticate_user(
         &self,
         request: &AuthenticateUser,
-    ) -> Result<AuthenticateUserSuccess, AuthenticateUserError> {
+    ) -> Result<Session, AuthenticateUserError> {
         let user_with_password_hash: UserWithPasswordHash =
             self.repo.get_user_with_password_hash(request).await?;
 
@@ -69,17 +66,38 @@ impl<R: AuthRepository + Clone> AuthService for Service<R> {
             return Err(AuthenticateUserError::InvalidPassword);
         }
 
-        let JwtCreationResponse {
-            jwt: token,
+        let AccessTokenCreationResponse {
+            access_token,
             expires_at,
-        } = Jwt::generate(user.id, user.email.clone(), &self.jwt_secret)
-            .map_err(|e| AuthenticateUserError::FailedJwt(anyhow!("{e}")))?;
+        } = AccessToken::generate(user.id, user.email.clone(), &self.jwt_secret)
+            .map_err(|e| AuthenticateUserError::FailedAccessToken(anyhow!("{e}")))?;
 
-        Ok(AuthenticateUserSuccess {
+        Ok(Session {
             user,
-            token,
+            access_token,
             expires_at,
         })
+    }
+
+    async fn create_session(
+        &self,
+        request: &super::models::session::CreateSession,
+    ) -> Result<Session, super::models::session::CreateSessionError> {
+        todo!()
+    }
+
+    async fn refresh_session(
+        &self,
+        request: &super::models::session::CreateSession,
+    ) -> Result<Session, super::models::session::RefreshSessionError> {
+        todo!()
+    }
+
+    async fn revoke_sessions(
+        &self,
+        request: &super::models::session::CreateSession,
+    ) -> Result<Session, super::models::session::RevokeSessionsError> {
+        todo!()
     }
 
     async fn change_password(&self, request: &ChangePassword) -> Result<(), ChangePasswordError> {
