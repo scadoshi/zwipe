@@ -15,25 +15,25 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Planning refresh token system and persistent authentication
+**Last Updated**: Session domain modeling and refresh token architecture design
 
-**Next Learning Focus**: Refresh token infrastructure, use_persistent hook, and auto-login flow
+**Next Learning Focus**: SQLx session repository implementation, service orchestration with token generation, HTTP handler patterns
 
-**Recent Achievement**: Designed complete refresh token architecture understanding rotating vs non-rotating strategies. Learned about use_persistent hook for cross-platform secure storage (iOS Keychain/Android KeyStore). Clarified JWT structure (self-contained with exp claim), token refresh flow (only on 401), and mobile storage best practices. Understood why refreshing on every request is overkill (performance + no security benefit).
+**Recent Achievement**: Completed comprehensive session domain architecture. Built Session struct containing user data plus both access and refresh tokens with their expiration timestamps. Designed complete request/error type system (CreateSession, RefreshSession, RevokeSessions) with proper error handling. Learned distinction between access tokens (JWTs, self-contained) and refresh tokens (opaque random bytes, hashed for storage). Understood SHA-256 vs Argon2 tradeoffs for token hashing (speed vs security needs). Created visual flow diagram mapping entire authentication flow from frontend to backend including validation, refresh, and 401 handling. Clarified multi-device session support pattern (multiple refresh tokens per user). Discovered session persistence need while building frontend auth screens, leading to architecture redesign.
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **Refresh Token Backend** - Database table, token hashing, rotation logic, expiration tracking
-2. **Refresh Endpoint** - /api/auth/refresh that takes refresh token, returns new access + refresh
-3. **use_persistent Integration** - Storing both tokens securely with Dioxus abstraction
-4. **Auto-Login Flow** - Loading screen that checks tokens on app start and routes appropriately
-5. **401 Refresh Pattern** - Automatic token refresh and request retry on expired access tokens
+1. **SQLx Session Operations** - Implementing create_session, refresh_session, revoke_sessions in database layer
+2. **Service Session Logic** - Token generation orchestration, refresh validation, rotation implementation
+3. **Session HTTP Handlers** - REST endpoints exposing session management to frontend
+4. **Frontend Session Integration** - Updating AuthClient to handle Session responses with both tokens
+5. **Token Persistence Strategy** - use_persistent for secure cross-platform storage (Keychain/KeyStore)
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **JWT Decoding** - Using jsonwebtoken crate to read exp claim client-side
-2. **Refresh Token Hashing** - Best practices for storing refresh tokens in database
-3. **Token Rotation Implementation** - Invalidating old refresh token when issuing new one
-4. **Loading Screen UX** - Balancing fast auto-login with good user experience
-5. **Request Retry Logic** - Clean pattern for retry-after-refresh without code duplication
+1. **SQLx Refresh Token Queries** - Best patterns for token lookup by hash, multi-token management per user
+2. **Service Orchestration Flow** - Coordinating token generation, database operations, error handling
+3. **Token Expiration Strategy** - Choosing appropriate lifespans for access (24hr?) vs refresh (7 days? 30 days?)
+4. **Frontend Token Storage** - use_persistent API and secure storage implementation details
+5. **Auto-Login UX** - Loading screen flow, token validation, routing decisions
 
 ---
 
@@ -56,10 +56,13 @@ alwaysApply: true
 - **YAGNI vs Future Planning**: Build for future but stay realistic about current needs
 - **DRY Balance**: Code reuse without over-abstraction
 - **Pragmatic API Design**: Route functions over constants when it preserves readability without adding ceremony
+- **Domain Modeling Process**: Request types, error types, response types, and port definitions before implementation
+- **Newtype Pattern**: Type-safe wrappers (RefreshToken, AccessToken) with validation and domain-specific methods
 
 ### 🔒 Security & Authentication
 - **JWT Security Flow**: Complete token generation/validation with proper configuration
 - **Password Security**: Argon2 hashing, salts, rainbow table prevention, timing attack mitigation
+- **Cryptographic Hashing Strategy**: SHA-256 for tokens (fast verification) vs Argon2 for passwords (slow, memory-hard)
 - **Authentication Delays**: Why delays in auth are important for security
 - **Information Disclosure Prevention**: Avoiding enumeration attacks through generic error responses
 - **Security Spidey Senses**: When to step carefully with sensitive data and implementation details
@@ -221,14 +224,19 @@ alwaysApply: true
 
 ## LEARNING - Recently Introduced, Needs Guidance 📚
 
-### 🔐 Refresh Token Architecture & Mobile Security
-- **Rotating vs Non-Rotating Tokens**: Security tradeoffs between token refresh strategies
-- **Refresh Token Database Design**: Separate table with hashing, expiration, revocation tracking
-- **Token Refresh Flow**: Access token expiration detection and automatic refresh on 401
-- **Mobile Secure Storage**: use_persistent abstraction over iOS Keychain/Android KeyStore
-- **JWT Structure Understanding**: Self-contained tokens with exp/iat claims readable client-side
-- **Auto-Login Patterns**: App start flow with token validation and routing decisions
-- **Request Retry Logic**: Refreshing tokens and retrying failed requests transparently
+### 🔐 Session & Refresh Token Architecture
+- **Session-Based Authentication**: Session struct containing user + access_token + refresh_token + both expiration timestamps
+- **Rotating Token Strategy**: Security model where refresh operation generates new access + new refresh token, invalidating old refresh
+- **Access vs Refresh Tokens**: JWTs (self-contained, 24hr) vs opaque random bytes (32-byte, hashed with SHA-256 for storage)
+- **Token Hashing Strategy**: SHA-256 for refresh tokens (fast verification) vs Argon2 for passwords (slow, memory-hard)
+- **Refresh Token Database Design**: Separate table with user_id, hashed token value, created_at, expires_at, revoked flag
+- **Multi-Device Session Support**: Multiple refresh tokens per user (max 5) enabling concurrent device authentication
+- **Token Refresh Flow**: 401 response triggers refresh, not proactive checking (performance + no security benefit)
+- **Mobile Secure Storage**: use_persistent abstraction over iOS Keychain/Android KeyStore for token persistence
+- **Request/Error Type Design**: CreateSession, RefreshSession, RevokeSessions with corresponding error enums
+- **Auto-Login Patterns**: App start flow with stored token validation and routing decisions
+- **Session Port Architecture**: AuthService and AuthRepository traits for session management operations
+- **Token Expiration Strategy**: Choosing appropriate lifespans balancing security vs UX
 
 ### 🔮 Advanced Rust Patterns
 - **Advanced Async Patterns**: Complex Future handling, async streaming, async iterators

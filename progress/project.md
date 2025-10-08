@@ -13,26 +13,26 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Planning refresh token system and persistent authentication
+**Last Updated**: Domain modeling for Session-based authentication with rotating refresh tokens
 
-**Current Focus**: Building production-ready token persistence with rotating refresh tokens
+**Current Focus**: Implementing backend infrastructure for session management with refresh token rotation
 
-**Recent Achievement**: Designed complete refresh token architecture with rotating tokens for mobile security. Identified use_persistent hook for secure token storage (iOS Keychain/Android KeyStore). Planned auto-login flow with loading screen, token validation, and automatic refresh on 401 responses. Determined rotating refresh token strategy (new access + refresh on every refresh call) over non-rotating for enhanced security.
+**Recent Achievement**: Completed domain modeling for session-based authentication architecture. Created comprehensive flow diagram mapping frontend and backend authentication flows including token validation, refresh logic, and 401 handling. Built Session struct with both access and refresh tokens plus expiration timestamps. Designed complete request/error type system: CreateSession, RefreshSession, RevokeSessions with corresponding error enums. Updated AuthService and AuthRepository ports with session management operations. Renamed AccessToken terminology throughout codebase for clarity (Jwt → AccessToken) while preserving JwtSecret for technical accuracy. Discovered need for persistent token storage while building frontend auth screens, leading to complete refresh token architecture design.
 
-**Current Decision**: Implementing rotating refresh tokens (more secure than non-rotating). Separate refresh_tokens table with token hashing, expiration, and revocation tracking. Frontend stores both access_token and refresh_token in secure storage via use_persistent. Refresh only on 401 (not every request) for performance. Auto-login flow: check stored tokens → verify with backend → route to main app or auth screens.
+**Current Decision**: Session-based authentication with rotating refresh tokens. Database stores SHA-256 hashed refresh tokens (opaque strings, not JWTs). Session response contains: User, AccessToken (JWT with 24hr exp), access_token_expires_at, RefreshToken (32-byte random), refresh_token_expires_at. Multi-device support via multiple refresh tokens per user (max 5). Refresh only on 401 for performance. Frontend will use use_persistent for iOS Keychain/Android KeyStore storage. Auto-login flow: check stored tokens → validate with backend → route appropriately.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Refresh Token Infrastructure** - Backend table, hashing, rotation logic, /api/auth/refresh endpoint (Note: Will need cleanup job for expired tokens)
-2. **Token Response Updates** - Return both access_token and refresh_token from login/register
-3. **Persistent Token Storage** - use_persistent for secure mobile storage of both tokens
-4. **Loading Screen Flow** - Auto-login attempt on app start with token validation
-5. **Authenticated Request Pattern** - Automatic token refresh on 401 with request retry
+1. **Session SQLx Implementation** - Database operations for create_session, refresh_session, revoke_sessions in outbound layer
+2. **Session Service Logic** - Orchestration layer implementing AuthService session methods with token generation and validation
+3. **Session HTTP Handlers** - REST endpoints for /api/auth/refresh and session management
+4. **Frontend-Backend Integration Testing** - Verify session creation, token storage, and refresh flows work end-to-end
+5. **Persistent Token Storage** - use_persistent for secure mobile storage of Session data (both tokens + expirations)
 
 ### 🤔 Next Immediate Priorities (Top 5)
-1. **Global Auth State** - Shared authentication status across all components
-2. **Authenticated HTTP Calls** - Pattern for including JWT in card/deck API requests
-3. **Token Expiration** - Handle expired tokens and re-authentication flow
-4. **Main App Screens** - Deck browsing/management UI with swipe navigation
+1. **Auto-Login Flow** - Loading screen that validates stored session on app start and routes appropriately
+2. **401 Refresh Pattern** - Automatic token refresh and request retry on expired access tokens
+3. **Global Auth State** - Shared authentication status and session data across all components
+4. **Main App Landing Pages** - Deck browsing/management UI with swipe navigation
 5. **Card Display Components** - Render card data from backend search/deck endpoints
 
 ---
@@ -98,6 +98,12 @@ alwaysApply: true
 - **Swipe Abstraction**: Consolidated onswipestart/move/end methods for identical touch/mouse behavior
 - **Environment Configuration**: Separate .env files with OnceLock caching for efficient config loading
 - **WSL2 Display Resolution**: Resolved GUI rendering issues in development environment
+- **Session Domain Modeling**: Complete session.rs module with Session struct (user + access_token + refresh_token + both expirations)
+- **Session Request Types**: CreateSession, RefreshSession, RevokeSessions with comprehensive error handling
+- **Token Terminology Refactoring**: Renamed Jwt → AccessToken throughout codebase while preserving JwtSecret for technical accuracy
+- **RefreshToken Implementation**: 32-byte random token generation with SHA-256 hashing for database storage
+- **Authentication Flow Diagram**: Comprehensive visual mapping of frontend/backend flows including token validation, refresh, and 401 handling
+- **Session Port Definitions**: AuthService and AuthRepository traits updated with session management operations
 
 ---
 
@@ -136,6 +142,9 @@ alwaysApply: true
 - **Security Boundaries**: Information disclosure prevention and generic error responses to prevent enumeration attacks
 - **Current Password Verification**: Secure password change implementation requiring current password authentication
 - **AuthenticatedUser Security**: All operations use AuthenticatedUser ID to prevent privilege escalation
+- **Session Architecture Design**: Comprehensive domain modeling for rotating refresh token system with flow diagrams
+- **Token Strategy Decision**: Access tokens (JWT, 24hr) vs Refresh tokens (opaque 32-byte random, hashed with SHA-256)
+- **Multi-Device Session Support**: Architecture allowing up to 5 concurrent refresh tokens per user for cross-device auth
 
 ### 💾 Database Evolution & Challenges
 - **Diesel to SQLx Migration**: Complete transition from Diesel ORM to raw SQL control with custom type integration
