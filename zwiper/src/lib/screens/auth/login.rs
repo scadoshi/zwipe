@@ -49,7 +49,7 @@ pub fn Login(swipe_state: Signal<swipe::State>) -> Element {
                         Ok(s) => {
                             submission_error.set(None);
                             println!("authenticated user => {:#?}", s.user);
-                            println!("token => {:?}", s.token)
+                            println!("access_token => {:?}", s.access_token)
                         }
                         Err(e) => submission_error.set(Some(e.to_string())),
                     },
