@@ -5,7 +5,7 @@ use reqwest::{Client, StatusCode};
 use thiserror::Error;
 use zwipe::{
     domain::auth::models::{
-        AuthenticateUser, AuthenticateUserSuccess, InvalidAuthenticateUser, InvalidRawRegisterUser,
+        session::Session, AuthenticateUser, InvalidAuthenticateUser, InvalidRawRegisterUser,
         RawRegisterUser,
     },
     inbound::http::{
@@ -70,7 +70,7 @@ pub fn validate_register_user(
 pub async fn register_user(
     request: HttpRegisterUser,
     auth_client: &AuthClient,
-) -> Result<AuthenticateUserSuccess, RegisterUserError> {
+) -> Result<Session, RegisterUserError> {
     let mut url = auth_client.app_config.backend_url.clone();
     url.set_path(&register_route());
     let response = auth_client
@@ -83,7 +83,7 @@ pub async fn register_user(
 
     match response.status() {
         StatusCode::CREATED => {
-            let success: AuthenticateUserSuccess = response.json().await?;
+            let success: Session = response.json().await?;
             Ok(success)
         }
         StatusCode::UNPROCESSABLE_ENTITY => {
@@ -132,7 +132,7 @@ pub fn validate_authenticate_user(
 pub async fn authenticate_user(
     request: HttpAuthenticateUser,
     auth_client: &AuthClient,
-) -> Result<AuthenticateUserSuccess, AuthenticateUserError> {
+) -> Result<Session, AuthenticateUserError> {
     let mut url = auth_client.app_config.backend_url.clone();
     url.set_path(&login_route());
     let response = auth_client
@@ -145,7 +145,7 @@ pub async fn authenticate_user(
 
     match response.status() {
         StatusCode::OK => {
-            let success: AuthenticateUserSuccess = response.json().await?;
+            let success: Session = response.json().await?;
             Ok(success)
         }
         StatusCode::UNPROCESSABLE_ENTITY => {
