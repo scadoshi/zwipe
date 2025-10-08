@@ -1,15 +1,15 @@
+pub mod access_token;
 pub mod bad_words;
-pub mod jwt;
 pub mod password;
-use crate::domain::auth::models::jwt::Jwt;
-#[cfg(feature = "zerver")]
-use crate::domain::auth::models::jwt::JwtError;
+pub mod refresh_token;
+pub mod session;
 #[cfg(feature = "zerver")]
 use crate::domain::auth::models::password::HashedPassword;
 use crate::domain::auth::models::password::{InvalidPassword, Password};
-use crate::domain::user::models::{InvalidUsername, User, Username};
+#[cfg(feature = "zerver")]
+use crate::domain::user::models::User;
+use crate::domain::user::models::{InvalidUsername, Username};
 use email_address::EmailAddress;
-use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use thiserror::Error;
 use uuid::Uuid;
@@ -25,8 +25,8 @@ pub enum RegisterUserError {
     Duplicate,
     #[error(transparent)]
     Database(anyhow::Error),
-    #[error("failed to generate `Jwt`: {0}")]
-    FailedJwt(anyhow::Error),
+    #[error("failed to generate access token: {0}")]
+    FailedAccessToken(anyhow::Error),
     #[error("user created but database returned invalid object: {0}")]
     UserFromDb(anyhow::Error),
 }
@@ -103,8 +103,8 @@ pub enum AuthenticateUserError {
     UserFromDb(anyhow::Error),
     #[error("failed to verify password: {0}")]
     FailedToVerify(anyhow::Error),
-    #[error("failed to generate `JWT`: {0}")]
-    FailedJwt(anyhow::Error),
+    #[error("failed to generate access token: {0}")]
+    FailedAccessToken(anyhow::Error),
 }
 
 /// errors encountered while constructing `AuthenticateUserRequest`
@@ -120,14 +120,6 @@ impl From<InvalidPassword> for InvalidAuthenticateUser {
     fn from(value: InvalidPassword) -> Self {
         Self::Password(value)
     }
-}
-
-#[cfg(feature = "zerver")]
-/// errors encountered while constructing `AuthenticateUserSuccessError`
-#[derive(Debug, Error)]
-pub enum InvalidAuthenticateUserSuccess {
-    #[error(transparent)]
-    JwtError(JwtError),
 }
 
 /// errors encountered while constructing `ChangePasswordRequestError`
@@ -319,33 +311,6 @@ impl From<&ChangePassword> for AuthenticateUser {
             identifier: value.user_id.to_string(),
             password: value.current_password.to_owned(),
         }
-    }
-}
-
-/// successful authentication response containing user data and JWT token
-///
-/// authentication and register user requeast use this
-#[derive(Debug, Serialize, PartialEq, Deserialize)]
-pub struct AuthenticateUserSuccess {
-    pub user: User,
-    pub token: Jwt,
-    pub expires_at: usize,
-}
-
-#[cfg(feature = "zerver")]
-impl AuthenticateUserSuccess {
-    pub fn new(
-        user: User,
-        token_string: String,
-        expires_at: usize,
-    ) -> Result<Self, InvalidAuthenticateUserSuccess> {
-        let token =
-            Jwt::new(&token_string).map_err(|e| InvalidAuthenticateUserSuccess::JwtError(e))?;
-        Ok(AuthenticateUserSuccess {
-            user,
-            token,
-            expires_at,
-        })
     }
 }
 
