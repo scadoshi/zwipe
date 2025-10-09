@@ -30,6 +30,7 @@ pub enum ApiError {
     UnprocessableEntity(String),
     Unauthorized(String),
     NotFound(String),
+    Forbidden(String),
 }
 
 #[cfg(feature = "zerver")]
@@ -55,14 +56,12 @@ impl IntoResponse for ApiError {
                 "internal server error".to_string(),
             )
                 .into_response(),
-
             ApiError::UnprocessableEntity(message) => {
                 (StatusCode::UNPROCESSABLE_ENTITY, message).into_response()
             }
-
             ApiError::Unauthorized(message) => (StatusCode::UNAUTHORIZED, message).into_response(),
-
             ApiError::NotFound(message) => (StatusCode::NOT_FOUND, message).into_response(),
+            ApiError::Forbidden(message) => (StatusCode::FORBIDDEN, message).into_response(),
         }
     }
 }
