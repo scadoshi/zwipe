@@ -3,9 +3,9 @@ pub mod bad_words;
 pub mod password;
 pub mod refresh_token;
 pub mod session;
-#[cfg(feature = "zerver")]
-use crate::domain::auth::models::password::HashedPassword;
 use crate::domain::auth::models::password::{InvalidPassword, Password};
+#[cfg(feature = "zerver")]
+use crate::domain::auth::models::{password::HashedPassword, session::CreateSessionError};
 #[cfg(feature = "zerver")]
 use crate::domain::user::models::User;
 use crate::domain::user::models::{InvalidUsername, Username};
@@ -29,6 +29,15 @@ pub enum RegisterUserError {
     FailedAccessToken(anyhow::Error),
     #[error("user created but database returned invalid object: {0}")]
     UserFromDb(anyhow::Error),
+    #[error(transparent)]
+    CreateSessionError(CreateSessionError),
+}
+
+#[cfg(feature = "zerver")]
+impl From<CreateSessionError> for RegisterUserError {
+    fn from(value: CreateSessionError) -> Self {
+        Self::CreateSessionError(value)
+    }
 }
 
 #[derive(Debug, Error)]
@@ -105,6 +114,15 @@ pub enum AuthenticateUserError {
     FailedToVerify(anyhow::Error),
     #[error("failed to generate access token: {0}")]
     FailedAccessToken(anyhow::Error),
+    #[error(transparent)]
+    CreateSessionError(CreateSessionError),
+}
+
+#[cfg(feature = "zerver")]
+impl From<CreateSessionError> for AuthenticateUserError {
+    fn from(value: CreateSessionError) -> Self {
+        Self::CreateSessionError(value)
+    }
 }
 
 /// errors encountered while constructing `AuthenticateUserRequest`
