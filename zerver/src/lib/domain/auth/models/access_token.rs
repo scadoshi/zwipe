@@ -1,3 +1,5 @@
+#[cfg(feature = "zerver")]
+use crate::domain::user::models::User;
 use crate::domain::user::models::Username;
 use email_address::EmailAddress;
 use serde::{Deserialize, Serialize};
@@ -135,21 +137,16 @@ pub struct AccessToken {
 
 #[cfg(feature = "zerver")]
 impl AccessToken {
-    pub fn generate(
-        user_id: Uuid,
-        username: Username,
-        email: EmailAddress,
-        secret: &JwtSecret,
-    ) -> Result<AccessToken, InvalidJwt> {
+    pub fn generate(user: &User, secret: &JwtSecret) -> Result<AccessToken, InvalidJwt> {
         use chrono::Utc;
 
         let issued_at = Utc::now().timestamp() as i64;
         let expires_at = issued_at + 86400; // +24 hours
 
         let user_claims = UserClaims {
-            user_id,
-            username,
-            email,
+            user_id: user.id,
+            username: user.username.clone(),
+            email: user.email.clone(),
             exp: expires_at,
             iat: issued_at,
         };
@@ -335,12 +332,15 @@ mod tests {
 
     #[test]
     fn test_generate_access_token_success_creates_valid_tokens() {
-        let user_id = Uuid::new_v4();
-        let username = Username::new("testuser").unwrap();
-        let email = EmailAddress::from_str("test@email.com").unwrap();
+        let user = User::new(
+            Uuid::new_v4(),
+            Username::new("testuser").unwrap(),
+            EmailAddress::from_str("test@email.com").unwrap(),
+        );
+
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let result = AccessToken::generate(user_id, username, email, &secret);
+        let result = AccessToken::generate(&user, &secret);
         assert!(result.is_ok());
         let access_token = result.unwrap();
         assert!(!access_token.jwt.to_string().is_empty());
@@ -349,56 +349,65 @@ mod tests {
 
     #[test]
     fn test_generate_access_token_produces_consistent_results() {
-        let user_id = Uuid::new_v4();
-        let username = Username::new("testuser").unwrap();
-        let email = EmailAddress::from_str("test@email.com").unwrap();
+        let user = User::new(
+            Uuid::new_v4(),
+            Username::new("testuser").unwrap(),
+            EmailAddress::from_str("test@email.com").unwrap(),
+        );
+
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token1 =
-            AccessToken::generate(user_id.clone(), username.clone(), email.clone(), &secret)
-                .unwrap();
-        let token2 = AccessToken::generate(user_id, username, email, &secret).unwrap();
+        let token1 = AccessToken::generate(&user, &secret).unwrap();
+        let token2 = AccessToken::generate(&user, &secret).unwrap();
         assert_eq!(token1, token2);
     }
 
     #[test]
     fn test_generate_access_token_produces_unique_tokens_for_different_users() {
-        let user_id1 = Uuid::new_v4();
-        let user_id2 = Uuid::new_v4();
-        let username1 = Username::new("user1").unwrap();
-        let username2 = Username::new("user2").unwrap();
-        let email1 = EmailAddress::from_str("user1@email.com").unwrap();
-        let email2 = EmailAddress::from_str("user2@email.com").unwrap();
+        let user1 = User::new(
+            Uuid::new_v4(),
+            Username::new("testuser1").unwrap(),
+            EmailAddress::from_str("test1@email.com").unwrap(),
+        );
+
+        let user2 = User::new(
+            Uuid::new_v4(),
+            Username::new("testuser2").unwrap(),
+            EmailAddress::from_str("test2@email.com").unwrap(),
+        );
+
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token1 = AccessToken::generate(user_id1, username1, email1, &secret).unwrap();
-        let token2 = AccessToken::generate(user_id2, username2, email2, &secret).unwrap();
+        let token1 = AccessToken::generate(&user1, &secret).unwrap();
+        let token2 = AccessToken::generate(&user2, &secret).unwrap();
         assert_ne!(token1, token2);
     }
 
     #[test]
     fn test_generate_access_token_produces_unique_tokens_for_different_secrets() {
-        let user_id = Uuid::new_v4();
-        let username = Username::new("testuser").unwrap();
-        let email = EmailAddress::from_str("test@email.com").unwrap();
+        let user = User::new(
+            Uuid::new_v4(),
+            Username::new("testuser").unwrap(),
+            EmailAddress::from_str("test@email.com").unwrap(),
+        );
         let secret1 = JwtSecret::new("secret-1-that-is-long-enough-for-validation").unwrap();
         let secret2 = JwtSecret::new("secret-2-that-is-long-enough-for-validation").unwrap();
 
-        let token1 =
-            AccessToken::generate(user_id.clone(), username.clone(), email.clone(), &secret1)
-                .unwrap();
-        let token2 = AccessToken::generate(user_id, username, email, &secret2).unwrap();
+        let token1 = AccessToken::generate(&user, &secret1).unwrap();
+        let token2 = AccessToken::generate(&user, &secret2).unwrap();
         assert_ne!(token1, token2);
     }
 
     #[test]
     fn test_generate_access_token_normalizes_email_input() {
-        let user_id = Uuid::new_v4();
-        let username = Username::new("testuser").unwrap();
-        let email = EmailAddress::from_str("TesT@eMaiL.Com").unwrap();
+        let user = User::new(
+            Uuid::new_v4(),
+            Username::new("testuser").unwrap(),
+            EmailAddress::from_str("test@email.com").unwrap(),
+        );
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token = AccessToken::generate(user_id, username, email, &secret).unwrap();
+        let token = AccessToken::generate(&user, &secret).unwrap();
         let claims = token.validate(&secret).unwrap();
         assert_eq!(claims.email.to_string(), "test@email.com");
     }
@@ -409,19 +418,19 @@ mod tests {
 
     #[test]
     fn test_validate_access_token_success_returns_correct_claims() {
-        let user_id = Uuid::new_v4();
-        let username = Username::new("testuser").unwrap();
-        let email = EmailAddress::from_str("user@example.com").unwrap();
+        let user = User::new(
+            Uuid::new_v4(),
+            Username::new("testuser").unwrap(),
+            EmailAddress::from_str("test@email.com").unwrap(),
+        );
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token =
-            AccessToken::generate(user_id.clone(), username.clone(), email.clone(), &secret)
-                .unwrap();
+        let token = AccessToken::generate(&user, &secret).unwrap();
         let claims = token.validate(&secret).unwrap();
 
-        assert_eq!(claims.user_id, user_id);
-        assert_eq!(claims.username, username);
-        assert_eq!(claims.email, email);
+        assert_eq!(claims.user_id, user.id);
+        assert_eq!(claims.username, user.username);
+        assert_eq!(claims.email, user.email);
     }
 
     #[test]
@@ -441,15 +450,18 @@ mod tests {
 
     #[test]
     fn test_validate_access_token_rejects_wrong_secret() {
-        let user_id = Uuid::new_v4();
-        let username = Username::new("testuser").unwrap();
-        let email = EmailAddress::from_str("test@email.com").unwrap();
+        let user = User::new(
+            Uuid::new_v4(),
+            Username::new("testuser").unwrap(),
+            EmailAddress::from_str("test@email.com").unwrap(),
+        );
+
         let correct_secret =
             JwtSecret::new("correct-secret-that-is-long-enough-for-validation").unwrap();
         let wrong_secret =
             JwtSecret::new("wrong-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token = AccessToken::generate(user_id, username, email, &correct_secret).unwrap();
+        let token = AccessToken::generate(&user, &correct_secret).unwrap();
         let result = token.validate(&wrong_secret);
         assert!(result.is_err());
     }
@@ -460,12 +472,14 @@ mod tests {
 
     #[test]
     fn test_access_token_claims_have_correct_expiration_and_issued_at() {
-        let user_id = Uuid::new_v4();
-        let username = Username::new("testuser").unwrap();
-        let email = EmailAddress::from_str("test@email.com").unwrap();
+        let user = User::new(
+            Uuid::new_v4(),
+            Username::new("testuser").unwrap(),
+            EmailAddress::from_str("test@email.com").unwrap(),
+        );
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token = AccessToken::generate(user_id, username, email, &secret).unwrap();
+        let token = AccessToken::generate(&user, &secret).unwrap();
         let claims = token.validate(&secret).unwrap();
 
         let now = chrono::Utc::now().timestamp();
@@ -482,19 +496,19 @@ mod tests {
 
     #[test]
     fn test_access_token_claims_match_input_data() {
-        let user_id = Uuid::new_v4();
-        let username = Username::new("testuser").unwrap();
-        let email = EmailAddress::from_str("specific@example.com").unwrap();
+        let user = User::new(
+            Uuid::new_v4(),
+            Username::new("testuser").unwrap(),
+            EmailAddress::from_str("test@email.com").unwrap(),
+        );
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token =
-            AccessToken::generate(user_id.clone(), username.clone(), email.clone(), &secret)
-                .unwrap();
+        let token = AccessToken::generate(&user, &secret).unwrap();
         let claims = token.validate(&secret).unwrap();
 
-        assert_eq!(claims.user_id, user_id);
-        assert_eq!(claims.username, username);
-        assert_eq!(claims.email, email);
+        assert_eq!(claims.user_id, user.id);
+        assert_eq!(claims.username, user.username);
+        assert_eq!(claims.email, user.email);
     }
 
     // =====================
@@ -504,14 +518,15 @@ mod tests {
     #[test]
     fn test_generate_and_validate_round_trip_with_multiple_user_ids() {
         let user_ids = vec![Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4()]; // Multiple random UUIDs
+
         let username = Username::new("testuser").unwrap();
         let email = EmailAddress::from_str("test@email.com").unwrap();
+
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
         for user_id in user_ids {
-            let token =
-                AccessToken::generate(user_id.clone(), username.clone(), email.clone(), &secret)
-                    .unwrap();
+            let user = User::new(user_id, username.clone(), email.clone());
+            let token = AccessToken::generate(&user, &secret).unwrap();
             let claims = token.validate(&secret).unwrap();
             assert_eq!(claims.user_id, user_id);
         }
@@ -520,27 +535,23 @@ mod tests {
     #[test]
     fn test_complete_authentication_flow_round_trip() {
         // Simulate a complete auth flow: generate token, validate it, extract claims
-        let original_user_id = Uuid::new_v4();
-        let original_username = Username::new("authuser").unwrap();
-        let original_email = EmailAddress::from_str("auth@example.com").unwrap();
+        let original_user = User::new(
+            Uuid::new_v4(),
+            Username::new("authuser").unwrap(),
+            EmailAddress::from_str("auth@example.com").unwrap(),
+        );
         let secret = JwtSecret::new("production-grade-secret-that-is-long-enough").unwrap();
 
         // Generate token (like during login)
-        let token = AccessToken::generate(
-            original_user_id.clone(),
-            original_username.clone(),
-            original_email.clone(),
-            &secret,
-        )
-        .unwrap();
+        let token = AccessToken::generate(&original_user, &secret).unwrap();
 
         // Validate token (like during protected route access)
         let claims = token.validate(&secret).unwrap();
 
         // Verify all data survived the round trip
-        assert_eq!(claims.user_id, original_user_id);
-        assert_eq!(claims.username, original_username);
-        assert_eq!(claims.email, original_email);
+        assert_eq!(claims.user_id, original_user.id);
+        assert_eq!(claims.username, original_user.username);
+        assert_eq!(claims.email, original_user.email);
 
         let now = chrono::Utc::now().timestamp();
         assert!(claims.exp > now);
