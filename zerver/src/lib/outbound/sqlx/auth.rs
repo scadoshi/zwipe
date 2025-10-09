@@ -134,15 +134,6 @@ impl From<sqlx::Error> for CreateSessionError {
     }
 }
 
-impl From<sqlx::Error> for RefreshSessionError {
-    fn from(value: sqlx::Error) -> Self {
-        match value {
-            sqlx::Error::RowNotFound => Self::NotFound,
-            e => Self::Database(e.into()),
-        }
-    }   
-}
-
 impl From<sqlx::Error> for EnforceSessionMaximumError {
     fn from(value: sqlx::Error) -> Self {
         Self::Database(value.into())
@@ -153,6 +144,12 @@ impl From<sqlx::Error> for DeleteExpiredSessionsError {
     fn from(value: sqlx::Error) -> Self {
         Self::Database(value.into())
     }   
+}
+
+impl From<sqlx::Error> for RefreshSessionError {
+    fn from(value: sqlx::Error) -> Self {
+        Self::Database(value.into())
+    }
 }
 
 // ==========
@@ -389,18 +386,23 @@ impl AuthRepository for Postgres {
             DatabaseRefreshToken, 
             "SELECT id, user_id, expires_at, revoked FROM refresh_tokens WHERE value_hash = $1",
             request.refresh_token.sha256_hash()
-        ).fetch_one(&mut *tx).await?;
+        ).fetch_one(&mut *tx).await.map_err(|e| {
+            match e {
+                sqlx::Error::RowNotFound => RefreshSessionError::NotFound(request.user_id),
+                e => RefreshSessionError::Database(e.into()),
+            }
+        })?;
 
         if existing.user_id != request.user_id {
-            return Err(RefreshSessionError::Forbidden);
+            return Err(RefreshSessionError::Forbidden(request.user_id));
         }
 
         if existing.expires_at < Utc::now().naive_local() {
-            return Err(RefreshSessionError::Expired);
+            return Err(RefreshSessionError::Expired(request.user_id));
         }
 
         if existing.revoked {
-            return Err(RefreshSessionError::Revoked);
+            return Err(RefreshSessionError::Revoked(request.user_id));
         }
 
         query!("DELETE FROM refresh_tokens WHERE id = $1", existing.id).execute(&mut *tx).await?;

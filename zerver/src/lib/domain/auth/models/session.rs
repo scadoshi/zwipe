@@ -83,14 +83,14 @@ pub enum RefreshSessionError {
     Database(anyhow::Error),
     #[error(transparent)]
     CreateSessionError(CreateSessionError),
-    #[error("match for given refresh token not found")]
-    NotFound,
-    #[error("given refresh token is expired")]
-    Expired,
-    #[error("given refresh token has been revoked")]
-    Revoked,
-    #[error("refresh token does not belong to the requesting user")]
-    Forbidden,
+    #[error("match for given refresh token not found—user attempting: {0}")]
+    NotFound(Uuid),
+    #[error("given refresh token is expired—user attempting: {0}")]
+    Expired(Uuid),
+    #[error("given refresh token has been revoked—user attempting: {0}")]
+    Revoked(Uuid),
+    #[error("refresh token does not belong to the requesting user—user attempting: {0}")]
+    Forbidden(Uuid),
     #[error(transparent)]
     GetUserError(GetUserError),
     #[error(transparent)]
@@ -184,7 +184,6 @@ impl From<Uuid> for CreateSession {
     }
 }
 
-#[cfg(feature = "zerver")]
 #[derive(Debug, Clone)]
 pub struct RefreshSession {
     pub user_id: Uuid,
