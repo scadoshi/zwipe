@@ -31,7 +31,7 @@ impl<R: AuthRepository> Service<R> {
 
 impl<R: AuthRepository + Clone> AuthService for Service<R> {
     fn jwt_secret(&self) -> &JwtSecret {
-        &self.jwt_secret
+        &self.jwt_secret // comment
     }
 
     async fn register_user(&self, request: &RegisterUser) -> Result<Session, RegisterUserError> {
