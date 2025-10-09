@@ -13,27 +13,27 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Completed session service layer with atomic transaction patterns, fixed critical registration atomicity bug
+**Last Updated**: Complete backend session system - middleware, handlers, and refresh endpoint all working with Session responses
 
-**Current Focus**: Update HTTP inbound adapters (middleware + handlers) for new Session-based responses
+**Current Focus**: Frontend session integration - token storage, auto-login, and refresh patterns
 
-**Recent Achievement**: Completed all three session service methods (create_session, refresh_session, revoke_sessions) with proper AuthService<AR, UR> dual-generic orchestration pattern. Fixed critical atomicity bug in register_user - created atomic create_user_and_refresh_token repository method preventing orphaned user accounts. Built reusable transaction helper pattern (create_refresh_token_with_tx, enforce_refresh_token_max_with_tx). Simplified session request types removing unnecessary wrappers. Audited all service layers confirming proper atomicity. Updated AccessToken.generate() to accept User struct directly. Service layer cleanly orchestrates UserRepository + AuthRepository + JWT generation.
+**Recent Achievement**: Completed HTTP layer integration for session system. Updated middleware to extract and validate JWT from bearer tokens with username in AuthenticatedUser. All auth handlers (register/login/refresh) now return Session struct containing user data, access token, and refresh token. Created /api/auth/refresh endpoint with proper route function. Enhanced RefreshSessionError variants to include user_id for better security logging. Removed all catch-all patterns from ApiError mappings across every handler - now using explicit per-variant matching ensuring future enum changes require deliberate error handling decisions. Backend session system is production-ready.
 
-**Current Decision**: Session service layer complete with proper separation: repositories handle atomic database operations (using transaction helpers), services orchestrate cross-domain business logic, JWT generation stays stateless. Tuple returns (User, RefreshToken) maintain atomicity when operations span multiple tables. Next step: update HTTP layer (middleware + handlers) to work with new Session structure.
+**Current Decision**: Backend session architecture complete and secure. Middleware validates JWTs cleanly, handlers return full Session objects, refresh endpoint enables token rotation. All error mappings explicit and exhaustive. Next phase: build frontend token management - persistent storage (iOS Keychain/Android KeyStore), auto-login on app start, automatic refresh on 401, and global auth state context.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Middleware Update** - Modify AuthenticatedUser extractor to construct AccessToken from bearer JWT string
-2. **HTTP Handler Updates** - Update register/login handlers to return Session struct instead of old response types
-3. **Response Type Cleanup** - Remove RegisterUserSuccess/AuthenticateUserSuccess types, standardize on Session
-4. **Handler Testing** - Verify Session serialization works correctly for frontend consumption
-5. **Error Response Verification** - Ensure session error types map correctly to HTTP status codes
+1. **Token Storage Implementation** - Implement use_persistent for secure iOS Keychain/Android KeyStore storage
+2. **Frontend Session Deserialization** - Update AuthClient to handle Session responses with both access and refresh tokens
+3. **Auto-Login Flow** - Loading screen that validates stored tokens on app start and routes appropriately
+4. **Global Auth State** - Shared authentication context and session data across all Dioxus components
+5. **Token Refresh UX** - Handle refresh flow gracefully with loading states and error recovery
 
 ### 🤔 Next Immediate Priorities (Top 5)
-1. **Frontend Session Integration** - Update AuthClient to deserialize Session responses with both tokens
-2. **Token Storage Implementation** - Implement use_persistent for secure iOS Keychain/Android KeyStore storage
-3. **Auto-Login Flow** - Loading screen that validates stored tokens on app start and routes appropriately
-4. **401 Refresh Pattern** - HTTP interceptor for automatic token refresh and request retry on expired access tokens
-5. **Global Auth State** - Shared authentication context and session data across all components
+1. **401 Refresh Pattern** - HTTP interceptor for automatic token refresh and request retry on expired access tokens
+2. **Session Context Provider** - Dioxus context for app-wide access to current user and token state
+3. **Protected Route Pattern** - Component wrapper checking auth state before rendering protected screens
+4. **Logout Implementation** - Clear stored tokens, revoke refresh token via API, reset auth state
+5. **Token Expiration Warnings** - Proactive UX when refresh token approaching expiration (13+ days old)
 
 ---
 
@@ -118,6 +118,13 @@ alwaysApply: true
 - **Service Atomicity Audit**: Confirmed all service layers properly delegate atomic operations to repositories
 - **Request Type Simplification**: Removed unnecessary wrappers (CreateSession/RevokeSessions use Uuid directly)
 - **AccessToken API Update**: generate() method now accepts User struct for cleaner service layer code
+- **Middleware AccessToken Integration**: Updated AuthenticatedUser extractor to construct Jwt from bearer token string and validate
+- **Jwt Validation Refactor**: Moved validate() method from AccessToken to Jwt type for cleaner separation of concerns
+- **Username in AuthenticatedUser**: Added username field to middleware extractor for consistent user identification across handlers
+- **Session Response Migration**: Register and login handlers now return Session struct (user + access_token + refresh_token)
+- **Refresh Endpoint Implementation**: Complete /api/auth/refresh POST endpoint with HttpRefreshSession types and route function
+- **Enhanced Session Error Logging**: RefreshSessionError variants (NotFound, Expired, Revoked, Forbidden) now include user_id for security audit trails
+- **Exhaustive Error Mapping**: Removed all catch-all patterns from ApiError From impls across auth, user, card, deck, and deck_card handlers ensuring explicit handling of every error variant
 
 ---
 

@@ -15,25 +15,25 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Completed session service layer implementation with atomic transaction patterns and cross-domain orchestration
+**Last Updated**: Completed backend session system - middleware, handlers, refresh endpoint, and exhaustive error mapping
 
-**Next Learning Focus**: Update middleware for new AccessToken structure, update HTTP handlers to return Session responses, implement frontend session integration
+**Next Learning Focus**: Frontend session management - use_persistent for token storage, auto-login flow, 401 refresh patterns, Dioxus context for global auth state
 
-**Recent Achievement**: Completed all three session service methods (create_session, refresh_session, revoke_sessions) with proper cross-domain orchestration using AuthService<AR, UR> dual-generic pattern. Fixed critical atomicity bug in register_user by creating atomic create_user_and_refresh_token repository method wrapping both operations in single transaction. Built transaction helper pattern with create_refresh_token_with_tx and enforce_refresh_token_max_with_tx for reusable atomic operations. Simplified request types removing unnecessary wrappers (using Uuid directly). Audited all service layers confirming proper atomicity patterns. Updated AccessToken.generate() to accept User struct directly. Service layer now cleanly orchestrates: UserRepository for user data, AuthRepository for token operations, in-memory JWT generation.
+**Recent Achievement**: Finished HTTP layer integration for complete backend session system. Updated middleware to extract Jwt from bearer token and validate (moved validation from AccessToken to Jwt). Added username to AuthenticatedUser for consistent user identification. Migrated register/login handlers to return Session struct. Built refresh endpoint at /api/auth/refresh with proper types and route function. Enhanced RefreshSessionError with user_id for security logging. Removed all catch-all error patterns across every handler (auth, user, card, deck, deck_card) - now using exhaustive per-variant matching ensuring compiler catches missing error cases. Backend is production-ready for token rotation and session management.
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **Middleware AccessToken Update** - Modify AuthenticatedUser extractor to construct AccessToken from JWT bearer string with new structure
-2. **HTTP Handler Session Updates** - Update register/login handlers to return Session struct, remove old response types
-3. **Session Deserialization** - Verify AccessToken Deserialize trait works for frontend Session parsing
-4. **Frontend Session Integration** - Update AuthClient to handle Session responses with both access + refresh tokens
-5. **Token Storage Implementation** - Implement use_persistent for secure iOS Keychain/Android KeyStore storage
+1. **Persistent Token Storage** - Implement use_persistent for secure iOS Keychain/Android KeyStore integration
+2. **Session Deserialization** - Update AuthClient to deserialize full Session responses (user + access_token + refresh_token)
+3. **Auto-Login Flow** - Loading screen that checks stored tokens, validates via health check, routes to appropriate screen
+4. **Global Auth Context** - Dioxus context provider for app-wide access to current session and user data
+5. **Token Refresh UX** - Graceful handling of token refresh flow with loading states and error recovery
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Middleware AccessToken Construction** - How to construct AccessToken from bearer string (validate JWT first, or wrap then validate?)
-2. **Handler Response Migration** - Clean removal of old RegisterUserSuccess/AuthenticateUserSuccess types
-3. **Frontend Token Storage** - use_persistent API specifics and secure storage implementation patterns
-4. **Auto-Login UX** - Loading screen flow, token validation timing, routing decisions on app start
-5. **401 Refresh Pattern** - HTTP interceptor implementation for automatic token refresh and request retry
+1. **use_persistent API** - Syntax for reading/writing to secure storage, error handling patterns for storage failures
+2. **Dioxus Context Patterns** - How to create and consume context for session state, when to trigger context updates
+3. **Auto-Login Timing** - When to validate tokens (app start only, or periodic checks), how to handle stale sessions gracefully
+4. **401 Interceptor Pattern** - Best approach for detecting 401, triggering refresh, retrying original request without infinite loops
+5. **Protected Route Pattern** - Clean component wrapper that checks auth state, redirects if unauthorized, passes user data to children
 
 ---
 
@@ -132,6 +132,7 @@ alwaysApply: true
 - **Error Architecture**: Sophisticated ApiError with domain error mapping
 - **Request/Response Conversion**: Clean TryFrom patterns for HTTP-to-domain conversion
 - **Bearer Token Extraction**: JWT validation and claims parsing in middleware
+- **Exhaustive Error Mapping**: Pattern of explicit per-variant matching in From<DomainError> for ApiError implementations, avoiding catch-all patterns to ensure compiler catches missing error cases when enums evolve
 
 ### 🔄 Async Programming & Trait Constraints
 - **Async Function Design**: Building async functions with proper trait bounds
@@ -227,7 +228,7 @@ alwaysApply: true
 
 ## LEARNING - Recently Introduced, Needs Guidance 📚
 
-### 🔐 Session & Refresh Token Architecture
+### 🔐 Backend Session & Token Architecture (Complete)
 - **Session-Based Authentication**: Session struct containing user + access_token + refresh_token + both expiration timestamps
 - **Rotating Token Strategy**: Security model where refresh operation generates new access + new refresh token, invalidating old refresh
 - **Access vs Refresh Tokens**: JWTs (self-contained, 24hr) vs opaque hex strings (64-char, 14-day, hashed with SHA-256 for storage)
@@ -235,9 +236,7 @@ alwaysApply: true
 - **Refresh Token Database Design**: Separate table with user_id, hashed token value, created_at, expires_at, revoked flag
 - **Multi-Device Session Support**: Multiple refresh tokens per user (max 5) enabling concurrent device authentication
 - **Token Refresh Flow**: 401 response triggers refresh, not proactive checking (performance + no security benefit)
-- **Mobile Secure Storage**: use_persistent abstraction over iOS Keychain/Android KeyStore for token persistence
 - **Request Type Simplification**: CreateSession and RevokeSessions wrap Uuid directly, RefreshSession contains user_id + refresh_token string
-- **Auto-Login Patterns**: App start flow with stored token validation and routing decisions
 - **Session Port Architecture**: AuthService and AuthRepository traits for session management operations
 - **Token Expiration Strategy**: 14-day refresh tokens, 24-hour access tokens balancing security vs UX
 - **RefreshToken Self-Containment**: Struct with value + expires_at fields for tight coupling and consistency
@@ -251,6 +250,18 @@ alwaysApply: true
 - **Service Session Methods**: Complete implementation of create_session, refresh_session, revoke_sessions with proper orchestration
 - **Cross-Domain Session Creation**: AuthService orchestrates UserRepository (fetch user data) + AuthRepository (token operations) + JWT generation
 - **Expired Token Cleanup**: delete_expired_refresh_tokens method using WHERE expires_at < NOW() for scheduled maintenance via sync binary
+- **Middleware Session Integration**: AuthenticatedUser extractor constructs Jwt from bearer token, validates with JwtSecret, includes username
+- **Jwt/AccessToken Separation**: Moved validation from AccessToken to Jwt for cleaner type responsibilities
+- **HTTP Session Responses**: Register/login/refresh handlers all return Session struct with complete user and token data
+- **Refresh Endpoint**: Complete /api/auth/refresh POST endpoint with HttpRefreshSession request/response types and route function
+- **Enhanced Error Logging**: RefreshSessionError variants include user_id for security audit trails (NotFound, Expired, Revoked, Forbidden)
+- **Exhaustive Error Mapping**: Removed all catch-all patterns from ApiError implementations ensuring explicit per-variant handling
+- *Note: Backend complete, frontend integration (storage, auto-login, 401 handling) still needed*
+
+### 📱 Frontend Session Management (Starting)
+- **Mobile Secure Storage**: use_persistent abstraction over iOS Keychain/Android KeyStore for token persistence
+- **Auto-Login Patterns**: App start flow with stored token validation and routing decisions
+- *Note: Backend ready, now building frontend storage and auto-login flows*
 
 ### 🔮 Advanced Rust Patterns
 - **Advanced Async Patterns**: Complex Future handling, async streaming, async iterators
