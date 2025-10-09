@@ -17,9 +17,9 @@ use crate::{
     domain::{
         auth::{
             models::{
-                AuthenticateUserError, AuthenticateUserSuccess, ChangePassword,
-                ChangePasswordError, InvalidAuthenticateUser, InvalidChangePassword,
-                InvalidRegisterUser, RegisterUser, RegisterUserError,
+                session::Session, AuthenticateUserError, ChangePassword, ChangePasswordError,
+                InvalidAuthenticateUser, InvalidChangePassword, InvalidRegisterUser, RegisterUser,
+                RegisterUserError,
             },
             ports::AuthService,
         },
@@ -107,7 +107,7 @@ impl From<RawRegisterUser> for HttpRegisterUser {
 pub async fn register_user<AS, US, HS, CS, DS>(
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Json(body): Json<HttpRegisterUser>,
-) -> Result<(StatusCode, Json<AuthenticateUserSuccess>), ApiError>
+) -> Result<(StatusCode, Json<Session>), ApiError>
 where
     AS: AuthService,
     US: UserService,
@@ -184,7 +184,7 @@ impl TryFrom<HttpAuthenticateUser> for AuthenticateUser {
 pub async fn authenticate_user<AS, US, HS, CS, DS>(
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Json(body): Json<HttpAuthenticateUser>,
-) -> Result<(StatusCode, Json<AuthenticateUserSuccess>), ApiError>
+) -> Result<(StatusCode, Json<Session>), ApiError>
 where
     AS: AuthService,
     US: UserService,

@@ -12,13 +12,11 @@ use axum_extra::{
 use email_address::EmailAddress;
 use uuid::Uuid;
 
+use crate::domain::user::models::Username;
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
-        auth::{
-            models::access_token::{AccessToken, UserClaims},
-            ports::AuthService,
-        },
+        auth::{models::access_token::UserClaims, ports::AuthService},
         card::ports::CardService,
         deck::ports::DeckService,
         health::ports::HealthService,
@@ -28,6 +26,7 @@ use crate::{
 };
 pub struct AuthenticatedUser {
     pub id: Uuid,
+    pub username: Username,
     pub email: EmailAddress,
 }
 
@@ -35,6 +34,7 @@ impl From<UserClaims> for AuthenticatedUser {
     fn from(value: UserClaims) -> Self {
         Self {
             id: value.user_id,
+            username: value.username,
             email: value.email,
         }
     }
@@ -55,12 +55,16 @@ where
         parts: &mut Parts,
         state: &AppState<AS, US, HS, CS, DS>,
     ) -> Result<Self, Self::Rejection> {
+        use std::str::FromStr;
+
+        use crate::domain::auth::models::access_token::Jwt;
+
         let TypedHeader(Authorization(bearer)) =
             TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)
                 .await
                 .map_err(|_| StatusCode::BAD_REQUEST)?;
-        let access_token = AccessToken::new(bearer.token()).map_err(|_| StatusCode::BAD_REQUEST)?;
-        let claims = access_token
+        let jwt = Jwt::from_str(bearer.token()).map_err(|_| StatusCode::BAD_REQUEST)?;
+        let claims = jwt
             .validate(state.auth_service.jwt_secret())
             .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
