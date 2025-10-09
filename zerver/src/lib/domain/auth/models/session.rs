@@ -1,9 +1,5 @@
 use crate::domain::auth::models::access_token::AccessToken;
 use crate::domain::auth::models::refresh_token::RefreshToken;
-#[cfg(feature = "zerver")]
-use crate::domain::auth::models::{
-    access_token::InvalidAccessToken, refresh_token::InvalidRefreshToken,
-};
 use crate::domain::user::models::User;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -134,6 +130,13 @@ impl FromStr for CreateSession {
     type Err = InvalidCreateSession;
     fn from_str(s: &str) -> Result<Self, InvalidCreateSession> {
         Ok(Self(Uuid::try_parse(s)?))
+    }
+}
+
+#[cfg(feature = "zerver")]
+impl From<Uuid> for CreateSession {
+    fn from(value: Uuid) -> Self {
+        Self(value)
     }
 }
 
