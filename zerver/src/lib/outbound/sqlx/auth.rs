@@ -1,20 +1,18 @@
 use std::str::FromStr;
-
 use chrono::{NaiveDateTime, Utc};
 use email_address::EmailAddress;
 use sqlx::{query, query_as, PgTransaction};
 use sqlx_macros::FromRow;
 use uuid::Uuid;
 use thiserror::Error;
-
 use crate::domain::auth::models::password::HashedPassword;
 use crate::domain::auth::models::refresh_token::{RefreshToken, Sha256Hash};
-use crate::domain::auth::models::session::{CreateSession, CreateSessionError, DeleteExpiredSessionsError, EnforceSessionMaximumError, RefreshSession, RefreshSessionError, RevokeSessions, RevokeSessionsError, MAXIMUM_SESSION_COUNT};
+use crate::domain::auth::models::session::{CreateSessionError, DeleteExpiredSessionsError, EnforceSessionMaximumError, RefreshSession, RefreshSessionError, RevokeSessionsError, MAXIMUM_SESSION_COUNT};
 use crate::domain::auth::models::{
     AuthenticateUser, AuthenticateUserError, ChangeEmail, ChangeEmailError, ChangePassword, ChangePasswordError, ChangeUsername, ChangeUsernameError, DeleteUser, DeleteUserError, RegisterUser, RegisterUserError, UserWithPasswordHash
 };
 use crate::domain::auth::ports::AuthRepository;
-use crate::domain::user::models::{User, Username, InvalidUsername};
+use crate::domain::user::models::{InvalidUsername, User, Username};
 use crate::outbound::sqlx::postgres::{IsConstraintViolation, Postgres};
 use crate::outbound::sqlx::user::{DatabaseUser, ToUserError};
 
@@ -197,26 +195,62 @@ pub struct DatabaseRefreshToken {
     id: i32, user_id: Uuid, value_hash: String, created_at: NaiveDateTime, expires_at: NaiveDateTime, revoked: bool
 }
 
+// ==========
+//   helpers
+// ==========
+
 /// takes existing transaction to create a new refresh token
 /// commit will be handled outside of this
-async fn create_refresh_token_with_tx(request: &CreateSession, tx:  &mut PgTransaction<'_>) -> Result<RefreshToken, CreateSessionError> {
+async fn create_refresh_token_with_tx(user_id: &Uuid, tx:  &mut PgTransaction<'_>) -> Result<RefreshToken, CreateSessionError> {
     let refresh_token = RefreshToken::generate();
     let _result = query_as!(
         DatabaseRefreshToken,
         "INSERT INTO refresh_tokens (user_id, value_hash, expires_at) VALUES ($1, $2, $3) RETURNING *",
-        request.user_id(), refresh_token.sha256_hash(), refresh_token.expires_at
+        user_id, 
+        refresh_token.sha256_hash(), 
+        refresh_token.expires_at
     ).fetch_one(&mut **tx).await?;
+    enforce_refresh_token_max_with_tx(&user_id, tx).await?;
     Ok(refresh_token)
 }
 
+/// takes existing transaction
+/// removes oldest refresh tokens until
+/// total is not greater than max
+async fn enforce_refresh_token_max_with_tx(
+    user_id: &Uuid, 
+    tx:  &mut PgTransaction<'_>
+) -> Result<(), EnforceSessionMaximumError> {
+query!(r#"DELETE FROM refresh_tokens WHERE id IN (
+            SELECT id FROM (
+                SELECT 
+                    id, 
+                    ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY created_at DESC) token_number
+                FROM refresh_tokens
+                WHERE user_id = $1
+            ) users_refresh_tokens
+            WHERE token_number > $2
+    )"#,
+    user_id,
+    MAXIMUM_SESSION_COUNT as i64
+)
+    .execute(&mut **tx)
+    .await?;
+
+Ok(())
+}
+
+// ======
+//  main
+// ======
 impl AuthRepository for Postgres {
     // ========
     //  create
     // ========
-    async fn create_user_with_password_hash(
+    async fn create_user_and_refresh_token(
         &self,
         request: &RegisterUser,
-    ) -> Result<User, RegisterUserError> {
+    ) -> Result<(User, RefreshToken), RegisterUserError> {
         let mut tx = self
             .pool
             .begin()
@@ -233,20 +267,20 @@ impl AuthRepository for Postgres {
         let user: User = database_user
             .try_into()?;
 
+        let refresh_token = create_refresh_token_with_tx(&user.id, &mut tx).await?;
+
         tx.commit().await?;
 
-        Ok(user)
+        Ok((user, refresh_token))
     }
 
     async fn create_refresh_token(
             &self,
-            request: &CreateSession,
+            user_id: &Uuid,
         ) -> Result<RefreshToken, CreateSessionError> {
 
         let mut tx = self.pool.begin().await?;
-        let refresh_token = create_refresh_token_with_tx(request, &mut tx).await?;
-        self.enforce_session_maximum(request).await?;
-
+        let refresh_token = create_refresh_token_with_tx(user_id, &mut tx).await?;
         tx.commit().await?;
 
     Ok(refresh_token)
@@ -273,7 +307,7 @@ impl AuthRepository for Postgres {
     }
     // ========
     //  update                           
-    // ========
+    // ======== 
     async fn change_password(
         &self,
         request: &ChangePassword,
@@ -368,7 +402,7 @@ impl AuthRepository for Postgres {
 
         query!("DELETE FROM refresh_tokens WHERE id = $1", existing.id).execute(&mut *tx).await?;
 
-        let new = create_refresh_token_with_tx(&request.into(), &mut tx).await?;
+        let new = create_refresh_token_with_tx(&request.user_id, &mut tx).await?;
 
         tx.commit().await?;
 
@@ -393,50 +427,32 @@ impl AuthRepository for Postgres {
         Ok(())
     }
 
-    async fn revoke_sessions(
+    async fn delete_users_refresh_tokens(
             &self,
-            request: &RevokeSessions,
+            user_id: &Uuid,
         ) -> Result<(), RevokeSessionsError> {
         let mut tx = self.pool.begin().await?;
 
-        query!("DELETE FROM refresh_tokens WHERE user_id = $1", request.user_id()).execute(&mut *tx).await?;
+        query!("DELETE FROM refresh_tokens WHERE user_id = $1", user_id)
+            .execute(&mut *tx)
+            .await?;
 
         tx.commit().await?;
 
         Ok(())
     }
 
-    async fn enforce_session_maximum(
-            &self,
-            request: &CreateSession,
-        ) -> Result<(), EnforceSessionMaximumError> {
-        let mut tx = self.pool.begin().await?;
-
-        query!(r#"DELETE FROM refresh_tokens WHERE id IN (
-                    SELECT id FROM (
-                        SELECT 
-                            id, 
-                            ROW_NUMBER() OVER(PARTITION BY user_id ORDER BY created_at DESC) token_number
-                        FROM refresh_tokens
-                        WHERE user_id = $1
-                    ) users_refresh_tokens
-                    WHERE token_number > $2
-            )"#,
-            request.user_id(),
-            MAXIMUM_SESSION_COUNT as i64
-        ).execute(&mut *tx).await?;
-
-        tx.commit().await?;
-
-        Ok(())
-    }
-
-    async fn delete_expired_tokens(
+    async fn delete_expired_refresh_tokens(
             &self,
         ) -> Result<(), DeleteExpiredSessionsError> {
         let mut tx = self.pool.begin().await?;
-        query!("DELETE FROM refresh_tokens WHERE expires_at < NOW()").execute(&mut *tx).await?;
+
+        query!("DELETE FROM refresh_tokens WHERE expires_at < NOW()")
+            .execute(&mut *tx)
+            .await?;
+
         tx.commit().await?;
+
         Ok(())
     }
 }
