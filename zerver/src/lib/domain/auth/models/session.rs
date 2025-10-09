@@ -10,6 +10,8 @@ use std::str::FromStr;
 use thiserror::Error;
 use uuid::Uuid;
 
+pub const MAXIMUM_SESSION_COUNT: u8 = 5;
+
 // ========
 //  errors
 // ========
@@ -31,8 +33,17 @@ impl From<uuid::Error> for InvalidCreateSession {
 #[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum CreateSessionError {
-    #[error("add error enumerations here as you go")]
-    Todo,
+    #[error(transparent)]
+    Database(anyhow::Error),
+    #[error(transparent)]
+    EnforceSessionMaximumError(EnforceSessionMaximumError),
+}
+
+#[cfg(feature = "zerver")]
+impl From<EnforceSessionMaximumError> for CreateSessionError {
+    fn from(value: EnforceSessionMaximumError) -> Self {
+        Self::EnforceSessionMaximumError(value)
+    }
 }
 
 #[cfg(feature = "zerver")]
@@ -52,30 +63,24 @@ impl From<uuid::Error> for InvalidRefreshSession {
 #[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum RefreshSessionError {
-    #[error("add error enumerations here as you go")]
-    Todo,
-}
-
-#[cfg(feature = "zerver")]
-#[derive(Debug, Error)]
-pub enum InvalidSession {
     #[error(transparent)]
-    InvalidAccessToken(InvalidAccessToken),
+    Database(anyhow::Error),
     #[error(transparent)]
-    InvalidRefreshToken(InvalidRefreshToken),
+    CreateSessionError(CreateSessionError),
+    #[error("match for given refresh token not found")]
+    NotFound,
+    #[error("given refresh token is expired")]
+    Expired,
+    #[error("given refresh token has been revoked")]
+    Revoked,
+    #[error("refresh token does not belong to the requesting user")]
+    Forbidden,
 }
 
 #[cfg(feature = "zerver")]
-impl From<InvalidAccessToken> for InvalidSession {
-    fn from(value: InvalidAccessToken) -> Self {
-        Self::InvalidAccessToken(value)
-    }
-}
-
-#[cfg(feature = "zerver")]
-impl From<InvalidRefreshToken> for InvalidSession {
-    fn from(value: InvalidRefreshToken) -> Self {
-        Self::InvalidRefreshToken(value)
+impl From<CreateSessionError> for RefreshSessionError {
+    fn from(value: CreateSessionError) -> Self {
+        Self::CreateSessionError(value)
     }
 }
 
@@ -89,6 +94,24 @@ impl From<uuid::Error> for InvalidRevokeSessions {
     fn from(value: uuid::Error) -> Self {
         Self::UserId(value)
     }
+}
+
+#[derive(Debug, Error)]
+pub enum RevokeSessionsError {
+    #[error(transparent)]
+    Database(anyhow::Error),
+}
+
+#[derive(Debug, Error)]
+pub enum EnforceSessionMaximumError {
+    #[error(transparent)]
+    Database(anyhow::Error),
+}
+
+#[derive(Debug, Error)]
+pub enum DeleteExpiredSessionsError {
+    #[error(transparent)]
+    Database(anyhow::Error),
 }
 
 // =========
@@ -115,10 +138,17 @@ impl FromStr for CreateSession {
 }
 
 #[cfg(feature = "zerver")]
+impl From<&RefreshSession> for CreateSession {
+    fn from(value: &RefreshSession) -> Self {
+        Self(value.user_id.to_owned())
+    }
+}
+
+#[cfg(feature = "zerver")]
 #[derive(Debug, Clone)]
 pub struct RefreshSession {
-    user_id: Uuid,
-    refresh_token: String,
+    pub user_id: Uuid,
+    pub refresh_token: String,
 }
 
 #[cfg(feature = "zerver")]
@@ -150,12 +180,6 @@ impl FromStr for RevokeSessions {
     }
 }
 
-#[derive(Debug, Error)]
-pub enum RevokeSessionsError {
-    #[error("add error enumerations here")]
-    Todo,
-}
-
 // ======
 //  main
 // ======
@@ -165,28 +189,16 @@ pub enum RevokeSessionsError {
 pub struct Session {
     pub user: User,
     pub access_token: AccessToken,
-    pub access_token_expires_at: usize,
     pub refresh_token: RefreshToken,
-    pub refresh_token_expires_at: usize,
 }
 
 #[cfg(feature = "zerver")]
 impl Session {
-    pub fn new(
-        user: User,
-        access_token_string: String,
-        access_token_expires_at: usize,
-        refresh_token_string: String,
-        refresh_token_expires_at: usize,
-    ) -> Result<Self, InvalidSession> {
-        let access_token = AccessToken::from_str(&access_token_string)?;
-        let refresh_token = RefreshToken::from_str(&refresh_token_string)?;
-        Ok(Session {
+    pub fn new(user: User, access_token: AccessToken, refresh_token: RefreshToken) -> Self {
+        Session {
             user,
             access_token,
-            access_token_expires_at,
             refresh_token,
-            refresh_token_expires_at,
-        })
+        }
     }
 }
