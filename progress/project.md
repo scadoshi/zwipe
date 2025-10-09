@@ -13,20 +13,20 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Domain modeling for Session-based authentication with rotating refresh tokens
+**Last Updated**: Completed SQLx repository implementation for session management with refresh token rotation
 
-**Current Focus**: Implementing backend infrastructure for session management with refresh token rotation
+**Current Focus**: Building service orchestration layer and HTTP handlers for session endpoints
 
-**Recent Achievement**: Completed domain modeling for session-based authentication architecture. Created comprehensive flow diagram mapping frontend and backend authentication flows including token validation, refresh logic, and 401 handling. Built Session struct with both access and refresh tokens plus expiration timestamps. Designed complete request/error type system: CreateSession, RefreshSession, RevokeSessions with corresponding error enums. Updated AuthService and AuthRepository ports with session management operations. Renamed AccessToken terminology throughout codebase for clarity (Jwt → AccessToken) while preserving JwtSecret for technical accuracy. Discovered need for persistent token storage while building frontend auth screens, leading to complete refresh token architecture design.
+**Recent Achievement**: Implemented complete SQLx repository layer for session management. Built `create_refresh_token` with SHA-256 token hashing for secure database storage. Implemented `use_refresh_token` with token rotation (delete old, create new), expiration validation, and ownership verification. Built `revoke_sessions` for user logout across all devices. Added `enforce_session_maximum` with SQL window functions to maintain max 5 tokens per user. Created `delete_expired_tokens` for scheduled cleanup job in sync binary. Refactored RefreshToken to self-contain value + expires_at fields (14-day lifespan) for tight coupling. Created `Sha256Hash` trait for flexible hashing. Designed comprehensive error mappings (NotFound, Expired, Revoked, Forbidden, Database). Repository layer is transaction-safe and production-ready.
 
-**Current Decision**: Session-based authentication with rotating refresh tokens. Database stores SHA-256 hashed refresh tokens (opaque strings, not JWTs). Session response contains: User, AccessToken (JWT with 24hr exp), access_token_expires_at, RefreshToken (32-byte random), refresh_token_expires_at. Multi-device support via multiple refresh tokens per user (max 5). Refresh only on 401 for performance. Frontend will use use_persistent for iOS Keychain/Android KeyStore storage. Auto-login flow: check stored tokens → validate with backend → route appropriately.
+**Current Decision**: Session-based authentication with rotating refresh tokens. Database stores SHA-256 hashed refresh tokens (opaque hex strings, not JWTs). Session response contains: User, AccessToken (JWT with 24hr exp), access_token_expires_at, RefreshToken (64-char hex string, 14-day exp), refresh_token_expires_at. Multi-device support via multiple refresh tokens per user (max 5). Refresh only on 401 for performance. Frontend will use use_persistent for iOS Keychain/Android KeyStore storage. Auto-login flow: check stored tokens → validate with backend → route appropriately.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Session SQLx Implementation** - Database operations for create_session, refresh_session, revoke_sessions in outbound layer
-2. **Session Service Logic** - Orchestration layer implementing AuthService session methods with token generation and validation
-3. **Session HTTP Handlers** - REST endpoints for /api/auth/refresh and session management
-4. **Frontend-Backend Integration Testing** - Verify session creation, token storage, and refresh flows work end-to-end
-5. **Persistent Token Storage** - use_persistent for secure mobile storage of Session data (both tokens + expirations)
+1. **AccessToken Refactoring** - Self-contain value + expires_at fields to match RefreshToken pattern
+2. **Transaction Nesting Fix** - Pass &mut tx to enforce_session_maximum to avoid nested transactions
+3. **Service Layer Implementation** - Orchestrate token generation + repository calls in AuthService methods
+4. **Session HTTP Handlers** - REST endpoints for /api/auth/refresh and update existing auth endpoints to return Session
+5. **Frontend Session Integration** - Update AuthClient to handle Session responses with both tokens
 
 ### 🤔 Next Immediate Priorities (Top 5)
 1. **Auto-Login Flow** - Loading screen that validates stored session on app start and routes appropriately
@@ -101,9 +101,16 @@ alwaysApply: true
 - **Session Domain Modeling**: Complete session.rs module with Session struct (user + access_token + refresh_token + both expirations)
 - **Session Request Types**: CreateSession, RefreshSession, RevokeSessions with comprehensive error handling
 - **Token Terminology Refactoring**: Renamed Jwt → AccessToken throughout codebase while preserving JwtSecret for technical accuracy
-- **RefreshToken Implementation**: 32-byte random token generation with SHA-256 hashing for database storage
+- **RefreshToken Architecture**: Self-contained struct with value + expires_at fields, 14-day lifespan constant, hex-encoded 32-byte random generation
+- **Sha256Hash Trait**: Flexible trait implementation for both RefreshToken and String types enabling secure token storage
 - **Authentication Flow Diagram**: Comprehensive visual mapping of frontend/backend flows including token validation, refresh, and 401 handling
 - **Session Port Definitions**: AuthService and AuthRepository traits updated with session management operations
+- **Session Repository Implementation**: Complete SQLx outbound layer with create_refresh_token, use_refresh_token, revoke_sessions, enforce_session_maximum, delete_expired_tokens
+- **Token Rotation Pattern**: use_refresh_token deletes old token and creates new one atomically for security
+- **Session Error System**: Comprehensive error variants (NotFound, Expired, Revoked, Forbidden) with proper SQLx error mapping
+- **Session Maximum Enforcement**: SQL window functions maintaining 5 token limit per user with automatic cleanup of oldest tokens
+- **Token Validation Logic**: Expiration checking, ownership verification, revocation status in use_refresh_token method
+- **Expired Token Cleanup**: delete_expired_tokens method for scheduled cleanup job in sync binary (removes tokens where expires_at < NOW())
 
 ---
 
@@ -145,6 +152,12 @@ alwaysApply: true
 - **Session Architecture Design**: Comprehensive domain modeling for rotating refresh token system with flow diagrams
 - **Token Strategy Decision**: Access tokens (JWT, 24hr) vs Refresh tokens (opaque 32-byte random, hashed with SHA-256)
 - **Multi-Device Session Support**: Architecture allowing up to 5 concurrent refresh tokens per user for cross-device auth
+- **RefreshToken Self-Containment**: Refactored to struct with value + expires_at fields for tight coupling and consistency
+- **Session Repository Implementation**: Complete SQLx implementation with token rotation, validation, and enforcement patterns
+- **Sha256Hash Trait Pattern**: Flexible trait for hashing both RefreshToken and String types, enabling secure database storage
+- **Token Rotation Security**: Delete-then-create pattern in use_refresh_token ensures old tokens invalidated atomically
+- **Window Function Enforcement**: SQL-based session maximum using ROW_NUMBER() OVER(PARTITION BY user_id) for automatic cleanup
+- **Expired Token Cleanup Job**: delete_expired_tokens repository method for scheduled cleanup via sync binary
 
 ### 💾 Database Evolution & Challenges
 - **Diesel to SQLx Migration**: Complete transition from Diesel ORM to raw SQL control with custom type integration
@@ -212,7 +225,7 @@ alwaysApply: true
 - **Monitoring & Logging**: Structured logging, metrics collection, health monitoring
 - **Database Optimization**: Query performance analysis, indexing strategy
 - **Image Handling**: Card image serving, caching, and mobile optimization
-- **Token Cleanup Job**: Scheduled job to remove expired/revoked refresh tokens (weekly via sync binary)
+- **Token Cleanup Job Integration**: Add delete_expired_tokens call to sync binary for scheduled cleanup (daily/weekly)
 
 ### 🎮 MTG-Specific Features
 - **Advanced Card Search**: Format legality, power/toughness filtering, advanced search operators

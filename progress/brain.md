@@ -15,25 +15,25 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Session domain modeling and refresh token architecture design
+**Last Updated**: Completed SQLx session repository implementation with refresh token rotation and validation
 
-**Next Learning Focus**: SQLx session repository implementation, service orchestration with token generation, HTTP handler patterns
+**Next Learning Focus**: Service layer token orchestration, HTTP handler session endpoints, AccessToken refactoring to match RefreshToken pattern
 
-**Recent Achievement**: Completed comprehensive session domain architecture. Built Session struct containing user data plus both access and refresh tokens with their expiration timestamps. Designed complete request/error type system (CreateSession, RefreshSession, RevokeSessions) with proper error handling. Learned distinction between access tokens (JWTs, self-contained) and refresh tokens (opaque random bytes, hashed for storage). Understood SHA-256 vs Argon2 tradeoffs for token hashing (speed vs security needs). Created visual flow diagram mapping entire authentication flow from frontend to backend including validation, refresh, and 401 handling. Clarified multi-device session support pattern (multiple refresh tokens per user). Discovered session persistence need while building frontend auth screens, leading to architecture redesign.
+**Recent Achievement**: Built complete SQLx repository layer for session management. Implemented `create_refresh_token` with SHA-256 hashing for secure database storage (64-char hex strings). Built `use_refresh_token` with atomic token rotation (delete old, create new in single transaction), expiration validation (14-day lifespan), ownership verification (user_id matching), and revocation checking. Implemented `revoke_sessions` for multi-device logout. Created `enforce_session_maximum` using SQL window functions (ROW_NUMBER() OVER PARTITION BY) to maintain 5-token limit with automatic oldest-token cleanup. Added `delete_expired_tokens` for scheduled cleanup job in sync binary (WHERE expires_at < NOW()). Refactored RefreshToken to self-contain value + expires_at fields for tight coupling. Created `Sha256Hash` trait for flexible hashing of RefreshToken and String types. Designed comprehensive error system (NotFound, Expired, Revoked, Forbidden, Database) with proper SQLx error mapping.
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **SQLx Session Operations** - Implementing create_session, refresh_session, revoke_sessions in database layer
-2. **Service Session Logic** - Token generation orchestration, refresh validation, rotation implementation
-3. **Session HTTP Handlers** - REST endpoints exposing session management to frontend
-4. **Frontend Session Integration** - Updating AuthClient to handle Session responses with both tokens
-5. **Token Persistence Strategy** - use_persistent for secure cross-platform storage (Keychain/KeyStore)
+1. **AccessToken Refactoring** - Self-contain value + expires_at fields to match RefreshToken consistency pattern
+2. **Transaction Nesting Fix** - Pass &mut tx to enforce_session_maximum to avoid nested transaction bug
+3. **Service Token Orchestration** - Coordinating AccessToken generation + RefreshToken creation in service methods
+4. **Session HTTP Handlers** - Building /api/auth/refresh endpoint and updating existing auth endpoints
+5. **Frontend Session Integration** - Updating AuthClient to handle Session responses with both tokens
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **SQLx Refresh Token Queries** - Best patterns for token lookup by hash, multi-token management per user
-2. **Service Orchestration Flow** - Coordinating token generation, database operations, error handling
-3. **Token Expiration Strategy** - Choosing appropriate lifespans for access (24hr?) vs refresh (7 days? 30 days?)
-4. **Frontend Token Storage** - use_persistent API and secure storage implementation details
-5. **Auto-Login UX** - Loading screen flow, token validation, routing decisions
+1. **Service Orchestration Pattern** - Best way to coordinate token generation, repository calls, and Session building
+2. **HTTP Handler Session Updates** - How to modify existing register/login handlers to return Session instead of old structure
+3. **Frontend Token Storage** - use_persistent API and secure storage implementation details for both tokens
+4. **Auto-Login UX** - Loading screen flow, token validation, routing decisions on app start
+5. **401 Refresh Pattern** - HTTP interceptor pattern for automatic token refresh and request retry
 
 ---
 
@@ -227,16 +227,24 @@ alwaysApply: true
 ### 🔐 Session & Refresh Token Architecture
 - **Session-Based Authentication**: Session struct containing user + access_token + refresh_token + both expiration timestamps
 - **Rotating Token Strategy**: Security model where refresh operation generates new access + new refresh token, invalidating old refresh
-- **Access vs Refresh Tokens**: JWTs (self-contained, 24hr) vs opaque random bytes (32-byte, hashed with SHA-256 for storage)
+- **Access vs Refresh Tokens**: JWTs (self-contained, 24hr) vs opaque hex strings (64-char, 14-day, hashed with SHA-256 for storage)
 - **Token Hashing Strategy**: SHA-256 for refresh tokens (fast verification) vs Argon2 for passwords (slow, memory-hard)
 - **Refresh Token Database Design**: Separate table with user_id, hashed token value, created_at, expires_at, revoked flag
 - **Multi-Device Session Support**: Multiple refresh tokens per user (max 5) enabling concurrent device authentication
 - **Token Refresh Flow**: 401 response triggers refresh, not proactive checking (performance + no security benefit)
 - **Mobile Secure Storage**: use_persistent abstraction over iOS Keychain/Android KeyStore for token persistence
-- **Request/Error Type Design**: CreateSession, RefreshSession, RevokeSessions with corresponding error enums
+- **Request/Error Type Design**: CreateSession, RefreshSession, RevokeSessions with comprehensive error enums
 - **Auto-Login Patterns**: App start flow with stored token validation and routing decisions
 - **Session Port Architecture**: AuthService and AuthRepository traits for session management operations
-- **Token Expiration Strategy**: Choosing appropriate lifespans balancing security vs UX
+- **Token Expiration Strategy**: 14-day refresh tokens, 24-hour access tokens balancing security vs UX
+- **RefreshToken Self-Containment**: Struct with value + expires_at fields for tight coupling and consistency
+- **Sha256Hash Trait Pattern**: Flexible trait implementation enabling hashing of RefreshToken and String types
+- **SQLx Session Operations**: create_refresh_token, use_refresh_token, revoke_sessions, enforce_session_maximum, delete_expired_tokens implementations
+- **Token Rotation Pattern**: Delete old token, create new token atomically in use_refresh_token method
+- **Session Validation Logic**: Expiration checking, ownership verification (user_id match), revocation status checking
+- **Session Maximum Enforcement**: SQL window functions (ROW_NUMBER() OVER PARTITION BY) for automatic oldest-token cleanup
+- **Transaction-Safe Operations**: All session operations wrapped in transactions for atomicity and consistency
+- **Expired Token Cleanup**: delete_expired_tokens method using WHERE expires_at < NOW() for scheduled maintenance via sync binary
 
 ### 🔮 Advanced Rust Patterns
 - **Advanced Async Patterns**: Complex Future handling, async streaming, async iterators
