@@ -1,3 +1,9 @@
+use crate::domain::auth::models::access_token::InvalidJwt;
+use crate::domain::auth::models::session::RefreshSession;
+#[cfg(feature = "zerver")]
+use crate::domain::auth::models::session::{
+    CreateSessionError, EnforceSessionMaximumError, InvalidRefreshSession, RefreshSessionError,
+};
 use crate::domain::auth::models::{AuthenticateUser, RawRegisterUser};
 #[cfg(feature = "zerver")]
 use crate::domain::auth::models::{
@@ -38,14 +44,48 @@ use serde::{Deserialize, Serialize};
 // ==========
 
 #[cfg(feature = "zerver")]
+impl From<EnforceSessionMaximumError> for ApiError {
+    fn from(value: EnforceSessionMaximumError) -> Self {
+        match value {
+            EnforceSessionMaximumError::Database(e) => e.log_500(),
+        }
+    }
+}
+
+#[cfg(feature = "zerver")]
+impl From<InvalidJwt> for ApiError {
+    fn from(value: InvalidJwt) -> Self {
+        match value {
+            InvalidJwt::Format => Self::UnprocessableEntity("invalid token format".to_string()),
+            InvalidJwt::MissingToken => Self::UnprocessableEntity("missing token".to_string()),
+            InvalidJwt::EncodingError(e) => e.log_500(),
+        }
+    }
+}
+
+#[cfg(feature = "zerver")]
+impl From<CreateSessionError> for ApiError {
+    fn from(value: CreateSessionError) -> Self {
+        match value {
+            CreateSessionError::Database(e) => e.log_500(),
+            CreateSessionError::GetUserError(e) => ApiError::from(e),
+            CreateSessionError::EnforceSessionMaximumError(e) => ApiError::from(e),
+            CreateSessionError::InvalidJwt(e) => ApiError::from(e),
+        }
+    }
+}
+
+#[cfg(feature = "zerver")]
 impl From<RegisterUserError> for ApiError {
     fn from(value: RegisterUserError) -> Self {
         match value {
             RegisterUserError::Duplicate => Self::UnprocessableEntity(
                 "user with that username or email already exists".to_string(),
             ),
-
-            e => e.log_500(),
+            RegisterUserError::Database(e) => e.log_500(),
+            RegisterUserError::FailedAccessToken(e) => e.log_500(),
+            RegisterUserError::UserFromDb(e) => e.log_500(),
+            RegisterUserError::CreateSessionError(e) => ApiError::from(e),
         }
     }
 }
@@ -63,7 +103,7 @@ impl From<InvalidRegisterUser> for ApiError {
             InvalidRegisterUser::Password(e) => {
                 Self::UnprocessableEntity(format!("invalid password: {}", e))
             }
-            e => e.log_500(),
+            InvalidRegisterUser::FailedPasswordHash(e) => e.log_500(),
         }
     }
 }
@@ -115,11 +155,11 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let req = RegisterUser::new(&body.username, &body.email, &body.password)?;
+    let request = RegisterUser::new(&body.username, &body.email, &body.password)?;
 
     state
         .auth_service
-        .register_user(&req)
+        .register_user(&request)
         .await
         .map_err(ApiError::from)
         .map(|response| (StatusCode::CREATED, response.into()))
@@ -136,15 +176,23 @@ impl From<AuthenticateUserError> for ApiError {
             AuthenticateUserError::UserNotFound | AuthenticateUserError::InvalidPassword => {
                 Self::Unauthorized("invalid credentials".to_string())
             }
-            e => e.log_500(),
+            AuthenticateUserError::Database(e) => e.log_500(),
+            AuthenticateUserError::UserFromDb(e) => e.log_500(),
+            AuthenticateUserError::FailedToVerify(e) => e.log_500(),
+            AuthenticateUserError::FailedAccessToken(e) => e.log_500(),
+            AuthenticateUserError::CreateSessionError(e) => ApiError::from(e),
         }
     }
 }
 
 #[cfg(feature = "zerver")]
 impl From<InvalidAuthenticateUser> for ApiError {
-    fn from(_value: InvalidAuthenticateUser) -> Self {
-        Self::UnprocessableEntity("invalid credentials".to_string())
+    fn from(value: InvalidAuthenticateUser) -> Self {
+        match value {
+            InvalidAuthenticateUser::MissingIdentifier | InvalidAuthenticateUser::Password(_) => {
+                Self::UnprocessableEntity("invalid credentials".to_string())
+            }
+        }
     }
 }
 
@@ -192,11 +240,109 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let req = AuthenticateUser::new(&body.identifier, &body.password)?;
+    let request = AuthenticateUser::new(&body.identifier, &body.password)?;
 
     state
         .auth_service
-        .authenticate_user(&req)
+        .authenticate_user(&request)
+        .await
+        .map_err(ApiError::from)
+        .map(|response| (StatusCode::OK, response.into()))
+}
+
+// =========
+//  refresh
+// =========
+
+#[cfg(feature = "zerver")]
+impl From<RefreshSessionError> for ApiError {
+    fn from(value: RefreshSessionError) -> Self {
+        match value {
+            RefreshSessionError::CreateSessionError(e) => ApiError::from(e),
+            RefreshSessionError::Database(e) => e.log_500(),
+            RefreshSessionError::GetUserError(e) => e.log_500(),
+            RefreshSessionError::InvalidJwt(e) => ApiError::from(e),
+            RefreshSessionError::EnforceSessionMaximumError(e) => ApiError::from(e),
+            RefreshSessionError::NotFound(u) => {
+                tracing::info!("{}", RefreshSessionError::NotFound(u).to_string());
+                Self::Unauthorized("invalid refresh token".to_string())
+            }
+            RefreshSessionError::Expired(u) => {
+                tracing::info!("{}", RefreshSessionError::Expired(u).to_string());
+                Self::Unauthorized("refresh token expired".to_string())
+            }
+            RefreshSessionError::Revoked(u) => {
+                tracing::warn!("{}", RefreshSessionError::Revoked(u).to_string());
+                Self::Unauthorized("invalid refresh token".to_string())
+            }
+            RefreshSessionError::Forbidden(u) => {
+                tracing::warn!("{}", RefreshSessionError::Forbidden(u).to_string());
+                Self::Forbidden("invalid refresh token".to_string())
+            }
+        }
+    }
+}
+
+#[cfg(feature = "zerver")]
+impl From<InvalidRefreshSession> for ApiError {
+    fn from(value: InvalidRefreshSession) -> Self {
+        match value {
+            InvalidRefreshSession::UserId(_) => {
+                Self::UnprocessableEntity("invalid user id".to_string())
+            }
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct HttpRefreshSession {
+    user_id: String,
+    refresh_token: String,
+}
+
+impl HttpRefreshSession {
+    pub fn new(user_id: &str, refresh_token: &str) -> Self {
+        Self {
+            user_id: user_id.to_string(),
+            refresh_token: refresh_token.to_string(),
+        }
+    }
+}
+
+impl From<RefreshSession> for HttpRefreshSession {
+    fn from(value: RefreshSession) -> Self {
+        Self {
+            user_id: value.user_id.to_string(),
+            refresh_token: value.refresh_token,
+        }
+    }
+}
+
+#[cfg(feature = "zerver")]
+impl TryFrom<HttpRefreshSession> for RefreshSession {
+    type Error = InvalidRefreshSession;
+    fn try_from(value: HttpRefreshSession) -> Result<Self, Self::Error> {
+        Self::new(&value.user_id, &value.refresh_token)
+    }
+}
+
+#[cfg(feature = "zerver")]
+pub async fn refresh_session<AS, US, HS, CS, DS>(
+    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    Json(body): Json<HttpRefreshSession>,
+) -> Result<(StatusCode, Json<Session>), ApiError>
+where
+    AS: AuthService,
+    US: UserService,
+    HS: HealthService,
+    CS: CardService,
+    DS: DeckService,
+{
+    let request = RefreshSession::new(&body.user_id, &body.refresh_token)?;
+
+    state
+        .auth_service
+        .refresh_session(&request)
         .await
         .map_err(ApiError::from)
         .map(|response| (StatusCode::OK, response.into()))
@@ -213,7 +359,8 @@ impl From<ChangePasswordError> for ApiError {
             ChangePasswordError::UserNotFound => {
                 Self::UnprocessableEntity("user not found".to_string())
             }
-            e => e.log_500(),
+            ChangePasswordError::Database(e) => e.log_500(),
+            ChangePasswordError::AuthenticateUserError(e) => ApiError::from(e),
         }
     }
 }
@@ -225,7 +372,7 @@ impl From<InvalidChangePassword> for ApiError {
             InvalidChangePassword::Password(e) => {
                 Self::UnprocessableEntity(format!("invalid password {}", e))
             }
-            e => e.log_500(),
+            InvalidChangePassword::FailedPasswordHash(e) => e.log_500(),
         }
     }
 }
@@ -277,7 +424,8 @@ impl From<ChangeUsernameError> for ApiError {
     fn from(value: ChangeUsernameError) -> Self {
         match value {
             ChangeUsernameError::UserNotFound => Self::NotFound("user not found".to_string()),
-            e => e.log_500(),
+            ChangeUsernameError::Database(e) => e.log_500(),
+            ChangeUsernameError::UserFromDb(e) => e.log_500(),
         }
     }
 }
@@ -339,7 +487,8 @@ impl From<ChangeEmailError> for ApiError {
     fn from(value: ChangeEmailError) -> Self {
         match value {
             ChangeEmailError::UserNotFound => Self::NotFound("user not found".to_string()),
-            e => e.log_500(),
+            ChangeEmailError::Database(e) => e.log_500(),
+            ChangeEmailError::UserFromDb(e) => e.log_500(),
         }
     }
 }
@@ -401,7 +550,7 @@ impl From<DeleteUserError> for ApiError {
     fn from(value: DeleteUserError) -> Self {
         match value {
             DeleteUserError::NotFound => Self::NotFound("user not found".to_string()),
-            e => e.log_500(),
+            DeleteUserError::Database(e) => e.log_500(),
         }
     }
 }

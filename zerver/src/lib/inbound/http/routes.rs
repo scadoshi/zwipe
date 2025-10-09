@@ -37,6 +37,8 @@ where
     CS: CardService,
     DS: DeckService,
 {
+    use crate::inbound::http::handlers::auth::refresh_session;
+
     Router::new()
         .route("/", get(root))
         .nest(
@@ -51,7 +53,8 @@ where
                 "/auth",
                 Router::new()
                     .route("/register", post(register_user))
-                    .route("/login", post(authenticate_user)),
+                    .route("/login", post(authenticate_user))
+                    .route("/refresh", post(refresh_session)),
             ),
         )
 }
@@ -71,6 +74,10 @@ pub fn register_route() -> String {
 
 pub fn login_route() -> String {
     "/api/auth/login".to_string()
+}
+
+pub fn refresh_session_route() -> String {
+    "/api/auth/refresh".to_string()
 }
 
 // actual routing
