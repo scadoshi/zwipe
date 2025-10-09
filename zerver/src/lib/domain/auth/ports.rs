@@ -3,8 +3,10 @@ use std::future::Future;
 use crate::domain::{
     auth::models::{
         access_token::JwtSecret,
+        refresh_token::RefreshToken,
         session::{
-            CreateSession, CreateSessionError, RefreshSession, RefreshSessionError, RevokeSessions,
+            CreateSession, CreateSessionError, DeleteExpiredSessionsError,
+            EnforceSessionMaximumError, RefreshSession, RefreshSessionError, RevokeSessions,
             RevokeSessionsError, Session,
         },
         AuthenticateUser, AuthenticateUserError, ChangeEmail, ChangeEmailError, ChangePassword,
@@ -21,15 +23,24 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
         request: &RegisterUser,
     ) -> impl Future<Output = Result<User, RegisterUserError>> + Send;
 
-    fn create_session(
+    fn create_refresh_token(
         &self,
         request: &CreateSession,
-    ) -> impl Future<Output = Result<Session, CreateSessionError>> + Send;
+    ) -> impl Future<Output = Result<RefreshToken, CreateSessionError>> + Send;
 
-    fn refresh_session(
+    fn enforce_session_maximum(
+        &self,
+        request: &CreateSession,
+    ) -> impl Future<Output = Result<(), EnforceSessionMaximumError>> + Send;
+
+    fn delete_expired_tokens(
+        &self,
+    ) -> impl Future<Output = Result<(), DeleteExpiredSessionsError>> + Send;
+
+    fn use_refresh_token(
         &self,
         request: &RefreshSession,
-    ) -> impl Future<Output = Result<Session, RefreshSessionError>> + Send;
+    ) -> impl Future<Output = Result<RefreshToken, RefreshSessionError>> + Send;
 
     fn revoke_sessions(
         &self,
