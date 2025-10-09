@@ -1,3 +1,6 @@
+use crate::domain::deck::models::deck_card::DeckCard;
+#[cfg(feature = "zerver")]
+use crate::domain::deck::models::deck_card::GetDeckCardError;
 #[cfg(feature = "zerver")]
 use axum::{
     extract::{Path, State},
@@ -5,8 +8,6 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
-
-use crate::domain::deck::models::deck_card::DeckCard;
 
 #[cfg(feature = "zerver")]
 use crate::{
@@ -69,7 +70,9 @@ impl From<CreateDeckCardError> for ApiError {
             CreateDeckCardError::Duplicate => {
                 Self::UnprocessableEntity("card and deck combination already exist".to_string())
             }
-            e => e.log_500(),
+            CreateDeckCardError::Database(e) => e.log_500(),
+            CreateDeckCardError::DeckCardFromDb(e) => e.log_500(),
+            CreateDeckCardError::GetDeckProfileError(e) => ApiError::from(e),
         }
     }
 }
@@ -130,6 +133,21 @@ where
         .map(|deck_card| (StatusCode::CREATED, Json(deck_card.into())))
 }
 
+// =====
+//  get
+// =====
+
+#[cfg(feature = "zerver")]
+impl From<GetDeckCardError> for ApiError {
+    fn from(value: GetDeckCardError) -> Self {
+        match value {
+            GetDeckCardError::NotFound => Self::NotFound("deck card not found".to_string()),
+            GetDeckCardError::Database(e) => e.log_500(),
+            GetDeckCardError::DeckCardFromDb(e) => e.log_500(),
+        }
+    }
+}
+
 // ========
 //  update
 // ========
@@ -144,7 +162,9 @@ impl From<UpdateDeckCardError> for ApiError {
             UpdateDeckCardError::NotFound => {
                 Self::UnprocessableEntity("deck card not found".to_string())
             }
-            e => e.log_500(),
+            UpdateDeckCardError::Database(e) => e.log_500(),
+            UpdateDeckCardError::DeckCardFromDb(e) => e.log_500(),
+            UpdateDeckCardError::GetDeckProfileError(e) => ApiError::from(e),
         }
     }
 }
@@ -212,7 +232,8 @@ impl From<DeleteDeckCardError> for ApiError {
             DeleteDeckCardError::NotFound => {
                 Self::UnprocessableEntity("deck card not found".to_string())
             }
-            e => e.log_500(),
+            DeleteDeckCardError::Database(e) => e.log_500(),
+            DeleteDeckCardError::GetDeckProfileError(e) => ApiError::from(e),
         }
     }
 }

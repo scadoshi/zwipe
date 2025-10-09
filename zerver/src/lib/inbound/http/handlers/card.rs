@@ -35,18 +35,32 @@ use serde::Deserialize;
 // =====
 
 #[cfg(feature = "zerver")]
+impl From<GetCardProfileError> for ApiError {
+    fn from(value: GetCardProfileError) -> Self {
+        match value {
+            GetCardProfileError::NotFound => Self::NotFound("card profile not found".to_string()),
+            GetCardProfileError::CardProfileFromDb(e) => e.log_500(),
+            GetCardProfileError::Database(e) => e.log_500(),
+        }
+    }
+}
+
+#[cfg(feature = "zerver")]
+impl From<GetScryfallDataError> for ApiError {
+    fn from(value: GetScryfallDataError) -> Self {
+        match value {
+            GetScryfallDataError::NotFound => Self::NotFound("scryfall data not found".to_string()),
+            GetScryfallDataError::Database(e) => e.log_500(),
+        }
+    }
+}
+
+#[cfg(feature = "zerver")]
 impl From<GetCardError> for ApiError {
     fn from(value: GetCardError) -> Self {
         match value {
-            GetCardError::GetCardProfileError(GetCardProfileError::NotFound) => {
-                Self::NotFound("card profile not found".to_string())
-            }
-
-            GetCardError::GetScryfallDataError(GetScryfallDataError::NotFound) => {
-                Self::NotFound("scryfall data not found".to_string())
-            }
-
-            e => e.log_500(),
+            GetCardError::GetCardProfileError(e) => ApiError::from(e),
+            GetCardError::GetScryfallDataError(e) => ApiError::from(e),
         }
     }
 }

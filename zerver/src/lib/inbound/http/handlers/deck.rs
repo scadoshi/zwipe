@@ -1,37 +1,17 @@
-#[cfg(feature = "zerver")]
-use axum::{
-    extract::{Path, State},
-    http::StatusCode,
-    Json,
-};
-use serde::{Deserialize, Serialize};
-
 use crate::domain::deck::models::deck::DeckProfile;
-
 #[cfg(feature = "zerver")]
 use crate::domain::deck::models::deck::{
     Deck, InvalidCreateDeckProfile, InvalidGetDeck, InvalidUpdateDeckProfile,
 };
-
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
         auth::ports::AuthService,
-        card::{
-            models::{
-                card_profile::GetCardProfileError, scryfall_data::GetScryfallDataError,
-                GetCardError,
-            },
-            ports::CardService,
-        },
+        card::ports::CardService,
         deck::{
-            models::{
-                deck::{
-                    CreateDeckProfile, CreateDeckProfileError, DeleteDeck, DeleteDeckError,
-                    GetDeck, GetDeckError, GetDeckProfileError, UpdateDeckProfile,
-                    UpdateDeckProfileError,
-                },
-                deck_card::GetDeckCardError,
+            models::deck::{
+                CreateDeckProfile, CreateDeckProfileError, DeleteDeck, DeleteDeckError, GetDeck,
+                GetDeckError, GetDeckProfileError, UpdateDeckProfile, UpdateDeckProfileError,
             },
             ports::DeckService,
         },
@@ -40,6 +20,13 @@ use crate::{
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
 };
+#[cfg(feature = "zerver")]
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    Json,
+};
+use serde::{Deserialize, Serialize};
 
 // ============
 //  http types
@@ -93,7 +80,8 @@ impl From<CreateDeckProfileError> for ApiError {
             CreateDeckProfileError::Duplicate => Self::UnprocessableEntity(
                 "deck with name and user combination already exists".to_string(),
             ),
-            e => e.log_500(),
+            CreateDeckProfileError::Database(e) => e.log_500(),
+            CreateDeckProfileError::DeckFromDb(e) => e.log_500(),
         }
     }
 }
@@ -150,42 +138,27 @@ where
 // =====
 
 #[cfg(feature = "zerver")]
+impl From<GetDeckProfileError> for ApiError {
+    fn from(value: GetDeckProfileError) -> Self {
+        match value {
+            GetDeckProfileError::NotFound => Self::NotFound("deck profile not found".to_string()),
+            GetDeckProfileError::DeckNotOwnedByUser => {
+                Self::Forbidden("deck does not belong to the requesting user".to_string())
+            }
+            GetDeckProfileError::DeckProfileFromDb(e) => e.log_500(),
+            GetDeckProfileError::Database(e) => e.log_500(),
+        }
+    }
+}
+
+#[cfg(feature = "zerver")]
 impl From<GetDeckError> for ApiError {
     fn from(value: GetDeckError) -> Self {
         match value {
-            GetDeckError::GetCardError(gce) => match gce {
-                GetCardError::GetCardProfileError(gcpe) => match gcpe {
-                    GetCardProfileError::NotFound => {
-                        Self::NotFound("card profile not found".to_string())
-                    }
-                    e => e.log_500(),
-                },
-                GetCardError::GetScryfallDataError(gsfde) => match gsfde {
-                    GetScryfallDataError::NotFound => {
-                        Self::NotFound("scryfall data not found".to_string())
-                    }
-                    e => e.log_500(),
-                },
-            },
-
-            GetDeckError::GetCardProfileError(gcpe) => match gcpe {
-                GetCardProfileError::NotFound => {
-                    Self::NotFound("card profile not found".to_string())
-                }
-                e => e.log_500(),
-            },
-
-            GetDeckError::GetDeckCardError(gdce) => match gdce {
-                GetDeckCardError::NotFound => Self::NotFound("deck card not found".to_string()),
-                e => e.log_500(),
-            },
-
-            GetDeckError::GetDeckProfileError(gdpe) => match gdpe {
-                GetDeckProfileError::NotFound => {
-                    Self::NotFound("deck profile not found".to_string())
-                }
-                e => e.log_500(),
-            },
+            GetDeckError::GetCardError(e) => ApiError::from(e),
+            GetDeckError::GetDeckCardError(e) => ApiError::from(e),
+            GetDeckError::GetCardProfileError(e) => ApiError::from(e),
+            GetDeckError::GetDeckProfileError(e) => ApiError::from(e),
         }
     }
 }
@@ -239,7 +212,9 @@ impl From<UpdateDeckProfileError> for ApiError {
             UpdateDeckProfileError::Duplicate => Self::UnprocessableEntity(
                 "deck with name and user combination already exists".to_string(),
             ),
-            e => e.log_500(),
+            UpdateDeckProfileError::GetDeckProfileError(e) => ApiError::from(e),
+            UpdateDeckProfileError::DeckFromDb(e) => e.log_500(),
+            UpdateDeckProfileError::Database(e) => e.log_500(),
         }
     }
 }
@@ -307,7 +282,7 @@ impl From<DeleteDeckError> for ApiError {
     fn from(value: DeleteDeckError) -> Self {
         match value {
             DeleteDeckError::NotFound => Self::NotFound("deck not found".to_string()),
-            e => e.log_500(),
+            DeleteDeckError::Database(e) => e.log_500(),
         }
     }
 }
