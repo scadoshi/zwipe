@@ -13,27 +13,27 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Refactored AccessToken architecture and updated service layer session orchestration for register/authenticate flows
+**Last Updated**: Completed session service layer with atomic transaction patterns, fixed critical registration atomicity bug
 
-**Current Focus**: Complete remaining service session methods, update middleware and HTTP handlers for new AccessToken structure
+**Current Focus**: Update HTTP inbound adapters (middleware + handlers) for new Session-based responses
 
-**Recent Achievement**: Refactored AccessToken to match RefreshToken pattern - now self-contains `jwt: Jwt` + `expires_at: i64` with `generate()` and `validate()` methods. Added `username` field to UserClaims for complete JWT identity. Updated all 20+ tests in access_token.rs module for new structure. Updated `register_user()` and `authenticate_user()` in AuthService to orchestrate AccessToken generation + RefreshToken repository creation, returning complete Session struct. Session architecture now consistent across both token types with self-contained expiration.
+**Recent Achievement**: Completed all three session service methods (create_session, refresh_session, revoke_sessions) with proper AuthService<AR, UR> dual-generic orchestration pattern. Fixed critical atomicity bug in register_user - created atomic create_user_and_refresh_token repository method preventing orphaned user accounts. Built reusable transaction helper pattern (create_refresh_token_with_tx, enforce_refresh_token_max_with_tx). Simplified session request types removing unnecessary wrappers. Audited all service layers confirming proper atomicity. Updated AccessToken.generate() to accept User struct directly. Service layer cleanly orchestrates UserRepository + AuthRepository + JWT generation.
 
-**Current Decision**: AccessToken refactored to wrap Jwt newtype (format validation) with expires_at field for consistency with RefreshToken. Service layer orchestrates: generate AccessToken via JWT library, create RefreshToken via repository, return Session with both + User. Middleware needs update to construct AccessToken from bearer string. HTTP handlers need update to return Session struct. Frontend will deserialize Session with both tokens for secure storage.
+**Current Decision**: Session service layer complete with proper separation: repositories handle atomic database operations (using transaction helpers), services orchestrate cross-domain business logic, JWT generation stays stateless. Tuple returns (User, RefreshToken) maintain atomicity when operations span multiple tables. Next step: update HTTP layer (middleware + handlers) to work with new Session structure.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Service Session Methods** - Implement create_session, refresh_session, revoke_sessions orchestration logic
-2. **Middleware Update** - Modify AuthenticatedUser extractor for AccessToken construction from JWT string
-3. **HTTP Handler Updates** - Modify register/login handlers to return Session instead of old response structure
-4. **AccessToken Deserialization** - Add Deserialize derive to enable frontend Session parsing
-5. **Session Response Types** - Remove old success types, migrate to Session-based responses
+1. **Middleware Update** - Modify AuthenticatedUser extractor to construct AccessToken from bearer JWT string
+2. **HTTP Handler Updates** - Update register/login handlers to return Session struct instead of old response types
+3. **Response Type Cleanup** - Remove RegisterUserSuccess/AuthenticateUserSuccess types, standardize on Session
+4. **Handler Testing** - Verify Session serialization works correctly for frontend consumption
+5. **Error Response Verification** - Ensure session error types map correctly to HTTP status codes
 
 ### 🤔 Next Immediate Priorities (Top 5)
-1. **Frontend Session Integration** - Update AuthClient to handle Session responses with both tokens
-2. **Token Storage** - Implement use_persistent for secure iOS Keychain/Android KeyStore storage
-3. **Auto-Login Flow** - Loading screen that validates stored session on app start and routes appropriately
-4. **401 Refresh Pattern** - Automatic token refresh and request retry on expired access tokens
-5. **Global Auth State** - Shared authentication status and session data across all components
+1. **Frontend Session Integration** - Update AuthClient to deserialize Session responses with both tokens
+2. **Token Storage Implementation** - Implement use_persistent for secure iOS Keychain/Android KeyStore storage
+3. **Auto-Login Flow** - Loading screen that validates stored tokens on app start and routes appropriately
+4. **401 Refresh Pattern** - HTTP interceptor for automatic token refresh and request retry on expired access tokens
+5. **Global Auth State** - Shared authentication context and session data across all components
 
 ---
 
@@ -111,6 +111,13 @@ alwaysApply: true
 - **Session Maximum Enforcement**: SQL window functions maintaining 5 token limit per user with automatic cleanup of oldest tokens
 - **Token Validation Logic**: Expiration checking, ownership verification, revocation status in use_refresh_token method
 - **Expired Token Cleanup**: delete_expired_tokens method for scheduled cleanup job in sync binary (removes tokens where expires_at < NOW())
+- **Session Service Layer**: Complete implementation of create_session, refresh_session, revoke_sessions with cross-domain orchestration
+- **Atomic Registration**: create_user_and_refresh_token wraps user + token creation in single transaction preventing orphaned accounts
+- **Transaction Helper Pattern**: create_refresh_token_with_tx and enforce_refresh_token_max_with_tx reused across repository methods
+- **Dual-Generic AuthService**: AuthService<AR: AuthRepository, UR: UserRepository> pattern enabling cross-domain data composition
+- **Service Atomicity Audit**: Confirmed all service layers properly delegate atomic operations to repositories
+- **Request Type Simplification**: Removed unnecessary wrappers (CreateSession/RevokeSessions use Uuid directly)
+- **AccessToken API Update**: generate() method now accepts User struct for cleaner service layer code
 
 ---
 
@@ -158,6 +165,11 @@ alwaysApply: true
 - **Token Rotation Security**: Delete-then-create pattern in use_refresh_token ensures old tokens invalidated atomically
 - **Window Function Enforcement**: SQL-based session maximum using ROW_NUMBER() OVER(PARTITION BY user_id) for automatic cleanup
 - **Expired Token Cleanup Job**: delete_expired_tokens repository method for scheduled cleanup via sync binary
+- **Transaction Helper Pattern Discovery**: Built reusable create_refresh_token_with_tx and enforce_refresh_token_max_with_tx for atomic operations
+- **Atomicity Bug Fix**: Discovered and fixed critical race condition in register_user where user creation could succeed but token creation fail
+- **Cross-Repository Orchestration**: Implemented AuthService<AR, UR> dual-generic pattern for clean user data + token operation coordination
+- **Service Layer Atomicity Audit**: Comprehensive review of all service implementations confirming proper separation of concerns
+- **Tuple Return Pattern**: Using (User, RefreshToken) returns to maintain atomicity when operations span auth + user tables
 
 ### 💾 Database Evolution & Challenges
 - **Diesel to SQLx Migration**: Complete transition from Diesel ORM to raw SQL control with custom type integration
