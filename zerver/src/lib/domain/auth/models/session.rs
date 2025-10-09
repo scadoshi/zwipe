@@ -1,6 +1,8 @@
 use crate::domain::auth::models::access_token::AccessToken;
 use crate::domain::auth::models::refresh_token::RefreshToken;
 use crate::domain::user::models::User;
+#[cfg(feature = "zerver")]
+use crate::domain::{auth::models::access_token::InvalidJwt, user::models::GetUserError};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use thiserror::Error;
@@ -33,6 +35,24 @@ pub enum CreateSessionError {
     Database(anyhow::Error),
     #[error(transparent)]
     EnforceSessionMaximumError(EnforceSessionMaximumError),
+    #[error(transparent)]
+    GetUserError(GetUserError),
+    #[error(transparent)]
+    InvalidJwt(InvalidJwt),
+}
+
+#[cfg(feature = "zerver")]
+impl From<InvalidJwt> for CreateSessionError {
+    fn from(value: InvalidJwt) -> Self {
+        Self::InvalidJwt(value)
+    }
+}
+
+#[cfg(feature = "zerver")]
+impl From<GetUserError> for CreateSessionError {
+    fn from(value: GetUserError) -> Self {
+        Self::GetUserError(value)
+    }
 }
 
 #[cfg(feature = "zerver")]
@@ -71,6 +91,33 @@ pub enum RefreshSessionError {
     Revoked,
     #[error("refresh token does not belong to the requesting user")]
     Forbidden,
+    #[error(transparent)]
+    GetUserError(GetUserError),
+    #[error(transparent)]
+    InvalidJwt(InvalidJwt),
+    #[error(transparent)]
+    EnforceSessionMaximumError(EnforceSessionMaximumError),
+}
+
+#[cfg(feature = "zerver")]
+impl From<EnforceSessionMaximumError> for RefreshSessionError {
+    fn from(value: EnforceSessionMaximumError) -> Self {
+        Self::EnforceSessionMaximumError(value)
+    }
+}
+
+#[cfg(feature = "zerver")]
+impl From<InvalidJwt> for RefreshSessionError {
+    fn from(value: InvalidJwt) -> Self {
+        Self::InvalidJwt(value)
+    }
+}
+
+#[cfg(feature = "zerver")]
+impl From<GetUserError> for RefreshSessionError {
+    fn from(value: GetUserError) -> Self {
+        Self::GetUserError(value)
+    }
 }
 
 #[cfg(feature = "zerver")]
@@ -115,35 +162,25 @@ pub enum DeleteExpiredSessionsError {
 // =========
 
 #[cfg(feature = "zerver")]
-#[derive(Debug, Clone)]
-pub struct CreateSession(Uuid);
-
-#[cfg(feature = "zerver")]
-impl CreateSession {
-    pub fn user_id(&self) -> &Uuid {
-        &self.0
+impl FromStr for CreateSession {
+    type Err = InvalidCreateSession;
+    fn from_str(s: &str) -> Result<Self, InvalidCreateSession> {
+        Ok(Self {
+            user_id: Uuid::try_parse(s)?,
+        })
     }
 }
 
 #[cfg(feature = "zerver")]
-impl FromStr for CreateSession {
-    type Err = InvalidCreateSession;
-    fn from_str(s: &str) -> Result<Self, InvalidCreateSession> {
-        Ok(Self(Uuid::try_parse(s)?))
-    }
+#[derive(Debug, Clone)]
+pub struct CreateSession {
+    pub user_id: Uuid,
 }
 
 #[cfg(feature = "zerver")]
 impl From<Uuid> for CreateSession {
     fn from(value: Uuid) -> Self {
-        Self(value)
-    }
-}
-
-#[cfg(feature = "zerver")]
-impl From<&RefreshSession> for CreateSession {
-    fn from(value: &RefreshSession) -> Self {
-        Self(value.user_id.to_owned())
+        Self { user_id: value }
     }
 }
 
@@ -167,19 +204,15 @@ impl RefreshSession {
 }
 
 #[derive(Debug, Clone)]
-pub struct RevokeSessions(Uuid);
-
-impl RevokeSessions {
-    pub fn user_id(&self) -> &Uuid {
-        &self.0
-    }
+pub struct RevokeSessions {
+    pub user_id: Uuid,
 }
 
 impl FromStr for RevokeSessions {
     type Err = InvalidRevokeSessions;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let user_id = Uuid::try_parse(s)?;
-        Ok(Self(user_id))
+        Ok(Self { user_id })
     }
 }
 
