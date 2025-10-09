@@ -1,8 +1,11 @@
 use crate::domain::{
     auth::{
         models::{
-            access_token::{AccessToken, AccessTokenCreationResponse, JwtSecret},
-            session::Session,
+            access_token::{AccessToken, JwtSecret},
+            session::{
+                CreateSession, CreateSessionError, RefreshSessionError, RevokeSessionsError,
+                Session,
+            },
             AuthenticateUser, AuthenticateUserError, ChangeEmail, ChangeEmailError, ChangePassword,
             ChangePasswordError, ChangeUsername, ChangeUsernameError, DeleteUser, DeleteUserError,
             RegisterUser, RegisterUserError, UserWithPasswordHash,
@@ -34,16 +37,20 @@ impl<R: AuthRepository + Clone> AuthService for Service<R> {
     async fn register_user(&self, request: &RegisterUser) -> Result<Session, RegisterUserError> {
         let user = self.repo.create_user_with_password_hash(request).await?;
 
-        let AccessTokenCreationResponse {
-            access_token,
-            expires_at,
-        } = AccessToken::generate(user.id, user.email.clone(), &self.jwt_secret)
-            .map_err(|e| RegisterUserError::FailedAccessToken(anyhow!("{e}")))?;
+        let access_token = AccessToken::generate(
+            user.id,
+            user.username.clone(),
+            user.email.clone(),
+            &self.jwt_secret,
+        )
+        .map_err(|e| RegisterUserError::FailedAccessToken(anyhow!("{e}")))?;
+
+        let refresh_token = self.repo.create_refresh_token(&user.id.into()).await?;
 
         Ok(Session {
             user,
             access_token,
-            expires_at,
+            refresh_token,
         })
     }
 
@@ -66,37 +73,38 @@ impl<R: AuthRepository + Clone> AuthService for Service<R> {
             return Err(AuthenticateUserError::InvalidPassword);
         }
 
-        let AccessTokenCreationResponse {
-            access_token,
-            expires_at,
-        } = AccessToken::generate(user.id, user.email.clone(), &self.jwt_secret)
-            .map_err(|e| AuthenticateUserError::FailedAccessToken(anyhow!("{e}")))?;
+        let access_token = AccessToken::generate(
+            user.id,
+            user.username.clone(),
+            user.email.clone(),
+            &self.jwt_secret,
+        )
+        .map_err(|e| AuthenticateUserError::FailedAccessToken(anyhow!("{e}")))?;
+
+        let refresh_token = self.repo.create_refresh_token(&user.id.into()).await?;
 
         Ok(Session {
             user,
             access_token,
-            expires_at,
+            refresh_token,
         })
     }
 
-    async fn create_session(
-        &self,
-        request: &super::models::session::CreateSession,
-    ) -> Result<Session, super::models::session::CreateSessionError> {
+    async fn create_session(&self, request: &CreateSession) -> Result<Session, CreateSessionError> {
         todo!()
     }
 
     async fn refresh_session(
         &self,
-        request: &super::models::session::CreateSession,
-    ) -> Result<Session, super::models::session::RefreshSessionError> {
+        request: &CreateSession,
+    ) -> Result<Session, RefreshSessionError> {
         todo!()
     }
 
     async fn revoke_sessions(
         &self,
-        request: &super::models::session::CreateSession,
-    ) -> Result<Session, super::models::session::RevokeSessionsError> {
+        request: &CreateSession,
+    ) -> Result<Session, RevokeSessionsError> {
         todo!()
     }
 
