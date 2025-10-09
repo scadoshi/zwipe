@@ -89,11 +89,11 @@ impl UserRepository for Postgres {
     // =====
     //  get
     // =====
-    async fn get_user(&self, request: &GetUser) -> Result<User, GetUserError> {
+    async fn get_user(&self, user_id: &Uuid) -> Result<User, GetUserError> {
         let database_user = query_as!(
             DatabaseUser,
             "SELECT id, username, email FROM users WHERE id = $1",
-            request.id()
+            user_id
         )
         .fetch_one(&self.pool)
         .await?;

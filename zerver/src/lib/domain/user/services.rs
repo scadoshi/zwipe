@@ -24,6 +24,6 @@ where
 
 impl<R: UserRepository> UserService for Service<R> {
     async fn get_user(&self, request: &GetUser) -> Result<User, GetUserError> {
-        self.repo.get_user(request).await
+        self.repo.get_user(&request.user_id).await
     }
 }

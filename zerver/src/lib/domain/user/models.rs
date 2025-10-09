@@ -95,21 +95,21 @@ impl<'de> Deserialize<'de> for Username {
 // ==========
 
 #[derive(Debug, Clone)]
-pub struct GetUser(Uuid);
+pub struct GetUser {
+    pub user_id: Uuid,
+}
 
 impl GetUser {
     pub fn new(id: &str) -> Result<Self, uuid::Error> {
-        Ok(Self(Uuid::try_parse(id)?))
-    }
-
-    pub fn id(&self) -> Uuid {
-        self.0
+        Ok(Self {
+            user_id: Uuid::try_parse(id)?,
+        })
     }
 }
 
 impl From<Uuid> for GetUser {
     fn from(value: Uuid) -> Self {
-        Self(value)
+        Self { user_id: value }
     }
 }
 
@@ -122,4 +122,14 @@ pub struct User {
     pub id: Uuid,
     pub username: Username,
     pub email: EmailAddress,
+}
+
+impl User {
+    pub fn new(id: Uuid, username: Username, email: EmailAddress) -> Self {
+        Self {
+            id,
+            username,
+            email,
+        }
+    }
 }
