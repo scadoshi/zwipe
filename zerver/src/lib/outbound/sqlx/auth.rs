@@ -192,7 +192,10 @@ impl TryFrom<DatabaseUserWithPasswordHash> for UserWithPasswordHash {
 
 #[derive(Debug, Clone, FromRow)]
 pub struct DatabaseRefreshToken {
-    id: i32, user_id: Uuid, value_hash: String, created_at: NaiveDateTime, expires_at: NaiveDateTime, revoked: bool
+    id: i32, 
+    user_id: Uuid, 
+    expires_at: NaiveDateTime, 
+    revoked: bool,
 }
 
 // ==========
@@ -205,7 +208,7 @@ async fn create_refresh_token_with_tx(user_id: &Uuid, tx:  &mut PgTransaction<'_
     let refresh_token = RefreshToken::generate();
     let _result = query_as!(
         DatabaseRefreshToken,
-        "INSERT INTO refresh_tokens (user_id, value_hash, expires_at) VALUES ($1, $2, $3) RETURNING *",
+        "INSERT INTO refresh_tokens (user_id, value_hash, expires_at) VALUES ($1, $2, $3) RETURNING id, user_id, expires_at, revoked",
         user_id, 
         refresh_token.sha256_hash(), 
         refresh_token.expires_at
@@ -384,7 +387,7 @@ impl AuthRepository for Postgres {
 
         let existing = query_as!(
             DatabaseRefreshToken, 
-            "SELECT * FROM refresh_tokens WHERE value_hash = $1",
+            "SELECT id, user_id, expires_at, revoked FROM refresh_tokens WHERE value_hash = $1",
             request.refresh_token.sha256_hash()
         ).fetch_one(&mut *tx).await?;
 

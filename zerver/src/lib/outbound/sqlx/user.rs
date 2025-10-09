@@ -4,7 +4,7 @@ use sqlx_macros::FromRow;
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::domain::user::models::{GetUser, GetUserError, InvalidUsername, User, Username};
+use crate::domain::user::models::{GetUserError, InvalidUsername, User, Username};
 use crate::domain::user::ports::UserRepository;
 use crate::outbound::sqlx::postgres::Postgres;
 
