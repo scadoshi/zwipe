@@ -19,7 +19,7 @@ async fn run() -> anyhow::Result<()> {
         .with_max_level(tracing::Level::from_str(&config.rust_log)?)
         .init();
     let db = Postgres::new(&config.database_url).await?;
-    let auth_service = auth::services::Service::new(db.clone(), config.jwt_secret);
+    let auth_service = auth::services::Service::new(db.clone(), db.clone(), config.jwt_secret);
     let user_service = user::services::Service::new(db.clone());
     let health_service = health::services::Service::new(db.clone());
     let card_service = card::services::Service::new(db.clone());
