@@ -15,22 +15,22 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Completed SQLx session repository implementation with refresh token rotation and validation
+**Last Updated**: Refactored AccessToken architecture and updated auth service layer with session orchestration
 
-**Next Learning Focus**: Service layer token orchestration, HTTP handler session endpoints, AccessToken refactoring to match RefreshToken pattern
+**Next Learning Focus**: Complete service layer session methods (create_session, refresh_session, revoke_sessions), update middleware for new AccessToken structure, update HTTP handlers for Session responses
 
-**Recent Achievement**: Built complete SQLx repository layer for session management. Implemented `create_refresh_token` with SHA-256 hashing for secure database storage (64-char hex strings). Built `use_refresh_token` with atomic token rotation (delete old, create new in single transaction), expiration validation (14-day lifespan), ownership verification (user_id matching), and revocation checking. Implemented `revoke_sessions` for multi-device logout. Created `enforce_session_maximum` using SQL window functions (ROW_NUMBER() OVER PARTITION BY) to maintain 5-token limit with automatic oldest-token cleanup. Added `delete_expired_tokens` for scheduled cleanup job in sync binary (WHERE expires_at < NOW()). Refactored RefreshToken to self-contain value + expires_at fields for tight coupling. Created `Sha256Hash` trait for flexible hashing of RefreshToken and String types. Designed comprehensive error system (NotFound, Expired, Revoked, Forbidden, Database) with proper SQLx error mapping.
+**Recent Achievement**: Refactored AccessToken to match RefreshToken pattern - now self-contains `jwt: Jwt` + `expires_at: i64` fields with `generate()` and `validate()` methods. Added `username` to UserClaims for complete user identity in JWT. Updated all 20+ tests in access_token.rs for new structure. Updated `register_user()` and `authenticate_user()` service methods to orchestrate AccessToken generation + RefreshToken creation, returning complete Session struct. Session architecture now consistent: both tokens self-contained with expiration, service layer coordinates generation, repository handles persistence.
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **AccessToken Refactoring** - Self-contain value + expires_at fields to match RefreshToken consistency pattern
-2. **Transaction Nesting Fix** - Pass &mut tx to enforce_session_maximum to avoid nested transaction bug
-3. **Service Token Orchestration** - Coordinating AccessToken generation + RefreshToken creation in service methods
-4. **Session HTTP Handlers** - Building /api/auth/refresh endpoint and updating existing auth endpoints
-5. **Frontend Session Integration** - Updating AuthClient to handle Session responses with both tokens
+1. **Service Session Methods** - Implement create_session, refresh_session, revoke_sessions orchestration in AuthService
+2. **Middleware AccessToken Update** - Modify AuthenticatedUser extractor for new AccessToken::from_str pattern (no more ::new)
+3. **HTTP Handler Session Updates** - Modify register/login handlers to return Session structure instead of old response format
+4. **Session Deserialization** - Add Deserialize trait to AccessToken for frontend Session parsing
+5. **Frontend Session Integration** - Update AuthClient to handle Session responses with both tokens
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Service Orchestration Pattern** - Best way to coordinate token generation, repository calls, and Session building
-2. **HTTP Handler Session Updates** - How to modify existing register/login handlers to return Session instead of old structure
+1. **Session Method Orchestration** - How create_session/refresh_session should coordinate with repository methods
+2. **AccessToken Construction** - Best pattern for creating AccessToken from existing JWT string (validate-then-wrap vs parse directly)
 3. **Frontend Token Storage** - use_persistent API and secure storage implementation details for both tokens
 4. **Auto-Login UX** - Loading screen flow, token validation, routing decisions on app start
 5. **401 Refresh Pattern** - HTTP interceptor pattern for automatic token refresh and request retry

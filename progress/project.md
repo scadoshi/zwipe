@@ -13,27 +13,27 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Completed SQLx repository implementation for session management with refresh token rotation
+**Last Updated**: Refactored AccessToken architecture and updated service layer session orchestration for register/authenticate flows
 
-**Current Focus**: Building service orchestration layer and HTTP handlers for session endpoints
+**Current Focus**: Complete remaining service session methods, update middleware and HTTP handlers for new AccessToken structure
 
-**Recent Achievement**: Implemented complete SQLx repository layer for session management. Built `create_refresh_token` with SHA-256 token hashing for secure database storage. Implemented `use_refresh_token` with token rotation (delete old, create new), expiration validation, and ownership verification. Built `revoke_sessions` for user logout across all devices. Added `enforce_session_maximum` with SQL window functions to maintain max 5 tokens per user. Created `delete_expired_tokens` for scheduled cleanup job in sync binary. Refactored RefreshToken to self-contain value + expires_at fields (14-day lifespan) for tight coupling. Created `Sha256Hash` trait for flexible hashing. Designed comprehensive error mappings (NotFound, Expired, Revoked, Forbidden, Database). Repository layer is transaction-safe and production-ready.
+**Recent Achievement**: Refactored AccessToken to match RefreshToken pattern - now self-contains `jwt: Jwt` + `expires_at: i64` with `generate()` and `validate()` methods. Added `username` field to UserClaims for complete JWT identity. Updated all 20+ tests in access_token.rs module for new structure. Updated `register_user()` and `authenticate_user()` in AuthService to orchestrate AccessToken generation + RefreshToken repository creation, returning complete Session struct. Session architecture now consistent across both token types with self-contained expiration.
 
-**Current Decision**: Session-based authentication with rotating refresh tokens. Database stores SHA-256 hashed refresh tokens (opaque hex strings, not JWTs). Session response contains: User, AccessToken (JWT with 24hr exp), access_token_expires_at, RefreshToken (64-char hex string, 14-day exp), refresh_token_expires_at. Multi-device support via multiple refresh tokens per user (max 5). Refresh only on 401 for performance. Frontend will use use_persistent for iOS Keychain/Android KeyStore storage. Auto-login flow: check stored tokens → validate with backend → route appropriately.
+**Current Decision**: AccessToken refactored to wrap Jwt newtype (format validation) with expires_at field for consistency with RefreshToken. Service layer orchestrates: generate AccessToken via JWT library, create RefreshToken via repository, return Session with both + User. Middleware needs update to construct AccessToken from bearer string. HTTP handlers need update to return Session struct. Frontend will deserialize Session with both tokens for secure storage.
 
 ### 🎯 Currently Working On (Top 5)
-1. **AccessToken Refactoring** - Self-contain value + expires_at fields to match RefreshToken pattern
-2. **Transaction Nesting Fix** - Pass &mut tx to enforce_session_maximum to avoid nested transactions
-3. **Service Layer Implementation** - Orchestrate token generation + repository calls in AuthService methods
-4. **Session HTTP Handlers** - REST endpoints for /api/auth/refresh and update existing auth endpoints to return Session
-5. **Frontend Session Integration** - Update AuthClient to handle Session responses with both tokens
+1. **Service Session Methods** - Implement create_session, refresh_session, revoke_sessions orchestration logic
+2. **Middleware Update** - Modify AuthenticatedUser extractor for AccessToken construction from JWT string
+3. **HTTP Handler Updates** - Modify register/login handlers to return Session instead of old response structure
+4. **AccessToken Deserialization** - Add Deserialize derive to enable frontend Session parsing
+5. **Session Response Types** - Remove old success types, migrate to Session-based responses
 
 ### 🤔 Next Immediate Priorities (Top 5)
-1. **Auto-Login Flow** - Loading screen that validates stored session on app start and routes appropriately
-2. **401 Refresh Pattern** - Automatic token refresh and request retry on expired access tokens
-3. **Global Auth State** - Shared authentication status and session data across all components
-4. **Main App Landing Pages** - Deck browsing/management UI with swipe navigation
-5. **Card Display Components** - Render card data from backend search/deck endpoints
+1. **Frontend Session Integration** - Update AuthClient to handle Session responses with both tokens
+2. **Token Storage** - Implement use_persistent for secure iOS Keychain/Android KeyStore storage
+3. **Auto-Login Flow** - Loading screen that validates stored session on app start and routes appropriately
+4. **401 Refresh Pattern** - Automatic token refresh and request retry on expired access tokens
+5. **Global Auth State** - Shared authentication status and session data across all components
 
 ---
 
