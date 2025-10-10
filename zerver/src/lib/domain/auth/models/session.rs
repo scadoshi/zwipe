@@ -207,11 +207,23 @@ pub struct RevokeSessions {
     pub user_id: Uuid,
 }
 
+impl RevokeSessions {
+    pub fn new(user_id: Uuid) -> Self {
+        Self { user_id }
+    }
+}
+
 impl FromStr for RevokeSessions {
     type Err = InvalidRevokeSessions;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let user_id = Uuid::try_parse(s)?;
         Ok(Self { user_id })
+    }
+}
+
+impl From<Uuid> for RevokeSessions {
+    fn from(value: Uuid) -> Self {
+        Self::new(value)
     }
 }
 
