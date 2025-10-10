@@ -37,5 +37,6 @@ async fn run() -> anyhow::Result<()> {
         server_config,
     )
     .await?;
+    tracing::info!("running server on http://{}", config.bind_address);
     http_server.run().await
 }
