@@ -24,7 +24,11 @@ where
 {
     async fn check_sessions(&self, latest: &mut Option<NaiveDateTime>) -> anyhow::Result<()> {
         if latest.map_or(true, |d| d.was_a_week_ago()) {
+            tracing::info!(
+                "session clean up: attempting to delete expired refresh tokens from database"
+            );
             self.delete_expired_sessions().await?;
+            tracing::info!("session clean up completed");
             *latest = Some(Utc::now().naive_utc());
         }
         Ok(())
