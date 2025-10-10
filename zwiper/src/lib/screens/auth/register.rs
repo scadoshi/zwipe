@@ -60,8 +60,7 @@ pub fn Register(swipe_state: Signal<swipe::State>) -> Element {
                     Ok(request) => match register_user(request, &auth_client.read()).await {
                         Ok(s) => {
                             submission_error.set(None);
-                            println!("authenticated user => {:#?}", s.user);
-                            println!("access_token => {:?}", s.access_token)
+                            println!("session => {:#?}", s);
                         }
                         Err(e) => submission_error.set(Some(e.to_string())),
                     },
