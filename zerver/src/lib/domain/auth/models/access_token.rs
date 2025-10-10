@@ -1,6 +1,7 @@
 #[cfg(feature = "zerver")]
 use crate::domain::user::models::User;
 use crate::domain::user::models::Username;
+use chrono::NaiveDateTime;
 use email_address::EmailAddress;
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, str::FromStr};
@@ -142,23 +143,27 @@ impl<'de> Deserialize<'de> for Jwt {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AccessToken {
     pub jwt: Jwt,
-    pub expires_at: i64,
+    pub expires_at: NaiveDateTime,
 }
 
 #[cfg(feature = "zerver")]
 impl AccessToken {
-    pub fn generate(user: &User, secret: &JwtSecret) -> Result<AccessToken, InvalidJwt> {
-        use chrono::Utc;
+    pub fn new(jwt: Jwt, expires_at: NaiveDateTime) -> Self {
+        Self { jwt, expires_at }
+    }
 
-        let issued_at = Utc::now().timestamp() as i64;
-        let expires_at = issued_at + 86400; // +24 hours
+    pub fn generate(user: &User, secret: &JwtSecret) -> Result<AccessToken, InvalidJwt> {
+        use chrono::{Duration, Utc};
+
+        let issued_at = Utc::now().naive_utc();
+        let expires_at = issued_at + Duration::hours(24);
 
         let user_claims = UserClaims {
             user_id: user.id,
             username: user.username.clone(),
             email: user.email.clone(),
-            exp: expires_at,
-            iat: issued_at,
+            exp: expires_at.and_utc().timestamp() as i64,
+            iat: issued_at.and_utc().timestamp() as i64,
         };
 
         let jwt = Jwt::from_str(
@@ -170,15 +175,14 @@ impl AccessToken {
             .map_err(|e| InvalidJwt::EncodingError(e))?,
         )?;
 
-        Ok(AccessToken { jwt, expires_at })
+        Ok(AccessToken::new(jwt, expires_at))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
     use super::*;
+    use std::str::FromStr;
 
     // ========================
     //  `JwtSecret` test
