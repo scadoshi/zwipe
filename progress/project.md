@@ -13,11 +13,11 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Complete backend session system - middleware, handlers, and refresh endpoint all working with Session responses
+**Last Updated**: Complete backend session system with logout endpoint and automated token cleanup
 
 **Current Focus**: Frontend session integration - token storage, auto-login, and refresh patterns
 
-**Recent Achievement**: Completed HTTP layer integration for session system. Updated middleware to extract and validate JWT from bearer tokens with username in AuthenticatedUser. All auth handlers (register/login/refresh) now return Session struct containing user data, access token, and refresh token. Created /api/auth/refresh endpoint with proper route function. Enhanced RefreshSessionError variants to include user_id for better security logging. Removed all catch-all patterns from ApiError mappings across every handler - now using explicit per-variant matching ensuring future enum changes require deliberate error handling decisions. Backend session system is production-ready.
+**Recent Achievement**: Finished complete backend session infrastructure with all endpoints and maintenance jobs. Built /api/user/logout POST endpoint with revoke_sessions handler using AuthenticatedUser middleware for secure session termination. Implemented CheckSessions trait in zync binary providing weekly automated cleanup of expired refresh tokens via delete_expired_refresh_tokens. Resolved critical frontend environment configuration - discovered desktop/iOS apps cannot load .env at runtime, implemented build.rs with cargo:rustc-env directives to bake BACKEND_URL at compile time using env!() macro instead of std::env::var(). Backend session system fully production-ready with scheduled maintenance running every hour checking for weekly cleanup threshold.
 
 **Current Decision**: Backend session architecture complete and secure. Middleware validates JWTs cleanly, handlers return full Session objects, refresh endpoint enables token rotation. All error mappings explicit and exhaustive. Next phase: build frontend token management - persistent storage (iOS Keychain/Android KeyStore), auto-login on app start, automatic refresh on 401, and global auth state context.
 
@@ -123,8 +123,12 @@ alwaysApply: true
 - **Username in AuthenticatedUser**: Added username field to middleware extractor for consistent user identification across handlers
 - **Session Response Migration**: Register and login handlers now return Session struct (user + access_token + refresh_token)
 - **Refresh Endpoint Implementation**: Complete /api/auth/refresh POST endpoint with HttpRefreshSession types and route function
+- **Logout Endpoint Implementation**: Complete /api/user/logout POST endpoint with revoke_sessions handler, AuthenticatedUser middleware, proper RESTful design (POST not GET for side effects)
 - **Enhanced Session Error Logging**: RefreshSessionError variants (NotFound, Expired, Revoked, Forbidden) now include user_id for security audit trails
 - **Exhaustive Error Mapping**: Removed all catch-all patterns from ApiError From impls across auth, user, card, deck, and deck_card handlers ensuring explicit handling of every error variant
+- **Scheduled Token Cleanup Job**: CheckSessions trait in zync binary with weekly cleanup, memory-tracked timestamps using map_or() pattern, WasAgo trait for time checks
+- **Frontend Compile-Time Configuration**: build.rs with cargo:rustc-env directives passing BACKEND_URL to compiler, env!() macro for compile-time environment variable access (required for desktop/iOS apps)
+- **Background Job Architecture**: Unified zync binary loop handling both card sync (CheckCards) and session cleanup (CheckSessions) with hourly execution and appropriate time thresholds
 
 ---
 

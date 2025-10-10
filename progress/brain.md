@@ -15,11 +15,11 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Completed backend session system - middleware, handlers, refresh endpoint, and exhaustive error mapping
+**Last Updated**: Complete backend session system including logout endpoint and automated token cleanup via sync binary
 
 **Next Learning Focus**: Frontend session management - use_persistent for token storage, auto-login flow, 401 refresh patterns, Dioxus context for global auth state
 
-**Recent Achievement**: Finished HTTP layer integration for complete backend session system. Updated middleware to extract Jwt from bearer token and validate (moved validation from AccessToken to Jwt). Added username to AuthenticatedUser for consistent user identification. Migrated register/login handlers to return Session struct. Built refresh endpoint at /api/auth/refresh with proper types and route function. Enhanced RefreshSessionError with user_id for security logging. Removed all catch-all error patterns across every handler (auth, user, card, deck, deck_card) - now using exhaustive per-variant matching ensuring compiler catches missing error cases. Backend is production-ready for token rotation and session management.
+**Recent Achievement**: Finished complete backend session infrastructure. Built /api/user/logout POST endpoint with revoke_sessions handler using AuthenticatedUser middleware. Implemented CheckSessions trait in zync binary for weekly automated cleanup of expired refresh tokens using map_or() pattern for Option handling. Fixed critical frontend environment variable issue - discovered desktop/iOS apps can't load .env at runtime, implemented build.rs with cargo:rustc-env directives to bake BACKEND_URL at compile time using env!() macro. Backend session system fully production-ready with scheduled maintenance.
 
 ### 🎯 Currently Working Towards (Top 5)
 1. **Persistent Token Storage** - Implement use_persistent for secure iOS Keychain/Android KeyStore integration
@@ -90,6 +90,8 @@ alwaysApply: true
 ### ⚙️ Basic Implementation Patterns
 - **Environment Setup**: .env files, configuration management
 - **macro_rules!**: Basic declarative macro creation and usage
+- **Build Scripts**: build.rs with cargo directives (rustc-env, warning, rerun-if-changed) for compile-time configuration
+- **Compile-Time Environment Variables**: env!() macro for baking config into binaries (required for desktop/mobile apps)
 
 ### 🎨 Dioxus Component Development & State Management
 - **Component Architecture**: Function components with RSX macro for HTML-like syntax
@@ -228,7 +230,7 @@ alwaysApply: true
 
 ## LEARNING - Recently Introduced, Needs Guidance 📚
 
-### 🔐 Backend Session & Token Architecture (Complete)
+### 🔐 Backend Session & Token Architecture (Complete) ✅
 - **Session-Based Authentication**: Session struct containing user + access_token + refresh_token + both expiration timestamps
 - **Rotating Token Strategy**: Security model where refresh operation generates new access + new refresh token, invalidating old refresh
 - **Access vs Refresh Tokens**: JWTs (self-contained, 24hr) vs opaque hex strings (64-char, 14-day, hashed with SHA-256 for storage)
@@ -254,9 +256,12 @@ alwaysApply: true
 - **Jwt/AccessToken Separation**: Moved validation from AccessToken to Jwt for cleaner type responsibilities
 - **HTTP Session Responses**: Register/login/refresh handlers all return Session struct with complete user and token data
 - **Refresh Endpoint**: Complete /api/auth/refresh POST endpoint with HttpRefreshSession request/response types and route function
+- **Logout Endpoint**: Complete /api/user/logout POST endpoint with revoke_sessions handler using AuthenticatedUser middleware
 - **Enhanced Error Logging**: RefreshSessionError variants include user_id for security audit trails (NotFound, Expired, Revoked, Forbidden)
 - **Exhaustive Error Mapping**: Removed all catch-all patterns from ApiError implementations ensuring explicit per-variant handling
-- *Note: Backend complete, frontend integration (storage, auto-login, 401 handling) still needed*
+- **Scheduled Token Cleanup**: CheckSessions trait in zync binary with weekly cleanup using map_or() for Option handling, memory-tracked latest_token_clean_up
+- **RESTful Logout Design**: POST verb for logout (not GET) due to side effects and state modification
+- *Note: Backend complete and production-ready, frontend integration (storage, auto-login, 401 handling) next phase*
 
 ### 📱 Frontend Session Management (Starting)
 - **Mobile Secure Storage**: use_persistent abstraction over iOS Keychain/Android KeyStore for token persistence
