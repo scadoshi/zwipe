@@ -8,10 +8,7 @@ use crate::{
 };
 use dioxus::prelude::*;
 use email_address::EmailAddress;
-use zwipe::domain::{
-    auth::models::{password::Password, InvalidAuthenticateUser},
-    user::models::Username,
-};
+use zwipe::domain::{auth::models::password::Password, user::models::Username};
 
 #[component]
 pub fn Login(swipe_state: Signal<swipe::State>) -> Element {
