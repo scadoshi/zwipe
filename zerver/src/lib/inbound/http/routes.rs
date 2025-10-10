@@ -90,6 +90,8 @@ where
     CS: CardService,
     DS: DeckService,
 {
+    use crate::inbound::http::handlers::auth::revoke_sessions;
+
     Router::new().nest(
         "/api",
         Router::new()
@@ -100,7 +102,8 @@ where
                     .route("/change-password", put(change_password))
                     .route("/change-username", put(change_username))
                     .route("/change-email", put(change_email))
-                    .route("/delete-user", delete(delete_user)),
+                    .route("/delete-user", delete(delete_user))
+                    .route("/logout", post(revoke_sessions)),
             )
             .nest(
                 "/card",
@@ -145,6 +148,10 @@ pub fn change_email_route() -> String {
 
 pub fn delete_user_route() -> String {
     "/api/user/delete-user".to_string()
+}
+
+pub fn logout_route() -> String {
+    "/api/auth/logout".to_string()
 }
 
 pub fn get_card_route(card_profile_id: &str) -> String {
