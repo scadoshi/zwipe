@@ -1,15 +1,14 @@
-use crate::domain::auth::models::access_token::InvalidJwt;
-#[cfg(feature = "zerver")]
-use crate::domain::auth::models::session::{
-    CreateSessionError, EnforceSessionMaximumError, InvalidRefreshSession, RefreshSessionError,
-};
-use crate::domain::auth::models::session::{RefreshSession, RevokeSessions, RevokeSessionsError};
-use crate::domain::auth::models::{AuthenticateUser, RawRegisterUser};
 #[cfg(feature = "zerver")]
 use crate::domain::auth::models::{
+    access_token::InvalidJwt,
+    session::{
+        CreateSessionError, EnforceSessionMaximumError, InvalidRefreshSession, RefreshSessionError,
+        RevokeSessions, RevokeSessionsError,
+    },
     ChangeEmail, ChangeEmailError, ChangeUsername, ChangeUsernameError, DeleteUser,
     DeleteUserError, InvalidChangeEmail, InvalidChangeUsername,
 };
+use crate::domain::auth::models::{session::RefreshSession, AuthenticateUser, RawRegisterUser};
 #[cfg(feature = "zerver")]
 use crate::domain::deck::ports::DeckService;
 #[cfg(feature = "zerver")]
