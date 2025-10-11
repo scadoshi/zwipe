@@ -65,8 +65,13 @@ impl From<InvalidJwt> for ApiError {
 #[cfg(feature = "zerver")]
 impl From<CreateSessionError> for ApiError {
     fn from(value: CreateSessionError) -> Self {
+        use crate::domain::user::models::GetUserError;
+
         match value {
             CreateSessionError::Database(e) => e.log_500(),
+            CreateSessionError::GetUserError(GetUserError::NotFound) => {
+                Self::Unauthorized("invalid credentials".to_string())
+            }
             CreateSessionError::GetUserError(e) => ApiError::from(e),
             CreateSessionError::EnforceSessionMaximumError(e) => ApiError::from(e),
             CreateSessionError::InvalidJwt(e) => ApiError::from(e),
@@ -256,9 +261,14 @@ where
 #[cfg(feature = "zerver")]
 impl From<RefreshSessionError> for ApiError {
     fn from(value: RefreshSessionError) -> Self {
+        use crate::domain::user::models::GetUserError;
+
         match value {
             RefreshSessionError::CreateSessionError(e) => ApiError::from(e),
             RefreshSessionError::Database(e) => e.log_500(),
+            RefreshSessionError::GetUserError(GetUserError::NotFound) => {
+                Self::Unauthorized("invalid refresh token".to_string())
+            }
             RefreshSessionError::GetUserError(e) => e.log_500(),
             RefreshSessionError::InvalidJwt(e) => ApiError::from(e),
             RefreshSessionError::EnforceSessionMaximumError(e) => ApiError::from(e),
