@@ -74,7 +74,7 @@ impl From<CreateSessionError> for ApiError {
             }
             CreateSessionError::GetUserError(e) => ApiError::from(e),
             CreateSessionError::EnforceSessionMaximumError(e) => ApiError::from(e),
-            CreateSessionError::InvalidJwt(e) => ApiError::from(e),
+            CreateSessionError::InvalidJwt(e) => e.log_500(),
         }
     }
 }
@@ -270,7 +270,7 @@ impl From<RefreshSessionError> for ApiError {
                 Self::Unauthorized("invalid refresh token".to_string())
             }
             RefreshSessionError::GetUserError(e) => e.log_500(),
-            RefreshSessionError::InvalidJwt(e) => ApiError::from(e),
+            RefreshSessionError::InvalidJwt(e) => e.log_500(),
             RefreshSessionError::EnforceSessionMaximumError(e) => ApiError::from(e),
             RefreshSessionError::NotFound(u) => {
                 tracing::info!("{}", RefreshSessionError::NotFound(u).to_string());
