@@ -1,14 +1,18 @@
 use std::str::FromStr;
 
 use crate::{
-    http::auth::{
-        authenticate_user, validate_authenticate_user, AuthClient, AuthenticateUserError,
-    },
+    http::auth::{login, AuthClient, LoginError},
     swipe::{self, Direction as Dir, OnMouse, OnTouch, VH_GAP},
 };
 use dioxus::prelude::*;
 use email_address::EmailAddress;
-use zwipe::domain::{auth::models::password::Password, user::models::Username};
+use zwipe::{
+    domain::{
+        auth::models::{password::Password, AuthenticateUser},
+        user::models::Username,
+    },
+    inbound::http::handlers::auth::HttpAuthenticateUser,
+};
 
 #[component]
 pub fn Login(swipe_state: Signal<swipe::State>) -> Element {
@@ -41,8 +45,10 @@ pub fn Login(swipe_state: Signal<swipe::State>) -> Element {
             is_loading.set(true);
 
             if valid_credentials() {
-                match validate_authenticate_user(&*username_or_email.read(), &*password.read()) {
-                    Ok(request) => match authenticate_user(request, &auth_client.read()).await {
+                match AuthenticateUser::new(&*username_or_email.read(), &*password.read())
+                    .map(HttpAuthenticateUser::from)
+                {
+                    Ok(request) => match login(request, &auth_client.read()).await {
                         Ok(s) => {
                             submission_error.set(None);
                             println!("session => {:#?}", s);
@@ -52,7 +58,7 @@ pub fn Login(swipe_state: Signal<swipe::State>) -> Element {
                     Err(e) => submission_error.set(Some(e.to_string())),
                 }
             } else {
-                submission_error.set(Some(AuthenticateUserError::Unauthorized.to_string()));
+                submission_error.set(Some(LoginError::Unauthorized.to_string()));
             }
             is_loading.set(false);
         }
