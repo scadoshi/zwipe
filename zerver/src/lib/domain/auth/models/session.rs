@@ -62,7 +62,6 @@ impl From<EnforceSessionMaximumError> for CreateSessionError {
     }
 }
 
-#[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum InvalidRefreshSession {
     #[error(transparent)]
