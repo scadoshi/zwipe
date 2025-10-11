@@ -278,7 +278,7 @@ impl From<RefreshSessionError> for ApiError {
             }
             RefreshSessionError::Expired(u) => {
                 tracing::info!("{}", RefreshSessionError::Expired(u).to_string());
-                Self::Unauthorized("refresh token expired".to_string())
+                Self::Unauthorized("invalid refresh token".to_string())
             }
             RefreshSessionError::Revoked(u) => {
                 tracing::warn!("{}", RefreshSessionError::Revoked(u).to_string());
