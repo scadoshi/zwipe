@@ -2,12 +2,18 @@ use std::str::FromStr;
 
 use crate::{
     error_map::UserFacing,
-    http::auth::{register_user, validate_register_user, AuthClient},
+    http::auth::{register, AuthClient},
     swipe::{self, Direction as Dir, OnMouse, OnTouch, VH_GAP},
 };
 use dioxus::prelude::*;
 use email_address::EmailAddress;
-use zwipe::domain::{auth::models::password::Password, user::models::Username};
+use zwipe::{
+    domain::{
+        auth::models::{password::Password, RawRegisterUser},
+        user::models::Username,
+    },
+    inbound::http::handlers::auth::HttpRegisterUser,
+};
 
 #[component]
 pub fn Register(swipe_state: Signal<swipe::State>) -> Element {
@@ -56,8 +62,10 @@ pub fn Register(swipe_state: Signal<swipe::State>) -> Element {
                 && email_error.read().is_none()
                 && password_error.read().is_none()
             {
-                match validate_register_user(&*username.read(), &*email.read(), &*password.read()) {
-                    Ok(request) => match register_user(request, &auth_client.read()).await {
+                match RawRegisterUser::new(&*username.read(), &*email.read(), &*password.read())
+                    .map(HttpRegisterUser::from)
+                {
+                    Ok(request) => match register(request, &auth_client.read()).await {
                         Ok(s) => {
                             submission_error.set(None);
                             println!("session => {:#?}", s);
