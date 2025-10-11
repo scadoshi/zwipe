@@ -1,7 +1,10 @@
 use std::str::FromStr;
 
 use crate::{
-    http::auth::{login, AuthClient, LoginError},
+    client::auth::{
+        login::{Login as LoginTrait, LoginError},
+        AuthClient,
+    },
     swipe::{self, Direction as Dir, OnMouse, OnTouch, VH_GAP},
 };
 use dioxus::prelude::*;
@@ -48,7 +51,7 @@ pub fn Login(swipe_state: Signal<swipe::State>) -> Element {
                 match AuthenticateUser::new(&*username_or_email.read(), &*password.read())
                     .map(HttpAuthenticateUser::from)
                 {
-                    Ok(request) => match login(request, &auth_client.read()).await {
+                    Ok(request) => match auth_client.read().authenticate_user(request).await {
                         Ok(s) => {
                             submission_error.set(None);
                             println!("session => {:#?}", s);

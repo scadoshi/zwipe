@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
 use crate::{
+    client::auth::{register::Register as RegisterTrait, AuthClient},
     error_map::UserFacing,
-    http::auth::{register, AuthClient},
     swipe::{self, Direction as Dir, OnMouse, OnTouch, VH_GAP},
 };
 use dioxus::prelude::*;
@@ -65,7 +65,7 @@ pub fn Register(swipe_state: Signal<swipe::State>) -> Element {
                 match RawRegisterUser::new(&*username.read(), &*email.read(), &*password.read())
                     .map(HttpRegisterUser::from)
                 {
-                    Ok(request) => match register(request, &auth_client.read()).await {
+                    Ok(request) => match auth_client.read().register(request).await {
                         Ok(s) => {
                             submission_error.set(None);
                             println!("session => {:#?}", s);
