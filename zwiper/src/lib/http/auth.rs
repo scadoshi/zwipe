@@ -4,12 +4,11 @@ use crate::config::AppConfig;
 use reqwest::{Client, StatusCode};
 use thiserror::Error;
 use zwipe::{
-    domain::auth::models::{
-        session::Session, AuthenticateUser, InvalidAuthenticateUser, InvalidRawRegisterUser,
-        RawRegisterUser,
+    domain::auth::models::session::{
+        InvalidRefreshSession, InvalidRevokeSessions, RevokeSessions, Session,
     },
     inbound::http::{
-        handlers::auth::{HttpAuthenticateUser, HttpRegisterUser},
+        handlers::auth::{HttpAuthenticateUser, HttpRefreshSession, HttpRegisterUser},
         routes::{login_route, register_route},
     },
 };
@@ -38,7 +37,7 @@ impl AuthClient {
 // ==========
 
 #[derive(Debug, Error)]
-pub enum RegisterUserError {
+pub enum ResisterError {
     #[error("something went wrong")]
     SomethingWentWrong,
     #[error("network error")]
@@ -47,30 +46,22 @@ pub enum RegisterUserError {
     InvalidRequest(String),
 }
 
-impl From<reqwest::Error> for RegisterUserError {
+impl From<reqwest::Error> for ResisterError {
     fn from(value: reqwest::Error) -> Self {
         Self::Network(value)
     }
 }
 
-impl From<serde_json::Error> for RegisterUserError {
+impl From<serde_json::Error> for ResisterError {
     fn from(_value: serde_json::Error) -> Self {
         Self::SomethingWentWrong
     }
 }
 
-pub fn validate_register_user(
-    username: &str,
-    email: &str,
-    password: &str,
-) -> Result<HttpRegisterUser, InvalidRawRegisterUser> {
-    RawRegisterUser::new(username, email, password).map(|r| r.into())
-}
-
-pub async fn register_user(
+pub async fn register(
     request: HttpRegisterUser,
     auth_client: &AuthClient,
-) -> Result<Session, RegisterUserError> {
+) -> Result<Session, ResisterError> {
     let mut url = auth_client.app_config.backend_url.clone();
     url.set_path(&register_route());
     let response = auth_client
@@ -88,9 +79,9 @@ pub async fn register_user(
         }
         StatusCode::UNPROCESSABLE_ENTITY => {
             let message = response.text().await?;
-            Err(RegisterUserError::InvalidRequest(message))
+            Err(ResisterError::InvalidRequest(message))
         }
-        _ => Err(RegisterUserError::SomethingWentWrong),
+        _ => Err(ResisterError::SomethingWentWrong),
     }
 }
 
@@ -99,7 +90,7 @@ pub async fn register_user(
 // ==============
 
 #[derive(Debug, Error)]
-pub enum AuthenticateUserError {
+pub enum LoginError {
     #[error("invalid credentials")]
     Unauthorized,
     #[error("something went wrong")]
@@ -110,29 +101,22 @@ pub enum AuthenticateUserError {
     InvalidRequest(String),
 }
 
-impl From<reqwest::Error> for AuthenticateUserError {
+impl From<reqwest::Error> for LoginError {
     fn from(value: reqwest::Error) -> Self {
         Self::Network(value)
     }
 }
 
-impl From<serde_json::Error> for AuthenticateUserError {
+impl From<serde_json::Error> for LoginError {
     fn from(_value: serde_json::Error) -> Self {
         Self::SomethingWentWrong
     }
 }
 
-pub fn validate_authenticate_user(
-    identifier: &str,
-    password: &str,
-) -> Result<HttpAuthenticateUser, InvalidAuthenticateUser> {
-    AuthenticateUser::new(identifier, password).map(|r| r.into())
-}
-
-pub async fn authenticate_user(
+pub async fn login(
     request: HttpAuthenticateUser,
     auth_client: &AuthClient,
-) -> Result<Session, AuthenticateUserError> {
+) -> Result<Session, LoginError> {
     let mut url = auth_client.app_config.backend_url.clone();
     url.set_path(&login_route());
     let response = auth_client
@@ -150,9 +134,37 @@ pub async fn authenticate_user(
         }
         StatusCode::UNPROCESSABLE_ENTITY => {
             let message = response.text().await?;
-            Err(AuthenticateUserError::InvalidRequest(message))
+            Err(LoginError::InvalidRequest(message))
         }
-        StatusCode::UNAUTHORIZED => Err(AuthenticateUserError::Unauthorized),
-        _ => Err(AuthenticateUserError::SomethingWentWrong),
+        StatusCode::UNAUTHORIZED => Err(LoginError::Unauthorized),
+        _ => Err(LoginError::SomethingWentWrong),
     }
+}
+
+// =========
+//  refresh
+// =========
+
+#[derive(Debug, Error)]
+pub enum RefreshError {
+    #[error("thing")]
+    Thing,
+}
+
+pub fn refresh() -> Result<HttpRefreshSession, InvalidRefreshSession> {
+    todo!()
+}
+
+// ========
+//  logout
+// ========
+
+#[derive(Debug, Error)]
+pub enum LogoutError {
+    #[error("thing")]
+    Thing,
+}
+
+pub fn logout() -> Result<RevokeSessions, InvalidRevokeSessions> {
+    todo!()
 }
