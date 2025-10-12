@@ -1,7 +1,10 @@
 use std::fmt::Debug;
 
 use crate::domain::user::{
-    models::{GetUser, GetUserError, User},
+    models::{
+        get_user::{GetUser, GetUserError},
+        User,
+    },
     ports::{UserRepository, UserService},
 };
 
@@ -24,6 +27,9 @@ where
 
 impl<R: UserRepository> UserService for Service<R> {
     async fn get_user(&self, request: &GetUser) -> Result<User, GetUserError> {
+        // =====
+        //  get
+        // =====
         self.repo.get_user(&request.user_id).await
     }
 }
