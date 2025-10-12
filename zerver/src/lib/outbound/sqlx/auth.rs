@@ -15,7 +15,7 @@ use crate::domain::user::models::{User};
 use crate::outbound::sqlx::auth::helpers::TxHelper;
 use crate::outbound::sqlx::auth::models::{DatabaseRefreshToken, DatabaseUserWithPasswordHash};
 use crate::outbound::sqlx::postgres::{ Postgres};
-use crate::outbound::sqlx::user::{DatabaseUser};
+use crate::outbound::sqlx::user::{models::DatabaseUser};
 
 impl AuthRepository for Postgres {
     // ========
