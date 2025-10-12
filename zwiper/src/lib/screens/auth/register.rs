@@ -10,7 +10,7 @@ use email_address::EmailAddress;
 use zwipe::{
     domain::{
         auth::models::{password::Password, register_user::RawRegisterUser},
-        user::models::Username,
+        user::models::username::Username,
     },
     inbound::http::handlers::auth::register_user::HttpRegisterUser,
 };
