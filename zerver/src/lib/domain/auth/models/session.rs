@@ -2,7 +2,7 @@ use crate::domain::auth::models::access_token::AccessToken;
 use crate::domain::auth::models::refresh_token::RefreshToken;
 use crate::domain::user::models::User;
 #[cfg(feature = "zerver")]
-use crate::domain::{auth::models::access_token::InvalidJwt, user::models::GetUserError};
+use crate::domain::{auth::models::access_token::InvalidJwt, user::models::get_user::GetUserError};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use thiserror::Error;

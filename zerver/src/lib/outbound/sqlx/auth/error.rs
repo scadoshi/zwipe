@@ -11,9 +11,9 @@ use crate::{
                 RefreshSessionError, RevokeSessionsError,
             },
         },
-        user::models::InvalidUsername,
+        user::models::username::InvalidUsername,
     },
-    outbound::sqlx::{postgres::IsConstraintViolation, user::IntoUserError},
+    outbound::sqlx::{postgres::IsConstraintViolation, user::error::IntoUserError},
 };
 use thiserror::Error;
 

@@ -1,4 +1,4 @@
-use crate::domain::user::models::{InvalidUsername, Username};
+use crate::domain::user::models::username::{InvalidUsername, Username};
 use thiserror::Error;
 use uuid::Uuid;
 

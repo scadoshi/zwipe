@@ -12,7 +12,7 @@ use axum_extra::{
 use email_address::EmailAddress;
 use uuid::Uuid;
 
-use crate::domain::user::models::Username;
+use crate::domain::user::models::username::Username;
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{

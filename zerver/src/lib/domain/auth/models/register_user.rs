@@ -2,10 +2,10 @@
 use crate::domain::auth::models::password::HashedPassword;
 #[cfg(feature = "zerver")]
 use crate::domain::auth::models::session::CreateSessionError;
-use crate::domain::user::models::Username;
+use crate::domain::user::models::username::Username;
 use crate::domain::{
     auth::models::password::{InvalidPassword, Password},
-    user::models::InvalidUsername,
+    user::models::username::InvalidUsername,
 };
 use email_address::EmailAddress;
 use std::str::FromStr;

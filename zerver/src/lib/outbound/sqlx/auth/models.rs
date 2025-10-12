@@ -1,7 +1,7 @@
 use crate::{
     domain::{
         auth::models::{password::HashedPassword, UserWithPasswordHash},
-        user::models::Username,
+        user::models::username::Username,
     },
     outbound::sqlx::auth::error::IntoUserWithPasswordHashError,
 };

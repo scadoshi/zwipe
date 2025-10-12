@@ -10,15 +10,19 @@ use crate::inbound::http::handlers::auth::{
 };
 #[cfg(feature = "zerver")]
 use crate::inbound::http::handlers::deck_card::{
-    create_deck_card, delete_deck_card, update_deck_card,
+    create_deck_card::create_deck_card, delete_deck_card::delete_deck_card,
+    update_deck_card::update_deck_card,
 };
 #[cfg(feature = "zerver")]
-use crate::inbound::http::handlers::user::get_user;
+use crate::inbound::http::handlers::user::get_user::get_user;
 #[cfg(feature = "zerver")]
 use crate::inbound::http::handlers::{
     auth::{authenticate_user::authenticate_user, register_user::register_user},
     card::{get_card, search_cards},
-    deck::{create_deck_profile, delete_deck, get_deck, update_deck_profile},
+    deck::{
+        create_deck_profile::create_deck_profile, delete_deck::delete_deck, get_deck::get_deck,
+        update_deck_profile::update_deck_profile,
+    },
     health::{are_server_and_database_running, is_server_running, root},
 };
 #[cfg(feature = "zerver")]

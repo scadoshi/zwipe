@@ -12,7 +12,7 @@ pub mod session;
 #[cfg(feature = "zerver")]
 use crate::domain::auth::models::password::HashedPassword;
 #[cfg(feature = "zerver")]
-use crate::domain::user::models::{User, Username};
+use crate::domain::user::models::{username::Username, User};
 #[cfg(feature = "zerver")]
 use email_address::EmailAddress;
 #[cfg(feature = "zerver")]

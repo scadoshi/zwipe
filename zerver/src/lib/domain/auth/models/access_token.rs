@@ -1,6 +1,6 @@
+use crate::domain::user::models::username::Username;
 #[cfg(feature = "zerver")]
 use crate::domain::user::models::User;
-use crate::domain::user::models::Username;
 use chrono::NaiveDateTime;
 use email_address::EmailAddress;
 use serde::{Deserialize, Serialize};

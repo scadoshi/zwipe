@@ -13,7 +13,7 @@ use crate::{
         card::ports::CardService,
         deck::ports::DeckService,
         health::ports::HealthService,
-        user::{models::GetUserError, ports::UserService},
+        user::{models::get_user::GetUserError, ports::UserService},
     },
     inbound::http::{ApiError, AppState, Log500},
 };
