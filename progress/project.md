@@ -13,13 +13,13 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Complete backend session system with logout endpoint and automated token cleanup
+**Last Updated**: Complete architectural refactoring with modular file organization across all backend domains
 
 **Current Focus**: Frontend session integration - token storage, auto-login, and refresh patterns
 
-**Recent Achievement**: Finished complete backend session infrastructure with all endpoints and maintenance jobs. Built /api/user/logout POST endpoint with revoke_sessions handler using AuthenticatedUser middleware for secure session termination. Implemented CheckSessions trait in zync binary providing weekly automated cleanup of expired refresh tokens via delete_expired_refresh_tokens. Resolved critical frontend environment configuration - discovered desktop/iOS apps cannot load .env at runtime, implemented build.rs with cargo:rustc-env directives to bake BACKEND_URL at compile time using env!() macro instead of std::env::var(). Backend session system fully production-ready with scheduled maintenance running every hour checking for weekly cleanup threshold.
+**Recent Achievement**: Completed comprehensive architectural refactoring establishing consistent patterns across auth, user, and deck domains. Split monolithic files into per-operation modules: domain models separated by operation (11 auth files, 2 user files, 11 deck files), SQLx repositories modularized with error/models/helpers pattern, HTTP handlers split into individual operation files (8 auth, 1 user, 8 deck handlers). Discovered and patched critical security vulnerability where any user could modify/delete any deck - implemented OwnsDeck trait on Uuid providing ownership validation across 5 deck operations. Eliminated unnecessary HTTP wrapper types (HttpDeckProfile, HttpDeckCard) by adding custom Serialize implementations to domain types (DeckCard, Quantity). Removed ~1,600 lines of monolithic code while dramatically improving navigation, maintainability, and security. Backend now follows uniform modular architecture making future development more efficient.
 
-**Current Decision**: Backend session architecture complete and secure. Middleware validates JWTs cleanly, handlers return full Session objects, refresh endpoint enables token rotation. All error mappings explicit and exhaustive. Next phase: build frontend token management - persistent storage (iOS Keychain/Android KeyStore), auto-login on app start, automatic refresh on 401, and global auth state context.
+**Current Decision**: Backend architecture modernized with consistent modular patterns. All domains follow same file organization making codebase predictable and navigable. Security hardened with ownership validation preventing unauthorized resource access. Ready to shift focus to frontend session management with clean, maintainable backend foundation established.
 
 ### 🎯 Currently Working On (Top 5)
 1. **Token Storage Implementation** - Implement use_persistent for secure iOS Keychain/Android KeyStore storage
@@ -129,6 +129,9 @@ alwaysApply: true
 - **Scheduled Token Cleanup Job**: CheckSessions trait in zync binary with weekly cleanup, memory-tracked timestamps using map_or() pattern, WasAgo trait for time checks
 - **Frontend Compile-Time Configuration**: build.rs with cargo:rustc-env directives passing BACKEND_URL to compiler, env!() macro for compile-time environment variable access (required for desktop/iOS apps)
 - **Background Job Architecture**: Unified zync binary loop handling both card sync (CheckCards) and session cleanup (CheckSessions) with hourly execution and appropriate time thresholds
+- **Modular Architecture Refactoring**: Complete restructuring of auth, user, and deck domains into per-operation files with consistent error/models/helpers pattern in SQLx layer
+- **Ownership Validation System**: OwnsDeck trait on Uuid type providing ownership checks across create_deck_card, get_deck, update_deck_profile, update_deck_card, and delete_deck operations
+- **Direct Domain Serialization**: Custom Serialize implementations on domain types (DeckCard, Quantity, DeckProfile) eliminating unnecessary HTTP wrapper layer
 
 ---
 

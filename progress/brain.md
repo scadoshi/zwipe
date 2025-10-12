@@ -15,11 +15,11 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Complete backend session system including logout endpoint and automated token cleanup via sync binary
+**Last Updated**: Complete architectural refactoring establishing modular file organization patterns across all domains
 
 **Next Learning Focus**: Frontend session management - use_persistent for token storage, auto-login flow, 401 refresh patterns, Dioxus context for global auth state
 
-**Recent Achievement**: Finished complete backend session infrastructure. Built /api/user/logout POST endpoint with revoke_sessions handler using AuthenticatedUser middleware. Implemented CheckSessions trait in zync binary for weekly automated cleanup of expired refresh tokens using map_or() pattern for Option handling. Fixed critical frontend environment variable issue - discovered desktop/iOS apps can't load .env at runtime, implemented build.rs with cargo:rustc-env directives to bake BACKEND_URL at compile time using env!() macro. Backend session system fully production-ready with scheduled maintenance.
+**Recent Achievement**: Completed massive architectural refactoring across auth, user, and deck domains. Established consistent modular patterns: split domain models into per-operation files, created error/models/helpers modules in SQLx layer, separated HTTP handlers into individual files. Discovered and fixed critical security vulnerability in deck operations - implemented OwnsDeck trait providing ownership validation across 5 operations (create_deck_card, get_deck, update_deck_profile, update_deck_card, delete_deck). Removed unnecessary HTTP wrapper types (HttpDeckProfile, HttpDeckCard) by adding Serialize to domain types. Deleted ~1,600 lines of monolithic code while improving maintainability and security. Architecture now consistent and navigable across all domains.
 
 ### 🎯 Currently Working Towards (Top 5)
 1. **Persistent Token Storage** - Implement use_persistent for secure iOS Keychain/Android KeyStore integration
@@ -58,6 +58,9 @@ alwaysApply: true
 - **Pragmatic API Design**: Route functions over constants when it preserves readability without adding ceremony
 - **Domain Modeling Process**: Request types, error types, response types, and port definitions before implementation
 - **Newtype Pattern**: Type-safe wrappers (RefreshToken, AccessToken) with validation and domain-specific methods
+- **Modular File Organization**: Per-operation domain model files, error/models/helpers SQLx modules, separated HTTP handlers
+- **Ownership Validation Patterns**: Trait-based ownership checking (OwnsDeck) preventing unauthorized resource access
+- **Direct Domain Serialization**: Serialize domain types directly when HTTP shape matches, avoiding unnecessary wrapper boilerplate
 
 ### 🔒 Security & Authentication
 - **JWT Security Flow**: Complete token generation/validation with proper configuration
@@ -126,6 +129,8 @@ alwaysApply: true
 - **Migration & Schema Management**: Forward-only migrations, database recreation workflows
 - **Bulk Data Processing**: Production-scale processing (35,400+ cards) with resilient error handling
 - **Constraint Management**: Advanced PostgreSQL constraint handling and violation detection
+- **Modular Repository Architecture**: error/models/helpers module pattern for clean SQLx implementations
+- **Ownership Validation Traits**: Custom traits on types (OwnsDeck for Uuid) enabling reusable security checks
 
 ### 🌐 Advanced HTTP & Middleware Patterns
 - **Custom Middleware**: AuthenticatedUser extractor with FromRequestParts trait
