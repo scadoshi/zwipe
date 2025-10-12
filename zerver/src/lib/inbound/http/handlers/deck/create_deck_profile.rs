@@ -4,17 +4,18 @@ use crate::{
         auth::ports::AuthService,
         card::ports::CardService,
         deck::{
-            models::deck::create_deck_profile::{
-                CreateDeckProfile, CreateDeckProfileError, InvalidCreateDeckProfile,
+            models::deck::{
+                create_deck_profile::{
+                    CreateDeckProfile, CreateDeckProfileError, InvalidCreateDeckProfile,
+                },
+                deck_profile::DeckProfile,
             },
             ports::DeckService,
         },
         health::ports::HealthService,
         user::ports::UserService,
     },
-    inbound::http::{
-        handlers::deck::HttpDeckProfile, middleware::AuthenticatedUser, ApiError, AppState, Log500,
-    },
+    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
 };
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
@@ -45,11 +46,11 @@ impl From<InvalidCreateDeckProfile> for ApiError {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct HttpCreateDeckProfile {
+pub struct HttpCreateDeckProfileBody {
     pub name: String,
 }
 
-impl HttpCreateDeckProfile {
+impl HttpCreateDeckProfileBody {
     pub fn new(name: &str) -> Self {
         Self {
             name: name.to_string(),
@@ -61,8 +62,8 @@ impl HttpCreateDeckProfile {
 pub async fn create_deck_profile<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
-    Json(body): Json<HttpCreateDeckProfile>,
-) -> Result<(StatusCode, Json<HttpDeckProfile>), ApiError>
+    Json(body): Json<HttpCreateDeckProfileBody>,
+) -> Result<(StatusCode, Json<DeckProfile>), ApiError>
 where
     AS: AuthService,
     US: UserService,

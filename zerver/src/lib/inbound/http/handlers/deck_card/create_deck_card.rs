@@ -12,18 +12,16 @@ use crate::{
         auth::ports::AuthService,
         card::ports::CardService,
         deck::{
-            models::deck_card::create_deck_card::{
-                CreateDeckCard, CreateDeckCardError, InvalidCreateDeckCard,
+            models::deck_card::{
+                create_deck_card::{CreateDeckCard, CreateDeckCardError, InvalidCreateDeckCard},
+                DeckCard,
             },
             ports::DeckService,
         },
         health::ports::HealthService,
         user::ports::UserService,
     },
-    inbound::http::{
-        handlers::deck_card::HttpDeckCard, middleware::AuthenticatedUser, ApiError, AppState,
-        Log500,
-    },
+    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
 };
 
 #[cfg(feature = "zerver")]
@@ -81,7 +79,7 @@ pub async fn create_deck_card<AS, US, HS, CS, DS>(
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Path(deck_id): Path<String>,
     Json(body): Json<HttpCreateDeckCard>,
-) -> Result<(StatusCode, Json<HttpDeckCard>), ApiError>
+) -> Result<(StatusCode, Json<DeckCard>), ApiError>
 where
     AS: AuthService,
     US: UserService,
