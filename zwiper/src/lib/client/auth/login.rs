@@ -5,7 +5,7 @@ use reqwest::StatusCode;
 use thiserror::Error;
 use zwipe::{
     domain::auth::models::session::Session,
-    inbound::http::{handlers::auth::HttpAuthenticateUser, routes::login_route},
+    inbound::http::{handlers::auth::authenticate_user::HttpAuthenticateUser, routes::login_route},
 };
 
 #[derive(Debug, Error)]
