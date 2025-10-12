@@ -5,21 +5,27 @@ use uuid::Uuid;
 use crate::domain::{
     auth::models::{
         access_token::JwtSecret,
+        authenticate_user::{AuthenticateUser, AuthenticateUserError},
+        change_email::{ChangeEmail, ChangeEmailError},
+        change_password::{ChangePassword, ChangePasswordError},
+        change_username::{ChangeUsername, ChangeUsernameError},
+        delete_user::{DeleteUser, DeleteUserError},
         refresh_token::RefreshToken,
+        register_user::{RegisterUser, RegisterUserError},
         session::{
             CreateSession, CreateSessionError, DeleteExpiredSessionsError, RefreshSession,
             RefreshSessionError, RevokeSessions, RevokeSessionsError, Session,
         },
-        AuthenticateUser, AuthenticateUserError, ChangeEmail, ChangeEmailError, ChangePassword,
-        ChangePasswordError, ChangeUsername, ChangeUsernameError, DeleteUser, DeleteUserError,
-        RegisterUser, RegisterUserError, UserWithPasswordHash,
+        UserWithPasswordHash,
     },
     user::models::User,
 };
 
 /// enables auth related database operations
 pub trait AuthRepository: Clone + Send + Sync + 'static {
-    // create
+    // ========
+    //  create
+    // ========
     fn create_user_and_refresh_token(
         &self,
         request: &RegisterUser,
@@ -34,12 +40,18 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
         &self,
         request: &RefreshSession,
     ) -> impl Future<Output = Result<RefreshToken, RefreshSessionError>> + Send;
-    // get
+
+    // =====
+    //  get
+    // =====
     fn get_user_with_password_hash(
         &self,
         request: &AuthenticateUser,
     ) -> impl Future<Output = Result<UserWithPasswordHash, AuthenticateUserError>> + Send;
-    // update
+
+    // ========
+    //  update
+    // ========
     fn change_password(
         &self,
         request: &ChangePassword,
@@ -54,7 +66,10 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
         &self,
         request: &ChangeEmail,
     ) -> impl Future<Output = Result<User, ChangeEmailError>> + Send;
-    // delete
+
+    // ========
+    //  delete
+    // ========
     fn delete_user(
         &self,
         request: &DeleteUser,
@@ -72,9 +87,14 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
 
 /// orchestrates auth related operations
 pub trait AuthService: Clone + Send + Sync + 'static {
-    // config
+    // ========
+    //  config
+    // ========
     fn jwt_secret(&self) -> &JwtSecret;
-    // create
+
+    // ========
+    //  create
+    // ========
     fn register_user(
         &self,
         request: &RegisterUser,
@@ -89,12 +109,15 @@ pub trait AuthService: Clone + Send + Sync + 'static {
         &self,
         request: &RefreshSession,
     ) -> impl Future<Output = Result<Session, RefreshSessionError>> + Send;
-    // get
+
     fn authenticate_user(
         &self,
         request: &AuthenticateUser,
     ) -> impl Future<Output = Result<Session, AuthenticateUserError>> + Send;
-    // update
+
+    // ========
+    //  update
+    // ========
     fn change_password(
         &self,
         request: &ChangePassword,
@@ -109,7 +132,10 @@ pub trait AuthService: Clone + Send + Sync + 'static {
         &self,
         request: &ChangeEmail,
     ) -> impl Future<Output = Result<User, ChangeEmailError>> + Send;
-    // delete
+
+    // ========
+    //  delete
+    // ========
     fn delete_user(
         &self,
         request: &DeleteUser,

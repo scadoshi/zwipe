@@ -2,13 +2,17 @@ use crate::domain::{
     auth::{
         models::{
             access_token::{AccessToken, JwtSecret},
+            authenticate_user::{AuthenticateUser, AuthenticateUserError},
+            change_email::{ChangeEmail, ChangeEmailError},
+            change_password::{ChangePassword, ChangePasswordError},
+            change_username::{ChangeUsername, ChangeUsernameError},
+            delete_user::{DeleteUser, DeleteUserError},
+            register_user::{RegisterUser, RegisterUserError},
             session::{
                 CreateSession, CreateSessionError, DeleteExpiredSessionsError, RefreshSession,
                 RefreshSessionError, RevokeSessions, RevokeSessionsError, Session,
             },
-            AuthenticateUser, AuthenticateUserError, ChangeEmail, ChangeEmailError, ChangePassword,
-            ChangePasswordError, ChangeUsername, ChangeUsernameError, DeleteUser, DeleteUserError,
-            RegisterUser, RegisterUserError, UserWithPasswordHash,
+            UserWithPasswordHash,
         },
         ports::{AuthRepository, AuthService},
     },
@@ -47,10 +51,16 @@ where
     AR: AuthRepository + Clone,
     UR: UserRepository + Clone,
 {
+    // ========
+    //  config
+    // ========
     fn jwt_secret(&self) -> &JwtSecret {
         &self.jwt_secret
     }
 
+    // ========
+    //  create
+    // ========
     async fn register_user(&self, request: &RegisterUser) -> Result<Session, RegisterUserError> {
         let (user, refresh_token) = self
             .auth_repo
@@ -135,6 +145,9 @@ where
         Ok(())
     }
 
+    // ========
+    //  update
+    // ========
     async fn change_password(&self, request: &ChangePassword) -> Result<(), ChangePasswordError> {
         let _ = self.authenticate_user(&request.into()).await?;
         self.auth_repo.change_password(request).await
@@ -148,6 +161,9 @@ where
         self.auth_repo.change_email(request).await
     }
 
+    // ========
+    //  delete
+    // ========
     async fn delete_user(&self, request: &DeleteUser) -> Result<(), DeleteUserError> {
         self.auth_repo.delete_user(request).await
     }

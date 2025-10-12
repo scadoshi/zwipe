@@ -1,10 +1,9 @@
+use crate::domain::moderation::ContainsBadWord;
 use email_address::EmailAddress;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use thiserror::Error;
 use uuid::Uuid;
-
-use crate::domain::auth::models::bad_words::ContainsBadWord;
 
 // ========
 //  errors
