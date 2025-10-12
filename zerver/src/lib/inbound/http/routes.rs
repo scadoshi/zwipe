@@ -5,7 +5,8 @@ use crate::domain::{
 };
 #[cfg(feature = "zerver")]
 use crate::inbound::http::handlers::auth::{
-    change_email, change_password, change_username, delete_user,
+    change_email::change_email, change_password::change_password, change_username::change_username,
+    delete_user::delete_user, refresh_session::refresh_session, revoke_sessions::revoke_sessions,
 };
 #[cfg(feature = "zerver")]
 use crate::inbound::http::handlers::deck_card::{
@@ -15,7 +16,7 @@ use crate::inbound::http::handlers::deck_card::{
 use crate::inbound::http::handlers::user::get_user;
 #[cfg(feature = "zerver")]
 use crate::inbound::http::handlers::{
-    auth::{authenticate_user, register_user},
+    auth::{authenticate_user::authenticate_user, register_user::register_user},
     card::{get_card, search_cards},
     deck::{create_deck_profile, delete_deck, get_deck, update_deck_profile},
     health::{are_server_and_database_running, is_server_running, root},
@@ -27,7 +28,9 @@ use axum::routing::{delete, get, post, put};
 #[cfg(feature = "zerver")]
 use axum::Router;
 
-// actual routing
+// ===============
+//  public router
+// ===============
 #[cfg(feature = "zerver")]
 pub fn public_routes<AS, US, HS, CS, DS>() -> Router<AppState<AS, US, HS, CS, DS>>
 where
@@ -37,8 +40,6 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    use crate::inbound::http::handlers::auth::refresh_session;
-
     Router::new()
         .route("/", get(root))
         .nest(
@@ -59,7 +60,9 @@ where
         )
 }
 
-// for the frontend to use
+// ==============
+//  for frontend
+// ==============
 pub fn server_health_route() -> String {
     "/health/server".to_string()
 }
@@ -80,7 +83,9 @@ pub fn refresh_session_route() -> String {
     "/api/auth/refresh".to_string()
 }
 
-// actual routing
+// ===============
+//  private router
+// ===============
 #[cfg(feature = "zerver")]
 pub fn private_routes<AS, US, HS, CS, DS>() -> Router<AppState<AS, US, HS, CS, DS>>
 where
@@ -90,8 +95,6 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    use crate::inbound::http::handlers::auth::revoke_sessions;
-
     Router::new().nest(
         "/api",
         Router::new()
@@ -129,7 +132,9 @@ where
     )
 }
 
-// for the frontend to use
+// ==============
+//  for frontend
+// ==============
 pub fn get_user_route() -> String {
     "/api/user".to_string()
 }
