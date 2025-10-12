@@ -1,10 +1,10 @@
-mod common_passwords;
+mod common;
 #[cfg(feature = "zerver")]
 use argon2::{
     password_hash::{self, rand_core::OsRng, SaltString},
     Argon2, PasswordHasher, PasswordVerifier,
 };
-use common_passwords::IsCommonPassword;
+use common::IsCommonPassword;
 use std::collections::HashSet;
 use thiserror::Error;
 
