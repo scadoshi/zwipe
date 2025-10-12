@@ -1,3 +1,4 @@
+use serde::Serialize;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -21,6 +22,15 @@ impl Quantity {
 
     pub fn quantity(&self) -> i32 {
         self.0
+    }
+}
+
+impl Serialize for Quantity {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.quantity().serialize(serializer)
     }
 }
 
