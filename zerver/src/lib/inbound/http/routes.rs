@@ -18,7 +18,7 @@ use crate::inbound::http::handlers::user::get_user::get_user;
 #[cfg(feature = "zerver")]
 use crate::inbound::http::handlers::{
     auth::{authenticate_user::authenticate_user, register_user::register_user},
-    card::{get_card, search_cards},
+    card::{get_card::get_card, search_card::search_cards},
     deck::{
         create_deck_profile::create_deck_profile, delete_deck::delete_deck, get_deck::get_deck,
         update_deck_profile::update_deck_profile,

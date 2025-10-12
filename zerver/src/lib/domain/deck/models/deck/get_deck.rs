@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 #[cfg(feature = "zerver")]
 use crate::domain::{
-    card::models::{card_profile::GetCardProfileError, GetCardError},
+    card::models::{card_profile::get_card_profile::GetCardProfileError, get_card::GetCardError},
     deck::models::{
         deck::{deck_profile::DeckProfile, update_deck_profile::UpdateDeckProfile},
         deck_card::{

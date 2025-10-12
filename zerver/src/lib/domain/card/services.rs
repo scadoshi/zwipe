@@ -1,14 +1,22 @@
-use crate::domain::card::{
-    models::{
-        card_profile::{CardProfile, GetCardProfile, GetCardProfileError, GetCardProfiles},
-        scryfall_data::ScryfallData,
-        sync_metrics::{SyncMetrics, SyncType},
-        Card, CreateCardError, GetCard, GetCardError, GetCards, SearchCard, SearchCardError,
-    },
-    ports::{CardRepository, CardService},
-};
 use crate::inbound::external::scryfall::BulkEndpoint;
-use crate::outbound::sqlx::card::scryfall_data_field_count;
+use crate::{
+    domain::card::{
+        models::{
+            card_profile::{
+                get_card_profile::{GetCardProfile, GetCardProfileError, GetCardProfiles},
+                CardProfile,
+            },
+            create_card::CreateCardError,
+            get_card::{GetCard, GetCardError, GetCards},
+            scryfall_data::ScryfallData,
+            search_card::{SearchCard, SearchCardError},
+            sync_metrics::{SyncMetrics, SyncType},
+            Card,
+        },
+        ports::{CardRepository, CardService},
+    },
+    outbound::sqlx::card::helpers::scryfall_data_fields::scryfall_data_field_count,
+};
 use chrono::NaiveDateTime;
 
 /// postgresql will have issues if there are more
@@ -42,34 +50,11 @@ where
 }
 
 impl<R: CardRepository> CardService for Service<R> {
+    // ========
+    //  create
+    // ========
     async fn insert(&self, scryfall_data: ScryfallData) -> Result<Card, CreateCardError> {
         self.repo.insert(&scryfall_data).await
-    }
-
-    async fn get_card(&self, request: &GetCard) -> Result<Card, GetCardError> {
-        self.repo.get_card(request).await
-    }
-
-    async fn get_cards(&self, request: &GetCards) -> Result<Vec<Card>, GetCardError> {
-        self.repo.get_cards(request).await
-    }
-
-    async fn search_cards(&self, request: &SearchCard) -> Result<Vec<Card>, SearchCardError> {
-        self.repo.search_cards(request).await
-    }
-
-    async fn get_card_profile(
-        &self,
-        request: &GetCardProfile,
-    ) -> Result<CardProfile, GetCardProfileError> {
-        self.repo.get_card_profile(request).await
-    }
-
-    async fn get_card_profiles(
-        &self,
-        request: &GetCardProfiles,
-    ) -> Result<Vec<CardProfile>, GetCardProfileError> {
-        self.repo.get_card_profiles(request).await
     }
 
     async fn scryfall_sync(&self, sync_type: SyncType) -> anyhow::Result<SyncMetrics> {
@@ -107,6 +92,35 @@ impl<R: CardRepository> CardService for Service<R> {
         tracing::info!("{:?}", sync_metrics);
 
         Ok(sync_metrics)
+    }
+
+    // =====
+    //  get
+    // =====
+    async fn get_card(&self, request: &GetCard) -> Result<Card, GetCardError> {
+        self.repo.get_card(request).await
+    }
+
+    async fn get_cards(&self, request: &GetCards) -> Result<Vec<Card>, GetCardError> {
+        self.repo.get_cards(request).await
+    }
+
+    async fn search_cards(&self, request: &SearchCard) -> Result<Vec<Card>, SearchCardError> {
+        self.repo.search_cards(request).await
+    }
+
+    async fn get_card_profile(
+        &self,
+        request: &GetCardProfile,
+    ) -> Result<CardProfile, GetCardProfileError> {
+        self.repo.get_card_profile(request).await
+    }
+
+    async fn get_card_profiles(
+        &self,
+        request: &GetCardProfiles,
+    ) -> Result<Vec<CardProfile>, GetCardProfileError> {
+        self.repo.get_card_profiles(request).await
     }
 
     async fn get_last_sync_date(

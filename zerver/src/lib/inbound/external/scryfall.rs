@@ -115,7 +115,7 @@ impl CreatePlanesWalker for Client {
 //  bulk endpoint ergonomics
 // ==========================
 // not sure if every endpoints returns consistent types
-// only tested `OracleCards` for now (*3*)
+// only tested `OracleCards` for now :O
 
 pub enum BulkEndpoint {
     OracleCards,

@@ -3,21 +3,31 @@ use std::future::Future;
 use chrono::NaiveDateTime;
 
 use crate::domain::card::models::{
-    card_profile::{CardProfile, GetCardProfile, GetCardProfileError, GetCardProfiles},
+    card_profile::{
+        get_card_profile::{GetCardProfile, GetCardProfileError, GetCardProfiles},
+        CardProfile,
+    },
+    create_card::CreateCardError,
+    get_card::{GetCard, GetCardError, GetCards},
     scryfall_data::{GetScryfallDataError, ScryfallData, SearchScryfallDataError},
+    search_card::{SearchCard, SearchCardError},
     sync_metrics::{SyncMetrics, SyncType},
-    Card, CreateCardError, GetCard, GetCardError, GetCards, SearchCard, SearchCardError,
+    Card,
 };
 
 /// enables card related database operations
 pub trait CardRepository: Clone + Send + Sync + 'static {
+    // ========
+    //  create
+    // ========
+
     /// single card creation
     fn insert(
         &self,
         sfd: &ScryfallData,
     ) -> impl Future<Output = Result<Card, CreateCardError>> + Send;
 
-    /// for inserting as many cards as you want (*3*)
+    /// for inserting as many cards as you want :O
     /// - postgres limits parameter counts but that is handled else where
     /// - hence the privateness
     fn bulk_insert(
@@ -25,7 +35,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         multiple_scryfall_data: &[ScryfallData],
     ) -> impl Future<Output = Result<Vec<Card>, CreateCardError>> + Send;
 
-    /// for inserting as many cards as you want in batches (*3*)
+    /// for inserting as many cards as you want in batches :O
     /// - chunks into given batch size
     /// - uses bulk_insert internally
     fn batch_insert(
@@ -66,6 +76,16 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
     ) -> impl Future<Output = Result<Vec<Card>, CreateCardError>> + Send;
+
+    /// saves sync_metrics to database
+    fn record_sync_metrics(
+        &self,
+        sync_metrics: &SyncMetrics,
+    ) -> impl Future<Output = Result<SyncMetrics, anyhow::Error>> + Send;
+
+    // =====
+    //  get
+    // =====
 
     /// gets scryfall data with a uuid
     fn get_scryfall_data(
@@ -115,12 +135,6 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         request: &GetCardProfiles,
     ) -> impl Future<Output = Result<Vec<CardProfile>, GetCardProfileError>> + Send;
 
-    /// saves sync_metrics to database
-    fn record_sync_metrics(
-        &self,
-        sync_metrics: &SyncMetrics,
-    ) -> impl Future<Output = Result<SyncMetrics, anyhow::Error>> + Send;
-
     /// gets last sync date from database
     fn get_last_sync_date(
         &self,
@@ -130,6 +144,10 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
 
 /// orchestrates card related operations
 pub trait CardService: Clone + Send + Sync + 'static {
+    // ========
+    //  create
+    // ========
+
     /// inserts card into database responding with card
     ///
     /// this is not exposed because it is
@@ -138,6 +156,16 @@ pub trait CardService: Clone + Send + Sync + 'static {
         &self,
         scryfall_data: ScryfallData,
     ) -> impl Future<Output = Result<Card, CreateCardError>>;
+
+    /// syncs database with scryfall bulk data
+    fn scryfall_sync(
+        &self,
+        sync_type: SyncType,
+    ) -> impl Future<Output = anyhow::Result<SyncMetrics>> + Send;
+
+    // =====
+    //  get
+    // =====
 
     /// gets scryfall data with a uuid
     fn get_card(
@@ -168,12 +196,6 @@ pub trait CardService: Clone + Send + Sync + 'static {
         &self,
         request: &GetCardProfiles,
     ) -> impl Future<Output = Result<Vec<CardProfile>, GetCardProfileError>> + Send;
-
-    /// syncs database with scryfall bulk data
-    fn scryfall_sync(
-        &self,
-        sync_type: SyncType,
-    ) -> impl Future<Output = anyhow::Result<SyncMetrics>> + Send;
 
     /// gets last sync date from database
     fn get_last_sync_date(

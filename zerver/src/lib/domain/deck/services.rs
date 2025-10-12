@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use crate::domain::{
     card::{
-        models::{card_profile::GetCardProfiles, GetCards},
+        models::{card_profile::get_card_profile::GetCardProfiles, get_card::GetCards},
         ports::CardRepository,
     },
     deck::{
