@@ -13,9 +13,6 @@ use legalities::Legalities;
 use prices::Prices;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-// =]:^{O
-#[cfg(feature = "zerver")]
-use sqlx::FromRow;
 #[cfg(feature = "zerver")]
 use thiserror::Error;
 use uuid::Uuid;
@@ -46,6 +43,7 @@ pub enum SearchScryfallDataError {
 
 /// card data from scryfall
 /// used for create and get requests
+// =]:^{O
 #[cfg_attr(feature = "zerver", derive(sqlx::FromRow))]
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 // qualifying usage of FromRow (a sqlx derive macro)
