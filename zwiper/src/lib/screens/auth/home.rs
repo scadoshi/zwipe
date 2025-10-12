@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use zwipe::domain::ascii_logo;
+use zwipe::domain::logo;
 
 use crate::{
     screens::auth::{login::Login, register::Register},
@@ -10,7 +10,7 @@ use crate::{
 pub fn Home() -> Element {
     const MOVE_SWIPES: [Dir; 2] = [Dir::Up, Dir::Down];
 
-    let ascii_logo = ascii_logo::logo();
+    let ascii_logo = logo::logo();
     let mut swipe_state = use_signal(|| swipe::State::new());
 
     rsx! {

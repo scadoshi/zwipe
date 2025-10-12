@@ -11,10 +11,10 @@ use dioxus::prelude::*;
 use email_address::EmailAddress;
 use zwipe::{
     domain::{
-        auth::models::{password::Password, AuthenticateUser},
+        auth::models::{authenticate_user::AuthenticateUser, password::Password},
         user::models::Username,
     },
-    inbound::http::handlers::auth::HttpAuthenticateUser,
+    inbound::http::handlers::auth::authenticate_user::HttpAuthenticateUser,
 };
 
 #[component]

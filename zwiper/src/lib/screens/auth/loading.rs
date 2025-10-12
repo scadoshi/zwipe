@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use zwipe::domain::ascii_logo;
+use zwipe::domain::logo;
 
 #[component]
 pub fn AuthGate() -> Element {
