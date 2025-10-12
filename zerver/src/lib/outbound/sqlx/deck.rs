@@ -1,214 +1,19 @@
-use sqlx::{query, query_as, QueryBuilder};
-use sqlx_macros::FromRow;
-use thiserror::Error;
-use uuid::Uuid;
+pub mod error; 
+pub mod models;
+pub mod helper;
 
+use sqlx::{query, query_as, QueryBuilder};
 use crate::{
     domain::deck::{
-        models::{
-            deck::{
-                CreateDeckProfile, CreateDeckProfileError, DeckName, DeckProfile, DeleteDeck,
-                DeleteDeckError, GetDeck, GetDeckProfileError, InvalidDeckname, UpdateDeckProfile,
-                UpdateDeckProfileError,
-            },
-            deck_card::{
-                CreateDeckCard, CreateDeckCardError, DeckCard, DeleteDeckCard, DeleteDeckCardError, GetDeckCardError, InvalidQuantity, Quantity, UpdateDeckCard, UpdateDeckCardError
-            },
-        },
+        models::{deck::{
+                create_deck_profile::{CreateDeckProfile, CreateDeckProfileError}, deck_profile::DeckProfile, delete_deck::{DeleteDeck,
+                DeleteDeckError}, get_deck::{GetDeck, GetDeckProfileError}, update_deck_profile::{UpdateDeckProfile,
+                UpdateDeckProfileError},
+            }, deck_card::{create_deck_card::{CreateDeckCard, CreateDeckCardError}, delete_deck_card::{DeleteDeckCard, DeleteDeckCardError}, get_deck_card::GetDeckCardError, update_deck_card::{UpdateDeckCard, UpdateDeckCardError}, DeckCard}},
         ports::DeckRepository,
     },
-    outbound::sqlx::postgres::{IsConstraintViolation, Postgres},
+    outbound::sqlx::{deck::{error::IntoDeckCardError, helper::OwnsDeck, models::{DatabaseDeckCard, DatabaseDeckProfile}}, postgres::Postgres},
 };
-
-// ========
-//  errors
-// ========
-
-#[derive(Debug, Error)]
-pub enum ToDeckProfileError {
-    #[error("invalid deck id: {0}")]
-    Id(uuid::Error),
-    #[error(transparent)]
-    DeckName(InvalidDeckname),
-    #[error("invalid user id: {0}")]
-    UserId(uuid::Error),
-}
-
-impl From<ToDeckProfileError> for CreateDeckProfileError {
-    fn from(value: ToDeckProfileError) -> Self {
-        Self::DeckFromDb(value.into())
-    }
-}
-
-impl From<ToDeckProfileError> for UpdateDeckProfileError {
-    fn from(value: ToDeckProfileError) -> Self {
-        Self::DeckFromDb(value.into())
-    }
-}
-
-impl From<ToDeckProfileError> for GetDeckProfileError {
-    fn from(value: ToDeckProfileError) -> Self {
-        GetDeckProfileError::DeckProfileFromDb(value.into())
-    }
-}
-
-impl From<sqlx::Error> for CreateDeckProfileError {
-    fn from(value: sqlx::Error) -> Self {
-        match value {
-            e if e.is_unique_constraint_violation() => Self::Duplicate,
-            e => Self::Database(e.into()),
-        }
-    }
-}
-
-impl From<sqlx::Error> for GetDeckProfileError {
-    fn from(value: sqlx::Error) -> Self {
-        match value {
-            sqlx::Error::RowNotFound => Self::NotFound,
-            e => Self::Database(e.into()),
-        }
-    }
-}
-
-impl From<sqlx::Error> for UpdateDeckProfileError {
-    fn from(value: sqlx::Error) -> Self {
-        match value {
-            e if e.is_unique_constraint_violation() => Self::Duplicate,
-            sqlx::Error::RowNotFound => Self::NotFound,
-            e => Self::Database(e.into()),
-        }
-    }
-}
-
-impl From<sqlx::Error> for DeleteDeckError {
-    fn from(value: sqlx::Error) -> Self {
-        Self::Database(value.into())
-    }
-}
-
-#[derive(Debug, Error)]
-pub enum ToDeckCardError {
-    #[error(transparent)]
-    InvalidId(uuid::Error),
-    #[error(transparent)]
-    InvalidDeckId(uuid::Error),
-    #[error(transparent)]
-    InvalidCardId(uuid::Error),
-    #[error(transparent)]
-    InvalidQuantity(InvalidQuantity),
-}
-
-impl From<InvalidQuantity> for ToDeckCardError {
-    fn from(value: InvalidQuantity) -> Self {
-        Self::InvalidQuantity(value)
-    }
-}
-
-impl From<ToDeckCardError> for CreateDeckCardError {
-    fn from(value: ToDeckCardError) -> Self {
-        Self::DeckCardFromDb(value.into())
-    }
-}
-
-impl From<ToDeckCardError> for GetDeckCardError {
-    fn from(value: ToDeckCardError) -> Self {
-        Self::DeckCardFromDb(value.into())
-    }
-}
-
-impl From<ToDeckCardError> for UpdateDeckCardError {
-    fn from(value: ToDeckCardError) -> Self {
-        Self::DeckCardFromDb(value.into())
-    }
-}
-
-impl From<sqlx::Error> for CreateDeckCardError {
-    fn from(value: sqlx::Error) -> Self {
-        match value {
-            e if e.is_unique_constraint_violation() => Self::Duplicate,
-            e => Self::Database(e.into()),
-        }
-    }
-}
-
-impl From<sqlx::Error> for GetDeckCardError {
-    fn from(value: sqlx::Error) -> Self {
-        match value {
-            sqlx::Error::RowNotFound => Self::NotFound,
-            e => Self::Database(e.into()),
-        }
-    }
-}
-
-impl From<sqlx::Error> for UpdateDeckCardError {
-    fn from(value: sqlx::Error) -> Self {
-        match value {
-            e if e.is_check_constraint_violation() => Self::InvalidResultingQuantity,
-            sqlx::Error::RowNotFound => Self::NotFound,
-            e => Self::Database(e.into()),
-        }
-    }
-}
-
-impl From<sqlx::Error> for DeleteDeckCardError {
-    fn from(value: sqlx::Error) -> Self {
-        Self::Database(value.into())
-    }
-}
-
-// ===========
-//   db types
-// ===========
-
-/// raw database deck record
-/// (unvalidated data from `PostgreSQL`)
-#[derive(Debug, Clone, FromRow)]
-pub struct DatabaseDeckProfile {
-    pub id: String,
-    pub name: String,
-    pub user_id: String,
-}
-
-/// converts database deck to validated domain deck
-impl TryFrom<DatabaseDeckProfile> for DeckProfile {
-    type Error = ToDeckProfileError;
-
-    fn try_from(value: DatabaseDeckProfile) -> Result<Self, Self::Error> {
-        let id = Uuid::try_parse(&value.id).map_err(|e| ToDeckProfileError::Id(e.into()))?;
-        let name =
-            DeckName::new(&value.name).map_err(|e| ToDeckProfileError::DeckName(e.into()))?;
-        let user_id =
-            Uuid::try_parse(&value.user_id).map_err(|e| ToDeckProfileError::UserId(e.into()))?;
-        Ok(Self { id, name, user_id })
-    }
-}
-
-/// raw database deck card record
-/// (unvalidated data from `PostgreSQL`)
-#[derive(Debug, Clone, FromRow)]
-pub struct DatabaseDeckCard {
-    pub deck_id: String,
-    pub card_profile_id: String,
-    pub quantity: i32,
-}
-
-/// converts database deck card to validated domain deck card
-impl TryFrom<DatabaseDeckCard> for DeckCard {
-    type Error = ToDeckCardError;
-
-    fn try_from(value: DatabaseDeckCard) -> Result<Self, Self::Error> {
-        let deck_id = Uuid::try_parse(&value.deck_id)
-            .map_err(|e| ToDeckCardError::InvalidDeckId(e.into()))?;
-        let card_profile_id = Uuid::try_parse(&value.card_profile_id)
-            .map_err(|e| ToDeckCardError::InvalidCardId(e.into()))?;
-        let quantity = Quantity::new(value.quantity)?;
-        Ok(Self {
-            deck_id,
-            card_profile_id,
-            quantity,
-        })
-    }
-}
 
 impl DeckRepository for Postgres {
     // ========
@@ -240,6 +45,10 @@ impl DeckRepository for Postgres {
         &self,
         request: &CreateDeckCard,
     ) -> Result<DeckCard, CreateDeckCardError> {
+        if !request.user_id.owns_deck(&request.deck_id, &self.pool).await? {
+            return Err(CreateDeckCardError::Forbidden)
+        }
+        
         let mut tx = self.pool.begin().await?;
 
         let database_deck_card = query_as!(
@@ -258,6 +67,7 @@ impl DeckRepository for Postgres {
 
         Ok(deck_card)
     }
+
     // =====
     //  get
     // =====
@@ -273,6 +83,10 @@ impl DeckRepository for Postgres {
         .fetch_one(&self.pool)
         .await?;
 
+        if database_deck_profile.user_id != request.user_id.to_string() {
+            return Err(GetDeckProfileError::Forbidden);
+        }
+
         let deck_profile: DeckProfile = database_deck_profile.try_into()?;
 
         Ok(deck_profile)
@@ -282,6 +96,10 @@ impl DeckRepository for Postgres {
         &self,
         request: &GetDeck,
     ) -> Result<Vec<DeckCard>, GetDeckCardError> {
+        if request.user_id.owns_deck(&request.deck_id, &self.pool).await? {
+            return Err(GetDeckCardError::Forbidden);
+        }
+
         let database_deck_cards = query_as!(
             DatabaseDeckCard,
             "SELECT deck_id, card_profile_id, quantity FROM deck_cards WHERE deck_id = $1",
@@ -293,10 +111,11 @@ impl DeckRepository for Postgres {
         let deck_cards: Vec<DeckCard> = database_deck_cards
             .into_iter()
             .map(|x| x.try_into())
-            .collect::<Result<Vec<DeckCard>, ToDeckCardError>>()?;
+            .collect::<Result<Vec<DeckCard>, IntoDeckCardError>>()?;
 
         Ok(deck_cards)
     }
+
     // ========
     //  update
     // ========
@@ -304,6 +123,10 @@ impl DeckRepository for Postgres {
         &self,
         request: &UpdateDeckProfile,
     ) -> Result<DeckProfile, UpdateDeckProfileError> {
+        if request.user_id.owns_deck(&request.deck_id, &self.pool).await? {
+            return Err(UpdateDeckProfileError::Forbidden);
+        }
+
         let mut tx = self.pool.begin().await?;
 
         let mut qb = QueryBuilder::new("UPDATE decks SET ");
@@ -333,6 +156,10 @@ impl DeckRepository for Postgres {
         &self,
         request: &UpdateDeckCard,
     ) -> Result<DeckCard, UpdateDeckCardError> {
+        if request.user_id.owns_deck(&request.deck_id, &self.pool).await? {
+            return Err(UpdateDeckCardError::Forbidden);
+        }
+
         let mut tx = self.pool.begin().await?;
 
         let database_deck_card = query_as!(
@@ -351,13 +178,18 @@ impl DeckRepository for Postgres {
 
         Ok(deck_card)
     }
+
     // ========
     //  delete
     // ========
     async fn delete_deck(&self, request: &DeleteDeck) -> Result<(), DeleteDeckError> {
+        if request.user_id.owns_deck(&request.deck_id, &self.pool).await? {
+            return Err(DeleteDeckError::Forbidden);
+        }
+        
         let mut tx = self.pool.begin().await?;
 
-        let result = query!("DELETE FROM decks WHERE id = $1", request.id())
+        let result = query!("DELETE FROM decks WHERE id = $1", request.deck_id)
             .execute(&mut *tx)
             .await?;
 
@@ -371,6 +203,10 @@ impl DeckRepository for Postgres {
     }
 
     async fn delete_deck_card(&self, request: &DeleteDeckCard) -> Result<(), DeleteDeckCardError> {
+        if request.user_id.owns_deck(&request.deck_id, &self.pool).await? {
+            return Err(DeleteDeckCardError::Forbidden);
+        }
+        
         let mut tx = self.pool.begin().await?;
 
         let result = query!("DELETE FROM deck_cards WHERE deck_id = $1 AND card_profile_id = $2", request.deck_id, request.card_profile_id)
