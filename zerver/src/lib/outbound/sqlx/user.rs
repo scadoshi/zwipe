@@ -13,7 +13,7 @@ use crate::outbound::sqlx::postgres::Postgres;
 // ========
 
 #[derive(Debug, Error)]
-pub enum ToUserError {
+pub enum IntoUserError {
     #[error(transparent)]
     Id(uuid::Error),
     #[error(transparent)]
@@ -22,19 +22,19 @@ pub enum ToUserError {
     Email(email_address::Error),
 }
 
-impl From<uuid::Error> for ToUserError {
+impl From<uuid::Error> for IntoUserError {
     fn from(value: uuid::Error) -> Self {
         Self::Id(value)
     }
 }
 
-impl From<InvalidUsername> for ToUserError {
+impl From<InvalidUsername> for IntoUserError {
     fn from(value: InvalidUsername) -> Self {
         Self::Username(value)
     }
 }
 
-impl From<email_address::Error> for ToUserError {
+impl From<email_address::Error> for IntoUserError {
     fn from(value: email_address::Error) -> Self {
         Self::Email(value)
     }
@@ -49,8 +49,8 @@ impl From<sqlx::Error> for GetUserError {
     }
 }
 
-impl From<ToUserError> for GetUserError {
-    fn from(value: ToUserError) -> Self {
+impl From<IntoUserError> for GetUserError {
+    fn from(value: IntoUserError) -> Self {
         Self::UserFromDb(value.into())
     }
 }
@@ -70,7 +70,7 @@ pub struct DatabaseUser {
 
 /// converts database user to validated domain user
 impl TryFrom<DatabaseUser> for User {
-    type Error = ToUserError;
+    type Error = IntoUserError;
 
     fn try_from(value: DatabaseUser) -> Result<Self, Self::Error> {
         let id = Uuid::try_parse(&value.id)?;
