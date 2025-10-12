@@ -8,14 +8,14 @@ use std::{str::FromStr, time::Duration};
 use zwipe::{
     config::Config,
     domain::{
-        ascii_logo, auth::services::Service as AuthService, card::services::Service as CardService,
+        auth::services::Service as AuthService, card::services::Service as CardService, logo,
     },
     outbound::sqlx::postgres::Postgres,
 };
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    ascii_logo::print();
+    logo::print();
 
     let config = Config::from_env()?;
 

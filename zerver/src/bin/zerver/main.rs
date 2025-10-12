@@ -1,12 +1,12 @@
 use std::str::FromStr;
 use zwipe::config::Config;
-use zwipe::domain::{ascii_logo, auth, card, deck, health, user};
+use zwipe::domain::{auth, card, deck, health, logo, user};
 use zwipe::inbound::http::{HttpServer, HttpServerConfig};
 use zwipe::outbound::sqlx::postgres::Postgres;
 
 #[tokio::main]
 async fn main() {
-    ascii_logo::print();
+    logo::print();
     match run().await {
         Ok(_) => (),
         Err(e) => tracing::error!("main failed: {:?}", e),
