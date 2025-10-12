@@ -2,17 +2,27 @@ use std::future::Future;
 
 use crate::domain::deck::models::{
     deck::{
-        CreateDeckProfile, CreateDeckProfileError, Deck, DeckProfile, DeleteDeck, DeleteDeckError,
-        GetDeck, GetDeckError, GetDeckProfileError, UpdateDeckProfile, UpdateDeckProfileError,
+        create_deck_profile::{CreateDeckProfile, CreateDeckProfileError},
+        deck_profile::DeckProfile,
+        delete_deck::{DeleteDeck, DeleteDeckError},
+        get_deck::{GetDeck, GetDeckError, GetDeckProfileError},
+        update_deck_profile::{UpdateDeckProfile, UpdateDeckProfileError},
+        Deck,
     },
     deck_card::{
-        CreateDeckCard, CreateDeckCardError, DeckCard, DeleteDeckCard, DeleteDeckCardError,
-        GetDeckCardError, UpdateDeckCard, UpdateDeckCardError,
+        create_deck_card::{CreateDeckCard, CreateDeckCardError},
+        delete_deck_card::{DeleteDeckCard, DeleteDeckCardError},
+        get_deck_card::GetDeckCardError,
+        update_deck_card::{UpdateDeckCard, UpdateDeckCardError},
+        DeckCard,
     },
 };
 
 /// enables deck related database operations
 pub trait DeckRepository: Clone + Send + Sync + 'static {
+    // ========
+    //  create
+    // ========
     fn create_deck_profile(
         &self,
         request: &CreateDeckProfile,
@@ -23,6 +33,9 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         request: &CreateDeckCard,
     ) -> impl Future<Output = Result<DeckCard, CreateDeckCardError>> + Send;
 
+    // =====
+    //  get
+    // =====
     fn get_deck_profile(
         &self,
         request: &GetDeck,
@@ -33,6 +46,9 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         request: &GetDeck,
     ) -> impl Future<Output = Result<Vec<DeckCard>, GetDeckCardError>> + Send;
 
+    // ========
+    //  update
+    // ========
     fn update_deck_profile(
         &self,
         request: &UpdateDeckProfile,
@@ -43,6 +59,9 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         request: &UpdateDeckCard,
     ) -> impl Future<Output = Result<DeckCard, UpdateDeckCardError>> + Send;
 
+    // ========
+    //  delete
+    // ========
     fn delete_deck(
         &self,
         request: &DeleteDeck,

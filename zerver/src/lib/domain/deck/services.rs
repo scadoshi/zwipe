@@ -8,13 +8,18 @@ use crate::domain::{
     deck::{
         models::{
             deck::{
-                CreateDeckProfile, CreateDeckProfileError, Deck, DeckProfile, DeleteDeck,
-                DeleteDeckError, GetDeck, GetDeckError, GetDeckProfileError, UpdateDeckProfile,
-                UpdateDeckProfileError,
+                create_deck_profile::{CreateDeckProfile, CreateDeckProfileError},
+                deck_profile::DeckProfile,
+                delete_deck::{DeleteDeck, DeleteDeckError},
+                get_deck::{GetDeck, GetDeckError, GetDeckProfileError},
+                update_deck_profile::{UpdateDeckProfile, UpdateDeckProfileError},
+                Deck,
             },
             deck_card::{
-                CreateDeckCard, CreateDeckCardError, DeckCard, DeleteDeckCard, DeleteDeckCardError,
-                UpdateDeckCardError,
+                create_deck_card::{CreateDeckCard, CreateDeckCardError},
+                delete_deck_card::{DeleteDeckCard, DeleteDeckCardError},
+                update_deck_card::{UpdateDeckCard, UpdateDeckCardError},
+                DeckCard,
             },
         },
         ports::{DeckRepository, DeckService},
@@ -49,6 +54,9 @@ where
     DR: DeckRepository,
     CR: CardRepository,
 {
+    // ========
+    //  create
+    // ========
     async fn create_deck_profile(
         &self,
         request: &CreateDeckProfile,
@@ -56,13 +64,24 @@ where
         self.deck_repo.create_deck_profile(request).await
     }
 
+    async fn create_deck_card(
+        &self,
+        request: &CreateDeckCard,
+    ) -> Result<DeckCard, CreateDeckCardError> {
+        let _deck_profile = self.get_deck_profile(&request.into()).await?;
+        self.deck_repo.create_deck_card(request).await
+    }
+
+    // =====
+    //  get
+    // =====
     async fn get_deck_profile(
         &self,
         request: &GetDeck,
     ) -> Result<DeckProfile, GetDeckProfileError> {
         let deck_profile = self.deck_repo.get_deck_profile(request).await?;
         if request.user_id != deck_profile.user_id {
-            return Err(GetDeckProfileError::DeckNotOwnedByUser);
+            return Err(GetDeckProfileError::Forbidden);
         }
         Ok(deck_profile)
     }
@@ -83,6 +102,9 @@ where
         Ok(deck)
     }
 
+    // ========
+    //  update
+    // ========
     async fn update_deck_profile(
         &self,
         request: &UpdateDeckProfile,
@@ -92,24 +114,19 @@ where
         self.deck_repo.update_deck_profile(request).await
     }
 
-    async fn delete_deck(&self, request: &DeleteDeck) -> Result<(), DeleteDeckError> {
-        self.deck_repo.delete_deck(request).await
-    }
-
-    async fn create_deck_card(
-        &self,
-        request: &CreateDeckCard,
-    ) -> Result<DeckCard, CreateDeckCardError> {
-        let _deck_profile = self.get_deck_profile(&request.into()).await?;
-        self.deck_repo.create_deck_card(request).await
-    }
-
     async fn update_deck_card(
         &self,
-        request: &super::models::deck_card::UpdateDeckCard,
+        request: &UpdateDeckCard,
     ) -> Result<DeckCard, UpdateDeckCardError> {
         let _deck_profile = self.get_deck_profile(&request.into()).await?;
         self.deck_repo.update_deck_card(request).await
+    }
+
+    // ========
+    //  delete
+    // ========
+    async fn delete_deck(&self, request: &DeleteDeck) -> Result<(), DeleteDeckError> {
+        self.deck_repo.delete_deck(request).await
     }
 
     async fn delete_deck_card(&self, request: &DeleteDeckCard) -> Result<(), DeleteDeckCardError> {
