@@ -13,27 +13,27 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Card domain refactoring complete. Session management working with in-memory storage. Frontend screen development in progress.
+**Last Updated**: Dioxus context API implemented for global session management. Ready to build main application flow.
 
-**Current Focus**: Building frontend screens and navigation patterns. Persistent storage deferred until iOS deployment.
+**Current Focus**: Building MainHome screen with deck management, card search, and navigation patterns.
 
-**Recent Achievement**: Completed card domain refactoring applying consistent modular patterns. Split domain models into per-operation files (create_card.rs, get_card.rs, search_card.rs), extracted SQLx error mappings and insertion helpers (insert_card.rs 198 lines, scryfall_data_fields.rs 324 lines), separated HTTP handlers into individual files. Reduced card.rs from 900+ lines to 388 lines. Built PersistentSession trait using keyring crate for iOS Keychain/Android KeyStore - sessions working in-memory, persistent storage blocked by iOS entitlements configuration. All backend domains now follow uniform modular architecture (auth 11 files, user 2 files, deck 11 files, card 9+ files).
+**Recent Achievement**: Implemented global session management using Dioxus context API. Session loaded once at App startup with use_context_provider, accessed via use_context across all components eliminating prop drilling. AuthClient also provided via context. Optimized routing - MainHome at root (common case), redirects to /auth only when no session exists. Session state now shared reactively across component tree. Authentication flow complete end-to-end with in-memory sessions working (persistent storage deferred to deployment).
 
-**Current Decision**: Session architecture complete and functional in-memory. Deferring iOS Keychain entitlements configuration until deployment phase to maintain development momentum. Focus on building frontend screens knowing sessions work end-to-end but won't persist across app restarts during development.
+**Current Decision**: Context-based state management established as pattern for app-wide state (Session, AuthClient). Props reserved for parent-child component relationships (swipe_state). Ready to build actual application screens with clean state management architecture in place.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Frontend Screen Development** - Building main application screens and UI components
-2. **Router Configuration** - Setting up navigation structure and route definitions
-3. **Screen Transitions** - Implementing navigation patterns between authenticated screens
-4. **UI Component Library** - Creating reusable Dioxus components for app functionality
-5. **Session Flow Testing** - Verifying end-to-end auth works (login, register, navigation to main screens)
+1. **MainHome Application Flow** - Building deck management interface with swipe navigation
+2. **Deck List Display** - Showing user's decks with create/edit/delete actions
+3. **Card Search Screen** - Implementing card search with backend API integration
+4. **Navigation Patterns** - Establishing consistent swipe-based navigation between screens
+5. **Component Architecture** - Breaking down MainHome into reusable sub-components
 
 ### 🤔 Next Immediate Priorities (Top 5)
-1. **iOS Keychain Entitlements Configuration** - DEPLOYMENT BLOCKER: Add Dioxus.toml bundle config with keychain-access-groups for persistent session storage on iOS
-2. **Global Session Context** - Dioxus context provider for app-wide access to current user and session data
-3. **Protected Route Pattern** - Component wrapper checking auth state before rendering protected screens
-4. **401 Refresh Pattern** - HTTP interceptor for automatic token refresh and request retry on expired access tokens
-5. **Logout Implementation** - Clear stored sessions, revoke refresh token via API, reset auth state
+1. **Deck Detail Screen** - View and edit individual deck with card list
+2. **Add Card to Deck Flow** - Search cards and add to deck with quantity selection
+3. **Deck Analytics Display** - Mana curve, color distribution, type breakdown
+4. **iOS Keychain Entitlements Configuration** - DEPLOYMENT BLOCKER: Add Dioxus.toml bundle config for persistent session storage
+5. **401 Refresh Pattern** - HTTP interceptor for automatic token refresh and request retry on expired access tokens
 
 ---
 
@@ -136,6 +136,9 @@ alwaysApply: true
 - **Frontend Logging Infrastructure**: Integrated tracing_subscriber in Dioxus app with configurable log levels via RUST_LOG environment variable
 - **Infallible Config Pattern**: Changed frontend Config to panic on invalid environment variables rather than returning Result (config is deployment requirement)
 - **Session Persistence Trait**: PersistentSession trait on Session with keyring crate for iOS Keychain/Android KeyStore (requires entitlements for production)
+- **Dioxus Context API**: Global session state with use_context_provider in App root, use_context in components eliminating prop drilling
+- **Context-Based State Management**: Session and AuthClient provided via context, props reserved for parent-child relationships (swipe_state pattern)
+- **Route Optimization**: MainHome at root redirecting to /auth when no session (optimizes common case of returning authenticated users)
 
 ---
 

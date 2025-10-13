@@ -15,25 +15,25 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Card domain refactoring complete. Session management implemented with keyring crate.
+**Last Updated**: Dioxus context API implemented for global session and AuthClient state management.
 
-**Next Learning Focus**: Dioxus screen development, navigation patterns, component architecture. iOS entitlements deferred to deployment.
+**Next Learning Focus**: Building actual home screen flow with deck management, card search, and navigation patterns.
 
-**Recent Achievement**: Completed card domain refactoring following modular patterns. Reduced card.rs from 900+ lines to 388 by extracting helpers and error mappings. Built PersistentSession trait using keyring crate for iOS Keychain/Android KeyStore - sessions working in-memory but persistent storage requires iOS entitlements (Dioxus.toml bundle config). Decided to defer entitlements configuration until deployment to maintain learning momentum on frontend development. All backend domains now modular (auth 11 files, user 2 files, deck 11 files, card 9+ files).
+**Recent Achievement**: Implemented global session management using Dioxus context API. Created use_context_provider in App component loading session once at startup, all child components access via use_context() eliminating prop drilling. Added AuthClient to context in AuthHome. Swapped routes to optimize common case - MainHome at root redirects to /auth if no session (returning users get zero redirects). Session state now shared reactively across entire component tree. Ready to build actual application screens with authentication working end-to-end.
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **Dioxus Screen Components** - Building main application screens with proper component architecture
-2. **Router Navigation** - Setting up route structure and navigation patterns between screens
-3. **Component State Management** - Learning Dioxus Signal patterns for screen-level state
-4. **UI Component Library** - Creating reusable components following Dioxus best practices
-5. **Screen Flow Testing** - Verifying navigation and state management work correctly
+1. **Home Screen Application Flow** - Building deck management navigation, card search, and main user interactions
+2. **Deck List Components** - Displaying user's decks with swipe navigation patterns
+3. **Card Search Integration** - Connecting frontend to backend card search API
+4. **Screen Composition** - Breaking down MainHome into logical sub-components
+5. **Navigation Patterns** - Establishing consistent swipe and tap navigation throughout app
 
 ### 🤔 Current Uncertainties (Top 5)
 1. **iOS Entitlements Configuration** - Dioxus.toml bundle config syntax for keychain-access-groups (deferred to deployment)
-2. **Dioxus Context Patterns** - How to create and consume context for global session state across screens
-3. **Protected Route Pattern** - Clean component wrapper that checks auth state, redirects if unauthorized
+2. **Deck Management UX** - Best patterns for creating, editing, and viewing decks in mobile interface
+3. **Card Search UX** - How to present search results and add cards to deck efficiently
 4. **Component Composition** - Best practices for breaking down complex screens into smaller components
-5. **State Lifting** - When to lift state up vs keep it local to components
+5. **State Lifting** - When to lift state up vs keep it local to components vs context
 
 ---
 
@@ -101,6 +101,8 @@ alwaysApply: true
 ### 🎨 Dioxus Component Development & State Management
 - **Component Architecture**: Function components with RSX macro for HTML-like syntax
 - **State Management**: Signal types for reactive state with use_signal() patterns
+- **Context API**: use_context_provider() at root, use_context() in components for global reactive state
+- **Props vs Context**: Props for parent-child relationships, context for app-wide state (Session, AuthClient)
 - **Conditional Rendering**: Dynamic UI based on state with if expressions in RSX
 - **Form Handling**: Input binding, event handlers (oninput, onsubmit), and form validation
 - **Error Display Timing**: UX-focused validation that activates after first submit attempt
