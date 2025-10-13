@@ -17,11 +17,12 @@ use zwipe::{
 };
 
 #[component]
-pub fn Register(swipe_state: Signal<swipe::State>, session: Signal<Option<Session>>) -> Element {
+pub fn Register(swipe_state: Signal<swipe::State>) -> Element {
     const MOVE_SWIPES: [Dir; 1] = [Dir::Down];
     const SUBMIT_SWIPE: Dir = Dir::Up;
 
-    let auth_client = use_signal(|| AuthClient::new());
+    let auth_client: Signal<AuthClient> = use_context();
+    let mut session: Signal<Option<Session>> = use_context();
 
     let mut username = use_signal(|| String::new());
     let mut email = use_signal(|| String::new());
@@ -33,7 +34,6 @@ pub fn Register(swipe_state: Signal<swipe::State>, session: Signal<Option<Sessio
     let mut username_error: Signal<Option<String>> = use_signal(|| None);
     let mut email_error: Signal<Option<String>> = use_signal(|| None);
     let mut password_error: Signal<Option<String>> = use_signal(|| None);
-
     let mut submission_error: Signal<Option<String>> = use_signal(|| None);
 
     let maybe_submit = move || async move {
