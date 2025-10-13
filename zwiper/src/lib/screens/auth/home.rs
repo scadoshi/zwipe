@@ -2,11 +2,11 @@ use dioxus::prelude::*;
 use zwipe::domain::{auth::models::session::Session, logo};
 
 use crate::{
+    client::auth::AuthClient,
     screens::{
         auth::{login::Login, register::Register},
         Screen,
     },
-    session::Persist,
     swipe::{self, Direction as Dir, OnMouse, OnTouch, VH_GAP},
 };
 
@@ -14,24 +14,21 @@ use crate::{
 pub fn Home() -> Element {
     const MOVE_SWIPES: [Dir; 2] = [Dir::Up, Dir::Down];
 
-    let session: Signal<Option<Session>> = use_signal(|| match Session::load() {
-        Ok(session) => session,
-        Err(e) => {
-            tracing::error!("failed to load session: {e}");
-            None
-        }
-    });
+    let auth_client = use_signal(|| AuthClient::new());
+    use_context_provider(|| auth_client);
+    let session: Signal<Option<Session>> = use_context();
 
     let navigator = use_navigator();
-    let logo = logo::logo();
     let mut swipe_state = use_signal(|| swipe::State::new());
+
+    let logo = logo::logo();
 
     rsx! {
         if session.read().is_some() {
             { navigator.push(Screen::MainHome {}); }
         }
 
-        if session.read().is_none() { Login {swipe_state, session} }
+        if session.read().is_none() { Login {swipe_state} }
 
         div { class : "swipe-able",
 
@@ -67,6 +64,6 @@ pub fn Home() -> Element {
             }
         }
 
-        if session.read().is_none() { Register {swipe_state, session} }
+        if session.read().is_none() { Register {swipe_state} }
     }
 }
