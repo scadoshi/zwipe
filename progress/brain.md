@@ -15,22 +15,22 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Profile and Decks screen structure completed with development mock data system.
+**Last Updated**: Session management architecture and deck profiles API integration completed.
 
-**Next Learning Focus**: Form building for profile editing, HTTP client integration for deck CRUD operations, component composition patterns.
+**Next Learning Focus**: Complete deck list UI integration, profile editing forms, and HTTP client patterns for authenticated requests.
 
-**Recent Achievement**: Built Profile screen displaying session user data and Decks placeholder screen, both integrated with MainHome via vertical swipe navigation. Created development Spoof trait for generating mock sessions, enabling rapid UI iteration without authentication overhead. Temporarily bypassing keyring to focus on screen building. Three-screen navigation established: Profile (up), Home (center), Decks (down). Ready to build actual forms and backend integration.
+**Recent Achievement**: Built complete session management system with ActiveSession wrapper, GetActiveSession trait for token validation/refresh, and deck profiles API endpoint. Modularized session domain into separate files (create_session, refresh_session, revoke_sessions, etc.). Added get_deck_profiles backend endpoint with proper authentication. Frontend HTTP client architecture established with session-aware request patterns. Ready to integrate deck list display with backend.
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **Profile Edit Forms** - Building forms for username, email, and password changes with real-time validation
-2. **Deck List HTTP Integration** - Fetching user decks from backend API and displaying with loading states
-3. **Create Deck Form** - Simple form for creating new deck with name validation
-4. **Deck Display Components** - Showing deck cards with quantities in organized layout
-5. **HTTP Client Patterns** - Building reusable patterns for API calls, error handling, and loading states
+1. **Deck List UI Integration** - Complete get_deck_profiles HTTP client implementation and deck list display
+2. **Profile Edit Forms** - Building forms for username, email, and password changes with real-time validation
+3. **Session Context Integration** - Using use_context() in async functions for session management
+4. **Create Deck Form** - Simple form for creating new deck with name validation
+5. **HTTP Client Error Handling** - Proper error types for session vs network issues
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Form State Management** - Best patterns for managing multiple input fields with validation in Dioxus
-2. **HTTP Client Architecture** - Should create DeckClient similar to AuthClient, or use generic patterns
+1. **Async Context Access** - Best patterns for accessing Dioxus context in async HTTP client functions
+2. **Session Error Handling** - How to handle re-auth vs network errors in UI components
 3. **Loading State UX** - How to show loading states for list fetches vs single item operations
 4. **Error Display Patterns** - Consistent error messaging across different screen types
 5. **Component Reusability** - When to extract common patterns (forms, lists) into reusable components
@@ -274,14 +274,18 @@ alwaysApply: true
 - **RESTful Logout Design**: POST verb for logout (not GET) due to side effects and state modification
 - *Note: Backend complete and production-ready, frontend integration (storage, auto-login, 401 handling) next phase*
 
-### 📱 Frontend Session Management (In Progress)
+### 📱 Frontend Session Management (Complete) ✅
 - **PersistentSession Trait**: Built trait on Session for keyring-based storage (persist, retrieve, clear methods)
 - **Keyring Integration**: Using keyring crate for iOS Keychain/Android KeyStore abstraction
 - **Session Expiration Checking**: retrieve() checks refresh_token expiration and auto-clears expired sessions
 - **In-Memory Sessions Working**: Login/register flows create sessions successfully, navigation works
 - **iOS Entitlements Blocker**: Keychain access requires Dioxus.toml bundle config with keychain-access-groups - deferred to deployment
 - **Development Strategy**: Sessions work in-memory during development, will persist after entitlements configured for production
-- *Note: Session architecture complete, persistent storage blocked by iOS platform config (non-code issue)*
+- **ActiveSession Wrapper**: Type-safe wrapper ensuring validated sessions for HTTP requests
+- **GetActiveSession Trait**: Three-path token handling (valid, refresh needed, re-auth needed) with proper error returns
+- **Session Context Integration**: Using use_context() pattern for accessing session state in async functions
+- **HTTP Client Session Patterns**: AuthClient methods handle session validation and refresh automatically
+- *Note: Complete session management system ready for production use*
 
 ### 🔮 Advanced Rust Patterns
 - **Advanced Async Patterns**: Complex Future handling, async streaming, async iterators

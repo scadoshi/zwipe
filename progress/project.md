@@ -13,20 +13,20 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Profile and Decks screen structure established with development mock data utilities.
+**Last Updated**: Session management architecture and deck profiles API integration completed.
 
-**Current Focus**: Building profile editing interface (username, email, password) and deck list with CRUD operations.
+**Current Focus**: Complete deck list UI integration and profile editing forms with backend connectivity.
 
-**Recent Achievement**: Created Profile and Decks screen components with swipe navigation integrated into MainHome. Profile screen displays user info from session context (username, email). Built development Spoof trait for generating mock Session data to bypass keyring during development. Temporarily using spoofed session in App startup to enable rapid UI iteration without authentication flow. Screen structure now in place with vertical swipe navigation: Profile (up), Home (center), Decks (down).
+**Recent Achievement**: Built complete session management system with ActiveSession wrapper and GetActiveSession trait for token validation/refresh. Modularized session domain into separate files for better organization. Added get_deck_profiles backend endpoint with proper authentication middleware. Established frontend HTTP client architecture with session-aware request patterns. Ready to integrate deck list display with backend API.
 
-**Current Decision**: Using mock session data during frontend development to iterate quickly on UI/UX patterns. Will reconnect real authentication flow once screens are built out. Next priorities: profile editing forms and deck list display with backend integration.
+**Current Decision**: Session management foundation complete. Moving to UI integration phase with real backend connectivity. Next priorities: complete get_deck_profiles HTTP client implementation and deck list display.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Profile Editing Forms** - Username, email, and password change interfaces with validation
-2. **Deck List Display** - Fetch and display user's decks from backend with loading states
-3. **Create Deck Interface** - Form for creating new deck with name input
-4. **Deck Card Display** - Show cards in deck with quantities
-5. **Delete Deck Confirmation** - Confirmation dialog before deck deletion
+1. **Deck List HTTP Integration** - Complete get_deck_profiles client implementation and UI display
+2. **Profile Editing Forms** - Username, email, and password change interfaces with validation
+3. **Session Context Integration** - Using use_context() in async functions for session management
+4. **Create Deck Interface** - Form for creating new deck with name input
+5. **HTTP Client Error Handling** - Proper error types for session vs network issues
 
 ### 🤔 Next Immediate Priorities (Top 5)
 1. **Card Search Integration** - Connect to backend search API with query parameters
@@ -141,6 +141,10 @@ alwaysApply: true
 - **Route Optimization**: MainHome at root redirecting to /auth when no session (optimizes common case of returning authenticated users)
 - **Development Mock Utilities**: Spoof trait for generating mock Session data enabling rapid frontend development without authentication dependencies
 - **Screen Structure Architecture**: Profile, MainHome, and Decks screens with vertical swipe navigation integrated
+- **Session Management System**: Complete ActiveSession wrapper with GetActiveSession trait for token validation/refresh
+- **Deck Profiles API**: Backend endpoint for fetching user's deck profiles with proper authentication
+- **HTTP Client Architecture**: Session-aware request patterns with automatic token refresh handling
+- **Session Domain Modularization**: Split session operations into separate files (create_session, refresh_session, revoke_sessions, etc.)
 
 ---
 
