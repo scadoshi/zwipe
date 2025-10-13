@@ -6,7 +6,7 @@ use chrono::{ Utc};
 use sqlx::{query, query_as};
 use uuid::Uuid;
 use crate::domain::auth::models::refresh_token::{RefreshToken, Sha256Hash};
-use crate::domain::auth::models::session::{CreateSessionError, DeleteExpiredSessionsError, RefreshSession, RefreshSessionError, RevokeSessionsError};
+use crate::domain::auth::models::session::{create_session::CreateSessionError, delete_expired_sessions::DeleteExpiredSessionsError, refresh_session::{RefreshSession, RefreshSessionError}, revoke_sessions::RevokeSessionsError};
 use crate::domain::auth::models::{
     authenticate_user::{AuthenticateUser, AuthenticateUserError}, change_email::{ChangeEmail, ChangeEmailError}, change_password::{ChangePassword, ChangePasswordError}, change_username::{ChangeUsername, ChangeUsernameError}, delete_user::{DeleteUser, DeleteUserError}, register_user::{RegisterUser, RegisterUserError}, UserWithPasswordHash
 };

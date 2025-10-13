@@ -2,7 +2,7 @@ use std::future::Future;
 
 use sqlx::{query_as, PgTransaction, query};
 use uuid::Uuid;
-use crate::{domain::auth::models::{refresh_token::{RefreshToken, Sha256Hash}, session::{CreateSessionError, EnforceSessionMaximumError, MAXIMUM_SESSION_COUNT}}, outbound::sqlx::auth::models::DatabaseRefreshToken};
+use crate::{domain::auth::models::{refresh_token::{RefreshToken, Sha256Hash}, session::{create_session::CreateSessionError, enforce_session_maximum::EnforceSessionMaximumError, MAXIMUM_SESSION_COUNT}}, outbound::sqlx::auth::models::DatabaseRefreshToken};
 
 // **commits are handled outside of these helpers**
 

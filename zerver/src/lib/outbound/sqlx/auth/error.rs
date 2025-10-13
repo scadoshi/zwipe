@@ -7,8 +7,10 @@ use crate::{
             delete_user::DeleteUserError,
             register_user::RegisterUserError,
             session::{
-                CreateSessionError, DeleteExpiredSessionsError, EnforceSessionMaximumError,
-                RefreshSessionError, RevokeSessionsError,
+                create_session::CreateSessionError,
+                delete_expired_sessions::DeleteExpiredSessionsError,
+                enforce_session_maximum::EnforceSessionMaximumError,
+                refresh_session::RefreshSessionError, revoke_sessions::RevokeSessionsError,
             },
         },
         user::models::username::InvalidUsername,
