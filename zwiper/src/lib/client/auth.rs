@@ -2,6 +2,7 @@ pub mod login;
 pub mod logout;
 pub mod refresh;
 pub mod register;
+pub mod session;
 
 use crate::config::Config;
 use reqwest::Client;
@@ -9,8 +10,8 @@ use std::sync::OnceLock;
 
 #[derive(Debug, Clone)]
 pub struct AuthClient {
-    client: Client,
-    app_config: Config,
+    pub client: Client,
+    pub app_config: Config,
 }
 
 impl AuthClient {

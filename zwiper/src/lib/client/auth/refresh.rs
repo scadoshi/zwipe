@@ -38,20 +38,17 @@ impl From<serde_json::Error> for RefreshError {
 
 pub trait Refresh {
     fn refresh(
+        &self,
         request: &HttpRefreshSession,
-        auth_client: &AuthClient,
     ) -> impl Future<Output = Result<Session, RefreshError>> + Send;
 }
 
 impl Refresh for AuthClient {
-    async fn refresh(
-        request: &HttpRefreshSession,
-        auth_client: &AuthClient,
-    ) -> Result<Session, RefreshError> {
-        let mut url = auth_client.app_config.backend_url.clone();
+    async fn refresh(&self, request: &HttpRefreshSession) -> Result<Session, RefreshError> {
+        let mut url = self.app_config.backend_url.clone();
         url.set_path(&refresh_session_route());
 
-        let response = auth_client
+        let response = self
             .client
             .post(url)
             .header("Content-Type", "application/json")
