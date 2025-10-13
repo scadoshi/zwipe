@@ -12,6 +12,7 @@ fn credential_service() -> String {
 pub trait Persist {
     fn save(&self) -> anyhow::Result<()>;
     fn load() -> anyhow::Result<Option<Session>>;
+    fn infallible_load() -> Option<Session>;
     fn delete(&self) -> anyhow::Result<()>;
 }
 
@@ -44,6 +45,16 @@ impl Persist for Session {
                     return Ok(None);
                 }
                 Ok(Some(session))
+            }
+        }
+    }
+
+    fn infallible_load() -> Option<Session> {
+        match Session::load() {
+            Ok(session) => session,
+            Err(e) => {
+                tracing::error!("failed to load session: {e}");
+                None
             }
         }
     }
