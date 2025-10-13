@@ -5,20 +5,21 @@ use crate::{
         login::{Login as LoginTrait, LoginError},
         AuthClient,
     },
+    session::Persist,
     swipe::{self, Direction as Dir, OnMouse, OnTouch, VH_GAP},
 };
 use dioxus::prelude::*;
 use email_address::EmailAddress;
 use zwipe::{
     domain::{
-        auth::models::{authenticate_user::AuthenticateUser, password::Password},
+        auth::models::{authenticate_user::AuthenticateUser, password::Password, session::Session},
         user::models::username::Username,
     },
     inbound::http::handlers::auth::authenticate_user::HttpAuthenticateUser,
 };
 
 #[component]
-pub fn Login(swipe_state: Signal<swipe::State>) -> Element {
+pub fn Login(swipe_state: Signal<swipe::State>, session: Signal<Option<Session>>) -> Element {
     const MOVE_SWIPES: [Dir; 1] = [Dir::Up];
     const SUBMIT_SWIPE: Dir = Dir::Down;
 
@@ -31,7 +32,7 @@ pub fn Login(swipe_state: Signal<swipe::State>) -> Element {
     let mut is_loading = use_signal(|| false);
     let mut submission_error: Signal<Option<String>> = use_signal(|| None);
 
-    let valid_credentials = move || {
+    let valid_credentials = move || -> bool {
         let valid_username_or_email = Username::new(&username_or_email.read()).is_ok()
             || EmailAddress::from_str(&username_or_email.read()).is_ok();
         let valid_password = Password::new(&password.read()).is_ok();
@@ -52,9 +53,16 @@ pub fn Login(swipe_state: Signal<swipe::State>) -> Element {
                     .map(HttpAuthenticateUser::from)
                 {
                     Ok(request) => match auth_client.read().authenticate_user(request).await {
-                        Ok(s) => {
+                        Ok(new_session) => {
                             submission_error.set(None);
-                            println!("session => {:#?}", s);
+
+                            if let Err(e) = new_session.save() {
+                                tracing::error!("failed to save session: {e}");
+                            } else {
+                                tracing::info!("saved session successfully");
+                            }
+
+                            session.set(Some(new_session));
                         }
                         Err(e) => submission_error.set(Some(e.to_string())),
                     },

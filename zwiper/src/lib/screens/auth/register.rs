@@ -2,21 +2,22 @@ use std::str::FromStr;
 
 use crate::{
     client::auth::{register::Register as RegisterTrait, AuthClient},
-    error_map::UserFacing,
+    helpers::error_map::UserFacing,
+    session::Persist,
     swipe::{self, Direction as Dir, OnMouse, OnTouch, VH_GAP},
 };
 use dioxus::prelude::*;
 use email_address::EmailAddress;
 use zwipe::{
     domain::{
-        auth::models::{password::Password, register_user::RawRegisterUser},
+        auth::models::{password::Password, register_user::RawRegisterUser, session::Session},
         user::models::username::Username,
     },
     inbound::http::handlers::auth::register_user::HttpRegisterUser,
 };
 
 #[component]
-pub fn Register(swipe_state: Signal<swipe::State>) -> Element {
+pub fn Register(swipe_state: Signal<swipe::State>, session: Signal<Option<Session>>) -> Element {
     const MOVE_SWIPES: [Dir; 1] = [Dir::Down];
     const SUBMIT_SWIPE: Dir = Dir::Up;
 
@@ -66,9 +67,16 @@ pub fn Register(swipe_state: Signal<swipe::State>) -> Element {
                     .map(HttpRegisterUser::from)
                 {
                     Ok(request) => match auth_client.read().register(request).await {
-                        Ok(s) => {
+                        Ok(new_session) => {
                             submission_error.set(None);
-                            println!("session => {:#?}", s);
+
+                            if let Err(e) = new_session.save() {
+                                tracing::error!("failed to save session: {e}");
+                            } else {
+                                tracing::info!("saved session successfully");
+                            }
+
+                            session.set(Some(new_session));
                         }
                         Err(e) => submission_error.set(Some(e.to_string())),
                     },
