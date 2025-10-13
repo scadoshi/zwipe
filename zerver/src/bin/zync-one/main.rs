@@ -1,6 +1,5 @@
 use anyhow::Context;
 use reqwest::Client;
-use std::str::FromStr;
 use zwipe::{
     config::Config,
     domain::{

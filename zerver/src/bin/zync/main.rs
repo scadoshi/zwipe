@@ -4,7 +4,7 @@ pub mod was_ago;
 
 use crate::{auth::CheckSessions, card::CheckCards};
 use chrono::NaiveDateTime;
-use std::{str::FromStr, time::Duration};
+use std::time::Duration;
 use zwipe::{
     config::Config,
     domain::{
