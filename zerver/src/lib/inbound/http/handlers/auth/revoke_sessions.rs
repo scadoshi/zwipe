@@ -5,7 +5,7 @@ use axum::{extract::State, http::StatusCode};
 use crate::{
     domain::{
         auth::{
-            models::session::{RevokeSessions, RevokeSessionsError},
+            models::session::revoke_sessions::{RevokeSessions, RevokeSessionsError},
             ports::AuthService,
         },
         card::ports::CardService,

@@ -132,9 +132,9 @@ impl TryFrom<SearchCardRawParameters> for SearchCard {
 
 #[cfg(feature = "zerver")]
 pub async fn search_cards<AS, US, HS, CS, DS>(
+    _: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Query(params): Query<SearchCardRawParameters>,
-    _: AuthenticatedUser,
 ) -> Result<(StatusCode, Json<Vec<Card>>), ApiError>
 where
     AS: AuthService,

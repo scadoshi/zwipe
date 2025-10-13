@@ -64,7 +64,6 @@ pub async fn get_deck<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Path(deck_id): Path<String>,
-    _: AuthenticatedUser,
 ) -> Result<(StatusCode, Json<Deck>), ApiError>
 where
     AS: AuthService,

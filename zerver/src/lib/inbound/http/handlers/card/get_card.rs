@@ -57,9 +57,9 @@ impl From<GetCardError> for ApiError {
 
 #[cfg(feature = "zerver")]
 pub async fn get_card<AS, US, HS, CS, DS>(
+    _: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Path(card_profile_id): Path<String>,
-    _: AuthenticatedUser,
 ) -> Result<(StatusCode, Json<Card>), ApiError>
 where
     AS: AuthService,

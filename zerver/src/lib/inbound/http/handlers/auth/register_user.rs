@@ -12,7 +12,10 @@ use crate::{
             models::{
                 access_token::InvalidJwt,
                 register_user::{InvalidRegisterUser, RegisterUser, RegisterUserError},
-                session::{CreateSessionError, EnforceSessionMaximumError, Session},
+                session::{
+                    create_session::CreateSessionError,
+                    enforce_session_maximum::EnforceSessionMaximumError, Session,
+                },
             },
             ports::AuthService,
         },

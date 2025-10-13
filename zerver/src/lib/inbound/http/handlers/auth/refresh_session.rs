@@ -1,13 +1,9 @@
-#[cfg(feature = "zerver")]
-use axum::{extract::State, http::StatusCode, Json};
-use serde::{Deserialize, Serialize};
-
-use crate::domain::auth::models::session::RefreshSession;
+use crate::domain::auth::models::session::{refresh_session::RefreshSession, Session};
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
         auth::{
-            models::session::{InvalidRefreshSession, RefreshSessionError, Session},
+            models::session::refresh_session::{InvalidRefreshSession, RefreshSessionError},
             ports::AuthService,
         },
         card::ports::CardService,
@@ -17,6 +13,9 @@ use crate::{
     },
     inbound::http::{ApiError, AppState, Log500},
 };
+#[cfg(feature = "zerver")]
+use axum::{extract::State, http::StatusCode, Json};
+use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "zerver")]
 impl From<RefreshSessionError> for ApiError {
@@ -82,6 +81,13 @@ impl From<RefreshSession> for HttpRefreshSession {
             user_id: value.user_id.to_string(),
             refresh_token: value.refresh_token,
         }
+    }
+}
+
+impl From<&Session> for HttpRefreshSession {
+    fn from(value: &Session) -> Self {
+        let refresh_session = RefreshSession::from(value);
+        Self::from(refresh_session)
     }
 }
 
