@@ -23,11 +23,11 @@ pub fn Home() -> Element {
 
     let logo = logo::logo();
 
-    rsx! {
-        if session.read().is_some() {
-            { navigator.push(Screen::MainHome {}); }
-        }
+    if session.read().is_some() {
+        navigator.push(Screen::MainHome {});
+    }
 
+    rsx! {
         if session.read().is_none() { Login {swipe_state} }
 
         div { class : "swipe-able",
