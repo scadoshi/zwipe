@@ -1,10 +1,16 @@
 use dioxus::prelude::*;
-use zwiper::screens::Screen;
+use std::str::FromStr;
+use zwiper::{config::Config, screens::Screen};
 
 const FAVICON: Asset = asset!("/assets/favicon/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 
 fn main() {
+    let config = Config::from_env();
+    tracing_subscriber::fmt()
+        .with_max_level(config.rust_log)
+        .init();
+
     dioxus::launch(App);
 }
 
