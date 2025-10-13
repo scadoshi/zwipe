@@ -24,6 +24,7 @@ dotenvy = "0.15"
 keyring = { version = "3", features = ["apple-native"]}
 tracing = "0.1"
 tracing-subscriber = "0.3"
+uuid = "1.18.1"
 
 [build-dependencies]
 dotenvy = "0.15"
