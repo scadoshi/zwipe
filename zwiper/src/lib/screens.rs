@@ -8,7 +8,7 @@ use dioxus::prelude::*;
 #[rustfmt::skip]
 pub enum Screen {
     #[route("/")]
-    AuthHome {},
-    #[route("/home")]
     MainHome {},
+    #[route("/auth")]
+    AuthHome {},
 }
