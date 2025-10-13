@@ -3,7 +3,7 @@ use crate::{
         deck::{
             create_deck_profile::CreateDeckProfileError, deck_name::InvalidDeckname,
             delete_deck::DeleteDeckError, get_deck::GetDeckProfileError,
-            update_deck_profile::UpdateDeckProfileError,
+            get_deck_profiles::GetDeckProfilesError, update_deck_profile::UpdateDeckProfileError,
         },
         deck_card::{
             create_deck_card::CreateDeckCardError, delete_deck_card::DeleteDeckCardError,
@@ -144,5 +144,17 @@ impl From<sqlx::Error> for UpdateDeckCardError {
 impl From<sqlx::Error> for DeleteDeckCardError {
     fn from(value: sqlx::Error) -> Self {
         Self::Database(value.into())
+    }
+}
+
+impl From<sqlx::Error> for GetDeckProfilesError {
+    fn from(value: sqlx::Error) -> Self {
+        Self::Database(value.into())
+    }
+}
+
+impl From<IntoDeckProfileError> for GetDeckProfilesError {
+    fn from(value: IntoDeckProfileError) -> Self {
+        Self::DeckProfileFromDb(value.into())
     }
 }

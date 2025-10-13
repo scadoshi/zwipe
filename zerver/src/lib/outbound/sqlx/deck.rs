@@ -7,12 +7,12 @@ use crate::{
     domain::deck::{
         models::{deck::{
                 create_deck_profile::{CreateDeckProfile, CreateDeckProfileError}, deck_profile::DeckProfile, delete_deck::{DeleteDeck,
-                DeleteDeckError}, get_deck::{GetDeck, GetDeckProfileError}, update_deck_profile::{UpdateDeckProfile,
-                UpdateDeckProfileError},
+                DeleteDeckError}, get_deck::{GetDeck, GetDeckProfileError}, get_deck_profiles::{GetDeckProfiles, GetDeckProfilesError}, update_deck_profile::{UpdateDeckProfile,
+                UpdateDeckProfileError}
             }, deck_card::{create_deck_card::{CreateDeckCard, CreateDeckCardError}, delete_deck_card::{DeleteDeckCard, DeleteDeckCardError}, get_deck_card::GetDeckCardError, update_deck_card::{UpdateDeckCard, UpdateDeckCardError}, DeckCard}},
         ports::DeckRepository,
     },
-    outbound::sqlx::{deck::{error::IntoDeckCardError, helper::OwnsDeck, models::{DatabaseDeckCard, DatabaseDeckProfile}}, postgres::Postgres},
+    outbound::sqlx::{deck::{error::{IntoDeckCardError, IntoDeckProfileError}, helper::OwnsDeck, models::{DatabaseDeckCard, DatabaseDeckProfile}}, postgres::Postgres},
 };
 
 impl DeckRepository for Postgres {
@@ -90,6 +90,24 @@ impl DeckRepository for Postgres {
         let deck_profile: DeckProfile = database_deck_profile.try_into()?;
 
         Ok(deck_profile)
+    }
+
+    async fn get_deck_profiles(
+            &self,
+            request: &GetDeckProfiles,
+        ) -> Result<Vec<DeckProfile>, GetDeckProfilesError> {
+        let database_deck_profiles = query_as!(
+            DatabaseDeckProfile,
+            "SELECT id, name, user_id FROM decks WHERE user_id = $1",
+            request.user_id
+        ).fetch_all(&self.pool).await?;
+
+        let deck_profiles: Vec<DeckProfile> = database_deck_profiles
+            .into_iter()
+            .map(|x| x.try_into())
+            .collect::<Result<Vec<DeckProfile>, IntoDeckProfileError>>()?;
+
+        Ok(deck_profiles)
     }
 
     async fn get_deck_cards(
