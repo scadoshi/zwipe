@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use zwipe::domain::auth::models::session::Session;
-use zwiper::{config::Config, screens::Screen, session::Persist};
+use zwiper::{config::Config, helpers::development::Spoof, screens::Screen};
 
 const FAVICON: Asset = asset!("/assets/favicon/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
@@ -15,7 +15,12 @@ fn main() {
 
 #[component]
 fn App() -> Element {
-    let session: Signal<Option<Session>> = use_signal(|| Session::infallible_load());
+    let session: Signal<Option<Session>> = use_signal(|| {
+        // use this later when actual persistence is achieved
+        // Session::infallible_load()
+        // for now we can just spoof it
+        Some(Session::spoof())
+    });
     use_context_provider(|| session);
 
     rsx! {
