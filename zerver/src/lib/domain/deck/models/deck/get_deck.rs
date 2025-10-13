@@ -1,6 +1,3 @@
-use thiserror::Error;
-use uuid::Uuid;
-
 #[cfg(feature = "zerver")]
 use crate::domain::{
     card::models::{card_profile::get_card_profile::GetCardProfileError, get_card::GetCardError},
@@ -12,6 +9,8 @@ use crate::domain::{
         },
     },
 };
+use thiserror::Error;
+use uuid::Uuid;
 
 #[derive(Debug, Error)]
 pub enum InvalidGetDeck {

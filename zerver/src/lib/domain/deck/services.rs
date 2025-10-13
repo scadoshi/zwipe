@@ -12,6 +12,7 @@ use crate::domain::{
                 deck_profile::DeckProfile,
                 delete_deck::{DeleteDeck, DeleteDeckError},
                 get_deck::{GetDeck, GetDeckError, GetDeckProfileError},
+                get_deck_profiles::{GetDeckProfiles, GetDeckProfilesError},
                 update_deck_profile::{UpdateDeckProfile, UpdateDeckProfileError},
                 Deck,
             },
@@ -84,6 +85,13 @@ where
             return Err(GetDeckProfileError::Forbidden);
         }
         Ok(deck_profile)
+    }
+
+    async fn get_deck_profiles(
+        &self,
+        request: &GetDeckProfiles,
+    ) -> Result<Vec<DeckProfile>, GetDeckProfilesError> {
+        self.deck_repo.get_deck_profiles(request).await
     }
 
     async fn get_deck(&self, request: &GetDeck) -> Result<Deck, GetDeckError> {
