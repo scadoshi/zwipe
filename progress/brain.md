@@ -15,25 +15,25 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Dioxus context API implemented for global session and AuthClient state management.
+**Last Updated**: Profile and Decks screen structure completed with development mock data system.
 
-**Next Learning Focus**: Building actual home screen flow with deck management, card search, and navigation patterns.
+**Next Learning Focus**: Form building for profile editing, HTTP client integration for deck CRUD operations, component composition patterns.
 
-**Recent Achievement**: Implemented global session management using Dioxus context API. Created use_context_provider in App component loading session once at startup, all child components access via use_context() eliminating prop drilling. Added AuthClient to context in AuthHome. Swapped routes to optimize common case - MainHome at root redirects to /auth if no session (returning users get zero redirects). Session state now shared reactively across entire component tree. Ready to build actual application screens with authentication working end-to-end.
+**Recent Achievement**: Built Profile screen displaying session user data and Decks placeholder screen, both integrated with MainHome via vertical swipe navigation. Created development Spoof trait for generating mock sessions, enabling rapid UI iteration without authentication overhead. Temporarily bypassing keyring to focus on screen building. Three-screen navigation established: Profile (up), Home (center), Decks (down). Ready to build actual forms and backend integration.
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **Home Screen Application Flow** - Building deck management navigation, card search, and main user interactions
-2. **Deck List Components** - Displaying user's decks with swipe navigation patterns
-3. **Card Search Integration** - Connecting frontend to backend card search API
-4. **Screen Composition** - Breaking down MainHome into logical sub-components
-5. **Navigation Patterns** - Establishing consistent swipe and tap navigation throughout app
+1. **Profile Edit Forms** - Building forms for username, email, and password changes with real-time validation
+2. **Deck List HTTP Integration** - Fetching user decks from backend API and displaying with loading states
+3. **Create Deck Form** - Simple form for creating new deck with name validation
+4. **Deck Display Components** - Showing deck cards with quantities in organized layout
+5. **HTTP Client Patterns** - Building reusable patterns for API calls, error handling, and loading states
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **iOS Entitlements Configuration** - Dioxus.toml bundle config syntax for keychain-access-groups (deferred to deployment)
-2. **Deck Management UX** - Best patterns for creating, editing, and viewing decks in mobile interface
-3. **Card Search UX** - How to present search results and add cards to deck efficiently
-4. **Component Composition** - Best practices for breaking down complex screens into smaller components
-5. **State Lifting** - When to lift state up vs keep it local to components vs context
+1. **Form State Management** - Best patterns for managing multiple input fields with validation in Dioxus
+2. **HTTP Client Architecture** - Should create DeckClient similar to AuthClient, or use generic patterns
+3. **Loading State UX** - How to show loading states for list fetches vs single item operations
+4. **Error Display Patterns** - Consistent error messaging across different screen types
+5. **Component Reusability** - When to extract common patterns (forms, lists) into reusable components
 
 ---
 
@@ -103,6 +103,8 @@ alwaysApply: true
 - **State Management**: Signal types for reactive state with use_signal() patterns
 - **Context API**: use_context_provider() at root, use_context() in components for global reactive state
 - **Props vs Context**: Props for parent-child relationships, context for app-wide state (Session, AuthClient)
+- **Development Utilities**: Spoof trait pattern for generating mock data enabling UI development without dependencies
+- **Multi-Screen Navigation**: Vertical swipe navigation between Profile/Home/Decks with position-based transforms
 - **Conditional Rendering**: Dynamic UI based on state with if expressions in RSX
 - **Form Handling**: Input binding, event handlers (oninput, onsubmit), and form validation
 - **Error Display Timing**: UX-focused validation that activates after first submit attempt

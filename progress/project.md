@@ -13,27 +13,27 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Dioxus context API implemented for global session management. Ready to build main application flow.
+**Last Updated**: Profile and Decks screen structure established with development mock data utilities.
 
-**Current Focus**: Building MainHome screen with deck management, card search, and navigation patterns.
+**Current Focus**: Building profile editing interface (username, email, password) and deck list with CRUD operations.
 
-**Recent Achievement**: Implemented global session management using Dioxus context API. Session loaded once at App startup with use_context_provider, accessed via use_context across all components eliminating prop drilling. AuthClient also provided via context. Optimized routing - MainHome at root (common case), redirects to /auth only when no session exists. Session state now shared reactively across component tree. Authentication flow complete end-to-end with in-memory sessions working (persistent storage deferred to deployment).
+**Recent Achievement**: Created Profile and Decks screen components with swipe navigation integrated into MainHome. Profile screen displays user info from session context (username, email). Built development Spoof trait for generating mock Session data to bypass keyring during development. Temporarily using spoofed session in App startup to enable rapid UI iteration without authentication flow. Screen structure now in place with vertical swipe navigation: Profile (up), Home (center), Decks (down).
 
-**Current Decision**: Context-based state management established as pattern for app-wide state (Session, AuthClient). Props reserved for parent-child component relationships (swipe_state). Ready to build actual application screens with clean state management architecture in place.
+**Current Decision**: Using mock session data during frontend development to iterate quickly on UI/UX patterns. Will reconnect real authentication flow once screens are built out. Next priorities: profile editing forms and deck list display with backend integration.
 
 ### 🎯 Currently Working On (Top 5)
-1. **MainHome Application Flow** - Building deck management interface with swipe navigation
-2. **Deck List Display** - Showing user's decks with create/edit/delete actions
-3. **Card Search Screen** - Implementing card search with backend API integration
-4. **Navigation Patterns** - Establishing consistent swipe-based navigation between screens
-5. **Component Architecture** - Breaking down MainHome into reusable sub-components
+1. **Profile Editing Forms** - Username, email, and password change interfaces with validation
+2. **Deck List Display** - Fetch and display user's decks from backend with loading states
+3. **Create Deck Interface** - Form for creating new deck with name input
+4. **Deck Card Display** - Show cards in deck with quantities
+5. **Delete Deck Confirmation** - Confirmation dialog before deck deletion
 
 ### 🤔 Next Immediate Priorities (Top 5)
-1. **Deck Detail Screen** - View and edit individual deck with card list
-2. **Add Card to Deck Flow** - Search cards and add to deck with quantity selection
-3. **Deck Analytics Display** - Mana curve, color distribution, type breakdown
-4. **iOS Keychain Entitlements Configuration** - DEPLOYMENT BLOCKER: Add Dioxus.toml bundle config for persistent session storage
-5. **401 Refresh Pattern** - HTTP interceptor for automatic token refresh and request retry on expired access tokens
+1. **Card Search Integration** - Connect to backend search API with query parameters
+2. **Add Card to Deck Flow** - Search results with tap-to-add and quantity selection
+3. **Deck Detail Screen** - Full view of individual deck with edit capabilities
+4. **Deck Analytics Display** - Mana curve, color distribution, type breakdown (frontend calculation)
+5. **Reconnect Real Auth Flow** - Switch from spoofed session back to actual authentication once UI stable
 
 ---
 
@@ -139,6 +139,8 @@ alwaysApply: true
 - **Dioxus Context API**: Global session state with use_context_provider in App root, use_context in components eliminating prop drilling
 - **Context-Based State Management**: Session and AuthClient provided via context, props reserved for parent-child relationships (swipe_state pattern)
 - **Route Optimization**: MainHome at root redirecting to /auth when no session (optimizes common case of returning authenticated users)
+- **Development Mock Utilities**: Spoof trait for generating mock Session data enabling rapid frontend development without authentication dependencies
+- **Screen Structure Architecture**: Profile, MainHome, and Decks screens with vertical swipe navigation integrated
 
 ---
 
