@@ -2,7 +2,10 @@ use dioxus::prelude::*;
 use zwipe::domain::{auth::models::session::Session, logo::logo};
 
 use crate::{
-    screens::Screen,
+    screens::{
+        main::{decks::Decks, profile::Profile},
+        Screen,
+    },
     swipe::{self, Direction as Dir, OnMouse, OnTouch, VH_GAP},
 };
 
@@ -17,11 +20,12 @@ pub fn Home() -> Element {
 
     let logo = logo();
 
-    rsx! {
+    if session.read().is_none() {
+        navigator.push(Screen::AuthHome {});
+    }
 
-        if session.read().is_none() {
-            { navigator.push(Screen::AuthHome {}); }
-        }
+    rsx! {
+        Profile {swipe_state}
 
         div { class : "swipe-able",
 
@@ -45,16 +49,18 @@ pub fn Home() -> Element {
 
                 div { class : "home-up-hint",
                     p { class : "up-arrow", "↑" },
-                    p { "decks" },
+                    p { "profile" },
                 },
 
                 div { class: "logo",  "{logo}" },
 
                 div { class : "home-down-hint",
-                    p { "profile" },
+                    p { "decks" },
                     p { class : "down-arrow", "↓" },
                 },
             }
         }
+
+        Decks {swipe_state}
     }
 }
