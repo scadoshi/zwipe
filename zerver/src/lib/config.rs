@@ -1,6 +1,9 @@
+use std::str::FromStr;
+
 use crate::domain::auth::models::access_token::JwtSecret;
 use anyhow::Context;
 use axum::http::HeaderValue;
+use tracing::Level;
 
 const JWT_SECRET_KEY: &str = "JWT_SECRET";
 const DATABASE_URL_KEY: &str = "DATABASE_URL";
@@ -13,7 +16,7 @@ pub struct Config {
     pub jwt_secret: JwtSecret,
     pub database_url: String,
     pub bind_address: String,
-    pub rust_log: String,
+    pub rust_log: Level,
     pub rust_backtrace: String,
     pub allowed_origins: Vec<HeaderValue>,
 }
@@ -25,7 +28,7 @@ impl Config {
             .context("invalid jwt secret from env")?;
         let database_url = env_var_by_key(DATABASE_URL_KEY)?;
         let bind_address = env_var_by_key(BIND_ADDRESS_KEY)?;
-        let rust_log = env_var_by_key(RUST_LOG_KEY)?;
+        let rust_log = Level::from_str(&env_var_by_key(RUST_LOG_KEY)?)?;
         let rust_backtrace = env_var_by_key(RUST_BACKTRACE_KEY)?;
         let allowed_origins: Vec<HeaderValue> = env_var_by_key(ALLOWED_ORIGINS_KEY)?
             .split(",")

@@ -16,7 +16,7 @@ async fn main() {
 async fn run() -> anyhow::Result<()> {
     let config: Config = Config::from_env()?;
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::from_str(&config.rust_log)?)
+        .with_max_level(config.rust_log)
         .init();
     let db = Postgres::new(&config.database_url).await?;
     let auth_service = auth::services::Service::new(db.clone(), db.clone(), config.jwt_secret);
