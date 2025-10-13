@@ -1,4 +1,3 @@
-use std::str::FromStr;
 use zwipe::config::Config;
 use zwipe::domain::{auth, card, deck, health, logo, user};
 use zwipe::inbound::http::{HttpServer, HttpServerConfig};
