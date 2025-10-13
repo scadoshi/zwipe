@@ -15,25 +15,25 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Complete architectural refactoring establishing modular file organization patterns across all domains
+**Last Updated**: Card domain refactoring complete. Session management implemented with keyring crate.
 
-**Next Learning Focus**: Frontend session management - use_persistent for token storage, auto-login flow, 401 refresh patterns, Dioxus context for global auth state
+**Next Learning Focus**: Dioxus screen development, navigation patterns, component architecture. iOS entitlements deferred to deployment.
 
-**Recent Achievement**: Completed massive architectural refactoring across auth, user, and deck domains. Established consistent modular patterns: split domain models into per-operation files, created error/models/helpers modules in SQLx layer, separated HTTP handlers into individual files. Discovered and fixed critical security vulnerability in deck operations - implemented OwnsDeck trait providing ownership validation across 5 operations (create_deck_card, get_deck, update_deck_profile, update_deck_card, delete_deck). Removed unnecessary HTTP wrapper types (HttpDeckProfile, HttpDeckCard) by adding Serialize to domain types. Deleted ~1,600 lines of monolithic code while improving maintainability and security. Architecture now consistent and navigable across all domains.
+**Recent Achievement**: Completed card domain refactoring following modular patterns. Reduced card.rs from 900+ lines to 388 by extracting helpers and error mappings. Built PersistentSession trait using keyring crate for iOS Keychain/Android KeyStore - sessions working in-memory but persistent storage requires iOS entitlements (Dioxus.toml bundle config). Decided to defer entitlements configuration until deployment to maintain learning momentum on frontend development. All backend domains now modular (auth 11 files, user 2 files, deck 11 files, card 9+ files).
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **Persistent Token Storage** - Implement use_persistent for secure iOS Keychain/Android KeyStore integration
-2. **Session Deserialization** - Update AuthClient to deserialize full Session responses (user + access_token + refresh_token)
-3. **Auto-Login Flow** - Loading screen that checks stored tokens, validates via health check, routes to appropriate screen
-4. **Global Auth Context** - Dioxus context provider for app-wide access to current session and user data
-5. **Token Refresh UX** - Graceful handling of token refresh flow with loading states and error recovery
+1. **Dioxus Screen Components** - Building main application screens with proper component architecture
+2. **Router Navigation** - Setting up route structure and navigation patterns between screens
+3. **Component State Management** - Learning Dioxus Signal patterns for screen-level state
+4. **UI Component Library** - Creating reusable components following Dioxus best practices
+5. **Screen Flow Testing** - Verifying navigation and state management work correctly
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **use_persistent API** - Syntax for reading/writing to secure storage, error handling patterns for storage failures
-2. **Dioxus Context Patterns** - How to create and consume context for session state, when to trigger context updates
-3. **Auto-Login Timing** - When to validate tokens (app start only, or periodic checks), how to handle stale sessions gracefully
-4. **401 Interceptor Pattern** - Best approach for detecting 401, triggering refresh, retrying original request without infinite loops
-5. **Protected Route Pattern** - Clean component wrapper that checks auth state, redirects if unauthorized, passes user data to children
+1. **iOS Entitlements Configuration** - Dioxus.toml bundle config syntax for keychain-access-groups (deferred to deployment)
+2. **Dioxus Context Patterns** - How to create and consume context for global session state across screens
+3. **Protected Route Pattern** - Clean component wrapper that checks auth state, redirects if unauthorized
+4. **Component Composition** - Best practices for breaking down complex screens into smaller components
+5. **State Lifting** - When to lift state up vs keep it local to components
 
 ---
 
@@ -95,6 +95,8 @@ alwaysApply: true
 - **macro_rules!**: Basic declarative macro creation and usage
 - **Build Scripts**: build.rs with cargo directives (rustc-env, warning, rerun-if-changed) for compile-time configuration
 - **Compile-Time Environment Variables**: env!() macro for baking config into binaries (required for desktop/mobile apps)
+- **Infallible Config Pattern**: Using unwrap() in Config::from_env() when config is deployment requirement (better to crash than run with invalid config)
+- **Frontend Logging**: tracing_subscriber::fmt() setup in main() with configurable log levels for development debugging
 
 ### 🎨 Dioxus Component Development & State Management
 - **Component Architecture**: Function components with RSX macro for HTML-like syntax
@@ -268,10 +270,14 @@ alwaysApply: true
 - **RESTful Logout Design**: POST verb for logout (not GET) due to side effects and state modification
 - *Note: Backend complete and production-ready, frontend integration (storage, auto-login, 401 handling) next phase*
 
-### 📱 Frontend Session Management (Starting)
-- **Mobile Secure Storage**: use_persistent abstraction over iOS Keychain/Android KeyStore for token persistence
-- **Auto-Login Patterns**: App start flow with stored token validation and routing decisions
-- *Note: Backend ready, now building frontend storage and auto-login flows*
+### 📱 Frontend Session Management (In Progress)
+- **PersistentSession Trait**: Built trait on Session for keyring-based storage (persist, retrieve, clear methods)
+- **Keyring Integration**: Using keyring crate for iOS Keychain/Android KeyStore abstraction
+- **Session Expiration Checking**: retrieve() checks refresh_token expiration and auto-clears expired sessions
+- **In-Memory Sessions Working**: Login/register flows create sessions successfully, navigation works
+- **iOS Entitlements Blocker**: Keychain access requires Dioxus.toml bundle config with keychain-access-groups - deferred to deployment
+- **Development Strategy**: Sessions work in-memory during development, will persist after entitlements configured for production
+- *Note: Session architecture complete, persistent storage blocked by iOS platform config (non-code issue)*
 
 ### 🔮 Advanced Rust Patterns
 - **Advanced Async Patterns**: Complex Future handling, async streaming, async iterators

@@ -13,27 +13,27 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Complete architectural refactoring with modular file organization across all backend domains
+**Last Updated**: Card domain refactoring complete. Session management working with in-memory storage. Frontend screen development in progress.
 
-**Current Focus**: Frontend session integration - token storage, auto-login, and refresh patterns
+**Current Focus**: Building frontend screens and navigation patterns. Persistent storage deferred until iOS deployment.
 
-**Recent Achievement**: Completed comprehensive architectural refactoring establishing consistent patterns across auth, user, and deck domains. Split monolithic files into per-operation modules: domain models separated by operation (11 auth files, 2 user files, 11 deck files), SQLx repositories modularized with error/models/helpers pattern, HTTP handlers split into individual operation files (8 auth, 1 user, 8 deck handlers). Discovered and patched critical security vulnerability where any user could modify/delete any deck - implemented OwnsDeck trait on Uuid providing ownership validation across 5 deck operations. Eliminated unnecessary HTTP wrapper types (HttpDeckProfile, HttpDeckCard) by adding custom Serialize implementations to domain types (DeckCard, Quantity). Removed ~1,600 lines of monolithic code while dramatically improving navigation, maintainability, and security. Backend now follows uniform modular architecture making future development more efficient.
+**Recent Achievement**: Completed card domain refactoring applying consistent modular patterns. Split domain models into per-operation files (create_card.rs, get_card.rs, search_card.rs), extracted SQLx error mappings and insertion helpers (insert_card.rs 198 lines, scryfall_data_fields.rs 324 lines), separated HTTP handlers into individual files. Reduced card.rs from 900+ lines to 388 lines. Built PersistentSession trait using keyring crate for iOS Keychain/Android KeyStore - sessions working in-memory, persistent storage blocked by iOS entitlements configuration. All backend domains now follow uniform modular architecture (auth 11 files, user 2 files, deck 11 files, card 9+ files).
 
-**Current Decision**: Backend architecture modernized with consistent modular patterns. All domains follow same file organization making codebase predictable and navigable. Security hardened with ownership validation preventing unauthorized resource access. Ready to shift focus to frontend session management with clean, maintainable backend foundation established.
+**Current Decision**: Session architecture complete and functional in-memory. Deferring iOS Keychain entitlements configuration until deployment phase to maintain development momentum. Focus on building frontend screens knowing sessions work end-to-end but won't persist across app restarts during development.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Token Storage Implementation** - Implement use_persistent for secure iOS Keychain/Android KeyStore storage
-2. **Frontend Session Deserialization** - Update AuthClient to handle Session responses with both access and refresh tokens
-3. **Auto-Login Flow** - Loading screen that validates stored tokens on app start and routes appropriately
-4. **Global Auth State** - Shared authentication context and session data across all Dioxus components
-5. **Token Refresh UX** - Handle refresh flow gracefully with loading states and error recovery
+1. **Frontend Screen Development** - Building main application screens and UI components
+2. **Router Configuration** - Setting up navigation structure and route definitions
+3. **Screen Transitions** - Implementing navigation patterns between authenticated screens
+4. **UI Component Library** - Creating reusable Dioxus components for app functionality
+5. **Session Flow Testing** - Verifying end-to-end auth works (login, register, navigation to main screens)
 
 ### 🤔 Next Immediate Priorities (Top 5)
-1. **401 Refresh Pattern** - HTTP interceptor for automatic token refresh and request retry on expired access tokens
-2. **Session Context Provider** - Dioxus context for app-wide access to current user and token state
+1. **iOS Keychain Entitlements Configuration** - DEPLOYMENT BLOCKER: Add Dioxus.toml bundle config with keychain-access-groups for persistent session storage on iOS
+2. **Global Session Context** - Dioxus context provider for app-wide access to current user and session data
 3. **Protected Route Pattern** - Component wrapper checking auth state before rendering protected screens
-4. **Logout Implementation** - Clear stored tokens, revoke refresh token via API, reset auth state
-5. **Token Expiration Warnings** - Proactive UX when refresh token approaching expiration (13+ days old)
+4. **401 Refresh Pattern** - HTTP interceptor for automatic token refresh and request retry on expired access tokens
+5. **Logout Implementation** - Clear stored sessions, revoke refresh token via API, reset auth state
 
 ---
 
@@ -129,9 +129,13 @@ alwaysApply: true
 - **Scheduled Token Cleanup Job**: CheckSessions trait in zync binary with weekly cleanup, memory-tracked timestamps using map_or() pattern, WasAgo trait for time checks
 - **Frontend Compile-Time Configuration**: build.rs with cargo:rustc-env directives passing BACKEND_URL to compiler, env!() macro for compile-time environment variable access (required for desktop/iOS apps)
 - **Background Job Architecture**: Unified zync binary loop handling both card sync (CheckCards) and session cleanup (CheckSessions) with hourly execution and appropriate time thresholds
-- **Modular Architecture Refactoring**: Complete restructuring of auth, user, and deck domains into per-operation files with consistent error/models/helpers pattern in SQLx layer
+- **Modular Architecture Refactoring**: Complete restructuring of auth, user, deck, and card domains into per-operation files with consistent error/models/helpers pattern in SQLx layer
 - **Ownership Validation System**: OwnsDeck trait on Uuid type providing ownership checks across create_deck_card, get_deck, update_deck_profile, update_deck_card, and delete_deck operations
 - **Direct Domain Serialization**: Custom Serialize implementations on domain types (DeckCard, Quantity, DeckProfile) eliminating unnecessary HTTP wrapper layer
+- **Card Domain Modularization**: Split 900+ line card.rs into modular structure - extracted error mappings (35 lines), insertion helpers (198 lines), scryfall field binding (324 lines)
+- **Frontend Logging Infrastructure**: Integrated tracing_subscriber in Dioxus app with configurable log levels via RUST_LOG environment variable
+- **Infallible Config Pattern**: Changed frontend Config to panic on invalid environment variables rather than returning Result (config is deployment requirement)
+- **Session Persistence Trait**: PersistentSession trait on Session with keyring crate for iOS Keychain/Android KeyStore (requires entitlements for production)
 
 ---
 
@@ -265,6 +269,12 @@ alwaysApply: true
 - **Advanced Filtering**: Complex search queries, saved filters
 - **Social Features**: Deck sharing, public deck browser, user profiles
 - **Real-time Updates**: WebSocket integration for live deck collaboration
+
+### 🚢 iOS/Android Deployment
+- **iOS Keychain Entitlements**: Configure Dioxus.toml with bundle identifier and keychain-access-groups for persistent session storage
+- **Android KeyStore Configuration**: Verify keyring crate configuration for Android secure storage
+- **App Signing**: Set up iOS/Android code signing for device deployment
+- **Store Submission**: Prepare assets and metadata for App Store/Play Store submission
 
 ---
 
