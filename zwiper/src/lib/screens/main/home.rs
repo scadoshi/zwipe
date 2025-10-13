@@ -1,17 +1,28 @@
 use dioxus::prelude::*;
-use zwipe::domain::logo::logo;
+use zwipe::domain::{auth::models::session::Session, logo::logo};
 
-use crate::swipe::{self, Direction as Dir, OnMouse, OnTouch, VH_GAP};
+use crate::{
+    screens::Screen,
+    swipe::{self, Direction as Dir, OnMouse, OnTouch, VH_GAP},
+};
 
 #[component]
 pub fn Home() -> Element {
     const MOVE_SWIPES: [Dir; 2] = [Dir::Up, Dir::Down];
 
+    let session: Signal<Option<Session>> = use_context();
+
     let navigator = use_navigator();
-    let logo = logo();
     let mut swipe_state = use_signal(|| swipe::State::new());
 
+    let logo = logo();
+
     rsx! {
+
+        if session.read().is_none() {
+            { navigator.push(Screen::AuthHome {}); }
+        }
+
         div { class : "swipe-able",
 
             style : format!(
