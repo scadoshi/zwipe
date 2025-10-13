@@ -8,8 +8,8 @@
 }
 
 body {
-    background-color: #000000;
-    color: #ffffff;
+    background-color: #1a1d23;
+    color: #f5f5dc;
     font-family: 'Cascadia Code', monospace;
     font-weight: 300;
     line-height: 1.6;
@@ -103,7 +103,7 @@ body {
     text-align: left;
     margin-bottom: 1rem;
     font-weight: 300;
-    color: #ffffff;
+    color: #f5f5dc;
     letter-spacing: 0.2em;
 }
 
@@ -124,9 +124,9 @@ body {
     margin-bottom: 2rem;
     padding: 1rem 1rem;
     background: none;
-    border: 1px solid #ffffff;
+    border: 1px solid #f5f5dc;
     border-radius: 1rem;
-    color: #ffffff;
+    color: #f5f5dc;
     font-family: 'Cascadia Code', monospace;
     font-size: 1rem;
     font-weight: 300;
@@ -135,9 +135,9 @@ body {
 
 .form-group input:focus {
     outline: none;
-    background-color: #ffffff;
-    color: #000000;
-    border-color: #ffffff;
+    background-color: #f5f5dc;
+    color: #1a1d23;
+    border-color: #f5f5dc;
 }
 
 .form-group input::placeholder {
