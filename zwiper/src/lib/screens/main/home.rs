@@ -1,38 +1,17 @@
 use dioxus::prelude::*;
-use zwipe::domain::{auth::models::session::Session, logo};
+use zwipe::domain::logo::logo;
 
-use crate::{
-    screens::{
-        auth::{login::Login, register::Register},
-        Screen,
-    },
-    session::Persist,
-    swipe::{self, Direction as Dir, OnMouse, OnTouch, VH_GAP},
-};
+use crate::swipe::{self, Direction as Dir, OnMouse, OnTouch, VH_GAP};
 
 #[component]
 pub fn Home() -> Element {
     const MOVE_SWIPES: [Dir; 2] = [Dir::Up, Dir::Down];
 
-    let session: Signal<Option<Session>> = use_signal(|| match Session::load() {
-        Ok(session) => session,
-        Err(e) => {
-            tracing::error!("failed to load session: {e}");
-            None
-        }
-    });
-
     let navigator = use_navigator();
-    let logo = logo::logo();
+    let logo = logo();
     let mut swipe_state = use_signal(|| swipe::State::new());
 
     rsx! {
-        if session.read().is_some() {
-            { navigator.push(Screen::MainHome {}); }
-        }
-
-        if session.read().is_none() { Login {swipe_state, session} }
-
         div { class : "swipe-able",
 
             style : format!(
@@ -55,18 +34,16 @@ pub fn Home() -> Element {
 
                 div { class : "home-up-hint",
                     p { class : "up-arrow", "↑" },
-                    p { "login" },
+                    p { "decks" },
                 },
 
                 div { class: "logo",  "{logo}" },
 
                 div { class : "home-down-hint",
-                    p { "create profile" },
+                    p { "profile" },
                     p { class : "down-arrow", "↓" },
                 },
             }
         }
-
-        if session.read().is_none() { Register {swipe_state, session} }
     }
 }
