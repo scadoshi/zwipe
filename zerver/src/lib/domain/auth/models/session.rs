@@ -3,6 +3,7 @@ use crate::domain::auth::models::refresh_token::RefreshToken;
 use crate::domain::user::models::User;
 #[cfg(feature = "zerver")]
 use crate::domain::{auth::models::access_token::InvalidJwt, user::models::get_user::GetUserError};
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use thiserror::Error;
@@ -238,13 +239,17 @@ pub struct Session {
     pub refresh_token: RefreshToken,
 }
 
-#[cfg(feature = "zerver")]
 impl Session {
+    #[cfg(feature = "zerver")]
     pub fn new(user: User, access_token: AccessToken, refresh_token: RefreshToken) -> Self {
         Session {
             user,
             access_token,
             refresh_token,
         }
+    }
+
+    pub fn is_expired(&self) -> bool {
+        self.refresh_token.expires_at < Utc::now().naive_local()
     }
 }
