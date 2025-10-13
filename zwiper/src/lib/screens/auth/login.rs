@@ -19,17 +19,19 @@ use zwipe::{
 };
 
 #[component]
-pub fn Login(swipe_state: Signal<swipe::State>, session: Signal<Option<Session>>) -> Element {
+pub fn Login(swipe_state: Signal<swipe::State>) -> Element {
     const MOVE_SWIPES: [Dir; 1] = [Dir::Up];
     const SUBMIT_SWIPE: Dir = Dir::Down;
 
-    let auth_client = use_signal(|| AuthClient::new());
+    let auth_client: Signal<AuthClient> = use_context();
+    let mut session: Signal<Option<Session>> = use_context();
 
     let mut username_or_email = use_signal(|| String::new());
     let mut password = use_signal(|| String::new());
 
     let mut submit_attempted: Signal<bool> = use_signal(|| false);
     let mut is_loading = use_signal(|| false);
+
     let mut submission_error: Signal<Option<String>> = use_signal(|| None);
 
     let valid_credentials = move || -> bool {
