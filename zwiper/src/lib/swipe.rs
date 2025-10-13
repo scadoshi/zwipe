@@ -254,7 +254,7 @@ impl State {
             }
             (None, None) => self.previous_swipe = None,
         }
-        // println!("swipe dir => {:?}", self.previous_swipe);
+        tracing::debug!("swipe dir={:?}", self.previous_swipe);
     }
 
     // functionality shared by ontouch- and onmouse-
@@ -264,12 +264,10 @@ impl State {
         self.start = Some(point);
         self.current = Some(time_point.clone());
         self.previous = Some(time_point);
-        // println!(
-        //     "swipe start => {:?}",
-        //     self.current
-        //         .as_ref()
-        //         .expect("failed to get swipe start timepoint")
-        // );
+        tracing::debug!(
+            "swipe start={:?}",
+            self.current.as_ref().expect("failed to get swipe info")
+        );
     }
 
     pub fn onswipemove(&mut self, point: ClientPoint) {
@@ -284,12 +282,10 @@ impl State {
         self.previous = self.current.clone();
         self.current = Some(time_point);
         self.resolve_swipe_direction(swipe_moves);
-        // println!(
-        //     "swipe end => {:?}",
-        //     self.current
-        //         .as_ref()
-        //         .expect("failed to get swipe end timepoint")
-        // );
+        tracing::debug!(
+            "swipe end={:?}",
+            self.current.as_ref().expect("failed to get swipe info")
+        );
         self.reset();
     }
 }

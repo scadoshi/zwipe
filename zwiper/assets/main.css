@@ -35,7 +35,7 @@ body {
 
 /* logo */
 
-.ascii-logo {
+.logo {
     font-family: 'Cascadia Code', monospace;
     font-size: clamp(0.5rem, 2.5vw, 1.4rem);
     line-height: 1.2;
@@ -43,27 +43,12 @@ body {
     text-align: left;
     padding: 1rem;
     margin: 2rem;
-    animation: ascii-logo-first_load 1s forwards;
+    animation: logo-enter 1s forwards;
 }
 
-@keyframes ascii-logo-first_load {
+@keyframes logo-enter {
     from {
         letter-spacing: 10px;
-    }
-
-    to {
-        letter-spacing: 0;
-    }
-}
-
-
-.ascii-logo .loader {
-    animation: ascii-logo-loader 1s infinite alternate;
-}
-
-@keyframes ascii-logo-loader {
-    from {
-        letter-spacing: 1px;
     }
 
     to {
