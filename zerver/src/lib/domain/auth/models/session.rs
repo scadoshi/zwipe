@@ -232,7 +232,7 @@ impl From<Uuid> for RevokeSessions {
 // ======
 
 /// successful authentication response containing user data and tokens
-#[derive(Debug, Serialize, PartialEq, Deserialize)]
+#[derive(Debug, Clone, Serialize, PartialEq, Deserialize)]
 pub struct Session {
     pub user: User,
     pub access_token: AccessToken,
