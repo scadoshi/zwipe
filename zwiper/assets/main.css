@@ -64,7 +64,7 @@ body {
     align-items: center;
     height: 100vh;
     width: 100vw;
-    letter-spacing: .1rem;
+    letter-spacing: 0.1rem;
 }
 
 .home-up-hint {
@@ -153,7 +153,7 @@ body {
 
 .spinning-card {
     border: 3px solid #888888;
-    border-radius: .2rem;
+    border-radius: 0.2rem;
     width: 1.25rem;
     height: 1.75rem;
     animation: spin .5s linear infinite;
@@ -172,4 +172,27 @@ body {
     100% {
         transform: rotate(360deg);
     }
+}
+
+/*  profile */
+
+.profile-screen dl {
+    margin-bottom: 1rem;
+    letter-spacing: 0.1rem;
+}
+
+.profile-screen dt {
+    font-weight: 1000;
+}
+
+.profile-screen dd {
+    font-weight: 300;
+    margin-bottom: 1rem;
+}
+
+/* decks */
+
+.decks-screen p {
+    letter-spacing: 0.1rem;
+    margin-bottom: 2rem;
 }
