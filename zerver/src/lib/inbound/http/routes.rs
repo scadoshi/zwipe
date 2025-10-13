@@ -87,9 +87,9 @@ pub fn refresh_session_route() -> String {
     "/api/auth/refresh".to_string()
 }
 
-// ===============
+// ================
 //  private router
-// ===============
+// ================
 #[cfg(feature = "zerver")]
 pub fn private_routes<AS, US, HS, CS, DS>() -> Router<AppState<AS, US, HS, CS, DS>>
 where
@@ -99,6 +99,8 @@ where
     CS: CardService,
     DS: DeckService,
 {
+    use crate::inbound::http::handlers::deck::get_deck_profiles::get_deck_profiles;
+
     Router::new().nest(
         "/api",
         Router::new()
@@ -122,6 +124,7 @@ where
                 "/deck",
                 Router::new()
                     .route("/", post(create_deck_profile))
+                    .route("/", get(get_deck_profiles))
                     .route("/:deck_id", get(get_deck))
                     .route("/:deck_id", put(update_deck_profile))
                     .route("/:deck_id", delete(delete_deck))
@@ -177,6 +180,10 @@ pub fn create_deck_route() -> String {
 
 pub fn get_deck_route(deck_id: &str) -> String {
     format!("/api/deck/{}", deck_id)
+}
+
+pub fn get_deck_profiles_route() -> String {
+    format!("/api/deck")
 }
 
 pub fn update_deck_route(deck_id: &str) -> String {
