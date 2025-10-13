@@ -13,8 +13,11 @@ use crate::domain::{
         refresh_token::RefreshToken,
         register_user::{RegisterUser, RegisterUserError},
         session::{
-            CreateSession, CreateSessionError, DeleteExpiredSessionsError, RefreshSession,
-            RefreshSessionError, RevokeSessions, RevokeSessionsError, Session,
+            create_session::{CreateSession, CreateSessionError},
+            delete_expired_sessions::DeleteExpiredSessionsError,
+            refresh_session::{RefreshSession, RefreshSessionError},
+            revoke_sessions::{RevokeSessions, RevokeSessionsError},
+            Session,
         },
         UserWithPasswordHash,
     },

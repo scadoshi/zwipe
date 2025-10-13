@@ -1,6 +1,8 @@
 use crate::domain::auth::models::password::{InvalidPassword, Password};
 #[cfg(feature = "zerver")]
-use crate::domain::auth::models::{change_password::ChangePassword, session::CreateSessionError};
+use crate::domain::auth::models::{
+    change_password::ChangePassword, session::create_session::CreateSessionError,
+};
 use thiserror::Error;
 
 #[cfg(feature = "zerver")]
