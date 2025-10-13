@@ -1,7 +1,7 @@
 use crate::domain::user::models::username::Username;
 #[cfg(feature = "zerver")]
 use crate::domain::user::models::User;
-use chrono::NaiveDateTime;
+use chrono::{NaiveDateTime, Utc};
 use email_address::EmailAddress;
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, str::FromStr};
@@ -146,12 +146,13 @@ pub struct AccessToken {
     pub expires_at: NaiveDateTime,
 }
 
-#[cfg(feature = "zerver")]
 impl AccessToken {
+    #[cfg(feature = "zerver")]
     pub fn new(jwt: Jwt, expires_at: NaiveDateTime) -> Self {
         Self { jwt, expires_at }
     }
 
+    #[cfg(feature = "zerver")]
     pub fn generate(user: &User, secret: &JwtSecret) -> Result<AccessToken, InvalidJwt> {
         use chrono::{Duration, Utc};
 
@@ -176,6 +177,10 @@ impl AccessToken {
         )?;
 
         Ok(AccessToken::new(jwt, expires_at))
+    }
+
+    pub fn is_expired(&self) -> bool {
+        self.expires_at < Utc::now().naive_utc()
     }
 }
 
