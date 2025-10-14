@@ -1,5 +1,5 @@
 use crate::domain::moderation::ContainsBadWord;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use thiserror::Error;
 
@@ -13,7 +13,7 @@ pub enum InvalidDeckname {
     BadWord,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct DeckName(String);
 
 impl DeckName {
