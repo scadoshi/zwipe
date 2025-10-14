@@ -11,26 +11,20 @@ use zwipe::{
     },
 };
 
-pub struct ActiveSession(Session);
+pub trait EnsureActive {
+    fn ensure_active(
+        &self,
+        session: &Session,
+    ) -> impl Future<Output = Result<Option<Session>, RefreshError>> + Send;
 
-impl ActiveSession {
-    pub fn session(&self) -> Session {
-        self.0.clone()
-    }
+    fn infallible_ensure_active(
+        &self,
+        session: &Session,
+    ) -> impl Future<Output = Option<Session>> + Send;
 }
 
-pub trait GetActiveSession {
-    fn get_active_session(
-        &self,
-        session: Session,
-    ) -> impl Future<Output = Result<Option<ActiveSession>, RefreshError>> + Send;
-}
-
-impl GetActiveSession for AuthClient {
-    async fn get_active_session(
-        &self,
-        session: Session,
-    ) -> Result<Option<ActiveSession>, RefreshError> {
+impl EnsureActive for AuthClient {
+    async fn ensure_active(&self, session: &Session) -> Result<Option<Session>, RefreshError> {
         if session.is_expired() {
             return Ok(None);
         }
@@ -38,14 +32,22 @@ impl GetActiveSession for AuthClient {
         if session.access_token.is_expired() {
             let mut url = self.app_config.backend_url.clone();
             url.set_path(&refresh_session_route());
-
-            let request = HttpRefreshSession::from(&session);
-
+            let request = HttpRefreshSession::from(session);
             let session = self.refresh(&request).await?;
-
-            return Ok(Some(ActiveSession(session)));
+            return Ok(Some(session));
         }
 
-        Ok(Some(ActiveSession(session)))
+        Ok(Some(session.clone()))
+    }
+
+    async fn infallible_ensure_active(&self, session: &Session) -> Option<Session> {
+        match self.ensure_active(session).await {
+            Err(e) => {
+                tracing::error!("failed to get active session: {e}");
+                None
+            }
+            Ok(Some(session)) => Some(session),
+            Ok(None) => None,
+        }
     }
 }
