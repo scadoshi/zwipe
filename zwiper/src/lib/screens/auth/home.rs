@@ -2,11 +2,7 @@ use dioxus::prelude::*;
 use zwipe::domain::{auth::models::session::Session, logo};
 
 use crate::{
-    client::auth::AuthClient,
-    screens::{
-        auth::{login::Login, register::Register},
-        Screen,
-    },
+    screens::auth::{login::Login, register::Register},
     swipe::{self, Direction as Dir, OnMouse, OnTouch, VH_GAP},
 };
 
@@ -14,18 +10,10 @@ use crate::{
 pub fn Home() -> Element {
     const MOVE_SWIPES: [Dir; 2] = [Dir::Up, Dir::Down];
 
-    let auth_client = use_signal(|| AuthClient::new());
-    use_context_provider(|| auth_client);
     let session: Signal<Option<Session>> = use_context();
-
-    let navigator = use_navigator();
     let mut swipe_state = use_signal(|| swipe::State::new());
 
     let logo = logo::logo();
-
-    if session.read().is_some() {
-        navigator.push(Screen::MainHome {});
-    }
 
     rsx! {
         if session.read().is_none() { Login {swipe_state} }
