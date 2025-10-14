@@ -1,7 +1,10 @@
+use std::time::Duration;
+
 use dioxus::prelude::*;
 use zwipe::domain::{auth::models::session::Session, logo::logo};
 
 use crate::{
+    client::auth::{session::EnsureActive, AuthClient},
     screens::{
         main::{decks::Decks, profile::Profile},
         Screen,
@@ -13,16 +16,36 @@ use crate::{
 pub fn Home() -> Element {
     const MOVE_SWIPES: [Dir; 2] = [Dir::Up, Dir::Down];
 
-    let session: Signal<Option<Session>> = use_context();
+    let auth_client: Signal<AuthClient> = use_context();
+    let mut session: Signal<Option<Session>> = use_context();
 
     let navigator = use_navigator();
-    let mut swipe_state = use_signal(|| swipe::State::new());
-
-    let logo = logo();
-
     if session.read().is_none() {
         navigator.push(Screen::AuthHome {});
     }
+
+    let check_session = move || {
+        spawn(async move {
+            let Some(s) = session.read().clone() else {
+                return;
+            };
+            session.set(auth_client.read().infallible_ensure_active(&s).await);
+        });
+    };
+
+    use_effect(move || {
+        spawn(async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(60));
+            loop {
+                interval.tick().await;
+                check_session();
+            }
+        });
+    });
+
+    let mut swipe_state = use_signal(|| swipe::State::new());
+
+    let logo = logo();
 
     rsx! {
         Profile {swipe_state}
