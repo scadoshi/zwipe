@@ -15,25 +15,25 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Session management architecture and deck profiles API integration completed.
+**Last Updated**: Frontend session validation architecture and basic main screens implemented.
 
-**Next Learning Focus**: Complete deck list UI integration, profile editing forms, and HTTP client patterns for authenticated requests.
+**Next Learning Focus**: Deck loading/display, session persistence research, or refactoring check_session pattern into reusable helper.
 
-**Recent Achievement**: Built complete session management system with ActiveSession wrapper, GetActiveSession trait for token validation/refresh, and deck profiles API endpoint. Modularized session domain into separate files (create_session, refresh_session, revoke_sessions, etc.). Added get_deck_profiles backend endpoint with proper authentication. Frontend HTTP client architecture established with session-aware request patterns. Ready to integrate deck list display with backend.
+**Recent Achievement**: Implemented EnsureActive trait with infallible_ensure_active method that collapses session validation/refresh errors into Option<Session>. Built Profile, MainHome, and Decks screens with session checking pattern. Discovered challenges with Dioxus async + Send boundaries - spawn() doesn't return values, use_resource is correct pattern for async data fetching. Learning that Dioxus patterns differ significantly from backend Rust.
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **Deck List UI Integration** - Complete get_deck_profiles HTTP client implementation and deck list display
-2. **Profile Edit Forms** - Building forms for username, email, and password changes with real-time validation
-3. **Session Context Integration** - Using use_context() in async functions for session management
-4. **Create Deck Form** - Simple form for creating new deck with name validation
-5. **HTTP Client Error Handling** - Proper error types for session vs network issues
+1. **Deck Loading** - Implement actual deck profile fetching and display in Decks screen
+2. **Session Persistence** - Research keyring integration and iOS/Android entitlements for persistent sessions
+3. **Refactor check_session** - Extract repeated session validation pattern into reusable helper/macro
+4. **Periodic Session Refresh** - Implement background timer (use_future loop) to validate session every minute
+5. **Main Screen Content** - Build out actual functionality for Profile/Home/Decks beyond skeleton
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Async Context Access** - Best patterns for accessing Dioxus context in async HTTP client functions
-2. **Session Error Handling** - How to handle re-auth vs network errors in UI components
-3. **Loading State UX** - How to show loading states for list fetches vs single item operations
-4. **Error Display Patterns** - Consistent error messaging across different screen types
-5. **Component Reusability** - When to extract common patterns (forms, lists) into reusable components
+1. **Dioxus Async Patterns** - Still struggling with spawn vs use_resource vs use_future, when to use each
+2. **Signal + Send Boundaries** - Understanding why mut Signal causes Send issues in async functions
+3. **use_resource Data Flow** - How to properly structure component state around async resource loading
+4. **Session Validation Reusability** - Best way to avoid repeating check_session pattern (function, macro, hook pattern?)
+5. **Loading State UX** - Skeleton screens vs spinners vs "Loading..." text for deck/card fetching
 
 ---
 
@@ -240,6 +240,16 @@ alwaysApply: true
 ---
 
 ## LEARNING - Recently Introduced, Needs Guidance 📚
+
+### 🎨 Dioxus Async Patterns & Reactivity
+- **spawn() Limitations**: spawn() runs async tasks but doesn't return values - meant for side effects only
+- **use_resource Pattern**: Correct tool for async data fetching that returns values (Some/None for loading, Result for success/error)
+- **use_future Loops**: Background tasks with infinite loops for periodic operations (session refresh every N seconds)
+- **Signal + Send Issues**: mut Signal parameters can't cross async boundaries due to RefCell (not Sync) - pass Signal by value instead
+- **Context in Async**: use_context() works in spawn() blocks since they capture component context
+- **Infallible Patterns**: EnsureActive trait with infallible_ensure_active collapses Result<Option<T>, E> to Option<T> for simpler error handling
+- **Session Validation Flow**: Check session on component mount with spawn(), update signal, component reactively re-renders on None
+- *Note: Dioxus async patterns are fundamentally different from backend Rust - still building mental model*
 
 ### 🔐 Backend Session & Token Architecture (Complete) ✅
 - **Session-Based Authentication**: Session struct containing user + access_token + refresh_token + both expiration timestamps

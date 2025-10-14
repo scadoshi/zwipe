@@ -13,20 +13,20 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Session management architecture and deck profiles API integration completed.
+**Last Updated**: Frontend session validation architecture and main screen scaffolding completed.
 
-**Current Focus**: Complete deck list UI integration and profile editing forms with backend connectivity.
+**Current Focus**: Deck loading implementation, session persistence research, and check_session pattern refactoring.
 
-**Recent Achievement**: Built complete session management system with ActiveSession wrapper and GetActiveSession trait for token validation/refresh. Modularized session domain into separate files for better organization. Added get_deck_profiles backend endpoint with proper authentication middleware. Established frontend HTTP client architecture with session-aware request patterns. Ready to integrate deck list display with backend API.
+**Recent Achievement**: Implemented EnsureActive trait with infallible_ensure_active for clean session validation. Built Profile, MainHome, and Decks screen scaffolds with session checking on mount. Discovered and documented Dioxus async boundary challenges (spawn vs use_resource, Signal + Send issues). Established pattern of validating session on component mount with reactive re-render on expiration.
 
-**Current Decision**: Session management foundation complete. Moving to UI integration phase with real backend connectivity. Next priorities: complete get_deck_profiles HTTP client implementation and deck list display.
+**Current Decision**: Basic screen structure in place. Next phase: implement actual deck loading with use_resource, research session persistence, and extract check_session pattern into reusable helper to reduce duplication.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Deck List HTTP Integration** - Complete get_deck_profiles client implementation and UI display
-2. **Profile Editing Forms** - Username, email, and password change interfaces with validation
-3. **Session Context Integration** - Using use_context() in async functions for session management
-4. **Create Deck Interface** - Form for creating new deck with name input
-5. **HTTP Client Error Handling** - Proper error types for session vs network issues
+1. **Deck Loading Implementation** - Use use_resource to fetch and display deck profiles
+2. **Session Persistence** - Research iOS/Android keyring integration for persistent sessions
+3. **Check Session Refactoring** - Extract repeated session validation into reusable helper/macro
+4. **Periodic Session Refresh** - Implement use_future loop for background session validation
+5. **Main Screen Content** - Build actual Profile/Home/Decks functionality beyond skeletons
 
 ### 🤔 Next Immediate Priorities (Top 5)
 1. **Card Search Integration** - Connect to backend search API with query parameters
@@ -145,6 +145,9 @@ alwaysApply: true
 - **Deck Profiles API**: Backend endpoint for fetching user's deck profiles with proper authentication
 - **HTTP Client Architecture**: Session-aware request patterns with automatic token refresh handling
 - **Session Domain Modularization**: Split session operations into separate files (create_session, refresh_session, revoke_sessions, etc.)
+- **EnsureActive Trait**: Frontend session validation with ensure_active (fallible) and infallible_ensure_active (collapses errors to Option)
+- **Main Screen Scaffolding**: Profile, MainHome, and Decks screens with session validation on mount
+- **Session Checking Pattern**: spawn() async blocks that validate session and update signal, triggering reactive re-render
 
 ---
 
