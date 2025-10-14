@@ -1,5 +1,4 @@
 use crate::client::auth::AuthClient;
-use dioxus::prelude::*;
 use std::future::Future;
 use thiserror::Error;
 use zwipe::{

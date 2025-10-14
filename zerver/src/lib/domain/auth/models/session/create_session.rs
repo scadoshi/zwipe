@@ -8,6 +8,7 @@ use crate::domain::{
     },
     user::models::get_user::GetUserError,
 };
+#[cfg(feature = "zerver")]
 use thiserror::Error;
 #[cfg(feature = "zerver")]
 use uuid::Uuid;
