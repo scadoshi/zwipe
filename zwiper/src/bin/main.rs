@@ -1,6 +1,8 @@
 use dioxus::prelude::*;
 use zwipe::domain::auth::models::session::Session;
-use zwiper::{config::Config, helpers::development::Spoof, screens::Screen};
+use zwiper::{
+    client::auth::AuthClient, config::Config, helpers::development::Spoof, screens::Screen,
+};
 
 const FAVICON: Asset = asset!("/assets/favicon/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
@@ -15,6 +17,9 @@ fn main() {
 
 #[component]
 fn App() -> Element {
+    let auth_client = use_signal(|| AuthClient::new());
+    use_context_provider(|| auth_client);
+
     let session: Signal<Option<Session>> = use_signal(|| {
         // use this later when actual persistence is achieved
         // Session::infallible_load()
