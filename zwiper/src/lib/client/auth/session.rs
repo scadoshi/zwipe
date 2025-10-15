@@ -11,20 +11,20 @@ use zwipe::{
     },
 };
 
-pub trait EnsureActive {
-    fn ensure_active(
+pub trait ActiveSession {
+    fn get_active_session(
         &self,
         session: &Session,
     ) -> impl Future<Output = Result<Option<Session>, RefreshError>> + Send;
 
-    fn infallible_ensure_active(
+    fn infallible_get_active_session(
         &self,
         session: &Session,
     ) -> impl Future<Output = Option<Session>> + Send;
 }
 
-impl EnsureActive for AuthClient {
-    async fn ensure_active(&self, session: &Session) -> Result<Option<Session>, RefreshError> {
+impl ActiveSession for AuthClient {
+    async fn get_active_session(&self, session: &Session) -> Result<Option<Session>, RefreshError> {
         if session.is_expired() {
             return Ok(None);
         }
@@ -40,8 +40,8 @@ impl EnsureActive for AuthClient {
         Ok(Some(session.clone()))
     }
 
-    async fn infallible_ensure_active(&self, session: &Session) -> Option<Session> {
-        match self.ensure_active(session).await {
+    async fn infallible_get_active_session(&self, session: &Session) -> Option<Session> {
+        match self.get_active_session(session).await {
             Err(e) => {
                 tracing::error!("failed to get active session: {e}");
                 None
