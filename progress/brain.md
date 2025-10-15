@@ -15,25 +15,25 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Frontend session validation architecture and basic main screens implemented.
+**Last Updated**: Completed deck loading implementation with use_resource pattern, clarified Resource vs Signal mental models for Dioxus reactivity.
 
-**Next Learning Focus**: Deck loading/display, session persistence research, or refactoring check_session pattern into reusable helper.
+**Next Learning Focus**: Consolidate repeated screen boilerplate (swipe handlers, session validation, context extraction) into reusable component or helper pattern.
 
-**Recent Achievement**: Implemented EnsureActive trait with infallible_ensure_active method that collapses session validation/refresh errors into Option<Session>. Built Profile, MainHome, and Decks screens with session checking pattern. Discovered challenges with Dioxus async + Send boundaries - spawn() doesn't return values, use_resource is correct pattern for async data fetching. Learning that Dioxus patterns differ significantly from backend Rust.
+**Recent Achievement**: Built complete deck loading flow with `use_resource` for async data fetching, proper `Option<Result<Vec<T>>>` handling, and three-state rendering (loading/error/success). Renamed ActiveSession trait for clarity. Discovered key distinction: Resources are for "fetch and display" patterns, Signals are for "already have value, just validate/update" patterns. Session validation belongs in Signal territory since session exists from login - just needs periodic validation as side effect.
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **Deck Loading** - Implement actual deck profile fetching and display in Decks screen
-2. **Session Persistence** - Research keyring integration and iOS/Android entitlements for persistent sessions
-3. **Refactor check_session** - Extract repeated session validation pattern into reusable helper/macro
-4. **Periodic Session Refresh** - Implement background timer (use_future loop) to validate session every minute
-5. **Main Screen Content** - Build out actual functionality for Profile/Home/Decks beyond skeleton
+1. **DRY Screen Boilerplate** - Consolidate repeated code across screens: swipe event handlers (ontouchstart/move/end, onmousedown/move/up), session context extraction, check_session closure, periodic validation use_effect
+2. **Component Abstraction Strategy** - Determine best pattern for reusable screen wrapper: higher-order component, custom hook, or trait-based solution
+3. **Swipe Handler Consolidation** - All screens need identical touch/mouse events - should extract into reusable pattern
+4. **Session Management Consolidation** - Every screen repeats: get session from context, validate on mount, check every 60s
+5. **Profile/Home Screen Content** - Build actual functionality beyond "under construction" placeholders
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Dioxus Async Patterns** - Still struggling with spawn vs use_resource vs use_future, when to use each
-2. **Signal + Send Boundaries** - Understanding why mut Signal causes Send issues in async functions
-3. **use_resource Data Flow** - How to properly structure component state around async resource loading
-4. **Session Validation Reusability** - Best way to avoid repeating check_session pattern (function, macro, hook pattern?)
-5. **Loading State UX** - Skeleton screens vs spinners vs "Loading..." text for deck/card fetching
+1. **Component Composition Patterns** - Best way to wrap screens with common functionality (wrapper components, render props, custom hooks?)
+2. **Dioxus Reusability Idioms** - What's the idiomatic way to share behavior across multiple components?
+3. **Closure vs Function Trade-offs** - When to use closures in components vs extracting to standalone functions
+4. **Custom Hook Pattern in Dioxus** - Can you create reusable hooks like React's useSession() pattern?
+5. **Avoiding Over-Abstraction** - When does DRY become premature abstraction in component design?
 
 ---
 
@@ -243,13 +243,18 @@ alwaysApply: true
 
 ### 🎨 Dioxus Async Patterns & Reactivity
 - **spawn() Limitations**: spawn() runs async tasks but doesn't return values - meant for side effects only
-- **use_resource Pattern**: Correct tool for async data fetching that returns values (Some/None for loading, Result for success/error)
+- **use_resource Pattern**: Correct tool for async data fetching that returns values (None for loading, Some(Result) for ready)
+- **Resource vs Signal Mental Model**: Resources = "fetch this data and render it", Signals = "already have value, validate/update as side effect"
+- **use_resource Structure**: Handles `Option<Result<T, E>>` - None while loading, Some(Ok(data)) on success, Some(Err(e)) on failure
+- **Resource Rendering**: Match on three states: None (loading spinner), Some(Ok(data)) (render content), Some(Err(e)) (error message)
+- **Async Closure Pattern**: `move || async move { }` for creating Futures that can be `.await`ed when called
 - **use_future Loops**: Background tasks with infinite loops for periodic operations (session refresh every N seconds)
 - **Signal + Send Issues**: mut Signal parameters can't cross async boundaries due to RefCell (not Sync) - pass Signal by value instead
 - **Context in Async**: use_context() works in spawn() blocks since they capture component context
-- **Infallible Patterns**: EnsureActive trait with infallible_ensure_active collapses Result<Option<T>, E> to Option<T> for simpler error handling
-- **Session Validation Flow**: Check session on component mount with spawn(), update signal, component reactively re-renders on None
-- *Note: Dioxus async patterns are fundamentally different from backend Rust - still building mental model*
+- **Infallible Patterns**: ActiveSession trait with infallible_get_active_session collapses Result<Option<T>, E> to Option<T> for simpler error handling
+- **Session Validation Flow**: Signal holds session from context, spawn() validates and updates signal, component re-renders on change
+- **Error Honesty Pattern**: Returning `Err(SessionExpired)` instead of `Ok(vec![])` when session missing - honest errors better than fake empty states
+- *Note: Still building mental model - async closures returning Futures vs spawn() calling them immediately is confusing*
 
 ### 🔐 Backend Session & Token Architecture (Complete) ✅
 - **Session-Based Authentication**: Session struct containing user + access_token + refresh_token + both expiration timestamps

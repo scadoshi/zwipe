@@ -13,20 +13,20 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Frontend session validation architecture and main screen scaffolding completed.
+**Last Updated**: Deck loading implementation complete, screen boilerplate consolidation identified as next priority.
 
-**Current Focus**: Deck loading implementation, session persistence research, and check_session pattern refactoring.
+**Current Focus**: Consolidating repeated screen logic (swipe handlers, session management, context extraction) into reusable patterns to reduce duplication across Profile/Home/Decks screens.
 
-**Recent Achievement**: Implemented EnsureActive trait with infallible_ensure_active for clean session validation. Built Profile, MainHome, and Decks screen scaffolds with session checking on mount. Discovered and documented Dioxus async boundary challenges (spawn vs use_resource, Signal + Send issues). Established pattern of validating session on component mount with reactive re-render on expiration.
+**Recent Achievement**: Completed deck profile loading with use_resource pattern. Implemented three-state rendering (loading spinner, error display, deck list). Renamed ActiveSession trait for clarity. Established "honest error" pattern - returning SessionExpired error instead of empty results when session missing. Clarified Resource vs Signal mental models: Resources for async data fetching, Signals for existing values that need validation/updates.
 
-**Current Decision**: Basic screen structure in place. Next phase: implement actual deck loading with use_resource, research session persistence, and extract check_session pattern into reusable helper to reduce duplication.
+**Current Decision**: Deck loading works correctly. Noticed significant code duplication across screens: every screen repeats swipe event handlers (6 handlers), session context extraction, check_session closure, and 60-second validation loop. Need to consolidate this boilerplate before building more screens - approximately 30+ lines of identical setup per screen.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Deck Loading Implementation** - Use use_resource to fetch and display deck profiles
-2. **Session Persistence** - Research iOS/Android keyring integration for persistent sessions
-3. **Check Session Refactoring** - Extract repeated session validation into reusable helper/macro
-4. **Periodic Session Refresh** - Implement use_future loop for background session validation
-5. **Main Screen Content** - Build actual Profile/Home/Decks functionality beyond skeletons
+1. **Screen Boilerplate Consolidation** - Extract repeated swipe handlers, session validation, and context setup into reusable component/helper
+2. **Swipe Handler Abstraction** - Consolidate ontouchstart/move/end and onmousedown/move/up patterns used identically across all screens
+3. **Session Management Helper** - Reusable pattern for session context extraction, validation closure, and periodic checking
+4. **Component Composition Research** - Determine idiomatic Dioxus patterns for sharing behavior (wrapper components vs custom hooks vs traits)
+5. **Profile/Home Screen Implementation** - Build actual screen content once consolidation pattern established
 
 ### 🤔 Next Immediate Priorities (Top 5)
 1. **Card Search Integration** - Connect to backend search API with query parameters
@@ -145,9 +145,12 @@ alwaysApply: true
 - **Deck Profiles API**: Backend endpoint for fetching user's deck profiles with proper authentication
 - **HTTP Client Architecture**: Session-aware request patterns with automatic token refresh handling
 - **Session Domain Modularization**: Split session operations into separate files (create_session, refresh_session, revoke_sessions, etc.)
-- **EnsureActive Trait**: Frontend session validation with ensure_active (fallible) and infallible_ensure_active (collapses errors to Option)
+- **ActiveSession Trait**: Frontend session validation with get_active_session (fallible) and infallible_get_active_session (collapses errors to Option)
 - **Main Screen Scaffolding**: Profile, MainHome, and Decks screens with session validation on mount
 - **Session Checking Pattern**: spawn() async blocks that validate session and update signal, triggering reactive re-render
+- **Deck Loading Implementation**: Complete use_resource pattern with three-state rendering (None/Ok/Err), honest error handling (SessionExpired vs empty results)
+- **Resource Mental Model**: Clarified use_resource for "fetch and display" vs Signal for "already have, just validate" patterns
+- **Async Closure Pattern**: Async closures returning Futures (`move || async move {}`) for reusable async operations that can be .await'ed
 
 ---
 
