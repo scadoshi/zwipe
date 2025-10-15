@@ -12,6 +12,8 @@ pub enum GetDeckProfilesError {
     Network(reqwest::Error),
     #[error("something went wrong")]
     SomethingWentWrong,
+    #[error("session expired")]
+    SessionExpired,
 }
 
 impl From<reqwest::Error> for GetDeckProfilesError {
@@ -29,14 +31,14 @@ impl From<serde_json::Error> for GetDeckProfilesError {
 pub trait GetDecks {
     fn get_deck_profiles(
         &self,
-        session: Session,
+        session: &Session,
     ) -> impl Future<Output = Result<Vec<DeckProfile>, GetDeckProfilesError>> + Send;
 }
 
 impl GetDecks for AuthClient {
     async fn get_deck_profiles(
         &self,
-        session: Session,
+        session: &Session,
     ) -> Result<Vec<DeckProfile>, GetDeckProfilesError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&get_deck_profiles_route());
