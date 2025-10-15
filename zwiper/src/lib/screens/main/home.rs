@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 use zwipe::domain::{auth::models::session::Session, logo::logo};
 
 use crate::{
-    client::auth::{session::EnsureActive, AuthClient},
+    client::auth::{session::ActiveSession, AuthClient},
     screens::{
         main::{decks::Decks, profile::Profile},
         Screen,
@@ -24,13 +24,11 @@ pub fn Home() -> Element {
         navigator.push(Screen::AuthHome {});
     }
 
-    let check_session = move || {
-        spawn(async move {
-            let Some(s) = session.read().clone() else {
-                return;
-            };
-            session.set(auth_client.read().infallible_ensure_active(&s).await);
-        });
+    let check_session = move || async move {
+        let Some(s) = session.read().clone() else {
+            return;
+        };
+        session.set(auth_client.read().infallible_get_active_session(&s).await);
     };
 
     use_effect(move || {
@@ -38,7 +36,7 @@ pub fn Home() -> Element {
             let mut interval = tokio::time::interval(Duration::from_secs(60));
             loop {
                 interval.tick().await;
-                check_session();
+                check_session().await;
             }
         });
     });
