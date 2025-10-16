@@ -32,6 +32,8 @@ impl Direction {
 
 use Direction as Dir;
 
+use crate::swipe;
+
 #[derive(Debug, Clone)]
 pub struct Delta {
     pub from_start: f64,
@@ -344,5 +346,33 @@ impl OnMouse for Signal<State> {
     fn onmouseup(&mut self, e: Event<MouseData>, swipe_moves: &[Dir]) {
         let point = e.client_coordinates();
         self.with_mut(|ss| ss.onswipeend(point, swipe_moves));
+    }
+}
+
+#[component]
+pub fn Swipeable<F: Fn() -> Element + Clone + PartialEq + 'static>(child: F) -> Element {
+    let swipe_state = use_signal(|| swipe::State::new());
+    rsx! {
+            div { class : "swipeable",
+
+            style : format!(
+                "transform: translateY(calc({}px + {}vh));
+                transition: transform {}s;",
+                swipe_state.read().dy().from_start,
+                swipe_state.read().position.y * VH_GAP,
+                swipe_state.read().transition_seconds
+            ),
+
+            ontouchstart : move |e: Event<TouchData>| swipe_state.ontouchstart(e),
+            ontouchmove : move |e: Event<TouchData>| swipe_state.ontouchmove(e),
+            ontouchend : move |e: Event<TouchData>| swipe_state.ontouchend(e, &MOVE_SWIPES),
+
+            onmousedown : move |e: Event<MouseData>| swipe_state.onmousedown(e),
+            onmousemove : move |e: Event<MouseData>| swipe_state.onmousemove(e),
+            onmouseup : move |e: Event<MouseData>| swipe_state.onmouseup(e, &MOVE_SWIPES),
+
+            }
+
+        child {}
     }
 }
