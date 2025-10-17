@@ -1,8 +1,6 @@
 use dioxus::prelude::*;
 use zwipe::domain::auth::models::session::Session;
-use zwiper::{
-    client::auth::AuthClient, config::Config, helpers::development::Spoof, screens::Screen,
-};
+use zwiper::{config::Config, domain::development::Spoof};
 
 const FAVICON: Asset = asset!("/assets/favicon/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
