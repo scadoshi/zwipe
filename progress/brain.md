@@ -15,25 +15,25 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Completed deck loading implementation with use_resource pattern, clarified Resource vs Signal mental models for Dioxus reactivity.
+**Last Updated**: Completed major hexagonal architecture refactoring, migrated to GlobalSignal pattern, and created modular swipe component system. Ready to implement Swipeable wrapper across all screens.
 
-**Next Learning Focus**: Consolidate repeated screen boilerplate (swipe handlers, session validation, context extraction) into reusable component or helper pattern.
+**Next Learning Focus**: Use Swipeable component wrapper to eliminate repeated swipe handlers across screens. Calculate proper screen position offsets for each screen variant.
 
-**Recent Achievement**: Built complete deck loading flow with `use_resource` for async data fetching, proper `Option<Result<Vec<T>>>` handling, and three-state rendering (loading/error/success). Renamed ActiveSession trait for clarity. Discovered key distinction: Resources are for "fetch and display" patterns, Signals are for "already have value, just validate/update" patterns. Session validation belongs in Signal territory since session exists from login - just needs periodic validation as side effect.
+**Recent Achievement**: Major frontend restructuring into hexagonal layers (inbound/ui, outbound/client, domain). Migrated from Context API to GlobalSignal for session/auth state. Split 378-line swipe.rs into 6 focused modules. Built reusable Swipeable component with proper ownership handling for Vec<Direction> prop (clone pattern for multiple closure captures). Established separate file architecture for auth/app screen hierarchies.
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **DRY Screen Boilerplate** - Consolidate repeated code across screens: swipe event handlers (ontouchstart/move/end, onmousedown/move/up), session context extraction, check_session closure, periodic validation use_effect
-2. **Component Abstraction Strategy** - Determine best pattern for reusable screen wrapper: higher-order component, custom hook, or trait-based solution
-3. **Swipe Handler Consolidation** - All screens need identical touch/mouse events - should extract into reusable pattern
-4. **Session Management Consolidation** - Every screen repeats: get session from context, validate on mount, check every 60s
+1. **Swipeable Wrapper Integration** - Replace manual swipe handlers in all screens with Swipeable component wrapper
+2. **Screen Position Offset Calculation** - Determine proper transform offsets for Above/Center/Below screen positions
+3. **Session Management Consolidation** - Extract repeated check_session closure and use_effect validation loop into reusable pattern
+4. **Screen Architecture Finalization** - Complete transition to hexagonal inbound/outbound/domain structure
 5. **Profile/Home Screen Content** - Build actual functionality beyond "under construction" placeholders
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Component Composition Patterns** - Best way to wrap screens with common functionality (wrapper components, render props, custom hooks?)
-2. **Dioxus Reusability Idioms** - What's the idiomatic way to share behavior across multiple components?
-3. **Closure vs Function Trade-offs** - When to use closures in components vs extracting to standalone functions
-4. **Custom Hook Pattern in Dioxus** - Can you create reusable hooks like React's useSession() pattern?
-5. **Avoiding Over-Abstraction** - When does DRY become premature abstraction in component design?
+1. **Screen Offset Calculations** - How to parameterize Above/Center/Below positions in Swipeable wrapper (enum vs prop?)
+2. **Session Hook Pattern** - Can extract use_context + validation loop into reusable pattern without custom hooks?
+3. **GlobalSignal vs Context Tradeoffs** - When to use GlobalSignal vs Context API for different state types
+4. **Swipeable Children Rendering** - How to properly render children inside Swipeable div with correct positioning
+5. **Component Abstraction Balance** - Avoiding over-abstraction while eliminating 30+ lines of boilerplate per screen
 
 ---
 
@@ -125,6 +125,8 @@ alwaysApply: true
 - **Conditional Error Display**: Showing errors only when present, clearing on successful retry
 - **CSS Animation Integration**: Spinning card animation for visual feedback during HTTP requests
 - **Route Function Pattern**: Exporting backend routes as functions for frontend import consistency
+- **GlobalSignal Pattern**: Static global state with Signal::global() for session and auth client (alternative to Context API)
+- **Dioxus Props Ownership**: Props must be owned values, can't pass references - use clone pattern for multiple closure captures
 
 ### 💾 SQLx Database Operations & Advanced Patterns
 - **Connection Pooling**: Production-ready pool configuration with optimized settings
@@ -190,7 +192,10 @@ alwaysApply: true
 - **Coordinate System**: Browser coordinates (positive Y down) with proper delta calculations
 - **State Management**: Decoupled position updates from swipe detection for flexible interaction patterns
 - **Abstraction Patterns**: Consolidated onswipestart/move/end for identical touch/mouse behavior
-- *Note: Working implementation with consistent cross-platform behavior*
+- **Modular Swipe Architecture**: Split into delta, direction, onswipe, ontouch, state, time_point modules (6 files)
+- **Swipeable Component**: Reusable wrapper component with children prop and move_swipes Vec parameter
+- **Closure Ownership Pattern**: Clone Vec<Direction> for multiple closures that need to capture same owned value
+- *Note: Swipeable component created but not yet integrated into screens*
 
 ### 🏗️ Service Architecture & Dependency Injection
 - **Generic Service Patterns**: Service<R> and Service<DR, CR> implementations across domains

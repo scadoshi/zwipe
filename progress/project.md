@@ -13,20 +13,20 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Deck loading implementation complete, screen boilerplate consolidation identified as next priority.
+**Last Updated**: Major hexagonal architecture refactoring complete, GlobalSignal migration done, Swipeable component created.
 
-**Current Focus**: Consolidating repeated screen logic (swipe handlers, session management, context extraction) into reusable patterns to reduce duplication across Profile/Home/Decks screens.
+**Current Focus**: Integrating Swipeable wrapper component across all screens to eliminate repeated swipe handlers. Determining screen position offset strategy.
 
-**Recent Achievement**: Completed deck profile loading with use_resource pattern. Implemented three-state rendering (loading spinner, error display, deck list). Renamed ActiveSession trait for clarity. Established "honest error" pattern - returning SessionExpired error instead of empty results when session missing. Clarified Resource vs Signal mental models: Resources for async data fetching, Signals for existing values that need validation/updates.
+**Recent Achievement**: Restructured entire frontend into hexagonal layers - inbound/ui/ for components, outbound/client/ for HTTP, domain/ for shared utilities. Migrated from Context API to GlobalSignal pattern for session and auth client state. Modularized 378-line swipe.rs into 6 focused files (delta, direction, onswipe, ontouch, state, time_point). Built reusable Swipeable component with proper ownership handling for Vec<Direction> props.
 
-**Current Decision**: Deck loading works correctly. Noticed significant code duplication across screens: every screen repeats swipe event handlers (6 handlers), session context extraction, check_session closure, and 60-second validation loop. Need to consolidate this boilerplate before building more screens - approximately 30+ lines of identical setup per screen.
+**Current Decision**: Swipeable wrapper foundation laid but not yet used in screens. All screens still manually implement swipe handlers. Next step: replace manual handlers with Swipeable wrapper, determine proper offset calculation pattern (Above/Center/Below positions), then extract session validation pattern.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Screen Boilerplate Consolidation** - Extract repeated swipe handlers, session validation, and context setup into reusable component/helper
-2. **Swipe Handler Abstraction** - Consolidate ontouchstart/move/end and onmousedown/move/up patterns used identically across all screens
-3. **Session Management Helper** - Reusable pattern for session context extraction, validation closure, and periodic checking
-4. **Component Composition Research** - Determine idiomatic Dioxus patterns for sharing behavior (wrapper components vs custom hooks vs traits)
-5. **Profile/Home Screen Implementation** - Build actual screen content once consolidation pattern established
+1. **Swipeable Wrapper Integration** - Replace manual swipe handlers in all screens with Swipeable component
+2. **Screen Position Strategy** - Design offset calculation system for Above/Center/Below screen positioning
+3. **Session Validation Extraction** - Extract repeated check_session + use_effect pattern into reusable helper
+4. **Hexagonal Architecture Completion** - Finalize frontend transition to inbound/outbound/domain structure
+5. **Profile/Home Screen Implementation** - Build actual screen content beyond placeholders
 
 ### 🤔 Next Immediate Priorities (Top 5)
 1. **Card Search Integration** - Connect to backend search API with query parameters
@@ -151,6 +151,11 @@ alwaysApply: true
 - **Deck Loading Implementation**: Complete use_resource pattern with three-state rendering (None/Ok/Err), honest error handling (SessionExpired vs empty results)
 - **Resource Mental Model**: Clarified use_resource for "fetch and display" vs Signal for "already have, just validate" patterns
 - **Async Closure Pattern**: Async closures returning Futures (`move || async move {}`) for reusable async operations that can be .await'ed
+- **Frontend Hexagonal Refactoring**: Complete restructuring into inbound/ui/, outbound/client/, domain/ layers matching backend architecture
+- **GlobalSignal Migration**: Switched from Context API to static GlobalSignal for session and auth client (Signal::global pattern)
+- **Swipe Modularization**: Split 378-line monolithic swipe.rs into 6 focused modules for better maintainability
+- **Swipeable Component Foundation**: Reusable wrapper with children prop and Vec<Direction> parameter, proper clone pattern for closure ownership
+- **Separate Screen Hierarchies**: Established auth/ and app/ screen directories with home orchestrator files
 
 ---
 
