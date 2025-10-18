@@ -212,7 +212,7 @@ impl SwipeState {
             }
         }
 
-        tracing::debug!("swipe dir={:?}", self.latest_swipe);
+        tracing::trace!("swipe dir={:?}", self.latest_swipe);
     }
 
     pub fn set_traversing_axis(&mut self, config: &SwipeConfig) {
@@ -270,7 +270,7 @@ impl SwipeState {
 
         self.is_swiping = true;
 
-        tracing::debug!(
+        tracing::trace!(
             "swipe start={:?}",
             self.current_point
                 .as_ref()
@@ -301,7 +301,7 @@ impl SwipeState {
 
         self.set_latest_swipe(config);
 
-        tracing::debug!(
+        tracing::trace!(
             "swipe end={:?}",
             self.current_point
                 .as_ref()
