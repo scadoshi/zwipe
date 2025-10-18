@@ -1,7 +1,7 @@
 use crate::{
     domain::error::UserFacing,
     inbound::ui::components::interactions::swipe::{
-        direction::Direction, onswipe::OnMouse, ontouch::OnTouch, state::SwipeState, VH_GAP,
+        config::SwipeConfig, direction::Direction, state::SwipeState, Swipeable,
     },
     outbound::{
         client::auth::{register::Register as RegisterTrait, AuthClient},
@@ -21,11 +21,14 @@ use zwipe::{
 
 #[component]
 pub fn Register(swipe_state: Signal<SwipeState>) -> Element {
-    const MOVE_SWIPES: [Direction; 1] = [Direction::Down];
-    const SUBMIT_SWIPE: Direction = Direction::Up;
-
     let auth_client: Signal<AuthClient> = use_context();
     let mut session: Signal<Option<Session>> = use_context();
+
+    let swipe_config = SwipeConfig {
+        navigation_swipes: vec![Direction::Down],
+        submission_swipe: Some(Direction::Up),
+        from_main_screen: Some(Direction::Down),
+    };
 
     let mut username = use_signal(|| String::new());
     let mut email = use_signal(|| String::new());
@@ -39,83 +42,61 @@ pub fn Register(swipe_state: Signal<SwipeState>) -> Element {
     let mut password_error: Signal<Option<String>> = use_signal(|| None);
     let mut submission_error: Signal<Option<String>> = use_signal(|| None);
 
-    let maybe_submit = move || async move {
-        if swipe_state.read().previous_swipe == Some(SUBMIT_SWIPE) {
-            submit_attempted.set(true);
-            is_loading.set(true);
+    // let maybe_submit = move || async move {
+    //     if swipe_state.read().latest_swipe == swipe_config.submission_swipe
+    //         && swipe_config.submission_swipe.is_some()
+    //     {
+    //         submit_attempted.set(true);
+    //         is_loading.set(true);
 
-            if let Err(e) = Username::new(&username.read()) {
-                username_error.set(Some(e.to_string()));
-            } else {
-                username_error.set(None)
-            }
+    //         if let Err(e) = Username::new(&username.read()) {
+    //             username_error.set(Some(e.to_string()));
+    //         } else {
+    //             username_error.set(None)
+    //         }
 
-            if let Err(e) = EmailAddress::from_str(&email.read()) {
-                email_error.set(Some(e.to_string()));
-            } else {
-                email_error.set(None);
-            }
+    //         if let Err(e) = EmailAddress::from_str(&email.read()) {
+    //             email_error.set(Some(e.to_string()));
+    //         } else {
+    //             email_error.set(None);
+    //         }
 
-            if let Err(e) = Password::new(&password.read()) {
-                password_error.set(Some(e.to_string()))
-            } else {
-                password_error.set(None);
-            }
+    //         if let Err(e) = Password::new(&password.read()) {
+    //             password_error.set(Some(e.to_string()))
+    //         } else {
+    //             password_error.set(None);
+    //         }
 
-            if username_error.read().is_none()
-                && email_error.read().is_none()
-                && password_error.read().is_none()
-            {
-                match RawRegisterUser::new(&*username.read(), &*email.read(), &*password.read())
-                    .map(HttpRegisterUser::from)
-                {
-                    Ok(request) => match auth_client.read().register(request).await {
-                        Ok(new_session) => {
-                            submission_error.set(None);
+    //         if username_error.read().is_none()
+    //             && email_error.read().is_none()
+    //             && password_error.read().is_none()
+    //         {
+    //             match RawRegisterUser::new(&*username.read(), &*email.read(), &*password.read())
+    //                 .map(HttpRegisterUser::from)
+    //             {
+    //                 Ok(request) => match auth_client.read().register(request).await {
+    //                     Ok(new_session) => {
+    //                         submission_error.set(None);
 
-                            if let Err(e) = new_session.save() {
-                                tracing::error!("failed to save session: {e}");
-                            } else {
-                                tracing::info!("saved session successfully");
-                            }
+    //                         if let Err(e) = new_session.save() {
+    //                             tracing::error!("failed to save session: {e}");
+    //                         } else {
+    //                             tracing::info!("saved session successfully");
+    //                         }
 
-                            session.set(Some(new_session));
-                        }
-                        Err(e) => submission_error.set(Some(e.to_string())),
-                    },
-                    Err(e) => submission_error.set(Some(e.to_string())),
-                }
-            }
-            is_loading.set(false);
-        }
-    };
+    //                         session.set(Some(new_session));
+    //                     }
+    //                     Err(e) => submission_error.set(Some(e.to_string())),
+    //                 },
+    //                 Err(e) => submission_error.set(Some(e.to_string())),
+    //             }
+    //         }
+    //         is_loading.set(false);
+    //     }
+    // };
 
     rsx! {
-        div { class : "swipe-able",
-
-            style : format!(
-                "transform: translateY(calc({}px + {}vh + {}vh));
-                transition: transform {}s;",
-                swipe_state.read().dy().from_start,
-                VH_GAP,
-                swipe_state.read().position.y * VH_GAP,
-                swipe_state.read().transition_seconds
-            ),
-
-            ontouchstart : move |e: Event<TouchData>| swipe_state.ontouchstart(e),
-            ontouchmove : move |e: Event<TouchData>| swipe_state.ontouchmove(e),
-            ontouchend : move |e: Event<TouchData>| {
-                swipe_state.ontouchend(e, &MOVE_SWIPES);
-                spawn(maybe_submit());
-            },
-
-            onmousedown : move |e: Event<MouseData>| swipe_state.onmousedown(e),
-            onmousemove : move |e: Event<MouseData>| swipe_state.onmousemove(e),
-            onmouseup : move |e: Event<MouseData>| {
-                swipe_state.onmouseup(e, &MOVE_SWIPES);
-                spawn(maybe_submit());
-            },
-
+        Swipeable { state: swipe_state, config: swipe_config,
             div { class : "form-container",
                 h2 { "create profile ↓" }
 
