@@ -21,8 +21,8 @@ use zwipe::{
 
 #[component]
 pub fn Register(swipe_state: Signal<SwipeState>) -> Element {
-    let auth_client: Signal<AuthClient> = use_context();
     let mut session: Signal<Option<Session>> = use_context();
+    let auth_client: Signal<AuthClient> = use_context();
 
     let swipe_config = SwipeConfig {
         navigation_swipes: vec![Dir::Down],
@@ -66,7 +66,7 @@ pub fn Register(swipe_state: Signal<SwipeState>) -> Element {
         }
     };
 
-    let no_errors = move || {
+    let inputs_are_valid = move || {
         username_error.read().is_none()
             && email_error.read().is_none()
             && password_error.read().is_none()
@@ -90,7 +90,7 @@ pub fn Register(swipe_state: Signal<SwipeState>) -> Element {
                 validate_email();
                 validate_password();
 
-                if no_errors() {
+                if inputs_are_valid() {
                     match create_register_request() {
                         Ok(request) => {
                             spawn(async move {

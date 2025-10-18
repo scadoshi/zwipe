@@ -19,8 +19,6 @@ pub fn Home() -> Element {
 
     let logo = logo::logo();
 
-    // No navigation effects needed - RouteGuard handles screen switching
-
     rsx! {
         Login { swipe_state }
         Swipeable { state: swipe_state, config: swipe_config,
