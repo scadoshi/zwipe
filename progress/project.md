@@ -13,20 +13,20 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Built HomeGuard component with use_memo to handle session-based routing without navigation effects.
+**Last Updated**: Solved infinite HTTP loop bug with Dioxus reactivity patterns. Cleaned up duplicate session validation code.
 
-**Current Focus**: Debug persistent screen freeze issue - likely related to session persistence errors (Platform secure storage failure).
+**Current Focus**: Frontend code organization and reducing boilerplate across components.
 
-**Recent Achievement**: Implemented HomeGuard (route guard) component using use_memo to conditionally render AppHome or AuthHome based on session state. Discovered navigation effects cause deadlock - replaced multi-route structure with single route that conditionally renders. Confirmed swipe-to-submit working correctly with horizontal gestures. Debugged multiple freezing causes: navigation during render, effect racing, infinite background task spawning. Session persistence errors may be contributing to freeze - deferred to next session.
+**Recent Achievement**: Debugged and fixed critical reactivity infinite loop bug causing screen freeze after login. Root cause was `use_effect` spawning infinite background loops that both read AND write session signal, creating exponential task explosion (60+ HTTP connections/millisecond). Fixed by replacing `use_effect` → `use_future` for background tasks and adding conditional signal updates `if new != old` in `use_resource`. Centralized session refresh to home.rs, removed duplicate validation from profile.rs and decks.rs. Added "no decks yet" empty state message. Documented entire debugging process in REACTIVITY_LESSON.md.
 
-**Current Issue**: Screen still freezes after login despite HomeGuard implementation. Session persistence failing (Platform secure storage failure: A required entitlement isn't present). Need to investigate if persistence errors are causing freeze or if additional reactivity issues remain.
+**Current Success**: Login and registration now work correctly. App successfully navigates to main screens (Profile, Home, Decks) after authentication with proper session management and token refresh.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Session Persistence Investigation** - Debug Platform secure storage failure and its impact on UI freeze
-2. **HomeGuard Freeze Debug** - Investigate why screen still freezes despite use_memo implementation
-3. **Session Validation Extraction** - Extract repeated check_session + use_effect pattern into reusable helper
-4. **Profile/Home Screen Implementation** - Build actual screen content beyond placeholders
-5. **Card Search Integration** - Connect to backend search API with query parameters
+1. **Component Boilerplate Reduction** - Identify patterns for reusable session/client context access
+2. **Profile/Home Screen Content** - Build actual functionality beyond current placeholders
+3. **Card Search Integration** - Connect to backend search API with query parameters
+4. **Deck Creation Flow** - Form for creating new decks from main screen
+5. **iOS Keychain Entitlements** - Configure Dioxus.toml for production session persistence
 
 ### 🤔 Next Immediate Priorities (Top 5)
 1. **Card Search Integration** - Connect to backend search API with query parameters
@@ -170,6 +170,12 @@ alwaysApply: true
 - **HomeGuard Component**: Route guard using use_memo to conditionally render AppHome/AuthHome without navigation effects
 - **use_memo Pattern**: Derived state that only updates when session.is_some() boolean changes, preventing re-renders on session content updates
 - **Single Route Architecture**: Replaced multi-route structure with single HomeGuard route for cleaner conditional rendering
+- **Reactivity Loop Debugging**: Diagnosed and fixed infinite HTTP connection spawning (use_effect spawning infinite background loops)
+- **use_future Pattern**: Replaced use_effect with use_future for background session validation (runs once, doesn't track dependencies)
+- **Conditional Signal Updates**: Pattern of `if new_value != old_value { signal.set(new_value) }` to prevent infinite resource refetches
+- **Centralized Session Refresh**: Moved background session validation to home.rs, removed duplicate logic from profile.rs and decks.rs
+- **Session Refresh in Resources**: Pattern for use_resource to check token expiration, refresh if needed, and update signal only when changed
+- **Fire-and-Forget spawn()**: Direct spawn() in component body for one-time background tasks (home.rs session refresh loop)
 
 ---
 

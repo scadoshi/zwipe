@@ -15,25 +15,25 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Built HomeGuard component with use_memo, debugged multiple freeze causes including navigation effects and infinite task spawning.
+**Last Updated**: Solved major reactivity infinite loop bug. Gained deep understanding of use_effect vs use_future vs use_resource dependency tracking.
 
-**Next Learning Focus**: Investigate session persistence errors and their relationship to UI freeze issues.
+**Next Learning Focus**: Component pattern extraction and code organization for reducing boilerplate.
 
-**Recent Achievement**: Implemented HomeGuard using use_memo to prevent re-renders on session content updates. Debugged navigation effect deadlock - learned navigator.push() in effects causes freeze. Discovered effects re-run when reading signals inside closures outside spawn blocks. Found background tasks spawning infinitely when effect re-runs. Confirmed swipe-to-submit working with horizontal gestures. Identified session persistence errors (Platform secure storage failure) may be contributing to freeze.
+**Recent Achievement**: Debugged and fixed critical infinite HTTP loop bug (60+ connections/millisecond causing freeze). Root cause: `use_effect` spawning infinite background loops that read AND write same signal, creating exponential task explosion. Learned `use_effect` tracks ALL signal reads as dependencies, while `use_future` runs once without tracking. Discovered `use_resource` can cause infinite loops if unconditionally updating signals it reads. Fixed with conditional updates (`if new != old`). Centralized session refresh logic, eliminating duplicate code. Created comprehensive REACTIVITY_LESSON.md documenting debugging process and patterns.
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **Session Persistence Debug** - Investigate Platform secure storage failure and iOS Keychain entitlement requirements
-2. **use_memo Freeze Investigation** - Understand why HomeGuard still freezes despite derived state approach
-3. **Effect Reactivity Control** - Master when to wrap logic in spawn() to control signal dependency tracking
-4. **Session Management Consolidation** - Extract repeated check_session closure and use_effect validation loop into reusable pattern
-5. **Profile/Home Screen Content** - Build actual functionality beyond "under construction" placeholders
+1. **Component Pattern Extraction** - Identify and abstract repeated patterns across screens
+2. **Empty State Patterns** - Consistent UI for empty lists and missing data
+3. **Profile/Home Screen Content** - Build actual functionality beyond placeholders
+4. **Card Search UI** - Connect search component to backend API
+5. **Deck Creation Flow** - Form-based deck creation from main screen
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **use_memo Behavior** - Does use_memo truly prevent re-renders when derived value doesn't change, or are there edge cases?
-2. **Session Persistence Impact** - Can failed session.save() calls cause UI freeze or is it unrelated?
-3. **Router Component Mounting** - How does conditional rendering in routes affect component lifecycle and effects?
-4. **Background Task Lifecycle** - Do spawned tasks outlive component unmounts, or do they cancel?
-5. **Effect vs spawn Boundary** - Precise rules for when signal reads register as dependencies vs when they don't
+1. **Component Composition Patterns** - Best practices for reusable Dioxus components
+2. **State Management Scale** - When to lift state vs keep local for larger apps
+3. **Resource Invalidation** - How to manually trigger use_resource refetch
+4. **Background Task Cancellation** - Proper cleanup patterns for long-running tasks
+5. **Testing Reactive Components** - Strategies for testing components with signals and effects
 
 ---
 
@@ -253,35 +253,27 @@ alwaysApply: true
 
 ## LEARNING - Recently Introduced, Needs Guidance 📚
 
-### 🎨 Dioxus Async Patterns & Reactivity
-- **spawn() Limitations**: spawn() runs async tasks but doesn't return values - meant for side effects only
-- **use_resource Pattern**: Correct tool for async data fetching that returns values (None for loading, Some(Result) for ready)
-- **Resource vs Signal Mental Model**: Resources = "fetch this data and render it", Signals = "already have value, validate/update as side effect"
+### 🎨 Dioxus Reactivity & Async Patterns (MAJOR BREAKTHROUGH)
+- **use_effect Dependency Tracking**: Automatically tracks ALL signal reads as dependencies, re-running effect when any tracked signal changes
+- **use_future Independence**: Runs once on mount, does NOT track signal dependencies - correct tool for background loops
+- **use_resource Refetch Behavior**: Tracks signal reads and refetches when dependencies change - dangerous if updating signals it reads
+- **Infinite Loop Pattern Recognition**: Reading + writing same signal in tracked context (use_effect/use_resource) = exponential task explosion
+- **Conditional Update Pattern**: `if new_value != old_value { signal.set(new_value) }` prevents infinite loops in reactive contexts
+- **spawn() Breaks Tracking**: Signal reads inside spawn() blocks DON'T register as dependencies for parent effect/resource
+- **Background Task Spawning**: Use use_future for infinite loops, NOT use_effect (which would spawn new loop on every dependency change)
+- **Fire-and-Forget spawn()**: Direct spawn() in component body for one-time background tasks that don't need hook lifecycle
+- **Session Refresh Architecture**: Single centralized background loop in home.rs, individual screens use use_resource with conditional updates
+- **Resource + Signal Update Pattern**: Check/refresh in use_resource, make API call, conditionally update signal if changed, return result
+- **Exponential Task Explosion**: 3 components × use_effect spawning loops × signal updates = 2→4→8→16→32→64+ tasks in milliseconds
+- **Debugging Reactivity Loops**: Add strategic logging to track effect re-runs, look for exponential growth patterns in connection attempts
 - **use_resource Structure**: Handles `Option<Result<T, E>>` - None while loading, Some(Ok(data)) on success, Some(Err(e)) on failure
-- **Resource Rendering**: Match on three states: None (loading spinner), Some(Ok(data)) (render content), Some(Err(e)) (error message)
 - **Async Closure Pattern**: `move || async move { }` for creating Futures that can be `.await`ed when called
-- **use_future Loops**: Background tasks with infinite loops for periodic operations (session refresh every N seconds)
 - **Signal + Send Issues**: mut Signal parameters can't cross async boundaries due to RefCell (not Sync) - pass Signal by value instead
-- **Context in Async**: use_context() works in spawn() blocks since they capture component context
-- **Infallible Patterns**: ActiveSession trait with infallible_get_active_session collapses Result<Option<T>, E> to Option<T> for simpler error handling
-- **Session Validation Flow**: Signal holds session from context, spawn() validates and updates signal, component re-renders on change
-- **Error Honesty Pattern**: Returning `Err(SessionExpired)` instead of `Ok(vec![])` when session missing - honest errors better than fake empty states
-- **use_effect Pattern**: Side effects that run after render, automatically tracking signal dependencies
-- **Effect Dependency Tracking**: Reading signals inside effect closure registers them as dependencies, triggering re-runs on change
-- **Effect Racing**: Multiple effects in same component run in same cycle - order matters when sharing state mutations
-- **Signal Reads Trigger Effects**: Calling closure functions that read signals inside effect makes effect depend on those signals too
-- **Spawn Inside Effects**: Wrap async logic in spawn() inside effects to prevent signal reads from registering as effect dependencies
-- **Navigation Timing**: navigator.push() during render (component body) causes freezes - must be in use_effect for post-render execution
-- **Effect Mount Guards**: Use local "has_mounted" signal to distinguish first run from subsequent reactive re-runs
-- **State Cleanup in Effects**: Clear transient state (like latest_swipe) after processing to prevent re-triggering on component re-mount
-- **Closure Ownership in Effects**: Clone signals before move closure, use cloned versions consistently inside closure for proper reactivity
-- **UX-Driven Architecture**: Sometimes best technical solution comes from smart UX decisions (horizontal/vertical gesture separation)
-- **Navigation Effect Deadlock**: navigator.push() in use_effect causes freeze - navigation must not happen in effects or component body
+- **Navigation Effect Deadlock**: navigator.push() in use_effect causes freeze - use conditional rendering instead
 - **use_memo Pattern**: Creates derived state that only updates when computed value changes, not when source signal content changes
-- **Conditional Rendering vs Navigation**: Replacing navigator.push() with conditional rsx! rendering avoids navigation deadlock
-- **Infinite Task Spawning**: Effects that spawn background tasks and read signals will spawn new tasks on every signal change
-- **HomeGuard Pattern**: Single route with use_memo-based conditional rendering eliminates need for navigation effects
-- *Note: Effect reactivity powerful but dangerous - navigation and background tasks require careful separation from reactive effects*
+- **Centralized Session Management**: Better to have one background refresh loop than duplicate logic in every component
+- **Empty State UX**: Always handle empty lists explicitly (e.g., "no decks yet" message) instead of showing nothing
+- *Note: Hook selection (effect vs future vs resource) is critical - wrong choice causes infinite loops or missing reactivity*
 
 ### 🔐 Backend Session & Token Architecture (Complete) ✅
 - **Session-Based Authentication**: Session struct containing user + access_token + refresh_token + both expiration timestamps
