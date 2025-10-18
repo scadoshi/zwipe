@@ -1,25 +1,61 @@
-# Development
+# zwiper
 
-Your new bare-bones project includes minimal organization with a single `main.rs` file and a few assets.
+dioxus frontend for zwipe - mobile-first mtg deck builder with swipe navigation.
+
+## structure
 
 ```
-project/
-├─ assets/ # Any assets that are used by the app should be placed here
-├─ src/
-│  ├─ main.rs # main.rs is the entry point to your application and currently contains all components for the app
-├─ Cargo.toml # The Cargo.toml file defines the dependencies and feature flags for your project
+zwiper/
+├── assets/          # css, favicon, static files
+├── src/
+│   ├── bin/
+│   │   └── main.rs  # app entry point
+│   └── lib/
+│       ├── domain/       # errors, helpers, types
+│       ├── inbound/ui/   # dioxus components (auth, app, swipe)
+│       └── outbound/     # http client, session storage
+├── build.rs         # compile-time config (backend url)
+└── Dioxus.toml      # platform config, bundle settings
 ```
 
-### Serving Your App
-
-Run the following command in the root of your project to start developing with the default platform:
+## development
 
 ```bash
+# serve with hot reload (default: web)
 dx serve
-```
 
-To run for a different platform, use the `--platform platform` flag. E.g.
-```bash
+# specific platform
 dx serve --platform desktop
+dx serve --platform ios     # requires xcode
+dx serve --platform android # requires android sdk
+
+# build release
+dx build --release --platform desktop
 ```
 
+## current status
+
+- swipe gesture system complete (touch + mouse)
+- auth screens with validation
+- http client integration
+- session management via context
+- debugging: screen freeze after login (session persistence issue)
+
+## architecture
+
+hexagonal pattern matching backend:
+- **inbound/ui/** - dioxus components and screens
+- **outbound/** - http client, session storage (keychain/keystore)
+- **domain/** - shared types via feature flags from zerver
+
+session storage uses keyring crate for ios keychain/android keystore (requires entitlements for production).
+
+## environment
+
+requires `.env` file with:
+```
+BACKEND_URL=http://localhost:3000
+RUST_LOG=info
+```
+
+backend url is baked into binary at compile-time via build.rs.
