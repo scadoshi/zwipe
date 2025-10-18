@@ -13,13 +13,13 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Solved infinite HTTP loop bug with Dioxus reactivity patterns. Cleaned up duplicate session validation code.
+**Last Updated**: Enhanced swipe navigation with flexible multi-dimensional screen positioning system.
 
-**Current Focus**: Frontend code organization and reducing boilerplate across components.
+**Current Focus**: Building out main app functionality (card search, deck creation, profile features).
 
-**Recent Achievement**: Debugged and fixed critical reactivity infinite loop bug causing screen freeze after login. Root cause was `use_effect` spawning infinite background loops that both read AND write session signal, creating exponential task explosion (60+ HTTP connections/millisecond). Fixed by replacing `use_effect` → `use_future` for background tasks and adding conditional signal updates `if new != old` in `use_resource`. Centralized session refresh to home.rs, removed duplicate validation from profile.rs and decks.rs. Added "no decks yet" empty state message. Documented entire debugging process in REACTIVITY_LESSON.md.
+**Recent Achievement**: Refactored swipe navigation to support arbitrary x/y screen positioning. Replaced `Option<Direction>` with `ScreenOffset` type (Point2D<i32>) enabling screens positioned at any coordinate (e.g., up twice, left and down, etc). Created helper methods (`up()`, `down()`, `left()`, `right()`) and chaining methods (`up_again()`, etc) for flexible screen layouts. Added position guards to form submissions preventing accidental submissions from wrong screens. Fixed profile screen positioning bug.
 
-**Current Success**: Login and registration now work correctly. App successfully navigates to main screens (Profile, Home, Decks) after authentication with proper session management and token refresh.
+**Current Success**: Login and registration work correctly. App navigates to main screens with proper session management. Swipe navigation system now supports complex multi-dimensional screen layouts.
 
 ### 🎯 Currently Working On (Top 5)
 1. **Component Boilerplate Reduction** - Identify patterns for reusable session/client context access
@@ -176,6 +176,10 @@ alwaysApply: true
 - **Centralized Session Refresh**: Moved background session validation to home.rs, removed duplicate logic from profile.rs and decks.rs
 - **Session Refresh in Resources**: Pattern for use_resource to check token expiration, refresh if needed, and update signal only when changed
 - **Fire-and-Forget spawn()**: Direct spawn() in component body for one-time background tasks (home.rs session refresh loop)
+- **ScreenOffset Type System**: Flexible Point2D<i32> coordinate system for screen positioning replacing single-direction Option<Direction>
+- **Multi-Dimensional Screen Positioning**: Screens can now be positioned at arbitrary x/y coordinates (up twice, diagonal positions, etc)
+- **Chaining Screen Offset Methods**: Helper methods (up_again, down_again) allow progressive screen offset calculations
+- **Position-Aware Form Submission**: Form submission guards check screen_offset to prevent accidental submissions from wrong screens
 
 ---
 

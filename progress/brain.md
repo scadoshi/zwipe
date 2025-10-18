@@ -15,18 +15,18 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Solved major reactivity infinite loop bug. Gained deep understanding of use_effect vs use_future vs use_resource dependency tracking.
+**Last Updated**: Refactored swipe navigation system to support multi-dimensional screen positioning with Point2D coordinates.
 
-**Next Learning Focus**: Component pattern extraction and code organization for reducing boilerplate.
+**Next Learning Focus**: Building out profile features (logout button), card search integration, and deck creation flow.
 
-**Recent Achievement**: Debugged and fixed critical infinite HTTP loop bug (60+ connections/millisecond causing freeze). Root cause: `use_effect` spawning infinite background loops that read AND write same signal, creating exponential task explosion. Learned `use_effect` tracks ALL signal reads as dependencies, while `use_future` runs once without tracking. Discovered `use_resource` can cause infinite loops if unconditionally updating signals it reads. Fixed with conditional updates (`if new != old`). Centralized session refresh logic, eliminating duplicate code. Created comprehensive REACTIVITY_LESSON.md documenting debugging process and patterns.
+**Recent Achievement**: Enhanced swipe system by replacing single-direction `Option<Direction>` with flexible `ScreenOffset` type (Point2D<i32, UnknownUnit>). Created trait with convenience methods (`up()`, `down()`, `left()`, `right()`) and chaining methods (`up_again()`, `down_again()`) enabling arbitrary screen positioning. Screens can now be at coordinates like (0, -2) for "up twice" or (-1, 1) for "left and down". Added position guards to form submission checking `screen_offset.y` to prevent accidental submissions from wrong screens. Fixed profile positioning bug (was `up()`, should be `down()`).
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **Component Pattern Extraction** - Identify and abstract repeated patterns across screens
-2. **Empty State Patterns** - Consistent UI for empty lists and missing data
-3. **Profile/Home Screen Content** - Build actual functionality beyond placeholders
-4. **Card Search UI** - Connect search component to backend API
-5. **Deck Creation Flow** - Form-based deck creation from main screen
+1. **Logout Functionality** - Complete logout button implementation with session clearing
+2. **Card Search UI** - Connect search component to backend API with query parameters
+3. **Deck Creation Flow** - Form-based deck creation from main screen
+4. **Complex Screen Layouts** - Utilize new ScreenOffset system for advanced navigation patterns
+5. **Profile Feature Expansion** - Add settings, preferences, account management options
 
 ### 🤔 Current Uncertainties (Top 5)
 1. **Component Composition Patterns** - Best practices for reusable Dioxus components
@@ -197,12 +197,17 @@ alwaysApply: true
 - **Abstraction Patterns**: Consolidated onswipestart/move/end for identical touch/mouse behavior
 - **Modular Swipe Architecture**: Split into axis, config, direction, onmouse, ontouch, state, time_point modules (7 files)
 - **Swipeable Component**: Reusable wrapper requiring external Signal<SwipeState> for shared state across screens
-- **SwipeConfig Structure**: navigation_swipes (Vec), submission_swipe (Option), from_main_screen (Option) for positioning
+- **SwipeConfig Structure**: navigation_swipes (Vec), submission_swipe (Option), from_main_screen (ScreenOffset) for positioning
 - **Shared State Pattern**: Parent component creates Signal<SwipeState>, passes to all child Swipeable components
 - **Smooth Animation System**: is_swiping flag controls return_animation_seconds (0.0 during swipe, non-zero after)
 - **VW_GAP Adjustment**: Increased to 100vw for horizontal submission gestures, VH_GAP remains 75vh for vertical navigation
 - **Universal Integration**: All auth (Login, Register, Home) and app (Profile, MainHome, Decks) screens using Swipeable
-- *Note: Submission working but navigation-during-render freeze needs fixing - move navigator.push() to effects*
+- **ScreenOffset Type System**: Point2D<i32> coordinates replacing Option<Direction> for flexible multi-dimensional positioning
+- **Screen Positioning Trait**: ScreenOffsetMethods trait providing up/down/left/right factory methods and chaining methods (*_again)
+- **Multi-Dimensional Layouts**: Can position screens at any x/y coordinate (diagonal, multiple steps in one direction, etc)
+- **Position-Aware Submissions**: Form submission guards check current screen_offset to prevent wrong-screen submissions
+- **Screen Offset Calculations**: Transform calculations using offset.x and offset.y directly with VW_GAP/VH_GAP multipliers
+- *Note: New system enables complex screen hierarchies like settings menus, multi-level navigation, grid-based layouts*
 
 ### 🏗️ Service Architecture & Dependency Injection
 - **Generic Service Patterns**: Service<R> and Service<DR, CR> implementations across domains
