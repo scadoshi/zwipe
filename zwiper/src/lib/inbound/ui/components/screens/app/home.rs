@@ -24,20 +24,16 @@ pub fn Home() -> Element {
     let auth_client: Signal<AuthClient> = use_context();
     let mut session: Signal<Option<Session>> = use_context();
 
-    // No navigation effects needed - RouteGuard handles screen switching
-
-    // Background session validation (can uncomment once RouteGuard is working)
-    use_effect(move || {
-        spawn(async move {
-            let mut interval = interval(Duration::from_secs(60));
-            loop {
-                interval.tick().await;
-                let Some(s) = session.read().clone() else {
-                    continue;
-                };
-                session.set(auth_client.read().infallible_get_active_session(&s).await);
-            }
-        });
+    spawn(async move {
+        let mut interval = interval(Duration::from_secs(60));
+        loop {
+            tracing::debug!("ensuring active session");
+            interval.tick().await;
+            let Some(s) = session.read().clone() else {
+                continue;
+            };
+            session.set(auth_client.read().infallible_get_active_session(&s).await);
+        }
     });
 
     let logo = logo();
