@@ -1,21 +1,21 @@
+use crate::inbound::ui::components::interactions::swipe::config::SwipeConfig;
+use crate::inbound::ui::components::interactions::swipe::direction::Direction;
+use crate::inbound::ui::components::interactions::swipe::Swipeable;
+use crate::outbound::client::auth::AuthClient;
 use crate::{
-    inbound::ui::components::interactions::swipe::{
-        direction::Direction, onswipe::OnMouse, ontouch::OnTouch, state::SwipeState, VH_GAP,
-    },
+    inbound::ui::components::interactions::swipe::state::SwipeState,
     outbound::{
-        client::auth::{
-            login::{Login as LoginTrait, LoginError},
-            AuthClient,
-        },
+        client::auth::login::{Login as LoginTrait, LoginError},
         session::Persist,
     },
 };
 use dioxus::prelude::*;
 use email_address::EmailAddress;
 use std::str::FromStr;
+use zwipe::domain::auth::models::session::Session;
 use zwipe::{
     domain::{
-        auth::models::{authenticate_user::AuthenticateUser, password::Password, session::Session},
+        auth::models::{authenticate_user::AuthenticateUser, password::Password},
         user::models::username::Username,
     },
     inbound::http::handlers::auth::authenticate_user::HttpAuthenticateUser,
@@ -23,11 +23,14 @@ use zwipe::{
 
 #[component]
 pub fn Login(swipe_state: Signal<SwipeState>) -> Element {
-    const MOVE_SWIPES: [Direction; 1] = [Direction::Up];
-    const SUBMIT_SWIPE: Direction = Direction::Down;
-
-    let auth_client: Signal<AuthClient> = use_context();
     let mut session: Signal<Option<Session>> = use_context();
+    let auth_client: Signal<AuthClient> = use_context();
+
+    let swipe_config = SwipeConfig::new(
+        vec![Direction::Up],
+        Some(Direction::Down),
+        Some(Direction::Up),
+    );
 
     let mut username_or_email = use_signal(|| String::new());
     let mut password = use_signal(|| String::new());
@@ -48,8 +51,10 @@ pub fn Login(swipe_state: Signal<SwipeState>) -> Element {
         }
     };
 
-    let maybe_submit = move || async move {
-        if swipe_state.read().previous_swipe == Some(SUBMIT_SWIPE) {
+    let maybe_submit = move |swipe_config: SwipeConfig| async move {
+        if swipe_state.read().latest_swipe == swipe_config.submission_swipe
+            && swipe_config.submission_swipe.is_some()
+        {
             submit_attempted.set(true);
             is_loading.set(true);
 
@@ -81,31 +86,7 @@ pub fn Login(swipe_state: Signal<SwipeState>) -> Element {
     };
 
     rsx! {
-        div { class : "swipe-able",
-
-            style : format!(
-                "transform: translateY(calc({}px - {}vh + {}vh));
-                transition: transform {}s;",
-                swipe_state.read().dy().from_start,
-                VH_GAP,
-                swipe_state.read().position.y * VH_GAP,
-                swipe_state.read().transition_seconds
-            ),
-
-            ontouchstart : move |e: Event<TouchData>| swipe_state.ontouchstart(e),
-            ontouchmove : move |e: Event<TouchData>| swipe_state.ontouchmove(e),
-            ontouchend : move |e: Event<TouchData>| {
-                swipe_state.ontouchend(e, &MOVE_SWIPES);
-                spawn(maybe_submit());
-            },
-
-            onmousedown : move |e: Event<MouseData>| swipe_state.onmousedown(e),
-            onmousemove : move |e: Event<MouseData>| swipe_state.onmousemove(e),
-            onmouseup : move |e: Event<MouseData>| {
-                swipe_state.onmouseup(e, &MOVE_SWIPES);
-                spawn(maybe_submit());
-            },
-
+        Swipeable { state: swipe_state, config: swipe_config,
             div { class : "form-container",
 
                 if *is_loading.read() {
@@ -117,7 +98,6 @@ pub fn Login(swipe_state: Signal<SwipeState>) -> Element {
                 }
 
                 h2 { "login ↑"}
-
                 form {
                     div { class : "form-group",
                         label { r#for: "identity" }
@@ -133,7 +113,6 @@ pub fn Login(swipe_state: Signal<SwipeState>) -> Element {
                             }
                         }
                     }
-
                     div { class : "form-group",
                         label { r#for : "password", "" }
                         input {
