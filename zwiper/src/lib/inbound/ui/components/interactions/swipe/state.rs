@@ -1,5 +1,5 @@
 use crate::inbound::ui::components::interactions::swipe::{
-    delta::Delta, direction::Direction, time_point::TimePoint,
+    axis::Axis, config::SwipeConfig, direction::Direction, time_point::TimePoint,
 };
 use chrono::Utc;
 use dioxus::html::geometry::{
@@ -8,210 +8,300 @@ use dioxus::html::geometry::{
 };
 
 type BasicPoint = Point2D<i32, UnknownUnit>;
+type DeltaPoint = Point2D<f64, UnknownUnit>;
 
 #[derive(Debug, Clone)]
 pub struct SwipeState {
     // for screen placement rendering
-    pub start: Option<ClientPoint>,
+    pub start_point: Option<TimePoint>,
     // for direction and speed calculation
-    pub current: Option<TimePoint>,
-    pub previous: Option<TimePoint>,
-    // below should be used to
-    // determine how quickly the element
-    // returns to its swiped from position
-    pub transition_seconds: f64,
+    pub previous_point: Option<TimePoint>,
+    pub current_point: Option<TimePoint>,
     // what direction the last swipe resolved to
-    pub previous_swipe: Option<Direction>,
-    // determines screen displacement
-    pub position: BasicPoint,
+    pub latest_swipe: Option<Direction>,
+    pub screen_displacement: BasicPoint,
+    // tracks which axis user is swiping on
+    pub traversing_axis: Option<Axis>,
+    pub is_swiping: bool,
+    // how quickly element returns back to start position
+    pub return_animation_seconds: f64,
 }
 
 impl SwipeState {
     pub fn new() -> Self {
         Self {
-            start: None,
-            current: None,
-            previous: None,
-            transition_seconds: 0.0,
-            previous_swipe: None,
-            position: BasicPoint::new(0, 0),
+            start_point: None,
+            current_point: None,
+            previous_point: None,
+            latest_swipe: None,
+            screen_displacement: BasicPoint::new(0, 0),
+            traversing_axis: None,
+            is_swiping: false,
+            return_animation_seconds: 0.0,
         }
     }
 
     pub fn reset(&mut self) {
-        self.start = None;
-        self.current = None;
-        self.previous = None;
+        self.start_point = None;
+        self.current_point = None;
+        self.previous_point = None;
+        self.traversing_axis = None;
+        self.is_swiping = false;
     }
 
-    pub fn dx(&self) -> Delta {
-        if let (Some(start), Some(current), Some(previous)) = (
-            self.start.as_ref(),
-            self.current.as_ref(),
-            self.previous.as_ref(),
-        ) {
-            let from_start = current.point.x - start.x;
-            let from_previous = current.point.x - previous.point.x;
+    pub fn distance_from_start_point(&self) -> Option<f64> {
+        let (Some(start), Some(curr)) = (self.start_point.as_ref(), self.current_point.as_ref())
+        else {
+            return None;
+        };
 
-            let milliseconds_from_previous =
-                (current.time - previous.time).as_seconds_f64() / 1000.0;
-            let direction_from_start = if from_start > 0.0 {
-                Direction::Right
-            } else {
-                Direction::Left
-            };
-            return Delta::new(
-                from_start,
-                from_previous,
-                Some(direction_from_start),
-                milliseconds_from_previous,
-            );
-        }
-        Delta::default()
+        let dx = curr.point.x - start.point.x;
+        let dy = curr.point.y - start.point.y;
+
+        Some((dx.powi(2) + dy.powi(2)).sqrt())
     }
 
-    pub fn dy(&self) -> Delta {
-        if let (Some(start), Some(current), Some(previous)) = (
-            self.start.as_ref(),
-            self.current.as_ref(),
-            self.previous.as_ref(),
-        ) {
-            let from_start = current.point.y - start.y;
-            let from_previous = current.point.y - previous.point.y;
-
-            let milliseconds_from_previous =
-                (current.time - previous.time).as_seconds_f64() / 1000.0;
-            let direction_from_start = if from_start > 0.0 {
-                Direction::Down
-            } else {
-                Direction::Up
-            };
-            return Delta::new(
-                from_start,
-                from_previous,
-                Some(direction_from_start),
-                milliseconds_from_previous,
-            );
-        }
-        Delta::default()
+    pub fn delta_from_start_point(&self) -> Option<DeltaPoint> {
+        let (Some(start), Some(curr)) = (self.start_point.as_ref(), self.current_point.as_ref())
+        else {
+            return None;
+        };
+        Some(DeltaPoint::new(
+            curr.point.x - start.point.x,
+            curr.point.y - start.point.y,
+        ))
     }
 
-    pub fn set_transition_seconds(&mut self) {
+    pub fn distance_from_previous_point(&self) -> Option<f64> {
+        let (Some(prev), Some(curr)) = (self.previous_point.as_ref(), self.current_point.as_ref())
+        else {
+            return None;
+        };
+
+        let dx = curr.point.x - prev.point.x;
+        let dy = curr.point.y - prev.point.y;
+
+        Some((dx.powi(2) + dy.powi(2)).sqrt())
+    }
+
+    pub fn delta_from_previous_point(&self) -> Option<DeltaPoint> {
+        let (Some(prev), Some(curr)) = (self.previous_point.as_ref(), self.current_point.as_ref())
+        else {
+            return None;
+        };
+        Some(DeltaPoint::new(
+            curr.point.x - prev.point.x,
+            curr.point.y - prev.point.y,
+        ))
+    }
+
+    pub fn milliseconds_from_previous_point(&self) -> Option<f64> {
+        let (Some(prev), Some(curr)) = (self.previous_point.as_ref(), self.current_point.as_ref())
+        else {
+            return None;
+        };
+        Some((curr.time - prev.time).num_milliseconds() as f64)
+    }
+
+    pub fn speed(&self) -> Option<f64> {
+        let (Some(distance), Some(time)) = (
+            self.distance_from_previous_point(),
+            self.milliseconds_from_previous_point(),
+        ) else {
+            return None;
+        };
+        Some(distance / time)
+    }
+
+    // below should be used to
+    // determine how quickly the element
+    // returns to its swiped from position
+    pub fn calculate_return_animation_seconds(&mut self) {
         let mut s = 0.0;
-        let md = self.dx().from_start.abs() + self.dy().from_start.abs();
-        if md > 0.0 {
-            s = 0.1;
+
+        if let Some(d) = self.distance_from_start_point() {
+            if d > 0.0 {
+                s = 0.1;
+            }
+            if d > 25.0 {
+                s = 0.2;
+            }
+            if d > 50.0 {
+                s = 0.3;
+            }
+            if d > 100.0 {
+                s = 0.4;
+            }
         }
-        if md > 25.0 {
-            s = 0.2;
-        }
-        if md > 50.0 {
-            s = 0.3;
-        }
-        if md > 100.0 {
-            s = 0.4;
-        }
-        self.transition_seconds = s;
+
+        self.return_animation_seconds = s;
     }
 
-    pub fn resolve_swipe_direction(&mut self, swipe_moves: &[Direction]) {
-        const SPEED_CHECK_MIN_DIST: f64 = 10.0;
-        const SPEED_THRESHOLD: f64 = 5.0;
-        const DISTANCE_THRESHOLD: f64 = 200.0;
+    pub fn update_position(&mut self, direction: &Direction) {
+        match direction {
+            Direction::Left => self.screen_displacement.x -= 1,
+            Direction::Right => self.screen_displacement.x += 1,
+            Direction::Up => self.screen_displacement.y -= 1,
+            Direction::Down => self.screen_displacement.y += 1,
+        }
+    }
 
-        if swipe_moves.is_empty() {
+    pub fn set_latest_swipe(&mut self, config: &SwipeConfig) {
+        const DISTANCE_THRESHOLD_FOR_SPEED_TO_BE_VALID: f64 = 10.0;
+        const SPEED_THRESHOLD_FOR_SWIPE: f64 = 5.0;
+        const DISTANCE_THRESHOLD_FOR_SWIPE: f64 = 200.0;
+
+        if self.traversing_axis.is_none() {
+            self.set_traversing_axis(config);
+        }
+
+        let (Some(distance_from_start), Some(speed)) =
+            (self.distance_from_start_point(), self.speed())
+        else {
             return;
-        }
+        };
 
-        let dx = self.dx();
-        let dy = self.dy();
+        if distance_from_start > DISTANCE_THRESHOLD_FOR_SWIPE
+            || (distance_from_start > DISTANCE_THRESHOLD_FOR_SPEED_TO_BE_VALID
+                && speed > SPEED_THRESHOLD_FOR_SWIPE)
+        {
+            match self.traversing_axis {
+                Some(Axis::X) => {
+                    let Some(DeltaPoint { x, .. }) = self.delta_from_start_point() else {
+                        return;
+                    };
 
-        let mut x_dir = None;
-        let mut y_dir = None;
-
-        if dx.from_start.abs() > DISTANCE_THRESHOLD {
-            x_dir = dx.direction_from_start.clone();
-        }
-        if dx.from_start.abs() > SPEED_CHECK_MIN_DIST {
-            if let Some(speed) = dx.speed() {
-                if speed.abs() > SPEED_THRESHOLD {
-                    x_dir = dx.direction_from_start.clone();
-                }
-            }
-        }
-
-        if dy.from_start.abs() > DISTANCE_THRESHOLD {
-            y_dir = dy.direction_from_start.clone();
-        }
-        if dy.from_start.abs() > SPEED_CHECK_MIN_DIST {
-            if let Some(speed) = dy.speed() {
-                if speed.abs() > SPEED_THRESHOLD {
-                    y_dir = dy.direction_from_start.clone();
-                }
-            }
-        }
-
-        let allow = move |dir: &Direction| swipe_moves.contains(dir);
-        match (x_dir, y_dir) {
-            (Some(x), Some(y)) => {
-                let winner = if dx.from_start.abs() > dy.from_start.abs() {
-                    x
-                } else {
-                    y
-                };
-                if allow(&winner) {
-                    match winner {
-                        Direction::Up | Direction::Down => self.position.y += winner.as_i32(),
-                        Direction::Left | Direction::Right => self.position.x += winner.as_i32(),
+                    if x < 0.0 {
+                        let direction = Direction::Left;
+                        if config.navigation_swipes.contains(&direction) {
+                            self.update_position(&direction);
+                        }
+                        self.latest_swipe = Some(direction);
+                    }
+                    if x > 0.0 {
+                        let direction = Direction::Right;
+                        if config.navigation_swipes.contains(&direction) {
+                            self.update_position(&direction);
+                        }
+                        self.latest_swipe = Some(direction);
                     }
                 }
-                self.previous_swipe = Some(winner);
-            }
-            (Some(x), None) => {
-                if allow(&x) {
-                    self.position.x += x.as_i32();
+
+                Some(Axis::Y) => {
+                    let Some(DeltaPoint { y, .. }) = self.delta_from_start_point() else {
+                        return;
+                    };
+
+                    if y < 0.0 {
+                        let direction = Direction::Up;
+                        if config.navigation_swipes.contains(&direction) {
+                            self.update_position(&direction);
+                        }
+                        self.latest_swipe = Some(direction);
+                    }
+                    if y > 0.0 {
+                        let direction = Direction::Down;
+                        if config.navigation_swipes.contains(&direction) {
+                            self.update_position(&direction);
+                        }
+                        self.latest_swipe = Some(direction);
+                    }
                 }
-                self.previous_swipe = Some(x);
+
+                None => (),
             }
-            (None, Some(y)) => {
-                if allow(&y) {
-                    self.position.y += y.as_i32();
-                }
-                self.previous_swipe = Some(y);
-            }
-            (None, None) => self.previous_swipe = None,
         }
-        tracing::debug!("swipe dir={:?}", self.previous_swipe);
+
+        tracing::debug!("swipe dir={:?}", self.latest_swipe);
+    }
+
+    pub fn set_traversing_axis(&mut self, config: &SwipeConfig) {
+        let (Some(start), Some(curr)) = (self.start_point.as_ref(), self.current_point.as_ref())
+        else {
+            return;
+        };
+
+        let dx = (curr.point.x - start.point.x).abs();
+        let dy = (curr.point.y - start.point.y).abs();
+
+        let x_allowed = {
+            config.navigation_swipes.contains(&Direction::Left)
+                || config.navigation_swipes.contains(&Direction::Right)
+        };
+        let y_allowed = {
+            config.navigation_swipes.contains(&Direction::Up)
+                || config.navigation_swipes.contains(&Direction::Down)
+        };
+
+        if x_allowed && y_allowed {
+            if dx > dy {
+                self.traversing_axis = Some(Axis::X);
+            }
+
+            if dy > dx {
+                self.traversing_axis = Some(Axis::Y);
+            }
+        }
+
+        if x_allowed && !y_allowed {
+            if dx > 0.0 {
+                self.traversing_axis = Some(Axis::X);
+            }
+        }
+
+        if !x_allowed && y_allowed {
+            if dy > 0.0 {
+                self.traversing_axis = Some(Axis::Y);
+            }
+        }
     }
 
     // functionality shared by ontouch- and onmouse-
-    pub fn onswipestart(&mut self, point: ClientPoint) {
-        self.set_transition_seconds();
-        let time_point = TimePoint::new(point.clone(), Utc::now().naive_utc());
-        self.start = Some(point);
-        self.current = Some(time_point.clone());
-        self.previous = Some(time_point);
+    pub fn onswipestart(&mut self, start_point: ClientPoint) {
+        let time_point = TimePoint::new(start_point.clone(), Utc::now().naive_utc());
+
+        self.start_point = Some(time_point.clone());
+        self.current_point = Some(time_point.clone());
+        self.previous_point = Some(time_point);
+
+        self.is_swiping = true;
+
         tracing::debug!(
             "swipe start={:?}",
-            self.current.as_ref().expect("failed to get swipe info")
+            self.current_point
+                .as_ref()
+                .expect("failed to get swipe info")
         );
     }
 
-    pub fn onswipemove(&mut self, point: ClientPoint) {
-        let time_point = TimePoint::new(point, Utc::now().naive_utc());
-        self.previous = self.current.clone();
-        self.current = Some(time_point);
+    pub fn onswipemove(&mut self, current_point: ClientPoint, config: &SwipeConfig) {
+        self.return_animation_seconds = 0.0;
+        let time_point = TimePoint::new(current_point, Utc::now().naive_utc());
+
+        if self.traversing_axis.is_none() {
+            self.set_traversing_axis(config);
+        }
+
+        self.previous_point = self.current_point.clone();
+        self.current_point = Some(time_point);
     }
 
-    pub fn onswipeend(&mut self, point: ClientPoint, swipe_moves: &[Direction]) {
-        self.set_transition_seconds();
-        let time_point = TimePoint::new(point, Utc::now().naive_utc());
-        self.previous = self.current.clone();
-        self.current = Some(time_point);
-        self.resolve_swipe_direction(swipe_moves);
+    pub fn onswipeend(&mut self, end_point: ClientPoint, config: &SwipeConfig) {
+        self.calculate_return_animation_seconds();
+        let time_point = TimePoint::new(end_point, Utc::now().naive_utc());
+
+        self.previous_point = self.current_point.clone();
+        self.current_point = Some(time_point);
+
+        self.is_swiping = false;
+
+        self.set_latest_swipe(config);
+
         tracing::debug!(
             "swipe end={:?}",
-            self.current.as_ref().expect("failed to get swipe info")
+            self.current_point
+                .as_ref()
+                .expect("failed to get swipe info")
         );
         self.reset();
     }
