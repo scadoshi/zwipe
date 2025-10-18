@@ -7,7 +7,7 @@ pub mod state;
 pub mod time_point;
 
 use crate::inbound::ui::components::interactions::swipe::axis::Axis;
-use crate::inbound::ui::components::interactions::swipe::direction::Direction;
+use crate::inbound::ui::components::interactions::swipe::direction::Direction as Dir;
 use crate::inbound::ui::components::interactions::swipe::{
     config::SwipeConfig, onmouse::OnMouse, ontouch::OnTouch, state::SwipeState,
 };
@@ -17,7 +17,7 @@ use dioxus::prelude::*;
 type DeltaPoint = Point2D<f64, UnknownUnit>;
 
 pub const VH_GAP: i32 = 75;
-pub const VW_GAP: i32 = 75;
+pub const VW_GAP: i32 = 100;
 
 #[component]
 pub fn Swipeable(state: Signal<SwipeState>, config: SwipeConfig, children: Element) -> Element {
@@ -47,15 +47,15 @@ pub fn Swipeable(state: Signal<SwipeState>, config: SwipeConfig, children: Eleme
 
     // screens starting position relative to main screen - reactive to screen_displacement
     let from_main_x = match config.from_main_screen {
-        Some(Direction::Left) => -1,
-        Some(Direction::Right) => 1,
+        Some(Dir::Left) => -1,
+        Some(Dir::Right) => 1,
         _ => 0,
     };
     let xvw = (from_main_x + state.read().screen_displacement.x) * VW_GAP;
 
     let from_main_y = match config.from_main_screen {
-        Some(Direction::Up) => -1,
-        Some(Direction::Down) => 1,
+        Some(Dir::Up) => -1,
+        Some(Dir::Down) => 1,
         _ => 0,
     };
     let yvh = (from_main_y + state.read().screen_displacement.y) * VH_GAP;

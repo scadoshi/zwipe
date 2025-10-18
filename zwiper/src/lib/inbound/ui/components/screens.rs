@@ -1,2 +1,2 @@
-// pub mod app;
+pub mod app;
 pub mod auth;

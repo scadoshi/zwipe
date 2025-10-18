@@ -1,21 +1,21 @@
-use crate::inbound::ui::components::interactions::swipe::config::SwipeConfig;
-use crate::inbound::ui::components::interactions::swipe::direction::Direction;
-use crate::inbound::ui::components::interactions::swipe::Swipeable;
-use crate::outbound::client::auth::AuthClient;
 use crate::{
-    inbound::ui::components::interactions::swipe::state::SwipeState,
+    inbound::ui::components::interactions::swipe::{
+        config::SwipeConfig, direction::Direction as Dir, state::SwipeState, Swipeable,
+    },
     outbound::{
-        client::auth::login::{Login as LoginTrait, LoginError},
+        client::auth::{
+            login::{Login as LoginTrait, LoginError},
+            AuthClient,
+        },
         session::Persist,
     },
 };
 use dioxus::prelude::*;
 use email_address::EmailAddress;
 use std::str::FromStr;
-use zwipe::domain::auth::models::session::Session;
 use zwipe::{
     domain::{
-        auth::models::{authenticate_user::AuthenticateUser, password::Password},
+        auth::models::{authenticate_user::AuthenticateUser, password::Password, session::Session},
         user::models::username::Username,
     },
     inbound::http::handlers::auth::authenticate_user::HttpAuthenticateUser,
@@ -26,11 +26,11 @@ pub fn Login(swipe_state: Signal<SwipeState>) -> Element {
     let mut session: Signal<Option<Session>> = use_context();
     let auth_client: Signal<AuthClient> = use_context();
 
-    let swipe_config = SwipeConfig::new(
-        vec![Direction::Up],
-        Some(Direction::Down),
-        Some(Direction::Up),
-    );
+    let swipe_config = SwipeConfig {
+        navigation_swipes: vec![Dir::Up],
+        submission_swipe: Some(Dir::Right),
+        from_main_screen: Some(Dir::Up),
+    };
 
     let mut username_or_email = use_signal(|| String::new());
     let mut password = use_signal(|| String::new());
@@ -40,50 +40,54 @@ pub fn Login(swipe_state: Signal<SwipeState>) -> Element {
 
     let mut submission_error: Signal<Option<String>> = use_signal(|| None);
 
-    let valid_credentials = move || -> bool {
-        let valid_username_or_email = Username::new(&username_or_email.read()).is_ok()
-            || EmailAddress::from_str(&username_or_email.read()).is_ok();
-        let valid_password = Password::new(&password.read()).is_ok();
-        if valid_username_or_email && valid_password {
-            true
-        } else {
-            false
-        }
+    let valid_credentials = move || {
+        (Username::new(&username_or_email.read()).is_ok()
+            || EmailAddress::from_str(&username_or_email.read()).is_ok())
+            && Password::new(&password.read()).is_ok()
     };
 
-    let maybe_submit = move |swipe_config: SwipeConfig| async move {
-        if swipe_state.read().latest_swipe == swipe_config.submission_swipe
-            && swipe_config.submission_swipe.is_some()
-        {
-            submit_attempted.set(true);
-            is_loading.set(true);
+    let create_login_request = move || {
+        AuthenticateUser::new(&*username_or_email.read(), &*password.read())
+            .map(HttpAuthenticateUser::from)
+    };
 
-            if valid_credentials() {
-                match AuthenticateUser::new(&*username_or_email.read(), &*password.read())
-                    .map(HttpAuthenticateUser::from)
-                {
-                    Ok(request) => match auth_client.read().authenticate_user(request).await {
-                        Ok(new_session) => {
-                            submission_error.set(None);
+    use_effect({
+        let mut s = swipe_state.clone();
+        let c = swipe_config.clone();
+        move || {
+            if s.read().latest_swipe == c.submission_swipe && c.submission_swipe.is_some() {
+                s.write().latest_swipe = None;
+                submit_attempted.set(true);
+                is_loading.set(true);
 
-                            if let Err(e) = new_session.save() {
-                                tracing::error!("failed to save session: {e}");
-                            } else {
-                                tracing::info!("saved session successfully");
-                            }
+                if valid_credentials() {
+                    match create_login_request() {
+                        Ok(request) => {
+                            spawn(async move {
+                                match auth_client.read().authenticate_user(request).await {
+                                    Ok(new_session) => {
+                                        submission_error.set(None);
 
-                            session.set(Some(new_session));
+                                        if let Err(e) = new_session.save() {
+                                            tracing::error!("failed to save session: {e}");
+                                        }
+
+                                        session.set(Some(new_session));
+                                    }
+                                    Err(e) => submission_error.set(Some(e.to_string())),
+                                }
+                            });
                         }
                         Err(e) => submission_error.set(Some(e.to_string())),
-                    },
-                    Err(e) => submission_error.set(Some(e.to_string())),
+                    }
+                } else {
+                    submission_error.set(Some(LoginError::Unauthorized.to_string()));
                 }
-            } else {
-                submission_error.set(Some(LoginError::Unauthorized.to_string()));
+
+                is_loading.set(false);
             }
-            is_loading.set(false);
         }
-    };
+    });
 
     rsx! {
         Swipeable { state: swipe_state, config: swipe_config,
@@ -97,7 +101,7 @@ pub fn Login(swipe_state: Signal<SwipeState>) -> Element {
                     }
                 }
 
-                h2 { "login ↑"}
+                h2 { "login →"}
                 form {
                     div { class : "form-group",
                         label { r#for: "identity" }

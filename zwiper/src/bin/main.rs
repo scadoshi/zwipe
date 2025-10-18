@@ -22,10 +22,10 @@ fn main() {
 #[component]
 fn App() -> Element {
     let session: Signal<Option<Session>> = use_signal(|| {
-        // use this later when actual pesrsistence is achieved
-        // Session::infallible_load()
+        // use this later when actual persistence is achieved
+        Session::infallible_load()
         // for now we can just spoof it
-        Some(Session::spoof())
+        // Some(Session::spoof())
     });
     use_context_provider(|| session);
 

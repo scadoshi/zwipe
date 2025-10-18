@@ -1,6 +1,6 @@
 use crate::{
     inbound::ui::components::interactions::swipe::{
-        direction::Direction, onmouse::OnMouse, ontouch::OnTouch, state::SwipeState, VH_GAP,
+        config::SwipeConfig, direction::Direction as Dir, state::SwipeState, Swipeable,
     },
     outbound::client::auth::{session::ActiveSession, AuthClient},
 };
@@ -11,8 +11,11 @@ use zwipe::domain::auth::models::session::Session;
 
 #[component]
 pub fn Profile(swipe_state: Signal<SwipeState>) -> Element {
-    const MOVE_SWIPES: [Direction; 1] = [Direction::Up];
-
+    let swipe_config = SwipeConfig {
+        navigation_swipes: vec![Dir::Up],
+        submission_swipe: None,
+        from_main_screen: Some(Dir::Down),
+    };
     let auth_client: Signal<AuthClient> = use_context();
     let mut session: Signal<Option<Session>> = use_context();
 
@@ -25,9 +28,9 @@ pub fn Profile(swipe_state: Signal<SwipeState>) -> Element {
 
     use_effect(move || {
         spawn(async move {
-            let mut i = interval(Duration::from_secs(60));
+            let mut interval = interval(Duration::from_secs(60));
             loop {
-                i.tick().await;
+                interval.tick().await;
                 check_session().await;
             }
         });
@@ -35,25 +38,7 @@ pub fn Profile(swipe_state: Signal<SwipeState>) -> Element {
 
     rsx! {
         if let Some(session) = session.read().as_ref() {
-            div { class : "swipe-able",
-
-                style : format!(
-                    "transform: translateY(calc({}px - {}vh + {}vh));
-                    transition: transform {}s;",
-                    swipe_state.read().dy().from_start,
-                    VH_GAP,
-                    swipe_state.read().position.y * VH_GAP,
-                    swipe_state.read().transition_seconds
-                ),
-
-                ontouchstart : move |e: Event<TouchData>| swipe_state.ontouchstart(e),
-                ontouchmove : move |e: Event<TouchData>| swipe_state.ontouchmove(e),
-                ontouchend : move |e: Event<TouchData>| { swipe_state.ontouchend(e, &MOVE_SWIPES) },
-
-                onmousedown : move |e: Event<MouseData>| swipe_state.onmousedown(e),
-                onmousemove : move |e: Event<MouseData>| swipe_state.onmousemove(e),
-                onmouseup : move |e: Event<MouseData>| { swipe_state.onmouseup(e, &MOVE_SWIPES) },
-
+            Swipeable { state: swipe_state, config: swipe_config,
                 div { class : "profile-screen",
                     dl {
                         dt { "Username" }

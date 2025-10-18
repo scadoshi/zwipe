@@ -1,6 +1,6 @@
 use crate::{
     inbound::ui::components::interactions::swipe::{
-        direction::Direction, onmouse::OnMouse, ontouch::OnTouch, state::SwipeState, VH_GAP,
+        config::SwipeConfig, direction::Direction as Dir, state::SwipeState, Swipeable,
     },
     outbound::client::{
         auth::{session::ActiveSession, AuthClient},
@@ -16,7 +16,11 @@ use zwipe::domain::{
 
 #[component]
 pub fn Decks(swipe_state: Signal<SwipeState>) -> Element {
-    const MOVE_SWIPES: [Direction; 1] = [Direction::Down];
+    let swipe_config = SwipeConfig {
+        navigation_swipes: vec![Dir::Down],
+        submission_swipe: None,
+        from_main_screen: Some(Dir::Up),
+    };
 
     let auth_client: Signal<AuthClient> = use_context();
     let mut session: Signal<Option<Session>> = use_context();
@@ -48,25 +52,7 @@ pub fn Decks(swipe_state: Signal<SwipeState>) -> Element {
     });
 
     rsx! {
-        div { class : "swipe-able",
-
-            style : format!(
-                "transform: translateY(calc({}px + {}vh + {}vh));
-                transition: transform {}s;",
-                swipe_state.read().dy().from_start,
-                VH_GAP,
-                swipe_state.read().position.y * VH_GAP,
-                swipe_state.read().transition_seconds
-            ),
-
-            ontouchstart : move |e: Event<TouchData>| swipe_state.ontouchstart(e),
-            ontouchmove : move |e: Event<TouchData>| swipe_state.ontouchmove(e),
-            ontouchend : move |e: Event<TouchData>| { swipe_state.ontouchend(e, &MOVE_SWIPES) },
-
-            onmousedown : move |e: Event<MouseData>| swipe_state.onmousedown(e),
-            onmousemove : move |e: Event<MouseData>| swipe_state.onmousemove(e),
-            onmouseup : move |e: Event<MouseData>| { swipe_state.onmouseup(e, &MOVE_SWIPES) },
-
+        Swipeable { state: swipe_state, config: swipe_config,
             div { class : "decks-screen",
                 {
                     match decks.read().as_ref() {
