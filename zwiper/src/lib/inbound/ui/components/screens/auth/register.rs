@@ -1,7 +1,11 @@
 use crate::{
     domain::error::UserFacing,
     inbound::ui::components::interactions::swipe::{
-        config::SwipeConfig, direction::Direction as Dir, state::SwipeState, Swipeable,
+        config::SwipeConfig,
+        direction::Direction as Dir,
+        screen_offset::{ScreenOffset, ScreenOffsetMethods},
+        state::SwipeState,
+        Swipeable,
     },
     outbound::{
         client::auth::{register::Register as RegisterTrait, AuthClient},
@@ -27,7 +31,7 @@ pub fn Register(swipe_state: Signal<SwipeState>) -> Element {
     let swipe_config = SwipeConfig {
         navigation_swipes: vec![Dir::Down],
         submission_swipe: Some(Dir::Left),
-        from_main_screen: Some(Dir::Down),
+        from_main_screen: ScreenOffset::down(),
     };
 
     let mut username = use_signal(|| String::new());
@@ -81,7 +85,10 @@ pub fn Register(swipe_state: Signal<SwipeState>) -> Element {
         let mut s = swipe_state.clone();
         let c = swipe_config.clone();
         move || {
-            if s.read().latest_swipe == c.submission_swipe && c.submission_swipe.is_some() {
+            if s.read().latest_swipe == c.submission_swipe
+                && s.read().screen_offset.y == -1
+                && c.submission_swipe.is_some()
+            {
                 s.write().latest_swipe = None;
                 submit_attempted.set(true);
                 is_loading.set(true);

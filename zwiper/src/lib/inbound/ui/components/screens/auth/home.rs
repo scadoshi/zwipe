@@ -3,7 +3,11 @@ use zwipe::domain::logo;
 
 use crate::inbound::ui::components::{
     interactions::swipe::{
-        config::SwipeConfig, direction::Direction as Dir, state::SwipeState, Swipeable,
+        config::SwipeConfig,
+        direction::Direction as Dir,
+        screen_offset::{ScreenOffset, ScreenOffsetMethods},
+        state::SwipeState,
+        Swipeable,
     },
     screens::auth::{login::Login, register::Register},
 };
@@ -14,7 +18,7 @@ pub fn Home() -> Element {
     let swipe_config = SwipeConfig {
         navigation_swipes: vec![Dir::Up, Dir::Down],
         submission_swipe: None,
-        from_main_screen: None,
+        from_main_screen: ScreenOffset::none(),
     };
 
     let logo = logo::logo();

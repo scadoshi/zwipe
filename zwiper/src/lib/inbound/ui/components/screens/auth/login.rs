@@ -1,6 +1,10 @@
 use crate::{
     inbound::ui::components::interactions::swipe::{
-        config::SwipeConfig, direction::Direction as Dir, state::SwipeState, Swipeable,
+        config::SwipeConfig,
+        direction::Direction as Dir,
+        screen_offset::{ScreenOffset, ScreenOffsetMethods},
+        state::SwipeState,
+        Swipeable,
     },
     outbound::{
         client::auth::{
@@ -29,7 +33,7 @@ pub fn Login(swipe_state: Signal<SwipeState>) -> Element {
     let swipe_config = SwipeConfig {
         navigation_swipes: vec![Dir::Up],
         submission_swipe: Some(Dir::Right),
-        from_main_screen: Some(Dir::Up),
+        from_main_screen: ScreenOffset::up(),
     };
 
     let mut username_or_email = use_signal(|| String::new());
@@ -55,7 +59,10 @@ pub fn Login(swipe_state: Signal<SwipeState>) -> Element {
         let mut s = swipe_state.clone();
         let c = swipe_config.clone();
         move || {
-            if s.read().latest_swipe == c.submission_swipe && c.submission_swipe.is_some() {
+            if s.read().latest_swipe == c.submission_swipe
+                && s.read().screen_offset.y == 1
+                && c.submission_swipe.is_some()
+            {
                 s.write().latest_swipe = None;
                 submit_attempted.set(true);
                 is_loading.set(true);
