@@ -6,7 +6,7 @@ use crate::{
     inbound::ui::{
         components::{
             interactions::swipe::{
-                direction::Direction, onswipe::OnMouse, ontouch::OnTouch, state::SwipeState, VH_GAP,
+                direction::Direction, onmouse::OnMouse, ontouch::OnTouch, state::SwipeState, VH_GAP,
             },
             screens::app::{decks::Decks, profile::Profile},
         },
