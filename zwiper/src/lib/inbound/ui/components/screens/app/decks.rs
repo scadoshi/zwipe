@@ -19,7 +19,7 @@ pub fn Decks(swipe_state: Signal<SwipeState>) -> Element {
     let swipe_config = SwipeConfig {
         navigation_swipes: vec![Dir::Down],
         submission_swipe: None,
-        from_main_screen: Some(Dir::Up),
+        from_main_screen: Some(Dir::Down),
     };
 
     let auth_client: Signal<AuthClient> = use_context();
@@ -43,9 +43,9 @@ pub fn Decks(swipe_state: Signal<SwipeState>) -> Element {
 
     use_effect(move || {
         spawn(async move {
-            let mut i = interval(Duration::from_secs(60));
+            let mut interval = interval(Duration::from_secs(60));
             loop {
-                i.tick().await;
+                interval.tick().await;
                 check_session().await;
             }
         });

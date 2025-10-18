@@ -13,20 +13,20 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Swipeable component integration complete with axis locking and shared state architecture.
+**Last Updated**: Built HomeGuard component with use_memo to handle session-based routing without navigation effects.
 
-**Current Focus**: Implementing swipe-to-submit detection in Login/Register screens using latest_swipe and use_effect or custom onswipeend handlers.
+**Current Focus**: Debug persistent screen freeze issue - likely related to session persistence errors (Platform secure storage failure).
 
-**Recent Achievement**: Successfully integrated Swipeable wrapper across all auth screens with shared SwipeState signal. Implemented axis locking (X/Y) preventing diagonal swiping. Built dynamic CSS transform system combining xpx/ypx (finger delta) with xvw/yvh (screen displacement). Added is_swiping flag for smooth return animations. Fixed screen_displacement logic to only update for navigation_swipes, not submission_swipe directions. All three auth screens (Login, Home, Register) now move together with single shared state.
+**Recent Achievement**: Implemented HomeGuard (route guard) component using use_memo to conditionally render AppHome or AuthHome based on session state. Discovered navigation effects cause deadlock - replaced multi-route structure with single route that conditionally renders. Confirmed swipe-to-submit working correctly with horizontal gestures. Debugged multiple freezing causes: navigation during render, effect racing, infinite background task spawning. Session persistence errors may be contributing to freeze - deferred to next session.
 
-**Current Decision**: Swipeable handles navigation, but submission detection needs custom logic in Login/Register. Will use use_effect watching latest_swipe or extract onswipeend event handlers into form screens to trigger maybe_submit when submission_swipe direction detected.
+**Current Issue**: Screen still freezes after login despite HomeGuard implementation. Session persistence failing (Platform secure storage failure: A required entitlement isn't present). Need to investigate if persistence errors are causing freeze or if additional reactivity issues remain.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Swipe-to-Submit Detection** - Implement submission logic in Login/Register using latest_swipe + use_effect pattern
-2. **Session Validation Extraction** - Extract repeated check_session + use_effect pattern into reusable helper
-3. **App Screen Swipeable Integration** - Roll out Swipeable component to Profile/MainHome/Decks screens
+1. **Session Persistence Investigation** - Debug Platform secure storage failure and its impact on UI freeze
+2. **HomeGuard Freeze Debug** - Investigate why screen still freezes despite use_memo implementation
+3. **Session Validation Extraction** - Extract repeated check_session + use_effect pattern into reusable helper
 4. **Profile/Home Screen Implementation** - Build actual screen content beyond placeholders
-5. **Reconnect Real Auth Flow** - Switch from spoofed session to actual login after submission detection complete
+5. **Card Search Integration** - Connect to backend search API with query parameters
 
 ### 🤔 Next Immediate Priorities (Top 5)
 1. **Card Search Integration** - Connect to backend search API with query parameters
@@ -161,6 +161,15 @@ alwaysApply: true
 - **Dynamic Screen Positioning**: CSS transforms combining xpx/ypx (finger delta) + xvw/yvh (screen_displacement * gap constants)
 - **Smart Screen Displacement**: update_position() only called when direction in navigation_swipes, preventing displacement from submission swipes
 - **Smooth Animation System**: is_swiping flag sets return_animation_seconds to 0.0 during active swipe, non-zero after release
+- **Swipe-to-Submit Detection**: use_effect pattern watching latest_swipe signal to trigger form submissions without buttons
+- **Gesture Separation Architecture**: Horizontal swipes (left/right) for submission, vertical swipes (up/down) for navigation to avoid conflicts
+- **Extended Axis Locking**: Axis locking includes submission_swipe directions alongside navigation_swipes for comprehensive gesture control
+- **Complete Swipeable Integration**: All auth (Login, Register, Home) and app (Profile, MainHome, Decks) screens using unified Swipeable component
+- **SwipeConfig Refinement**: Removed constructor method, using struct literal initialization for clarity
+- **Real Session Flow**: Switched from spoofed sessions to Session::infallible_load() with actual authentication
+- **HomeGuard Component**: Route guard using use_memo to conditionally render AppHome/AuthHome without navigation effects
+- **use_memo Pattern**: Derived state that only updates when session.is_some() boolean changes, preventing re-renders on session content updates
+- **Single Route Architecture**: Replaced multi-route structure with single HomeGuard route for cleaner conditional rendering
 
 ---
 

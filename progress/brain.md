@@ -15,25 +15,25 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Successfully integrated Swipeable component across auth screens with axis locking and shared state architecture. Fixed multiple positioning and animation bugs.
+**Last Updated**: Built HomeGuard component with use_memo, debugged multiple freeze causes including navigation effects and infinite task spawning.
 
-**Next Learning Focus**: Implement swipe-to-submit detection using use_effect to watch latest_swipe signal, or extract custom onswipeend handlers in form screens to trigger submission logic.
+**Next Learning Focus**: Investigate session persistence errors and their relationship to UI freeze issues.
 
-**Recent Achievement**: Swipeable component now requires external Signal<SwipeState> (always passed from parent). Implemented axis locking with traversing_axis preventing diagonal swipes. Built dynamic CSS transform system combining finger deltas (xpx/ypx) with screen offsets (xvw/yvh). Fixed jittery swiping with is_swiping flag controlling animations. Debugged screen_displacement logic to only update for navigation_swipes, preventing unwanted offsets from submission swipes. All three auth screens move together with shared state.
+**Recent Achievement**: Implemented HomeGuard using use_memo to prevent re-renders on session content updates. Debugged navigation effect deadlock - learned navigator.push() in effects causes freeze. Discovered effects re-run when reading signals inside closures outside spawn blocks. Found background tasks spawning infinitely when effect re-runs. Confirmed swipe-to-submit working with horizontal gestures. Identified session persistence errors (Platform secure storage failure) may be contributing to freeze.
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **Swipe-to-Submit Logic** - Watch latest_swipe signal with use_effect to trigger maybe_submit in Login/Register screens
-2. **Alternative Submission Pattern** - Explore custom onswipeend handlers in form components if use_effect approach doesn't work
-3. **App Screen Integration** - Roll out Swipeable to Profile/MainHome/Decks with proper shared state
+1. **Session Persistence Debug** - Investigate Platform secure storage failure and iOS Keychain entitlement requirements
+2. **use_memo Freeze Investigation** - Understand why HomeGuard still freezes despite derived state approach
+3. **Effect Reactivity Control** - Master when to wrap logic in spawn() to control signal dependency tracking
 4. **Session Management Consolidation** - Extract repeated check_session closure and use_effect validation loop into reusable pattern
 5. **Profile/Home Screen Content** - Build actual functionality beyond "under construction" placeholders
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Submission Detection Pattern** - Should use_effect watch latest_swipe, or extract onswipeend into form components?
-2. **Signal Reactivity in use_effect** - Will reading swipe_state.read().latest_swipe trigger re-runs, or need different approach?
-3. **Event Handler Extraction** - If need custom handlers, how to layer them on top of Swipeable's built-in handlers?
-4. **Session Hook Pattern** - Can extract use_context + validation loop into reusable pattern without custom hooks?
-5. **Component Abstraction Balance** - Finding right level between reusability and flexibility for different screen needs
+1. **use_memo Behavior** - Does use_memo truly prevent re-renders when derived value doesn't change, or are there edge cases?
+2. **Session Persistence Impact** - Can failed session.save() calls cause UI freeze or is it unrelated?
+3. **Router Component Mounting** - How does conditional rendering in routes affect component lifecycle and effects?
+4. **Background Task Lifecycle** - Do spawned tasks outlive component unmounts, or do they cancel?
+5. **Effect vs spawn Boundary** - Precise rules for when signal reads register as dependencies vs when they don't
 
 ---
 
@@ -185,12 +185,13 @@ alwaysApply: true
 ### 🎮 Swipe-Based Navigation & Gestures
 - **Position Tracking**: BasicPoint (i32 x/y) for screen coordinates independent of swipe detection
 - **Multi-Screen Architecture**: Always-render pattern with CSS transforms controlling visibility
-- **Swipe-to-Submit Pattern**: Detecting submission_swipe direction in SwipeConfig to trigger form submissions (implementation pending)
+- **Swipe-to-Submit Implementation**: use_effect watching latest_swipe signal triggers form submissions when submission_swipe direction detected
+- **Gesture Separation Strategy**: Horizontal swipes (left/right) for submission, vertical swipes (up/down) for navigation eliminates conflicts
 - **Transform Calculations**: CSS calc() combining xpx/ypx (finger delta) with xvw/yvh (screen_displacement offsets)
-- **Axis Locking**: traversing_axis (X/Y) set on first movement, locks screen to horizontal or vertical based on SwipeConfig
+- **Extended Axis Locking**: traversing_axis (X/Y) includes both navigation_swipes and submission_swipe directions for complete gesture control
 - **Smart Displacement Updates**: update_position() only called for directions in navigation_swipes, not submission_swipe
 - **Direction Resolution**: Separate tracking of detected swipe vs allowed navigation for dual-purpose gestures
-- **Event Handler Closures**: Extracting validation logic into reusable closures callable from multiple handlers
+- **Effect-Based Submission**: use_effect pattern with spawn() wrapping async submission logic to control signal dependency tracking
 - **Coordinate System**: Browser coordinates (positive Y down) with proper delta calculations
 - **State Management**: Decoupled position updates from swipe detection for flexible interaction patterns
 - **Abstraction Patterns**: Consolidated onswipestart/move/end for identical touch/mouse behavior
@@ -199,8 +200,9 @@ alwaysApply: true
 - **SwipeConfig Structure**: navigation_swipes (Vec), submission_swipe (Option), from_main_screen (Option) for positioning
 - **Shared State Pattern**: Parent component creates Signal<SwipeState>, passes to all child Swipeable components
 - **Smooth Animation System**: is_swiping flag controls return_animation_seconds (0.0 during swipe, non-zero after)
-- **VH_GAP/VW_GAP Constants**: 75vh/75vw spacing between screens for natural swipe distances
-- *Note: Navigation complete, submission detection next - need use_effect or custom handlers*
+- **VW_GAP Adjustment**: Increased to 100vw for horizontal submission gestures, VH_GAP remains 75vh for vertical navigation
+- **Universal Integration**: All auth (Login, Register, Home) and app (Profile, MainHome, Decks) screens using Swipeable
+- *Note: Submission working but navigation-during-render freeze needs fixing - move navigator.push() to effects*
 
 ### 🏗️ Service Architecture & Dependency Injection
 - **Generic Service Patterns**: Service<R> and Service<DR, CR> implementations across domains
@@ -264,7 +266,22 @@ alwaysApply: true
 - **Infallible Patterns**: ActiveSession trait with infallible_get_active_session collapses Result<Option<T>, E> to Option<T> for simpler error handling
 - **Session Validation Flow**: Signal holds session from context, spawn() validates and updates signal, component re-renders on change
 - **Error Honesty Pattern**: Returning `Err(SessionExpired)` instead of `Ok(vec![])` when session missing - honest errors better than fake empty states
-- *Note: Still building mental model - async closures returning Futures vs spawn() calling them immediately is confusing*
+- **use_effect Pattern**: Side effects that run after render, automatically tracking signal dependencies
+- **Effect Dependency Tracking**: Reading signals inside effect closure registers them as dependencies, triggering re-runs on change
+- **Effect Racing**: Multiple effects in same component run in same cycle - order matters when sharing state mutations
+- **Signal Reads Trigger Effects**: Calling closure functions that read signals inside effect makes effect depend on those signals too
+- **Spawn Inside Effects**: Wrap async logic in spawn() inside effects to prevent signal reads from registering as effect dependencies
+- **Navigation Timing**: navigator.push() during render (component body) causes freezes - must be in use_effect for post-render execution
+- **Effect Mount Guards**: Use local "has_mounted" signal to distinguish first run from subsequent reactive re-runs
+- **State Cleanup in Effects**: Clear transient state (like latest_swipe) after processing to prevent re-triggering on component re-mount
+- **Closure Ownership in Effects**: Clone signals before move closure, use cloned versions consistently inside closure for proper reactivity
+- **UX-Driven Architecture**: Sometimes best technical solution comes from smart UX decisions (horizontal/vertical gesture separation)
+- **Navigation Effect Deadlock**: navigator.push() in use_effect causes freeze - navigation must not happen in effects or component body
+- **use_memo Pattern**: Creates derived state that only updates when computed value changes, not when source signal content changes
+- **Conditional Rendering vs Navigation**: Replacing navigator.push() with conditional rsx! rendering avoids navigation deadlock
+- **Infinite Task Spawning**: Effects that spawn background tasks and read signals will spawn new tasks on every signal change
+- **HomeGuard Pattern**: Single route with use_memo-based conditional rendering eliminates need for navigation effects
+- *Note: Effect reactivity powerful but dangerous - navigation and background tasks require careful separation from reactive effects*
 
 ### 🔐 Backend Session & Token Architecture (Complete) ✅
 - **Session-Based Authentication**: Session struct containing user + access_token + refresh_token + both expiration timestamps

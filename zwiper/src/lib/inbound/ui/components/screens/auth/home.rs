@@ -1,14 +1,11 @@
 use dioxus::prelude::*;
-use zwipe::domain::{auth::models::session::Session, logo};
+use zwipe::domain::logo;
 
-use crate::inbound::ui::{
-    components::{
-        interactions::swipe::{
-            config::SwipeConfig, direction::Direction as Dir, state::SwipeState, Swipeable,
-        },
-        screens::auth::{login::Login, register::Register},
+use crate::inbound::ui::components::{
+    interactions::swipe::{
+        config::SwipeConfig, direction::Direction as Dir, state::SwipeState, Swipeable,
     },
-    Router,
+    screens::auth::{login::Login, register::Register},
 };
 
 #[component]
@@ -20,22 +17,9 @@ pub fn Home() -> Element {
         from_main_screen: None,
     };
 
-    let session: Signal<Option<Session>> = use_context();
-    let navigator = use_navigator();
-    if session.read().is_some() {
-        tracing::info!("session found sending to app home");
-        navigator.push(Router::AppHome {});
-    }
-
     let logo = logo::logo();
 
-    use_effect(move || {
-        let navigator = use_navigator();
-        if session.read().is_none() {
-            tracing::info!("session not found sending to auth home");
-            navigator.push(Router::AuthHome {});
-        }
-    });
+    // No navigation effects needed - RouteGuard handles screen switching
 
     rsx! {
         Login { swipe_state }

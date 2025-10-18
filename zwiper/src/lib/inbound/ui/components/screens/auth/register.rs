@@ -100,8 +100,6 @@ pub fn Register(swipe_state: Signal<SwipeState>) -> Element {
 
                                         if let Err(e) = new_session.save() {
                                             tracing::error!("failed to save session: {e}");
-                                        } else {
-                                            tracing::info!("saved session successfully");
                                         }
 
                                         session.set(Some(new_session));

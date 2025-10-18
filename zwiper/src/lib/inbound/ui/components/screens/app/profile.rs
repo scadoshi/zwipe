@@ -14,7 +14,7 @@ pub fn Profile(swipe_state: Signal<SwipeState>) -> Element {
     let swipe_config = SwipeConfig {
         navigation_swipes: vec![Dir::Up],
         submission_swipe: None,
-        from_main_screen: Some(Dir::Down),
+        from_main_screen: Some(Dir::Up),
     };
     let auth_client: Signal<AuthClient> = use_context();
     let mut session: Signal<Option<Session>> = use_context();

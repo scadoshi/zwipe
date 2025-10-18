@@ -1,19 +1,16 @@
-use dioxus::prelude::*;
-use std::time::Duration;
-use zwipe::domain::{auth::models::session::Session, logo::logo};
-
 use crate::{
-    inbound::ui::{
-        components::{
-            interactions::swipe::{
-                config::SwipeConfig, direction::Direction as Dir, state::SwipeState, Swipeable,
-            },
-            screens::app::{decks::Decks, profile::Profile},
+    inbound::ui::components::{
+        interactions::swipe::{
+            config::SwipeConfig, direction::Direction as Dir, state::SwipeState, Swipeable,
         },
-        Router,
+        screens::app::{decks::Decks, profile::Profile},
     },
     outbound::client::auth::{session::ActiveSession, AuthClient},
 };
+use dioxus::prelude::*;
+use std::time::Duration;
+use tokio::time::interval;
+use zwipe::domain::{auth::models::session::Session, logo::logo};
 
 #[component]
 pub fn Home() -> Element {
@@ -27,28 +24,20 @@ pub fn Home() -> Element {
     let auth_client: Signal<AuthClient> = use_context();
     let mut session: Signal<Option<Session>> = use_context();
 
-    let check_session = move || async move {
-        let Some(s) = session.read().clone() else {
-            return;
-        };
-        session.set(auth_client.read().infallible_get_active_session(&s).await);
-    };
+    // No navigation effects needed - RouteGuard handles screen switching
 
-    use_effect({
-        let navigator = use_navigator();
-        if session.read().is_none() {
-            tracing::info!("session not found sending to auth home");
-            navigator.push(Router::AuthHome {});
-        }
-        move || {
-            spawn(async move {
-                let mut interval = tokio::time::interval(Duration::from_secs(60));
-                loop {
-                    interval.tick().await;
-                    check_session().await;
-                }
-            });
-        }
+    // Background session validation (can uncomment once RouteGuard is working)
+    use_effect(move || {
+        spawn(async move {
+            let mut interval = interval(Duration::from_secs(60));
+            loop {
+                interval.tick().await;
+                let Some(s) = session.read().clone() else {
+                    continue;
+                };
+                session.set(auth_client.read().infallible_get_active_session(&s).await);
+            }
+        });
     });
 
     let logo = logo();
