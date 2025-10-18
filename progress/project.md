@@ -13,20 +13,20 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Major hexagonal architecture refactoring complete, GlobalSignal migration done, Swipeable component created.
+**Last Updated**: Swipeable component integration complete with axis locking and shared state architecture.
 
-**Current Focus**: Integrating Swipeable wrapper component across all screens to eliminate repeated swipe handlers. Determining screen position offset strategy.
+**Current Focus**: Implementing swipe-to-submit detection in Login/Register screens using latest_swipe and use_effect or custom onswipeend handlers.
 
-**Recent Achievement**: Restructured entire frontend into hexagonal layers - inbound/ui/ for components, outbound/client/ for HTTP, domain/ for shared utilities. Migrated from Context API to GlobalSignal pattern for session and auth client state. Modularized 378-line swipe.rs into 6 focused files (delta, direction, onswipe, ontouch, state, time_point). Built reusable Swipeable component with proper ownership handling for Vec<Direction> props.
+**Recent Achievement**: Successfully integrated Swipeable wrapper across all auth screens with shared SwipeState signal. Implemented axis locking (X/Y) preventing diagonal swiping. Built dynamic CSS transform system combining xpx/ypx (finger delta) with xvw/yvh (screen displacement). Added is_swiping flag for smooth return animations. Fixed screen_displacement logic to only update for navigation_swipes, not submission_swipe directions. All three auth screens (Login, Home, Register) now move together with single shared state.
 
-**Current Decision**: Swipeable wrapper foundation laid but not yet used in screens. All screens still manually implement swipe handlers. Next step: replace manual handlers with Swipeable wrapper, determine proper offset calculation pattern (Above/Center/Below positions), then extract session validation pattern.
+**Current Decision**: Swipeable handles navigation, but submission detection needs custom logic in Login/Register. Will use use_effect watching latest_swipe or extract onswipeend event handlers into form screens to trigger maybe_submit when submission_swipe direction detected.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Swipeable Wrapper Integration** - Replace manual swipe handlers in all screens with Swipeable component
-2. **Screen Position Strategy** - Design offset calculation system for Above/Center/Below screen positioning
-3. **Session Validation Extraction** - Extract repeated check_session + use_effect pattern into reusable helper
-4. **Hexagonal Architecture Completion** - Finalize frontend transition to inbound/outbound/domain structure
-5. **Profile/Home Screen Implementation** - Build actual screen content beyond placeholders
+1. **Swipe-to-Submit Detection** - Implement submission logic in Login/Register using latest_swipe + use_effect pattern
+2. **Session Validation Extraction** - Extract repeated check_session + use_effect pattern into reusable helper
+3. **App Screen Swipeable Integration** - Roll out Swipeable component to Profile/MainHome/Decks screens
+4. **Profile/Home Screen Implementation** - Build actual screen content beyond placeholders
+5. **Reconnect Real Auth Flow** - Switch from spoofed session to actual login after submission detection complete
 
 ### 🤔 Next Immediate Priorities (Top 5)
 1. **Card Search Integration** - Connect to backend search API with query parameters
@@ -156,6 +156,11 @@ alwaysApply: true
 - **Swipe Modularization**: Split 378-line monolithic swipe.rs into 6 focused modules for better maintainability
 - **Swipeable Component Foundation**: Reusable wrapper with children prop and Vec<Direction> parameter, proper clone pattern for closure ownership
 - **Separate Screen Hierarchies**: Established auth/ and app/ screen directories with home orchestrator files
+- **Swipeable Integration**: All auth screens using shared SwipeState signal passed from home orchestrator
+- **Axis Locking**: traversing_axis (X/Y) prevents diagonal swiping, set on first movement based on SwipeConfig allowed directions
+- **Dynamic Screen Positioning**: CSS transforms combining xpx/ypx (finger delta) + xvw/yvh (screen_displacement * gap constants)
+- **Smart Screen Displacement**: update_position() only called when direction in navigation_swipes, preventing displacement from submission swipes
+- **Smooth Animation System**: is_swiping flag sets return_animation_seconds to 0.0 during active swipe, non-zero after release
 
 ---
 

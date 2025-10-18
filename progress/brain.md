@@ -15,25 +15,25 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Completed major hexagonal architecture refactoring, migrated to GlobalSignal pattern, and created modular swipe component system. Ready to implement Swipeable wrapper across all screens.
+**Last Updated**: Successfully integrated Swipeable component across auth screens with axis locking and shared state architecture. Fixed multiple positioning and animation bugs.
 
-**Next Learning Focus**: Use Swipeable component wrapper to eliminate repeated swipe handlers across screens. Calculate proper screen position offsets for each screen variant.
+**Next Learning Focus**: Implement swipe-to-submit detection using use_effect to watch latest_swipe signal, or extract custom onswipeend handlers in form screens to trigger submission logic.
 
-**Recent Achievement**: Major frontend restructuring into hexagonal layers (inbound/ui, outbound/client, domain). Migrated from Context API to GlobalSignal for session/auth state. Split 378-line swipe.rs into 6 focused modules. Built reusable Swipeable component with proper ownership handling for Vec<Direction> prop (clone pattern for multiple closure captures). Established separate file architecture for auth/app screen hierarchies.
+**Recent Achievement**: Swipeable component now requires external Signal<SwipeState> (always passed from parent). Implemented axis locking with traversing_axis preventing diagonal swipes. Built dynamic CSS transform system combining finger deltas (xpx/ypx) with screen offsets (xvw/yvh). Fixed jittery swiping with is_swiping flag controlling animations. Debugged screen_displacement logic to only update for navigation_swipes, preventing unwanted offsets from submission swipes. All three auth screens move together with shared state.
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **Swipeable Wrapper Integration** - Replace manual swipe handlers in all screens with Swipeable component wrapper
-2. **Screen Position Offset Calculation** - Determine proper transform offsets for Above/Center/Below screen positions
-3. **Session Management Consolidation** - Extract repeated check_session closure and use_effect validation loop into reusable pattern
-4. **Screen Architecture Finalization** - Complete transition to hexagonal inbound/outbound/domain structure
+1. **Swipe-to-Submit Logic** - Watch latest_swipe signal with use_effect to trigger maybe_submit in Login/Register screens
+2. **Alternative Submission Pattern** - Explore custom onswipeend handlers in form components if use_effect approach doesn't work
+3. **App Screen Integration** - Roll out Swipeable to Profile/MainHome/Decks with proper shared state
+4. **Session Management Consolidation** - Extract repeated check_session closure and use_effect validation loop into reusable pattern
 5. **Profile/Home Screen Content** - Build actual functionality beyond "under construction" placeholders
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Screen Offset Calculations** - How to parameterize Above/Center/Below positions in Swipeable wrapper (enum vs prop?)
-2. **Session Hook Pattern** - Can extract use_context + validation loop into reusable pattern without custom hooks?
-3. **GlobalSignal vs Context Tradeoffs** - When to use GlobalSignal vs Context API for different state types
-4. **Swipeable Children Rendering** - How to properly render children inside Swipeable div with correct positioning
-5. **Component Abstraction Balance** - Avoiding over-abstraction while eliminating 30+ lines of boilerplate per screen
+1. **Submission Detection Pattern** - Should use_effect watch latest_swipe, or extract onswipeend into form components?
+2. **Signal Reactivity in use_effect** - Will reading swipe_state.read().latest_swipe trigger re-runs, or need different approach?
+3. **Event Handler Extraction** - If need custom handlers, how to layer them on top of Swipeable's built-in handlers?
+4. **Session Hook Pattern** - Can extract use_context + validation loop into reusable pattern without custom hooks?
+5. **Component Abstraction Balance** - Finding right level between reusability and flexibility for different screen needs
 
 ---
 
@@ -185,17 +185,22 @@ alwaysApply: true
 ### 🎮 Swipe-Based Navigation & Gestures
 - **Position Tracking**: BasicPoint (i32 x/y) for screen coordinates independent of swipe detection
 - **Multi-Screen Architecture**: Always-render pattern with CSS transforms controlling visibility
-- **Swipe-to-Submit Pattern**: Detecting disallowed swipes (previous_swipe) to trigger form submissions
-- **Transform Calculations**: CSS calc() with pixel deltas and viewport-height offsets for screen positioning
+- **Swipe-to-Submit Pattern**: Detecting submission_swipe direction in SwipeConfig to trigger form submissions (implementation pending)
+- **Transform Calculations**: CSS calc() combining xpx/ypx (finger delta) with xvw/yvh (screen_displacement offsets)
+- **Axis Locking**: traversing_axis (X/Y) set on first movement, locks screen to horizontal or vertical based on SwipeConfig
+- **Smart Displacement Updates**: update_position() only called for directions in navigation_swipes, not submission_swipe
 - **Direction Resolution**: Separate tracking of detected swipe vs allowed navigation for dual-purpose gestures
 - **Event Handler Closures**: Extracting validation logic into reusable closures callable from multiple handlers
 - **Coordinate System**: Browser coordinates (positive Y down) with proper delta calculations
 - **State Management**: Decoupled position updates from swipe detection for flexible interaction patterns
 - **Abstraction Patterns**: Consolidated onswipestart/move/end for identical touch/mouse behavior
-- **Modular Swipe Architecture**: Split into delta, direction, onswipe, ontouch, state, time_point modules (6 files)
-- **Swipeable Component**: Reusable wrapper component with children prop and move_swipes Vec parameter
-- **Closure Ownership Pattern**: Clone Vec<Direction> for multiple closures that need to capture same owned value
-- *Note: Swipeable component created but not yet integrated into screens*
+- **Modular Swipe Architecture**: Split into axis, config, direction, onmouse, ontouch, state, time_point modules (7 files)
+- **Swipeable Component**: Reusable wrapper requiring external Signal<SwipeState> for shared state across screens
+- **SwipeConfig Structure**: navigation_swipes (Vec), submission_swipe (Option), from_main_screen (Option) for positioning
+- **Shared State Pattern**: Parent component creates Signal<SwipeState>, passes to all child Swipeable components
+- **Smooth Animation System**: is_swiping flag controls return_animation_seconds (0.0 during swipe, non-zero after)
+- **VH_GAP/VW_GAP Constants**: 75vh/75vw spacing between screens for natural swipe distances
+- *Note: Navigation complete, submission detection next - need use_effect or custom handlers*
 
 ### 🏗️ Service Architecture & Dependency Injection
 - **Generic Service Patterns**: Service<R> and Service<DR, CR> implementations across domains
