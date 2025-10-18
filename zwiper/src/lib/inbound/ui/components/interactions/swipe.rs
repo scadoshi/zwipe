@@ -3,11 +3,11 @@ pub mod config;
 pub mod direction;
 pub mod onmouse;
 pub mod ontouch;
+pub mod screen_offset;
 pub mod state;
 pub mod time_point;
 
 use crate::inbound::ui::components::interactions::swipe::axis::Axis;
-use crate::inbound::ui::components::interactions::swipe::direction::Direction as Dir;
 use crate::inbound::ui::components::interactions::swipe::{
     config::SwipeConfig, onmouse::OnMouse, ontouch::OnTouch, state::SwipeState,
 };
@@ -45,20 +45,10 @@ pub fn Swipeable(state: Signal<SwipeState>, config: SwipeConfig, children: Eleme
         0.0
     };
 
-    // screens starting position relative to main screen - reactive to screen_displacement
-    let from_main_x = match config.from_main_screen {
-        Some(Dir::Left) => -1,
-        Some(Dir::Right) => 1,
-        _ => 0,
-    };
-    let xvw = (from_main_x + state.read().screen_displacement.x) * VW_GAP;
+    // screens starting position relative to main screen - reactive to screen_offset
+    let xvw = (config.from_main_screen.x + state.read().screen_offset.x) * VW_GAP;
 
-    let from_main_y = match config.from_main_screen {
-        Some(Dir::Up) => -1,
-        Some(Dir::Down) => 1,
-        _ => 0,
-    };
-    let yvh = (from_main_y + state.read().screen_displacement.y) * VH_GAP;
+    let yvh = (config.from_main_screen.y + state.read().screen_offset.y) * VH_GAP;
 
     // for returning element back to start position smoothly
     let return_animation_seconds = state.read().return_animation_seconds;

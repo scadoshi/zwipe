@@ -1,5 +1,6 @@
 use crate::inbound::ui::components::interactions::swipe::{
-    axis::Axis, config::SwipeConfig, direction::Direction as Dir, time_point::TimePoint,
+    axis::Axis, config::SwipeConfig, direction::Direction as Dir, screen_offset::ScreenOffset,
+    time_point::TimePoint,
 };
 use chrono::Utc;
 use dioxus::html::geometry::{
@@ -7,7 +8,6 @@ use dioxus::html::geometry::{
     ClientPoint,
 };
 
-type BasicPoint = Point2D<i32, UnknownUnit>;
 type DeltaPoint = Point2D<f64, UnknownUnit>;
 
 #[derive(Debug, Clone)]
@@ -19,7 +19,7 @@ pub struct SwipeState {
     pub current_point: Option<TimePoint>,
     // what direction the last swipe resolved to
     pub latest_swipe: Option<Dir>,
-    pub screen_displacement: BasicPoint,
+    pub screen_offset: ScreenOffset,
     // tracks which axis user is swiping on
     pub traversing_axis: Option<Axis>,
     pub is_swiping: bool,
@@ -34,7 +34,7 @@ impl SwipeState {
             current_point: None,
             previous_point: None,
             latest_swipe: None,
-            screen_displacement: BasicPoint::new(0, 0),
+            screen_offset: ScreenOffset::new(0, 0),
             traversing_axis: None,
             is_swiping: false,
             return_animation_seconds: 0.0,
@@ -139,10 +139,10 @@ impl SwipeState {
 
     pub fn update_position(&mut self, direction: &Dir) {
         match direction {
-            Dir::Left => self.screen_displacement.x -= 1,
-            Dir::Right => self.screen_displacement.x += 1,
-            Dir::Up => self.screen_displacement.y -= 1,
-            Dir::Down => self.screen_displacement.y += 1,
+            Dir::Left => self.screen_offset.x -= 1,
+            Dir::Right => self.screen_offset.x += 1,
+            Dir::Up => self.screen_offset.y -= 1,
+            Dir::Down => self.screen_offset.y += 1,
         }
     }
 
