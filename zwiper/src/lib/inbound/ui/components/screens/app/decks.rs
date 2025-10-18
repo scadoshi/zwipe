@@ -8,8 +8,6 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
-use std::time::Duration;
-use tokio::time::interval;
 use zwipe::domain::{
     auth::models::session::Session, deck::models::deck::deck_profile::DeckProfile,
 };
@@ -25,31 +23,28 @@ pub fn Decks(swipe_state: Signal<SwipeState>) -> Element {
     let auth_client: Signal<AuthClient> = use_context();
     let mut session: Signal<Option<Session>> = use_context();
 
-    let check_session = move || async move {
-        let Some(s) = session.read().clone() else {
-            return;
-        };
-        session.set(auth_client.read().infallible_get_active_session(&s).await);
-    };
-
     let decks: Resource<Result<Vec<DeckProfile>, GetDeckProfilesError>> =
         use_resource(move || async move {
-            check_session().await;
-            let Some(s) = session.read().clone() else {
+            let Some(current) = session.read().clone() else {
                 return Err(GetDeckProfilesError::SessionExpired);
             };
-            auth_client.read().get_deck_profiles(&s).await
-        });
 
-    use_effect(move || {
-        spawn(async move {
-            let mut interval = interval(Duration::from_secs(60));
-            loop {
-                interval.tick().await;
-                check_session().await;
+            let Some(active) = auth_client
+                .read()
+                .infallible_get_active_session(&current)
+                .await
+            else {
+                return Err(GetDeckProfilesError::SessionExpired);
+            };
+
+            let result = auth_client.read().get_deck_profiles(&active).await;
+
+            if active != current {
+                session.set(Some(active));
             }
+
+            result
         });
-    });
 
     rsx! {
         Swipeable { state: swipe_state, config: swipe_config,
@@ -57,9 +52,15 @@ pub fn Decks(swipe_state: Signal<SwipeState>) -> Element {
                 {
                     match decks.read().as_ref() {
                         Some(Ok(decks)) => rsx! {
-                            for deck_profile in decks {
-                                div { class : "deck-item",
-                                    h3 { { deck_profile.name.to_string() } }
+                            if decks.is_empty() {
+                                div { class: "no-decks",
+                                    p { "no decks yet" }
+                                }
+                            } else {
+                                for deck_profile in decks {
+                                    div { class : "deck-item",
+                                        h3 { { deck_profile.name.to_string() } }
+                                    }
                                 }
                             }
                         },
