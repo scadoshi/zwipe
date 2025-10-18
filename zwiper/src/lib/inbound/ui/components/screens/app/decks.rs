@@ -1,6 +1,10 @@
 use crate::{
     inbound::ui::components::interactions::swipe::{
-        config::SwipeConfig, direction::Direction as Dir, state::SwipeState, Swipeable,
+        config::SwipeConfig,
+        direction::Direction as Dir,
+        screen_offset::{ScreenOffset, ScreenOffsetMethods},
+        state::SwipeState,
+        Swipeable,
     },
     outbound::client::{
         auth::{session::ActiveSession, AuthClient},
@@ -17,7 +21,7 @@ pub fn Decks(swipe_state: Signal<SwipeState>) -> Element {
     let swipe_config = SwipeConfig {
         navigation_swipes: vec![Dir::Down],
         submission_swipe: None,
-        from_main_screen: Some(Dir::Down),
+        from_main_screen: ScreenOffset::down(),
     };
 
     let auth_client: Signal<AuthClient> = use_context();

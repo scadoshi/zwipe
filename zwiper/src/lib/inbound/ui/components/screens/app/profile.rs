@@ -1,5 +1,9 @@
 use crate::inbound::ui::components::interactions::swipe::{
-    config::SwipeConfig, direction::Direction as Dir, state::SwipeState, Swipeable,
+    config::SwipeConfig,
+    direction::Direction as Dir,
+    screen_offset::{ScreenOffset, ScreenOffsetMethods},
+    state::SwipeState,
+    Swipeable,
 };
 use dioxus::prelude::*;
 use zwipe::domain::auth::models::session::Session;
@@ -9,7 +13,7 @@ pub fn Profile(swipe_state: Signal<SwipeState>) -> Element {
     let swipe_config = SwipeConfig {
         navigation_swipes: vec![Dir::Up],
         submission_swipe: None,
-        from_main_screen: Some(Dir::Up),
+        from_main_screen: ScreenOffset::down(),
     };
 
     let session: Signal<Option<Session>> = use_context();
@@ -23,6 +27,9 @@ pub fn Profile(swipe_state: Signal<SwipeState>) -> Element {
                         dd { { session.user.username.to_string() } }
                         dt { "Email" }
                         dd { { session.user.email.to_string() } }
+                    }
+                    button { class : "",
+                        "logout"
                     }
                 }
             }

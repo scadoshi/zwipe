@@ -1,7 +1,8 @@
 use crate::{
     inbound::ui::components::{
         interactions::swipe::{
-            config::SwipeConfig, direction::Direction as Dir, state::SwipeState, Swipeable,
+            config::SwipeConfig, direction::Direction as Dir, screen_offset::ScreenOffset,
+            state::SwipeState, Swipeable,
         },
         screens::app::{decks::Decks, profile::Profile},
     },
@@ -18,7 +19,7 @@ pub fn Home() -> Element {
     let swipe_config = SwipeConfig {
         navigation_swipes: vec![Dir::Up, Dir::Down],
         submission_swipe: None,
-        from_main_screen: None,
+        from_main_screen: ScreenOffset::new(0, 0),
     };
 
     let auth_client: Signal<AuthClient> = use_context();
