@@ -6,10 +6,8 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
-use uuid::Uuid;
 use zwipe::domain::{
-    auth::models::session::Session,
-    deck::models::deck::{deck_name::DeckName, deck_profile::DeckProfile},
+    auth::models::session::Session, deck::models::deck::deck_profile::DeckProfile,
 };
 
 #[component]
