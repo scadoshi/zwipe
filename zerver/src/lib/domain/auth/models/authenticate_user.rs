@@ -1,7 +1,8 @@
 use crate::domain::auth::models::password::{InvalidPassword, Password};
 #[cfg(feature = "zerver")]
 use crate::domain::auth::models::{
-    change_password::ChangePassword, session::create_session::CreateSessionError,
+    change_email::ChangeEmail, change_password::ChangePassword, change_username::ChangeUsername,
+    session::create_session::CreateSessionError,
 };
 use thiserror::Error;
 
@@ -73,6 +74,26 @@ impl From<&ChangePassword> for AuthenticateUser {
         Self {
             identifier: value.user_id.to_string(),
             password: value.current_password.to_owned(),
+        }
+    }
+}
+
+#[cfg(feature = "zerver")]
+impl From<&ChangeUsername> for AuthenticateUser {
+    fn from(value: &ChangeUsername) -> Self {
+        Self {
+            identifier: value.user_id.to_string(),
+            password: value.password.to_string(),
+        }
+    }
+}
+
+#[cfg(feature = "zerver")]
+impl From<&ChangeEmail> for AuthenticateUser {
+    fn from(value: &ChangeEmail) -> Self {
+        Self {
+            identifier: value.user_id.to_string(),
+            password: value.password.to_string(),
         }
     }
 }
