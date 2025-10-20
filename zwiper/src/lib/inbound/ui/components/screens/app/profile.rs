@@ -1,34 +1,81 @@
-use crate::inbound::ui::components::interactions::swipe::{
-    config::SwipeConfig,
-    direction::Direction as Dir,
-    screen_offset::{ScreenOffset, ScreenOffsetMethods},
-    state::SwipeState,
-    Swipeable,
-};
+pub mod change_email;
+pub mod change_password;
+pub mod change_username;
+
+use crate::{inbound::ui::router::Router, outbound::session::Persist};
 use dioxus::prelude::*;
 use zwipe::domain::auth::models::session::Session;
 
 #[component]
-pub fn Profile(swipe_state: Signal<SwipeState>) -> Element {
-    let swipe_config = SwipeConfig {
-        navigation_swipes: vec![Dir::Up],
-        submission_swipe: None,
-        from_main_screen: ScreenOffset::down(),
-    };
-
-    let session: Signal<Option<Session>> = use_context();
+pub fn Profile() -> Element {
+    let mut session: Signal<Option<Session>> = use_context();
+    let navigator = use_navigator();
 
     rsx! {
-        if let Some(session) = session.read().as_ref() {
-            Swipeable { state: swipe_state, config: swipe_config,
-                div { class : "profile-screen",
-                    dl {
-                        dt { "Username" }
-                        dd { { session.user.username.to_string() } }
-                        dt { "Email" }
-                        dd { { session.user.email.to_string() } }
+        if let Some(user_session) = session.read().as_ref() {
+            div { class : "nicely-centered",
+                div { class : "profile-container",
+                    h2 { "profile" }
+
+                    div { class : "profile-field",
+                        div { class : "profile-field-content",
+                            label { "username" }
+                            p { { user_session.user.username.to_string() } }
+                        }
+                        button {
+                            class: "profile-field-button",
+                            onclick : move |_| {
+                                navigator.push(Router::ChangeUsername {});
+                            },
+                            "change"
+                        }
                     }
-                    button { class : "",
+
+                    div { class : "profile-field",
+                        div { class : "profile-field-content",
+                            label { "email" }
+                            p { { user_session.user.email.to_string() } }
+                        }
+                        button {
+                            class: "profile-field-button",
+                            onclick : move |_| {
+                                navigator.push(Router::ChangeEmail {});
+                            },
+                            "change"
+                        }
+                    }
+
+                    div { class : "profile-field",
+                        div { class : "profile-field-content",
+                            label { "password" }
+                            p { "•••••••" }
+                        }
+                        button {
+                            class: "profile-field-button",
+                            onclick : move |_| {
+                                navigator.push(Router::ChangePassword {});
+                            },
+                            "change"
+                        }
+                    }
+
+                    button {
+                        onclick : move |_| {
+                            navigator.push(Router::Home {});
+                        },
+                        "back"
+                    }
+
+                    button {
+                        class: "logout-button",
+                        onclick : move |_| {
+                            // todo: Call logout endpoint on server to invalidate refresh token
+                            if let Some(current_session) = session.read().clone() {
+                                let _ = current_session.delete();
+                            }
+                            session.set(None);
+                            navigator.push(Router::Login {});
+                        },
                         "logout"
                     }
                 }
