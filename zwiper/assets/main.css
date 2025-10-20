@@ -268,7 +268,7 @@ button:active {
     padding: 1rem;
     margin-bottom: 0.5rem;
     border: 1px solid #f5f5dc;
-    border-radius: 0.5rem;
+    border-radius: 1rem;
     cursor: pointer;
     transition: all 0.2s ease;
 }
