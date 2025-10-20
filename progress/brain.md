@@ -15,25 +15,25 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Refactored swipe navigation system to support multi-dimensional screen positioning with Point2D coordinates.
+**Last Updated**: Simplified auth UI to traditional buttons, built profile management screens, and implemented deck list with Resource lifetime handling.
 
-**Next Learning Focus**: Building out profile features (logout button), card search integration, and deck creation flow.
+**Next Learning Focus**: Implementing HTTP client methods for profile change operations and logout backend integration.
 
-**Recent Achievement**: Enhanced swipe system by replacing single-direction `Option<Direction>` with flexible `ScreenOffset` type (Point2D<i32, UnknownUnit>). Created trait with convenience methods (`up()`, `down()`, `left()`, `right()`) and chaining methods (`up_again()`, `down_again()`) enabling arbitrary screen positioning. Screens can now be at coordinates like (0, -2) for "up twice" or (-1, 1) for "left and down". Added position guards to form submission checking `screen_offset.y` to prevent accidental submissions from wrong screens. Fixed profile positioning bug (was `up()`, should be `down()`).
+**Recent Achievement**: Removed swipe-to-submit complexity from auth screens to accelerate MVP. Built complete profile management UI (change username/email/password forms) with minimal lowercase aesthetic and inline change buttons. Implemented logout with session deletion using Persist trait. Created deck list screen learning critical Resource pattern: `.value().with(|val| ...)` to extract owned data from within closure, avoiding "temporary value dropped while borrowed" errors. Discovered Resources can't be matched directly - must clone needed data inside `.with()` closure then use outside. Centralized session management with SessionProvider wrapping Router at app root.
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **Logout Functionality** - Complete logout button implementation with session clearing
-2. **Card Search UI** - Connect search component to backend API with query parameters
-3. **Deck Creation Flow** - Form-based deck creation from main screen
-4. **Complex Screen Layouts** - Utilize new ScreenOffset system for advanced navigation patterns
-5. **Profile Feature Expansion** - Add settings, preferences, account management options
+1. **Profile Change HTTP Calls** - Implement AuthClient methods for username/email/password changes
+2. **Logout Backend Integration** - Add server session revocation to logout flow
+3. **Deck Detail Navigation** - Route from deck list items to individual deck screens
+4. **Error Handling Refinement** - Better user-facing error messages across operations
+5. **HTTP Client Patterns** - Standardizing authenticated request patterns with session refresh
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Component Composition Patterns** - Best practices for reusable Dioxus components
-2. **State Management Scale** - When to lift state vs keep local for larger apps
-3. **Resource Invalidation** - How to manually trigger use_resource refetch
-4. **Background Task Cancellation** - Proper cleanup patterns for long-running tasks
-5. **Testing Reactive Components** - Strategies for testing components with signals and effects
+1. **Resource vs Signal Patterns** - When to use use_resource vs manual spawn + Signal for data fetching
+2. **Owned Data Extraction Strategy** - Best patterns for extracting data from Resources without lifetime issues
+3. **Component Reusability** - When to extract shared UI patterns into reusable components
+4. **Background Task Management** - Proper lifecycle and cleanup for session refresh loops
+5. **Route Parameter Patterns** - Best way to pass IDs through routes to detail screens
 
 ---
 
@@ -127,6 +127,11 @@ alwaysApply: true
 - **Route Function Pattern**: Exporting backend routes as functions for frontend import consistency
 - **GlobalSignal Pattern**: Static global state with Signal::global() for session and auth client (alternative to Context API)
 - **Dioxus Props Ownership**: Props must be owned values, can't pass references - use clone pattern for multiple closure captures
+- **SessionProvider Pattern**: Wrapping Router with context providers for global session/auth_client access across all routes
+- **Guard Route Pattern**: Root route redirecting based on session state for initial auth flow control
+- **Minimal UI Design**: Lowercase text, centered layouts, inline buttons for clean aesthetic consistency
+- **Profile Management UI**: Forms for username/email/password changes with inline change buttons
+- **Logout Implementation**: Session clearing with Persist::delete(), signal updates, and navigation to login
 
 ### 💾 SQLx Database Operations & Advanced Patterns
 - **Connection Pooling**: Production-ready pool configuration with optimized settings
@@ -278,6 +283,10 @@ alwaysApply: true
 - **use_memo Pattern**: Creates derived state that only updates when computed value changes, not when source signal content changes
 - **Centralized Session Management**: Better to have one background refresh loop than duplicate logic in every component
 - **Empty State UX**: Always handle empty lists explicitly (e.g., "no decks yet" message) instead of showing nothing
+- **Resource Lifetime Pattern**: `.value().with(|val| ...)` closure to access Resource data, extract owned copies to avoid "temporary value dropped" errors
+- **Owned Data Extraction**: Inside `.with()` closure, clone primitives and owned types (e.g., `(id, name.clone())`), use outside closure for rendering
+- **Resource Match Strategy**: Can't match directly on `resource.value()` guard - must extract needed data first then use in RSX
+- **Three-State Rendering**: Check is_empty, has_data, has_error using `.with()` boolean checks, render appropriate UI for each state
 - *Note: Hook selection (effect vs future vs resource) is critical - wrong choice causes infinite loops or missing reactivity*
 
 ### 🔐 Backend Session & Token Architecture (Complete) ✅

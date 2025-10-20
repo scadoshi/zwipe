@@ -13,27 +13,27 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Enhanced swipe navigation with flexible multi-dimensional screen positioning system.
+**Last Updated**: Simplified frontend to traditional button-based UI, completed profile management screens, and built deck list view.
 
-**Current Focus**: Building out main app functionality (card search, deck creation, profile features).
+**Current Focus**: Implementing profile change operations (username/email/password) with backend API calls and logout functionality.
 
-**Recent Achievement**: Refactored swipe navigation to support arbitrary x/y screen positioning. Replaced `Option<Direction>` with `ScreenOffset` type (Point2D<i32>) enabling screens positioned at any coordinate (e.g., up twice, left and down, etc). Created helper methods (`up()`, `down()`, `left()`, `right()`) and chaining methods (`up_again()`, etc) for flexible screen layouts. Added position guards to form submissions preventing accidental submissions from wrong screens. Fixed profile screen positioning bug.
+**Recent Achievement**: Removed swipe-to-submit from auth screens in favor of traditional buttons for faster MVP development. Built complete profile management UI with change username/email/password forms using minimal lowercase aesthetic. Implemented logout button with local session clearing. Created deck list screen with proper Resource pattern handling using `.value().with()` to avoid temporary value lifetime errors. Centralized session management in SessionProvider component wrapping Router. Added Guard component for initial route authentication redirection.
 
-**Current Success**: Login and registration work correctly. App navigates to main screens with proper session management. Swipe navigation system now supports complex multi-dimensional screen layouts.
+**Current Success**: Complete auth flow with session persistence. Profile screens with inline change buttons and clean minimal UI. Deck list fetching and displaying with proper loading/error states. Logout clears session and redirects to login.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Component Boilerplate Reduction** - Identify patterns for reusable session/client context access
-2. **Profile/Home Screen Content** - Build actual functionality beyond current placeholders
-3. **Card Search Integration** - Connect to backend search API with query parameters
-4. **Deck Creation Flow** - Form for creating new decks from main screen
-5. **iOS Keychain Entitlements** - Configure Dioxus.toml for production session persistence
+1. **Profile Change Operations API** - Implement backend calls for change username/email/password
+2. **Logout Backend Integration** - Add server-side session revocation to logout button
+3. **Deck List Navigation** - Route to individual deck detail screens from deck list
+4. **Card Search Integration** - Connect search component to backend API
+5. **Deck Creation Flow** - Form for creating new decks from main screen
 
 ### 🤔 Next Immediate Priorities (Top 5)
-1. **Card Search Integration** - Connect to backend search API with query parameters
-2. **Add Card to Deck Flow** - Search results with tap-to-add and quantity selection
-3. **Deck Detail Screen** - Full view of individual deck with edit capabilities
-4. **Deck Analytics Display** - Mana curve, color distribution, type breakdown (frontend calculation)
-5. **Reconnect Real Auth Flow** - Switch from spoofed session back to actual authentication once UI stable
+1. **Deck Detail Screen** - Full view of individual deck with edit capabilities
+2. **Add Card to Deck Flow** - Search results with add-to-deck functionality
+3. **Deck Analytics Display** - Mana curve, color distribution, type breakdown (frontend calculation)
+4. **Delete Deck Operation** - Backend integration for deck deletion
+5. **Error Handling Polish** - Improve error messages and user feedback across app
 
 ---
 
@@ -180,6 +180,15 @@ alwaysApply: true
 - **Multi-Dimensional Screen Positioning**: Screens can now be positioned at arbitrary x/y coordinates (up twice, diagonal positions, etc)
 - **Chaining Screen Offset Methods**: Helper methods (up_again, down_again) allow progressive screen offset calculations
 - **Position-Aware Form Submission**: Form submission guards check screen_offset to prevent accidental submissions from wrong screens
+- **Simplified Auth UI**: Removed swipe-to-submit from auth screens, using traditional button-based forms for MVP acceleration
+- **SessionProvider Architecture**: Centralized session context provider wrapping Router for global session/auth_client access
+- **Guard Route Pattern**: Root route component conditionally redirecting to /home or /login based on session presence
+- **Profile Management Screens**: Complete change username/email/password forms with minimal lowercase UI aesthetic
+- **Logout Implementation**: Frontend session clearing with Persist trait delete(), navigation to login, TODO for backend revocation
+- **Deck List Screen**: Resource-based deck fetching with proper three-state rendering (loading/success/error)
+- **Resource Lifetime Handling**: `.value().with()` pattern extracting owned data to avoid temporary value borrowing errors
+- **Clickable Deck Items**: Deck list items with onclick handlers and hover styling, TODO for navigation to detail screens
+- **Minimal UI Consistency**: Lowercase text, centered layouts, clean spacing across auth and app screens
 
 ---
 
