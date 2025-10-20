@@ -53,7 +53,7 @@ impl From<sqlx::Error> for ChangePasswordError {
 pub struct ChangePassword {
     pub user_id: Uuid,
     pub current_password: String,
-    pub password_hash: HashedPassword,
+    pub new_password_hash: HashedPassword,
 }
 #[cfg(feature = "zerver")]
 impl ChangePassword {
@@ -64,16 +64,18 @@ impl ChangePassword {
     ) -> Result<Self, InvalidChangePassword> {
         use crate::domain::auth::models::password::Password;
 
-        let password =
+        let new_password =
             Password::new(new_password).map_err(|e| InvalidChangePassword::Password(e))?;
+        // no type validation of current password
+        // so user isn't locked out of changing their password
         let current_password = current_password.to_string();
-        let password_hash = HashedPassword::generate(password)
+        let new_password_hash = HashedPassword::generate(new_password)
             .map_err(|e| InvalidChangePassword::FailedPasswordHash(e.into()))?;
 
         Ok(Self {
             user_id,
             current_password,
-            password_hash,
+            new_password_hash,
         })
     }
 }
