@@ -19,18 +19,42 @@ body {
     user-select: none;
 }
 
-/* swipe */
-.swipeable {
+button {
+    width: 100%;
+    margin-bottom: 2rem;
+    padding: 1rem 1rem;
+    background: none;
+    border: 1px solid #f5f5dc;
+    border-radius: 1rem;
+    color: #f5f5dc;
+    font-family: 'Cascadia Code', monospace;
+    font-size: 1rem;
+    font-weight: 300;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    background-color: #f5f5dc;
+    color: #1a1d23;
+    border-color: #f5f5dc;
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+.nicely-centered {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    z-index: 9999;
-    user-select: none;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    /* justify-content: center; */
 }
 
 /* logo */
@@ -107,7 +131,7 @@ body {
     letter-spacing: 0.2em;
 }
 
-.form-container .form-error {
+.error {
     text-align: center;
     font-weight: 300;
     color: #d13b3b;
@@ -176,23 +200,98 @@ body {
 
 /*  profile */
 
-.profile-screen dl {
-    margin-bottom: 1rem;
-    letter-spacing: 0.1rem;
+.profile-container {
+    width: 20rem;
+    padding: 2rem;
 }
 
-.profile-screen dt {
-    font-weight: 1000;
-}
-
-.profile-screen dd {
+.profile-container h2 {
+    text-align: center;
+    margin-bottom: 2rem;
     font-weight: 300;
-    margin-bottom: 1rem;
+    letter-spacing: 0.2em;
+}
+
+.profile-field {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    gap: 1rem;
+}
+
+.profile-field-content {
+    flex: 1;
+}
+
+.profile-field-content label {
+    display: block;
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.25rem;
+    opacity: 0.5;
+}
+
+.profile-field-content p {
+    font-size: 1rem;
+    font-weight: 300;
+    margin-bottom: 0.5rem;
+}
+
+.profile-field-button {
+    width: auto;
+    margin: 0;
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    border-radius: 0.6rem;
 }
 
 /* decks */
 
-.decks-screen p {
-    letter-spacing: 0.1rem;
+.decks-container {
+    width: 20rem;
+    padding: 2rem;
+}
+
+.decks-container h2 {
+    text-align: center;
     margin-bottom: 2rem;
+    font-weight: 300;
+    letter-spacing: 0.2em;
+}
+
+.deck-list {
+    margin-bottom: 2rem;
+}
+
+.deck-item {
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid #f5f5dc;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.deck-item:hover {
+    transform: translateY(-2px);
+    background-color: #f5f5dc;
+    color: #1a1d23;
+}
+
+.deck-item h3 {
+    margin: 0;
+    font-weight: 300;
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+}
+
+.empty-message {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.empty-message p {
+    opacity: 0.6;
+    letter-spacing: 0.1em;
 }
