@@ -1,11 +1,5 @@
 use crate::{
-    inbound::ui::components::interactions::swipe::{
-        config::SwipeConfig,
-        direction::Direction as Dir,
-        screen_offset::{ScreenOffset, ScreenOffsetMethods},
-        state::SwipeState,
-        Swipeable,
-    },
+    inbound::ui::router::Router,
     outbound::client::{
         auth::{session::ActiveSession, AuthClient},
         deck::get_deck_profiles::{GetDeckProfilesError, GetDecks},
@@ -17,13 +11,8 @@ use zwipe::domain::{
 };
 
 #[component]
-pub fn Decks(swipe_state: Signal<SwipeState>) -> Element {
-    let swipe_config = SwipeConfig {
-        navigation_swipes: vec![Dir::Down],
-        submission_swipe: None,
-        from_main_screen: ScreenOffset::down(),
-    };
-
+pub fn Decks() -> Element {
+    let navigator = use_navigator();
     let auth_client: Signal<AuthClient> = use_context();
     let mut session: Signal<Option<Session>> = use_context();
 
@@ -51,29 +40,76 @@ pub fn Decks(swipe_state: Signal<SwipeState>) -> Element {
         });
 
     rsx! {
-        Swipeable { state: swipe_state, config: swipe_config,
-            div { class : "decks-screen",
+        div { class : "nicely-centered",
+            div { class : "decks-container",
+                h2 { "decks" }
+
                 {
-                    match decks.read().as_ref() {
-                        Some(Ok(decks)) => rsx! {
-                            if decks.is_empty() {
-                                div { class: "no-decks",
-                                    p { "no decks yet" }
-                                }
+                    let is_empty = decks.value().with(|val| {
+                        matches!(val, Some(Ok(list)) if list.is_empty())
+                    });
+                    let has_data = decks.value().with(|val| {
+                        matches!(val, Some(Ok(list)) if !list.is_empty())
+                    });
+                    let has_error = decks.value().with(|val| matches!(val, Some(Err(_))));
+
+                    if is_empty {
+                        rsx! {
+                            div { class: "empty-message",
+                                p { "no decks yet" }
+                            }
+                            button {
+                                onclick : move |_| {
+                                    navigator.push(Router::Home {});
+                                },
+                                "back"
+                            }
+                        }
+                    } else if has_data {
+                        let deck_profiles = decks.value().with(|val| {
+                            if let Some(Ok(deck_list)) = val {
+                                deck_list.iter().map(|d| (d.id, d.name.clone())).collect::<Vec<_>>()
                             } else {
-                                for deck_profile in decks {
-                                    div { class : "deck-item",
-                                        h3 { { deck_profile.name.to_string() } }
+                                vec![]
+                            }
+                        });
+
+                        rsx! {
+                            div { class: "deck-list",
+                                for (id, name) in deck_profiles {
+                                    div {
+                                        key: "{id}",
+                                        class : "deck-item",
+                                        onclick : move |_| {
+                                            tracing::info!("clicked deck: {name}");
+                                        },
+                                        h3 { { name.to_string() } }
                                     }
                                 }
                             }
-                        },
-                        Some(Err(e)) => rsx! {
-                            div { class : "deck-error",
-                                p { "failed to load decks: {e}" }
+                            button {
+                                onclick : move |_| {
+                                    navigator.push(Router::Home {});
+                                },
+                                "back"
                             }
-                        },
-                        None => rsx! { div { class : "spinning-card" } },
+                        }
+                    } else if has_error {
+                        rsx! {
+                            div { class : "error",
+                                p { "failed to load decks" }
+                            }
+                            button {
+                                onclick : move |_| {
+                                    navigator.push(Router::Home {});
+                                },
+                                "back"
+                            }
+                        }
+                    } else {
+                        rsx! {
+                            div { class: "spinning-card" }
+                        }
                     }
                 }
             }
