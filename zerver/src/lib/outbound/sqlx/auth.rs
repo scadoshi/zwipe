@@ -90,7 +90,7 @@ impl AuthRepository for Postgres {
 
         query!(
             "UPDATE users SET password_hash = $1 WHERE id = $2", 
-            request.password_hash.to_string(), 
+            request.new_password_hash.to_string(), 
             request.user_id
         )
         .execute(&mut *tx)
@@ -116,7 +116,7 @@ impl AuthRepository for Postgres {
         let database_user = query_as!(
             DatabaseUser, 
             "UPDATE users SET username = $1 WHERE id = $2 RETURNING id, username, email", 
-            request.username.to_string(), 
+            request.new_username.to_string(), 
             request.user_id
         ).fetch_one(&mut *tx).await?;
 
