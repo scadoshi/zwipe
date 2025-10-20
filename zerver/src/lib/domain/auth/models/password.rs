@@ -5,7 +5,7 @@ use argon2::{
     Argon2, PasswordHasher, PasswordVerifier,
 };
 use common::IsCommonPassword;
-use std::collections::HashSet;
+use std::{collections::HashSet, fmt::Display};
 use thiserror::Error;
 
 // ========
@@ -80,6 +80,12 @@ impl Password {
 
     pub fn read(&self) -> &str {
         &self.0
+    }
+}
+
+impl Display for Password {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
