@@ -1,14 +1,15 @@
-use crate::outbound::client::auth::AuthClient;
-use reqwest::StatusCode;
 use std::future::Future;
+
+use reqwest::StatusCode;
 use thiserror::Error;
 use zwipe::{
-    domain::auth::models::session::Session,
-    inbound::http::{handlers::auth::authenticate_user::HttpAuthenticateUser, routes::login_route},
+    domain::user::models::User,
+    inbound::http::{handlers::auth::change_email::HttpChangeEmail, routes::change_email_route},
 };
 
+use crate::outbound::client::auth::AuthClient;
 #[derive(Debug, Error)]
-pub enum LoginError {
+pub enum ChangeEmailError {
     #[error("invalid credentials")]
     Unauthorized,
     #[error("something went wrong")]
@@ -19,32 +20,29 @@ pub enum LoginError {
     InvalidRequest(String),
 }
 
-impl From<reqwest::Error> for LoginError {
+impl From<reqwest::Error> for ChangeEmailError {
     fn from(value: reqwest::Error) -> Self {
         Self::Network(value)
     }
 }
 
-impl From<serde_json::Error> for LoginError {
+impl From<serde_json::Error> for ChangeEmailError {
     fn from(_value: serde_json::Error) -> Self {
         Self::SomethingWentWrong
     }
 }
 
-pub trait Login {
-    fn authenticate_user(
+pub trait ChangeEmail {
+    fn change_email(
         &self,
-        request: HttpAuthenticateUser,
-    ) -> impl Future<Output = Result<Session, LoginError>> + Send;
+        request: HttpChangeEmail,
+    ) -> impl Future<Output = Result<User, ChangeEmailError>> + Send;
 }
 
-impl Login for AuthClient {
-    async fn authenticate_user(
-        &self,
-        request: HttpAuthenticateUser,
-    ) -> Result<Session, LoginError> {
+impl ChangeEmail for AuthClient {
+    async fn change_email(&self, request: HttpChangeEmail) -> Result<User, ChangeEmailError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&login_route());
+        url.set_path(&change_email_route());
         let response = self
             .client
             .post(url)
@@ -55,15 +53,15 @@ impl Login for AuthClient {
 
         match response.status() {
             StatusCode::OK => {
-                let success: Session = response.json().await?;
+                let success: User = response.json().await?;
                 Ok(success)
             }
             StatusCode::UNPROCESSABLE_ENTITY => {
                 let message = response.text().await?;
-                Err(LoginError::InvalidRequest(message))
+                Err(ChangeEmailError::InvalidRequest(message))
             }
-            StatusCode::UNAUTHORIZED => Err(LoginError::Unauthorized),
-            _ => Err(LoginError::SomethingWentWrong),
+            StatusCode::UNAUTHORIZED => Err(ChangeEmailError::Unauthorized),
+            _ => Err(ChangeEmailError::SomethingWentWrong),
         }
     }
 }
