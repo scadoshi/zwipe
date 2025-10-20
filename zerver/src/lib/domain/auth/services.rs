@@ -151,17 +151,19 @@ where
     // ========
     //  update
     // ========
-    async fn change_password(&self, request: &ChangePassword) -> Result<(), ChangePasswordError> {
-        let _ = self.authenticate_user(&request.into()).await?;
-        self.auth_repo.change_password(request).await
-    }
-
     async fn change_username(&self, request: &ChangeUsername) -> Result<User, ChangeUsernameError> {
+        self.authenticate_user(&request.into()).await?;
         self.auth_repo.change_username(request).await
     }
 
     async fn change_email(&self, request: &ChangeEmail) -> Result<User, ChangeEmailError> {
+        self.authenticate_user(&request.into()).await?;
         self.auth_repo.change_email(request).await
+    }
+
+    async fn change_password(&self, request: &ChangePassword) -> Result<(), ChangePasswordError> {
+        self.authenticate_user(&request.into()).await?;
+        self.auth_repo.change_password(request).await
     }
 
     // ========
