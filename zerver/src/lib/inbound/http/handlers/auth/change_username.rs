@@ -1,12 +1,9 @@
-#[cfg(feature = "zerver")]
-use axum::{extract::State, http::StatusCode, Json};
-use serde::{Deserialize, Serialize};
-
+use crate::domain::auth::models::change_username::ChangeUsername;
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
         auth::{
-            models::change_username::{ChangeUsername, ChangeUsernameError, InvalidChangeUsername},
+            models::change_username::{ChangeUsernameError, InvalidChangeUsername},
             ports::AuthService,
         },
         card::ports::CardService,
@@ -16,6 +13,9 @@ use crate::{
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
 };
+#[cfg(feature = "zerver")]
+use axum::{extract::State, http::StatusCode, Json};
+use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "zerver")]
 impl From<ChangeUsernameError> for ApiError {
@@ -24,6 +24,9 @@ impl From<ChangeUsernameError> for ApiError {
             ChangeUsernameError::UserNotFound => Self::NotFound("user not found".to_string()),
             ChangeUsernameError::Database(e) => e.log_500(),
             ChangeUsernameError::UserFromDb(e) => e.log_500(),
+            ChangeUsernameError::AuthenticateUserError(_) => {
+                Self::Unauthorized("invalid credentials".to_string())
+            }
         }
     }
 }
@@ -36,19 +39,33 @@ impl From<InvalidChangeUsername> for ApiError {
             InvalidChangeUsername::Username(e) => {
                 Self::UnprocessableEntity(format!("invalid username: {}", e))
             }
+            InvalidChangeUsername::Password(_) => {
+                Self::Unauthorized("invalid credentials".to_string())
+            }
         }
     }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpChangeUsername {
-    username: String,
+    new_username: String,
+    password: String,
 }
 
 impl HttpChangeUsername {
-    pub fn new(username: &str) -> Self {
+    pub fn new(new_username: &str, password: &str) -> Self {
         Self {
-            username: username.to_string(),
+            new_username: new_username.to_string(),
+            password: password.to_string(),
+        }
+    }
+}
+
+impl From<ChangeUsername> for HttpChangeUsername {
+    fn from(value: ChangeUsername) -> Self {
+        Self {
+            new_username: value.new_username.to_string(),
+            password: value.password.to_string(),
         }
     }
 }
@@ -66,7 +83,7 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let request = ChangeUsername::new(user.id, &body.username)?;
+    let request = ChangeUsername::new(user.id, &body.new_username, &body.password)?;
 
     state
         .auth_service
