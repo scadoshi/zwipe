@@ -8,10 +8,10 @@ pub trait ScreenOffsetMethods {
     fn right() -> Self;
     fn up() -> Self;
     fn down() -> Self;
-    fn left_again(&self) -> Self;
-    fn right_again(&self) -> Self;
-    fn up_again(&self) -> Self;
-    fn down_again(&self) -> Self;
+    fn and_left(&self) -> Self;
+    fn and_right(&self) -> Self;
+    fn and_up(&self) -> Self;
+    fn and_down(&self) -> Self;
 }
 
 impl ScreenOffsetMethods for ScreenOffset {
@@ -30,16 +30,16 @@ impl ScreenOffsetMethods for ScreenOffset {
     fn down() -> Self {
         Self::new(0, 1)
     }
-    fn left_again(&self) -> Self {
+    fn and_left(&self) -> Self {
         Self::new(self.x - 1, self.y)
     }
-    fn right_again(&self) -> Self {
+    fn and_right(&self) -> Self {
         Self::new(self.x + 1, self.y)
     }
-    fn up_again(&self) -> Self {
+    fn and_up(&self) -> Self {
         Self::new(self.x, self.y - 1)
     }
-    fn down_again(&self) -> Self {
+    fn and_down(&self) -> Self {
         Self::new(self.x, self.y + 1)
     }
 }
