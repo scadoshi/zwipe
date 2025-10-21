@@ -3,7 +3,10 @@ use crate::{
         components::interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
         router::Router,
     },
-    outbound::client::auth::{logout::Logout, session::ActiveSession, AuthClient},
+    outbound::{
+        client::auth::{logout::Logout, session::ActiveSession, AuthClient},
+        session::Persist,
+    },
 };
 use dioxus::prelude::*;
 use zwipe::domain::{auth::models::session::Session, logo::logo};
@@ -49,6 +52,9 @@ pub fn Home() -> Element {
 
                             match auth_client.read().logout(&active).await {
                                 Ok(()) => {
+                                    if let Err(e) = active.delete() {
+                                        tracing::error!("failed to delete session from keyring: {e}");
+                                    }
                                     session.set(None);
                                     navigator.push(Router::Login {});
                                 }

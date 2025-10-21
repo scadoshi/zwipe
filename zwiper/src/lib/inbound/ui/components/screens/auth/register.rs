@@ -190,7 +190,7 @@ pub fn Register() -> Element {
                     button {
                         onclick : move |_| {
                             navigator.push(Router::Login {});
-                        }, "back"
+                        }, "back to login"
                     }
 
                 }

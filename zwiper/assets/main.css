@@ -42,7 +42,7 @@ button:hover {
 }
 
 button:active {
-    transform: translateY(0);
+    transform: translateY(-2px);
 }
 
 .swipeable {
