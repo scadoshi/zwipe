@@ -1,9 +1,11 @@
-use std::future::Future;
-
 use reqwest::StatusCode;
+use std::future::Future;
 use thiserror::Error;
-use zwipe::inbound::http::{
-    handlers::auth::change_password::HttpChangePassword, routes::change_password_route,
+use zwipe::{
+    domain::auth::models::session::Session,
+    inbound::http::{
+        handlers::auth::change_password::HttpChangePassword, routes::change_password_route,
+    },
 };
 
 use crate::outbound::client::auth::AuthClient;
@@ -18,6 +20,8 @@ pub enum ChangePasswordError {
     Network(reqwest::Error),
     #[error("{0}")]
     InvalidRequest(String),
+    #[error("session expired")]
+    SessionExpired,
 }
 
 impl From<reqwest::Error> for ChangePasswordError {
@@ -36,6 +40,7 @@ pub trait ChangePassword {
     fn change_password(
         &self,
         request: HttpChangePassword,
+        session: &Session,
     ) -> impl Future<Output = Result<(), ChangePasswordError>> + Send;
 }
 
@@ -43,13 +48,18 @@ impl ChangePassword for AuthClient {
     async fn change_password(
         &self,
         request: HttpChangePassword,
+        session: &Session,
     ) -> Result<(), ChangePasswordError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&change_password_route());
         let response = self
             .client
-            .post(url)
+            .put(url)
             .header("Content-Type", "application/json")
+            .header(
+                "Authorization",
+                format!("Bearer {}", session.access_token.value.as_str()),
+            )
             .body(serde_json::to_string(&request)?)
             .send()
             .await?;

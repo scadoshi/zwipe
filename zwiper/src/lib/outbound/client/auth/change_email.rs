@@ -3,7 +3,7 @@ use std::future::Future;
 use reqwest::StatusCode;
 use thiserror::Error;
 use zwipe::{
-    domain::user::models::User,
+    domain::{auth::models::session::Session, user::models::User},
     inbound::http::{handlers::auth::change_email::HttpChangeEmail, routes::change_email_route},
 };
 
@@ -18,6 +18,8 @@ pub enum ChangeEmailError {
     Network(reqwest::Error),
     #[error("{0}")]
     InvalidRequest(String),
+    #[error("session expired")]
+    SessionExpired,
 }
 
 impl From<reqwest::Error> for ChangeEmailError {
@@ -36,17 +38,26 @@ pub trait ChangeEmail {
     fn change_email(
         &self,
         request: HttpChangeEmail,
+        session: &Session,
     ) -> impl Future<Output = Result<User, ChangeEmailError>> + Send;
 }
 
 impl ChangeEmail for AuthClient {
-    async fn change_email(&self, request: HttpChangeEmail) -> Result<User, ChangeEmailError> {
+    async fn change_email(
+        &self,
+        request: HttpChangeEmail,
+        session: &Session,
+    ) -> Result<User, ChangeEmailError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&change_email_route());
         let response = self
             .client
-            .post(url)
+            .put(url)
             .header("Content-Type", "application/json")
+            .header(
+                "Authorization",
+                format!("Bearer {}", session.access_token.value.as_str()),
+            )
             .body(serde_json::to_string(&request)?)
             .send()
             .await?;

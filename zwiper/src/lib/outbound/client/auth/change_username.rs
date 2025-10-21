@@ -3,7 +3,7 @@ use std::future::Future;
 use reqwest::StatusCode;
 use thiserror::Error;
 use zwipe::{
-    domain::user::models::User,
+    domain::{auth::models::session::Session, user::models::User},
     inbound::http::{
         handlers::auth::change_username::HttpChangeUsername, routes::change_username_route,
     },
@@ -40,6 +40,7 @@ pub trait ChangeUsername {
     fn change_username(
         &self,
         request: HttpChangeUsername,
+        session: &Session,
     ) -> impl Future<Output = Result<User, ChangeUsernameError>> + Send;
 }
 
@@ -47,13 +48,18 @@ impl ChangeUsername for AuthClient {
     async fn change_username(
         &self,
         request: HttpChangeUsername,
+        session: &Session,
     ) -> Result<User, ChangeUsernameError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&change_username_route());
         let response = self
             .client
-            .post(url)
+            .put(url)
             .header("Content-Type", "application/json")
+            .header(
+                "Authorization",
+                format!("Bearer {}", session.access_token.value.as_str()),
+            )
             .body(serde_json::to_string(&request)?)
             .send()
             .await?;
