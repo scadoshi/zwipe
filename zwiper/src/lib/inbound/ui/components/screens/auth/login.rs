@@ -1,5 +1,8 @@
 use crate::{
-    inbound::ui::router::Router,
+    inbound::ui::{
+        components::interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
+        router::Router,
+    },
     outbound::{
         client::auth::{
             login::{Login as LoginTrait, LoginError},
@@ -22,6 +25,9 @@ use zwipe::{
 
 #[component]
 pub fn Login() -> Element {
+    let swipe_state = use_signal(|| SwipeState::new());
+    let swipe_config = SwipeConfig::blank();
+
     let navigator = use_navigator();
 
     let mut session: Signal<Option<Session>> = use_context();
@@ -44,9 +50,10 @@ pub fn Login() -> Element {
     };
 
     rsx! {
-        div { class: "nicely-centered",
+        Swipeable { state: swipe_state, config: swipe_config,
             div { class: "logo",  "{logo}" }
             div { class : "form-container",
+
                 form {
                     div { class : "form-group",
                         label { r#for: "identity" }
@@ -101,18 +108,20 @@ pub fn Login() -> Element {
                                 is_loading.set(false);
                             }, "login"
                         }
+
+                        if *is_loading.read() {
+                            div { class : "spinning-card" }
+                        } else if let Some(error) = submission_error.read().as_deref() {
+                            div { class: "error",
+                                { format!("{}", error) }
+                            }
+                        }
+
                         button {
                             onclick : move |_| {
                                 navigator.push(Router::Register {});
                             }, "create profile"
                         }
-                    }
-                }
-                if *is_loading.read() {
-                    div { class : "spinning-card" }
-                } else if let Some(error) = submission_error.read().as_deref() {
-                    div { class: "error",
-                        { format!("{}", error) }
                     }
                 }
             }

@@ -1,6 +1,9 @@
 use crate::{
     domain::error::UserFacing,
-    inbound::ui::router::Router,
+    inbound::ui::{
+        components::interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
+        router::Router,
+    },
     outbound::{
         client::auth::{register::Register as RegisterTrait, AuthClient},
         session::Persist,
@@ -20,6 +23,9 @@ use zwipe::{
 
 #[component]
 pub fn Register() -> Element {
+    let swipe_state = use_signal(|| SwipeState::new());
+    let swipe_config = SwipeConfig::blank();
+
     let navigator = use_navigator();
 
     let mut session: Signal<Option<Session>> = use_context();
@@ -73,7 +79,7 @@ pub fn Register() -> Element {
     };
 
     rsx! {
-        div { class: "nicely-centered",
+        Swipeable { state: swipe_state, config: swipe_config,
             div { class: "logo",  "{logo}" }
             div { class : "form-container",
             form {
@@ -184,7 +190,7 @@ pub fn Register() -> Element {
                     button {
                         onclick : move |_| {
                             navigator.push(Router::Login {});
-                        }, "back to login"
+                        }, "back"
                     }
 
                 }

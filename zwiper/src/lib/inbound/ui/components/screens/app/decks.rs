@@ -1,5 +1,8 @@
 use crate::{
-    inbound::ui::router::Router,
+    inbound::ui::{
+        components::interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
+        router::Router,
+    },
     outbound::client::{
         auth::{session::ActiveSession, AuthClient},
         deck::get_deck_profiles::{GetDeckProfilesError, GetDecks},
@@ -12,11 +15,14 @@ use zwipe::domain::{
 
 #[component]
 pub fn Decks() -> Element {
+    let swipe_state = use_signal(|| SwipeState::new());
+    let swipe_config = SwipeConfig::blank();
+
     let navigator = use_navigator();
     let auth_client: Signal<AuthClient> = use_context();
     let mut session: Signal<Option<Session>> = use_context();
 
-    let decks: Resource<Result<Vec<DeckProfile>, GetDeckProfilesError>> =
+    let deck_profiles_resource: Resource<Result<Vec<DeckProfile>, GetDeckProfilesError>> =
         use_resource(move || async move {
             let Some(current) = session.read().clone() else {
                 return Err(GetDeckProfilesError::SessionExpired);
@@ -40,77 +46,50 @@ pub fn Decks() -> Element {
         });
 
     rsx! {
-        div { class : "nicely-centered",
+        Swipeable { state: swipe_state, config: swipe_config,
             div { class : "decks-container",
                 h2 { "decks" }
 
-                {
-                    let is_empty = decks.value().with(|val| {
-                        matches!(val, Some(Ok(list)) if list.is_empty())
-                    });
-                    let has_data = decks.value().with(|val| {
-                        matches!(val, Some(Ok(list)) if !list.is_empty())
-                    });
-                    let has_error = decks.value().with(|val| matches!(val, Some(Err(_))));
-
-                    if is_empty {
-                        rsx! {
-                            div { class: "empty-message",
-                                p { "no decks yet" }
+                match &*deck_profiles_resource.read() {
+                    Some(Ok(deck_profiles)) => {
+                        if deck_profiles.is_empty() {
+                            rsx! {
+                                div { class: "empty-message",
+                                    p { "no decks yet" }
+                                }
                             }
-                            button {
-                                onclick : move |_| {
-                                    navigator.push(Router::Home {});
-                                },
-                                "back"
-                            }
-                        }
-                    } else if has_data {
-                        let deck_profiles = decks.value().with(|val| {
-                            if let Some(Ok(deck_list)) = val {
-                                deck_list.iter().map(|d| (d.id, d.name.clone())).collect::<Vec<_>>()
-                            } else {
-                                vec![]
-                            }
-                        });
-
-                        rsx! {
-                            div { class: "deck-list",
-                                for (id, name) in deck_profiles {
-                                    div {
-                                        key: "{id}",
-                                        class : "deck-item",
-                                        onclick : move |_| {
-                                            tracing::info!("clicked deck: {name}");
-                                        },
-                                        h3 { { name.to_string() } }
+                        } else {
+                            rsx! {
+                                div { class : "deck-profiles",
+                                    for profile in deck_profiles.iter().map(|x| x.to_owned()) {
+                                        div {
+                                            key : "{profile.id}",
+                                            class : "deck-item",
+                                            onclick : move |_| {
+                                                tracing::info!("clicked into deck {}", profile.name.to_string());
+                                            },
+                                            h3 { { profile.name.to_string() } }
+                                        }
                                     }
                                 }
                             }
-                            button {
-                                onclick : move |_| {
-                                    navigator.push(Router::Home {});
-                                },
-                                "back"
-                            }
-                        }
-                    } else if has_error {
-                        rsx! {
-                            div { class : "error",
-                                p { "failed to load decks" }
-                            }
-                            button {
-                                onclick : move |_| {
-                                    navigator.push(Router::Home {});
-                                },
-                                "back"
-                            }
-                        }
-                    } else {
-                        rsx! {
-                            div { class: "spinning-card" }
                         }
                     }
+                    Some(Err(e)) => rsx!{
+                        div { class : "error",
+                            p { "{e}" }
+                        }
+                    },
+                    None => rsx! {
+                        div { class: "spinning-card" }
+                    },
+
+                }
+                button {
+                    onclick : move |_| {
+                        navigator.push(Router::Home {});
+                    },
+                    "back"
                 }
             }
         }
