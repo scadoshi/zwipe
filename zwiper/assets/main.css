@@ -45,7 +45,7 @@ button:active {
     transform: translateY(0);
 }
 
-.nicely-centered {
+.swipeable {
     position: fixed;
     top: 0;
     left: 0;
@@ -54,7 +54,7 @@ button:active {
     display: flex;
     flex-direction: column;
     align-items: center;
-    /* justify-content: center; */
+    justify-content: center;
 }
 
 /* logo */
@@ -66,7 +66,7 @@ button:active {
     white-space: pre;
     text-align: left;
     padding: 1rem;
-    margin: 2rem;
+    margin: 1rem;
     animation: logo-enter 1s forwards;
 }
 
@@ -137,6 +137,16 @@ button:active {
     color: #d13b3b;
     letter-spacing: 0.1em;
     padding-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+.success-message {
+    text-align: center;
+    font-weight: 300;
+    color: #399a55;
+    letter-spacing: 0.1em;
+    padding-bottom: 1rem;
+    font-size: 0.9rem;
 }
 
 .form-group {
