@@ -105,14 +105,17 @@ where
         "/api",
         Router::new()
             .nest(
+                "/auth",
+                Router::new().route("/logout", post(revoke_sessions)),
+            )
+            .nest(
                 "/user",
                 Router::new()
                     .route("/", get(get_user))
                     .route("/change-password", put(change_password))
                     .route("/change-username", put(change_username))
                     .route("/change-email", put(change_email))
-                    .route("/delete-user", delete(delete_user))
-                    .route("/logout", post(revoke_sessions)),
+                    .route("/delete-user", delete(delete_user)),
             )
             .nest(
                 "/card",
