@@ -1,14 +1,13 @@
 use crate::domain::error::UserFacing;
+use crate::inbound::ui::components::auth::bouncer::Bouncer;
 use crate::inbound::ui::components::interactions::swipe::config::SwipeConfig;
-use crate::inbound::ui::components::success_messages::get_random_success_message;
+use crate::inbound::ui::components::success_messages::random_success_message;
 use crate::inbound::ui::components::{
     interactions::swipe::state::SwipeState, screens::app::profile::Swipeable,
 };
 use crate::inbound::ui::router::Router;
-use crate::outbound::client::auth::change_email::{
-    ChangeEmail as ChangeEmailTrait, ChangeEmailError,
-};
-use crate::outbound::client::auth::session::ActiveSession;
+use crate::outbound::client::auth::change_email::{AuthClientChangeEmail, ChangeEmailError};
+use crate::outbound::client::auth::session::AuthClientSession;
 use crate::outbound::client::auth::AuthClient;
 use dioxus::prelude::*;
 use email_address::EmailAddress;
@@ -56,103 +55,116 @@ pub fn ChangeEmail() -> Element {
         email_error.read().is_none() && password_error.read().is_none()
     };
 
+    let mut clear_inputs = move || {
+        new_email.set(String::new());
+        password.set(String::new());
+    };
+
+    let mut attempt_submit = move || {
+        submit_attempted.set(true);
+        if inputs_are_valid() {
+            tracing::info!("change email to {}", new_email.read());
+            let request = HttpChangeEmail::new(&*new_email.read(), &*password.read());
+            spawn(async move {
+                let Some(current) = session.read().clone() else {
+                    submission_error.set(Some(ChangeEmailError::SessionExpired.to_string()));
+                    return;
+                };
+
+                let Some(mut active) = auth_client
+                    .read()
+                    .infallible_get_active_session(&current)
+                    .await
+                else {
+                    return;
+                };
+
+                match auth_client.read().change_email(request, &active).await {
+                    Ok(updated_user) => {
+                        submission_error.set(None);
+                        active.user.email = updated_user.email;
+                        success_message.set(Some(random_success_message()));
+                        clear_inputs();
+                    }
+                    Err(e) => submission_error.set(Some(e.to_string())),
+                }
+
+                session.set(Some(active));
+            });
+        } else {
+            submission_error.set(Some("invalid input".to_string()));
+        }
+    };
+
     rsx! {
-        Swipeable { state: swipe_state, config: swipe_config,
-            div { class : "form-container",
+        Bouncer {
+            Swipeable { state: swipe_state, config: swipe_config,
+                div { class : "form-container",
 
-                h2 { "change email" }
+                    h2 { "change email" }
 
-                form {
-                    div { class : "form-group",
+                    form {
+                        div { class : "form-group",
 
-                        if *submit_attempted.read() {
-                            if let Some(error) = email_error.read().as_ref() {
-                                div { class : "error", "{error}" }
-                            }
-                        }
-
-                        input {
-                            id : "new_email",
-                            r#type : "text",
-                            placeholder : "new email",
-                            value : "{new_email}",
-                            autocapitalize : "none",
-                            spellcheck : "false",
-                            oninput: move |event| {
-                                new_email.set(event.value());
-                                if *submit_attempted.read() {
-                                    validate_email();
+                            if *submit_attempted.read() {
+                                if let Some(error) = email_error.read().as_ref() {
+                                    div { class : "error", "{error}" }
                                 }
                             }
-                        }
 
-
-                        if *submit_attempted.read() {
-                            if let Some(error) = password_error.read().as_ref() {
-                                div { class : "error", "{error}" }
-                            }
-                        }
-
-                        input {
-                            id : "password",
-                            r#type : "password",
-                            placeholder : "password",
-                            value : "{password}",
-                            autocapitalize : "none",
-                            spellcheck : "false",
-                            oninput : move |event| {
-                                password.set(event.value());
-                                if *submit_attempted.read() {
-                                    validate_password();
+                            input {
+                                id : "new_email",
+                                r#type : "text",
+                                placeholder : "new email",
+                                value : "{new_email}",
+                                autocapitalize : "none",
+                                spellcheck : "false",
+                                oninput: move |event| {
+                                    new_email.set(event.value());
+                                    if *submit_attempted.read() {
+                                        validate_email();
+                                    }
                                 }
                             }
-                        }
 
-                        button {
-                            onclick : move |_| {
-                                submit_attempted.set(true);
-                                if inputs_are_valid() {
-                                    tracing::info!("change email to {}", new_email.read());
-                                    let request = HttpChangeEmail::new(&*new_email.read(), &*password.read());
-                                    spawn(async move {
-                                        let Some(current) = session.read().clone() else {
-                                            submission_error.set(Some(ChangeEmailError::SessionExpired.to_string()));
-                                            return;
-                                        };
 
-                                        let Some(mut active) = auth_client
-                                            .read()
-                                            .infallible_get_active_session(&current)
-                                            .await else { return; };
-
-                                        match auth_client.read().change_email(request, &active).await {
-                                            Ok(updated_user) => {
-                                                submission_error.set(None);
-                                                active.user.email = updated_user.email;
-                                                success_message.set(Some(get_random_success_message()));
-                                            }
-                                            Err(e) => submission_error.set(Some(e.to_string())),
-                                        }
-
-                                        session.set(Some(active));
-                                    });
-
-                                } else {
-                                    submission_error.set(Some("invalid input".to_string()));
+                            if *submit_attempted.read() {
+                                if let Some(error) = password_error.read().as_ref() {
+                                    div { class : "error", "{error}" }
                                 }
-                            }, "submit"
-                        }
+                            }
 
-                        if let Some(error) = submission_error.read().as_deref() {
-                            div { class: "error", "{error}" }
-                        } else if let Some(success_message) = success_message.read().as_deref() {
-                            div { class: "success-message", {success_message} }
-                        }
+                            input {
+                                id : "password",
+                                r#type : "password",
+                                placeholder : "password",
+                                value : "{password}",
+                                autocapitalize : "none",
+                                spellcheck : "false",
+                                oninput : move |event| {
+                                    password.set(event.value());
+                                    if *submit_attempted.read() {
+                                        validate_password();
+                                    }
+                                }
+                            }
 
-                        button {
-                            onclick : move |_| {
-                                navigator.push(Router::Profile {});
-                            }, "back"
+                            button {
+                                onclick : move |_| attempt_submit(),
+                                "submit"
+                            }
+
+                            if let Some(error) = submission_error.read().as_deref() {
+                                div { class: "error", "{error}" }
+                            } else if let Some(success_message) = success_message.read().as_deref() {
+                                div { class: "success-message", {success_message} }
+                            }
+
+                            button {
+                                onclick : move |_| {
+                                    navigator.push(Router::Profile {});
+                                }, "back"
+                            }
                         }
                     }
                 }
