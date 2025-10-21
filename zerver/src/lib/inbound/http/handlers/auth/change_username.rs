@@ -20,8 +20,12 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "zerver")]
 impl From<ChangeUsernameError> for ApiError {
     fn from(value: ChangeUsernameError) -> Self {
+        tracing::warn!("{:#?}", value);
         match value {
             ChangeUsernameError::UserNotFound => Self::NotFound("user not found".to_string()),
+            ChangeUsernameError::Duplicate => {
+                Self::UnprocessableEntity("username already in use".to_string())
+            }
             ChangeUsernameError::Database(e) => e.log_500(),
             ChangeUsernameError::UserFromDb(e) => e.log_500(),
             ChangeUsernameError::AuthenticateUserError(_) => {

@@ -27,6 +27,9 @@ impl From<ChangeEmailError> for ApiError {
             ChangeEmailError::AuthenticateUserError(_) => {
                 Self::Unauthorized("invalid credentials".to_string())
             }
+            ChangeEmailError::Duplicate => {
+                Self::UnprocessableEntity("email already in use".to_string())
+            }
         }
     }
 }
