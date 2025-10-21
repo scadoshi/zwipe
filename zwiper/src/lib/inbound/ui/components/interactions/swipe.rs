@@ -2,6 +2,7 @@ pub mod axis;
 pub mod config;
 pub mod direction;
 pub mod onmouse;
+pub mod onswipe;
 pub mod ontouch;
 pub mod screen_offset;
 pub mod state;
@@ -24,10 +25,8 @@ pub fn Swipeable(state: Signal<SwipeState>, config: SwipeConfig, children: Eleme
     // cloning to be passable to closures
     let config1 = config.clone();
     let config2 = config.clone();
-    let config3 = config.clone();
-    let config4 = config.clone();
 
-    // re-positioning during swipe - reactive to state changes
+    // re-positioning during swipe reactive to state changes
     let delta = state
         .read()
         .delta_from_start_point()
@@ -61,12 +60,12 @@ pub fn Swipeable(state: Signal<SwipeState>, config: SwipeConfig, children: Eleme
                     ),
 
                     ontouchstart : move |e: Event<TouchData>| state.ontouchstart(e),
-                    ontouchmove : move |e: Event<TouchData>| state.ontouchmove(e, &config1),
-                    ontouchend : move |e: Event<TouchData>| state.ontouchend(e, &config2),
+                    ontouchmove : move |e: Event<TouchData>| state.ontouchmove(e),
+                    ontouchend : move |e: Event<TouchData>| state.ontouchend(e, &config1),
 
                     onmousedown : move |e: Event<MouseData>| state.onmousedown(e),
-                    onmousemove : move |e: Event<MouseData>| state.onmousemove(e, &config3),
-                    onmouseup : move |e: Event<MouseData>| state.onmouseup(e, &config4),
+                    onmousemove : move |e: Event<MouseData>| state.onmousemove(e),
+                    onmouseup : move |e: Event<MouseData>| state.onmouseup(e, &config2),
 
                     { children }
         }

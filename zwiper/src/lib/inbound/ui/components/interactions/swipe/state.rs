@@ -121,16 +121,16 @@ impl SwipeState {
 
         if let Some(d) = self.distance_from_start_point() {
             if d > 0.0 {
-                s = 0.1;
+                s = 0.25;
             }
             if d > 25.0 {
-                s = 0.2;
+                s = 0.5;
             }
             if d > 50.0 {
-                s = 0.3;
+                s = 0.625;
             }
             if d > 100.0 {
-                s = 0.4;
+                s = 0.75;
             }
         }
 
@@ -152,7 +152,7 @@ impl SwipeState {
         const DISTANCE_THRESHOLD_FOR_SWIPE: f64 = 100.0;
 
         if self.traversing_axis.is_none() {
-            self.set_traversing_axis(config);
+            self.set_traversing_axis();
         }
 
         let (Some(distance_from_start), Some(speed)) =
@@ -215,7 +215,7 @@ impl SwipeState {
         tracing::trace!("swipe dir={:?}", self.latest_swipe);
     }
 
-    pub fn set_traversing_axis(&mut self, config: &SwipeConfig) {
+    pub fn set_traversing_axis(&mut self) {
         let (Some(start), Some(curr)) = (self.start_point.as_ref(), self.current_point.as_ref())
         else {
             return;
@@ -224,89 +224,12 @@ impl SwipeState {
         let dx = (curr.point.x - start.point.x).abs();
         let dy = (curr.point.y - start.point.y).abs();
 
-        let x_allowed = {
-            config.navigation_swipes.contains(&Dir::Left)
-                || config.navigation_swipes.contains(&Dir::Right)
-                || config.submission_swipe == Some(Dir::Left)
-                || config.submission_swipe == Some(Dir::Right)
-        };
-        let y_allowed = {
-            config.navigation_swipes.contains(&Dir::Up)
-                || config.navigation_swipes.contains(&Dir::Down)
-                || config.submission_swipe == Some(Dir::Up)
-                || config.submission_swipe == Some(Dir::Down)
-        };
-
-        if x_allowed && y_allowed {
-            if dx > dy {
-                self.traversing_axis = Some(Axis::X);
-            }
-
-            if dy > dx {
-                self.traversing_axis = Some(Axis::Y);
-            }
+        if dx > dy {
+            self.traversing_axis = Some(Axis::X);
         }
 
-        if x_allowed && !y_allowed {
-            if dx > 0.0 {
-                self.traversing_axis = Some(Axis::X);
-            }
+        if dy > dx {
+            self.traversing_axis = Some(Axis::Y);
         }
-
-        if !x_allowed && y_allowed {
-            if dy > 0.0 {
-                self.traversing_axis = Some(Axis::Y);
-            }
-        }
-    }
-
-    // functionality shared by ontouch- and onmouse-
-    pub fn onswipestart(&mut self, start_point: ClientPoint) {
-        let time_point = TimePoint::new(start_point.clone(), Utc::now().naive_utc());
-
-        self.start_point = Some(time_point.clone());
-        self.current_point = Some(time_point.clone());
-        self.previous_point = Some(time_point);
-
-        self.is_swiping = true;
-
-        tracing::trace!(
-            "swipe start={:?}",
-            self.current_point
-                .as_ref()
-                .expect("failed to get swipe info")
-        );
-    }
-
-    pub fn onswipemove(&mut self, current_point: ClientPoint, config: &SwipeConfig) {
-        self.return_animation_seconds = 0.0;
-        let time_point = TimePoint::new(current_point, Utc::now().naive_utc());
-
-        if self.traversing_axis.is_none() {
-            self.set_traversing_axis(config);
-        }
-
-        self.previous_point = self.current_point.clone();
-        self.current_point = Some(time_point);
-    }
-
-    pub fn onswipeend(&mut self, end_point: ClientPoint, config: &SwipeConfig) {
-        self.calculate_return_animation_seconds();
-        let time_point = TimePoint::new(end_point, Utc::now().naive_utc());
-
-        self.previous_point = self.current_point.clone();
-        self.current_point = Some(time_point);
-
-        self.is_swiping = false;
-
-        self.set_latest_swipe(config);
-
-        tracing::trace!(
-            "swipe end={:?}",
-            self.current_point
-                .as_ref()
-                .expect("failed to get swipe info")
-        );
-        self.reset();
     }
 }
