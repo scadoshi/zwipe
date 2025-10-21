@@ -46,6 +46,8 @@ pub enum ChangeEmailError {
     UserFromDb(anyhow::Error),
     #[error(transparent)]
     AuthenticateUserError(AuthenticateUserError),
+    #[error("user with that email already exists")]
+    Duplicate,
 }
 
 #[cfg(feature = "zerver")]

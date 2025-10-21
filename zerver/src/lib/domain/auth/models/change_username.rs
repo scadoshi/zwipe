@@ -42,6 +42,8 @@ pub enum ChangeUsernameError {
     UserNotFound,
     #[error(transparent)]
     Database(anyhow::Error),
+    #[error("user with that username already exists")]
+    Duplicate,
     #[error("database returned invalid object: {0}")]
     UserFromDb(anyhow::Error),
     #[error(transparent)]
