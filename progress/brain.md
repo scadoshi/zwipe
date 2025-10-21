@@ -15,25 +15,25 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Simplified auth UI to traditional buttons, built profile management screens, and implemented deck list with Resource lifetime handling.
+**Last Updated**: Complete profile management system implementation with authenticated HTTP requests, logout backend integration, and universal swipeable UI patterns.
 
-**Next Learning Focus**: Implementing HTTP client methods for profile change operations and logout backend integration.
+**Next Learning Focus**: Deck detail screen implementation, card search integration, and frontend deck analytics calculations.
 
-**Recent Achievement**: Removed swipe-to-submit complexity from auth screens to accelerate MVP. Built complete profile management UI (change username/email/password forms) with minimal lowercase aesthetic and inline change buttons. Implemented logout with session deletion using Persist trait. Created deck list screen learning critical Resource pattern: `.value().with(|val| ...)` to extract owned data from within closure, avoiding "temporary value dropped while borrowed" errors. Discovered Resources can't be matched directly - must clone needed data inside `.with()` closure then use outside. Centralized session management with SessionProvider wrapping Router at app root.
+**Recent Achievement**: Built complete profile change system with HTTP client integration - change_username, change_email, change_password all working with bearer token authentication, session validation, and success messages. Implemented logout with backend session revocation via POST /api/auth/logout. Made all screens swipeable (login, profile changes, deck list) for consistent UI patterns. Mastered Resource pattern matching using `.value().with(|result| match result {...})` to avoid borrow checker lifetime issues. Refined form validation across all change screens with proper error timing and submission_error clearing on success. Learned authenticated request pattern: session validation → token refresh if needed → bearer header → API call → update session if changed.
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **Profile Change HTTP Calls** - Implement AuthClient methods for username/email/password changes
-2. **Logout Backend Integration** - Add server session revocation to logout flow
-3. **Deck Detail Navigation** - Route from deck list items to individual deck screens
-4. **Error Handling Refinement** - Better user-facing error messages across operations
-5. **HTTP Client Patterns** - Standardizing authenticated request patterns with session refresh
+1. **Deck Detail Screen** - Full deck view with card list, metrics, edit capabilities
+2. **Card Search Integration** - Connect to backend search API with query building
+3. **Add Card to Deck** - Search results with add functionality and quantity selection
+4. **Frontend Deck Analytics** - Mana curve, color distribution, type breakdown calculations
+5. **Deck Navigation Patterns** - Route parameters, detail screen state management
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Resource vs Signal Patterns** - When to use use_resource vs manual spawn + Signal for data fetching
-2. **Owned Data Extraction Strategy** - Best patterns for extracting data from Resources without lifetime issues
-3. **Component Reusability** - When to extract shared UI patterns into reusable components
-4. **Background Task Management** - Proper lifecycle and cleanup for session refresh loops
-5. **Route Parameter Patterns** - Best way to pass IDs through routes to detail screens
+1. **Route Parameter Patterns** - Best way to pass deck IDs through routes to detail screens
+2. **Frontend Data Transformation** - Patterns for calculating deck metrics from raw card data
+3. **Component Reusability** - When to extract shared UI patterns vs keeping inline
+4. **Search UX Patterns** - Debouncing, loading states, empty results handling for card search
+5. **Deck Modification Patterns** - Optimistic updates vs refetching after add/remove card operations
 
 ---
 
@@ -132,6 +132,13 @@ alwaysApply: true
 - **Minimal UI Design**: Lowercase text, centered layouts, inline buttons for clean aesthetic consistency
 - **Profile Management UI**: Forms for username/email/password changes with inline change buttons
 - **Logout Implementation**: Session clearing with Persist::delete(), signal updates, and navigation to login
+- **Authenticated HTTP Requests**: Pattern of session validation → token refresh check → bearer header → API call → conditional session update
+- **Success Message System**: Random success feedback with get_random_success_message() for positive UX
+- **Profile Change Integration**: Complete change_username, change_email, change_password with backend calls and session updates
+- **Form Validation Patterns**: Per-field validation functions, error display after first submit, clearing submission_error on success
+- **Swipeable Component Integration**: Wrapping all screens with Swipeable for consistent moveable UI (SwipeConfig::blank() for non-navigating screens)
+- **Resource Pattern Matching**: `.value().with(|result| match result {...})` to access Resource data without "temporary value dropped" errors
+- **Backend Logout Flow**: POST to /api/auth/logout with bearer token revokes server-side refresh tokens before local session clearing
 
 ### 💾 SQLx Database Operations & Advanced Patterns
 - **Connection Pooling**: Production-ready pool configuration with optimized settings
@@ -174,8 +181,8 @@ alwaysApply: true
 ## DEVELOPING - Active Implementation (Working But Learning) 🔧
 
 ### 🌐 Frontend-Backend HTTP Integration
-- **HTTP Client Architecture**: AuthClient with reqwest for POST requests, proper header configuration
-- **Error Type Design**: Custom RegisterUserError and AuthenticateUserError with status code mapping
+- **HTTP Client Architecture**: AuthClient with reqwest for POST/PUT requests, proper header configuration
+- **Error Type Design**: Custom error types per operation (RegisterUserError, ChangeUsernameError, etc.) with status code mapping
 - **Response Flow Understanding**: HTTP bytes → JSON deserialization → domain types
 - **Status Code Handling**: Branching on 200/201/401/422/500 to map server responses to user-facing errors
 - **Async Patterns in Dioxus**: spawn() for calling async functions from sync event handlers
@@ -185,7 +192,11 @@ alwaysApply: true
 - **Loading State Implementation**: Spinner activation/deactivation around async operations
 - **Error Recovery UX**: Automatic error clearing on successful retry
 - **OnceLock Configuration**: One-time config loading cached across AuthClient instances
-- *Note: Working end-to-end but token storage and global auth state not yet implemented*
+- **Authenticated Request Pattern**: Session validation → infallible_get_active_session → bearer header → HTTP request → conditional session update
+- **Bearer Token Headers**: `Authorization: Bearer {session.access_token.value.as_str()}` pattern for authenticated endpoints
+- **Success/Error State Management**: Mutually exclusive success_message and submission_error signals, clearing on opposite outcomes
+- **Change Operations Complete**: change_username, change_email, change_password all working with session updates and user field modifications
+- **Logout Backend Integration**: POST to /api/auth/logout with bearer token, server-side refresh token revocation, local session clearing
 
 ### 🎮 Swipe-Based Navigation & Gestures
 - **Position Tracking**: BasicPoint (i32 x/y) for screen coordinates independent of swipe detection
@@ -285,8 +296,9 @@ alwaysApply: true
 - **Empty State UX**: Always handle empty lists explicitly (e.g., "no decks yet" message) instead of showing nothing
 - **Resource Lifetime Pattern**: `.value().with(|val| ...)` closure to access Resource data, extract owned copies to avoid "temporary value dropped" errors
 - **Owned Data Extraction**: Inside `.with()` closure, clone primitives and owned types (e.g., `(id, name.clone())`), use outside closure for rendering
-- **Resource Match Strategy**: Can't match directly on `resource.value()` guard - must extract needed data first then use in RSX
-- **Three-State Rendering**: Check is_empty, has_data, has_error using `.with()` boolean checks, render appropriate UI for each state
+- **Resource Match Strategy**: CORRECT: `.value().with(|result| match result {...})` - match inside with() closure, not on resource.read() directly
+- **Resource Borrow Checker Fix**: Can't `match &*resource.read()` - creates temporary value that doesn't live long enough. Must use `.value().with()` closure pattern
+- **Three-State Rendering**: Match on Some(Ok(data)), Some(Err(e)), None inside `.with()` closure for loading/success/error states
 - *Note: Hook selection (effect vs future vs resource) is critical - wrong choice causes infinite loops or missing reactivity*
 
 ### 🔐 Backend Session & Token Architecture (Complete) ✅

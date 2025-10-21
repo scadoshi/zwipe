@@ -13,27 +13,27 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Simplified frontend to traditional button-based UI, completed profile management screens, and built deck list view.
+**Last Updated**: Complete profile management system with backend integration, logout functionality, and universal swipeable UI patterns.
 
-**Current Focus**: Implementing profile change operations (username/email/password) with backend API calls and logout functionality.
+**Current Focus**: Deck detail navigation and card search integration for building deck functionality.
 
-**Recent Achievement**: Removed swipe-to-submit from auth screens in favor of traditional buttons for faster MVP development. Built complete profile management UI with change username/email/password forms using minimal lowercase aesthetic. Implemented logout button with local session clearing. Created deck list screen with proper Resource pattern handling using `.value().with()` to avoid temporary value lifetime errors. Centralized session management in SessionProvider component wrapping Router. Added Guard component for initial route authentication redirection.
+**Recent Achievement**: Implemented full profile change operations (username/email/password) with authenticated HTTP requests, bearer token handling, and success message system. Built logout with backend session revocation via `/api/auth/logout`. Made all screens swipeable (login, profile changes, deck list) using unified Swipeable component pattern. Fixed Resource pattern matching with `.value().with()` closure pattern to avoid borrow checker lifetime issues. Refined form validation patterns across all change screens with proper error display timing and submission_error clearing on success.
 
-**Current Success**: Complete auth flow with session persistence. Profile screens with inline change buttons and clean minimal UI. Deck list fetching and displaying with proper loading/error states. Logout clears session and redirects to login.
+**Current Success**: Complete profile management system with working backend integration. All change operations (username/email/password) successfully update session state and display success messages. Logout revokes server-side refresh tokens and clears local session. Universal swipeable UI across all screens. Resource pattern properly handled for deck list and future data fetching.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Profile Change Operations API** - Implement backend calls for change username/email/password
-2. **Logout Backend Integration** - Add server-side session revocation to logout button
-3. **Deck List Navigation** - Route to individual deck detail screens from deck list
-4. **Card Search Integration** - Connect search component to backend API
+1. **Deck Detail Screen** - Individual deck view with full card list and metrics
+2. **Card Search Integration** - Connect search component to backend API for card lookup
+3. **Add Card to Deck Flow** - Search results with add-to-deck functionality
+4. **Deck Analytics Display** - Frontend calculation of mana curve, color distribution, type breakdown
 5. **Deck Creation Flow** - Form for creating new decks from main screen
 
 ### 🤔 Next Immediate Priorities (Top 5)
-1. **Deck Detail Screen** - Full view of individual deck with edit capabilities
-2. **Add Card to Deck Flow** - Search results with add-to-deck functionality
-3. **Deck Analytics Display** - Mana curve, color distribution, type breakdown (frontend calculation)
-4. **Delete Deck Operation** - Backend integration for deck deletion
-5. **Error Handling Polish** - Improve error messages and user feedback across app
+1. **Edit Deck Cards** - Update quantities and remove cards from decks
+2. **Delete Deck Operation** - Backend integration for deck deletion
+3. **Card Detail Screen** - Full card view with image and all attributes
+4. **Deck Sharing** - Export/import deck lists in standard formats
+5. **Performance Optimization** - Loading states, request debouncing, cache strategies
 
 ---
 
@@ -189,6 +189,14 @@ alwaysApply: true
 - **Resource Lifetime Handling**: `.value().with()` pattern extracting owned data to avoid temporary value borrowing errors
 - **Clickable Deck Items**: Deck list items with onclick handlers and hover styling, TODO for navigation to detail screens
 - **Minimal UI Consistency**: Lowercase text, centered layouts, clean spacing across auth and app screens
+- **Profile Change Operations**: Complete HTTP client methods for change_username, change_email, change_password with bearer token authentication
+- **Authenticated Request Pattern**: Session validation, token refresh, bearer header injection for all authenticated endpoints
+- **Success Message System**: Random success messages on successful operations with get_random_success_message() utility
+- **Logout Implementation**: Full backend integration with POST /api/auth/logout, server-side refresh token revocation, local session clearing
+- **Universal Swipeable UI**: All screens (login, profile changes, deck list) wrapped in Swipeable component for consistent moveable interactions
+- **Form Validation Refinement**: Proper error display timing (after first submit), separate validation for each field, submission_error clearing on success
+- **Resource Pattern Mastery**: Match on Resource using `.value().with(|result| match result {...})` to avoid temporary value lifetime errors
+- **Change Password Special Handling**: Current password not validated (legacy password policy compatibility), only new password validated
 
 ---
 
