@@ -142,14 +142,14 @@ impl<'de> Deserialize<'de> for Jwt {
 /// full access token
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AccessToken {
-    pub jwt: Jwt,
+    pub value: Jwt,
     pub expires_at: NaiveDateTime,
 }
 
 impl AccessToken {
     #[cfg(feature = "zerver")]
-    pub fn new(jwt: Jwt, expires_at: NaiveDateTime) -> Self {
-        Self { jwt, expires_at }
+    pub fn new(value: Jwt, expires_at: NaiveDateTime) -> Self {
+        Self { value, expires_at }
     }
 
     #[cfg(feature = "zerver")]
@@ -167,7 +167,7 @@ impl AccessToken {
             iat: issued_at.and_utc().timestamp() as i64,
         };
 
-        let jwt = Jwt::from_str(
+        let value = Jwt::from_str(
             &encode(
                 &Header::default(),
                 &user_claims,
@@ -176,7 +176,7 @@ impl AccessToken {
             .map_err(|e| InvalidJwt::EncodingError(e))?,
         )?;
 
-        Ok(AccessToken::new(jwt, expires_at))
+        Ok(AccessToken::new(value, expires_at))
     }
 
     pub fn is_expired(&self) -> bool {
@@ -353,8 +353,8 @@ mod tests {
         let result = AccessToken::generate(&user, &secret);
         assert!(result.is_ok());
         let access_token = result.unwrap();
-        assert!(!access_token.jwt.to_string().is_empty());
-        assert_eq!(access_token.jwt.to_string().split('.').count(), 3); // JWT has 3 parts
+        assert!(!access_token.value.to_string().is_empty());
+        assert_eq!(access_token.value.to_string().split('.').count(), 3); // JWT has 3 parts
     }
 
     #[test]
@@ -418,7 +418,7 @@ mod tests {
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
         let token = AccessToken::generate(&user, &secret).unwrap();
-        let claims = token.jwt.validate(&secret).unwrap();
+        let claims = token.value.validate(&secret).unwrap();
         assert_eq!(claims.email.to_string(), "test@email.com");
     }
 
@@ -436,7 +436,7 @@ mod tests {
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
         let token = AccessToken::generate(&user, &secret).unwrap();
-        let claims = token.jwt.validate(&secret).unwrap();
+        let claims = token.value.validate(&secret).unwrap();
 
         assert_eq!(claims.user_id, user.id);
         assert_eq!(claims.username, user.username);
@@ -472,7 +472,7 @@ mod tests {
             JwtSecret::new("wrong-secret-that-is-long-enough-for-validation").unwrap();
 
         let token = AccessToken::generate(&user, &correct_secret).unwrap();
-        let result = token.jwt.validate(&wrong_secret);
+        let result = token.value.validate(&wrong_secret);
         assert!(result.is_err());
     }
 
@@ -490,7 +490,7 @@ mod tests {
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
         let token = AccessToken::generate(&user, &secret).unwrap();
-        let claims = token.jwt.validate(&secret).unwrap();
+        let claims = token.value.validate(&secret).unwrap();
 
         let now = chrono::Utc::now().timestamp();
 
@@ -514,7 +514,7 @@ mod tests {
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
         let token = AccessToken::generate(&user, &secret).unwrap();
-        let claims = token.jwt.validate(&secret).unwrap();
+        let claims = token.value.validate(&secret).unwrap();
 
         assert_eq!(claims.user_id, user.id);
         assert_eq!(claims.username, user.username);
@@ -537,7 +537,7 @@ mod tests {
         for user_id in user_ids {
             let user = User::new(user_id, username.clone(), email.clone());
             let token = AccessToken::generate(&user, &secret).unwrap();
-            let claims = token.jwt.validate(&secret).unwrap();
+            let claims = token.value.validate(&secret).unwrap();
             assert_eq!(claims.user_id, user_id);
         }
     }
@@ -556,7 +556,7 @@ mod tests {
         let token = AccessToken::generate(&original_user, &secret).unwrap();
 
         // Validate token (like during protected route access)
-        let claims = token.jwt.validate(&secret).unwrap();
+        let claims = token.value.validate(&secret).unwrap();
 
         // Verify all data survived the round trip
         assert_eq!(claims.user_id, original_user.id);
