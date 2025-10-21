@@ -36,14 +36,14 @@ impl From<serde_json::Error> for RefreshError {
     }
 }
 
-pub trait Refresh {
+pub trait AuthClientRefresh {
     fn refresh(
         &self,
         request: &HttpRefreshSession,
     ) -> impl Future<Output = Result<Session, RefreshError>> + Send;
 }
 
-impl Refresh for AuthClient {
+impl AuthClientRefresh for AuthClient {
     async fn refresh(&self, request: &HttpRefreshSession) -> Result<Session, RefreshError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&refresh_session_route());

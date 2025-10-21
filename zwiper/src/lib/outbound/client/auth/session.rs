@@ -1,7 +1,7 @@
 use std::future::Future;
 
 use crate::outbound::client::auth::{
-    refresh::{Refresh, RefreshError},
+    refresh::{AuthClientRefresh, RefreshError},
     AuthClient,
 };
 use zwipe::{
@@ -11,7 +11,7 @@ use zwipe::{
     },
 };
 
-pub trait ActiveSession {
+pub trait AuthClientSession {
     fn get_active_session(
         &self,
         session: &Session,
@@ -23,7 +23,7 @@ pub trait ActiveSession {
     ) -> impl Future<Output = Option<Session>> + Send;
 }
 
-impl ActiveSession for AuthClient {
+impl AuthClientSession for AuthClient {
     async fn get_active_session(&self, session: &Session) -> Result<Option<Session>, RefreshError> {
         if session.is_expired() {
             return Ok(None);

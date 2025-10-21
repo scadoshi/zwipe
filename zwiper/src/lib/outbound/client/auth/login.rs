@@ -31,14 +31,14 @@ impl From<serde_json::Error> for LoginError {
     }
 }
 
-pub trait Login {
+pub trait AuthClientLogin {
     fn authenticate_user(
         &self,
         request: HttpAuthenticateUser,
     ) -> impl Future<Output = Result<Session, LoginError>> + Send;
 }
 
-impl Login for AuthClient {
+impl AuthClientLogin for AuthClient {
     async fn authenticate_user(
         &self,
         request: HttpAuthenticateUser,

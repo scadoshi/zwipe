@@ -36,7 +36,7 @@ impl From<serde_json::Error> for ChangeUsernameError {
     }
 }
 
-pub trait ChangeUsername {
+pub trait AuthClientChangeUsername {
     fn change_username(
         &self,
         request: HttpChangeUsername,
@@ -44,7 +44,7 @@ pub trait ChangeUsername {
     ) -> impl Future<Output = Result<User, ChangeUsernameError>> + Send;
 }
 
-impl ChangeUsername for AuthClient {
+impl AuthClientChangeUsername for AuthClient {
     async fn change_username(
         &self,
         request: HttpChangeUsername,

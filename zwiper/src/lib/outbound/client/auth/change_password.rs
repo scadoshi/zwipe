@@ -36,7 +36,7 @@ impl From<serde_json::Error> for ChangePasswordError {
     }
 }
 
-pub trait ChangePassword {
+pub trait AuthClientChangePassword {
     fn change_password(
         &self,
         request: HttpChangePassword,
@@ -44,7 +44,7 @@ pub trait ChangePassword {
     ) -> impl Future<Output = Result<(), ChangePasswordError>> + Send;
 }
 
-impl ChangePassword for AuthClient {
+impl AuthClientChangePassword for AuthClient {
     async fn change_password(
         &self,
         request: HttpChangePassword,

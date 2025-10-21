@@ -34,7 +34,7 @@ impl From<serde_json::Error> for ChangeEmailError {
     }
 }
 
-pub trait ChangeEmail {
+pub trait AuthClientChangeEmail {
     fn change_email(
         &self,
         request: HttpChangeEmail,
@@ -42,7 +42,7 @@ pub trait ChangeEmail {
     ) -> impl Future<Output = Result<User, ChangeEmailError>> + Send;
 }
 
-impl ChangeEmail for AuthClient {
+impl AuthClientChangeEmail for AuthClient {
     async fn change_email(
         &self,
         request: HttpChangeEmail,

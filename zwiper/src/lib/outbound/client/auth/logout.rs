@@ -21,11 +21,11 @@ impl From<reqwest::Error> for LogoutError {
     }
 }
 
-pub trait Logout {
+pub trait AuthClientLogout {
     fn logout(&self, session: &Session) -> impl Future<Output = Result<(), LogoutError>> + Send;
 }
 
-impl Logout for AuthClient {
+impl AuthClientLogout for AuthClient {
     async fn logout(&self, session: &Session) -> Result<(), LogoutError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&logout_route());

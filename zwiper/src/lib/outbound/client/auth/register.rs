@@ -30,14 +30,14 @@ impl From<serde_json::Error> for RegisterError {
     }
 }
 
-pub trait Register {
+pub trait AuthClientRegister {
     fn register(
         &self,
         request: HttpRegisterUser,
     ) -> impl Future<Output = Result<Session, RegisterError>> + Send;
 }
 
-impl Register for AuthClient {
+impl AuthClientRegister for AuthClient {
     async fn register(&self, request: HttpRegisterUser) -> Result<Session, RegisterError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&register_route());
