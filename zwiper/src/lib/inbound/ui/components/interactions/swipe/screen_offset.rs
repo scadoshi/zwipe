@@ -3,7 +3,6 @@ use dioxus::html::geometry::euclid::{Point2D, UnknownUnit};
 pub type ScreenOffset = Point2D<i32, UnknownUnit>;
 
 pub trait ScreenOffsetMethods {
-    fn none() -> Self;
     fn left() -> Self;
     fn right() -> Self;
     fn up() -> Self;
@@ -15,9 +14,6 @@ pub trait ScreenOffsetMethods {
 }
 
 impl ScreenOffsetMethods for ScreenOffset {
-    fn none() -> Self {
-        Self::new(0, 0)
-    }
     fn left() -> Self {
         Self::new(-1, 0)
     }

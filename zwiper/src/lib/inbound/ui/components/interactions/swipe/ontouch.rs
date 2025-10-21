@@ -1,10 +1,12 @@
-use crate::inbound::ui::components::interactions::swipe::{config::SwipeConfig, state::SwipeState};
+use crate::inbound::ui::components::interactions::swipe::{
+    config::SwipeConfig, onswipe::OnSwipe, state::SwipeState,
+};
 use dioxus::prelude::*;
 
 // wiring event for touch interactions to swipe behavior
 pub trait OnTouch {
     fn ontouchstart(&mut self, e: Event<TouchData>);
-    fn ontouchmove(&mut self, e: Event<TouchData>, config: &SwipeConfig);
+    fn ontouchmove(&mut self, e: Event<TouchData>);
     fn ontouchend(&mut self, e: Event<TouchData>, config: &SwipeConfig);
 }
 
@@ -16,10 +18,10 @@ impl OnTouch for Signal<SwipeState> {
         }
     }
 
-    fn ontouchmove(&mut self, e: Event<TouchData>, config: &SwipeConfig) {
+    fn ontouchmove(&mut self, e: Event<TouchData>) {
         if let Some(t) = e.touches().into_iter().next() {
             let current_point = t.client_coordinates();
-            self.with_mut(|ss| ss.onswipemove(current_point, config));
+            self.with_mut(|ss| ss.onswipemove(current_point));
         }
     }
 
