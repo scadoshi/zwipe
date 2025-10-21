@@ -5,7 +5,7 @@ use crate::{
     },
     outbound::{
         client::auth::{
-            login::{Login as LoginTrait, LoginError},
+            login::{AuthClientLogin, LoginError},
             AuthClient,
         },
         session::Persist,
@@ -49,6 +49,33 @@ pub fn Login() -> Element {
             && Password::new(&password.read()).is_ok()
     };
 
+    let mut attempt_submit = move || {
+        submit_attempted.set(true);
+        is_loading.set(true);
+        if inputs_are_valid() {
+            let request = HttpAuthenticateUser::new(&*username_or_email.read(), &*password.read());
+            spawn(async move {
+                match auth_client.read().authenticate_user(request).await {
+                    Ok(new_session) => {
+                        submission_error.set(None);
+
+                        if let Err(e) = new_session.save() {
+                            tracing::error!("failed to save session: {e}");
+                        }
+
+                        session.set(Some(new_session));
+                        tracing::info!("session={:?}", session.read());
+                        navigator.push(Router::Home {});
+                    }
+                    Err(e) => submission_error.set(Some(e.to_string())),
+                }
+            });
+        } else {
+            submission_error.set(Some(LoginError::Unauthorized.to_string()));
+        }
+        is_loading.set(false);
+    };
+
     rsx! {
         Swipeable { state: swipe_state, config: swipe_config,
             div { class: "logo",  "{logo}" }
@@ -81,32 +108,8 @@ pub fn Login() -> Element {
                             }
                         }
                         button {
-                            onclick : move |_| {
-                                submit_attempted.set(true);
-                                is_loading.set(true);
-                                if inputs_are_valid() {
-                                    let request = HttpAuthenticateUser::new(&*username_or_email.read(), &*password.read());
-                                    spawn(async move {
-                                        match auth_client.read().authenticate_user(request).await {
-                                            Ok(new_session) => {
-                                                submission_error.set(None);
-
-                                                if let Err(e) = new_session.save() {
-                                                    tracing::error!("failed to save session: {e}");
-                                                }
-
-                                                session.set(Some(new_session));
-                                                tracing::info!("session={:?}", session.read());
-                                                navigator.push(Router::Home {});
-                                            }
-                                            Err(e) => submission_error.set(Some(e.to_string())),
-                                        }
-                                    });
-                                } else {
-                                    submission_error.set(Some(LoginError::Unauthorized.to_string()));
-                                }
-                                is_loading.set(false);
-                            }, "login"
+                            onclick : move |_| attempt_submit(),
+                            "login"
                         }
 
                         if *is_loading.read() {
