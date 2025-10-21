@@ -93,7 +93,11 @@ impl From<sqlx::Error> for AuthenticateUserError {
 
 impl From<sqlx::Error> for ChangeUsernameError {
     fn from(value: sqlx::Error) -> Self {
-        Self::Database(value.into())
+        if value.is_unique_constraint_violation() {
+            Self::Duplicate
+        } else {
+            Self::Database(value.into())
+        }
     }
 }
 
@@ -105,7 +109,11 @@ impl From<IntoUserError> for ChangeUsernameError {
 
 impl From<sqlx::Error> for ChangeEmailError {
     fn from(value: sqlx::Error) -> Self {
-        Self::Database(value.into())
+        if value.is_unique_constraint_violation() {
+            Self::Duplicate
+        } else {
+            Self::Database(value.into())
+        }
     }
 }
 
