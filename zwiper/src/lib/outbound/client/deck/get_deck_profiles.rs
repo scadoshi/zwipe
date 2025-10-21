@@ -46,7 +46,7 @@ impl GetDecks for AuthClient {
         let response = self
             .client
             .get(url)
-            .bearer_auth(session.access_token.jwt.as_str())
+            .bearer_auth(session.access_token.value.as_str())
             .send()
             .await?;
 

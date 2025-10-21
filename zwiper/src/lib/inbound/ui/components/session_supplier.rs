@@ -9,8 +9,8 @@ use zwipe::domain::auth::models::session::Session;
 #[component]
 pub fn SessionSupplier(children: Element) -> Element {
     let mut session: Signal<Option<Session>> = use_signal(|| {
-        Some(Session::spoof())
-        // Session::infallible_load()
+        // Some(Session::spoof())
+        Session::infallible_load()
     });
     use_context_provider(|| session);
 

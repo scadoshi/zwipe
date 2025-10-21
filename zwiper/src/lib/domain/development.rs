@@ -33,7 +33,7 @@ impl Spoof for Session {
         };
 
         let access_token = AccessToken {
-            jwt: Jwt::from_str("123.456.789").unwrap(),
+            value: Jwt::from_str("123.456.789").unwrap(),
             expires_at: (Utc::now() + Duration::days(123)).naive_utc(),
         };
 
