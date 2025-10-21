@@ -11,9 +11,11 @@ fn credential_service() -> String {
 
 pub trait Persist {
     fn save(&self) -> anyhow::Result<()>;
+    fn infallible_save(&self);
     fn load() -> anyhow::Result<Option<Session>>;
     fn infallible_load() -> Option<Session>;
     fn delete(&self) -> anyhow::Result<()>;
+    fn infallible_delete(&self);
 }
 
 impl Persist for Session {
@@ -26,6 +28,13 @@ impl Persist for Session {
         let bytes = serde_json::to_vec(self)?;
         credential.set_secret(&bytes)?;
         Ok(())
+    }
+
+    fn infallible_save(&self) {
+        match self.save() {
+            Ok(()) => (),
+            Err(e) => tracing::error!("failed to save session: {e}"),
+        }
     }
 
     fn load() -> anyhow::Result<Option<Self>> {
@@ -67,5 +76,12 @@ impl Persist for Session {
         )?;
         credential.delete_credential()?;
         Ok(())
+    }
+
+    fn infallible_delete(&self) {
+        match self.delete() {
+            Ok(()) => (),
+            Err(e) => tracing::error!("failed to delete session: {e}"),
+        }
     }
 }
