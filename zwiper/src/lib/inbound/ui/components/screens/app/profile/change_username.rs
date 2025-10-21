@@ -1,14 +1,15 @@
 use crate::{
     inbound::ui::{
         components::{
+            auth::bouncer::Bouncer,
             interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
-            success_messages::get_random_success_message,
+            success_messages::random_success_message,
         },
         router::Router,
     },
     outbound::client::auth::{
-        change_username::{ChangeUsername as ChangeUsernameTrait, ChangeUsernameError},
-        session::ActiveSession,
+        change_username::{AuthClientChangeUsername, ChangeUsernameError},
+        session::AuthClientSession,
         AuthClient,
     },
 };
@@ -61,104 +62,112 @@ pub fn ChangeUsername() -> Element {
         username_error.read().is_none() && password_error.read().is_none()
     };
 
+    let mut clear_inputs = move || {
+        new_username.set(String::new());
+        password.set(String::new());
+    };
+
     rsx! {
-        Swipeable { state: swipe_state, config: swipe_config,
-            div { class : "form-container",
+        Bouncer {
+            Swipeable { state: swipe_state, config: swipe_config,
+                div { class : "form-container",
 
-                h2 { "change username" }
+                    h2 { "change username" }
 
-                form {
-                    div { class : "form-group",
+                    form {
+                        div { class : "form-group",
 
-                        if *submit_attempted.read() {
-                            if let Some(error) = username_error.read().as_ref() {
-                                div { class : "error", "{error}" }
-                            }
-                        }
-
-                        input {
-                            id : "new_username",
-                            r#type : "text",
-                            placeholder : "new username",
-                            value : "{new_username}",
-                            autocapitalize : "none",
-                            spellcheck : "false",
-                            oninput: move |event| {
-                                new_username.set(event.value());
-                                if *submit_attempted.read() {
-                                    validate_username();
+                            if *submit_attempted.read() {
+                                if let Some(error) = username_error.read().as_ref() {
+                                    div { class : "error", "{error}" }
                                 }
                             }
-                        }
 
-                        if *submit_attempted.read() {
-                            if let Some(error) = password_error.read().as_ref() {
-                                div { class : "error", "{error}" }
-                            }
-                        }
-
-                        input {
-                            id : "password",
-                            r#type : "password",
-                            placeholder : "password",
-                            value : "{password}",
-                            autocapitalize : "none",
-                            spellcheck : "false",
-                            oninput : move |event| {
-                                password.set(event.value());
-                                if *submit_attempted.read() {
-                                    validate_password();
+                            input {
+                                id : "new_username",
+                                r#type : "text",
+                                placeholder : "new username",
+                                value : "{new_username}",
+                                autocapitalize : "none",
+                                spellcheck : "false",
+                                oninput: move |event| {
+                                    new_username.set(event.value());
+                                    if *submit_attempted.read() {
+                                        validate_username();
+                                    }
                                 }
                             }
-                        }
 
-                        button {
-                            onclick : move |_| {
-                                submit_attempted.set(true);
-                                if inputs_are_valid() {
-                                    tracing::info!("change username to {}", new_username.read());
-                                    let request = HttpChangeUsername::new(&*new_username.read(), &*password.read());
-                                    spawn(async move {
-                                        let Some(current) = session.read().clone() else {
-                                            submission_error.set(Some(ChangeUsernameError::SessionExpired.to_string()));
-                                            return;
-                                        };
+                            if *submit_attempted.read() {
+                                if let Some(error) = password_error.read().as_ref() {
+                                    div { class : "error", "{error}" }
+                                }
+                            }
 
-                                        let Some(mut active) = auth_client
-                                            .read()
-                                            .infallible_get_active_session(&current)
-                                            .await else { return; };
+                            input {
+                                id : "password",
+                                r#type : "password",
+                                placeholder : "password",
+                                value : "{password}",
+                                autocapitalize : "none",
+                                spellcheck : "false",
+                                oninput : move |event| {
+                                    password.set(event.value());
+                                    if *submit_attempted.read() {
+                                        validate_password();
+                                    }
+                                }
+                            }
 
-                                        match auth_client.read().change_username(request, &active).await {
-                                            Ok(updated_user) => {
-                                                active.user.username = updated_user.username;
-                                                success_message.set(Some(get_random_success_message()));
-                                                submission_error.set(None);
+                            button {
+                                onclick : move |_| {
+                                    submit_attempted.set(true);
+                                    if inputs_are_valid() {
+                                        tracing::info!("change username to {}", new_username.read());
+                                        let request = HttpChangeUsername::new(&*new_username.read(), &*password.read());
+                                        spawn(async move {
+                                            let Some(current) = session.read().clone() else {
+                                                submission_error.set(Some(ChangeUsernameError::SessionExpired.to_string()));
+                                                return;
+                                            };
+
+                                            let Some(mut active) = auth_client
+                                                .read()
+                                                .infallible_get_active_session(&current)
+                                                .await else { return; };
+
+                                            match auth_client.read().change_username(request, &active).await {
+                                                Ok(updated_user) => {
+                                                    active.user.username = updated_user.username;
+                                                    success_message.set(Some(random_success_message()));
+                                                    submission_error.set(None);
+                                                    clear_inputs();
+                                                }
+                                                Err(e) => submission_error.set(Some(e.to_string())),
                                             }
-                                            Err(e) => submission_error.set(Some(e.to_string())),
-                                        }
 
-                                        session.set(Some(active));
-                                    });
+                                            session.set(Some(active));
+                                        });
 
-                                } else {
-                                    submission_error.set(Some("invalid input".to_string()));
-                                }
-                            }, "submit"
-                        }
+                                    } else {
+                                        submission_error.set(Some("invalid input".to_string()));
+                                    }
+                                }, "submit"
+                            }
 
-                        button {
-                            onclick : move |_| {
-                                navigator.push(Router::Profile {});
-                            }, "back"
+                            button {
+                                onclick : move |_| {
+                                    navigator.push(Router::Profile {});
+                                }, "back"
+                            }
                         }
                     }
-                }
 
-                if let Some(error) = submission_error.read().as_deref() {
-                    div { class: "error", "{error}" }
-                } else if let Some(success_message) = success_message.read().as_deref() {
-                    div { class: "success-message", {success_message} }
+                    if let Some(error) = submission_error.read().as_deref() {
+                        div { class: "error", "{error}" }
+                    } else if let Some(success_message) = success_message.read().as_deref() {
+                        div { class: "success-message", {success_message} }
+                    }
                 }
             }
         }
