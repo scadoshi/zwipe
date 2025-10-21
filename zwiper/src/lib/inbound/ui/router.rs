@@ -10,14 +10,11 @@ use crate::inbound::ui::components::screens::{
     auth::{login::Login, register::Register},
 };
 use dioxus::prelude::*;
-use zwipe::domain::auth::models::session::Session;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
 pub enum Router {
     #[route("/")]
-    Guard {},
-    #[route("/home")]
     Home {},
     #[route("/login")]
     Login {},
@@ -33,18 +30,4 @@ pub enum Router {
     ChangeEmail {},
     #[route("/user/change-password")]
     ChangePassword {},
-}
-
-#[component]
-fn Guard() -> Element {
-    let navigator = use_navigator();
-    let session: Signal<Option<Session>> = use_context();
-
-    if session.read().is_some() {
-        navigator.push(Router::Home {});
-    } else {
-        navigator.push(Router::Login {});
-    }
-
-    rsx! {}
 }
