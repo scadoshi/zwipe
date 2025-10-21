@@ -5,7 +5,7 @@ use crate::{
         router::Router,
     },
     outbound::{
-        client::auth::{register::Register as RegisterTrait, AuthClient},
+        client::auth::{register::AuthClientRegister, AuthClient},
         session::Persist,
     },
 };
@@ -78,6 +78,36 @@ pub fn Register() -> Element {
             && password_error.read().is_none()
     };
 
+    let mut attempt_submit = move || {
+        submit_attempted.set(true);
+        is_loading.set(true);
+
+        validate_username();
+        validate_email();
+        validate_password();
+
+        if inputs_are_valid() {
+            let request =
+                HttpRegisterUser::new(&*username.read(), &*email.read(), &*password.read());
+            spawn(async move {
+                match auth_client.read().register(request).await {
+                    Ok(new_session) => {
+                        submission_error.set(None);
+
+                        if let Err(e) = new_session.save() {
+                            tracing::error!("failed to save session: {e}");
+                        }
+
+                        session.set(Some(new_session));
+                        navigator.push(Router::Home {});
+                    }
+                    Err(e) => submission_error.set(Some(e.to_string())),
+                }
+            });
+        }
+        is_loading.set(false);
+    };
+
     rsx! {
         Swipeable { state: swipe_state, config: swipe_config,
             div { class: "logo",  "{logo}" }
@@ -93,6 +123,7 @@ pub fn Register() -> Element {
                             }
                         }
                     }
+
                     input {
                         id : "username",
                         r#type : "text",
@@ -158,34 +189,8 @@ pub fn Register() -> Element {
                     }
 
                     button {
-                        onclick : move |_| {
-                            submit_attempted.set(true);
-                            is_loading.set(true);
-
-                            validate_username();
-                            validate_email();
-                            validate_password();
-
-                            if inputs_are_valid() {
-                                let request = HttpRegisterUser::new(&*username.read(), &*email.read(), &*password.read());
-                                spawn(async move {
-                                    match auth_client.read().register(request).await {
-                                        Ok(new_session) => {
-                                            submission_error.set(None);
-
-                                            if let Err(e) = new_session.save() {
-                                                tracing::error!("failed to save session: {e}");
-                                            }
-
-                                            session.set(Some(new_session));
-                                            navigator.push(Router::Home {});
-                                        }
-                                        Err(e) => submission_error.set(Some(e.to_string())),
-                                    }
-                                });
-                            }
-                            is_loading.set(false);
-                        }, "create profile"
+                        onclick : move |_| attempt_submit(),
+                        "create profile"
                     }
                     button {
                         onclick : move |_| {
