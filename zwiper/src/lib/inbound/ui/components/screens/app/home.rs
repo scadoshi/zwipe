@@ -1,15 +1,27 @@
-use crate::inbound::ui::router::Router;
+use crate::{
+    inbound::ui::{
+        components::interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
+        router::Router,
+    },
+    outbound::client::auth::{logout::Logout, session::ActiveSession, AuthClient},
+};
 use dioxus::prelude::*;
 use zwipe::domain::{auth::models::session::Session, logo::logo};
 
 #[component]
 pub fn Home() -> Element {
+    let swipe_state = use_signal(|| SwipeState::new());
+    let swipe_config = SwipeConfig::blank();
+
     let navigator = use_navigator();
+
+    let auth_client: Signal<AuthClient> = use_context();
     let mut session: Signal<Option<Session>> = use_context();
+
     let logo = logo();
 
     rsx! {
-        div { class : "nicely-centered",
+        Swipeable { state: swipe_state, config: swipe_config,
             div { class : "logo", "{logo}" }
             div { class : "form-container",
                 button {
@@ -24,9 +36,25 @@ pub fn Home() -> Element {
                 }
                 button {
                     onclick : move |_| {
-                        // logout
-                        session.set(None);
-                        navigator.push(Router::Login {});
+                        spawn(async move {
+                            let Some(current) = session.read().clone() else {
+                                navigator.push(Router::Login {});
+                                return;
+                            };
+
+                            let Some(active) = auth_client.read().infallible_get_active_session(&current).await else {
+                                navigator.push(Router::Login {});
+                                return;
+                            };
+
+                            match auth_client.read().logout(&active).await {
+                                Ok(()) => {
+                                    session.set(None);
+                                    navigator.push(Router::Login {});
+                                }
+                                Err(e) => tracing::error!("failed to logout: {e}"),
+                            }
+                        });
                     }, "logout"
                 }
             }
