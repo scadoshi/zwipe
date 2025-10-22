@@ -31,7 +31,7 @@ pub fn Register() -> Element {
     let mut session: Signal<Option<Session>> = use_context();
     let auth_client: Signal<AuthClient> = use_context();
 
-    let logo = logo::logo();
+    let logo = logo::ZWIPE;
 
     let mut username = use_signal(|| String::new());
     let mut email = use_signal(|| String::new());

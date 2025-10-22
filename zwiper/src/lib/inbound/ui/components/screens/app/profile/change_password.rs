@@ -7,15 +7,12 @@ use crate::{
         },
         router::Router,
     },
-    outbound::client::{
-        auth::{change_password::AuthClientChangePassword, AuthClient},
-        error::ApiError,
-    },
+    outbound::client::{auth::AuthClient, user::change_password::AuthClientChangePassword},
 };
 use dioxus::prelude::*;
 use zwipe::{
     domain::auth::models::{password::Password, session::Session},
-    inbound::http::handlers::auth::change_password::HttpChangePassword,
+    inbound::http::{handlers::auth::change_password::HttpChangePassword, ApiError},
 };
 
 #[component]

@@ -8,13 +8,12 @@ use crate::inbound::ui::{
     },
     router::Router,
 };
-use crate::outbound::client::{
-    auth::{change_email::AuthClientChangeEmail, AuthClient},
-    error::ApiError,
-};
+use crate::outbound::client::auth::AuthClient;
+use crate::outbound::client::user::change_email::AuthClientChangeEmail;
 use dioxus::prelude::*;
 use email_address::EmailAddress;
 use std::str::FromStr;
+use zwipe::inbound::http::ApiError;
 use zwipe::{
     domain::auth::models::{password::Password, session::Session},
     inbound::http::handlers::auth::change_email::HttpChangeEmail,

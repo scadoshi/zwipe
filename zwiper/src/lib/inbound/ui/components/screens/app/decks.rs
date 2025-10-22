@@ -6,13 +6,12 @@ use crate::{
         },
         router::Router,
     },
-    outbound::client::{
-        auth::AuthClient, deck::get_deck_profiles::AuthClientGetDecks, error::ApiError,
-    },
+    outbound::client::{auth::AuthClient, deck::get_deck_profiles::AuthClientGetDecks},
 };
 use dioxus::prelude::*;
-use zwipe::domain::{
-    auth::models::session::Session, deck::models::deck::deck_profile::DeckProfile,
+use zwipe::{
+    domain::{auth::models::session::Session, deck::models::deck::deck_profile::DeckProfile},
+    inbound::http::ApiError,
 };
 
 #[component]

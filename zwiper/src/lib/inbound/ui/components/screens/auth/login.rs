@@ -4,10 +4,7 @@ use crate::{
         router::Router,
     },
     outbound::{
-        client::{
-            auth::{login::AuthClientLogin, AuthClient},
-            error::ApiError,
-        },
+        client::auth::{login::AuthClientLogin, AuthClient},
         session::Persist,
     },
 };
@@ -20,7 +17,7 @@ use zwipe::{
         logo,
         user::models::username::Username,
     },
-    inbound::http::handlers::auth::authenticate_user::HttpAuthenticateUser,
+    inbound::http::{handlers::auth::authenticate_user::HttpAuthenticateUser, ApiError},
 };
 
 #[component]
@@ -33,7 +30,7 @@ pub fn Login() -> Element {
     let mut session: Signal<Option<Session>> = use_context();
     let auth_client: Signal<AuthClient> = use_context();
 
-    let logo = logo::logo();
+    let logo = logo::ZWIPE;
 
     let mut username_or_email = use_signal(|| String::new());
     let mut password = use_signal(|| String::new());

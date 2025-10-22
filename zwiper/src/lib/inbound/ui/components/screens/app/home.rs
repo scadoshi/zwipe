@@ -10,7 +10,7 @@ use crate::{
     outbound::client::auth::AuthClient,
 };
 use dioxus::prelude::*;
-use zwipe::domain::{auth::models::session::Session, logo::logo};
+use zwipe::domain::{auth::models::session::Session, logo};
 
 #[component]
 pub fn Home() -> Element {
@@ -22,7 +22,7 @@ pub fn Home() -> Element {
     let auth_client: Signal<AuthClient> = use_context();
     let session: Signal<Option<Session>> = use_context();
 
-    let logo = logo();
+    let logo = logo::ZWIPE;
 
     rsx! {
         Bouncer {
