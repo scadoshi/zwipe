@@ -4,26 +4,24 @@ use crate::domain::{
     health::ports::HealthService, user::ports::UserService,
 };
 #[cfg(feature = "zerver")]
-use crate::inbound::http::handlers::auth::{
-    change_email::change_email, change_password::change_password, change_username::change_username,
-    delete_user::delete_user, refresh_session::refresh_session, revoke_sessions::revoke_sessions,
-};
-#[cfg(feature = "zerver")]
-use crate::inbound::http::handlers::deck_card::{
-    create_deck_card::create_deck_card, delete_deck_card::delete_deck_card,
-    update_deck_card::update_deck_card,
-};
-#[cfg(feature = "zerver")]
-use crate::inbound::http::handlers::user::get_user::get_user;
-#[cfg(feature = "zerver")]
 use crate::inbound::http::handlers::{
-    auth::{authenticate_user::authenticate_user, register_user::register_user},
+    auth::{
+        authenticate_user::authenticate_user, change_email::change_email,
+        change_password::change_password, change_username::change_username,
+        delete_user::delete_user, refresh_session::refresh_session, register_user::register_user,
+        revoke_sessions::revoke_sessions,
+    },
     card::{get_card::get_card, search_card::search_cards},
     deck::{
         create_deck_profile::create_deck_profile, delete_deck::delete_deck, get_deck::get_deck,
-        update_deck_profile::update_deck_profile,
+        get_deck_profiles::get_deck_profiles, update_deck_profile::update_deck_profile,
+    },
+    deck_card::{
+        create_deck_card::create_deck_card, delete_deck_card::delete_deck_card,
+        update_deck_card::update_deck_card,
     },
     health::{are_server_and_database_running, is_server_running, root},
+    user::get_user::get_user,
 };
 #[cfg(feature = "zerver")]
 use crate::inbound::http::AppState;
@@ -99,8 +97,6 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    use crate::inbound::http::handlers::deck::get_deck_profiles::get_deck_profiles;
-
     Router::new().nest(
         "/api",
         Router::new()

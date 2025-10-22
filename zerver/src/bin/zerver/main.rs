@@ -5,7 +5,7 @@ use zwipe::outbound::sqlx::postgres::Postgres;
 
 #[tokio::main]
 async fn main() {
-    logo::print();
+    logo::Zerver::print();
     match run().await {
         Ok(_) => (),
         Err(e) => tracing::error!("main failed: {:?}", e),
