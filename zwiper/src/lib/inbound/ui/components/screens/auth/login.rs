@@ -57,14 +57,10 @@ pub fn Login() -> Element {
             spawn(async move {
                 match auth_client.read().authenticate_user(request).await {
                     Ok(new_session) => {
+                        // tracing::info!("session={:?}", new_session);
                         submission_error.set(None);
-
-                        if let Err(e) = new_session.save() {
-                            tracing::error!("failed to save session: {e}");
-                        }
-
+                        new_session.infallible_save();
                         session.set(Some(new_session));
-                        tracing::info!("session={:?}", session.read());
                         navigator.push(Router::Home {});
                     }
                     Err(e) => submission_error.set(Some(e.to_string())),

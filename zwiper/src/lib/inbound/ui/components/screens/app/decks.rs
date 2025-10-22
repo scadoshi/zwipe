@@ -51,49 +51,61 @@ pub fn Decks() -> Element {
     rsx! {
         Bouncer {
             Swipeable { state: swipe_state, config: swipe_config,
-                div { class : "decks-container",
+                div { class : "decks-wrapper",
                     h2 { "decks" }
 
-                    match &*deck_profiles_resource.read() {
-                        Some(Ok(deck_profiles)) => {
-                            if deck_profiles.is_empty() {
-                                rsx! {
-                                    div { class: "empty-message",
-                                        p { "no decks yet" }
+                    div { class : "decks-container",
+                        match &*deck_profiles_resource.read() {
+                            Some(Ok(deck_profiles)) => {
+                                if deck_profiles.is_empty() {
+                                    rsx! {
+                                        div { class: "empty-message",
+                                            p { "no decks yet" }
+                                        }
                                     }
-                                }
-                            } else {
-                                rsx! {
-                                    div { class : "deck-profiles",
-                                        for profile in deck_profiles.iter().map(|x| x.to_owned()) {
-                                            div {
-                                                key : "{profile.id}",
-                                                class : "deck-item",
-                                                onclick : move |_| {
-                                                    tracing::info!("clicked into deck {}", profile.name.to_string());
-                                                },
-                                                h3 { { profile.name.to_string() } }
+                                } else {
+                                    rsx! {
+                                        div { class : "deck-list",
+                                            for profile in deck_profiles.iter().map(|x| x.to_owned()) {
+                                                div {
+                                                    key : "{profile.id}",
+                                                    class : "deck-item",
+                                                    onclick : move |_| {
+                                                        tracing::info!("clicked into deck {}", profile.name.to_string());
+                                                    },
+                                                    h3 { { profile.name.to_string() } }
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
+                            Some(Err(e)) => rsx!{
+                                div { class : "empty-message",
+                                    p { class : "error", "{e}" }
+                                }
+                            },
+                            None => rsx! {
+                                div { class: "empty-message",
+                                    div { class: "spinning-card" }
+                                }
+                            },
                         }
-                        Some(Err(e)) => rsx!{
-                            div { class : "error",
-                                p { "{e}" }
-                            }
-                        },
-                        None => rsx! {
-                            div { class: "spinning-card" }
-                        },
-
                     }
-                    button {
-                        onclick : move |_| {
-                            navigator.push(Router::Home {});
-                        },
-                        "back"
+
+                    div { class: "deck-buttons",
+                        button {
+                            onclick : move |_| {
+                                tracing::info!("add deck clicked");
+                            },
+                            "add deck"
+                        }
+                        button {
+                            onclick : move |_| {
+                                navigator.push(Router::Home {});
+                            },
+                            "back"
+                        }
                     }
                 }
             }

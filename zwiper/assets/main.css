@@ -124,7 +124,7 @@ button:active {
 }
 
 .form-container h2 {
-    text-align: left;
+    text-align: center;
     margin-bottom: 1rem;
     font-weight: 300;
     color: #f5f5dc;
@@ -258,20 +258,32 @@ button:active {
 
 /* decks */
 
-.decks-container {
+.decks-wrapper {
     width: 20rem;
-    padding: 2rem;
+    display: flex;
+    flex-direction: column;
 }
 
-.decks-container h2 {
+.decks-wrapper h2 {
     text-align: center;
     margin-bottom: 2rem;
     font-weight: 300;
     letter-spacing: 0.2em;
 }
 
-.deck-list {
+.decks-container {
+    min-height: 50vh;
+    padding: 2rem;
+    border: 1px solid #f5f5dc;
+    border-radius: 1rem;
+    display: flex;
+    flex-direction: column;
     margin-bottom: 2rem;
+}
+
+.deck-list {
+    flex: 1;
+    overflow-y: auto;
 }
 
 .deck-item {
@@ -297,11 +309,20 @@ button:active {
 }
 
 .empty-message {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    margin-bottom: 2rem;
 }
 
 .empty-message p {
     opacity: 0.6;
     letter-spacing: 0.1em;
+}
+
+.deck-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
 }
