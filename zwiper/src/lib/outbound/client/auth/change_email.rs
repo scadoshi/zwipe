@@ -1,45 +1,17 @@
-use std::future::Future;
-
+use crate::outbound::client::{auth::AuthClient, error::ApiError};
 use reqwest::StatusCode;
-use thiserror::Error;
+use std::future::Future;
 use zwipe::{
     domain::{auth::models::session::Session, user::models::User},
     inbound::http::{handlers::auth::change_email::HttpChangeEmail, routes::change_email_route},
 };
-
-use crate::outbound::client::auth::AuthClient;
-#[derive(Debug, Error)]
-pub enum ChangeEmailError {
-    #[error("invalid credentials")]
-    Unauthorized,
-    #[error("something went wrong")]
-    SomethingWentWrong,
-    #[error("network error")]
-    Network(reqwest::Error),
-    #[error("{0}")]
-    InvalidRequest(String),
-    #[error("session expired")]
-    SessionExpired,
-}
-
-impl From<reqwest::Error> for ChangeEmailError {
-    fn from(value: reqwest::Error) -> Self {
-        Self::Network(value)
-    }
-}
-
-impl From<serde_json::Error> for ChangeEmailError {
-    fn from(_value: serde_json::Error) -> Self {
-        Self::SomethingWentWrong
-    }
-}
 
 pub trait AuthClientChangeEmail {
     fn change_email(
         &self,
         request: HttpChangeEmail,
         session: &Session,
-    ) -> impl Future<Output = Result<User, ChangeEmailError>> + Send;
+    ) -> impl Future<Output = Result<User, ApiError>> + Send;
 }
 
 impl AuthClientChangeEmail for AuthClient {
@@ -47,32 +19,28 @@ impl AuthClientChangeEmail for AuthClient {
         &self,
         request: HttpChangeEmail,
         session: &Session,
-    ) -> Result<User, ChangeEmailError> {
+    ) -> Result<User, ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&change_email_route());
         let response = self
             .client
             .put(url)
-            .header("Content-Type", "application/json")
-            .header(
-                "Authorization",
-                format!("Bearer {}", session.access_token.value.as_str()),
-            )
-            .body(serde_json::to_string(&request)?)
+            .json(&request)
+            .bearer_auth(session.access_token.value.as_str())
             .send()
             .await?;
 
-        match response.status() {
+        let status = response.status();
+
+        match status {
             StatusCode::OK => {
-                let success: User = response.json().await?;
-                Ok(success)
+                let updated: User = response.json().await?;
+                Ok(updated)
             }
-            StatusCode::UNPROCESSABLE_ENTITY => {
+            _ => {
                 let message = response.text().await?;
-                Err(ChangeEmailError::InvalidRequest(message))
+                Err((status, message).into())
             }
-            StatusCode::UNAUTHORIZED => Err(ChangeEmailError::Unauthorized),
-            _ => Err(ChangeEmailError::SomethingWentWrong),
         }
     }
 }

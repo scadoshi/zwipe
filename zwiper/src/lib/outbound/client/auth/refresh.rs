@@ -1,8 +1,6 @@
-use std::future::Future;
-
-use crate::outbound::client::auth::AuthClient;
+use crate::outbound::client::{auth::AuthClient, error::ApiError};
 use reqwest::StatusCode;
-use thiserror::Error;
+use std::future::Future;
 use zwipe::{
     domain::auth::models::session::Session,
     inbound::http::{
@@ -10,64 +8,31 @@ use zwipe::{
     },
 };
 
-#[derive(Debug, Error)]
-pub enum RefreshError {
-    #[error("invalid credentials")]
-    Unauthorized,
-    #[error("access forbidden")]
-    Forbidden,
-    #[error("something went wrong")]
-    SomethingWentWrong,
-    #[error("network error")]
-    Network(reqwest::Error),
-    #[error("{0}")]
-    InvalidRequest(String),
-}
-
-impl From<reqwest::Error> for RefreshError {
-    fn from(value: reqwest::Error) -> Self {
-        Self::Network(value)
-    }
-}
-
-impl From<serde_json::Error> for RefreshError {
-    fn from(_value: serde_json::Error) -> Self {
-        Self::SomethingWentWrong
-    }
-}
-
 pub trait AuthClientRefresh {
     fn refresh(
         &self,
         request: &HttpRefreshSession,
-    ) -> impl Future<Output = Result<Session, RefreshError>> + Send;
+    ) -> impl Future<Output = Result<Session, ApiError>> + Send;
 }
 
 impl AuthClientRefresh for AuthClient {
-    async fn refresh(&self, request: &HttpRefreshSession) -> Result<Session, RefreshError> {
+    async fn refresh(&self, request: &HttpRefreshSession) -> Result<Session, ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&refresh_session_route());
 
-        let response = self
-            .client
-            .post(url)
-            .header("Content-Type", "application/json")
-            .body(serde_json::to_string(&request)?)
-            .send()
-            .await?;
+        let response = self.client.post(url).json(&request).send().await?;
 
-        match response.status() {
+        let status = response.status();
+
+        match status {
             StatusCode::OK => {
-                let success: Session = response.json().await?;
-                Ok(success)
+                let new: Session = response.json().await?;
+                Ok(new)
             }
-            StatusCode::UNAUTHORIZED => Err(RefreshError::Unauthorized),
-            StatusCode::FORBIDDEN => Err(RefreshError::Forbidden),
-            StatusCode::UNPROCESSABLE_ENTITY => {
+            _ => {
                 let message = response.text().await?;
-                Err(RefreshError::InvalidRequest(message))
+                Err((status, message).into())
             }
-            _ => Err(RefreshError::SomethingWentWrong),
         }
     }
 }
