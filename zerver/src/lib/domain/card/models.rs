@@ -7,9 +7,9 @@ pub mod search_card;
 #[cfg(feature = "zerver")]
 pub mod sync_metrics;
 use crate::domain::card::models::{card_profile::CardProfile, scryfall_data::ScryfallData};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, PartialEq, Deserialize)]
 pub struct Card {
     card_profile: CardProfile,
     scryfall_data: ScryfallData,

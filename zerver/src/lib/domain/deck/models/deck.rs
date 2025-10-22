@@ -7,9 +7,9 @@ pub mod get_deck_profiles;
 pub mod update_deck_profile;
 
 use crate::domain::{card::models::Card, deck::models::deck::deck_profile::DeckProfile};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Deck {
     deck_profile: DeckProfile,
     cards: Vec<Card>,
