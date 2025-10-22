@@ -7,8 +7,15 @@ pub fn Bouncer(children: Element) -> Element {
     let navigator = use_navigator();
     let session: Signal<Option<Session>> = use_context();
 
+    let has_session = use_memo(move || {
+        session
+            .read()
+            .as_ref()
+            .map_or(false, |current| !current.is_expired())
+    });
+
     use_effect(move || {
-        if session.read().is_none() {
+        if !*has_session.read() {
             navigator.push(Router::Login {});
         }
     });
