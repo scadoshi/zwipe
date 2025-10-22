@@ -4,7 +4,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "zerver")]
 use crate::{
@@ -58,10 +58,10 @@ impl From<InvalidCreateDeckCard> for ApiError {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct HttpCreateDeckCard {
-    card_profile_id: String,
-    quantity: i32,
+    pub card_profile_id: String,
+    pub quantity: i32,
 }
 
 impl HttpCreateDeckCard {

@@ -4,7 +4,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "zerver")]
 use crate::{
@@ -61,7 +61,7 @@ impl From<InvalidUpdateDeckCard> for ApiError {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct HttpUpdateDeckCard {
     update_quantity: i32,
 }

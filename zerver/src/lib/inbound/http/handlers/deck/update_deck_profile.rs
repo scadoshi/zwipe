@@ -63,11 +63,11 @@ impl From<InvalidUpdateDeckProfile> for ApiError {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct HttpUpdateDeckProfileBody {
+pub struct HttpUpdateDeckProfile {
     name: Option<String>,
 }
 
-impl HttpUpdateDeckProfileBody {
+impl HttpUpdateDeckProfile {
     pub fn new(name: Option<&str>) -> Self {
         Self {
             name: name.map(|name| name.to_string()),
@@ -80,7 +80,7 @@ pub async fn update_deck_profile<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Path(deck_id): Path<String>,
-    Json(body): Json<HttpUpdateDeckProfileBody>,
+    Json(body): Json<HttpUpdateDeckProfile>,
 ) -> Result<(StatusCode, Json<DeckProfile>), ApiError>
 where
     AS: AuthService,

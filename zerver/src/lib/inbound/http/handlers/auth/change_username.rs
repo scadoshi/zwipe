@@ -28,9 +28,7 @@ impl From<ChangeUsernameError> for ApiError {
             }
             ChangeUsernameError::Database(e) => e.log_500(),
             ChangeUsernameError::UserFromDb(e) => e.log_500(),
-            ChangeUsernameError::AuthenticateUserError(_) => {
-                Self::Unauthorized("invalid credentials".to_string())
-            }
+            ChangeUsernameError::AuthenticateUserError(e) => ApiError::from(e),
         }
     }
 }

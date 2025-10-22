@@ -24,9 +24,7 @@ impl From<ChangeEmailError> for ApiError {
             ChangeEmailError::UserNotFound => Self::NotFound("user not found".to_string()),
             ChangeEmailError::Database(e) => e.log_500(),
             ChangeEmailError::UserFromDb(e) => e.log_500(),
-            ChangeEmailError::AuthenticateUserError(_) => {
-                Self::Unauthorized("invalid credentials".to_string())
-            }
+            ChangeEmailError::AuthenticateUserError(e) => ApiError::from(e),
             ChangeEmailError::Duplicate => {
                 Self::UnprocessableEntity("email already in use".to_string())
             }

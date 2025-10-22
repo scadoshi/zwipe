@@ -46,11 +46,11 @@ impl From<InvalidCreateDeckProfile> for ApiError {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct HttpCreateDeckProfileBody {
+pub struct HttpCreateDeckProfile {
     pub name: String,
 }
 
-impl HttpCreateDeckProfileBody {
+impl HttpCreateDeckProfile {
     pub fn new(name: &str) -> Self {
         Self {
             name: name.to_string(),
@@ -62,7 +62,7 @@ impl HttpCreateDeckProfileBody {
 pub async fn create_deck_profile<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
-    Json(body): Json<HttpCreateDeckProfileBody>,
+    Json(body): Json<HttpCreateDeckProfile>,
 ) -> Result<(StatusCode, Json<DeckProfile>), ApiError>
 where
     AS: AuthService,
