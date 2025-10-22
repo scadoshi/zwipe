@@ -22,18 +22,18 @@ alwaysApply: true
 **Current Success**: Complete profile management system with working backend integration. All change operations (username/email/password) successfully update session state and display success messages. Logout revokes server-side refresh tokens and clears local session. Universal swipeable UI across all screens. Resource pattern properly handled for deck list and future data fetching.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Deck Detail Screen** - Individual deck view with full card list and metrics
-2. **Card Search Integration** - Connect search component to backend API for card lookup
-3. **Add Card to Deck Flow** - Search results with add-to-deck functionality
-4. **Deck Analytics Display** - Frontend calculation of mana curve, color distribution, type breakdown
-5. **Deck Creation Flow** - Form for creating new decks from main screen
+1. **Client Method Review** - Audit all existing frontend client implementations for completeness and consistency
+2. **ApiError Status Code Audit** - Review all backend HTTP handlers to ensure ApiError enum covers every status code the backend can throw
+3. **Complete Client Method Suite** - Build all remaining auth and deck client methods (deck cards CRUD) following established ApiError pattern
+4. **Deck Building Workflow** - Full deck creation flow, add cards from search, manage quantities, deck detail view
+5. **Card Search Integration** - Connect search component to backend API with query building and result display
 
 ### 🤔 Next Immediate Priorities (Top 5)
-1. **Edit Deck Cards** - Update quantities and remove cards from decks
-2. **Delete Deck Operation** - Backend integration for deck deletion
-3. **Card Detail Screen** - Full card view with image and all attributes
-4. **Deck Sharing** - Export/import deck lists in standard formats
-5. **Performance Optimization** - Loading states, request debouncing, cache strategies
+1. **Deck Detail Screen** - Individual deck view showing all cards with quantities and metrics
+2. **Deck Card Management** - Add, update quantity, and remove cards from decks with proper error handling
+3. **Frontend Deck Analytics** - Calculate mana curve, color distribution, type breakdown from card data
+4. **Card Detail Screen** - Full card view with image and all attributes for search results
+5. **Deck Sharing** - Export/import deck lists in standard formats
 
 ---
 

@@ -22,11 +22,11 @@ alwaysApply: true
 **Recent Achievement**: Completed comprehensive HTTP client refactoring achieving significant code reduction (360 lines deleted, 145 added). Created unified `ApiError` enum replacing 10+ operation-specific error types (LoginError, RegisterError, ChangeUsernameError, etc.). Implemented `From<(StatusCode, String)> for ApiError` pattern enabling clean `.into()` conversions at call sites. Standardized all POST/PUT requests to use `.json()` convenience method (auto-serializes + sets Content-Type header). Standardized all authenticated requests to use `.bearer_auth()` helper. Updated 10+ client methods (login, register, logout, refresh, all profile changes, deck operations) to return `Result<T, ApiError>`. Built new client methods from scratch (get_deck, update_deck_profile) following established patterns. HTTP client layer now feels production-ready with minimal boilerplate and consistent error handling across all operations.
 
 ### 🎯 Currently Working Towards (Top 5)
-1. **Deck Detail Screen** - Full deck view with card list, metrics, edit capabilities
-2. **Card Search Integration** - Connect to backend search API with query building
-3. **Add Card to Deck** - Search results with add functionality and quantity selection
-4. **Frontend Deck Analytics** - Mana curve, color distribution, type breakdown calculations
-5. **Deck Navigation Patterns** - Route parameters, detail screen state management
+1. **Client Method Review** - Audit all existing frontend client implementations for completeness
+2. **ApiError Status Code Audit** - Review all backend handlers to ensure ApiError covers every status code thrown
+3. **Complete Client Method Suite** - Build all remaining auth and deck client methods following established pattern
+4. **Deck Building Workflow** - Create deck, add cards, manage quantities, deck detail view
+5. **Card Search Integration** - Connect to backend search API with query building
 
 ### 🤔 Current Uncertainties (Top 5)
 1. **Route Parameter Patterns** - Best way to pass deck IDs through routes to detail screens
