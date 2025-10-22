@@ -5,7 +5,6 @@ pub mod login;
 pub mod logout;
 pub mod refresh;
 pub mod register;
-pub mod session;
 
 use crate::config::Config;
 use reqwest::Client;

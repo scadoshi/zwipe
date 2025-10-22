@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use zwiper::{
     config::Config,
-    inbound::ui::{components::auth::session_supplier::session_supplier, router::Router},
+    inbound::ui::{components::auth::session_upkeep::spawn_upkeeper, router::Router},
 };
 
 const FAVICON: Asset = asset!("/assets/favicon/favicon.ico");
@@ -17,7 +17,7 @@ fn main() {
 
 #[component]
 fn App() -> Element {
-    session_supplier();
+    spawn_upkeeper();
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
