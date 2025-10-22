@@ -1,17 +1,18 @@
-use crate::outbound::client::{auth::AuthClient, error::ApiError};
+use crate::outbound::client::auth::AuthClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use zwipe::{
     domain::{auth::models::session::Session, deck::models::deck::deck_profile::DeckProfile},
     inbound::http::{
-        handlers::deck::create_deck_profile::HttpCreateDeckProfileBody, routes::create_deck_route,
+        handlers::deck::create_deck_profile::HttpCreateDeckProfile, routes::create_deck_route,
+        ApiError,
     },
 };
 
 pub trait AuthClientCreateDeck {
     fn create_deck_profile(
         &self,
-        request: &HttpCreateDeckProfileBody,
+        request: &HttpCreateDeckProfile,
         session: &Session,
     ) -> impl Future<Output = Result<DeckProfile, ApiError>> + Send;
 }
@@ -19,7 +20,7 @@ pub trait AuthClientCreateDeck {
 impl AuthClientCreateDeck for AuthClient {
     async fn create_deck_profile(
         &self,
-        request: &HttpCreateDeckProfileBody,
+        request: &HttpCreateDeckProfile,
         session: &Session,
     ) -> Result<DeckProfile, ApiError> {
         let mut url = self.app_config.backend_url.clone();
@@ -33,14 +34,12 @@ impl AuthClientCreateDeck for AuthClient {
             .send()
             .await?;
 
-        let status = response.status();
-
-        match status {
+        match response.status() {
             StatusCode::CREATED => {
                 let new: DeckProfile = response.json().await?;
                 Ok(new)
             }
-            _ => {
+            status => {
                 let message = response.text().await?;
                 Err((status, message).into())
             }

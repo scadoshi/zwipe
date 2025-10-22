@@ -1,11 +1,12 @@
-use crate::outbound::client::{auth::AuthClient, error::ApiError};
+use crate::outbound::client::auth::AuthClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use uuid::Uuid;
 use zwipe::{
     domain::{auth::models::session::Session, deck::models::deck::deck_profile::DeckProfile},
     inbound::http::{
-        handlers::deck::update_deck_profile::HttpUpdateDeckProfileBody, routes::update_deck_route,
+        handlers::deck::update_deck_profile::HttpUpdateDeckProfile, routes::update_deck_route,
+        ApiError,
     },
 };
 
@@ -13,7 +14,7 @@ pub trait AuthClientUpdateDeckProfile {
     fn update_deck_profile(
         &self,
         deck_id: &Uuid,
-        body: HttpUpdateDeckProfileBody,
+        body: HttpUpdateDeckProfile,
         session: &Session,
     ) -> impl Future<Output = Result<DeckProfile, ApiError>> + Send;
 }
@@ -22,7 +23,7 @@ impl AuthClientUpdateDeckProfile for AuthClient {
     async fn update_deck_profile(
         &self,
         deck_id: &Uuid,
-        body: HttpUpdateDeckProfileBody,
+        body: HttpUpdateDeckProfile,
         session: &Session,
     ) -> Result<DeckProfile, ApiError> {
         let mut url = self.app_config.backend_url.clone();
@@ -36,14 +37,12 @@ impl AuthClientUpdateDeckProfile for AuthClient {
             .send()
             .await?;
 
-        let status = response.status();
-
-        match status {
+        match response.status() {
             StatusCode::OK => {
                 let updated: DeckProfile = response.json().await?;
                 Ok(updated)
             }
-            _ => {
+            status => {
                 let message = response.text().await?;
                 Err((status, message).into())
             }

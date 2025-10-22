@@ -1,8 +1,11 @@
-use crate::outbound::client::{auth::AuthClient, error::ApiError};
+use crate::outbound::client::auth::AuthClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use uuid::Uuid;
-use zwipe::{domain::auth::models::session::Session, inbound::http::routes::delete_deck_route};
+use zwipe::{
+    domain::auth::models::session::Session,
+    inbound::http::{routes::delete_deck_route, ApiError},
+};
 
 pub trait AuthClientDeleteDeck {
     fn delete_deck(
@@ -24,11 +27,9 @@ impl AuthClientDeleteDeck for AuthClient {
             .send()
             .await?;
 
-        let status = response.status();
-
-        match status {
+        match response.status() {
             StatusCode::NO_CONTENT => Ok(()),
-            _ => {
+            status => {
                 let message = response.text().await?;
                 Err((status, message).into())
             }

@@ -1,9 +1,9 @@
-use crate::outbound::client::{auth::AuthClient, error::ApiError};
+use crate::outbound::client::auth::AuthClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use zwipe::{
     domain::{auth::models::session::Session, deck::models::deck::deck_profile::DeckProfile},
-    inbound::http::routes::get_deck_profiles_route,
+    inbound::http::{routes::get_deck_profiles_route, ApiError},
 };
 
 pub trait AuthClientGetDecks {
@@ -25,14 +25,12 @@ impl AuthClientGetDecks for AuthClient {
             .send()
             .await?;
 
-        let status = response.status();
-
-        match status {
+        match response.status() {
             StatusCode::OK => {
                 let deck_profiles: Vec<DeckProfile> = response.json().await?;
                 Ok(deck_profiles)
             }
-            _ => {
+            status => {
                 let message = response.text().await?;
                 Err((status, message).into())
             }
