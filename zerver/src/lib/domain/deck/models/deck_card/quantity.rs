@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -31,6 +31,16 @@ impl Serialize for Quantity {
         S: serde::Serializer,
     {
         self.quantity().serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Quantity {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let quantity = i32::deserialize(deserializer)?;
+        Quantity::new(quantity).map_err(|e| serde::de::Error::custom(e))
     }
 }
 
