@@ -15,7 +15,7 @@ use zwipe::{
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    logo::print();
+    logo::Zervice::print();
 
     let config = Config::from_env()?;
 
@@ -29,7 +29,7 @@ async fn main() -> anyhow::Result<()> {
     let auth_service = AuthService::new(db.clone(), db.clone(), config.jwt_secret);
     let mut latest_token_clean_up: Option<NaiveDateTime> = None;
 
-    tracing::info!("running sync services");
+    tracing::info!("running card migration and refresh token services");
     loop {
         card_service.check_cards().await?;
         auth_service
