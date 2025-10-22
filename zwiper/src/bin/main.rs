@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use zwipe::domain::logo;
 use zwiper::{
     config::Config,
     inbound::ui::{components::auth::session_upkeep::spawn_upkeeper, router::Router},
@@ -8,6 +9,7 @@ const FAVICON: Asset = asset!("/assets/favicon/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 
 fn main() {
+    logo::Zwiper::print();
     let config = Config::from_env();
     tracing_subscriber::fmt()
         .with_max_level(config.rust_log)
