@@ -7,9 +7,9 @@ use crate::{
         },
         router::Router,
     },
-    outbound::client::auth::{
-        change_password::{AuthClientChangePassword, ChangePasswordError},
-        AuthClient,
+    outbound::client::{
+        auth::{change_password::AuthClientChangePassword, AuthClient},
+        error::ApiError,
     },
 };
 use dioxus::prelude::*;
@@ -69,7 +69,9 @@ pub fn ChangePassword() -> Element {
             spawn(async move {
                 session.upkeep(auth_client);
                 let Some(sesh) = session.read().clone() else {
-                    submission_error.set(Some(ChangePasswordError::SessionExpired.to_string()));
+                    submission_error.set(Some(
+                        ApiError::Unauthorized("session expired".to_string()).to_string(),
+                    ));
                     return;
                 };
 

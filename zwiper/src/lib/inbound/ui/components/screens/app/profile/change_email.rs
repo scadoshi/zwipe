@@ -8,9 +8,9 @@ use crate::inbound::ui::{
     },
     router::Router,
 };
-use crate::outbound::client::auth::{
-    change_email::{AuthClientChangeEmail, ChangeEmailError},
-    AuthClient,
+use crate::outbound::client::{
+    auth::{change_email::AuthClientChangeEmail, AuthClient},
+    error::ApiError,
 };
 use dioxus::prelude::*;
 use email_address::EmailAddress;
@@ -73,7 +73,9 @@ pub fn ChangeEmail() -> Element {
             spawn(async move {
                 session.upkeep(auth_client);
                 let Some(mut sesh) = session.read().clone() else {
-                    submission_error.set(Some(ChangeEmailError::SessionExpired.to_string()));
+                    submission_error.set(Some(
+                        ApiError::Unauthorized("session expired".to_string()).to_string(),
+                    ));
                     return;
                 };
 

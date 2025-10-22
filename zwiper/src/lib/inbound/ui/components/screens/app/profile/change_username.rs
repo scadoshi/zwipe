@@ -7,9 +7,9 @@ use crate::{
         },
         router::Router,
     },
-    outbound::client::auth::{
-        change_username::{AuthClientChangeUsername, ChangeUsernameError},
-        AuthClient,
+    outbound::client::{
+        auth::{change_username::AuthClientChangeUsername, AuthClient},
+        error::ApiError,
     },
 };
 use dioxus::prelude::*;
@@ -74,7 +74,9 @@ pub fn ChangeUsername() -> Element {
             spawn(async move {
                 session.upkeep(auth_client);
                 let Some(mut sesh) = session.read().clone() else {
-                    submission_error.set(Some(ChangeUsernameError::SessionExpired.to_string()));
+                    submission_error.set(Some(
+                        ApiError::Unauthorized("session expired".to_string()).to_string(),
+                    ));
                     return;
                 };
 
