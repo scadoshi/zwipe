@@ -27,8 +27,8 @@ pub fn Profile() -> Element {
     let navigator = use_navigator();
 
     rsx! {
-        if let Some(active_sesh) = session.read().as_ref() {
-            Bouncer {
+        Bouncer {
+            if let Some(active_sesh) = session.read().as_ref() {
                 Swipeable { state: swipe_state, config: swipe_config,
                     div { class : "profile-container",
                         h2 { "profile" }
