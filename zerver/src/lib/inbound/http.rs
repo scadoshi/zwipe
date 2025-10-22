@@ -10,11 +10,13 @@ use crate::domain::{
 #[cfg(feature = "zerver")]
 use anyhow::{anyhow, Context};
 #[cfg(feature = "zerver")]
-use axum::http::{header, HeaderValue, Method, StatusCode};
-#[cfg(feature = "zerver")]
-use axum::response::IntoResponse;
+use axum::{
+    http::{header, HeaderValue, Method, StatusCode},
+    response::IntoResponse,
+};
 #[cfg(feature = "zerver")]
 use std::sync::Arc;
+use thiserror::Error;
 #[cfg(feature = "zerver")]
 use tokio::net;
 #[cfg(feature = "zerver")]
@@ -24,26 +26,57 @@ use tower_http::cors::CorsLayer;
 //  error
 // =======
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum ApiError {
+    #[error("{0}")]
     InternalServerError(String),
+    #[error("{0}")]
     UnprocessableEntity(String),
+    #[error("{0}")]
     Unauthorized(String),
+    #[error("{0}")]
     NotFound(String),
+    #[error("{0}")]
     Forbidden(String),
+    #[error("network error: {0}")]
+    Network(String),
 }
 
-#[cfg(feature = "zerver")]
+impl From<reqwest::Error> for ApiError {
+    fn from(value: reqwest::Error) -> Self {
+        Self::Network(value.to_string())
+    }
+}
+
+impl From<serde_json::Error> for ApiError {
+    fn from(value: serde_json::Error) -> Self {
+        Self::Network(format!("json error: {}", value))
+    }
+}
+
 impl From<anyhow::Error> for ApiError {
     fn from(value: anyhow::Error) -> Self {
         Self::InternalServerError(value.to_string())
     }
 }
 
-#[cfg(feature = "zerver")]
 impl From<uuid::Error> for ApiError {
     fn from(value: uuid::Error) -> Self {
-        Self::UnprocessableEntity(format!("failed to parse `Uuid`: {}", value))
+        Self::UnprocessableEntity(format!("failed to parse uuid: {}", value))
+    }
+}
+
+impl From<(reqwest::StatusCode, String)> for ApiError {
+    fn from(value: (reqwest::StatusCode, String)) -> Self {
+        let (status, message) = value;
+        match status {
+            reqwest::StatusCode::INTERNAL_SERVER_ERROR => Self::InternalServerError(message),
+            reqwest::StatusCode::UNAUTHORIZED => Self::Unauthorized(message),
+            reqwest::StatusCode::FORBIDDEN => Self::Forbidden(message),
+            reqwest::StatusCode::NOT_FOUND => Self::NotFound(message),
+            reqwest::StatusCode::UNPROCESSABLE_ENTITY => Self::UnprocessableEntity(message),
+            _ => Self::InternalServerError(message),
+        }
     }
 }
 
@@ -56,6 +89,9 @@ impl IntoResponse for ApiError {
                 "internal server error".to_string(),
             )
                 .into_response(),
+            ApiError::Network(message) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, message).into_response()
+            }
             ApiError::UnprocessableEntity(message) => {
                 (StatusCode::UNPROCESSABLE_ENTITY, message).into_response()
             }
