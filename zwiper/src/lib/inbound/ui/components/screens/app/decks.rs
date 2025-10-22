@@ -7,8 +7,7 @@ use crate::{
         router::Router,
     },
     outbound::client::{
-        auth::AuthClient,
-        deck::get_deck_profiles::{GetDeckProfilesError, GetDecks},
+        auth::AuthClient, deck::get_deck_profiles::AuthClientGetDecks, error::ApiError,
     },
 };
 use dioxus::prelude::*;
@@ -25,11 +24,11 @@ pub fn Decks() -> Element {
     let auth_client: Signal<AuthClient> = use_context();
     let session: Signal<Option<Session>> = use_context();
 
-    let deck_profiles_resource: Resource<Result<Vec<DeckProfile>, GetDeckProfilesError>> =
+    let deck_profiles_resource: Resource<Result<Vec<DeckProfile>, ApiError>> =
         use_resource(move || async move {
             session.upkeep(auth_client);
             let Some(sesh) = session.read().clone() else {
-                return Err(GetDeckProfilesError::SessionExpired);
+                return Err(ApiError::Unauthorized("session expired".to_string()));
             };
 
             auth_client.read().get_deck_profiles(&sesh).await

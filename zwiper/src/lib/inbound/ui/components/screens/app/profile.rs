@@ -28,7 +28,7 @@ pub fn Profile() -> Element {
 
     rsx! {
         Bouncer {
-            if let Some(active_sesh) = session.read().as_ref() {
+            if let Some(sesh) = session.read().as_ref() {
                 Swipeable { state: swipe_state, config: swipe_config,
                     div { class : "profile-container",
                         h2 { "profile" }
@@ -36,7 +36,7 @@ pub fn Profile() -> Element {
                         div { class : "profile-field",
                             div { class : "profile-field-content",
                                 label { "username" }
-                                p { { active_sesh.user.username.to_string() } }
+                                p { { sesh.user.username.to_string() } }
                             }
                             button {
                                 class: "profile-field-button",
@@ -50,7 +50,7 @@ pub fn Profile() -> Element {
                         div { class : "profile-field",
                             div { class : "profile-field-content",
                                 label { "email" }
-                                p { { active_sesh.user.email.to_string() } }
+                                p { { sesh.user.email.to_string() } }
                             }
                             button {
                                 class: "profile-field-button",
