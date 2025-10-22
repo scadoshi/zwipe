@@ -19,7 +19,7 @@ use crate::{
 };
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "zerver")]
 impl From<CreateDeckProfileError> for ApiError {
@@ -45,7 +45,7 @@ impl From<InvalidCreateDeckProfile> for ApiError {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct HttpCreateDeckProfileBody {
     pub name: String,
 }

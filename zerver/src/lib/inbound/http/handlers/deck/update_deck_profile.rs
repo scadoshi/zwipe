@@ -23,7 +23,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "zerver")]
 impl From<UpdateDeckProfileError> for ApiError {
@@ -62,7 +62,7 @@ impl From<InvalidUpdateDeckProfile> for ApiError {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct HttpUpdateDeckProfileBody {
     name: Option<String>,
 }
