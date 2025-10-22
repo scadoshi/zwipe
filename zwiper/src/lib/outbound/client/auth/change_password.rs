@@ -1,6 +1,6 @@
+use crate::outbound::client::{auth::AuthClient, error::ApiError};
 use reqwest::StatusCode;
 use std::future::Future;
-use thiserror::Error;
 use zwipe::{
     domain::auth::models::session::Session,
     inbound::http::{
@@ -8,40 +8,12 @@ use zwipe::{
     },
 };
 
-use crate::outbound::client::auth::AuthClient;
-
-#[derive(Debug, Error)]
-pub enum ChangePasswordError {
-    #[error("invalid credentials")]
-    Unauthorized,
-    #[error("something went wrong")]
-    SomethingWentWrong,
-    #[error("network error")]
-    Network(reqwest::Error),
-    #[error("{0}")]
-    InvalidRequest(String),
-    #[error("session expired")]
-    SessionExpired,
-}
-
-impl From<reqwest::Error> for ChangePasswordError {
-    fn from(value: reqwest::Error) -> Self {
-        Self::Network(value)
-    }
-}
-
-impl From<serde_json::Error> for ChangePasswordError {
-    fn from(_value: serde_json::Error) -> Self {
-        Self::SomethingWentWrong
-    }
-}
-
 pub trait AuthClientChangePassword {
     fn change_password(
         &self,
         request: HttpChangePassword,
         session: &Session,
-    ) -> impl Future<Output = Result<(), ChangePasswordError>> + Send;
+    ) -> impl Future<Output = Result<(), ApiError>> + Send;
 }
 
 impl AuthClientChangePassword for AuthClient {
@@ -49,29 +21,25 @@ impl AuthClientChangePassword for AuthClient {
         &self,
         request: HttpChangePassword,
         session: &Session,
-    ) -> Result<(), ChangePasswordError> {
+    ) -> Result<(), ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&change_password_route());
         let response = self
             .client
             .put(url)
-            .header("Content-Type", "application/json")
-            .header(
-                "Authorization",
-                format!("Bearer {}", session.access_token.value.as_str()),
-            )
-            .body(serde_json::to_string(&request)?)
+            .json(&request)
+            .bearer_auth(session.access_token.value.as_str())
             .send()
             .await?;
 
-        match response.status() {
+        let status = response.status();
+
+        match status {
             StatusCode::OK => Ok(()),
-            StatusCode::UNPROCESSABLE_ENTITY => {
+            _ => {
                 let message = response.text().await?;
-                Err(ChangePasswordError::InvalidRequest(message))
+                Err((status, message).into())
             }
-            StatusCode::UNAUTHORIZED => Err(ChangePasswordError::Unauthorized),
-            _ => Err(ChangePasswordError::SomethingWentWrong),
         }
     }
 }
