@@ -15,23 +15,16 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Major HTTP client refactoring - centralized error handling, eliminated 215 lines of redundant code, and standardized request patterns across all client methods.
+**Last Updated**: Complete HTTP client implementation suite covering all 19 backend endpoints. Unified frontend/backend error handling through shared ApiError architecture achieving massive code reduction.
 
-**Next Learning Focus**: Deck detail screen implementation, card search integration, and frontend deck analytics calculations.
+**Next Learning Focus**: Building deck creation and card search UI components with Dioxus. Learning swipeable card browsing patterns and frontend deck analytics calculations.
 
-**Recent Achievement**: Completed comprehensive HTTP client refactoring achieving significant code reduction (360 lines deleted, 145 added). Created unified `ApiError` enum replacing 10+ operation-specific error types (LoginError, RegisterError, ChangeUsernameError, etc.). Implemented `From<(StatusCode, String)> for ApiError` pattern enabling clean `.into()` conversions at call sites. Standardized all POST/PUT requests to use `.json()` convenience method (auto-serializes + sets Content-Type header). Standardized all authenticated requests to use `.bearer_auth()` helper. Updated 10+ client methods (login, register, logout, refresh, all profile changes, deck operations) to return `Result<T, ApiError>`. Built new client methods from scratch (get_deck, update_deck_profile) following established patterns. HTTP client layer now feels production-ready with minimal boilerplate and consistent error handling across all operations.
-
-### 🎯 Currently Working Towards (Top 5)
-1. **Client Method Review** - Audit all existing frontend client implementations for completeness
-2. **ApiError Status Code Audit** - Review all backend handlers to ensure ApiError covers every status code thrown
-3. **Complete Client Method Suite** - Build all remaining auth and deck client methods following established pattern
-4. **Deck Building Workflow** - Create deck, add cards, manage quantities, deck detail view
-5. **Card Search Integration** - Connect to backend search API with query building
+**Recent Achievement**: Built complete HTTP client suite covering ALL 19 backend endpoints across 5 domains (auth, user, deck, deck_card, card) in a single focused session. Achieved architectural breakthrough by unifying ApiError between frontend and backend - moved enum to shared library, eliminated duplicate frontend error.rs, synchronized reqwest versions. Net code reduction of 263 lines (711 deleted, 448 added). Independently caught and fixed HTTP verb mismatches (delete_user using PUT instead of DELETE) and copy-paste errors (trait method names). Demonstrated complete understanding of established patterns by building all remaining client methods rapidly (6 minutes for search_cards including query parameter research). Enhanced delete_user security with password confirmation. Added `skip_serializing_if` to HttpSearchCards for clean query URLs. Refactored client folder structure moving user operations from auth/ to user/. All methods follow identical pattern with proper error handling and authentication.
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Route Parameter Patterns** - Best way to pass deck IDs through routes to detail screens
-2. **Frontend Data Transformation** - Patterns for calculating deck metrics from raw card data
-3. **Component Reusability** - When to extract shared UI patterns vs keeping inline
+1. **Swipeable Card Browsing** - How to implement card-by-card swipe navigation through search results
+2. **Frontend Data Transformation** - Patterns for calculating deck metrics (mana curve, color distribution) from raw card data
+3. **Component Reusability** - When to extract shared UI patterns vs keeping inline for deck/card displays
 4. **Search UX Patterns** - Debouncing, loading states, empty results handling for card search
 5. **Deck Modification Patterns** - Optimistic updates vs refetching after add/remove card operations
 
@@ -180,26 +173,27 @@ alwaysApply: true
 
 ## DEVELOPING - Active Implementation (Working But Learning) 🔧
 
-### 🌐 Frontend-Backend HTTP Integration (Production-Ready)
-- **HTTP Client Architecture**: AuthClient with reqwest for POST/PUT requests, proper header configuration
-- **Centralized Error Handling**: Single `ApiError` enum replacing operation-specific errors, reducing boilerplate significantly
+### 🌐 Frontend-Backend HTTP Integration (Production-Ready) ✅
+- **Complete Client Method Suite**: All 19 backend endpoints covered across 5 domains (auth: 4, user: 5, deck: 5, deck_card: 3, card: 2)
+- **Unified ApiError Architecture**: Single error enum shared between frontend and backend, moved to zerver/src/lib/inbound/http.rs
+- **Frontend/Backend Error Sharing**: Eliminated duplicate frontend error.rs file, both sides use same ApiError with Network variant for client errors
+- **Reqwest Version Alignment**: Synchronized frontend (0.12) and backend (0.12) reqwest versions for clean From trait implementations
 - **From Trait Patterns**: `From<(StatusCode, String)> for ApiError` enabling automatic conversions via `.into()` at call sites
-- **Status Code Mapping**: Centralized mapping of HTTP status codes to specific ApiError variants (Unauthorized, Forbidden, NotFound, UnprocessableEntity, InternalServerError, Unknown)
+- **Status Code Mapping**: Centralized mapping of HTTP status codes (Unauthorized, Forbidden, NotFound, UnprocessableEntity, InternalServerError)
 - **Request Convenience Methods**: `.json()` for automatic serialization + Content-Type header, `.bearer_auth()` for authentication headers
-- **Response Flow Understanding**: HTTP bytes → JSON deserialization → domain types
-- **Status Code Handling**: Simplified match statements: success case + wildcard with `.into()` conversion
-- **Async Patterns in Dioxus**: spawn() for calling async functions from sync event handlers
-- **Signal Move Semantics**: Cloning Signals and client instances for async block capture
-- **Custom Deserialize Implementation**: Newtype validation through HTTP boundaries using manual deserialize impls
-- **API Endpoint Construction**: URL path building with set_path() for RESTful routes
-- **Loading State Implementation**: Spinner activation/deactivation around async operations
-- **Error Recovery UX**: Automatic error clearing on successful retry
-- **OnceLock Configuration**: One-time config loading cached across AuthClient instances
-- **Authenticated Request Pattern**: Session validation → infallible_get_active_session → bearer header → HTTP request → conditional session update
-- **Success/Error State Management**: Mutually exclusive success_message and submission_error signals, clearing on opposite outcomes
-- **Complete Client Methods**: login, register, logout, refresh, change_username, change_email, change_password, create_deck, delete_deck, get_deck_profiles, get_deck, update_deck_profile
-- **Backend Serialization Alignment**: Added Serialize/Deserialize derives to backend types (Deck, HttpUpdateDeckProfileBody) for frontend consumption
-- *Note: 215 lines eliminated through refactoring - client layer now feels production-ready*
+- **HTTP Verb Consistency**: All client methods audited for correct REST verbs (GET/POST/PUT/DELETE)
+- **Client Method Organization**: Refactored into domain folders - auth/, user/, deck/, deck_card/, card/ for clean separation
+- **Auth Domain**: login, register, logout, refresh (Session-producing operations)
+- **User Domain**: get_user, change_username, change_email, change_password, delete_user (profile management)
+- **Deck Domain**: create_deck_profile, get_deck_profiles, get_deck, update_deck_profile, delete_deck (deck CRUD)
+- **Deck Card Domain**: create_deck_card, update_deck_card, delete_deck_card (deck composition)
+- **Card Domain**: get_card (by UUID), search_cards (complex query parameters with skip_serializing_if)
+- **Authenticated Request Pattern**: Session validation → infallible_get_active_session → bearer header → HTTP request
+- **Success/Error State Management**: Mutually exclusive success_message and submission_error signals
+- **Backend Serialization Alignment**: Added Serialize/Deserialize derives to backend types for frontend consumption
+- **Security Enhancement**: delete_user requires password confirmation with HttpDeleteUser request type
+- **Code Reduction Victory**: Net reduction of 263 lines (711 deleted, 448 added) through architectural improvements
+- *Note: Complete production-ready HTTP client layer with consistent patterns across all operations*
 
 ### 🎮 Swipe-Based Navigation & Gestures
 - **Position Tracking**: BasicPoint (i32 x/y) for screen coordinates independent of swipe detection

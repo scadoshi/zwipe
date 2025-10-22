@@ -13,26 +13,26 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Major HTTP client refactoring eliminating 215 lines of redundant code and establishing production-ready request patterns.
+**Last Updated**: Complete HTTP client implementation with all 19 backend endpoints covered. Unified frontend/backend error handling through shared ApiError enum. Ready to build deck creation and card search UI.
 
-**Current Focus**: Deck detail navigation and card search integration for building deck functionality.
+**Current Focus**: Building deck creation screen and card search integration for full deck building workflow.
 
-**Recent Achievement**: Completed comprehensive HTTP client refactoring reducing codebase by 215 lines (360 deleted, 145 added). Created centralized `ApiError` enum replacing 10+ operation-specific error types throughout client layer. Implemented `From<(StatusCode, String)> for ApiError` pattern enabling clean conversions at all call sites. Standardized all POST/PUT operations to use `.json()` convenience method (auto-serialization + Content-Type header). Standardized all authenticated requests to use `.bearer_auth()` helper method. Refactored login, register, logout, refresh, all profile changes, and deck operations to return unified `Result<T, ApiError>`. Built get_deck and update_deck_profile client methods from scratch following established patterns. HTTP client architecture now production-ready with minimal boilerplate and consistent error handling across all operations.
+**Recent Achievement**: Completed comprehensive HTTP client suite covering ALL backend endpoints (448 lines changed, 711 deleted - massive code reduction through shared ApiError architecture). Built 19 client methods across 5 domains (auth, user, deck, deck_card, card) with consistent patterns. Unified ApiError between frontend/backend by moving error enum to shared library - eliminated duplicate frontend error types while maintaining clean hexagonal boundaries. Added `skip_serializing_if` to HttpSearchCards for clean query parameter handling. Enhanced delete_user security requiring password confirmation. Refactored user profile changes into dedicated `/user` client folder. Updated logo system with Zwipe, Zerver, Zervice, Zwiper variants. All HTTP verbs correctly aligned (GET/POST/PUT/DELETE). Frontend compiles cleanly with only minor unused import warnings.
 
-**Current Success**: Complete profile management system with working backend integration. All change operations (username/email/password) successfully update session state and display success messages. Logout revokes server-side refresh tokens and clears local session. Universal swipeable UI across all screens. Resource pattern properly handled for deck list and future data fetching.
+**Current Success**: Complete end-to-end HTTP integration from frontend to backend across all domains. All authentication flows working (register, login, logout, refresh, profile changes, account deletion). Deck CRUD operations complete (create, read, update, delete). Deck card management ready (add, update quantity, remove). Card operations ready (get by ID, search with complex query parameters). Universal swipeable UI. Production-ready error handling with shared ApiError architecture.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Client Method Review** - Audit all existing frontend client implementations for completeness and consistency
-2. **ApiError Status Code Audit** - Review all backend HTTP handlers to ensure ApiError enum covers every status code the backend can throw
-3. **Complete Client Method Suite** - Build all remaining auth and deck client methods (deck cards CRUD) following established ApiError pattern
-4. **Deck Building Workflow** - Full deck creation flow, add cards from search, manage quantities, deck detail view
-5. **Card Search Integration** - Connect search component to backend API with query building and result display
+1. **Deck Creation Screen** - UI for creating new decks with name and description
+2. **Deck Detail Screen** - Individual deck view showing all cards with quantities and metrics
+3. **Card Search UI** - Search interface with filters (name, type, color, CMC, power/toughness, rarity)
+4. **Add Cards to Deck** - Integration of search results with deck card management
+5. **Deck Card Quantity Management** - UI for adjusting card quantities in decks
 
 ### 🤔 Next Immediate Priorities (Top 5)
-1. **Deck Detail Screen** - Individual deck view showing all cards with quantities and metrics
-2. **Deck Card Management** - Add, update quantity, and remove cards from decks with proper error handling
-3. **Frontend Deck Analytics** - Calculate mana curve, color distribution, type breakdown from card data
-4. **Card Detail Screen** - Full card view with image and all attributes for search results
+1. **Card Swipe Navigation** - Swipeable card browsing interface for search results
+2. **Frontend Deck Analytics** - Calculate mana curve, color distribution, type breakdown from card data
+3. **Card Detail Screen** - Full card view with image and all attributes
+4. **Deck Validation** - Client-side validation for deck legality and card limits
 5. **Deck Sharing** - Export/import deck lists in standard formats
 
 ---
@@ -204,6 +204,18 @@ alwaysApply: true
 - **Get Deck Client**: Built complete get_deck client method from scratch with proper authentication and error handling
 - **Update Deck Profile Client**: Built complete update_deck_profile client method with HttpUpdateDeckProfileBody struct and proper validation
 - **Backend Serialization Updates**: Added Deserialize to Deck domain type, Serialize to HttpUpdateDeckProfileBody for frontend/backend sharing
+- **Complete HTTP Client Suite**: Built all 19 client methods covering every backend endpoint across auth, user, deck, deck_card, and card domains
+- **Unified ApiError Architecture**: Moved ApiError enum to shared library (zerver/src/lib/inbound/http.rs), eliminated duplicate frontend error.rs file
+- **Frontend/Backend Error Sharing**: Single ApiError type used by both frontend and backend with Network variant for client-side errors
+- **Reqwest Version Alignment**: Synchronized reqwest versions between frontend (0.12) and backend (0.11 → 0.12) for clean From trait implementations
+- **Client Method Organization**: Refactored auth client methods - moved user profile operations (change_username, change_email, change_password, delete_user, get_user) from auth/ to user/ folder
+- **Delete User Security Enhancement**: Added password confirmation requirement to delete_user operation with HttpDeleteUser request type
+- **HttpSearchCards Serialization**: Added `skip_serializing_if = "Option::is_none"` to all optional fields for clean query parameter URLs
+- **Card Client Methods**: Implemented get_card (by UUID) and search_cards (with complex query parameters) following established patterns
+- **Deck Card Client Methods**: Implemented create_deck_card, update_deck_card, delete_deck_card for full deck composition management
+- **HTTP Verb Consistency**: Audited and corrected all client methods to use proper REST verbs (GET for reads, POST for creates, PUT for updates, DELETE for deletes)
+- **Logo System Refactoring**: Created modular logo system with Zwipe, Zerver, Zervice, Zwiper variants using const + struct pattern
+- **Code Reduction Victory**: Net reduction of 263 lines (711 deleted, 448 added) through architectural improvements and elimination of duplicate code
 
 ---
 
