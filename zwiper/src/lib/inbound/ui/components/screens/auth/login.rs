@@ -4,9 +4,9 @@ use crate::{
         router::Router,
     },
     outbound::{
-        client::auth::{
-            login::{AuthClientLogin, LoginError},
-            AuthClient,
+        client::{
+            auth::{login::AuthClientLogin, AuthClient},
+            error::ApiError,
         },
         session::Persist,
     },
@@ -67,7 +67,9 @@ pub fn Login() -> Element {
                 }
             });
         } else {
-            submission_error.set(Some(LoginError::Unauthorized.to_string()));
+            submission_error.set(Some(
+                ApiError::Unauthorized("invalid credentials".to_string()).to_string(),
+            ));
         }
         is_loading.set(false);
     };
