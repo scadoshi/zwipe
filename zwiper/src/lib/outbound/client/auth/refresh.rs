@@ -1,10 +1,11 @@
-use crate::outbound::client::{auth::AuthClient, error::ApiError};
+use crate::outbound::client::auth::AuthClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use zwipe::{
     domain::auth::models::session::Session,
     inbound::http::{
         handlers::auth::refresh_session::HttpRefreshSession, routes::refresh_session_route,
+        ApiError,
     },
 };
 
@@ -22,14 +23,12 @@ impl AuthClientRefresh for AuthClient {
 
         let response = self.client.post(url).json(&request).send().await?;
 
-        let status = response.status();
-
-        match status {
+        match response.status() {
             StatusCode::OK => {
                 let new: Session = response.json().await?;
                 Ok(new)
             }
-            _ => {
+            status => {
                 let message = response.text().await?;
                 Err((status, message).into())
             }
