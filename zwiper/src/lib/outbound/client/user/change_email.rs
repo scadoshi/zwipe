@@ -1,9 +1,11 @@
-use crate::outbound::client::{auth::AuthClient, error::ApiError};
+use crate::outbound::client::auth::AuthClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use zwipe::{
     domain::{auth::models::session::Session, user::models::User},
-    inbound::http::{handlers::auth::change_email::HttpChangeEmail, routes::change_email_route},
+    inbound::http::{
+        handlers::auth::change_email::HttpChangeEmail, routes::change_email_route, ApiError,
+    },
 };
 
 pub trait AuthClientChangeEmail {

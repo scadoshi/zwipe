@@ -1,32 +1,32 @@
-use crate::outbound::client::{auth::AuthClient, error::ApiError};
+use crate::outbound::client::auth::AuthClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use zwipe::{
     domain::auth::models::session::Session,
     inbound::http::{
-        handlers::auth::change_password::HttpChangePassword, routes::change_password_route,
+        handlers::auth::delete_user::HttpDeleteUser, routes::delete_user_route, ApiError,
     },
 };
 
-pub trait AuthClientChangePassword {
-    fn change_password(
+pub trait AuthClientDeleteUser {
+    fn delete_user(
         &self,
-        request: HttpChangePassword,
+        request: HttpDeleteUser,
         session: &Session,
     ) -> impl Future<Output = Result<(), ApiError>> + Send;
 }
 
-impl AuthClientChangePassword for AuthClient {
-    async fn change_password(
+impl AuthClientDeleteUser for AuthClient {
+    async fn delete_user(
         &self,
-        request: HttpChangePassword,
+        request: HttpDeleteUser,
         session: &Session,
     ) -> Result<(), ApiError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&change_password_route());
+        url.set_path(&delete_user_route());
         let response = self
             .client
-            .put(url)
+            .delete(url)
             .json(&request)
             .bearer_auth(session.access_token.value.as_str())
             .send()

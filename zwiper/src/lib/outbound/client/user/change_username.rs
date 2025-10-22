@@ -1,10 +1,11 @@
-use crate::outbound::client::{auth::AuthClient, error::ApiError};
+use crate::outbound::client::auth::AuthClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use zwipe::{
     domain::{auth::models::session::Session, user::models::User},
     inbound::http::{
         handlers::auth::change_username::HttpChangeUsername, routes::change_username_route,
+        ApiError,
     },
 };
 
