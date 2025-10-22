@@ -22,7 +22,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "zerver")]
 impl From<SearchCardError> for ApiError {
@@ -38,26 +38,41 @@ impl From<InvalidSearchCard> for ApiError {
     }
 }
 
-#[derive(Debug, Deserialize)]
-pub struct SearchCardRawParameters {
-    name: Option<String>,
-    type_line: Option<String>,
-    set: Option<String>,
-    rarity: Option<String>,
-    cmc: Option<f64>,
-    cmc_range: Option<(f64, f64)>,
-    power: Option<i32>,
-    power_range: Option<(i32, i32)>,
-    toughness: Option<i32>,
-    toughness_range: Option<(i32, i32)>,
-    color_identity: Option<String>,
-    color_identity_contains: Option<String>,
-    oracle_text: Option<String>,
-    limit: Option<u32>,
-    offset: Option<u32>,
+#[derive(Debug, Deserialize, Serialize)]
+pub struct HttpSearchCards {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub type_line: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub set: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rarity: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cmc: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cmc_range: Option<(f64, f64)>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub power: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub power_range: Option<(i32, i32)>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub toughness: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub toughness_range: Option<(i32, i32)>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color_identity: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color_identity_contains: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub oracle_text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub offset: Option<u32>,
 }
 
-impl SearchCardRawParameters {
+impl HttpSearchCards {
     pub fn new(
         name: Option<String>,
         type_line: Option<String>,
@@ -95,9 +110,9 @@ impl SearchCardRawParameters {
     }
 }
 
-impl TryFrom<SearchCardRawParameters> for SearchCard {
+impl TryFrom<HttpSearchCards> for SearchCard {
     type Error = InvalidSearchCard;
-    fn try_from(params: SearchCardRawParameters) -> Result<Self, Self::Error> {
+    fn try_from(params: HttpSearchCards) -> Result<Self, Self::Error> {
         let color_identity: Option<Colors> = params.color_identity.map(|s| {
             s.split(',')
                 .filter_map(|c| Color::try_from(c).ok())
@@ -134,7 +149,7 @@ impl TryFrom<SearchCardRawParameters> for SearchCard {
 pub async fn search_cards<AS, US, HS, CS, DS>(
     _: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
-    Query(params): Query<SearchCardRawParameters>,
+    Query(params): Query<HttpSearchCards>,
 ) -> Result<(StatusCode, Json<Vec<Card>>), ApiError>
 where
     AS: AuthService,
