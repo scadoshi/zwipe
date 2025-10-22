@@ -1,45 +1,20 @@
-use crate::outbound::client::auth::AuthClient;
+use crate::outbound::client::{auth::AuthClient, error::ApiError};
+use reqwest::StatusCode;
 use std::future::Future;
-use thiserror::Error;
 use zwipe::{
     domain::{auth::models::session::Session, deck::models::deck::deck_profile::DeckProfile},
     inbound::http::routes::get_deck_profiles_route,
 };
 
-#[derive(Debug, Error)]
-pub enum GetDeckProfilesError {
-    #[error("network error")]
-    Network(reqwest::Error),
-    #[error("something went wrong")]
-    SomethingWentWrong,
-    #[error("session expired")]
-    SessionExpired,
-}
-
-impl From<reqwest::Error> for GetDeckProfilesError {
-    fn from(value: reqwest::Error) -> Self {
-        Self::Network(value)
-    }
-}
-
-impl From<serde_json::Error> for GetDeckProfilesError {
-    fn from(_value: serde_json::Error) -> Self {
-        Self::SomethingWentWrong
-    }
-}
-
-pub trait GetDecks {
+pub trait AuthClientGetDecks {
     fn get_deck_profiles(
         &self,
         session: &Session,
-    ) -> impl Future<Output = Result<Vec<DeckProfile>, GetDeckProfilesError>> + Send;
+    ) -> impl Future<Output = Result<Vec<DeckProfile>, ApiError>> + Send;
 }
 
-impl GetDecks for AuthClient {
-    async fn get_deck_profiles(
-        &self,
-        session: &Session,
-    ) -> Result<Vec<DeckProfile>, GetDeckProfilesError> {
+impl AuthClientGetDecks for AuthClient {
+    async fn get_deck_profiles(&self, session: &Session) -> Result<Vec<DeckProfile>, ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&get_deck_profiles_route());
 
@@ -50,8 +25,17 @@ impl GetDecks for AuthClient {
             .send()
             .await?;
 
-        let deck_profiles: Vec<DeckProfile> = response.json().await?;
+        let status = response.status();
 
-        Ok(deck_profiles)
+        match status {
+            StatusCode::OK => {
+                let deck_profiles: Vec<DeckProfile> = response.json().await?;
+                Ok(deck_profiles)
+            }
+            _ => {
+                let message = response.text().await?;
+                Err((status, message).into())
+            }
+        }
     }
 }
