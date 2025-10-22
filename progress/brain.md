@@ -15,11 +15,11 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Complete profile management system implementation with authenticated HTTP requests, logout backend integration, and universal swipeable UI patterns.
+**Last Updated**: Major HTTP client refactoring - centralized error handling, eliminated 215 lines of redundant code, and standardized request patterns across all client methods.
 
 **Next Learning Focus**: Deck detail screen implementation, card search integration, and frontend deck analytics calculations.
 
-**Recent Achievement**: Built complete profile change system with HTTP client integration - change_username, change_email, change_password all working with bearer token authentication, session validation, and success messages. Implemented logout with backend session revocation via POST /api/auth/logout. Made all screens swipeable (login, profile changes, deck list) for consistent UI patterns. Mastered Resource pattern matching using `.value().with(|result| match result {...})` to avoid borrow checker lifetime issues. Refined form validation across all change screens with proper error timing and submission_error clearing on success. Learned authenticated request pattern: session validation → token refresh if needed → bearer header → API call → update session if changed.
+**Recent Achievement**: Completed comprehensive HTTP client refactoring achieving significant code reduction (360 lines deleted, 145 added). Created unified `ApiError` enum replacing 10+ operation-specific error types (LoginError, RegisterError, ChangeUsernameError, etc.). Implemented `From<(StatusCode, String)> for ApiError` pattern enabling clean `.into()` conversions at call sites. Standardized all POST/PUT requests to use `.json()` convenience method (auto-serializes + sets Content-Type header). Standardized all authenticated requests to use `.bearer_auth()` helper. Updated 10+ client methods (login, register, logout, refresh, all profile changes, deck operations) to return `Result<T, ApiError>`. Built new client methods from scratch (get_deck, update_deck_profile) following established patterns. HTTP client layer now feels production-ready with minimal boilerplate and consistent error handling across all operations.
 
 ### 🎯 Currently Working Towards (Top 5)
 1. **Deck Detail Screen** - Full deck view with card list, metrics, edit capabilities
@@ -180,11 +180,14 @@ alwaysApply: true
 
 ## DEVELOPING - Active Implementation (Working But Learning) 🔧
 
-### 🌐 Frontend-Backend HTTP Integration
+### 🌐 Frontend-Backend HTTP Integration (Production-Ready)
 - **HTTP Client Architecture**: AuthClient with reqwest for POST/PUT requests, proper header configuration
-- **Error Type Design**: Custom error types per operation (RegisterUserError, ChangeUsernameError, etc.) with status code mapping
+- **Centralized Error Handling**: Single `ApiError` enum replacing operation-specific errors, reducing boilerplate significantly
+- **From Trait Patterns**: `From<(StatusCode, String)> for ApiError` enabling automatic conversions via `.into()` at call sites
+- **Status Code Mapping**: Centralized mapping of HTTP status codes to specific ApiError variants (Unauthorized, Forbidden, NotFound, UnprocessableEntity, InternalServerError, Unknown)
+- **Request Convenience Methods**: `.json()` for automatic serialization + Content-Type header, `.bearer_auth()` for authentication headers
 - **Response Flow Understanding**: HTTP bytes → JSON deserialization → domain types
-- **Status Code Handling**: Branching on 200/201/401/422/500 to map server responses to user-facing errors
+- **Status Code Handling**: Simplified match statements: success case + wildcard with `.into()` conversion
 - **Async Patterns in Dioxus**: spawn() for calling async functions from sync event handlers
 - **Signal Move Semantics**: Cloning Signals and client instances for async block capture
 - **Custom Deserialize Implementation**: Newtype validation through HTTP boundaries using manual deserialize impls
@@ -193,10 +196,10 @@ alwaysApply: true
 - **Error Recovery UX**: Automatic error clearing on successful retry
 - **OnceLock Configuration**: One-time config loading cached across AuthClient instances
 - **Authenticated Request Pattern**: Session validation → infallible_get_active_session → bearer header → HTTP request → conditional session update
-- **Bearer Token Headers**: `Authorization: Bearer {session.access_token.value.as_str()}` pattern for authenticated endpoints
 - **Success/Error State Management**: Mutually exclusive success_message and submission_error signals, clearing on opposite outcomes
-- **Change Operations Complete**: change_username, change_email, change_password all working with session updates and user field modifications
-- **Logout Backend Integration**: POST to /api/auth/logout with bearer token, server-side refresh token revocation, local session clearing
+- **Complete Client Methods**: login, register, logout, refresh, change_username, change_email, change_password, create_deck, delete_deck, get_deck_profiles, get_deck, update_deck_profile
+- **Backend Serialization Alignment**: Added Serialize/Deserialize derives to backend types (Deck, HttpUpdateDeckProfileBody) for frontend consumption
+- *Note: 215 lines eliminated through refactoring - client layer now feels production-ready*
 
 ### 🎮 Swipe-Based Navigation & Gestures
 - **Position Tracking**: BasicPoint (i32 x/y) for screen coordinates independent of swipe detection

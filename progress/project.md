@@ -13,11 +13,11 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Complete profile management system with backend integration, logout functionality, and universal swipeable UI patterns.
+**Last Updated**: Major HTTP client refactoring eliminating 215 lines of redundant code and establishing production-ready request patterns.
 
 **Current Focus**: Deck detail navigation and card search integration for building deck functionality.
 
-**Recent Achievement**: Implemented full profile change operations (username/email/password) with authenticated HTTP requests, bearer token handling, and success message system. Built logout with backend session revocation via `/api/auth/logout`. Made all screens swipeable (login, profile changes, deck list) using unified Swipeable component pattern. Fixed Resource pattern matching with `.value().with()` closure pattern to avoid borrow checker lifetime issues. Refined form validation patterns across all change screens with proper error display timing and submission_error clearing on success.
+**Recent Achievement**: Completed comprehensive HTTP client refactoring reducing codebase by 215 lines (360 deleted, 145 added). Created centralized `ApiError` enum replacing 10+ operation-specific error types throughout client layer. Implemented `From<(StatusCode, String)> for ApiError` pattern enabling clean conversions at all call sites. Standardized all POST/PUT operations to use `.json()` convenience method (auto-serialization + Content-Type header). Standardized all authenticated requests to use `.bearer_auth()` helper method. Refactored login, register, logout, refresh, all profile changes, and deck operations to return unified `Result<T, ApiError>`. Built get_deck and update_deck_profile client methods from scratch following established patterns. HTTP client architecture now production-ready with minimal boilerplate and consistent error handling across all operations.
 
 **Current Success**: Complete profile management system with working backend integration. All change operations (username/email/password) successfully update session state and display success messages. Logout revokes server-side refresh tokens and clears local session. Universal swipeable UI across all screens. Resource pattern properly handled for deck list and future data fetching.
 
@@ -197,6 +197,13 @@ alwaysApply: true
 - **Form Validation Refinement**: Proper error display timing (after first submit), separate validation for each field, submission_error clearing on success
 - **Resource Pattern Mastery**: Match on Resource using `.value().with(|result| match result {...})` to avoid temporary value lifetime errors
 - **Change Password Special Handling**: Current password not validated (legacy password policy compatibility), only new password validated
+- **HTTP Client Error Refactoring**: Eliminated 215 lines by creating centralized ApiError enum replacing LoginError, RegisterError, ChangeUsernameError, ChangeEmailError, ChangePasswordError, LogoutError, RefreshError, CreateDeckError, DeleteDeckError, GetDeckProfilesError
+- **From Trait Error Conversion**: Implemented `From<(StatusCode, String)> for ApiError` enabling automatic `.into()` conversions throughout client layer
+- **Request Pattern Standardization**: All POST/PUT requests use `.json()` method (auto-serialization + Content-Type), all authenticated requests use `.bearer_auth()` helper
+- **Client Method Consistency**: All 12+ client methods follow identical pattern: `Result<T, ApiError>` returns, success case + wildcard match with `.into()`, clean error flow
+- **Get Deck Client**: Built complete get_deck client method from scratch with proper authentication and error handling
+- **Update Deck Profile Client**: Built complete update_deck_profile client method with HttpUpdateDeckProfileBody struct and proper validation
+- **Backend Serialization Updates**: Added Deserialize to Deck domain type, Serialize to HttpUpdateDeckProfileBody for frontend/backend sharing
 
 ---
 
@@ -298,6 +305,21 @@ alwaysApply: true
 - **Auth Domain Security Consolidation**: Successfully moved all user lifecycle operations to auth domain for centralized security
 - **User Domain Cleanup**: Simplified user domain to read-only profile access, removed all mutation operations
 - **Production Security Architecture**: Complete security boundary establishment with proper authentication and authorization
+
+### 🌐 Frontend HTTP Client Evolution & Refactoring
+- **Initial Client Implementation**: Built AuthClient with operation-specific error types (LoginError, RegisterError, etc.) - verbose but functional
+- **Error Type Proliferation**: Each operation had dedicated error enum with From impls, manual header construction, manual JSON serialization
+- **Refactoring Revelation**: Realized backend returns standardized (StatusCode, String) tuples - frontend duplicating unnecessary mapping logic
+- **Centralized Error Design**: Created single ApiError enum with variants (Unauthorized, Forbidden, NotFound, UnprocessableEntity, InternalServerError, Unknown)
+- **From Trait Implementation**: Built `From<(StatusCode, String)> for ApiError` centralizing all status code → error variant mapping in one location
+- **Request Pattern Standardization**: Discovered `.json()` convenience method (auto-serializes + sets Content-Type), replaced manual `.header()` + `.body(serde_json::to_string())`
+- **Authentication Helper Discovery**: Standardized on `.bearer_auth()` replacing manual `format!("Bearer {}")` header construction
+- **Massive Code Reduction**: Eliminated 215 lines (360 deleted, 145 added) - removed 10+ error type definitions with associated From impls
+- **Client Method Unification**: Refactored login, register, logout, refresh, change_username, change_email, change_password, create_deck, delete_deck, get_deck_profiles - all follow identical pattern
+- **New Methods from Scratch**: Built get_deck and update_deck_profile following established patterns - proved architecture is learnable and consistent
+- **Call Site Simplification**: UI components now handle single ApiError type with `.to_string()` for display - no complex matching needed
+- **Backend Alignment**: Added Serialize to HttpUpdateDeckProfileBody, Deserialize to Deck for frontend consumption
+- **Production Readiness**: HTTP client layer now feels production-ready with minimal boilerplate and consistent error handling
 
 ---
 
