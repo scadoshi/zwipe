@@ -1,13 +1,13 @@
 use crate::{
     inbound::ui::{
         components::{
-            auth::bouncer::Bouncer,
+            auth::{bouncer::Bouncer, session_upkeep::Upkeep},
             interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
         },
         router::Router,
     },
     outbound::client::{
-        auth::{session::AuthClientSession, AuthClient},
+        auth::AuthClient,
         deck::get_deck_profiles::{GetDeckProfilesError, GetDecks},
     },
 };
@@ -23,29 +23,16 @@ pub fn Decks() -> Element {
 
     let navigator = use_navigator();
     let auth_client: Signal<AuthClient> = use_context();
-    let mut session: Signal<Option<Session>> = use_context();
+    let session: Signal<Option<Session>> = use_context();
 
     let deck_profiles_resource: Resource<Result<Vec<DeckProfile>, GetDeckProfilesError>> =
         use_resource(move || async move {
-            let Some(current) = session.read().clone() else {
+            session.upkeep(auth_client);
+            let Some(sesh) = session.read().clone() else {
                 return Err(GetDeckProfilesError::SessionExpired);
             };
 
-            let Some(active) = auth_client
-                .read()
-                .infallible_get_active_session(&current)
-                .await
-            else {
-                return Err(GetDeckProfilesError::SessionExpired);
-            };
-
-            let result = auth_client.read().get_deck_profiles(&active).await;
-
-            if active != current {
-                session.set(Some(active));
-            }
-
-            result
+            auth_client.read().get_deck_profiles(&sesh).await
         });
 
     rsx! {

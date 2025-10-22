@@ -1,7 +1,7 @@
 use crate::{
     inbound::ui::{
         components::{
-            auth::bouncer::Bouncer,
+            auth::{bouncer::Bouncer, session_upkeep::Upkeep},
             interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
             success_messages::random_success_message,
         },
@@ -9,7 +9,6 @@ use crate::{
     },
     outbound::client::auth::{
         change_username::{AuthClientChangeUsername, ChangeUsernameError},
-        session::AuthClientSession,
         AuthClient,
     },
 };
@@ -67,6 +66,34 @@ pub fn ChangeUsername() -> Element {
         password.set(String::new());
     };
 
+    let mut attempt_submit = move || {
+        submit_attempted.set(true);
+        if inputs_are_valid() {
+            tracing::info!("change username to {}", new_username.read());
+            let request = HttpChangeUsername::new(&*new_username.read(), &*password.read());
+            spawn(async move {
+                session.upkeep(auth_client);
+                let Some(mut sesh) = session.read().clone() else {
+                    submission_error.set(Some(ChangeUsernameError::SessionExpired.to_string()));
+                    return;
+                };
+
+                match auth_client.read().change_username(request, &sesh).await {
+                    Ok(updated_user) => {
+                        sesh.user.username = updated_user.username;
+                        session.set(Some(sesh));
+                        success_message.set(Some(random_success_message()));
+                        submission_error.set(None);
+                        clear_inputs();
+                    }
+                    Err(e) => submission_error.set(Some(e.to_string())),
+                }
+            });
+        } else {
+            submission_error.set(Some("invalid input".to_string()));
+        }
+    };
+
     rsx! {
         Bouncer {
             Swipeable { state: swipe_state, config: swipe_config,
@@ -120,39 +147,8 @@ pub fn ChangeUsername() -> Element {
                             }
 
                             button {
-                                onclick : move |_| {
-                                    submit_attempted.set(true);
-                                    if inputs_are_valid() {
-                                        tracing::info!("change username to {}", new_username.read());
-                                        let request = HttpChangeUsername::new(&*new_username.read(), &*password.read());
-                                        spawn(async move {
-                                            let Some(current) = session.read().clone() else {
-                                                submission_error.set(Some(ChangeUsernameError::SessionExpired.to_string()));
-                                                return;
-                                            };
-
-                                            let Some(mut active) = auth_client
-                                                .read()
-                                                .infallible_get_active_session(&current)
-                                                .await else { return; };
-
-                                            match auth_client.read().change_username(request, &active).await {
-                                                Ok(updated_user) => {
-                                                    active.user.username = updated_user.username;
-                                                    success_message.set(Some(random_success_message()));
-                                                    submission_error.set(None);
-                                                    clear_inputs();
-                                                }
-                                                Err(e) => submission_error.set(Some(e.to_string())),
-                                            }
-
-                                            session.set(Some(active));
-                                        });
-
-                                    } else {
-                                        submission_error.set(Some("invalid input".to_string()));
-                                    }
-                                }, "submit"
+                                onclick : move |_| attempt_submit(),
+                                "submit"
                             }
 
                             button {

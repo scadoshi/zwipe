@@ -1,19 +1,24 @@
 use crate::domain::error::UserFacing;
-use crate::inbound::ui::components::auth::bouncer::Bouncer;
-use crate::inbound::ui::components::interactions::swipe::config::SwipeConfig;
-use crate::inbound::ui::components::success_messages::random_success_message;
-use crate::inbound::ui::components::{
-    interactions::swipe::state::SwipeState, screens::app::profile::Swipeable,
+use crate::inbound::ui::{
+    components::{
+        auth::{bouncer::Bouncer, session_upkeep::Upkeep},
+        interactions::swipe::{config::SwipeConfig, state::SwipeState},
+        screens::app::profile::Swipeable,
+        success_messages::random_success_message,
+    },
+    router::Router,
 };
-use crate::inbound::ui::router::Router;
-use crate::outbound::client::auth::change_email::{AuthClientChangeEmail, ChangeEmailError};
-use crate::outbound::client::auth::session::AuthClientSession;
-use crate::outbound::client::auth::AuthClient;
+use crate::outbound::client::auth::{
+    change_email::{AuthClientChangeEmail, ChangeEmailError},
+    AuthClient,
+};
 use dioxus::prelude::*;
 use email_address::EmailAddress;
 use std::str::FromStr;
-use zwipe::domain::auth::models::{password::Password, session::Session};
-use zwipe::inbound::http::handlers::auth::change_email::HttpChangeEmail;
+use zwipe::{
+    domain::auth::models::{password::Password, session::Session},
+    inbound::http::handlers::auth::change_email::HttpChangeEmail,
+};
 
 #[component]
 pub fn ChangeEmail() -> Element {
@@ -66,30 +71,22 @@ pub fn ChangeEmail() -> Element {
             tracing::info!("change email to {}", new_email.read());
             let request = HttpChangeEmail::new(&*new_email.read(), &*password.read());
             spawn(async move {
-                let Some(current) = session.read().clone() else {
+                session.upkeep(auth_client);
+                let Some(mut sesh) = session.read().clone() else {
                     submission_error.set(Some(ChangeEmailError::SessionExpired.to_string()));
                     return;
                 };
 
-                let Some(mut active) = auth_client
-                    .read()
-                    .infallible_get_active_session(&current)
-                    .await
-                else {
-                    return;
-                };
-
-                match auth_client.read().change_email(request, &active).await {
+                match auth_client.read().change_email(request, &sesh).await {
                     Ok(updated_user) => {
                         submission_error.set(None);
-                        active.user.email = updated_user.email;
+                        sesh.user.email = updated_user.email;
+                        session.set(Some(sesh));
                         success_message.set(Some(random_success_message()));
                         clear_inputs();
                     }
                     Err(e) => submission_error.set(Some(e.to_string())),
                 }
-
-                session.set(Some(active));
             });
         } else {
             submission_error.set(Some("invalid input".to_string()));

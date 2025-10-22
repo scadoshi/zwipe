@@ -1,7 +1,7 @@
 use crate::{
     inbound::ui::{
         components::{
-            auth::bouncer::Bouncer,
+            auth::{bouncer::Bouncer, session_upkeep::Upkeep},
             interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
             success_messages::random_success_message,
         },
@@ -9,7 +9,6 @@ use crate::{
     },
     outbound::client::auth::{
         change_password::{AuthClientChangePassword, ChangePasswordError},
-        session::AuthClientSession,
         AuthClient,
     },
 };
@@ -26,7 +25,7 @@ pub fn ChangePassword() -> Element {
 
     let navigator = use_navigator();
 
-    let mut session: Signal<Option<Session>> = use_context();
+    let session: Signal<Option<Session>> = use_context();
     let auth_client: Signal<AuthClient> = use_context();
 
     // we do not validate current password on frontend
@@ -68,30 +67,19 @@ pub fn ChangePassword() -> Element {
             tracing::info!("change password");
             let request = HttpChangePassword::new(&*current_password.read(), &*new_password.read());
             spawn(async move {
-                let Some(current) = session.read().clone() else {
+                session.upkeep(auth_client);
+                let Some(sesh) = session.read().clone() else {
                     submission_error.set(Some(ChangePasswordError::SessionExpired.to_string()));
                     return;
                 };
 
-                let Some(active) = auth_client
-                    .read()
-                    .infallible_get_active_session(&current)
-                    .await
-                else {
-                    return;
-                };
-
-                match auth_client.read().change_password(request, &active).await {
+                match auth_client.read().change_password(request, &sesh).await {
                     Ok(()) => {
                         success_message.set(Some(random_success_message()));
                         submission_error.set(None);
                         clear_inputs();
                     }
                     Err(e) => submission_error.set(Some(e.to_string())),
-                }
-
-                if active != current {
-                    session.set(Some(active));
                 }
             });
         } else {

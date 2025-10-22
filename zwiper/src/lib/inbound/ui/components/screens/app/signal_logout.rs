@@ -1,6 +1,9 @@
-use crate::outbound::{
-    client::auth::{logout::AuthClientLogout, session::AuthClientSession, AuthClient},
-    session::Persist,
+use crate::{
+    inbound::ui::components::auth::session_upkeep::Upkeep,
+    outbound::{
+        client::auth::{logout::AuthClientLogout, AuthClient},
+        session::Persist,
+    },
 };
 use dioxus::prelude::*;
 use zwipe::domain::auth::models::session::Session;
@@ -12,24 +15,16 @@ pub trait SignalLogout {
 impl SignalLogout for Signal<Option<Session>> {
     fn logout(self, auth_client: Signal<AuthClient>) {
         let mut session = self;
-        let Some(current) = session.read().clone() else {
-            return;
-        };
 
         spawn(async move {
-            let Some(active) = auth_client
-                .read()
-                .infallible_get_active_session(&current)
-                .await
-            else {
-                current.infallible_delete();
-                session.set(None);
+            session.upkeep(auth_client);
+            let Some(current) = session.read().clone() else {
                 return;
             };
 
-            match auth_client.read().logout(&active).await {
+            match auth_client.read().logout(&current).await {
                 Ok(()) => {
-                    active.infallible_delete();
+                    current.infallible_delete();
                     session.set(None);
                 }
                 Err(e) => tracing::error!("failed to logout: {e}"),
