@@ -190,7 +190,7 @@ impl AuthRepository for Postgres {
     async fn delete_user(&self, request: &DeleteUser) -> Result<(), DeleteUserError> {
         let mut tx = self.pool.begin().await?;
 
-        let result = query!("DELETE FROM users WHERE id = $1", request.id())
+        let result = query!("DELETE FROM users WHERE id = $1", request.user_id)
             .execute(&mut *tx)
             .await?;
 

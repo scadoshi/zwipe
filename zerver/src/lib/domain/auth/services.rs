@@ -170,6 +170,7 @@ where
     //  delete
     // ========
     async fn delete_user(&self, request: &DeleteUser) -> Result<(), DeleteUserError> {
+        self.authenticate_user(&request.into()).await?;
         self.auth_repo.delete_user(request).await
     }
 

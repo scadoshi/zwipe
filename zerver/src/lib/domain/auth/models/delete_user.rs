@@ -1,4 +1,5 @@
 #[cfg(feature = "zerver")]
+use crate::domain::auth::models::authenticate_user::AuthenticateUserError;
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -9,25 +10,43 @@ pub enum DeleteUserError {
     NotFound,
     #[error(transparent)]
     Database(anyhow::Error),
+    #[error(transparent)]
+    AuthenticateUserError(AuthenticateUserError),
+}
+
+#[cfg(feature = "zerver")]
+impl From<AuthenticateUserError> for DeleteUserError {
+    fn from(value: AuthenticateUserError) -> Self {
+        Self::AuthenticateUserError(value)
+    }
+}
+
+#[derive(Debug, Error)]
+pub enum InvalidDeleteUser {
+    #[error(transparent)]
+    Userid(uuid::Error),
+    #[error("invalid password")]
+    Password,
+}
+
+impl From<uuid::Error> for InvalidDeleteUser {
+    fn from(value: uuid::Error) -> Self {
+        Self::Userid(value)
+    }
 }
 
 #[derive(Debug, Clone)]
-pub struct DeleteUser(Uuid);
-
-impl DeleteUser {
-    pub fn new(id: &str) -> Result<Self, uuid::Error> {
-        let trimmed = id.trim();
-        let id = Uuid::try_parse(trimmed)?;
-        Ok(Self(id))
-    }
-
-    pub fn id(&self) -> Uuid {
-        self.0
-    }
+pub struct DeleteUser {
+    pub user_id: Uuid,
+    pub password: String,
 }
 
-impl From<Uuid> for DeleteUser {
-    fn from(value: Uuid) -> Self {
-        Self(value)
+impl DeleteUser {
+    pub fn new(user_id: Uuid, password: &str) -> Result<Self, InvalidDeleteUser> {
+        let password = password.trim();
+        Ok(Self {
+            user_id,
+            password: password.to_string(),
+        })
     }
 }
