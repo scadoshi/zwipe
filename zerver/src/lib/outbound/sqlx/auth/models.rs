@@ -15,7 +15,7 @@ use uuid::Uuid;
 /// (unvalidated data from `PostgreSQL`)
 #[derive(Debug, Clone, FromRow)]
 pub struct DatabaseUserWithPasswordHash {
-    pub id: String,
+    pub id: Uuid,
     pub username: String,
     pub email: String,
     pub password_hash: String,
@@ -27,14 +27,13 @@ impl TryFrom<DatabaseUserWithPasswordHash> for UserWithPasswordHash {
     type Error = IntoUserWithPasswordHashError;
 
     fn try_from(value: DatabaseUserWithPasswordHash) -> Result<Self, Self::Error> {
-        let id = Uuid::try_parse(&value.id)?;
         let username = Username::new(&value.username)?;
         let email = EmailAddress::from_str(&value.email)?;
 
         let password_hash = HashedPassword::new(&value.password_hash)?;
 
         Ok(Self {
-            id,
+            id: value.id,
             username,
             email,
             password_hash,

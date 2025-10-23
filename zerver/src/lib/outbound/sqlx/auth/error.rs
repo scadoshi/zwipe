@@ -22,36 +22,28 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum IntoUserWithPasswordHashError {
     #[error(transparent)]
-    InvalidId(uuid::Error),
+    Username(InvalidUsername),
     #[error(transparent)]
-    InvalidUsername(InvalidUsername),
+    Email(email_address::Error),
     #[error(transparent)]
-    InvalidEmail(email_address::Error),
-    #[error(transparent)]
-    InvalidPasswordHash(argon2::password_hash::Error),
+    PasswordHash(argon2::password_hash::Error),
 }
 
 impl From<argon2::password_hash::Error> for IntoUserWithPasswordHashError {
     fn from(value: argon2::password_hash::Error) -> Self {
-        Self::InvalidPasswordHash(value)
-    }
-}
-
-impl From<uuid::Error> for IntoUserWithPasswordHashError {
-    fn from(value: uuid::Error) -> Self {
-        Self::InvalidId(value)
+        Self::PasswordHash(value)
     }
 }
 
 impl From<InvalidUsername> for IntoUserWithPasswordHashError {
     fn from(value: InvalidUsername) -> Self {
-        Self::InvalidUsername(value)
+        Self::Username(value)
     }
 }
 
 impl From<email_address::Error> for IntoUserWithPasswordHashError {
     fn from(value: email_address::Error) -> Self {
-        Self::InvalidEmail(value)
+        Self::Email(value)
     }
 }
 
