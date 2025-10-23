@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Cascadia+Code:wght@200;300;400;500;600;700&display=swap');
 
 /* general */
+
 * {
     margin: 0;
     padding: 0;
@@ -153,6 +154,15 @@ button:active {
     text-align: center;
 }
 
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 300;
+    letter-spacing: 0.1em;
+    opacity: 0.8;
+}
+
 .form-group input {
     width: 100%;
     margin-bottom: 2rem;
@@ -208,7 +218,7 @@ button:active {
     }
 }
 
-/*  profile */
+/* profile */
 
 .profile-container {
     width: 20rem;
@@ -325,4 +335,121 @@ button:active {
     display: flex;
     flex-direction: column;
     gap: 0;
+}
+
+/* toggle switch */
+
+.toggle-switch-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.toggle-switch {
+    width: 5rem;
+    cursor: pointer;
+}
+
+.toggle-switch-track {
+    width: 100%;
+    height: 3rem;
+    border-radius: 1rem;
+    position: relative;
+    transition: all 0.3s ease;
+    border: 1px solid #f5f5dc;
+}
+
+.toggle-switch-track.on {
+    background-color: #f5f5dc;
+}
+
+.toggle-switch-track.off {
+    background-color: #1a1d23;
+}
+
+.toggle-switch-handle {
+    position: absolute;
+    top: 0.25rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    background-color: #f5f5dc;
+    border-radius: .8rem;
+    transition: all 0.3s ease;
+}
+
+.toggle-switch-track.on .toggle-switch-handle {
+    left: calc(100% - 2.75rem);
+}
+
+.toggle-switch-track.off .toggle-switch-handle {
+    left: 0.25rem;
+}
+
+/* singleton boxes */
+
+.form-group-singleton {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.singleton-box {
+    flex: 1;
+    padding: 1rem;
+    border: 1px solid #f5f5dc;
+    border-radius: 1rem;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 300;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.singleton-box.true {
+    background-color: #f5f5dc;
+    color: #1a1d23;
+}
+
+.singleton-box.false {
+    background-color: #1a1d23;
+    color: #f5f5dc;
+}
+
+.singleton-box:hover {
+    transform: translateY(-2px);
+}
+
+/* commander search */
+
+.commander-search {
+    margin-bottom: 2rem;
+}
+
+.dropdown {
+    margin-top: 0.5rem;
+    margin-bottom: 2rem;
+    border: 1px solid #f5f5dc;
+    border-radius: 1rem;
+    background-color: #1a1d23;
+    max-height: 20rem;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.dropdown-item {
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #333;
+    font-size: 1rem;
+    font-weight: 300;
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.dropdown-item:hover {
+    background-color: #f5f5dc;
+    color: #1a1d23;
 }
