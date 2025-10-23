@@ -3,7 +3,7 @@ use crate::outbound::{
     session::Persist,
 };
 use dioxus::prelude::*;
-use std::{thread::sleep, time::Duration};
+use std::time::Duration;
 use tokio::time::interval;
 use zwipe::{
     domain::auth::models::session::Session,

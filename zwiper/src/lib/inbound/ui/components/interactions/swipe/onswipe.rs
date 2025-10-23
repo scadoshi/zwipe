@@ -1,12 +1,7 @@
 use crate::inbound::ui::components::interactions::swipe::time_point::TimePoint;
 use crate::inbound::ui::components::interactions::swipe::{config::SwipeConfig, state::SwipeState};
 use chrono::Utc;
-use dioxus::html::geometry::{
-    euclid::{Point2D, UnknownUnit},
-    ClientPoint,
-};
-
-type DeltaPoint = Point2D<f64, UnknownUnit>;
+use dioxus::html::geometry::ClientPoint;
 
 // functionality shared by ontouch- and onmouse-
 pub trait OnSwipe {

@@ -2,11 +2,7 @@ use crate::inbound::ui::components::interactions::swipe::{
     axis::Axis, config::SwipeConfig, direction::Direction as Dir, screen_offset::ScreenOffset,
     time_point::TimePoint,
 };
-use chrono::Utc;
-use dioxus::html::geometry::{
-    euclid::{Point2D, UnknownUnit},
-    ClientPoint,
-};
+use dioxus::html::geometry::euclid::{Point2D, UnknownUnit};
 
 type DeltaPoint = Point2D<f64, UnknownUnit>;
 
