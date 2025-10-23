@@ -13,21 +13,27 @@ use crate::{
 /// (unvalidated data from `PostgreSQL`)
 #[derive(Debug, Clone, FromRow)]
 pub struct DatabaseDeckProfile {
-    pub id: String,
+    pub id: Uuid,
     pub name: String,
-    pub user_id: String,
+    pub commander_id: Option<Uuid>,
+    pub is_singleton: bool,
+    pub user_id: Uuid,
 }
 
 /// converts database deck to validated domain deck
 impl TryFrom<DatabaseDeckProfile> for DeckProfile {
     type Error = IntoDeckProfileError;
     fn try_from(value: DatabaseDeckProfile) -> Result<Self, Self::Error> {
-        let id = Uuid::try_parse(&value.id).map_err(|e| IntoDeckProfileError::Id(e.into()))?;
         let name =
             DeckName::new(&value.name).map_err(|e| IntoDeckProfileError::DeckName(e.into()))?;
-        let user_id =
-            Uuid::try_parse(&value.user_id).map_err(|e| IntoDeckProfileError::UserId(e.into()))?;
-        Ok(Self { id, name, user_id })
+
+        Ok(Self {
+            id: value.id,
+            name,
+            commander_id: value.commander_id,
+            is_singleton: value.is_singleton,
+            user_id: value.user_id,
+        })
     }
 }
 

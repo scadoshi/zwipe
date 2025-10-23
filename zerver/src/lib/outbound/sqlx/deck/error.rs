@@ -17,12 +17,8 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum IntoDeckProfileError {
-    #[error("invalid deck id: {0}")]
-    Id(uuid::Error),
     #[error(transparent)]
     DeckName(InvalidDeckname),
-    #[error("invalid user id: {0}")]
-    UserId(uuid::Error),
 }
 
 impl From<IntoDeckProfileError> for CreateDeckProfileError {

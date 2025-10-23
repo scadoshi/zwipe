@@ -27,8 +27,10 @@ impl DeckRepository for Postgres {
 
         let database_deck_profile = query_as!(
             DatabaseDeckProfile,
-            "INSERT INTO decks (name, user_id) VALUES ($1, $2) RETURNING id, name, user_id",
+            "INSERT INTO decks (name, commander_id, is_singleton, user_id) VALUES ($1, $2, $3, $4) RETURNING id, name, commander_id, is_singleton, user_id",
             request.name.to_string(),
+            request.commander_id,
+            request.is_singleton,
             request.user_id
         )
         .fetch_one(&mut *tx)
@@ -77,13 +79,13 @@ impl DeckRepository for Postgres {
     ) -> Result<DeckProfile, GetDeckProfileError> {
         let database_deck_profile = query_as!(
             DatabaseDeckProfile,
-            "SELECT id, name, user_id FROM decks WHERE id = $1",
+            "SELECT id, name, commander_id, is_singleton, user_id FROM decks WHERE id = $1",
             request.deck_id
         )
         .fetch_one(&self.pool)
         .await?;
 
-        if database_deck_profile.user_id != request.user_id.to_string() {
+        if database_deck_profile.user_id != request.user_id {
             return Err(GetDeckProfileError::Forbidden);
         }
 
@@ -98,7 +100,7 @@ impl DeckRepository for Postgres {
         ) -> Result<Vec<DeckProfile>, GetDeckProfilesError> {
         let database_deck_profiles = query_as!(
             DatabaseDeckProfile,
-            "SELECT id, name, user_id FROM decks WHERE user_id = $1",
+            "SELECT id, name, commander_id, is_singleton, user_id FROM decks WHERE user_id = $1",
             request.user_id
         ).fetch_all(&self.pool).await?;
 
