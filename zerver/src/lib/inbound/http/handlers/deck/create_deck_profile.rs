@@ -20,6 +20,7 @@ use crate::{
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[cfg(feature = "zerver")]
 impl From<CreateDeckProfileError> for ApiError {
@@ -48,12 +49,16 @@ impl From<InvalidCreateDeckProfile> for ApiError {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpCreateDeckProfile {
     pub name: String,
+    pub commander_id: Option<Uuid>,
+    pub is_singleton: bool,
 }
 
 impl HttpCreateDeckProfile {
-    pub fn new(name: &str) -> Self {
+    pub fn new(name: &str, commander_id: Option<Uuid>, is_singleton: bool) -> Self {
         Self {
             name: name.to_string(),
+            commander_id,
+            is_singleton,
         }
     }
 }
@@ -71,7 +76,8 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let request = CreateDeckProfile::new(&body.name, user.id)?;
+    let request =
+        CreateDeckProfile::new(&body.name, body.commander_id, body.is_singleton, user.id)?;
 
     state
         .deck_service
