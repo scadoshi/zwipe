@@ -1,7 +1,8 @@
 use crate::inbound::ui::components::screens::{
     app::{
         deck::{
-            deck_list::DeckList, get_deck::GetDeck, new_deck::NewDeck, update_deck::UpdateDeck,
+            create_deck::CreateDeck, deck_list::DeckList, get_deck::GetDeck,
+            update_deck::UpdateDeck,
         },
         home::Home,
         profile::{
@@ -43,8 +44,8 @@ pub enum Router {
     // deck
     #[route("/deck")]
     DeckList {},
-    #[route("/deck/new")]
-    NewDeck,
+    #[route("/deck/create")]
+    CreateDeck,
     #[route("/deck/update/:deck_id")]
     UpdateDeck { deck_id: Uuid },
     #[route("/deck/get/:deck_id")]
