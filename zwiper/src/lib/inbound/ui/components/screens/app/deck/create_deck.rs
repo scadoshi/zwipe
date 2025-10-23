@@ -80,7 +80,7 @@ pub fn CreateDeck() -> Element {
                     div { class : "form-container",
                     form {
                         div { class : "form-group",
-                            label { r#for : "deck-name", "deck name" }
+                            label { r#for : "deck-name", "" }
                             input {
                                 id: "deck name",
                                 r#type : "text",
@@ -93,7 +93,7 @@ pub fn CreateDeck() -> Element {
                                 }
                             }
 
-                            label { r#for : "commander", "commander" }
+                            label { r#for : "commander", "" }
                             div { class: "commander-search",
                                 input {
                                     id: "commander",
@@ -129,7 +129,7 @@ pub fn CreateDeck() -> Element {
                                 }
                             }
 
-                            label { r#for : "is-singleton", "singleton" }
+                            label { r#for : "is-singleton", "card copy rule" }
                             div {
                                 class: "form-group-singleton",
                                 div {
@@ -137,14 +137,14 @@ pub fn CreateDeck() -> Element {
                                     onclick: move |_| {
                                         is_singleton.set(true);
                                     },
-                                    "true"
+                                    "singleton"
                                 }
                                 div {
                                     class: if !is_singleton() { "singleton-box true" } else { "singleton-box false" },
                                     onclick: move |_| {
                                         is_singleton.set(false);
                                     },
-                                    "false"
+                                    "none"
                                 }
                             }
 
