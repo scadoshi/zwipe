@@ -4,17 +4,9 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum IntoUserError {
     #[error(transparent)]
-    Id(uuid::Error),
-    #[error(transparent)]
     Username(InvalidUsername),
     #[error(transparent)]
     Email(email_address::Error),
-}
-
-impl From<uuid::Error> for IntoUserError {
-    fn from(value: uuid::Error) -> Self {
-        Self::Id(value)
-    }
 }
 
 impl From<InvalidUsername> for IntoUserError {

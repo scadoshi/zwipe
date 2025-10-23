@@ -11,7 +11,7 @@ use crate::{
 /// (unvalidated data from `PostgreSQL`)
 #[derive(Debug, Clone, FromRow)]
 pub struct DatabaseUser {
-    pub id: String,
+    pub id: Uuid,
     pub username: String,
     pub email: String,
 }
@@ -21,12 +21,11 @@ impl TryFrom<DatabaseUser> for User {
     type Error = IntoUserError;
 
     fn try_from(value: DatabaseUser) -> Result<Self, Self::Error> {
-        let id = Uuid::try_parse(&value.id)?;
         let username = Username::new(&value.username)?;
         let email =
             EmailAddress::parse_with_options(&value.email, email_address::Options::default())?;
         Ok(Self {
-            id,
+            id: value.id,
             username,
             email,
         })
