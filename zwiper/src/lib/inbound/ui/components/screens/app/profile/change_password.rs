@@ -34,9 +34,9 @@ pub fn ChangePassword() -> Element {
     let mut confirm_password = use_signal(|| String::new());
     let mut password_error: Signal<Option<String>> = use_signal(|| None);
     let mut validate_new_password = move || {
-        if let Err(e) = Password::new(&new_password.read()) {
+        if let Err(e) = Password::new(&new_password()) {
             password_error.set(Some(e.to_string()));
-        } else if new_password.read().as_str() != confirm_password.read().as_str() {
+        } else if new_password().as_str() != confirm_password().as_str() {
             password_error.set(Some("passwords do not match".to_string()));
         } else {
             password_error.set(None)
@@ -49,7 +49,7 @@ pub fn ChangePassword() -> Element {
 
     let mut inputs_are_valid = move || {
         validate_new_password();
-        password_error.read().is_none()
+        password_error().is_none()
     };
 
     let mut clear_inputs = move || {
@@ -62,17 +62,17 @@ pub fn ChangePassword() -> Element {
         submit_attempted.set(true);
         if inputs_are_valid() {
             tracing::info!("change password");
-            let request = HttpChangePassword::new(&*current_password.read(), &*new_password.read());
+            let request = HttpChangePassword::new(&*current_password(), &*new_password());
             spawn(async move {
                 session.upkeep(auth_client);
-                let Some(sesh) = session.read().clone() else {
+                let Some(sesh) = session() else {
                     submission_error.set(Some(
                         ApiError::Unauthorized("session expired".to_string()).to_string(),
                     ));
                     return;
                 };
 
-                match auth_client.read().change_password(request, &sesh).await {
+                match auth_client().change_password(request, &sesh).await {
                     Ok(()) => {
                         success_message.set(Some(random_success_message()));
                         submission_error.set(None);
@@ -108,8 +108,8 @@ pub fn ChangePassword() -> Element {
                                 }
                             }
 
-                            if *submit_attempted.read() {
-                                if let Some(error) = password_error.read().as_ref() {
+                            if submit_attempted() {
+                                if let Some(error) = password_error() {
                                     div { class : "error", "{error}" }
                                 }
                             }
@@ -123,7 +123,7 @@ pub fn ChangePassword() -> Element {
                                 spellcheck : "false",
                                 oninput : move |event| {
                                     new_password.set(event.value());
-                                    if *submit_attempted.read() {
+                                    if submit_attempted() {
                                         validate_new_password();
                                     }
                                 }
@@ -138,7 +138,7 @@ pub fn ChangePassword() -> Element {
                                 spellcheck : "false",
                                 oninput : move |event| {
                                     confirm_password.set(event.value());
-                                    if *submit_attempted.read() {
+                                    if submit_attempted() {
                                         validate_new_password();
                                     }
                                 }
@@ -149,9 +149,9 @@ pub fn ChangePassword() -> Element {
                                 "submit"
                             }
 
-                            if let Some(error) = submission_error.read().as_deref() {
+                            if let Some(error) = submission_error() {
                                 div { class: "error", "{error}" }
-                            } else if let Some(success_message) = success_message.read().as_deref() {
+                            } else if let Some(success_message) = success_message() {
                                 div { class: "success-message", {success_message} }
                             }
 

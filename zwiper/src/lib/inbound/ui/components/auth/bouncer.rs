@@ -8,14 +8,13 @@ pub fn Bouncer(children: Element) -> Element {
     let session: Signal<Option<Session>> = use_context();
 
     let has_session = use_memo(move || {
-        session
-            .read()
+        session()
             .as_ref()
             .map_or(false, |current| !current.is_expired())
     });
 
     use_effect(move || {
-        if !*has_session.read() {
+        if !has_session() {
             navigator.push(Router::Login {});
         }
     });

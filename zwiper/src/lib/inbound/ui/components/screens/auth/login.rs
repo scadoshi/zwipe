@@ -41,20 +41,19 @@ pub fn Login() -> Element {
     let mut submission_error: Signal<Option<String>> = use_signal(|| None);
 
     let inputs_are_valid = move || {
-        (Username::new(&username_or_email.read()).is_ok()
-            || EmailAddress::from_str(&username_or_email.read()).is_ok())
-            && Password::new(&password.read()).is_ok()
+        (Username::new(&username_or_email()).is_ok()
+            || EmailAddress::from_str(&username_or_email()).is_ok())
+            && Password::new(&password()).is_ok()
     };
 
     let mut attempt_submit = move || {
         submit_attempted.set(true);
         is_loading.set(true);
         if inputs_are_valid() {
-            let request = HttpAuthenticateUser::new(&*username_or_email.read(), &*password.read());
+            let request = HttpAuthenticateUser::new(&username_or_email(), &password());
             spawn(async move {
-                match auth_client.read().authenticate_user(request).await {
+                match auth_client().authenticate_user(request).await {
                     Ok(new_session) => {
-                        // tracing::info!("session={:?}", new_session);
                         submission_error.set(None);
                         new_session.infallible_save();
                         session.set(Some(new_session));
@@ -77,7 +76,9 @@ pub fn Login() -> Element {
             div { class : "form-container",
 
                 form {
+
                     div { class : "form-group",
+
                         label { r#for: "identity" }
                         input {
                             id : "identity",
@@ -90,6 +91,7 @@ pub fn Login() -> Element {
                                 username_or_email.set(event.value());
                             }
                         }
+
                         label { r#for : "password", "" }
                         input {
                             id : "password",
@@ -102,14 +104,15 @@ pub fn Login() -> Element {
                                 password.set(event.value());
                             }
                         }
+
                         button {
                             onclick : move |_| attempt_submit(),
                             "login"
                         }
 
-                        if *is_loading.read() {
+                        if is_loading() {
                             div { class : "spinning-card" }
-                        } else if let Some(error) = submission_error.read().as_deref() {
+                        } else if let Some(error) = submission_error() {
                             div { class: "error",
                                 { format!("{}", error) }
                             }

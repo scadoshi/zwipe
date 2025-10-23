@@ -19,7 +19,7 @@ impl Upkeep for Signal<Option<Session>> {
         let mut session = self;
 
         spawn(async move {
-            let Some(current) = session.read().clone() else {
+            let Some(current) = session() else {
                 tracing::debug!("session is none");
                 return;
             };
@@ -32,7 +32,7 @@ impl Upkeep for Signal<Option<Session>> {
 
             if current.access_token.is_expired() {
                 let request = HttpRefreshSession::from(&current);
-                match auth_client.read().refresh(&request).await {
+                match auth_client().refresh(&request).await {
                     Ok(new) => {
                         session.set(Some(new));
                         tracing::info!("refreshed session");

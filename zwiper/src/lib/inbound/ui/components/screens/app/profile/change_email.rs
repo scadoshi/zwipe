@@ -32,7 +32,7 @@ pub fn ChangeEmail() -> Element {
     let mut new_email = use_signal(|| String::new());
     let mut email_error: Signal<Option<String>> = use_signal(|| None);
     let mut validate_email = move || {
-        if let Err(e) = EmailAddress::from_str(&new_email.read()) {
+        if let Err(e) = EmailAddress::from_str(&new_email()) {
             email_error.set(Some(e.to_user_facing_string()));
         } else {
             email_error.set(None)
@@ -42,7 +42,7 @@ pub fn ChangeEmail() -> Element {
     let mut password = use_signal(|| String::new());
     let mut password_error: Signal<Option<String>> = use_signal(|| None);
     let mut validate_password = move || {
-        if let Err(_) = Password::new(&password.read()) {
+        if let Err(_) = Password::new(&password()) {
             password_error.set(Some("invalid password".to_string()));
         } else {
             password_error.set(None);
@@ -56,7 +56,7 @@ pub fn ChangeEmail() -> Element {
     let mut inputs_are_valid = move || {
         validate_email();
         validate_password();
-        email_error.read().is_none() && password_error.read().is_none()
+        email_error().is_none() && password_error().is_none()
     };
 
     let mut clear_inputs = move || {
@@ -67,18 +67,18 @@ pub fn ChangeEmail() -> Element {
     let mut attempt_submit = move || {
         submit_attempted.set(true);
         if inputs_are_valid() {
-            tracing::info!("change email to {}", new_email.read());
-            let request = HttpChangeEmail::new(&*new_email.read(), &*password.read());
+            tracing::info!("change email to {}", new_email());
+            let request = HttpChangeEmail::new(&*new_email(), &*password());
             spawn(async move {
                 session.upkeep(auth_client);
-                let Some(mut sesh) = session.read().clone() else {
+                let Some(mut sesh) = session() else {
                     submission_error.set(Some(
                         ApiError::Unauthorized("session expired".to_string()).to_string(),
                     ));
                     return;
                 };
 
-                match auth_client.read().change_email(request, &sesh).await {
+                match auth_client().change_email(request, &sesh).await {
                     Ok(updated_user) => {
                         submission_error.set(None);
                         sesh.user.email = updated_user.email;
@@ -104,8 +104,8 @@ pub fn ChangeEmail() -> Element {
                     form {
                         div { class : "form-group",
 
-                            if *submit_attempted.read() {
-                                if let Some(error) = email_error.read().as_ref() {
+                            if submit_attempted() {
+                                if let Some(error) = email_error() {
                                     div { class : "error", "{error}" }
                                 }
                             }
@@ -119,15 +119,15 @@ pub fn ChangeEmail() -> Element {
                                 spellcheck : "false",
                                 oninput: move |event| {
                                     new_email.set(event.value());
-                                    if *submit_attempted.read() {
+                                    if submit_attempted() {
                                         validate_email();
                                     }
                                 }
                             }
 
 
-                            if *submit_attempted.read() {
-                                if let Some(error) = password_error.read().as_ref() {
+                            if submit_attempted() {
+                                if let Some(error) = password_error() {
                                     div { class : "error", "{error}" }
                                 }
                             }
@@ -141,7 +141,7 @@ pub fn ChangeEmail() -> Element {
                                 spellcheck : "false",
                                 oninput : move |event| {
                                     password.set(event.value());
-                                    if *submit_attempted.read() {
+                                    if submit_attempted() {
                                         validate_password();
                                     }
                                 }
@@ -152,9 +152,9 @@ pub fn ChangeEmail() -> Element {
                                 "submit"
                             }
 
-                            if let Some(error) = submission_error.read().as_deref() {
+                            if let Some(error) = submission_error() {
                                 div { class: "error", "{error}" }
-                            } else if let Some(success_message) = success_message.read().as_deref() {
+                            } else if let Some(success_message) = success_message() {
                                 div { class: "success-message", {success_message} }
                             }
 

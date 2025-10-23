@@ -18,11 +18,11 @@ impl SignalLogout for Signal<Option<Session>> {
 
         spawn(async move {
             session.upkeep(auth_client);
-            let Some(current) = session.read().clone() else {
+            let Some(current) = session() else {
                 return;
             };
 
-            match auth_client.read().logout(&current).await {
+            match auth_client().logout(&current).await {
                 Ok(()) => {
                     current.infallible_delete();
                     session.set(None);

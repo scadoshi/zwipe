@@ -31,7 +31,7 @@ pub fn ChangeUsername() -> Element {
     let mut new_username = use_signal(|| String::new());
     let mut username_error: Signal<Option<String>> = use_signal(|| None);
     let mut validate_username = move || {
-        if let Err(e) = Username::new(&new_username.read()) {
+        if let Err(e) = Username::new(&new_username()) {
             username_error.set(Some(e.to_string()));
         } else {
             username_error.set(None)
@@ -41,7 +41,7 @@ pub fn ChangeUsername() -> Element {
     let mut password = use_signal(|| String::new());
     let mut password_error: Signal<Option<String>> = use_signal(|| None);
     let mut validate_password = move || {
-        if let Err(_) = Password::new(&password.read()) {
+        if let Err(_) = Password::new(&password()) {
             password_error.set(Some("invalid password".to_string()));
         } else {
             password_error.set(None);
@@ -55,7 +55,7 @@ pub fn ChangeUsername() -> Element {
     let mut inputs_are_valid = move || {
         validate_username();
         validate_password();
-        username_error.read().is_none() && password_error.read().is_none()
+        username_error().is_none() && password_error().is_none()
     };
 
     let mut clear_inputs = move || {
@@ -66,18 +66,18 @@ pub fn ChangeUsername() -> Element {
     let mut attempt_submit = move || {
         submit_attempted.set(true);
         if inputs_are_valid() {
-            tracing::info!("change username to {}", new_username.read());
-            let request = HttpChangeUsername::new(&*new_username.read(), &*password.read());
+            tracing::info!("change username to {}", new_username());
+            let request = HttpChangeUsername::new(&*new_username(), &*password());
             spawn(async move {
                 session.upkeep(auth_client);
-                let Some(mut sesh) = session.read().clone() else {
+                let Some(mut sesh) = session() else {
                     submission_error.set(Some(
                         ApiError::Unauthorized("session expired".to_string()).to_string(),
                     ));
                     return;
                 };
 
-                match auth_client.read().change_username(request, &sesh).await {
+                match auth_client().change_username(request, &sesh).await {
                     Ok(updated_user) => {
                         sesh.user.username = updated_user.username;
                         session.set(Some(sesh));
@@ -103,8 +103,8 @@ pub fn ChangeUsername() -> Element {
                     form {
                         div { class : "form-group",
 
-                            if *submit_attempted.read() {
-                                if let Some(error) = username_error.read().as_ref() {
+                            if submit_attempted() {
+                                if let Some(error) = username_error() {
                                     div { class : "error", "{error}" }
                                 }
                             }
@@ -118,14 +118,14 @@ pub fn ChangeUsername() -> Element {
                                 spellcheck : "false",
                                 oninput: move |event| {
                                     new_username.set(event.value());
-                                    if *submit_attempted.read() {
+                                    if submit_attempted() {
                                         validate_username();
                                     }
                                 }
                             }
 
-                            if *submit_attempted.read() {
-                                if let Some(error) = password_error.read().as_ref() {
+                            if submit_attempted() {
+                                if let Some(error) = password_error() {
                                     div { class : "error", "{error}" }
                                 }
                             }
@@ -139,7 +139,7 @@ pub fn ChangeUsername() -> Element {
                                 spellcheck : "false",
                                 oninput : move |event| {
                                     password.set(event.value());
-                                    if *submit_attempted.read() {
+                                    if submit_attempted() {
                                         validate_password();
                                     }
                                 }
@@ -158,9 +158,9 @@ pub fn ChangeUsername() -> Element {
                         }
                     }
 
-                    if let Some(error) = submission_error.read().as_deref() {
+                    if let Some(error) = submission_error() {
                         div { class: "error", "{error}" }
-                    } else if let Some(success_message) = success_message.read().as_deref() {
+                    } else if let Some(success_message) = success_message() {
                         div { class: "success-message", {success_message} }
                     }
                 }

@@ -27,30 +27,29 @@ pub fn Swipeable(state: Signal<SwipeState>, config: SwipeConfig, children: Eleme
     let config2 = config.clone();
 
     // re-positioning during swipe reactive to state changes
-    let delta = state
-        .read()
+    let delta = state()
         .delta_from_start_point()
         .unwrap_or(DeltaPoint::new(0.0, 0.0));
 
-    let xpx = if state.read().traversing_axis == Some(Axis::X) {
+    let xpx = if state().traversing_axis == Some(Axis::X) {
         delta.x
     } else {
         0.0
     };
 
-    let ypx = if state.read().traversing_axis == Some(Axis::Y) {
+    let ypx = if state().traversing_axis == Some(Axis::Y) {
         delta.y
     } else {
         0.0
     };
 
     // screens starting position relative to main screen - reactive to screen_offset
-    let xvw = (config.from_main_screen.x + state.read().screen_offset.x) * VW_GAP;
+    let xvw = (config.from_main_screen.x + state().screen_offset.x) * VW_GAP;
 
-    let yvh = (config.from_main_screen.y + state.read().screen_offset.y) * VH_GAP;
+    let yvh = (config.from_main_screen.y + state().screen_offset.y) * VH_GAP;
 
     // for returning element back to start position smoothly
-    let return_animation_seconds = state.read().return_animation_seconds;
+    let return_animation_seconds = state().return_animation_seconds;
 
     rsx! {
             div { class : "swipeable",
