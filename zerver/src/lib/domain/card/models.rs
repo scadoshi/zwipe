@@ -11,8 +11,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, PartialEq, Deserialize)]
 pub struct Card {
-    card_profile: CardProfile,
-    scryfall_data: ScryfallData,
+    pub card_profile: CardProfile,
+    pub scryfall_data: ScryfallData,
 }
 
 #[cfg(feature = "zerver")]
