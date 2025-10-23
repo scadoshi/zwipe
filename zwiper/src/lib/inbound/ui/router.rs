@@ -1,6 +1,8 @@
 use crate::inbound::ui::components::screens::{
     app::{
-        decks::Decks,
+        deck::{
+            deck_list::DeckList, get_deck::GetDeck, new_deck::NewDeck, update_deck::UpdateDeck,
+        },
         home::Home,
         profile::{
             change_email::ChangeEmail, change_password::ChangePassword,
@@ -10,24 +12,41 @@ use crate::inbound::ui::components::screens::{
     auth::{login::Login, register::Register},
 };
 use dioxus::prelude::*;
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
 pub enum Router {
+    // home
     #[route("/")]
     Home {},
+
+    // auth
     #[route("/login")]
     Login {},
     #[route("/register")]
     Register {},
-    #[route("/user/profile")]
+    
+    // user
+    #[route("/user")]
     Profile {},
-    #[route("/decks")]
-    Decks {},
-    #[route("/user/change-username")]
+    #[child]
+    #[route("/change-username")]
     ChangeUsername {},
-    #[route("/user/change-email")]
+    #[child]
+    #[route("/change-email")]
     ChangeEmail {},
-    #[route("/user/change-password")]
+    #[child]
+    #[route("/change-password")]
     ChangePassword {},
+
+    // deck
+    #[route("/deck")]
+    DeckList {},
+    #[route("/deck/new")]
+    NewDeck,
+    #[route("/deck/update/:deck_id")]
+    UpdateDeck { deck_id: Uuid },
+    #[route("/deck/get/:deck_id")]
+    GetDeck { deck_id: Uuid },
 }

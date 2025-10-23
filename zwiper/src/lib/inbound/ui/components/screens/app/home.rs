@@ -36,7 +36,7 @@ pub fn Home() -> Element {
                     }
                     button {
                         onclick : move |_| {
-                            navigator.push(Router::Decks {} );
+                            navigator.push(Router::DeckList {} );
                         }, "decks"
                     }
                     button {
