@@ -6,5 +6,7 @@ use uuid::Uuid;
 pub struct DeckProfile {
     pub id: Uuid,
     pub name: DeckName,
+    pub commander_id: Option<Uuid>,
+    pub is_singleton: bool,
     pub user_id: Uuid,
 }
