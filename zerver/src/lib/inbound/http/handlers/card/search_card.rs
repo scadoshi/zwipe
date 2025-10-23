@@ -1,13 +1,13 @@
 use crate::domain::card::models::{
     scryfall_data::colors::{Color, Colors},
-    search_card::{InvalidSearchCard, SearchCard},
+    search_card::{InvalidSearchCards, SearchCards},
 };
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
         auth::ports::AuthService,
         card::{
-            models::{search_card::SearchCardError, Card},
+            models::{search_card::SearchCardsError, Card},
             ports::CardService,
         },
         deck::ports::DeckService,
@@ -25,15 +25,15 @@ use axum::{
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "zerver")]
-impl From<SearchCardError> for ApiError {
-    fn from(value: SearchCardError) -> Self {
+impl From<SearchCardsError> for ApiError {
+    fn from(value: SearchCardsError) -> Self {
         value.log_500()
     }
 }
 
 #[cfg(feature = "zerver")]
-impl From<InvalidSearchCard> for ApiError {
-    fn from(value: InvalidSearchCard) -> Self {
+impl From<InvalidSearchCards> for ApiError {
+    fn from(value: InvalidSearchCards) -> Self {
         Self::UnprocessableEntity(format!("invalid request: {}", value))
     }
 }
@@ -108,10 +108,30 @@ impl HttpSearchCards {
             offset,
         }
     }
+
+    pub fn by_name(search_query: &str) -> Self {
+        HttpSearchCards {
+            name: Some(search_query.to_string()),
+            type_line: None,
+            set: None,
+            rarity: None,
+            cmc: None,
+            cmc_range: None,
+            power: None,
+            power_range: None,
+            toughness: None,
+            toughness_range: None,
+            color_identity: None,
+            color_identity_contains: None,
+            oracle_text: None,
+            limit: None,
+            offset: None,
+        }
+    }
 }
 
-impl TryFrom<HttpSearchCards> for SearchCard {
-    type Error = InvalidSearchCard;
+impl TryFrom<HttpSearchCards> for SearchCards {
+    type Error = InvalidSearchCards;
     fn try_from(params: HttpSearchCards) -> Result<Self, Self::Error> {
         let color_identity: Option<Colors> = params.color_identity.map(|s| {
             s.split(',')
@@ -125,7 +145,7 @@ impl TryFrom<HttpSearchCards> for SearchCard {
                 .collect()
         });
 
-        SearchCard::new(
+        SearchCards::new(
             params.name,
             params.type_line,
             params.set,
@@ -158,7 +178,9 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let request = SearchCard::try_from(params)?;
+    let request = SearchCards::try_from(params)?;
+
+    tracing::debug!("f");
 
     state
         .card_service

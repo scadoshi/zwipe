@@ -10,7 +10,7 @@ use crate::domain::card::models::{
     create_card::CreateCardError,
     get_card::{GetCard, GetCardError, GetCards},
     scryfall_data::{GetScryfallDataError, ScryfallData, SearchScryfallDataError},
-    search_card::{SearchCard, SearchCardError},
+    search_card::{SearchCards, SearchCardsError},
     sync_metrics::{SyncMetrics, SyncType},
     Card,
 };
@@ -102,7 +102,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// search for scryfall data given parameters
     fn search_scryfall_data(
         &self,
-        request: &SearchCard,
+        request: &SearchCards,
     ) -> impl Future<Output = Result<Vec<ScryfallData>, SearchScryfallDataError>> + Send;
 
     /// gets card with a uuid
@@ -120,8 +120,8 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// search for cards given parameters
     fn search_cards(
         &self,
-        request: &SearchCard,
-    ) -> impl Future<Output = Result<Vec<Card>, SearchCardError>> + Send;
+        request: &SearchCards,
+    ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
     /// gets card profile with a uuid
     fn get_card_profile(
@@ -182,8 +182,8 @@ pub trait CardService: Clone + Send + Sync + 'static {
     /// gets cards matching parameters
     fn search_cards(
         &self,
-        request: &SearchCard,
-    ) -> impl Future<Output = Result<Vec<Card>, SearchCardError>> + Send;
+        request: &SearchCards,
+    ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
     /// gets card profile with a uuid
     fn get_card_profile(

@@ -7,14 +7,14 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum InvalidSearchCard {
+pub enum InvalidSearchCards {
     #[error("must include at least one parameter")]
     MissingParameters,
 }
 
 #[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
-pub enum SearchCardError {
+pub enum SearchCardsError {
     #[error(transparent)]
     SearchScryfallDataError(SearchScryfallDataError),
     #[error(transparent)]
@@ -22,21 +22,21 @@ pub enum SearchCardError {
 }
 
 #[cfg(feature = "zerver")]
-impl From<SearchScryfallDataError> for SearchCardError {
+impl From<SearchScryfallDataError> for SearchCardsError {
     fn from(value: SearchScryfallDataError) -> Self {
-        SearchCardError::SearchScryfallDataError(value)
+        SearchCardsError::SearchScryfallDataError(value)
     }
 }
 
 #[cfg(feature = "zerver")]
-impl From<GetCardProfileError> for SearchCardError {
+impl From<GetCardProfileError> for SearchCardsError {
     fn from(value: GetCardProfileError) -> Self {
-        SearchCardError::GetCardProfileError(value)
+        SearchCardsError::GetCardProfileError(value)
     }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct SearchCard {
+pub struct SearchCards {
     pub name: Option<String>,
     pub type_line: Option<String>,
     pub set: Option<String>,
@@ -54,7 +54,7 @@ pub struct SearchCard {
     pub offset: Option<u32>,
 }
 
-impl SearchCard {
+impl SearchCards {
     pub fn new(
         name: Option<String>,
         type_line: Option<String>,
@@ -71,7 +71,7 @@ impl SearchCard {
         oracle_text: Option<String>,
         limit: Option<u32>,
         offset: Option<u32>,
-    ) -> Result<Self, InvalidSearchCard> {
+    ) -> Result<Self, InvalidSearchCards> {
         if name.is_none()
             && type_line.is_none()
             && set.is_none()
@@ -86,7 +86,7 @@ impl SearchCard {
             && color_identity_contains.is_none()
             && oracle_text.is_none()
         {
-            return Err(InvalidSearchCard::MissingParameters);
+            return Err(InvalidSearchCards::MissingParameters);
         }
 
         let limit = match limit {

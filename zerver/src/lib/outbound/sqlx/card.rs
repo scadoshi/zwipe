@@ -13,7 +13,7 @@ use crate::domain::card::models::{
     create_card::CreateCardError,
     get_card::{GetCard, GetCardError, GetCards},
     helpers::Sleeve,
-    search_card::{SearchCard, SearchCardError},
+    search_card::{SearchCards, SearchCardsError},
     Card,
 };
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
@@ -34,7 +34,7 @@ use crate::{
 
 use anyhow::Context;
 use chrono::NaiveDateTime;
-use sqlx::{query, query_as, query_scalar, Postgres};
+use sqlx::{query, query_as, query_scalar, Execute, Postgres};
 use sqlx::{query_builder::Separated, QueryBuilder};
 use uuid::Uuid;
 
@@ -202,110 +202,88 @@ impl CardRepository for MyPostgres {
 
     async fn search_scryfall_data(
         &self,
-        request: &SearchCard,
+        request: &SearchCards,
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
-        let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new("SELECT * FROM scryfall_data");
+        let mut qb: QueryBuilder<'_, Postgres> =
+            QueryBuilder::new("SELECT * FROM scryfall_data WHERE ");
         let mut sep: Separated<Postgres, &'static str> = qb.separated(" AND ");
 
-        let mut n = 1;
-
         if let Some(name) = &request.name {
-            sep.push(format!("name ILIKE ${}", n));
+            sep.push("name ILIKE ");
             sep.push_bind_unseparated(format!("%{}%", name));
-            n += 1;
         }
         if let Some(type_line) = &request.type_line {
-            sep.push(format!("type_line ILIKE ${}", n));
+            sep.push("type_line ILIKE ");
             sep.push_bind_unseparated(format!("%{}%", type_line));
-            n += 1;
         }
         if let Some(set) = &request.set {
-            sep.push(format!("set ILIKE ${}", n));
+            sep.push("set ILIKE ");
             sep.push_bind_unseparated(format!("%{}%", set));
-            n += 1;
         }
         if let Some(rarity) = &request.rarity {
-            sep.push(format!("rarity ILIKE ${}", n));
+            sep.push("rarity ILIKE ");
             sep.push_bind_unseparated(format!("%{}%", rarity));
-            n += 1;
         }
         if let Some(cmc) = request.cmc {
-            sep.push(format!("cmc = ${}", n));
+            sep.push("cmc = ");
             sep.push_bind_unseparated(cmc);
-            n += 1;
         }
         if let Some(cmc_range) = request.cmc_range {
             let lower = cmc_range.0.min(cmc_range.1);
             let higher = cmc_range.0.max(cmc_range.1);
-            sep.push(format!("cmc between ${} and ${}", n, n + 1));
+            sep.push("cmc between ");
             sep.push_bind_unseparated(lower);
+            sep.push("and ");
             sep.push_bind_unseparated(higher);
-            n += 2;
         }
         if let Some(power) = request.power {
-            sep.push(format!("power ~ '^\\d+$' AND CAST(power AS INT) = ${}", n));
+            sep.push("power ~ '^\\d+$' AND CAST(power AS INT) = ");
             sep.push_bind_unseparated(power);
-            n += 1;
         }
         if let Some(power_range) = request.power_range {
             let lower = power_range.0.min(power_range.1);
             let higher = power_range.0.max(power_range.1);
-            sep.push(format!(
-                "power ~ '^\\d+$' AND CAST(power AS INT) between ${} AND ${}",
-                n,
-                n + 1
-            ));
+            sep.push("power ~ '^\\d+$' AND CAST(power AS INT) between ");
             sep.push_bind_unseparated(lower);
+            sep.push("and ");
             sep.push_bind_unseparated(higher);
-            n += 2;
         }
         if let Some(toughness) = request.toughness {
-            sep.push(format!(
-                "toughness ~ '^\\d+$' AND CAST(toughness AS INT) = ${}",
-                n
-            ));
+            sep.push("toughness ~ '^\\d+$' AND CAST(toughness AS INT) = ");
             sep.push_bind_unseparated(toughness);
-            n += 1;
         }
         if let Some(toughness_range) = request.toughness_range {
             let lower = toughness_range.0.min(toughness_range.1);
             let higher = toughness_range.0.max(toughness_range.1);
-            sep.push(format!(
-                "toughness ~ '^\\d+$' AND CAST(toughness AS INT) between ${} AND ${}",
-                n,
-                n + 1
-            ));
+            sep.push("toughness ~ '^\\d+$' AND CAST(toughness AS INT) between ");
             sep.push_bind_unseparated(lower);
+            sep.push("and ");
             sep.push_bind_unseparated(higher);
-            n += 2;
         }
         if let Some(colors) = &request.color_identity {
-            sep.push(format!(
-                "color_identity @> ${} AND color_identity <@ ${}",
-                n, n
-            ));
+            sep.push("color_identity @> ");
             sep.push_bind_unseparated(colors);
-            n += 1;
+            sep.push("AND color_identity <@ ");
+            sep.push_bind_unseparated(colors);
         }
         if let Some(colors) = &request.color_identity_contains {
-            sep.push(format!("color_identity && ${}", n));
+            sep.push("color_identity && ");
             sep.push_bind_unseparated(colors);
-            n += 1;
         }
         if let Some(oracle_text) = &request.oracle_text {
-            sep.push(format!("oracle_text  ILIKE ${}", n));
+            sep.push("oracle_text ILIKE ");
             sep.push_bind_unseparated(format!("%{}%", oracle_text));
-            n += 1;
         }
         if let Some(limit) = request.limit {
-            qb.push(format!(" LIMIT ${}", n));
+            qb.push(" LIMIT ");
             qb.push_bind(limit as i32);
-            n += 1;
         }
         if let Some(offset) = request.offset {
-            qb.push(format!(" OFFSET ${}", n));
+            qb.push(" OFFSET ");
             qb.push_bind(offset as i32);
         }
+
+        tracing::info!("{}", qb.sql());
 
         let scryfall_data: Vec<ScryfallData> = qb.build_query_as().fetch_all(&self.pool).await?;
 
@@ -328,7 +306,7 @@ impl CardRepository for MyPostgres {
         Ok(cards)
     }
 
-    async fn search_cards(&self, request: &SearchCard) -> Result<Vec<Card>, SearchCardError> {
+    async fn search_cards(&self, request: &SearchCards) -> Result<Vec<Card>, SearchCardsError> {
         let scryfall_data = self.search_scryfall_data(request).await?;
         let get_card_profiles = GetCardProfiles::from(scryfall_data.as_slice());
         let card_profiles = self.get_card_profiles(&get_card_profiles).await?;
