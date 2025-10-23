@@ -13,16 +13,16 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Complete HTTP client implementation with all 19 backend endpoints covered. Unified frontend/backend error handling through shared ApiError enum. Ready to build deck creation and card search UI.
+**Last Updated**: Built deck creation screen with searchable commander field, singleton toggle, and comprehensive UUID refactoring across backend.
 
-**Current Focus**: Building deck creation screen and card search integration for full deck building workflow.
+**Current Focus**: Deck creation UI complete with searchable commander. Next: wire up save functionality to create decks with commander_id and is_singleton.
 
-**Recent Achievement**: Completed comprehensive HTTP client suite covering ALL backend endpoints (448 lines changed, 711 deleted - massive code reduction through shared ApiError architecture). Built 19 client methods across 5 domains (auth, user, deck, deck_card, card) with consistent patterns. Unified ApiError between frontend/backend by moving error enum to shared library - eliminated duplicate frontend error types while maintaining clean hexagonal boundaries. Added `skip_serializing_if` to HttpSearchCards for clean query parameter handling. Enhanced delete_user security requiring password confirmation. Refactored user profile changes into dedicated `/user` client folder. Updated logo system with Zwipe, Zerver, Zervice, Zwiper variants. All HTTP verbs correctly aligned (GET/POST/PUT/DELETE). Frontend compiles cleanly with only minor unused import warnings.
+**Recent Achievement**: Built deck creation screen with searchable commander field implementing HttpSearchCards::by_name() helper with 300ms debouncing. Created singleton toggle with true/false boxes for clean UX. Discovered PostgreSQL can return Uuid directly - refactored DatabaseUser, DatabaseDeckProfile to use Uuid instead of String, eliminated unnecessary error types (Id variants). Made Card fields public for frontend access. Added commander_id and is_singleton to decks schema. Simplified signal usage throughout frontend replacing .read() with signal() syntax (17+ changes). Renamed route /deck/new → /deck/create for consistency. All migrations compile cleanly with new deck fields.
 
 **Current Success**: Complete end-to-end HTTP integration from frontend to backend across all domains. All authentication flows working (register, login, logout, refresh, profile changes, account deletion). Deck CRUD operations complete (create, read, update, delete). Deck card management ready (add, update quantity, remove). Card operations ready (get by ID, search with complex query parameters). Universal swipeable UI. Production-ready error handling with shared ApiError architecture.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Deck Creation Screen** - UI for creating new decks with name and description
+1. **Deck Creation Save** - Wire up save button to call create_deck_profile API with commander_id and is_singleton
 2. **Deck Detail Screen** - Individual deck view showing all cards with quantities and metrics
 3. **Card Search UI** - Search interface with filters (name, type, color, CMC, power/toughness, rarity)
 4. **Add Cards to Deck** - Integration of search results with deck card management
@@ -197,6 +197,11 @@ alwaysApply: true
 - **Form Validation Refinement**: Proper error display timing (after first submit), separate validation for each field, submission_error clearing on success
 - **Resource Pattern Mastery**: Match on Resource using `.value().with(|result| match result {...})` to avoid temporary value lifetime errors
 - **Change Password Special Handling**: Current password not validated (legacy password policy compatibility), only new password validated
+- **Deck Creation UI**: CreateDeck component with searchable commander field, singleton toggle, and form inputs for deck name
+- **Searchable Commander Field**: Debounced card search (300ms) with HttpSearchCards::by_name() helper, shows top 5 results
+- **UUID Database Handling**: Refactored DatabaseUser and DatabaseDeckProfile to return Uuid directly from PostgreSQL, eliminated string conversion errors
+- **Card Field Access**: Made Card struct fields public for frontend consumption
+- **Signal Simplification**: Cleaned up signal usage replacing .read() with signal() syntax throughout frontend (17+ changes)
 - **HTTP Client Error Refactoring**: Eliminated 215 lines by creating centralized ApiError enum replacing LoginError, RegisterError, ChangeUsernameError, ChangeEmailError, ChangePasswordError, LogoutError, RefreshError, CreateDeckError, DeleteDeckError, GetDeckProfilesError
 - **From Trait Error Conversion**: Implemented `From<(StatusCode, String)> for ApiError` enabling automatic `.into()` conversions throughout client layer
 - **Request Pattern Standardization**: All POST/PUT requests use `.json()` method (auto-serialization + Content-Type), all authenticated requests use `.bearer_auth()` helper

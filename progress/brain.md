@@ -15,11 +15,11 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Complete HTTP client implementation suite covering all 19 backend endpoints. Unified frontend/backend error handling through shared ApiError architecture achieving massive code reduction.
+**Last Updated**: Built deck creation screen with searchable commander field and singleton toggle. Refactored UUID handling throughout codebase for cleaner database interactions.
 
-**Next Learning Focus**: Building deck creation and card search UI components with Dioxus. Learning swipeable card browsing patterns and frontend deck analytics calculations.
+**Next Learning Focus**: Complete deck creation flow with save functionality. Building card search UI with filters and swipeable navigation patterns.
 
-**Recent Achievement**: Built complete HTTP client suite covering ALL 19 backend endpoints across 5 domains (auth, user, deck, deck_card, card) in a single focused session. Achieved architectural breakthrough by unifying ApiError between frontend and backend - moved enum to shared library, eliminated duplicate frontend error.rs, synchronized reqwest versions. Net code reduction of 263 lines (711 deleted, 448 added). Independently caught and fixed HTTP verb mismatches (delete_user using PUT instead of DELETE) and copy-paste errors (trait method names). Demonstrated complete understanding of established patterns by building all remaining client methods rapidly (6 minutes for search_cards including query parameter research). Enhanced delete_user security with password confirmation. Added `skip_serializing_if` to HttpSearchCards for clean query URLs. Refactored client folder structure moving user operations from auth/ to user/. All methods follow identical pattern with proper error handling and authentication.
+**Recent Achievement**: Built deck creation screen with searchable commander field using HttpSearchCards::by_name() helper. Implemented 300ms debouncing with tokio::time::sleep. Created singleton toggle with true/false boxes. Discovered UUID can be returned directly from PostgreSQL without string conversion - refactored all DatabaseUser, DatabaseDeckProfile models to use Uuid directly, eliminated unnecessary parsing errors (removed Id variants from IntoUserError, IntoDeckProfileError, IntoUserWithPasswordHashError). Made Card fields public for frontend access. Added by_name() convenience method to HttpSearchCards. Simplified signal usage throughout frontend - replaced .read() with signal() syntax for cleaner code (17+ simplifications across all components). Renamed route /deck/new → /deck/create for consistency. Updated database schema adding commander_id and is_singleton fields to decks table.
 
 ### 🤔 Current Uncertainties (Top 5)
 1. **Swipeable Card Browsing** - How to implement card-by-card swipe navigation through search results
@@ -132,6 +132,8 @@ alwaysApply: true
 - **Swipeable Component Integration**: Wrapping all screens with Swipeable for consistent moveable UI (SwipeConfig::blank() for non-navigating screens)
 - **Resource Pattern Matching**: `.value().with(|result| match result {...})` to access Resource data without "temporary value dropped" errors
 - **Backend Logout Flow**: POST to /api/auth/logout with bearer token revokes server-side refresh tokens before local session clearing
+- **Signal Simplification**: Using signal() syntax instead of signal.read() for cleaner Dioxus code (17+ simplifications across components)
+- **Debounced Search**: Implementing search with 300ms delay using tokio::time::sleep in spawned async tasks
 
 ### 💾 SQLx Database Operations & Advanced Patterns
 - **Connection Pooling**: Production-ready pool configuration with optimized settings
@@ -144,6 +146,7 @@ alwaysApply: true
 - **Constraint Management**: Advanced PostgreSQL constraint handling and violation detection
 - **Modular Repository Architecture**: error/models/helpers module pattern for clean SQLx implementations
 - **Ownership Validation Traits**: Custom traits on types (OwnsDeck for Uuid) enabling reusable security checks
+- **Direct UUID Handling**: SQLx returns Uuid directly from PostgreSQL without string conversion (database types align with Rust types)
 
 ### 🌐 Advanced HTTP & Middleware Patterns
 - **Custom Middleware**: AuthenticatedUser extractor with FromRequestParts trait
@@ -173,7 +176,16 @@ alwaysApply: true
 
 ## DEVELOPING - Active Implementation (Working But Learning) 🔧
 
-### 🌐 Frontend-Backend HTTP Integration (Production-Ready) ✅
+### 🎨 Frontend Deck Creation & Search UI (In Progress)
+- **Deck Creation Screen**: Built CreateDeck component with deck name input, searchable commander field, and singleton toggle
+- **Searchable Commander Field**: Debounced card search using HttpSearchCards::by_name() with 300ms delay via tokio::time::sleep
+- **Dropdown UX**: Search results display as clickable options in normal document flow (pushes other elements down)
+- **Singleton Toggle**: True/false boxes for deck format selection with visual feedback
+- **Route Refactoring**: Renamed /deck/new → /deck/create for consistency
+- **Database Schema Extension**: Added commander_id and is_singleton fields to decks table
+- **Card Field Access**: Made Card struct fields public for frontend usage
+- **Search Limit**: Limited commander search to 5 results for clean UX
+- *Note: Search working, UI structure complete, pending save functionality implementation*
 - **Complete Client Method Suite**: All 19 backend endpoints covered across 5 domains (auth: 4, user: 5, deck: 5, deck_card: 3, card: 2)
 - **Unified ApiError Architecture**: Single error enum shared between frontend and backend, moved to zerver/src/lib/inbound/http.rs
 - **Frontend/Backend Error Sharing**: Eliminated duplicate frontend error.rs file, both sides use same ApiError with Network variant for client errors
