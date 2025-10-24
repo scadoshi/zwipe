@@ -41,10 +41,12 @@ impl From<IntoDeckProfileError> for GetDeckProfileError {
 
 impl From<sqlx::Error> for CreateDeckProfileError {
     fn from(value: sqlx::Error) -> Self {
-        match value {
-            e if e.is_check_constraint_violation() => Self::Duplicate,
+        let matched = match value {
+            e if e.is_unique_constraint_violation() => Self::Duplicate,
             e => Self::Database(e.into()),
-        }
+        };
+        tracing::error!("{:#?}", matched);
+        matched
     }
 }
 
