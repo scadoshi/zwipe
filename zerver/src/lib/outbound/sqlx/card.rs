@@ -4,15 +4,18 @@ pub mod helpers;
 pub mod scryfall_data;
 pub mod sync_metrics;
 
-use crate::domain::card::models::card_profile::{
-    get_card_profile::{GetCardProfile, GetCardProfileError, GetCardProfiles},
-    CardProfile,
+use crate::domain::card::models::{
+    card_profile::{
+        get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
+        CardProfile,
+    },
+    get_card::GetCardError,
+    helpers::SleeveCardProfile,
+    scryfall_data::get_scryfall_data::{ScryfallDataIds, SearchScryfallDataError},
 };
-use crate::domain::card::models::scryfall_data::{GetScryfallDataError, SearchScryfallDataError};
 use crate::domain::card::models::{
     create_card::CreateCardError,
-    get_card::{GetCard, GetCardError, GetCards},
-    helpers::Sleeve,
+    scryfall_data::get_scryfall_data::{GetScryfallData, GetScryfallDataError},
     search_card::{SearchCards, SearchCardsError},
     Card,
 };
@@ -34,7 +37,7 @@ use crate::{
 
 use anyhow::Context;
 use chrono::NaiveDateTime;
-use sqlx::{query, query_as, query_scalar, Execute, Postgres};
+use sqlx::{query, query_as, query_scalar, Postgres};
 use sqlx::{query_builder::Separated, QueryBuilder};
 use uuid::Uuid;
 
@@ -177,10 +180,10 @@ impl CardRepository for MyPostgres {
     // =====
     async fn get_scryfall_data(
         &self,
-        request: &GetCard,
+        request: &GetScryfallData,
     ) -> Result<ScryfallData, GetScryfallDataError> {
         let scryfall_data: ScryfallData = query_as("SELECT * FROM scryfall_data WHERE id = $1")
-            .bind(request.card_profile_id())
+            .bind(request.id())
             .fetch_one(&self.pool)
             .await?;
 
@@ -189,7 +192,7 @@ impl CardRepository for MyPostgres {
 
     async fn get_multiple_scryfall_data(
         &self,
-        request: &GetCards,
+        request: &ScryfallDataIds,
     ) -> Result<Vec<ScryfallData>, GetScryfallDataError> {
         let scryfall_data: Vec<ScryfallData> =
             query_as("SELECT * FROM scryfall_data WHERE id = ANY($1)")
@@ -283,34 +286,34 @@ impl CardRepository for MyPostgres {
             qb.push_bind(offset as i32);
         }
 
-        tracing::info!("{}", qb.sql());
-
         let scryfall_data: Vec<ScryfallData> = qb.build_query_as().fetch_all(&self.pool).await?;
 
         Ok(scryfall_data)
     }
 
-    async fn get_card(&self, request: &GetCard) -> Result<Card, GetCardError> {
-        let scryfall_data = self.get_scryfall_data(request).await?;
-        let get_card_profile = GetCardProfile::from(&scryfall_data);
-        let card_profile = self.get_card_profile(&get_card_profile).await?;
+    async fn get_card(&self, request: &GetCardProfile) -> Result<Card, GetCardError> {
+        let card_profile = self.get_card_profile(request).await?;
+        let get_scryfall_data = GetScryfallData::from(&card_profile);
+        let scryfall_data = self.get_scryfall_data(&get_scryfall_data).await?;
         let card = Card::new(card_profile, scryfall_data);
         Ok(card)
     }
 
-    async fn get_cards(&self, request: &GetCards) -> Result<Vec<Card>, GetCardError> {
-        let scryfall_data = self.get_multiple_scryfall_data(request).await?;
-        let get_card_profiles = GetCardProfiles::from(scryfall_data.as_slice());
-        let card_profiles = self.get_card_profiles(&get_card_profiles).await?;
-        let cards = scryfall_data.sleeve(card_profiles);
+    async fn get_cards(&self, request: &CardProfileIds) -> Result<Vec<Card>, GetCardError> {
+        let card_profiles = self.get_card_profiles_by_id(request).await?;
+        let scryfall_data_ids = ScryfallDataIds::from(card_profiles.as_slice());
+        let scryfall_data = self.get_multiple_scryfall_data(&scryfall_data_ids).await?;
+        let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
     }
 
     async fn search_cards(&self, request: &SearchCards) -> Result<Vec<Card>, SearchCardsError> {
         let scryfall_data = self.search_scryfall_data(request).await?;
-        let get_card_profiles = GetCardProfiles::from(scryfall_data.as_slice());
-        let card_profiles = self.get_card_profiles(&get_card_profiles).await?;
-        let cards = scryfall_data.sleeve(card_profiles);
+        let scryfall_data_ids = ScryfallDataIds::from(scryfall_data.as_slice());
+        let card_profiles = self
+            .get_card_profiles_by_scryfall_data_id(&scryfall_data_ids)
+            .await?;
+        let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
     }
 
@@ -330,13 +333,31 @@ impl CardRepository for MyPostgres {
         Ok(card_profile)
     }
 
-    async fn get_card_profiles(
+    async fn get_card_profiles_by_id(
         &self,
-        request: &GetCardProfiles,
+        request: &CardProfileIds,
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
         let card_profiles: Vec<CardProfile> = query_as!(
             DatabaseCardProfile,
             "SELECT id, scryfall_data_id FROM card_profiles WHERE id = ANY($1)",
+            request.ids()
+        )
+        .fetch_all(&self.pool)
+        .await?
+        .into_iter()
+        .map(|dcp| dcp.into())
+        .collect();
+
+        Ok(card_profiles)
+    }
+
+    async fn get_card_profiles_by_scryfall_data_id(
+        &self,
+        request: &ScryfallDataIds,
+    ) -> Result<Vec<CardProfile>, GetCardProfileError> {
+        let card_profiles: Vec<CardProfile> = query_as!(
+            DatabaseCardProfile,
+            "SELECT id, scryfall_data_id FROM card_profiles WHERE scryfall_data_id = ANY($1)",
             request.ids()
         )
         .fetch_all(&self.pool)

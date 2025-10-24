@@ -1,5 +1,6 @@
 use crate::domain::card::models::card_profile::CardProfile;
-use crate::domain::card::models::{create_card::CreateCardError, helpers::Sleeve, Card};
+use crate::domain::card::models::helpers::SleeveScryfallData;
+use crate::domain::card::models::{create_card::CreateCardError, Card};
 use crate::domain::card::models::{
     scryfall_data::ScryfallData,
     sync_metrics::{ErrorMetrics, SyncMetrics},

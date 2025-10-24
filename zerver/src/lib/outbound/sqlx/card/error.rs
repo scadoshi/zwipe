@@ -1,7 +1,8 @@
 use crate::{
     domain::card::models::{
-        card_profile::get_card_profile::GetCardProfileError, create_card::CreateCardError,
-        scryfall_data::GetScryfallDataError,
+        card_profile::get_card_profile::GetCardProfileError,
+        create_card::CreateCardError,
+        scryfall_data::get_scryfall_data::{GetScryfallDataError, SearchScryfallDataError},
     },
     outbound::sqlx::postgres::IsConstraintViolation,
 };
@@ -30,5 +31,11 @@ impl From<sqlx::Error> for GetCardProfileError {
             sqlx::Error::RowNotFound => Self::NotFound,
             e => Self::Database(e.into()),
         }
+    }
+}
+
+impl From<sqlx::Error> for SearchScryfallDataError {
+    fn from(value: sqlx::Error) -> Self {
+        Self::Database(value.into())
     }
 }
