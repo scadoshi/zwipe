@@ -3,18 +3,23 @@ use std::time::Duration;
 use tokio::time::sleep;
 use zwipe::{
     domain::{auth::models::session::Session, card::models::Card},
-    inbound::http::handlers::card::search_card::HttpSearchCards,
+    inbound::http::handlers::{
+        card::search_card::HttpSearchCards, deck::create_deck_profile::HttpCreateDeckProfile,
+    },
 };
 
 use crate::{
     inbound::ui::{
         components::{
-            auth::bouncer::Bouncer,
+            auth::{bouncer::Bouncer, session_upkeep::Upkeep},
             interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
         },
         router::Router,
     },
-    outbound::client::{auth::AuthClient, card::search_cards::AuthClientSearchCards},
+    outbound::client::{
+        auth::AuthClient, card::search_cards::AuthClientSearchCards,
+        deck::create_deck::AuthClientCreateDeck,
+    },
 };
 
 #[component]
@@ -37,6 +42,10 @@ pub fn CreateDeck() -> Element {
     let mut search_results = use_signal(|| Vec::<Card>::new());
     let mut is_searching = use_signal(|| false);
     let mut show_dropdown = use_signal(|| false);
+
+    // save state
+    let mut submission_error = use_signal(|| None::<String>);
+    let mut is_saving = use_signal(|| false);
 
     // debounced search effect
     use_effect(move || {
@@ -61,7 +70,6 @@ pub fn CreateDeck() -> Element {
 
                 match auth_client().search_cards(&request, &sesh).await {
                     Ok(cards) => {
-                        tracing::info!("cards length {:?}", cards.len());
                         search_results.set(cards);
                         is_searching.set(false);
                         show_dropdown.set(true);
@@ -69,6 +77,7 @@ pub fn CreateDeck() -> Element {
                     Err(e) => {
                         tracing::error!("search error: {}", e);
                         is_searching.set(false);
+                        show_dropdown.set(false);
                     }
                 }
             }
@@ -149,11 +158,45 @@ pub fn CreateDeck() -> Element {
                                 }
                             }
 
+                            if let Some(error) = submission_error() {
+                                div { class: "error-message", "{error}" }
+                            }
+
                             button {
+                                disabled: is_saving(),
                                 onclick : move |_| {
-                                    tracing::info!("clicked save");
+                                    submission_error.set(None);
+                                    is_saving.set(true);
+
+                                    spawn(async move {
+                                        let Some(sesh) = session() else {
+                                            submission_error.set(Some("session expired".to_string()));
+                                            is_saving.set(false);
+                                            return;
+                                        };
+
+                                        // upkeep session before API call
+                                        session.upkeep(auth_client);
+
+                                        let commander_id = commander().map(|c| c.card_profile.id);
+                                        let request = HttpCreateDeckProfile::new(
+                                            &deck_name(),
+                                            commander_id,
+                                            is_singleton(),
+                                        );
+
+                                        match auth_client().create_deck_profile(&request, &sesh).await {
+                                            Ok(_) => {
+                                                navigator.push(Router::DeckList {});
+                                            }
+                                            Err(e) => {
+                                                submission_error.set(Some(e.to_string()));
+                                                is_saving.set(false);
+                                            }
+                                        }
+                                    });
                                 },
-                                "save"
+                                if is_saving() { "saving..." } else { "save" }
                             }
 
                             button {
