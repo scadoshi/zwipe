@@ -4,9 +4,9 @@ use crate::{
         auth::ports::AuthService,
         card::{
             models::{
-                card_profile::get_card_profile::GetCardProfileError,
-                get_card::{GetCard, GetCardError},
-                scryfall_data::GetScryfallDataError,
+                card_profile::get_card_profile::{GetCardProfile, GetCardProfileError},
+                get_card::GetCardError,
+                scryfall_data::get_scryfall_data::GetScryfallDataError,
                 Card,
             },
             ports::CardService,
@@ -68,7 +68,7 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let request = GetCard::new(&card_profile_id)?;
+    let request = GetCardProfile::new(&card_profile_id)?;
 
     state
         .card_service

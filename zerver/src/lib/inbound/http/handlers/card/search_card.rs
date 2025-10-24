@@ -180,8 +180,6 @@ where
 {
     let request = SearchCards::try_from(params)?;
 
-    tracing::debug!("f");
-
     state
         .card_service
         .search_cards(&request)
