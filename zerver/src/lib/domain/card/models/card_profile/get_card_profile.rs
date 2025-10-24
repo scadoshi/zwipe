@@ -22,7 +22,7 @@ pub enum GetCardProfileError {
 
 #[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
-pub enum InvalidGetCardProfiles {
+pub enum InvalidCardProfileIds {
     #[error("invalid id: {0}")]
     Uuid(uuid::Error),
     #[error("no ids provided")]
@@ -30,7 +30,7 @@ pub enum InvalidGetCardProfiles {
 }
 
 #[cfg(feature = "zerver")]
-impl From<uuid::Error> for InvalidGetCardProfiles {
+impl From<uuid::Error> for InvalidCardProfileIds {
     fn from(value: uuid::Error) -> Self {
         Self::Uuid(value)
     }
@@ -55,20 +55,14 @@ impl GetCardProfile {
 }
 
 #[cfg(feature = "zerver")]
-impl From<&ScryfallData> for GetCardProfile {
-    fn from(value: &ScryfallData) -> Self {
-        GetCardProfile(value.id.clone())
-    }
-}
+#[derive(Debug)]
+pub struct CardProfileIds(Vec<Uuid>);
 
 #[cfg(feature = "zerver")]
-pub struct GetCardProfiles(Vec<Uuid>);
-
-#[cfg(feature = "zerver")]
-impl GetCardProfiles {
-    pub fn new(ids: Vec<&str>) -> Result<Self, InvalidGetCardProfiles> {
+impl CardProfileIds {
+    pub fn new(ids: Vec<&str>) -> Result<Self, InvalidCardProfileIds> {
         if ids.is_empty() {
-            return Err(InvalidGetCardProfiles::MissingIds);
+            return Err(InvalidCardProfileIds::MissingIds);
         }
         Ok(Self(
             ids.into_iter()
@@ -83,7 +77,7 @@ impl GetCardProfiles {
 }
 
 #[cfg(feature = "zerver")]
-impl From<&[DeckCard]> for GetCardProfiles {
+impl From<&[DeckCard]> for CardProfileIds {
     fn from(value: &[DeckCard]) -> Self {
         Self(
             value
@@ -95,7 +89,7 @@ impl From<&[DeckCard]> for GetCardProfiles {
 }
 
 #[cfg(feature = "zerver")]
-impl From<&[ScryfallData]> for GetCardProfiles {
+impl From<&[ScryfallData]> for CardProfileIds {
     fn from(value: &[ScryfallData]) -> Self {
         Self(value.into_iter().map(|sfd| sfd.id.to_owned()).collect())
     }

@@ -1,6 +1,7 @@
 pub mod all_parts;
 pub mod card_faces;
 pub mod colors;
+pub mod get_scryfall_data;
 pub mod image_uris;
 pub mod legalities;
 pub mod prices;
@@ -13,29 +14,7 @@ use legalities::Legalities;
 use prices::Prices;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-#[cfg(feature = "zerver")]
-use thiserror::Error;
 use uuid::Uuid;
-
-// =======
-//  error
-// =======
-
-#[cfg(feature = "zerver")]
-#[derive(Debug, Error)]
-pub enum GetScryfallDataError {
-    #[error("scryfall data not found")]
-    NotFound,
-    #[error(transparent)]
-    Database(anyhow::Error),
-}
-
-#[cfg(feature = "zerver")]
-#[derive(Debug, Error)]
-pub enum SearchScryfallDataError {
-    #[error(transparent)]
-    Database(anyhow::Error),
-}
 
 // ======
 //  main

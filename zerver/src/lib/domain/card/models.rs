@@ -4,6 +4,7 @@ pub mod get_card;
 pub mod helpers;
 pub mod scryfall_data;
 pub mod search_card;
+
 #[cfg(feature = "zerver")]
 pub mod sync_metrics;
 use crate::domain::card::models::{card_profile::CardProfile, scryfall_data::ScryfallData};

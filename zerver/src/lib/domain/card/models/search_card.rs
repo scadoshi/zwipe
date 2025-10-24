@@ -1,7 +1,8 @@
 use crate::domain::card::models::scryfall_data::colors::Colors;
 #[cfg(feature = "zerver")]
 use crate::domain::card::models::{
-    card_profile::get_card_profile::GetCardProfileError, scryfall_data::SearchScryfallDataError,
+    card_profile::get_card_profile::GetCardProfileError,
+    scryfall_data::get_scryfall_data::SearchScryfallDataError,
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
