@@ -3,11 +3,11 @@ use crate::{
     domain::card::{
         models::{
             card_profile::{
-                get_card_profile::{GetCardProfile, GetCardProfileError, GetCardProfiles},
+                get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
                 CardProfile,
             },
             create_card::CreateCardError,
-            get_card::{GetCard, GetCardError, GetCards},
+            get_card::GetCardError,
             scryfall_data::ScryfallData,
             search_card::{SearchCards, SearchCardsError},
             sync_metrics::{SyncMetrics, SyncType},
@@ -97,11 +97,11 @@ impl<R: CardRepository> CardService for Service<R> {
     // =====
     //  get
     // =====
-    async fn get_card(&self, request: &GetCard) -> Result<Card, GetCardError> {
+    async fn get_card(&self, request: &GetCardProfile) -> Result<Card, GetCardError> {
         self.repo.get_card(request).await
     }
 
-    async fn get_cards(&self, request: &GetCards) -> Result<Vec<Card>, GetCardError> {
+    async fn get_cards(&self, request: &CardProfileIds) -> Result<Vec<Card>, GetCardError> {
         self.repo.get_cards(request).await
     }
 
@@ -118,9 +118,9 @@ impl<R: CardRepository> CardService for Service<R> {
 
     async fn get_card_profiles(
         &self,
-        request: &GetCardProfiles,
+        request: &CardProfileIds,
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
-        self.repo.get_card_profiles(request).await
+        self.repo.get_card_profiles_by_id(request).await
     }
 
     async fn get_last_sync_date(

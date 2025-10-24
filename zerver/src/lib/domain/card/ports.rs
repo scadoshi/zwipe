@@ -4,12 +4,17 @@ use chrono::NaiveDateTime;
 
 use crate::domain::card::models::{
     card_profile::{
-        get_card_profile::{GetCardProfile, GetCardProfileError, GetCardProfiles},
+        get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
         CardProfile,
     },
     create_card::CreateCardError,
-    get_card::{GetCard, GetCardError, GetCards},
-    scryfall_data::{GetScryfallDataError, ScryfallData, SearchScryfallDataError},
+    get_card::GetCardError,
+    scryfall_data::{
+        get_scryfall_data::{
+            GetScryfallData, GetScryfallDataError, ScryfallDataIds, SearchScryfallDataError,
+        },
+        ScryfallData,
+    },
     search_card::{SearchCards, SearchCardsError},
     sync_metrics::{SyncMetrics, SyncType},
     Card,
@@ -87,16 +92,16 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     //  get
     // =====
 
-    /// gets scryfall data with a uuid
+    /// gets scryfall data with a scryfall data id
     fn get_scryfall_data(
         &self,
-        request: &GetCard,
+        request: &GetScryfallData,
     ) -> impl Future<Output = Result<ScryfallData, GetScryfallDataError>> + Send;
 
-    /// gets multiple scryfall data with a list of uuids
+    /// gets multiple scryfall data with a list of scryfall data ids
     fn get_multiple_scryfall_data(
         &self,
-        request: &GetCards,
+        request: &ScryfallDataIds,
     ) -> impl Future<Output = Result<Vec<ScryfallData>, GetScryfallDataError>> + Send;
 
     /// search for scryfall data given parameters
@@ -105,16 +110,16 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         request: &SearchCards,
     ) -> impl Future<Output = Result<Vec<ScryfallData>, SearchScryfallDataError>> + Send;
 
-    /// gets card with a uuid
+    /// gets card with a card profile id
     fn get_card(
         &self,
-        request: &GetCard,
+        request: &GetCardProfile,
     ) -> impl Future<Output = Result<Card, GetCardError>> + Send;
 
-    /// gets cards with a list of uuids
+    /// gets cards with a list of card profile ids
     fn get_cards(
         &self,
-        request: &GetCards,
+        request: &CardProfileIds,
     ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
 
     /// search for cards given parameters
@@ -123,16 +128,22 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         request: &SearchCards,
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
-    /// gets card profile with a uuid
+    /// gets card profile with its uuid
     fn get_card_profile(
         &self,
         request: &GetCardProfile,
     ) -> impl Future<Output = Result<CardProfile, GetCardProfileError>> + Send;
 
-    /// gets card profiles with a list of uuids
-    fn get_card_profiles(
+    /// gets card profile with a list of its uuid
+    fn get_card_profiles_by_id(
         &self,
-        request: &GetCardProfiles,
+        request: &CardProfileIds,
+    ) -> impl Future<Output = Result<Vec<CardProfile>, GetCardProfileError>> + Send;
+
+    /// gets card profile with a list its linked scryfall data uuid
+    fn get_card_profiles_by_scryfall_data_id(
+        &self,
+        request: &ScryfallDataIds,
     ) -> impl Future<Output = Result<Vec<CardProfile>, GetCardProfileError>> + Send;
 
     /// gets last sync date from database
@@ -167,16 +178,16 @@ pub trait CardService: Clone + Send + Sync + 'static {
     //  get
     // =====
 
-    /// gets scryfall data with a uuid
+    /// gets scryfall data with a card profile id
     fn get_card(
         &self,
-        request: &GetCard,
+        request: &GetCardProfile,
     ) -> impl Future<Output = Result<Card, GetCardError>> + Send;
 
-    /// gets scryfall cards with a list of uuids
+    /// gets scryfall cards with a list of card profile ids
     fn get_cards(
         &self,
-        request: &GetCards,
+        request: &CardProfileIds,
     ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
 
     /// gets cards matching parameters
@@ -194,7 +205,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
     /// gets card profiles with a list of uuids
     fn get_card_profiles(
         &self,
-        request: &GetCardProfiles,
+        request: &CardProfileIds,
     ) -> impl Future<Output = Result<Vec<CardProfile>, GetCardProfileError>> + Send;
 
     /// gets last sync date from database
