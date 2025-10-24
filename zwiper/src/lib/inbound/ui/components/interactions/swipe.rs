@@ -45,7 +45,6 @@ pub fn Swipeable(state: Signal<SwipeState>, config: SwipeConfig, children: Eleme
 
     // screens starting position relative to main screen - reactive to screen_offset
     let xvw = (config.from_main_screen.x + state().screen_offset.x) * VW_GAP;
-
     let yvh = (config.from_main_screen.y + state().screen_offset.y) * VH_GAP;
 
     // for returning element back to start position smoothly

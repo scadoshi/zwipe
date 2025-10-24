@@ -61,6 +61,7 @@ pub fn CreateDeck() -> Element {
 
                 match auth_client().search_cards(&request, &sesh).await {
                     Ok(cards) => {
+                        tracing::info!("cards length {:?}", cards.len());
                         search_results.set(cards);
                         is_searching.set(false);
                         show_dropdown.set(true);
