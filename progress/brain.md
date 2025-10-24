@@ -15,18 +15,18 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Built deck creation screen with searchable commander field and singleton toggle. Refactored UUID handling throughout codebase for cleaner database interactions.
+**Last Updated**: Completed deck creation flow with save functionality and session upkeep. Fixed card search to search ScryfallData first then fetch CardProfiles for correct results.
 
-**Next Learning Focus**: Complete deck creation flow with save functionality. Building card search UI with filters and swipeable navigation patterns.
+**Next Learning Focus**: Deep dive into deck screen and create deck screen implementation to refine architecture and UX patterns before building deck modification flow with swipeable card addition.
 
-**Recent Achievement**: Built deck creation screen with searchable commander field using HttpSearchCards::by_name() helper. Implemented 300ms debouncing with tokio::time::sleep. Created singleton toggle with true/false boxes. Discovered UUID can be returned directly from PostgreSQL without string conversion - refactored all DatabaseUser, DatabaseDeckProfile models to use Uuid directly, eliminated unnecessary parsing errors (removed Id variants from IntoUserError, IntoDeckProfileError, IntoUserWithPasswordHashError). Made Card fields public for frontend access. Added by_name() convenience method to HttpSearchCards. Simplified signal usage throughout frontend - replaced .read() with signal() syntax for cleaner code (17+ simplifications across all components). Renamed route /deck/new → /deck/create for consistency. Updated database schema adding commander_id and is_singleton fields to decks table.
+**Recent Achievement**: Built complete deck creation flow with searchable commander field, singleton toggle, and save functionality. Refactored card search to reverse flow - search ScryfallData by query parameters first, then fetch associated CardProfiles using get_card_profiles_by_scryfall_data_id. Renamed types for clarity (GetCardProfiles → CardProfileIds, GetCards → ScryfallDataIds). Created separate sleeve traits (SleeveScryfallData, SleeveCardProfile) for bidirectional data combination. Implemented session upkeep pattern before API calls. Fixed deck unique constraint violation error mapping (is_check_constraint_violation → is_unique_constraint_violation). Added loading states, error handling, and navigation on successful deck creation.
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Swipeable Card Browsing** - How to implement card-by-card swipe navigation through search results
-2. **Frontend Data Transformation** - Patterns for calculating deck metrics (mana curve, color distribution) from raw card data
-3. **Component Reusability** - When to extract shared UI patterns vs keeping inline for deck/card displays
-4. **Search UX Patterns** - Debouncing, loading states, empty results handling for card search
-5. **Deck Modification Patterns** - Optimistic updates vs refetching after add/remove card operations
+1. **Deck Screen Architecture** - How to structure deck detail view and refinement needed for current implementation
+2. **Deck Modification Flow** - Patterns for swiping through cards and adding them to decks with quantities
+3. **Frontend Data Transformation** - Patterns for calculating deck metrics (mana curve, color distribution) from raw card data
+4. **Component Reusability** - When to extract shared UI patterns vs keeping inline for deck/card displays
+5. **Optimistic Updates** - Update UI immediately vs refetching after add/remove card operations
 
 ---
 

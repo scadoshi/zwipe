@@ -13,23 +13,23 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Built deck creation screen with searchable commander field, singleton toggle, and comprehensive UUID refactoring across backend.
+**Last Updated**: Completed deck creation flow with save functionality. Refactored card search architecture for correct results.
 
-**Current Focus**: Deck creation UI complete with searchable commander. Next: wire up save functionality to create decks with commander_id and is_singleton.
+**Current Focus**: Deep dive into deck screen and create deck screen implementation to refine architecture and UX patterns. Next: build deck modification flow with swipeable card addition.
 
-**Recent Achievement**: Built deck creation screen with searchable commander field implementing HttpSearchCards::by_name() helper with 300ms debouncing. Created singleton toggle with true/false boxes for clean UX. Discovered PostgreSQL can return Uuid directly - refactored DatabaseUser, DatabaseDeckProfile to use Uuid instead of String, eliminated unnecessary error types (Id variants). Made Card fields public for frontend access. Added commander_id and is_singleton to decks schema. Simplified signal usage throughout frontend replacing .read() with signal() syntax (17+ changes). Renamed route /deck/new → /deck/create for consistency. All migrations compile cleanly with new deck fields.
+**Recent Achievement**: Built complete deck creation flow with searchable commander field, singleton toggle, and save functionality implementing session upkeep pattern. Refactored card search to reverse flow - search ScryfallData by query parameters first, then fetch associated CardProfiles using get_card_profiles_by_scryfall_data_id. Renamed types for clarity (GetCardProfiles → CardProfileIds, GetCards → ScryfallDataIds). Created separate sleeve traits (SleeveScryfallData, SleeveCardProfile) for bidirectional data combination. Fixed deck unique constraint violation error mapping (is_check_constraint_violation → is_unique_constraint_violation). Added comprehensive error handling and loading states throughout deck creation flow.
 
 **Current Success**: Complete end-to-end HTTP integration from frontend to backend across all domains. All authentication flows working (register, login, logout, refresh, profile changes, account deletion). Deck CRUD operations complete (create, read, update, delete). Deck card management ready (add, update quantity, remove). Card operations ready (get by ID, search with complex query parameters). Universal swipeable UI. Production-ready error handling with shared ApiError architecture.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Deck Creation Save** - Wire up save button to call create_deck_profile API with commander_id and is_singleton
-2. **Deck Detail Screen** - Individual deck view showing all cards with quantities and metrics
-3. **Card Search UI** - Search interface with filters (name, type, color, CMC, power/toughness, rarity)
-4. **Add Cards to Deck** - Integration of search results with deck card management
-5. **Deck Card Quantity Management** - UI for adjusting card quantities in decks
+1. **Deck Screen Refinement** - Deep dive into architecture and UX patterns for deck list and detail screens
+2. **Create Deck Screen Refinement** - Review and tighten implementation of deck creation flow
+3. **Deck Modification Architecture** - Design patterns for swiping through cards and adding to decks
+4. **Card Addition Flow** - UI/UX for selecting cards and adding them to decks with quantities
+5. **Deck Card Display** - Visual representation of cards in decks with quantities and metrics
 
 ### 🤔 Next Immediate Priorities (Top 5)
-1. **Card Swipe Navigation** - Swipeable card browsing interface for search results
+1. **Swipeable Card Browsing** - Implement card-by-card swipe navigation through search results
 2. **Frontend Deck Analytics** - Calculate mana curve, color distribution, type breakdown from card data
 3. **Card Detail Screen** - Full card view with image and all attributes
 4. **Deck Validation** - Client-side validation for deck legality and card limits
@@ -199,8 +199,13 @@ alwaysApply: true
 - **Change Password Special Handling**: Current password not validated (legacy password policy compatibility), only new password validated
 - **Deck Creation UI**: CreateDeck component with searchable commander field, singleton toggle, and form inputs for deck name
 - **Searchable Commander Field**: Debounced card search (300ms) with HttpSearchCards::by_name() helper, shows top 5 results
+- **Deck Creation Save**: Complete save functionality with session upkeep, error handling, loading states, and navigation to deck list
+- **Card Search Refactoring**: Reversed search flow to query ScryfallData first, then fetch CardProfiles by scryfall_data_id for correct results
+- **Type Naming Clarity**: Renamed GetCardProfiles → CardProfileIds, GetCards → ScryfallDataIds for better clarity
+- **Bidirectional Sleeve Traits**: Created SleeveScryfallData and SleeveCardProfile traits for flexible data combination
 - **UUID Database Handling**: Refactored DatabaseUser and DatabaseDeckProfile to return Uuid directly from PostgreSQL, eliminated string conversion errors
 - **Card Field Access**: Made Card struct fields public for frontend consumption
+- **Deck Constraint Error Fix**: Corrected unique constraint violation detection (is_check_constraint_violation → is_unique_constraint_violation)
 - **Signal Simplification**: Cleaned up signal usage replacing .read() with signal() syntax throughout frontend (17+ changes)
 - **HTTP Client Error Refactoring**: Eliminated 215 lines by creating centralized ApiError enum replacing LoginError, RegisterError, ChangeUsernameError, ChangeEmailError, ChangePasswordError, LogoutError, RefreshError, CreateDeckError, DeleteDeckError, GetDeckProfilesError
 - **From Trait Error Conversion**: Implemented `From<(StatusCode, String)> for ApiError` enabling automatic `.into()` conversions throughout client layer
