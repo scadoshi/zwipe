@@ -1,10 +1,7 @@
 use std::fmt::Debug;
 
 use crate::domain::{
-    card::{
-        models::{card_profile::get_card_profile::GetCardProfiles, get_card::GetCards},
-        ports::CardRepository,
-    },
+    card::{models::card_profile::get_card_profile::CardProfileIds, ports::CardRepository},
     deck::{
         models::{
             deck::{
@@ -99,11 +96,8 @@ where
         let gd = GetDeck::from(&deck_profile);
         let deck_cards = self.deck_repo.get_deck_cards(&gd).await?;
 
-        let gcp = GetCardProfiles::from(deck_cards.as_slice());
-        let card_profiles = self.card_repo.get_card_profiles(&gcp).await?;
-
-        let gcs = GetCards::from(card_profiles.as_slice());
-        let cards = self.card_repo.get_cards(&gcs).await?;
+        let cps = CardProfileIds::from(deck_cards.as_slice());
+        let cards = self.card_repo.get_cards(&cps).await?;
 
         let deck = Deck::new(deck_profile, cards);
 
