@@ -37,7 +37,7 @@ pub fn DeckList() -> Element {
         Bouncer {
             Swipeable { state: swipe_state, config: swipe_config,
                 div { class : "decks-wrapper",
-                    h2 { "decks" }
+                    h2 { "deck list" }
 
                     div { class : "decks-container",
                         match &*deck_profiles_resource.read() {
@@ -83,7 +83,7 @@ pub fn DeckList() -> Element {
                             onclick : move |_| {
                                 navigator.push(Router::CreateDeck);
                             },
-                            "add deck"
+                            "create deck"
                         }
                         button {
                             onclick : move |_| {
