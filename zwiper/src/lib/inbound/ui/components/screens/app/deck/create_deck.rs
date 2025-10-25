@@ -56,12 +56,9 @@ pub fn CreateDeck() -> Element {
             return;
         }
 
-        // do not show dropdown until search completes
         is_searching.set(true);
 
-        // debounce: wait 300ms before searching
         spawn(async move {
-            // wait 300ms before making the API call
             sleep(Duration::from_millis(300)).await;
 
             if let Some(sesh) = session() {
@@ -88,6 +85,9 @@ pub fn CreateDeck() -> Element {
         Bouncer {
                 Swipeable { state: swipe_state, config: swipe_config,
                     div { class : "form-container",
+
+                    h2 { "create deck" }
+
                     form {
                         div { class : "form-group",
                             label { r#for : "deck-name", "" }
@@ -175,7 +175,6 @@ pub fn CreateDeck() -> Element {
                                             return;
                                         };
 
-                                        // upkeep session before API call
                                         session.upkeep(auth_client);
 
                                         let commander_id = commander().map(|c| c.card_profile.id);
