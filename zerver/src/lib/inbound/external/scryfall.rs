@@ -81,9 +81,9 @@ impl PlanesWalker {
     /// for searching for a single card
     pub async fn tutor(client: &mut Client, search_str: &str) -> anyhow::Result<Vec<ScryfallData>> {
         let url = SCRYFALL_API_BASE.to_string() + CARDS_SEARCH_ENDPOINT;
-        let teferi = PlanesWalker::untap(client, &url);
+        let urza = PlanesWalker::untap(client, &url);
 
-        let get_result = teferi
+        let get_result = urza
             .tutor_for(search_str)
             .cast()
             .await
