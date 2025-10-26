@@ -1,4 +1,7 @@
-use crate::domain::deck::models::deck::deck_name::{DeckName, InvalidDeckname};
+use crate::domain::deck::models::deck::{
+    copy_max::{CopyMax, InvalidCopyMax},
+    deck_name::{DeckName, InvalidDeckname},
+};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -6,11 +9,19 @@ use uuid::Uuid;
 pub enum InvalidCreateDeckProfile {
     #[error(transparent)]
     DeckName(InvalidDeckname),
+    #[error(transparent)]
+    CopyMax(InvalidCopyMax),
 }
 
 impl From<InvalidDeckname> for InvalidCreateDeckProfile {
     fn from(value: InvalidDeckname) -> Self {
         Self::DeckName(value)
+    }
+}
+
+impl From<InvalidCopyMax> for InvalidCreateDeckProfile {
+    fn from(value: InvalidCopyMax) -> Self {
+        Self::CopyMax(value)
     }
 }
 
@@ -29,7 +40,7 @@ pub enum CreateDeckProfileError {
 pub struct CreateDeckProfile {
     pub name: DeckName,
     pub commander_id: Option<Uuid>,
-    pub is_singleton: bool,
+    pub copy_max: Option<CopyMax>,
     pub user_id: Uuid,
 }
 
@@ -37,14 +48,15 @@ impl CreateDeckProfile {
     pub fn new(
         name: &str,
         commander_id: Option<Uuid>,
-        is_singleton: bool,
+        copy_max: Option<i32>,
         user_id: Uuid,
     ) -> Result<Self, InvalidCreateDeckProfile> {
         let name = DeckName::new(name)?;
+        let copy_max: Option<CopyMax> = copy_max.map(|max| CopyMax::new(max)).transpose()?;
         Ok(Self {
             name,
             commander_id,
-            is_singleton,
+            copy_max,
             user_id,
         })
     }

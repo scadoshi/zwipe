@@ -16,14 +16,6 @@ impl From<uuid::Error> for InvalidGetDeckProfiles {
     }
 }
 
-#[derive(Debug, Error)]
-pub enum GetDeckProfilesError {
-    #[error(transparent)]
-    Database(anyhow::Error),
-    #[error("deck profile found but database returned invalid object: {0}")]
-    DeckProfileFromDb(anyhow::Error),
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GetDeckProfiles {
     pub user_id: Uuid,

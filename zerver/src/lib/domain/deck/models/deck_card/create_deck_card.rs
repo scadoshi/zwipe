@@ -1,5 +1,5 @@
 #[cfg(feature = "zerver")]
-use crate::domain::deck::models::deck::get_deck::GetDeckProfileError;
+use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
 use crate::domain::deck::models::deck_card::quantity::{InvalidQuantity, Quantity};
 use thiserror::Error;
 use uuid::Uuid;

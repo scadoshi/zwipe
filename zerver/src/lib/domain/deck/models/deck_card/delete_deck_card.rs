@@ -1,7 +1,8 @@
-#[cfg(feature = "zerver")]
-use crate::domain::deck::models::deck::get_deck::GetDeckProfileError;
 use thiserror::Error;
 use uuid::Uuid;
+
+#[cfg(feature = "zerver")]
+use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
 
 #[cfg(feature = "zerver")]
 #[derive(Debug, Error)]

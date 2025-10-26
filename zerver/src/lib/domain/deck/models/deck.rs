@@ -1,8 +1,10 @@
+pub mod copy_max;
 pub mod create_deck_profile;
 pub mod deck_name;
 pub mod deck_profile;
 pub mod delete_deck;
 pub mod get_deck;
+pub mod get_deck_profile;
 pub mod get_deck_profiles;
 pub mod update_deck_profile;
 
