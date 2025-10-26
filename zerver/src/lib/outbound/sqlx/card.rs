@@ -309,6 +309,9 @@ impl CardRepository for MyPostgres {
 
     async fn search_cards(&self, request: &SearchCards) -> Result<Vec<Card>, SearchCardsError> {
         let scryfall_data = self.search_scryfall_data(request).await?;
+        if scryfall_data.is_empty() {
+            return Ok(vec![]);
+        }
         let scryfall_data_ids = ScryfallDataIds::from(scryfall_data.as_slice());
         let card_profiles = self
             .get_card_profiles_by_scryfall_data_id(&scryfall_data_ids)
