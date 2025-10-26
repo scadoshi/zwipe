@@ -7,7 +7,7 @@ use crate::{
         },
         router::Router,
     },
-    outbound::client::{auth::AuthClient, user::change_username::AuthClientChangeUsername},
+    outbound::client::{user::change_username::ClientChangeUsername, ZwipeClient},
 };
 use dioxus::prelude::*;
 use zwipe::{
@@ -26,7 +26,7 @@ pub fn ChangeUsername() -> Element {
     let navigator = use_navigator();
 
     let mut session: Signal<Option<Session>> = use_context();
-    let auth_client: Signal<AuthClient> = use_context();
+    let auth_client: Signal<ZwipeClient> = use_context();
 
     let mut new_username = use_signal(|| String::new());
     let mut username_error: Signal<Option<String>> = use_signal(|| None);

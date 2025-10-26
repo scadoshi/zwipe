@@ -7,7 +7,7 @@ use crate::{
         },
         router::Router,
     },
-    outbound::client::auth::AuthClient,
+    outbound::client::ZwipeClient,
 };
 use dioxus::prelude::*;
 use zwipe::domain::{auth::models::session::Session, logo};
@@ -19,7 +19,7 @@ pub fn Home() -> Element {
 
     let navigator = use_navigator();
 
-    let auth_client: Signal<AuthClient> = use_context();
+    let auth_client: Signal<ZwipeClient> = use_context();
     let session: Signal<Option<Session>> = use_context();
 
     let logo = logo::ZWIPE;

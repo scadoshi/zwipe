@@ -1,5 +1,5 @@
 use crate::outbound::{
-    client::auth::{refresh::AuthClientRefresh, AuthClient},
+    client::{auth::refresh::ClientRefresh, ZwipeClient},
     session::Persist,
 };
 use dioxus::prelude::*;
@@ -11,11 +11,11 @@ use zwipe::{
 };
 
 pub trait Upkeep {
-    fn upkeep(self, auth_client: Signal<AuthClient>);
+    fn upkeep(self, auth_client: Signal<ZwipeClient>);
 }
 
 impl Upkeep for Signal<Option<Session>> {
-    fn upkeep(self, auth_client: Signal<AuthClient>) {
+    fn upkeep(self, auth_client: Signal<ZwipeClient>) {
         let mut session = self;
 
         spawn(async move {
@@ -53,7 +53,7 @@ pub fn spawn_upkeeper() {
     let session = use_signal(|| Session::infallible_load());
     use_context_provider(|| session);
 
-    let auth_client = use_signal(|| AuthClient::new());
+    let auth_client = use_signal(|| ZwipeClient::new());
     use_context_provider(|| auth_client);
 
     spawn(async move {

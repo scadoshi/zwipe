@@ -5,7 +5,7 @@ use crate::{
         router::Router,
     },
     outbound::{
-        client::auth::{register::AuthClientRegister, AuthClient},
+        client::{auth::register::ClientRegister, ZwipeClient},
         session::Persist,
     },
 };
@@ -29,7 +29,7 @@ pub fn Register() -> Element {
     let navigator = use_navigator();
 
     let mut session: Signal<Option<Session>> = use_context();
-    let auth_client: Signal<AuthClient> = use_context();
+    let auth_client: Signal<ZwipeClient> = use_context();
 
     let logo = logo::ZWIPE;
 

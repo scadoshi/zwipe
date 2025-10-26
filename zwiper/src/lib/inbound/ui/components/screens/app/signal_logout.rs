@@ -1,7 +1,7 @@
 use crate::{
     inbound::ui::components::auth::session_upkeep::Upkeep,
     outbound::{
-        client::auth::{logout::AuthClientLogout, AuthClient},
+        client::{auth::logout::ClientLogout, ZwipeClient},
         session::Persist,
     },
 };
@@ -9,11 +9,11 @@ use dioxus::prelude::*;
 use zwipe::domain::auth::models::session::Session;
 
 pub trait SignalLogout {
-    fn logout(self, auth_client: Signal<AuthClient>);
+    fn logout(self, auth_client: Signal<ZwipeClient>);
 }
 
 impl SignalLogout for Signal<Option<Session>> {
-    fn logout(self, auth_client: Signal<AuthClient>) {
+    fn logout(self, auth_client: Signal<ZwipeClient>) {
         let mut session = self;
 
         spawn(async move {

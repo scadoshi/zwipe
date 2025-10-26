@@ -7,7 +7,7 @@ use crate::{
         },
         router::Router,
     },
-    outbound::client::{auth::AuthClient, user::change_password::AuthClientChangePassword},
+    outbound::client::{user::change_password::ClientChangePassword, ZwipeClient},
 };
 use dioxus::prelude::*;
 use zwipe::{
@@ -23,7 +23,7 @@ pub fn ChangePassword() -> Element {
     let navigator = use_navigator();
 
     let session: Signal<Option<Session>> = use_context();
-    let auth_client: Signal<AuthClient> = use_context();
+    let auth_client: Signal<ZwipeClient> = use_context();
 
     // we do not validate current password on frontend
     // as to not lock them out of changing

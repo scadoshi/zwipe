@@ -8,15 +8,15 @@ use crate::inbound::ui::{
     },
     router::Router,
 };
-use crate::outbound::client::auth::AuthClient;
-use crate::outbound::client::user::change_email::AuthClientChangeEmail;
+use crate::outbound::client::user::change_email::ClientChangeEmail;
+use crate::outbound::client::ZwipeClient;
 use dioxus::prelude::*;
 use email_address::EmailAddress;
 use std::str::FromStr;
-use zwipe::inbound::http::ApiError;
 use zwipe::{
     domain::auth::models::{password::Password, session::Session},
     inbound::http::handlers::auth::change_email::HttpChangeEmail,
+    inbound::http::ApiError,
 };
 
 #[component]
@@ -27,7 +27,7 @@ pub fn ChangeEmail() -> Element {
     let navigator = use_navigator();
 
     let mut session: Signal<Option<Session>> = use_context();
-    let auth_client: Signal<AuthClient> = use_context();
+    let auth_client: Signal<ZwipeClient> = use_context();
 
     let mut new_email = use_signal(|| String::new());
     let mut email_error: Signal<Option<String>> = use_signal(|| None);
