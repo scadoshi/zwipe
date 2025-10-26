@@ -45,7 +45,7 @@ pub fn DeckList() -> Element {
                                 if deck_profiles.is_empty() {
                                     rsx! {
                                         div { class: "empty-message",
-                                            p { "no deck-list yet" }
+                                            p { "no decks yet" }
                                         }
                                     }
                                 } else {
@@ -56,7 +56,7 @@ pub fn DeckList() -> Element {
                                                     key : "{profile.id}",
                                                     class : "deck-item",
                                                     onclick : move |_| {
-                                                        navigator.push(Router::GetDeck {
+                                                        navigator.push(Router::ViewDeckProfile {
                                                             deck_id: profile.id,
                                                         });
                                                     },

@@ -87,13 +87,12 @@ pub fn CreateDeck() -> Element {
         is_saving.set(true);
 
         spawn(async move {
+            session.upkeep(auth_client);
             let Some(sesh) = session() else {
                 submission_error.set(Some("session expired".to_string()));
                 is_saving.set(false);
                 return;
             };
-
-            session.upkeep(auth_client);
 
             let commander_id = commander().map(|c| c.card_profile.id);
             let request =
@@ -101,7 +100,7 @@ pub fn CreateDeck() -> Element {
 
             match auth_client().create_deck_profile(&request, &sesh).await {
                 Ok(created) => {
-                    navigator.push(Router::GetDeck {
+                    navigator.push(Router::ViewDeckProfile {
                         deck_id: created.id,
                     });
                 }
@@ -122,7 +121,6 @@ pub fn CreateDeck() -> Element {
 
                     form {
                         div { class : "form-group",
-                            label { r#for : "deck-name", "" }
                             input {
                                 id: "deck name",
                                 r#type : "text",
@@ -135,7 +133,6 @@ pub fn CreateDeck() -> Element {
                                 }
                             }
 
-                            label { r#for : "commander", "" }
                             div { class: "commander-search",
                                 input {
                                     id: "commander",

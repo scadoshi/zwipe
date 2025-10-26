@@ -14,7 +14,7 @@ pub trait ClientUpdateDeckProfile {
     fn update_deck_profile(
         &self,
         deck_id: &Uuid,
-        body: HttpUpdateDeckProfile,
+        body: &HttpUpdateDeckProfile,
         session: &Session,
     ) -> impl Future<Output = Result<DeckProfile, ApiError>> + Send;
 }
@@ -23,7 +23,7 @@ impl ClientUpdateDeckProfile for ZwipeClient {
     async fn update_deck_profile(
         &self,
         deck_id: &Uuid,
-        body: HttpUpdateDeckProfile,
+        body: &HttpUpdateDeckProfile,
         session: &Session,
     ) -> Result<DeckProfile, ApiError> {
         let mut url = self.app_config.backend_url.clone();
