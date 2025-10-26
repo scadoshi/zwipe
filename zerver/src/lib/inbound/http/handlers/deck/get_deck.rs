@@ -4,16 +4,13 @@ use crate::{
         auth::ports::AuthService,
         card::ports::CardService,
         deck::{
-            models::deck::{
-                get_deck::{GetDeck, GetDeckError, GetDeckProfileError, InvalidGetDeck},
-                Deck,
-            },
+            models::deck::{get_deck::GetDeckError, Deck},
             ports::DeckService,
         },
         health::ports::HealthService,
         user::ports::UserService,
     },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState},
 };
 #[cfg(feature = "zerver")]
 use axum::{
@@ -21,20 +18,8 @@ use axum::{
     http::StatusCode,
     Json,
 };
-
 #[cfg(feature = "zerver")]
-impl From<GetDeckProfileError> for ApiError {
-    fn from(value: GetDeckProfileError) -> Self {
-        match value {
-            GetDeckProfileError::NotFound => Self::NotFound("deck profile not found".to_string()),
-            GetDeckProfileError::Forbidden => {
-                Self::Forbidden("deck does not belong to the requesting user".to_string())
-            }
-            GetDeckProfileError::DeckProfileFromDb(e) => e.log_500(),
-            GetDeckProfileError::Database(e) => e.log_500(),
-        }
-    }
-}
+use uuid::Uuid;
 
 #[cfg(feature = "zerver")]
 impl From<GetDeckError> for ApiError {
@@ -49,21 +34,10 @@ impl From<GetDeckError> for ApiError {
 }
 
 #[cfg(feature = "zerver")]
-impl From<InvalidGetDeck> for ApiError {
-    fn from(value: InvalidGetDeck) -> Self {
-        match value {
-            InvalidGetDeck::DeckId(e) => {
-                Self::UnprocessableEntity(format!("invalid deck id: {}", e))
-            }
-        }
-    }
-}
-
-#[cfg(feature = "zerver")]
 pub async fn get_deck<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
-    Path(deck_id): Path<String>,
+    Path(deck_id): Path<Uuid>,
 ) -> Result<(StatusCode, Json<Deck>), ApiError>
 where
     AS: AuthService,
@@ -72,7 +46,9 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let request = GetDeck::new(user.id, &deck_id)?;
+    use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfile;
+
+    let request = GetDeckProfile::new(user.id, deck_id);
 
     state
         .deck_service

@@ -7,7 +7,7 @@ use crate::{
     domain::deck::{
         models::{deck::{
                 create_deck_profile::{CreateDeckProfile, CreateDeckProfileError}, deck_profile::DeckProfile, delete_deck::{DeleteDeck,
-                DeleteDeckError}, get_deck::{GetDeck, GetDeckProfileError}, get_deck_profiles::{GetDeckProfiles, GetDeckProfilesError}, update_deck_profile::{UpdateDeckProfile,
+                DeleteDeckError}, get_deck_profile::{GetDeckProfile, GetDeckProfileError}, get_deck_profiles::GetDeckProfiles, update_deck_profile::{UpdateDeckProfile,
                 UpdateDeckProfileError}
             }, deck_card::{create_deck_card::{CreateDeckCard, CreateDeckCardError}, delete_deck_card::{DeleteDeckCard, DeleteDeckCardError}, get_deck_card::GetDeckCardError, update_deck_card::{UpdateDeckCard, UpdateDeckCardError}, DeckCard}},
         ports::DeckRepository,
@@ -25,12 +25,14 @@ impl DeckRepository for Postgres {
     ) -> Result<DeckProfile, CreateDeckProfileError> {
         let mut tx = self.pool.begin().await?;
 
+        let database_copy_max = request.copy_max.as_ref().map(|wrapped| wrapped.max());
+
         let database_deck_profile = query_as!(
             DatabaseDeckProfile,
-            "INSERT INTO decks (name, commander_id, is_singleton, user_id) VALUES ($1, $2, $3, $4) RETURNING id, name, commander_id, is_singleton, user_id",
+            "INSERT INTO decks (name, commander_id, copy_max, user_id) VALUES ($1, $2, $3, $4) RETURNING id, name, commander_id, copy_max, user_id",
             request.name.to_string(),
             request.commander_id,
-            request.is_singleton,
+            database_copy_max,
             request.user_id
         )
         .fetch_one(&mut *tx)
@@ -75,11 +77,11 @@ impl DeckRepository for Postgres {
     // =====
     async fn get_deck_profile(
         &self,
-        request: &GetDeck,
+        request: &GetDeckProfile,
     ) -> Result<DeckProfile, GetDeckProfileError> {
         let database_deck_profile = query_as!(
             DatabaseDeckProfile,
-            "SELECT id, name, commander_id, is_singleton, user_id FROM decks WHERE id = $1",
+            "SELECT id, name, commander_id, copy_max, user_id FROM decks WHERE id = $1",
             request.deck_id
         )
         .fetch_one(&self.pool)
@@ -97,10 +99,10 @@ impl DeckRepository for Postgres {
     async fn get_deck_profiles(
             &self,
             request: &GetDeckProfiles,
-        ) -> Result<Vec<DeckProfile>, GetDeckProfilesError> {
+        ) -> Result<Vec<DeckProfile>, GetDeckProfileError> {
         let database_deck_profiles = query_as!(
             DatabaseDeckProfile,
-            "SELECT id, name, commander_id, is_singleton, user_id FROM decks WHERE user_id = $1",
+            "SELECT id, name, commander_id, copy_max, user_id FROM decks WHERE user_id = $1",
             request.user_id
         ).fetch_all(&self.pool).await?;
 
@@ -114,7 +116,7 @@ impl DeckRepository for Postgres {
 
     async fn get_deck_cards(
         &self,
-        request: &GetDeck,
+        request: &GetDeckProfile,
     ) -> Result<Vec<DeckCard>, GetDeckCardError> {
         if request.user_id.owns_deck(&request.deck_id, &self.pool).await? {
             return Err(GetDeckCardError::Forbidden);

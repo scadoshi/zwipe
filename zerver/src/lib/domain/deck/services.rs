@@ -8,8 +8,9 @@ use crate::domain::{
                 create_deck_profile::{CreateDeckProfile, CreateDeckProfileError},
                 deck_profile::DeckProfile,
                 delete_deck::{DeleteDeck, DeleteDeckError},
-                get_deck::{GetDeck, GetDeckError, GetDeckProfileError},
-                get_deck_profiles::{GetDeckProfiles, GetDeckProfilesError},
+                get_deck::GetDeckError,
+                get_deck_profile::{GetDeckProfile, GetDeckProfileError},
+                get_deck_profiles::GetDeckProfiles,
                 update_deck_profile::{UpdateDeckProfile, UpdateDeckProfileError},
                 Deck,
             },
@@ -75,7 +76,7 @@ where
     // =====
     async fn get_deck_profile(
         &self,
-        request: &GetDeck,
+        request: &GetDeckProfile,
     ) -> Result<DeckProfile, GetDeckProfileError> {
         let deck_profile = self.deck_repo.get_deck_profile(request).await?;
         if request.user_id != deck_profile.user_id {
@@ -87,13 +88,13 @@ where
     async fn get_deck_profiles(
         &self,
         request: &GetDeckProfiles,
-    ) -> Result<Vec<DeckProfile>, GetDeckProfilesError> {
+    ) -> Result<Vec<DeckProfile>, GetDeckProfileError> {
         self.deck_repo.get_deck_profiles(request).await
     }
 
-    async fn get_deck(&self, request: &GetDeck) -> Result<Deck, GetDeckError> {
+    async fn get_deck(&self, request: &GetDeckProfile) -> Result<Deck, GetDeckError> {
         let deck_profile = self.deck_repo.get_deck_profile(request).await?;
-        let gd = GetDeck::from(&deck_profile);
+        let gd = GetDeckProfile::from(&deck_profile);
         let deck_cards = self.deck_repo.get_deck_cards(&gd).await?;
 
         let cps = CardProfileIds::from(deck_cards.as_slice());
@@ -111,7 +112,7 @@ where
         &self,
         request: &UpdateDeckProfile,
     ) -> Result<DeckProfile, UpdateDeckProfileError> {
-        let get_deck = GetDeck::from(request);
+        let get_deck = GetDeckProfile::from(request);
         let _deck_profile = self.get_deck_profile(&get_deck).await?;
         self.deck_repo.update_deck_profile(request).await
     }

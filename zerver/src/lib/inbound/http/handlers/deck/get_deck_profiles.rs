@@ -1,7 +1,4 @@
 #[cfg(feature = "zerver")]
-use axum::{extract::State, http::StatusCode, Json};
-
-#[cfg(feature = "zerver")]
 use crate::{
     domain::{
         auth::ports::AuthService,
@@ -9,9 +6,7 @@ use crate::{
         deck::{
             models::deck::{
                 deck_profile::DeckProfile,
-                get_deck_profiles::{
-                    GetDeckProfiles, GetDeckProfilesError, InvalidGetDeckProfiles,
-                },
+                get_deck_profiles::{GetDeckProfiles, InvalidGetDeckProfiles},
             },
             ports::DeckService,
         },
@@ -20,18 +15,8 @@ use crate::{
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState},
 };
-
 #[cfg(feature = "zerver")]
-impl From<GetDeckProfilesError> for ApiError {
-    fn from(value: GetDeckProfilesError) -> Self {
-        use crate::inbound::http::Log500;
-
-        match value {
-            GetDeckProfilesError::Database(e) => e.log_500(),
-            GetDeckProfilesError::DeckProfileFromDb(e) => e.log_500(),
-        }
-    }
-}
+use axum::{extract::State, http::StatusCode, Json};
 
 #[cfg(feature = "zerver")]
 impl From<InvalidGetDeckProfiles> for ApiError {

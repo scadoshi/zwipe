@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::{
     domain::deck::models::{
-        deck::{deck_name::DeckName, deck_profile::DeckProfile},
+        deck::{copy_max::CopyMax, deck_name::DeckName, deck_profile::DeckProfile},
         deck_card::{quantity::Quantity, DeckCard},
     },
     outbound::sqlx::deck::error::{IntoDeckCardError, IntoDeckProfileError},
@@ -16,7 +16,7 @@ pub struct DatabaseDeckProfile {
     pub id: Uuid,
     pub name: String,
     pub commander_id: Option<Uuid>,
-    pub is_singleton: bool,
+    pub copy_max: Option<i32>,
     pub user_id: Uuid,
 }
 
@@ -24,14 +24,14 @@ pub struct DatabaseDeckProfile {
 impl TryFrom<DatabaseDeckProfile> for DeckProfile {
     type Error = IntoDeckProfileError;
     fn try_from(value: DatabaseDeckProfile) -> Result<Self, Self::Error> {
-        let name =
-            DeckName::new(&value.name).map_err(|e| IntoDeckProfileError::DeckName(e.into()))?;
+        let name = DeckName::new(&value.name)?;
+        let copy_max = value.copy_max.map(|max| CopyMax::new(max)).transpose()?;
 
         Ok(Self {
             id: value.id,
             name,
             commander_id: value.commander_id,
-            is_singleton: value.is_singleton,
+            copy_max,
             user_id: value.user_id,
         })
     }

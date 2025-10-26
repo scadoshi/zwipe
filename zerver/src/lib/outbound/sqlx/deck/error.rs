@@ -1,9 +1,9 @@
 use crate::{
     domain::deck::models::{
         deck::{
-            create_deck_profile::CreateDeckProfileError, deck_name::InvalidDeckname,
-            delete_deck::DeleteDeckError, get_deck::GetDeckProfileError,
-            get_deck_profiles::GetDeckProfilesError, update_deck_profile::UpdateDeckProfileError,
+            copy_max::InvalidCopyMax, create_deck_profile::CreateDeckProfileError,
+            deck_name::InvalidDeckname, delete_deck::DeleteDeckError,
+            get_deck_profile::GetDeckProfileError, update_deck_profile::UpdateDeckProfileError,
         },
         deck_card::{
             create_deck_card::CreateDeckCardError, delete_deck_card::DeleteDeckCardError,
@@ -19,6 +19,20 @@ use thiserror::Error;
 pub enum IntoDeckProfileError {
     #[error(transparent)]
     DeckName(InvalidDeckname),
+    #[error(transparent)]
+    CopyMax(InvalidCopyMax),
+}
+
+impl From<InvalidDeckname> for IntoDeckProfileError {
+    fn from(value: InvalidDeckname) -> Self {
+        Self::DeckName(value)
+    }
+}
+
+impl From<InvalidCopyMax> for IntoDeckProfileError {
+    fn from(value: InvalidCopyMax) -> Self {
+        Self::CopyMax(value)
+    }
 }
 
 impl From<IntoDeckProfileError> for CreateDeckProfileError {
@@ -142,17 +156,5 @@ impl From<sqlx::Error> for UpdateDeckCardError {
 impl From<sqlx::Error> for DeleteDeckCardError {
     fn from(value: sqlx::Error) -> Self {
         Self::Database(value.into())
-    }
-}
-
-impl From<sqlx::Error> for GetDeckProfilesError {
-    fn from(value: sqlx::Error) -> Self {
-        Self::Database(value.into())
-    }
-}
-
-impl From<IntoDeckProfileError> for GetDeckProfilesError {
-    fn from(value: IntoDeckProfileError) -> Self {
-        Self::DeckProfileFromDb(value.into())
     }
 }
