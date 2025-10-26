@@ -24,6 +24,7 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[cfg(feature = "zerver")]
 impl From<UpdateDeckProfileError> for ApiError {
@@ -52,8 +53,8 @@ impl From<InvalidUpdateDeckProfile> for ApiError {
             InvalidUpdateDeckProfile::DeckName(e) => {
                 Self::UnprocessableEntity(format!("invalid deck name: {}", e))
             }
-            InvalidUpdateDeckProfile::DeckId(e) => {
-                Self::UnprocessableEntity(format!("invalid id: {}", e))
+            InvalidUpdateDeckProfile::CopyMax(e) => {
+                Self::UnprocessableEntity(format!("invalid copy max: {}", e))
             }
             InvalidUpdateDeckProfile::NoUpdates => {
                 Self::UnprocessableEntity("must update at least one field".to_string())
@@ -64,13 +65,21 @@ impl From<InvalidUpdateDeckProfile> for ApiError {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HttpUpdateDeckProfile {
-    name: Option<String>,
+    pub name: Option<String>,
+    pub commander_id: Option<Option<Uuid>>,
+    pub copy_max: Option<Option<i32>>,
 }
 
 impl HttpUpdateDeckProfile {
-    pub fn new(name: Option<&str>) -> Self {
+    pub fn new(
+        name: Option<&str>,
+        commander_id: Option<Option<Uuid>>,
+        copy_max: Option<Option<i32>>,
+    ) -> Self {
         Self {
             name: name.map(|name| name.to_string()),
+            commander_id,
+            copy_max,
         }
     }
 }
@@ -79,7 +88,7 @@ impl HttpUpdateDeckProfile {
 pub async fn update_deck_profile<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
-    Path(deck_id): Path<String>,
+    Path(deck_id): Path<Uuid>,
     Json(body): Json<HttpUpdateDeckProfile>,
 ) -> Result<(StatusCode, Json<DeckProfile>), ApiError>
 where
@@ -89,7 +98,13 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let request = UpdateDeckProfile::new(&deck_id, body.name.as_deref(), user.id)?;
+    let request = UpdateDeckProfile::new(
+        deck_id,
+        body.name.as_deref(),
+        body.commander_id,
+        body.copy_max,
+        user.id,
+    )?;
 
     state
         .deck_service

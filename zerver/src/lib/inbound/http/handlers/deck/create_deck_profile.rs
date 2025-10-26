@@ -53,15 +53,15 @@ impl From<InvalidCreateDeckProfile> for ApiError {
 pub struct HttpCreateDeckProfile {
     pub name: String,
     pub commander_id: Option<Uuid>,
-    pub card_copy_max: Option<i32>,
+    pub copy_max: Option<i32>,
 }
 
 impl HttpCreateDeckProfile {
-    pub fn new(name: &str, commander_id: Option<Uuid>, card_copy_max: Option<i32>) -> Self {
+    pub fn new(name: &str, commander_id: Option<Uuid>, copy_max: Option<i32>) -> Self {
         Self {
             name: name.to_string(),
             commander_id,
-            card_copy_max,
+            copy_max,
         }
     }
 }
@@ -79,8 +79,7 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let request =
-        CreateDeckProfile::new(&body.name, body.commander_id, body.card_copy_max, user.id)?;
+    let request = CreateDeckProfile::new(&body.name, body.commander_id, body.copy_max, user.id)?;
 
     state
         .deck_service
