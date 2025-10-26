@@ -1,6 +1,9 @@
-use crate::domain::deck::models::deck::deck_name::{DeckName, InvalidDeckname};
 #[cfg(feature = "zerver")]
 use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
+use crate::domain::deck::models::deck::{
+    copy_max::{CopyMax, InvalidCopyMax},
+    deck_name::{DeckName, InvalidDeckname},
+};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -9,7 +12,7 @@ pub enum InvalidUpdateDeckProfile {
     #[error(transparent)]
     DeckName(InvalidDeckname),
     #[error(transparent)]
-    DeckId(uuid::Error),
+    CopyMax(InvalidCopyMax),
     #[error("must update at least one field")]
     NoUpdates,
 }
@@ -20,9 +23,9 @@ impl From<InvalidDeckname> for InvalidUpdateDeckProfile {
     }
 }
 
-impl From<uuid::Error> for InvalidUpdateDeckProfile {
-    fn from(value: uuid::Error) -> Self {
-        Self::DeckId(value)
+impl From<InvalidCopyMax> for InvalidUpdateDeckProfile {
+    fn from(value: InvalidCopyMax) -> Self {
+        Self::CopyMax(value)
     }
 }
 
@@ -58,25 +61,32 @@ impl From<GetDeckProfileError> for UpdateDeckProfileError {
 pub struct UpdateDeckProfile {
     pub deck_id: Uuid,
     pub name: Option<DeckName>,
+    pub commander_id: Option<Option<Uuid>>,
+    pub copy_max: Option<Option<CopyMax>>,
     pub user_id: Uuid,
 }
 
 impl UpdateDeckProfile {
     pub fn new(
-        deck_id: &str,
+        deck_id: Uuid,
         name: Option<&str>,
+        commander_id: Option<Option<Uuid>>,
+        copy_max: Option<Option<i32>>,
         user_id: Uuid,
     ) -> Result<Self, InvalidUpdateDeckProfile> {
-        if name.is_none() {
+        if name.is_none() && commander_id.is_none() && copy_max.is_none() {
             return Err(InvalidUpdateDeckProfile::NoUpdates);
         }
-
-        let deck_id = Uuid::try_parse(deck_id)?;
-
         let name = name.map(|name_str| DeckName::new(name_str)).transpose()?;
+        let copy_max = copy_max
+            .map(|update| update.map(|value| CopyMax::new(value)).transpose())
+            .transpose()?;
+
         Ok(Self {
             deck_id,
             name,
+            commander_id,
+            copy_max,
             user_id,
         })
     }
