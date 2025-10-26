@@ -385,15 +385,16 @@ button:active {
     left: 0.25rem;
 }
 
-/* singleton boxes */
+/* copy-max boxes */
 
-.form-group-singleton {
+.form-group-copy-max {
     display: flex;
     gap: 1rem;
     margin-bottom: 2rem;
+    justify-content: center;
 }
 
-.singleton-box {
+.copy-max-box {
     flex: 1;
     padding: 1rem;
     border: 1px solid #f5f5dc;
@@ -405,17 +406,17 @@ button:active {
     transition: all 0.2s ease;
 }
 
-.singleton-box.true {
+.copy-max-box.true {
     background-color: #f5f5dc;
     color: #1a1d23;
 }
 
-.singleton-box.false {
+.copy-max-box.false {
     background-color: #1a1d23;
     color: #f5f5dc;
 }
 
-.singleton-box:hover {
+.copy-max-box:hover {
     transform: translateY(-2px);
 }
 
