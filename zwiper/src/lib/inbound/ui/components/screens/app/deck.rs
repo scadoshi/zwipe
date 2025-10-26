@@ -1,4 +1,4 @@
 pub mod create_deck;
 pub mod deck_list;
-pub mod get_deck;
-pub mod update_deck;
+pub mod edit_deck_profile;
+pub mod view_deck_profile;

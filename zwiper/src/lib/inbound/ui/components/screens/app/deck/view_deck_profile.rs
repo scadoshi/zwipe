@@ -22,7 +22,7 @@ use zwipe::{
 };
 
 #[component]
-pub fn GetDeck(deck_id: Uuid) -> Element {
+pub fn ViewDeckProfile(deck_id: Uuid) -> Element {
     let swipe_state = use_signal(|| SwipeState::new());
     let swipe_config = SwipeConfig::blank();
 
@@ -69,59 +69,56 @@ pub fn GetDeck(deck_id: Uuid) -> Element {
                     Some(Ok(profile)) => rsx! {
 
                         h2 { "{profile.name}" }
+                        div { class : "form-group",
 
-                        form {
-                            div { class : "form-group",
-
-                                if let Some(Ok(Some(commander))) = &*commander_resource.read() {
-                                    if let Some(ImageUris { large: Some(image_url), .. }) = &commander.scryfall_data.image_uris {
-                                        img {
-                                            src: "{image_url}",
-                                            alt: "{commander.scryfall_data.name}",
-                                            class: "commander-image"
-                                        }
-                                    } else {
-                                        label { r#for : "commander-info", "commander" }
-                                        p { class: "commander-name-only", { commander.scryfall_data.name.to_lowercase() } }
+                            if let Some(Ok(Some(commander))) = &*commander_resource.read() {
+                                if let Some(ImageUris { normal: Some(image_url), .. }) = &commander.scryfall_data.image_uris {
+                                    img {
+                                        src: "{image_url}",
+                                        alt: "{commander.scryfall_data.name}",
+                                        class: "commander-image"
                                     }
+                                } else {
+                                    label { r#for : "commander-info", "commander" }
+                                    p { class: "commander-name-only", { commander.scryfall_data.name.to_lowercase() } }
                                 }
+                            }
 
-                                label { r#for : "copy-max", "card copy rule" }
+                            label { r#for : "copy-max", "card copy rule" }
+                            div {
+                                class: "form-group-copy-max",
                                 div {
-                                    class: "form-group-copy-max",
-                                    div {
-                                        class: if profile.copy_max == Some(CopyMax::standard()) { "copy-max-box true" } else { "copy-max-box false" },
-                                        "standard"
-                                    }
-                                    div {
-                                        class: if profile.copy_max == Some(CopyMax::singleton()) { "copy-max-box true" } else { "copy-max-box false" },
-                                        "singleton"
-                                    }
-                                    div {
-                                        class: if profile.copy_max.is_none() { "copy-max-box true" } else { "copy-max-box false" },
-                                        "none"
-                                    }
+                                    class: if profile.copy_max == Some(CopyMax::standard()) { "copy-max-box true" } else { "copy-max-box false" },
+                                    "standard"
                                 }
+                                div {
+                                    class: if profile.copy_max == Some(CopyMax::singleton()) { "copy-max-box true" } else { "copy-max-box false" },
+                                    "singleton"
+                                }
+                                div {
+                                    class: if profile.copy_max.is_none() { "copy-max-box true" } else { "copy-max-box false" },
+                                    "none"
+                                }
+                            }
 
-                                button {
-                                    onclick : move |_| {
-                                        navigator.push(Router::UpdateDeck { deck_id });
-                                    },
-                                    "update"
-                                }
+                            button {
+                                onclick : move |_| {
+                                    navigator.push(Router::EditDeckProfile { deck_id });
+                                },
+                                "edit"
+                            }
 
-                                button {
-                                    onclick : move |_| {
-                                        navigator.push(Router::DeckList {});
-                                    },
-                                    "back"
-                                }
+                            button {
+                                onclick : move |_| {
+                                    navigator.push(Router::DeckList {});
+                                },
+                                "back"
                             }
                         }
                     },
                         Some(Err(e)) => rsx! { div { class : "error", "{e}"} },
                         None => rsx! { div { class : "spinning-card" } }
-                }
+                    }
                 }
             }
         }
