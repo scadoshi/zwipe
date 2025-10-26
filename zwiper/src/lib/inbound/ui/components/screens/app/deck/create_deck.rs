@@ -141,6 +141,10 @@ pub fn CreateDeck() -> Element {
                                     value : "{commander_display}",
                                     autocapitalize : "none",
                                     spellcheck : "false",
+                                    onclick : move |_| {
+                                        search_query.set(String::new());
+                                        commander_display.set(String::new());
+                                    },
                                     oninput : move |event| {
                                         search_query.set(event.value());
                                         commander_display.set(event.value());
