@@ -266,22 +266,22 @@ button:active {
     border-radius: 0.6rem;
 }
 
-/* decks */
+/* deck-list */
 
-.decks-wrapper {
+.deck-list-wrapper {
     width: 20rem;
     display: flex;
     flex-direction: column;
 }
 
-.decks-wrapper h2 {
+.deck-list-wrapper h2 {
     text-align: center;
     margin-bottom: 2rem;
     font-weight: 300;
     letter-spacing: 0.2em;
 }
 
-.decks-container {
+.deck-list-container {
     min-height: 50vh;
     padding: 2rem;
     border: 1px solid #f5f5dc;
@@ -420,10 +420,46 @@ button:active {
     transform: translateY(-2px);
 }
 
-/* commander search */
+/* commander */
 
 .commander-search {
     margin-bottom: 2rem;
+}
+
+.commander-name {
+    margin-bottom: 2rem;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    white-space: normal;
+}
+
+.commander-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 1rem;
+    margin-bottom: 2rem;
+}
+
+.commander-name-only {
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 300;
+    margin-bottom: 2rem;
+    letter-spacing: 0.1em;
+}
+
+.commander-flavor-text {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.commander-flavor-text p {
+    font-style: italic;
+    font-size: 0.8rem;
+    opacity: 0.4;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    line-height: 1.4;
 }
 
 .dropdown {
