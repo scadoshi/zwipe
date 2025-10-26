@@ -18,7 +18,7 @@ pub trait AuthClientDeleteDeck {
 impl AuthClientDeleteDeck for AuthClient {
     async fn delete_deck(&self, deck_id: &Uuid, session: &Session) -> Result<(), ApiError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&delete_deck_route(&deck_id.to_string()));
+        url.set_path(&delete_deck_route(&deck_id));
 
         let response = self
             .client

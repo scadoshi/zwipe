@@ -27,7 +27,7 @@ impl AuthClientUpdateDeckProfile for AuthClient {
         session: &Session,
     ) -> Result<DeckProfile, ApiError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&update_deck_route(&deck_id.to_string()));
+        url.set_path(&update_deck_route(&deck_id));
 
         let response = self
             .client

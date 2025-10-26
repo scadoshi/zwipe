@@ -29,10 +29,7 @@ impl AuthClientUpdateDeckCard for AuthClient {
         session: &Session,
     ) -> Result<DeckCard, ApiError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&update_deck_card_route(
-            &deck_id.to_string(),
-            &card_profile_id.to_string(),
-        ));
+        url.set_path(&update_deck_card_route(&deck_id, &card_profile_id));
 
         let response = self
             .client

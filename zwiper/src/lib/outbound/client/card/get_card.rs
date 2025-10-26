@@ -18,7 +18,7 @@ pub trait AuthClientGetCard {
 impl AuthClientGetCard for AuthClient {
     async fn get_card(&self, card_profile_id: &Uuid, session: &Session) -> Result<Card, ApiError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&get_card_route(&card_profile_id.to_string()));
+        url.set_path(&get_card_route(&card_profile_id));
 
         let response = self
             .client
