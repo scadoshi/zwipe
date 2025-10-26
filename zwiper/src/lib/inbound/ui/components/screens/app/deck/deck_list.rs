@@ -6,7 +6,7 @@ use crate::{
         },
         router::Router,
     },
-    outbound::client::{auth::AuthClient, deck::get_deck_profiles::AuthClientGetDecks},
+    outbound::client::{deck::get_deck_profiles::ClientGetDeckList, ZwipeClient},
 };
 use dioxus::prelude::*;
 use zwipe::{
@@ -20,7 +20,7 @@ pub fn DeckList() -> Element {
     let swipe_config = SwipeConfig::blank();
 
     let navigator = use_navigator();
-    let auth_client: Signal<AuthClient> = use_context();
+    let auth_client: Signal<ZwipeClient> = use_context();
     let session: Signal<Option<Session>> = use_context();
 
     let deck_profiles_resource: Resource<Result<Vec<DeckProfile>, ApiError>> =
@@ -36,16 +36,16 @@ pub fn DeckList() -> Element {
     rsx! {
         Bouncer {
             Swipeable { state: swipe_state, config: swipe_config,
-                div { class : "decks-wrapper",
+                div { class : "deck-list-wrapper",
                     h2 { "deck list" }
 
-                    div { class : "decks-container",
+                    div { class : "deck-list-container",
                         match &*deck_profiles_resource.read() {
                             Some(Ok(deck_profiles)) => {
                                 if deck_profiles.is_empty() {
                                     rsx! {
                                         div { class: "empty-message",
-                                            p { "no decks yet" }
+                                            p { "no deck-list yet" }
                                         }
                                     }
                                 } else {

@@ -7,8 +7,7 @@ use crate::{
         router::Router,
     },
     outbound::client::{
-        auth::AuthClient, card::get_card::AuthClientGetCard,
-        deck::get_deck_profile::AuthClientGetDeckProfile,
+        card::get_card::ClientGetCard, deck::get_deck_profile::ClientGetDeckProfile, ZwipeClient,
     },
 };
 use dioxus::prelude::*;
@@ -16,6 +15,7 @@ use uuid::Uuid;
 use zwipe::{
     domain::{
         auth::models::session::Session,
+        card::models::{scryfall_data::image_uris::ImageUris, Card},
         deck::models::deck::{copy_max::CopyMax, deck_profile::DeckProfile},
     },
     inbound::http::ApiError,
@@ -29,7 +29,7 @@ pub fn GetDeck(deck_id: Uuid) -> Element {
     let navigator = use_navigator();
 
     let session: Signal<Option<Session>> = use_context();
-    let auth_client: Signal<AuthClient> = use_context();
+    let auth_client: Signal<ZwipeClient> = use_context();
 
     let deck_profile_resource: Resource<Result<DeckProfile, ApiError>> =
         use_resource(move || async move {
@@ -41,7 +41,7 @@ pub fn GetDeck(deck_id: Uuid) -> Element {
             auth_client().get_deck_profile(deck_id, &sesh).await
         });
 
-    let commander_name_resource: Resource<Result<Option<String>, ApiError>> =
+    let commander_resource: Resource<Result<Option<Card>, ApiError>> =
         use_resource(move || async move {
             let Some(Ok(profile)) = &*deck_profile_resource.read() else {
                 return Ok(None);
@@ -58,14 +58,13 @@ pub fn GetDeck(deck_id: Uuid) -> Element {
             auth_client()
                 .get_card(&commander_id, &sesh)
                 .await
-                .map(|value| Some(value.scryfall_data.name))
+                .map(|value| Some(value))
         });
 
     rsx! {
-        Bouncer {
-            Swipeable { state: swipe_state, config: swipe_config,
-                div { class : "form-container",
-
+    Bouncer {
+        Swipeable { state: swipe_state, config: swipe_config,
+            div { class : "form-container",
                 match &*deck_profile_resource.read() {
                     Some(Ok(profile)) => rsx! {
 
@@ -73,20 +72,17 @@ pub fn GetDeck(deck_id: Uuid) -> Element {
 
                         form {
                             div { class : "form-group",
-                                label { r#for : "commander", "" }
-                                div { class: "commander-search",
-                                    input {
-                                        id: "commander",
-                                        r#type : "text",
-                                        placeholder : "commander",
-                                        value : {
-                                            if let Some(Ok(Some(commander_name))) = &*commander_name_resource.read() {
-                                                commander_name.to_lowercase()
-                                            } else {
-                                                "none".to_string()
-                                            }
-                                        },
-                                        readonly : true,
+
+                                if let Some(Ok(Some(commander))) = &*commander_resource.read() {
+                                    if let Some(ImageUris { large: Some(image_url), .. }) = &commander.scryfall_data.image_uris {
+                                        img {
+                                            src: "{image_url}",
+                                            alt: "{commander.scryfall_data.name}",
+                                            class: "commander-image"
+                                        }
+                                    } else {
+                                        label { r#for : "commander-info", "commander" }
+                                        p { class: "commander-name-only", { commander.scryfall_data.name.to_lowercase() } }
                                     }
                                 }
 
@@ -125,7 +121,7 @@ pub fn GetDeck(deck_id: Uuid) -> Element {
                     },
                         Some(Err(e)) => rsx! { div { class : "error", "{e}"} },
                         None => rsx! { div { class : "spinning-card" } }
-                    }
+                }
                 }
             }
         }

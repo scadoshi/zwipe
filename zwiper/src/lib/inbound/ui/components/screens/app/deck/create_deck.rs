@@ -1,3 +1,15 @@
+use crate::{
+    inbound::ui::{
+        components::{
+            auth::{bouncer::Bouncer, session_upkeep::Upkeep},
+            interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
+        },
+        router::Router,
+    },
+    outbound::client::{
+        card::search_cards::ClientSearchCards, deck::create_deck::ClientCreateDeck, ZwipeClient,
+    },
+};
 use dioxus::prelude::*;
 use std::time::Duration;
 use tokio::time::sleep;
@@ -10,20 +22,6 @@ use zwipe::{
     },
 };
 
-use crate::{
-    inbound::ui::{
-        components::{
-            auth::{bouncer::Bouncer, session_upkeep::Upkeep},
-            interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
-        },
-        router::Router,
-    },
-    outbound::client::{
-        auth::AuthClient, card::search_cards::AuthClientSearchCards,
-        deck::create_deck::AuthClientCreateDeck,
-    },
-};
-
 #[component]
 pub fn CreateDeck() -> Element {
     let swipe_state = use_signal(|| SwipeState::new());
@@ -32,7 +30,7 @@ pub fn CreateDeck() -> Element {
     let navigator = use_navigator();
 
     let session: Signal<Option<Session>> = use_context();
-    let auth_client: Signal<AuthClient> = use_context();
+    let auth_client: Signal<ZwipeClient> = use_context();
 
     // form
     let mut deck_name = use_signal(|| String::new());
