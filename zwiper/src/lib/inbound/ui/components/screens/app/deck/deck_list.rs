@@ -56,7 +56,9 @@ pub fn DeckList() -> Element {
                                                     key : "{profile.id}",
                                                     class : "deck-item",
                                                     onclick : move |_| {
-                                                        tracing::info!("clicked into deck {}", profile.name.to_string());
+                                                        navigator.push(Router::GetDeck {
+                                                            deck_id: profile.id,
+                                                        });
                                                     },
                                                     h3 { { profile.name.to_string() } }
                                                 }

@@ -14,6 +14,7 @@ use crate::inbound::ui::components::screens::{
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
+use zwipe::domain::deck::models::deck::deck_profile::DeckProfile;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]

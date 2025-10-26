@@ -2,7 +2,9 @@ use dioxus::prelude::*;
 use std::time::Duration;
 use tokio::time::sleep;
 use zwipe::{
-    domain::{auth::models::session::Session, card::models::Card},
+    domain::{
+        auth::models::session::Session, card::models::Card, deck::models::deck::copy_max::CopyMax,
+    },
     inbound::http::handlers::{
         card::search_card::HttpSearchCards, deck::create_deck_profile::HttpCreateDeckProfile,
     },
@@ -32,10 +34,11 @@ pub fn CreateDeck() -> Element {
     let session: Signal<Option<Session>> = use_context();
     let auth_client: Signal<AuthClient> = use_context();
 
+    // form
     let mut deck_name = use_signal(|| String::new());
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
     let mut commander_display = use_signal(|| String::new());
-    let mut is_singleton = use_signal(|| true);
+    let mut copy_max: Signal<Option<CopyMax>> = use_signal(|| Some(CopyMax::singleton()));
 
     // commander search state
     let mut search_query = use_signal(|| String::new());
@@ -59,7 +62,7 @@ pub fn CreateDeck() -> Element {
         is_searching.set(true);
 
         spawn(async move {
-            sleep(Duration::from_millis(300)).await;
+            sleep(Duration::from_millis(500)).await;
 
             if let Some(sesh) = session() {
                 let mut request = HttpSearchCards::by_name(&query);
@@ -80,6 +83,37 @@ pub fn CreateDeck() -> Element {
             }
         });
     });
+
+    let mut attempt_submit = move || {
+        submission_error.set(None);
+        is_saving.set(true);
+
+        spawn(async move {
+            let Some(sesh) = session() else {
+                submission_error.set(Some("session expired".to_string()));
+                is_saving.set(false);
+                return;
+            };
+
+            session.upkeep(auth_client);
+
+            let commander_id = commander().map(|c| c.card_profile.id);
+            let request =
+                HttpCreateDeckProfile::new(&deck_name(), commander_id, copy_max().map(|x| x.max()));
+
+            match auth_client().create_deck_profile(&request, &sesh).await {
+                Ok(created) => {
+                    navigator.push(Router::GetDeck {
+                        deck_id: created.id,
+                    });
+                }
+                Err(e) => {
+                    submission_error.set(Some(e.to_string()));
+                    is_saving.set(false);
+                }
+            }
+        });
+    };
 
     rsx! {
         Bouncer {
@@ -128,10 +162,12 @@ pub fn CreateDeck() -> Element {
                                                     class: "dropdown-item",
                                                     onclick: move |_| {
                                                         commander.set(Some(card.clone()));
-                                                        commander_display.set(card.scryfall_data.name.clone());
+                                                        commander_display.set(card.scryfall_data.name.clone().to_lowercase());
                                                         show_dropdown.set(false);
                                                     },
-                                                    "{card.scryfall_data.name}"
+                                                    {
+                                                        format!("{}", card.scryfall_data.name.to_lowercase())
+                                                    }
                                                 }
                                             }
                                         }
@@ -139,63 +175,40 @@ pub fn CreateDeck() -> Element {
                                 }
                             }
 
-                            label { r#for : "is-singleton", "card copy rule" }
+                            label { r#for : "copy-max", "card copy rule" }
                             div {
-                                class: "form-group-singleton",
+                                class: "form-group-copy-max",
                                 div {
-                                    class: if is_singleton() { "singleton-box true" } else { "singleton-box false" },
+                                    class: if copy_max() == Some(CopyMax::standard()) { "copy-max-box true" } else { "copy-max-box false" },
                                     onclick: move |_| {
-                                        is_singleton.set(true);
+                                        copy_max.set(Some(CopyMax::standard()));
+                                    },
+                                    "standard"
+                                }
+                                div {
+                                    class: if copy_max() == Some(CopyMax::singleton()) { "copy-max-box true" } else { "copy-max-box false" },
+                                    onclick: move |_| {
+                                        copy_max.set(Some(CopyMax::singleton()));
                                     },
                                     "singleton"
                                 }
                                 div {
-                                    class: if !is_singleton() { "singleton-box true" } else { "singleton-box false" },
+                                    class: if copy_max().is_none() { "copy-max-box true" } else { "copy-max-box false" },
                                     onclick: move |_| {
-                                        is_singleton.set(false);
+                                        copy_max.set(None);
                                     },
                                     "none"
                                 }
                             }
 
-                            if let Some(error) = submission_error() {
-                                div { class: "error-message", "{error}" }
-                            }
-
                             button {
                                 disabled: is_saving(),
-                                onclick : move |_| {
-                                    submission_error.set(None);
-                                    is_saving.set(true);
-
-                                    spawn(async move {
-                                        let Some(sesh) = session() else {
-                                            submission_error.set(Some("session expired".to_string()));
-                                            is_saving.set(false);
-                                            return;
-                                        };
-
-                                        session.upkeep(auth_client);
-
-                                        let commander_id = commander().map(|c| c.card_profile.id);
-                                        let request = HttpCreateDeckProfile::new(
-                                            &deck_name(),
-                                            commander_id,
-                                            is_singleton(),
-                                        );
-
-                                        match auth_client().create_deck_profile(&request, &sesh).await {
-                                            Ok(_) => {
-                                                navigator.push(Router::DeckList {});
-                                            }
-                                            Err(e) => {
-                                                submission_error.set(Some(e.to_string()));
-                                                is_saving.set(false);
-                                            }
-                                        }
-                                    });
-                                },
+                                onclick : move |_| attempt_submit(),
                                 if is_saving() { "saving..." } else { "save" }
+                            }
+
+                            if let Some(error) = submission_error() {
+                                div { class: "error", "{error}" }
                             }
 
                             button {
