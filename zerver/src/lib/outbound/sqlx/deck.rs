@@ -25,7 +25,7 @@ impl DeckRepository for Postgres {
     ) -> Result<DeckProfile, CreateDeckProfileError> {
         let mut tx = self.pool.begin().await?;
 
-        let database_copy_max = request.copy_max.as_ref().map(|wrapped| wrapped.max());
+        let database_copy_max = request.copy_max.as_ref().map(|cm| cm.max());
 
         let database_deck_profile = query_as!(
             DatabaseDeckProfile,
@@ -118,7 +118,7 @@ impl DeckRepository for Postgres {
         &self,
         request: &GetDeckProfile,
     ) -> Result<Vec<DeckCard>, GetDeckCardError> {
-        if request.user_id.owns_deck(&request.deck_id, &self.pool).await? {
+        if !request.user_id.owns_deck(&request.deck_id, &self.pool).await? {
             return Err(GetDeckCardError::Forbidden);
         }
 
@@ -145,7 +145,7 @@ impl DeckRepository for Postgres {
         &self,
         request: &UpdateDeckProfile,
     ) -> Result<DeckProfile, UpdateDeckProfileError> {
-        if request.user_id.owns_deck(&request.deck_id, &self.pool).await? {
+        if !request.user_id.owns_deck(&request.deck_id, &self.pool).await? {
             return Err(UpdateDeckProfileError::Forbidden);
         }
 
@@ -158,17 +158,25 @@ impl DeckRepository for Postgres {
             sep.push("name = ").push_bind_unseparated(name.to_string());
         }
 
+        if let Some(commander_id) = &request.commander_id {
+            sep.push("commander_id = ").push_bind_unseparated(commander_id);
+        }
+
+        if let Some(copy_max) = &request.copy_max {
+            sep.push("copy_max = ").push_bind_unseparated(copy_max.as_ref().map(|cm| cm.max()));
+        }
+
         let now = chrono::Utc::now().naive_utc();
         sep.push("updated_at = ").push_bind_unseparated(now);
 
         qb.push(" WHERE id = ")
             .push_bind(request.deck_id)
-            .push(" RETURNING id, name, user_id");
+            .push(" RETURNING id, name, commander_id, copy_max, user_id");
 
         let database_deck: DatabaseDeckProfile = qb.build_query_as().fetch_one(&mut *tx).await?;
-
+        
         let deck_profile: DeckProfile = database_deck.try_into()?;
-
+        
         tx.commit().await?;
 
         Ok(deck_profile)
@@ -178,7 +186,7 @@ impl DeckRepository for Postgres {
         &self,
         request: &UpdateDeckCard,
     ) -> Result<DeckCard, UpdateDeckCardError> {
-        if request.user_id.owns_deck(&request.deck_id, &self.pool).await? {
+        if !request.user_id.owns_deck(&request.deck_id, &self.pool).await? {
             return Err(UpdateDeckCardError::Forbidden);
         }
 
@@ -205,7 +213,7 @@ impl DeckRepository for Postgres {
     //  delete
     // ========
     async fn delete_deck(&self, request: &DeleteDeck) -> Result<(), DeleteDeckError> {
-        if request.user_id.owns_deck(&request.deck_id, &self.pool).await? {
+        if !request.user_id.owns_deck(&request.deck_id, &self.pool).await? {
             return Err(DeleteDeckError::Forbidden);
         }
         
@@ -225,7 +233,7 @@ impl DeckRepository for Postgres {
     }
 
     async fn delete_deck_card(&self, request: &DeleteDeckCard) -> Result<(), DeleteDeckCardError> {
-        if request.user_id.owns_deck(&request.deck_id, &self.pool).await? {
+        if !request.user_id.owns_deck(&request.deck_id, &self.pool).await? {
             return Err(DeleteDeckCardError::Forbidden);
         }
         
