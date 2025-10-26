@@ -1,4 +1,4 @@
-use crate::outbound::client::auth::AuthClient;
+use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use uuid::Uuid;
@@ -7,7 +7,7 @@ use zwipe::{
     inbound::http::{routes::get_card_route, ApiError},
 };
 
-pub trait AuthClientGetCard {
+pub trait ClientGetCard {
     fn get_card(
         &self,
         card_profile_id: &Uuid,
@@ -15,7 +15,7 @@ pub trait AuthClientGetCard {
     ) -> impl Future<Output = Result<Card, ApiError>> + Send;
 }
 
-impl AuthClientGetCard for AuthClient {
+impl ClientGetCard for ZwipeClient {
     async fn get_card(&self, card_profile_id: &Uuid, session: &Session) -> Result<Card, ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&get_card_route(&card_profile_id));

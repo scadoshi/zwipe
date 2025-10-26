@@ -1,4 +1,4 @@
-use crate::outbound::client::auth::AuthClient;
+use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use uuid::Uuid;
@@ -7,7 +7,7 @@ use zwipe::{
     inbound::http::{routes::delete_deck_card_route, ApiError},
 };
 
-pub trait AuthClientDeleteDeckCard {
+pub trait ClientDeleteDeckCard {
     fn delete_deck_card(
         &self,
         deck_id: &Uuid,
@@ -16,7 +16,7 @@ pub trait AuthClientDeleteDeckCard {
     ) -> impl Future<Output = Result<(), ApiError>> + Send;
 }
 
-impl AuthClientDeleteDeckCard for AuthClient {
+impl ClientDeleteDeckCard for ZwipeClient {
     async fn delete_deck_card(
         &self,
         deck_id: &Uuid,

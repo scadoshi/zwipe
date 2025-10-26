@@ -1,4 +1,4 @@
-use crate::outbound::client::auth::AuthClient;
+use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use zwipe::{
@@ -8,7 +8,7 @@ use zwipe::{
     },
 };
 
-pub trait AuthClientSearchCards {
+pub trait ClientSearchCards {
     fn search_cards(
         &self,
         request: &HttpSearchCards,
@@ -16,7 +16,7 @@ pub trait AuthClientSearchCards {
     ) -> impl Future<Output = Result<Vec<Card>, ApiError>> + Send;
 }
 
-impl AuthClientSearchCards for AuthClient {
+impl ClientSearchCards for ZwipeClient {
     async fn search_cards(
         &self,
         request: &HttpSearchCards,

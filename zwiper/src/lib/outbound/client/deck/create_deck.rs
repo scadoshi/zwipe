@@ -1,4 +1,4 @@
-use crate::outbound::client::auth::AuthClient;
+use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use zwipe::{
@@ -9,7 +9,7 @@ use zwipe::{
     },
 };
 
-pub trait AuthClientCreateDeck {
+pub trait ClientCreateDeck {
     fn create_deck_profile(
         &self,
         request: &HttpCreateDeckProfile,
@@ -17,7 +17,7 @@ pub trait AuthClientCreateDeck {
     ) -> impl Future<Output = Result<DeckProfile, ApiError>> + Send;
 }
 
-impl AuthClientCreateDeck for AuthClient {
+impl ClientCreateDeck for ZwipeClient {
     async fn create_deck_profile(
         &self,
         request: &HttpCreateDeckProfile,

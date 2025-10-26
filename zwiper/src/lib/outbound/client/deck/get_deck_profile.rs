@@ -1,4 +1,4 @@
-use crate::outbound::client::auth::AuthClient;
+use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use uuid::Uuid;
@@ -7,7 +7,7 @@ use zwipe::{
     inbound::http::{routes::get_deck_profile_route, ApiError},
 };
 
-pub trait AuthClientGetDeckProfile {
+pub trait ClientGetDeckProfile {
     fn get_deck_profile(
         &self,
         deck_id: Uuid,
@@ -15,7 +15,7 @@ pub trait AuthClientGetDeckProfile {
     ) -> impl Future<Output = Result<DeckProfile, ApiError>> + Send;
 }
 
-impl AuthClientGetDeckProfile for AuthClient {
+impl ClientGetDeckProfile for ZwipeClient {
     async fn get_deck_profile(
         &self,
         deck_id: Uuid,

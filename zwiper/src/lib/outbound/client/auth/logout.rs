@@ -1,4 +1,4 @@
-use crate::outbound::client::auth::AuthClient;
+use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use zwipe::{
@@ -6,11 +6,11 @@ use zwipe::{
     inbound::http::{routes::logout_route, ApiError},
 };
 
-pub trait AuthClientLogout {
+pub trait ClientLogout {
     fn logout(&self, session: &Session) -> impl Future<Output = Result<(), ApiError>> + Send;
 }
 
-impl AuthClientLogout for AuthClient {
+impl ClientLogout for ZwipeClient {
     async fn logout(&self, session: &Session) -> Result<(), ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&logout_route());

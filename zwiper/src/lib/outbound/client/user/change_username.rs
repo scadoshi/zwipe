@@ -1,4 +1,4 @@
-use crate::outbound::client::auth::AuthClient;
+use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use zwipe::{
@@ -9,7 +9,7 @@ use zwipe::{
     },
 };
 
-pub trait AuthClientChangeUsername {
+pub trait ClientChangeUsername {
     fn change_username(
         &self,
         request: HttpChangeUsername,
@@ -17,7 +17,7 @@ pub trait AuthClientChangeUsername {
     ) -> impl Future<Output = Result<User, ApiError>> + Send;
 }
 
-impl AuthClientChangeUsername for AuthClient {
+impl ClientChangeUsername for ZwipeClient {
     async fn change_username(
         &self,
         request: HttpChangeUsername,

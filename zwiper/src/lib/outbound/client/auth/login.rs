@@ -1,4 +1,4 @@
-use crate::outbound::client::auth::AuthClient;
+use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use zwipe::{
@@ -8,14 +8,14 @@ use zwipe::{
     },
 };
 
-pub trait AuthClientLogin {
+pub trait ClientLogin {
     fn authenticate_user(
         &self,
         request: HttpAuthenticateUser,
     ) -> impl Future<Output = Result<Session, ApiError>> + Send;
 }
 
-impl AuthClientLogin for AuthClient {
+impl ClientLogin for ZwipeClient {
     async fn authenticate_user(&self, request: HttpAuthenticateUser) -> Result<Session, ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&login_route());

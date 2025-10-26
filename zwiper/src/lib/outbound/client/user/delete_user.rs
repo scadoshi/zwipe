@@ -1,4 +1,4 @@
-use crate::outbound::client::auth::AuthClient;
+use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use zwipe::{
@@ -8,7 +8,7 @@ use zwipe::{
     },
 };
 
-pub trait AuthClientDeleteUser {
+pub trait ClientDeleteUser {
     fn delete_user(
         &self,
         request: HttpDeleteUser,
@@ -16,7 +16,7 @@ pub trait AuthClientDeleteUser {
     ) -> impl Future<Output = Result<(), ApiError>> + Send;
 }
 
-impl AuthClientDeleteUser for AuthClient {
+impl ClientDeleteUser for ZwipeClient {
     async fn delete_user(
         &self,
         request: HttpDeleteUser,

@@ -1,4 +1,4 @@
-use crate::outbound::client::auth::AuthClient;
+use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use zwipe::{
@@ -8,7 +8,7 @@ use zwipe::{
     },
 };
 
-pub trait AuthClientChangeEmail {
+pub trait ClientChangeEmail {
     fn change_email(
         &self,
         request: HttpChangeEmail,
@@ -16,7 +16,7 @@ pub trait AuthClientChangeEmail {
     ) -> impl Future<Output = Result<User, ApiError>> + Send;
 }
 
-impl AuthClientChangeEmail for AuthClient {
+impl ClientChangeEmail for ZwipeClient {
     async fn change_email(
         &self,
         request: HttpChangeEmail,

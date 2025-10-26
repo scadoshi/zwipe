@@ -1,4 +1,4 @@
-use crate::outbound::client::auth::AuthClient;
+use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use uuid::Uuid;
@@ -10,7 +10,7 @@ use zwipe::{
     },
 };
 
-pub trait AuthClientUpdateDeckCard {
+pub trait ClientUpdateDeckCard {
     fn update_deck_card(
         &self,
         deck_id: &Uuid,
@@ -20,7 +20,7 @@ pub trait AuthClientUpdateDeckCard {
     ) -> impl Future<Output = Result<DeckCard, ApiError>> + Send;
 }
 
-impl AuthClientUpdateDeckCard for AuthClient {
+impl ClientUpdateDeckCard for ZwipeClient {
     async fn update_deck_card(
         &self,
         deck_id: &Uuid,

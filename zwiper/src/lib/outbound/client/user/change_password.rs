@@ -1,4 +1,4 @@
-use crate::outbound::client::auth::AuthClient;
+use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use zwipe::{
@@ -9,7 +9,7 @@ use zwipe::{
     },
 };
 
-pub trait AuthClientChangePassword {
+pub trait ClientChangePassword {
     fn change_password(
         &self,
         request: HttpChangePassword,
@@ -17,7 +17,7 @@ pub trait AuthClientChangePassword {
     ) -> impl Future<Output = Result<(), ApiError>> + Send;
 }
 
-impl AuthClientChangePassword for AuthClient {
+impl ClientChangePassword for ZwipeClient {
     async fn change_password(
         &self,
         request: HttpChangePassword,
