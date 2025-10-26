@@ -15,17 +15,17 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Completed deck get/view screen with commander image display. Refactored CopyMax domain type and GetDeckProfile separation. Built client architecture consolidation into unified ZwipeClient.
+**Last Updated**: Completed full deck profile CRUD flow (Create/View/Edit/Delete) with conditional updates, comprehensive error handling, and critical bug fixes.
 
-**Next Learning Focus**: Build update deck screen for editing deck profiles. Implement deck card addition flow with card browsing and quantity management.
+**Next Learning Focus**: Build confirmation dialogs for destructive actions. Design card addition flow with quantity management. Explore frontend analytics calculations.
 
-**Recent Achievement**: Completed major deck profile architecture refactor - replaced is_singleton boolean with CopyMax newtype (validates 1 or 4 for MTG deck rules). Split GetDeck into GetDeckProfile (profile-only) and GetDeck (full deck with cards) for cleaner separation. Built complete deck view screen with commander image display using Scryfall image_uris, fallback to text name when no image. Refactored frontend client from AuthClient to unified ZwipeClient consolidating all HTTP operations. Cleaned up CSS for commander display, copy-max selection boxes, and form layouts. Fixed centered alignment for copy-max UI. Removed unused screens and outdated client methods.
+**Recent Achievement**: Built complete EditDeckProfile screen independently (362 lines) with pre-populated fields, debounced commander search, copy-max selection, and change tracking. Implemented conditional update pattern sending only modified fields. Fixed critical ownership validation bug (missing negation) affecting 5 repository operations. Separated view/edit concerns with dedicated screens. Added delete deck functionality. Debugged and fixed Scryfall ID issue (was sending scryfall_data.id instead of card_profile.id). Implemented comprehensive error handling with separate signals for load/submission/delete errors. Extended UpdateDeckProfile domain model to support commander_id and copy_max with Option<Option<T>> pattern for "no update" vs "set to None" distinction. Built dynamic SQL QueryBuilder updates. Fixed CSS overflow with max-height constraint on commander images.
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Update Deck Implementation** - Building editable form for deck profile modifications
-2. **Image Display Patterns** - Handling optional Scryfall images across different card contexts
-3. **Deck Modification Flow** - Patterns for swiping through cards and adding them to decks with quantities
-4. **Frontend Data Transformation** - Patterns for calculating deck metrics (mana curve, color distribution) from raw card data
+1. **Confirmation Dialogs** - Building "are you sure?" modals for destructive actions
+2. **Deck Card Addition Flow** - Patterns for browsing cards and adding them to decks with quantities
+3. **Swipeable Card Browser** - Card-by-card navigation through search results
+4. **Frontend Data Transformation** - Calculating deck metrics (mana curve, color distribution) from raw card data
 5. **Component Reusability** - When to extract shared UI patterns vs keeping inline for deck/card displays
 
 ---
@@ -53,6 +53,9 @@ alwaysApply: true
 - **Newtype Pattern**: Type-safe wrappers (RefreshToken, AccessToken) with validation and domain-specific methods
 - **Modular File Organization**: Per-operation domain model files, error/models/helpers SQLx modules, separated HTTP handlers
 - **Ownership Validation Patterns**: Trait-based ownership checking (OwnsDeck) preventing unauthorized resource access
+- **Ownership Bug Patterns**: Recognizing inverted authorization logic from missing negation in ownership checks
+- **Full-Stack Debugging**: Tracing issues through frontend → domain → SQLx layers to identify root causes
+- **Foreign Key Understanding**: Database primary keys (card_profile.id) vs external IDs (scryfall_data.id) for proper relationships
 - **Direct Domain Serialization**: Serialize domain types directly when HTTP shape matches, avoiding unnecessary wrapper boilerplate
 
 ### 🔒 Security & Authentication
@@ -147,6 +150,9 @@ alwaysApply: true
 - **Modular Repository Architecture**: error/models/helpers module pattern for clean SQLx implementations
 - **Ownership Validation Traits**: Custom traits on types (OwnsDeck for Uuid) enabling reusable security checks
 - **Direct UUID Handling**: SQLx returns Uuid directly from PostgreSQL without string conversion (database types align with Rust types)
+- **Option<Option<T>> Pattern**: Domain model pattern distinguishing "no update" from "set to None" for partial update requests
+- **Dynamic SQL Building**: QueryBuilder conditional push pattern for building UPDATE queries with only changed fields
+- **Conditional Field Updates**: Using if let to selectively build SQL based on which fields are present in update request
 
 ### 🌐 Advanced HTTP & Middleware Patterns
 - **Custom Middleware**: AuthenticatedUser extractor with FromRequestParts trait
@@ -176,20 +182,24 @@ alwaysApply: true
 
 ## DEVELOPING - Active Implementation (Working But Learning) 🔧
 
-### 🎨 Frontend Deck Creation & Viewing (In Progress)
+### 🎨 Frontend Deck CRUD (Complete Flow)
 - **Deck Creation Screen**: Built CreateDeck component with deck name input, searchable commander field, and CopyMax selection
 - **Searchable Commander Field**: Debounced card search using HttpSearchCards::by_name() with 500ms delay via tokio::time::sleep
 - **Dropdown UX**: Search results display as clickable options in normal document flow (pushes other elements down)
 - **CopyMax Selection**: Three-option UI (standard/singleton/none) with centered layout and visual feedback
-- **Route Refactoring**: Renamed /deck/new → /deck/create for consistency
-- **Database Schema Extension**: Replaced is_singleton boolean with card_copy_max int field for CopyMax newtype
-- **Card Field Access**: Made Card struct fields public for frontend usage
-- **Search Limit**: Limited commander search to 5 results for clean UX
-- **Deck View Screen**: Built GetDeck component displaying deck profile with commander information
-- **Commander Image Display**: Shows large Scryfall card image using image_uris, falls back to text name if unavailable
+- **View/Edit Separation**: ViewDeckProfile (read-only) and EditDeckProfile (editable form) for clean separation of concerns
+- **EditDeckProfile Implementation**: Complete 362-line screen with pre-population, change tracking, conditional updates
+- **Pre-Population Pattern**: use_effect watching resources, populating form signals with current values
+- **Change Tracking**: Separate original_* signals tracking initial state, comparing to current values before update
+- **Conditional Update Requests**: Only send changed fields (Option<T> for each field), reducing unnecessary database writes
+- **Commander Image Display**: Shows large Scryfall card image using image_uris (max-height: 40vh), falls back to text name if unavailable
 - **Image Fallback Pattern**: Qualified match on `ImageUris { large: Some(url), .. }` with else block for missing images
-- **CSS Refinement**: Commander image styling (rounded corners, responsive width), centered copy-max boxes, minimalist layout
-- *Note: Get/create screens complete, update screen next*
+- **Comprehensive Error Handling**: Separate load_error, submission_error, delete_error signals for granular display
+- **Delete Deck Functionality**: Implemented with async error handling, navigation to deck list on success
+- **CSS Overflow Handling**: overflow-y: auto on swipeable, max-height constraint on images preventing button cutoff
+- **Option<Option<T>> Pattern**: Domain model distinguishing "no update" from "set to None" for nullable fields
+- **Dynamic SQL Building**: QueryBuilder conditional push based on which fields are present in update request
+- *Note: Complete CRUD flow working, confirmation dialog next*
 - **Complete Client Method Suite**: All 19 backend endpoints covered across 5 domains (auth: 4, user: 5, deck: 5, deck_card: 3, card: 2)
 - **Unified ApiError Architecture**: Single error enum shared between frontend and backend, moved to zerver/src/lib/inbound/http.rs
 - **Frontend/Backend Error Sharing**: Eliminated duplicate frontend error.rs file, both sides use same ApiError with Network variant for client errors
@@ -312,6 +322,10 @@ alwaysApply: true
 - **Resource Match Strategy**: CORRECT: `.value().with(|result| match result {...})` - match inside with() closure, not on resource.read() directly
 - **Resource Borrow Checker Fix**: Can't `match &*resource.read()` - creates temporary value that doesn't live long enough. Must use `.value().with()` closure pattern
 - **Three-State Rendering**: Match on Some(Ok(data)), Some(Err(e)), None inside `.with()` closure for loading/success/error states
+- **Form Pre-Population Pattern**: use_effect watching resources to extract loaded data and populate form signals with current values
+- **Change Tracking Pattern**: Separate original_* signals tracking initial state, comparing to current signals before update submission
+- **Conditional Update Requests**: Only send changed fields by comparing current vs original values, reducing unnecessary backend calls
+- **Multiple Error Signals**: Separate error signals (load_error, submission_error, delete_error) for granular error display in different contexts
 - *Note: Hook selection (effect vs future vs resource) is critical - wrong choice causes infinite loops or missing reactivity*
 
 ### 🔐 Backend Session & Token Architecture (Complete) ✅
