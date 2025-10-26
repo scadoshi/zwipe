@@ -79,7 +79,6 @@ pub fn Login() -> Element {
 
                     div { class : "form-group",
 
-                        label { r#for: "identity" }
                         input {
                             id : "identity",
                             r#type : "text",
@@ -92,7 +91,6 @@ pub fn Login() -> Element {
                             }
                         }
 
-                        label { r#for : "password", "" }
                         input {
                             id : "password",
                             r#type : "password",

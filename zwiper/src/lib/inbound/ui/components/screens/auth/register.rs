@@ -108,7 +108,6 @@ pub fn Register() -> Element {
             div { class : "form-container",
             form {
                 div { class : "form-group",
-                    label { r#for : "username" }
 
                     if submit_attempted() {
                         if let Some(error) = username_error() {
@@ -132,7 +131,6 @@ pub fn Register() -> Element {
                             }
                         }
                     }
-                    label { r#for : "email" }
 
                     if submit_attempted() {
                         if let Some(error) = email_error() {
@@ -156,8 +154,6 @@ pub fn Register() -> Element {
                             }
                         }
                     }
-
-                    label { r#for : "password", "" }
 
                     if submit_attempted() {
                         if let Some(error) = password_error() {
