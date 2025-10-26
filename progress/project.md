@@ -13,17 +13,17 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Completed deck creation flow with save functionality. Refactored card search architecture for correct results.
+**Last Updated**: Completed deck view screen with commander image display. Refactored CopyMax domain type and client architecture consolidation.
 
-**Current Focus**: Deep dive into deck screen and create deck screen implementation to refine architecture and UX patterns. Next: build deck modification flow with swipeable card addition.
+**Current Focus**: Build update deck screen for profile editing. Continue deck modification flow with card addition and quantity management.
 
-**Recent Achievement**: Built complete deck creation flow with searchable commander field, singleton toggle, and save functionality implementing session upkeep pattern. Refactored card search to reverse flow - search ScryfallData by query parameters first, then fetch associated CardProfiles using get_card_profiles_by_scryfall_data_id. Renamed types for clarity (GetCardProfiles → CardProfileIds, GetCards → ScryfallDataIds). Created separate sleeve traits (SleeveScryfallData, SleeveCardProfile) for bidirectional data combination. Fixed deck unique constraint violation error mapping (is_check_constraint_violation → is_unique_constraint_violation). Added comprehensive error handling and loading states throughout deck creation flow.
+**Recent Achievement**: Completed major architectural refactor replacing is_singleton boolean with CopyMax newtype (validates 1 or 4 for MTG rules). Split GetDeck into GetDeckProfile (profile-only) and GetDeck (full deck with cards) for cleaner API separation. Built deck view screen displaying commander card images from Scryfall image_uris with text fallback. Refactored frontend client from AuthClient to unified ZwipeClient consolidating all HTTP operations under single trait-based interface. Improved CSS for commander display, copy-max selection, and form layouts. Cleaned up unused screens and deprecated client methods.
 
-**Current Success**: Complete end-to-end HTTP integration from frontend to backend across all domains. All authentication flows working (register, login, logout, refresh, profile changes, account deletion). Deck CRUD operations complete (create, read, update, delete). Deck card management ready (add, update quantity, remove). Card operations ready (get by ID, search with complex query parameters). Universal swipeable UI. Production-ready error handling with shared ApiError architecture.
+**Current Success**: Complete end-to-end HTTP integration from frontend to backend across all domains. Deck CRUD with CopyMax domain modeling. Deck view screen with Scryfall image integration. Unified client architecture. All authentication flows working. Card search with proper data flow. Universal swipeable UI. Production-ready error handling with shared ApiError architecture.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Deck Screen Refinement** - Deep dive into architecture and UX patterns for deck list and detail screens
-2. **Create Deck Screen Refinement** - Review and tighten implementation of deck creation flow
+1. **Update Deck Screen** - Build editable form for deck profile modifications
+2. **Client Architecture Cleanup** - Complete ZwipeClient refactor across all components
 3. **Deck Modification Architecture** - Design patterns for swiping through cards and adding to decks
 4. **Card Addition Flow** - UI/UX for selecting cards and adding them to decks with quantities
 5. **Deck Card Display** - Visual representation of cards in decks with quantities and metrics
@@ -226,6 +226,16 @@ alwaysApply: true
 - **HTTP Verb Consistency**: Audited and corrected all client methods to use proper REST verbs (GET for reads, POST for creates, PUT for updates, DELETE for deletes)
 - **Logo System Refactoring**: Created modular logo system with Zwipe, Zerver, Zervice, Zwiper variants using const + struct pattern
 - **Code Reduction Victory**: Net reduction of 263 lines (711 deleted, 448 added) through architectural improvements and elimination of duplicate code
+- **CopyMax Domain Type**: Replaced is_singleton boolean with CopyMax newtype validating 1 (singleton) or 4 (standard) for MTG deck rules
+- **GetDeckProfile Separation**: Split GetDeck into GetDeckProfile (profile-only) and GetDeck (full deck with cards) for cleaner API design
+- **Backend CopyMax Integration**: Updated domain models, ports, services, handlers, and repository to use CopyMax throughout deck operations
+- **Frontend CopyMax UI**: Three-option selection (standard/singleton/none) with centered layout and visual feedback
+- **Deck View Screen**: Complete GetDeck component with deck profile display, copy-max visualization, update/back navigation
+- **Commander Image Display**: Scryfall image_uris integration showing large card images with text fallback for missing images
+- **Image Fallback Pattern**: Qualified match on `ImageUris { large: Some(url), .. }` providing graceful degradation to text display
+- **CSS Commander Styling**: Responsive card images with rounded corners, centered layouts, minimalist aesthetic
+- **ZwipeClient Architecture**: Unified client consolidating AuthClient operations under single trait-based interface (in progress)
+- **Client Method Cleanup**: Removed deprecated auth client methods, consolidated user operations under unified client pattern
 
 ---
 
@@ -342,6 +352,26 @@ alwaysApply: true
 - **Call Site Simplification**: UI components now handle single ApiError type with `.to_string()` for display - no complex matching needed
 - **Backend Alignment**: Added Serialize to HttpUpdateDeckProfileBody, Deserialize to Deck for frontend consumption
 - **Production Readiness**: HTTP client layer now feels production-ready with minimal boilerplate and consistent error handling
+
+### 🎨 Session Reflection: Deck UI & Domain Modeling (Today)
+**Strengths:**
+- **Domain Modeling**: CopyMax newtype effectively replaces boolean with validated MTG-specific rules (1 or 4)
+- **API Separation**: GetDeckProfile vs GetDeck split creates cleaner contracts for different use cases
+- **Image Integration**: Scryfall image_uris display works seamlessly with graceful text fallback
+- **CSS Iteration**: Quick iteration on styling (centered boxes, commander display) building confidence with layout patterns
+- **Resource Pattern**: use_resource for async data fetching with proper three-state rendering (None/Ok/Err) feels natural
+
+**Areas for Improvement:**
+- **CSS Memorization**: Still referencing properties frequently (justify-content, flex patterns) - monotonous but necessary
+- **Form Architecture**: Need patterns for editable vs read-only forms (create vs update vs view screens)
+- **Component Reuse**: Starting to see repeated patterns (form layouts, field displays) that could be extracted
+- **Image Handling**: Should consider loading states, error states, and image size optimization for mobile
+
+**Key Learnings:**
+- **Qualified Match Arms**: Using `if let Some(ImageUris { large: Some(url), .. })` with else blocks provides clean fallback logic
+- **Form Screen Progression**: Create → View → Update pattern emerging as standard CRUD flow with distinct UX needs
+- **Resource Dependencies**: Chaining resources (deck_profile_resource → commander_resource) requires careful dependency management
+- **CSS Simplification**: Removing unnecessary containers and wrappers improves layout simplicity and responsiveness
 
 ---
 

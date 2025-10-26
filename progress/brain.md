@@ -15,18 +15,18 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Completed deck creation flow with save functionality and session upkeep. Fixed card search to search ScryfallData first then fetch CardProfiles for correct results.
+**Last Updated**: Completed deck get/view screen with commander image display. Refactored CopyMax domain type and GetDeckProfile separation. Built client architecture consolidation into unified ZwipeClient.
 
-**Next Learning Focus**: Deep dive into deck screen and create deck screen implementation to refine architecture and UX patterns before building deck modification flow with swipeable card addition.
+**Next Learning Focus**: Build update deck screen for editing deck profiles. Implement deck card addition flow with card browsing and quantity management.
 
-**Recent Achievement**: Built complete deck creation flow with searchable commander field, singleton toggle, and save functionality. Refactored card search to reverse flow - search ScryfallData by query parameters first, then fetch associated CardProfiles using get_card_profiles_by_scryfall_data_id. Renamed types for clarity (GetCardProfiles → CardProfileIds, GetCards → ScryfallDataIds). Created separate sleeve traits (SleeveScryfallData, SleeveCardProfile) for bidirectional data combination. Implemented session upkeep pattern before API calls. Fixed deck unique constraint violation error mapping (is_check_constraint_violation → is_unique_constraint_violation). Added loading states, error handling, and navigation on successful deck creation.
+**Recent Achievement**: Completed major deck profile architecture refactor - replaced is_singleton boolean with CopyMax newtype (validates 1 or 4 for MTG deck rules). Split GetDeck into GetDeckProfile (profile-only) and GetDeck (full deck with cards) for cleaner separation. Built complete deck view screen with commander image display using Scryfall image_uris, fallback to text name when no image. Refactored frontend client from AuthClient to unified ZwipeClient consolidating all HTTP operations. Cleaned up CSS for commander display, copy-max selection boxes, and form layouts. Fixed centered alignment for copy-max UI. Removed unused screens and outdated client methods.
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Deck Screen Architecture** - How to structure deck detail view and refinement needed for current implementation
-2. **Deck Modification Flow** - Patterns for swiping through cards and adding them to decks with quantities
-3. **Frontend Data Transformation** - Patterns for calculating deck metrics (mana curve, color distribution) from raw card data
-4. **Component Reusability** - When to extract shared UI patterns vs keeping inline for deck/card displays
-5. **Optimistic Updates** - Update UI immediately vs refetching after add/remove card operations
+1. **Update Deck Implementation** - Building editable form for deck profile modifications
+2. **Image Display Patterns** - Handling optional Scryfall images across different card contexts
+3. **Deck Modification Flow** - Patterns for swiping through cards and adding them to decks with quantities
+4. **Frontend Data Transformation** - Patterns for calculating deck metrics (mana curve, color distribution) from raw card data
+5. **Component Reusability** - When to extract shared UI patterns vs keeping inline for deck/card displays
 
 ---
 
@@ -176,16 +176,20 @@ alwaysApply: true
 
 ## DEVELOPING - Active Implementation (Working But Learning) 🔧
 
-### 🎨 Frontend Deck Creation & Search UI (In Progress)
-- **Deck Creation Screen**: Built CreateDeck component with deck name input, searchable commander field, and singleton toggle
-- **Searchable Commander Field**: Debounced card search using HttpSearchCards::by_name() with 300ms delay via tokio::time::sleep
+### 🎨 Frontend Deck Creation & Viewing (In Progress)
+- **Deck Creation Screen**: Built CreateDeck component with deck name input, searchable commander field, and CopyMax selection
+- **Searchable Commander Field**: Debounced card search using HttpSearchCards::by_name() with 500ms delay via tokio::time::sleep
 - **Dropdown UX**: Search results display as clickable options in normal document flow (pushes other elements down)
-- **Singleton Toggle**: True/false boxes for deck format selection with visual feedback
+- **CopyMax Selection**: Three-option UI (standard/singleton/none) with centered layout and visual feedback
 - **Route Refactoring**: Renamed /deck/new → /deck/create for consistency
-- **Database Schema Extension**: Added commander_id and is_singleton fields to decks table
+- **Database Schema Extension**: Replaced is_singleton boolean with card_copy_max int field for CopyMax newtype
 - **Card Field Access**: Made Card struct fields public for frontend usage
 - **Search Limit**: Limited commander search to 5 results for clean UX
-- *Note: Search working, UI structure complete, pending save functionality implementation*
+- **Deck View Screen**: Built GetDeck component displaying deck profile with commander information
+- **Commander Image Display**: Shows large Scryfall card image using image_uris, falls back to text name if unavailable
+- **Image Fallback Pattern**: Qualified match on `ImageUris { large: Some(url), .. }` with else block for missing images
+- **CSS Refinement**: Commander image styling (rounded corners, responsive width), centered copy-max boxes, minimalist layout
+- *Note: Get/create screens complete, update screen next*
 - **Complete Client Method Suite**: All 19 backend endpoints covered across 5 domains (auth: 4, user: 5, deck: 5, deck_card: 3, card: 2)
 - **Unified ApiError Architecture**: Single error enum shared between frontend and backend, moved to zerver/src/lib/inbound/http.rs
 - **Frontend/Backend Error Sharing**: Eliminated duplicate frontend error.rs file, both sides use same ApiError with Network variant for client errors
