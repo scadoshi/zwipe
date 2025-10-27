@@ -23,12 +23,16 @@ use zwipe::{
     domain::{
         auth::models::session::Session,
         card::models::Card,
-        deck::models::deck::{copy_max::CopyMax, deck_profile::DeckProfile},
+        deck::models::deck::{
+            copy_max::CopyMax, deck_profile::DeckProfile,
+            update_deck_profile::InvalidUpdateDeckProfile,
+        },
     },
     inbound::http::{
         handlers::{
             card::search_card::HttpSearchCards, deck::update_deck_profile::HttpUpdateDeckProfile,
         },
+        helpers::Optdate,
         ApiError,
     },
 };
@@ -179,16 +183,24 @@ pub fn EditDeckProfile(deck_id: Uuid) -> Element {
             };
 
             let commander_id_update = if commander() != original_commander() {
-                Some(commander().map(|c| c.card_profile.id))
+                Optdate::Set(commander().map(|c| c.card_profile.id))
             } else {
-                None
+                Optdate::Unchanged
             };
 
             let copy_max_update = if copy_max() != original_copy_max() {
-                Some(copy_max().map(|cm| cm.max()))
+                Optdate::Set(copy_max().map(|cm| cm.max()))
             } else {
-                None
+                Optdate::Unchanged
             };
+
+            if deck_name_update.is_none()
+                && commander_id_update.is_unchanged()
+                && copy_max_update.is_unchanged()
+            {
+                submission_error.set(Some(InvalidUpdateDeckProfile::NoUpdates.to_string()));
+                return;
+            }
 
             let request = HttpUpdateDeckProfile::new(
                 deck_name_update.as_deref(),
@@ -200,10 +212,8 @@ pub fn EditDeckProfile(deck_id: Uuid) -> Element {
                 .update_deck_profile(&deck_id, &request, &sesh)
                 .await
             {
-                Ok(created) => {
-                    navigator.push(Router::ViewDeckProfile {
-                        deck_id: created.id,
-                    });
+                Ok(_updated) => {
+                    navigator.push(Router::ViewDeckProfile { deck_id });
                 }
                 Err(e) => {
                     submission_error.set(Some(e.to_string()));
@@ -219,9 +229,9 @@ pub fn EditDeckProfile(deck_id: Uuid) -> Element {
 
                 div { class : "form-container",
                     match &*deck_profile_resource.read() {
-                        Some(Ok(profile)) => rsx! {
+                        Some(Ok(_profile)) => rsx! {
 
-                            h2 { "{profile.name}" }
+                            h2 { "{deck_name}" }
 
                             if let Some(error) = load_error() {
                                 div { "{error}" }
@@ -252,6 +262,7 @@ pub fn EditDeckProfile(deck_id: Uuid) -> Element {
                                             onclick : move |_| {
                                                 search_query.set(String::new());
                                                 commander_display.set(String::new());
+                                                commander.set(None);
                                             },
                                             oninput : move |event| {
                                                 search_query.set(event.value());
