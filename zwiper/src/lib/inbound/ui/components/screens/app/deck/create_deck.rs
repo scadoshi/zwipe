@@ -36,7 +36,7 @@ pub fn CreateDeck() -> Element {
     let mut deck_name = use_signal(|| String::new());
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
     let mut commander_display = use_signal(|| String::new());
-    let mut copy_max: Signal<Option<CopyMax>> = use_signal(|| Some(CopyMax::singleton()));
+    let mut copy_max: Signal<Option<CopyMax>> = use_signal(|| None);
 
     // commander search state
     let mut search_query = use_signal(|| String::new());

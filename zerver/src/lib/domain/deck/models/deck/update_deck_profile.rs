@@ -53,10 +53,7 @@ impl From<GetDeckProfileError> for UpdateDeckProfileError {
     }
 }
 
-/// for updating deck profiles.
-/// though name is the only field
-/// i am still leaving as an `Option<T>`
-/// to leave room for future additions
+/// for updating deck profiles
 #[derive(Debug, Clone)]
 pub struct UpdateDeckProfile {
     pub deck_id: Uuid,

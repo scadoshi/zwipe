@@ -4,14 +4,14 @@ pub mod helper;
 
 use sqlx::{query, query_as, QueryBuilder};
 use crate::{
-    domain::deck::{
+    domain::{ deck::{
         models::{deck::{
                 create_deck_profile::{CreateDeckProfile, CreateDeckProfileError}, deck_profile::DeckProfile, delete_deck::{DeleteDeck,
                 DeleteDeckError}, get_deck_profile::{GetDeckProfile, GetDeckProfileError}, get_deck_profiles::GetDeckProfiles, update_deck_profile::{UpdateDeckProfile,
                 UpdateDeckProfileError}
             }, deck_card::{create_deck_card::{CreateDeckCard, CreateDeckCardError}, delete_deck_card::{DeleteDeckCard, DeleteDeckCardError}, get_deck_card::GetDeckCardError, update_deck_card::{UpdateDeckCard, UpdateDeckCardError}, DeckCard}},
         ports::DeckRepository,
-    },
+    }},
     outbound::sqlx::{deck::{error::{IntoDeckCardError, IntoDeckProfileError}, helper::OwnsDeck, models::{DatabaseDeckCard, DatabaseDeckProfile}}, postgres::Postgres},
 };
 
