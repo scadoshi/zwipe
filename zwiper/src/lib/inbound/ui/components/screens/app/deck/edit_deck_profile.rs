@@ -11,8 +11,7 @@ use crate::{
     outbound::client::{
         card::{get_card::ClientGetCard, search_cards::ClientSearchCards},
         deck::{
-            delete_deck::ClientDeleteDeck, get_deck_profile::ClientGetDeckProfile,
-            update_deck_profile::ClientUpdateDeckProfile,
+            get_deck_profile::ClientGetDeckProfile, update_deck_profile::ClientUpdateDeckProfile,
         },
         ZwipeClient,
     },
@@ -214,27 +213,6 @@ pub fn EditDeckProfile(deck_id: Uuid) -> Element {
         });
     };
 
-    let mut delete_error = use_signal(|| None::<String>);
-    let mut attempt_delete = move || {
-        session.upkeep(client);
-        let Some(sesh) = session() else {
-            submission_error.set(Some("session expired".to_string()));
-            is_saving.set(false);
-            return;
-        };
-
-        spawn(async move {
-            match client().delete_deck(&deck_id, &sesh).await {
-                Ok(_) => {
-                    navigator.push(Router::DeckList {});
-                }
-                Err(e) => {
-                    delete_error.set(Some(e.to_string()));
-                }
-            }
-        });
-    };
-
     rsx! {
         Bouncer {
             Swipeable { state: swipe_state, config: swipe_config,
@@ -341,13 +319,8 @@ pub fn EditDeckProfile(deck_id: Uuid) -> Element {
                                     }
 
                                     button {
-                                        onclick : move |_| attempt_delete(),
-                                        "delete"
-                                    }
-
-                                    button {
                                         onclick : move |_| {
-                                            navigator.push(Router::DeckList {});
+                                            navigator.push(Router::ViewDeckProfile { deck_id });
                                         },
                                         "back"
                                     }

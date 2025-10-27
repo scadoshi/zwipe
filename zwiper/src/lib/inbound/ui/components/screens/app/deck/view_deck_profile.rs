@@ -7,7 +7,9 @@ use crate::{
         router::Router,
     },
     outbound::client::{
-        card::get_card::ClientGetCard, deck::get_deck_profile::ClientGetDeckProfile, ZwipeClient,
+        card::get_card::ClientGetCard,
+        deck::{delete_deck::ClientDeleteDeck, get_deck_profile::ClientGetDeckProfile},
+        ZwipeClient,
     },
 };
 use dioxus::prelude::*;
@@ -29,16 +31,16 @@ pub fn ViewDeckProfile(deck_id: Uuid) -> Element {
     let navigator = use_navigator();
 
     let session: Signal<Option<Session>> = use_context();
-    let auth_client: Signal<ZwipeClient> = use_context();
+    let client: Signal<ZwipeClient> = use_context();
 
     let deck_profile_resource: Resource<Result<DeckProfile, ApiError>> =
         use_resource(move || async move {
-            session.upkeep(auth_client);
+            session.upkeep(client);
             let Some(sesh) = session() else {
                 return Err(ApiError::Unauthorized("session expired".to_string()));
             };
 
-            auth_client().get_deck_profile(deck_id, &sesh).await
+            client().get_deck_profile(deck_id, &sesh).await
         });
 
     let commander_resource: Resource<Result<Option<Card>, ApiError>> =
@@ -55,11 +57,32 @@ pub fn ViewDeckProfile(deck_id: Uuid) -> Element {
                 return Err(ApiError::Unauthorized("session expired".to_string()));
             };
 
-            auth_client()
+            client()
                 .get_card(&commander_id, &sesh)
                 .await
                 .map(|value| Some(value))
         });
+
+    let mut show_delete_confirmation = use_signal(|| false);
+    let mut delete_error = use_signal(|| None::<String>);
+    let mut attempt_delete = move || {
+        session.upkeep(client);
+        let Some(sesh) = session() else {
+            delete_error.set(Some("session expired".to_string()));
+            return;
+        };
+
+        spawn(async move {
+            match client().delete_deck(&deck_id, &sesh).await {
+                Ok(_) => {
+                    navigator.push(Router::DeckList {});
+                }
+                Err(e) => {
+                    delete_error.set(Some(e.to_string()));
+                }
+            }
+        });
+    };
 
     rsx! {
     Bouncer {
@@ -101,11 +124,33 @@ pub fn ViewDeckProfile(deck_id: Uuid) -> Element {
                                 }
                             }
 
-                            button {
-                                onclick : move |_| {
-                                    navigator.push(Router::EditDeckProfile { deck_id });
-                                },
-                                "edit"
+                            if !show_delete_confirmation() {
+                                button {
+                                    onclick : move |_| {
+                                        navigator.push(Router::EditDeckProfile { deck_id });
+                                    },
+                                    "edit"
+                                }
+
+                                button { class : "delete-button",
+                                    onclick : move |_| show_delete_confirmation.set(true),
+                                    "delete"
+                                }
+                            }
+
+                            if show_delete_confirmation() {
+                                label { r#for : "confirmation-prompt", "are you sure?" }
+                                div { class : "confirmation-prompt",
+                                    id : "confirmation-prompt",
+                                    button { class : "yes-button",
+                                        onclick : move |_| attempt_delete(),
+                                        "yes"
+                                    }
+                                    button { class : "no-button",
+                                        onclick : move |_| show_delete_confirmation.set(false),
+                                        "no"
+                                    }
+                                }
                             }
 
                             button {
