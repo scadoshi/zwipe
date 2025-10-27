@@ -1,3 +1,4 @@
+use crate::inbound::http::helpers::Optdate;
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
@@ -66,16 +67,12 @@ impl From<InvalidUpdateDeckProfile> for ApiError {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HttpUpdateDeckProfile {
     pub name: Option<String>,
-    pub commander_id: Option<Option<Uuid>>,
-    pub copy_max: Option<Option<i32>>,
+    pub commander_id: Optdate<Uuid>,
+    pub copy_max: Optdate<i32>,
 }
 
 impl HttpUpdateDeckProfile {
-    pub fn new(
-        name: Option<&str>,
-        commander_id: Option<Option<Uuid>>,
-        copy_max: Option<Option<i32>>,
-    ) -> Self {
+    pub fn new(name: Option<&str>, commander_id: Optdate<Uuid>, copy_max: Optdate<i32>) -> Self {
         Self {
             name: name.map(|name| name.to_string()),
             commander_id,
@@ -98,11 +95,13 @@ where
     CS: CardService,
     DS: DeckService,
 {
+    tracing::info!("{:#?}", body);
+
     let request = UpdateDeckProfile::new(
         deck_id,
         body.name.as_deref(),
-        body.commander_id,
-        body.copy_max,
+        body.commander_id.into_option(),
+        body.copy_max.into_option(),
         user.id,
     )?;
 

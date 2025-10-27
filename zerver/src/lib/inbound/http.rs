@@ -1,7 +1,9 @@
 pub mod handlers;
+pub mod helpers;
 #[cfg(feature = "zerver")]
 pub mod middleware;
 pub mod routes;
+
 #[cfg(feature = "zerver")]
 use crate::domain::{
     auth::ports::AuthService, card::ports::CardService, deck::ports::DeckService,
