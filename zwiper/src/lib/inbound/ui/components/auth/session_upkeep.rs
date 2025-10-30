@@ -11,11 +11,11 @@ use zwipe::{
 };
 
 pub trait Upkeep {
-    fn upkeep(self, auth_client: Signal<ZwipeClient>);
+    fn upkeep(self, client: Signal<ZwipeClient>);
 }
 
 impl Upkeep for Signal<Option<Session>> {
-    fn upkeep(self, auth_client: Signal<ZwipeClient>) {
+    fn upkeep(self, client: Signal<ZwipeClient>) {
         let mut session = self;
 
         spawn(async move {
@@ -32,7 +32,7 @@ impl Upkeep for Signal<Option<Session>> {
 
             if current.access_token.is_expired() {
                 let request = HttpRefreshSession::from(&current);
-                match auth_client().refresh(&request).await {
+                match client().refresh(&request).await {
                     Ok(new) => {
                         session.set(Some(new));
                         tracing::info!("refreshed session");
@@ -53,14 +53,14 @@ pub fn spawn_upkeeper() {
     let session = use_signal(|| Session::infallible_load());
     use_context_provider(|| session);
 
-    let auth_client = use_signal(|| ZwipeClient::new());
-    use_context_provider(|| auth_client);
+    let client = use_signal(|| ZwipeClient::new());
+    use_context_provider(|| client);
 
     spawn(async move {
         let mut interval = interval(Duration::from_secs(60));
         loop {
             interval.tick().await;
-            session.upkeep(auth_client);
+            session.upkeep(client);
         }
     });
 }
