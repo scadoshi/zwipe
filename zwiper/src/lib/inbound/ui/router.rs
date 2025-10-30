@@ -4,6 +4,7 @@ use crate::inbound::ui::components::screens::{
             create_deck::CreateDeck, deck_list::DeckList, edit_deck_profile::EditDeckProfile,
             view_deck_profile::ViewDeckProfile,
         },
+        deck_card::{add::AddDeckCard, remove::RemoveDeckCard},
         home::Home,
         profile::{
             change_email::ChangeEmail, change_password::ChangePassword,
@@ -31,14 +32,11 @@ pub enum Router {
     // user
     #[route("/user")]
     Profile {},
-    #[child]
-    #[route("/change-username")]
+    #[route("/user/change-username")]
     ChangeUsername {},
-    #[child]
-    #[route("/change-email")]
+    #[route("/user/change-email")]
     ChangeEmail {},
-    #[child]
-    #[route("/change-password")]
+    #[route("/user/change-password")]
     ChangePassword {},
 
     // deck
@@ -50,4 +48,10 @@ pub enum Router {
     EditDeckProfile { deck_id: Uuid },
     #[route("/deck/get/:deck_id")]
     ViewDeckProfile { deck_id: Uuid },
+
+    //deck card
+    #[route("/deck/cards/add/:deck_id")]
+    AddDeckCard { deck_id: Uuid },
+    #[route("/deck/cards/remove/:deck_id")]
+    RemoveDeckCard { deck_id: Uuid },
 }
