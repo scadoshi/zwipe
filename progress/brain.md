@@ -15,18 +15,18 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Completed full deck profile CRUD flow (Create/View/Edit/Delete) with conditional updates, comprehensive error handling, and critical bug fixes.
+**Last Updated**: Started building deck card addition flow with filtering system and planning multi-layer swipe architecture for card browsing.
 
-**Next Learning Focus**: Build confirmation dialogs for destructive actions. Design card addition flow with quantity management. Explore frontend analytics calculations.
+**Next Learning Focus**: Complete card filtering UI/UX. Implement nested swipe detection distinguishing card-level from screen-level gestures. Build deck metrics visualization screen.
 
-**Recent Achievement**: Built complete EditDeckProfile screen independently (362 lines) with pre-populated fields, debounced commander search, copy-max selection, and change tracking. Implemented conditional update pattern sending only modified fields. Fixed critical ownership validation bug (missing negation) affecting 5 repository operations. Separated view/edit concerns with dedicated screens. Added delete deck functionality. Debugged and fixed Scryfall ID issue (was sending scryfall_data.id instead of card_profile.id). Implemented comprehensive error handling with separate signals for load/submission/delete errors. Extended UpdateDeckProfile domain model to support commander_id and copy_max with Option<Option<T>> pattern for "no update" vs "set to None" distinction. Built dynamic SQL QueryBuilder updates. Fixed CSS overflow with max-height constraint on commander images.
+**Recent Achievement**: Refactored EditDeckProfile with use_memo for computed change detection (deck_name_update, commander_id_update, copy_max_update, has_made_changes). Added conditional deck card management buttons (add/remove) appearing only when no profile changes exist. Built AddDeckCard and RemoveDeckCard screen foundations with Filter component implementing name-based card search, image filtering (excludes cards without large images), and success message feedback. Created helper methods: HttpSearchCards::blank(), is_blank(), PartialEq derive; Optdate::is_changed(). Planned three-layer screen architecture: filters (up), card display (center), deck metrics (down). Designing nested swipe detection system to differentiate card element swipes (left/right for browsing results) from screen swipes (up/down for navigation).
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Confirmation Dialogs** - Building "are you sure?" modals for destructive actions
-2. **Deck Card Addition Flow** - Patterns for browsing cards and adding them to decks with quantities
-3. **Swipeable Card Browser** - Card-by-card navigation through search results
-4. **Frontend Data Transformation** - Calculating deck metrics (mana curve, color distribution) from raw card data
-5. **Component Reusability** - When to extract shared UI patterns vs keeping inline for deck/card displays
+1. **Nested Swipe Detection** - Differentiating card element swipes from screen swipes based on touch target
+2. **Card Browsing UX** - Implementing smooth left/right swipe navigation through search results
+3. **Quantity Management** - UI patterns for selecting card quantities (respecting deck copy_max rules)
+4. **Deck Metrics Visualization** - Calculating and displaying mana curve, color distribution, type breakdown
+5. **Multi-Layer Swipe Architecture** - Managing separate SwipeState for card-level vs screen-level gestures
 
 ---
 
@@ -137,6 +137,7 @@ alwaysApply: true
 - **Backend Logout Flow**: POST to /api/auth/logout with bearer token revokes server-side refresh tokens before local session clearing
 - **Signal Simplification**: Using signal() syntax instead of signal.read() for cleaner Dioxus code (17+ simplifications across components)
 - **Debounced Search**: Implementing search with 300ms delay using tokio::time::sleep in spawned async tasks
+- **use_memo Pattern**: Computed signals deriving state from other signals, only updating when computed value changes (not when source signal content changes)
 
 ### 💾 SQLx Database Operations & Advanced Patterns
 - **Connection Pooling**: Production-ready pool configuration with optimized settings
@@ -314,7 +315,6 @@ alwaysApply: true
 - **Async Closure Pattern**: `move || async move { }` for creating Futures that can be `.await`ed when called
 - **Signal + Send Issues**: mut Signal parameters can't cross async boundaries due to RefCell (not Sync) - pass Signal by value instead
 - **Navigation Effect Deadlock**: navigator.push() in use_effect causes freeze - use conditional rendering instead
-- **use_memo Pattern**: Creates derived state that only updates when computed value changes, not when source signal content changes
 - **Centralized Session Management**: Better to have one background refresh loop than duplicate logic in every component
 - **Empty State UX**: Always handle empty lists explicitly (e.g., "no decks yet" message) instead of showing nothing
 - **Resource Lifetime Pattern**: `.value().with(|val| ...)` closure to access Resource data, extract owned copies to avoid "temporary value dropped" errors
@@ -373,6 +373,20 @@ alwaysApply: true
 - **Session Context Integration**: Using use_context() pattern for accessing session state in async functions
 - **HTTP Client Session Patterns**: AuthClient methods handle session validation and refresh automatically
 - *Note: Complete session management system ready for production use*
+
+### 🃏 Deck Card Management & Multi-Layer Swipe Architecture (Active Development)
+- **AddDeckCard Screen Foundation**: Built screen with Filter component separation, card display, and add button placeholder
+- **Filter Component Architecture**: Separate screen positioned "up" from main, swipeable navigation between filter and card display
+- **Card Search Integration**: HttpSearchCards with name filtering, image presence validation (filter out cards without large images)
+- **Success Message Feedback**: Random success messages after successful card searches using get_random_success_message()
+- **Helper Method Creation**: Built HttpSearchCards::blank(), is_blank(), PartialEq derive for filter state validation
+- **Optdate Convenience**: Added is_changed() helper complementing is_unchanged() for cleaner conditional logic
+- **Three-Layer Screen Planning**: Filter (up), card display (center), metrics (down) with vertical swipe navigation
+- **Nested Swipe Detection Challenge**: Need to differentiate card element swipes (left/right for browsing) from screen swipes (up/down for navigation)
+- **Touch Target Identification**: Planning to detect which element receives touch/mouse event to route to appropriate swipe handler
+- **Card Browsing Vision**: Swipe left/right through search results card-by-card, swipe up/down to navigate screens
+- **Deck Metrics Planning**: Down screen will show mana curve, color distribution, type breakdown calculated from card data
+- *Note: Early foundation stage, core challenge is nested gesture detection differentiating card vs screen swipes*
 
 ### 🔮 Advanced Rust Patterns
 - **Advanced Async Patterns**: Complex Future handling, async streaming, async iterators

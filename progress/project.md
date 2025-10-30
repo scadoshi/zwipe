@@ -13,27 +13,27 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Completed full deck profile CRUD (Create/View/Edit/Delete) with conditional updates and comprehensive error handling.
+**Last Updated**: Started building deck card addition flow with filtering system and planning multi-layer swipe architecture for card browsing and deck metrics.
 
-**Current Focus**: Build confirmation dialog for deck deletion. Design card addition flow for adding cards to decks with quantity management.
+**Current Focus**: Complete card filtering UI. Implement nested swipe detection to differentiate card-level swipes (browsing) from screen-level swipes (navigation). Build deck metrics visualization.
 
-**Recent Achievement**: Built complete EditDeckProfile screen with pre-populated form fields, debounced commander search, copy-max selection, and change tracking. Implemented conditional update requests sending only modified fields. Fixed critical ownership validation bug (missing negation) affecting 5 operations. Separated view and edit concerns with dedicated ViewDeckProfile and EditDeckProfile screens. Added delete deck functionality. Fixed Scryfall ID bug sending card_profile.id instead of scryfall_data.id. Implemented comprehensive error handling for load errors, submission errors, and delete errors. Updated UpdateDeckProfile domain model to support commander_id and copy_max fields with proper validation.
+**Recent Achievement**: Refactored EditDeckProfile with use_memo pattern for computed change detection (deck_name_update, commander_id_update, copy_max_update, has_made_changes). Added conditional deck card management buttons (add/remove) that appear only when no profile changes exist, navigating to AddDeckCard/RemoveDeckCard routes. Built AddDeckCard and RemoveDeckCard screen foundations with Filter component implementing name-based card search, image filtering (excludes cards without large images), and success message feedback. Created helper methods: HttpSearchCards::blank(), is_blank(), PartialEq derive; Optdate::is_changed(). Planned three-layer screen architecture: filters (up), card display (center), deck metrics (down). Designing nested swipe detection system to differentiate card element swipes (left/right for browsing results) from screen swipes (up/down for navigation between filters/cards/metrics).
 
-**Current Success**: Complete deck profile CRUD flow from creation through deletion. Proper view/edit separation. Conditional updates with change tracking. Commander search integration. CopyMax domain modeling. Comprehensive error handling at all layers. Working delete functionality. Fixed CSS overflow issues with commander images.
+**Current Success**: EditDeckProfile conditional updates with use_memo. Deck card management foundation with filter/display separation. Card search with image validation. Three-layer screen architecture planned. Helper methods for filter validation and change detection.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Delete Confirmation Dialog** - Build "are you sure?" confirmation before deck deletion
-2. **Deck Card Addition Flow** - UI/UX for browsing cards and adding them to decks with quantities
-3. **Card Browse Screen** - Swipeable card-by-card navigation through search results
-4. **Deck Card Display** - Visual representation of cards in decks with quantities
-5. **Frontend Deck Analytics** - Calculate mana curve, color distribution from card data
+1. **Card Filtering Enhancement** - Add more filter fields (type, color, CMC, set) for comprehensive card search
+2. **Nested Swipe Detection** - Implement touch target identification to route gestures to card or screen handlers
+3. **Card Browsing Implementation** - Swipeable left/right navigation through search results
+4. **Deck Metrics Screen** - Build "down" screen with mana curve, color distribution, type breakdown visualizations
+5. **Add Card Button Integration** - Wire up add_card function with quantity selection and copy_max validation
 
 ### 🤔 Next Immediate Priorities (Top 5)
-1. **Swipeable Card Browsing** - Implement card-by-card swipe navigation through search results
-2. **Frontend Deck Analytics** - Calculate mana curve, color distribution, type breakdown from card data
-3. **Card Detail Screen** - Full card view with image and all attributes
-4. **Deck Validation** - Client-side validation for deck legality and card limits
-5. **Deck Sharing** - Export/import deck lists in standard formats
+1. **Quantity Selection UI** - Build quantity selector for adding cards (1-4 based on deck copy_max)
+2. **RemoveDeckCard Implementation** - Display current deck cards, implement removal with confirmation
+3. **Deck Metrics Calculation** - Frontend analytics for mana curve, color distribution, type breakdown
+4. **Confirmation Dialogs** - Build reusable modal for destructive actions (delete deck, remove card)
+5. **Advanced Card Filters** - Add type_line, color_identity, CMC, rarity filters to search
 
 ---
 
@@ -244,6 +244,13 @@ alwaysApply: true
 - **Delete Deck Functionality**: Implemented delete_deck button with async error handling and navigation to deck list on success
 - **ZwipeClient Architecture**: Unified client consolidating AuthClient operations under single trait-based interface
 - **Client Method Cleanup**: Removed deprecated auth client methods, consolidated user operations under unified client pattern
+- **use_memo Refactoring**: EditDeckProfile uses computed signals (deck_name_update, commander_id_update, copy_max_update, has_made_changes) for clean change detection
+- **Conditional UI Elements**: Deck card management buttons (add/remove) conditionally visible based on has_made_changes computed signal
+- **Helper Method Creation**: HttpSearchCards::blank(), is_blank(), PartialEq; Optdate::is_changed() for cleaner validation and conditional logic
+- **Deck Card Module Foundation**: Created AddDeckCard and RemoveDeckCard screens with routing integration from EditDeckProfile
+- **Filter Component Separation**: Built Filter as separate swipeable screen positioned "up" from main card display
+- **Card Search with Validation**: Name-based filtering with image presence validation (excludes cards without large images for display)
+- **Three-Layer Architecture Planning**: Designed screen hierarchy with filters (up), card display (center), deck metrics (down)
 
 ---
 
