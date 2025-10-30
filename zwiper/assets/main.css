@@ -125,10 +125,10 @@ button:active {
 .form-container {
     width: 20rem;
     padding: 2rem;
+    text-align: center;
 }
 
 .form-container h2 {
-    text-align: center;
     margin-bottom: 0.5rem;
     font-weight: 300;
     color: #f5f5dc;
@@ -504,4 +504,24 @@ button:active {
     display: flex;
     justify-content: space-between;
     gap: 4%;
+}
+
+.deck-card-prompt button {
+    width: 48%;
+    margin-bottom: 2rem;
+}
+
+.deck-card-prompt {
+    display: flex;
+    justify-content: space-between;
+    gap: 4%;
+}
+
+/* cards */
+.card-image {
+    max-width: 100%;
+    max-height: 100vh;
+    height: auto;
+    border-radius: 1rem;
+    margin-bottom: 2rem;
 }
