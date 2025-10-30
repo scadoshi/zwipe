@@ -87,6 +87,36 @@ pub fn EditDeckProfile(deck_id: Uuid) -> Element {
     let mut original_commander: Signal<Option<Card>> = use_signal(|| None);
     let mut original_copy_max: Signal<Option<CopyMax>> = use_signal(|| None);
 
+    let deck_name_update = use_memo(move || {
+        if deck_name() != original_deck_name() {
+            Some(deck_name())
+        } else {
+            None
+        }
+    });
+
+    let commander_id_update = use_memo(move || {
+        if commander() != original_commander() {
+            Optdate::Set(commander().map(|c| c.card_profile.id))
+        } else {
+            Optdate::Unchanged
+        }
+    });
+
+    let copy_max_update = use_memo(move || {
+        if copy_max() != original_copy_max() {
+            Optdate::Set(copy_max().map(|cm| cm.max()))
+        } else {
+            Optdate::Unchanged
+        }
+    });
+
+    let has_made_changes = use_memo(move || {
+        deck_name_update().is_some()
+            || commander_id_update().is_changed()
+            || copy_max_update().is_changed()
+    });
+
     let mut load_error = use_signal(|| None::<String>);
 
     // commander search state
@@ -176,36 +206,15 @@ pub fn EditDeckProfile(deck_id: Uuid) -> Element {
                 return;
             };
 
-            let deck_name_update = if deck_name() != original_deck_name() {
-                Some(deck_name())
-            } else {
-                None
-            };
-
-            let commander_id_update = if commander() != original_commander() {
-                Optdate::Set(commander().map(|c| c.card_profile.id))
-            } else {
-                Optdate::Unchanged
-            };
-
-            let copy_max_update = if copy_max() != original_copy_max() {
-                Optdate::Set(copy_max().map(|cm| cm.max()))
-            } else {
-                Optdate::Unchanged
-            };
-
-            if deck_name_update.is_none()
-                && commander_id_update.is_unchanged()
-                && copy_max_update.is_unchanged()
-            {
+            if !has_made_changes() {
                 submission_error.set(Some(InvalidUpdateDeckProfile::NoUpdates.to_string()));
                 return;
             }
 
             let request = HttpUpdateDeckProfile::new(
-                deck_name_update.as_deref(),
-                commander_id_update,
-                copy_max_update,
+                deck_name_update().as_deref(),
+                commander_id_update(),
+                copy_max_update(),
             );
 
             match client()
@@ -319,10 +328,31 @@ pub fn EditDeckProfile(deck_id: Uuid) -> Element {
                                         }
                                     }
 
-                                    button {
-                                        disabled: is_saving(),
-                                        onclick : move |_| attempt_submit(),
-                                        if is_saving() { "saving..." } else { "save" }
+                                    if has_made_changes() {
+                                        button {
+                                            disabled: is_saving(),
+                                            onclick : move |_| attempt_submit(),
+                                            if is_saving() { "saving..." } else { "save changes" }
+                                        }
+                                    }
+
+                                    if !has_made_changes() {
+                                        label { "deck cards" }
+                                        div { class : "deck-card-prompt",
+                                            button { class : "add-deck-card-button",
+                                                onclick : move |_| {
+                                                    navigator.push(Router::AddDeckCard { deck_id });
+                                                },
+                                                "add"
+                                            }
+
+                                            button { class : "remove-deck-card-button",
+                                                onclick : move |_| {
+                                                    navigator.push(Router::RemoveDeckCard { deck_id });
+                                                },
+                                                "remove"
+                                            }
+                                        }
                                     }
 
                                     if let Some(error) = submission_error() {
