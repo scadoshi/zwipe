@@ -23,6 +23,10 @@ where
         *self == Optdate::Unchanged
     }
 
+    pub fn is_changed(&self) -> bool {
+        !self.is_unchanged()
+    }
+
     pub fn into_option(self) -> Option<Option<T>> {
         self.into()
     }

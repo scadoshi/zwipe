@@ -38,7 +38,7 @@ impl From<InvalidSearchCards> for ApiError {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct HttpSearchCards {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -127,6 +127,30 @@ impl HttpSearchCards {
             limit: None,
             offset: None,
         }
+    }
+
+    pub fn blank() -> Self {
+        HttpSearchCards {
+            name: None,
+            type_line: None,
+            set: None,
+            rarity: None,
+            cmc: None,
+            cmc_range: None,
+            power: None,
+            power_range: None,
+            toughness: None,
+            toughness_range: None,
+            color_identity: None,
+            color_identity_contains: None,
+            oracle_text: None,
+            limit: None,
+            offset: None,
+        }
+    }
+
+    pub fn is_blank(&self) -> bool {
+        *self == HttpSearchCards::blank()
     }
 }
 
