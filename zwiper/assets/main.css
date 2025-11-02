@@ -468,6 +468,7 @@ button:active {
 
 .dropdown {
     margin-top: 0rem;
+    margin-bottom: 1rem;
     border: 1px solid #f5f5dc;
     border-radius: 1rem;
     background-color: #1a1d23;
@@ -524,4 +525,113 @@ button:active {
     height: auto;
     border-radius: 1rem;
     margin-bottom: 2rem;
+}
+
+/* filter group */
+.filter-group {
+    text-align: center;
+}
+
+.filter-group label {
+    display: block;
+    padding: 0.2rem, 0.2rem;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    font-weight: 300;
+    letter-spacing: 0.1em;
+    opacity: 0.8;
+}
+
+.filter-group input {
+    width: 50%;
+    margin-bottom: 1rem;
+    padding: 0.5rem 0.5rem;
+    background: none;
+    border: 1px solid #f5f5dc;
+    border-radius: 0.5rem;
+    color: #f5f5dc;
+    font-family: 'Cascadia Code', monospace;
+    font-size: 0.8rem;
+    font-weight: 300;
+    transition: all 0.2s ease;
+}
+
+.filter-group input:focus {
+    outline: none;
+    background-color: #f5f5dc;
+    color: #1a1d23;
+    border-color: #f5f5dc;
+}
+
+.filter-group input::placeholder {
+    color: #888888;
+    font-weight: 300;
+}
+
+.filter-group input:hover {
+    transform: translateY(-2px);
+}
+
+/* selected type chips */
+.selected-types {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.8rem;
+}
+
+.type-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid #f5f5dc;
+    border-radius: 0.6rem;
+    font-size: 0.75rem;
+}
+
+.remove-chip {
+    all: unset;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    width: auto;
+    margin: 0;
+    padding: 0;
+}
+
+.type-selector-toggle {
+    width: 50%;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
+    font-size: 0.8rem;
+}
+
+/* basic type grid */
+.basic-type-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+    justify-content: center;
+}
+
+.basic-type-box {
+    padding: 0.3rem 0.6rem;
+    border: 1px solid #f5f5dc;
+    border-radius: 0.6rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: #1a1d23;
+    color: #f5f5dc;
+}
+
+.basic-type-box:hover {
+    transform: translateY(-2px);
+}
+
+.basic-type-box.selected {
+    background-color: #f5f5dc;
+    color: #1a1d23;
 }
