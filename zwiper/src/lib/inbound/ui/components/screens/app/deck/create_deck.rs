@@ -15,11 +15,11 @@ use std::time::Duration;
 use tokio::time::sleep;
 use zwipe::{
     domain::{
-        auth::models::session::Session, card::models::Card, deck::models::deck::copy_max::CopyMax,
+        auth::models::session::Session,
+        card::models::{search_card::SearchCards, Card},
+        deck::models::deck::copy_max::CopyMax,
     },
-    inbound::http::handlers::{
-        card::search_card::HttpSearchCards, deck::create_deck_profile::HttpCreateDeckProfile,
-    },
+    inbound::http::handlers::deck::create_deck_profile::HttpCreateDeckProfile,
 };
 
 #[component]
@@ -63,7 +63,7 @@ pub fn CreateDeck() -> Element {
             sleep(Duration::from_millis(500)).await;
 
             if let Some(sesh) = session() {
-                let mut request = HttpSearchCards::by_name(&query);
+                let mut request = SearchCards::by_name(&query);
                 request.limit = Some(5);
 
                 match auth_client().search_cards(&request, &sesh).await {
@@ -157,8 +157,7 @@ pub fn CreateDeck() -> Element {
                                             div { "searching..." }
                                         } else {
                                             for card in search_results().iter().map(|x| x.clone()) {
-                                                div {
-                                                    class: "dropdown-item",
+                                                div { class: "dropdown-item",
                                                     onclick: move |_| {
                                                         commander.set(Some(card.clone()));
                                                         commander_display.set(card.scryfall_data.name.clone().to_lowercase());

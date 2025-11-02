@@ -13,16 +13,16 @@ use crate::{
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
-use zwipe::{
-    domain::{auth::models::session::Session, card::models::Card},
-    inbound::http::handlers::card::search_card::HttpSearchCards,
+use zwipe::domain::{
+    auth::models::session::Session,
+    card::models::{search_card::SearchCards, Card},
 };
 
 #[component]
 pub fn Filter(
     swipe_state: Signal<SwipeState>,
     deck_id: Uuid,
-    card_filter: Signal<HttpSearchCards>,
+    card_filter: Signal<SearchCards>,
     cards: Signal<Vec<Card>>,
 ) -> Element {
     let swipe_config = SwipeConfig {
@@ -63,14 +63,14 @@ pub fn Filter(
                     input { class : "form-input",
                         id : "name-input",
                         placeholder : "name",
-                        value : if let Some(name) = card_filter.read().name.as_deref() {
+                        value : if let Some(name) = card_filter.read().name_contains.as_deref() {
                             name
                         } else { "" },
                         r#type : "text",
                         autocapitalize : "none",
                         spellcheck : "false",
                         oninput : move |event| {
-                            card_filter.write().name = Some(event.value());
+                            card_filter.write().name_contains = Some(event.value());
                         }
                     }
 

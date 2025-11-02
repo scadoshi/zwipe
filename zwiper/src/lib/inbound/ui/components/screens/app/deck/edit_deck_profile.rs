@@ -22,18 +22,14 @@ use uuid::Uuid;
 use zwipe::{
     domain::{
         auth::models::session::Session,
-        card::models::Card,
+        card::models::{search_card::SearchCards, Card},
         deck::models::deck::{
             copy_max::CopyMax, deck_profile::DeckProfile,
             update_deck_profile::InvalidUpdateDeckProfile,
         },
     },
     inbound::http::{
-        handlers::{
-            card::search_card::HttpSearchCards, deck::update_deck_profile::HttpUpdateDeckProfile,
-        },
-        helpers::Optdate,
-        ApiError,
+        handlers::deck::update_deck_profile::HttpUpdateDeckProfile, helpers::Optdate, ApiError,
     },
 };
 
@@ -175,7 +171,7 @@ pub fn EditDeckProfile(deck_id: Uuid) -> Element {
             sleep(Duration::from_millis(500)).await;
 
             if let Some(sesh) = session() {
-                let mut request = HttpSearchCards::by_name(&query);
+                let mut request = SearchCards::by_name(&query);
                 request.limit = Some(5);
 
                 match client().search_cards(&request, &sesh).await {

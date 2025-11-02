@@ -22,15 +22,10 @@ use uuid::Uuid;
 use zwipe::{
     domain::{
         auth::models::session::Session,
-        card::models::{scryfall_data::image_uris::ImageUris, Card},
+        card::models::{scryfall_data::image_uris::ImageUris, search_card::SearchCards, Card},
         deck::models::deck::Deck,
     },
-    inbound::http::{
-        handlers::{
-            card::search_card::HttpSearchCards, deck_card::create_deck_card::HttpCreateDeckCard,
-        },
-        ApiError,
-    },
+    inbound::http::{handlers::deck_card::create_deck_card::HttpCreateDeckCard, ApiError},
 };
 
 #[component]
@@ -70,11 +65,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
 
     let cards: Signal<Vec<Card>> = use_signal(|| Vec::new());
 
-    let card_filter = use_signal(|| {
-        let mut card_filter = HttpSearchCards::blank();
-        card_filter.limit = Some(100);
-        card_filter
-    });
+    let card_filter = use_signal(|| SearchCards::default());
 
     rsx! {
         Bouncer {
