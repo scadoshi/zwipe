@@ -16,11 +16,7 @@ use crate::{
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
 };
 #[cfg(feature = "zerver")]
-use axum::{
-    extract::{Query, State},
-    http::StatusCode,
-    Json,
-};
+use axum::{extract::State, http::StatusCode, Json};
 
 #[cfg(feature = "zerver")]
 impl From<SearchCardsError> for ApiError {
@@ -40,7 +36,7 @@ impl From<InvalidSearchCards> for ApiError {
 pub async fn search_cards<AS, US, HS, CS, DS>(
     _: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
-    Query(request): Query<SearchCards>,
+    Json(body): Json<SearchCards>,
 ) -> Result<(StatusCode, Json<Vec<Card>>), ApiError>
 where
     AS: AuthService,
@@ -51,7 +47,7 @@ where
 {
     state
         .card_service
-        .search_cards(&request)
+        .search_cards(&body)
         .await
         .map_err(ApiError::from)
         .map(|cards| (StatusCode::OK, Json(cards)))

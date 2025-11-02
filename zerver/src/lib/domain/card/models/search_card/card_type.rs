@@ -27,11 +27,11 @@ impl Display for CardType {
 }
 
 pub trait WithCardTypes {
-    fn filled_with_all_card_types() -> Self;
+    fn with_all_card_types() -> Self;
 }
 
 impl WithCardTypes for Vec<CardType> {
-    fn filled_with_all_card_types() -> Self {
+    fn with_all_card_types() -> Self {
         vec![
             CardType::Artifact,
             CardType::Creature,

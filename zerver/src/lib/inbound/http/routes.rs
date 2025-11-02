@@ -122,7 +122,7 @@ where
                 "/card",
                 Router::new()
                     .route("/:card_profile_id", get(get_card))
-                    .route("/search", get(search_cards))
+                    .route("/search", post(search_cards))
                     .route("/types", get(get_card_types)),
             )
             .nest(
@@ -180,8 +180,8 @@ pub fn search_cards_route() -> String {
     "/api/card/search".to_string()
 }
 
-pub fn get_all_card_types_route() -> String {
-    "api/card/all-types".to_string()
+pub fn get_card_types_route() -> String {
+    "api/card/types".to_string()
 }
 
 pub fn create_deck_route() -> String {
