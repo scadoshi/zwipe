@@ -10,6 +10,7 @@ use crate::domain::card::models::{
         CardProfile,
     },
     get_card::GetCardError,
+    get_card_types::GetCardTypesError,
     helpers::SleeveCardProfile,
     scryfall_data::get_scryfall_data::{ScryfallDataIds, SearchScryfallDataError},
 };
@@ -211,76 +212,117 @@ impl CardRepository for MyPostgres {
             QueryBuilder::new("SELECT * FROM scryfall_data WHERE ");
         let mut sep: Separated<Postgres, &'static str> = qb.separated(" AND ");
 
-        if let Some(name) = &request.name {
+        if let Some(query_string) = &request.name_contains {
             sep.push("name ILIKE ");
-            sep.push_bind_unseparated(format!("%{}%", name));
+            sep.push_bind_unseparated(format!("%{}%", query_string));
         }
-        if let Some(type_line) = &request.type_line {
+
+        if let Some(query_string) = &request.type_line_contains {
             sep.push("type_line ILIKE ");
-            sep.push_bind_unseparated(format!("%{}%", type_line));
+            sep.push_bind_unseparated(format!("%{}%", query_string));
         }
-        if let Some(set) = &request.set {
+
+        if let Some(query_string_array) = &request.type_line_contains_any {
+            sep.push(" (");
+            query_string_array
+                .iter()
+                .enumerate()
+                .for_each(|(i, query_string)| {
+                    if i > 0 {
+                        sep.push_unseparated(" OR ");
+                    }
+                    sep.push_unseparated("type_line ILIKE ");
+                    sep.push_bind_unseparated(format!("%{}%", query_string));
+                });
+            sep.push_unseparated(") ");
+        }
+
+        if let Some(card_types) = &request.card_type_contains_any {
+            sep.push(" (");
+            card_types.iter().enumerate().for_each(|(i, query_string)| {
+                if i > 0 {
+                    sep.push_unseparated(" OR ");
+                }
+                sep.push_unseparated("type_line ILIKE ");
+                sep.push_bind_unseparated(format!("%{}%", query_string));
+            });
+            sep.push_unseparated(") ");
+        }
+
+        if let Some(query_string) = &request.set_contains {
             sep.push("set ILIKE ");
-            sep.push_bind_unseparated(format!("%{}%", set));
+            sep.push_bind_unseparated(format!("%{}%", query_string));
         }
-        if let Some(rarity) = &request.rarity {
+
+        if let Some(query_string) = &request.rarity_contains {
             sep.push("rarity ILIKE ");
-            sep.push_bind_unseparated(format!("%{}%", rarity));
+            sep.push_bind_unseparated(format!("%{}%", query_string));
         }
-        if let Some(cmc) = request.cmc {
+
+        if let Some(query_string) = request.cmc_equals {
             sep.push("cmc = ");
-            sep.push_bind_unseparated(cmc);
+            sep.push_bind_unseparated(query_string);
         }
+
         if let Some(cmc_range) = request.cmc_range {
             let lower = cmc_range.0.min(cmc_range.1);
             let higher = cmc_range.0.max(cmc_range.1);
             sep.push("cmc between ");
             sep.push_bind_unseparated(lower);
-            sep.push("and ");
+            sep.push("AND ");
             sep.push_bind_unseparated(higher);
         }
-        if let Some(power) = request.power {
+
+        if let Some(query_string) = request.power_equals {
             sep.push("power ~ '^\\d+$' AND CAST(power AS INT) = ");
-            sep.push_bind_unseparated(power);
+            sep.push_bind_unseparated(query_string);
         }
+
         if let Some(power_range) = request.power_range {
             let lower = power_range.0.min(power_range.1);
             let higher = power_range.0.max(power_range.1);
             sep.push("power ~ '^\\d+$' AND CAST(power AS INT) between ");
             sep.push_bind_unseparated(lower);
-            sep.push("and ");
+            sep.push("AND ");
             sep.push_bind_unseparated(higher);
         }
-        if let Some(toughness) = request.toughness {
+
+        if let Some(query_string) = request.toughness_equals {
             sep.push("toughness ~ '^\\d+$' AND CAST(toughness AS INT) = ");
-            sep.push_bind_unseparated(toughness);
+            sep.push_bind_unseparated(query_string);
         }
+
         if let Some(toughness_range) = request.toughness_range {
             let lower = toughness_range.0.min(toughness_range.1);
             let higher = toughness_range.0.max(toughness_range.1);
             sep.push("toughness ~ '^\\d+$' AND CAST(toughness AS INT) between ");
             sep.push_bind_unseparated(lower);
-            sep.push("and ");
+            sep.push("AND ");
             sep.push_bind_unseparated(higher);
         }
-        if let Some(colors) = &request.color_identity {
+
+        if let Some(colors) = &request.color_identity_equals {
             sep.push("color_identity @> ");
             sep.push_bind_unseparated(colors);
             sep.push("AND color_identity <@ ");
             sep.push_bind_unseparated(colors);
         }
-        if let Some(colors) = &request.color_identity_contains {
+
+        if let Some(colors) = &request.color_identity_contains_any {
             sep.push("color_identity && ");
             sep.push_bind_unseparated(colors);
         }
-        if let Some(oracle_text) = &request.oracle_text {
+
+        if let Some(query_string) = &request.oracle_text_contains {
             sep.push("oracle_text ILIKE ");
-            sep.push_bind_unseparated(format!("%{}%", oracle_text));
+            sep.push_bind_unseparated(format!("%{}%", query_string));
         }
+
         if let Some(limit) = request.limit {
             qb.push(" LIMIT ");
             qb.push_bind(limit as i32);
         }
+
         if let Some(offset) = request.offset {
             qb.push(" OFFSET ");
             qb.push_bind(offset as i32);
@@ -318,6 +360,24 @@ impl CardRepository for MyPostgres {
             .await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
+    }
+
+    async fn get_card_types(&self) -> Result<Vec<String>, GetCardTypesError> {
+        let card_types: Vec<String> = query_scalar!(
+            "SELECT DISTINCT subtype FROM (
+                SELECT TRIM(BOTH ':-?, ' FROM UNNEST(STRING_TO_ARRAY(type_line, ' '))) subtype 
+                FROM scryfall_data 
+            ) subtypes
+            WHERE subtype NOT IN ('//', '-', 'the', 'of', 'and/or', 'you', 'you''ll')
+            ORDER BY subtype ASC"
+        )
+        .fetch_all(&self.pool)
+        .await?
+        .into_iter()
+        .filter_map(|x| x)
+        .collect();
+
+        Ok(card_types)
     }
 
     async fn get_card_profile(
