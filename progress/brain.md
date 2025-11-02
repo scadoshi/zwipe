@@ -15,18 +15,18 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Started building deck card addition flow with filtering system and planning multi-layer swipe architecture for card browsing.
+**Last Updated**: Built complete card filtering system with multi-select UI and refactored search endpoint to POST for complex parameters. Learning emphasis: avoid AI-driven "vibe coding", focus on deliberate learning.
 
-**Next Learning Focus**: Complete card filtering UI/UX. Implement nested swipe detection distinguishing card-level from screen-level gestures. Build deck metrics visualization screen.
+**Next Learning Focus**: Debug HTTP method issues (405 errors). Design filter state management patterns. Understand trade-offs between UI organizational strategies (minimizers vs separate screens). Build reusable components across similar workflows.
 
-**Recent Achievement**: Refactored EditDeckProfile with use_memo for computed change detection (deck_name_update, commander_id_update, copy_max_update, has_made_changes). Added conditional deck card management buttons (add/remove) appearing only when no profile changes exist. Built AddDeckCard and RemoveDeckCard screen foundations with Filter component implementing name-based card search, image filtering (excludes cards without large images), and success message feedback. Created helper methods: HttpSearchCards::blank(), is_blank(), PartialEq derive; Optdate::is_changed(). Planned three-layer screen architecture: filters (up), card display (center), deck metrics (down). Designing nested swipe detection system to differentiate card element swipes (left/right for browsing results) from screen swipes (up/down for navigation).
+**Recent Achievement**: Independently built comprehensive card filtering UI with two interaction patterns: always-visible toggle grid for basic types (7 CardType enum values) and chip-based searchable multi-select for subtypes (~670 options). Implemented GET→POST endpoint refactor solving query parameter serialization issues with complex types (Vec<CardType>, Vec<String>, tuples). Created get_card_types endpoint extracting distinct subtypes using SQL UNNEST and STRING_TO_ARRAY. Designed filtered dropdown with top-5 results and debounced search. Built smaller chip styling for space efficiency. Recognized need for architectural decisions about filter organization (minimizers vs screens). Understanding importance of version compatibility checking (dx/dioxus). Emphasizing learning discipline over AI convenience.
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Nested Swipe Detection** - Differentiating card element swipes from screen swipes based on touch target
-2. **Card Browsing UX** - Implementing smooth left/right swipe navigation through search results
-3. **Quantity Management** - UI patterns for selecting card quantities (respecting deck copy_max rules)
-4. **Deck Metrics Visualization** - Calculating and displaying mana curve, color distribution, type breakdown
-5. **Multi-Layer Swipe Architecture** - Managing separate SwipeState for card-level vs screen-level gestures
+1. **HTTP Method Debugging** - Understanding 405 errors despite correct route configuration (CORS, server state, method routing)
+2. **Filter UI Architecture** - Trade-offs between minimizing sections (single-expand) vs separate swipeable screens for complex filters
+3. **Component Reusability Patterns** - Sharing filter logic between AddDeckCard/RemoveDeckCard while handling different data sources
+4. **Query Parameter Serialization** - When to use GET with query params vs POST with JSON body for complex search operations
+5. **Learning Discipline** - Balancing AI assistance with deliberate practice to maintain code quality and understanding
 
 ---
 
@@ -374,19 +374,39 @@ alwaysApply: true
 - **HTTP Client Session Patterns**: AuthClient methods handle session validation and refresh automatically
 - *Note: Complete session management system ready for production use*
 
-### 🃏 Deck Card Management & Multi-Layer Swipe Architecture (Active Development)
-- **AddDeckCard Screen Foundation**: Built screen with Filter component separation, card display, and add button placeholder
-- **Filter Component Architecture**: Separate screen positioned "up" from main, swipeable navigation between filter and card display
-- **Card Search Integration**: HttpSearchCards with name filtering, image presence validation (filter out cards without large images)
-- **Success Message Feedback**: Random success messages after successful card searches using get_random_success_message()
-- **Helper Method Creation**: Built HttpSearchCards::blank(), is_blank(), PartialEq derive for filter state validation
-- **Optdate Convenience**: Added is_changed() helper complementing is_unchanged() for cleaner conditional logic
-- **Three-Layer Screen Planning**: Filter (up), card display (center), metrics (down) with vertical swipe navigation
-- **Nested Swipe Detection Challenge**: Need to differentiate card element swipes (left/right for browsing) from screen swipes (up/down for navigation)
-- **Touch Target Identification**: Planning to detect which element receives touch/mouse event to route to appropriate swipe handler
-- **Card Browsing Vision**: Swipe left/right through search results card-by-card, swipe up/down to navigate screens
-- **Deck Metrics Planning**: Down screen will show mana curve, color distribution, type breakdown calculated from card data
-- *Note: Early foundation stage, core challenge is nested gesture detection differentiating card vs screen swipes*
+### 🃏 Card Filtering System & Multi-Select UI (Complete Foundation)
+- **CardType Enum**: Basic MTG card types (Instant, Sorcery, Creature, Enchantment, Artifact, Planeswalker, Land) with Display trait
+- **WithCardTypes Trait**: Trait on Vec<CardType> providing with_all_card_types() factory method for UI population
+- **SearchCards Domain Integration**: Frontend uses backend SearchCards struct directly with type_line_contains_any and card_type_contains_any fields
+- **GET→POST Refactor**: Changed search_cards endpoint from GET with query params to POST with JSON body solving complex type serialization
+- **Serialization Understanding**: serde_urlencoded can't handle Vec<CardType> or (i64, i64) tuples cleanly, serde_json handles arbitrary nesting
+- **Backend SQL Filtering**: Built OR conditions for type_line_contains_any and card_type_contains_any in dynamic QueryBuilder
+- **Get Card Types Endpoint**: GET /api/card/types extracts ~670 distinct subtypes using STRING_TO_ARRAY, UNNEST, TRIM, DISTINCT
+- **SQL String Processing**: Splitting type_line on spaces, unnesting arrays, trimming punctuation, filtering stop words
+- **Toggle Grid UI**: Always-visible grid of clickable boxes for basic types (no dropdown needed for small fixed set)
+- **Selection State**: onclick toggles presence in selected_basic_card_types signal, selected state inverts background/text colors
+- **Chip-Based Multi-Select**: Selected items shown as removable chips (0.75rem font, rounded borders, × button)
+- **Filtered Dropdown**: Type-to-search input shows top 5 matching subtypes from resource, clicking adds to selected_other_types
+- **Resource Integration**: use_resource calling get_card_types on mount, providing Vec<String> for frontend filtering
+- **CSS Styling**: .basic-type-grid flex wrap with gap, .basic-type-box with hover transform, .selected inverted colors
+- **Frontend Client Update**: Built get_card_types() and updated search_cards() to POST with .json() method
+- **Route Function Pattern**: get_card_types_route() and search_cards_route() exported for frontend consistency
+- **405 Debugging Challenge**: Route configured correctly but getting Method Not Allowed (investigating CORS, server state)
+- *Note: Complete filtering UI working, pending 405 resolution and architectural decisions about filter organization*
+
+### 🃏 Deck Card Management & Multi-Layer Architecture Planning
+- **AddDeckCard Screen Foundation**: Built with Filter component, card display, and add button placeholder
+- **Filter Component Separation**: Positioned "up" from main screen, swipeable navigation between filter and display
+- **Image Validation**: Filters exclude cards without large images using qualified match on ImageUris
+- **Helper Methods**: HttpSearchCards::blank(), is_blank(), PartialEq derive; Optdate::is_changed()
+- **Architecture Decisions Ahead**: Minimizing sections (single-expand) vs separate swipeable screens for complex filters
+- **Reusability Challenge**: Filter component needs to work for both AddDeckCard (all cards) and RemoveDeckCard (deck cards)
+- **Component Strategy**: Consider building filter to only modify parent state, not trigger search (let parent handle execution)
+- **Three-Layer Vision**: Filter (up), card display (center), metrics (down) with vertical swipe navigation
+- **Nested Gesture Detection**: Need to differentiate card swipes (left/right browsing) from screen swipes (up/down navigation)
+- **Card Browsing Planning**: Swipe through filtered results card-by-card, separate from screen navigation
+- **Deck Metrics Planning**: Down screen with mana curve, color distribution, type breakdown from card data
+- *Note: Core UI built, architectural decisions needed before proceeding with complex interactions*
 
 ### 🔮 Advanced Rust Patterns
 - **Advanced Async Patterns**: Complex Future handling, async streaming, async iterators

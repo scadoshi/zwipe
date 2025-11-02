@@ -13,27 +13,29 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Started building deck card addition flow with filtering system and planning multi-layer swipe architecture for card browsing and deck metrics.
+**Last Updated**: Built complete card filtering system with multi-select UI for basic types and searchable subtypes. Refactored search endpoint from GET to POST for complex filter support.
 
-**Current Focus**: Complete card filtering UI. Implement nested swipe detection to differentiate card-level swipes (browsing) from screen-level swipes (navigation). Build deck metrics visualization.
+**Current Focus**: Debug 405 error on POST /api/card/search endpoint. Design filter state management strategy (minimizers vs separate screens). Check Dioxus/dx version compatibility. Build reusable filter component architecture.
 
-**Recent Achievement**: Refactored EditDeckProfile with use_memo pattern for computed change detection (deck_name_update, commander_id_update, copy_max_update, has_made_changes). Added conditional deck card management buttons (add/remove) that appear only when no profile changes exist, navigating to AddDeckCard/RemoveDeckCard routes. Built AddDeckCard and RemoveDeckCard screen foundations with Filter component implementing name-based card search, image filtering (excludes cards without large images), and success message feedback. Created helper methods: HttpSearchCards::blank(), is_blank(), PartialEq derive; Optdate::is_changed(). Planned three-layer screen architecture: filters (up), card display (center), deck metrics (down). Designing nested swipe detection system to differentiate card element swipes (left/right for browsing results) from screen swipes (up/down for navigation between filters/cards/metrics).
+**Recent Achievement**: Built comprehensive card filtering UI with two selection modes: toggle-based basic types (Instant, Sorcery, Creature, etc.) and searchable subtypes with chips (Barbarian, Wizard, etc.). Implemented GET→POST refactor for search_cards endpoint to handle complex query parameters (Vec<CardType>, Vec<String>, tuples). Created CardType enum with Display trait and WithCardTypes trait. Built get_card_types endpoint querying ~670 distinct subtypes from database. Designed filtered dropdown showing top 5 matches with debounced search. Added chip-based multi-select UI with smaller sizing (0.75rem font, 0.3rem/0.6rem padding). Changed basic types from dropdown to always-visible toggle grid with inverted colors for selection. Refactored HttpSearchCards wrapper to use SearchCards domain type directly in frontend.
 
-**Current Success**: EditDeckProfile conditional updates with use_memo. Deck card management foundation with filter/display separation. Card search with image validation. Three-layer screen architecture planned. Helper methods for filter validation and change detection.
+**Current Success**: Complete filtering UI with toggle grid and chip-based multi-select. Backend card type extraction working. Search endpoint refactored to POST with JSON body. Frontend-backend type alignment complete.
+
+**Current Blocker**: 405 Method Not Allowed on POST /api/card/search (route configured correctly, likely needs CORS or server restart).
 
 ### 🎯 Currently Working On (Top 5)
-1. **Card Filtering Enhancement** - Add more filter fields (type, color, CMC, set) for comprehensive card search
-2. **Nested Swipe Detection** - Implement touch target identification to route gestures to card or screen handlers
-3. **Card Browsing Implementation** - Swipeable left/right navigation through search results
-4. **Deck Metrics Screen** - Build "down" screen with mana curve, color distribution, type breakdown visualizations
-5. **Add Card Button Integration** - Wire up add_card function with quantity selection and copy_max validation
+1. **Debug 405 Error** - Fix POST /api/card/search endpoint (likely CORS or server restart needed)
+2. **Filter Architecture Decision** - Choose between minimizing sections vs separate swipeable screens for filters
+3. **Dioxus Version Compatibility** - Check dx 0.7.0 and dioxus alignment after recent upgrade
+4. **Reusable Filter Component** - Design filter component shared between AddDeckCard and RemoveDeckCard
+5. **Card Stack Management** - Implement swipeable card browsing through filtered results
 
 ### 🤔 Next Immediate Priorities (Top 5)
-1. **Quantity Selection UI** - Build quantity selector for adding cards (1-4 based on deck copy_max)
-2. **RemoveDeckCard Implementation** - Display current deck cards, implement removal with confirmation
-3. **Deck Metrics Calculation** - Frontend analytics for mana curve, color distribution, type breakdown
-4. **Confirmation Dialogs** - Build reusable modal for destructive actions (delete deck, remove card)
-5. **Advanced Card Filters** - Add type_line, color_identity, CMC, rarity filters to search
+1. **Filter UI Strategy** - Implement chosen approach (minimizers with single-expand OR separate screens)
+2. **Card Browsing Stack** - Build left/right swipe navigation through search results
+3. **Deck Metrics Screen** - Build "down" screen with mana curve, color distribution, type breakdown
+4. **Add Card Integration** - Wire quantity selection and add_card function with copy_max validation
+5. **RemoveDeckCard Filters** - Adapt filter component for deck-specific card removal flow
 
 ---
 
