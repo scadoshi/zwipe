@@ -1,6 +1,7 @@
 pub mod card_profile;
 pub mod create_card;
 pub mod get_card;
+pub mod get_card_types;
 pub mod helpers;
 pub mod scryfall_data;
 pub mod search_card;
