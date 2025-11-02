@@ -98,7 +98,9 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    use crate::inbound::http::handlers::deck::get_deck_profile::get_deck_profile;
+    use crate::inbound::http::handlers::{
+        card::get_card_types::get_card_types, deck::get_deck_profile::get_deck_profile,
+    };
 
     Router::new().nest(
         "/api",
@@ -120,7 +122,8 @@ where
                 "/card",
                 Router::new()
                     .route("/:card_profile_id", get(get_card))
-                    .route("/search", get(search_cards)),
+                    .route("/search", get(search_cards))
+                    .route("/types", get(get_card_types)),
             )
             .nest(
                 "/deck",
@@ -175,6 +178,10 @@ pub fn get_card_route(card_profile_id: &Uuid) -> String {
 
 pub fn search_cards_route() -> String {
     "/api/card/search".to_string()
+}
+
+pub fn get_all_card_types_route() -> String {
+    "api/card/all-types".to_string()
 }
 
 pub fn create_deck_route() -> String {

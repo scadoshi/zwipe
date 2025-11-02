@@ -1,3 +1,4 @@
+use crate::domain::card::models::get_card_types::GetCardTypesError;
 use crate::inbound::external::scryfall::BulkEndpoint;
 use crate::{
     domain::card::{
@@ -107,6 +108,10 @@ impl<R: CardRepository> CardService for Service<R> {
 
     async fn search_cards(&self, request: &SearchCards) -> Result<Vec<Card>, SearchCardsError> {
         self.repo.search_cards(request).await
+    }
+
+    async fn get_card_types(&self) -> Result<Vec<String>, GetCardTypesError> {
+        self.repo.get_card_types().await
     }
 
     async fn get_card_profile(

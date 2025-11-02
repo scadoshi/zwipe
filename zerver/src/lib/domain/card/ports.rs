@@ -9,6 +9,7 @@ use crate::domain::card::models::{
     },
     create_card::CreateCardError,
     get_card::GetCardError,
+    get_card_types::GetCardTypesError,
     scryfall_data::{
         get_scryfall_data::{
             GetScryfallData, GetScryfallDataError, ScryfallDataIds, SearchScryfallDataError,
@@ -128,6 +129,10 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         request: &SearchCards,
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
+    /// gets all distinct types from cards
+    fn get_card_types(&self)
+        -> impl Future<Output = Result<Vec<String>, GetCardTypesError>> + Send;
+
     /// gets card profile with its uuid
     fn get_card_profile(
         &self,
@@ -195,6 +200,10 @@ pub trait CardService: Clone + Send + Sync + 'static {
         &self,
         request: &SearchCards,
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
+
+    /// gets all distinct types from cards
+    fn get_card_types(&self)
+        -> impl Future<Output = Result<Vec<String>, GetCardTypesError>> + Send;
 
     /// gets card profile with a uuid
     fn get_card_profile(
