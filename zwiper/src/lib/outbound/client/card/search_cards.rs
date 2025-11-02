@@ -2,16 +2,17 @@ use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use zwipe::{
-    domain::{auth::models::session::Session, card::models::Card},
-    inbound::http::{
-        handlers::card::search_card::HttpSearchCards, routes::search_cards_route, ApiError,
+    domain::{
+        auth::models::session::Session,
+        card::models::{search_card::SearchCards, Card},
     },
+    inbound::http::{routes::search_cards_route, ApiError},
 };
 
 pub trait ClientSearchCards {
     fn search_cards(
         &self,
-        request: &HttpSearchCards,
+        request: &SearchCards,
         session: &Session,
     ) -> impl Future<Output = Result<Vec<Card>, ApiError>> + Send;
 }
@@ -19,7 +20,7 @@ pub trait ClientSearchCards {
 impl ClientSearchCards for ZwipeClient {
     async fn search_cards(
         &self,
-        request: &HttpSearchCards,
+        request: &SearchCards,
         session: &Session,
     ) -> Result<Vec<Card>, ApiError> {
         let mut url = self.app_config.backend_url.clone();
@@ -27,8 +28,8 @@ impl ClientSearchCards for ZwipeClient {
 
         let response = self
             .client
-            .get(url)
-            .query(request)
+            .post(url)
+            .json(request)
             .bearer_auth(session.access_token.value.as_str())
             .send()
             .await?;
