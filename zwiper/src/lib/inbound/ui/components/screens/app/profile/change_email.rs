@@ -1,12 +1,9 @@
 use crate::domain::error::UserFacing;
-use crate::inbound::ui::{
-    components::{
-        auth::{bouncer::Bouncer, session_upkeep::Upkeep},
-        interactions::swipe::{config::SwipeConfig, state::SwipeState},
-        screens::app::profile::Swipeable,
-        success_messages::random_success_message,
-    },
-    router::Router,
+use crate::inbound::ui::components::{
+    auth::{bouncer::Bouncer, session_upkeep::Upkeep},
+    interactions::swipe::{config::SwipeConfig, state::SwipeState},
+    screens::app::profile::Swipeable,
+    success_messages::random_success_message,
 };
 use crate::outbound::client::user::change_email::ClientChangeEmail;
 use crate::outbound::client::ZwipeClient;
@@ -97,73 +94,70 @@ pub fn ChangeEmail() -> Element {
     rsx! {
         Bouncer {
             Swipeable { state: swipe_state, config: swipe_config,
-                div { class : "form-container",
+                div { class : "container-sm",
 
-                    h2 { "change email" }
+                    h2 { class: "text-center mb-2 font-light tracking-wider", "change email" }
 
-                    form {
-                        div { class : "form-group",
+                    form { class: "flex-col text-center",
 
-                            if submit_attempted() {
-                                if let Some(error) = email_error() {
-                                    div { class : "error", "{error}" }
-                                }
-                            }
-
-                            input {
-                                id : "new_email",
-                                r#type : "text",
-                                placeholder : "new email",
-                                value : "{new_email}",
-                                autocapitalize : "none",
-                                spellcheck : "false",
-                                oninput: move |event| {
-                                    new_email.set(event.value());
-                                    if submit_attempted() {
-                                        validate_email();
-                                    }
-                                }
-                            }
-
-
-                            if submit_attempted() {
-                                if let Some(error) = password_error() {
-                                    div { class : "error", "{error}" }
-                                }
-                            }
-
-                            input {
-                                id : "password",
-                                r#type : "password",
-                                placeholder : "password",
-                                value : "{password}",
-                                autocapitalize : "none",
-                                spellcheck : "false",
-                                oninput : move |event| {
-                                    password.set(event.value());
-                                    if submit_attempted() {
-                                        validate_password();
-                                    }
-                                }
-                            }
-
-                            button {
-                                onclick : move |_| attempt_submit(),
-                                "submit"
-                            }
-
-                            if let Some(error) = submission_error() {
-                                div { class: "error", "{error}" }
-                            } else if let Some(success_message) = success_message() {
-                                div { class: "success-message", {success_message} }
-                            }
-
-                            button {
-                                onclick : move |_| {
-                                    navigator.push(Router::Profile {});
-                                }, "back"
+                        if submit_attempted() {
+                            if let Some(error) = email_error() {
+                                div { class : "message-error", "{error}" }
                             }
                         }
+
+                        input { class: "input",
+                            id : "new_email",
+                            r#type : "text",
+                            placeholder : "new email",
+                            value : "{new_email}",
+                            autocapitalize : "none",
+                            spellcheck : "false",
+                            oninput: move |event| {
+                                new_email.set(event.value());
+                                if submit_attempted() {
+                                    validate_email();
+                                }
+                            }
+                        }
+
+                        if submit_attempted() {
+                            if let Some(error) = password_error() {
+                                div { class : "message-error", "{error}" }
+                            }
+                        }
+
+                        input { class: "input",
+                            id : "password",
+                            r#type : "password",
+                            placeholder : "password",
+                            value : "{password}",
+                            autocapitalize : "none",
+                            spellcheck : "false",
+                            oninput : move |event| {
+                                password.set(event.value());
+                                if submit_attempted() {
+                                    validate_password();
+                                }
+                            }
+                        }
+
+                        button { class: "btn",
+                            onclick : move |_| attempt_submit(),
+                            "submit"
+                        }
+
+                        button { class: "btn",
+                            onclick : move |_| {
+                                navigator.go_back();
+                            }, "back"
+                        }
+                    }
+
+                    if let Some(error) = submission_error() {
+                        div { class: "message-error", "{error}" }
+                    } else if let Some(success_message) = success_message() {
+                        div { class: "message-success", {success_message} }
                     }
                 }
             }

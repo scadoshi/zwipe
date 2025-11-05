@@ -1,11 +1,8 @@
 use crate::{
-    inbound::ui::{
-        components::{
-            auth::{bouncer::Bouncer, session_upkeep::Upkeep},
-            interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
-            success_messages::random_success_message,
-        },
-        router::Router,
+    inbound::ui::components::{
+        auth::{bouncer::Bouncer, session_upkeep::Upkeep},
+        interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
+        success_messages::random_success_message,
     },
     outbound::client::{user::change_password::ClientChangePassword, ZwipeClient},
 };
@@ -89,78 +86,76 @@ pub fn ChangePassword() -> Element {
     rsx! {
         Bouncer {
             Swipeable { state: swipe_state, config: swipe_config,
-                div { class : "form-container",
+                div { class : "container-sm",
 
-                    h2 { "change password" }
+                    h2 { class: "text-center mb-2 font-light tracking-wider", "change password" }
 
-                    form {
-                        div { class : "form-group",
+                    form { class: "flex-col text-center",
 
-                            input {
-                                id : "current_password",
-                                r#type : "password",
-                                placeholder : "current",
-                                value : "{current_password}",
-                                autocapitalize : "none",
-                                spellcheck : "false",
-                                oninput: move |event| {
-                                    current_password.set(event.value());
-                                }
-                            }
-
-                            if submit_attempted() {
-                                if let Some(error) = password_error() {
-                                    div { class : "error", "{error}" }
-                                }
-                            }
-
-                            input {
-                                id : "new_password",
-                                r#type : "password",
-                                placeholder : "new",
-                                value : "{new_password}",
-                                autocapitalize : "none",
-                                spellcheck : "false",
-                                oninput : move |event| {
-                                    new_password.set(event.value());
-                                    if submit_attempted() {
-                                        validate_new_password();
-                                    }
-                                }
-                            }
-
-                            input {
-                                id : "confirm_password",
-                                r#type : "password",
-                                placeholder : "confirm new",
-                                value : "{confirm_password}",
-                                autocapitalize : "none",
-                                spellcheck : "false",
-                                oninput : move |event| {
-                                    confirm_password.set(event.value());
-                                    if submit_attempted() {
-                                        validate_new_password();
-                                    }
-                                }
-                            }
-
-                            button {
-                                onclick : move |_| attempt_submit(),
-                                "submit"
-                            }
-
-                            if let Some(error) = submission_error() {
-                                div { class: "error", "{error}" }
-                            } else if let Some(success_message) = success_message() {
-                                div { class: "success-message", {success_message} }
-                            }
-
-                            button {
-                                onclick : move |_| {
-                                    navigator.push(Router::Profile {});
-                                }, "back"
+                        input { class: "input",
+                            id : "current_password",
+                            r#type : "password",
+                            placeholder : "current",
+                            value : "{current_password}",
+                            autocapitalize : "none",
+                            spellcheck : "false",
+                            oninput: move |event| {
+                                current_password.set(event.value());
                             }
                         }
+
+                        if submit_attempted() {
+                            if let Some(error) = password_error() {
+                                div { class : "message-error", "{error}" }
+                            }
+                        }
+
+                        input { class: "input",
+                            id : "new_password",
+                            r#type : "password",
+                            placeholder : "new",
+                            value : "{new_password}",
+                            autocapitalize : "none",
+                            spellcheck : "false",
+                            oninput : move |event| {
+                                new_password.set(event.value());
+                                if submit_attempted() {
+                                    validate_new_password();
+                                }
+                            }
+                        }
+
+                        input { class: "input",
+                            id : "confirm_password",
+                            r#type : "password",
+                            placeholder : "confirm new",
+                            value : "{confirm_password}",
+                            autocapitalize : "none",
+                            spellcheck : "false",
+                            oninput : move |event| {
+                                confirm_password.set(event.value());
+                                if submit_attempted() {
+                                    validate_new_password();
+                                }
+                            }
+                        }
+
+                        button { class: "btn",
+                            onclick : move |_| attempt_submit(),
+                            "submit"
+                        }
+
+                        button { class: "btn",
+                            onclick : move |_| {
+                                navigator.go_back();
+                            }, "back"
+                        }
+                    }
+
+                    if let Some(error) = submission_error() {
+                        div { class: "message-error", "{error}" }
+                    } else if let Some(success_message) = success_message() {
+                        div { class: "message-success", {success_message} }
                     }
                 }
             }

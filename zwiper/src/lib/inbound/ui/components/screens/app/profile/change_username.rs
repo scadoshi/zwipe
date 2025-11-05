@@ -1,11 +1,8 @@
 use crate::{
-    inbound::ui::{
-        components::{
-            auth::{bouncer::Bouncer, session_upkeep::Upkeep},
-            interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
-            success_messages::random_success_message,
-        },
-        router::Router,
+    inbound::ui::components::{
+        auth::{bouncer::Bouncer, session_upkeep::Upkeep},
+        interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
+        success_messages::random_success_message,
     },
     outbound::client::{user::change_username::ClientChangeUsername, ZwipeClient},
 };
@@ -96,72 +93,70 @@ pub fn ChangeUsername() -> Element {
     rsx! {
         Bouncer {
             Swipeable { state: swipe_state, config: swipe_config,
-                div { class : "form-container",
+                div { class : "container-sm",
 
-                    h2 { "change username" }
+                    h2 { class: "text-center mb-2 font-light tracking-wider", "change username" }
 
-                    form {
-                        div { class : "form-group",
+                    form { class: "flex-col text-center",
 
-                            if submit_attempted() {
-                                if let Some(error) = username_error() {
-                                    div { class : "error", "{error}" }
+                        if submit_attempted() {
+                            if let Some(error) = username_error() {
+                                div { class : "message-error", "{error}" }
+                            }
+                        }
+
+                        input { class: "input",
+                            id : "new_username",
+                            r#type : "text",
+                            placeholder : "new username",
+                            value : "{new_username}",
+                            autocapitalize : "none",
+                            spellcheck : "false",
+                            oninput: move |event| {
+                                new_username.set(event.value());
+                                if submit_attempted() {
+                                    validate_username();
                                 }
                             }
+                        }
 
-                            input {
-                                id : "new_username",
-                                r#type : "text",
-                                placeholder : "new username",
-                                value : "{new_username}",
-                                autocapitalize : "none",
-                                spellcheck : "false",
-                                oninput: move |event| {
-                                    new_username.set(event.value());
-                                    if submit_attempted() {
-                                        validate_username();
-                                    }
+                        if submit_attempted() {
+                            if let Some(error) = password_error() {
+                                div { class : "message-error", "{error}" }
+                            }
+                        }
+
+                        input { class: "input",
+                            id : "password",
+                            r#type : "password",
+                            placeholder : "password",
+                            value : "{password}",
+                            autocapitalize : "none",
+                            spellcheck : "false",
+                            oninput : move |event| {
+                                password.set(event.value());
+                                if submit_attempted() {
+                                    validate_password();
                                 }
                             }
+                        }
 
-                            if submit_attempted() {
-                                if let Some(error) = password_error() {
-                                    div { class : "error", "{error}" }
-                                }
-                            }
+                        button { class: "btn",
+                            onclick : move |_| attempt_submit(),
+                            "submit"
+                        }
 
-                            input {
-                                id : "password",
-                                r#type : "password",
-                                placeholder : "password",
-                                value : "{password}",
-                                autocapitalize : "none",
-                                spellcheck : "false",
-                                oninput : move |event| {
-                                    password.set(event.value());
-                                    if submit_attempted() {
-                                        validate_password();
-                                    }
-                                }
-                            }
-
-                            button {
-                                onclick : move |_| attempt_submit(),
-                                "submit"
-                            }
-
-                            button {
-                                onclick : move |_| {
-                                    navigator.push(Router::Profile {});
-                                }, "back"
-                            }
+                        button { class: "btn",
+                            onclick : move |_| {
+                                navigator.go_back();
+                            }, "back"
                         }
                     }
 
                     if let Some(error) = submission_error() {
-                        div { class: "error", "{error}" }
+                        div { class: "message-error", "{error}" }
                     } else if let Some(success_message) = success_message() {
-                        div { class: "success-message", {success_message} }
+                        div { class: "message-success", {success_message} }
                     }
                 }
             }

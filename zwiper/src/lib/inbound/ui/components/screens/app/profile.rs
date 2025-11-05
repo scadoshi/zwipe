@@ -22,7 +22,9 @@ pub fn Profile() -> Element {
     let swipe_config = SwipeConfig::blank();
 
     let session: Signal<Option<Session>> = use_context();
-    let auth_client: Signal<ZwipeClient> = use_context();
+    let client: Signal<ZwipeClient> = use_context();
+
+    let mut confirm_logout = use_signal(|| false);
 
     let navigator = use_navigator();
 
@@ -30,16 +32,17 @@ pub fn Profile() -> Element {
         Bouncer {
             if let Some(sesh) = session().as_ref() {
                 Swipeable { state: swipe_state, config: swipe_config,
-                    div { class : "profile-container",
-                        h2 { "profile" }
+                    div { class : "container-sm",
+                        h2 { class: "text-center mb-4 font-light tracking-wider", "profile" }
 
-                        div { class : "profile-field",
-                            div { class : "profile-field-content",
-                                label { "username" }
-                                p { { sesh.user.username.to_string() } }
+                        div { class : "flex items-center flex-between mb-4 gap-2",
+                            div { class : "flex-1",
+                                label { class: "label", "username" }
+                                p { class: "text-base font-light mb-1",
+                                    { sesh.user.username.to_string() }
+                                }
                             }
-                            button {
-                                class: "profile-field-button",
+                            button { class: "btn btn-sm",
                                 onclick : move |_| {
                                     navigator.push(Router::ChangeUsername {});
                                 },
@@ -47,13 +50,14 @@ pub fn Profile() -> Element {
                             }
                         }
 
-                        div { class : "profile-field",
-                            div { class : "profile-field-content",
-                                label { "email" }
-                                p { { sesh.user.email.to_string() } }
+                        div { class : "flex items-center flex-between mb-4 gap-2",
+                            div { class : "flex-1",
+                                label { class: "label", "email" }
+                                p { class: "text-base font-light mb-1",
+                                    { sesh.user.email.to_string() }
+                                }
                             }
-                            button {
-                                class: "profile-field-button",
+                            button { class: "btn btn-sm",
                                 onclick : move |_| {
                                     navigator.push(Router::ChangeEmail {});
                                 },
@@ -61,13 +65,12 @@ pub fn Profile() -> Element {
                             }
                         }
 
-                        div { class : "profile-field",
-                            div { class : "profile-field-content",
-                                label { "password" }
-                                p { "•••••••" }
+                        div { class : "flex items-center flex-between mb-4 gap-2",
+                            div { class : "flex-1",
+                                label { class: "label", "password" }
+                                p { class: "text-base font-light mb-1", "•••••••" }
                             }
-                            button {
-                                class: "profile-field-button",
+                            button { class: "btn btn-sm",
                                 onclick : move |_| {
                                     navigator.push(Router::ChangePassword {});
                                 },
@@ -75,15 +78,31 @@ pub fn Profile() -> Element {
                             }
                         }
 
-                        button {
-                            class: "logout-button",
-                            onclick : move |_| session.logout(auth_client),
-                            "logout"
+                        if !confirm_logout() {
+                            button { class: "btn",
+                                onclick : move |_| confirm_logout.set(true),
+                                "logout"
+                            }
                         }
 
-                        button {
+                        if confirm_logout() {
+                            label { class: "text-center label", r#for : "confirmation-prompt", "are you sure?" }
+                            div { class : "flex flex-between gap-2",
+                                id : "confirmation-prompt",
+                                button { class : "btn btn-half",
+                                    onclick: move |_| session.logout(client),
+                                    "yes"
+                                }
+                                button { class : "btn btn-half",
+                                    onclick: move |_| confirm_logout.set(false),
+                                    "no"
+                                }
+                            }
+                        }
+
+                        button { class: "btn",
                             onclick : move |_| {
-                                navigator.push(Router::Home {});
+                                navigator.go_back();
                             },
                             "back"
                         }
