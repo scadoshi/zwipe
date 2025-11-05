@@ -73,54 +73,51 @@ pub fn Login() -> Element {
     rsx! {
         Swipeable { state: swipe_state, config: swipe_config,
             div { class: "logo",  "{logo}" }
-            div { class : "form-container",
+            div { class : "container-sm text-center",
 
-                form {
+                form { class: "flex-col",
 
-                    div { class : "form-group",
-
-                        input {
-                            id : "identity",
-                            r#type : "text",
-                            placeholder : "username or email",
-                            value : "{username_or_email}",
-                            autocapitalize : "none",
-                            spellcheck : "false",
-                            oninput: move |event| {
-                                username_or_email.set(event.value());
-                            }
+                    input { class: "input",
+                        id : "identity",
+                        r#type : "text",
+                        placeholder : "username or email",
+                        value : "{username_or_email}",
+                        autocapitalize : "none",
+                        spellcheck : "false",
+                        oninput: move |event| {
+                            username_or_email.set(event.value());
                         }
+                    }
 
-                        input {
-                            id : "password",
-                            r#type : "password",
-                            placeholder : "password",
-                            value : "{password}",
-                            autocapitalize : "none",
-                            spellcheck : "false",
-                            oninput : move |event| {
-                                password.set(event.value());
-                            }
+                    input { class: "input",
+                        id : "password",
+                        r#type : "password",
+                        placeholder : "password",
+                        value : "{password}",
+                        autocapitalize : "none",
+                        spellcheck : "false",
+                        oninput : move |event| {
+                            password.set(event.value());
                         }
+                    }
 
-                        button {
-                            onclick : move |_| attempt_submit(),
-                            "login"
-                        }
+                    button { class: "btn",
+                        onclick : move |_| attempt_submit(),
+                        "login"
+                    }
 
-                        if is_loading() {
-                            div { class : "spinning-card" }
-                        } else if let Some(error) = submission_error() {
-                            div { class: "error",
-                                { format!("{}", error) }
-                            }
+                    if is_loading() {
+                        div { class : "spinner" }
+                    } else if let Some(error) = submission_error() {
+                        div { class: "message-error",
+                            { format!("{}", error) }
                         }
+                    }
 
-                        button {
-                            onclick : move |_| {
-                                navigator.push(Router::Register {});
-                            }, "create profile"
-                        }
+                    button { class: "btn",
+                        onclick : move |_| {
+                            navigator.push(Router::Register {});
+                        }, "create profile"
                     }
                 }
             }

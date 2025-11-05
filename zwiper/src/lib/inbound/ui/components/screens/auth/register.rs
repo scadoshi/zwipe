@@ -105,19 +105,17 @@ pub fn Register() -> Element {
     rsx! {
         Swipeable { state: swipe_state, config: swipe_config,
             div { class: "logo",  "{logo}" }
-            div { class : "form-container",
-            form {
-                div { class : "form-group",
+            div { class : "container-sm text-center",
+
+                form { class: "flex-col",
 
                     if submit_attempted() {
                         if let Some(error) = username_error() {
-                            div { class : "error",
-                                "{error}"
-                            }
+                            div { class : "message-error", "{error}" }
                         }
                     }
 
-                    input {
+                    input { class: "input",
                         id : "username",
                         r#type : "text",
                         placeholder : "username",
@@ -134,13 +132,11 @@ pub fn Register() -> Element {
 
                     if submit_attempted() {
                         if let Some(error) = email_error() {
-                            div { class : "error",
-                                "{error}"
-                            }
+                            div { class : "message-error", "{error}" }
                         }
                     }
 
-                    input {
+                    input { class: "input",
                         id : "email",
                         r#type : "text",
                         placeholder : "email",
@@ -157,13 +153,11 @@ pub fn Register() -> Element {
 
                     if submit_attempted() {
                         if let Some(error) = password_error() {
-                            div { class : "error",
-                                "{error}"
-                            }
+                            div { class : "message-error", "{error}" }
                         }
                     }
 
-                    input {
+                    input { class: "input",
                         id : "password",
                         r#type : "password",
                         placeholder : "password",
@@ -178,26 +172,25 @@ pub fn Register() -> Element {
                         }
                     }
 
-                    button {
+                    button { class: "btn",
                         onclick : move |_| attempt_submit(),
                         "create profile"
                     }
-                    button {
+
+                    if is_loading() {
+                        div { class : "spinner" }
+                    } else if let Some(error) = submission_error() {
+                        div { class: "message-error",
+                            { format!("{}", error) }
+                        }
+                    }
+
+                    button { class: "btn",
                         onclick : move |_| {
-                            navigator.push(Router::Login {});
+                            navigator.go_back();
                         }, "back to login"
                     }
-
                 }
-
-                if is_loading() {
-                    div { class : "spinning-card" }
-                } else if let Some(error) = submission_error() {
-                    div { class: "error",
-                        { format!("{}", error) }
-                    }
-                }
-            }
             }
         }
     }
