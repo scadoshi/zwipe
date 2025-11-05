@@ -1,5 +1,3 @@
-pub mod filter;
-
 use crate::{
     inbound::ui::{
         components::{
@@ -8,7 +6,6 @@ use crate::{
                 config::SwipeConfig, direction::Direction as Dir, screen_offset::ScreenOffset,
                 state::SwipeState, Swipeable,
             },
-            screens::app::deck_card::add::filter::Filter,
         },
         router::Router,
     },
@@ -29,13 +26,13 @@ use zwipe::{
 };
 
 #[component]
-pub fn AddDeckCard(deck_id: Uuid) -> Element {
+pub fn AddDeckCard(
+    deck_id: Uuid,
+    card_filter: Signal<SearchCards>,
+    cards: Signal<Vec<Card>>,
+) -> Element {
     let swipe_state = use_signal(|| SwipeState::new());
-    let swipe_config = SwipeConfig {
-        navigation_swipes: vec![Dir::Down],
-        submission_swipe: None,
-        from_main_screen: ScreenOffset::origin(),
-    };
+    let swipe_config = SwipeConfig::blank();
 
     // let card_swipe_state = use_signal(|| SwipeState::new());
 
@@ -63,21 +60,12 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         });
     };
 
-    let cards: Signal<Vec<Card>> = use_signal(|| Vec::new());
-
-    let card_filter = use_signal(|| SearchCards::default());
-
     rsx! {
         Bouncer {
-            Filter { swipe_state, deck_id, card_filter, cards }
-
             Swipeable { state: swipe_state, config: swipe_config,
                 div { class : "form-container",
 
-                    if cards().is_empty() {
-                        p { class : "up-arrow", "↑" }
-                        p { "try adding some filters" }
-                    } else {
+                    if !cards().is_empty() {
                         if let Some(card) = cards().iter().next() {
                             if let Some(ImageUris { large: Some(image_url), ..}) = &card.scryfall_data.image_uris {
                                 img {
@@ -89,13 +77,20 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                         }
                     }
 
+                    button { class : "btn",
+                        onclick : move |_| {
+                            navigator.push(Router::Filter { card_filter, cards });
+                        },
+                        "adjust card filters"
+                    }
+
                     if let Some(add_card_error) = add_card_error() {
                         div { class : "error", "{add_card_error}"}
                     }
 
-                    button {
+                    button { class : "btn",
                         onclick: move |_| {
-                            navigator.push(Router::EditDeckProfile { deck_id });
+                            navigator.go_back();
                         },
                         "back"
                     }

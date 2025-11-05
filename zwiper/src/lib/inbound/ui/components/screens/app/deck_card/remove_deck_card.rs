@@ -1,24 +1,27 @@
-pub mod filter;
-
 use crate::{
-    inbound::ui::{
-        components::{
-            auth::{bouncer::Bouncer, session_upkeep::Upkeep},
-            interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
-        },
-        router::Router,
+    inbound::ui::components::{
+        auth::{bouncer::Bouncer, session_upkeep::Upkeep},
+        interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
     },
     outbound::client::{deck::get_deck::ClientGetDeck, ZwipeClient},
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe::{
-    domain::{auth::models::session::Session, deck::models::deck::Deck},
+    domain::{
+        auth::models::session::Session,
+        card::models::{search_card::SearchCards, Card},
+        deck::models::deck::Deck,
+    },
     inbound::http::ApiError,
 };
 
 #[component]
-pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
+pub fn RemoveDeckCard(
+    deck_id: Uuid,
+    card_filter: Signal<SearchCards>,
+    cards: Signal<Vec<Card>>,
+) -> Element {
     let swipe_state = use_signal(|| SwipeState::new());
     let swipe_config = SwipeConfig::blank();
 
@@ -44,7 +47,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                     p { "click to go back" }
                     button {
                         onclick: move |_| {
-                            navigator.push(Router::EditDeckProfile { deck_id });
+                            navigator.go_back();
                         },
                         "back"
                     }

@@ -1,14 +1,7 @@
 use crate::{
     inbound::ui::components::{
         auth::session_upkeep::Upkeep,
-        interactions::swipe::{
-            config::SwipeConfig,
-            direction::Direction as Dir,
-            screen_offset::{ScreenOffset, ScreenOffsetMethods},
-            state::SwipeState,
-            Swipeable,
-        },
-        success_messages::random_success_message,
+        interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
     },
     outbound::client::{
         card::{get_card_types::ClientGetCardTypes, search_cards::ClientSearchCards},
@@ -16,7 +9,6 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
-use uuid::Uuid;
 use zwipe::{
     domain::{
         auth::models::session::Session,
@@ -32,23 +24,16 @@ use zwipe::{
 };
 
 #[component]
-pub fn Filter(
-    swipe_state: Signal<SwipeState>,
-    deck_id: Uuid,
-    card_filter: Signal<SearchCards>,
-    cards: Signal<Vec<Card>>,
-) -> Element {
-    let swipe_config = SwipeConfig {
-        navigation_swipes: vec![Dir::Up],
-        submission_swipe: None,
-        from_main_screen: ScreenOffset::up(),
-    };
+pub fn Filter(card_filter: Signal<SearchCards>, cards: Signal<Vec<Card>>) -> Element {
+    let swipe_config = SwipeConfig::blank();
+    let swipe_state = use_signal(|| SwipeState::new());
 
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
 
+    let navigator = use_navigator();
+
     let mut search_error = use_signal(|| None::<String>);
-    let mut success_message = use_signal(|| None::<String>);
 
     let all_card_types: Resource<Result<Vec<String>, ApiError>> =
         use_resource(move || async move {
@@ -66,8 +51,6 @@ pub fn Filter(
     let mut show_other_types_dropdown = use_signal(|| false);
 
     let mut attempt_search_cards = move || {
-        success_message.set(None);
-
         card_filter.write().card_type_contains_any = if selected_basic_card_types().is_empty() {
             None
         } else {
@@ -95,7 +78,6 @@ pub fn Filter(
             match client().search_cards(&card_filter.read(), &sesh).await {
                 Ok(cards_from_search) => {
                     search_error.set(None);
-                    success_message.set(Some(random_success_message()));
                     cards.set(
                         cards_from_search
                             .into_iter()
@@ -107,7 +89,8 @@ pub fn Filter(
                                     .is_some()
                             })
                             .collect(),
-                    )
+                    );
+                    navigator.go_back();
                 }
                 Err(e) => search_error.set(Some(e.to_string())),
             }
@@ -116,14 +99,14 @@ pub fn Filter(
 
     rsx! {
         Swipeable { state: swipe_state, config: swipe_config,
-            div { class : "form-container",
+            div { class : "container-sm",
 
-                h2 { "card filters" }
+                h2 { class: "text-center mb-2 font-light tracking-wider", "card filters" }
 
-                form { class : "filter-group",
+                form { class : "flex-col text-center",
 
-                    label { r#for : "name-contains", "name contains" }
-                    input { class : "filter-input",
+                    label { class: "label", r#for : "name-contains", "name contains" }
+                    input { class : "input",
                         id : "name-contains",
                         placeholder : "name contains",
                         value : if let Some(name) = card_filter.read().name_contains.as_deref() {
@@ -140,16 +123,15 @@ pub fn Filter(
                         }
                     }
 
-                    div { class : "basic-card-type-selection",
-                        label { r#for : "card-type", "basic types"}
+                    div { class : "flex-col text-center",
+                        label { class: "label", r#for : "card-type", "basic types"}
 
-                        div { class: "basic-type-grid",
+                        div { class: "flex flex-wrap gap-1 mb-2 flex-center",
                             for card_type in Vec::with_all_card_types() {
-                                div {
-                                    class: if selected_basic_card_types().contains(&card_type) {
-                                        "basic-type-box selected"
+                                div { class: if selected_basic_card_types().contains(&card_type) {
+                                        "type-box selected"
                                     } else {
-                                        "basic-type-box"
+                                        "type-box"
                                     },
                                     onclick: move |_| {
                                         if selected_basic_card_types().contains(&card_type) {
@@ -164,15 +146,15 @@ pub fn Filter(
                         }
                     }
 
-                    div { class : "other-card-type-selection",
-                        label { r#for : "other-type", "other types"}
+                    div { class : "flex-col text-center",
+                        label { class: "label", r#for : "other-type", "other types"}
 
                         if !selected_other_types().is_empty() {
-                            div { class: "selected-types",
+                            div { class: "flex flex-wrap gap-1 mb-2",
                                 for selected_type in selected_other_types().iter().map(|x| x.clone()) {
                                     div { class: "type-chip",
                                         "{selected_type}",
-                                        button { class: "remove-chip",
+                                        button { class: "type-chip-remove",
                                             onclick: move |_| {
                                                 selected_other_types.write().retain(|x| x != &selected_type);
                                             },
@@ -183,9 +165,9 @@ pub fn Filter(
                             }
                         }
 
-                        input { class : "form-input",
+                        input { class : "input",
                             id : "other-type-search",
-                            placeholder : "type to search types",
+                            placeholder : "type to search...",
                             value : "{other_type_query_string}",
                             r#type : "text",
                             autocapitalize : "none",
@@ -220,17 +202,20 @@ pub fn Filter(
                         }
                     }
 
-                    button { class : "search-cards-button",
+                    button { class : "btn",
                         onclick : move |_| attempt_search_cards(),
                         "search"
                     }
 
                     if let Some(search_error) = search_error() {
-                        div { class : "error", "{search_error}" }
+                        div { class : "message-error", "{search_error}" }
                     }
 
-                    if let Some(success_message) = success_message() {
-                        div { class: "success-message", "{success_message}" }
+                    button { class : "btn",
+                        onclick : move |_| {
+                            navigator.go_back();
+                        },
+                        "back"
                     }
                 }
             }
