@@ -19,8 +19,10 @@ pub fn Home() -> Element {
 
     let navigator = use_navigator();
 
-    let auth_client: Signal<ZwipeClient> = use_context();
+    let client: Signal<ZwipeClient> = use_context();
     let session: Signal<Option<Session>> = use_context();
+
+    let mut confirm_logout = use_signal(|| false);
 
     let logo = logo::ZWIPE;
 
@@ -28,20 +30,38 @@ pub fn Home() -> Element {
         Bouncer {
             Swipeable { state: swipe_state, config: swipe_config,
                 div { class : "logo", "{logo}" }
-                div { class : "form-container",
-                    button {
+                div { class : "container-sm text-center flex-col",
+                    button { class : "btn",
                         onclick : move |_| {
                             navigator.push(Router::Profile {} );
                         }, "profile"
                     }
-                    button {
+                    button { class : "btn",
                         onclick : move |_| {
                             navigator.push(Router::DeckList {} );
                         }, "decks"
                     }
-                    button {
-                        onclick : move |_| session.logout(auth_client),
-                        "logout"
+
+                    if !confirm_logout() {
+                        button { class : "btn",
+                            onclick : move |_| confirm_logout.set(true),
+                            "logout"
+                        }
+                    }
+
+                    if confirm_logout() {
+                        label { class: "label", r#for : "confirmation-prompt", "are you sure?" }
+                        div { class : "flex flex-between gap-2",
+                            id : "confirmation-prompt",
+                            button { class : "btn btn-half",
+                                onclick: move |_| session.logout(client),
+                                "yes"
+                            }
+                            button { class : "btn btn-half",
+                                onclick: move |_| confirm_logout.set(false),
+                                "no"
+                            }
+                        }
                     }
                 }
             }

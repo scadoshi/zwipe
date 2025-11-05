@@ -4,7 +4,9 @@ use crate::inbound::ui::components::screens::{
             create_deck::CreateDeck, deck_list::DeckList, edit_deck_profile::EditDeckProfile,
             view_deck_profile::ViewDeckProfile,
         },
-        deck_card::{add::AddDeckCard, remove::RemoveDeckCard},
+        deck_card::{
+            add_deck_card::AddDeckCard, card_filter::Filter, remove_deck_card::RemoveDeckCard,
+        },
         home::Home,
         profile::{
             change_email::ChangeEmail, change_password::ChangePassword,
@@ -15,6 +17,7 @@ use crate::inbound::ui::components::screens::{
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
+use zwipe::domain::card::models::{search_card::SearchCards, Card};
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -51,7 +54,20 @@ pub enum Router {
 
     //deck card
     #[route("/deck/cards/add/:deck_id")]
-    AddDeckCard { deck_id: Uuid },
+    AddDeckCard { 
+        deck_id: Uuid, 
+        card_filter: Signal<SearchCards>, 
+        cards: Signal<Vec<Card>>
+    },
     #[route("/deck/cards/remove/:deck_id")]
-    RemoveDeckCard { deck_id: Uuid },
+    RemoveDeckCard { 
+        deck_id: Uuid, 
+        card_filter: Signal<SearchCards>, 
+        cards: Signal<Vec<Card>>
+     },
+    #[route("/deck/cards/filter")]
+    Filter { 
+        card_filter: Signal<SearchCards>,
+        cards: Signal<Vec<Card>>
+    }
 }
