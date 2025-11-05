@@ -114,107 +114,101 @@ pub fn CreateDeck() -> Element {
 
     rsx! {
         Bouncer {
-                Swipeable { state: swipe_state, config: swipe_config,
-                    div { class : "form-container",
+            Swipeable { state: swipe_state, config: swipe_config,
+                div { class : "container-sm",
 
-                    h2 { "create deck" }
+                    h2 { class: "text-center mb-2 font-light tracking-wider", "create deck" }
 
-                    form {
-                        div { class : "form-group",
-                            input {
-                                id: "deck name",
+                    form { class: "flex-col text-center",
+                        input { class: "input",
+                            id: "deck name",
+                            r#type : "text",
+                            placeholder : "deck name",
+                            value : "{deck_name}",
+                            autocapitalize : "none",
+                            spellcheck : "false",
+                            oninput : move |event| {
+                                deck_name.set(event.value());
+                            }
+                        }
+
+                        div { class: "mb-4",
+                            input { class: "input",
+                                id: "commander",
                                 r#type : "text",
-                                placeholder : "deck name",
-                                value : "{deck_name}",
+                                placeholder : "commander",
+                                value : "{commander_display}",
                                 autocapitalize : "none",
                                 spellcheck : "false",
+                                onclick : move |_| {
+                                    search_query.set(String::new());
+                                    commander_display.set(String::new());
+                                },
                                 oninput : move |event| {
-                                    deck_name.set(event.value());
+                                    search_query.set(event.value());
+                                    commander_display.set(event.value());
                                 }
                             }
 
-                            div { class: "commander-search",
-                                input {
-                                    id: "commander",
-                                    r#type : "text",
-                                    placeholder : "commander",
-                                    value : "{commander_display}",
-                                    autocapitalize : "none",
-                                    spellcheck : "false",
-                                    onclick : move |_| {
-                                        search_query.set(String::new());
-                                        commander_display.set(String::new());
-                                    },
-                                    oninput : move |event| {
-                                        search_query.set(event.value());
-                                        commander_display.set(event.value());
-                                    }
-                                }
-
-                                if show_dropdown() {
-                                    div { class: "dropdown",
-                                        if is_searching() {
-                                            div { "searching..." }
-                                        } else {
-                                            for card in search_results().iter().map(|x| x.clone()) {
-                                                div { class: "dropdown-item",
-                                                    onclick: move |_| {
-                                                        commander.set(Some(card.clone()));
-                                                        commander_display.set(card.scryfall_data.name.clone().to_lowercase());
-                                                        show_dropdown.set(false);
-                                                    },
-                                                    {
-                                                        format!("{}", card.scryfall_data.name.to_lowercase())
-                                                    }
+                            if show_dropdown() {
+                                div { class: "dropdown",
+                                    if is_searching() {
+                                        div { "searching..." }
+                                    } else {
+                                        for card in search_results().iter().map(|x| x.clone()) {
+                                            div { class: "dropdown-item",
+                                                onclick: move |_| {
+                                                    commander.set(Some(card.clone()));
+                                                    commander_display.set(card.scryfall_data.name.clone().to_lowercase());
+                                                    show_dropdown.set(false);
+                                                },
+                                                {
+                                                    format!("{}", card.scryfall_data.name.to_lowercase())
                                                 }
                                             }
                                         }
                                     }
                                 }
                             }
+                        }
 
-                            label { r#for : "copy-max", "card copy rule" }
-                            div {
-                                class: "form-group-copy-max",
-                                div {
-                                    class: if copy_max() == Some(CopyMax::standard()) { "copy-max-box true" } else { "copy-max-box false" },
-                                    onclick: move |_| {
-                                        copy_max.set(Some(CopyMax::standard()));
-                                    },
-                                    "standard"
-                                }
-                                div {
-                                    class: if copy_max() == Some(CopyMax::singleton()) { "copy-max-box true" } else { "copy-max-box false" },
-                                    onclick: move |_| {
-                                        copy_max.set(Some(CopyMax::singleton()));
-                                    },
-                                    "singleton"
-                                }
-                                div {
-                                    class: if copy_max().is_none() { "copy-max-box true" } else { "copy-max-box false" },
-                                    onclick: move |_| {
-                                        copy_max.set(None);
-                                    },
-                                    "none"
-                                }
-                            }
-
-                            button {
-                                disabled: is_saving(),
-                                onclick : move |_| attempt_submit(),
-                                if is_saving() { "saving..." } else { "save" }
-                            }
-
-                            if let Some(error) = submission_error() {
-                                div { class: "error", "{error}" }
-                            }
-
-                            button {
-                                onclick : move |_| {
-                                    navigator.push(Router::DeckList {});
+                        label { class: "label", r#for : "copy-max", "card copy rule" }
+                        div { class: "flex gap-2 mb-4 flex-center",
+                            div { class: if copy_max() == Some(CopyMax::standard()) { "copy-max-box selected" } else { "copy-max-box unselected" },
+                                onclick: move |_| {
+                                    copy_max.set(Some(CopyMax::standard()));
                                 },
-                                "back"
+                                "standard"
                             }
+                            div { class: if copy_max() == Some(CopyMax::singleton()) { "copy-max-box selected" } else { "copy-max-box unselected" },
+                                onclick: move |_| {
+                                    copy_max.set(Some(CopyMax::singleton()));
+                                },
+                                "singleton"
+                            }
+                            div { class: if copy_max().is_none() { "copy-max-box selected" } else { "copy-max-box unselected" },
+                                onclick: move |_| {
+                                    copy_max.set(None);
+                                },
+                                "none"
+                            }
+                        }
+
+                        button { class: "btn",
+                            disabled: is_saving(),
+                            onclick : move |_| attempt_submit(),
+                            if is_saving() { "saving..." } else { "save" }
+                        }
+
+                        if let Some(error) = submission_error() {
+                            div { class: "message-error", "{error}" }
+                        }
+
+                        button { class: "btn",
+                            onclick : move |_| {
+                                navigator.go_back();
+                            },
+                            "back"
                         }
                     }
                 }

@@ -63,7 +63,7 @@ pub fn ViewDeckProfile(deck_id: Uuid) -> Element {
                 .map(|value| Some(value))
         });
 
-    let mut show_delete_confirmation = use_signal(|| false);
+    let mut confirm_deletion = use_signal(|| false);
     let mut delete_error = use_signal(|| None::<String>);
     let mut attempt_delete = move || {
         session.upkeep(client);
@@ -87,82 +87,79 @@ pub fn ViewDeckProfile(deck_id: Uuid) -> Element {
     rsx! {
     Bouncer {
         Swipeable { state: swipe_state, config: swipe_config,
-            div { class : "form-container",
+            div { class : "container-sm text-center",
                 match &*deck_profile_resource.read() {
                     Some(Ok(profile)) => rsx! {
 
-                        h2 { "{profile.name}" }
-                        div { class : "form-group",
+                        h2 { class: "text-center mb-2 font-light tracking-wider", "{profile.name}" }
+                        div { class : "flex-col",
 
                             if let Some(Ok(Some(commander))) = &*commander_resource.read() {
                                 if let Some(ImageUris { normal: Some(image_url), .. }) = &commander.scryfall_data.image_uris {
-                                    img {
+                                    img { class: "card-image",
                                         src: "{image_url}",
                                         alt: "{commander.scryfall_data.name}",
-                                        class: "commander-image"
                                     }
                                 } else {
-                                    label { r#for : "commander-info", "commander" }
-                                    p { class: "commander-name-only", { commander.scryfall_data.name.to_lowercase() } }
+                                    label { class: "label", r#for : "commander-info", "commander" }
+                                    p { class: "text-center text-base font-light mb-4 tracking-wide",
+                                        { commander.scryfall_data.name.to_lowercase() }
+                                    }
                                 }
                             }
 
-                            label { r#for : "copy-max", "card copy rule" }
-                            div {
-                                class: "form-group-copy-max",
-                                div {
-                                    class: if profile.copy_max == Some(CopyMax::standard()) { "copy-max-box true" } else { "copy-max-box false" },
+                            label { class: "label", r#for : "copy-max", "card copy rule" }
+                            p { class: "text-base font-light mb-4",
+                                if profile.copy_max == Some(CopyMax::standard()) {
                                     "standard"
-                                }
-                                div {
-                                    class: if profile.copy_max == Some(CopyMax::singleton()) { "copy-max-box true" } else { "copy-max-box false" },
+                                } else if profile.copy_max == Some(CopyMax::singleton()) {
                                     "singleton"
-                                }
-                                div {
-                                    class: if profile.copy_max.is_none() { "copy-max-box true" } else { "copy-max-box false" },
+                                } else {
                                     "none"
                                 }
                             }
 
-                            if !show_delete_confirmation() {
-                                button {
-                                    onclick : move |_| {
-                                        navigator.push(Router::EditDeckProfile { deck_id });
-                                    },
-                                    "edit"
-                                }
-
-                                button { class : "delete-button",
-                                    onclick : move |_| show_delete_confirmation.set(true),
-                                    "delete"
+                            if !confirm_deletion() {
+                                div { class : "flex flex-between gap-2",
+                                    id : "confirmation-prompt",
+                                    button { class: "btn btn-half",
+                                        onclick : move |_| {
+                                            navigator.push(Router::EditDeckProfile { deck_id });
+                                        },
+                                        "edit"
+                                    }
+                                    button { class : "btn btn-half",
+                                        onclick : move |_| confirm_deletion.set(true),
+                                        "delete"
+                                    }
                                 }
                             }
 
-                            if show_delete_confirmation() {
-                                label { r#for : "confirmation-prompt", "are you sure?" }
-                                div { class : "confirmation-prompt",
+                            if confirm_deletion() {
+                                label { class: "label", r#for : "confirmation-prompt", "are you sure?" }
+                                div { class : "flex flex-between gap-2",
                                     id : "confirmation-prompt",
-                                    button { class : "yes-button",
+                                    button { class : "btn btn-half",
                                         onclick : move |_| attempt_delete(),
                                         "yes"
                                     }
-                                    button { class : "no-button",
-                                        onclick : move |_| show_delete_confirmation.set(false),
+                                    button { class : "btn btn-half",
+                                        onclick : move |_| confirm_deletion.set(false),
                                         "no"
                                     }
                                 }
                             }
 
-                            button {
+                            button { class: "btn",
                                 onclick : move |_| {
-                                    navigator.push(Router::DeckList {});
+                                    navigator.push(Router::DeckList {} );
                                 },
                                 "back"
                             }
                         }
                     },
-                        Some(Err(e)) => rsx! { div { class : "error", "{e}"} },
-                        None => rsx! { div { class : "spinning-card" } }
+                        Some(Err(e)) => rsx! { div { class : "message-error", "{e}"} },
+                        None => rsx! { div { class : "spinner" } }
                     }
                 }
             }

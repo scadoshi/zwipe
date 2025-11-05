@@ -36,31 +36,32 @@ pub fn DeckList() -> Element {
     rsx! {
         Bouncer {
             Swipeable { state: swipe_state, config: swipe_config,
-                div { class : "deck-list-wrapper",
-                    h2 { "deck list" }
+                div { class : "container-sm flex-col",
+                    h2 { class: "text-center mb-4 font-light tracking-wider", "deck list" }
 
-                    div { class : "deck-list-container",
+                    div { class : "flex-col min-h-50 p-4 border rounded mb-4",
                         match &*deck_profiles_resource.read() {
                             Some(Ok(deck_profiles)) => {
                                 if deck_profiles.is_empty() {
                                     rsx! {
-                                        div { class: "empty-message",
+                                        div { class: "message-empty",
                                             p { "no decks yet" }
                                         }
                                     }
                                 } else {
                                     rsx! {
-                                        div { class : "deck-list",
+                                        div { class : "flex-1 overflow-y-auto",
                                             for profile in deck_profiles.iter().map(|x| x.to_owned()) {
-                                                div {
+                                                div { class : "card",
                                                     key : "{profile.id}",
-                                                    class : "deck-item",
                                                     onclick : move |_| {
                                                         navigator.push(Router::ViewDeckProfile {
                                                             deck_id: profile.id,
                                                         });
                                                     },
-                                                    h3 { { profile.name.to_string() } }
+                                                    h3 { class: "font-light text-base tracking-wide",
+                                                        { profile.name.to_string() }
+                                                    }
                                                 }
                                             }
                                         }
@@ -68,28 +69,28 @@ pub fn DeckList() -> Element {
                                 }
                             }
                             Some(Err(e)) => rsx!{
-                                div { class : "empty-message",
-                                    p { class : "error", "{e}" }
+                                div { class : "message-empty",
+                                    p { class : "message-error", "{e}" }
                                 }
                             },
                             None => rsx! {
-                                div { class: "empty-message",
-                                    div { class: "spinning-card" }
+                                div { class: "message-empty",
+                                    div { class: "spinner" }
                                 }
                             },
                         }
                     }
 
-                    div { class: "deck-buttons",
-                        button {
+                    div { class: "flex-col",
+                        button { class: "btn",
                             onclick : move |_| {
                                 navigator.push(Router::CreateDeck);
                             },
                             "create deck"
                         }
-                        button {
+                        button { class: "btn",
                             onclick : move |_| {
-                                navigator.push(Router::Home {});
+                                navigator.go_back();
                             },
                             "back"
                         }

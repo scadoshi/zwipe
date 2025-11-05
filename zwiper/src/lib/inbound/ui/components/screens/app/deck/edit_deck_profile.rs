@@ -121,6 +121,10 @@ pub fn EditDeckProfile(deck_id: Uuid) -> Element {
     let mut is_searching = use_signal(|| false);
     let mut show_dropdown = use_signal(|| false);
 
+    // if they want to add or remove cards
+    let card_filter = use_signal(|| SearchCards::default());
+    let cards = use_signal(|| Vec::<Card>::new());
+
     // defaults from resources
     use_effect(move || {
         let curr_deck = match &*deck_profile_resource.read() {
@@ -232,141 +236,135 @@ pub fn EditDeckProfile(deck_id: Uuid) -> Element {
         Bouncer {
             Swipeable { state: swipe_state, config: swipe_config,
 
-                div { class : "form-container",
+                div { class : "container-sm",
                     match &*deck_profile_resource.read() {
                         Some(Ok(_profile)) => rsx! {
 
-                            h2 { "{deck_name}" }
+                            h2 { class: "text-center mb-2 font-light tracking-wider", "{deck_name}" }
 
                             if let Some(error) = load_error() {
-                                div { "{error}" }
+                                div { class: "message-error", "{error}" }
                             }
 
-                            form {
-                                div { class : "form-group",
-                                    input {
-                                        id: "deck name",
+                            form { class: "flex-col text-center",
+                                input { class: "input",
+                                    id: "deck name",
+                                    r#type : "text",
+                                    placeholder : "deck name",
+                                    value : "{deck_name}",
+                                    autocapitalize : "none",
+                                    spellcheck : "false",
+                                    oninput : move |event| {
+                                        deck_name.set(event.value());
+                                    }
+                                }
+
+                                div { class: "mb-4",
+                                    input { class: "input",
+                                        id: "commander",
                                         r#type : "text",
-                                        placeholder : "deck name",
-                                        value : "{deck_name}",
+                                        placeholder : "commander",
+                                        value : "{commander_display}",
                                         autocapitalize : "none",
                                         spellcheck : "false",
+                                        onclick : move |_| {
+                                            search_query.set(String::new());
+                                            commander_display.set(String::new());
+                                            commander.set(None);
+                                        },
                                         oninput : move |event| {
-                                            deck_name.set(event.value());
+                                            search_query.set(event.value());
+                                            commander_display.set(event.value());
                                         }
                                     }
 
-                                    div { class: "commander-search",
-                                        input {
-                                            id: "commander",
-                                            r#type : "text",
-                                            placeholder : "commander",
-                                            value : "{commander_display}",
-                                            autocapitalize : "none",
-                                            spellcheck : "false",
-                                            onclick : move |_| {
-                                                search_query.set(String::new());
-                                                commander_display.set(String::new());
-                                                commander.set(None);
-                                            },
-                                            oninput : move |event| {
-                                                search_query.set(event.value());
-                                                commander_display.set(event.value());
-                                            }
-                                        }
-
-                                        if show_dropdown() {
-                                            div { class: "dropdown",
-                                                if is_searching() {
-                                                    div { "searching..." }
-                                                } else {
-                                                    for card in search_results().iter().map(|x| x.clone()) {
-                                                        div {
-                                                            class: "dropdown-item",
-                                                            onclick: move |_| {
-                                                                commander.set(Some(card.clone()));
-                                                                commander_display.set(card.scryfall_data.name.clone().to_lowercase());
-                                                                show_dropdown.set(false);
-                                                            },
-                                                            {
-                                                                format!("{}", card.scryfall_data.name.to_lowercase())
-                                                            }
+                                    if show_dropdown() {
+                                        div { class: "dropdown",
+                                            if is_searching() {
+                                                div { "searching..." }
+                                            } else {
+                                                for card in search_results().iter().map(|x| x.clone()) {
+                                                    div { class: "dropdown-item",
+                                                        onclick: move |_| {
+                                                            commander.set(Some(card.clone()));
+                                                            commander_display.set(card.scryfall_data.name.clone().to_lowercase());
+                                                            show_dropdown.set(false);
+                                                        },
+                                                        {
+                                                            format!("{}", card.scryfall_data.name.to_lowercase())
                                                         }
                                                     }
                                                 }
                                             }
                                         }
                                     }
+                                }
 
-                                    label { r#for : "copy-max", "card copy rule" }
-                                    div {
-                                        class: "form-group-copy-max",
-                                        div {
-                                            class: if copy_max() == Some(CopyMax::standard()) { "copy-max-box true" } else { "copy-max-box false" },
-                                            onclick: move |_| {
-                                                copy_max.set(Some(CopyMax::standard()));
-                                            },
-                                            "standard"
-                                        }
-                                        div {
-                                            class: if copy_max() == Some(CopyMax::singleton()) { "copy-max-box true" } else { "copy-max-box false" },
-                                            onclick: move |_| {
-                                                copy_max.set(Some(CopyMax::singleton()));
-                                            },
-                                            "singleton"
-                                        }
-                                        div {
-                                            class: if copy_max().is_none() { "copy-max-box true" } else { "copy-max-box false" },
-                                            onclick: move |_| {
-                                                copy_max.set(None);
-                                            },
-                                            "none"
-                                        }
-                                    }
-
-                                    if has_made_changes() {
-                                        button {
-                                            disabled: is_saving(),
-                                            onclick : move |_| attempt_submit(),
-                                            if is_saving() { "saving..." } else { "save changes" }
-                                        }
-                                    }
-
-                                    if !has_made_changes() {
-                                        label { "deck cards" }
-                                        div { class : "deck-card-prompt",
-                                            button { class : "add-deck-card-button",
-                                                onclick : move |_| {
-                                                    navigator.push(Router::AddDeckCard { deck_id });
-                                                },
-                                                "add"
-                                            }
-
-                                            button { class : "remove-deck-card-button",
-                                                onclick : move |_| {
-                                                    navigator.push(Router::RemoveDeckCard { deck_id });
-                                                },
-                                                "remove"
-                                            }
-                                        }
-                                    }
-
-                                    if let Some(error) = submission_error() {
-                                        div { class: "error", "{error}" }
-                                    }
-
-                                    button {
-                                        onclick : move |_| {
-                                            navigator.push(Router::ViewDeckProfile { deck_id });
+                                label { class: "label mb-2", r#for : "copy-max", "card copy rule" }
+                                div { class: "flex gap-2 mb-2 flex-center",
+                                    div { class: if copy_max() == Some(CopyMax::standard()) { "copy-max-box selected" } else { "copy-max-box unselected" },
+                                        onclick: move |_| {
+                                            copy_max.set(Some(CopyMax::standard()));
                                         },
-                                        "back"
+                                        "standard"
                                     }
+                                    div { class: if copy_max() == Some(CopyMax::singleton()) { "copy-max-box selected" } else { "copy-max-box unselected" },
+                                        onclick: move |_| {
+                                            copy_max.set(Some(CopyMax::singleton()));
+                                        },
+                                        "singleton"
+                                    }
+                                    div { class: if copy_max().is_none() { "copy-max-box selected" } else { "copy-max-box unselected" },
+                                        onclick: move |_| {
+                                            copy_max.set(None);
+                                        },
+                                        "none"
+                                    }
+                                }
+
+                                if has_made_changes() {
+                                    label { class : "label", "changes have been made" }
+                                    button { class: "btn",
+                                        disabled: is_saving(),
+                                        onclick : move |_| attempt_submit(),
+                                        if is_saving() { "saving..." } else { "save them" }
+                                    }
+                                }
+
+                                if !has_made_changes() {
+                                    label { class: "label mb-2", "deck cards" }
+                                    div { class : "flex flex-between gap-2",
+                                        button { class : "btn btn-half",
+                                            onclick : move |_| {
+                                                navigator.push(Router::AddDeckCard { deck_id, card_filter, cards});
+                                            },
+                                            "add"
+                                        }
+
+                                        button { class : "btn btn-half",
+                                            onclick : move |_| {
+                                                navigator.push(Router::RemoveDeckCard { deck_id, card_filter, cards});
+                                            },
+                                            "remove"
+                                        }
+                                    }
+                                }
+
+                                if let Some(error) = submission_error() {
+                                    div { class: "message-error", "{error}" }
+                                }
+
+                                button { class: "btn",
+                                    onclick : move |_| {
+                                        navigator.go_back();
+                                    },
+                                    "back"
                                 }
                             }
 
                         },
-                        Some(Err(e)) => rsx! { div { class : "error", "{e}"} },
-                        None => rsx! { div { class : "spinning-card" } }
+                        Some(Err(e)) => rsx! { div { class : "message-error", "{e}"} },
+                        None => rsx! { div { class : "spinner" } }
                     }
                 }
             }
