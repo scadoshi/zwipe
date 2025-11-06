@@ -90,7 +90,7 @@ pub fn AddDeckCard(
 
                     button { class : "btn",
                         onclick: move |_| {
-                            navigator.go_back();
+                            navigator.push(Router::EditDeckProfile { deck_id });
                         },
                         "back"
                     }

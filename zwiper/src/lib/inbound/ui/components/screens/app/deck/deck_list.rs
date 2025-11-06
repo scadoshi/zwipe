@@ -90,7 +90,7 @@ pub fn DeckList() -> Element {
                         }
                         button { class: "btn",
                             onclick : move |_| {
-                                navigator.go_back();
+                                navigator.push(Router::Home {});
                             },
                             "back"
                         }

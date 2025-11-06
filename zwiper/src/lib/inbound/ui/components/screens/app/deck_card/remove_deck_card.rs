@@ -44,9 +44,8 @@ pub fn RemoveDeckCard(
             Swipeable { state: swipe_state, config: swipe_config,
                 div { class : "form-container",
                     p { "still building" }
-                    p { "click to go back" }
-                    button {
-                        onclick: move |_| {
+                    button { class : "btn",
+                        onclick : move |_| {
                             navigator.go_back();
                         },
                         "back"
