@@ -121,7 +121,7 @@ pub fn EditDeckProfile(deck_id: Uuid) -> Element {
     let mut is_searching = use_signal(|| false);
     let mut show_dropdown = use_signal(|| false);
 
-    // if they want to add or remove cards
+    // here bc need to pass to other needy components
     let card_filter = use_signal(|| SearchCards::default());
     let cards = use_signal(|| Vec::<Card>::new());
 
@@ -356,7 +356,7 @@ pub fn EditDeckProfile(deck_id: Uuid) -> Element {
 
                                 button { class: "btn",
                                     onclick : move |_| {
-                                        navigator.go_back();
+                                        navigator.push(Router::ViewDeckProfile { deck_id });
                                     },
                                     "back"
                                 }
