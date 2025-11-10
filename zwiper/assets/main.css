@@ -581,6 +581,21 @@ body {
     color: #1a1d23;
 }
 
+.card-shape {
+    padding: 1rem;
+    border: 1px solid #f5f5dc;
+    border-radius: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin: 0 auto 0.5rem auto;
+    margin-bottom: 2rem;
+    width: 25vh;
+    height: 35vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 /* ===========================
   specific - swipeable
  ============================= */
