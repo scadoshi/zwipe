@@ -30,8 +30,6 @@ pub fn AddDeckCard(
     let swipe_state = use_signal(|| SwipeState::new());
     let swipe_config = SwipeConfig::blank();
 
-    // let card_swipe_state = use_signal(|| SwipeState::new());
-
     let navigator = use_navigator();
 
     let session: Signal<Option<Session>> = use_context();
