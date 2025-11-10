@@ -1,7 +1,10 @@
 use crate::{
-    inbound::ui::components::{
-        auth::session_upkeep::Upkeep,
-        interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
+    inbound::ui::{
+        components::{
+            auth::session_upkeep::Upkeep,
+            interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
+        },
+        router::Router,
     },
     outbound::client::{
         card::{get_card_types::ClientGetCardTypes, search_cards::ClientSearchCards},
@@ -9,6 +12,7 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
+use uuid::Uuid;
 use zwipe::{
     domain::{
         auth::models::session::Session,
@@ -24,7 +28,11 @@ use zwipe::{
 };
 
 #[component]
-pub fn Filter(card_filter: Signal<SearchCards>, cards: Signal<Vec<Card>>) -> Element {
+pub fn AddDeckCardFilter(
+    card_filter: Signal<SearchCards>,
+    cards: Signal<Vec<Card>>,
+    deck_id: Uuid,
+) -> Element {
     let swipe_config = SwipeConfig::blank();
     let swipe_state = use_signal(|| SwipeState::new());
 
@@ -90,7 +98,14 @@ pub fn Filter(card_filter: Signal<SearchCards>, cards: Signal<Vec<Card>>) -> Ele
                             })
                             .collect(),
                     );
-                    navigator.go_back();
+                    // debug remove this later
+                    tracing::debug!("{} cards found", { cards.len() });
+                    tracing::debug!("{:#?}", cards);
+                    navigator.push(Router::AddDeckCard {
+                        deck_id,
+                        card_filter,
+                        cards,
+                    });
                 }
                 Err(e) => search_error.set(Some(e.to_string())),
             }
@@ -213,7 +228,7 @@ pub fn Filter(card_filter: Signal<SearchCards>, cards: Signal<Vec<Card>>) -> Ele
 
                     button { class : "btn",
                         onclick : move |_| {
-                            navigator.go_back();
+                            navigator.push(Router::AddDeckCard { deck_id, card_filter, cards });
                         },
                         "back"
                     }

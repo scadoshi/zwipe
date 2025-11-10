@@ -1,18 +1,13 @@
+pub mod card_filter;
 use crate::{
     inbound::ui::{
         components::{
             auth::{bouncer::Bouncer, session_upkeep::Upkeep},
-            interactions::swipe::{
-                config::SwipeConfig, direction::Direction as Dir, screen_offset::ScreenOffset,
-                state::SwipeState, Swipeable,
-            },
+            interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
         },
         router::Router,
     },
-    outbound::client::{
-        deck::get_deck::ClientGetDeck, deck_card::create_deck_card::ClientCreateDeckCard,
-        ZwipeClient,
-    },
+    outbound::client::{deck_card::create_deck_card::ClientCreateDeckCard, ZwipeClient},
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -20,9 +15,8 @@ use zwipe::{
     domain::{
         auth::models::session::Session,
         card::models::{scryfall_data::image_uris::ImageUris, search_card::SearchCards, Card},
-        deck::models::deck::Deck,
     },
-    inbound::http::{handlers::deck_card::create_deck_card::HttpCreateDeckCard, ApiError},
+    inbound::http::handlers::deck_card::create_deck_card::HttpCreateDeckCard,
 };
 
 #[component]
@@ -31,6 +25,8 @@ pub fn AddDeckCard(
     card_filter: Signal<SearchCards>,
     cards: Signal<Vec<Card>>,
 ) -> Element {
+    tracing::debug!("{} cards found", { cards.len() });
+
     let swipe_state = use_signal(|| SwipeState::new());
     let swipe_config = SwipeConfig::blank();
 
@@ -63,6 +59,8 @@ pub fn AddDeckCard(
     rsx! {
         Bouncer {
             Swipeable { state: swipe_state, config: swipe_config,
+                h2 { class: "text-center mb-2 font-light tracking-wider", "add deck card" }
+
                 div { class : "form-container",
 
                     if !cards().is_empty() {
@@ -75,11 +73,15 @@ pub fn AddDeckCard(
                                 }
                             }
                         }
+                    } else {
+                        div { class : "card-shape",
+                            "no cards yet"
+                        }
                     }
 
                     button { class : "btn",
                         onclick : move |_| {
-                            navigator.push(Router::Filter { card_filter, cards });
+                            navigator.push(Router::AddDeckCardFilter { card_filter, cards, deck_id } );
                         },
                         "adjust card filters"
                     }
