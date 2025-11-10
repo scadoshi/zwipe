@@ -13,29 +13,29 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Built complete card filtering system with multi-select UI for basic types and searchable subtypes. Refactored search endpoint from GET to POST for complex filter support.
+**Last Updated**: Restructured filter components for AddDeckCard. Fixed 405 errors. Built empty card state UI. Pivoting to filter-on-load architecture instead of inter-component card passing.
 
-**Current Focus**: Debug 405 error on POST /api/card/search endpoint. Design filter state management strategy (minimizers vs separate screens). Check Dioxus/dx version compatibility. Build reusable filter component architecture.
+**Current Focus**: Implement filter search execution in AddDeckCard component on load. Build filter UI for both AddDeckCard (all cards) and RemoveDeckCard (deck cards). Design modular sub-components for filter reuse across contexts.
 
-**Recent Achievement**: Built comprehensive card filtering UI with two selection modes: toggle-based basic types (Instant, Sorcery, Creature, etc.) and searchable subtypes with chips (Barbarian, Wizard, etc.). Implemented GET→POST refactor for search_cards endpoint to handle complex query parameters (Vec<CardType>, Vec<String>, tuples). Created CardType enum with Display trait and WithCardTypes trait. Built get_card_types endpoint querying ~670 distinct subtypes from database. Designed filtered dropdown showing top 5 matches with debounced search. Added chip-based multi-select UI with smaller sizing (0.75rem font, 0.3rem/0.6rem padding). Changed basic types from dropdown to always-visible toggle grid with inverted colors for selection. Refactored HttpSearchCards wrapper to use SearchCards domain type directly in frontend.
+**Recent Achievement**: Resolved 405 POST errors through server restart. Created `.card-shape` CSS for empty state with horizontal centering (`margin: 0 auto`). Specialized filter component by moving from `deck_card/card_filter.rs` to `add_deck_card/filter.rs`. Created separate AddDeckCardFilter route with deck_id, card_filter Signal, and cards Signal. Identified FnOnce closure issue preventing multiple onclick calls - signals need cloning before move closures. Pivoted architecture: instead of passing filtered cards between components, apply filter on AddDeckCard mount to simplify state management. Updated navigation to use explicit routes instead of `go_back()` for predictable behavior.
 
-**Current Success**: Complete filtering UI with toggle grid and chip-based multi-select. Backend card type extraction working. Search endpoint refactored to POST with JSON body. Frontend-backend type alignment complete.
+**Current Success**: Empty state UI working. Filter component foundation built. Router structure supports separate filter screens for add/remove contexts. Understanding of Dioxus closure ownership patterns.
 
-**Current Blocker**: 405 Method Not Allowed on POST /api/card/search (route configured correctly, likely needs CORS or server restart).
+**Current Challenge**: Implementing filter execution on AddDeckCard load (use_effect or use_resource pattern). Deciding when to trigger search (on mount, on filter change, on explicit button click).
 
 ### 🎯 Currently Working On (Top 5)
-1. **Debug 405 Error** - Fix POST /api/card/search endpoint (likely CORS or server restart needed)
-2. **Filter Architecture Decision** - Choose between minimizing sections vs separate swipeable screens for filters
-3. **Dioxus Version Compatibility** - Check dx 0.7.0 and dioxus alignment after recent upgrade
-4. **Reusable Filter Component** - Design filter component shared between AddDeckCard and RemoveDeckCard
-5. **Card Stack Management** - Implement swipeable card browsing through filtered results
+1. **AddDeckCard Filter Execution** - Implement filter search on component load (use_effect/use_resource pattern)
+2. **Filter-on-Load Pattern** - Apply card_filter to load initial cards in AddDeckCard, avoiding inter-component passing
+3. **AddDeckCardFilter Implementation** - Build complete filter UI with search button executing query and navigating back
+4. **Signal State Management** - Understand how Signals passed through router maintain reactivity across navigation
+5. **FnOnce Closure Resolution** - Clone signals before move closures to enable FnMut behavior for multiple calls
 
 ### 🤔 Next Immediate Priorities (Top 5)
-1. **Filter UI Strategy** - Implement chosen approach (minimizers with single-expand OR separate screens)
-2. **Card Browsing Stack** - Build left/right swipe navigation through search results
-3. **Deck Metrics Screen** - Build "down" screen with mana curve, color distribution, type breakdown
+1. **RemoveDeckCard Filter** - Build separate filter querying deck's cards instead of all cards (different data source)
+2. **Filter Sub-Component Modularization** - Extract reusable pieces (type selectors, name input) for code reuse
+3. **Card Browsing Stack** - Implement left/right swipe navigation through filtered card results
 4. **Add Card Integration** - Wire quantity selection and add_card function with copy_max validation
-5. **RemoveDeckCard Filters** - Adapt filter component for deck-specific card removal flow
+5. **Deck Metrics Screen** - Build "down" screen with mana curve, color distribution, type breakdown
 
 ---
 
@@ -250,9 +250,14 @@ alwaysApply: true
 - **Conditional UI Elements**: Deck card management buttons (add/remove) conditionally visible based on has_made_changes computed signal
 - **Helper Method Creation**: HttpSearchCards::blank(), is_blank(), PartialEq; Optdate::is_changed() for cleaner validation and conditional logic
 - **Deck Card Module Foundation**: Created AddDeckCard and RemoveDeckCard screens with routing integration from EditDeckProfile
-- **Filter Component Separation**: Built Filter as separate swipeable screen positioned "up" from main card display
+- **Empty State UI**: `.card-shape` CSS class (25vh × 35vh) with centered positioning via `margin: 0 auto` for "no cards yet" display
+- **Filter Component Specialization**: Moved from generic filter to context-specific `add_deck_card/filter.rs` for targeted implementation
+- **Router Structure**: Separate AddDeckCardFilter and RemoveDeckCardFilter routes with deck_id, card_filter Signal, and cards Signal parameters
 - **Card Search with Validation**: Name-based filtering with image presence validation (excludes cards without large images for display)
-- **Three-Layer Architecture Planning**: Designed screen hierarchy with filters (up), card display (center), deck metrics (down)
+- **FnOnce Closure Learning**: Identified that move closures capturing mutable state become FnOnce, requiring signal cloning for FnMut onclick handlers
+- **Navigation Pattern**: Switched from `navigator.go_back()` to explicit `push(route)` for predictable back button behavior
+- **Architecture Pivot**: Changed from inter-component card passing to filter-on-load pattern in AddDeckCard for simpler state management
+- **Three-Layer Architecture Planning**: Designed screen hierarchy with filters (separate screens), card display (center), deck metrics (down)
 
 ---
 
