@@ -761,11 +761,12 @@ body {
  ================================== */
 
 .card-image {
+    display: block;
     object-fit: contain;
     max-height: 35vh;
     height: auto;
     border-radius: 1rem;
-    margin-bottom: 2rem;
+    margin: 0 auto 2rem auto;
 }
 
 .card-image-full {
