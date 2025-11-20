@@ -6,7 +6,10 @@ use dioxus::prelude::*;
 use std::time::Duration;
 use tokio::time::interval;
 use zwipe::{
-    domain::auth::models::session::Session,
+    domain::{
+        auth::models::session::Session,
+        card::models::{search_card::SearchCards, Card},
+    },
     inbound::http::handlers::auth::refresh_session::HttpRefreshSession,
 };
 
@@ -55,6 +58,13 @@ pub fn spawn_upkeeper() {
 
     let client = use_signal(|| ZwipeClient::new());
     use_context_provider(|| client);
+
+    // card search state - used by deck card screens
+    let filter = use_signal(|| SearchCards::default());
+    use_context_provider(|| filter);
+
+    let cards = use_signal(|| Vec::<Card>::new());
+    use_context_provider(|| cards);
 
     spawn(async move {
         let mut interval = interval(Duration::from_secs(60));
