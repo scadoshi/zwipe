@@ -5,11 +5,11 @@ use crate::inbound::ui::components::screens::{
             view_deck_profile::ViewDeckProfile,
         },
         deck_card::{
-            add_deck_card::AddDeckCard,
+            add::Add as AddDeckCard,
             filter::{
                 mana::Mana, printing::Printing, stats::Stats, text::Text, types::Types, Filter,
             },
-            remove_deck_card::RemoveDeckCard,
+            remove::Remove as RemoveDeckCard,
         },
         home::Home,
         profile::{
