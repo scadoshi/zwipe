@@ -8,19 +8,13 @@ use crate::inbound::ui::{
     components::{
         auth::bouncer::Bouncer,
         interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
-        screens::app::deck_card::filter::{
-            mana::Mana, printing::Printing, stats::Stats, text::Text, types::Types,
-        },
     },
     router::Router,
 };
 use dioxus::prelude::*;
-use zwipe::domain::card::models::search_card::SearchCards;
 
 #[component]
 pub fn Filter() -> Element {
-    let filter: Signal<SearchCards> = use_context();
-
     let swipe_config = SwipeConfig::blank();
     let swipe_state = use_signal(|| SwipeState::new());
     let navigator = use_navigator();

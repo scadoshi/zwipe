@@ -17,7 +17,7 @@ use zwipe::{
 };
 
 #[component]
-pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
+pub fn Remove(deck_id: Uuid) -> Element {
     let _filter: Signal<SearchCards> = use_context();
     let _cards: Signal<Vec<Card>> = use_context();
 
