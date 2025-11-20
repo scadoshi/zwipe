@@ -5,7 +5,7 @@ use crate::inbound::ui::components::screens::{
             view_deck_profile::ViewDeckProfile,
         },
         deck_card::{
-            add_deck_card::{filter::AddDeckCardFilter, AddDeckCard},
+            add_deck_card::{filter::Filter as AddDeckCardFilter, AddDeckCard},
             remove_deck_card::RemoveDeckCard,
         },
         home::Home,
@@ -57,19 +57,19 @@ pub enum Router {
     #[route("/deck/card/add/:deck_id")]
     AddDeckCard { 
         deck_id: Uuid, 
-        card_filter: Signal<SearchCards>, 
+        filter: Signal<SearchCards>, 
         cards: Signal<Vec<Card>>
     },
     #[route("/deck/card/remove/:deck_id")]
     RemoveDeckCard { 
         deck_id: Uuid, 
-        card_filter: Signal<SearchCards>, 
+        filter: Signal<SearchCards>, 
         cards: Signal<Vec<Card>>
      },
     #[route("/deck/card/add/:deck_id/filter")]
     AddDeckCardFilter {
         deck_id: Uuid,
-        card_filter: Signal<SearchCards>,
+        filter: Signal<SearchCards>,
         cards: Signal<Vec<Card>>,
     }
 }

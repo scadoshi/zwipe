@@ -1,4 +1,4 @@
-pub mod card_filter;
+pub mod filter;
 use crate::{
     inbound::ui::{
         components::{
@@ -22,7 +22,7 @@ use zwipe::{
 #[component]
 pub fn AddDeckCard(
     deck_id: Uuid,
-    card_filter: Signal<SearchCards>,
+    filter: Signal<SearchCards>,
     cards: Signal<Vec<Card>>,
 ) -> Element {
     tracing::debug!("{} cards found", { cards.len() });
@@ -79,7 +79,7 @@ pub fn AddDeckCard(
 
                     button { class : "btn",
                         onclick : move |_| {
-                            navigator.push(Router::AddDeckCardFilter { card_filter, cards, deck_id } );
+                            navigator.push(Router::AddDeckCardFilter { filter, cards, deck_id } );
                         },
                         "adjust card filters"
                     }

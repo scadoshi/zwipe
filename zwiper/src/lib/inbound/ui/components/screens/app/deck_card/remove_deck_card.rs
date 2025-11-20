@@ -19,7 +19,7 @@ use zwipe::{
 #[component]
 pub fn RemoveDeckCard(
     deck_id: Uuid,
-    card_filter: Signal<SearchCards>,
+    filter: Signal<SearchCards>,
     cards: Signal<Vec<Card>>,
 ) -> Element {
     let swipe_state = use_signal(|| SwipeState::new());
