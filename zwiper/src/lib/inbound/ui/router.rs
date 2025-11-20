@@ -5,7 +5,10 @@ use crate::inbound::ui::components::screens::{
             view_deck_profile::ViewDeckProfile,
         },
         deck_card::{
-            add_deck_card::{filter::Filter as AddDeckCardFilter, AddDeckCard},
+            add_deck_card::AddDeckCard,
+            filter::{
+                mana::Mana, printing::Printing, stats::Stats, text::Text, types::Types, Filter,
+            },
             remove_deck_card::RemoveDeckCard,
         },
         home::Home,
@@ -18,7 +21,6 @@ use crate::inbound::ui::components::screens::{
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
-use zwipe::domain::card::models::{search_card::SearchCards, Card};
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -56,22 +58,26 @@ pub enum Router {
     //deck card
     #[route("/deck/card/add/:deck_id")]
     AddDeckCard { 
-        deck_id: Uuid, 
-        filter: Signal<SearchCards>, 
-        cards: Signal<Vec<Card>>
+        deck_id: Uuid,
     },
     #[route("/deck/card/remove/:deck_id")]
     RemoveDeckCard { 
-        deck_id: Uuid, 
-        filter: Signal<SearchCards>, 
-        cards: Signal<Vec<Card>>
-     },
-    #[route("/deck/card/add/:deck_id/filter")]
-    AddDeckCardFilter {
         deck_id: Uuid,
-        filter: Signal<SearchCards>,
-        cards: Signal<Vec<Card>>,
-    }
+     },
+
+     // filtering
+    #[route("/deck/card/filter")]
+    Filter {},
+    #[route("/deck/card/filter/types")]
+    Types {},
+    #[route("/deck/card/filter/text")]
+    Text {},
+    #[route("/deck/card/filter/stats")]
+    Stats {},
+    #[route("/deck/card/filter/printing")]
+    Printing {},
+    #[route("/deck/card/filter/mana")]
+    Mana {},
 }
 
 impl Default for Router {
