@@ -15,18 +15,18 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Restructured filter components for deck card management. Fixed 405 errors (server restart). Built empty state UI for card display. Pivoting to filter-on-load strategy instead of passing cards between components.
+**Last Updated**: Completed modular filter component architecture. Built Text and Types filter sub-components with direct filter mutation pattern. Renamed card_filter → filter throughout codebase for consistency.
 
-**Next Learning Focus**: Build card filter implementation for AddDeckCard with filter applied on component load. Understand signal-based state passing through router params. Build modular sub-components for filter reuse. Consider RemoveDeckCard filter implementation with different data source.
+**Next Learning Focus**: Complete remaining filter sub-components (Printing, Mana, Stats). Execute filter search on AddDeckCard mount. Build RemoveDeckCard filter querying deck's existing cards.
 
-**Recent Achievement**: Resolved 405 POST endpoint errors through server restart. Created `.card-shape` CSS class for empty card state with centered positioning (`margin: 0 auto`). Moved generic filter component to `add_deck_card/filter.rs` for specialization. Updated router with `AddDeckCardFilter` route. Identified issue: FnOnce closure can't be called multiple times in onclick handlers - signals need cloning before move closures. Recognized architectural pivot: instead of passing cards between components, apply filter on AddDeckCard load to avoid inter-component data passing complexity. Changed EditDeckProfile back button from `go_back()` to explicit `push(ViewDeckProfile)` for predictable navigation.
+**Recent Achievement**: Refactored 239-line monolithic filter into modular architecture with 5 sub-components (text, types, printing, mana, stats). Built Text component with name_contains input. Built Types component with basic type grid toggles and searchable other-types with chip-based multi-select UI. Learned signal() syntax only works for Copy types - non-Copy types (SearchCards with Vec/String fields) require explicit .read()/.write(). Established pattern: direct filter mutation when possible, local signal + use_effect only for read/write conflicts. Renamed card_filter → filter across router and all components for cleaner naming. Fixed navigator async issue - navigator can't be called inside spawn(), used should_go_back signal + use_effect bridge pattern for navigation trigger.
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Signal Passing Through Routes** - How Signals behave when passed through router navigation, whether they maintain reactivity
-2. **Filter-on-Load Pattern** - Loading card filter into AddDeckCard on mount vs navigating to separate filter screen
-3. **Closure Ownership in Dioxus** - When move closures become FnOnce vs FnMut, how to clone signals properly for multiple calls
-4. **Component Specialization Strategy** - When to build separate filter components vs generic reusable one with configuration
-5. **Empty State UX** - Designing intuitive empty states that guide users toward next action (filtering)
+1. **Card Display Reactivity Issue** - Cards Signal updates successfully but AddDeckCard shows empty state after navigation back from filter
+2. **Signal Reactivity Across Navigation** - Whether signals lose reactivity when navigating between routes with go_back()
+3. **Filter Search Execution Timing** - When to trigger search in AddDeckCard (on mount, on filter change, explicit button only)
+4. **RemoveDeckCard Filter Data Source** - How to query deck's existing cards vs all cards for removal context
+5. **Nested Gesture Detection** - Differentiating card swipes (browsing) from screen swipes (navigation) in card display
 
 ---
 
@@ -136,6 +136,10 @@ alwaysApply: true
 - **Resource Pattern Matching**: `.value().with(|result| match result {...})` to access Resource data without "temporary value dropped" errors
 - **Backend Logout Flow**: POST to /api/auth/logout with bearer token revokes server-side refresh tokens before local session clearing
 - **Signal Simplification**: Using signal() syntax instead of signal.read() for cleaner Dioxus code (17+ simplifications across components)
+- **Signal Copy vs Non-Copy**: signal() syntax only works for Copy types (primitives, simple structs); non-Copy types (Vec, String, complex structs) require explicit .read()/.write()
+- **Direct Mutation vs Reactive Patterns**: Prefer direct filter.write() access when possible; only use local signal + use_effect for read/write conflicts
+- **Modular Component Architecture**: Breaking monolithic components into focused sub-components with shared Signal for state coordination
+- **Navigator Async Constraints**: Navigator can't be called inside spawn() async blocks - use signal + use_effect bridge (set signal in async, watch in effect)
 - **Debounced Search**: Implementing search with 300ms delay using tokio::time::sleep in spawned async tasks
 - **use_memo Pattern**: Computed signals deriving state from other signals, only updating when computed value changes (not when source signal content changes)
 
@@ -374,41 +378,40 @@ alwaysApply: true
 - **HTTP Client Session Patterns**: AuthClient methods handle session validation and refresh automatically
 - *Note: Complete session management system ready for production use*
 
-### 🃏 Card Filtering System & Multi-Select UI (Complete Foundation)
+### 🃏 Card Filtering System & Modular Architecture (Complete Foundation)
 - **CardType Enum**: Basic MTG card types (Instant, Sorcery, Creature, Enchantment, Artifact, Planeswalker, Land) with Display trait
 - **WithCardTypes Trait**: Trait on Vec<CardType> providing with_all_card_types() factory method for UI population
 - **SearchCards Domain Integration**: Frontend uses backend SearchCards struct directly with type_line_contains_any and card_type_contains_any fields
 - **GET→POST Refactor**: Changed search_cards endpoint from GET with query params to POST with JSON body solving complex type serialization
-- **Serialization Understanding**: serde_urlencoded can't handle Vec<CardType> or (i64, i64) tuples cleanly, serde_json handles arbitrary nesting
 - **Backend SQL Filtering**: Built OR conditions for type_line_contains_any and card_type_contains_any in dynamic QueryBuilder
 - **Get Card Types Endpoint**: GET /api/card/types extracts ~670 distinct subtypes using STRING_TO_ARRAY, UNNEST, TRIM, DISTINCT
-- **SQL String Processing**: Splitting type_line on spaces, unnesting arrays, trimming punctuation, filtering stop words
-- **Toggle Grid UI**: Always-visible grid of clickable boxes for basic types (no dropdown needed for small fixed set)
-- **Selection State**: onclick toggles presence in selected_basic_card_types signal, selected state inverts background/text colors
-- **Chip-Based Multi-Select**: Selected items shown as removable chips (0.75rem font, rounded borders, × button)
+- **Modular Filter Architecture**: Refactored 239-line monolithic filter into 5 focused sub-components (text, types, printing, mana, stats)
+- **Text Filter Component**: Simple name_contains input with direct filter mutation pattern
+- **Types Filter Component**: Basic type grid toggles + chip-based other-types multi-select with searchable dropdown
+- **Toggle Grid UI**: Always-visible grid of clickable boxes for basic types, onclick toggles card_type_contains_any array
+- **Chip-Based Multi-Select**: Selected other types shown as removable chips, local signal + use_effect syncing to filter.type_line_contains_any
 - **Filtered Dropdown**: Type-to-search input shows top 5 matching subtypes from resource, clicking adds to selected_other_types
 - **Resource Integration**: use_resource calling get_card_types on mount, providing Vec<String> for frontend filtering
-- **CSS Styling**: .basic-type-grid flex wrap with gap, .basic-type-box with hover transform, .selected inverted colors
-- **Frontend Client Update**: Built get_card_types() and updated search_cards() to POST with .json() method
-- **Route Function Pattern**: get_card_types_route() and search_cards_route() exported for frontend consistency
-- **405 Debugging Challenge**: Route configured correctly but getting Method Not Allowed (investigating CORS, server state)
-- *Note: Complete filtering UI working, pending 405 resolution and architectural decisions about filter organization*
+- **Direct vs Reactive Patterns**: Basic types use direct filter mutation (no read/write conflict), other types use local signal (avoid conflict in chip rendering)
+- **Filter Naming Consistency**: Renamed card_filter → filter throughout codebase for cleaner, more consistent naming
+- *Note: Text and Types components complete, Printing/Mana/Stats remain as stubs for next session*
 
-### 🃏 Deck Card Management & Multi-Layer Architecture Planning
+### 🃏 Deck Card Management & Modular Filter Architecture
 - **AddDeckCard Screen Foundation**: Built with card display, empty state ("no cards yet"), and filter navigation
 - **Empty State UI**: Created `.card-shape` CSS class (25vh × 35vh, centered with `margin: 0 auto`, flex-centered content)
-- **Filter Component Specialization**: Moved from generic `deck_card/card_filter.rs` to `add_deck_card/filter.rs` for context-specific implementation
-- **Router Structure**: Separate routes for AddDeckCard and AddDeckCardFilter with deck_id, card_filter Signal, and cards Signal
-- **Image Validation**: Filters exclude cards without large images using qualified match on ImageUris
+- **Modular Filter Refactoring**: Broke 239-line monolithic filter into parent orchestrator + 5 sub-components (text, types, printing, mana, stats)
+- **Router Structure**: Separate routes for AddDeckCard and AddDeckCardFilter with deck_id, filter Signal, and cards Signal
+- **Filter Naming**: Renamed card_filter → filter throughout for consistency and clarity
+- **Text Filter**: Name search input with direct filter.write().name_contains mutation
+- **Types Filter**: Basic type grid + chip-based other-types multi-select, combining direct mutation with local signal patterns
+- **Signal Pattern Discovery**: signal() only works for Copy types; SearchCards requires .read()/.write() due to Vec/String fields
+- **Direct vs Reactive Balance**: Use direct filter access when possible; local signal + use_effect only for read/write conflicts
+- **Image Validation**: Search results filtered to exclude cards without large images for display
 - **Helper Methods**: HttpSearchCards::blank(), is_blank(), PartialEq derive; Optdate::is_changed()
-- **FnOnce Closure Issue**: Discovered move closures capturing mutable state become FnOnce, can't be called multiple times in onclick
-- **Signal Cloning Pattern**: Need to clone signals before move closures to enable FnMut behavior for repeated calls
-- **Architecture Pivot**: Changed strategy from passing cards between filter and display to applying filter on AddDeckCard load
-- **Navigation Pattern**: Changed from `go_back()` to explicit `push(route)` for predictable back button behavior
+- **Architecture Pattern**: Sub-components receive shared filter Signal, mutate directly, parent orchestrates search execution
 - **RemoveDeckCard Planning**: Will need separate filter implementation filtering deck's cards instead of all cards
 - **Three-Layer Vision**: Filter (separate screen), card display (center), metrics (down) with navigation between
-- **Nested Gesture Detection**: Need to differentiate card swipes (left/right browsing) from screen swipes (up/down navigation)
-- *Note: Foundation built, next step is implementing filter-on-load pattern with search execution in AddDeckCard*
+- *Note: Text and Types filters complete, Printing/Mana/Stats stubs ready for next session, filter-on-load execution pending*
 
 ### 🔮 Advanced Rust Patterns
 - **Advanced Async Patterns**: Complex Future handling, async streaming, async iterators

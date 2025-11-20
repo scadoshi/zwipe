@@ -13,22 +13,22 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Restructured filter components for AddDeckCard. Fixed 405 errors. Built empty card state UI. Pivoting to filter-on-load architecture instead of inter-component card passing.
+**Last Updated**: Completed modular filter architecture refactoring. Built Text and Types filter sub-components. Renamed card_filter → filter throughout codebase for consistency.
 
-**Current Focus**: Implement filter search execution in AddDeckCard component on load. Build filter UI for both AddDeckCard (all cards) and RemoveDeckCard (deck cards). Design modular sub-components for filter reuse across contexts.
+**Current Focus**: Complete remaining filter sub-components (Printing, Mana, Stats). Execute filter search on AddDeckCard mount. Build RemoveDeckCard filter for deck's existing cards.
 
-**Recent Achievement**: Resolved 405 POST errors through server restart. Created `.card-shape` CSS for empty state with horizontal centering (`margin: 0 auto`). Specialized filter component by moving from `deck_card/card_filter.rs` to `add_deck_card/filter.rs`. Created separate AddDeckCardFilter route with deck_id, card_filter Signal, and cards Signal. Identified FnOnce closure issue preventing multiple onclick calls - signals need cloning before move closures. Pivoted architecture: instead of passing filtered cards between components, apply filter on AddDeckCard mount to simplify state management. Updated navigation to use explicit routes instead of `go_back()` for predictable behavior.
+**Recent Achievement**: Refactored 239-line monolithic filter into modular architecture with 5 sub-components. Built Text component with name_contains input. Built Types component with basic type grid toggles and chip-based other-types multi-select UI. Learned signal() only works for Copy types - SearchCards requires .read()/.write() due to Vec/String fields. Established pattern: direct filter mutation when possible, local signal + use_effect only for read/write conflicts. Renamed card_filter → filter across all components. Fixed navigator async issue with signal-based navigation trigger pattern (should_go_back signal + use_effect).
 
-**Current Success**: Empty state UI working. Filter component foundation built. Router structure supports separate filter screens for add/remove contexts. Understanding of Dioxus closure ownership patterns.
+**Current Success**: Modular filter architecture working. Text and Types filters complete with proper direct/reactive patterns. Router structure clean with consistent filter naming. Navigation working after search - navigator.go_back() successfully returns to AddDeckCard.
 
-**Current Challenge**: Implementing filter execution on AddDeckCard load (use_effect or use_resource pattern). Deciding when to trigger search (on mount, on filter change, on explicit button click).
+**Current Challenge**: Cards not displaying after successful search - cards Signal updates successfully (debug logs confirm count), navigation completes, but AddDeckCard screen shows empty state instead of filtered cards. Need to investigate reactivity between cards Signal and rendering.
 
 ### 🎯 Currently Working On (Top 5)
-1. **AddDeckCard Filter Execution** - Implement filter search on component load (use_effect/use_resource pattern)
-2. **Filter-on-Load Pattern** - Apply card_filter to load initial cards in AddDeckCard, avoiding inter-component passing
-3. **AddDeckCardFilter Implementation** - Build complete filter UI with search button executing query and navigating back
-4. **Signal State Management** - Understand how Signals passed through router maintain reactivity across navigation
-5. **FnOnce Closure Resolution** - Clone signals before move closures to enable FnMut behavior for multiple calls
+1. **Printing Filter Component** - Build set_contains and rarity_contains inputs for card printing/release filtering
+2. **Mana Filter Component** - Build CMC range/equals and color_identity filtering with Colors enum
+3. **Stats Filter Component** - Build power/toughness range/equals inputs for combat stats filtering
+4. **AddDeckCard Filter Execution** - Implement filter search on component load (use_effect/use_resource pattern)
+5. **Filter-on-Load Pattern** - Apply filter to load initial cards in AddDeckCard on mount, avoiding inter-component passing
 
 ### 🤔 Next Immediate Priorities (Top 5)
 1. **RemoveDeckCard Filter** - Build separate filter querying deck's cards instead of all cards (different data source)
@@ -258,6 +258,14 @@ alwaysApply: true
 - **Navigation Pattern**: Switched from `navigator.go_back()` to explicit `push(route)` for predictable back button behavior
 - **Architecture Pivot**: Changed from inter-component card passing to filter-on-load pattern in AddDeckCard for simpler state management
 - **Three-Layer Architecture Planning**: Designed screen hierarchy with filters (separate screens), card display (center), deck metrics (down)
+- **Modular Filter Refactoring**: Broke 239-line monolithic filter into parent orchestrator (filter.rs) + 5 sub-components in filter/ directory
+- **Text Filter Implementation**: Simple name_contains input with direct filter.write() mutation pattern
+- **Types Filter Implementation**: Basic type grid + chip-based other-types multi-select combining direct and reactive patterns
+- **Filter Naming Consistency**: Renamed card_filter → filter across router, EditDeckProfile, AddDeckCard, RemoveDeckCard for clarity
+- **Signal Copy Semantics Learning**: Discovered signal() syntax only works for Copy types; complex structs require .read()/.write()
+- **Direct vs Reactive Pattern**: Established preference for direct filter access, using local signal + use_effect only for read/write conflicts
+- **Navigator Async Constraints**: Navigator can't be called from spawn() async blocks - must use signal + use_effect bridge pattern
+- **Signal-Based Navigation Trigger**: should_go_back signal set in async block, use_effect watches and triggers navigator.go_back() in sync context
 
 ---
 
