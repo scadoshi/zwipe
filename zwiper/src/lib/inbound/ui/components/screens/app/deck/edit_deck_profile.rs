@@ -121,10 +121,6 @@ pub fn EditDeckProfile(deck_id: Uuid) -> Element {
     let mut is_searching = use_signal(|| false);
     let mut show_dropdown = use_signal(|| false);
 
-    // here bc need to pass to other needy components
-    let filter = use_signal(|| SearchCards::default());
-    let cards = use_signal(|| Vec::<Card>::new());
-
     // defaults from resources
     use_effect(move || {
         let curr_deck = match &*deck_profile_resource.read() {
@@ -336,14 +332,14 @@ pub fn EditDeckProfile(deck_id: Uuid) -> Element {
                                     div { class : "flex flex-between gap-2",
                                         button { class : "btn btn-half",
                                             onclick : move |_| {
-                                                navigator.push(Router::AddDeckCard { deck_id, filter, cards});
+                                                navigator.push(Router::AddDeckCard { deck_id });
                                             },
                                             "add"
                                         }
 
                                         button { class : "btn btn-half",
                                             onclick : move |_| {
-                                                navigator.push(Router::RemoveDeckCard { deck_id, filter, cards});
+                                                navigator.push(Router::RemoveDeckCard { deck_id });
                                             },
                                             "remove"
                                         }

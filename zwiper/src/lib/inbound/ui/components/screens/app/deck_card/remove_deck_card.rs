@@ -17,11 +17,10 @@ use zwipe::{
 };
 
 #[component]
-pub fn RemoveDeckCard(
-    deck_id: Uuid,
-    filter: Signal<SearchCards>,
-    cards: Signal<Vec<Card>>,
-) -> Element {
+pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
+    let _filter: Signal<SearchCards> = use_context();
+    let _cards: Signal<Vec<Card>> = use_context();
+
     let swipe_state = use_signal(|| SwipeState::new());
     let swipe_config = SwipeConfig::blank();
 
@@ -30,7 +29,7 @@ pub fn RemoveDeckCard(
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
 
-    let deck_cards: Resource<Result<Deck, ApiError>> = use_resource(move || async move {
+    let _deck_cards: Resource<Result<Deck, ApiError>> = use_resource(move || async move {
         session.upkeep(client);
         let Some(sesh) = session() else {
             return Err(ApiError::Unauthorized("session expired".to_string()));

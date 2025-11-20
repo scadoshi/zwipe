@@ -1,4 +1,3 @@
-pub mod filter;
 use crate::{
     inbound::ui::{
         components::{
@@ -7,7 +6,10 @@ use crate::{
         },
         router::Router,
     },
-    outbound::client::{deck_card::create_deck_card::ClientCreateDeckCard, ZwipeClient},
+    outbound::client::{
+        card::search_cards::ClientSearchCards, deck_card::create_deck_card::ClientCreateDeckCard,
+        ZwipeClient,
+    },
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -20,11 +22,10 @@ use zwipe::{
 };
 
 #[component]
-pub fn AddDeckCard(
-    deck_id: Uuid,
-    filter: Signal<SearchCards>,
-    cards: Signal<Vec<Card>>,
-) -> Element {
+pub fn AddDeckCard(deck_id: Uuid) -> Element {
+    let filter: Signal<SearchCards> = use_context();
+    let mut cards: Signal<Vec<Card>> = use_context();
+
     tracing::debug!("{} cards found", { cards.len() });
 
     let swipe_state = use_signal(|| SwipeState::new());
@@ -36,8 +37,9 @@ pub fn AddDeckCard(
     let client: Signal<ZwipeClient> = use_context();
 
     let mut add_card_error = use_signal(|| None::<String>);
+    let mut search_error = use_signal(|| None::<String>);
 
-    let mut add_card = move |card: &Card| {
+    let _add_card = move |card: &Card| {
         session.upkeep(client);
         let Some(sesh) = session() else {
             add_card_error.set(Some("session expired".to_string()));
@@ -54,6 +56,58 @@ pub fn AddDeckCard(
         });
     };
 
+    use_effect(move || {
+        tracing::error!("attempting search");
+        tracing::error!(
+            "within the add element filter is blank: {}",
+            filter.read().is_blank()
+        );
+        // tracing::error!("filter: {:#?}", filter.read());
+
+        if filter.read().is_blank() {
+            // search_error.set(Some("must search something".to_string()));
+            return;
+        }
+
+        tracing::error!("attempting session upkeep");
+
+        session.upkeep(client);
+        let Some(sesh) = session() else {
+            search_error.set(Some("session expired".to_string()));
+            return;
+        };
+
+        tracing::error!("spawning an async thread");
+
+        spawn(async move {
+            match client().search_cards(&filter.read(), &sesh).await {
+                Ok(cards_from_search) => {
+                    tracing::error!("{} cards found", cards_from_search.len());
+
+                    search_error.set(None);
+
+                    tracing::error!("attempting to set cards");
+
+                    cards.set(
+                        cards_from_search
+                            .into_iter()
+                            .filter(|card| {
+                                card.scryfall_data
+                                    .image_uris
+                                    .as_ref()
+                                    .and_then(|x| x.large.as_ref())
+                                    .is_some()
+                            })
+                            .collect(),
+                    );
+
+                    tracing::error!("cards now has {} cards", cards.read().len());
+                }
+                Err(e) => search_error.set(Some(e.to_string())),
+            }
+        });
+    });
+
     rsx! {
         Bouncer {
             Swipeable { state: swipe_state, config: swipe_config,
@@ -61,8 +115,12 @@ pub fn AddDeckCard(
 
                 div { class : "form-container",
 
-                    if !cards().is_empty() {
-                        if let Some(card) = cards().iter().next() {
+                    // <debug>
+                    {tracing::error!("{:?} cards found", cards.read().len());}
+                    // </debug>
+
+                    if !cards.read().is_empty() {
+                        if let Some(card) = cards.read().iter().next() {
                             if let Some(ImageUris { large: Some(image_url), ..}) = &card.scryfall_data.image_uris {
                                 img {
                                     src: "{image_url}",
@@ -79,13 +137,17 @@ pub fn AddDeckCard(
 
                     button { class : "btn",
                         onclick : move |_| {
-                            navigator.push(Router::AddDeckCardFilter { filter, cards, deck_id } );
+                            navigator.push(Router::Filter { } );
                         },
-                        "adjust card filters"
+                        "filters"
                     }
 
                     if let Some(add_card_error) = add_card_error() {
                         div { class : "error", "{add_card_error}"}
+                    }
+
+                    if let Some(search_error) = search_error() {
+                        div { class : "message-error", "{search_error}" }
                     }
 
                     button { class : "btn",
