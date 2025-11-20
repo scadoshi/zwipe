@@ -15,17 +15,17 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Completed modular filter component architecture. Built Text and Types filter sub-components with direct filter mutation pattern. Renamed card_filter → filter throughout codebase for consistency.
+**Last Updated**: Fixed critical Signal reactivity bug across navigation by moving filter/cards to app-level context. Refactored deck_card filters to shared module with separate route components. Filter state now persists correctly across all navigation.
 
-**Next Learning Focus**: Complete remaining filter sub-components (Printing, Mana, Stats). Execute filter search on AddDeckCard mount. Build RemoveDeckCard filter querying deck's existing cards.
+**Next Learning Focus**: Complete remaining filter sub-components (Printing, Mana, Stats). Build filter search execution in AddDeckCard with use_effect. Implement card browsing with swipe navigation.
 
-**Recent Achievement**: Refactored 239-line monolithic filter into modular architecture with 5 sub-components (text, types, printing, mana, stats). Built Text component with name_contains input. Built Types component with basic type grid toggles and searchable other-types with chip-based multi-select UI. Learned signal() syntax only works for Copy types - non-Copy types (SearchCards with Vec/String fields) require explicit .read()/.write(). Established pattern: direct filter mutation when possible, local signal + use_effect only for read/write conflicts. Renamed card_filter → filter across router and all components for cleaner naming. Fixed navigator async issue - navigator can't be called inside spawn(), used should_go_back signal + use_effect bridge pattern for navigation trigger.
+**Recent Achievement**: Diagnosed and solved Signal persistence bug - Signals passed as route parameters don't reliably persist across navigation. Moved filter and cards Signals to app-level context in spawn_upkeeper() alongside session/client. Updated all deck_card components to use_context() instead of props. Refactored filters from add_deck_card nested structure to shared deck_card/filter/ module with separate route components (FilterMana, FilterPrinting, FilterStats, FilterText, FilterTypes). Eliminated Signal passing through router - navigation now simple with just deck_id. Cards Signal now updates and displays correctly after filter changes.
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Card Display Reactivity Issue** - Cards Signal updates successfully but AddDeckCard shows empty state after navigation back from filter
-2. **Signal Reactivity Across Navigation** - Whether signals lose reactivity when navigating between routes with go_back()
-3. **Filter Search Execution Timing** - When to trigger search in AddDeckCard (on mount, on filter change, explicit button only)
-4. **RemoveDeckCard Filter Data Source** - How to query deck's existing cards vs all cards for removal context
+1. **Filter Sub-Component Implementation** - Best patterns for Mana (CMC/color identity), Printing (rarity/set), Stats (power/toughness) filter UIs
+2. **Filter Search Execution Timing** - When to trigger search in AddDeckCard (on mount, on filter change, explicit button only)
+3. **RemoveDeckCard Filter Data Source** - How to query deck's existing cards vs all cards for removal context
+4. **Card Browsing Stack** - How to implement left/right swipe through filtered card results with proper state management
 5. **Nested Gesture Detection** - Differentiating card swipes (browsing) from screen swipes (navigation) in card display
 
 ---
@@ -98,7 +98,9 @@ alwaysApply: true
 - **Component Architecture**: Function components with RSX macro for HTML-like syntax
 - **State Management**: Signal types for reactive state with use_signal() patterns
 - **Context API**: use_context_provider() at root, use_context() in components for global reactive state
-- **Props vs Context**: Props for parent-child relationships, context for app-wide state (Session, AuthClient)
+- **Props vs Context**: Props for parent-child relationships, context for app-wide state (Session, AuthClient, filter, cards)
+- **Context for Route-Shared State**: Signals that need to persist across navigation must live in context, not as route parameters
+- **Signal Serialization Limits**: Signals can't be reliably passed as route parameters (not serializable), use context for cross-route state
 - **Development Utilities**: Spoof trait pattern for generating mock data enabling UI development without dependencies
 - **Multi-Screen Navigation**: Vertical swipe navigation between Profile/Home/Decks with position-based transforms
 - **Conditional Rendering**: Dynamic UI based on state with if expressions in RSX
@@ -330,6 +332,10 @@ alwaysApply: true
 - **Change Tracking Pattern**: Separate original_* signals tracking initial state, comparing to current signals before update submission
 - **Conditional Update Requests**: Only send changed fields by comparing current vs original values, reducing unnecessary backend calls
 - **Multiple Error Signals**: Separate error signals (load_error, submission_error, delete_error) for granular error display in different contexts
+- **Signal Navigation Bug**: Signals passed as route parameters don't persist across navigation - Dioxus may create new instances or fail to track
+- **Context Solution**: App-level context (use_context_provider in spawn_upkeeper) solves cross-route Signal persistence
+- **Router Signal Limitations**: Signals aren't serializable, can't be reliably used as route parameters despite compiling
+- **Debugging Signal Reactivity**: Check if Signal updates in one component, navigation completes, but reading component shows stale data = context issue
 - *Note: Hook selection (effect vs future vs resource) is critical - wrong choice causes infinite loops or missing reactivity*
 
 ### 🔐 Backend Session & Token Architecture (Complete) ✅

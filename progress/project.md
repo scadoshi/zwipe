@@ -13,22 +13,22 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Completed modular filter architecture refactoring. Built Text and Types filter sub-components. Renamed card_filter → filter throughout codebase for consistency.
+**Last Updated**: Fixed Signal reactivity bug by moving filter/cards to app-level context. Refactored filters to shared deck_card module with separate route components. Card display now working correctly after filter changes.
 
-**Current Focus**: Complete remaining filter sub-components (Printing, Mana, Stats). Execute filter search on AddDeckCard mount. Build RemoveDeckCard filter for deck's existing cards.
+**Current Focus**: Complete remaining filter sub-components (Printing, Mana, Stats). Build filter search execution with use_effect in AddDeckCard. Implement card browsing with swipe navigation.
 
-**Recent Achievement**: Refactored 239-line monolithic filter into modular architecture with 5 sub-components. Built Text component with name_contains input. Built Types component with basic type grid toggles and chip-based other-types multi-select UI. Learned signal() only works for Copy types - SearchCards requires .read()/.write() due to Vec/String fields. Established pattern: direct filter mutation when possible, local signal + use_effect only for read/write conflicts. Renamed card_filter → filter across all components. Fixed navigator async issue with signal-based navigation trigger pattern (should_go_back signal + use_effect).
+**Recent Achievement**: Diagnosed root cause of card display bug - Signals passed as route parameters don't persist reliably across navigation. Refactored to app-level context architecture: moved filter and cards Signals to spawn_upkeeper() alongside session/client. Updated Router to remove Signal parameters, simplified to just deck_id. All components now use use_context() for filter/cards access. Restructured filters from add_deck_card/filter/ to shared deck_card/filter/ with separate route components per category. Cards now display correctly after navigation. Centered card images with CSS margin auto.
 
-**Current Success**: Modular filter architecture working. Text and Types filters complete with proper direct/reactive patterns. Router structure clean with consistent filter naming. Navigation working after search - navigator.go_back() successfully returns to AddDeckCard.
+**Current Success**: Filter state persists correctly across all navigation. Context-based architecture eliminates Signal passing complexity. Filter components can mutate shared state from any route. Card search results display properly in AddDeckCard after returning from filter screens.
 
-**Current Challenge**: Cards not displaying after successful search - cards Signal updates successfully (debug logs confirm count), navigation completes, but AddDeckCard screen shows empty state instead of filtered cards. Need to investigate reactivity between cards Signal and rendering.
+**Current Challenge**: Need to build remaining filter UIs (Printing, Mana, Stats) and wire up automatic search execution when filter changes.
 
 ### 🎯 Currently Working On (Top 5)
 1. **Printing Filter Component** - Build set_contains and rarity_contains inputs for card printing/release filtering
-2. **Mana Filter Component** - Build CMC range/equals and color_identity filtering with Colors enum
+2. **Mana Filter Component** - Build CMC range/equals and color_identity filtering UI
 3. **Stats Filter Component** - Build power/toughness range/equals inputs for combat stats filtering
-4. **AddDeckCard Filter Execution** - Implement filter search on component load (use_effect/use_resource pattern)
-5. **Filter-on-Load Pattern** - Apply filter to load initial cards in AddDeckCard on mount, avoiding inter-component passing
+4. **Filter Search Execution** - Implement use_effect in AddDeckCard watching filter Signal, triggering search when filter changes
+5. **Card Display Integration** - Wire filtered results to card image display with proper empty state handling
 
 ### 🤔 Next Immediate Priorities (Top 5)
 1. **RemoveDeckCard Filter** - Build separate filter querying deck's cards instead of all cards (different data source)
@@ -266,6 +266,13 @@ alwaysApply: true
 - **Direct vs Reactive Pattern**: Established preference for direct filter access, using local signal + use_effect only for read/write conflicts
 - **Navigator Async Constraints**: Navigator can't be called from spawn() async blocks - must use signal + use_effect bridge pattern
 - **Signal-Based Navigation Trigger**: should_go_back signal set in async block, use_effect watches and triggers navigator.go_back() in sync context
+- **Signal Reactivity Bug Diagnosis**: Discovered Signals passed as route parameters don't persist across navigation - Dioxus may create new instances
+- **App-Level Context Solution**: Moved filter and cards Signals to spawn_upkeeper() for app-level context persistence
+- **Context Architecture**: filter/cards Signals provided alongside session/client in spawn_upkeeper(), accessed via use_context() in all components
+- **Router Simplification**: Removed Signal parameters from AddDeckCard, RemoveDeckCard, Filter routes - only deck_id needed
+- **Shared Filter Module**: Refactored from add_deck_card/filter/ to deck_card/filter/ enabling AddDeckCard and RemoveDeckCard to share filter components
+- **Filter Route Components**: Split filter into separate routes (FilterMana, FilterPrinting, FilterStats, FilterText, FilterTypes) for MVP simplicity
+- **Card Image Centering**: Added display: block and margin: 0 auto to .card-image CSS for proper horizontal centering
 
 ---
 
