@@ -505,6 +505,20 @@ body {
     margin-bottom: 1rem;
 }
 
+.input-half {
+    display: inline-block;
+    width: 48%;
+    margin-right: 2%;
+    margin-bottom: 1rem;
+    vertical-align: top;
+}
+
+.input-half:last-child {
+    margin-right: 0;
+}
+
+
+
 /* ===========================
   common components - labels
  ============================= */
