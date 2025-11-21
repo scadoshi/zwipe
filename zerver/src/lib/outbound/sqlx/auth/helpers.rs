@@ -7,16 +7,16 @@ use crate::{domain::auth::models::{refresh_token::{RefreshToken, Sha256Hash}, se
 // **commits are handled outside of these helpers**
 
 pub trait TxHelper {
-    fn create_refresh_token(&mut self, user_id: &Uuid) -> 
+    fn create_refresh_token(&mut self, user_id: Uuid) -> 
         impl Future<Output = Result<RefreshToken, CreateSessionError>> + Send;
 
-    fn enforce_refresh_token_max(&mut self, user_id: &Uuid) -> 
+    fn enforce_refresh_token_max(&mut self, user_id: Uuid) -> 
         impl Future<Output = Result<(), EnforceSessionMaximumError>> + Send;
 }
 
 /// creates new refresh token for user
 impl<'a> TxHelper for PgTransaction<'a> {
-    async fn create_refresh_token(&mut self, user_id: &Uuid) -> 
+    async fn create_refresh_token(&mut self, user_id: Uuid) -> 
             Result<RefreshToken, CreateSessionError> {
                 let refresh_token = RefreshToken::generate();
                 let _result = query_as!(
@@ -31,7 +31,7 @@ impl<'a> TxHelper for PgTransaction<'a> {
             }
 
     /// removes oldest refresh tokens until total is not greater than max
-    async fn enforce_refresh_token_max(&mut self, user_id: &Uuid) -> 
+    async fn enforce_refresh_token_max(&mut self, user_id: Uuid) -> 
             Result<(), EnforceSessionMaximumError> {
             query!(r#"DELETE FROM refresh_tokens WHERE id IN (
                         SELECT id FROM (

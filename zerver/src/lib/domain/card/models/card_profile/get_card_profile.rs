@@ -49,8 +49,8 @@ impl GetCardProfile {
         Ok(Self(Uuid::try_parse(id)?))
     }
 
-    pub fn id(&self) -> &Uuid {
-        &self.0
+    pub fn id(&self) -> Uuid {
+        self.0
     }
 }
 

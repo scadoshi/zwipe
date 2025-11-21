@@ -3,13 +3,12 @@ use crate::domain::user::models::username::Username;
 use crate::domain::user::models::User;
 use chrono::{NaiveDateTime, Utc};
 use email_address::EmailAddress;
+#[cfg(feature = "zerver")]
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
 use uuid::Uuid;
-
-#[cfg(feature = "zerver")]
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 
 // ========
 //  errors
@@ -110,7 +109,7 @@ impl FromStr for Jwt {
         if s.is_empty() {
             return Err(InvalidJwt::MissingToken);
         }
-        if s.split(".").count() != 3 {
+        if s.split('.').count() != 3 {
             return Err(InvalidJwt::Format);
         }
         Ok(Self(s.to_string()))

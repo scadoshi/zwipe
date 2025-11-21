@@ -7,7 +7,7 @@ use crate::domain::user::models::{
 };
 
 pub trait UserRepository: Clone + Send + Sync + 'static {
-    fn get_user(&self, user_id: &Uuid) -> impl Future<Output = Result<User, GetUserError>> + Send;
+    fn get_user(&self, user_id: Uuid) -> impl Future<Output = Result<User, GetUserError>> + Send;
 }
 
 pub trait UserService: Clone + Send + Sync + 'static {

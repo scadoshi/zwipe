@@ -30,6 +30,6 @@ impl<R: UserRepository> UserService for Service<R> {
         // =====
         //  get
         // =====
-        self.repo.get_user(&request.user_id).await
+        self.repo.get_user(request.user_id).await
     }
 }

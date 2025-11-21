@@ -49,7 +49,7 @@ impl DeckRepository for Postgres {
         &self,
         request: &CreateDeckCard,
     ) -> Result<DeckCard, CreateDeckCardError> {
-        if !request.user_id.owns_deck(&request.deck_id, &self.pool).await? {
+        if !request.user_id.owns_deck(request.deck_id, &self.pool).await? {
             return Err(CreateDeckCardError::Forbidden)
         }
         
@@ -118,7 +118,7 @@ impl DeckRepository for Postgres {
         &self,
         request: &GetDeckProfile,
     ) -> Result<Vec<DeckCard>, GetDeckCardError> {
-        if !request.user_id.owns_deck(&request.deck_id, &self.pool).await? {
+        if !request.user_id.owns_deck(request.deck_id, &self.pool).await? {
             return Err(GetDeckCardError::Forbidden);
         }
 
@@ -145,7 +145,7 @@ impl DeckRepository for Postgres {
         &self,
         request: &UpdateDeckProfile,
     ) -> Result<DeckProfile, UpdateDeckProfileError> {
-        if !request.user_id.owns_deck(&request.deck_id, &self.pool).await? {
+        if !request.user_id.owns_deck(request.deck_id, &self.pool).await? {
             return Err(UpdateDeckProfileError::Forbidden);
         }
 
@@ -186,7 +186,7 @@ impl DeckRepository for Postgres {
         &self,
         request: &UpdateDeckCard,
     ) -> Result<DeckCard, UpdateDeckCardError> {
-        if !request.user_id.owns_deck(&request.deck_id, &self.pool).await? {
+        if !request.user_id.owns_deck(request.deck_id, &self.pool).await? {
             return Err(UpdateDeckCardError::Forbidden);
         }
 
@@ -213,7 +213,7 @@ impl DeckRepository for Postgres {
     //  delete
     // ========
     async fn delete_deck(&self, request: &DeleteDeck) -> Result<(), DeleteDeckError> {
-        if !request.user_id.owns_deck(&request.deck_id, &self.pool).await? {
+        if !request.user_id.owns_deck(request.deck_id, &self.pool).await? {
             return Err(DeleteDeckError::Forbidden);
         }
         
@@ -233,7 +233,7 @@ impl DeckRepository for Postgres {
     }
 
     async fn delete_deck_card(&self, request: &DeleteDeckCard) -> Result<(), DeleteDeckCardError> {
-        if !request.user_id.owns_deck(&request.deck_id, &self.pool).await? {
+        if !request.user_id.owns_deck(request.deck_id, &self.pool).await? {
             return Err(DeleteDeckCardError::Forbidden);
         }
         

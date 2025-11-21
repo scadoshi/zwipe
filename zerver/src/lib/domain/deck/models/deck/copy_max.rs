@@ -5,7 +5,7 @@ use thiserror::Error;
 #[error("must be standard (4) or singleton (1)")]
 pub struct InvalidCopyMax;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Copy)]
 pub struct CopyMax(i32);
 
 impl CopyMax {

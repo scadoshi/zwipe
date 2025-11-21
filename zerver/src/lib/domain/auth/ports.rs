@@ -1,7 +1,3 @@
-use std::future::Future;
-
-use uuid::Uuid;
-
 use crate::domain::{
     auth::models::{
         access_token::JwtSecret,
@@ -23,6 +19,8 @@ use crate::domain::{
     },
     user::models::User,
 };
+use std::future::Future;
+use uuid::Uuid;
 
 /// enables auth related database operations
 pub trait AuthRepository: Clone + Send + Sync + 'static {
@@ -36,7 +34,7 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
 
     fn create_refresh_token(
         &self,
-        request: &Uuid,
+        request: Uuid,
     ) -> impl Future<Output = Result<RefreshToken, CreateSessionError>> + Send;
 
     fn use_refresh_token(
@@ -84,7 +82,7 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
 
     fn delete_users_refresh_tokens(
         &self,
-        user_id: &Uuid,
+        user_id: Uuid,
     ) -> impl Future<Output = Result<(), RevokeSessionsError>> + Send;
 }
 

@@ -39,7 +39,7 @@ impl AuthRepository for Postgres {
         ).fetch_one(&mut *tx).await?;
 
         let user: User = database_user.try_into()?;
-        let refresh_token = tx.create_refresh_token(&user.id).await?;
+        let refresh_token = tx.create_refresh_token(user.id).await?;
         tx.commit().await?;
 
         Ok((user, refresh_token))
@@ -47,7 +47,7 @@ impl AuthRepository for Postgres {
 
     async fn create_refresh_token(
             &self,
-            user_id: &Uuid,
+            user_id: Uuid,
         ) -> Result<RefreshToken, CreateSessionError> {
 
         let mut tx = self.pool.begin().await?;
@@ -178,7 +178,7 @@ impl AuthRepository for Postgres {
 
         query!("DELETE FROM refresh_tokens WHERE id = $1", existing.id).execute(&mut *tx).await?;
 
-        let new = tx.create_refresh_token(&request.user_id).await?;
+        let new = tx.create_refresh_token(request.user_id).await?;
 
         tx.commit().await?;
 
@@ -205,7 +205,7 @@ impl AuthRepository for Postgres {
 
     async fn delete_users_refresh_tokens(
             &self,
-            user_id: &Uuid,
+            user_id: Uuid,
         ) -> Result<(), RevokeSessionsError> {
         let mut tx = self.pool.begin().await?;
 

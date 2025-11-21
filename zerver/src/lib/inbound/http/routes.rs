@@ -172,7 +172,7 @@ pub fn logout_route() -> String {
     "/api/auth/logout".to_string()
 }
 
-pub fn get_card_route(card_profile_id: &Uuid) -> String {
+pub fn get_card_route(card_profile_id: Uuid) -> String {
     format!("/api/card/{}", card_profile_id)
 }
 
@@ -188,7 +188,7 @@ pub fn create_deck_route() -> String {
     "/api/deck".to_string()
 }
 
-pub fn get_deck_route(deck_id: &Uuid) -> String {
+pub fn get_deck_route(deck_id: Uuid) -> String {
     format!("/api/deck/{}", deck_id)
 }
 
@@ -196,26 +196,26 @@ pub fn get_deck_profiles_route() -> String {
     "/api/deck".to_string()
 }
 
-pub fn get_deck_profile_route(deck_id: &Uuid) -> String {
+pub fn get_deck_profile_route(deck_id: Uuid) -> String {
     format!("/api/deck/profile/{}", deck_id)
 }
 
-pub fn update_deck_route(deck_id: &Uuid) -> String {
+pub fn update_deck_route(deck_id: Uuid) -> String {
     format!("/api/deck/{}", deck_id)
 }
 
-pub fn delete_deck_route(deck_id: &Uuid) -> String {
+pub fn delete_deck_route(deck_id: Uuid) -> String {
     format!("/api/deck/{}", deck_id)
 }
 
-pub fn create_deck_card_route(deck_id: &Uuid) -> String {
+pub fn create_deck_card_route(deck_id: Uuid) -> String {
     format!("/api/deck/{}/card", deck_id)
 }
 
-pub fn update_deck_card_route(deck_id: &Uuid, card_profile_id: &Uuid) -> String {
+pub fn update_deck_card_route(deck_id: Uuid, card_profile_id: Uuid) -> String {
     format!("/api/deck/{}/card/{}", deck_id, card_profile_id)
 }
 
-pub fn delete_deck_card_route(deck_id: &Uuid, card_profile_id: &Uuid) -> String {
+pub fn delete_deck_card_route(deck_id: Uuid, card_profile_id: Uuid) -> String {
     format!("/api/deck/{}/card/{}", deck_id, card_profile_id)
 }
