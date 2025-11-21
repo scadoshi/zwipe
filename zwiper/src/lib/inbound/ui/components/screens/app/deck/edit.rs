@@ -132,7 +132,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
 
         deck_name.set(curr_deck.name.to_string());
         original_deck_name.set(curr_deck.name.to_string());
-        copy_max.set(curr_deck.copy_max.clone());
+        copy_max.set(curr_deck.copy_max);
         original_copy_max.set(curr_deck.copy_max);
 
         let curr_commander = match &*commander_resource.read() {
@@ -276,7 +276,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                                             show_dropdown.set(false);
                                                         },
                                                         {
-                                                            card.scryfall_data.name.to_lowercase().to_string()
+                                                            card.scryfall_data.name.to_lowercase()
                                                         }
                                                     }
                                                 }

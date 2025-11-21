@@ -205,7 +205,10 @@ impl HttpServer {
     }
 
     pub async fn run(self) -> anyhow::Result<()> {
-        tracing::info!("server running on {}", self.listener.local_addr().unwrap());
+        tracing::info!(
+            "server running on {}",
+            self.listener.local_addr().map_err(|e| anyhow!(e))?
+        );
         axum::serve(self.listener, self.router)
             .await
             .context("received error from running server")?;

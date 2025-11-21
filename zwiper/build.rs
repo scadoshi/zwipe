@@ -1,3 +1,5 @@
+#![allow(clippy::expect_used, clippy::panic)]
+
 const BACKEND_URL_KEY: &str = "BACKEND_URL";
 const RUST_LOG_KEY: &str = "RUST_LOG";
 const RUST_BACKTRACE_KEY: &str = "RUST_BACKTRACE";

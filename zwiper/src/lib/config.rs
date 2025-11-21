@@ -1,3 +1,5 @@
+#![allow(clippy::unwrap_used)]
+
 use anyhow::Context;
 use reqwest::Url;
 use std::str::FromStr;

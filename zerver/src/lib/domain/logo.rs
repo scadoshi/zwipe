@@ -1,3 +1,5 @@
+#![allow(clippy::print_stdout)]
+
 pub const ZWIPE: &str = include_str!("logo/zwipe.txt");
 pub struct Zwipe;
 

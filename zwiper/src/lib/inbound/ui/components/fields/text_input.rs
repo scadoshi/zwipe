@@ -10,7 +10,7 @@ pub fn TextInput(
 ) -> Element {
     let id = id.unwrap_or_default();
     let placeholder = placeholder.unwrap_or_default();
-    let input_type = input_type.unwrap_or("text".to_string());
+    let input_type = input_type.unwrap_or_else(|| "text".to_string());
 
     rsx! {
         if let Some(label) = label {

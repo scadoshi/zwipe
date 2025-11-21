@@ -102,7 +102,7 @@ pub fn Login() -> Element {
                         div { class : "spinner" }
                     } else if let Some(error) = submission_error() {
                         div { class: "message-error",
-                            { error.to_string() }
+                            { error }
                         }
                     }
 

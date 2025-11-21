@@ -20,12 +20,7 @@ impl OnSwipe for SwipeState {
 
         self.is_swiping = true;
 
-        tracing::trace!(
-            "swipe start={:?}",
-            self.current_point
-                .as_ref()
-                .expect("failed to get swipe info")
-        );
+        tracing::trace!("swipe start={:?}", self.current_point);
     }
 
     fn onswipemove(&mut self, current_point: ClientPoint) {
@@ -51,12 +46,7 @@ impl OnSwipe for SwipeState {
 
         self.set_latest_swipe(config);
 
-        tracing::trace!(
-            "swipe end={:?}",
-            self.current_point
-                .as_ref()
-                .expect("failed to get swipe info")
-        );
+        tracing::trace!("swipe end={:?}", self.current_point);
         self.reset();
     }
 }

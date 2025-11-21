@@ -21,5 +21,6 @@ use rand::Rng;
 pub fn random_success_message() -> String {
     let mut rng = rand::rng();
     let index = rng.random_range(0..SUCCESS_MESSAGES.len());
+    #[allow(clippy::indexing_slicing)]
     SUCCESS_MESSAGES[index].to_string()
 }

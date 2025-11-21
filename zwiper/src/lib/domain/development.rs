@@ -1,7 +1,8 @@
-use std::str::FromStr;
+#![allow(clippy::unwrap_used)]
 
 use chrono::{Duration, Utc};
 use email_address::EmailAddress;
+use std::str::FromStr;
 use uuid::Uuid;
 use zwipe::domain::{
     auth::models::{
