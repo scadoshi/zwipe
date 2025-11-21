@@ -1,6 +1,7 @@
 use crate::{
     inbound::ui::components::{
         auth::{bouncer::Bouncer, session_upkeep::Upkeep},
+        fields::text_input::TextInput,
         interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
         success_messages::random_success_message,
     },
@@ -81,6 +82,7 @@ pub fn ChangeUsername() -> Element {
                         success_message.set(Some(random_success_message()));
                         submission_error.set(None);
                         clear_inputs();
+                        submit_attempted.set(false);
                     }
                     Err(e) => submission_error.set(Some(e.to_string())),
                 }
@@ -89,6 +91,13 @@ pub fn ChangeUsername() -> Element {
             submission_error.set(Some("invalid input".to_string()));
         }
     };
+
+    use_effect(move || {
+        if submit_attempted() {
+            validate_username();
+            validate_password();
+        }
+    });
 
     rsx! {
         Bouncer {
@@ -105,19 +114,10 @@ pub fn ChangeUsername() -> Element {
                             }
                         }
 
-                        input { class: "input",
-                            id : "new_username",
-                            r#type : "text",
-                            placeholder : "new username",
-                            value : "{new_username}",
-                            autocapitalize : "none",
-                            spellcheck : "false",
-                            oninput: move |event| {
-                                new_username.set(event.value());
-                                if submit_attempted() {
-                                    validate_username();
-                                }
-                            }
+                        TextInput {
+                            value: new_username,
+                            id: "new_username".to_string(),
+                            placeholder: "new username".to_string(),
                         }
 
                         if submit_attempted() {
@@ -126,19 +126,11 @@ pub fn ChangeUsername() -> Element {
                             }
                         }
 
-                        input { class: "input",
-                            id : "password",
-                            r#type : "password",
-                            placeholder : "password",
-                            value : "{password}",
-                            autocapitalize : "none",
-                            spellcheck : "false",
-                            oninput : move |event| {
-                                password.set(event.value());
-                                if submit_attempted() {
-                                    validate_password();
-                                }
-                            }
+                        TextInput {
+                            value: password,
+                            id: "password".to_string(),
+                            placeholder: "password".to_string(),
+                            input_type: "password".to_string(),
                         }
 
                         button { class: "btn",

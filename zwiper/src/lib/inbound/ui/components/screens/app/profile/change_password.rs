@@ -1,6 +1,7 @@
 use crate::{
     inbound::ui::components::{
         auth::{bouncer::Bouncer, session_upkeep::Upkeep},
+        fields::text_input::TextInput,
         interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
         success_messages::random_success_message,
     },
@@ -74,6 +75,7 @@ pub fn ChangePassword() -> Element {
                         success_message.set(Some(random_success_message()));
                         submission_error.set(None);
                         clear_inputs();
+                        submit_attempted.set(false);
                     }
                     Err(e) => submission_error.set(Some(e.to_string())),
                 }
@@ -82,6 +84,12 @@ pub fn ChangePassword() -> Element {
             submission_error.set(Some("invalid input".to_string()));
         }
     };
+
+    use_effect(move || {
+        if submit_attempted() {
+            validate_new_password();
+        }
+    });
 
     rsx! {
         Bouncer {
@@ -92,16 +100,11 @@ pub fn ChangePassword() -> Element {
 
                     form { class: "flex-col text-center",
 
-                        input { class: "input",
-                            id : "current_password",
-                            r#type : "password",
-                            placeholder : "current",
-                            value : "{current_password}",
-                            autocapitalize : "none",
-                            spellcheck : "false",
-                            oninput: move |event| {
-                                current_password.set(event.value());
-                            }
+                        TextInput {
+                            value: current_password,
+                            id: "current_password".to_string(),
+                            placeholder: "current password".to_string(),
+                            input_type: "password".to_string(),
                         }
 
                         if submit_attempted() {
@@ -110,34 +113,18 @@ pub fn ChangePassword() -> Element {
                             }
                         }
 
-                        input { class: "input",
-                            id : "new_password",
-                            r#type : "password",
-                            placeholder : "new",
-                            value : "{new_password}",
-                            autocapitalize : "none",
-                            spellcheck : "false",
-                            oninput : move |event| {
-                                new_password.set(event.value());
-                                if submit_attempted() {
-                                    validate_new_password();
-                                }
-                            }
+                        TextInput {
+                            value: new_password,
+                            id: "new_password".to_string(),
+                            placeholder: "new password".to_string(),
+                            input_type: "password".to_string(),
                         }
 
-                        input { class: "input",
-                            id : "confirm_password",
-                            r#type : "password",
-                            placeholder : "confirm new",
-                            value : "{confirm_password}",
-                            autocapitalize : "none",
-                            spellcheck : "false",
-                            oninput : move |event| {
-                                confirm_password.set(event.value());
-                                if submit_attempted() {
-                                    validate_new_password();
-                                }
-                            }
+                        TextInput {
+                            value: confirm_password,
+                            id: "confirm_password".to_string(),
+                            placeholder: "confirm new".to_string(),
+                            input_type: "password".to_string(),
                         }
 
                         button { class: "btn",

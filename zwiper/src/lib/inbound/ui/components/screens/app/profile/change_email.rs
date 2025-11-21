@@ -1,4 +1,5 @@
 use crate::domain::error::UserFacing;
+use crate::inbound::ui::components::fields::text_input::TextInput;
 use crate::inbound::ui::components::{
     auth::{bouncer::Bouncer, session_upkeep::Upkeep},
     interactions::swipe::{config::SwipeConfig, state::SwipeState},
@@ -82,6 +83,7 @@ pub fn ChangeEmail() -> Element {
                         session.set(Some(sesh));
                         success_message.set(Some(random_success_message()));
                         clear_inputs();
+                        submit_attempted.set(false);
                     }
                     Err(e) => submission_error.set(Some(e.to_string())),
                 }
@@ -90,6 +92,13 @@ pub fn ChangeEmail() -> Element {
             submission_error.set(Some("invalid input".to_string()));
         }
     };
+
+    use_effect(move || {
+        if submit_attempted() {
+            validate_email();
+            validate_password();
+        }
+    });
 
     rsx! {
         Bouncer {
@@ -106,19 +115,10 @@ pub fn ChangeEmail() -> Element {
                             }
                         }
 
-                        input { class: "input",
-                            id : "new_email",
-                            r#type : "text",
-                            placeholder : "new email",
-                            value : "{new_email}",
-                            autocapitalize : "none",
-                            spellcheck : "false",
-                            oninput: move |event| {
-                                new_email.set(event.value());
-                                if submit_attempted() {
-                                    validate_email();
-                                }
-                            }
+                        TextInput {
+                            value: new_email,
+                            id: "new_email".to_string(),
+                            placeholder: "new email".to_string(),
                         }
 
                         if submit_attempted() {
@@ -127,19 +127,11 @@ pub fn ChangeEmail() -> Element {
                             }
                         }
 
-                        input { class: "input",
-                            id : "password",
-                            r#type : "password",
-                            placeholder : "password",
-                            value : "{password}",
-                            autocapitalize : "none",
-                            spellcheck : "false",
-                            oninput : move |event| {
-                                password.set(event.value());
-                                if submit_attempted() {
-                                    validate_password();
-                                }
-                            }
+                        TextInput {
+                            value: password,
+                            id: "password".to_string(),
+                            placeholder: "password".to_string(),
+                            input_type: "password".to_string(),
                         }
 
                         button { class: "btn",
