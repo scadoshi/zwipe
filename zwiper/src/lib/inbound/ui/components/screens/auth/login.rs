@@ -1,6 +1,9 @@
 use crate::{
     inbound::ui::{
-        components::interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
+        components::{
+            fields::text_input::TextInput,
+            interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
+        },
         router::Router,
     },
     outbound::{
@@ -77,28 +80,17 @@ pub fn Login() -> Element {
 
                 form { class: "flex-col",
 
-                    input { class: "input",
-                        id : "identity",
-                        r#type : "text",
-                        placeholder : "username or email",
-                        value : "{username_or_email}",
-                        autocapitalize : "none",
-                        spellcheck : "false",
-                        oninput: move |event| {
-                            username_or_email.set(event.value());
-                        }
+                    TextInput {
+                        value: username_or_email,
+                        id: "identity".to_string(),
+                        placeholder: "username or email".to_string(),
                     }
 
-                    input { class: "input",
-                        id : "password",
-                        r#type : "password",
-                        placeholder : "password",
-                        value : "{password}",
-                        autocapitalize : "none",
-                        spellcheck : "false",
-                        oninput : move |event| {
-                            password.set(event.value());
-                        }
+                    TextInput {
+                        value: password,
+                        id: "password".to_string(),
+                        placeholder: "password".to_string(),
+                        input_type: "password".to_string(),
                     }
 
                     button { class: "btn",

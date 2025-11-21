@@ -1,7 +1,10 @@
 use crate::{
     domain::error::UserFacing,
     inbound::ui::{
-        components::interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
+        components::{
+            fields::text_input::TextInput,
+            interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
+        },
         router::Router,
     },
     outbound::{
@@ -102,6 +105,14 @@ pub fn Register() -> Element {
         is_loading.set(false);
     };
 
+    use_effect(move || {
+        if submit_attempted() {
+            validate_username();
+            validate_email();
+            validate_password();
+        }
+    });
+
     rsx! {
         Swipeable { state: swipe_state, config: swipe_config,
             div { class: "logo",  "{logo}" }
@@ -115,20 +126,11 @@ pub fn Register() -> Element {
                         }
                     }
 
-                    input { class: "input",
-                        id : "username",
-                        r#type : "text",
-                        placeholder : "username",
-                        value : "{username}",
-                        autocapitalize : "none",
-                        spellcheck : "false",
-                        oninput : move |event| {
-                            username.set(event.value());
-                            if submit_attempted() {
-                                validate_username();
-                            }
-                        }
-                    }
+                    TextInput {
+                        value: username,
+                        id:"username".to_string(),
+                        placeholder: "username".to_string(),
+                     }
 
                     if submit_attempted() {
                         if let Some(error) = email_error() {
@@ -136,19 +138,10 @@ pub fn Register() -> Element {
                         }
                     }
 
-                    input { class: "input",
-                        id : "email",
-                        r#type : "text",
-                        placeholder : "email",
-                        value : "{email}",
-                        autocapitalize : "none",
-                        spellcheck : "false",
-                        oninput : move |event| {
-                            email.set(event.value());
-                            if submit_attempted() {
-                                validate_email();
-                            }
-                        }
+                    TextInput {
+                        value: email,
+                        id: "email".to_string(),
+                        placeholder: "email".to_string(),
                     }
 
                     if submit_attempted() {
@@ -157,19 +150,11 @@ pub fn Register() -> Element {
                         }
                     }
 
-                    input { class: "input",
-                        id : "password",
-                        r#type : "password",
-                        placeholder : "password",
-                        value : "{password}",
-                        autocapitalize : "none",
-                        spellcheck : "false",
-                        oninput : move |event| {
-                            password.set(event.value());
-                            if submit_attempted() {
-                                validate_password()
-                            }
-                        }
+                    TextInput {
+                        value: email,
+                        id: "password".to_string(),
+                        placeholder: "password".to_string(),
+                        input_type: "password".to_string(),
                     }
 
                     button { class: "btn",
