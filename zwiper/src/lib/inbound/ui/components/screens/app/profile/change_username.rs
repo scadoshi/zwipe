@@ -18,7 +18,7 @@ use zwipe::{
 
 #[component]
 pub fn ChangeUsername() -> Element {
-    let swipe_state = use_signal(|| SwipeState::new());
+    let swipe_state = use_signal(SwipeState::new);
     let swipe_config = SwipeConfig::blank();
 
     let navigator = use_navigator();
@@ -26,7 +26,7 @@ pub fn ChangeUsername() -> Element {
     let mut session: Signal<Option<Session>> = use_context();
     let auth_client: Signal<ZwipeClient> = use_context();
 
-    let mut new_username = use_signal(|| String::new());
+    let mut new_username = use_signal(String::new);
     let mut username_error: Signal<Option<String>> = use_signal(|| None);
     let mut validate_username = move || {
         if let Err(e) = Username::new(&new_username()) {
@@ -36,7 +36,7 @@ pub fn ChangeUsername() -> Element {
         }
     };
 
-    let mut password = use_signal(|| String::new());
+    let mut password = use_signal(String::new);
     let mut password_error: Signal<Option<String>> = use_signal(|| None);
     let mut validate_password = move || {
         if let Err(_) = Password::new(&password()) {

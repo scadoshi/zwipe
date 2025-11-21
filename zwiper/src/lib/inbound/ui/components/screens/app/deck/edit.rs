@@ -35,7 +35,7 @@ use zwipe::{
 
 #[component]
 pub fn EditDeck(deck_id: Uuid) -> Element {
-    let swipe_state = use_signal(|| SwipeState::new());
+    let swipe_state = use_signal(SwipeState::new);
     let swipe_config = SwipeConfig::blank();
 
     let navigator = use_navigator();
@@ -74,12 +74,12 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         });
 
     // form
-    let mut deck_name: Signal<String> = use_signal(|| String::new());
+    let mut deck_name: Signal<String> = use_signal(String::new);
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
-    let mut commander_display = use_signal(|| String::new());
+    let mut commander_display = use_signal(String::new);
     let mut copy_max: Signal<Option<CopyMax>> = use_signal(|| None);
 
-    let mut original_deck_name: Signal<String> = use_signal(|| String::new());
+    let mut original_deck_name: Signal<String> = use_signal(String::new);
     let mut original_commander: Signal<Option<Card>> = use_signal(|| None);
     let mut original_copy_max: Signal<Option<CopyMax>> = use_signal(|| None);
 
@@ -116,8 +116,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut load_error = use_signal(|| None::<String>);
 
     // commander search state
-    let mut search_query = use_signal(|| String::new());
-    let mut search_results = use_signal(|| Vec::<Card>::new());
+    let mut search_query = use_signal(String::new);
+    let mut search_results = use_signal(Vec::<Card>::new);
     let mut is_searching = use_signal(|| false);
     let mut show_dropdown = use_signal(|| false);
 

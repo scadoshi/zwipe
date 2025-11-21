@@ -25,7 +25,7 @@ use zwipe::{
 
 #[component]
 pub fn Login() -> Element {
-    let swipe_state = use_signal(|| SwipeState::new());
+    let swipe_state = use_signal(SwipeState::new);
     let swipe_config = SwipeConfig::blank();
 
     let navigator = use_navigator();
@@ -35,8 +35,8 @@ pub fn Login() -> Element {
 
     let logo = logo::ZWIPE;
 
-    let mut username_or_email = use_signal(|| String::new());
-    let mut password = use_signal(|| String::new());
+    let username_or_email = use_signal(String::new);
+    let password = use_signal(String::new);
 
     let mut submit_attempted = use_signal(|| false);
     let mut is_loading = use_signal(|| false);

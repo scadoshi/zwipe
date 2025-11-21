@@ -18,7 +18,7 @@ use zwipe::domain::auth::models::session::Session;
 
 #[component]
 pub fn Profile() -> Element {
-    let swipe_state = use_signal(|| SwipeState::new());
+    let swipe_state = use_signal(SwipeState::new);
     let swipe_config = SwipeConfig::blank();
 
     let session: Signal<Option<Session>> = use_context();

@@ -23,8 +23,8 @@ pub struct SwipeState {
     pub return_animation_seconds: f64,
 }
 
-impl SwipeState {
-    pub fn new() -> Self {
+impl Default for SwipeState {
+    fn default() -> Self {
         Self {
             start_point: None,
             current_point: None,
@@ -35,6 +35,12 @@ impl SwipeState {
             is_swiping: false,
             return_animation_seconds: 0.0,
         }
+    }
+}
+
+impl SwipeState {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn reset(&mut self) {

@@ -39,7 +39,7 @@ impl From<GetCardProfileError> for SearchCardsError {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct SearchCards {
     pub name_contains: Option<String>,
     pub type_line_contains: Option<String>,

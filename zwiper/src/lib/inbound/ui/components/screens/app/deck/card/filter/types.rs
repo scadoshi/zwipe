@@ -20,7 +20,7 @@ use zwipe::{
 #[component]
 pub fn Types() -> Element {
     let swipe_config = SwipeConfig::blank();
-    let swipe_state = use_signal(|| SwipeState::new());
+    let swipe_state = use_signal(SwipeState::new);
     let navigator = use_navigator();
 
     let session: Signal<Option<Session>> = use_context();
@@ -37,8 +37,8 @@ pub fn Types() -> Element {
             client().get_card_types(&sesh).await
         });
 
-    let mut selected_other_types: Signal<Vec<String>> = use_signal(|| Vec::new());
-    let mut other_type_query_string_for_dropdown = use_signal(|| String::new());
+    let mut selected_other_types: Signal<Vec<String>> = use_signal(Vec::new);
+    let mut other_type_query_string_for_dropdown = use_signal(String::new);
     let mut show_other_type_dropdown = use_signal(|| false);
 
     use_effect(move || {

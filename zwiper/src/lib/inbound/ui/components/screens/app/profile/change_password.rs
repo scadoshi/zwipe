@@ -15,7 +15,7 @@ use zwipe::{
 
 #[component]
 pub fn ChangePassword() -> Element {
-    let swipe_state = use_signal(|| SwipeState::new());
+    let swipe_state = use_signal(SwipeState::new);
     let swipe_config = SwipeConfig::blank();
 
     let navigator = use_navigator();
@@ -26,10 +26,10 @@ pub fn ChangePassword() -> Element {
     // we do not validate current password on frontend
     // as to not lock them out of changing
     // if their current somehow defies policy
-    let mut current_password = use_signal(|| String::new());
+    let mut current_password = use_signal(String::new);
 
-    let mut new_password = use_signal(|| String::new());
-    let mut confirm_password = use_signal(|| String::new());
+    let mut new_password = use_signal(String::new);
+    let mut confirm_password = use_signal(String::new);
     let mut password_error: Signal<Option<String>> = use_signal(|| None);
     let mut validate_new_password = move || {
         if let Err(e) = Password::new(&new_password()) {

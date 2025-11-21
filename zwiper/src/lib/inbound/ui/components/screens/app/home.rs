@@ -14,7 +14,7 @@ use zwipe::domain::{auth::models::session::Session, logo};
 
 #[component]
 pub fn Home() -> Element {
-    let swipe_state = use_signal(|| SwipeState::new());
+    let swipe_state = use_signal(SwipeState::new);
     let swipe_config = SwipeConfig::blank();
 
     let navigator = use_navigator();

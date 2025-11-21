@@ -28,7 +28,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     tracing::debug!("{} cards found", { cards.len() });
 
-    let swipe_state = use_signal(|| SwipeState::new());
+    let swipe_state = use_signal(SwipeState::new);
     let swipe_config = SwipeConfig::blank();
 
     let navigator = use_navigator();
@@ -67,8 +67,9 @@ pub fn Add(deck_id: Uuid) -> Element {
             return;
         };
 
+        let filter_clone = filter.read().clone();
         spawn(async move {
-            match client().search_cards(&filter.read(), &sesh).await {
+            match client().search_cards(&filter_clone, &sesh).await {
                 Ok(cards_from_search) => {
                     search_error.set(None);
                     cards.set(

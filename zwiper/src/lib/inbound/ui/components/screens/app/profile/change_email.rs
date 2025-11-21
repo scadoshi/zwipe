@@ -19,7 +19,7 @@ use zwipe::{
 
 #[component]
 pub fn ChangeEmail() -> Element {
-    let swipe_state = use_signal(|| SwipeState::new());
+    let swipe_state = use_signal(SwipeState::new);
     let swipe_config = SwipeConfig::blank();
 
     let navigator = use_navigator();
@@ -27,7 +27,7 @@ pub fn ChangeEmail() -> Element {
     let mut session: Signal<Option<Session>> = use_context();
     let auth_client: Signal<ZwipeClient> = use_context();
 
-    let mut new_email = use_signal(|| String::new());
+    let mut new_email = use_signal(String::new);
     let mut email_error: Signal<Option<String>> = use_signal(|| None);
     let mut validate_email = move || {
         if let Err(e) = EmailAddress::from_str(&new_email()) {
@@ -37,7 +37,7 @@ pub fn ChangeEmail() -> Element {
         }
     };
 
-    let mut password = use_signal(|| String::new());
+    let mut password = use_signal(String::new);
     let mut password_error: Signal<Option<String>> = use_signal(|| None);
     let mut validate_password = move || {
         if let Err(_) = Password::new(&password()) {

@@ -26,7 +26,7 @@ use zwipe::{
 
 #[component]
 pub fn Register() -> Element {
-    let swipe_state = use_signal(|| SwipeState::new());
+    let swipe_state = use_signal(SwipeState::new);
     let swipe_config = SwipeConfig::blank();
 
     let navigator = use_navigator();
@@ -36,9 +36,9 @@ pub fn Register() -> Element {
 
     let logo = logo::ZWIPE;
 
-    let mut username = use_signal(|| String::new());
-    let mut email = use_signal(|| String::new());
-    let mut password = use_signal(|| String::new());
+    let username = use_signal(String::new);
+    let email = use_signal(String::new);
+    let password = use_signal(String::new);
 
     let mut submit_attempted = use_signal(|| false);
     let mut is_loading = use_signal(|| false);

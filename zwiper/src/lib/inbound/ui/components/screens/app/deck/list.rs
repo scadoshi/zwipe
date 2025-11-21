@@ -16,7 +16,7 @@ use zwipe::{
 
 #[component]
 pub fn DeckList() -> Element {
-    let swipe_state = use_signal(|| SwipeState::new());
+    let swipe_state = use_signal(SwipeState::new);
     let swipe_config = SwipeConfig::blank();
 
     let navigator = use_navigator();

@@ -16,7 +16,7 @@ pub struct Config {
 
 impl Config {
     pub fn from_env() -> Self {
-        let backend_url = Url::from_str(&BACKEND_URL)
+        let backend_url = Url::from_str(BACKEND_URL)
             .context(format!("invalid url in BACKEND_URL: {}", BACKEND_URL))
             .unwrap();
 

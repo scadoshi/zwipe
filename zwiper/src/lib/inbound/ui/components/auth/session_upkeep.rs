@@ -53,17 +53,17 @@ impl Upkeep for Signal<Option<Session>> {
 
 pub fn spawn_upkeeper() {
     tracing::debug!("upkeeper spawned");
-    let session = use_signal(|| Session::infallible_load());
+    let session = use_signal(Session::infallible_load);
     use_context_provider(|| session);
 
-    let client = use_signal(|| ZwipeClient::new());
+    let client = use_signal(ZwipeClient::new);
     use_context_provider(|| client);
 
     // card search state - used by deck card screens
-    let filter = use_signal(|| SearchCards::default());
+    let filter = use_signal(SearchCards::default);
     use_context_provider(|| filter);
 
-    let cards = use_signal(|| Vec::<Card>::new());
+    let cards = use_signal(Vec::<Card>::new);
     use_context_provider(|| cards);
 
     spawn(async move {

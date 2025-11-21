@@ -2,6 +2,7 @@ use crate::{
     inbound::ui::{
         components::{
             auth::{bouncer::Bouncer, session_upkeep::Upkeep},
+            fields::text_input::TextInput,
             interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
         },
         router::Router,
@@ -24,7 +25,7 @@ use zwipe::{
 
 #[component]
 pub fn CreateDeck() -> Element {
-    let swipe_state = use_signal(|| SwipeState::new());
+    let swipe_state = use_signal(SwipeState::new);
     let swipe_config = SwipeConfig::blank();
 
     let navigator = use_navigator();
@@ -33,14 +34,14 @@ pub fn CreateDeck() -> Element {
     let auth_client: Signal<ZwipeClient> = use_context();
 
     // form
-    let mut deck_name = use_signal(|| String::new());
+    let deck_name = use_signal(String::new);
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
-    let mut commander_display = use_signal(|| String::new());
+    let mut commander_display = use_signal(String::new);
     let mut copy_max: Signal<Option<CopyMax>> = use_signal(|| None);
 
     // commander search state
-    let mut search_query = use_signal(|| String::new());
-    let mut search_results = use_signal(|| Vec::<Card>::new());
+    let mut search_query = use_signal(String::new);
+    let mut search_results = use_signal(Vec::<Card>::new);
     let mut is_searching = use_signal(|| false);
     let mut show_dropdown = use_signal(|| false);
 
@@ -120,16 +121,10 @@ pub fn CreateDeck() -> Element {
                     h2 { class: "text-center mb-2 font-light tracking-wider", "create deck" }
 
                     form { class: "flex-col text-center",
-                        input { class: "input",
-                            id: "deck name",
-                            r#type : "text",
-                            placeholder : "deck name",
-                            value : "{deck_name}",
-                            autocapitalize : "none",
-                            spellcheck : "false",
-                            oninput : move |event| {
-                                deck_name.set(event.value());
-                            }
+                        TextInput {
+                            value: deck_name,
+                            id: "deck-name".to_string(),
+                            placeholder: "deck name".to_string(),
                         }
 
                         div { class: "mb-4",
@@ -162,9 +157,7 @@ pub fn CreateDeck() -> Element {
                                                     commander_display.set(card.scryfall_data.name.clone().to_lowercase());
                                                     show_dropdown.set(false);
                                                 },
-                                                {
-                                                    format!("{}", card.scryfall_data.name.to_lowercase())
-                                                }
+                                                { card.scryfall_data.name.to_lowercase() }
                                             }
                                         }
                                     }

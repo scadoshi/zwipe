@@ -2,13 +2,13 @@ use crate::inbound::ui::components::{
     auth::bouncer::Bouncer,
     interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
 };
-use dioxus::{html::tr, prelude::*};
+use dioxus::prelude::*;
 use zwipe::domain::card::models::search_card::SearchCards;
 
 #[component]
 pub fn Mana() -> Element {
     let swipe_config = SwipeConfig::blank();
-    let swipe_state = use_signal(|| SwipeState::new());
+    let swipe_state = use_signal(SwipeState::new);
     let navigator = use_navigator();
 
     let mut filter: Signal<SearchCards> = use_context();
@@ -21,7 +21,7 @@ pub fn Mana() -> Element {
        ⚠️ pub color_identity_contains_any: Option<Colors>,
     */
 
-    let mut cmc_equals_string = use_signal(|| String::new());
+    let mut cmc_equals_string = use_signal(String::new);
     let mut try_parse_cmc_equals = move || {
         if cmc_equals_string().is_empty() {
             filter.write().cmc_equals = None;
@@ -35,8 +35,8 @@ pub fn Mana() -> Element {
         }
     };
 
-    let mut cmc_range_min_string = use_signal(|| String::new());
-    let mut cmc_range_max_string = use_signal(|| String::new());
+    let mut cmc_range_min_string = use_signal(String::new);
+    let mut cmc_range_max_string = use_signal(String::new);
     let mut try_parse_cmc_range = move || {
         if cmc_range_min_string().is_empty() || cmc_range_max_string.is_empty() {
             filter.write().cmc_range = None;

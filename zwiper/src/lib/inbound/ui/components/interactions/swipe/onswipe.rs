@@ -12,7 +12,7 @@ pub trait OnSwipe {
 
 impl OnSwipe for SwipeState {
     fn onswipestart(&mut self, start_point: ClientPoint) {
-        let time_point = TimePoint::new(start_point.clone(), Utc::now().naive_utc());
+        let time_point = TimePoint::new(start_point, Utc::now().naive_utc());
 
         self.start_point = Some(time_point.clone());
         self.current_point = Some(time_point.clone());

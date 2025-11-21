@@ -16,7 +16,7 @@ use dioxus::prelude::*;
 #[component]
 pub fn Filter() -> Element {
     let swipe_config = SwipeConfig::blank();
-    let swipe_state = use_signal(|| SwipeState::new());
+    let swipe_state = use_signal(SwipeState::new);
     let navigator = use_navigator();
 
     rsx! {

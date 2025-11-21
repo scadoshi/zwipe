@@ -8,7 +8,7 @@ use zwipe::domain::card::models::search_card::SearchCards;
 #[component]
 pub fn Text() -> Element {
     let swipe_config = SwipeConfig::blank();
-    let swipe_state = use_signal(|| SwipeState::new());
+    let swipe_state = use_signal(SwipeState::new);
     let navigator = use_navigator();
 
     let mut filter: Signal<SearchCards> = use_context();

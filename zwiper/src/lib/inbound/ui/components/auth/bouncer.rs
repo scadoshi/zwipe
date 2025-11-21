@@ -10,7 +10,7 @@ pub fn Bouncer(children: Element) -> Element {
     let has_session = use_memo(move || {
         session()
             .as_ref()
-            .map_or(false, |current| !current.is_expired())
+            .is_some_and(|current| !current.is_expired())
     });
 
     use_effect(move || {
