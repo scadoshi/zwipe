@@ -269,7 +269,7 @@ impl CardRepository for MyPostgres {
             let higher = cmc_range.0.max(cmc_range.1);
             sep.push("cmc between ");
             sep.push_bind_unseparated(lower);
-            sep.push("AND ");
+            sep.push("");
             sep.push_bind_unseparated(higher);
         }
 
