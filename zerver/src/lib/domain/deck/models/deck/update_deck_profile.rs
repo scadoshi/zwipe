@@ -74,9 +74,9 @@ impl UpdateDeckProfile {
         if name.is_none() && commander_id.is_none() && copy_max.is_none() {
             return Err(InvalidUpdateDeckProfile::NoUpdates);
         }
-        let name = name.map(|name_str| DeckName::new(name_str)).transpose()?;
+        let name = name.map(DeckName::new).transpose()?;
         let copy_max = copy_max
-            .map(|update| update.map(|value| CopyMax::new(value)).transpose())
+            .map(|update| update.map(CopyMax::new).transpose())
             .transpose()?;
 
         Ok(Self {

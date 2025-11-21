@@ -52,7 +52,7 @@ impl CreateDeckProfile {
         user_id: Uuid,
     ) -> Result<Self, InvalidCreateDeckProfile> {
         let name = DeckName::new(name)?;
-        let copy_max: Option<CopyMax> = copy_max.map(|max| CopyMax::new(max)).transpose()?;
+        let copy_max: Option<CopyMax> = copy_max.map(CopyMax::new).transpose()?;
         Ok(Self {
             name,
             commander_id,

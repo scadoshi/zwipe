@@ -113,7 +113,6 @@ pub fn scryfall_data_field_count() -> usize {
 
 /// for pushing all scryfall data fields
 /// onto a `QueryBuilder``
-
 pub trait BindScryfallDataFields {
     fn bind_scryfall_fields(&mut self, card: &ScryfallData);
 }

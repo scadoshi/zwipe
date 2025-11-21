@@ -124,8 +124,8 @@ impl From<RawRegisterUser> for HttpRegisterUser {
     fn from(value: RawRegisterUser) -> Self {
         Self::new(
             &value.username.to_string(),
-            &value.email.to_string(),
-            &value.password.read().to_string(),
+            value.email.as_ref(),
+            value.password.read(),
         )
     }
 }

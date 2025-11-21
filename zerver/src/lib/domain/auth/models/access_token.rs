@@ -163,8 +163,8 @@ impl AccessToken {
             user_id: user.id,
             username: user.username.clone(),
             email: user.email.clone(),
-            exp: expires_at.and_utc().timestamp() as i64,
-            iat: issued_at.and_utc().timestamp() as i64,
+            exp: expires_at.and_utc().timestamp(),
+            iat: issued_at.and_utc().timestamp(),
         };
 
         let value = Jwt::from_str(
@@ -173,7 +173,7 @@ impl AccessToken {
                 &user_claims,
                 &EncodingKey::from_secret(secret.as_ref()),
             )
-            .map_err(|e| InvalidJwt::EncodingError(e))?,
+            .map_err(InvalidJwt::EncodingError)?,
         )?;
 
         Ok(AccessToken::new(value, expires_at))

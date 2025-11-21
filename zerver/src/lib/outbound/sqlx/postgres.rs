@@ -39,9 +39,8 @@ impl IsConstraintViolation for sqlx::Error {
 /// postgresql connection pool with production-ready defaults
 pub struct PostgresPoolOptions(sqlx::postgres::PgPoolOptions);
 
-impl PostgresPoolOptions {
-    /// creates pool options with optimized settings for production workloads
-    pub fn new() -> Self {
+impl Default for PostgresPoolOptions {
+    fn default() -> Self {
         Self(
             sqlx::postgres::PgPoolOptions::new()
                 .min_connections(2)
@@ -49,6 +48,13 @@ impl PostgresPoolOptions {
                 .idle_timeout(Some(std::time::Duration::from_secs(300)))
                 .acquire_timeout(std::time::Duration::from_secs(5)),
         )
+    }
+}
+
+impl PostgresPoolOptions {
+    /// creates pool options with optimized settings for production workloads
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub async fn connect(self, path: &str) -> Result<sqlx::postgres::PgPool, sqlx::Error> {

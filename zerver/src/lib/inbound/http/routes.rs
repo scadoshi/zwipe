@@ -193,7 +193,7 @@ pub fn get_deck_route(deck_id: &Uuid) -> String {
 }
 
 pub fn get_deck_profiles_route() -> String {
-    format!("/api/deck")
+    "/api/deck".to_string()
 }
 
 pub fn get_deck_profile_route(deck_id: &Uuid) -> String {

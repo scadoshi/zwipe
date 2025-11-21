@@ -54,10 +54,8 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// intends to incrementally update database with only new cards
     ///
     /// the flow looks something like this
-    /// 1. find ids of cards which
-    /// given list include but database does not
-    /// 2. insert **only those** cards into database
-    /// (uses batch_insert)
+    /// 1. find ids of cards which given list include but database does not
+    /// 2. insert **only those** cards into database (uses batch_insert)
     ///
     /// transactions keep it atomic!
     fn batch_insert_if_not_exists(
@@ -72,8 +70,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// the flow looks something like this
     /// 1. find ids of cards which given list *and* database share
     /// 2. delete cards with those ids from database
-    /// 3. insert all given cards back into database
-    /// (uses batch_insert)
+    /// 3. insert all given cards back into database (uses batch_insert)
     ///
     /// transactions keep it atomic!
     fn delete_if_exists_and_batch_insert(

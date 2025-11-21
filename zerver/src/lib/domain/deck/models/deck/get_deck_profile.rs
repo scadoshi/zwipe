@@ -39,8 +39,8 @@ impl GetDeckProfile {
 impl From<&DeckProfile> for GetDeckProfile {
     fn from(value: &DeckProfile) -> Self {
         Self {
-            deck_id: value.id.clone(),
-            user_id: value.user_id.clone(),
+            deck_id: value.id,
+            user_id: value.user_id,
         }
     }
 }
@@ -49,8 +49,8 @@ impl From<&DeckProfile> for GetDeckProfile {
 impl From<&UpdateDeckProfile> for GetDeckProfile {
     fn from(value: &UpdateDeckProfile) -> Self {
         Self {
-            deck_id: value.deck_id.clone(),
-            user_id: value.user_id.clone(),
+            deck_id: value.deck_id,
+            user_id: value.user_id,
         }
     }
 }
@@ -59,8 +59,8 @@ impl From<&UpdateDeckProfile> for GetDeckProfile {
 impl From<&CreateDeckCard> for GetDeckProfile {
     fn from(value: &CreateDeckCard) -> Self {
         Self {
-            deck_id: value.deck_id.clone(),
-            user_id: value.user_id.clone(),
+            deck_id: value.deck_id,
+            user_id: value.user_id,
         }
     }
 }
@@ -69,8 +69,8 @@ impl From<&CreateDeckCard> for GetDeckProfile {
 impl From<&UpdateDeckCard> for GetDeckProfile {
     fn from(value: &UpdateDeckCard) -> Self {
         Self {
-            deck_id: value.deck_id.clone(),
-            user_id: value.user_id.clone(),
+            deck_id: value.deck_id,
+            user_id: value.user_id,
         }
     }
 }
@@ -79,8 +79,8 @@ impl From<&UpdateDeckCard> for GetDeckProfile {
 impl From<&DeleteDeckCard> for GetDeckProfile {
     fn from(value: &DeleteDeckCard) -> Self {
         Self {
-            deck_id: value.deck_id.clone(),
-            user_id: value.user_id.clone(),
+            deck_id: value.deck_id,
+            user_id: value.user_id,
         }
     }
 }

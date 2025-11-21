@@ -26,7 +26,7 @@ impl<'a> TxHelper for PgTransaction<'a> {
                     refresh_token.sha256_hash(), 
                     refresh_token.expires_at
                 ).fetch_one(&mut **self).await?;
-                self.enforce_refresh_token_max(&user_id).await?;
+                self.enforce_refresh_token_max(user_id).await?;
                 Ok(refresh_token)
             }
 

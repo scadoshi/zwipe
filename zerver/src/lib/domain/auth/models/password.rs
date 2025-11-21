@@ -191,9 +191,12 @@ impl HashedPassword {
             Err(e) => Err(e),
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
-        self.0.clone()
+#[cfg(feature = "zerver")]
+impl std::fmt::Display for HashedPassword {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 

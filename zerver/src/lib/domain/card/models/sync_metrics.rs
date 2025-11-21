@@ -11,10 +11,8 @@ use uuid::Uuid;
 /// represents the type of sync which occured
 /// in this entry of SyncMetrics
 ///
-///  - **Partial**: incremental addition of new cards
-/// that do not exist in database
-/// - **Full**: comprehensive refresh of all given cards
-/// even if already exists in database
+///  - **Partial**: incremental addition of new cards that do not exist in database
+/// - **Full**: comprehensive refresh of all given cards even if already exists in database
 #[derive(Debug, Clone, Serialize, Deserialize, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum SyncType {
@@ -43,7 +41,7 @@ impl TryFrom<&str> for SyncType {
 }
 
 /// for tracking sync status
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum SyncStatus {
     Success,
@@ -241,19 +239,19 @@ impl SyncMetrics {
 
     // for getting from SyncMetrics
     pub fn sync_type(&self) -> SyncType {
-        self.sync_type.clone()
+        self.sync_type
     }
     pub fn started_at(&self) -> NaiveDateTime {
-        self.started_at.clone()
+        self.started_at
     }
     pub fn ended_at(&self) -> Option<NaiveDateTime> {
-        self.ended_at.clone()
+        self.ended_at
     }
     pub fn duration_in_seconds(&self) -> i32 {
         self.duration_in_seconds
     }
     pub fn status(&self) -> SyncStatus {
-        self.status.clone()
+        self.status
     }
     pub fn received(&self) -> i32 {
         self.received

@@ -95,7 +95,7 @@ impl RefreshSession {
 impl From<&Session> for RefreshSession {
     fn from(value: &Session) -> Self {
         Self {
-            user_id: value.user.id.clone(),
+            user_id: value.user.id,
             refresh_token: value.refresh_token.value.clone(),
         }
     }

@@ -55,5 +55,5 @@ where
         .get_user(&request)
         .await
         .map_err(ApiError::from)
-        .map(|user| (StatusCode::OK, Json(user.into())))
+        .map(|user| (StatusCode::OK, Json(user)))
 }

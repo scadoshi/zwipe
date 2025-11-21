@@ -45,11 +45,11 @@ impl DeleteDeckCard {
         deck_id: &str,
         card_profile_id: &str,
     ) -> Result<Self, InvalidDeleteDeckCard> {
-        let deck_id = Uuid::try_parse(deck_id).map_err(|e| InvalidDeleteDeckCard::DeckId(e))?;
-        let card_profile_id = Uuid::try_parse(card_profile_id)
-            .map_err(|e| InvalidDeleteDeckCard::CardProfileId(e))?;
+        let deck_id = Uuid::try_parse(deck_id).map_err(InvalidDeleteDeckCard::DeckId)?;
+        let card_profile_id =
+            Uuid::try_parse(card_profile_id).map_err(InvalidDeleteDeckCard::CardProfileId)?;
         Ok(Self {
-            user_id: user_id,
+            user_id,
             deck_id,
             card_profile_id,
         })

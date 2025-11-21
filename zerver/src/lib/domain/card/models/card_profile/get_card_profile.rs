@@ -66,7 +66,7 @@ impl CardProfileIds {
         }
         Ok(Self(
             ids.into_iter()
-                .map(|x| Uuid::try_parse(x))
+                .map(Uuid::try_parse)
                 .collect::<Result<Vec<Uuid>, uuid::Error>>()?,
         ))
     }
@@ -81,7 +81,7 @@ impl From<&[DeckCard]> for CardProfileIds {
     fn from(value: &[DeckCard]) -> Self {
         Self(
             value
-                .into_iter()
+                .iter()
                 .map(|dc| dc.card_profile_id.to_owned())
                 .collect(),
         )
@@ -91,6 +91,6 @@ impl From<&[DeckCard]> for CardProfileIds {
 #[cfg(feature = "zerver")]
 impl From<&[ScryfallData]> for CardProfileIds {
     fn from(value: &[ScryfallData]) -> Self {
-        Self(value.into_iter().map(|sfd| sfd.id.to_owned()).collect())
+        Self(value.iter().map(|sfd| sfd.id.to_owned()).collect())
     }
 }

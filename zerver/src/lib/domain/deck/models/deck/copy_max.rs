@@ -45,7 +45,7 @@ impl<'de> Deserialize<'de> for CopyMax {
         D: serde::Deserializer<'de>,
     {
         let max: i32 = serde::Deserialize::deserialize(deserializer)?;
-        let card_copy_max = CopyMax::new(max).map_err(|e| serde::de::Error::custom(e))?;
+        let card_copy_max = CopyMax::new(max).map_err(serde::de::Error::custom)?;
         Ok(card_copy_max)
     }
 }

@@ -64,8 +64,7 @@ impl ChangePassword {
     ) -> Result<Self, InvalidChangePassword> {
         use crate::domain::auth::models::password::Password;
 
-        let new_password =
-            Password::new(new_password).map_err(|e| InvalidChangePassword::Password(e))?;
+        let new_password = Password::new(new_password).map_err(InvalidChangePassword::Password)?;
         // no type validation of current password
         // so user isn't locked out of changing their password
         let current_password = current_password.to_string();

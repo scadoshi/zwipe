@@ -100,7 +100,7 @@ impl CardRepository for MyPostgres {
         let new_data: Vec<ScryfallData> = scryfall_data
             .iter()
             .filter(|sfd| !existing_ids.contains(&sfd.id))
-            .map(|sfd| sfd.clone())
+            .cloned()
             .collect();
 
         if new_data.is_empty() {
@@ -374,7 +374,7 @@ impl CardRepository for MyPostgres {
         .fetch_all(&self.pool)
         .await?
         .into_iter()
-        .filter_map(|x| x)
+        .flatten()
         .collect();
 
         Ok(card_types)

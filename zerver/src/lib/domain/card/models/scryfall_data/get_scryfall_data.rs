@@ -49,7 +49,7 @@ impl<'de> Deserialize<'de> for GetScryfallData {
 #[cfg(feature = "zerver")]
 impl From<&CardProfile> for GetScryfallData {
     fn from(value: &CardProfile) -> Self {
-        Self(value.scryfall_data_id.clone())
+        Self(value.scryfall_data_id)
     }
 }
 
@@ -66,7 +66,7 @@ impl ScryfallDataIds {
         }
         Ok(Self(
             ids.into_iter()
-                .map(|x| Uuid::try_parse(x))
+                .map(Uuid::try_parse)
                 .collect::<Result<Vec<Uuid>, uuid::Error>>()?,
         ))
     }
@@ -81,7 +81,7 @@ impl From<&[CardProfile]> for ScryfallDataIds {
     fn from(value: &[CardProfile]) -> Self {
         Self(
             value
-                .into_iter()
+                .iter()
                 .map(|x| x.scryfall_data_id.to_owned())
                 .collect(),
         )
@@ -91,7 +91,7 @@ impl From<&[CardProfile]> for ScryfallDataIds {
 #[cfg(feature = "zerver")]
 impl From<&[ScryfallData]> for ScryfallDataIds {
     fn from(value: &[ScryfallData]) -> Self {
-        Self(value.into_iter().map(|x| x.id.to_owned()).collect())
+        Self(value.iter().map(|x| x.id.to_owned()).collect())
     }
 }
 

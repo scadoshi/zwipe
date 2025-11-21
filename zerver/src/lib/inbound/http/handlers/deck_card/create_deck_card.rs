@@ -94,5 +94,5 @@ where
         .create_deck_card(&request)
         .await
         .map_err(ApiError::from)
-        .map(|deck_card| (StatusCode::CREATED, Json(deck_card.into())))
+        .map(|deck_card| (StatusCode::CREATED, Json(deck_card)))
 }

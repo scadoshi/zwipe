@@ -43,7 +43,7 @@ where
 /// for inserting a single card given a transaction
 impl InsertCardWithTx for ScryfallData {
     async fn insert_with_tx(&self, tx: &mut PgTransaction<'_>) -> Result<Card, CreateCardError> {
-        let scryfall_data_id = self.id.clone();
+        let scryfall_data_id = self.id;
         let mut sfd_qb = QueryBuilder::new("INSERT INTO scryfall_data (");
         sfd_qb.push(scryfall_data_fields()).push(") VALUES ");
         sfd_qb.bind_scryfall_fields(self);
@@ -90,7 +90,7 @@ impl InsertCardsWithTx for &[ScryfallData] {
         sfd_qb.push(scryfall_data_fields()).push(") VALUES ");
 
         let mut sfd: Vec<ScryfallData> = self.to_vec();
-        sfd.dedup_by_key(|sfd| sfd.id.clone());
+        sfd.dedup_by_key(|sfd| sfd.id);
         sfd.bind_to(&mut sfd_qb);
         sfd_qb.push(" RETURNING *;");
 
@@ -155,7 +155,7 @@ async fn insert_card_by_card(
 ) {
     for card in batch {
         let card_name = card.name.clone();
-        let card_id = card.id.clone();
+        let card_id = card.id;
 
         match card.insert_with_tx(tx).await {
             Ok(_) => sync_metrics.add_imported(1),

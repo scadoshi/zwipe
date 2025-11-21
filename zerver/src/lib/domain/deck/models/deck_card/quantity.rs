@@ -40,7 +40,7 @@ impl<'de> Deserialize<'de> for Quantity {
         D: serde::Deserializer<'de>,
     {
         let quantity = i32::deserialize(deserializer)?;
-        Quantity::new(quantity).map_err(|e| serde::de::Error::custom(e))
+        Quantity::new(quantity).map_err(serde::de::Error::custom)
     }
 }
 

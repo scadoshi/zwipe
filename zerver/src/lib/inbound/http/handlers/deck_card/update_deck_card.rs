@@ -93,5 +93,5 @@ where
         .update_deck_card(&request)
         .await
         .map_err(ApiError::from)
-        .map(|deck_card| (StatusCode::OK, Json(deck_card.into())))
+        .map(|deck_card| (StatusCode::OK, Json(deck_card)))
 }

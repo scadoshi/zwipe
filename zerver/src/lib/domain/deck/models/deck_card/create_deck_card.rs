@@ -57,9 +57,9 @@ impl CreateDeckCard {
         card_profile_id: &str,
         quantity: i32,
     ) -> Result<Self, InvalidCreateDeckCard> {
-        let deck_id = Uuid::try_parse(deck_id).map_err(|e| InvalidCreateDeckCard::DeckId(e))?;
-        let card_profile_id = Uuid::try_parse(card_profile_id)
-            .map_err(|e| InvalidCreateDeckCard::CardProfileId(e))?;
+        let deck_id = Uuid::try_parse(deck_id).map_err(InvalidCreateDeckCard::DeckId)?;
+        let card_profile_id =
+            Uuid::try_parse(card_profile_id).map_err(InvalidCreateDeckCard::CardProfileId)?;
         let quantity = Quantity::new(quantity)?;
 
         Ok(Self {

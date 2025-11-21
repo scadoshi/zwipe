@@ -86,5 +86,5 @@ where
         .create_deck_profile(&request)
         .await
         .map_err(ApiError::from)
-        .map(|deck_profile| (StatusCode::CREATED, Json(deck_profile.into())))
+        .map(|deck_profile| (StatusCode::CREATED, Json(deck_profile)))
 }

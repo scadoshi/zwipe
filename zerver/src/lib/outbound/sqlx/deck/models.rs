@@ -25,7 +25,7 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
     type Error = IntoDeckProfileError;
     fn try_from(value: DatabaseDeckProfile) -> Result<Self, Self::Error> {
         let name = DeckName::new(&value.name)?;
-        let copy_max = value.copy_max.map(|max| CopyMax::new(max)).transpose()?;
+        let copy_max = value.copy_max.map(CopyMax::new).transpose()?;
 
         Ok(Self {
             id: value.id,
@@ -50,10 +50,9 @@ pub struct DatabaseDeckCard {
 impl TryFrom<DatabaseDeckCard> for DeckCard {
     type Error = IntoDeckCardError;
     fn try_from(value: DatabaseDeckCard) -> Result<Self, Self::Error> {
-        let deck_id = Uuid::try_parse(&value.deck_id)
-            .map_err(|e| IntoDeckCardError::InvalidDeckId(e.into()))?;
-        let card_profile_id = Uuid::try_parse(&value.card_profile_id)
-            .map_err(|e| IntoDeckCardError::InvalidCardId(e.into()))?;
+        let deck_id = Uuid::try_parse(&value.deck_id).map_err(IntoDeckCardError::InvalidDeckId)?;
+        let card_profile_id =
+            Uuid::try_parse(&value.card_profile_id).map_err(IntoDeckCardError::InvalidCardId)?;
         let quantity = Quantity::new(value.quantity)?;
         Ok(Self {
             deck_id,

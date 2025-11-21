@@ -59,9 +59,9 @@ impl UpdateDeckCard {
         card_profile_id: &str,
         update_quantity: i32,
     ) -> Result<Self, InvalidUpdateDeckCard> {
-        let deck_id = Uuid::try_parse(deck_id).map_err(|e| InvalidUpdateDeckCard::DeckId(e))?;
-        let card_profile_id = Uuid::try_parse(card_profile_id)
-            .map_err(|e| InvalidUpdateDeckCard::CardProfileId(e))?;
+        let deck_id = Uuid::try_parse(deck_id).map_err(InvalidUpdateDeckCard::DeckId)?;
+        let card_profile_id =
+            Uuid::try_parse(card_profile_id).map_err(InvalidUpdateDeckCard::CardProfileId)?;
         let update_quantity = UpdateQuantity::new(update_quantity)?;
         Ok(Self {
             user_id,

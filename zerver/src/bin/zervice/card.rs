@@ -22,12 +22,12 @@ where
 
         let last_full: Option<NaiveDateTime> = self.get_last_sync_date(SyncType::Full).await?;
 
-        if last_full.map_or(true, |d| d.was_a_month_ago()) {
+        if last_full.is_none_or(|d| d.was_a_month_ago()) {
             self.scryfall_sync(SyncType::Full).await?;
         }
 
-        if (last_partial.map_or(true, |d| d.was_a_week_ago()))
-            && (last_full.map_or(true, |d| d.was_a_week_ago()))
+        if (last_partial.is_none_or(|d| d.was_a_week_ago()))
+            && (last_full.is_none_or(|d| d.was_a_week_ago()))
         {
             self.scryfall_sync(SyncType::Partial).await?;
         }

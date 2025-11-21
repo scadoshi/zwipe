@@ -102,7 +102,7 @@ where
         let access_token = AccessToken::generate(&user, &self.jwt_secret)
             .map_err(|e| AuthenticateUserError::FailedAccessToken(anyhow!("{e}")))?;
 
-        let refresh_token = self.auth_repo.create_refresh_token(&user.id.into()).await?;
+        let refresh_token = self.auth_repo.create_refresh_token(&user.id).await?;
 
         Ok(Session {
             user,
@@ -132,7 +132,7 @@ where
     ) -> Result<Session, RefreshSessionError> {
         let user = self.user_repo.get_user(&request.user_id).await?;
 
-        let refresh_token = self.auth_repo.use_refresh_token(&request).await?;
+        let refresh_token = self.auth_repo.use_refresh_token(request).await?;
 
         let access_token = AccessToken::generate(&user, self.jwt_secret())?;
 

@@ -23,7 +23,7 @@ where
     UR: UserRepository,
 {
     async fn check_sessions(&self, latest: &mut Option<NaiveDateTime>) -> anyhow::Result<()> {
-        if latest.map_or(true, |d| d.was_a_week_ago()) {
+        if latest.is_none_or(|d| d.was_a_week_ago()) {
             tracing::info!(
                 "session clean up: attempting to delete expired refresh tokens from database"
             );
