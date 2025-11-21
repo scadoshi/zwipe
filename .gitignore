@@ -2,3 +2,4 @@ target/
 .env
 .sqlx/
 .vscode
+scratch.txt
