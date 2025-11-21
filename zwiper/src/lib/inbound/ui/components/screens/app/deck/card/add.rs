@@ -49,7 +49,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         let request = HttpCreateDeckCard::new(&card.card_profile.id.to_string(), 1);
 
         spawn(async move {
-            match client().create_deck_card(&deck_id, &request, &sesh).await {
+            match client().create_deck_card(deck_id, &request, &sesh).await {
                 Ok(_) => add_card_error.set(None),
                 Err(e) => add_card_error.set(Some(e.to_string())),
             }

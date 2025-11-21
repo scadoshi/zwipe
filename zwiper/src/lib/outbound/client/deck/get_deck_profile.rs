@@ -22,7 +22,7 @@ impl ClientGetDeckProfile for ZwipeClient {
         session: &Session,
     ) -> Result<DeckProfile, ApiError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&get_deck_profile_route(&deck_id));
+        url.set_path(&get_deck_profile_route(deck_id));
 
         let response = self
             .client

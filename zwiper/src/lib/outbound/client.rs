@@ -14,13 +14,19 @@ pub struct ZwipeClient {
     pub app_config: Config,
 }
 
-impl ZwipeClient {
-    pub fn new() -> Self {
+impl Default for ZwipeClient {
+    fn default() -> Self {
         static CONFIG: OnceLock<Config> = OnceLock::new();
         let app_config = CONFIG.get_or_init(Config::from_env).clone();
         Self {
             client: Client::new(),
             app_config,
         }
+    }
+}
+
+impl ZwipeClient {
+    pub fn new() -> Self {
+        Self::default()
     }
 }

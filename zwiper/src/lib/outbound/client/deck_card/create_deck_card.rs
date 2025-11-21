@@ -13,7 +13,7 @@ use zwipe::{
 pub trait ClientCreateDeckCard {
     fn create_deck_card(
         &self,
-        deck_id: &Uuid,
+        deck_id: Uuid,
         request: &HttpCreateDeckCard,
         session: &Session,
     ) -> impl Future<Output = Result<DeckCard, ApiError>> + Send;
@@ -22,12 +22,12 @@ pub trait ClientCreateDeckCard {
 impl ClientCreateDeckCard for ZwipeClient {
     async fn create_deck_card(
         &self,
-        deck_id: &Uuid,
+        deck_id: Uuid,
         request: &HttpCreateDeckCard,
         session: &Session,
     ) -> Result<DeckCard, ApiError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&create_deck_card_route(&deck_id));
+        url.set_path(&create_deck_card_route(deck_id));
 
         let response = self
             .client

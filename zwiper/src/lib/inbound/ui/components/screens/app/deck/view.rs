@@ -57,10 +57,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 return Err(ApiError::Unauthorized("session expired".to_string()));
             };
 
-            client()
-                .get_card(&commander_id, &sesh)
-                .await
-                .map(|value| Some(value))
+            client().get_card(commander_id, &sesh).await.map(Some)
         });
 
     let mut confirm_deletion = use_signal(|| false);
@@ -73,7 +70,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         };
 
         spawn(async move {
-            match client().delete_deck(&deck_id, &sesh).await {
+            match client().delete_deck(deck_id, &sesh).await {
                 Ok(_) => {
                     navigator.push(Router::DeckList {});
                 }

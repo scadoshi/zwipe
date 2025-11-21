@@ -10,15 +10,15 @@ use zwipe::{
 pub trait ClientGetDeck {
     fn get_deck(
         &self,
-        deck_id: &Uuid,
+        deck_id: Uuid,
         session: &Session,
     ) -> impl Future<Output = Result<Deck, ApiError>> + Send;
 }
 
 impl ClientGetDeck for ZwipeClient {
-    async fn get_deck(&self, deck_id: &Uuid, session: &Session) -> Result<Deck, ApiError> {
+    async fn get_deck(&self, deck_id: Uuid, session: &Session) -> Result<Deck, ApiError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&get_deck_route(&deck_id));
+        url.set_path(&get_deck_route(deck_id));
 
         let response = self
             .client

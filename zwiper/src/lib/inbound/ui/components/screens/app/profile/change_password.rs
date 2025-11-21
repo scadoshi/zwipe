@@ -60,7 +60,7 @@ pub fn ChangePassword() -> Element {
         submit_attempted.set(true);
         if inputs_are_valid() {
             tracing::info!("change password");
-            let request = HttpChangePassword::new(&*current_password(), &*new_password());
+            let request = HttpChangePassword::new(&current_password(), &new_password());
             spawn(async move {
                 session.upkeep(auth_client);
                 let Some(sesh) = session() else {

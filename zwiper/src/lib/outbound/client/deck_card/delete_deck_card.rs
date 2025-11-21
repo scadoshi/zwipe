@@ -10,8 +10,8 @@ use zwipe::{
 pub trait ClientDeleteDeckCard {
     fn delete_deck_card(
         &self,
-        deck_id: &Uuid,
-        card_profile_id: &Uuid,
+        deck_id: Uuid,
+        card_profile_id: Uuid,
         session: &Session,
     ) -> impl Future<Output = Result<(), ApiError>> + Send;
 }
@@ -19,12 +19,12 @@ pub trait ClientDeleteDeckCard {
 impl ClientDeleteDeckCard for ZwipeClient {
     async fn delete_deck_card(
         &self,
-        deck_id: &Uuid,
-        card_profile_id: &Uuid,
+        deck_id: Uuid,
+        card_profile_id: Uuid,
         session: &Session,
     ) -> Result<(), ApiError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&delete_deck_card_route(&deck_id, &card_profile_id));
+        url.set_path(&delete_deck_card_route(deck_id, card_profile_id));
 
         let response = self
             .client

@@ -67,10 +67,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 return Err(ApiError::Unauthorized("session expired".to_string()));
             };
 
-            client()
-                .get_card(&commander_id, &sesh)
-                .await
-                .map(|value| Some(value))
+            client().get_card(commander_id, &sesh).await.map(Some)
         });
 
     // form
@@ -135,7 +132,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         deck_name.set(curr_deck.name.to_string());
         original_deck_name.set(curr_deck.name.to_string());
         copy_max.set(curr_deck.copy_max.clone());
-        original_copy_max.set(curr_deck.copy_max.clone());
+        original_copy_max.set(curr_deck.copy_max);
 
         let curr_commander = match &*commander_resource.read() {
             Some(Ok(Some(commander))) => commander.clone(),
@@ -213,10 +210,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 copy_max_update(),
             );
 
-            match client()
-                .update_deck_profile(&deck_id, &request, &sesh)
-                .await
-            {
+            match client().update_deck_profile(deck_id, &request, &sesh).await {
                 Ok(_updated) => {
                     navigator.push(Router::ViewDeck { deck_id });
                 }
@@ -287,7 +281,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                                             show_dropdown.set(false);
                                                         },
                                                         {
-                                                            format!("{}", card.scryfall_data.name.to_lowercase())
+                                                            card.scryfall_data.name.to_lowercase().to_string()
                                                         }
                                                     }
                                                 }

@@ -35,7 +35,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
             return Err(ApiError::Unauthorized("session expired".to_string()));
         };
 
-        client().get_deck(&deck_id, &sesh).await
+        client().get_deck(deck_id, &sesh).await
     });
 
     rsx! {

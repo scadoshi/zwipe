@@ -10,15 +10,15 @@ use zwipe::{
 pub trait ClientGetCard {
     fn get_card(
         &self,
-        card_profile_id: &Uuid,
+        card_profile_id: Uuid,
         session: &Session,
     ) -> impl Future<Output = Result<Card, ApiError>> + Send;
 }
 
 impl ClientGetCard for ZwipeClient {
-    async fn get_card(&self, card_profile_id: &Uuid, session: &Session) -> Result<Card, ApiError> {
+    async fn get_card(&self, card_profile_id: Uuid, session: &Session) -> Result<Card, ApiError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&get_card_route(&card_profile_id));
+        url.set_path(&get_card_route(card_profile_id));
 
         let response = self
             .client

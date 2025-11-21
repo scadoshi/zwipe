@@ -39,7 +39,7 @@ pub fn ChangeUsername() -> Element {
     let mut password = use_signal(String::new);
     let mut password_error: Signal<Option<String>> = use_signal(|| None);
     let mut validate_password = move || {
-        if let Err(_) = Password::new(&password()) {
+        if Password::new(&password()).is_err() {
             password_error.set(Some("invalid password".to_string()));
         } else {
             password_error.set(None);
@@ -65,7 +65,7 @@ pub fn ChangeUsername() -> Element {
         submit_attempted.set(true);
         if inputs_are_valid() {
             tracing::info!("change username to {}", new_username());
-            let request = HttpChangeUsername::new(&*new_username(), &*password());
+            let request = HttpChangeUsername::new(&new_username(), &password());
             spawn(async move {
                 session.upkeep(auth_client);
                 let Some(mut sesh) = session() else {

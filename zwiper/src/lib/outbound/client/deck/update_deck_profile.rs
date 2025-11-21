@@ -13,7 +13,7 @@ use zwipe::{
 pub trait ClientUpdateDeckProfile {
     fn update_deck_profile(
         &self,
-        deck_id: &Uuid,
+        deck_id: Uuid,
         body: &HttpUpdateDeckProfile,
         session: &Session,
     ) -> impl Future<Output = Result<DeckProfile, ApiError>> + Send;
@@ -22,12 +22,12 @@ pub trait ClientUpdateDeckProfile {
 impl ClientUpdateDeckProfile for ZwipeClient {
     async fn update_deck_profile(
         &self,
-        deck_id: &Uuid,
+        deck_id: Uuid,
         body: &HttpUpdateDeckProfile,
         session: &Session,
     ) -> Result<DeckProfile, ApiError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&update_deck_route(&deck_id));
+        url.set_path(&update_deck_route(deck_id));
 
         let response = self
             .client
