@@ -15,18 +15,18 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Established workspace clippy configuration with 26 lints. Applied TextInput to 9 screens. Optimized Copy type usage removing unnecessary references. Migrated to structured logging.
+**Last Updated**: Completed TextInput application across all applicable screens. Ready to begin clippy marathon addressing build script warnings, unwrap elimination, and builder pattern refactoring.
 
-**Next Learning Focus**: Builder pattern implementation for complex constructors (SearchCards 17 params, SyncMetrics 10 params). Systematic unwrap/panic elimination. Survey UI for component abstraction patterns. Complete clippy marathon.
+**Next Learning Focus**: Builder pattern implementation (classic vs typed vs parameter object approaches). Systematic unwrap/panic elimination strategies (? propagation, Result returns, expect with context). Single selection field component design patterns.
 
-**Recent Achievement**: Configured workspace clippy lints catching quality issues (26 lints: unwrap_used, panic, too_many_arguments, print_stdout, etc.). Removed 100+ unnecessary `&Uuid` references across 32 files understanding Copy trait semantics. Replaced println! with tracing::info for structured logging. TextInput component working across login, register, and profile change screens. Cargo clippy --fix workflow learned (review, commit, iterate).
+**Recent Achievement**: Applied TextInput component to ALL applicable input fields across login, register, profile changes, deck creation/editing, and filter screens. Completed workspace clippy configuration (26 lints). Removed 100+ unnecessary `&Uuid` references understanding Copy semantics. Migrated println! to tracing::info!. Learned cargo clippy --fix workflow.
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Builder Pattern Implementation Details** - Best approach for SearchCards (17 params) and SyncMetrics (10 params): classic builder, typed builder, or parameter object pattern?
-2. **Unwrap Elimination Strategy** - How to systematically remove unwrap() calls: propagate errors up with ?, add Result returns, or use expect() with descriptive messages in select cases?
-3. **Component Abstraction Survey** - What are ALL the repeated UI patterns across screens? Need systematic audit to identify Button, Dropdown, Checkbox, Toggle candidates.
-4. **Component Props Complexity** - How many optional params before component becomes too complex (TextInput has 5 - what's the threshold)?
-5. **Panic in Build Scripts** - build.rs uses panic for missing env vars (infallible config pattern) - is this acceptable or should clippy allow be added?
+1. **Builder Pattern Best Practices** - Classic builder (with_* methods) vs typed builder (compile-time state) vs parameter object (struct with defaults) - which fits Rust idioms best for SearchCards/SyncMetrics?
+2. **Unwrap Elimination Approach** - Systematic strategy: start from deepest call sites and propagate errors up, or start from entry points and work down? How to handle legitimate infallible cases?
+3. **Build Script Clippy Exceptions** - Should build.rs panic for missing env vars (fail fast at compile time) or use #[allow(clippy::panic)] since this is intentional compile-time validation?
+4. **Single Selection Component Design** - Props interface for dropdown/select: pass options as Vec<(String, T)>, enum-based with Display, or builder pattern for option construction?
+5. **Component Abstraction Threshold** - TextInput has 5 props (value, id, label, placeholder, input_type) - what's the limit before components become harder to use than inline code?
 
 ---
 

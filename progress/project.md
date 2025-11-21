@@ -24,11 +24,11 @@ alwaysApply: true
 **Current Challenge**: Systematic clippy warning resolution requiring architectural changes (builder patterns). Identifying full scope of reusable UI components. Balancing abstraction with simplicity.
 
 ### 🎯 Currently Working On (Top 5)
-1. **TextInput Refactor Completion** - Apply TextInput component to ALL remaining screens (CreateDeck commander field, filter text inputs, any other manual input fields)
-2. **Clippy Marathon** - Systematic resolution of ALL clippy warnings in order: unwrap_used (add proper error handling), expect_used (convert to ?), panic (eliminate from non-build code), too_many_arguments (builder patterns for SearchCards/SyncMetrics/Planeswalker)
-3. **Common UI Component Identification** - Survey entire UI for repeated patterns (buttons, dropdowns, checkboxes, chip-based multi-select, toggle groups) and prioritize next abstractions
-4. **Component Library Expansion** - Build 2-3 additional reusable components based on identified patterns (Button, Dropdown, Checkbox candidates)
-5. **Resume Filter Implementation** - Complete Mana (CMC range/color identity) and Stats (power/toughness) filter components after component library stabilizes
+1. **Clippy Marathon - Phase 1: Build Script Warnings** - Resolve build.rs warnings (expect_used, panic in env var loading) with #[allow] or proper error context
+2. **Clippy Marathon - Phase 2: Unwrap Elimination** - Systematically remove all unwrap() calls adding proper error handling with ? operator and Result returns
+3. **Clippy Marathon - Phase 3: Builder Patterns** - Refactor SearchCards (17 params), SyncMetrics (10 params), Planeswalker types to builder pattern satisfying too_many_arguments
+4. **Single Selection Field Component** - Build reusable dropdown/select component for common single-choice patterns (CopyMax selection, card type selection, etc.)
+5. **Common UI Component Survey** - Audit entire UI identifying next component candidates (Button variants, Checkbox, Toggle groups, multi-select dropdowns)
 
 ### 🤔 Next Immediate Priorities (Top 5)
 1. **RemoveDeckCard Filter** - Build separate filter querying deck's cards instead of all cards (different data source)
