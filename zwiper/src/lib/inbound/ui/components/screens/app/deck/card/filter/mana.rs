@@ -1,5 +1,6 @@
 use crate::inbound::ui::components::{
     auth::bouncer::Bouncer,
+    fields::text_input::TextInput,
     interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
 };
 use dioxus::prelude::*;

@@ -4,6 +4,7 @@ use crate::{
     inbound::ui::{
         components::{
             auth::{bouncer::Bouncer, session_upkeep::Upkeep},
+            fields::text_input::TextInput,
             interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
         },
         router::Router,
@@ -237,16 +238,10 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                             }
 
                             form { class: "flex-col text-center",
-                                input { class: "input",
-                                    id: "deck name",
-                                    r#type : "text",
-                                    placeholder : "deck name",
-                                    value : "{deck_name}",
-                                    autocapitalize : "none",
-                                    spellcheck : "false",
-                                    oninput : move |event| {
-                                        deck_name.set(event.value());
-                                    }
+                                TextInput {
+                                    value: deck_name,
+                                    id: "deck_name".to_string(),
+                                    placeholder: "deck name".to_string(),
                                 }
 
                                 div { class: "mb-4",

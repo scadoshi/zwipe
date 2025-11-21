@@ -115,34 +115,40 @@ pub fn Types() -> Element {
                             autocapitalize : "none",
                             spellcheck : "false",
                             oninput : move |event| {
-                                let query_string = event.value();
-                                let has_query = !query_string.is_empty();
-                                if has_query {
-                                    other_type_query_string_for_dropdown.set(query_string);
-                                } else {
-                                    other_type_query_string_for_dropdown.set(String::new());
-                                }
-                                show_other_type_dropdown.set(has_query);
+                                other_type_query_string_for_dropdown.set(event.value());
+                                show_other_type_dropdown.set(!event.value().is_empty());
                             }
                         }
 
                         if show_other_type_dropdown() {
                             if let Some(Ok(all_types)) = all_card_types.read().as_ref() {
                                 div { class : "dropdown",
-                                    for t in all_types
-                                        .iter()
-                                        .filter(|t| !filter.read().type_line_contains_any.as_ref().unwrap_or(&Vec::new()).contains(t))
-                                        .filter(|t| t.to_lowercase().contains(&other_type_query_string_for_dropdown().to_lowercase()))
-                                        .take(5)
-                                        .map(|x| x.to_lowercase())
                                     {
-                                        div { class: "dropdown-item",
-                                            onclick : move |_| {
-                                                selected_other_types.write().push(t.clone());
-                                                other_type_query_string_for_dropdown.set(String::new());
-                                                show_other_type_dropdown.set(false);
-                                            },
-                                            "{t}"
+                                        let matches: Vec<String> = all_types
+                                            .iter()
+                                            .filter(|t| !filter.read().type_line_contains_any.as_ref().unwrap_or(&Vec::new()).contains(t))
+                                            .filter(|t| t.to_lowercase().contains(&other_type_query_string_for_dropdown().to_lowercase()))
+                                            .take(5)
+                                            .map(|x| x.to_lowercase())
+                                            .collect();
+                                        if matches.is_empty() {
+                                            rsx! {
+                                                div { class : "dropdown-item", "no results" }
+                                            }
+                                        } else {
+                                            rsx! {
+                                                for t in matches
+                                                {
+                                                    div { class: "dropdown-item",
+                                                        onclick : move |_| {
+                                                            selected_other_types.write().push(t.clone());
+                                                            other_type_query_string_for_dropdown.set(String::new());
+                                                            show_other_type_dropdown.set(false);
+                                                        },
+                                                        "{t}"
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
