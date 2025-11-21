@@ -128,7 +128,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                     button { class : "btn",
                         onclick: move |_| {
-                            navigator.push(Router::EditDeckProfile { deck_id });
+                            navigator.push(Router::EditDeck { deck_id });
                         },
                         "back"
                     }

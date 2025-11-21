@@ -13,15 +13,15 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Fixed Signal reactivity bug by moving filter/cards to app-level context. Refactored filters to shared deck_card module with separate route components. Card display now working correctly after filter changes.
+**Last Updated**: Refactored file structure moving deck_card under deck/card for better semantic hierarchy. Renamed components for consistency and clarity. Added CSS for side-by-side inputs.
 
-**Current Focus**: Complete remaining filter sub-components (Printing, Mana, Stats). Build filter search execution with use_effect in AddDeckCard. Implement card browsing with swipe navigation.
+**Current Focus**: Complete Mana filter component (CMC range/equals, color identity). Build Stats filter (power/toughness). Wire filter search execution to trigger on filter changes.
 
-**Recent Achievement**: Diagnosed root cause of card display bug - Signals passed as route parameters don't persist reliably across navigation. Refactored to app-level context architecture: moved filter and cards Signals to spawn_upkeeper() alongside session/client. Updated Router to remove Signal parameters, simplified to just deck_id. All components now use use_context() for filter/cards access. Restructured filters from add_deck_card/filter/ to shared deck_card/filter/ with separate route components per category. Cards now display correctly after navigation. Centered card images with CSS margin auto.
+**Recent Achievement**: Reorganized file structure reflecting parent-child relationship - deck_card/* moved to deck/card/*. Renamed all deck components (create_deck → create, deck_list → list, edit_deck_profile → edit, view_deck_profile → view) for consistency. Updated router enum (EditDeckProfile → EditDeck, ViewDeckProfile → ViewDeck) and all imports. Added .input-half CSS class (48% width with margins) for side-by-side form inputs. Clean architectural refactoring improving code organization with zero functional changes.
 
-**Current Success**: Filter state persists correctly across all navigation. Context-based architecture eliminates Signal passing complexity. Filter components can mutate shared state from any route. Card search results display properly in AddDeckCard after returning from filter screens.
+**Current Success**: File structure now semantically clear with deck operations and deck card operations properly nested. Component naming consistent across codebase. Router paths clean and intuitive.
 
-**Current Challenge**: Need to build remaining filter UIs (Printing, Mana, Stats) and wire up automatic search execution when filter changes.
+**Current Challenge**: Complete remaining filter UIs (Mana, Stats) with proper input components and validation.
 
 ### 🎯 Currently Working On (Top 5)
 1. **Printing Filter Component** - Build set_contains and rarity_contains inputs for card printing/release filtering
@@ -273,6 +273,10 @@ alwaysApply: true
 - **Shared Filter Module**: Refactored from add_deck_card/filter/ to deck_card/filter/ enabling AddDeckCard and RemoveDeckCard to share filter components
 - **Filter Route Components**: Split filter into separate routes (FilterMana, FilterPrinting, FilterStats, FilterText, FilterTypes) for MVP simplicity
 - **Card Image Centering**: Added display: block and margin: 0 auto to .card-image CSS for proper horizontal centering
+- **File Structure Refactoring**: Moved deck_card module under deck/card reflecting semantic parent-child relationship
+- **Component Naming Consistency**: Renamed all deck components (create_deck → create, deck_list → list, edit_deck_profile → edit, view_deck_profile → view)
+- **Router Enum Updates**: Changed EditDeckProfile → EditDeck, ViewDeckProfile → ViewDeck for cleaner route naming
+- **CSS Input Layout**: Added .input-half class (48% width, 2% margin) for side-by-side form inputs
 
 ---
 

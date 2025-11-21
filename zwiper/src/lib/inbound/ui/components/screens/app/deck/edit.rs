@@ -34,7 +34,7 @@ use zwipe::{
 };
 
 #[component]
-pub fn EditDeckProfile(deck_id: Uuid) -> Element {
+pub fn EditDeck(deck_id: Uuid) -> Element {
     let swipe_state = use_signal(|| SwipeState::new());
     let swipe_config = SwipeConfig::blank();
 
@@ -218,7 +218,7 @@ pub fn EditDeckProfile(deck_id: Uuid) -> Element {
                 .await
             {
                 Ok(_updated) => {
-                    navigator.push(Router::ViewDeckProfile { deck_id });
+                    navigator.push(Router::ViewDeck { deck_id });
                 }
                 Err(e) => {
                     submission_error.set(Some(e.to_string()));
@@ -352,7 +352,7 @@ pub fn EditDeckProfile(deck_id: Uuid) -> Element {
 
                                 button { class: "btn",
                                     onclick : move |_| {
-                                        navigator.push(Router::ViewDeckProfile { deck_id });
+                                        navigator.push(Router::ViewDeck { deck_id });
                                     },
                                     "back"
                                 }

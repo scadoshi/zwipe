@@ -1,15 +1,17 @@
 use crate::inbound::ui::components::screens::{
     app::{
         deck::{
-            create_deck::CreateDeck, deck_list::DeckList, edit_deck_profile::EditDeckProfile,
-            view_deck_profile::ViewDeckProfile,
-        },
-        deck_card::{
-            add::Add as AddDeckCard,
-            filter::{
-                mana::Mana, printing::Printing, stats::Stats, text::Text, types::Types, Filter,
+            card::{
+                add::Add as AddDeckCard,
+                filter::{
+                    mana::Mana, printing::Printing, stats::Stats, text::Text, types::Types, Filter,
+                },
+                remove::Remove as RemoveDeckCard,
             },
-            remove::Remove as RemoveDeckCard,
+            create::CreateDeck,
+            edit::EditDeck,
+            list::DeckList,
+            view::ViewDeck,
         },
         home::Home,
         profile::{
@@ -51,9 +53,9 @@ pub enum Router {
     #[route("/deck/create")]
     CreateDeck,
     #[route("/deck/update/:deck_id")]
-    EditDeckProfile { deck_id: Uuid },
+    EditDeck { deck_id: Uuid },
     #[route("/deck/get/:deck_id")]
-    ViewDeckProfile { deck_id: Uuid },
+    ViewDeck { deck_id: Uuid },
 
     //deck card
     #[route("/deck/card/add/:deck_id")]

@@ -24,7 +24,7 @@ use zwipe::{
 };
 
 #[component]
-pub fn ViewDeckProfile(deck_id: Uuid) -> Element {
+pub fn ViewDeck(deck_id: Uuid) -> Element {
     let swipe_state = use_signal(|| SwipeState::new());
     let swipe_config = SwipeConfig::blank();
 
@@ -124,7 +124,7 @@ pub fn ViewDeckProfile(deck_id: Uuid) -> Element {
                                     id : "confirmation-prompt",
                                     button { class: "btn btn-half",
                                         onclick : move |_| {
-                                            navigator.push(Router::EditDeckProfile { deck_id });
+                                            navigator.push(Router::EditDeck { deck_id });
                                         },
                                         "edit"
                                     }

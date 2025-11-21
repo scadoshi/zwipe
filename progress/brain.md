@@ -15,11 +15,11 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Fixed critical Signal reactivity bug across navigation by moving filter/cards to app-level context. Refactored deck_card filters to shared module with separate route components. Filter state now persists correctly across all navigation.
+**Last Updated**: Refactored file structure moving deck_card module under deck/card for better semantic hierarchy. Renamed components for consistency (EditDeckProfile → EditDeck, ViewDeckProfile → ViewDeck). Added CSS for side-by-side input layout (.input-half).
 
-**Next Learning Focus**: Complete remaining filter sub-components (Printing, Mana, Stats). Build filter search execution in AddDeckCard with use_effect. Implement card browsing with swipe navigation.
+**Next Learning Focus**: Complete Mana filter component with CMC range/equals and color identity UI. Build Stats filter with power/toughness inputs. Wire filter search execution to trigger on filter changes.
 
-**Recent Achievement**: Diagnosed and solved Signal persistence bug - Signals passed as route parameters don't reliably persist across navigation. Moved filter and cards Signals to app-level context in spawn_upkeeper() alongside session/client. Updated all deck_card components to use_context() instead of props. Refactored filters from add_deck_card nested structure to shared deck_card/filter/ module with separate route components (FilterMana, FilterPrinting, FilterStats, FilterText, FilterTypes). Eliminated Signal passing through router - navigation now simple with just deck_id. Cards Signal now updates and displays correctly after filter changes.
+**Recent Achievement**: Reorganized file structure for better semantic hierarchy - moved deck_card module under deck/card reflecting parent-child relationship. Renamed all deck components (create_deck → create, deck_list → list, edit_deck_profile → edit, view_deck_profile → view) for consistency. Updated router to use EditDeck/ViewDeck. Added .input-half CSS for side-by-side form inputs. Clean architectural refactoring with no functional changes.
 
 ### 🤔 Current Uncertainties (Top 5)
 1. **Filter Sub-Component Implementation** - Best patterns for Mana (CMC/color identity), Printing (rarity/set), Stats (power/toughness) filter UIs

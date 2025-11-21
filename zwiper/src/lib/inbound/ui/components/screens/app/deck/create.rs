@@ -100,7 +100,7 @@ pub fn CreateDeck() -> Element {
 
             match auth_client().create_deck_profile(&request, &sesh).await {
                 Ok(created) => {
-                    navigator.push(Router::ViewDeckProfile {
+                    navigator.push(Router::ViewDeck {
                         deck_id: created.id,
                     });
                 }

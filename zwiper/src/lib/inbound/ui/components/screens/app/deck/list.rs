@@ -55,7 +55,7 @@ pub fn DeckList() -> Element {
                                                 div { class : "card",
                                                     key : "{profile.id}",
                                                     onclick : move |_| {
-                                                        navigator.push(Router::ViewDeckProfile {
+                                                        navigator.push(Router::ViewDeck {
                                                             deck_id: profile.id,
                                                         });
                                                     },
