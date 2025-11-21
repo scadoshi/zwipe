@@ -3,7 +3,7 @@ pub struct Zwipe;
 
 impl Zwipe {
     pub fn print() {
-        tracing::info!("{ZWIPE}");
+        println!("{ZWIPE}");
     }
 }
 
@@ -12,7 +12,7 @@ pub struct Zerver;
 
 impl Zerver {
     pub fn print() {
-        tracing::info!("{ZERVER}");
+        println!("{ZERVER}");
     }
 }
 
@@ -21,7 +21,7 @@ pub struct Zervice;
 
 impl Zervice {
     pub fn print() {
-        tracing::info!("{ZERVICE}");
+        println!("{ZERVICE}");
     }
 }
 
@@ -30,6 +30,6 @@ pub struct Zwiper;
 
 impl Zwiper {
     pub fn print() {
-        tracing::info!("{ZWIPER}");
+        println!("{ZWIPER}");
     }
 }
