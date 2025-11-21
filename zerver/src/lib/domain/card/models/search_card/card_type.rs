@@ -35,10 +35,10 @@ impl WithCardTypes for Vec<CardType> {
         vec![
             CardType::Artifact,
             CardType::Creature,
+            CardType::Planeswalker,
             CardType::Instant,
             CardType::Sorcery,
             CardType::Enchantment,
-            CardType::Planeswalker,
             CardType::Land,
         ]
     }
