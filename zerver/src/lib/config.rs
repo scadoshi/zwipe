@@ -1,8 +1,7 @@
-use std::str::FromStr;
-
 use crate::domain::auth::models::access_token::JwtSecret;
 use anyhow::Context;
 use axum::http::HeaderValue;
+use std::str::FromStr;
 use tracing::Level;
 
 const JWT_SECRET_KEY: &str = "JWT_SECRET";
@@ -31,7 +30,7 @@ impl Config {
         let rust_log = Level::from_str(&env_var_by_key(RUST_LOG_KEY)?)?;
         let rust_backtrace = env_var_by_key(RUST_BACKTRACE_KEY)?;
         let allowed_origins: Vec<HeaderValue> = env_var_by_key(ALLOWED_ORIGINS_KEY)?
-            .split(",")
+            .split(',')
             .map(|x| x.parse())
             .collect::<Result<Vec<HeaderValue>, _>>()?;
         Ok(Self {
