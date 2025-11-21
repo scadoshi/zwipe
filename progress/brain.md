@@ -15,18 +15,18 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Refactored file structure moving deck_card module under deck/card for better semantic hierarchy. Renamed components for consistency (EditDeckProfile → EditDeck, ViewDeckProfile → ViewDeck). Added CSS for side-by-side input layout (.input-half).
+**Last Updated**: Built reusable TextInput component and integrated across login/register/profile screens. Resolved 59 clippy warnings. Established Cargo workspace with centralized dependency management.
 
-**Next Learning Focus**: Complete Mana filter component with CMC range/equals and color identity UI. Build Stats filter with power/toughness inputs. Wire filter search execution to trigger on filter changes.
+**Next Learning Focus**: Refactor complex types (SearchCards, SyncMetrics, Planeswalker) to builder patterns for clippy compliance. Identify additional UI component abstraction opportunities. Continue filter implementation.
 
-**Recent Achievement**: Reorganized file structure for better semantic hierarchy - moved deck_card module under deck/card reflecting parent-child relationship. Renamed all deck components (create_deck → create, deck_list → list, edit_deck_profile → edit, view_deck_profile → view) for consistency. Updated router to use EditDeck/ViewDeck. Added .input-half CSS for side-by-side form inputs. Clean architectural refactoring with no functional changes.
+**Recent Achievement**: Created TextInput component abstracting label, input binding, and common attributes reducing form boilerplate. Applied across 7+ screens (login, register, 5 profile change forms). Resolved 59 easy clippy warnings (needless borrow, redundant clones, unused imports). Established Cargo workspace with resolver 2, workspace.dependencies for 15 shared crates, eliminating version drift and profile warnings.
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Filter Sub-Component Implementation** - Best patterns for Mana (CMC/color identity), Printing (rarity/set), Stats (power/toughness) filter UIs
-2. **Filter Search Execution Timing** - When to trigger search in AddDeckCard (on mount, on filter change, explicit button only)
-3. **RemoveDeckCard Filter Data Source** - How to query deck's existing cards vs all cards for removal context
-4. **Card Browsing Stack** - How to implement left/right swipe through filtered card results with proper state management
-5. **Nested Gesture Detection** - Differentiating card swipes (browsing) from screen swipes (navigation) in card display
+1. **Builder Pattern Implementation** - How to refactor SearchCards, SyncMetrics, Planeswalker to builder types satisfying clippy's too_many_arguments lint
+2. **Component Abstraction Boundaries** - Which UI patterns warrant extraction vs when inline is better (avoiding over-DRYing)
+3. **Reusable Component Props Design** - Balancing flexibility vs simplicity in component interfaces (TextInput worked well - when to expand?)
+4. **Filter Sub-Component Implementation** - Best patterns for Mana (CMC/color identity), Printing (rarity/set), Stats (power/toughness) filter UIs
+5. **Component Library Organization** - File structure for growing component library (fields/, interactions/, layouts/, etc.)
 
 ---
 
@@ -93,6 +93,9 @@ alwaysApply: true
 - **Compile-Time Environment Variables**: env!() macro for baking config into binaries (required for desktop/mobile apps)
 - **Infallible Config Pattern**: Using unwrap() in Config::from_env() when config is deployment requirement (better to crash than run with invalid config)
 - **Frontend Logging**: tracing_subscriber::fmt() setup in main() with configurable log levels for development debugging
+- **Cargo Workspace Configuration**: Multi-package workspace setup with resolver 2, centralized dependency management via workspace.dependencies
+- **Workspace Dependency Inheritance**: Using workspace = true in child Cargo.toml files to inherit versions from root, eliminating drift
+- **Build Profile Consolidation**: Centralizing profiles ([profile.wasm-dev], etc.) at workspace root instead of per-package
 
 ### 🎨 Dioxus Component Development & State Management
 - **Component Architecture**: Function components with RSX macro for HTML-like syntax
@@ -144,6 +147,9 @@ alwaysApply: true
 - **Navigator Async Constraints**: Navigator can't be called inside spawn() async blocks - use signal + use_effect bridge (set signal in async, watch in effect)
 - **Debounced Search**: Implementing search with 300ms delay using tokio::time::sleep in spawned async tasks
 - **use_memo Pattern**: Computed signals deriving state from other signals, only updating when computed value changes (not when source signal content changes)
+- **Reusable Component Abstraction**: Extracting repetitive UI patterns (TextInput) into focused components with clear props interface
+- **Component Props Design**: Balancing required vs optional props, using Option<String> for optional labels, Signal<String> for two-way binding
+- **DRY Component Boundaries**: Knowing when to extract components (repeated 3+ times with identical structure) vs when inline is clearer
 
 ### 💾 SQLx Database Operations & Advanced Patterns
 - **Connection Pooling**: Production-ready pool configuration with optimized settings
@@ -303,6 +309,13 @@ alwaysApply: true
 ---
 
 ## LEARNING - Recently Introduced, Needs Guidance 📚
+
+### 🔧 Clippy Linting & Code Quality
+- **Easy Clippy Warnings**: Resolved needless_borrow, redundant_clone, unused_imports, struct_field_names warnings across 59 files
+- **Complex Clippy Patterns**: Understanding too_many_arguments lint requiring builder pattern refactoring for types with 8+ fields
+- **Builder Pattern Need**: SearchCards, SyncMetrics, Planeswalker types require builder pattern to satisfy clippy (current constructors have excessive parameters)
+- **Clippy Workflow**: Running clippy, identifying easy vs complex fixes, batch resolving similar warning types
+- *Note: Easy warnings resolved, complex refactoring (builders) pending*
 
 ### 🎨 Dioxus Reactivity & Async Patterns (MAJOR BREAKTHROUGH)
 - **use_effect Dependency Tracking**: Automatically tracks ALL signal reads as dependencies, re-running effect when any tracked signal changes

@@ -13,22 +13,22 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Refactored file structure moving deck_card under deck/card for better semantic hierarchy. Renamed components for consistency and clarity. Added CSS for side-by-side inputs.
+**Last Updated**: Implemented reusable TextInput component and resolved 59 clippy warnings across backend/frontend. Established workspace dependency management with unified versions. Reduced code duplication in UI forms.
 
-**Current Focus**: Complete Mana filter component (CMC range/equals, color identity). Build Stats filter (power/toughness). Wire filter search execution to trigger on filter changes.
+**Current Focus**: Resolve complex clippy warnings requiring builder pattern refactoring (SearchCards, SyncMetrics, Planeswalker types). Apply TextInput pattern to remaining UI elements. Continue filter implementation.
 
-**Recent Achievement**: Reorganized file structure reflecting parent-child relationship - deck_card/* moved to deck/card/*. Renamed all deck components (create_deck → create, deck_list → list, edit_deck_profile → edit, view_deck_profile → view) for consistency. Updated router enum (EditDeckProfile → EditDeck, ViewDeckProfile → ViewDeck) and all imports. Added .input-half CSS class (48% width with margins) for side-by-side form inputs. Clean architectural refactoring improving code organization with zero functional changes.
+**Recent Achievement**: Created TextInput component consolidating repetitive form input patterns across login, register, and profile change screens. Resolved 59 easy clippy warnings (needless borrow, redundant clones, unused imports). Established Cargo workspace with centralized dependency versions, resolver 2, and unified build profiles eliminating version drift across zerver/zwiper packages.
 
-**Current Success**: File structure now semantically clear with deck operations and deck card operations properly nested. Component naming consistent across codebase. Router paths clean and intuitive.
+**Current Success**: UI forms significantly cleaner with TextInput abstraction. Workspace configuration warnings resolved. Dependency management centralized for maintainability.
 
-**Current Challenge**: Complete remaining filter UIs (Mana, Stats) with proper input components and validation.
+**Current Challenge**: Refactor complex domain types to builder patterns for clippy compliance. Identify additional UI component abstraction opportunities beyond TextInput.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Printing Filter Component** - Build set_contains and rarity_contains inputs for card printing/release filtering
-2. **Mana Filter Component** - Build CMC range/equals and color_identity filtering UI
-3. **Stats Filter Component** - Build power/toughness range/equals inputs for combat stats filtering
-4. **Filter Search Execution** - Implement use_effect in AddDeckCard watching filter Signal, triggering search when filter changes
-5. **Card Display Integration** - Wire filtered results to card image display with proper empty state handling
+1. **Complex Clippy Warnings** - Refactor SearchCards, SyncMetrics, Planeswalker to builder pattern types for clippy compliance
+2. **UI Component Abstraction** - Apply TextInput pattern to remaining form elements, identify other common UI patterns for extraction
+3. **Component Library Expansion** - Build reusable components for dropdowns, buttons, checkboxes, chip selects beyond TextInput
+4. **Printing Filter Component** - Build set_contains and rarity_contains inputs for card printing/release filtering
+5. **Mana Filter Component** - Build CMC range/equals and color_identity filtering UI
 
 ### 🤔 Next Immediate Priorities (Top 5)
 1. **RemoveDeckCard Filter** - Build separate filter querying deck's cards instead of all cards (different data source)
@@ -277,6 +277,12 @@ alwaysApply: true
 - **Component Naming Consistency**: Renamed all deck components (create_deck → create, deck_list → list, edit_deck_profile → edit, view_deck_profile → view)
 - **Router Enum Updates**: Changed EditDeckProfile → EditDeck, ViewDeckProfile → ViewDeck for cleaner route naming
 - **CSS Input Layout**: Added .input-half class (48% width, 2% margin) for side-by-side form inputs
+- **TextInput Component**: Created reusable TextInput component consolidating label, input, two-way binding, and common attributes (autocapitalize, spellcheck)
+- **TextInput Integration**: Applied TextInput to login, register, and all profile change screens reducing form boilerplate
+- **Clippy Warning Resolution**: Resolved 59 easy clippy warnings across backend/frontend (needless borrow, redundant clones, unused imports, struct field ordering)
+- **Workspace Configuration**: Established Cargo workspace with resolver 2, centralized dependency versions, unified build profiles
+- **Workspace Dependency Management**: Migrated 15 shared dependencies (reqwest, serde, uuid, chrono, etc.) to workspace.dependencies for version consistency
+- **Profile Consolidation**: Moved build profiles from zwiper/Cargo.toml to root Cargo.toml eliminating profile warnings
 
 ---
 
