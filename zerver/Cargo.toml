@@ -3,6 +3,9 @@ name = "zwipe"
 version = "0.1.0"
 edition = "2021"
 
+[lints]
+workspace = true
+
 [features]
 default = ["zerver"]
 zerver = ["axum", "axum-extra", "tower", "tower-http", "tokio", "sqlx", "sqlx-macros", "strum", "jsonwebtoken", "argon2", "tracing", "tracing-subscriber", "urlencoding", "derive_more", "itertools"]

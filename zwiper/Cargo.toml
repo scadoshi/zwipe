@@ -4,6 +4,9 @@ version = "0.1.0"
 authors = ["scottyrayfermo"]
 edition = "2021"
 
+[lints]
+workspace = true
+
 [lib]
 name = "zwiper"
 path = "src/lib/lib.rs"

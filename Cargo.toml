@@ -2,6 +2,37 @@
 members = ["zerver", "zwiper"]
 resolver = "2"
 
+[workspace.lints.clippy]
+# Basic quality
+redundant_clone = "warn"
+needless_borrow = "warn"
+unnecessary_to_owned = "warn"
+
+# Unwrap/panic prevention
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
+indexing_slicing = "warn"
+
+# Performance/efficiency
+needless_range_loop = "warn"
+needless_collect = "warn"
+inefficient_to_string = "warn"
+clone_on_ref_ptr = "warn"
+or_fun_call = "warn"
+large_enum_variant = "warn"
+single_char_pattern = "warn"
+
+# Code quality
+too_many_arguments = "warn"
+type_complexity = "warn"
+unnecessary_wraps = "warn"
+unused_async = "warn"
+dbg_macro = "warn"
+todo = "warn"
+print_stdout = "warn"
+print_stderr = "warn"
+
 [workspace.dependencies]
 # Shared dependencies with unified versions
 reqwest = { version = "0.12.23", features = ["json"] }
