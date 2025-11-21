@@ -15,18 +15,18 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Built reusable TextInput component and integrated across login/register/profile screens. Resolved 59 clippy warnings. Established Cargo workspace with centralized dependency management.
+**Last Updated**: Established workspace clippy configuration with 26 lints. Applied TextInput to 9 screens. Optimized Copy type usage removing unnecessary references. Migrated to structured logging.
 
-**Next Learning Focus**: Refactor complex types (SearchCards, SyncMetrics, Planeswalker) to builder patterns for clippy compliance. Identify additional UI component abstraction opportunities. Continue filter implementation.
+**Next Learning Focus**: Builder pattern implementation for complex constructors (SearchCards 17 params, SyncMetrics 10 params). Systematic unwrap/panic elimination. Survey UI for component abstraction patterns. Complete clippy marathon.
 
-**Recent Achievement**: Created TextInput component abstracting label, input binding, and common attributes reducing form boilerplate. Applied across 7+ screens (login, register, 5 profile change forms). Resolved 59 easy clippy warnings (needless borrow, redundant clones, unused imports). Established Cargo workspace with resolver 2, workspace.dependencies for 15 shared crates, eliminating version drift and profile warnings.
+**Recent Achievement**: Configured workspace clippy lints catching quality issues (26 lints: unwrap_used, panic, too_many_arguments, print_stdout, etc.). Removed 100+ unnecessary `&Uuid` references across 32 files understanding Copy trait semantics. Replaced println! with tracing::info for structured logging. TextInput component working across login, register, and profile change screens. Cargo clippy --fix workflow learned (review, commit, iterate).
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Builder Pattern Implementation** - How to refactor SearchCards, SyncMetrics, Planeswalker to builder types satisfying clippy's too_many_arguments lint
-2. **Component Abstraction Boundaries** - Which UI patterns warrant extraction vs when inline is better (avoiding over-DRYing)
-3. **Reusable Component Props Design** - Balancing flexibility vs simplicity in component interfaces (TextInput worked well - when to expand?)
-4. **Filter Sub-Component Implementation** - Best patterns for Mana (CMC/color identity), Printing (rarity/set), Stats (power/toughness) filter UIs
-5. **Component Library Organization** - File structure for growing component library (fields/, interactions/, layouts/, etc.)
+1. **Builder Pattern Implementation Details** - Best approach for SearchCards (17 params) and SyncMetrics (10 params): classic builder, typed builder, or parameter object pattern?
+2. **Unwrap Elimination Strategy** - How to systematically remove unwrap() calls: propagate errors up with ?, add Result returns, or use expect() with descriptive messages in select cases?
+3. **Component Abstraction Survey** - What are ALL the repeated UI patterns across screens? Need systematic audit to identify Button, Dropdown, Checkbox, Toggle candidates.
+4. **Component Props Complexity** - How many optional params before component becomes too complex (TextInput has 5 - what's the threshold)?
+5. **Panic in Build Scripts** - build.rs uses panic for missing env vars (infallible config pattern) - is this acceptable or should clippy allow be added?
 
 ---
 
@@ -96,6 +96,9 @@ alwaysApply: true
 - **Cargo Workspace Configuration**: Multi-package workspace setup with resolver 2, centralized dependency management via workspace.dependencies
 - **Workspace Dependency Inheritance**: Using workspace = true in child Cargo.toml files to inherit versions from root, eliminating drift
 - **Build Profile Consolidation**: Centralizing profiles ([profile.wasm-dev], etc.) at workspace root instead of per-package
+- **Clippy Workspace Configuration**: workspace.lints.clippy in root Cargo.toml for lint levels, clippy.toml for thresholds, [lints] workspace = true in packages
+- **Clippy Fix Workflow**: cargo clippy --fix --allow-dirty --allow-staged for auto-fixes, git diff review, commit cleaned changes
+- **Copy Type Semantics**: Understanding when & is unnecessary for Copy types (Uuid, primitives) vs non-Copy (String, Vec)
 
 ### 🎨 Dioxus Component Development & State Management
 - **Component Architecture**: Function components with RSX macro for HTML-like syntax
@@ -311,11 +314,14 @@ alwaysApply: true
 ## LEARNING - Recently Introduced, Needs Guidance 📚
 
 ### 🔧 Clippy Linting & Code Quality
-- **Easy Clippy Warnings**: Resolved needless_borrow, redundant_clone, unused_imports, struct_field_names warnings across 59 files
-- **Complex Clippy Patterns**: Understanding too_many_arguments lint requiring builder pattern refactoring for types with 8+ fields
-- **Builder Pattern Need**: SearchCards, SyncMetrics, Planeswalker types require builder pattern to satisfy clippy (current constructors have excessive parameters)
-- **Clippy Workflow**: Running clippy, identifying easy vs complex fixes, batch resolving similar warning types
-- *Note: Easy warnings resolved, complex refactoring (builders) pending*
+- **Workspace Clippy Configuration**: Established 26 workspace-level lints across quality, safety, performance, and code quality categories
+- **Clippy Lint Categories**: Basic quality (redundant_clone, needless_borrow), unwrap/panic prevention (unwrap_used, expect_used, panic, indexing_slicing), performance (needless_collect, clone_on_ref_ptr, or_fun_call), code quality (too_many_arguments, unused_async, dbg_macro)
+- **Clippy Fix Workflow**: cargo clippy identifies issues → --fix for auto-fixable → git diff review → commit → iterate on manual fixes
+- **Easy vs Complex Warnings**: Auto-fixable (single_char_pattern, needless_borrow, or_fun_call) vs requires refactoring (too_many_arguments, unwrap_used, panic)
+- **Builder Pattern Requirements**: SearchCards (17 params) and SyncMetrics (10 params) trigger too_many_arguments lint requiring architectural refactoring
+- **Copy Type Optimization**: Removed 100+ unnecessary & references for Uuid leveraging Copy trait for cleaner signatures
+- **Structured Logging**: Migrated println! to tracing::info! for proper log level control and structured output
+- *Note: Easy warnings resolved (single_char, or_fun_call, needless_borrow), complex refactoring (builders, unwrap elimination, panic removal) up next*
 
 ### 🎨 Dioxus Reactivity & Async Patterns (MAJOR BREAKTHROUGH)
 - **use_effect Dependency Tracking**: Automatically tracks ALL signal reads as dependencies, re-running effect when any tracked signal changes
