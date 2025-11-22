@@ -10,7 +10,7 @@ use crate::{
             create_card::CreateCardError,
             get_card::GetCardError,
             scryfall_data::ScryfallData,
-            search_card::{SearchCards, SearchCardsError},
+            search_card::{CardFilter, SearchCardsError},
             sync_metrics::{SyncMetrics, SyncType},
             Card,
         },
@@ -106,7 +106,7 @@ impl<R: CardRepository> CardService for Service<R> {
         self.repo.get_cards(request).await
     }
 
-    async fn search_cards(&self, request: &SearchCards) -> Result<Vec<Card>, SearchCardsError> {
+    async fn search_cards(&self, request: &CardFilter) -> Result<Vec<Card>, SearchCardsError> {
         self.repo.search_cards(request).await
     }
 

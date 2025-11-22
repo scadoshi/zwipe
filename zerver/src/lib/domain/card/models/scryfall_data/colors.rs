@@ -5,9 +5,8 @@ use thiserror::Error;
 #[error("invalid color")]
 pub struct InvalidColor;
 
-/// stores color information in ScryfallData
-/// against various color related fields
-#[derive(Debug, Clone, PartialEq)]
+/// stores color information in ScryfallData against various color related fields
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Color {
     White,
     Blue,

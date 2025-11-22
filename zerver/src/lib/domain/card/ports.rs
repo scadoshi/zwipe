@@ -16,7 +16,7 @@ use crate::domain::card::models::{
         },
         ScryfallData,
     },
-    search_card::{SearchCards, SearchCardsError},
+    search_card::{CardFilter, SearchCardsError},
     sync_metrics::{SyncMetrics, SyncType},
     Card,
 };
@@ -105,7 +105,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// search for scryfall data given parameters
     fn search_scryfall_data(
         &self,
-        request: &SearchCards,
+        request: &CardFilter,
     ) -> impl Future<Output = Result<Vec<ScryfallData>, SearchScryfallDataError>> + Send;
 
     /// gets card with a card profile id
@@ -123,7 +123,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// search for cards given parameters
     fn search_cards(
         &self,
-        request: &SearchCards,
+        request: &CardFilter,
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
     /// gets all distinct types from cards
@@ -195,7 +195,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
     /// gets cards matching parameters
     fn search_cards(
         &self,
-        request: &SearchCards,
+        request: &CardFilter,
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
     /// gets all distinct types from cards

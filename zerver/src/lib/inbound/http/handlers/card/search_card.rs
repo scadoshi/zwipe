@@ -4,7 +4,7 @@ use crate::{
         auth::ports::AuthService,
         card::{
             models::{
-                search_card::{InvalidSearchCards, SearchCards, SearchCardsError},
+                search_card::{CardFilter, SearchCardsError},
                 Card,
             },
             ports::CardService,
@@ -26,17 +26,10 @@ impl From<SearchCardsError> for ApiError {
 }
 
 #[cfg(feature = "zerver")]
-impl From<InvalidSearchCards> for ApiError {
-    fn from(value: InvalidSearchCards) -> Self {
-        Self::UnprocessableEntity(format!("invalid request: {}", value))
-    }
-}
-
-#[cfg(feature = "zerver")]
 pub async fn search_cards<AS, US, HS, CS, DS>(
     _: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
-    Json(body): Json<SearchCards>,
+    Json(body): Json<CardFilter>,
 ) -> Result<(StatusCode, Json<Vec<Card>>), ApiError>
 where
     AS: AuthService,
