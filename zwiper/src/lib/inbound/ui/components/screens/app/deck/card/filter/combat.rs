@@ -7,7 +7,7 @@ use crate::inbound::ui::components::{
 };
 
 #[component]
-pub fn Stats() -> Element {
+pub fn Combat() -> Element {
     let swipe_config = SwipeConfig::blank();
     let swipe_state = use_signal(SwipeState::new);
     let navigator = use_navigator();

@@ -1,6 +1,6 @@
+pub mod combat;
 pub mod mana;
 pub mod printing;
-pub mod stats;
 pub mod text;
 pub mod types;
 

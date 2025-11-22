@@ -4,7 +4,8 @@ use crate::inbound::ui::components::screens::{
             card::{
                 add::Add as AddDeckCard,
                 filter::{
-                    mana::Mana, printing::Printing, stats::Stats, text::Text, types::Types, Filter,
+                    combat::Combat, mana::Mana, printing::Printing, text::Text, types::Types,
+                    Filter,
                 },
                 remove::Remove as RemoveDeckCard,
             },
@@ -74,8 +75,8 @@ pub enum Router {
     Types {},
     #[route("/deck/card/filter/text")]
     Text {},
-    #[route("/deck/card/filter/stats")]
-    Stats {},
+    #[route("/deck/card/filter/combat")]
+    Combat {},
     #[route("/deck/card/filter/printing")]
     Printing {},
     #[route("/deck/card/filter/mana")]
