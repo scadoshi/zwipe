@@ -50,7 +50,7 @@ pub fn Filter() -> Element {
 
                         button { class : "btn",
                             onclick : move |_| {
-                                navigator.push(Router::Stats {});
+                                navigator.push(Router::Combat {});
                             },
                             "stats"
                         }

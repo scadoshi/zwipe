@@ -3,7 +3,7 @@ use crate::inbound::ui::components::{
     interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
 };
 use dioxus::prelude::*;
-use zwipe::domain::card::models::search_card::SearchCards;
+use zwipe::domain::card::models::search_card::card_filter::builder::CardFilterBuilder;
 
 #[component]
 pub fn Text() -> Element {
@@ -11,7 +11,7 @@ pub fn Text() -> Element {
     let swipe_state = use_signal(SwipeState::new);
     let navigator = use_navigator();
 
-    let mut filter: Signal<SearchCards> = use_context();
+    let mut filter_builder: Signal<CardFilterBuilder> = use_context();
     rsx! {
         Bouncer {
             Swipeable { state: swipe_state, config: swipe_config,
@@ -23,17 +23,14 @@ pub fn Text() -> Element {
                         input { class : "input",
                             id : "name-contains",
                             placeholder : "name contains",
-                            value : if let Some(name) = filter.read().name_contains.as_deref() {
+                            value : if let Some(name) = filter_builder().name_contains() {
                                 name
                             } else { "" },
                             r#type : "text",
                             autocapitalize : "none",
                             spellcheck : "false",
                             oninput : move |event| {
-                                filter.write().name_contains = Some(event.value());
-                                if filter.read().name_contains == Some("".to_string()) {
-                                    filter.write().name_contains = None;
-                                }
+                                filter_builder.write().set_name_contains(event.value());
                             }
                         }
 

@@ -3,7 +3,7 @@ use crate::inbound::ui::components::{
     interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
 };
 use dioxus::prelude::*;
-use zwipe::domain::card::models::search_card::SearchCards;
+use zwipe::domain::card::models::search_card::card_filter::builder::CardFilterBuilder;
 
 #[component]
 pub fn Mana() -> Element {
@@ -11,7 +11,7 @@ pub fn Mana() -> Element {
     let swipe_state = use_signal(SwipeState::new);
     let navigator = use_navigator();
 
-    let mut filter: Signal<SearchCards> = use_context();
+    let mut filter_builder: Signal<CardFilterBuilder> = use_context();
 
     let mut error = use_signal(|| None::<String>);
     /*
@@ -24,11 +24,11 @@ pub fn Mana() -> Element {
     let mut cmc_equals_string = use_signal(String::new);
     let mut try_parse_cmc_equals = move || {
         if cmc_equals_string().is_empty() {
-            filter.write().cmc_equals = None;
+            filter_builder.write().unset_cmc_equals();
             return;
         }
         if let Ok(n) = cmc_equals_string().parse::<f64>() {
-            filter.write().cmc_equals = Some(n);
+            filter_builder.write().set_cmc_equals(n);
             cmc_equals_string.set(n.to_string());
         } else {
             error.set(Some("invalid input".to_string()));
@@ -39,15 +39,14 @@ pub fn Mana() -> Element {
     let mut cmc_range_max_string = use_signal(String::new);
     let mut try_parse_cmc_range = move || {
         if cmc_range_min_string().is_empty() || cmc_range_max_string.is_empty() {
-            filter.write().cmc_range = None;
-            tracing::error!("don't forget the other one!");
+            filter_builder.write().unset_cmc_range();
             return;
         }
         if let (Ok(min), Ok(max)) = (
             cmc_range_min_string().parse::<f64>(),
             cmc_range_max_string().parse::<f64>(),
         ) {
-            filter.write().cmc_range = Some((min, max));
+            filter_builder.write().set_cmc_range((min, max));
             cmc_range_min_string.set(min.to_string());
             cmc_range_max_string.set(max.to_string());
         } else {
