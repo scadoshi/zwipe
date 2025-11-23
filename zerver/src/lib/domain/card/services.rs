@@ -10,7 +10,7 @@ use crate::{
             create_card::CreateCardError,
             get_card::GetCardError,
             scryfall_data::ScryfallData,
-            search_card::{CardFilter, SearchCardsError},
+            search_card::{card_filter::CardFilter, error::SearchCardsError},
             sync_metrics::{SyncMetrics, SyncType},
             Card,
         },

@@ -16,7 +16,7 @@ use crate::domain::card::models::{
         },
         ScryfallData,
     },
-    search_card::{CardFilter, SearchCardsError},
+    search_card::{card_filter::CardFilter, error::SearchCardsError},
     sync_metrics::{SyncMetrics, SyncType},
     Card,
 };

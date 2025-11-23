@@ -17,7 +17,7 @@ use crate::domain::card::models::{
 use crate::domain::card::models::{
     create_card::CreateCardError,
     scryfall_data::get_scryfall_data::{GetScryfallData, GetScryfallDataError},
-    search_card::{CardFilter, SearchCardsError},
+    search_card::{card_filter::CardFilter, error::SearchCardsError},
     Card,
 };
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
@@ -361,8 +361,8 @@ impl CardRepository for MyPostgres {
     async fn get_card_types(&self) -> Result<Vec<String>, GetCardTypesError> {
         let card_types: Vec<String> = query_scalar!(
             "SELECT DISTINCT subtype FROM (
-                SELECT TRIM(BOTH ':-?, ' FROM UNNEST(STRING_TO_ARRAY(type_line, ' '))) subtype 
-                FROM scryfall_data 
+                SELECT TRIM(BOTH ':-?, ' FROM UNNEST(STRING_TO_ARRAY(type_line, ' '))) subtype
+                FROM scryfall_data
             ) subtypes
             WHERE subtype NOT IN ('//', '-', 'the', 'of', 'and/or', 'you', 'you''ll')
             ORDER BY subtype ASC"

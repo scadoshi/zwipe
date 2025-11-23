@@ -4,7 +4,7 @@ use crate::{
         auth::ports::AuthService,
         card::{
             models::{
-                search_card::{CardFilter, SearchCardsError},
+                search_card::{card_filter::CardFilter, error::SearchCardsError},
                 Card,
             },
             ports::CardService,
