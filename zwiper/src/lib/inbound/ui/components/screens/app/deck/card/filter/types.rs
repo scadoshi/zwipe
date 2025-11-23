@@ -10,8 +10,8 @@ use zwipe::{
     domain::{
         auth::models::session::Session,
         card::models::search_card::{
+            card_filter::builder::CardFilterBuilder,
             card_type::{CardType, WithCardTypes},
-            SearchCards,
         },
     },
     inbound::http::ApiError,
@@ -26,7 +26,7 @@ pub fn Types() -> Element {
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
 
-    let mut filter: Signal<SearchCards> = use_context();
+    let mut filter_builder: Signal<CardFilterBuilder> = use_context();
 
     let all_card_types: Resource<Result<Vec<String>, ApiError>> =
         use_resource(move || async move {
@@ -42,11 +42,9 @@ pub fn Types() -> Element {
     let mut show_other_type_dropdown = use_signal(|| false);
 
     use_effect(move || {
-        if selected_other_types().is_empty() {
-            filter.write().type_line_contains_any = None;
-        } else {
-            filter.write().type_line_contains_any = Some(selected_other_types.read().clone());
-        }
+        filter_builder
+            .write()
+            .set_type_line_contains_any(selected_other_types());
     });
 
     rsx! {
@@ -58,28 +56,24 @@ pub fn Types() -> Element {
                         label { class: "label", r#for : "card-type", "basic types"}
                             div { class: "flex flex-wrap gap-1 mb-2 flex-center",
                                 for card_type in Vec::with_all_card_types() {
-                                    div { class: if let Some(card_type_contains_any) = &filter.read().card_type_contains_any {
+                                    div { class: if let Some(card_type_contains_any) = filter_builder().card_type_contains_any() {
                                             if card_type_contains_any.contains(&card_type) {
                                                 "type-box selected"
                                             } else { "type-box" }
                                         } else { "type-box" },
                                         onclick: move |_| {
                                             let mut new: Vec<CardType> = Vec::new();
-                                            if let Some(selected) = &filter.read().card_type_contains_any {
-                                                new = selected.clone();
+                                            if let Some(selected) = filter_builder().card_type_contains_any() {
+                                                new = selected.to_vec();
                                                 if selected.contains(&card_type) {
                                                     new.retain(|x| x!= &card_type);
                                                 } else {
-                                                    new.push(card_type.clone());
+                                                    new.push(card_type);
                                                 }
                                             } else {
-                                                new.push(card_type.clone());
+                                                new.push(card_type);
                                             }
-                                            if new.is_empty() {
-                                                filter.write().card_type_contains_any = None
-                                            } else {
-                                                filter.write().card_type_contains_any = Some(new);
-                                            }
+                                            filter_builder.write().set_card_type_contains_any(new);
                                         },
                                         "{card_type}"
                                     }
@@ -124,10 +118,13 @@ pub fn Types() -> Element {
                             if let Some(Ok(all_types)) = all_card_types.read().as_ref() {
                                 div { class : "dropdown",
                                     {
+                                        let filter_builder = filter_builder();
                                         let matches: Vec<String> = all_types
                                             .iter()
-                                            .filter(|t| !filter.read().type_line_contains_any.as_ref().unwrap_or(&Vec::new()).contains(t))
-                                            .filter(|t| t.to_lowercase().contains(&other_type_query_string_for_dropdown().to_lowercase()))
+                                            .filter(|t|
+                                                    !filter_builder.type_line_contains_any().is_some_and(|v| v.contains(t))
+                                                    && t.to_lowercase().contains(&other_type_query_string_for_dropdown().to_lowercase())
+                                            )
                                             .take(5)
                                             .map(|x| x.to_lowercase())
                                             .collect();
