@@ -17,7 +17,10 @@ use tokio::time::sleep;
 use zwipe::{
     domain::{
         auth::models::session::Session,
-        card::models::{search_card::SearchCards, Card},
+        card::models::{
+            search_card::card_filter::{builder::CardFilterBuilder, error::InvalidCardFilter},
+            Card,
+        },
         deck::models::deck::copy_max::CopyMax,
     },
     inbound::http::handlers::deck::create_deck_profile::HttpCreateDeckProfile,
@@ -64,10 +67,15 @@ pub fn CreateDeck() -> Element {
             sleep(Duration::from_millis(500)).await;
 
             if let Some(sesh) = session() {
-                let mut request = SearchCards::by_name(&query);
-                request.limit = Some(5);
+                let Ok(card_filter) = CardFilterBuilder::with_name_contains(&query)
+                    .set_limit(5)
+                    .build()
+                else {
+                    tracing::error!("{}", InvalidCardFilter::Empty.to_string());
+                    return;
+                };
 
-                match auth_client().search_cards(&request, &sesh).await {
+                match auth_client().search_cards(&card_filter, &sesh).await {
                     Ok(cards) => {
                         search_results.set(cards);
                         is_searching.set(false);

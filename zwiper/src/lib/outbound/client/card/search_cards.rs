@@ -4,7 +4,7 @@ use std::future::Future;
 use zwipe::{
     domain::{
         auth::models::session::Session,
-        card::models::{search_card::SearchCards, Card},
+        card::models::{search_card::card_filter::CardFilter, Card},
     },
     inbound::http::{routes::search_cards_route, ApiError},
 };
@@ -12,7 +12,7 @@ use zwipe::{
 pub trait ClientSearchCards {
     fn search_cards(
         &self,
-        request: &SearchCards,
+        card_filter: &CardFilter,
         session: &Session,
     ) -> impl Future<Output = Result<Vec<Card>, ApiError>> + Send;
 }
@@ -20,7 +20,7 @@ pub trait ClientSearchCards {
 impl ClientSearchCards for ZwipeClient {
     async fn search_cards(
         &self,
-        request: &SearchCards,
+        card_filter: &CardFilter,
         session: &Session,
     ) -> Result<Vec<Card>, ApiError> {
         let mut url = self.app_config.backend_url.clone();
@@ -29,7 +29,7 @@ impl ClientSearchCards for ZwipeClient {
         let response = self
             .client
             .post(url)
-            .json(request)
+            .json(card_filter)
             .bearer_auth(session.access_token.value.as_str())
             .send()
             .await?;

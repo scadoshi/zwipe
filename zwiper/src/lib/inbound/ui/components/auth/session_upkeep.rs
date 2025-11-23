@@ -8,7 +8,7 @@ use tokio::time::interval;
 use zwipe::{
     domain::{
         auth::models::session::Session,
-        card::models::{search_card::SearchCards, Card},
+        card::models::{search_card::card_filter::builder::CardFilterBuilder, Card},
     },
     inbound::http::handlers::auth::refresh_session::HttpRefreshSession,
 };
@@ -60,8 +60,8 @@ pub fn spawn_upkeeper() {
     use_context_provider(|| client);
 
     // card search state - used by deck card screens
-    let filter = use_signal(SearchCards::default);
-    use_context_provider(|| filter);
+    let filter_builder = use_signal(CardFilterBuilder::default);
+    use_context_provider(|| filter_builder);
 
     let cards = use_signal(Vec::<Card>::new);
     use_context_provider(|| cards);

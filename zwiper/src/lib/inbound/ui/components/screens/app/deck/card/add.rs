@@ -16,29 +16,28 @@ use uuid::Uuid;
 use zwipe::{
     domain::{
         auth::models::session::Session,
-        card::models::{scryfall_data::image_uris::ImageUris, search_card::SearchCards, Card},
+        card::models::{
+            scryfall_data::image_uris::ImageUris,
+            search_card::card_filter::builder::CardFilterBuilder, Card,
+        },
     },
     inbound::http::handlers::deck_card::create_deck_card::HttpCreateDeckCard,
 };
 
 #[component]
 pub fn Add(deck_id: Uuid) -> Element {
-    let filter: Signal<SearchCards> = use_context();
-    let mut cards: Signal<Vec<Card>> = use_context();
-
-    tracing::debug!("{} cards found", { cards.len() });
-
+    let navigator = use_navigator();
     let swipe_state = use_signal(SwipeState::new);
     let swipe_config = SwipeConfig::blank();
 
-    let navigator = use_navigator();
-
-    let session: Signal<Option<Session>> = use_context();
-    let client: Signal<ZwipeClient> = use_context();
+    let filter_builder: Signal<CardFilterBuilder> = use_context();
+    let mut cards: Signal<Vec<Card>> = use_context();
 
     let mut add_card_error = use_signal(|| None::<String>);
     let mut search_error = use_signal(|| None::<String>);
 
+    let session: Signal<Option<Session>> = use_context();
+    let client: Signal<ZwipeClient> = use_context();
     let _add_card = move |card: &Card| {
         session.upkeep(client);
         let Some(sesh) = session() else {
@@ -57,9 +56,9 @@ pub fn Add(deck_id: Uuid) -> Element {
     };
 
     use_effect(move || {
-        if filter.read().is_blank() {
+        let Ok(filter) = filter_builder.read().build() else {
             return;
-        }
+        };
 
         session.upkeep(client);
         let Some(sesh) = session() else {
@@ -67,9 +66,8 @@ pub fn Add(deck_id: Uuid) -> Element {
             return;
         };
 
-        let filter_clone = filter.read().clone();
         spawn(async move {
-            match client().search_cards(&filter_clone, &sesh).await {
+            match client().search_cards(&filter, &sesh).await {
                 Ok(cards_from_search) => {
                     search_error.set(None);
                     cards.set(
