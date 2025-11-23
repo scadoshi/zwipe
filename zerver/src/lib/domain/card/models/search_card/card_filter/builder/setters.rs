@@ -1,0 +1,189 @@
+use super::{CardFilterBuilder, CardType, Colors};
+
+impl CardFilterBuilder {
+    // text
+    pub fn set_name_contains(&mut self, name_contains: impl Into<String>) -> &mut Self {
+        let s = name_contains.into();
+        self.name_contains = if s.is_empty() { None } else { Some(s) };
+        self
+    }
+
+    pub fn unset_name_contains(&mut self) -> &mut Self {
+        self.name_contains = None;
+        self
+    }
+
+    pub fn set_oracle_text_contains(
+        &mut self,
+        oracle_text_contains: impl Into<String>,
+    ) -> &mut Self {
+        let s = oracle_text_contains.into();
+        self.oracle_text_contains = if s.is_empty() { None } else { Some(s) };
+        self
+    }
+
+    pub fn unset_oracle_text_contains(&mut self) -> &mut Self {
+        self.oracle_text_contains = None;
+        self
+    }
+
+    // types
+    pub fn set_type_line_contains(&mut self, type_line_contains: impl Into<String>) -> &mut Self {
+        let s = type_line_contains.into();
+        self.type_line_contains = if s.is_empty() { None } else { Some(s) };
+        self
+    }
+
+    pub fn unset_type_line_contains(&mut self) -> &mut Self {
+        self.type_line_contains = None;
+        self
+    }
+
+    pub fn set_type_line_contains_any<I, S>(&mut self, type_line_contains_any: I) -> &mut Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        let v: Vec<String> = type_line_contains_any.into_iter().map(Into::into).collect();
+        self.type_line_contains_any = if v.is_empty() { None } else { Some(v) };
+        self
+    }
+
+    pub fn unset_type_line_contains_any(&mut self) -> &mut Self {
+        self.type_line_contains_any = None;
+        self
+    }
+
+    pub fn set_card_type_contains_any<I>(&mut self, card_type_contains_any: I) -> &mut Self
+    where
+        I: IntoIterator<Item = CardType>,
+    {
+        let v: Vec<CardType> = card_type_contains_any.into_iter().collect();
+        self.card_type_contains_any = if v.is_empty() { None } else { Some(v) };
+        self
+    }
+
+    pub fn unset_card_type_contains_any(&mut self) -> &mut Self {
+        self.card_type_contains_any = None;
+        self
+    }
+
+    // printing
+    pub fn set_set_contains(&mut self, set_contains: impl Into<String>) -> &mut Self {
+        let s = set_contains.into();
+        self.set_contains = if s.is_empty() { None } else { Some(s) };
+        self
+    }
+
+    pub fn unset_set_contains(&mut self) -> &mut Self {
+        self.set_contains = None;
+        self
+    }
+
+    pub fn set_rarity_contains(&mut self, rarity_contains: impl Into<String>) -> &mut Self {
+        let s = rarity_contains.into();
+        self.rarity_contains = if s.is_empty() { None } else { Some(s) };
+        self
+    }
+
+    pub fn unset_rarity_contains(&mut self) -> &mut Self {
+        self.rarity_contains = None;
+        self
+    }
+
+    // mana
+    pub fn set_cmc_equals(&mut self, cmc_equals: f64) -> &mut Self {
+        self.cmc_equals = Some(cmc_equals);
+        self
+    }
+
+    pub fn unset_cmc_equals(&mut self) -> &mut Self {
+        self.cmc_equals = None;
+        self
+    }
+
+    pub fn set_cmc_range(&mut self, cmc_range: (f64, f64)) -> &mut Self {
+        self.cmc_range = Some(cmc_range);
+        self
+    }
+
+    pub fn unset_cmc_range(&mut self) -> &mut Self {
+        self.cmc_range = None;
+        self
+    }
+
+    pub fn set_color_identity_equals(&mut self, color_identity_equals: Colors) -> &mut Self {
+        self.color_identity_equals = Some(color_identity_equals);
+        self
+    }
+
+    pub fn unset_color_identity_equals(&mut self) -> &mut Self {
+        self.color_identity_equals = None;
+        self
+    }
+
+    pub fn set_color_identity_contains_any(
+        &mut self,
+        color_identity_contains_any: Colors,
+    ) -> &mut Self {
+        self.color_identity_contains_any = Some(color_identity_contains_any);
+        self
+    }
+
+    pub fn unset_color_identity_contains_any(&mut self) -> &mut Self {
+        self.color_identity_contains_any = None;
+        self
+    }
+
+    // combat
+    pub fn set_power_equals(&mut self, power_equals: i32) -> &mut Self {
+        self.power_equals = Some(power_equals);
+        self
+    }
+
+    pub fn unset_power_equals(&mut self) -> &mut Self {
+        self.power_equals = None;
+        self
+    }
+
+    pub fn set_power_range(&mut self, power_range: (i32, i32)) -> &mut Self {
+        self.power_range = Some(power_range);
+        self
+    }
+
+    pub fn unset_power_range(&mut self) -> &mut Self {
+        self.power_range = None;
+        self
+    }
+
+    pub fn set_toughness_equals(&mut self, toughness_equals: i32) -> &mut Self {
+        self.toughness_equals = Some(toughness_equals);
+        self
+    }
+
+    pub fn unset_toughness_equals(&mut self) -> &mut Self {
+        self.toughness_equals = None;
+        self
+    }
+
+    pub fn set_toughness_range(&mut self, toughness_range: (i32, i32)) -> &mut Self {
+        self.toughness_range = Some(toughness_range);
+        self
+    }
+
+    pub fn unset_toughness_range(&mut self) -> &mut Self {
+        self.toughness_range = None;
+        self
+    }
+
+    // config
+    pub fn set_limit(&mut self, limit: u32) -> &mut Self {
+        self.limit = limit;
+        self
+    }
+
+    pub fn set_offset(&mut self, offset: u32) -> &mut Self {
+        self.offset = offset;
+        self
+    }
+}
