@@ -39,54 +39,75 @@ use zwipe::{
 
 #[component]
 pub fn EditDeck(deck_id: Uuid) -> Element {
+    // config
     let swipe_state = use_signal(SwipeState::new);
     let swipe_config = SwipeConfig::blank();
-
     let navigator = use_navigator();
-
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
 
-    // get original deck information
-    let mut original_deck_name: Signal<String> = use_signal(String::new);
-    let mut original_commander_id: Signal<Option<Uuid>> = use_signal(|| None);
-    let mut original_commander: Signal<Option<Card>> = use_signal(|| None);
-    let mut original_copy_max: Signal<Option<CopyMax>> = use_signal(|| None);
-    let original_deck_profile_resource: Resource<Result<DeckProfile, ApiError>> =
-        use_resource(move || async move {
-            let Some(sesh) = session() else {
-                return Err(ApiError::Unauthorized("session expired".to_string()));
-            };
-            let result = client().get_deck_profile(deck_id, &sesh).await;
-            if let Ok(deck_profile) = result.clone() {
-                original_deck_name.set(deck_profile.name.to_string());
-                original_commander_id.set(deck_profile.commander_id);
-                original_copy_max.set(deck_profile.copy_max);
-            }
-            result
-        });
-
-    // get original commander information
-    let commander_resource: Resource<Result<Option<Card>, ApiError>> =
-        use_resource(move || async move {
-            let Some(commander_id) = original_commander_id() else {
-                return Ok(None);
-            };
-            let Some(sesh) = session() else {
-                return Err(ApiError::Unauthorized("session expired".to_string()));
-            };
-            let result = client().get_card(commander_id, &sesh).await.map(Some);
-            if let Ok(commander) = &result {
-                original_commander.set(commander.clone());
-            }
-            result
-        });
-
-    // form
+    // original defaults and update intake
     let mut deck_name: Signal<String> = use_signal(String::new);
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
     let mut commander_display = use_signal(String::new);
     let mut copy_max: Signal<Option<CopyMax>> = use_signal(|| None);
+
+    // original
+    let mut original_deck_name: Signal<String> = use_signal(String::new);
+    let mut original_commander: Signal<Option<Card>> = use_signal(|| None);
+    let mut original_copy_max: Signal<Option<CopyMax>> = use_signal(|| None);
+
+    let mut load_error = use_signal(|| None::<String>);
+
+    let original_deck_profile_resource: Resource<Result<DeckProfile, ApiError>> =
+        use_resource(move || async move {
+            session.upkeep(client);
+            let Some(sesh) = session() else {
+                return Err(ApiError::Unauthorized("session expired".to_string()));
+            };
+            client().get_deck_profile(deck_id, &sesh).await
+        });
+    use_effect(move || match original_deck_profile_resource() {
+        Some(Ok(original)) => {
+            original_deck_name.set(original.name.to_string());
+            deck_name.set(original.name.to_string());
+            original_copy_max.set(original.copy_max);
+            copy_max.set(original.copy_max);
+        }
+        Some(Err(e)) => {
+            load_error.set(Some(e.to_string()));
+        }
+        None => (),
+    });
+    let original_commander_resource: Resource<Result<Option<Card>, ApiError>> =
+        use_resource(move || async move {
+            let Some(Ok(DeckProfile {
+                commander_id: Some(original_commander_id),
+                ..
+            })) = original_deck_profile_resource()
+            else {
+                return Ok(None);
+            };
+            session.upkeep(client);
+            let Some(sesh) = session() else {
+                return Err(ApiError::Unauthorized("session expired".to_string()));
+            };
+            client()
+                .get_card(original_commander_id, &sesh)
+                .await
+                .map(Some)
+        });
+    use_effect(move || match original_commander_resource() {
+        Some(Ok(Some(original))) => {
+            original_commander.set(Some(original.clone()));
+            commander.set(Some(original.clone()));
+            commander_display.set(original.scryfall_data.name.to_lowercase());
+        }
+        Some(Ok(None)) | None => (),
+        Some(Err(e)) => {
+            load_error.set(Some(e.to_string()));
+        }
+    });
 
     let deck_name_update = use_memo(move || {
         if deck_name() != original_deck_name() {
@@ -95,7 +116,6 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             None
         }
     });
-
     let commander_id_update = use_memo(move || {
         if commander() != original_commander() {
             Optdate::Set(commander().map(|c| c.card_profile.id))
@@ -103,7 +123,6 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             Optdate::Unchanged
         }
     });
-
     let copy_max_update = use_memo(move || {
         if copy_max() != original_copy_max() {
             Optdate::Set(copy_max().map(|cm| cm.max()))
@@ -111,52 +130,17 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             Optdate::Unchanged
         }
     });
-
     let has_made_changes = use_memo(move || {
         deck_name_update().is_some()
             || commander_id_update().is_changed()
             || copy_max_update().is_changed()
     });
 
-    let mut load_error = use_signal(|| None::<String>);
-
     // commander search state
     let mut search_query = use_signal(String::new);
     let mut search_results = use_signal(Vec::<Card>::new);
     let mut is_searching = use_signal(|| false);
     let mut show_dropdown = use_signal(|| false);
-
-    // defaults from resources
-    // this needs to be refactored removed to match the above added pattern
-    use_effect(move || {
-        let curr_deck = match &*original_deck_profile_resource.read() {
-            Some(Ok(profile)) => profile.clone(),
-            Some(Err(e)) => {
-                load_error.set(Some(e.to_string()));
-                return;
-            }
-            None => return,
-        };
-
-        deck_name.set(curr_deck.name.to_string());
-        original_deck_name.set(curr_deck.name.to_string());
-        copy_max.set(curr_deck.copy_max);
-        original_copy_max.set(curr_deck.copy_max);
-
-        let curr_commander = match &*commander_resource.read() {
-            Some(Ok(Some(commander))) => commander.clone(),
-            Some(Ok(None)) => return,
-            Some(Err(e)) => {
-                load_error.set(Some(e.to_string()));
-                return;
-            }
-            None => return,
-        };
-
-        commander.set(Some(curr_commander.clone()));
-        original_commander.set(Some(curr_commander.clone()));
-        commander_display.set(curr_commander.scryfall_data.name.to_lowercase());
-    });
 
     // save state
     let mut submission_error = use_signal(|| None::<String>);
