@@ -7,8 +7,6 @@ use serde::{Deserialize, Serialize};
 /// this wrapper prevents that
 ///
 /// optional + update => opt + date => optdate
-///
-/// deal with it
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum Optdate<T> {
     Set(Option<T>),
