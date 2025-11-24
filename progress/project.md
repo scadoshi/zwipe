@@ -24,7 +24,7 @@ alwaysApply: true
 **Current Challenge**: Systematic clippy warning resolution requiring architectural changes (builder patterns). Identifying full scope of reusable UI components. Balancing abstraction with simplicity.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Clippy Marathon - Phase 1: Build Script Warnings** - Resolve build.rs warnings (expect_used, panic in env var loading) with #[allow] or proper error context
+1. **Button Component CSS Integration** - Resolve asset loading issue preventing button styles from applying (asset!() path working but styles not rendering)
 2. **Clippy Marathon - Phase 2: Unwrap Elimination** - Systematically remove all unwrap() calls adding proper error handling with ? operator and Result returns
 3. **Clippy Marathon - Phase 3: Builder Patterns** - Refactor SearchCards (17 params), SyncMetrics (10 params), Planeswalker types to builder pattern satisfying too_many_arguments
 4. **Single Selection Field Component** - Build reusable dropdown/select component for common single-choice patterns (CopyMax selection, card type selection, etc.)
@@ -500,16 +500,16 @@ alwaysApply: true
 ## Development Context for AI Assistants
 
 ### 🎯 Current Session Focus
-- CardFilter refactor: migrate to single-type builder + getters; remove typestate
-- UI integration: update filter screens, deck add/remove, and client usage
-- Context design: persist Option<CardFilterBuilder> and builder semantics
-- Clippy/quality: define await-holding-invalid-types; plan read-guard fixes
+- Clippy await_holding_lock resolution: discovered resource() vs resource.read() pattern
+- Refactored edit.rs and view.rs: resources chain directly without intermediate signals
+- Resource pattern: resource() clones safely across await, .read() creates unsafe guards
+- Branch: satisfying-clippy ready for PR to main
 
 ### 📚 Learning Context
-- Frontend state patterns: Dioxus context with Signals; persisting builders across screens
-- Typestate tradeoffs: when to prefer runtime validation over PhantomData
-- Clippy linting: await-holding-invalid-type; scope reads before awaits
-- Next: implement read-guard fixes in edit/view resources
+- Critical discovery: resource() function call clones value, .read() returns borrow guard
+- Direct resource chaining eliminates need for signal coordination in many cases
+- Edit screens: use effects to populate form signals; View screens: render directly from resources
+- Pattern established: pure resources + effects for side effects vs direct resource rendering
 
 ### 🛠️ Development Commands
 ```bash
