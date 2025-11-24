@@ -59,7 +59,7 @@ impl<R: CardRepository> CardService for Service<R> {
     }
 
     async fn scryfall_sync(&self, sync_type: SyncType) -> anyhow::Result<SyncMetrics> {
-        let mut sync_metrics = SyncMetrics::generate(sync_type);
+        let mut sync_metrics = SyncMetrics::with_sync_type(sync_type);
 
         let batch_size = batch_size();
 

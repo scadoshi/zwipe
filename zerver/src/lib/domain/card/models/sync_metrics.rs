@@ -140,7 +140,7 @@ impl Deref for VecErrorMetrics {
 /// stores metrics about a scryfall database card sync
 ///
 /// keeping fields private for more controlled design pattern
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SyncMetrics {
     sync_type: SyncType,
     status: SyncStatus,
@@ -154,12 +154,10 @@ pub struct SyncMetrics {
     errors: Vec<ErrorMetrics>,
 }
 
-impl SyncMetrics {
-    /// constructs SyncMetrics
-    /// with sensible defaults
-    pub fn generate(sync_type: SyncType) -> Self {
+impl Default for SyncMetrics {
+    fn default() -> Self {
         Self {
-            sync_type,
+            sync_type: SyncType::Full,
             status: SyncStatus::InProgress,
             started_at: chrono::Utc::now().naive_utc(),
             ended_at: None,
@@ -171,66 +169,88 @@ impl SyncMetrics {
             errors: Vec::new(),
         }
     }
+}
 
-    /// constructs SyncMetrics
-    /// out of raw types
-    pub fn new(
-        sync_type: SyncType,
-        started_at: NaiveDateTime,
-        ended_at: Option<NaiveDateTime>,
-        duration_in_seconds: i32,
-        status: SyncStatus,
-        received: i32,
-        imported: i32,
-        skipped: i32,
-        error_count: i32,
-        errors: Vec<ErrorMetrics>,
-    ) -> Self {
+impl SyncMetrics {
+    pub fn with_sync_type(sync_type: SyncType) -> Self {
         Self {
             sync_type,
-            started_at,
-            ended_at,
-            duration_in_seconds,
-            status,
-            received,
-            imported,
-            skipped,
-            error_count,
-            errors,
+            ..Self::default()
         }
     }
 
-    // for mutating SyncMetrics
-    pub fn set_received(&mut self, count: i32) {
+    pub fn set_sync_type(&mut self, sync_type: SyncType) -> &mut Self {
+        self.sync_type = sync_type;
+        self
+    }
+
+    pub fn set_status(&mut self, status: SyncStatus) -> &mut Self {
+        self.status = status;
+        self
+    }
+
+    pub fn set_started_at(&mut self, started_at: NaiveDateTime) -> &mut Self {
+        self.started_at = started_at;
+        self
+    }
+
+    pub fn set_ended_at(&mut self, ended_at: Option<NaiveDateTime>) -> &mut Self {
+        self.ended_at = ended_at;
+        self
+    }
+
+    pub fn set_duration_in_seconds(&mut self, duration_in_seconds: i32) -> &mut Self {
+        self.duration_in_seconds = duration_in_seconds;
+        self
+    }
+
+    pub fn set_received(&mut self, count: i32) -> &mut Self {
         self.received = count;
+        self
     }
 
-    pub fn set_imported(&mut self, count: i32) {
+    pub fn set_imported(&mut self, count: i32) -> &mut Self {
         self.imported = count;
+        self
     }
 
-    pub fn add_imported(&mut self, count: i32) {
+    pub fn add_imported(&mut self, count: i32) -> &mut Self {
         self.imported += count;
+        self
     }
 
-    pub fn set_skipped(&mut self, count: i32) {
+    pub fn set_skipped(&mut self, count: i32) -> &mut Self {
         self.skipped = count;
+        self
     }
 
-    pub fn add_skipped(&mut self, count: i32) {
+    pub fn add_skipped(&mut self, count: i32) -> &mut Self {
         self.skipped += count;
+        self
     }
 
-    pub fn add_error(&mut self, error: ErrorMetrics) {
+    pub fn set_error_count(&mut self, count: i32) -> &mut Self {
+        self.error_count = count;
+        self
+    }
+
+    pub fn add_error(&mut self, error: ErrorMetrics) -> &mut Self {
         self.errors.push(error);
         self.error_count = self.errors.len() as i32;
+        self
+    }
+
+    pub fn set_errors<I>(&mut self, error_metrics: I) -> &mut Self
+    where
+        I: IntoIterator<Item = ErrorMetrics>,
+    {
+        self.errors = error_metrics.into_iter().collect();
+        self
     }
 
     pub fn mark_as_completed(&mut self) {
         self.error_count = self.errors.len() as i32;
-
         self.evaluate_status();
-
         self.ended_at = Some(chrono::Utc::now().naive_utc());
         if let Some(ended_at) = self.ended_at {
             self.duration_in_seconds = (ended_at - self.started_at).num_seconds() as i32;
@@ -270,17 +290,15 @@ impl SyncMetrics {
     }
 
     // helpers
-    fn evaluate_status(&mut self) {
+    fn evaluate_status(&mut self) -> &mut Self {
         self.status = SyncStatus::Failure;
-
         let intended_to_import = self.received - self.skipped;
-
         if self.imported as f32 >= intended_to_import as f32 * 0.7 {
             self.status = SyncStatus::PartialSuccess;
         }
-
         if self.imported == intended_to_import && self.error_count == 0 {
             self.status = SyncStatus::Success;
         }
+        self
     }
 }

@@ -58,7 +58,7 @@ pub struct PlanesWalker(RequestBuilder);
 
 impl PlanesWalker {
     /// main constructor
-    fn untap(client: &mut Client, full_url: &str) -> Self {
+    fn untap(client: Client, full_url: &str) -> Self {
         Self(
             client
                 .get(full_url)
@@ -79,7 +79,7 @@ impl PlanesWalker {
 
     #[allow(dead_code)]
     /// for searching for a single card
-    pub async fn tutor(client: &mut Client, search_str: &str) -> anyhow::Result<Vec<ScryfallData>> {
+    pub async fn tutor(client: Client, search_str: &str) -> anyhow::Result<Vec<ScryfallData>> {
         let url = SCRYFALL_API_BASE.to_string() + CARDS_SEARCH_ENDPOINT;
         let urza = PlanesWalker::untap(client, &url);
 
@@ -102,11 +102,11 @@ impl PlanesWalker {
 /// for getting a `RequestBuilder` ready with scryfall api url + endpoint
 #[allow(dead_code)]
 trait CreatePlanesWalker {
-    fn into_planeswalker(&mut self, endpoint: &str) -> PlanesWalker;
+    fn into_planeswalker(self, endpoint: &str) -> PlanesWalker;
 }
 
 impl CreatePlanesWalker for Client {
-    fn into_planeswalker(&mut self, endpoint: &str) -> PlanesWalker {
+    fn into_planeswalker(self, endpoint: &str) -> PlanesWalker {
         PlanesWalker::untap(self, endpoint)
     }
 }
@@ -142,7 +142,7 @@ impl BulkEndpoint {
     pub async fn amass(&self) -> anyhow::Result<Vec<ScryfallData>> {
         // first get the bulk data object with our main url
         let url = SCRYFALL_API_BASE.to_string() + &self.resolve();
-        let urza = PlanesWalker::untap(&mut Client::new(), &url);
+        let urza = PlanesWalker::untap(Client::new(), &url);
 
         let bulk_response = urza
             .cast()
@@ -158,7 +158,7 @@ impl BulkEndpoint {
             from_value::<BulkDataObject>(bulk_json).context("failed to parse BulkDataObject")?;
 
         // then use the download_uri to fetch the actual card data
-        let karn = PlanesWalker::untap(&mut Client::new(), &bulk_data_object.download_uri);
+        let karn = PlanesWalker::untap(Client::new(), &bulk_data_object.download_uri);
 
         let cards_response = karn
             .cast()

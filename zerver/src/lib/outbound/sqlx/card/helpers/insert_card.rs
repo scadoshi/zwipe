@@ -158,7 +158,9 @@ async fn insert_card_by_card(
         let card_id = card.id;
 
         match card.insert_with_tx(tx).await {
-            Ok(_) => sync_metrics.add_imported(1),
+            Ok(_) => {
+                sync_metrics.add_imported(1);
+            }
             Err(e) => {
                 // ignore tx abort messages as they are never root cause
                 if !e.to_string().contains(POSTGRES_TX_ABORT_MESSAGE) {
