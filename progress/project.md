@@ -416,6 +416,16 @@ alwaysApply: true
 - **ID Bug Resolution**: Debugged commander blanking issue, fixed by sending card_profile.id instead of scryfall_data.id
 - **CSS Problem Solving**: Fixed button cutoff by adding max-height to commander images and overflow-y to swipeable
 
+### 🎨 Session: CardFilter Builder Refactor & UI Integration
+- Replaced typestate builder with a single-type `CardFilterBuilder`; `build()` returns `Result<CardFilter, InvalidCardFilter>`
+- Introduced `card_filter` module (builder/getters/error) and removed legacy `getters.rs`/`setters.rs`
+- Added getters for both `CardFilter` and `CardFilterBuilder`
+- Updated backend ports, services, HTTP handlers, and SQLx adapter to the new filter/builder types
+- Updated UI screens (filter, mana, printing, text, combat, add/remove, create/edit) and client code to new API
+- Context design: persist `Option<CardFilterBuilder>` for “no filters yet” vs “has filters” semantics
+- Improved types dropdown predicate using `Option::map_or` for clarity
+- Plan: fix clippy `await_holding_invalid_type` by scoping resource reads before awaits in edit/view
+
 **Strengths:**
 - **Debugging Persistence**: Traced commander issue through full stack (frontend → domain → SQLx) to identify root cause
 - **Change Detection Logic**: Implemented clean pattern comparing current vs original state before building update requests
@@ -490,14 +500,16 @@ alwaysApply: true
 ## Development Context for AI Assistants
 
 ### 🎯 Current Session Focus
-- **Auth Domain Security**: Centralizing user lifecycle operations
-- **User Domain Cleanup**: Simplifying to read-only operations
-- **Production Hardening**: Comprehensive security and performance optimization
+- CardFilter refactor: migrate to single-type builder + getters; remove typestate
+- UI integration: update filter screens, deck add/remove, and client usage
+- Context design: persist Option<CardFilterBuilder> and builder semantics
+- Clippy/quality: define await-holding-invalid-types; plan read-guard fixes
 
 ### 📚 Learning Context
-- **Architecture Understanding**: Solid grasp of hexagonal patterns and service layer design
-- **Implementation Confidence**: Strong SQLx, HTTP, and security implementation skills
-- **Current Edge**: Advanced type systems, production deployment, monitoring
+- Frontend state patterns: Dioxus context with Signals; persisting builders across screens
+- Typestate tradeoffs: when to prefer runtime validation over PhantomData
+- Clippy linting: await-holding-invalid-type; scope reads before awaits
+- Next: implement read-guard fixes in edit/view resources
 
 ### 🛠️ Development Commands
 ```bash

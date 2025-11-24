@@ -15,18 +15,22 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Completed TextInput application across all applicable screens. Ready to begin clippy marathon addressing build script warnings, unwrap elimination, and builder pattern refactoring.
+**Last Updated**: Refactored to a single-type CardFilterBuilder with runtime validation (`build() -> Result`), removed typestate/PhantomData, added getters for CardFilter and CardFilterBuilder, updated backend ports/services/handlers and UI screens, improved types predicate (`Option::map_or`), and split commits logically. Planned fixes for `await_holding_invalid_type` and clippy.toml entries.
 
-**Next Learning Focus**: Builder pattern implementation (classic vs typed vs parameter object approaches). Systematic unwrap/panic elimination strategies (? propagation, Result returns, expect with context). Single selection field component design patterns.
+**Next Learning Focus**: 
+- Scope Dioxus Resource reads before awaits (no guards across await)
+- Validate/simplify clippy.toml (resolve unreachable type paths or mark `allow-invalid = true`)
+- Continue ergonomics on builder setters using `&mut self`
+- Solidify context persistence pattern for filters (Option<CardFilterBuilder> vs finished CardFilter)
 
-**Recent Achievement**: Applied TextInput component to ALL applicable input fields across login, register, profile changes, deck creation/editing, and filter screens. Completed workspace clippy configuration (26 lints). Removed 100+ unnecessary `&Uuid` references understanding Copy semantics. Migrated println! to tracing::info!. Learned cargo clippy --fix workflow.
+**Recent Achievement**: Completed CardFilter module (builder/getters/error), removed legacy typestate files, updated UI filter screens and deck flows to new API, added CardFilter getters, and improved dropdown filtering logic. Commits reorganized into small, focused changes.
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Builder Pattern Best Practices** - Classic builder (with_* methods) vs typed builder (compile-time state) vs parameter object (struct with defaults) - which fits Rust idioms best for SearchCards/SyncMetrics?
-2. **Unwrap Elimination Approach** - Systematic strategy: start from deepest call sites and propagate errors up, or start from entry points and work down? How to handle legitimate infallible cases?
-3. **Build Script Clippy Exceptions** - Should build.rs panic for missing env vars (fail fast at compile time) or use #[allow(clippy::panic)] since this is intentional compile-time validation?
-4. **Single Selection Component Design** - Props interface for dropdown/select: pass options as Vec<(String, T)>, enum-based with Display, or builder pattern for option construction?
-5. **Component Abstraction Threshold** - TextInput has 5 props (value, id, label, placeholder, input_type) - what's the limit before components become harder to use than inline code?
+1. **Clippy Config Paths** — Correct public path for Dioxus signal guard types vs using `allow-invalid = true` in clippy.toml.
+2. **Await Safety with Resources** — Best-practice pattern to extract/copy data from `Resource::read()` and drop guards before any `.await`.
+3. **Filter State Persistence** — Long-term pattern: store `Option<CardFilterBuilder>` vs storing finished `CardFilter` and rebuilding a builder on edit.
+4. **Boundary Validation** — How much server-side validation to duplicate (reject empty CardFilter) when frontend `build()` already enforces non-empty.
+5. **UI Clear/Reset UX** — Clean UX for clearing all filters vs incremental removal while keeping state consistent with builder semantics.
 
 ---
 
