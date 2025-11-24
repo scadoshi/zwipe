@@ -28,7 +28,7 @@ use tower_http::cors::CorsLayer;
 //  error
 // =======
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone)]
 pub enum ApiError {
     #[error("{0}")]
     InternalServerError(String),
