@@ -15,22 +15,22 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Refactored to a single-type CardFilterBuilder with runtime validation (`build() -> Result`), removed typestate/PhantomData, added getters for CardFilter and CardFilterBuilder, updated backend ports/services/handlers and UI screens, improved types predicate (`Option::map_or`), and split commits logically. Planned fixes for `await_holding_invalid_type` and clippy.toml entries.
+**Last Updated**: Resolved Clippy `await_holding_lock` warnings by discovering resource cloning pattern: `resource()` clones the value (safe across await), while `resource.read()` holds a borrow guard (unsafe). Refactored edit.rs and view.rs to use direct resource chaining without intermediate signals where possible. Cleaned up unnecessary effects when resources can be read directly in RSX.
 
 **Next Learning Focus**: 
-- Scope Dioxus Resource reads before awaits (no guards across await)
-- Validate/simplify clippy.toml (resolve unreachable type paths or mark `allow-invalid = true`)
-- Continue ergonomics on builder setters using `&mut self`
-- Solidify context persistence pattern for filters (Option<CardFilterBuilder> vs finished CardFilter)
+- Continue Clippy Marathon: unwrap elimination, builder patterns for too_many_arguments
+- Build reusable single-selection dropdown component
+- Extract common filter UI sub-components for reuse
+- Card browsing with swipe navigation
 
-**Recent Achievement**: Completed CardFilter module (builder/getters/error), removed legacy typestate files, updated UI filter screens and deck flows to new API, added CardFilter getters, and improved dropdown filtering logic. Commits reorganized into small, focused changes.
+**Recent Achievement**: Discovered and applied the critical `resource()` vs `resource.read()` pattern—calling resources as functions clones data safely for async contexts, while `.read()` creates guards that can't cross await boundaries. This eliminates the need for intermediate signal coordination in many cases. Successfully refactored deck edit/view screens with cleaner reactive patterns.
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Clippy Config Paths** — Correct public path for Dioxus signal guard types vs using `allow-invalid = true` in clippy.toml.
-2. **Await Safety with Resources** — Best-practice pattern to extract/copy data from `Resource::read()` and drop guards before any `.await`.
-3. **Filter State Persistence** — Long-term pattern: store `Option<CardFilterBuilder>` vs storing finished `CardFilter` and rebuilding a builder on edit.
-4. **Boundary Validation** — How much server-side validation to duplicate (reject empty CardFilter) when frontend `build()` already enforces non-empty.
-5. **UI Clear/Reset UX** — Clean UX for clearing all filters vs incremental removal while keeping state consistent with builder semantics.
+1. **Button Component CSS Loading** — Button component styles not applying despite asset!() macro loading CSS from assets/components/button/style.css. Syntax issue in CSS or bundling problem?
+2. **Filter State Persistence** — Long-term pattern: store `Option<CardFilterBuilder>` vs storing finished `CardFilter` and rebuilding a builder on edit.
+3. **Builder Pattern Refactoring** — Best approach for SearchCards (17 params) and SyncMetrics (10 params) to satisfy too_many_arguments without breaking existing code.
+4. **Component Composition Strategy** — When to use sub-components vs inline logic for complex UI elements like filters with multiple fields.
+5. **Resource vs Effect Trade-offs** — When to use resources with effects for side effects vs direct resource reading in RSX for simpler cases.
 
 ---
 
@@ -359,6 +359,10 @@ alwaysApply: true
 - **Context Solution**: App-level context (use_context_provider in spawn_upkeeper) solves cross-route Signal persistence
 - **Router Signal Limitations**: Signals aren't serializable, can't be reliably used as route parameters despite compiling
 - **Debugging Signal Reactivity**: Check if Signal updates in one component, navigation completes, but reading component shows stale data = context issue
+- **CRITICAL: resource() vs resource.read()** — `resource()` clones the value (safe across await), `resource.read()` returns borrow guard (UNSAFE across await). Clippy's await_holding_lock only triggers on `.read()` guards, not on cloned values.
+- **Direct Resource Chaining**: Resources can read other resources directly with `resource()` - no intermediate signals needed. Pattern: `let Some(Ok(Data { field, .. })) = other_resource() else { return Ok(None) };`
+- **When to Use Effects**: Edit screens need effects to populate form signals, but view screens can render directly from resources with pattern matching in RSX.
+- **Resource Separation of Concerns**: Keep resources pure (just fetch), use effects for side effects (populate signals), or render directly from resources for read-only display.
 - *Note: Hook selection (effect vs future vs resource) is critical - wrong choice causes infinite loops or missing reactivity*
 
 ### 🔐 Backend Session & Token Architecture (Complete) ✅
