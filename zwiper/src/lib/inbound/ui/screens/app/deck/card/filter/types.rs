@@ -119,7 +119,7 @@ pub fn Types() -> Element {
                                 div { class : "dropdown",
                                     {
                                         let filter_builder = filter_builder();
-                                        let matches: Vec<String> = all_types
+                                        let results: Vec<String> = all_types
                                             .iter()
                                             .filter(|t|
                                                     !filter_builder.type_line_contains_any().is_some_and(|v| v.contains(t))
@@ -128,13 +128,13 @@ pub fn Types() -> Element {
                                             .take(5)
                                             .map(|x| x.to_lowercase())
                                             .collect();
-                                        if matches.is_empty() {
+                                        if results.is_empty() {
                                             rsx! {
                                                 div { class : "dropdown-item", "no results" }
                                             }
                                         } else {
                                             rsx! {
-                                                for t in matches
+                                                for t in results
                                                 {
                                                     div { class: "dropdown-item",
                                                         onclick : move |_| {
