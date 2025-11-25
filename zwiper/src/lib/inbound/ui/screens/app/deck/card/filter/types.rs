@@ -51,7 +51,7 @@ pub fn Types() -> Element {
     Bouncer {
         Swipeable { state: swipe_state, config: swipe_config,
             div { class : "container-sm",
-                h2 { class: "text-center mb-2 font-light tracking-wider", "type filters" }
+                h2 { class: "text-center mb-2 font-light tracking-wider", "type filter" }
                         form { class : "flex-col text-center",
                         label { class: "label", r#for : "card-type", "basic types"}
                             div { class: "flex flex-wrap gap-1 mb-2 flex-center",

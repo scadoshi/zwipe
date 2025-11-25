@@ -6,7 +6,7 @@ use dioxus::prelude::*;
 use zwipe::domain::card::models::search_card::card_filter::builder::CardFilterBuilder;
 
 #[component]
-pub fn Printing() -> Element {
+pub fn Rarity() -> Element {
     let swipe_config = SwipeConfig::blank();
     let swipe_state = use_signal(SwipeState::new);
     let navigator = use_navigator();
@@ -16,7 +16,7 @@ pub fn Printing() -> Element {
         Bouncer {
             Swipeable { state: swipe_state, config: swipe_config,
                 div { class : "container-sm",
-                    h2 { class: "text-center mb-2 font-light tracking-wider", "mana filters" }
+                    h2 { class: "text-center mb-2 font-light tracking-wider", "rarity filter" }
 
                     form { class : "flex-col text-center",
                         label { class: "label", r#for : "name-contains", "name contains" }

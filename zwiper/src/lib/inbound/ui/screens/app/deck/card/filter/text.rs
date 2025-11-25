@@ -16,7 +16,7 @@ pub fn Text() -> Element {
         Bouncer {
             Swipeable { state: swipe_state, config: swipe_config,
                 div { class : "container-sm",
-                    h2 { class: "text-center mb-2 font-light tracking-wider", "mana filters" }
+                    h2 { class: "text-center mb-2 font-light tracking-wider", "text filter" }
 
                     form { class : "flex-col text-center",
                         label { class: "label", r#for : "name-contains", "name contains" }

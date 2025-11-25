@@ -1,24 +1,22 @@
-use dioxus::prelude::*;
-use zwipe::domain::card::models::search_card::card_filter::builder::CardFilterBuilder;
-
 use crate::inbound::ui::components::{
     auth::bouncer::Bouncer,
     interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
 };
+use dioxus::prelude::*;
+use zwipe::domain::card::models::search_card::card_filter::builder::CardFilterBuilder;
 
 #[component]
-pub fn Combat() -> Element {
+pub fn Set() -> Element {
     let swipe_config = SwipeConfig::blank();
     let swipe_state = use_signal(SwipeState::new);
     let navigator = use_navigator();
 
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
-
     rsx! {
         Bouncer {
             Swipeable { state: swipe_state, config: swipe_config,
                 div { class : "container-sm",
-                    h2 { class: "text-center mb-2 font-light tracking-wider", "combat filter" }
+                    h2 { class: "text-center mb-2 font-light tracking-wider", "set filter" }
 
                     form { class : "flex-col text-center",
                         label { class: "label", r#for : "name-contains", "name contains" }
@@ -33,7 +31,7 @@ pub fn Combat() -> Element {
                             spellcheck : "false",
                             oninput : move |event| {
                                 filter_builder.write().set_name_contains(event.value());
-                            },
+                            }
                         }
 
                         button { class : "btn",
