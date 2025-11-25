@@ -41,27 +41,21 @@ pub struct CardFilterBuilder {
 impl Default for CardFilterBuilder {
     fn default() -> Self {
         Self {
-            // combat
             power_equals: None,
             power_range: None,
             toughness_equals: None,
             toughness_range: None,
-            // mana
             cmc_equals: None,
             cmc_range: None,
             color_identity_contains_any: None,
             color_identity_equals: None,
-            // printing
             rarity_contains: None,
             set_contains: None,
-            // text
             name_contains: None,
             oracle_text_contains: None,
-            // types
             type_line_contains: None,
             type_line_contains_any: None,
             card_type_contains_any: None,
-            // config
             limit: 100,
             offset: 0,
         }
