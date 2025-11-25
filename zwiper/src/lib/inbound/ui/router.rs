@@ -1,4 +1,4 @@
-use crate::inbound::ui::components::screens::{
+use crate::inbound::ui::screens::{
     app::{
         deck::{
             card::{
@@ -37,7 +37,7 @@ pub enum Router {
     Login {},
     #[route("/register")]
     Register {},
-    
+
     // user
     #[route("/user")]
     Profile {},
@@ -60,11 +60,11 @@ pub enum Router {
 
     //deck card
     #[route("/deck/card/add/:deck_id")]
-    AddDeckCard { 
+    AddDeckCard {
         deck_id: Uuid,
     },
     #[route("/deck/card/remove/:deck_id")]
-    RemoveDeckCard { 
+    RemoveDeckCard {
         deck_id: Uuid,
      },
 

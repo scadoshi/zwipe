@@ -29,16 +29,9 @@ pub fn Filter() -> Element {
 
                         button { class : "btn",
                             onclick : move |_| {
-                                navigator.push(Router::Types {});
+                                navigator.push(Router::Combat {});
                             },
-                            "types"
-                        }
-
-                        button { class : "btn",
-                            onclick : move |_| {
-                                navigator.push(Router::Text {});
-                            },
-                            "text"
+                            "combat"
                         }
 
                         button { class : "btn",
@@ -50,16 +43,23 @@ pub fn Filter() -> Element {
 
                         button { class : "btn",
                             onclick : move |_| {
-                                navigator.push(Router::Combat {});
+                                navigator.push(Router::Printing {});
                             },
-                            "stats"
+                            "printing"
                         }
 
                         button { class : "btn",
                             onclick : move |_| {
-                                navigator.push(Router::Printing {});
+                                navigator.push(Router::Text {});
                             },
-                            "printing"
+                            "text"
+                        }
+
+                        button { class : "btn",
+                            onclick : move |_| {
+                                navigator.push(Router::Types {});
+                            },
+                            "types"
                         }
 
                         button { class : "btn",

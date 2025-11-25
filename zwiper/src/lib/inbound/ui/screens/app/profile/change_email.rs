@@ -1,9 +1,9 @@
 use crate::domain::error::UserFacing;
 use crate::inbound::ui::components::fields::text_input::TextInput;
+use crate::inbound::ui::components::interactions::swipe::Swipeable;
 use crate::inbound::ui::components::{
     auth::{bouncer::Bouncer, session_upkeep::Upkeep},
     interactions::swipe::{config::SwipeConfig, state::SwipeState},
-    screens::app::profile::Swipeable,
     success_messages::random_success_message,
 };
 use crate::outbound::client::user::change_email::ClientChangeEmail;

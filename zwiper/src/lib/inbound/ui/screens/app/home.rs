@@ -3,9 +3,9 @@ use crate::{
         components::{
             auth::bouncer::Bouncer,
             interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
-            screens::app::signal_logout::SignalLogout,
         },
         router::Router,
+        screens::app::signal_logout::SignalLogout,
     },
     outbound::client::ZwipeClient,
 };

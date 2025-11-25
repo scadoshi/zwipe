@@ -7063,6 +7063,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "zerver"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "argon2",
+ "axum 0.7.9",
+ "axum-extra",
+ "chrono",
+ "derive_more 2.0.1",
+ "dotenvy",
+ "email_address",
+ "hex",
+ "itertools",
+ "jsonwebtoken",
+ "once_cell",
+ "rand 0.9.2",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2",
+ "sqlx",
+ "sqlx-macros",
+ "strum",
+ "thiserror 2.0.17",
+ "tokio",
+ "tower 0.4.13",
+ "tower-http 0.5.2",
+ "tracing",
+ "tracing-subscriber",
+ "urlencoding",
+ "uuid",
+]
+
+[[package]]
 name = "zvariant"
 version = "5.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7104,40 +7138,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "zwipe"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "argon2",
- "axum 0.7.9",
- "axum-extra",
- "chrono",
- "derive_more 2.0.1",
- "dotenvy",
- "email_address",
- "hex",
- "itertools",
- "jsonwebtoken",
- "once_cell",
- "rand 0.9.2",
- "reqwest",
- "serde",
- "serde_json",
- "sha2",
- "sqlx",
- "sqlx-macros",
- "strum",
- "thiserror 2.0.17",
- "tokio",
- "tower 0.4.13",
- "tower-http 0.5.2",
- "tracing",
- "tracing-subscriber",
- "urlencoding",
- "uuid",
-]
-
-[[package]]
 name = "zwiper"
 version = "0.1.0"
 dependencies = [
@@ -7156,5 +7156,5 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uuid",
- "zwipe",
+ "zerver",
 ]
