@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use crate::{
     inbound::ui::{
         components::{
@@ -18,6 +16,7 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
+use std::time::Duration;
 use tokio::time::sleep;
 use uuid::Uuid;
 use zwipe::{

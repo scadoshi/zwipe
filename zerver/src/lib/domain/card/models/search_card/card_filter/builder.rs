@@ -22,8 +22,9 @@ pub struct CardFilterBuilder {
     cmc_range: Option<(f64, f64)>,
     color_identity_contains_any: Option<Colors>,
     color_identity_equals: Option<Colors>,
-    // printing
+    // rarity
     rarity_contains: Option<String>,
+    // set
     set_contains: Option<String>,
     // text
     name_contains: Option<String>,
