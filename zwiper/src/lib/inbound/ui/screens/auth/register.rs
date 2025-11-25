@@ -151,7 +151,7 @@ pub fn Register() -> Element {
                     }
 
                     TextInput {
-                        value: email,
+                        value: password,
                         id: "password".to_string(),
                         placeholder: "password".to_string(),
                         input_type: "password".to_string(),
