@@ -11,6 +11,6 @@ use uuid::Uuid;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DeckCard {
     pub deck_id: Uuid,
-    pub card_profile_id: Uuid,
+    pub scryfall_data_id: Uuid,
     pub quantity: Quantity,
 }

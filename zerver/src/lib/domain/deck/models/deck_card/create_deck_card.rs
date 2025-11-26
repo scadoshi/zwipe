@@ -9,7 +9,7 @@ pub enum InvalidCreateDeckCard {
     #[error(transparent)]
     DeckId(uuid::Error),
     #[error(transparent)]
-    CardProfileId(uuid::Error),
+    ScryfallDataId(uuid::Error),
     #[error(transparent)]
     Quantity(InvalidQuantity),
 }
@@ -46,7 +46,7 @@ impl From<GetDeckProfileError> for CreateDeckCardError {
 pub struct CreateDeckCard {
     pub user_id: Uuid,
     pub deck_id: Uuid,
-    pub card_profile_id: Uuid,
+    pub scryfall_data_id: Uuid,
     pub quantity: Quantity,
 }
 
@@ -54,17 +54,17 @@ impl CreateDeckCard {
     pub fn new(
         user_id: Uuid,
         deck_id: &str,
-        card_profile_id: &str,
+        scryfall_data_id: &str,
         quantity: i32,
     ) -> Result<Self, InvalidCreateDeckCard> {
         let deck_id = Uuid::try_parse(deck_id).map_err(InvalidCreateDeckCard::DeckId)?;
-        let card_profile_id =
-            Uuid::try_parse(card_profile_id).map_err(InvalidCreateDeckCard::CardProfileId)?;
+        let scryfall_data_id =
+            Uuid::try_parse(scryfall_data_id).map_err(InvalidCreateDeckCard::ScryfallDataId)?;
         let quantity = Quantity::new(quantity)?;
 
         Ok(Self {
             deck_id,
-            card_profile_id,
+            scryfall_data_id,
             quantity,
             user_id,
         })

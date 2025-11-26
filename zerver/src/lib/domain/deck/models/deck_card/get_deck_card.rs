@@ -5,7 +5,7 @@ pub enum InvalidGetDeckCard {
     #[error(transparent)]
     DeckId(uuid::Error),
     #[error(transparent)]
-    CardProfileId(uuid::Error),
+    ScryfallDataId(uuid::Error),
 }
 
 #[cfg(feature = "zerver")]

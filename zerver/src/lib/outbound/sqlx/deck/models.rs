@@ -42,7 +42,7 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
 #[derive(Debug, Clone, FromRow)]
 pub struct DatabaseDeckCard {
     pub deck_id: String,
-    pub card_profile_id: String,
+    pub scryfall_data_id: String,
     pub quantity: i32,
 }
 
@@ -51,12 +51,12 @@ impl TryFrom<DatabaseDeckCard> for DeckCard {
     type Error = IntoDeckCardError;
     fn try_from(value: DatabaseDeckCard) -> Result<Self, Self::Error> {
         let deck_id = Uuid::try_parse(&value.deck_id).map_err(IntoDeckCardError::InvalidDeckId)?;
-        let card_profile_id =
-            Uuid::try_parse(&value.card_profile_id).map_err(IntoDeckCardError::InvalidCardId)?;
+        let scryfall_data_id =
+            Uuid::try_parse(&value.scryfall_data_id).map_err(IntoDeckCardError::InvalidCardId)?;
         let quantity = Quantity::new(value.quantity)?;
         Ok(Self {
             deck_id,
-            card_profile_id,
+            scryfall_data_id,
             quantity,
         })
     }

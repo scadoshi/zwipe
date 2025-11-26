@@ -9,7 +9,7 @@ pub enum InvalidUpdateDeckCard {
     #[error(transparent)]
     DeckId(uuid::Error),
     #[error(transparent)]
-    CardProfileId(uuid::Error),
+    ScryfallDataId(uuid::Error),
     #[error(transparent)]
     UpdateQuantity(InvalidUpdateQuanity),
 }
@@ -48,7 +48,7 @@ impl From<GetDeckProfileError> for UpdateDeckCardError {
 pub struct UpdateDeckCard {
     pub user_id: Uuid,
     pub deck_id: Uuid,
-    pub card_profile_id: Uuid,
+    pub scryfall_data_id: Uuid,
     pub update_quantity: UpdateQuantity,
 }
 
@@ -56,17 +56,17 @@ impl UpdateDeckCard {
     pub fn new(
         user_id: Uuid,
         deck_id: &str,
-        card_profile_id: &str,
+        scryfall_data_id: &str,
         update_quantity: i32,
     ) -> Result<Self, InvalidUpdateDeckCard> {
         let deck_id = Uuid::try_parse(deck_id).map_err(InvalidUpdateDeckCard::DeckId)?;
-        let card_profile_id =
-            Uuid::try_parse(card_profile_id).map_err(InvalidUpdateDeckCard::CardProfileId)?;
+        let scryfall_data_id =
+            Uuid::try_parse(scryfall_data_id).map_err(InvalidUpdateDeckCard::ScryfallDataId)?;
         let update_quantity = UpdateQuantity::new(update_quantity)?;
         Ok(Self {
             user_id,
             deck_id,
-            card_profile_id,
+            scryfall_data_id,
             update_quantity,
         })
     }
