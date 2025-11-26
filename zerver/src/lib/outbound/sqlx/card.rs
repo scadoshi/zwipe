@@ -11,6 +11,7 @@ use crate::domain::card::models::{
     Card,
 };
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
+use crate::outbound::sqlx::card::helpers::upsert_card::BatchDeltaUpsertWithTx;
 use crate::outbound::sqlx::postgres::Postgres as MyPostgres;
 use crate::{
     domain::card::models::{
@@ -29,10 +30,7 @@ use crate::{
 };
 use crate::{
     domain::card::{
-        models::{
-            scryfall_data::ScryfallData,
-            sync_metrics::{SyncMetrics, SyncType},
-        },
+        models::{scryfall_data::ScryfallData, sync_metrics::SyncMetrics},
         ports::CardRepository,
     },
     outbound::sqlx::card::sync_metrics::DatabaseSyncMetrics,
@@ -42,95 +40,51 @@ use anyhow::Context;
 use chrono::NaiveDateTime;
 use sqlx::{query_as, query_scalar, Postgres};
 use sqlx::{query_builder::Separated, QueryBuilder};
-use uuid::Uuid;
 
 impl CardRepository for MyPostgres {
     // ========
     //  create
     // ========
-    async fn insert(&self, scryfall_data: &ScryfallData) -> Result<Card, CreateCardError> {
+    async fn upsert(&self, scryfall_data: &ScryfallData) -> Result<Card, CreateCardError> {
         let mut tx = self.pool.begin().await?;
         let card = scryfall_data.single_upsert_with_tx(&mut tx).await?;
         tx.commit().await?;
         Ok(card)
     }
 
-    async fn bulk_insert(
+    async fn bulk_upsert(
         &self,
-        scryfall_data: &[ScryfallData],
+        multiple_scryfall_data: &[ScryfallData],
     ) -> Result<Vec<Card>, CreateCardError> {
         let mut tx = self.pool.begin().await?;
-        let cards = scryfall_data.bulk_upsert_with_tx(&mut tx).await?;
+        let cards = multiple_scryfall_data.bulk_upsert_with_tx(&mut tx).await?;
         tx.commit().await?;
         Ok(cards)
     }
 
-    async fn batch_insert(
+    async fn batch_upsert(
         &self,
-        cards: &[ScryfallData],
+        multiple_scryfall_data: &[ScryfallData],
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
     ) -> Result<Vec<Card>, CreateCardError> {
         let mut tx = self.pool.begin().await?;
-        let cards = cards
+        let cards = multiple_scryfall_data
             .batch_upsert_with_tx(&mut tx, batch_size, sync_metrics)
             .await?;
         tx.commit().await?;
         Ok(cards)
     }
 
-    async fn batch_insert_if_not_exists(
+    async fn batch_delta_upsert(
         &self,
-        scryfall_data: &[ScryfallData],
+        multiple_scryfall_data: &[ScryfallData],
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
     ) -> Result<Vec<Card>, CreateCardError> {
-        tracing::info!("initiating batch insert if not exists process");
-        tracing::info!("received {} cards", scryfall_data.len());
         let mut tx = self.pool.begin().await?;
-
-        let existing_ids: Vec<Uuid> = query_scalar!("SELECT id FROM scryfall_data")
-            .fetch_all(&self.pool)
-            .await?;
-
-        tracing::info!(
-            "skipping {} cards because database already has them",
-            existing_ids.len()
-        );
-        sync_metrics.set_skipped(existing_ids.len() as i32);
-
-        let new_data: Vec<ScryfallData> = scryfall_data
-            .iter()
-            .filter(|sfd| !existing_ids.contains(&sfd.id))
-            .cloned()
-            .collect();
-
-        if new_data.is_empty() {
-            tracing::info!("no new cards to import so database is up to date");
-            return Ok(Vec::new());
-        }
-
-        tracing::info!("importing {} new cards", new_data.len());
-        let cards: Vec<Card> = new_data
-            .batch_upsert_with_tx(&mut tx, batch_size, sync_metrics)
-            .await?;
-
-        tx.commit().await?;
-
-        Ok(cards)
-    }
-
-    async fn delete_if_exists_and_batch_insert(
-        &self,
-        cards: &[ScryfallData],
-        batch_size: usize,
-        sync_metrics: &mut SyncMetrics,
-    ) -> Result<Vec<Card>, CreateCardError> {
-        tracing::info!("initiating upsert (insert or update) process");
-        tracing::info!("received {} cards", cards.len());
-        let mut tx = self.pool.begin().await?;
-        let cards: Vec<Card> = cards
-            .batch_upsert_with_tx(&mut tx, batch_size, sync_metrics)
+        let cards = multiple_scryfall_data
+            .batch_delta_upsert_with_tx(&mut tx, batch_size, sync_metrics)
             .await?;
         tx.commit().await?;
         Ok(cards)
@@ -142,17 +96,16 @@ impl CardRepository for MyPostgres {
     ) -> Result<SyncMetrics, anyhow::Error> {
         let mut tx = self.pool.begin().await?;
         let query_sql = "INSERT INTO scryfall_data_sync_metrics".to_string()
-         + " (sync_type, started_at, ended_at, duration_in_seconds, status, received, imported, skipped, error_count, errors)"
-         + " VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *";
+         + " (started_at, ended_at, duration_in_seconds, status, received_count, upserted_count, skipped_count, error_count, errors)"
+         + " VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *";
         let database_sync_metrics: DatabaseSyncMetrics = query_as(&query_sql)
-            .bind(sync_metrics.sync_type().to_string())
             .bind(sync_metrics.started_at())
             .bind(sync_metrics.ended_at())
             .bind(sync_metrics.duration_in_seconds())
             .bind(sync_metrics.status().to_string())
-            .bind(sync_metrics.received())
-            .bind(sync_metrics.imported())
-            .bind(sync_metrics.skipped())
+            .bind(sync_metrics.received_count())
+            .bind(sync_metrics.upserted_count())
+            .bind(sync_metrics.skipped_count())
             .bind(sync_metrics.error_count())
             .bind(sync_metrics.errors())
             .fetch_one(&mut *tx)
@@ -428,14 +381,10 @@ impl CardRepository for MyPostgres {
         Ok(card_profiles)
     }
 
-    async fn get_last_sync_date(
-        &self,
-        sync_type: SyncType,
-    ) -> anyhow::Result<Option<NaiveDateTime>> {
-        let last_sync_date: Option<NaiveDateTime> = query_scalar!(
+    async fn get_last_sync_date(&self) -> anyhow::Result<Option<NaiveDateTime>> {
+        let last_sync_date: Option<NaiveDateTime> = query_scalar(
             "SELECT started_at FROM scryfall_data_sync_metrics
-            WHERE sync_type = $1 ORDER BY started_at DESC LIMIT 1",
-            sync_type.to_string()
+            ORDER BY started_at DESC LIMIT 1",
         )
         .fetch_optional(&self.pool)
         .await

@@ -5,7 +5,7 @@ use std::ops::Deref;
 use uuid::Uuid;
 
 use crate::domain::card::models::sync_metrics::{
-    ErrorMetrics, SyncMetrics, SyncStatus, SyncType, VecErrorMetrics,
+    ErrorMetrics, SyncMetrics, SyncStatus, VecErrorMetrics,
 };
 
 // ===============
@@ -141,13 +141,12 @@ pub struct DatabaseSyncMetrics {
     #[sqlx(rename = "id")]
     _id: Uuid,
     status: String,
-    sync_type: String,
     started_at: NaiveDateTime,
     ended_at: Option<NaiveDateTime>,
     duration_in_seconds: i32,
-    received: i32,
-    imported: i32,
-    skipped: i32,
+    received_count: i32,
+    upserted_count: i32,
+    skipped_count: i32,
     error_count: i32,
     errors: VecErrorMetrics,
 }
@@ -155,18 +154,17 @@ pub struct DatabaseSyncMetrics {
 impl TryFrom<DatabaseSyncMetrics> for SyncMetrics {
     type Error = anyhow::Error;
     fn try_from(value: DatabaseSyncMetrics) -> anyhow::Result<Self> {
-        let sync_type = SyncType::try_from(value.sync_type.as_str())?;
         let status = SyncStatus::try_from(value.status.as_str())?;
         let errors: Vec<ErrorMetrics> = value.errors.deref().to_vec();
 
-        let sync_metrics = SyncMetrics::with_sync_type(sync_type)
+        let sync_metrics = SyncMetrics::new()
             .set_started_at(value.started_at)
             .set_ended_at(value.ended_at)
             .set_duration_in_seconds(value.duration_in_seconds)
             .set_status(status)
-            .set_received(value.received)
-            .set_imported(value.imported)
-            .set_skipped(value.skipped)
+            .set_received_count(value.received_count)
+            .set_upserted_count(value.upserted_count)
+            .set_skipped_count(value.skipped_count)
             .set_error_count(value.error_count)
             .set_errors(errors)
             .clone();
