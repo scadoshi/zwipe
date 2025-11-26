@@ -13,29 +13,29 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Completed workspace clippy configuration with 26 lints enabled. Applied TextInput to 9 screens. Removed unnecessary Uuid references (Copy type optimization). Migrated println to structured logging.
+**Last Updated**: Completed card-profile-id-switch refactor fixing deck relationship breakage during syncs. Implemented PostgreSQL UPSERT pattern for scryfall_data and card_profiles. Created trigger function auto-updating timestamps. Switched deck_cards to reference stable scryfall_data_id instead of regenerated card_profile_id.
 
-**Current Focus**: Apply TextInput to ALL remaining screens. Clippy marathon resolving every warning (builder patterns for SearchCards/SyncMetrics/Planeswalker, unwrap elimination, panic removal). Identify next common UI components (Button, Dropdown, Checkbox). Resume filter implementation.
+**Current Focus**: Clean up SyncMetrics enum (remove Full vs Partial distinction, unify to UPSERT-based sync). Resume filter implementation (Printing, Mana, Stats components). Continue Clippy marathon (unwrap elimination, builder patterns).
 
-**Recent Achievement**: Established workspace clippy lints (quality, unwrap/panic prevention, performance, code quality). Removed 100+ unnecessary `&Uuid` references across 32 files leveraging Copy semantics. Replaced 4 println! with tracing::info for structured logging. TextInput component working across login, register, and 5 profile change forms.
+**Recent Achievement**: Diagnosed and resolved critical architectural flaw where card syncs deleted and recreated card_profiles with new UUIDs, orphaning deck_cards relationships. Designed complete solution: stable Scryfall ID references, UPSERT pattern eliminating delete operations, PostgreSQL triggers for timestamp tracking, ON DELETE RESTRICT preventing cascading deletes.
 
-**Current Success**: Clippy catching real issues (too_many_arguments, unwrap_used, print_stdout). Copy type optimization complete. Clean separation of concerns with workspace lints applying uniformly.
+**Current Success**: Deck relationships now survive syncs. Card profiles track sync timestamps. Database enforces referential integrity with RESTRICT constraints. UPSERT pattern handles both inserts and updates cleanly.
 
-**Current Challenge**: Systematic clippy warning resolution requiring architectural changes (builder patterns). Identifying full scope of reusable UI components. Balancing abstraction with simplicity.
+**Current Challenge**: SyncMetrics architecture assumes delete-first sync model. Need to refactor to single UPSERT-based sync type eliminating Full/Partial distinction now that all syncs update in place.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Button Component CSS Integration** - Resolve asset loading issue preventing button styles from applying (asset!() path working but styles not rendering)
-2. **Clippy Marathon - Phase 2: Unwrap Elimination** - Systematically remove all unwrap() calls adding proper error handling with ? operator and Result returns
-3. **Clippy Marathon - Phase 3: Builder Patterns** - Refactor SearchCards (17 params), SyncMetrics (10 params), Planeswalker types to builder pattern satisfying too_many_arguments
-4. **Single Selection Field Component** - Build reusable dropdown/select component for common single-choice patterns (CopyMax selection, card type selection, etc.)
-5. **Common UI Component Survey** - Audit entire UI identifying next component candidates (Button variants, Checkbox, Toggle groups, multi-select dropdowns)
+1. **SyncMetrics Refactor** - Remove Full/Partial distinction, unify to single UPSERT-based sync type now that delete operations eliminated
+2. **Filter Implementation** - Complete Printing, Mana, and Stats filter components (Text and Types already done)
+3. **Card Browsing Stack** - Implement left/right swipe navigation through filtered card results
+4. **Clippy Marathon - Phase 2: Unwrap Elimination** - Systematically remove all unwrap() calls adding proper error handling
+5. **Clippy Marathon - Phase 3: Builder Patterns** - Refactor SearchCards (17 params), SyncMetrics (10 params) to builder pattern
 
 ### 🤔 Next Immediate Priorities (Top 5)
-1. **RemoveDeckCard Filter** - Build separate filter querying deck's cards instead of all cards (different data source)
-2. **Filter Sub-Component Modularization** - Extract reusable pieces (type selectors, name input) for code reuse
-3. **Card Browsing Stack** - Implement left/right swipe navigation through filtered card results
-4. **Add Card Integration** - Wire quantity selection and add_card function with copy_max validation
-5. **Deck Metrics Screen** - Build "down" screen with mana curve, color distribution, type breakdown
+1. **Add Card Integration** - Wire quantity selection and add_card function with copy_max validation
+2. **RemoveDeckCard Filter** - Build separate filter querying deck's cards instead of all cards
+3. **Deck Metrics Screen** - Build "down" screen with mana curve, color distribution, type breakdown
+4. **Filter Sub-Component Reuse** - Extract reusable pieces (type selectors, name input) for code sharing
+5. **Single Selection Component** - Build reusable dropdown for CopyMax, card type selection, etc.
 
 ---
 
@@ -288,6 +288,11 @@ alwaysApply: true
 - **Copy Type Optimization**: Removed 100+ unnecessary `&Uuid` references across 32 files leveraging Uuid's Copy trait for cleaner code
 - **Structured Logging Migration**: Replaced println! with tracing::info! in logo printing methods for proper structured logging
 - **Clippy Fix Run**: Applied cargo clippy --fix resolving single_char_pattern, or_fun_call, and other auto-fixable warnings
+- **Stable Card References**: Switched deck_cards from card_profile_id to scryfall_data_id preventing relationship breakage during syncs
+- **UPSERT Implementation**: ON CONFLICT DO UPDATE pattern for both scryfall_data (80+ fields) and card_profiles (timestamp refresh)
+- **Trigger Function Creation**: Built PL/pgSQL trigger auto-updating card_profiles.updated_at on any UPDATE operation
+- **Foreign Key Strategy**: ON DELETE RESTRICT for card_profiles preventing cascade deletions, preserving deck integrity
+- **Sync Flow Simplification**: Eliminated delete operations from delete_if_exists_and_batch_insert, now pure UPSERT
 
 ---
 
@@ -500,16 +505,18 @@ alwaysApply: true
 ## Development Context for AI Assistants
 
 ### 🎯 Current Session Focus
-- Clippy await_holding_lock resolution: discovered resource() vs resource.read() pattern
-- Refactored edit.rs and view.rs: resources chain directly without intermediate signals
-- Resource pattern: resource() clones safely across await, .read() creates unsafe guards
-- Branch: satisfying-clippy ready for PR to main
+- Completed card-profile-id-switch branch and merged to main
+- Switched deck_cards to stable scryfall_data_id references preventing sync breakage
+- Implemented UPSERT pattern eliminating delete operations from sync flow
+- Created PostgreSQL trigger for timestamp automation
+- Next: SyncMetrics cleanup and filter implementation completion
 
 ### 📚 Learning Context
-- Critical discovery: resource() function call clones value, .read() returns borrow guard
-- Direct resource chaining eliminates need for signal coordination in many cases
-- Edit screens: use effects to populate form signals; View screens: render directly from resources
-- Pattern established: pure resources + effects for side effects vs direct resource rendering
+- PostgreSQL UPSERT with EXCLUDED table for update clauses
+- Trigger functions using PL/pgSQL: RETURNS TRIGGER, NEW/OLD variables, BEFORE/AFTER timing
+- Foreign key cascade strategies: RESTRICT vs CASCADE for data integrity
+- Stable vs unstable IDs: external IDs (Scryfall) vs database-generated UUIDs
+- Architectural debugging: tracing relationship breakage through full stack to identify root cause
 
 ### 🛠️ Development Commands
 ```bash

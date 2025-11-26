@@ -15,15 +15,15 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Resolved Clippy `await_holding_lock` warnings by discovering resource cloning pattern: `resource()` clones the value (safe across await), while `resource.read()` holds a borrow guard (unsafe). Refactored edit.rs and view.rs to use direct resource chaining without intermediate signals where possible. Cleaned up unnecessary effects when resources can be read directly in RSX.
+**Last Updated**: Completed card-profile-id-switch refactor switching deck_cards to stable scryfall_data_id references. Implemented PostgreSQL UPSERT pattern preventing deck relationship breakage during syncs. Built trigger function for auto-updating card_profiles.updated_at timestamp. Simplified sync flow by removing delete operations in favor of insert-or-update pattern.
 
 **Next Learning Focus**: 
-- Continue Clippy Marathon: unwrap elimination, builder patterns for too_many_arguments
-- Build reusable single-selection dropdown component
-- Extract common filter UI sub-components for reuse
-- Card browsing with swipe navigation
+- Clean up SyncMetrics (remove Full vs Partial distinction, unify to single UPSERT-based sync)
+- Continue filter implementation (Printing, Mana, Stats components)
+- Build card browsing with swipe navigation
+- Continue Clippy Marathon: unwrap elimination, builder patterns
 
-**Recent Achievement**: Discovered and applied the critical `resource()` vs `resource.read()` pattern—calling resources as functions clones data safely for async contexts, while `.read()` creates guards that can't cross await boundaries. This eliminates the need for intermediate signal coordination in many cases. Successfully refactored deck edit/view screens with cleaner reactive patterns.
+**Recent Achievement**: Diagnosed critical architectural issue where card syncs regenerated card_profile IDs breaking deck relationships. Designed and implemented complete solution using stable Scryfall IDs, UPSERT pattern across both scryfall_data and card_profiles tables, and PostgreSQL triggers. Learned trigger functions with PL/pgSQL (BEFORE UPDATE, NEW variable, RETURNS TRIGGER pattern).
 
 ### 🤔 Current Uncertainties (Top 5)
 1. **Button Component CSS Loading** — Button component styles not applying despite asset!() macro loading CSS from assets/components/button/style.css. Syntax issue in CSS or bundling problem?
@@ -173,6 +173,11 @@ alwaysApply: true
 - **Option<Option<T>> Pattern**: Domain model pattern distinguishing "no update" from "set to None" for partial update requests
 - **Dynamic SQL Building**: QueryBuilder conditional push pattern for building UPDATE queries with only changed fields
 - **Conditional Field Updates**: Using if let to selectively build SQL based on which fields are present in update request
+- **PostgreSQL UPSERT Pattern**: ON CONFLICT (column) DO UPDATE SET for insert-or-update operations preventing constraint violations
+- **EXCLUDED Table Reference**: Special PostgreSQL table in UPSERT containing attempted insert values for UPDATE clause
+- **Trigger Functions**: PL/pgSQL functions with RETURNS TRIGGER, NEW/OLD variables, BEFORE/AFTER timing for automated database logic
+- **Trigger Attachment**: CREATE TRIGGER with FOR EACH ROW executing functions on table events (INSERT/UPDATE/DELETE)
+- **ON DELETE RESTRICT**: Foreign key constraint preventing parent deletion when children exist (vs CASCADE which deletes children)
 
 ### 🌐 Advanced HTTP & Middleware Patterns
 - **Custom Middleware**: AuthenticatedUser extractor with FromRequestParts trait
