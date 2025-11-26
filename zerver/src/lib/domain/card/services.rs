@@ -14,7 +14,7 @@ use crate::{
             get_card::GetCardError,
             scryfall_data::ScryfallData,
             search_card::{card_filter::CardFilter, error::SearchCardsError},
-            sync_metrics::{SyncMetrics, SyncType},
+            sync_metrics::SyncMetrics,
             Card,
         },
         ports::{CardRepository, CardService},
@@ -23,12 +23,10 @@ use crate::{
 };
 use chrono::NaiveDateTime;
 
-/// postgresql will have issues if there are more
-/// parameters than this in any single query
+/// postgresql will have issues if there are more parameters than this in any single query
 const POSTGRESQL_PARAMETER_HARD_LIMIT: usize = 65_535;
 
-/// calculates batch size based on limit
-/// based on the number of fields that `ScryfallData` has
+/// calculates batch size based on limit based on the number of fields that `ScryfallData` has
 ///
 /// limits to half of maximum to keep queries running quickly
 fn batch_size() -> usize {
@@ -57,44 +55,23 @@ impl<R: CardRepository> CardService for Service<R> {
     // ========
     //  create
     // ========
-    async fn insert(&self, scryfall_data: ScryfallData) -> Result<Card, CreateCardError> {
-        self.repo.insert(&scryfall_data).await
+    async fn upsert(&self, scryfall_data: ScryfallData) -> Result<Card, CreateCardError> {
+        self.repo.upsert(&scryfall_data).await
     }
 
-    async fn scryfall_sync(&self, sync_type: SyncType) -> anyhow::Result<SyncMetrics> {
-        let mut sync_metrics = SyncMetrics::with_sync_type(sync_type);
-
+    async fn scryfall_sync(&self) -> anyhow::Result<SyncMetrics> {
+        let mut sync_metrics = SyncMetrics::new();
         let batch_size = batch_size();
-
         // just going to hard code this for now
         let bulk_endpoint = BulkEndpoint::OracleCards;
         let scryfall_data = bulk_endpoint.amass().await?;
-
-        sync_metrics.set_received(scryfall_data.len() as i32);
-
-        match sync_type {
-            SyncType::Full => {
-                self.repo
-                    .delete_if_exists_and_batch_insert(
-                        &scryfall_data,
-                        batch_size,
-                        &mut sync_metrics,
-                    )
-                    .await?;
-            }
-            SyncType::Partial => {
-                self.repo
-                    .batch_insert_if_not_exists(&scryfall_data, batch_size, &mut sync_metrics)
-                    .await?;
-            }
-        };
-
+        sync_metrics.set_received_count(scryfall_data.len() as i32);
+        self.repo
+            .batch_delta_upsert(&scryfall_data, batch_size, &mut sync_metrics)
+            .await?;
         sync_metrics.mark_as_completed();
-
         let sync_metrics = self.repo.record_sync_metrics(&sync_metrics).await?;
-
         tracing::info!("{:?}", sync_metrics);
-
         Ok(sync_metrics)
     }
 
@@ -149,10 +126,7 @@ impl<R: CardRepository> CardService for Service<R> {
             .await
     }
 
-    async fn get_last_sync_date(
-        &self,
-        sync_type: SyncType,
-    ) -> anyhow::Result<Option<NaiveDateTime>> {
-        self.repo.get_last_sync_date(sync_type).await
+    async fn get_last_sync_date(&self) -> anyhow::Result<Option<NaiveDateTime>> {
+        self.repo.get_last_sync_date().await
     }
 }
