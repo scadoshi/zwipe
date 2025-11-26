@@ -1,10 +1,8 @@
-use std::future::Future;
-
 use crate::was_ago::WasAgo;
 use chrono::NaiveDateTime;
+use std::future::Future;
 use zwipe::domain::card::{
     self,
-    models::sync_metrics::SyncType,
     ports::{CardRepository, CardService},
 };
 
@@ -17,21 +15,10 @@ where
     R: CardRepository,
 {
     async fn check_cards(&self) -> anyhow::Result<()> {
-        let last_partial: Option<NaiveDateTime> =
-            self.get_last_sync_date(SyncType::Partial).await?;
-
-        let last_full: Option<NaiveDateTime> = self.get_last_sync_date(SyncType::Full).await?;
-
-        if last_full.is_none_or(|d| d.was_a_month_ago()) {
-            self.scryfall_sync(SyncType::Full).await?;
+        let last_sync: Option<NaiveDateTime> = self.get_last_sync_date().await?;
+        if last_sync.is_none_or(|d| d.was_a_week_ago()) {
+            self.scryfall_sync().await?;
         }
-
-        if (last_partial.is_none_or(|d| d.was_a_week_ago()))
-            && (last_full.is_none_or(|d| d.was_a_week_ago()))
-        {
-            self.scryfall_sync(SyncType::Partial).await?;
-        }
-
         Ok(())
     }
 }
