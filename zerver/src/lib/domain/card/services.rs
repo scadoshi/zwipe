@@ -1,4 +1,7 @@
 use crate::domain::card::models::get_card_types::GetCardTypesError;
+use crate::domain::card::models::scryfall_data::get_scryfall_data::{
+    GetScryfallData, ScryfallDataIds,
+};
 use crate::inbound::external::scryfall::BulkEndpoint;
 use crate::{
     domain::card::{
@@ -98,11 +101,11 @@ impl<R: CardRepository> CardService for Service<R> {
     // =====
     //  get
     // =====
-    async fn get_card(&self, request: &GetCardProfile) -> Result<Card, GetCardError> {
+    async fn get_card(&self, request: &GetScryfallData) -> Result<Card, GetCardError> {
         self.repo.get_card(request).await
     }
 
-    async fn get_cards(&self, request: &CardProfileIds) -> Result<Vec<Card>, GetCardError> {
+    async fn get_cards(&self, request: &ScryfallDataIds) -> Result<Vec<Card>, GetCardError> {
         self.repo.get_cards(request).await
     }
 
@@ -114,18 +117,36 @@ impl<R: CardRepository> CardService for Service<R> {
         self.repo.get_card_types().await
     }
 
-    async fn get_card_profile(
+    async fn get_card_profile_with_id(
         &self,
         request: &GetCardProfile,
     ) -> Result<CardProfile, GetCardProfileError> {
-        self.repo.get_card_profile(request).await
+        self.repo.get_card_profile_with_id(request).await
     }
 
-    async fn get_card_profiles(
+    async fn get_card_profile_with_scryfall_data_id(
+        &self,
+        request: &GetScryfallData,
+    ) -> Result<CardProfile, GetCardProfileError> {
+        self.repo
+            .get_card_profile_with_scryfall_data_id(request)
+            .await
+    }
+
+    async fn get_card_profiles_with_ids(
         &self,
         request: &CardProfileIds,
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
-        self.repo.get_card_profiles_by_id(request).await
+        self.repo.get_card_profiles_with_ids(request).await
+    }
+
+    async fn get_card_profiles_with_scryfall_data_ids(
+        &self,
+        request: &ScryfallDataIds,
+    ) -> Result<Vec<CardProfile>, GetCardProfileError> {
+        self.repo
+            .get_card_profiles_with_scryfall_data_ids(request)
+            .await
     }
 
     async fn get_last_sync_date(
