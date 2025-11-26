@@ -124,29 +124,13 @@ impl CardRepository for MyPostgres {
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
     ) -> Result<Vec<Card>, CreateCardError> {
-        tracing::info!("initiating delete if exists and insert process");
+        tracing::info!("initiating upsert (insert or update) process");
         tracing::info!("received {} cards", cards.len());
-
         let mut tx = self.pool.begin().await?;
-
-        // extract ids for deletion
-        let card_ids: Vec<Uuid> = cards.iter().map(|c| c.id).collect();
-
-        tracing::info!("deleting {} cards", card_ids.len());
-
-        // delete the cards (card_profile cascade cascades)
-        query!("DELETE FROM scryfall_data WHERE id = ANY($1)", &card_ids)
-            .execute(&mut *tx)
-            .await?;
-
-        tracing::info!("importing {} cards", cards.len());
-
         let cards: Vec<Card> = cards
             .batch_insert_with_tx(&mut tx, batch_size, sync_metrics)
             .await?;
-
         tx.commit().await?;
-
         Ok(cards)
     }
 
@@ -325,22 +309,22 @@ impl CardRepository for MyPostgres {
         qb.push_bind(request.offset() as i32);
 
         let scryfall_data: Vec<ScryfallData> = qb.build_query_as().fetch_all(&self.pool).await?;
-
         Ok(scryfall_data)
     }
 
-    async fn get_card(&self, request: &GetCardProfile) -> Result<Card, GetCardError> {
-        let card_profile = self.get_card_profile(request).await?;
-        let get_scryfall_data = GetScryfallData::from(&card_profile);
-        let scryfall_data = self.get_scryfall_data(&get_scryfall_data).await?;
+    async fn get_card(&self, request: &GetScryfallData) -> Result<Card, GetCardError> {
+        let scryfall_data = self.get_scryfall_data(request).await?;
+        let card_profile = self.get_card_profile_with_scryfall_data_id(request).await?;
         let card = Card::new(card_profile, scryfall_data);
         Ok(card)
     }
 
-    async fn get_cards(&self, request: &CardProfileIds) -> Result<Vec<Card>, GetCardError> {
-        let card_profiles = self.get_card_profiles_by_id(request).await?;
-        let scryfall_data_ids = ScryfallDataIds::from(card_profiles.as_slice());
-        let scryfall_data = self.get_multiple_scryfall_data(&scryfall_data_ids).await?;
+    async fn get_cards(&self, request: &ScryfallDataIds) -> Result<Vec<Card>, GetCardError> {
+        let scryfall_data = self.get_multiple_scryfall_data(request).await?;
+        let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
+        let card_profiles = self
+            .get_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
+            .await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
     }
@@ -350,9 +334,9 @@ impl CardRepository for MyPostgres {
         if scryfall_data.is_empty() {
             return Ok(vec![]);
         }
-        let scryfall_data_ids = ScryfallDataIds::from(scryfall_data.as_slice());
+        let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
         let card_profiles = self
-            .get_card_profiles_by_scryfall_data_id(&scryfall_data_ids)
+            .get_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
             .await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
@@ -372,33 +356,48 @@ impl CardRepository for MyPostgres {
         .into_iter()
         .flatten()
         .collect();
-
         Ok(card_types)
     }
 
-    async fn get_card_profile(
+    async fn get_card_profile_with_id(
         &self,
         request: &GetCardProfile,
     ) -> Result<CardProfile, GetCardProfileError> {
         let card_profile: CardProfile = query_as!(
             DatabaseCardProfile,
-            "SELECT id, scryfall_data_id FROM card_profiles WHERE id = $1",
+            "SELECT id, scryfall_data_id, created_at, updated_at FROM card_profiles WHERE id = $1",
             request.id()
         )
         .fetch_one(&self.pool)
         .await?
         .into();
-
         Ok(card_profile)
     }
 
-    async fn get_card_profiles_by_id(
+    async fn get_card_profile_with_scryfall_data_id(
+        &self,
+        request: &GetScryfallData,
+    ) -> Result<CardProfile, GetCardProfileError> {
+        let card_profile: CardProfile = query_as!(
+            DatabaseCardProfile,
+            "SELECT id, scryfall_data_id, created_at, updated_at 
+            FROM card_profiles WHERE scryfall_data_id = $1",
+            request.id()
+        )
+        .fetch_one(&self.pool)
+        .await?
+        .into();
+        Ok(card_profile)
+    }
+
+    async fn get_card_profiles_with_ids(
         &self,
         request: &CardProfileIds,
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
         let card_profiles: Vec<CardProfile> = query_as!(
             DatabaseCardProfile,
-            "SELECT id, scryfall_data_id FROM card_profiles WHERE id = ANY($1)",
+            "SELECT id, scryfall_data_id, created_at, updated_at 
+            FROM card_profiles WHERE id = ANY($1)",
             request.ids()
         )
         .fetch_all(&self.pool)
@@ -406,17 +405,17 @@ impl CardRepository for MyPostgres {
         .into_iter()
         .map(|dcp| dcp.into())
         .collect();
-
         Ok(card_profiles)
     }
 
-    async fn get_card_profiles_by_scryfall_data_id(
+    async fn get_card_profiles_with_scryfall_data_ids(
         &self,
         request: &ScryfallDataIds,
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
         let card_profiles: Vec<CardProfile> = query_as!(
             DatabaseCardProfile,
-            "SELECT id, scryfall_data_id FROM card_profiles WHERE scryfall_data_id = ANY($1)",
+            "SELECT id, scryfall_data_id, created_at, updated_at 
+            FROM card_profiles WHERE scryfall_data_id = ANY($1)",
             request.ids()
         )
         .fetch_all(&self.pool)
@@ -424,7 +423,6 @@ impl CardRepository for MyPostgres {
         .into_iter()
         .map(|dcp| dcp.into())
         .collect();
-
         Ok(card_profiles)
     }
 
@@ -433,13 +431,13 @@ impl CardRepository for MyPostgres {
         sync_type: SyncType,
     ) -> anyhow::Result<Option<NaiveDateTime>> {
         let last_sync_date: Option<NaiveDateTime> = query_scalar!(
-            "SELECT started_at FROM scryfall_data_sync_metrics WHERE sync_type = $1 ORDER BY started_at DESC LIMIT 1",
+            "SELECT started_at FROM scryfall_data_sync_metrics 
+            WHERE sync_type = $1 ORDER BY started_at DESC LIMIT 1",
             sync_type.to_string()
         )
         .fetch_optional(&self.pool)
         .await
         .context("failed to get last sync date")?;
-
         Ok(last_sync_date)
     }
 }
