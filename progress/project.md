@@ -13,22 +13,22 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Completed card-profile-id-switch refactor fixing deck relationship breakage during syncs. Implemented PostgreSQL UPSERT pattern for scryfall_data and card_profiles. Created trigger function auto-updating timestamps. Switched deck_cards to reference stable scryfall_data_id instead of regenerated card_profile_id.
+**Last Updated**: Completed SyncMetrics architectural cleanup. Eliminated SyncType enum (Full/Partial distinction), unified to single intelligent delta-sync strategy. Fixed critical metrics tracking bug where empty delta slices created invalid SQL. Database migration removed sync_type column, renamed fields (imported→upserted_count). Sync scheduling simplified from complex monthly/weekly branching to single weekly intelligent sync.
 
-**Current Focus**: Clean up SyncMetrics enum (remove Full vs Partial distinction, unify to UPSERT-based sync). Resume filter implementation (Printing, Mana, Stats components). Continue Clippy marathon (unwrap elimination, builder patterns).
+**Current Focus**: Resume filter implementation (Printing, Mana, Stats components). Build card browsing with swipe navigation. Continue Clippy marathon (unwrap elimination, builder patterns).
 
-**Recent Achievement**: Diagnosed and resolved critical architectural flaw where card syncs deleted and recreated card_profiles with new UUIDs, orphaning deck_cards relationships. Designed complete solution: stable Scryfall ID references, UPSERT pattern eliminating delete operations, PostgreSQL triggers for timestamp tracking, ON DELETE RESTRICT preventing cascading deletes.
+**Recent Achievement**: Removed 81 net lines while gaining smarter behavior. Single sync type now uses PartialEq-based delta detection comparing all 87 ScryfallData fields. Debugged and fixed metrics tracking: empty delta slices created invalid INSERT statements (no VALUES), causing error handler to skip metrics updates. Added early-return guard for empty deltas preventing SQL generation.
 
-**Current Success**: Deck relationships now survive syncs. Card profiles track sync timestamps. Database enforces referential integrity with RESTRICT constraints. UPSERT pattern handles both inserts and updates cleanly.
+**Current Success**: Sync system intelligently detects changes, skips unchanged records, tracks accurate metrics (received/upserted/skipped). Database handles inserts and updates atomically. Scheduling logic simplified. All layers updated (domain, service, repository, binary).
 
-**Current Challenge**: SyncMetrics architecture assumes delete-first sync model. Need to refactor to single UPSERT-based sync type eliminating Full/Partial distinction now that all syncs update in place.
+**Current Challenge**: Delta comparison includes volatile fields (prices, purchase_uris) that change frequently. May want to exclude these from PartialEq comparison for better efficiency, or accept that price changes trigger full card updates.
 
 ### 🎯 Currently Working On (Top 5)
-1. **SyncMetrics Refactor** - Remove Full/Partial distinction, unify to single UPSERT-based sync type now that delete operations eliminated
-2. **Filter Implementation** - Complete Printing, Mana, and Stats filter components (Text and Types already done)
-3. **Card Browsing Stack** - Implement left/right swipe navigation through filtered card results
-4. **Clippy Marathon - Phase 2: Unwrap Elimination** - Systematically remove all unwrap() calls adding proper error handling
-5. **Clippy Marathon - Phase 3: Builder Patterns** - Refactor SearchCards (17 params), SyncMetrics (10 params) to builder pattern
+1. **Filter Implementation** - Complete Printing, Mana, and Stats filter components (Text and Types already done)
+2. **Card Browsing Stack** - Implement left/right swipe navigation through filtered card results
+3. **Clippy Marathon - Phase 2: Unwrap Elimination** - Systematically remove all unwrap() calls adding proper error handling
+4. **Clippy Marathon - Phase 3: Builder Patterns** - Refactor SearchCards (17 params) to builder pattern
+5. **Delta Sync Optimization** - Consider excluding volatile fields (prices) from PartialEq for more efficient change detection
 
 ### 🤔 Next Immediate Priorities (Top 5)
 1. **Add Card Integration** - Wire quantity selection and add_card function with copy_max validation
@@ -293,6 +293,11 @@ alwaysApply: true
 - **Trigger Function Creation**: Built PL/pgSQL trigger auto-updating card_profiles.updated_at on any UPDATE operation
 - **Foreign Key Strategy**: ON DELETE RESTRICT for card_profiles preventing cascade deletions, preserving deck integrity
 - **Sync Flow Simplification**: Eliminated delete operations from delete_if_exists_and_batch_insert, now pure UPSERT
+- **SyncType Enum Removal**: Eliminated Full/Partial sync distinction—single intelligent delta sync using PartialEq comparison
+- **Database Migration**: Removed sync_type column, renamed metrics (received_count, upserted_count, skipped_count)
+- **Delta Detection**: PartialEq-based change detection on all ScryfallData fields, fetches existing records and filters to delta
+- **Empty Delta Guard**: Added early-return for empty delta slices preventing invalid SQL generation (INSERT with no VALUES)
+- **Metrics Tracking Fix**: Debugged issue where empty deltas fell through to error handler, missing metrics updates entirely
 
 ---
 
@@ -505,18 +510,20 @@ alwaysApply: true
 ## Development Context for AI Assistants
 
 ### 🎯 Current Session Focus
-- Completed card-profile-id-switch branch and merged to main
-- Switched deck_cards to stable scryfall_data_id references preventing sync breakage
-- Implemented UPSERT pattern eliminating delete operations from sync flow
-- Created PostgreSQL trigger for timestamp automation
-- Next: SyncMetrics cleanup and filter implementation completion
+- Completed SyncMetrics architectural cleanup
+- Removed SyncType enum entirely (Full/Partial distinction eliminated)
+- Unified to single intelligent delta-sync strategy
+- Fixed metrics tracking bug (empty deltas created invalid SQL)
+- Database migration: removed sync_type column, renamed count fields
+- Next: Filter implementation (Printing, Mana, Stats components), card browsing
 
 ### 📚 Learning Context
-- PostgreSQL UPSERT with EXCLUDED table for update clauses
-- Trigger functions using PL/pgSQL: RETURNS TRIGGER, NEW/OLD variables, BEFORE/AFTER timing
-- Foreign key cascade strategies: RESTRICT vs CASCADE for data integrity
-- Stable vs unstable IDs: external IDs (Scryfall) vs database-generated UUIDs
-- Architectural debugging: tracing relationship breakage through full stack to identify root cause
+- Architectural simplification: removed 81 net lines while improving behavior
+- Delta sync with PartialEq: compare all fields to detect changes before upserting
+- Empty collection guards: check slice.is_empty() before SQL generation to prevent syntax errors
+- Tuple return patterns: (Vec<Card>, usize) communicates both results and metadata
+- Metrics debugging: traced empty delta → invalid SQL → error handler → missing metrics
+- QueryBuilder limitations: empty VALUES clause creates syntax errors requiring guards
 
 ### 🛠️ Development Commands
 ```bash

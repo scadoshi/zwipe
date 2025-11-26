@@ -15,15 +15,15 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Completed card-profile-id-switch refactor switching deck_cards to stable scryfall_data_id references. Implemented PostgreSQL UPSERT pattern preventing deck relationship breakage during syncs. Built trigger function for auto-updating card_profiles.updated_at timestamp. Simplified sync flow by removing delete operations in favor of insert-or-update pattern.
+**Last Updated**: Completed SyncMetrics architectural cleanup removing SyncType enum entirely. Unified to single intelligent delta-sync strategy with PartialEq-based change detection. Fixed metrics tracking bug where empty deltas created invalid SQL causing metrics loss. Database migration removed sync_type column, renamed metrics for clarity (imported→upserted_count). Scheduling simplified from complex monthly/weekly logic to single weekly intelligent sync.
 
 **Next Learning Focus**: 
-- Clean up SyncMetrics (remove Full vs Partial distinction, unify to single UPSERT-based sync)
 - Continue filter implementation (Printing, Mana, Stats components)
 - Build card browsing with swipe navigation
 - Continue Clippy Marathon: unwrap elimination, builder patterns
+- Possible optimization: exclude volatile fields (prices) from delta comparison
 
-**Recent Achievement**: Diagnosed critical architectural issue where card syncs regenerated card_profile IDs breaking deck relationships. Designed and implemented complete solution using stable Scryfall IDs, UPSERT pattern across both scryfall_data and card_profiles tables, and PostgreSQL triggers. Learned trigger functions with PL/pgSQL (BEFORE UPDATE, NEW variable, RETURNS TRIGGER pattern).
+**Recent Achievement**: Eliminated 81 net lines while gaining smarter behavior. Removed Full/Partial sync distinction—single sync now intelligently detects deltas using Rust's PartialEq on all 87 ScryfallData fields. Debugged metrics tracking: discovered empty delta slices created invalid SQL (INSERT with no VALUES), error handler wasn't tracking metrics. Fixed with early-return guard checking delta.is_empty() before bulk operations.
 
 ### 🤔 Current Uncertainties (Top 5)
 1. **Button Component CSS Loading** — Button component styles not applying despite asset!() macro loading CSS from assets/components/button/style.css. Syntax issue in CSS or bundling problem?
@@ -178,6 +178,10 @@ alwaysApply: true
 - **Trigger Functions**: PL/pgSQL functions with RETURNS TRIGGER, NEW/OLD variables, BEFORE/AFTER timing for automated database logic
 - **Trigger Attachment**: CREATE TRIGGER with FOR EACH ROW executing functions on table events (INSERT/UPDATE/DELETE)
 - **ON DELETE RESTRICT**: Foreign key constraint preventing parent deletion when children exist (vs CASCADE which deletes children)
+- **Delta Sync Pattern**: Fetch existing records, filter with PartialEq to find changes, upsert only delta—reduces database load
+- **Empty Collection Guards**: Check for empty slices before building SQL to prevent invalid queries (INSERT with no VALUES errors)
+- **Tuple Return Pattern**: Returning (Vec<T>, usize) from functions to communicate both results and metadata (cards + skip count)
+- **QueryBuilder Invalid SQL**: SQLx QueryBuilder with empty VALUES clause creates syntax errors—must guard against empty collections
 
 ### 🌐 Advanced HTTP & Middleware Patterns
 - **Custom Middleware**: AuthenticatedUser extractor with FromRequestParts trait
