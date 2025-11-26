@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use crate::domain::{
-    card::{models::card_profile::get_card_profile::CardProfileIds, ports::CardRepository},
+    card::{models::scryfall_data::get_scryfall_data::ScryfallDataIds, ports::CardRepository},
     deck::{
         models::{
             deck::{
@@ -94,14 +94,10 @@ where
 
     async fn get_deck(&self, request: &GetDeckProfile) -> Result<Deck, GetDeckError> {
         let deck_profile = self.deck_repo.get_deck_profile(request).await?;
-        let gd = GetDeckProfile::from(&deck_profile);
-        let deck_cards = self.deck_repo.get_deck_cards(&gd).await?;
-
-        let cps = CardProfileIds::from(deck_cards.as_slice());
-        let cards = self.card_repo.get_cards(&cps).await?;
-
+        let deck_cards = self.deck_repo.get_deck_cards(request).await?;
+        let scryfall_data_ids = ScryfallDataIds::from(deck_cards.as_slice());
+        let cards = self.card_repo.get_cards(&scryfall_data_ids).await?;
         let deck = Deck::new(deck_profile, cards);
-
         Ok(deck)
     }
 
