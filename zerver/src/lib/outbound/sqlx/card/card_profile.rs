@@ -1,7 +1,7 @@
+use crate::domain::card::models::card_profile::CardProfile;
+use chrono::NaiveDateTime;
 use sqlx_macros::FromRow;
 use uuid::Uuid;
-
-use crate::domain::card::models::card_profile::CardProfile;
 
 // ======
 //  main
@@ -11,6 +11,8 @@ use crate::domain::card::models::card_profile::CardProfile;
 pub struct DatabaseCardProfile {
     pub id: Uuid,
     pub scryfall_data_id: Uuid,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
 }
 
 impl From<DatabaseCardProfile> for CardProfile {
@@ -18,6 +20,8 @@ impl From<DatabaseCardProfile> for CardProfile {
         Self {
             id: value.id,
             scryfall_data_id: value.scryfall_data_id,
+            created_at: value.created_at,
+            updated_at: value.updated_at,
         }
     }
 }

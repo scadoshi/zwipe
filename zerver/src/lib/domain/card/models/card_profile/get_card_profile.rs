@@ -1,5 +1,5 @@
 #[cfg(feature = "zerver")]
-use crate::domain::{card::models::scryfall_data::ScryfallData, deck::models::deck_card::DeckCard};
+use crate::domain::card::models::scryfall_data::ScryfallData;
 #[cfg(feature = "zerver")]
 use thiserror::Error;
 #[cfg(feature = "zerver")]
@@ -73,18 +73,6 @@ impl CardProfileIds {
 
     pub fn ids(&self) -> &Vec<Uuid> {
         &self.0
-    }
-}
-
-#[cfg(feature = "zerver")]
-impl From<&[DeckCard]> for CardProfileIds {
-    fn from(value: &[DeckCard]) -> Self {
-        Self(
-            value
-                .iter()
-                .map(|dc| dc.card_profile_id.to_owned())
-                .collect(),
-        )
     }
 }
 
