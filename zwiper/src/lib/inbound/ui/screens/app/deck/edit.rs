@@ -117,7 +117,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     });
     let commander_id_update = use_memo(move || {
         if commander() != original_commander() {
-            Optdate::Set(commander().map(|c| c.card_profile.id))
+            Optdate::Set(commander().map(|c| c.scryfall_data.id))
         } else {
             Optdate::Unchanged
         }
@@ -148,17 +148,13 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     // debounced search effect
     use_effect(move || {
         let query = search_query();
-
         if query.is_empty() {
             show_dropdown.set(false);
             return;
         }
-
         is_searching.set(true);
-
         spawn(async move {
             sleep(Duration::from_millis(500)).await;
-
             if let Some(sesh) = session() {
                 let Ok(card_filter) = CardFilterBuilder::with_name_contains(&query)
                     .set_limit(5)
@@ -167,7 +163,6 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                     tracing::error!("{}", InvalidCardFilter::Empty.to_string());
                     return;
                 };
-
                 match client().search_cards(&card_filter, &sesh).await {
                     Ok(cards) => {
                         search_results.set(cards);
@@ -230,6 +225,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                             h2 { class: "text-center mb-2 font-light tracking-wider", "{deck_name}" }
 
                             if let Some(error) = load_error() {
+                                // {tracing::error!("{}", error);}
                                 div { class: "message-error", "{error}" }
                             }
 

@@ -23,14 +23,12 @@ impl ClientGetDeckProfile for ZwipeClient {
     ) -> Result<DeckProfile, ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&get_deck_profile_route(deck_id));
-
         let response = self
             .client
             .get(url)
             .bearer_auth(session.access_token.value.as_str())
             .send()
             .await?;
-
         match response.status() {
             StatusCode::OK => {
                 let deck_profile: DeckProfile = response.json().await?;

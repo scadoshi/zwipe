@@ -103,7 +103,7 @@ pub fn CreateDeck() -> Element {
                 return;
             };
 
-            let commander_id = commander().map(|c| c.card_profile.id);
+            let commander_id = commander().map(|c| c.scryfall_data.id);
             let request =
                 HttpCreateDeckProfile::new(&deck_name(), commander_id, copy_max().map(|x| x.max()));
 
