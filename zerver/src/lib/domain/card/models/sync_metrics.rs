@@ -11,8 +11,8 @@ use uuid::Uuid;
 /// represents the type of sync which occured
 /// in this entry of SyncMetrics
 ///
-///  - **Partial**: incremental addition of new cards that do not exist in database
-/// - **Full**: comprehensive refresh of all given cards even if already exists in database
+///  - **Partial**: incremental addition of new cards only (skips existing cards)
+/// - **Full**: comprehensive UPSERT of all cards (inserts new, updates existing with latest data)
 #[derive(Debug, Clone, Serialize, Deserialize, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum SyncType {
