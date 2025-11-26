@@ -84,11 +84,11 @@ pub struct ErrorMetrics {
 }
 
 impl ErrorMetrics {
-    pub fn new(card_id: Uuid, card_name: &str, error: &str) -> Self {
+    pub fn new(card_id: Uuid, card_name: impl Into<String>, error: impl Into<String>) -> Self {
         ErrorMetrics {
             card_id,
-            card_name: card_name.to_string(),
-            error: error.to_string(),
+            card_name: card_name.into(),
+            error: error.into(),
         }
     }
 }

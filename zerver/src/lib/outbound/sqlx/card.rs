@@ -5,26 +5,28 @@ pub mod scryfall_data;
 pub mod sync_metrics;
 
 use crate::domain::card::models::{
-    card_profile::{
-        get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
-        CardProfile,
-    },
-    get_card::GetCardError,
-    get_card_types::GetCardTypesError,
-    helpers::SleeveCardProfile,
-    scryfall_data::get_scryfall_data::{ScryfallDataIds, SearchScryfallDataError},
-};
-use crate::domain::card::models::{
     create_card::CreateCardError,
     scryfall_data::get_scryfall_data::{GetScryfallData, GetScryfallDataError},
     search_card::{card_filter::CardFilter, error::SearchCardsError},
     Card,
 };
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
-use crate::outbound::sqlx::card::helpers::insert_card::{
-    BatchInsertWithTx, InsertCardWithTx, InsertCardsWithTx,
-};
 use crate::outbound::sqlx::postgres::Postgres as MyPostgres;
+use crate::{
+    domain::card::models::{
+        card_profile::{
+            get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
+            CardProfile,
+        },
+        get_card::GetCardError,
+        get_card_types::GetCardTypesError,
+        helpers::SleeveCardProfile,
+        scryfall_data::get_scryfall_data::{ScryfallDataIds, SearchScryfallDataError},
+    },
+    outbound::sqlx::card::helpers::upsert_card::{
+        BatchUpsertWithTx, BulkUpsertWithTx, SingleUpsertWithTx,
+    },
+};
 use crate::{
     domain::card::{
         models::{
@@ -38,7 +40,7 @@ use crate::{
 
 use anyhow::Context;
 use chrono::NaiveDateTime;
-use sqlx::{query, query_as, query_scalar, Postgres};
+use sqlx::{query_as, query_scalar, Postgres};
 use sqlx::{query_builder::Separated, QueryBuilder};
 use uuid::Uuid;
 
@@ -48,7 +50,7 @@ impl CardRepository for MyPostgres {
     // ========
     async fn insert(&self, scryfall_data: &ScryfallData) -> Result<Card, CreateCardError> {
         let mut tx = self.pool.begin().await?;
-        let card = scryfall_data.insert_with_tx(&mut tx).await?;
+        let card = scryfall_data.single_upsert_with_tx(&mut tx).await?;
         tx.commit().await?;
         Ok(card)
     }
@@ -58,7 +60,7 @@ impl CardRepository for MyPostgres {
         scryfall_data: &[ScryfallData],
     ) -> Result<Vec<Card>, CreateCardError> {
         let mut tx = self.pool.begin().await?;
-        let cards = scryfall_data.insert_with_tx(&mut tx).await?;
+        let cards = scryfall_data.bulk_upsert_with_tx(&mut tx).await?;
         tx.commit().await?;
         Ok(cards)
     }
@@ -71,7 +73,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<Vec<Card>, CreateCardError> {
         let mut tx = self.pool.begin().await?;
         let cards = cards
-            .batch_insert_with_tx(&mut tx, batch_size, sync_metrics)
+            .batch_upsert_with_tx(&mut tx, batch_size, sync_metrics)
             .await?;
         tx.commit().await?;
         Ok(cards)
@@ -110,7 +112,7 @@ impl CardRepository for MyPostgres {
 
         tracing::info!("importing {} new cards", new_data.len());
         let cards: Vec<Card> = new_data
-            .batch_insert_with_tx(&mut tx, batch_size, sync_metrics)
+            .batch_upsert_with_tx(&mut tx, batch_size, sync_metrics)
             .await?;
 
         tx.commit().await?;
@@ -128,7 +130,7 @@ impl CardRepository for MyPostgres {
         tracing::info!("received {} cards", cards.len());
         let mut tx = self.pool.begin().await?;
         let cards: Vec<Card> = cards
-            .batch_insert_with_tx(&mut tx, batch_size, sync_metrics)
+            .batch_upsert_with_tx(&mut tx, batch_size, sync_metrics)
             .await?;
         tx.commit().await?;
         Ok(cards)
@@ -380,7 +382,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<CardProfile, GetCardProfileError> {
         let card_profile: CardProfile = query_as!(
             DatabaseCardProfile,
-            "SELECT id, scryfall_data_id, created_at, updated_at 
+            "SELECT id, scryfall_data_id, created_at, updated_at
             FROM card_profiles WHERE scryfall_data_id = $1",
             request.id()
         )
@@ -396,7 +398,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
         let card_profiles: Vec<CardProfile> = query_as!(
             DatabaseCardProfile,
-            "SELECT id, scryfall_data_id, created_at, updated_at 
+            "SELECT id, scryfall_data_id, created_at, updated_at
             FROM card_profiles WHERE id = ANY($1)",
             request.ids()
         )
@@ -414,7 +416,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
         let card_profiles: Vec<CardProfile> = query_as!(
             DatabaseCardProfile,
-            "SELECT id, scryfall_data_id, created_at, updated_at 
+            "SELECT id, scryfall_data_id, created_at, updated_at
             FROM card_profiles WHERE scryfall_data_id = ANY($1)",
             request.ids()
         )
@@ -431,7 +433,7 @@ impl CardRepository for MyPostgres {
         sync_type: SyncType,
     ) -> anyhow::Result<Option<NaiveDateTime>> {
         let last_sync_date: Option<NaiveDateTime> = query_scalar!(
-            "SELECT started_at FROM scryfall_data_sync_metrics 
+            "SELECT started_at FROM scryfall_data_sync_metrics
             WHERE sync_type = $1 ORDER BY started_at DESC LIMIT 1",
             sync_type.to_string()
         )

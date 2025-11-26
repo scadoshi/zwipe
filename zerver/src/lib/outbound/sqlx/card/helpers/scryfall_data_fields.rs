@@ -2,7 +2,7 @@ use crate::domain::card::models::scryfall_data::ScryfallData;
 use sqlx::Postgres;
 use sqlx::QueryBuilder;
 
-/// scryfall card fields for use in query field tuples
+/// every `ScryfallData` field line separated for various uses
 const SCRYFALL_DATA_FIELDS: &str = r#"
     arena_id
     id
@@ -93,15 +93,18 @@ const SCRYFALL_DATA_FIELDS: &str = r#"
     preview_source
 "#;
 
+/// comma separates non-empty lines in `SCRYFALL_DATA_FIELDS`
 pub fn scryfall_data_fields() -> String {
     SCRYFALL_DATA_FIELDS
         .trim()
         .lines()
-        .map(|x| x.trim().to_string())
+        .map(|line| line.trim().to_string())
+        .filter(|line| !line.is_empty())
         .collect::<Vec<String>>()
         .join(",")
 }
 
+/// counts the number of non-empty lines in `SCRYFALL_DATA_FIELDS`
 pub fn scryfall_data_field_count() -> usize {
     SCRYFALL_DATA_FIELDS
         .trim()
@@ -111,14 +114,26 @@ pub fn scryfall_data_field_count() -> usize {
         .count()
 }
 
-/// for pushing all scryfall data fields
-/// onto a `QueryBuilder``
+/// prepares `SCRYFALL_DATA_FIELDS` for an `ON CONFLICT` clause for use while upserting in bulk
+pub fn bulk_upsert_conflict_fields() -> String {
+    " ON CONFLICT (id) DO UPDATE SET ".to_string()
+        + SCRYFALL_DATA_FIELDS
+            .trim()
+            .lines()
+            .map(|x| x.trim().to_string())
+            .map(|x| x.clone() + " = EXCLUDED." + x.as_str())
+            .collect::<Vec<String>>()
+            .join(",")
+            .as_str()
+}
+
+/// binds all `SCRYFALL_DATA_FIELDS` onto a `QueryBuilder` with given card's data
 pub trait BindScryfallDataFields {
-    fn bind_scryfall_fields(&mut self, card: &ScryfallData);
+    fn bind_scryfall_fields(&mut self, card: &ScryfallData) -> &mut Self;
 }
 
 impl BindScryfallDataFields for QueryBuilder<'_, Postgres> {
-    fn bind_scryfall_fields(&mut self, card: &ScryfallData) {
+    fn bind_scryfall_fields(&mut self, card: &ScryfallData) -> &mut Self {
         self.push("(");
         // core card fields
         // cards have the following core properties
@@ -300,24 +315,23 @@ impl BindScryfallDataFields for QueryBuilder<'_, Postgres> {
         self.push(", ");
         self.push_bind(card.preview_source.clone());
         self.push(")");
+        self
     }
 }
 
-/// for easy binding of scryfall data fields
-/// to a separator query builder type
-pub trait BindToSeparator {
-    fn bind_to(&self, qb: &mut QueryBuilder<'_, Postgres>);
+/// binds many cards onto a `QueryBuilder` using the above
+pub trait BindCards {
+    fn bind_cards(&mut self, scryfall_data: &[ScryfallData]) -> &mut Self;
 }
 
-impl BindToSeparator for Vec<ScryfallData> {
-    fn bind_to(&self, qb: &mut QueryBuilder<'_, Postgres>) {
-        let mut needs_comma = false;
-        for card in self {
-            if needs_comma {
-                qb.push(", ");
+impl BindCards for QueryBuilder<'_, Postgres> {
+    fn bind_cards(&mut self, scryfall_data: &[ScryfallData]) -> &mut Self {
+        for (i, card) in scryfall_data.iter().enumerate() {
+            if i > 0 {
+                self.push(", ");
             }
-            qb.bind_scryfall_fields(card);
-            needs_comma = true;
+            self.bind_scryfall_fields(card);
         }
+        self
     }
 }
