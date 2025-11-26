@@ -121,7 +121,7 @@ where
             .nest(
                 "/card",
                 Router::new()
-                    .route("/:card_profile_id", get(get_card))
+                    .route("/:scryfall_data_id", get(get_card))
                     .route("/search", post(search_cards))
                     .route("/types", get(get_card_types)),
             )
@@ -138,8 +138,8 @@ where
                         "/:deck_id/card",
                         Router::new()
                             .route("/", post(create_deck_card))
-                            .route("/:card_profile_id", put(update_deck_card))
-                            .route("/:card_profile_id", delete(delete_deck_card)),
+                            .route("/:scryfall_data_id", put(update_deck_card))
+                            .route("/:scryfall_data_id", delete(delete_deck_card)),
                     ),
             ),
     )
@@ -172,8 +172,8 @@ pub fn logout_route() -> String {
     "/api/auth/logout".to_string()
 }
 
-pub fn get_card_route(card_profile_id: Uuid) -> String {
-    format!("/api/card/{}", card_profile_id)
+pub fn get_card_route(scryfall_data_id: Uuid) -> String {
+    format!("/api/card/{}", scryfall_data_id)
 }
 
 pub fn search_cards_route() -> String {
@@ -212,10 +212,10 @@ pub fn create_deck_card_route(deck_id: Uuid) -> String {
     format!("/api/deck/{}/card", deck_id)
 }
 
-pub fn update_deck_card_route(deck_id: Uuid, card_profile_id: Uuid) -> String {
-    format!("/api/deck/{}/card/{}", deck_id, card_profile_id)
+pub fn update_deck_card_route(deck_id: Uuid, scryfall_data_id: Uuid) -> String {
+    format!("/api/deck/{}/card/{}", deck_id, scryfall_data_id)
 }
 
-pub fn delete_deck_card_route(deck_id: Uuid, card_profile_id: Uuid) -> String {
-    format!("/api/deck/{}/card/{}", deck_id, card_profile_id)
+pub fn delete_deck_card_route(deck_id: Uuid, scryfall_data_id: Uuid) -> String {
+    format!("/api/deck/{}/card/{}", deck_id, scryfall_data_id)
 }

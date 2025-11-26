@@ -51,7 +51,7 @@ impl From<InvalidUpdateDeckCard> for ApiError {
             InvalidUpdateDeckCard::DeckId(e) => {
                 Self::UnprocessableEntity(format!("invalid deck id: {}", e))
             }
-            InvalidUpdateDeckCard::CardProfileId(e) => {
+            InvalidUpdateDeckCard::ScryfallDataId(e) => {
                 Self::UnprocessableEntity(format!("invalid card id: {}", e))
             }
             InvalidUpdateDeckCard::UpdateQuantity(e) => {
@@ -76,7 +76,7 @@ impl HttpUpdateDeckCard {
 pub async fn update_deck_card<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
-    Path((deck_id, card_profile_id)): Path<(String, String)>,
+    Path((deck_id, scryfall_data_id)): Path<(String, String)>,
     Json(body): Json<HttpUpdateDeckCard>,
 ) -> Result<(StatusCode, Json<DeckCard>), ApiError>
 where
@@ -86,7 +86,7 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let request = UpdateDeckCard::new(user.id, &deck_id, &card_profile_id, body.update_quantity)?;
+    let request = UpdateDeckCard::new(user.id, &deck_id, &scryfall_data_id, body.update_quantity)?;
 
     state
         .deck_service

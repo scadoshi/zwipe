@@ -4,9 +4,9 @@ use crate::{
         auth::ports::AuthService,
         card::{
             models::{
-                card_profile::get_card_profile::{GetCardProfile, GetCardProfileError},
+                card_profile::get_card_profile::GetCardProfileError,
                 get_card::GetCardError,
-                scryfall_data::get_scryfall_data::GetScryfallDataError,
+                scryfall_data::get_scryfall_data::{GetScryfallData, GetScryfallDataError},
                 Card,
             },
             ports::CardService,
@@ -59,7 +59,7 @@ impl From<GetCardError> for ApiError {
 pub async fn get_card<AS, US, HS, CS, DS>(
     _: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
-    Path(card_profile_id): Path<String>,
+    Path(scryfall_data_id): Path<String>,
 ) -> Result<(StatusCode, Json<Card>), ApiError>
 where
     AS: AuthService,
@@ -68,8 +68,7 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let request = GetCardProfile::new(&card_profile_id)?;
-
+    let request = GetScryfallData::new(&scryfall_data_id)?;
     state
         .card_service
         .get_card(&request)

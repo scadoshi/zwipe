@@ -44,7 +44,7 @@ impl From<InvalidDeleteDeckCard> for ApiError {
             InvalidDeleteDeckCard::DeckId(e) => {
                 Self::UnprocessableEntity(format!("invalid deck id: {}", e))
             }
-            InvalidDeleteDeckCard::CardProfileId(e) => {
+            InvalidDeleteDeckCard::ScryfallDataId(e) => {
                 Self::UnprocessableEntity(format!("invalid card profile id: {}", e))
             }
         }
@@ -55,7 +55,7 @@ impl From<InvalidDeleteDeckCard> for ApiError {
 pub async fn delete_deck_card<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
-    Path((deck_id, card_profile_id)): Path<(String, String)>,
+    Path((deck_id, scryfall_data_id)): Path<(String, String)>,
 ) -> Result<StatusCode, ApiError>
 where
     AS: AuthService,
@@ -64,7 +64,7 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let request = DeleteDeckCard::new(user.id, &deck_id, &card_profile_id)?;
+    let request = DeleteDeckCard::new(user.id, &deck_id, &scryfall_data_id)?;
 
     state
         .deck_service

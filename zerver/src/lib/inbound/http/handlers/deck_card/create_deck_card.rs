@@ -45,7 +45,7 @@ impl From<CreateDeckCardError> for ApiError {
 impl From<InvalidCreateDeckCard> for ApiError {
     fn from(value: InvalidCreateDeckCard) -> Self {
         match value {
-            InvalidCreateDeckCard::CardProfileId(e) => {
+            InvalidCreateDeckCard::ScryfallDataId(e) => {
                 Self::UnprocessableEntity(format!("invalid card id: {}", e))
             }
             InvalidCreateDeckCard::DeckId(e) => {
@@ -60,14 +60,14 @@ impl From<InvalidCreateDeckCard> for ApiError {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpCreateDeckCard {
-    pub card_profile_id: String,
+    pub scryfall_data_id: String,
     pub quantity: i32,
 }
 
 impl HttpCreateDeckCard {
-    pub fn new(card_profile_id: &str, quantity: i32) -> Self {
+    pub fn new(scryfall_data_id: &str, quantity: i32) -> Self {
         Self {
-            card_profile_id: card_profile_id.to_string(),
+            scryfall_data_id: scryfall_data_id.to_string(),
             quantity,
         }
     }
@@ -87,7 +87,7 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let request = CreateDeckCard::new(user.id, &deck_id, &body.card_profile_id, body.quantity)?;
+    let request = CreateDeckCard::new(user.id, &deck_id, &body.scryfall_data_id, body.quantity)?;
 
     state
         .deck_service
