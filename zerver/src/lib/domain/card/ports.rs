@@ -17,7 +17,7 @@ use crate::domain::card::models::{
         ScryfallData,
     },
     search_card::{card_filter::CardFilter, error::SearchCardsError},
-    sync_metrics::{SyncMetrics, SyncType},
+    sync_metrics::SyncMetrics,
     Card,
 };
 
@@ -27,60 +27,43 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     //  create
     // ========
 
-    /// single card creation
-    fn insert(
+    /// single insert/update of `ScryfallData`
+    /// - also inserts/updates `CardProfile`
+    fn upsert(
         &self,
-        sfd: &ScryfallData,
+        scryfall_data: &ScryfallData,
     ) -> impl Future<Output = Result<Card, CreateCardError>> + Send;
 
-    /// for inserting as many cards as you want :O
-    /// - postgres limits parameter counts but that is handled else where
-    /// - hence the privateness
-    fn bulk_insert(
+    /// bulk insert/update of `ScryfallData`
+    /// - also inserts/updates `CardProfile`
+    /// - includes no special batching
+    /// - beware of `PostgreSQL` parameter limits
+    fn bulk_upsert(
         &self,
         multiple_scryfall_data: &[ScryfallData],
     ) -> impl Future<Output = Result<Vec<Card>, CreateCardError>> + Send;
 
-    /// for inserting as many cards as you want in batches :O
-    /// - chunks into given batch size
-    /// - uses bulk_insert internally
-    fn batch_insert(
-        &self,
-        multiple_scryfall_data: &[ScryfallData],
-        batch_size: usize,
-        sync_metrics: &mut SyncMetrics,
-    ) -> impl Future<Output = Result<Vec<Card>, CreateCardError>> + Send;
-
-    /// intends to incrementally update database with only new cards
-    ///
-    /// the flow looks something like this
-    /// 1. find ids of cards which given list include but database does not
-    /// 2. insert **only those** cards into database (uses batch_insert)
-    ///
-    /// transactions keep it atomic!
-    fn batch_insert_if_not_exists(
+    /// batch insert/update of `ScryfallData`
+    /// - also inserts/updates `CardProfile`
+    /// - uses `BulkUpsertWithTx` interally to perform batching
+    fn batch_upsert(
         &self,
         multiple_scryfall_data: &[ScryfallData],
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
     ) -> impl Future<Output = Result<Vec<Card>, CreateCardError>> + Send;
 
-    /// intends to refresh cards in database with the given list of cards
-    ///
-    /// the flow looks something like this
-    /// 1. find ids of cards which given list *and* database share
-    /// 2. delete cards with those ids from database
-    /// 3. insert all given cards back into database (uses batch_insert)
-    ///
-    /// transactions keep it atomic!
-    fn delete_if_exists_and_batch_insert(
+    /// inserts/updates `ScryfallData` only when newer than existing database records
+    /// - also inserts/updates `CardProfile`
+    /// - skips records that are already up to date
+    fn batch_delta_upsert(
         &self,
         multiple_scryfall_data: &[ScryfallData],
         batch_size: usize,
         sync_metrics: &mut SyncMetrics,
     ) -> impl Future<Output = Result<Vec<Card>, CreateCardError>> + Send;
 
-    /// saves sync_metrics to database
+    /// saves `SyncMetrics` to database
     fn record_sync_metrics(
         &self,
         sync_metrics: &SyncMetrics,
@@ -157,7 +140,6 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// gets last sync date from database
     fn get_last_sync_date(
         &self,
-        sync_type: SyncType,
     ) -> impl Future<Output = anyhow::Result<Option<NaiveDateTime>>> + Send;
 }
 
@@ -171,16 +153,13 @@ pub trait CardService: Clone + Send + Sync + 'static {
     ///
     /// this is not exposed because it is
     /// more for internal unit testing
-    fn insert(
+    fn upsert(
         &self,
         scryfall_data: ScryfallData,
     ) -> impl Future<Output = Result<Card, CreateCardError>>;
 
     /// syncs database with scryfall bulk data
-    fn scryfall_sync(
-        &self,
-        sync_type: SyncType,
-    ) -> impl Future<Output = anyhow::Result<SyncMetrics>> + Send;
+    fn scryfall_sync(&self) -> impl Future<Output = anyhow::Result<SyncMetrics>> + Send;
 
     // =====
     //  get
@@ -235,6 +214,5 @@ pub trait CardService: Clone + Send + Sync + 'static {
     /// gets last sync date from database
     fn get_last_sync_date(
         &self,
-        sync_type: SyncType,
     ) -> impl Future<Output = anyhow::Result<Option<NaiveDateTime>>> + Send;
 }
