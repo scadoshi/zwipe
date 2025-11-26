@@ -1,3 +1,5 @@
+pub mod on_conflict_do_update_excluded_fields;
+
 use crate::domain::card::models::card_profile::CardProfile;
 use crate::domain::card::models::helpers::SleeveScryfallData;
 use crate::domain::card::models::{create_card::CreateCardError, Card};
@@ -6,6 +8,7 @@ use crate::domain::card::models::{
     sync_metrics::{ErrorMetrics, SyncMetrics},
 };
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
+use crate::outbound::sqlx::card::helpers::insert_card::on_conflict_do_update_excluded_fields::ON_CONFLICT_DO_UPDATE_EXCLUDED_FIELDS;
 use crate::outbound::sqlx::card::helpers::scryfall_data_fields::{
     scryfall_data_fields, BindScryfallDataFields, BindToSeparator,
 };
@@ -47,22 +50,23 @@ impl InsertCardWithTx for ScryfallData {
         let mut sfd_qb = QueryBuilder::new("INSERT INTO scryfall_data (");
         sfd_qb.push(scryfall_data_fields()).push(") VALUES ");
         sfd_qb.bind_scryfall_fields(self);
+        sfd_qb.push(ON_CONFLICT_DO_UPDATE_EXCLUDED_FIELDS);
         sfd_qb.push(" RETURNING *");
         let scryfall_data: ScryfallData = sfd_qb
             .build_query_as::<ScryfallData>()
             .fetch_one(&mut **tx)
             .await?;
-
         let database_card_profile = query_as!(
             DatabaseCardProfile,
-            "INSERT INTO card_profiles (scryfall_data_id) VALUES ($1) RETURNING id, scryfall_data_id",
+            "INSERT INTO card_profiles (scryfall_data_id) VALUES ($1)
+            ON CONFLICT (scryfall_data_id)
+            DO UPDATE SET updated_at = NOW()
+            RETURNING id, scryfall_data_id, created_at, updated_at",
             scryfall_data_id
         )
         .fetch_one(&mut **tx)
         .await?;
-
         let card_profile: CardProfile = database_card_profile.into();
-
         let card = Card::new(card_profile, scryfall_data);
         Ok(card)
     }
@@ -92,6 +96,7 @@ impl InsertCardsWithTx for &[ScryfallData] {
         let mut sfd: Vec<ScryfallData> = self.to_vec();
         sfd.dedup_by_key(|sfd| sfd.id);
         sfd.bind_to(&mut sfd_qb);
+        sfd_qb.push(ON_CONFLICT_DO_UPDATE_EXCLUDED_FIELDS);
         sfd_qb.push(" RETURNING *;");
 
         let sfd: Vec<ScryfallData> = sfd_qb
@@ -112,6 +117,7 @@ impl InsertCardsWithTx for &[ScryfallData] {
             needs_comma = true;
         }
 
+        cp_qb.push(" ON CONFLICT (scryfall_data_id) DO UPDATE SET updated_at = NOW() ");
         cp_qb.push(" RETURNING id, scryfall_data_id");
 
         let cps: Vec<CardProfile> = cp_qb
@@ -181,7 +187,6 @@ impl BatchInsertWithTx for &[ScryfallData] {
         sync_metrics: &mut SyncMetrics,
     ) -> Result<Vec<Card>, CreateCardError> {
         let mut cards: Vec<Card> = Vec::new();
-
         for chunk in self.chunks(batch_size) {
             match chunk.insert_with_tx(tx).await {
                 Ok(inserted) => {
@@ -195,7 +200,6 @@ impl BatchInsertWithTx for &[ScryfallData] {
                 }
             }
         }
-
         Ok(cards)
     }
 }
