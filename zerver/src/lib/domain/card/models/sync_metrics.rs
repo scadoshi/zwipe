@@ -8,38 +8,6 @@ use uuid::Uuid;
 //  parts
 // =======
 
-/// represents the type of sync which occured
-/// in this entry of SyncMetrics
-///
-///  - **Partial**: incremental addition of new cards only (skips existing cards)
-/// - **Full**: comprehensive upsert of all cards (inserts new, updates existing with latest data)
-#[derive(Debug, Clone, Serialize, Deserialize, Copy)]
-#[serde(rename_all = "snake_case")]
-pub enum SyncType {
-    Partial,
-    Full,
-}
-
-impl Display for SyncType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Partial => write!(f, "partial"),
-            Self::Full => write!(f, "full"),
-        }
-    }
-}
-
-impl TryFrom<&str> for SyncType {
-    type Error = anyhow::Error;
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        match value.to_lowercase().as_str() {
-            "partial" => Ok(Self::Partial),
-            "full" => Ok(Self::Full),
-            x => Err(anyhow!("failed to parse SyncType from {x}")),
-        }
-    }
-}
-
 /// for tracking sync status
 #[derive(Debug, Clone, Serialize, Deserialize, Copy)]
 #[serde(rename_all = "snake_case")]
@@ -142,14 +110,13 @@ impl Deref for VecErrorMetrics {
 /// keeping fields private for more controlled design pattern
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SyncMetrics {
-    sync_type: SyncType,
     status: SyncStatus,
     started_at: NaiveDateTime,
     ended_at: Option<NaiveDateTime>,
     duration_in_seconds: i32,
-    received: i32,
-    imported: i32,
-    skipped: i32,
+    received_count: i32,
+    upserted_count: i32,
+    skipped_count: i32,
     error_count: i32,
     errors: Vec<ErrorMetrics>,
 }
@@ -157,14 +124,13 @@ pub struct SyncMetrics {
 impl Default for SyncMetrics {
     fn default() -> Self {
         Self {
-            sync_type: SyncType::Full,
             status: SyncStatus::InProgress,
             started_at: chrono::Utc::now().naive_utc(),
             ended_at: None,
             duration_in_seconds: 0,
-            received: 0,
-            imported: 0,
-            skipped: 0,
+            received_count: 0,
+            upserted_count: 0,
+            skipped_count: 0,
             error_count: 0,
             errors: Vec::new(),
         }
@@ -172,16 +138,8 @@ impl Default for SyncMetrics {
 }
 
 impl SyncMetrics {
-    pub fn with_sync_type(sync_type: SyncType) -> Self {
-        Self {
-            sync_type,
-            ..Self::default()
-        }
-    }
-
-    pub fn set_sync_type(&mut self, sync_type: SyncType) -> &mut Self {
-        self.sync_type = sync_type;
-        self
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn set_status(&mut self, status: SyncStatus) -> &mut Self {
@@ -204,28 +162,28 @@ impl SyncMetrics {
         self
     }
 
-    pub fn set_received(&mut self, count: i32) -> &mut Self {
-        self.received = count;
+    pub fn set_received_count(&mut self, count: i32) -> &mut Self {
+        self.received_count = count;
         self
     }
 
-    pub fn set_imported(&mut self, count: i32) -> &mut Self {
-        self.imported = count;
+    pub fn set_upserted_count(&mut self, count: i32) -> &mut Self {
+        self.upserted_count = count;
         self
     }
 
-    pub fn add_imported(&mut self, count: i32) -> &mut Self {
-        self.imported += count;
+    pub fn add_upserted_count(&mut self, count: i32) -> &mut Self {
+        self.upserted_count += count;
         self
     }
 
-    pub fn set_skipped(&mut self, count: i32) -> &mut Self {
-        self.skipped = count;
+    pub fn set_skipped_count(&mut self, count: i32) -> &mut Self {
+        self.skipped_count = count;
         self
     }
 
-    pub fn add_skipped(&mut self, count: i32) -> &mut Self {
-        self.skipped += count;
+    pub fn add_skipped_count(&mut self, count: i32) -> &mut Self {
+        self.skipped_count += count;
         self
     }
 
@@ -258,9 +216,6 @@ impl SyncMetrics {
     }
 
     // for getting from SyncMetrics
-    pub fn sync_type(&self) -> SyncType {
-        self.sync_type
-    }
     pub fn started_at(&self) -> NaiveDateTime {
         self.started_at
     }
@@ -273,14 +228,14 @@ impl SyncMetrics {
     pub fn status(&self) -> SyncStatus {
         self.status
     }
-    pub fn received(&self) -> i32 {
-        self.received
+    pub fn received_count(&self) -> i32 {
+        self.received_count
     }
-    pub fn imported(&self) -> i32 {
-        self.imported
+    pub fn upserted_count(&self) -> i32 {
+        self.upserted_count
     }
-    pub fn skipped(&self) -> i32 {
-        self.skipped
+    pub fn skipped_count(&self) -> i32 {
+        self.skipped_count
     }
     pub fn error_count(&self) -> i32 {
         self.error_count
@@ -292,11 +247,11 @@ impl SyncMetrics {
     // helpers
     fn evaluate_status(&mut self) -> &mut Self {
         self.status = SyncStatus::Failure;
-        let intended_to_import = self.received - self.skipped;
-        if self.imported as f32 >= intended_to_import as f32 * 0.7 {
+        let intended_to_import = self.received_count - self.skipped_count;
+        if self.upserted_count as f32 >= intended_to_import as f32 * 0.7 {
             self.status = SyncStatus::PartialSuccess;
         }
-        if self.imported == intended_to_import && self.error_count == 0 {
+        if self.upserted_count == intended_to_import && self.error_count == 0 {
             self.status = SyncStatus::Success;
         }
         self
