@@ -1,6 +1,9 @@
 #[cfg(feature = "zerver")]
-use crate::domain::card::models::{
-    card_profile::CardProfile, get_card::InvalidGetCards, scryfall_data::ScryfallData,
+use crate::domain::{
+    card::models::{
+        card_profile::CardProfile, get_card::InvalidGetCards, scryfall_data::ScryfallData,
+    },
+    deck::models::deck_card::DeckCard,
 };
 use serde::Deserialize;
 #[cfg(feature = "zerver")]
@@ -23,7 +26,7 @@ pub enum SearchScryfallDataError {
     Database(anyhow::Error),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct GetScryfallData(Uuid);
 
 impl GetScryfallData {
@@ -77,21 +80,16 @@ impl ScryfallDataIds {
 }
 
 #[cfg(feature = "zerver")]
-impl From<&[CardProfile]> for ScryfallDataIds {
-    fn from(value: &[CardProfile]) -> Self {
-        Self(
-            value
-                .iter()
-                .map(|x| x.scryfall_data_id.to_owned())
-                .collect(),
-        )
+impl From<&[DeckCard]> for ScryfallDataIds {
+    fn from(value: &[DeckCard]) -> Self {
+        value.iter().map(|x| x.scryfall_data_id).collect()
     }
 }
 
 #[cfg(feature = "zerver")]
 impl From<&[ScryfallData]> for ScryfallDataIds {
     fn from(value: &[ScryfallData]) -> Self {
-        Self(value.iter().map(|x| x.id.to_owned()).collect())
+        value.iter().map(|x| x.id).collect()
     }
 }
 
