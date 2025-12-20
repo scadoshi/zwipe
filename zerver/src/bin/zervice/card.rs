@@ -1,5 +1,4 @@
-use crate::was_ago::WasAgo;
-use chrono::NaiveDateTime;
+use chrono::{Duration, Utc};
 use std::future::Future;
 use zwipe::domain::card::{
     self,
@@ -15,8 +14,11 @@ where
     R: CardRepository,
 {
     async fn check_cards(&self) -> anyhow::Result<()> {
-        let last_sync: Option<NaiveDateTime> = self.get_last_sync_date().await?;
-        if last_sync.is_none_or(|d| d.was_a_week_ago()) {
+        if self
+            .get_last_sync_date()
+            .await?
+            .is_none_or(|d| d < Utc::now().naive_utc() - Duration::days(7))
+        {
             self.scryfall_sync().await?;
         }
         Ok(())

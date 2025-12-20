@@ -1,6 +1,5 @@
 pub mod auth;
 pub mod card;
-pub mod was_ago;
 
 use crate::{auth::CheckSessions, card::CheckCards};
 use chrono::NaiveDateTime;
