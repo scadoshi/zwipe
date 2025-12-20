@@ -17,7 +17,7 @@ pub struct CardFilter {
     // mana
     cmc_equals: Option<f64>,
     cmc_range: Option<(f64, f64)>,
-    color_identity_contains_any: Option<Colors>,
+    color_identity_within: Option<Colors>,
     color_identity_equals: Option<Colors>,
     // printing
     rarity_contains: Option<String>,

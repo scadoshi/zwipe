@@ -122,16 +122,13 @@ impl CardFilterBuilder {
         self
     }
 
-    pub fn set_color_identity_contains_any(
-        &mut self,
-        color_identity_contains_any: Colors,
-    ) -> &mut Self {
-        self.color_identity_contains_any = Some(color_identity_contains_any);
+    pub fn set_color_identity_within(&mut self, color_identity_contains_any: Colors) -> &mut Self {
+        self.color_identity_within = Some(color_identity_contains_any);
         self
     }
 
-    pub fn unset_color_identity_contains_any(&mut self) -> &mut Self {
-        self.color_identity_contains_any = None;
+    pub fn unset_color_identity_within(&mut self) -> &mut Self {
+        self.color_identity_within = None;
         self
     }
 

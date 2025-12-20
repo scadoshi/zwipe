@@ -48,8 +48,8 @@ impl CardFilterBuilder {
         self.color_identity_equals.as_ref()
     }
 
-    pub fn color_identity_contains_any(&self) -> Option<&Colors> {
-        self.color_identity_contains_any.as_ref()
+    pub fn color_identity_within(&self) -> Option<&Colors> {
+        self.color_identity_within.as_ref()
     }
 
     // combat

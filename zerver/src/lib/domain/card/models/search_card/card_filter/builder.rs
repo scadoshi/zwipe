@@ -20,7 +20,7 @@ pub struct CardFilterBuilder {
     // mana
     cmc_equals: Option<f64>,
     cmc_range: Option<(f64, f64)>,
-    color_identity_contains_any: Option<Colors>,
+    color_identity_within: Option<Colors>,
     color_identity_equals: Option<Colors>,
     // rarity
     rarity_contains: Option<String>,
@@ -47,7 +47,7 @@ impl Default for CardFilterBuilder {
             toughness_range: None,
             cmc_equals: None,
             cmc_range: None,
-            color_identity_contains_any: None,
+            color_identity_within: None,
             color_identity_equals: None,
             rarity_contains: None,
             set_contains: None,
@@ -161,12 +161,12 @@ impl CardFilterBuilder {
         }
     }
 
-    pub fn with_color_identity_contains_any<I>(color_identity_contains_any: I) -> CardFilterBuilder
+    pub fn with_color_identity_within<I>(color_identity_within: I) -> CardFilterBuilder
     where
         I: IntoIterator<Item = Color>,
     {
         CardFilterBuilder {
-            color_identity_contains_any: Some(color_identity_contains_any.into_iter().collect()),
+            color_identity_within: Some(color_identity_within.into_iter().collect()),
             ..CardFilterBuilder::default()
         }
     }
@@ -213,7 +213,7 @@ impl CardFilterBuilder {
             toughness_range: self.toughness_range,
             cmc_equals: self.cmc_equals,
             cmc_range: self.cmc_range,
-            color_identity_contains_any: self.color_identity_contains_any.clone(),
+            color_identity_within: self.color_identity_within.clone(),
             color_identity_equals: self.color_identity_equals.clone(),
             rarity_contains: self.rarity_contains.clone(),
             set_contains: self.set_contains.clone(),
