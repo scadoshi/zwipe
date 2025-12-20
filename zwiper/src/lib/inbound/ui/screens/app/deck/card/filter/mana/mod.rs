@@ -1,9 +1,12 @@
+mod color_identity_filter_mode;
+
 use crate::inbound::ui::components::{
     auth::bouncer::Bouncer,
     interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
 };
+use color_identity_filter_mode::ColorIdentityFilterMode;
 use dioxus::prelude::*;
-use zwipe::domain::card::models::scryfall_data::colors::{Color, Colors};
+use zwipe::domain::card::models::scryfall_data::colors::Color;
 use zwipe::domain::card::models::search_card::card_filter::builder::CardFilterBuilder;
 
 #[component]
@@ -34,7 +37,7 @@ pub fn Mana() -> Element {
     let mut cmc_range_max_string = use_signal(String::new);
 
     let mut selected_colors = use_signal(Vec::<Color>::new);
-    let mut color_mode = use_signal(|| "contains");
+    let mut color_identity_filter_mode = use_signal(|| ColorIdentityFilterMode::default());
 
     let mut try_parse_cmc_range = move || {
         if cmc_range_min_string().is_empty() || cmc_range_max_string.is_empty() {
@@ -57,19 +60,21 @@ pub fn Mana() -> Element {
         let colors = selected_colors();
         if colors.is_empty() {
             filter_builder.write().unset_color_identity_equals();
-            filter_builder.write().unset_color_identity_contains_any();
+            filter_builder.write().unset_color_identity_within();
         } else {
-            let colors_type: Colors = colors.into_iter().collect();
-            if color_mode() == "equals" {
-                filter_builder.write().unset_color_identity_contains_any();
-                filter_builder
-                    .write()
-                    .set_color_identity_equals(colors_type);
-            } else {
-                filter_builder.write().unset_color_identity_equals();
-                filter_builder
-                    .write()
-                    .set_color_identity_contains_any(colors_type);
+            match color_identity_filter_mode() {
+                ColorIdentityFilterMode::Exact => {
+                    filter_builder.write().unset_color_identity_within();
+                    filter_builder
+                        .write()
+                        .set_color_identity_equals(colors.into());
+                }
+                ColorIdentityFilterMode::Within => {
+                    filter_builder.write().unset_color_identity_equals();
+                    filter_builder
+                        .write()
+                        .set_color_identity_within(colors.into());
+                }
             }
         }
     });
@@ -157,19 +162,14 @@ pub fn Mana() -> Element {
                             }
                         }
 
-                        label { class: "label", "color search mode" }
+                        label { class: "label", "color identity filter mode" }
                         button {
                             class: "btn",
                             r#type: "button",
                             onclick: move |_| {
-                                let new_mode = if color_mode() == "equals" {
-                                    "contains"
-                                } else {
-                                    "equals"
-                                };
-                                color_mode.set(new_mode);
+                                color_identity_filter_mode.set(color_identity_filter_mode().toggle());
                             },
-                            "{color_mode()}"
+                            { format!("{}", color_identity_filter_mode().to_string().to_lowercase()) }
                         }
 
                         if let Some(error) = error() {
