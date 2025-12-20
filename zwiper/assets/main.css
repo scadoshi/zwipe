@@ -869,9 +869,36 @@ body {
     color: #1a1d23;
 }
 
+/* =========================
+  specific - mana selection
+=========================== */
+
+.mana-box {
+    padding: 0.5rem 1rem;
+    border: 1px solid #f5f5dc;
+    border-radius: 0.6rem;
+    font-size: 0.9rem;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: #1a1d23;
+    color: #f5f5dc;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.mana-box:hover {
+    transform: translateY(-2px);
+}
+
+.mana-box.selected {
+    background-color: #f5f5dc;
+    color: #1a1d23;
+}
+
 /* ================================
   specific - modal (bottom sheet)
- ================================== */
+================================== */
 
 .modal-backdrop {
     position: fixed;
