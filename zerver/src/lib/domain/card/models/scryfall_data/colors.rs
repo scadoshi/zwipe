@@ -15,18 +15,46 @@ pub enum Color {
     Green,
 }
 
+impl Color {
+    pub fn long_name(&self) -> String {
+        let s = match self {
+            Self::White => "White",
+            Self::Blue => "Blue",
+            Self::Black => "Black",
+            Self::Red => "Red",
+            Self::Green => "Green",
+        };
+        s.to_string()
+    }
+
+    pub fn short_name(&self) -> String {
+        let s = match self {
+            Self::White => "W",
+            Self::Blue => "U",
+            Self::Black => "B",
+            Self::Red => "R",
+            Self::Green => "G",
+        };
+        s.to_string()
+    }
+
+    pub fn all() -> [Self; 5] {
+        [Self::White, Self::Blue, Self::Black, Self::Red, Self::Green]
+    }
+}
+
+impl std::fmt::Display for Color {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.long_name())
+    }
+}
+
 impl Serialize for Color {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        match self {
-            Self::White => "W".serialize(serializer),
-            Self::Blue => "U".serialize(serializer),
-            Self::Black => "B".serialize(serializer),
-            Self::Red => "R".serialize(serializer),
-            Self::Green => "G".serialize(serializer),
-        }
+        self.short_name().serialize(serializer)
     }
 }
 
@@ -66,6 +94,16 @@ impl TryFrom<&str> for Color {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Colors(Vec<Color>);
+
+impl Colors {
+    pub fn to_short_name_vec(&self) -> Vec<String> {
+        self.0.iter().map(|c| c.short_name()).collect()
+    }
+
+    pub fn to_long_name_vec(&self) -> Vec<String> {
+        self.0.iter().map(|c| c.long_name()).collect()
+    }
+}
 
 impl Serialize for Colors {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
