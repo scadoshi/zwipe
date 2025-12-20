@@ -3,6 +3,7 @@ use crate::inbound::ui::components::{
     interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
 };
 use dioxus::prelude::*;
+use zwipe::domain::card::models::scryfall_data::colors::{Color, Colors};
 use zwipe::domain::card::models::search_card::card_filter::builder::CardFilterBuilder;
 
 #[component]
@@ -14,12 +15,6 @@ pub fn Mana() -> Element {
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
 
     let mut error = use_signal(|| None::<String>);
-    /*
-       ✅ pub cmc_equals: Option<f64>,
-       ✅ pub cmc_range: Option<(f64, f64)>,
-       ⚠️ pub color_identity_equals: Option<Colors>,
-       ⚠️ pub color_identity_contains_any: Option<Colors>,
-    */
 
     let mut cmc_equals_string = use_signal(String::new);
     let mut try_parse_cmc_equals = move || {
@@ -37,6 +32,10 @@ pub fn Mana() -> Element {
 
     let mut cmc_range_min_string = use_signal(String::new);
     let mut cmc_range_max_string = use_signal(String::new);
+
+    let mut selected_colors = use_signal(Vec::<Color>::new);
+    let mut color_mode = use_signal(|| "contains");
+
     let mut try_parse_cmc_range = move || {
         if cmc_range_min_string().is_empty() || cmc_range_max_string.is_empty() {
             filter_builder.write().unset_cmc_range();
@@ -53,6 +52,27 @@ pub fn Mana() -> Element {
             error.set(Some("invalid input".to_string()));
         }
     };
+
+    use_effect(move || {
+        let colors = selected_colors();
+        if colors.is_empty() {
+            filter_builder.write().unset_color_identity_equals();
+            filter_builder.write().unset_color_identity_contains_any();
+        } else {
+            let colors_type: Colors = colors.into_iter().collect();
+            if color_mode() == "equals" {
+                filter_builder.write().unset_color_identity_contains_any();
+                filter_builder
+                    .write()
+                    .set_color_identity_equals(colors_type);
+            } else {
+                filter_builder.write().unset_color_identity_equals();
+                filter_builder
+                    .write()
+                    .set_color_identity_contains_any(colors_type);
+            }
+        }
+    });
 
     rsx! {
         Bouncer {
@@ -111,6 +131,45 @@ pub fn Mana() -> Element {
                                     try_parse_cmc_range();
                                 }
                             }
+                        }
+
+                        label { class: "label", "color identity" }
+
+                        div { class: "flex flex-wrap gap-1 mb-2 flex-center",
+                            for color in Color::all() {
+                                div {
+                                    class: if selected_colors().contains(&color) {
+                                        "mana-box selected"
+                                    } else {
+                                        "mana-box"
+                                    },
+                                    onclick: move |_| {
+                                        let mut colors = selected_colors();
+                                        if colors.contains(&color) {
+                                            colors.retain(|c| c != &color);
+                                        } else {
+                                            colors.push(color);
+                                        }
+                                        selected_colors.set(colors);
+                                    },
+                                    { format!("{}", color.to_string().to_lowercase()) }
+                                }
+                            }
+                        }
+
+                        label { class: "label", "color search mode" }
+                        button {
+                            class: "btn",
+                            r#type: "button",
+                            onclick: move |_| {
+                                let new_mode = if color_mode() == "equals" {
+                                    "contains"
+                                } else {
+                                    "equals"
+                                };
+                                color_mode.set(new_mode);
+                            },
+                            "{color_mode()}"
                         }
 
                         if let Some(error) = error() {
