@@ -152,7 +152,7 @@ impl CardRepository for MyPostgres {
         let mut sep: Separated<Postgres, &'static str> = qb.separated(" AND ");
 
         if let Some(query_string) = &request.name_contains() {
-            sep.push("name ILIKE ");
+        sep.push("name ILIKE ");
             sep.push_bind_unseparated(format!("%{}%", query_string));
         }
 
@@ -222,7 +222,7 @@ impl CardRepository for MyPostgres {
             let higher = power_range.0.max(power_range.1);
             sep.push("power ~ '^\\d+$' AND CAST(power AS INT) between ");
             sep.push_bind_unseparated(lower);
-            sep.push("AND ");
+            sep.push_unseparated("AND ");
             sep.push_bind_unseparated(higher);
         }
 
@@ -236,20 +236,21 @@ impl CardRepository for MyPostgres {
             let higher = toughness_range.0.max(toughness_range.1);
             sep.push("toughness ~ '^\\d+$' AND CAST(toughness AS INT) between ");
             sep.push_bind_unseparated(lower);
-            sep.push("AND ");
+            sep.push_unseparated("AND ");
             sep.push_bind_unseparated(higher);
         }
 
         if let Some(colors) = request.color_identity_equals() {
             sep.push("color_identity @> ");
             sep.push_bind_unseparated(colors);
-            sep.push("AND color_identity <@ ");
+            sep.push("color_identity <@ ");
             sep.push_bind_unseparated(colors);
         }
 
         if let Some(colors) = request.color_identity_contains_any() {
-            sep.push("color_identity && ");
-            sep.push_bind_unseparated(colors);
+            let short_names = colors.to_short_name_vec();
+            sep.push("color_identity ?| ");
+            sep.push_bind_unseparated(short_names);
         }
 
         if let Some(query_string) = &request.oracle_text_contains() {
