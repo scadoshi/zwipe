@@ -16,7 +16,7 @@ pub enum Color {
 }
 
 impl Color {
-    pub fn long_name(&self) -> String {
+    pub fn to_long_name(&self) -> String {
         let s = match self {
             Self::White => "White",
             Self::Blue => "Blue",
@@ -27,7 +27,7 @@ impl Color {
         s.to_string()
     }
 
-    pub fn short_name(&self) -> String {
+    pub fn to_short_name(&self) -> String {
         let s = match self {
             Self::White => "W",
             Self::Blue => "U",
@@ -45,7 +45,7 @@ impl Color {
 
 impl std::fmt::Display for Color {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.long_name())
+        write!(f, "{}", self.to_long_name())
     }
 }
 
@@ -54,7 +54,7 @@ impl Serialize for Color {
     where
         S: serde::Serializer,
     {
-        self.short_name().serialize(serializer)
+        self.to_short_name().serialize(serializer)
     }
 }
 
@@ -97,11 +97,31 @@ pub struct Colors(Vec<Color>);
 
 impl Colors {
     pub fn to_short_name_vec(&self) -> Vec<String> {
-        self.0.iter().map(|c| c.short_name()).collect()
+        self.0.iter().map(|c| c.to_short_name()).collect()
     }
 
     pub fn to_long_name_vec(&self) -> Vec<String> {
-        self.0.iter().map(|c| c.long_name()).collect()
+        self.0.iter().map(|c| c.to_long_name()).collect()
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    pub fn contains(&self, color: &Color) -> bool {
+        self.0.contains(color)
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &Color> {
+        self.0.iter()
+    }
+
+    pub fn as_slice(&self) -> &[Color] {
+        self.0.as_slice()
     }
 }
 
@@ -126,5 +146,14 @@ impl<'de> Deserialize<'de> for Colors {
 impl FromIterator<Color> for Colors {
     fn from_iter<T: IntoIterator<Item = Color>>(iter: T) -> Self {
         Colors(iter.into_iter().collect())
+    }
+}
+
+impl<I> From<I> for Colors
+where
+    I: IntoIterator<Item = Color>,
+{
+    fn from(value: I) -> Self {
+        value.into_iter().collect()
     }
 }
