@@ -13,22 +13,22 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Completed SyncMetrics architectural cleanup. Eliminated SyncType enum (Full/Partial distinction), unified to single intelligent delta-sync strategy. Fixed critical metrics tracking bug where empty delta slices created invalid SQL. Database migration removed sync_type column, renamed fields (imported→upserted_count). Sync scheduling simplified from complex monthly/weekly branching to single weekly intelligent sync.
+**Last Updated**: Completed Phase 1 of filter implementation. Combat filter (power/toughness equals + range inputs) and Mana filter (CMC + color identity with W/U/B/R/G toggles) fully functional. Enhanced Color domain with long_name/short_name methods, Display impl for UI, Serialize using short names for API compatibility. Fixed critical JSONB operator bug (changed && to ?| with proper text array conversion). Added CSS .mana-box styling. All 6 commits tracked and documented.
 
-**Current Focus**: Resume filter implementation (Printing, Mana, Stats components). Build card browsing with swipe navigation. Continue Clippy marathon (unwrap elimination, builder patterns).
+**Current Focus**: Test Phase 1 filters in browser. Evaluate next priority: Set filter (requires GET /api/card/sets endpoint) vs Rarity filter (requires Rarity newtype) vs move to card browsing/swiping features.
 
-**Recent Achievement**: Removed 81 net lines while gaining smarter behavior. Single sync type now uses PartialEq-based delta detection comparing all 87 ScryfallData fields. Debugged and fixed metrics tracking: empty delta slices created invalid INSERT statements (no VALUES), causing error handler to skip metrics updates. Added early-return guard for empty deltas preventing SQL generation.
+**Recent Achievement**: Completed 4/6 filter screens (Text, Types, Combat, Mana) with comprehensive power/toughness/color identity filtering. Debugged and fixed PostgreSQL jsonb operator incompatibility - learned ?| requires jsonb on left, text[] on right. Created Colors::to_short_name_vec() for proper SQL binding. Full color names displayed in UI via Display trait while API uses short notation.
 
-**Current Success**: Sync system intelligently detects changes, skips unchanged records, tracks accurate metrics (received/upserted/skipped). Database handles inserts and updates atomically. Scheduling logic simplified. All layers updated (domain, service, repository, binary).
+**Current Success**: Filter system Phase 1 complete with working backend integration. CardFilterBuilder properly syncs across all filter screens via context. Color domain model enhanced with flexible name formatting. SQL queries correctly use PostgreSQL jsonb operators (@>, <@, ?|). Zero compilation errors, ready for browser testing.
 
-**Current Challenge**: Delta comparison includes volatile fields (prices, purchase_uris) that change frequently. May want to exclude these from PartialEq comparison for better efficiency, or accept that price changes trigger full card updates.
+**Current Challenge**: Phase 2 filters blocked on backend work. Set filter needs GET /api/card/sets endpoint for dropdown population. Rarity filter needs Rarity newtype in domain model. Must decide priority: backend work for remaining filters vs move to card browsing/swiping features with current 4 functional filters.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Filter Implementation** - Complete Printing, Mana, and Stats filter components (Text and Types already done)
+1. **Browser Testing - Phase 1 Filters** - Test Combat (power/toughness) and Mana (CMC + color identity) filters with real card data
 2. **Card Browsing Stack** - Implement left/right swipe navigation through filtered card results
-3. **Clippy Marathon - Phase 2: Unwrap Elimination** - Systematically remove all unwrap() calls adding proper error handling
-4. **Clippy Marathon - Phase 3: Builder Patterns** - Refactor SearchCards (17 params) to builder pattern
-5. **Delta Sync Optimization** - Consider excluding volatile fields (prices) from PartialEq for more efficient change detection
+3. **Phase 2 Filter Decision** - Evaluate Set filter (needs backend endpoint) vs Rarity filter (needs newtype) vs defer both
+4. **Clippy Marathon - Phase 2: Unwrap Elimination** - Systematically remove all unwrap() calls adding proper error handling
+5. **Clippy Marathon - Phase 3: Builder Patterns** - Refactor SearchCards (17 params) to builder pattern
 
 ### 🤔 Next Immediate Priorities (Top 5)
 1. **Add Card Integration** - Wire quantity selection and add_card function with copy_max validation
@@ -71,7 +71,8 @@ alwaysApply: true
 - **CORS Configuration**: Complete cross-origin setup for web application integration
 
 ### 🎮 Domain-Specific Implementation
-- **Card Management**: Complete Scryfall integration, comprehensive search with CMC/power/toughness ranges, dual color identity modes, bulk data processing
+- **Card Management**: Complete Scryfall integration, comprehensive search with CMC/power/toughness ranges, dual color identity modes (equals/contains), bulk data processing
+- **Card Filtering UI**: Combat filter (power/toughness equals + range), Mana filter (CMC + color identity W/U/B/R/G toggles), Text filter (name/oracle text), Types filter (basic types grid + searchable other types)
 - **Deck Management**: Full CRUD operations with card composition, cross-domain orchestration, and nested resource API
 - **Auth Domain Security**: Complete user lifecycle operations (username/email updates, account deletion) centralized for security
 - **User Domain Simplification**: Read-only profile access, all mutations moved to auth domain for proper security boundaries
@@ -83,6 +84,9 @@ alwaysApply: true
 - **Fast-fail Authentication**: Enhanced password validation preventing invalid network requests
 - **Dioxus Component Validation**: Secure login with generic error messaging and smart registration with real-time validation
 - **UX-Focused Error Handling**: Security-first login validation vs user-friendly registration feedback patterns
+- **Color Domain Enhancement**: Color::long_name() for UI display, short_name() for API serialization, all() factory method for iteration, Display impl using long names
+- **Colors Collection Methods**: to_short_name_vec() and to_long_name_vec() for SQL query parameter conversion
+- **PostgreSQL JSONB Operators**: Correct usage of @> (contains), <@ (is contained by), ?| (contains any of text[]) for color identity filtering
 - **Swipe Detection System**: Complete touch and mouse event handling with Delta struct for distance/velocity tracking
 - **Direction Resolution**: Threshold-based detection using 50px distance OR 3.0 px/ms velocity with allowed-direction filtering
 - **Cross-Platform Input**: OnTouch and OnMouse traits with proper coordinate system handling and state management

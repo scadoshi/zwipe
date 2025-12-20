@@ -15,22 +15,22 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Completed SyncMetrics architectural cleanup removing SyncType enum entirely. Unified to single intelligent delta-sync strategy with PartialEq-based change detection. Fixed metrics tracking bug where empty deltas created invalid SQL causing metrics loss. Database migration removed sync_type column, renamed metrics for clarity (imported→upserted_count). Scheduling simplified from complex monthly/weekly logic to single weekly intelligent sync.
+**Last Updated**: Completed Phase 1 filter implementation (Combat + Mana). Built power/toughness filtering with equals and range inputs using i32 parsing closures. Implemented color identity filtering with W/U/B/R/G toggles and equals/contains mode button. Enhanced Color domain with long_name/short_name methods and Display impl. Fixed critical PostgreSQL jsonb operator bug - learned ?| requires jsonb ?| text[] not jsonb ?| jsonb. Created Colors::to_short_name_vec() for proper SQL binding. Added CSS .mana-box styling matching .type-box pattern.
 
-**Next Learning Focus**: 
-- Continue filter implementation (Printing, Mana, Stats components)
-- Build card browsing with swipe navigation
-- Continue Clippy Marathon: unwrap elimination, builder patterns
-- Possible optimization: exclude volatile fields (prices) from delta comparison
+**Next Learning Focus**:
+- Browser testing Phase 1 filters with real card data
+- Decide Phase 2 priority (Set/Rarity filters vs card browsing)
+- Continue Clippy Marathon (unwrap elimination, builder patterns)
+- Learn more PostgreSQL operator types and their requirements
 
-**Recent Achievement**: Eliminated 81 net lines while gaining smarter behavior. Removed Full/Partial sync distinction—single sync now intelligently detects deltas using Rust's PartialEq on all 87 ScryfallData fields. Debugged metrics tracking: discovered empty delta slices created invalid SQL (INSERT with no VALUES), error handler wasn't tracking metrics. Fixed with early-return guard checking delta.is_empty() before bulk operations.
+**Recent Achievement**: Completed 4/6 filter screens (Text, Types, Combat, Mana) with full backend integration. Combat filter handles 8 input fields (power/toughness equals + min/max ranges) with proper i32 parsing and error handling. Mana filter includes CMC inputs plus color identity grid with 5 toggleable colors and mode button switching between "equals" and "contains". Successfully debugged PostgreSQL jsonb operators - discovered ?| needs text array on right side, not jsonb. Built Colors collection helpers converting domain types to Vec<String> for SQL parameter binding.
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **Button Component CSS Loading** — Button component styles not applying despite asset!() macro loading CSS from assets/components/button/style.css. Syntax issue in CSS or bundling problem?
+1. **PostgreSQL Operator Type Requirements** — Learning curve on which PostgreSQL operators work with which type combinations (jsonb/text[]/arrays). Need reference for @>, <@, ?|, &&, etc.
 2. **Filter State Persistence** — Long-term pattern: store `Option<CardFilterBuilder>` vs storing finished `CardFilter` and rebuilding a builder on edit.
-3. **Builder Pattern Refactoring** — Best approach for SearchCards (17 params) and SyncMetrics (10 params) to satisfy too_many_arguments without breaking existing code.
-4. **Component Composition Strategy** — When to use sub-components vs inline logic for complex UI elements like filters with multiple fields.
-5. **Resource vs Effect Trade-offs** — When to use resources with effects for side effects vs direct resource reading in RSX for simpler cases.
+3. **Phase 2 Priority Decision** — Backend work for Set/Rarity filters vs moving to card browsing with current 4 filters. Trade-offs: completeness vs momentum.
+4. **Builder Pattern Refactoring** — Best approach for SearchCards (17 params) and SyncMetrics (10 params) to satisfy too_many_arguments without breaking existing code.
+5. **Component Composition Strategy** — When to use sub-components vs inline logic for complex UI elements like filters with multiple fields.
 
 ---
 
@@ -182,6 +182,9 @@ alwaysApply: true
 - **Empty Collection Guards**: Check for empty slices before building SQL to prevent invalid queries (INSERT with no VALUES errors)
 - **Tuple Return Pattern**: Returning (Vec<T>, usize) from functions to communicate both results and metadata (cards + skip count)
 - **QueryBuilder Invalid SQL**: SQLx QueryBuilder with empty VALUES clause creates syntax errors—must guard against empty collections
+- **JSONB Operator Types**: @> and <@ work with jsonb on both sides, ?| requires jsonb ?| text[] for "contains any" queries
+- **Type Conversion for Operators**: Colors::to_short_name_vec() pattern converting domain types to Vec<String> for proper SQL parameter binding
+- **Operator Selection Strategy**: Use @> for exact match (jsonb contains jsonb), ?| for "any of" (jsonb contains any text[])
 
 ### 🌐 Advanced HTTP & Middleware Patterns
 - **Custom Middleware**: AuthenticatedUser extractor with FromRequestParts trait
@@ -420,7 +423,7 @@ alwaysApply: true
 - **HTTP Client Session Patterns**: AuthClient methods handle session validation and refresh automatically
 - *Note: Complete session management system ready for production use*
 
-### 🃏 Card Filtering System & Modular Architecture (Complete Foundation)
+### 🃏 Card Filtering System & Modular Architecture (Phase 1 Complete)
 - **CardType Enum**: Basic MTG card types (Instant, Sorcery, Creature, Enchantment, Artifact, Planeswalker, Land) with Display trait
 - **WithCardTypes Trait**: Trait on Vec<CardType> providing with_all_card_types() factory method for UI population
 - **SearchCards Domain Integration**: Frontend uses backend SearchCards struct directly with type_line_contains_any and card_type_contains_any fields
@@ -430,13 +433,25 @@ alwaysApply: true
 - **Modular Filter Architecture**: Refactored 239-line monolithic filter into 5 focused sub-components (text, types, printing, mana, stats)
 - **Text Filter Component**: Simple name_contains input with direct filter mutation pattern
 - **Types Filter Component**: Basic type grid toggles + chip-based other-types multi-select with searchable dropdown
+- **Combat Filter Component**: Power/toughness equals + range inputs (8 fields total) with i32 parsing closures and error handling
+- **Mana Filter Component**: CMC equals/range + color identity grid (W/U/B/R/G) with equals/contains mode toggle button
+- **Parsing Pattern**: String signals → onblur triggers parsing closure → validates i32/f64 → updates CardFilterBuilder → displays errors
+- **Color Identity UI**: For loop using Color::all() rendering toggle boxes, onclick modifies selected_colors signal
+- **Color Mode Toggle**: Single button cycling between "equals" (exact match) and "contains" (any of) with labeled interface
+- **use_effect Color Sync**: Watches selected_colors and color_mode, converts to Colors type, sets appropriate CardFilterBuilder field
+- **Color Domain Enhancement**: long_name() returns "White"/"Blue"/etc for UI, short_name() returns "W"/"U"/etc for API
+- **Color Display Impl**: Uses long_name() so "{color}" in RSX shows full names automatically
+- **Colors Collection Methods**: to_short_name_vec() for SQL queries, to_long_name_vec() for potential UI needs
 - **Toggle Grid UI**: Always-visible grid of clickable boxes for basic types, onclick toggles card_type_contains_any array
 - **Chip-Based Multi-Select**: Selected other types shown as removable chips, local signal + use_effect syncing to filter.type_line_contains_any
 - **Filtered Dropdown**: Type-to-search input shows top 5 matching subtypes from resource, clicking adds to selected_other_types
 - **Resource Integration**: use_resource calling get_card_types on mount, providing Vec<String> for frontend filtering
 - **Direct vs Reactive Patterns**: Basic types use direct filter mutation (no read/write conflict), other types use local signal (avoid conflict in chip rendering)
 - **Filter Naming Consistency**: Renamed card_filter → filter throughout codebase for cleaner, more consistent naming
-- *Note: Text and Types components complete, Printing/Mana/Stats remain as stubs for next session*
+- **JSONB Operator Debugging**: Fixed color_identity_contains_any from && (array operator) to ?| (jsonb contains any text[])
+- **SQL Type Conversion**: Created to_short_name_vec() to convert Colors → Vec<String> for proper text[] parameter binding
+- **CSS .mana-box Styling**: Matches .type-box pattern with selected state, hover effects, flex-wrap for responsive layout
+- *Note: Phase 1 complete (Text, Types, Combat, Mana), Phase 2 blocked (Set needs endpoint, Rarity needs newtype)*
 
 ### 🃏 Deck Card Management & Modular Filter Architecture
 - **AddDeckCard Screen Foundation**: Built with card display, empty state ("no cards yet"), and filter navigation
