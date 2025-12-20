@@ -152,7 +152,7 @@ impl CardRepository for MyPostgres {
         let mut sep: Separated<Postgres, &'static str> = qb.separated(" AND ");
 
         if let Some(query_string) = &request.name_contains() {
-        sep.push("name ILIKE ");
+            sep.push("name ILIKE ");
             sep.push_bind_unseparated(format!("%{}%", query_string));
         }
 
@@ -247,10 +247,34 @@ impl CardRepository for MyPostgres {
             sep.push_bind_unseparated(colors);
         }
 
-        if let Some(colors) = request.color_identity_contains_any() {
-            let short_names = colors.to_short_name_vec();
-            sep.push("color_identity ?| ");
-            sep.push_bind_unseparated(short_names);
+        if let Some(colors) = request.color_identity_within() {
+            let all_combinations = (1..1 << colors.len()).fold(
+                Vec::<Vec<String>>::new(),
+                |mut all_combinations, bits| {
+                    all_combinations.push(
+                        colors
+                            .iter()
+                            .enumerate()
+                            .filter(|(i, _)| bits & (1 << i) != 0)
+                            .map(|(_, c)| c.to_short_name())
+                            .collect(),
+                    );
+                    all_combinations
+                },
+            );
+
+            sep.push("(");
+            all_combinations
+                .into_iter()
+                .enumerate()
+                .for_each(|(i, subset)| {
+                    if i > 0 {
+                        sep.push_unseparated(" OR ");
+                    }
+                    sep.push_unseparated("color_identity <@ ");
+                    sep.push_bind_unseparated(subset);
+                });
+            sep.push_unseparated(")");
         }
 
         if let Some(query_string) = &request.oracle_text_contains() {
