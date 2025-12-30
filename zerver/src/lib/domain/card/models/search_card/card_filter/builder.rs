@@ -2,7 +2,10 @@ pub mod getters;
 pub mod setters;
 
 use crate::domain::card::models::{
-    scryfall_data::colors::{Color, Colors},
+    scryfall_data::{
+        colors::{Color, Colors},
+        rarity::Rarities,
+    },
     search_card::{
         card_filter::{error::InvalidCardFilter, CardFilter},
         card_type::CardType,
@@ -23,7 +26,7 @@ pub struct CardFilterBuilder {
     color_identity_within: Option<Colors>,
     color_identity_equals: Option<Colors>,
     // rarity
-    rarity_contains: Option<String>,
+    rarity_equals_any: Option<Rarities>,
     // set
     set_contains: Option<String>,
     // text
@@ -49,7 +52,7 @@ impl Default for CardFilterBuilder {
             cmc_range: None,
             color_identity_within: None,
             color_identity_equals: None,
-            rarity_contains: None,
+            rarity_equals_any: None,
             set_contains: None,
             name_contains: None,
             oracle_text_contains: None,
@@ -129,9 +132,14 @@ impl CardFilterBuilder {
         }
     }
 
-    pub fn with_rarity_contains(rarity_contains: impl Into<String>) -> CardFilterBuilder {
+    pub fn with_rarity_equals_any(rarity_equals_any: Rarities) -> CardFilterBuilder {
+        let rarity_equals_any = if rarity_equals_any.is_empty() {
+            None
+        } else {
+            Some(rarity_equals_any)
+        };
         CardFilterBuilder {
-            rarity_contains: Some(rarity_contains.into()),
+            rarity_equals_any,
             ..CardFilterBuilder::default()
         }
     }
@@ -215,7 +223,7 @@ impl CardFilterBuilder {
             cmc_range: self.cmc_range,
             color_identity_within: self.color_identity_within.clone(),
             color_identity_equals: self.color_identity_equals.clone(),
-            rarity_contains: self.rarity_contains.clone(),
+            rarity_equals_any: self.rarity_equals_any.clone(),
             set_contains: self.set_contains.clone(),
             name_contains: self.name_contains.clone(),
             oracle_text_contains: self.oracle_text_contains.clone(),

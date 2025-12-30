@@ -1,4 +1,5 @@
 use super::{CardFilterBuilder, CardType, Colors};
+use crate::domain::card::models::scryfall_data::rarity::Rarities;
 
 impl CardFilterBuilder {
     // text
@@ -80,14 +81,17 @@ impl CardFilterBuilder {
         self
     }
 
-    pub fn set_rarity_contains(&mut self, rarity_contains: impl Into<String>) -> &mut Self {
-        let s = rarity_contains.into();
-        self.rarity_contains = if s.is_empty() { None } else { Some(s) };
+    pub fn set_rarity_equals_any(&mut self, rarity_equals_any: Rarities) -> &mut Self {
+        self.rarity_equals_any = if rarity_equals_any.is_empty() {
+            None
+        } else {
+            Some(rarity_equals_any)
+        };
         self
     }
 
-    pub fn unset_rarity_contains(&mut self) -> &mut Self {
-        self.rarity_contains = None;
+    pub fn unset_rarity_equals_any(&mut self) -> &mut Self {
+        self.rarity_equals_any = None;
         self
     }
 

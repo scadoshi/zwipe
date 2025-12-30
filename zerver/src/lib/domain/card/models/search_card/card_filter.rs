@@ -3,7 +3,11 @@ pub mod error;
 pub mod getters;
 
 use crate::domain::card::models::{
-    scryfall_data::colors::Colors, search_card::card_type::CardType,
+    scryfall_data::{
+        colors::Colors,
+        rarity::Rarities,
+    },
+    search_card::card_type::CardType,
 };
 use serde::{Deserialize, Serialize};
 
@@ -20,7 +24,7 @@ pub struct CardFilter {
     color_identity_within: Option<Colors>,
     color_identity_equals: Option<Colors>,
     // printing
-    rarity_contains: Option<String>,
+    rarity_equals_any: Option<Rarities>,
     set_contains: Option<String>,
     // text
     name_contains: Option<String>,
