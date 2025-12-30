@@ -11,7 +11,6 @@ const SUBSTRING_BANNED: &[&str] = &[
     "chink",
     "wetback",
     "beaner",
-    "sandnigger",
     // abuse
     "rapist",
     "pedophile",
