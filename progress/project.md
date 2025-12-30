@@ -13,20 +13,20 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Completed GET /api/card/sets endpoint (full stack). Built domain error type, port definitions, service delegation, SQLx implementation with SELECT DISTINCT set_name, and frontend client trait. Pragmatic decision to return Vec<String> without newtype wrapper - set names are just display strings from Scryfall with no validation needed.
+**Last Updated**: Completed Rarity implementation with full SQLx integration. Built Rarity enum (6 variants) and Rarities newtype wrapper, implemented custom SQLx Type/Encode/Decode traits, integrated into CardFilter with rarity_equals_any field using PostgreSQL = ANY() operator. Migrated entire database schema from VARCHAR to TEXT for PostgreSQL best practices. Fixed Scryfall deserialization with custom Serialize/Deserialize using TryFrom for flexible parsing.
 
-**Current Focus**: Build Rarity newtype for Phase 2 filters. Will require domain type definition, database serialization (SQLx Encode/Decode/Type traits), and integration into CardFilter/CardFilterBuilder.
+**Current Focus**: Wire filter endpoints into frontend UI. Implement Set filter dropdown, test Phase 1 filters (Text, Types, Combat, Mana) with real card data, begin card browsing navigation stack.
 
-**Recent Achievement**: Completed Set endpoint following established patterns throughout the stack. Domain error → port definition → repository implementation → service delegation → frontend client. Clean execution demonstrating solid grasp of hexagonal architecture workflow.
+**Recent Achievement**: Independently debugged and resolved complex Rarity implementation challenges - custom Serde implementation for Scryfall data parsing, SQLx Type compatibility (VARCHAR vs TEXT), and .as_ref() vs .as_deref() Option semantics. Complete end-to-end implementation from domain type through database storage to query integration, tested with full card sync (35k+ cards).
 
-**Current Success**: 5/6 filter backend endpoints complete (Text, Types, Combat, Mana, Set). Set endpoint ready for UI integration. Filter system architecture proven and repeatable.
+**Current Success**: All 6 filter backend endpoints complete (Text, Types, Combat, Mana, Set, Rarity). Complete filter system architecture with PostgreSQL ANY(), ILIKE, BETWEEN, JSONB operators. Ready for frontend UI integration.
 
-**Current Challenge**: Rarity newtype implementation. Need to define enum variants (Common, Uncommon, Rare, Mythic), implement SQLx traits for database serialization, and wire through CardFilter for rarity-based filtering.
+**Current Challenge**: Frontend filter UI integration. Need to build filter screens with proper state management, wire backend endpoints, and test with real card data to validate complete filter workflow.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Rarity Newtype Implementation** - Build Rarity enum (Common/Uncommon/Rare/Mythic) with SQLx Encode/Decode/Type traits for database serialization
-2. **Set Filter UI** - Wire GET /api/card/sets endpoint into filter component with searchable dropdown
-3. **Browser Testing - Phase 1 Filters** - Test Combat (power/toughness) and Mana (CMC + color identity) filters with real card data
+1. **Set Filter UI** - Wire GET /api/card/sets endpoint into filter component with searchable dropdown
+2. **Rarity Filter UI** - Build rarity selection component with Common/Uncommon/Rare/Mythic/Bonus/Special toggles
+3. **Browser Testing - Phase 1 Filters** - Test all 6 filters (Text, Types, Combat, Mana, Set, Rarity) with real card data
 4. **Card Browsing Stack** - Implement left/right swipe navigation through filtered card results
 5. **Clippy Marathon - Phase 2: Unwrap Elimination** - Systematically remove all unwrap() calls adding proper error handling
 
@@ -88,6 +88,9 @@ alwaysApply: true
 - **Colors Collection Methods**: to_short_name_vec() and to_long_name_vec() for SQL query parameter conversion
 - **PostgreSQL JSONB Operators**: Correct usage of @> (contains), <@ (is contained by), ?| (contains any of text[]) for color identity filtering
 - **Get Sets Endpoint**: Complete GET /api/card/sets returning Vec<String> of distinct set names, full stack implementation (domain error, ports, service, SQLx, frontend client)
+- **Rarity Domain Type**: Complete Rarity enum (Common/Uncommon/Rare/Mythic/Bonus/Special) with custom SQLx Type/Encode/Decode traits, Rarities newtype wrapper with collection methods (to_short_names, to_long_names), custom Serialize/Deserialize using TryFrom for flexible Scryfall parsing
+- **Rarity Filter Integration**: CardFilter rarity_equals_any field using PostgreSQL = ANY() operator for efficient multi-rarity queries, complete integration through CardFilterBuilder
+- **PostgreSQL Type Migration**: Migrated entire scryfall_data schema from VARCHAR to TEXT for PostgreSQL best practices and SQLx type compatibility
 - **Swipe Detection System**: Complete touch and mouse event handling with Delta struct for distance/velocity tracking
 - **Direction Resolution**: Threshold-based detection using 50px distance OR 3.0 px/ms velocity with allowed-direction filtering
 - **Cross-Platform Input**: OnTouch and OnMouse traits with proper coordinate system handling and state management

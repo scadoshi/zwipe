@@ -15,22 +15,22 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Completed GET /api/card/sets endpoint (full stack). Built domain error type, port definitions (CardRepository + CardService), SQLx implementation with SELECT DISTINCT set_name, service delegation, and frontend client trait. Pragmatic decision to skip newtype - set names are display strings from Scryfall with no validation needed.
+**Last Updated**: Completed Rarity implementation with full SQLx integration. Built Rarity enum with custom Type/Encode/Decode traits, Rarities newtype wrapper, integrated into CardFilter with PostgreSQL = ANY() operator. Independently debugged and resolved Scryfall deserialization (custom Serialize/Deserialize using TryFrom), SQLx type compatibility (VARCHAR vs TEXT migration), and Option semantics (.as_ref() vs .as_deref()). Tested with full 35k+ card sync.
 
 **Next Learning Focus**:
-- Build Rarity newtype with SQLx Encode/Decode/Type trait implementations
-- Learn custom enum serialization patterns for PostgreSQL
-- Wire Set endpoint into filter UI component
-- Browser test Phase 1 filters with real card data
+- Wire filter endpoints into frontend UI components
+- Build Set and Rarity filter UI screens with proper state management
+- Test complete filter workflow with real card data
+- Implement card browsing navigation with left/right swipe
 
-**Recent Achievement**: Completed Set endpoint following established hexagonal architecture patterns. Domain error → port definition → repository implementation → service delegation → frontend client. Clean execution without guidance, demonstrating solid grasp of the full-stack workflow. Made pragmatic call to return Vec<String> instead of creating unnecessary Set newtype.
+**Recent Achievement**: Independently implemented complete Rarity domain type from scratch - designed enum structure, implemented SQLx traits, debugged type compatibility issues, fixed Scryfall parsing with custom Serde, and migrated database schema. Demonstrated solid understanding of SQLx type system, custom serialization patterns, and full-stack debugging through domain → database → external API layers.
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **SQLx Custom Enum Serialization** — How to implement Encode/Decode/Type traits for Rarity enum. Need to understand derive macros vs manual implementation for PostgreSQL text storage.
-2. **PostgreSQL Operator Type Requirements** — Learning curve on which PostgreSQL operators work with which type combinations (jsonb/text[]/arrays). Need reference for @>, <@, ?|, &&, etc.
-3. **Filter State Persistence** — Long-term pattern: store `Option<CardFilterBuilder>` vs storing finished `CardFilter` and rebuilding a builder on edit.
-4. **Builder Pattern Refactoring** — Best approach for SearchCards (17 params) and SyncMetrics (10 params) to satisfy too_many_arguments without breaking existing code.
-5. **Component Composition Strategy** — When to use sub-components vs inline logic for complex UI elements like filters with multiple fields.
+1. **PostgreSQL Operator Type Requirements** — Learning curve on which PostgreSQL operators work with which type combinations (jsonb/text[]/arrays). Need reference for @>, <@, ?|, &&, etc.
+2. **Filter State Persistence** — Long-term pattern: store `Option<CardFilterBuilder>` vs storing finished `CardFilter` and rebuilding a builder on edit.
+3. **Builder Pattern Refactoring** — Best approach for SearchCards (17 params) and SyncMetrics (10 params) to satisfy too_many_arguments without breaking existing code.
+4. **Component Composition Strategy** — When to use sub-components vs inline logic for complex UI elements like filters with multiple fields.
+5. **Dioxus Resource Patterns** — When to use use_resource vs use_effect vs use_future for data fetching, and how to avoid reactivity loops with proper dependency management.
 
 ---
 
@@ -186,6 +186,12 @@ alwaysApply: true
 - **JSONB Operator Types**: @> and <@ work with jsonb on both sides, ?| requires jsonb ?| text[] for "contains any" queries
 - **Type Conversion for Operators**: Colors::to_short_name_vec() pattern converting domain types to Vec<String> for proper SQL parameter binding
 - **Operator Selection Strategy**: Use @> for exact match (jsonb contains jsonb), ?| for "any of" (jsonb contains any text[])
+- **SQLx Custom Enum Serialization**: Manual implementation of Type/Encode/Decode traits for enums, type_info() declares PostgreSQL type, encode_by_ref() converts to database format, decode() parses from database
+- **PostgreSQL = ANY() Pattern**: Using = ANY(ARRAY[...]) for efficient multi-value equality checks, SQLx automatically encodes Vec<T> to PostgreSQL arrays
+- **Custom Serde for Enums**: Implementing custom Serialize/Deserialize using TryFrom for flexible parsing (case-insensitive, multiple formats), avoiding derive limitations
+- **.as_ref() vs .as_deref() Semantics**: .as_ref() converts Option<T> → Option<&T> (keeps wrapper), .as_deref() converts Option<T> → Option<&T::Target> (uses Deref trait), crucial for Option<Newtype> handling
+- **VARCHAR vs TEXT in PostgreSQL**: Functionally identical types, TEXT preferred for modern PostgreSQL (no length limits, more flexible), VARCHAR legacy compatibility
+- **SQLx Type Compatibility**: Type impl must exactly match database column type (text vs varchar), SQLx strictly enforces type matching for safety
 
 ### 🌐 Advanced HTTP & Middleware Patterns
 - **Custom Middleware**: AuthenticatedUser extractor with FromRequestParts trait
