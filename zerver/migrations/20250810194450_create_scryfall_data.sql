@@ -9,7 +9,7 @@ CREATE TABLE scryfall_data (
     multiverse_ids INT[],
     tcgplayer_id INT,
     tcgplayer_etched_id INT UNIQUE,
-    cardmarket_id INT UNIQUE,
+    cardmarket_id INT,
     object VARCHAR NOT NULL,
     layout VARCHAR NOT NULL,
     oracle_id UUID,
