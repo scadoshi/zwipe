@@ -5,6 +5,7 @@ pub mod get_scryfall_data;
 pub mod image_uris;
 pub mod legalities;
 pub mod prices;
+pub mod rarity;
 
 use all_parts::AllParts;
 use card_faces::CardFaces;
@@ -15,6 +16,8 @@ use prices::Prices;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
+
+use crate::domain::card::models::scryfall_data::rarity::Rarity;
 
 // ======
 //  main
@@ -108,7 +111,7 @@ pub struct ScryfallData {
     pub promo: bool,
     pub promo_types: Option<Vec<String>>,
     pub purchase_uris: Option<serde_json::Value>,
-    pub rarity: String,
+    pub rarity: Rarity,
     pub related_uris: serde_json::Value,
     pub released_at: chrono::NaiveDate,
     pub reprint: bool,

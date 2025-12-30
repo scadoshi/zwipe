@@ -275,7 +275,7 @@ impl BindScryfallDataFields for QueryBuilder<'_, Postgres> {
         self.push(", ");
         self.push_bind(card.purchase_uris.clone());
         self.push(", ");
-        self.push_bind(card.rarity.clone());
+        self.push_bind(card.rarity);
         self.push(", ");
         self.push_bind(card.related_uris.clone());
         self.push(", ");
