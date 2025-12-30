@@ -4,3 +4,4 @@ pub mod colors;
 pub mod image_uris;
 pub mod legalities;
 pub mod prices;
+pub mod rarity;
