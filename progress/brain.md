@@ -15,20 +15,20 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Completed Phase 1 filter implementation (Combat + Mana). Built power/toughness filtering with equals and range inputs using i32 parsing closures. Implemented color identity filtering with W/U/B/R/G toggles and equals/contains mode button. Enhanced Color domain with long_name/short_name methods and Display impl. Fixed critical PostgreSQL jsonb operator bug - learned ?| requires jsonb ?| text[] not jsonb ?| jsonb. Created Colors::to_short_name_vec() for proper SQL binding. Added CSS .mana-box styling matching .type-box pattern.
+**Last Updated**: Completed GET /api/card/sets endpoint (full stack). Built domain error type, port definitions (CardRepository + CardService), SQLx implementation with SELECT DISTINCT set_name, service delegation, and frontend client trait. Pragmatic decision to skip newtype - set names are display strings from Scryfall with no validation needed.
 
 **Next Learning Focus**:
-- Browser testing Phase 1 filters with real card data
-- Decide Phase 2 priority (Set/Rarity filters vs card browsing)
-- Continue Clippy Marathon (unwrap elimination, builder patterns)
-- Learn more PostgreSQL operator types and their requirements
+- Build Rarity newtype with SQLx Encode/Decode/Type trait implementations
+- Learn custom enum serialization patterns for PostgreSQL
+- Wire Set endpoint into filter UI component
+- Browser test Phase 1 filters with real card data
 
-**Recent Achievement**: Completed 4/6 filter screens (Text, Types, Combat, Mana) with full backend integration. Combat filter handles 8 input fields (power/toughness equals + min/max ranges) with proper i32 parsing and error handling. Mana filter includes CMC inputs plus color identity grid with 5 toggleable colors and mode button switching between "equals" and "contains". Successfully debugged PostgreSQL jsonb operators - discovered ?| needs text array on right side, not jsonb. Built Colors collection helpers converting domain types to Vec<String> for SQL parameter binding.
+**Recent Achievement**: Completed Set endpoint following established hexagonal architecture patterns. Domain error → port definition → repository implementation → service delegation → frontend client. Clean execution without guidance, demonstrating solid grasp of the full-stack workflow. Made pragmatic call to return Vec<String> instead of creating unnecessary Set newtype.
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **PostgreSQL Operator Type Requirements** — Learning curve on which PostgreSQL operators work with which type combinations (jsonb/text[]/arrays). Need reference for @>, <@, ?|, &&, etc.
-2. **Filter State Persistence** — Long-term pattern: store `Option<CardFilterBuilder>` vs storing finished `CardFilter` and rebuilding a builder on edit.
-3. **Phase 2 Priority Decision** — Backend work for Set/Rarity filters vs moving to card browsing with current 4 filters. Trade-offs: completeness vs momentum.
+1. **SQLx Custom Enum Serialization** — How to implement Encode/Decode/Type traits for Rarity enum. Need to understand derive macros vs manual implementation for PostgreSQL text storage.
+2. **PostgreSQL Operator Type Requirements** — Learning curve on which PostgreSQL operators work with which type combinations (jsonb/text[]/arrays). Need reference for @>, <@, ?|, &&, etc.
+3. **Filter State Persistence** — Long-term pattern: store `Option<CardFilterBuilder>` vs storing finished `CardFilter` and rebuilding a builder on edit.
 4. **Builder Pattern Refactoring** — Best approach for SearchCards (17 params) and SyncMetrics (10 params) to satisfy too_many_arguments without breaking existing code.
 5. **Component Composition Strategy** — When to use sub-components vs inline logic for complex UI elements like filters with multiple fields.
 
@@ -55,6 +55,7 @@ alwaysApply: true
 - **Pragmatic API Design**: Route functions over constants when it preserves readability without adding ceremony
 - **Domain Modeling Process**: Request types, error types, response types, and port definitions before implementation
 - **Newtype Pattern**: Type-safe wrappers (RefreshToken, AccessToken) with validation and domain-specific methods
+- **Pragmatic Newtype Judgment**: Knowing when newtypes add value (validation, type safety, domain methods) vs unnecessary ceremony (Set names are just display strings)
 - **Modular File Organization**: Per-operation domain model files, error/models/helpers SQLx modules, separated HTTP handlers
 - **Ownership Validation Patterns**: Trait-based ownership checking (OwnsDeck) preventing unauthorized resource access
 - **Ownership Bug Patterns**: Recognizing inverted authorization logic from missing negation in ownership checks
@@ -451,7 +452,9 @@ alwaysApply: true
 - **JSONB Operator Debugging**: Fixed color_identity_contains_any from && (array operator) to ?| (jsonb contains any text[])
 - **SQL Type Conversion**: Created to_short_name_vec() to convert Colors → Vec<String> for proper text[] parameter binding
 - **CSS .mana-box Styling**: Matches .type-box pattern with selected state, hover effects, flex-wrap for responsive layout
-- *Note: Phase 1 complete (Text, Types, Combat, Mana), Phase 2 blocked (Set needs endpoint, Rarity needs newtype)*
+- **Get Sets Endpoint**: Full stack implementation (domain error, ports, service, SQLx with SELECT DISTINCT set_name, frontend client) returning Vec<String>
+- **Pragmatic Newtype Decisions**: Recognized when newtypes add value (validation, type safety) vs unnecessary ceremony (Set names are just display strings)
+- *Note: Phase 1 complete (Text, Types, Combat, Mana), Set endpoint done, Rarity newtype next*
 
 ### 🃏 Deck Card Management & Modular Filter Architecture
 - **AddDeckCard Screen Foundation**: Built with card display, empty state ("no cards yet"), and filter navigation

@@ -13,22 +13,22 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Completed Phase 1 of filter implementation. Combat filter (power/toughness equals + range inputs) and Mana filter (CMC + color identity with W/U/B/R/G toggles) fully functional. Enhanced Color domain with long_name/short_name methods, Display impl for UI, Serialize using short names for API compatibility. Fixed critical JSONB operator bug (changed && to ?| with proper text array conversion). Added CSS .mana-box styling. All 6 commits tracked and documented.
+**Last Updated**: Completed GET /api/card/sets endpoint (full stack). Built domain error type, port definitions, service delegation, SQLx implementation with SELECT DISTINCT set_name, and frontend client trait. Pragmatic decision to return Vec<String> without newtype wrapper - set names are just display strings from Scryfall with no validation needed.
 
-**Current Focus**: Test Phase 1 filters in browser. Evaluate next priority: Set filter (requires GET /api/card/sets endpoint) vs Rarity filter (requires Rarity newtype) vs move to card browsing/swiping features.
+**Current Focus**: Build Rarity newtype for Phase 2 filters. Will require domain type definition, database serialization (SQLx Encode/Decode/Type traits), and integration into CardFilter/CardFilterBuilder.
 
-**Recent Achievement**: Completed 4/6 filter screens (Text, Types, Combat, Mana) with comprehensive power/toughness/color identity filtering. Debugged and fixed PostgreSQL jsonb operator incompatibility - learned ?| requires jsonb on left, text[] on right. Created Colors::to_short_name_vec() for proper SQL binding. Full color names displayed in UI via Display trait while API uses short notation.
+**Recent Achievement**: Completed Set endpoint following established patterns throughout the stack. Domain error → port definition → repository implementation → service delegation → frontend client. Clean execution demonstrating solid grasp of hexagonal architecture workflow.
 
-**Current Success**: Filter system Phase 1 complete with working backend integration. CardFilterBuilder properly syncs across all filter screens via context. Color domain model enhanced with flexible name formatting. SQL queries correctly use PostgreSQL jsonb operators (@>, <@, ?|). Zero compilation errors, ready for browser testing.
+**Current Success**: 5/6 filter backend endpoints complete (Text, Types, Combat, Mana, Set). Set endpoint ready for UI integration. Filter system architecture proven and repeatable.
 
-**Current Challenge**: Phase 2 filters blocked on backend work. Set filter needs GET /api/card/sets endpoint for dropdown population. Rarity filter needs Rarity newtype in domain model. Must decide priority: backend work for remaining filters vs move to card browsing/swiping features with current 4 functional filters.
+**Current Challenge**: Rarity newtype implementation. Need to define enum variants (Common, Uncommon, Rare, Mythic), implement SQLx traits for database serialization, and wire through CardFilter for rarity-based filtering.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Browser Testing - Phase 1 Filters** - Test Combat (power/toughness) and Mana (CMC + color identity) filters with real card data
-2. **Card Browsing Stack** - Implement left/right swipe navigation through filtered card results
-3. **Phase 2 Filter Decision** - Evaluate Set filter (needs backend endpoint) vs Rarity filter (needs newtype) vs defer both
-4. **Clippy Marathon - Phase 2: Unwrap Elimination** - Systematically remove all unwrap() calls adding proper error handling
-5. **Clippy Marathon - Phase 3: Builder Patterns** - Refactor SearchCards (17 params) to builder pattern
+1. **Rarity Newtype Implementation** - Build Rarity enum (Common/Uncommon/Rare/Mythic) with SQLx Encode/Decode/Type traits for database serialization
+2. **Set Filter UI** - Wire GET /api/card/sets endpoint into filter component with searchable dropdown
+3. **Browser Testing - Phase 1 Filters** - Test Combat (power/toughness) and Mana (CMC + color identity) filters with real card data
+4. **Card Browsing Stack** - Implement left/right swipe navigation through filtered card results
+5. **Clippy Marathon - Phase 2: Unwrap Elimination** - Systematically remove all unwrap() calls adding proper error handling
 
 ### 🤔 Next Immediate Priorities (Top 5)
 1. **Add Card Integration** - Wire quantity selection and add_card function with copy_max validation
@@ -87,6 +87,7 @@ alwaysApply: true
 - **Color Domain Enhancement**: Color::long_name() for UI display, short_name() for API serialization, all() factory method for iteration, Display impl using long names
 - **Colors Collection Methods**: to_short_name_vec() and to_long_name_vec() for SQL query parameter conversion
 - **PostgreSQL JSONB Operators**: Correct usage of @> (contains), <@ (is contained by), ?| (contains any of text[]) for color identity filtering
+- **Get Sets Endpoint**: Complete GET /api/card/sets returning Vec<String> of distinct set names, full stack implementation (domain error, ports, service, SQLx, frontend client)
 - **Swipe Detection System**: Complete touch and mouse event handling with Delta struct for distance/velocity tracking
 - **Direction Resolution**: Threshold-based detection using 50px distance OR 3.0 px/ms velocity with allowed-direction filtering
 - **Cross-Platform Input**: OnTouch and OnMouse traits with proper coordinate system handling and state management
