@@ -6,6 +6,7 @@ pub mod sync_metrics;
 
 use crate::domain::card::models::{
     create_card::CreateCardError,
+    get_sets::GetSetsError,
     scryfall_data::get_scryfall_data::{GetScryfallData, GetScryfallDataError},
     search_card::{card_filter::CardFilter, error::SearchCardsError},
     Card,
@@ -337,6 +338,16 @@ impl CardRepository for MyPostgres {
         .flatten()
         .collect();
         Ok(card_types)
+    }
+
+    async fn get_sets(&self) -> Result<Vec<String>, GetSetsError> {
+        let sets: Vec<String> =
+            query_scalar!("SELECT DISTINCT set_name FROM scryfall_data ORDER BY set_name")
+                .fetch_all(&self.pool)
+                .await?
+                .into_iter()
+                .collect();
+        Ok(sets)
     }
 
     async fn get_card_profile_with_id(
