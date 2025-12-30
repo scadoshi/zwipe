@@ -22,7 +22,7 @@ impl Encode<'_, Postgres> for Colors {
         &self,
         buf: &mut <Postgres as sqlx::Database>::ArgumentBuffer<'_>,
     ) -> Result<IsNull, sqlx::error::BoxDynError> {
-        let short_names: Vec<String> = self.to_short_name_vec();
+        let short_names: Vec<String> = self.to_short_names();
         short_names.encode(buf)
     }
 }
@@ -38,6 +38,6 @@ impl Decode<'_, Postgres> for Colors {
             .collect();
         colors
             .map(Colors::from)
-            .map_err(|_| "Invalid color value in database".into())
+            .map_err(|_| "invalid color value in database".into())
     }
 }

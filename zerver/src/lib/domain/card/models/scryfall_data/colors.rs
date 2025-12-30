@@ -92,15 +92,22 @@ impl TryFrom<&str> for Color {
     }
 }
 
+impl TryFrom<String> for Color {
+    type Error = InvalidColor;
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::try_from(value.as_ref())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Colors(Vec<Color>);
 
 impl Colors {
-    pub fn to_short_name_vec(&self) -> Vec<String> {
+    pub fn to_short_names(&self) -> Vec<String> {
         self.0.iter().map(|c| c.to_short_name()).collect()
     }
 
-    pub fn to_long_name_vec(&self) -> Vec<String> {
+    pub fn to_long_names(&self) -> Vec<String> {
         self.0.iter().map(|c| c.to_long_name()).collect()
     }
 
@@ -125,15 +132,6 @@ impl Colors {
     }
 }
 
-impl Serialize for Colors {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        self.0.serialize(serializer)
-    }
-}
-
 impl<'de> Deserialize<'de> for Colors {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -143,17 +141,26 @@ impl<'de> Deserialize<'de> for Colors {
     }
 }
 
-impl FromIterator<Color> for Colors {
-    fn from_iter<T: IntoIterator<Item = Color>>(iter: T) -> Self {
-        Colors(iter.into_iter().collect())
-    }
-}
-
 impl<I> From<I> for Colors
 where
     I: IntoIterator<Item = Color>,
 {
     fn from(value: I) -> Self {
         value.into_iter().collect()
+    }
+}
+
+impl Serialize for Colors {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.0.serialize(serializer)
+    }
+}
+
+impl FromIterator<Color> for Colors {
+    fn from_iter<T: IntoIterator<Item = Color>>(iter: T) -> Self {
+        Colors(iter.into_iter().collect())
     }
 }
