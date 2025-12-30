@@ -194,9 +194,10 @@ impl CardRepository for MyPostgres {
             sep.push_bind_unseparated(format!("%{}%", query_string));
         }
 
-        if let Some(query_string) = &request.rarity_contains() {
-            sep.push("rarity ILIKE ");
-            sep.push_bind_unseparated(format!("%{}%", query_string));
+        if let Some(rarities) = request.rarity_equals_any() {
+            sep.push("rarity = ANY(");
+            sep.push_bind_unseparated(rarities);
+            sep.push_unseparated(")");
         }
 
         if let Some(query_string) = request.cmc_equals() {

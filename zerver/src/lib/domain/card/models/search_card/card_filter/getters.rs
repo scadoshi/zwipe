@@ -1,5 +1,8 @@
 use crate::domain::card::models::{
-    scryfall_data::colors::Colors,
+    scryfall_data::{
+        colors::Colors,
+        rarity::Rarities,
+    },
     search_card::{card_filter::CardFilter, card_type::CardType},
 };
 
@@ -31,8 +34,8 @@ impl CardFilter {
         self.set_contains.as_deref()
     }
 
-    pub fn rarity_contains(&self) -> Option<&str> {
-        self.rarity_contains.as_deref()
+    pub fn rarity_equals_any(&self) -> Option<&Rarities> {
+        self.rarity_equals_any.as_ref()
     }
 
     // mana
