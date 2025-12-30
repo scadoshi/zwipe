@@ -136,22 +136,22 @@ else
 fi
 
 # Check GitHub CLI authentication
-print_status "Checking GitHub authentication..."
-if ! gh auth status &> /dev/null; then
-    print_warning "Not authenticated with GitHub CLI"
-    echo "🔐 You need to authenticate with GitHub to clone the repository."
-    echo "Starting GitHub CLI authentication process..."
-    gh auth login
-    
-    # Verify authentication worked
-    if ! gh auth status &> /dev/null; then
-        print_error "GitHub authentication failed. Please try again manually with 'gh auth login'"
-        exit 1
-    fi
-    print_status "GitHub authentication successful!"
-else
-    print_status "Already authenticated with GitHub CLI"
-fi
+# print_status "Checking GitHub authentication..."
+# if ! gh auth status &> /dev/null; then
+#     print_warning "Not authenticated with GitHub CLI"
+#     echo "🔐 You need to authenticate with GitHub to clone the repository."
+#     echo "Starting GitHub CLI authentication process..."
+#     gh auth login
+#
+#     # Verify authentication worked
+#     if ! gh auth status &> /dev/null; then
+#         print_error "GitHub authentication failed. Please try again manually with 'gh auth login'"
+#         exit 1
+#     fi
+#     print_status "GitHub authentication successful!"
+# else
+#     print_status "Already authenticated with GitHub CLI"
+# fi
 
 # Function to find project root reliably
 find_project_root() {
@@ -270,13 +270,3 @@ echo "   - Primary: dx serve --platform mobile (native mobile experience)"
 echo "   - Fallback: dx serve --platform desktop (if mobile doesn't work)"
 echo "   - Web testing: dx serve --platform web"
 echo "   - iOS testing: Perfect for your Mac setup with true iOS emulation"
-echo ""
-echo "🚀 Opening Cursor in zwipe directory..."
-# Try cursor command, fallback if not available
-if command -v cursor &> /dev/null; then
-    cursor ../
-elif [ -d "/Applications/Cursor.app" ]; then
-    open -a "Cursor" ../
-else
-    print_warning "Cursor not found. Please open the zwipe directory manually in Cursor."
-fi
