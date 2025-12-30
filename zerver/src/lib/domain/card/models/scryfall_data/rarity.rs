@@ -1,13 +1,12 @@
-use std::ops::Deref;
-
 use serde::{Deserialize, Serialize};
+use std::ops::Deref;
 use thiserror::Error;
 
 #[derive(Debug, Clone, Error)]
 #[error("invalid rarity")]
 pub struct InvalidRarity;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Rarity {
     Common,
     Uncommon,
@@ -66,6 +65,24 @@ impl Rarity {
 impl std::fmt::Display for Rarity {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.to_long_name())
+    }
+}
+
+impl Serialize for Rarity {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.to_long_name().to_lowercase().serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Rarity {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        Self::try_from(String::deserialize(deserializer)?).map_err(serde::de::Error::custom)
     }
 }
 
