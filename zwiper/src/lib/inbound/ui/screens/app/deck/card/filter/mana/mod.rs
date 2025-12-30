@@ -37,7 +37,7 @@ pub fn Mana() -> Element {
     let mut cmc_range_max_string = use_signal(String::new);
 
     let mut selected_colors = use_signal(Vec::<Color>::new);
-    let mut color_identity_filter_mode = use_signal(|| ColorIdentityFilterMode::default());
+    let mut color_identity_filter_mode = use_signal(ColorIdentityFilterMode::default);
 
     let mut try_parse_cmc_range = move || {
         if cmc_range_min_string().is_empty() || cmc_range_max_string.is_empty() {
@@ -157,7 +157,7 @@ pub fn Mana() -> Element {
                                         }
                                         selected_colors.set(colors);
                                     },
-                                    { format!("{}", color.to_string().to_lowercase()) }
+                                    { color.to_string().to_lowercase() }
                                 }
                             }
                         }
@@ -169,7 +169,7 @@ pub fn Mana() -> Element {
                             onclick: move |_| {
                                 color_identity_filter_mode.set(color_identity_filter_mode().toggle());
                             },
-                            { format!("{}", color_identity_filter_mode().to_string().to_lowercase()) }
+                            { color_identity_filter_mode().to_string().to_lowercase() }
                         }
 
                         if let Some(error) = error() {

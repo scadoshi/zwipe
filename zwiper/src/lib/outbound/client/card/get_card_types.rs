@@ -27,8 +27,8 @@ impl ClientGetCardTypes for ZwipeClient {
 
         match response.status() {
             StatusCode::OK => {
-                let all_types: Vec<String> = response.json().await?;
-                Ok(all_types)
+                let card_types: Vec<String> = response.json().await?;
+                Ok(card_types)
             }
             status => {
                 let message = response.text().await?;
