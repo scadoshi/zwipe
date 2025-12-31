@@ -16,17 +16,44 @@ pub fn Combat() -> Element {
 
     let mut error = use_signal(|| None::<String>);
 
-    // Power signals
-    let mut power_equals_string = use_signal(String::new);
-    let mut power_range_min_string = use_signal(String::new);
-    let mut power_range_max_string = use_signal(String::new);
+    let mut power_equals_string: Signal<String> = use_signal(|| {
+        filter_builder()
+            .power_equals()
+            .map(|x| x.to_string())
+            .unwrap_or_default()
+    });
+    let mut power_range_min_string = use_signal(|| {
+        filter_builder()
+            .power_range()
+            .map(|(min, _)| min.to_string())
+            .unwrap_or_default()
+    });
+    let mut power_range_max_string = use_signal(|| {
+        filter_builder()
+            .power_range()
+            .map(|(_, max)| max.to_string())
+            .unwrap_or_default()
+    });
 
-    // Toughness signals
-    let mut toughness_equals_string = use_signal(String::new);
-    let mut toughness_range_min_string = use_signal(String::new);
-    let mut toughness_range_max_string = use_signal(String::new);
+    let mut toughness_equals_string = use_signal(|| {
+        filter_builder()
+            .toughness_equals()
+            .map(|v| v.to_string())
+            .unwrap_or_default()
+    });
+    let mut toughness_range_min_string = use_signal(|| {
+        filter_builder()
+            .toughness_range()
+            .map(|(min, _)| min.to_string())
+            .unwrap_or_default()
+    });
+    let mut toughness_range_max_string = use_signal(|| {
+        filter_builder()
+            .toughness_range()
+            .map(|(_, max)| max.to_string())
+            .unwrap_or_default()
+    });
 
-    // Power equals parser
     let mut try_parse_power_equals = move || {
         if power_equals_string().is_empty() {
             filter_builder.write().unset_power_equals();
@@ -40,7 +67,6 @@ pub fn Combat() -> Element {
         }
     };
 
-    // Power range parser
     let mut try_parse_power_range = move || {
         if power_range_min_string().is_empty() || power_range_max_string().is_empty() {
             filter_builder.write().unset_power_range();
@@ -58,7 +84,6 @@ pub fn Combat() -> Element {
         }
     };
 
-    // Toughness equals parser
     let mut try_parse_toughness_equals = move || {
         if toughness_equals_string().is_empty() {
             filter_builder.write().unset_toughness_equals();
@@ -72,7 +97,6 @@ pub fn Combat() -> Element {
         }
     };
 
-    // Toughness range parser
     let mut try_parse_toughness_range = move || {
         if toughness_range_min_string().is_empty() || toughness_range_max_string().is_empty() {
             filter_builder.write().unset_toughness_range();

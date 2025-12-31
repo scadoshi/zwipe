@@ -37,7 +37,12 @@ pub fn Types() -> Element {
             client().get_card_types(&sesh).await
         });
 
-    let mut selected_other_types: Signal<Vec<String>> = use_signal(Vec::new);
+    let mut selected_other_types: Signal<Vec<String>> = use_signal(|| {
+        filter_builder()
+            .type_line_contains_any()
+            .map(|v| v.to_vec())
+            .unwrap_or_default()
+    });
     let mut other_type_query_string_for_dropdown = use_signal(String::new);
     let mut show_other_type_dropdown = use_signal(|| false);
 

@@ -19,7 +19,12 @@ pub fn Mana() -> Element {
 
     let mut error = use_signal(|| None::<String>);
 
-    let mut cmc_equals_string = use_signal(String::new);
+    let mut cmc_equals_string = use_signal(|| {
+        filter_builder()
+            .cmc_equals()
+            .map(|v| v.to_string())
+            .unwrap_or_default()
+    });
     let mut try_parse_cmc_equals = move || {
         if cmc_equals_string().is_empty() {
             filter_builder.write().unset_cmc_equals();
@@ -33,11 +38,37 @@ pub fn Mana() -> Element {
         }
     };
 
-    let mut cmc_range_min_string = use_signal(String::new);
-    let mut cmc_range_max_string = use_signal(String::new);
+    let mut cmc_range_min_string = use_signal(|| {
+        filter_builder()
+            .cmc_range()
+            .map(|(min, _)| min.to_string())
+            .unwrap_or_default()
+    });
+    let mut cmc_range_max_string = use_signal(|| {
+        filter_builder()
+            .cmc_range()
+            .map(|(_, max)| max.to_string())
+            .unwrap_or_default()
+    });
 
-    let mut selected_colors = use_signal(Vec::<Color>::new);
-    let mut color_identity_filter_mode = use_signal(ColorIdentityFilterMode::default);
+    let mut selected_colors = use_signal(|| {
+        if let Some(colors) = filter_builder().color_identity_equals() {
+            colors.to_vec()
+        } else if let Some(colors) = filter_builder().color_identity_within() {
+            colors.to_vec()
+        } else {
+            Vec::new()
+        }
+    });
+    let mut color_identity_filter_mode = use_signal(|| {
+        if filter_builder().color_identity_equals().is_some() {
+            ColorIdentityFilterMode::Exact
+        } else if filter_builder().color_identity_within().is_some() {
+            ColorIdentityFilterMode::Within
+        } else {
+            ColorIdentityFilterMode::default()
+        }
+    });
 
     let mut try_parse_cmc_range = move || {
         if cmc_range_min_string().is_empty() || cmc_range_max_string.is_empty() {
