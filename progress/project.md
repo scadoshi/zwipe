@@ -13,21 +13,21 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Completed Rarity implementation with full SQLx integration. Built Rarity enum (6 variants) and Rarities newtype wrapper, implemented custom SQLx Type/Encode/Decode traits, integrated into CardFilter with rarity_equals_any field using PostgreSQL = ANY() operator. Migrated entire database schema from VARCHAR to TEXT for PostgreSQL best practices. Fixed Scryfall deserialization with custom Serialize/Deserialize using TryFrom for flexible parsing.
+**Last Updated**: Fixed filter state persistence bug - all filters now properly initialize local signals from filter_builder on component mount. Combat, Mana, and Types filters load persisted values when returning to screen. Implemented initialization closure pattern for use_signal ensuring form inputs display saved filter state.
 
-**Current Focus**: Wire filter endpoints into frontend UI. Implement Set filter dropdown, test Phase 1 filters (Text, Types, Combat, Mana) with real card data, begin card browsing navigation stack.
+**Current Focus**: Browser testing of complete filter workflow with real card data. Test all 6 filters (Text, Types, Combat, Mana, Set, Rarity) to validate persistence, search execution, and navigation flow.
 
-**Recent Achievement**: Independently debugged and resolved complex Rarity implementation challenges - custom Serde implementation for Scryfall data parsing, SQLx Type compatibility (VARCHAR vs TEXT), and .as_ref() vs .as_deref() Option semantics. Complete end-to-end implementation from domain type through database storage to query integration, tested with full card sync (35k+ cards).
+**Recent Achievement**: Debugged and resolved filter state persistence issue across three filter screens. Identified pattern of local signals initialized to empty values instead of reading from context. Implemented consistent initialization pattern using closures in use_signal for all numeric inputs, color selections, and multi-select fields. Fixed Colors newtype compatibility by adding to_vec() method.
 
-**Current Success**: All 6 filter backend endpoints complete (Text, Types, Combat, Mana, Set, Rarity). Complete filter system architecture with PostgreSQL ANY(), ILIKE, BETWEEN, JSONB operators. Ready for frontend UI integration.
+**Current Success**: All 6 filter screens complete with proper state management. Filter values persist across navigation, local signals initialize from filter_builder, and user edits sync back to context. Ready for end-to-end browser testing.
 
-**Current Challenge**: Frontend filter UI integration. Need to build filter screens with proper state management, wire backend endpoints, and test with real card data to validate complete filter workflow.
+**Current Challenge**: Browser validation of complete filter workflow. Need to verify all filters work with real card data, test persistence across multiple navigation cycles, and ensure backend integration returns expected results.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Set Filter UI** - Wire GET /api/card/sets endpoint into filter component with searchable dropdown
-2. **Rarity Filter UI** - Build rarity selection component with Common/Uncommon/Rare/Mythic/Bonus/Special toggles
-3. **Browser Testing - Phase 1 Filters** - Test all 6 filters (Text, Types, Combat, Mana, Set, Rarity) with real card data
-4. **Card Browsing Stack** - Implement left/right swipe navigation through filtered card results
+1. **Browser Testing - Complete Filter Workflow** - Test all 6 filters with real card data validating persistence, search, and navigation
+2. **Card Browsing Stack** - Implement left/right swipe navigation through filtered card results
+3. **Add Card Integration** - Wire quantity selection and add_card function with copy_max validation
+4. **Filter Results Display** - Show filtered card results in browsable grid/list with card images
 5. **Clippy Marathon - Phase 2: Unwrap Elimination** - Systematically remove all unwrap() calls adding proper error handling
 
 ### 🤔 Next Immediate Priorities (Top 5)
@@ -72,7 +72,8 @@ alwaysApply: true
 
 ### 🎮 Domain-Specific Implementation
 - **Card Management**: Complete Scryfall integration, comprehensive search with CMC/power/toughness ranges, dual color identity modes (equals/contains), bulk data processing
-- **Card Filtering UI**: Combat filter (power/toughness equals + range), Mana filter (CMC + color identity W/U/B/R/G toggles), Text filter (name/oracle text), Types filter (basic types grid + searchable other types)
+- **Card Filtering UI**: Combat filter (power/toughness equals + range), Mana filter (CMC + color identity W/U/B/R/G toggles), Text filter (name/oracle text), Types filter (basic types grid + searchable other types), Set filter (multi-select searchable dropdown), Rarity filter (6-option keycard selector)
+- **Filter State Persistence**: All filters initialize local signals from filter_builder on mount using closure pattern, persisting values across navigation cycles
 - **Deck Management**: Full CRUD operations with card composition, cross-domain orchestration, and nested resource API
 - **Auth Domain Security**: Complete user lifecycle operations (username/email updates, account deletion) centralized for security
 - **User Domain Simplification**: Read-only profile access, all mutations moved to auth domain for proper security boundaries

@@ -15,22 +15,22 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Completed Rarity implementation with full SQLx integration. Built Rarity enum with custom Type/Encode/Decode traits, Rarities newtype wrapper, integrated into CardFilter with PostgreSQL = ANY() operator. Independently debugged and resolved Scryfall deserialization (custom Serialize/Deserialize using TryFrom), SQLx type compatibility (VARCHAR vs TEXT migration), and Option semantics (.as_ref() vs .as_deref()). Tested with full 35k+ card sync.
+**Last Updated**: Fixed filter state persistence bug affecting Combat, Mana, and Types filters. Debugged issue where local signals initialized to empty values instead of reading from filter_builder context on mount. Implemented initialization closure pattern `use_signal(|| { filter_builder().field()... })` across all affected screens. Fixed Colors newtype compatibility by adding to_vec() method for proper conversion.
 
 **Next Learning Focus**:
-- Wire filter endpoints into frontend UI components
-- Build Set and Rarity filter UI screens with proper state management
-- Test complete filter workflow with real card data
-- Implement card browsing navigation with left/right swipe
+- Browser test complete filter workflow with real card data
+- Validate filter persistence across multiple navigation cycles
+- Test backend integration and card search results
+- Implement card browsing navigation with filtered results display
 
-**Recent Achievement**: Independently implemented complete Rarity domain type from scratch - designed enum structure, implemented SQLx traits, debugged type compatibility issues, fixed Scryfall parsing with custom Serde, and migrated database schema. Demonstrated solid understanding of SQLx type system, custom serialization patterns, and full-stack debugging through domain → database → external API layers.
+**Recent Achievement**: Independently diagnosed and resolved filter state persistence issue by tracing signal initialization patterns across multiple components. Recognized that direct reads (value attribute) work correctly but local signals need initialization closures. Implemented consistent pattern for all numeric inputs (power/toughness/cmc), range fields, color selections, and multi-select arrays. Demonstrated understanding of Dioxus signal lifecycle and mount-time initialization patterns.
 
 ### 🤔 Current Uncertainties (Top 5)
 1. **PostgreSQL Operator Type Requirements** — Learning curve on which PostgreSQL operators work with which type combinations (jsonb/text[]/arrays). Need reference for @>, <@, ?|, &&, etc.
-2. **Filter State Persistence** — Long-term pattern: store `Option<CardFilterBuilder>` vs storing finished `CardFilter` and rebuilding a builder on edit.
-3. **Builder Pattern Refactoring** — Best approach for SearchCards (17 params) and SyncMetrics (10 params) to satisfy too_many_arguments without breaking existing code.
-4. **Component Composition Strategy** — When to use sub-components vs inline logic for complex UI elements like filters with multiple fields.
-5. **Dioxus Resource Patterns** — When to use use_resource vs use_effect vs use_future for data fetching, and how to avoid reactivity loops with proper dependency management.
+2. **Builder Pattern Refactoring** — Best approach for SearchCards (17 params) and SyncMetrics (10 params) to satisfy too_many_arguments without breaking existing code.
+3. **Component Composition Strategy** — When to use sub-components vs inline logic for complex UI elements like filters with multiple fields.
+4. **Card Display Patterns** — Best approach for rendering filtered card results - grid vs list, pagination vs infinite scroll, image loading strategies.
+5. **Filter Execution Timing** — When to execute search (on every filter change, on explicit submit, debounced after changes) for best UX and performance.
 
 ---
 
@@ -158,6 +158,8 @@ alwaysApply: true
 - **Reusable Component Abstraction**: Extracting repetitive UI patterns (TextInput) into focused components with clear props interface
 - **Component Props Design**: Balancing required vs optional props, using Option<String> for optional labels, Signal<String> for two-way binding
 - **DRY Component Boundaries**: Knowing when to extract components (repeated 3+ times with identical structure) vs when inline is clearer
+- **Signal Initialization from Context**: Pattern of `use_signal(|| { context().field()... })` for initializing local signals from context on mount, ensuring form inputs display persisted state
+- **Mount-Time Initialization**: Understanding that signal closures run once on component mount, capturing initial values from context for local editing
 
 ### 💾 SQLx Database Operations & Advanced Patterns
 - **Connection Pooling**: Production-ready pool configuration with optimized settings
