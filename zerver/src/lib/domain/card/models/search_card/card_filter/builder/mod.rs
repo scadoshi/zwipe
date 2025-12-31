@@ -28,7 +28,7 @@ pub struct CardFilterBuilder {
     // rarity
     rarity_equals_any: Option<Rarities>,
     // set
-    set_contains: Option<String>,
+    set_equals_any: Option<Vec<String>>,
     // text
     name_contains: Option<String>,
     oracle_text_contains: Option<String>,
@@ -53,7 +53,7 @@ impl Default for CardFilterBuilder {
             color_identity_within: None,
             color_identity_equals: None,
             rarity_equals_any: None,
-            set_contains: None,
+            set_equals_any: None,
             name_contains: None,
             oracle_text_contains: None,
             type_line_contains: None,
@@ -125,9 +125,11 @@ impl CardFilterBuilder {
     }
 
     // printing
-    pub fn with_set_contains(set_contains: impl Into<String>) -> CardFilterBuilder {
+    pub fn with_set_contains(
+        set_equals_any: impl IntoIterator<Item = impl Into<String>>,
+    ) -> CardFilterBuilder {
         CardFilterBuilder {
-            set_contains: Some(set_contains.into()),
+            set_equals_any: Some(set_equals_any.into_iter().map(|x| x.into()).collect()),
             ..CardFilterBuilder::default()
         }
     }
@@ -224,7 +226,7 @@ impl CardFilterBuilder {
             color_identity_within: self.color_identity_within.clone(),
             color_identity_equals: self.color_identity_equals.clone(),
             rarity_equals_any: self.rarity_equals_any.clone(),
-            set_contains: self.set_contains.clone(),
+            set_equals_any: self.set_equals_any.clone(),
             name_contains: self.name_contains.clone(),
             oracle_text_contains: self.oracle_text_contains.clone(),
             type_line_contains: self.type_line_contains.clone(),
