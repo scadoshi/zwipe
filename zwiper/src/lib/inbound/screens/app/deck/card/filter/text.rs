@@ -34,6 +34,21 @@ pub fn Text() -> Element {
                             }
                         }
 
+                        label { class: "label", r#for: "oracle-text-contains", "oracle text contains" }
+                        input { class: "input",
+                            id: "oracle-text-contains",
+                            placeholder: "oracle text contains",
+                            value: if let Some(text) = filter_builder().oracle_text_contains() {
+                                text
+                            } else { "" },
+                            r#type: "text",
+                            autocapitalize: "none",
+                            spellcheck: "false",
+                            oninput: move |event| {
+                                filter_builder.write().set_oracle_text_contains(event.value());
+                            }
+                        }
+
                         button { class : "btn",
                             onclick : move |_| {
                                 navigator.go_back();
