@@ -26,11 +26,12 @@ impl CardFilterBuilder {
         self.card_type_contains_any.as_deref()
     }
 
-    // printing
-    pub fn set_contains(&self) -> Option<&str> {
-        self.set_contains.as_deref()
+    // set
+    pub fn set_equals_any(&self) -> Option<&[String]> {
+        self.set_equals_any.as_deref()
     }
 
+    // rarity
     pub fn rarity_equals_any(&self) -> Option<&Rarities> {
         self.rarity_equals_any.as_ref()
     }

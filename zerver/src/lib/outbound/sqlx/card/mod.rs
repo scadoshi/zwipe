@@ -97,8 +97,8 @@ impl CardRepository for MyPostgres {
     ) -> Result<SyncMetrics, anyhow::Error> {
         let mut tx = self.pool.begin().await?;
         let query_sql = "INSERT INTO scryfall_data_sync_metrics".to_string()
-         + " (started_at, ended_at, duration_in_seconds, status, received_count, upserted_count, skipped_count, error_count, errors)"
-         + " VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *";
+            + " (started_at, ended_at, duration_in_seconds, status, received_count, upserted_count, skipped_count, error_count, errors)"
+            + " VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *";
         let database_sync_metrics: DatabaseSyncMetrics = query_as(&query_sql)
             .bind(sync_metrics.started_at())
             .bind(sync_metrics.ended_at())
@@ -189,9 +189,10 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated(") ");
         }
 
-        if let Some(query_string) = &request.set_contains() {
-            sep.push("set ILIKE ");
-            sep.push_bind_unseparated(format!("%{}%", query_string));
+        if let Some(sets) = request.set_equals_any() {
+            sep.push("set = ANY(");
+            sep.push_bind_unseparated(sets);
+            sep.push_unseparated(")");
         }
 
         if let Some(rarities) = request.rarity_equals_any() {
@@ -224,7 +225,7 @@ impl CardRepository for MyPostgres {
             let higher = power_range.0.max(power_range.1);
             sep.push("power ~ '^\\d+$' AND CAST(power AS INT) between ");
             sep.push_bind_unseparated(lower);
-            sep.push_unseparated("AND ");
+            sep.push_unseparated(" AND ");
             sep.push_bind_unseparated(higher);
         }
 
@@ -238,7 +239,7 @@ impl CardRepository for MyPostgres {
             let higher = toughness_range.0.max(toughness_range.1);
             sep.push("toughness ~ '^\\d+$' AND CAST(toughness AS INT) between ");
             sep.push_bind_unseparated(lower);
-            sep.push_unseparated("AND ");
+            sep.push_unseparated(" AND ");
             sep.push_bind_unseparated(higher);
         }
 

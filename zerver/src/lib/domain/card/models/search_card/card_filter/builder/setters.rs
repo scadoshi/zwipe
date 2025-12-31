@@ -70,14 +70,17 @@ impl CardFilterBuilder {
     }
 
     // printing
-    pub fn set_set_contains(&mut self, set_contains: impl Into<String>) -> &mut Self {
-        let s = set_contains.into();
-        self.set_contains = if s.is_empty() { None } else { Some(s) };
+    pub fn set_set_equals_any(
+        &mut self,
+        set_equals_any: impl IntoIterator<Item = impl Into<String>>,
+    ) -> &mut Self {
+        let s: Vec<String> = set_equals_any.into_iter().map(|x| x.into()).collect();
+        self.set_equals_any = if s.is_empty() { None } else { Some(s) };
         self
     }
 
-    pub fn unset_set_contains(&mut self) -> &mut Self {
-        self.set_contains = None;
+    pub fn unset_set_equals_any(&mut self) -> &mut Self {
+        self.set_equals_any = None;
         self
     }
 
