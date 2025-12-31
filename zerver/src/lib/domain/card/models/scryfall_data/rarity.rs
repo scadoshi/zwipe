@@ -60,6 +60,17 @@ impl Rarity {
             Self::Special => "S".to_string(),
         }
     }
+
+    pub fn all() -> Vec<Self> {
+        vec![
+            Self::Common,
+            Self::Uncommon,
+            Self::Rare,
+            Self::Mythic,
+            Self::Bonus,
+            Self::Special,
+        ]
+    }
 }
 
 impl std::fmt::Display for Rarity {
@@ -122,6 +133,10 @@ impl Rarities {
 
     pub fn as_slice(&self) -> &[Rarity] {
         self.0.as_slice()
+    }
+
+    pub fn to_vec(&self) -> Vec<Rarity> {
+        self.0.clone()
     }
 }
 
