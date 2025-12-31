@@ -6,23 +6,19 @@ pub mod text;
 pub mod types;
 
 use crate::inbound::{
-    components::{
-        auth::bouncer::Bouncer,
-        interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
-    },
+    components::auth::bouncer::Bouncer,
     router::Router,
 };
 use dioxus::prelude::*;
 
 #[component]
 pub fn Filter() -> Element {
-    let swipe_config = SwipeConfig::blank();
-    let swipe_state = use_signal(SwipeState::new);
     let navigator = use_navigator();
 
     rsx! {
         Bouncer {
-            Swipeable { state: swipe_state, config: swipe_config,
+            div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
+                style: "width: 100vw; justify-content: center;",
                 div { class : "container-sm",
                     h2 { class: "text-center mb-2 font-light tracking-wider", "card filters" }
 

@@ -1,7 +1,4 @@
-use crate::inbound::components::{
-    auth::bouncer::Bouncer,
-    interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
-};
+use crate::inbound::components::auth::bouncer::Bouncer;
 use dioxus::prelude::*;
 use zwipe::domain::card::models::{
     scryfall_data::rarity::Rarity as CardRarity,
@@ -10,15 +7,14 @@ use zwipe::domain::card::models::{
 
 #[component]
 pub fn Rarity() -> Element {
-    let swipe_config = SwipeConfig::blank();
-    let swipe_state = use_signal(SwipeState::new);
     let navigator = use_navigator();
 
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
 
     rsx! {
         Bouncer {
-            Swipeable { state: swipe_state, config: swipe_config,
+            div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
+                style: "width: 100vw; justify-content: center;",
                 div { class : "container-sm",
                     h2 { class: "text-center mb-2 font-light tracking-wider", "rarity filter" }
 
