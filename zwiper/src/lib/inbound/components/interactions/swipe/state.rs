@@ -1,6 +1,5 @@
 use crate::inbound::components::interactions::swipe::{
-    axis::Axis, config::SwipeConfig, direction::Direction as Dir, screen_offset::ScreenOffset,
-    time_point::TimePoint,
+    axis::Axis, config::SwipeConfig, direction::Direction as Dir, time_point::TimePoint,
 };
 use dioxus::html::geometry::euclid::{Point2D, UnknownUnit};
 
@@ -8,14 +7,12 @@ type DeltaPoint = Point2D<f64, UnknownUnit>;
 
 #[derive(Debug, Clone)]
 pub struct SwipeState {
-    // for screen placement rendering
-    pub start_point: Option<TimePoint>,
     // for direction and speed calculation
+    pub start_point: Option<TimePoint>,
     pub previous_point: Option<TimePoint>,
     pub current_point: Option<TimePoint>,
     // what direction the last swipe resolved to
     pub latest_swipe: Option<Dir>,
-    pub screen_offset: ScreenOffset,
     // tracks which axis user is swiping on
     pub traversing_axis: Option<Axis>,
     pub is_swiping: bool,
@@ -30,7 +27,6 @@ impl Default for SwipeState {
             current_point: None,
             previous_point: None,
             latest_swipe: None,
-            screen_offset: ScreenOffset::new(0, 0),
             traversing_axis: None,
             is_swiping: false,
             return_animation_seconds: 0.0,
@@ -139,19 +135,8 @@ impl SwipeState {
         self.return_animation_seconds = s;
     }
 
-    pub fn update_position(&mut self, direction: &Dir) {
-        match direction {
-            Dir::Left => self.screen_offset.x -= 1,
-            Dir::Right => self.screen_offset.x += 1,
-            Dir::Up => self.screen_offset.y -= 1,
-            Dir::Down => self.screen_offset.y += 1,
-        }
-    }
-
     pub fn set_latest_swipe(&mut self, config: &SwipeConfig) {
         const DISTANCE_THRESHOLD_FOR_SPEED_TO_BE_VALID: f64 = 10.0;
-        const SPEED_THRESHOLD_FOR_SWIPE: f64 = 5.0;
-        const DISTANCE_THRESHOLD_FOR_SWIPE: f64 = 100.0;
 
         if self.traversing_axis.is_none() {
             self.set_traversing_axis();
@@ -163,9 +148,9 @@ impl SwipeState {
             return;
         };
 
-        if distance_from_start > DISTANCE_THRESHOLD_FOR_SWIPE
+        if distance_from_start > config.distance_threshold
             || (distance_from_start > DISTANCE_THRESHOLD_FOR_SPEED_TO_BE_VALID
-                && speed > SPEED_THRESHOLD_FOR_SWIPE)
+                && speed > config.speed_threshold)
         {
             match self.traversing_axis {
                 Some(Axis::X) => {
@@ -175,17 +160,15 @@ impl SwipeState {
 
                     if x < 0.0 {
                         let direction = Dir::Left;
-                        if config.navigation_swipes.contains(&direction) {
-                            self.update_position(&direction);
+                        if config.allowed_directions.contains(&direction) {
+                            self.latest_swipe = Some(direction);
                         }
-                        self.latest_swipe = Some(direction);
                     }
                     if x > 0.0 {
                         let direction = Dir::Right;
-                        if config.navigation_swipes.contains(&direction) {
-                            self.update_position(&direction);
+                        if config.allowed_directions.contains(&direction) {
+                            self.latest_swipe = Some(direction);
                         }
-                        self.latest_swipe = Some(direction);
                     }
                 }
 
@@ -196,17 +179,15 @@ impl SwipeState {
 
                     if y < 0.0 {
                         let direction = Dir::Up;
-                        if config.navigation_swipes.contains(&direction) {
-                            self.update_position(&direction);
+                        if config.allowed_directions.contains(&direction) {
+                            self.latest_swipe = Some(direction);
                         }
-                        self.latest_swipe = Some(direction);
                     }
                     if y > 0.0 {
                         let direction = Dir::Down;
-                        if config.navigation_swipes.contains(&direction) {
-                            self.update_position(&direction);
+                        if config.allowed_directions.contains(&direction) {
+                            self.latest_swipe = Some(direction);
                         }
-                        self.latest_swipe = Some(direction);
                     }
                 }
 
