@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 use zwipe::domain::logo;
 use zwiper::{
     config::Config,
-    inbound::ui::{components::auth::session_upkeep::spawn_upkeeper, router::Router},
+    inbound::{components::auth::session_upkeep::spawn_upkeeper, router::Router},
 };
 
 const FAVICON: Asset = asset!("/assets/favicon/favicon.ico");
