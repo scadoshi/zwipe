@@ -1,8 +1,5 @@
 use crate::{
-    inbound::components::{
-        auth::{bouncer::Bouncer, session_upkeep::Upkeep},
-        interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
-    },
+    inbound::components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
     outbound::client::{card::get_sets::ClientGetSets, ZwipeClient},
 };
 use dioxus::prelude::*;
@@ -16,8 +13,6 @@ use zwipe::{
 
 #[component]
 pub fn Set() -> Element {
-    let swipe_config = SwipeConfig::blank();
-    let swipe_state = use_signal(SwipeState::new);
     let navigator = use_navigator();
 
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
@@ -38,7 +33,8 @@ pub fn Set() -> Element {
 
     rsx! {
         Bouncer {
-            Swipeable { state: swipe_state, config: swipe_config,
+            div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
+                style: "width: 100vw; justify-content: center;",
                 div { class : "container-sm",
                     h2 { class: "text-center mb-2 font-light tracking-wider", "set filter" }
 

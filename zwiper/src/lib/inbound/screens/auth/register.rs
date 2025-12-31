@@ -1,10 +1,7 @@
 use crate::{
     domain::error::UserFacing,
     inbound::{
-        components::{
-            fields::text_input::TextInput,
-            interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
-        },
+        components::fields::text_input::TextInput,
         router::Router,
     },
     outbound::{
@@ -26,9 +23,6 @@ use zwipe::{
 
 #[component]
 pub fn Register() -> Element {
-    let swipe_state = use_signal(SwipeState::new);
-    let swipe_config = SwipeConfig::blank();
-
     let navigator = use_navigator();
 
     let mut session: Signal<Option<Session>> = use_context();
@@ -114,68 +108,69 @@ pub fn Register() -> Element {
     });
 
     rsx! {
-        Swipeable { state: swipe_state, config: swipe_config,
+        div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
+            style: "width: 100vw; justify-content: center;",
             div { class: "logo",  "{logo}" }
             div { class : "container-sm text-center",
 
-                form { class: "flex-col",
+            form { class: "flex-col",
 
-                    if submit_attempted() {
-                        if let Some(error) = username_error() {
-                            div { class : "message-error", "{error}" }
-                        }
-                    }
-
-                    TextInput {
-                        value: username,
-                        id:"username".to_string(),
-                        placeholder: "username".to_string(),
-                     }
-
-                    if submit_attempted() {
-                        if let Some(error) = email_error() {
-                            div { class : "message-error", "{error}" }
-                        }
-                    }
-
-                    TextInput {
-                        value: email,
-                        id: "email".to_string(),
-                        placeholder: "email".to_string(),
-                    }
-
-                    if submit_attempted() {
-                        if let Some(error) = password_error() {
-                            div { class : "message-error", "{error}" }
-                        }
-                    }
-
-                    TextInput {
-                        value: password,
-                        id: "password".to_string(),
-                        placeholder: "password".to_string(),
-                        input_type: "password".to_string(),
-                    }
-
-                    button { class: "btn",
-                        onclick : move |_| attempt_submit(),
-                        "create profile"
-                    }
-
-                    if is_loading() {
-                        div { class : "spinner" }
-                    } else if let Some(error) = submission_error() {
-                        div { class: "message-error",
-                            { error }
-                        }
-                    }
-
-                    button { class: "btn",
-                        onclick : move |_| {
-                            navigator.go_back();
-                        }, "back to login"
+                if submit_attempted() {
+                    if let Some(error) = username_error() {
+                        div { class : "message-error", "{error}" }
                     }
                 }
+
+                TextInput {
+                    value: username,
+                    id:"username".to_string(),
+                    placeholder: "username".to_string(),
+                 }
+
+                if submit_attempted() {
+                    if let Some(error) = email_error() {
+                        div { class : "message-error", "{error}" }
+                    }
+                }
+
+                TextInput {
+                    value: email,
+                    id: "email".to_string(),
+                    placeholder: "email".to_string(),
+                }
+
+                if submit_attempted() {
+                    if let Some(error) = password_error() {
+                        div { class : "message-error", "{error}" }
+                    }
+                }
+
+                TextInput {
+                    value: password,
+                    id: "password".to_string(),
+                    placeholder: "password".to_string(),
+                    input_type: "password".to_string(),
+                }
+
+                button { class: "btn",
+                    onclick : move |_| attempt_submit(),
+                    "create profile"
+                }
+
+                if is_loading() {
+                    div { class : "spinner" }
+                } else if let Some(error) = submission_error() {
+                    div { class: "message-error",
+                        { error }
+                    }
+                }
+
+                button { class: "btn",
+                    onclick : move |_| {
+                        navigator.go_back();
+                    }, "back to login"
+                }
+            }
             }
         }
     }

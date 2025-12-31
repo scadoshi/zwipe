@@ -1,9 +1,7 @@
 use crate::domain::error::UserFacing;
 use crate::inbound::components::fields::text_input::TextInput;
-use crate::inbound::components::interactions::swipe::Swipeable;
 use crate::inbound::components::{
     auth::{bouncer::Bouncer, session_upkeep::Upkeep},
-    interactions::swipe::{config::SwipeConfig, state::SwipeState},
     success_messages::random_success_message,
 };
 use crate::outbound::client::user::change_email::ClientChangeEmail;
@@ -19,9 +17,6 @@ use zwipe::{
 
 #[component]
 pub fn ChangeEmail() -> Element {
-    let swipe_state = use_signal(SwipeState::new);
-    let swipe_config = SwipeConfig::blank();
-
     let navigator = use_navigator();
 
     let mut session: Signal<Option<Session>> = use_context();
@@ -102,7 +97,8 @@ pub fn ChangeEmail() -> Element {
 
     rsx! {
         Bouncer {
-            Swipeable { state: swipe_state, config: swipe_config,
+            div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
+                style: "width: 100vw; justify-content: center;",
                 div { class : "container-sm",
 
                     h2 { class: "text-center mb-2 font-light tracking-wider", "change email" }

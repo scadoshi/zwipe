@@ -1,9 +1,6 @@
 use crate::{
     inbound::{
-        components::{
-            auth::{bouncer::Bouncer, session_upkeep::Upkeep},
-            interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
-        },
+        components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
         router::Router,
     },
     outbound::client::{deck::get_deck_profiles::ClientGetDeckList, ZwipeClient},
@@ -16,9 +13,6 @@ use zwipe::{
 
 #[component]
 pub fn DeckList() -> Element {
-    let swipe_state = use_signal(SwipeState::new);
-    let swipe_config = SwipeConfig::blank();
-
     let navigator = use_navigator();
     let auth_client: Signal<ZwipeClient> = use_context();
     let session: Signal<Option<Session>> = use_context();
@@ -35,7 +29,8 @@ pub fn DeckList() -> Element {
 
     rsx! {
         Bouncer {
-            Swipeable { state: swipe_state, config: swipe_config,
+            div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
+                style: "width: 100vw; justify-content: center;",
                 div { class : "container-sm flex-col",
                     h2 { class: "text-center mb-4 font-light tracking-wider", "deck list" }
 

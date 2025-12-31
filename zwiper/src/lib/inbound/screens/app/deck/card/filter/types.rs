@@ -1,8 +1,5 @@
 use crate::{
-    inbound::components::{
-        auth::{bouncer::Bouncer, session_upkeep::Upkeep},
-        interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
-    },
+    inbound::components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
     outbound::client::{card::get_card_types::ClientGetCardTypes, ZwipeClient},
 };
 use dioxus::prelude::*;
@@ -19,8 +16,6 @@ use zwipe::{
 
 #[component]
 pub fn Types() -> Element {
-    let swipe_config = SwipeConfig::blank();
-    let swipe_state = use_signal(SwipeState::new);
     let navigator = use_navigator();
 
     let session: Signal<Option<Session>> = use_context();
@@ -54,7 +49,8 @@ pub fn Types() -> Element {
 
     rsx! {
     Bouncer {
-        Swipeable { state: swipe_state, config: swipe_config,
+        div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
+            style: "width: 100vw; justify-content: center;",
             div { class : "container-sm",
                 h2 { class: "text-center mb-2 font-light tracking-wider", "type filter" }
                         form { class : "flex-col text-center",

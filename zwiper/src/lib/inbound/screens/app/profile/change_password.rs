@@ -2,7 +2,6 @@ use crate::{
     inbound::components::{
         auth::{bouncer::Bouncer, session_upkeep::Upkeep},
         fields::text_input::TextInput,
-        interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
         success_messages::random_success_message,
     },
     outbound::client::{user::change_password::ClientChangePassword, ZwipeClient},
@@ -15,9 +14,6 @@ use zwipe::{
 
 #[component]
 pub fn ChangePassword() -> Element {
-    let swipe_state = use_signal(SwipeState::new);
-    let swipe_config = SwipeConfig::blank();
-
     let navigator = use_navigator();
 
     let session: Signal<Option<Session>> = use_context();
@@ -93,7 +89,8 @@ pub fn ChangePassword() -> Element {
 
     rsx! {
         Bouncer {
-            Swipeable { state: swipe_state, config: swipe_config,
+            div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
+                style: "width: 100vw; justify-content: center;",
                 div { class : "container-sm",
 
                     h2 { class: "text-center mb-2 font-light tracking-wider", "change password" }

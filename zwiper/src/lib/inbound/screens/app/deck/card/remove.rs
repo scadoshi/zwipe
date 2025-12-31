@@ -1,8 +1,5 @@
 use crate::{
-    inbound::components::{
-        auth::{bouncer::Bouncer, session_upkeep::Upkeep},
-        interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
-    },
+    inbound::components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
     outbound::client::{deck::get_deck::ClientGetDeck, ZwipeClient},
 };
 use dioxus::prelude::*;
@@ -21,9 +18,6 @@ pub fn Remove(deck_id: Uuid) -> Element {
     let _filter_builder: Signal<CardFilterBuilder> = use_context();
     let _cards: Signal<Vec<Card>> = use_context();
 
-    let swipe_state = use_signal(SwipeState::new);
-    let swipe_config = SwipeConfig::blank();
-
     let navigator = use_navigator();
 
     let session: Signal<Option<Session>> = use_context();
@@ -40,9 +34,10 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
     rsx! {
         Bouncer {
-            Swipeable { state: swipe_state, config: swipe_config,
+            div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
+                style: "width: 100vw; justify-content: center;",
                 div { class : "form-container",
-                    p { "still building" }
+                        p { "still building" }
                     button { class : "btn",
                         onclick : move |_| {
                             navigator.go_back();
