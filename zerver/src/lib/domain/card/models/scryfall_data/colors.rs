@@ -130,6 +130,10 @@ impl Colors {
     pub fn as_slice(&self) -> &[Color] {
         self.0.as_slice()
     }
+
+    pub fn to_vec(&self) -> Vec<Color> {
+        self.0.clone()
+    }
 }
 
 impl<'de> Deserialize<'de> for Colors {
