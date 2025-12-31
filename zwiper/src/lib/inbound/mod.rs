@@ -1,1 +1,3 @@
-pub mod ui;
+pub mod components;
+pub mod router;
+pub mod screens;
