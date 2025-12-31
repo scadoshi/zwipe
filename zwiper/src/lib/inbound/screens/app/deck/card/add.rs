@@ -106,7 +106,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         }
                     } else {
                         div { class : "card-shape",
-                            "no cards yet"
+                            "no cards"
                         }
                     }
 
