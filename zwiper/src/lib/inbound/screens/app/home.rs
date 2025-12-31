@@ -1,10 +1,6 @@
 use crate::{
     inbound::{
-        components::{
-            auth::bouncer::Bouncer,
-            interactions::swipe::{config::SwipeConfig, state::SwipeState, Swipeable},
-        },
-        router::Router,
+        components::auth::bouncer::Bouncer, router::Router,
         screens::app::signal_logout::SignalLogout,
     },
     outbound::client::ZwipeClient,
@@ -14,9 +10,6 @@ use zwipe::domain::{auth::models::session::Session, logo};
 
 #[component]
 pub fn Home() -> Element {
-    let swipe_state = use_signal(SwipeState::new);
-    let swipe_config = SwipeConfig::blank();
-
     let navigator = use_navigator();
 
     let client: Signal<ZwipeClient> = use_context();
@@ -28,7 +21,8 @@ pub fn Home() -> Element {
 
     rsx! {
         Bouncer {
-            Swipeable { state: swipe_state, config: swipe_config,
+            div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
+                style: "width: 100vw; justify-content: center;",
                 div { class : "logo", "{logo}" }
                 div { class : "container-sm text-center flex-col",
                     button { class : "btn",

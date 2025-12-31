@@ -9,6 +9,7 @@ pub mod state;
 pub mod time_point;
 
 use crate::inbound::components::interactions::swipe::axis::Axis;
+use crate::inbound::components::interactions::swipe::direction::Direction;
 use crate::inbound::components::interactions::swipe::{
     config::SwipeConfig, onmouse::OnMouse, ontouch::OnTouch, state::SwipeState,
 };
@@ -17,11 +18,16 @@ use dioxus::prelude::*;
 
 type DeltaPoint = Point2D<f64, UnknownUnit>;
 
-pub const VH_GAP: i32 = 75;
-pub const VW_GAP: i32 = 100;
-
 #[component]
-pub fn Swipeable(state: Signal<SwipeState>, config: SwipeConfig, children: Element) -> Element {
+pub fn Swipeable(
+    state: Signal<SwipeState>,
+    config: SwipeConfig,
+    on_swipe_left: EventHandler<()>,
+    on_swipe_right: EventHandler<()>,
+    on_swipe_up: EventHandler<()>,
+    on_swipe_down: EventHandler<()>,
+    children: Element,
+) -> Element {
     // cloning to be passable to closures
     let config1 = config.clone();
     let config2 = config.clone();
@@ -31,6 +37,7 @@ pub fn Swipeable(state: Signal<SwipeState>, config: SwipeConfig, children: Eleme
         .delta_from_start_point()
         .unwrap_or(DeltaPoint::new(0.0, 0.0));
 
+    // only move on the axis the user is swiping on (axis locking)
     let xpx = if state().traversing_axis == Some(Axis::X) {
         delta.x
     } else {
@@ -43,17 +50,27 @@ pub fn Swipeable(state: Signal<SwipeState>, config: SwipeConfig, children: Eleme
         0.0
     };
 
-    // screens starting position relative to main screen - reactive to screen_offset
-    let xvw = (config.from_main_screen.x + state().screen_offset.x) * VW_GAP;
-    let yvh = (config.from_main_screen.y + state().screen_offset.y) * VH_GAP;
-
     // for returning element back to start position smoothly
     let return_animation_seconds = state().return_animation_seconds;
+
+    // Call EventHandlers when swipe is detected and clear the swipe
+    use_effect(move || {
+        if let Some(direction) = state().latest_swipe {
+            match direction {
+                Direction::Left => on_swipe_left.call(()),
+                Direction::Right => on_swipe_right.call(()),
+                Direction::Up => on_swipe_up.call(()),
+                Direction::Down => on_swipe_down.call(()),
+            }
+            // Clear the swipe after handling it
+            state.write().latest_swipe = None;
+        }
+    });
 
     rsx! {
             div { class : "swipeable",
                     style : format!(
-                    "transform: translate(calc({xpx}px + {xvw}vw), calc({ypx}px + {yvh}vh));
+                    "transform: translate({xpx}px, {ypx}px);
                     transition: transform {return_animation_seconds}s;"
                     ),
 
