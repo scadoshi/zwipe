@@ -15,22 +15,22 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Fixed filter state persistence bug affecting Combat, Mana, and Types filters. Debugged issue where local signals initialized to empty values instead of reading from filter_builder context on mount. Implemented initialization closure pattern `use_signal(|| { filter_builder().field()... })` across all affected screens. Fixed Colors newtype compatibility by adding to_vec() method for proper conversion.
+**Last Updated**: Complete refactor of Swipeable component from navigation-specific to generic reusable wrapper. Implemented EventHandler pattern for all 4 swipe directions with use_effect clearing latest_swipe. Integrated with AddDeckCard providing complete swipe-to-add workflow (left=skip, right=add). Implemented pagination loading more cards when user within 10 of end. Built de-duplication using HashSet preventing duplicate card display. Fixed CSS positioning bug by removing .swipeable class overlay.
 
 **Next Learning Focus**:
-- Browser test complete filter workflow with real card data
-- Validate filter persistence across multiple navigation cycles
-- Test backend integration and card search results
-- Implement card browsing navigation with filtered results display
+- Implement CSS-based exit animation (slide left, rotate, 300ms ease-out)
+- Use onanimationend event to trigger next card after animation completes
+- Fetch existing deck cards and filter search results to prevent duplicates
+- Use Signal pattern for deck card IDs enabling manual updates when cards added
 
-**Recent Achievement**: Independently diagnosed and resolved filter state persistence issue by tracing signal initialization patterns across multiple components. Recognized that direct reads (value attribute) work correctly but local signals need initialization closures. Implemented consistent pattern for all numeric inputs (power/toughness/cmc), range fields, color selections, and multi-select arrays. Demonstrated understanding of Dioxus signal lifecycle and mount-time initialization patterns.
+**Recent Achievement**: Successfully refactored complex navigation component into generic reusable pattern. Made architectural decision to keep all functionality (axis detection, 4 directions) for future extensibility rather than simplifying to only current needs. Implemented complete pagination system with intelligent de-duplication. Debugged CSS positioning issue by tracing overlay behavior to .swipeable class. Demonstrated understanding of EventHandler patterns, closure mutability requirements, and Signal-based reactive state management.
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **PostgreSQL Operator Type Requirements** — Learning curve on which PostgreSQL operators work with which type combinations (jsonb/text[]/arrays). Need reference for @>, <@, ?|, &&, etc.
-2. **Builder Pattern Refactoring** — Best approach for SearchCards (17 params) and SyncMetrics (10 params) to satisfy too_many_arguments without breaking existing code.
-3. **Component Composition Strategy** — When to use sub-components vs inline logic for complex UI elements like filters with multiple fields.
-4. **Card Display Patterns** — Best approach for rendering filtered card results - grid vs list, pagination vs infinite scroll, image loading strategies.
-5. **Filter Execution Timing** — When to execute search (on every filter change, on explicit submit, debounced after changes) for best UX and performance.
+1. **CSS Animation Integration with Dioxus** — How to coordinate CSS animations with Dioxus state changes, using onanimationend events to trigger state updates after animations complete
+2. **Resource vs Signal for Data Loading** — When to use use_resource (auto-loading) vs Signal (manual updates) for deck card filtering use case
+3. **Builder Pattern Refactoring** — Best approach for SearchCards (17 params) and SyncMetrics (10 params) to satisfy too_many_arguments without breaking existing code
+4. **Animation Timing Coordination** — Ensuring smooth UX when card exit animation must complete before showing next card, avoiding janky transitions
+5. **Deck Card ID Extraction** — Best pattern for extracting card IDs from Deck struct (need pub accessor or direct field access)
 
 ---
 
@@ -160,6 +160,11 @@ alwaysApply: true
 - **DRY Component Boundaries**: Knowing when to extract components (repeated 3+ times with identical structure) vs when inline is clearer
 - **Signal Initialization from Context**: Pattern of `use_signal(|| { context().field()... })` for initializing local signals from context on mount, ensuring form inputs display persisted state
 - **Mount-Time Initialization**: Understanding that signal closures run once on component mount, capturing initial values from context for local editing
+- **EventHandler Props Pattern**: Building generic components with EventHandler<()> props for flexible callback integration (on_swipe_left, on_swipe_right, etc.)
+- **EventHandler Invocation**: EventHandler.call(()) pattern to invoke callbacks passed as props from parent components
+- **Mutable Closure Requirements**: Closures that modify signals or call other closures must be declared with `let mut` keyword to satisfy borrow checker
+- **Component Generalization**: Refactoring context-specific components into generic wrappers by replacing hardcoded logic with EventHandler props
+- **CSS Class Removal for Positioning**: Understanding when CSS classes cause unintended layout effects (position: fixed creating full-screen overlays)
 
 ### 💾 SQLx Database Operations & Advanced Patterns
 - **Connection Pooling**: Production-ready pool configuration with optimized settings
@@ -262,7 +267,7 @@ alwaysApply: true
 - **Code Reduction Victory**: Net reduction of 263 lines (711 deleted, 448 added) through architectural improvements
 - *Note: Complete production-ready HTTP client layer with consistent patterns across all operations*
 
-### 🎮 Swipe-Based Navigation & Gestures
+### 🎮 Swipe-Based Navigation & Gestures (Major Refactor Complete)
 - **Position Tracking**: BasicPoint (i32 x/y) for screen coordinates independent of swipe detection
 - **Multi-Screen Architecture**: Always-render pattern with CSS transforms controlling visibility
 - **Swipe-to-Submit Implementation**: use_effect watching latest_swipe signal triggers form submissions when submission_swipe direction detected
@@ -276,18 +281,23 @@ alwaysApply: true
 - **State Management**: Decoupled position updates from swipe detection for flexible interaction patterns
 - **Abstraction Patterns**: Consolidated onswipestart/move/end for identical touch/mouse behavior
 - **Modular Swipe Architecture**: Split into axis, config, direction, onmouse, ontouch, state, time_point modules (7 files)
-- **Swipeable Component**: Reusable wrapper requiring external Signal<SwipeState> for shared state across screens
-- **SwipeConfig Structure**: navigation_swipes (Vec), submission_swipe (Option), from_main_screen (ScreenOffset) for positioning
-- **Shared State Pattern**: Parent component creates Signal<SwipeState>, passes to all child Swipeable components
+- **Generic Swipeable Component**: Refactored from screen-navigation to generic wrapper accepting EventHandler props for all 4 directions
+- **SwipeConfig Simplification**: Removed navigation_swipes/submission_swipe/from_main_screen, added allowed_directions Vec<Direction> + distance_threshold + speed_threshold
+- **EventHandler Integration**: Component signature includes on_swipe_left/right/up/down EventHandler<()> props called via .call(()) pattern
+- **use_effect Clearing Pattern**: Effect watches latest_swipe signal, matches direction to call appropriate EventHandler, then clears latest_swipe preventing re-triggering
+- **Shared State Pattern**: Parent component creates Signal<SwipeState>, passes to Swipeable along with config and event handlers
 - **Smooth Animation System**: is_swiping flag controls return_animation_seconds (0.0 during swipe, non-zero after)
-- **VW_GAP Adjustment**: Increased to 100vw for horizontal submission gestures, VH_GAP remains 75vh for vertical navigation
-- **Universal Integration**: All auth (Login, Register, Home) and app (Profile, MainHome, Decks) screens using Swipeable
+- **Transform Simplification**: Removed screen_offset and VW_GAP/VH_GAP calculations, now pure delta-based transform: translate({xpx}px, {ypx}px)
+- **Axis Locking Preservation**: Kept traversing_axis and all 4 direction detection for future extensibility despite current needs being X-axis only
+- **CSS Class Removal**: Removed class="swipeable" to prevent position: fixed overlay breaking layout in non-navigation contexts
+- **Component Reusability**: Generic design enables use on any swipeable entity (cards, images, panels) not just navigation screens
+- **Screen Migration**: Removed Swipeable from 18 auth/app screens, replaced with centered div wrappers using Tailwind utility classes
 - **ScreenOffset Type System**: Point2D<i32> coordinates replacing Option<Direction> for flexible multi-dimensional positioning
 - **Screen Positioning Trait**: ScreenOffsetMethods trait providing up/down/left/right factory methods and chaining methods (*_again)
 - **Multi-Dimensional Layouts**: Can position screens at any x/y coordinate (diagonal, multiple steps in one direction, etc)
 - **Position-Aware Submissions**: Form submission guards check current screen_offset to prevent wrong-screen submissions
 - **Screen Offset Calculations**: Transform calculations using offset.x and offset.y directly with VW_GAP/VH_GAP multipliers
-- *Note: New system enables complex screen hierarchies like settings menus, multi-level navigation, grid-based layouts*
+- *Note: Complete refactor achieving generic reusability while preserving all detection capabilities for future use cases*
 
 ### 🏗️ Service Architecture & Dependency Injection
 - **Generic Service Patterns**: Service<R> and Service<DR, CR> implementations across domains
@@ -464,8 +474,8 @@ alwaysApply: true
 - **Pragmatic Newtype Decisions**: Recognized when newtypes add value (validation, type safety) vs unnecessary ceremony (Set names are just display strings)
 - *Note: Phase 1 complete (Text, Types, Combat, Mana), Set endpoint done, Rarity newtype next*
 
-### 🃏 Deck Card Management & Modular Filter Architecture
-- **AddDeckCard Screen Foundation**: Built with card display, empty state ("no cards yet"), and filter navigation
+### 🃏 Deck Card Management & Swipe Navigation (Complete)
+- **AddDeckCard Screen Foundation**: Built with card display, empty state ("no cards yet"), filter navigation, and complete swipe-to-add workflow
 - **Empty State UI**: Created `.card-shape` CSS class (25vh × 35vh, centered with `margin: 0 auto`, flex-centered content)
 - **Modular Filter Refactoring**: Broke 239-line monolithic filter into parent orchestrator + 5 sub-components (text, types, printing, mana, stats)
 - **Router Structure**: Separate routes for AddDeckCard and AddDeckCardFilter with deck_id, filter Signal, and cards Signal
@@ -477,9 +487,17 @@ alwaysApply: true
 - **Image Validation**: Search results filtered to exclude cards without large images for display
 - **Helper Methods**: HttpSearchCards::blank(), is_blank(), PartialEq derive; Optdate::is_changed()
 - **Architecture Pattern**: Sub-components receive shared filter Signal, mutate directly, parent orchestrates search execution
+- **Card Swipe Integration**: Wrapped card image in Swipeable component with left (skip) and right (add to deck) gesture handlers
+- **Index-Based Card Iteration**: current_index signal tracking position in cards list without mutating the list (preserves for undo)
+- **Pagination Implementation**: current_offset tracking database offset, is_loading_more preventing duplicate loads, pagination_limit=100 matching backend
+- **Load-More Threshold**: Triggers pagination when user within 10 cards of end, seamless infinite scroll experience
+- **De-duplication with HashSet**: Tracks existing card IDs using std::collections::HashSet preventing duplicate cards across pagination batches
+- **Filter-Based De-duplication**: Filters cards missing large images AND cards already in HashSet before adding to display list
+- **Pagination Reset on Filter Change**: use_effect watching filter_builder resets current_offset and current_index ensuring fresh results
+- **Non-Mutating Iteration Benefits**: Keeping full card list intact enables potential undo, rewind, or history features in future
 - **RemoveDeckCard Planning**: Will need separate filter implementation filtering deck's cards instead of all cards
 - **Three-Layer Vision**: Filter (separate screen), card display (center), metrics (down) with navigation between
-- *Note: Text and Types filters complete, Printing/Mana/Stats stubs ready for next session, filter-on-load execution pending*
+- *Note: Complete swipe-to-add workflow functional, exit animations and deck card filtering planned next*
 
 ### 🔮 Advanced Rust Patterns
 - **Advanced Async Patterns**: Complex Future handling, async streaming, async iterators

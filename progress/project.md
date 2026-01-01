@@ -13,21 +13,21 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Fixed filter state persistence bug - all filters now properly initialize local signals from filter_builder on component mount. Combat, Mana, and Types filters load persisted values when returning to screen. Implemented initialization closure pattern for use_signal ensuring form inputs display saved filter state.
+**Last Updated**: Complete refactor of Swipeable component to generic reusable wrapper with EventHandler integration. Implemented card swipe navigation in AddDeckCard screen with left (skip) and right (add) gestures. Added pagination with 100-card batches, load-more-threshold triggering when user within 10 cards of end. Implemented de-duplication using HashSet to prevent showing same card twice. Fixed CSS positioning bug where cards overlaid other elements by removing .swipeable class.
 
-**Current Focus**: Browser testing of complete filter workflow with real card data. Test all 6 filters (Text, Types, Combat, Mana, Set, Rarity) to validate persistence, search execution, and navigation flow.
+**Current Focus**: Two planned enhancements for card swiping UX - (1) card exit animation sliding left off screen with rotation, (2) filtering existing deck cards to prevent showing duplicates already added. Plan documented in /Users/scottyrayfermo/.claude/plans/imperative-herding-donut.md ready for implementation.
 
-**Recent Achievement**: Debugged and resolved filter state persistence issue across three filter screens. Identified pattern of local signals initialized to empty values instead of reading from context. Implemented consistent initialization pattern using closures in use_signal for all numeric inputs, color selections, and multi-select fields. Fixed Colors newtype compatibility by adding to_vec() method.
+**Recent Achievement**: Successfully refactored navigation-focused Swipeable component into generic wrapper working on any swipeable entity. Maintained all functionality (axis detection, all 4 directions) for future extensibility. Integrated with AddDeckCard screen providing complete swipe-to-add card workflow with smooth pagination and intelligent de-duplication.
 
-**Current Success**: All 6 filter screens complete with proper state management. Filter values persist across navigation, local signals initialize from filter_builder, and user edits sync back to context. Ready for end-to-end browser testing.
+**Current Success**: Card swiping fully functional with left/right gestures controlling skip/add actions. Pagination seamlessly loads more cards as user approaches end of cached list. De-duplication prevents showing duplicate cards. Cards follow finger during swipe and snap back smoothly when released without committing gesture.
 
-**Current Challenge**: Browser validation of complete filter workflow. Need to verify all filters work with real card data, test persistence across multiple navigation cycles, and ensure backend integration returns expected results.
+**Current Challenge**: Enhance card swiping UX with exit animations and deck card filtering. Animation should slide card off screen with rotation providing satisfying visual feedback. Filtering should fetch current deck cards and exclude them from search results preventing user from seeing cards already added to deck.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Browser Testing - Complete Filter Workflow** - Test all 6 filters with real card data validating persistence, search, and navigation
-2. **Card Browsing Stack** - Implement left/right swipe navigation through filtered card results
-3. **Add Card Integration** - Wire quantity selection and add_card function with copy_max validation
-4. **Filter Results Display** - Show filtered card results in browsable grid/list with card images
+1. **Card Exit Animation** - Slide card left off screen with rotation when swiped (300ms ease-out animation)
+2. **Deck Card Filtering** - Fetch existing deck cards and filter search results to prevent showing duplicates already added
+3. **Browser Testing - Complete Filter Workflow** - Test all 6 filters with real card data validating persistence, search, and navigation
+4. **Filter Results Display** - Enhance card browsing with visual feedback and smooth transitions
 5. **Clippy Marathon - Phase 2: Unwrap Elimination** - Systematically remove all unwrap() calls adding proper error handling
 
 ### 🤔 Next Immediate Priorities (Top 5)
@@ -99,6 +99,14 @@ alwaysApply: true
 - **Swipe-to-Submit Pattern**: Detection of disallowed swipe directions to trigger form submissions without buttons
 - **Always-Render Architecture**: All auth screens render simultaneously with CSS calc transforms controlling visibility
 - **Minimal UI Approach**: Arrow-in-title hints and simplified CSS removing unnecessary flexbox complexity
+- **Generic Swipeable Component**: Refactored from screen-navigation-specific to generic reusable wrapper accepting EventHandler props for all 4 directions
+- **Swipeable Component Simplification**: Removed screen-offset tracking and navigation_swipes/submission_swipe config, added allowed_directions, distance_threshold, speed_threshold for flexible gesture detection
+- **EventHandler Integration**: Component now calls on_swipe_left/right/up/down EventHandlers and clears latest_swipe via use_effect pattern
+- **Swipeable Screen Migration**: Removed Swipeable from 18 auth/app screens, replaced with centered div wrappers using Tailwind utility classes
+- **Card Swipe Navigation**: Complete swipe-to-add implementation in AddDeckCard with left (skip) and right (add) gestures controlling card iteration
+- **Pagination System**: Automatic card loading when user within 10 cards of end, 100-card batch size matching backend default
+- **De-duplication Pattern**: HashSet tracking seen card IDs preventing duplicate display across pagination batches
+- **Non-Mutating Card Iteration**: Index-based navigation preserving full card list for potential undo functionality
 - **Frontend-Backend HTTP Integration**: Complete authentication flow with reqwest POST requests to /api/auth endpoints
 - **Async Dioxus Patterns**: spawn() for calling async HTTP functions from sync event handlers
 - **HTTP Error Handling**: Custom error types mapping status codes (401/422/500) to user-facing messages
