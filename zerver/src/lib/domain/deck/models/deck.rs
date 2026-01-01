@@ -13,8 +13,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Deck {
-    deck_profile: DeckProfile,
-    cards: Vec<Card>,
+    pub deck_profile: DeckProfile,
+    pub cards: Vec<Card>,
 }
 
 impl Deck {

@@ -11,23 +11,19 @@ pub trait IsConstraintViolation {
 
 impl IsConstraintViolation for sqlx::Error {
     fn is_unique_constraint_violation(&self) -> bool {
-        if let sqlx::Error::Database(e) = self {
-            if let Some(code) = e.code() {
-                if code == UNIQUE_CONSTRAINT_VIOLATION_CODE {
+        if let sqlx::Error::Database(e) = self
+            && let Some(code) = e.code()
+                && code == UNIQUE_CONSTRAINT_VIOLATION_CODE {
                     return true;
                 }
-            }
-        }
         false
     }
     fn is_check_constraint_violation(&self) -> bool {
-        if let sqlx::Error::Database(e) = self {
-            if let Some(code) = e.code() {
-                if code == CHECK_CONSTRAINT_VIOLATION_CODE {
+        if let sqlx::Error::Database(e) = self
+            && let Some(code) = e.code()
+                && code == CHECK_CONSTRAINT_VIOLATION_CODE {
                     return true;
                 }
-            }
-        }
         false
     }
 }
