@@ -1,7 +1,7 @@
 use crate::{
     inbound::{
-        components::auth::bouncer::Bouncer, router::Router,
-        screens::app::signal_logout::SignalLogout,
+        components::auth::{bouncer::Bouncer, signal_logout::SignalLogout},
+        router::Router,
     },
     outbound::client::ZwipeClient,
 };

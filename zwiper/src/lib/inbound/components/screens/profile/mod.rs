@@ -4,9 +4,8 @@ pub mod change_username;
 
 use crate::{
     inbound::{
-        components::auth::bouncer::Bouncer,
+        components::auth::{bouncer::Bouncer, signal_logout::SignalLogout},
         router::Router,
-        screens::app::signal_logout::SignalLogout,
     },
     outbound::client::ZwipeClient,
 };
