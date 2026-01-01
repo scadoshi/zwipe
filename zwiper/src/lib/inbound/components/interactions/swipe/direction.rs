@@ -14,3 +14,14 @@ impl Direction {
         }
     }
 }
+
+impl std::fmt::Display for Direction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            Self::Left => write!(f, "Left"),
+            Self::Right => write!(f, "Right"),
+            Self::Up => write!(f, "Up"),
+            Self::Down => write!(f, "Down"),
+        }
+    }
+}

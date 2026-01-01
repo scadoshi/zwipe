@@ -30,7 +30,7 @@ pub fn Swipeable(
 ) -> Element {
     // cloning to be passable to closures
     let config1 = config.clone();
-    let config2 = config.clone();
+    let config2 = config;
 
     // re-positioning during swipe reactive to state changes
     let delta = state()
