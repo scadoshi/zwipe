@@ -2,7 +2,9 @@ use crate::{
     inbound::{
         components::{
             auth::{bouncer::Bouncer, session_upkeep::Upkeep},
-            interactions::swipe::{config::SwipeConfig, direction::Direction, state::SwipeState, Swipeable},
+            interactions::swipe::{
+                config::SwipeConfig, direction::Direction, state::SwipeState, Swipeable,
+            },
         },
         router::Router,
     },
@@ -90,7 +92,8 @@ pub fn Add(deck_id: Uuid) -> Element {
                         .into_iter()
                         .filter(|card| {
                             !existing_ids.contains(&card.card_profile.id)
-                                && card.scryfall_data
+                                && card
+                                    .scryfall_data
                                     .image_uris
                                     .as_ref()
                                     .and_then(|x| x.large.as_ref())
@@ -138,8 +141,8 @@ pub fn Add(deck_id: Uuid) -> Element {
     let swipe_state = use_signal(SwipeState::new);
     let swipe_config = SwipeConfig::new(
         vec![Direction::Left, Direction::Right],
-        150.0,  // 150px to commit swipe
-        5.0,    // 5px/ms speed threshold
+        150.0, // 150px to commit swipe
+        5.0,   // 5px/ms speed threshold
     );
 
     let mut add_card_to_deck = move || {
@@ -154,7 +157,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         };
 
         // For now, always add quantity 1 (will add quantity picker later)
-        let request = HttpCreateDeckCard::new(&card.card_profile.id.to_string(), 1);
+        let request = HttpCreateDeckCard::new(&card.scryfall_data.id.to_string(), 1);
 
         spawn(async move {
             match client().create_deck_card(deck_id, &request, &sesh).await {
