@@ -13,15 +13,15 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Complete refactor of Swipeable component to generic reusable wrapper with EventHandler integration. Implemented card swipe navigation in AddDeckCard screen with left (skip) and right (add) gestures. Added pagination with 100-card batches, load-more-threshold triggering when user within 10 cards of end. Implemented de-duplication using HashSet to prevent showing same card twice. Fixed CSS positioning bug where cards overlaid other elements by removing .swipeable class.
+**Last Updated**: Filter modal UI polish complete. Fixed accordion open animation by discovering dioxus_primitives uses conditional rendering (element not in DOM when closed), requiring @keyframes animation instead of CSS transitions. Fixed modal-header centering for apply filters button. Centered accordion containers and content. Added CSS Grid animation pattern for smooth accordion interactions.
 
-**Current Focus**: Two planned enhancements for card swiping UX - (1) card exit animation sliding left off screen with rotation, (2) filtering existing deck cards to prevent showing duplicates already added. Plan documented in /Users/scottyrayfermo/.claude/plans/imperative-herding-donut.md ready for implementation.
+**Current Focus**: Card swiping UX enhancements - (1) card exit animation sliding off screen with rotation, (2) continue refining filter workflow and card browsing experience.
 
-**Recent Achievement**: Successfully refactored navigation-focused Swipeable component into generic wrapper working on any swipeable entity. Maintained all functionality (axis detection, all 4 directions) for future extensibility. Integrated with AddDeckCard screen providing complete swipe-to-add card workflow with smooth pagination and intelligent de-duplication.
+**Recent Achievement**: Solved accordion animation mystery - dioxus_primitives AccordionContent uses conditional rendering (if render_element()), meaning CSS transitions can't animate opening (no "before" state in DOM). Solution: @keyframes animations trigger immediately on DOM insertion, while transitions handle closing (element exists to animate from).
 
-**Current Success**: Card swiping fully functional with left/right gestures controlling skip/add actions. Pagination seamlessly loads more cards as user approaches end of cached list. De-duplication prevents showing duplicate cards. Cards follow finger during swipe and snap back smoothly when released without committing gesture.
+**Current Success**: Filter modal fully polished with centered accordion triggers, centered content within accordion items, smooth open/close animations, and properly aligned header buttons. CSS Grid with grid-template-rows provides clean animation infrastructure.
 
-**Current Challenge**: Enhance card swiping UX with exit animations and deck card filtering. Animation should slide card off screen with rotation providing satisfying visual feedback. Filtering should fetch current deck cards and exclude them from search results preventing user from seeing cards already added to deck.
+**Current Challenge**: Implement card exit animations for swipe-to-add workflow. Animation should slide card off screen with rotation when swiped left (skip) or right (add), using onanimationend to trigger next card display.
 
 ### 🎯 Currently Working On (Top 5)
 1. **Card Exit Animation** - Slide card left off screen with rotation when swiped (300ms ease-out animation)
@@ -315,6 +315,10 @@ alwaysApply: true
 - **Delta Detection**: PartialEq-based change detection on all ScryfallData fields, fetches existing records and filters to delta
 - **Empty Delta Guard**: Added early-return for empty delta slices preventing invalid SQL generation (INSERT with no VALUES)
 - **Metrics Tracking Fix**: Debugged issue where empty deltas fell through to error handler, missing metrics updates entirely
+- **Filter Modal UI Polish**: Centered accordion triggers, accordion containers, and accordion content using CSS Grid and flex centering patterns
+- **Accordion Animation Fix**: Discovered dioxus_primitives uses conditional rendering for AccordionContent, requiring @keyframes for open animation (transitions only work for closing when element exists in DOM)
+- **CSS Grid Animation Pattern**: grid-template-rows: 0fr → 1fr with @keyframes for smooth accordion open/close animations
+- **Modal Header Centering**: Fixed apply filters button alignment by changing justify-content from space-between to center
 
 ---
 
