@@ -375,9 +375,28 @@ body {
   right: 0;
 }
 
+/* =======================
+  utilities - utility bar
+  ========================= */
+
+.utility-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #1a1d23;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  z-index: 50;
+}
+
 /* =====================
   utilities - overflow
- ======================= */
+  ======================= */
 
 .overflow-auto {
   overflow: auto;
@@ -469,6 +488,44 @@ body {
 
 .btn-half {
   width: 48%;
+}
+
+.btn-utility {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+  border-radius: 0.5rem;
+  width: auto;
+  margin: 0;
+  background: none;
+  border: 1px solid #f5f5dc;
+  color: #f5f5dc;
+  font-family: "Cascadia Code", monospace;
+  font-weight: 300;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-utility:hover {
+  transform: translateY(-2px);
+  background-color: #f5f5dc;
+  color: #1a1d23;
+  border-color: #f5f5dc;
+}
+
+.btn-utility:active {
+  transform: translateY(-1px);
+}
+
+.btn-utility:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-utility:disabled:hover {
+  background: none;
+  color: #f5f5dc;
+  transform: none;
 }
 
 /* ===========================
@@ -1212,3 +1269,4 @@ body {
 .floating-button:active {
   transform: scale(0.95);
 }
+
