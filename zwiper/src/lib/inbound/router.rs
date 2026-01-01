@@ -1,26 +1,24 @@
-use crate::inbound::screens::{
-    app::{
-        deck::{
-            card::{
-                add::Add as AddDeckCard,
-                filter::{
-                    combat::Combat, mana::Mana, rarity::Rarity, set::Set, text::Text, types::Types,
-                    Filter,
-                },
-                remove::Remove as RemoveDeckCard,
-            },
-            create::CreateDeck,
-            edit::EditDeck,
-            list::DeckList,
-            view::ViewDeck,
-        },
-        home::Home,
-        profile::{
-            change_email::ChangeEmail, change_password::ChangePassword,
-            change_username::ChangeUsername, Profile,
-        },
-    },
+use crate::inbound::components::screens::{
     auth::{login::Login, register::Register},
+    deck::{
+        card::{
+            add::Add as AddDeckCard,
+            filter::{
+                combat::Combat, mana::Mana, rarity::Rarity, set::Set, text::Text, types::Types,
+                Filter,
+            },
+            remove::Remove as RemoveDeckCard,
+        },
+        create::CreateDeck,
+        edit::EditDeck,
+        list::DeckList,
+        view::ViewDeck,
+    },
+    home::Home,
+    profile::{
+        change_email::ChangeEmail, change_password::ChangePassword,
+        change_username::ChangeUsername, Profile,
+    },
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
