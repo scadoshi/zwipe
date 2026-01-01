@@ -15,15 +15,14 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Complete refactor of Swipeable component from navigation-specific to generic reusable wrapper. Implemented EventHandler pattern for all 4 swipe directions with use_effect clearing latest_swipe. Integrated with AddDeckCard providing complete swipe-to-add workflow (left=skip, right=add). Implemented pagination loading more cards when user within 10 of end. Built de-duplication using HashSet preventing duplicate card display. Fixed CSS positioning bug by removing .swipeable class overlay.
+**Last Updated**: Filter modal UI polish complete. Discovered critical insight about dioxus_primitives accordion - uses conditional rendering (element not in DOM when closed), meaning CSS transitions can't animate opening. Solution: @keyframes animations trigger on DOM insertion while transitions handle closing.
 
 **Next Learning Focus**:
-- Implement CSS-based exit animation (slide left, rotate, 300ms ease-out)
+- Implement CSS-based card exit animation (slide off screen with rotation, 300ms ease-out)
 - Use onanimationend event to trigger next card after animation completes
-- Fetch existing deck cards and filter search results to prevent duplicates
-- Use Signal pattern for deck card IDs enabling manual updates when cards added
+- Continue refining swipe-to-add workflow with visual feedback
 
-**Recent Achievement**: Successfully refactored complex navigation component into generic reusable pattern. Made architectural decision to keep all functionality (axis detection, 4 directions) for future extensibility rather than simplifying to only current needs. Implemented complete pagination system with intelligent de-duplication. Debugged CSS positioning issue by tracing overlay behavior to .swipeable class. Demonstrated understanding of EventHandler patterns, closure mutability requirements, and Signal-based reactive state management.
+**Recent Achievement**: Solved accordion animation mystery through source code investigation. Traced issue to dioxus_primitives AccordionContent using `if render_element()` conditional rendering. This means CSS transitions have no "before" state to animate from on open. Applied @keyframes animation pattern which triggers immediately when elements are inserted into DOM, while keeping transitions for closing (element exists to animate from).
 
 ### 🤔 Current Uncertainties (Top 5)
 1. **CSS Animation Integration with Dioxus** — How to coordinate CSS animations with Dioxus state changes, using onanimationend events to trigger state updates after animations complete
@@ -165,6 +164,10 @@ alwaysApply: true
 - **Mutable Closure Requirements**: Closures that modify signals or call other closures must be declared with `let mut` keyword to satisfy borrow checker
 - **Component Generalization**: Refactoring context-specific components into generic wrappers by replacing hardcoded logic with EventHandler props
 - **CSS Class Removal for Positioning**: Understanding when CSS classes cause unintended layout effects (position: fixed creating full-screen overlays)
+- **@keyframes vs CSS Transitions**: Transitions require element to exist in DOM with a "before" state; @keyframes animations trigger immediately on DOM insertion—critical for conditional rendering
+- **dioxus_primitives Conditional Rendering**: AccordionContent uses `if render_element()` pattern, meaning element only exists in DOM when open—transitions can't animate opening, must use @keyframes
+- **CSS Grid Animation Pattern**: grid-template-rows: 0fr → 1fr animates actual content height; combined with @keyframes for open, transitions for close
+- **Hybrid Animation Strategy**: Use @keyframes for elements being inserted (open), transitions for elements being removed (close)—solves conditional rendering animation challenges
 
 ### 💾 SQLx Database Operations & Advanced Patterns
 - **Connection Pooling**: Production-ready pool configuration with optimized settings
