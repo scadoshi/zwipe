@@ -190,4 +190,24 @@ impl CardFilterBuilder {
         self.offset = offset;
         self
     }
+
+    // clear all filters
+    pub fn clear_all(&mut self) -> &mut Self {
+        self.name_contains = None;
+        self.oracle_text_contains = None;
+        self.type_line_contains = None;
+        self.type_line_contains_any = None;
+        self.card_type_contains_any = None;
+        self.set_equals_any = None;
+        self.rarity_equals_any = None;
+        self.cmc_equals = None;
+        self.cmc_range = None;
+        self.color_identity_equals = None;
+        self.color_identity_within = None;
+        self.power_equals = None;
+        self.power_range = None;
+        self.toughness_equals = None;
+        self.toughness_range = None;
+        self
+    }
 }
