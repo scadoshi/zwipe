@@ -1,68 +1,83 @@
+/* Animation for accordion opening (element is newly inserted into DOM) */
+@keyframes accordion-open {
+  from {
+    grid-template-rows: 0fr;
+  }
+  to {
+    grid-template-rows: 1fr;
+  }
+}
+
+/* Accordion trigger - simple button-like style */
 .accordion-trigger {
   display: flex;
   width: 100%;
   box-sizing: border-box;
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
-  padding: 0;
-  padding-top: 1rem;
-  padding-bottom: 1rem;
-  border: none;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #f5f5dc;
   background-color: transparent;
-  color: var(--secondary-color-4);
+  color: #f5f5dc;
   outline: none;
-  text-align: left;
-}
-
-.accordion-trigger:focus-visible {
-  border: none;
-  box-shadow: inset 0 0 0 2px var(--focused-border-color);
-}
-
-.accordion-trigger:hover {
+  text-align: center;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 300;
   cursor: pointer;
-  text-decoration-line: underline;
+  transition: all 0.2s ease;
+  margin: 0.5rem 0;
+  font-family: "Cascadia Code", monospace;
+}
+
+.accordion-trigger:hover:not([data-open="true"]) {
+  transform: translateY(-2px);
+  background-color: rgba(245, 245, 220, 0.05);
+}
+
+/* Selected/open state */
+.accordion-item[data-open="true"] .accordion-trigger {
+  background-color: #f5f5dc;
+  color: #1a1d23;
+  border-color: #f5f5dc;
+  font-weight: 300;
+  transform: none;
 }
 
 .accordion-content {
   display: grid;
-  height: 0;
-}
-
-.accordion-content[data-open="false"] {
-	animation: accordion-slide-down 300ms cubic-bezier(0.87, 0, 0.13, 1) forwards;
+  grid-template-rows: 0fr;
+  justify-items: center;
+  width: 100%;
+  overflow: hidden;
+  transition: grid-template-rows 300ms ease;
 }
 
 .accordion-content[data-open="true"] {
-  animation: accordion-slide-up 300ms cubic-bezier(0.87, 0, 0.13, 1) forwards;
+  grid-template-rows: 1fr;
+  overflow-y: auto;
+  padding-bottom: 0.5rem;
+  animation: accordion-open 300ms ease;
 }
 
-@keyframes accordion-slide-down {
-	from {
-    height: var(--collapsible-content-width);
-	}
-
-	to {
-    height: 0;
-	}
+/* Inner wrapper needed for grid animation */
+.accordion-content > * {
+  min-height: 0;
+  overflow: hidden;
 }
 
-@keyframes accordion-slide-up {
-	from {
-    height: 0;
-	}
-
-	to {
-    height: var(--collapsible-content-width);
-	}
+/* Center content within flex containers */
+.accordion-content .flex-col {
+  align-items: center;
 }
 
 .accordion-item {
-  overflow: hidden;
+  /* overflow: hidden; */
   box-sizing: border-box;
-  border-bottom: 1px solid var(--primary-color-6);
-  margin-top: 1px;
+  /* border-bottom: 1px solid #333; */
+  margin-top: 1rem;
 }
 
 .accordion-item:first-child {
@@ -77,7 +92,7 @@
   width: 20px;
   height: 20px;
   fill: none;
-  stroke: var(--secondary-color-4);
+  stroke: #f5f5dc;
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 2;
@@ -85,5 +100,6 @@
 }
 
 .accordion-item[data-open="true"] .accordion-expand-icon {
+  stroke: #1a1d23;
   rotate: 180deg;
 }
