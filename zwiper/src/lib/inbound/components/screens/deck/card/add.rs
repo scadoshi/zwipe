@@ -1,19 +1,25 @@
 use crate::{
     inbound::{
         components::{
+            accordion::{Accordion, AccordionContent, AccordionItem, AccordionTrigger},
             auth::{bouncer::Bouncer, session_upkeep::Upkeep},
             interactions::swipe::{
                 config::SwipeConfig, direction::Direction, state::SwipeState, Swipeable,
+            },
+            screens::deck::card::filter::{
+                combat::CombatFilterContent, mana::ManaFilterContent, rarity::RarityFilterContent,
+                set::SetFilterContent, text::TextFilterContent, types::TypesFilterContent,
             },
         },
         router::Router,
     },
     outbound::client::{
-        card::search_cards::ClientSearchCards, deck_card::create_deck_card::ClientCreateDeckCard,
-        ZwipeClient,
+        card::search_cards::ClientSearchCards, deck::get_deck::ClientGetDeck,
+        deck_card::create_deck_card::ClientCreateDeckCard, ZwipeClient,
     },
 };
 use dioxus::prelude::*;
+use std::collections::HashSet;
 use uuid::Uuid;
 use zwipe::{
     domain::{
@@ -30,11 +36,19 @@ use zwipe::{
 pub fn Add(deck_id: Uuid) -> Element {
     let navigator = use_navigator();
 
-    let filter_builder: Signal<CardFilterBuilder> = use_context();
+    let mut filter_builder: Signal<CardFilterBuilder> = use_context();
     let mut cards: Signal<Vec<Card>> = use_context();
 
     let mut add_card_error = use_signal(|| None::<String>);
     let mut search_error = use_signal(|| None::<String>);
+
+    let mut is_animating = use_signal(|| false);
+    let mut animation_direction = use_signal(|| Direction::Left);
+
+    let mut deck_cards_ids = use_signal(HashSet::<Uuid>::new);
+
+    // Filters overlay at bottom of screen state
+    let mut filters_overlay_open = use_signal(|| false);
 
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
@@ -45,8 +59,8 @@ pub fn Add(deck_id: Uuid) -> Element {
     // Pagination state
     let mut current_offset = use_signal(|| 0_u32);
     let mut is_loading_more = use_signal(|| false);
-    let pagination_limit = 100_u32; // Match backend default
-    let load_more_threshold = 10_usize; // Trigger load when within 10 cards of end
+    let pagination_limit = 100_u32; // Backend default
+    let load_more_threshold = 10_usize;
 
     let current_card = move || {
         let idx = current_index();
@@ -56,7 +70,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     // Load more cards with pagination and de-duplication
     let mut load_more_cards = move || {
         if is_loading_more() {
-            return; // Already loading
+            return;
         }
 
         is_loading_more.set(true);
@@ -80,18 +94,18 @@ pub fn Add(deck_id: Uuid) -> Element {
             match client().search_cards(&filter, &sesh).await {
                 Ok(new_cards) => {
                     let existing_cards = cards();
+                    let deck_ids = deck_cards_ids();
 
                     // Get existing card IDs for de-duplication
-                    let existing_ids: std::collections::HashSet<_> = existing_cards
-                        .iter()
-                        .map(|c| c.card_profile.id.clone())
-                        .collect();
+                    let existing_ids: HashSet<Uuid> =
+                        existing_cards.iter().map(|c| c.card_profile.id).collect();
 
-                    // Filter out duplicates and cards without images
+                    // Filter out duplicates, deck cards, and cards without images
                     let unique_new_cards: Vec<Card> = new_cards
                         .into_iter()
                         .filter(|card| {
                             !existing_ids.contains(&card.card_profile.id)
+                                && !deck_ids.contains(&card.scryfall_data.id)
                                 && card
                                     .scryfall_data
                                     .image_uris
@@ -171,6 +185,36 @@ pub fn Add(deck_id: Uuid) -> Element {
         });
     };
 
+    let mut clear_filters = move || {
+        filter_builder.write().clear_all();
+    };
+
+    // Fetch deck cards on mount for filtering
+    use_effect(move || {
+        session.upkeep(client);
+        let Some(sesh) = session() else {
+            return;
+        };
+
+        spawn(async move {
+            match client().get_deck(deck_id, &sesh).await {
+                Ok(deck) => {
+                    // Extract scryfall_data IDs from deck cards
+                    // Note: Deck struct has private fields, need to access via pattern matching
+                    let ids: std::collections::HashSet<_> = deck
+                        .cards
+                        .iter()
+                        .map(|card| card.scryfall_data.id)
+                        .collect();
+                    deck_cards_ids.set(ids);
+                }
+                Err(_) => {
+                    // Continue without deck card filtering if fetch fails
+                }
+            }
+        });
+    });
+
     use_effect(move || {
         // Reset pagination when filter changes
         current_offset.set(0);
@@ -194,6 +238,7 @@ pub fn Add(deck_id: Uuid) -> Element {
             match client().search_cards(&filter, &sesh).await {
                 Ok(cards_from_search) => {
                     search_error.set(None);
+                    let deck_ids = deck_cards_ids();
                     cards.set(
                         cards_from_search
                             .into_iter()
@@ -203,6 +248,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                     .as_ref()
                                     .and_then(|x| x.large.as_ref())
                                     .is_some()
+                                    && !deck_ids.contains(&card.scryfall_data.id)
                             })
                             .collect(),
                     );
@@ -226,15 +272,17 @@ pub fn Add(deck_id: Uuid) -> Element {
                         if let Some(ImageUris { large: Some(image_url), ..}) = &card.scryfall_data.image_uris {
                             Swipeable {
                                 state: swipe_state,
-                                config: swipe_config.clone(),
+                                config: swipe_config,
                                 on_swipe_left: move |_| {
-                                    // Skip card - advance to next
-                                    next_card();
+                                    // Skip card - trigger exit animation
+                                    is_animating.set(true);
+                                    animation_direction.set(Direction::Left);
                                 },
                                 on_swipe_right: move |_| {
-                                    // Add card to deck then advance to next
+                                    // Add card to deck then trigger exit animation
                                     add_card_to_deck();
-                                    next_card();
+                                    is_animating.set(true);
+                                    animation_direction.set(Direction::Right);
                                 },
                                 on_swipe_up: move |_| {},     // Not used
                                 on_swipe_down: move |_| {},   // Not used
@@ -242,7 +290,17 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 img {
                                     src: "{image_url}",
                                     alt: "{card.scryfall_data.name}",
-                                    class: "card-image"
+                                    class: "card-image",
+                                    class: if is_animating() { "card-exit-animation" } else { "" },
+                                    style: if is_animating() {
+                                        format!("--card-exit-direction: card-exit-{}", animation_direction().to_string().to_lowercase())
+                                    } else {
+                                        String::new()
+                                    },
+                                    onanimationend: move |_| {
+                                        is_animating.set(false);
+                                        next_card();
+                                    }
                                 }
                             }
                         }
@@ -253,15 +311,8 @@ pub fn Add(deck_id: Uuid) -> Element {
                         }
                     }
 
-                    button { class : "btn",
-                        onclick : move |_| {
-                            navigator.push(Router::Filter { } );
-                        },
-                        "filters"
-                    }
-
                     if let Some(add_card_error) = add_card_error() {
-                        div { class : "error", "{add_card_error}"}
+                        div { class : "message-error", "{add_card_error}"}
                     }
 
                     if let Some(search_error) = search_error() {
@@ -273,6 +324,87 @@ pub fn Add(deck_id: Uuid) -> Element {
                             navigator.push(Router::EditDeck { deck_id });
                         },
                         "back"
+                    }
+                }
+            }
+
+            // Fixed bottom tab - button-style trigger
+            div {
+                class: "fixed bottom-0 left-0 right-0 bg-dark",
+                style: "z-index: 50; padding: 1rem; display: flex; justify-content: center;",
+                button {
+                    class: "btn btn-sm",
+                    onclick: move |_| filters_overlay_open.set(true),
+                    "filters ↑"
+                }
+            }
+
+            // Modal backdrop (always rendered for CSS animation)
+            div {
+                class: if filters_overlay_open() { "modal-backdrop show" } else { "modal-backdrop" },
+                onclick: move |_| filters_overlay_open.set(false),
+            }
+
+            // Bottom sheet (always rendered for CSS animation)
+            div {
+                class: if filters_overlay_open() { "bottom-sheet show" } else { "bottom-sheet" },
+
+                // Header with apply button
+                div { class: "modal-header",
+                    button {
+                        class: "btn btn-sm",
+                        onclick: move |_| filters_overlay_open.set(false),
+                        "apply filters ↓"
+                    }
+                }
+
+                // Content with accordion
+                div { class: "modal-content",
+                    Accordion {
+                        id: "filter-accordion",
+                        allow_multiple_open: false,
+                        collapsible: true,
+
+                        AccordionItem { index: 1,
+                            AccordionTrigger { "combat" }
+                            AccordionContent { CombatFilterContent {} }
+                        }
+
+                        AccordionItem { index: 2,
+                            AccordionTrigger { "mana" }
+                            AccordionContent { ManaFilterContent {} }
+                        }
+
+                        AccordionItem { index: 3,
+                            AccordionTrigger { "rarity" }
+                            AccordionContent { RarityFilterContent {} }
+                        }
+
+                        AccordionItem { index: 4,
+                            AccordionTrigger { "set" }
+                            AccordionContent { SetFilterContent {} }
+                        }
+
+                        AccordionItem { index: 5,
+                            AccordionTrigger { "text" }
+                            AccordionContent { TextFilterContent {} }
+                        }
+
+                        AccordionItem { index: 6,
+                            AccordionTrigger { "types" }
+                            AccordionContent { TypesFilterContent {} }
+                        }
+                  }
+                }
+
+                // Footer with clear button
+                div { class: "modal-footer",
+                    button {
+                        class: "btn btn-sm",
+                        onclick: move |_| {
+                            clear_filters();
+                        },
+                        "clear filters"
                     }
                 }
             }
