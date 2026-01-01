@@ -328,14 +328,19 @@ pub fn Add(deck_id: Uuid) -> Element {
                 }
             }
 
-            // Fixed bottom tab - button-style trigger
             div {
-                class: "fixed bottom-0 left-0 right-0 bg-dark",
-                style: "z-index: 50; padding: 1rem; display: flex; justify-content: center;",
+                class: "utility-bar",
                 button {
-                    class: "btn btn-sm",
+                    class: "btn-utility",
                     onclick: move |_| filters_overlay_open.set(true),
-                    "filters ↑"
+                    "filters"
+                }
+                button {
+                    class: "btn-utility",
+                    onclick: move |_| {
+                        cards.write().clear();
+                    },
+                    "clear cards"
                 }
             }
 
@@ -354,7 +359,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     button {
                         class: "btn btn-sm",
                         onclick: move |_| filters_overlay_open.set(false),
-                        "apply filters ↓"
+                        "apply filters"
                     }
                 }
 
