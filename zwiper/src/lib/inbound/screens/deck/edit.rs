@@ -215,13 +215,15 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
 
     rsx! {
         Bouncer {
+            div { class: "page-header",
+                h2 { "edit deck" }
+            }
+
             div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
-                style: "width: 100vw; justify-content: center;",
+                style: "width: 100vw; justify-content: center; padding-top: 4rem;",
                 div { class : "container-sm",
                     match &*original_deck_profile_resource.read() {
                         Some(Ok(_profile)) => rsx! {
-
-                            h2 { class: "text-center mb-2 font-light tracking-wider", "edit deck" }
 
                             if let Some(error) = load_error() {
                                 // {tracing::error!("{}", error);}
@@ -230,10 +232,10 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
 
                             form { class: "flex-col text-center",
                                 TextInput {
-                                    label: Some("deck name".to_string()),
+                                    label: Some("deck name"),
                                     value: deck_name,
-                                    id: "deck_name".to_string(),
-                                    placeholder: "deck name".to_string(),
+                                    id: "deck_name",
+                                    placeholder: "deck name",
                                 }
 
                                 div { class: "mb-4",

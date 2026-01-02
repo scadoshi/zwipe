@@ -375,6 +375,31 @@ body {
   right: 0;
 }
 
+/* ======================
+  utilities - page header
+  ======================== */
+
+.page-header {
+  position: fixed;
+  border-bottom: 1px solid #333;
+  top: 0;
+  left: 0;
+  right: 0;
+  background-color: #1a1d23;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem 2rem;
+  z-index: 50;
+}
+
+.page-header h2 {
+  font-size: 1rem;
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  margin: 0;
+}
+
 /* =======================
   utilities - utility bar
   ========================= */
