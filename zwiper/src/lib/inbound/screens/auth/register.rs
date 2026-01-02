@@ -2,7 +2,7 @@ use crate::{
     domain::error::UserFacing,
     inbound::{components::fields::text_input::TextInput, router::Router},
     outbound::{
-        client::{ZwipeClient, auth::register::ClientRegister},
+        client::{auth::register::ClientRegister, ZwipeClient},
         session::Persist,
     },
 };
@@ -109,67 +109,56 @@ pub fn Register() -> Element {
             style: "width: 100vw; justify-content: center;",
             div { class: "logo",  "{logo}" }
             div { class : "container-sm text-center",
-
-            form { class: "flex-col",
-
-                if submit_attempted() {
-                    if let Some(error) = username_error() {
+                form { class: "flex-col",
+                    if submit_attempted() {
+                        if let Some(error) = username_error() {
+                            div { class : "message-error", "{error}" }
+                        }
+                    }
+                    TextInput {
+                        value: username,
+                        id:"username".to_string(),
+                        placeholder: "username".to_string(),
+                     }
+                    if submit_attempted() {
+                        if let Some(error) = email_error() {
+                            div { class : "message-error", "{error}" }
+                        }
+                    }
+                    TextInput {
+                        value: email,
+                        id: "email".to_string(),
+                        placeholder: "email".to_string(),
+                    }
+                    if submit_attempted() && let Some(error) = password_error() {
                         div { class : "message-error", "{error}" }
                     }
-                }
-
-                TextInput {
-                    value: username,
-                    id:"username".to_string(),
-                    placeholder: "username".to_string(),
-                 }
-
-                if submit_attempted() {
-                    if let Some(error) = email_error() {
-                        div { class : "message-error", "{error}" }
+                    TextInput {
+                        value: password,
+                        id: "password".to_string(),
+                        placeholder: "password".to_string(),
+                        input_type: "password".to_string(),
+                    }
+                    if is_loading() {
+                        div { class : "spinner" }
+                    } else if let Some(error) = submission_error() {
+                        div { class: "message-error",
+                            { error }
+                        }
                     }
                 }
-
-                TextInput {
-                    value: email,
-                    id: "email".to_string(),
-                    placeholder: "email".to_string(),
-                }
-
-                if submit_attempted() {
-                    if let Some(error) = password_error() {
-                        div { class : "message-error", "{error}" }
-                    }
-                }
-
-                TextInput {
-                    value: password,
-                    id: "password".to_string(),
-                    placeholder: "password".to_string(),
-                    input_type: "password".to_string(),
-                }
-
-                button { class: "btn",
-                    onclick : move |_| attempt_submit(),
-                    "create profile"
-                }
-
-                if is_loading() {
-                    div { class : "spinner" }
-                } else if let Some(error) = submission_error() {
-                    div { class: "message-error",
-                        { error }
-                    }
-                }
-            }
             }
         }
-
         div { class: "util-bar",
             button {
                 class: "util-btn",
                 onclick: move |_| navigator.go_back(),
-                "back"
+                "back to login"
+            }
+            button {
+                class: "util-btn",
+                onclick : move |_| attempt_submit(),
+                "create profile"
             }
         }
     }
