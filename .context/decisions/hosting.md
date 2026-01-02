@@ -10,24 +10,24 @@ For a card game app serving 36k+ MTG cards to mobile users, the deployment archi
 
 ### **Three-Tier Architecture**
 ```
-📱 Mobile App (Flutter)
-├── SQLite local database (card metadata + cache)
-├── Image cache (LRU, 200-400MB)
-├── User data cache (offline editing)
-└── Authentication tokens
+📱 Mobile App (Dioxus)
+├── Browser/mobile rendering
+├── Session storage (tokens, preferences)
+├── HTTP client for API communication
+└── Reactive UI with signals
 
 🌐 API Server (Rust + Axum)
-├── User authentication & authorization  
+├── User authentication & authorization
 ├── Deck CRUD operations
 ├── Card search & filtering APIs
-├── Sync & conflict resolution
-└── Analytics & monitoring
+├── Session management (JWT + refresh tokens)
+└── Scryfall card sync
 
 🗄️ Database + Storage
-├── PostgreSQL (user data, deck master records)
-├── Card metadata (Scryfall sync)
-├── CDN (Cloudflare/AWS) for images
-└── File storage for backups
+├── PostgreSQL (user data, deck records, 35k+ cards)
+├── SQLx for database operations
+├── CDN (Cloudflare/AWS) for images (future)
+└── Automated backups
 ```
 
 ---
