@@ -117,8 +117,8 @@ pub fn Register() -> Element {
                     }
                     TextInput {
                         value: username,
-                        id:"username".to_string(),
-                        placeholder: "username".to_string(),
+                        id: "username",
+                        placeholder: "username",
                      }
                     if submit_attempted() {
                         if let Some(error) = email_error() {
@@ -127,17 +127,17 @@ pub fn Register() -> Element {
                     }
                     TextInput {
                         value: email,
-                        id: "email".to_string(),
-                        placeholder: "email".to_string(),
+                        id: "email",
+                        placeholder: "email",
                     }
                     if submit_attempted() && let Some(error) = password_error() {
                         div { class : "message-error", "{error}" }
                     }
                     TextInput {
                         value: password,
-                        id: "password".to_string(),
-                        placeholder: "password".to_string(),
-                        input_type: "password".to_string(),
+                        id: "password",
+                        placeholder: "password",
+                        input_type: "password",
                     }
                     if is_loading() {
                         div { class : "spinner" }
