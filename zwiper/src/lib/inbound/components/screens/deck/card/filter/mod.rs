@@ -5,10 +5,7 @@ pub mod set;
 pub mod text;
 pub mod types;
 
-use crate::inbound::{
-    components::auth::bouncer::Bouncer,
-    router::Router,
-};
+use crate::inbound::{components::auth::bouncer::Bouncer, router::Router};
 use dioxus::prelude::*;
 
 #[component]
@@ -72,13 +69,15 @@ pub fn Filter() -> Element {
                             }
                         }
 
-                        button { class : "btn",
-                            onclick : move |_| {
-                                navigator.go_back();
-                            },
-                            "back"
-                        }
                     }
+                }
+            }
+
+            div { class: "util-bar",
+                button {
+                    class: "util-btn",
+                    onclick: move |_| navigator.go_back(),
+                    "back"
                 }
             }
         }

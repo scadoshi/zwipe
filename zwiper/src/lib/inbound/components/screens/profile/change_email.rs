@@ -129,17 +129,6 @@ pub fn ChangeEmail() -> Element {
                             placeholder: "password".to_string(),
                             input_type: "password".to_string(),
                         }
-
-                        button { class: "btn",
-                            onclick : move |_| attempt_submit(),
-                            "submit"
-                        }
-
-                        button { class: "btn",
-                            onclick : move |_| {
-                                navigator.go_back();
-                            }, "back"
-                        }
                     }
 
                     if let Some(error) = submission_error() {
@@ -147,6 +136,18 @@ pub fn ChangeEmail() -> Element {
                     } else if let Some(success_message) = success_message() {
                         div { class: "message-success", {success_message} }
                     }
+                }
+            }
+
+            div { class: "util-bar",
+                button {
+                    class: "util-btn",
+                    onclick: move |_| navigator.go_back(),
+                    "back"
+                }
+                button { class: "util-btn",
+                    onclick : move |_| attempt_submit(),
+                    "save changes"
                 }
             }
         }

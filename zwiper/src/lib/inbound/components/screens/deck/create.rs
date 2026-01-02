@@ -7,7 +7,7 @@ use crate::{
         router::Router,
     },
     outbound::client::{
-        card::search_cards::ClientSearchCards, deck::create_deck::ClientCreateDeck, ZwipeClient,
+        ZwipeClient, card::search_cards::ClientSearchCards, deck::create_deck::ClientCreateDeck,
     },
 };
 use dioxus::prelude::*;
@@ -17,8 +17,8 @@ use zwipe::{
     domain::{
         auth::models::session::Session,
         card::models::{
-            search_card::card_filter::{builder::CardFilterBuilder, error::InvalidCardFilter},
             Card,
+            search_card::card_filter::{builder::CardFilterBuilder, error::InvalidCardFilter},
         },
         deck::models::deck::copy_max::CopyMax,
     },
@@ -205,14 +205,15 @@ pub fn CreateDeck() -> Element {
                         if let Some(error) = submission_error() {
                             div { class : "message-error", "{error}" }
                         }
-
-                        button { class : "btn",
-                            onclick : move |_| {
-                                navigator.go_back();
-                            },
-                            "back"
-                        }
                     }
+                }
+            }
+
+            div { class: "util-bar",
+                button {
+                    class: "util-btn",
+                    onclick: move |_| navigator.go_back(),
+                    "back"
                 }
             }
         }

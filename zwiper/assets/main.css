@@ -379,8 +379,9 @@ body {
   utilities - utility bar
   ========================= */
 
-.utility-bar {
+.util-bar {
   position: fixed;
+  border-top: 1px solid #333;
   bottom: 0;
   left: 0;
   right: 0;
@@ -490,7 +491,7 @@ body {
   width: 48%;
 }
 
-.btn-utility {
+.util-btn {
   padding: 0.4rem 0.8rem;
   font-size: 0.8rem;
   border-radius: 0.5rem;
@@ -505,24 +506,24 @@ body {
   transition: all 0.2s ease;
 }
 
-.btn-utility:hover {
+.util-btn:hover {
   transform: translateY(-2px);
   background-color: #f5f5dc;
   color: #1a1d23;
   border-color: #f5f5dc;
 }
 
-.btn-utility:active {
+.util-btn:active {
   transform: translateY(-1px);
 }
 
-.btn-utility:disabled {
+.util-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
 }
 
-.btn-utility:disabled:hover {
+.util-btn:disabled:hover {
   background: none;
   color: #f5f5dc;
   transform: none;
@@ -1269,4 +1270,3 @@ body {
 .floating-button:active {
   transform: scale(0.95);
 }
-

@@ -201,6 +201,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
 
             match client().update_deck_profile(deck_id, &request, &sesh).await {
                 Ok(_updated) => {
+                    submission_error.set(None);
+                    is_saving.set(false);
                     navigator.push(Router::ViewDeck { deck_id });
                 }
                 Err(e) => {
@@ -296,49 +298,48 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                     }
                                 }
 
-                                if has_made_changes() {
-                                    label { class : "label", "changes have been made" }
-                                    button { class: "btn",
-                                        disabled: is_saving(),
-                                        onclick : move |_| attempt_submit(),
-                                        if is_saving() { "saving..." } else { "save them" }
-                                    }
-                                }
-
-                                if !has_made_changes() {
-                                    label { class: "label mb-2", "deck cards" }
-                                    div { class : "flex flex-between gap-2",
-                                        button { class : "btn btn-half",
-                                            onclick : move |_| {
-                                                navigator.push(Router::AddDeckCard { deck_id });
-                                            },
-                                            "add"
-                                        }
-
-                                        button { class : "btn btn-half",
-                                            onclick : move |_| {
-                                                navigator.push(Router::RemoveDeckCard { deck_id });
-                                            },
-                                            "remove"
-                                        }
-                                    }
-                                }
-
                                 if let Some(error) = submission_error() {
                                     div { class: "message-error", "{error}" }
-                                }
-
-                                button { class: "btn",
-                                    onclick : move |_| {
-                                        navigator.push(Router::ViewDeck { deck_id });
-                                    },
-                                    "back"
                                 }
                             }
 
                         },
                         Some(Err(e)) => rsx! { div { class : "message-error", "{e}"} },
                         None => rsx! { div { class : "spinner" } }
+                    }
+                }
+            }
+
+            div { class: "util-bar",
+                button {
+                    class: "util-btn",
+                    onclick: move |_| {
+                        navigator.push(Router::ViewDeck { deck_id });
+                    },
+                    "back"
+                }
+                if !has_made_changes() {
+                    button {
+                        class : "util-btn",
+                        onclick : move |_| {
+                            navigator.push(Router::AddDeckCard { deck_id });
+                        },
+                        "add cards"
+                    }
+                    button {
+                        class : "util-btn",
+                        onclick : move |_| {
+                            navigator.push(Router::RemoveDeckCard { deck_id });
+                        },
+                        "remove cards"
+                    }
+                }
+                if has_made_changes() {
+                    button {
+                        class: "util-btn",
+                        disabled: is_saving(),
+                        onclick : move |_| attempt_submit(),
+                            if is_saving() { "saving..." } else { "save changes" }
                     }
                 }
             }

@@ -1,12 +1,16 @@
+use crate::inbound::components::alert_dialog::{
+    AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
+    AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
+};
 use crate::{
     inbound::{
         components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
         router::Router,
     },
     outbound::client::{
+        ZwipeClient,
         card::get_card::ClientGetCard,
         deck::{delete_deck::ClientDeleteDeck, get_deck_profile::ClientGetDeckProfile},
-        ZwipeClient,
     },
 };
 use dioxus::prelude::*;
@@ -14,7 +18,7 @@ use uuid::Uuid;
 use zwipe::{
     domain::{
         auth::models::session::Session,
-        card::models::{scryfall_data::image_uris::ImageUris, Card},
+        card::models::{Card, scryfall_data::image_uris::ImageUris},
         deck::models::deck::{copy_max::CopyMax, deck_profile::DeckProfile},
     },
     inbound::http::ApiError,
@@ -68,7 +72,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         Some(Ok(None)) | None => (),
     });
 
-    let mut confirm_deletion = use_signal(|| false);
+    let mut show_delete_dialog = use_signal(|| false);
     let mut delete_error = use_signal(|| None::<String>);
     let mut attempt_delete = move || {
         session.upkeep(client);
@@ -129,51 +133,54 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     }
                                 }
 
-                                if !confirm_deletion() {
-                                    div { class : "flex flex-between gap-2",
-                                        id : "confirmation-prompt",
-                                        button { class: "btn btn-half",
-                                            onclick : move |_| {
-                                                navigator.push(Router::EditDeck { deck_id });
-                                            },
-                                            "edit"
-                                        }
-                                        button { class : "btn btn-half",
-                                            onclick : move |_| confirm_deletion.set(true),
-                                            "delete"
-                                        }
-                                    }
-                                }
-
-                                if confirm_deletion() {
-                                    label { class: "label", r#for : "confirmation-prompt", "are you sure?" }
-                                    div { class : "flex flex-between gap-2",
-                                        id : "confirmation-prompt",
-                                        button { class : "btn btn-half",
-                                            onclick : move |_| attempt_delete(),
-                                            "yes"
-                                        }
-                                        button { class : "btn btn-half",
-                                            onclick : move |_| confirm_deletion.set(false),
-                                            "no"
-                                        }
-                                    }
-                                }
-
                                 if let Some(error) = delete_error() {
                                     div { class: "message-error", "{error}" }
-                                }
-
-                                button { class: "btn",
-                                    onclick : move |_| {
-                                        navigator.push(Router::DeckList {} );
-                                    },
-                                    "back"
                                 }
                             }
                         },
                     Some(Err(e)) => rsx! { div { class : "message-error", "{e}"} },
                     None => rsx! { div { class : "spinner" } }
+                    }
+                }
+            }
+
+            div { class: "util-bar",
+                button {
+                    class: "util-btn",
+                    onclick: move |_| {
+                        navigator.push(Router::DeckList {});
+                    },
+                    "back"
+                }
+                button {
+                    class: "util-btn",
+                    onclick: move |_| {
+                        navigator.push(Router::EditDeck { deck_id });
+                    },
+                    "edit"
+                }
+                button {
+                    class: "util-btn",
+                    onclick: move |_| show_delete_dialog.set(true),
+                    "delete"
+                }
+            }
+
+            AlertDialogRoot {
+                open: show_delete_dialog(),
+                on_open_change: move |open| show_delete_dialog.set(open),
+                AlertDialogContent {
+                    AlertDialogTitle { "delete deck" }
+                    AlertDialogDescription { "are you sure you want to delete this deck?" }
+                    AlertDialogActions {
+                        AlertDialogCancel {
+                            on_click: move |_| show_delete_dialog.set(false),
+                            "cancel"
+                        }
+                        AlertDialogAction {
+                            on_click: move |_| attempt_delete(),
+                            "delete"
+                        }
                     }
                 }
             }

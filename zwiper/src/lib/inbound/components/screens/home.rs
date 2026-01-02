@@ -1,3 +1,7 @@
+use crate::inbound::components::alert_dialog::{
+    AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
+    AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
+};
 use crate::{
     inbound::{
         components::auth::{bouncer::Bouncer, signal_logout::SignalLogout},
@@ -15,7 +19,7 @@ pub fn Home() -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let session: Signal<Option<Session>> = use_context();
 
-    let mut confirm_logout = use_signal(|| false);
+    let mut show_logout_dialog = use_signal(|| false);
 
     let logo = logo::ZWIPE;
 
@@ -25,36 +29,42 @@ pub fn Home() -> Element {
                 style: "width: 100vw; justify-content: center;",
                 div { class : "logo", "{logo}" }
                 div { class : "container-sm text-center flex-col",
-                    button { class : "btn",
+                }
+            }
+
+            div { class: "util-bar",
+                button {
+                    class: "util-btn",
+                    onclick: move |_| show_logout_dialog.set(true),
+                    "logout"
+                }
+                    button { class : "util-btn",
                         onclick : move |_| {
                             navigator.push(Router::Profile {} );
                         }, "profile"
                     }
-                    button { class : "btn",
+                    button { class : "util-btn",
                         onclick : move |_| {
                             navigator.push(Router::DeckList {} );
                         }, "decks"
                     }
 
-                    if !confirm_logout() {
-                        button { class : "btn",
-                            onclick : move |_| confirm_logout.set(true),
-                            "logout"
-                        }
-                    }
+            }
 
-                    if confirm_logout() {
-                        label { class: "label", r#for : "confirmation-prompt", "are you sure?" }
-                        div { class : "flex flex-between gap-2",
-                            id : "confirmation-prompt",
-                            button { class : "btn btn-half",
-                                onclick: move |_| session.logout(client),
-                                "yes"
-                            }
-                            button { class : "btn btn-half",
-                                onclick: move |_| confirm_logout.set(false),
-                                "no"
-                            }
+            AlertDialogRoot {
+                open: show_logout_dialog(),
+                on_open_change: move |open| show_logout_dialog.set(open),
+                AlertDialogContent {
+                    AlertDialogTitle { "logout" }
+                    AlertDialogDescription { "are you sure you want to logout?" }
+                    AlertDialogActions {
+                        AlertDialogCancel {
+                            on_click: move |_| show_logout_dialog.set(false),
+                            "cancel"
+                        }
+                        AlertDialogAction {
+                            on_click: move |_| session.logout(client),
+                            "logout"
                         }
                     }
                 }
