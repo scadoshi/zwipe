@@ -263,3 +263,49 @@ The initial UI rendered by the component on the client must be identical to the 
 
 * Use the `use_server_future` hook instead of `use_resource`. It runs the future on the server, serializes the result, and sends it to the client, ensuring the client has the data immediately for its first render.
 * Any code that relies on browser-specific APIs (like accessing `localStorage`) must be run *after* hydration. Place this code inside a `use_effect` hook.
+
+# Event Handler Syntax
+
+**CRITICAL:** Event handlers in Dioxus must return `()` (unit type) or an async block. Functions like `navigator.push()` return values that don't implement `SpawnIfAsync`, causing compiler errors if returned from the closure.
+
+## Correct Syntax (Statement with Braces)
+
+```rust
+button {
+    class: "util-btn",
+    onclick: move |_| {
+        navigator.push(Router::Home {});
+    },
+    "click me"
+}
+```
+
+**Why this works:** The braces create a block, and the semicolon makes `navigator.push()` a statement (not an expression). The block returns `()`, satisfying the trait requirements.
+
+## Incorrect Syntax (Causes SpawnIfAsync Error)
+
+```rust
+button {
+    class: "util-btn",
+    onclick: move |_| navigator.push(Router::Home {}), // ❌ Returns a value
+    "click me"
+}
+```
+
+**Why this fails:** Without braces and semicolon, this is an expression that returns `Option<ExternalNavigationFailure>`, which doesn't implement `SpawnIfAsync`.
+
+## Multiple Statements
+
+For multiple statements, always use braces:
+
+```rust
+button {
+    onclick: move |_| {
+        tracing::info!("Button clicked");
+        count.set(count() + 1);
+    },
+    "click me"
+}
+```
+
+**Rule:** When calling functions that return values (like `navigator.push()`, `navigator.go_back()`), wrap in braces and use semicolons to make them statements, not expressions.
