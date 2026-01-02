@@ -390,6 +390,7 @@ body {
   flex-direction: row;
   justify-content: center;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
   padding: 2rem;
   z-index: 50;
@@ -504,6 +505,7 @@ body {
   font-weight: 300;
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .util-btn:hover {

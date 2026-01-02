@@ -8,9 +8,9 @@ use crate::{
         router::Router,
     },
     outbound::client::{
-        ZwipeClient,
         card::get_card::ClientGetCard,
         deck::{delete_deck::ClientDeleteDeck, get_deck_profile::ClientGetDeckProfile},
+        ZwipeClient,
     },
 };
 use dioxus::prelude::*;
@@ -18,7 +18,7 @@ use uuid::Uuid;
 use zwipe::{
     domain::{
         auth::models::session::Session,
-        card::models::{Card, scryfall_data::image_uris::ImageUris},
+        card::models::{scryfall_data::image_uris::ImageUris, Card},
         deck::models::deck::{copy_max::CopyMax, deck_profile::DeckProfile},
     },
     inbound::http::ApiError,
@@ -151,6 +151,20 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                         navigator.push(Router::DeckList {});
                     },
                     "back"
+                }
+                button {
+                    class : "util-btn",
+                    onclick : move |_| {
+                        navigator.push(Router::AddDeckCard { deck_id });
+                    },
+                    "add cards"
+                }
+                button {
+                    class : "util-btn",
+                    onclick : move |_| {
+                        navigator.push(Router::RemoveDeckCard { deck_id });
+                    },
+                    "remove cards"
                 }
                 button {
                     class: "util-btn",
