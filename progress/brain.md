@@ -15,21 +15,23 @@ alwaysApply: true
 
 ## Current Learning Status
 
-**Last Updated**: Filter modal UI polish complete. Discovered critical insight about dioxus_primitives accordion - uses conditional rendering (element not in DOM when closed), meaning CSS transitions can't animate opening. Solution: @keyframes animations trigger on DOM insertion while transitions handle closing.
+**Last Updated**: AlertDialog component implementation complete. Solved CSS loading mystery—document::Link inside components doesn't reliably render to <head>. Solution: global CSS loading in main.rs ensures styles available on mount. Replaced all inline confirmations with styled AlertDialog modals. Standardized utility bar navigation across 20+ screens.
 
 **Next Learning Focus**:
-- Implement CSS-based card exit animation (slide off screen with rotation, 300ms ease-out)
-- Use onanimationend event to trigger next card after animation completes
-- Continue refining swipe-to-add workflow with visual feedback
+- Improve deck list and edit deck screen UX and visual design
+- Build view deck screen with card categorization by type
+- Implement remove cards workflow with filtering
+- Add toast notifications for swipe feedback teaching user gestures
+- Debug and fix card filter persistence and clearing issues
 
-**Recent Achievement**: Solved accordion animation mystery through source code investigation. Traced issue to dioxus_primitives AccordionContent using `if render_element()` conditional rendering. This means CSS transitions have no "before" state to animate from on open. Applied @keyframes animation pattern which triggers immediately when elements are inserted into DOM, while keeping transitions for closing (element exists to animate from).
+**Recent Achievement**: Discovered dioxus_primitives component CSS must be loaded globally at app root level, not inside component wrappers. document::Link elements nested in components don't consistently render to document head. Moved accordion, alert-dialog, and toast stylesheets to main.rs with Asset constants for reliable loading.
 
 ### 🤔 Current Uncertainties (Top 5)
-1. **CSS Animation Integration with Dioxus** — How to coordinate CSS animations with Dioxus state changes, using onanimationend events to trigger state updates after animations complete
-2. **Resource vs Signal for Data Loading** — When to use use_resource (auto-loading) vs Signal (manual updates) for deck card filtering use case
-3. **Builder Pattern Refactoring** — Best approach for SearchCards (17 params) and SyncMetrics (10 params) to satisfy too_many_arguments without breaking existing code
-4. **Animation Timing Coordination** — Ensuring smooth UX when card exit animation must complete before showing next card, avoiding janky transitions
-5. **Deck Card ID Extraction** — Best pattern for extracting card IDs from Deck struct (need pub accessor or direct field access)
+1. **Deck List Design Patterns** — Best practices for displaying many decks in a scrollable list, handling empty states, and integrating with utility bar navigation
+2. **View Deck Card Organization** — Optimal approach for categorizing and displaying deck cards by type (creatures, spells, lands) with counts and visual hierarchy
+3. **Toast Notification Timing** — When to show toasts for user actions (every swipe vs first few for teaching), duration, and positioning
+4. **Card Filter Debugging** — Root causes of filter clearing issues, persistence problems, and why some filters don't apply correctly
+5. **Remove Cards Screen Architecture** — Whether to reuse add card components or build separate specialized screen for deck card removal
 
 ---
 
@@ -168,6 +170,11 @@ alwaysApply: true
 - **dioxus_primitives Conditional Rendering**: AccordionContent uses `if render_element()` pattern, meaning element only exists in DOM when open—transitions can't animate opening, must use @keyframes
 - **CSS Grid Animation Pattern**: grid-template-rows: 0fr → 1fr animates actual content height; combined with @keyframes for open, transitions for close
 - **Hybrid Animation Strategy**: Use @keyframes for elements being inserted (open), transitions for elements being removed (close)—solves conditional rendering animation challenges
+- **AlertDialog Component System**: Built wrapper components around dioxus_primitives alert_dialog with custom styling for confirmation modals (logout, delete)
+- **Modal Dialog Pattern**: AlertDialogRoot, Content, Title, Description, Actions, Cancel, Action components creating consistent confirmation UX
+- **Global CSS Loading Requirement**: document::Link inside components doesn't reliably render to <head>—must load component CSS globally in main.rs with Asset constants
+- **CSS Loading Architecture**: Component stylesheets (accordion.css, alert-dialog.css, toast.css) loaded at app root ensures styles available on component mount
+- **Utility Bar Standardization**: Consolidated navigation buttons to bottom .util-bar divs with .util-btn styling across 20+ screens for consistent mobile-first UX
 
 ### 💾 SQLx Database Operations & Advanced Patterns
 - **Connection Pooling**: Production-ready pool configuration with optimized settings
