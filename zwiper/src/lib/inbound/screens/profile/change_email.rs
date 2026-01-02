@@ -97,11 +97,13 @@ pub fn ChangeEmail() -> Element {
 
     rsx! {
         Bouncer {
-            div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
-                style: "width: 100vw; justify-content: center;",
-                div { class : "container-sm",
+            div { class: "page-header",
+                h2 { "change email" }
+            }
 
-                    h2 { class: "text-center mb-2 font-light tracking-wider", "change email" }
+            div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
+                style: "width: 100vw; justify-content: center; padding-top: 4rem;",
+                div { class : "container-sm",
 
                     form { class: "flex-col text-center",
 
@@ -113,8 +115,9 @@ pub fn ChangeEmail() -> Element {
 
                         TextInput {
                             value: new_email,
-                            id: "new_email".to_string(),
-                            placeholder: "new email".to_string(),
+                            id: "new_email",
+                            label: "new email",
+                            placeholder: "new email",
                         }
 
                         if submit_attempted() {
@@ -125,9 +128,10 @@ pub fn ChangeEmail() -> Element {
 
                         TextInput {
                             value: password,
-                            id: "password".to_string(),
-                            placeholder: "password".to_string(),
-                            input_type: "password".to_string(),
+                            id: "password",
+                            label: "password",
+                            placeholder: "password",
+                            input_type: "password",
                         }
                     }
 

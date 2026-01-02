@@ -97,11 +97,13 @@ pub fn ChangeUsername() -> Element {
 
     rsx! {
         Bouncer {
-            div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
-                style: "width: 100vw; justify-content: center;",
-                div { class : "container-sm",
+            div { class: "page-header",
+                h2 { "change username" }
+            }
 
-                    h2 { class: "text-center mb-2 font-light tracking-wider", "change username" }
+            div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
+                style: "width: 100vw; justify-content: center; padding-top: 4rem;",
+                div { class : "container-sm",
 
                     form { class: "flex-col text-center",
 
@@ -113,8 +115,9 @@ pub fn ChangeUsername() -> Element {
 
                         TextInput {
                             value: new_username,
-                            id: "new_username".to_string(),
-                            placeholder: "new username".to_string(),
+                            id: "new_username",
+                            label: "new username",
+                            placeholder: "new username",
                         }
 
                         if submit_attempted() {
@@ -125,9 +128,10 @@ pub fn ChangeUsername() -> Element {
 
                         TextInput {
                             value: password,
-                            id: "password".to_string(),
-                            placeholder: "password".to_string(),
-                            input_type: "password".to_string(),
+                            id: "password",
+                            label: "password",
+                            placeholder: "password",
+                            input_type: "password",
                         }
                     }
 

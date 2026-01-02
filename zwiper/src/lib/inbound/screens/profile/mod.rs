@@ -27,11 +27,14 @@ pub fn Profile() -> Element {
 
     rsx! {
         Bouncer {
+            div { class: "page-header",
+                h2 { "profile" }
+            }
+
             div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
-                style: "width: 100vw; justify-content: center;",
+                style: "width: 100vw; justify-content: center; padding-top: 4rem;",
                 if let Some(sesh) = session().as_ref() {
                     div { class : "container-sm",
-                        h2 { class: "text-center mb-4 font-light tracking-wider", "profile" }
 
                         div { class : "flex items-center flex-between mb-4 gap-2",
                             div { class : "flex-1",
@@ -39,12 +42,6 @@ pub fn Profile() -> Element {
                                 p { class: "text-base font-light mb-1",
                                     { sesh.user.username.to_string() }
                                 }
-                            }
-                            button { class: "btn btn-sm",
-                                onclick : move |_| {
-                                    navigator.push(Router::ChangeUsername {});
-                                },
-                                "change"
                             }
                         }
 
@@ -55,24 +52,12 @@ pub fn Profile() -> Element {
                                     { sesh.user.email.to_string() }
                                 }
                             }
-                            button { class: "btn btn-sm",
-                                onclick : move |_| {
-                                    navigator.push(Router::ChangeEmail {});
-                                },
-                                "change"
-                            }
                         }
 
                         div { class : "flex items-center flex-between mb-4 gap-2",
                             div { class : "flex-1",
                                 label { class: "label", "password" }
                                 p { class: "text-base font-light mb-1", "•••••••" }
-                            }
-                            button { class: "btn btn-sm",
-                                onclick : move |_| {
-                                    navigator.push(Router::ChangePassword {});
-                                },
-                                "change"
                             }
                         }
 
@@ -85,6 +70,27 @@ pub fn Profile() -> Element {
                     class: "util-btn",
                     onclick: move |_| navigator.go_back(),
                     "back"
+                }
+                button {
+                    class: "util-btn",
+                    onclick: move |_| {
+                        navigator.push(Router::ChangeUsername {});
+                    },
+                    "change username"
+                }
+                button {
+                    class: "util-btn",
+                    onclick: move |_| {
+                        navigator.push(Router::ChangeEmail {});
+                    },
+                    "change email"
+                }
+                button {
+                    class: "util-btn",
+                    onclick: move |_| {
+                        navigator.push(Router::ChangePassword {});
+                    },
+                    "change password"
                 }
                 button {
                     class: "util-btn",
