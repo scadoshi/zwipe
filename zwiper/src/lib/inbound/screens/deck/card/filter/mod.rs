@@ -17,7 +17,6 @@ pub fn Filter() -> Element {
             div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
                 style: "width: 100vw; justify-content: center;",
                 div { class : "container-sm",
-                    h2 { class: "text-center mb-2 font-light tracking-wider", "card filters" }
 
                     form { class : "flex-col text-center",
 

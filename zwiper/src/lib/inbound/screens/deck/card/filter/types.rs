@@ -52,7 +52,6 @@ pub fn Types() -> Element {
         div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
             style: "width: 100vw; justify-content: center;",
             div { class : "container-sm",
-                h2 { class: "text-center mb-2 font-light tracking-wider", "type filter" }
                         form { class : "flex-col text-center",
                         label { class: "label", r#for : "card-type", "basic types"}
                             div { class: "flex flex-wrap gap-1 mb-2 flex-center",

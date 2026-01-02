@@ -114,7 +114,6 @@ pub fn Combat() -> Element {
             div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
                 style: "width: 100vw; justify-content: center;",
                 div { class : "container-sm",
-                    h2 { class: "text-center mb-2 font-light tracking-wider", "combat filter" }
                     form { class : "flex-col text-center",
                         label { class: "label", r#for: "power-equals", "power equals" }
                         input { class: "input",
