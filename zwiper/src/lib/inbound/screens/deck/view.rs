@@ -96,46 +96,59 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     rsx! {
         Bouncer {
             div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
-                style: "width: 100vw; justify-content: center;",
-                div { class : "container-sm text-center",
+                style: "width: 100vw; justify-content: center; padding-bottom: 8rem;",
+                div { class: "flex-col",
+                    style: "max-width: 40rem; width: 100%; padding: 2rem;",
                     match deck_profile_resource() {
                         Some(Ok(deck_profile)) => rsx! {
-                            h2 { class: "text-center mb-2 font-light tracking-wider", "{deck_profile.name}" }
-
                             if let Some(error) = load_error() {
                                 div { class: "message-error", "{error}" }
                             }
 
-                            div { class : "flex-col",
+                            div { class: "flex items-center flex-between mb-4 gap-2",
+                                div { class: "flex-1",
+                                    label { class: "label", "deck name" }
+                                    p { class: "text-base font-light mb-1", "{deck_profile.name}" }
+                                }
+                            }
 
-                                if let Some(cmd) = commander() {
-                                    if let Some(ImageUris { normal: Some(image_url), .. }) = &cmd.scryfall_data.image_uris {
-                                        img { class: "card-image",
-                                            src: "{image_url}",
-                                            alt: "{cmd.scryfall_data.name}",
+                            div { class: "flex items-center flex-between mb-4 gap-2",
+                                div { class: "flex-1",
+                                    label { class: "label", "commander" }
+                                    if let Some(cmd) = commander() {
+                                        if let Some(ImageUris { normal: Some(image_url), .. }) = &cmd.scryfall_data.image_uris {
+                                            img { class: "card-image",
+                                                src: "{image_url}",
+                                                alt: "{cmd.scryfall_data.name}",
+                                            }
+                                        } else {
+                                            p { class: "text-base font-light mb-1",
+                                                { cmd.scryfall_data.name.to_lowercase() }
+                                            }
                                         }
                                     } else {
-                                        label { class: "label", r#for : "commander-info", "commander" }
-                                        p { class: "text-center text-base font-light mb-4 tracking-wide",
-                                            { cmd.scryfall_data.name.to_lowercase() }
+                                        p { class: "text-base font-light mb-1", "none" }
+                                    }
+                                }
+                            }
+
+                            div { class: "flex items-center flex-between mb-4 gap-2",
+                                div { class: "flex-1",
+                                    label { class: "label", "card copy rule" }
+                                    p { class: "text-base font-light mb-1",
+                                        if deck_profile.copy_max == Some(CopyMax::standard()) {
+                                            "standard"
+                                        } else if deck_profile.copy_max == Some(CopyMax::singleton()) {
+                                            "singleton"
+                                        } else {
+                                            "none"
                                         }
                                     }
                                 }
+                            }
 
-                                label { class: "label", r#for : "copy-max", "card copy rule" }
-                                p { class: "text-base font-light mb-4",
-                                    if deck_profile.copy_max == Some(CopyMax::standard()) {
-                                        "standard"
-                                    } else if deck_profile.copy_max == Some(CopyMax::singleton()) {
-                                        "singleton"
-                                    } else {
-                                        "none"
-                                    }
-                                }
-
-                                if let Some(error) = delete_error() {
-                                    div { class: "message-error", "{error}" }
-                                }
+                            if let Some(error) = delete_error() {
+                                div { class: "message-error", "{error}" }
                             }
                         },
                     Some(Err(e)) => rsx! { div { class : "message-error", "{e}"} },

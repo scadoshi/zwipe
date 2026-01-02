@@ -221,7 +221,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                     match &*original_deck_profile_resource.read() {
                         Some(Ok(_profile)) => rsx! {
 
-                            h2 { class: "text-center mb-2 font-light tracking-wider", "{deck_name}" }
+                            h2 { class: "text-center mb-2 font-light tracking-wider", "edit deck" }
 
                             if let Some(error) = load_error() {
                                 // {tracing::error!("{}", error);}
@@ -230,12 +230,14 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
 
                             form { class: "flex-col text-center",
                                 TextInput {
+                                    label: Some("deck name".to_string()),
                                     value: deck_name,
                                     id: "deck_name".to_string(),
                                     placeholder: "deck name".to_string(),
                                 }
 
                                 div { class: "mb-4",
+                                    label { class: "label", "commander" }
                                     input { class: "input",
                                         id: "commander",
                                         r#type : "text",
@@ -278,19 +280,19 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
 
                                 label { class: "label mb-2", r#for : "copy-max", "card copy rule" }
                                 div { class: "flex gap-2 mb-2 flex-center",
-                                    div { class: if copy_max() == Some(CopyMax::standard()) { "copy-max-box selected" } else { "copy-max-box unselected" },
+                                    div { class: if copy_max() == Some(CopyMax::standard()) { "type-box selected" } else { "type-box unselected" },
                                         onclick: move |_| {
                                             copy_max.set(Some(CopyMax::standard()));
                                         },
                                         "standard"
                                     }
-                                    div { class: if copy_max() == Some(CopyMax::singleton()) { "copy-max-box selected" } else { "copy-max-box unselected" },
+                                    div { class: if copy_max() == Some(CopyMax::singleton()) { "type-box selected" } else { "type-box unselected" },
                                         onclick: move |_| {
                                             copy_max.set(Some(CopyMax::singleton()));
                                         },
                                         "singleton"
                                     }
-                                    div { class: if copy_max().is_none() { "copy-max-box selected" } else { "copy-max-box unselected" },
+                                    div { class: if copy_max().is_none() { "type-box selected" } else { "type-box unselected" },
                                         onclick: move |_| {
                                             copy_max.set(None);
                                         },
