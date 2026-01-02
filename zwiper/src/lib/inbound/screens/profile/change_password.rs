@@ -89,19 +89,22 @@ pub fn ChangePassword() -> Element {
 
     rsx! {
         Bouncer {
-            div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
-                style: "width: 100vw; justify-content: center;",
-                div { class : "container-sm",
+            div { class: "page-header",
+                h2 { "change password" }
+            }
 
-                    h2 { class: "text-center mb-2 font-light tracking-wider", "change password" }
+            div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
+                style: "width: 100vw; justify-content: center; padding-top: 4rem;",
+                div { class : "container-sm",
 
                     form { class: "flex-col text-center",
 
                         TextInput {
                             value: current_password,
-                            id: "current_password".to_string(),
-                            placeholder: "current password".to_string(),
-                            input_type: "password".to_string(),
+                            id: "current_password",
+                            label: "current password",
+                            placeholder: "current password",
+                            input_type: "password",
                         }
 
                         if submit_attempted() {
@@ -112,16 +115,18 @@ pub fn ChangePassword() -> Element {
 
                         TextInput {
                             value: new_password,
-                            id: "new_password".to_string(),
-                            placeholder: "new password".to_string(),
-                            input_type: "password".to_string(),
+                            id: "new_password",
+                            label: "new password",
+                            placeholder: "new password",
+                            input_type: "password",
                         }
 
                         TextInput {
                             value: confirm_password,
-                            id: "confirm_password".to_string(),
-                            placeholder: "confirm new".to_string(),
-                            input_type: "password".to_string(),
+                            id: "confirm_password",
+                            label: "confirm password",
+                            placeholder: "confirm new",
+                            input_type: "password",
                         }
                     }
 
