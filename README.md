@@ -14,20 +14,18 @@ full-stack rust application:
 ## quick start
 
 ```bash
-# prerequisites: rust 1.75+, postgresql 14+, dx cli
+# prerequisites
+# - rust 1.75+ (https://rustup.rs)
+# - macos: xcode command line tools (xcode-select --install)
 
-# setup database
+# run setup script (installs postgres, dx, sqlx-cli, creates database)
 ./zcripts/denv/macos/setup.sh    # macos
 ./zcripts/denv/fedora/setup.sh   # linux
 
-# run backend
-cd zerver && cargo run --bin zerver
-
-# run frontend
-cd zwiper && dx serve
-
-# background card sync & auth cleanup service
-cargo run --bin zervice
+# start development
+cd zerver && cargo run --bin zerver  # backend
+cd zwiper && dx serve                # frontend
+cargo run --bin zervice              # background sync (optional)
 ```
 
 ## architecture
