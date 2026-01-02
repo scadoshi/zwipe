@@ -30,6 +30,10 @@ pub fn Home() -> Element {
                 div { class : "logo", "{logo}" }
                 div { class : "container-sm text-center flex-col",
                 }
+
+                if let Some(sesh) = session() {
+                    div { class : "welcome-message", { format!("Hello, {}", sesh.user.username) } }
+                }
             }
 
             div { class: "util-bar",
