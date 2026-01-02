@@ -32,7 +32,7 @@ pub fn Home() -> Element {
                 }
 
                 if let Some(sesh) = session() {
-                    div { class : "welcome-message", { format!("Hello, {}", sesh.user.username) } }
+                    div { class : "welcome-message", { format!("hello, {}!", sesh.user.username) } }
                 }
             }
 
