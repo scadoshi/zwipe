@@ -6,7 +6,12 @@ use dioxus_primitives::accordion::{
 #[component]
 pub fn Accordion(props: AccordionProps) -> Element {
     rsx! {
-        document::Link { rel: "stylesheet", href: asset!("./style.css") }
+        // Context: the AlertDialog element could not load its .css with this method for some
+        // reason.. After some time spent debugging, I decided to just load in
+        // zwiper/src/bin/main.rs for now and attend to later. All other elements with their own
+        // style sheets will get the same treatment to keep consistency for now..
+        //
+        //document::Link { rel: "stylesheet", href: asset!("/assets/accordion.css") }
         accordion::Accordion {
             class: "accordion",
             width: "15rem",

@@ -1,0 +1,115 @@
+/* Alert Dialog Overlay */
+.alert-dialog-overlay {
+  position: fixed;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.6);
+  inset: 0;
+}
+
+.alert-dialog-overlay[data-state="closed"] {
+  animation: alert-animate-out 150ms ease-in forwards;
+}
+
+.alert-dialog-overlay[data-state="open"] {
+  animation: alert-animate-in 150ms ease-out forwards;
+}
+
+@keyframes alert-animate-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes alert-animate-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* Alert Dialog Container */
+.alert-dialog {
+  position: fixed;
+  z-index: 1001;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  width: calc(100% - 2rem);
+  max-width: 20rem;
+  box-sizing: border-box;
+  padding: 2rem;
+  border: 1px solid #f5f5dc;
+  border-radius: 1rem;
+  background: #1a1d23;
+  color: #f5f5dc;
+  font-family: "Cascadia Code", monospace;
+  font-weight: 300;
+  text-align: center;
+  gap: 1rem;
+}
+
+.alert-dialog-title {
+  margin: 0;
+  color: #f5f5dc;
+  font-size: 1.25rem;
+  font-weight: 300;
+  letter-spacing: 0.1em;
+}
+
+.alert-dialog-description {
+  margin: 0;
+  color: #f5f5dc;
+  font-size: 1rem;
+  font-weight: 300;
+  opacity: 0.8;
+}
+
+.alert-dialog-actions {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.alert-dialog-cancel,
+.alert-dialog-action {
+  padding: 0.5rem 1rem;
+  border: 1px solid #f5f5dc;
+  border-radius: 0.6rem;
+  background: none;
+  color: #f5f5dc;
+  font-family: "Cascadia Code", monospace;
+  font-size: 0.8rem;
+  font-weight: 300;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.alert-dialog-cancel:hover,
+.alert-dialog-action:hover {
+  transform: translateY(-2px);
+  background-color: #f5f5dc;
+  color: #1a1d23;
+  border-color: #f5f5dc;
+}
+
+.alert-dialog-cancel:active,
+.alert-dialog-action:active {
+  transform: translateY(0);
+}
+
+.alert-dialog-cancel:focus-visible,
+.alert-dialog-action:focus-visible {
+  outline: none;
+}
+
