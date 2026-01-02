@@ -1,8 +1,5 @@
 use crate::{
-    inbound::{
-        components::fields::text_input::TextInput,
-        router::Router,
-    },
+    inbound::{components::fields::text_input::TextInput, router::Router},
     outbound::{
         client::{auth::login::ClientLogin, ZwipeClient},
         session::Persist,
@@ -72,41 +69,40 @@ pub fn Login() -> Element {
             style: "width: 100vw; justify-content: center;",
             div { class: "logo",  "{logo}" }
             div { class : "container-sm text-center",
-
-            form { class: "flex-col",
-
-                TextInput {
-                    value: username_or_email,
-                    id: "identity".to_string(),
-                    placeholder: "username or email".to_string(),
-                }
-
-                TextInput {
-                    value: password,
-                    id: "password".to_string(),
-                    placeholder: "password".to_string(),
-                    input_type: "password".to_string(),
-                }
-
-                button { class: "btn",
-                    onclick : move |_| attempt_submit(),
-                    "login"
-                }
-
-                if is_loading() {
-                    div { class : "spinner" }
-                } else if let Some(error) = submission_error() {
-                    div { class: "message-error",
-                        { error }
+                form { class: "flex-col",
+                    TextInput {
+                        value: username_or_email,
+                        id: "identity".to_string(),
+                        placeholder: "username or email".to_string(),
+                    }
+                    TextInput {
+                        value: password,
+                        id: "password".to_string(),
+                        placeholder: "password".to_string(),
+                        input_type: "password".to_string(),
+                    }
+                    if is_loading() {
+                        div { class : "spinner" }
+                    } else if let Some(error) = submission_error() {
+                        div { class: "message-error",
+                            { error }
+                        }
                     }
                 }
-
-                button { class: "btn",
-                    onclick : move |_| {
-                        navigator.push(Router::Register {});
-                    }, "create profile"
-                }
             }
+            div { class: "util-bar",
+                button {
+                    class: "util-btn",
+                    onclick: move |_| attempt_submit(),
+                    "login"
+                },
+                button {
+                    class : "util-btn",
+                    onclick: move |_| {
+                        navigator.push(Router::Register {});
+                    },
+                    "create profile"
+                }
             }
         }
     }
