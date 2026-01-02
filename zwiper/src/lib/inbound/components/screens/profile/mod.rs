@@ -2,6 +2,10 @@ pub mod change_email;
 pub mod change_password;
 pub mod change_username;
 
+use crate::inbound::components::alert_dialog::{
+    AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
+    AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
+};
 use crate::{
     inbound::{
         components::auth::{bouncer::Bouncer, signal_logout::SignalLogout},
@@ -17,7 +21,7 @@ pub fn Profile() -> Element {
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
 
-    let mut confirm_logout = use_signal(|| false);
+    let mut show_logout_dialog = use_signal(|| false);
 
     let navigator = use_navigator();
 
@@ -72,33 +76,37 @@ pub fn Profile() -> Element {
                             }
                         }
 
-                        if !confirm_logout() {
-                            button { class: "btn",
-                                onclick : move |_| confirm_logout.set(true),
-                                "logout"
-                            }
-                        }
+                    }
+                }
+            }
 
-                        if confirm_logout() {
-                            label { class: "text-center label", r#for : "confirmation-prompt", "are you sure?" }
-                            div { class : "flex flex-between gap-2",
-                                id : "confirmation-prompt",
-                                button { class : "btn btn-half",
-                                    onclick: move |_| session.logout(client),
-                                    "yes"
-                                }
-                                button { class : "btn btn-half",
-                                    onclick: move |_| confirm_logout.set(false),
-                                    "no"
-                                }
-                            }
-                        }
+            div { class: "util-bar",
+                button {
+                    class: "util-btn",
+                    onclick: move |_| navigator.go_back(),
+                    "back"
+                }
+                button {
+                    class: "util-btn",
+                    onclick: move |_| show_logout_dialog.set(true),
+                    "logout"
+                }
+            }
 
-                        button { class: "btn",
-                            onclick : move |_| {
-                                navigator.go_back();
-                            },
-                            "back"
+            AlertDialogRoot {
+                open: show_logout_dialog(),
+                on_open_change: move |open| show_logout_dialog.set(open),
+                AlertDialogContent {
+                    AlertDialogTitle { "logout" }
+                    AlertDialogDescription { "are you sure you want to logout?" }
+                    AlertDialogActions {
+                        AlertDialogCancel {
+                            on_click: move |_| show_logout_dialog.set(false),
+                            "cancel"
+                        }
+                        AlertDialogAction {
+                            on_click: move |_| session.logout(client),
+                            "logout"
                         }
                     }
                 }

@@ -202,14 +202,15 @@ pub fn Mana() -> Element {
                         if let Some(error) = error() {
                             div { class: "message-error", "{error}" }
                         }
-
-                        button { class : "btn",
-                            onclick : move |_| {
-                                navigator.go_back();
-                            },
-                            "back"
-                        }
                     }
+                }
+            }
+
+            div { class: "util-bar",
+                button {
+                    class: "util-btn",
+                    onclick: move |_| navigator.go_back(),
+                    "back"
                 }
             }
         }

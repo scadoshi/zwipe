@@ -4,7 +4,7 @@ use crate::{
             accordion::{Accordion, AccordionContent, AccordionItem, AccordionTrigger},
             auth::{bouncer::Bouncer, session_upkeep::Upkeep},
             interactions::swipe::{
-                config::SwipeConfig, direction::Direction, state::SwipeState, Swipeable,
+                Swipeable, config::SwipeConfig, direction::Direction, state::SwipeState,
             },
             screens::deck::card::filter::{
                 combat::CombatFilterContent, mana::ManaFilterContent, rarity::RarityFilterContent,
@@ -14,8 +14,8 @@ use crate::{
         router::Router,
     },
     outbound::client::{
-        card::search_cards::ClientSearchCards, deck::get_deck::ClientGetDeck,
-        deck_card::create_deck_card::ClientCreateDeckCard, ZwipeClient,
+        ZwipeClient, card::search_cards::ClientSearchCards, deck::get_deck::ClientGetDeck,
+        deck_card::create_deck_card::ClientCreateDeckCard,
     },
 };
 use dioxus::prelude::*;
@@ -25,8 +25,8 @@ use zwipe::{
     domain::{
         auth::models::session::Session,
         card::models::{
-            scryfall_data::image_uris::ImageUris,
-            search_card::card_filter::builder::CardFilterBuilder, Card,
+            Card, scryfall_data::image_uris::ImageUris,
+            search_card::card_filter::builder::CardFilterBuilder,
         },
     },
     inbound::http::handlers::deck_card::create_deck_card::HttpCreateDeckCard,
@@ -318,25 +318,25 @@ pub fn Add(deck_id: Uuid) -> Element {
                     if let Some(search_error) = search_error() {
                         div { class : "message-error", "{search_error}" }
                     }
-
-                    button { class : "btn",
-                        onclick: move |_| {
-                            navigator.push(Router::EditDeck { deck_id });
-                        },
-                        "back"
-                    }
                 }
             }
 
             div {
-                class: "utility-bar",
+                class: "util-bar",
                 button {
-                    class: "btn-utility",
+                    class: "util-btn",
+                    onclick: move |_| {
+                        navigator.push(Router::EditDeck { deck_id });
+                    },
+                    "back"
+                }
+                button {
+                    class: "util-btn",
                     onclick: move |_| filters_overlay_open.set(true),
                     "filters"
                 }
                 button {
-                    class: "btn-utility",
+                    class: "util-btn",
                     onclick: move |_| {
                         cards.write().clear();
                     },

@@ -1,11 +1,8 @@
 use crate::{
     domain::error::UserFacing,
-    inbound::{
-        components::fields::text_input::TextInput,
-        router::Router,
-    },
+    inbound::{components::fields::text_input::TextInput, router::Router},
     outbound::{
-        client::{auth::register::ClientRegister, ZwipeClient},
+        client::{ZwipeClient, auth::register::ClientRegister},
         session::Persist,
     },
 };
@@ -164,13 +161,15 @@ pub fn Register() -> Element {
                         { error }
                     }
                 }
-
-                button { class: "btn",
-                    onclick : move |_| {
-                        navigator.go_back();
-                    }, "back to login"
-                }
             }
+            }
+        }
+
+        div { class: "util-bar",
+            button {
+                class: "util-btn",
+                onclick: move |_| navigator.go_back(),
+                "back"
             }
         }
     }

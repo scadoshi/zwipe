@@ -56,13 +56,15 @@ pub fn Rarity() -> Element {
                             }
                         }
 
-                        button { class: "btn",
-                            onclick: move |_| {
-                                navigator.go_back();
-                            },
-                            "back"
-                        }
                     }
+                }
+            }
+
+            div { class: "util-bar",
+                button {
+                    class: "util-btn",
+                    onclick: move |_| navigator.go_back(),
+                    "back"
                 }
             }
         }

@@ -1,13 +1,13 @@
 use crate::{
     inbound::components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
-    outbound::client::{deck::get_deck::ClientGetDeck, ZwipeClient},
+    outbound::client::{ZwipeClient, deck::get_deck::ClientGetDeck},
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe::{
     domain::{
         auth::models::session::Session,
-        card::models::{search_card::card_filter::builder::CardFilterBuilder, Card},
+        card::models::{Card, search_card::card_filter::builder::CardFilterBuilder},
         deck::models::deck::Deck,
     },
     inbound::http::ApiError,
@@ -37,13 +37,15 @@ pub fn Remove(deck_id: Uuid) -> Element {
             div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
                 style: "width: 100vw; justify-content: center;",
                 div { class : "form-container",
-                        p { "still building" }
-                    button { class : "btn",
-                        onclick : move |_| {
-                            navigator.go_back();
-                        },
-                        "back"
-                    }
+                    p { "still building" }
+                }
+            }
+
+            div { class: "util-bar",
+                button {
+                    class: "util-btn",
+                    onclick: move |_| navigator.go_back(),
+                    "back"
                 }
             }
         }

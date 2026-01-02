@@ -1,6 +1,6 @@
 use crate::{
     inbound::components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
-    outbound::client::{card::get_card_types::ClientGetCardTypes, ZwipeClient},
+    outbound::client::{ZwipeClient, card::get_card_types::ClientGetCardTypes},
 };
 use dioxus::prelude::*;
 use zwipe::{
@@ -153,13 +153,15 @@ pub fn Types() -> Element {
                             }
                         }
 
-                        button { class : "btn",
-                            onclick : move |_| {
-                                navigator.go_back();
-                            },
-                            "back"
-                        }
                     }
+                }
+            }
+
+            div { class: "util-bar",
+                button {
+                    class: "util-btn",
+                    onclick: move |_| navigator.go_back(),
+                    "back"
                 }
             }
         }

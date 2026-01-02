@@ -3,7 +3,7 @@ use crate::{
         components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
         router::Router,
     },
-    outbound::client::{deck::get_deck_profiles::ClientGetDeckList, ZwipeClient},
+    outbound::client::{ZwipeClient, deck::get_deck_profiles::ClientGetDeckList},
 };
 use dioxus::prelude::*;
 use zwipe::{
@@ -76,20 +76,23 @@ pub fn DeckList() -> Element {
                         }
                     }
 
-                    div { class: "flex-col",
-                        button { class: "btn",
-                            onclick : move |_| {
-                                navigator.push(Router::CreateDeck);
-                            },
-                            "create deck"
-                        }
-                        button { class: "btn",
-                            onclick : move |_| {
-                                navigator.push(Router::Home {});
-                            },
-                            "back"
-                        }
-                    }
+                }
+            }
+
+            div { class: "util-bar",
+                button {
+                    class: "util-btn",
+                    onclick: move |_| {
+                        navigator.push(Router::Home {});
+                    },
+                    "back"
+                }
+                button {
+                    class: "util-btn",
+                    onclick: move |_| {
+                        navigator.push(Router::CreateDeck);
+                    },
+                    "create deck"
                 }
             }
         }
