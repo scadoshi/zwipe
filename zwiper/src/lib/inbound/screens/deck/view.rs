@@ -95,8 +95,13 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
     rsx! {
         Bouncer {
+            div {
+                class : "page-header",
+                h2 { "deck" }
+            }
+
             div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
-                style: "width: 100vw; justify-content: center; padding-bottom: 8rem;",
+                style: "width: 100vw; justify-content: center; padding-bottom: 8rem; padding-top: 4rem;",
                 div { class: "flex-col",
                     style: "max-width: 40rem; width: 100%; padding: 2rem;",
                     match deck_profile_resource() {

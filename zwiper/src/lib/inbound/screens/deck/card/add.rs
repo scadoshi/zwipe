@@ -262,9 +262,12 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     rsx! {
         Bouncer {
+            div { class: "page-header",
+                h2 { "add deck card" }
+            }
+
             div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
-                style: "width: 100vw; justify-content: center;",
-                h2 { class: "text-center mb-2 font-light tracking-wider", "add deck card" }
+                style: "width: 100vw; justify-content: center; padding-top: 4rem;",
 
                 div { class : "form-container",
                     // Show current card with Swipeable

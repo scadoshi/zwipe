@@ -119,17 +119,19 @@ pub fn CreateDeck() -> Element {
 
     rsx! {
         Bouncer {
-            div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
-                style: "width: 100vw; justify-content: center;",
-                div { class : "container-sm",
+            div { class: "page-header",
+                h2 { "create deck" }
+            }
 
-                    h2 { class : "text-center mb-2 font-light tracking-wider", "create deck" }
+            div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
+                style: "width: 100vw; justify-content: center; padding-top: 4rem;",
+                div { class : "container-sm",
 
                     form { class : "flex-col text-center",
                         TextInput {
                             value: deck_name,
-                            id: "deck-name".to_string(),
-                            placeholder: "deck name".to_string(),
+                            id: "deck-name",
+                            placeholder: "deck name",
                         }
 
                         div { class : "mb-4",
