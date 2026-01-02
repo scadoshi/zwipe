@@ -392,7 +392,8 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: 0.5rem;
-  padding: 2rem;
+  padding-bottom: 2rem;
+  padding-top: 1rem;
   z-index: 50;
 }
 

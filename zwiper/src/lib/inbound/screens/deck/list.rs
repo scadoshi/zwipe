@@ -30,50 +30,47 @@ pub fn DeckList() -> Element {
     rsx! {
         Bouncer {
             div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
-                style: "width: 100vw; justify-content: center;",
-                div { class : "container-sm flex-col",
+                style: "width: 100vw; justify-content: center; padding-bottom: 8rem;",
+                div { class: "flex-col",
+                    style: "max-width: 40rem; width: 100%; padding: 2rem;",
                     h2 { class: "text-center mb-4 font-light tracking-wider", "decks" }
 
-                    div { class : "flex-col min-h-50 p-4 border rounded mb-4",
-                        match &*deck_profiles_resource.read() {
-                            Some(Ok(deck_profiles)) => {
-                                if deck_profiles.is_empty() {
-                                    rsx! {
-                                        div { class: "message-empty",
-                                            p { "no decks yet" }
-                                        }
+                    match &*deck_profiles_resource.read() {
+                        Some(Ok(deck_profiles)) => {
+                            if deck_profiles.is_empty() {
+                                rsx! {
+                                    div { class: "message-empty",
+                                        p { "no decks yet" }
                                     }
-                                } else {
-                                    rsx! {
-                                        div { class : "flex-1 overflow-y-auto",
-                                            for profile in deck_profiles.iter().map(|x| x.to_owned()) {
-                                                div { class : "card",
-                                                    key : "{profile.id}",
-                                                    onclick : move |_| {
-                                                        navigator.push(Router::ViewDeck {
-                                                            deck_id: profile.id,
-                                                        });
-                                                    },
-                                                    h3 { class: "font-light text-base tracking-wide",
-                                                        { profile.name.to_string() }
-                                                    }
-                                                }
+                                }
+                            } else {
+                                rsx! {
+                                    for profile in deck_profiles.iter().map(|x| x.to_owned()) {
+                                        div { class : "card",
+                                            key : "{profile.id}",
+                                            onclick : move |_| {
+                                                navigator.push(Router::ViewDeck {
+                                                    deck_id: profile.id,
+                                                });
+                                            },
+                                            h3 { class: "font-light text-base tracking-wide",
+                                                { profile.name.to_string() }
                                             }
                                         }
                                     }
                                 }
                             }
-                            Some(Err(e)) => rsx!{
-                                div { class : "message-empty",
-                                    p { class : "message-error", "{e}" }
-                                }
-                            },
-                            None => rsx! {
-                                div { class: "message-empty",
-                                    div { class: "spinner" }
-                                }
-                            },
                         }
+                        Some(Err(e)) => rsx!{
+                            div { class : "message-empty",
+                                p { class : "message-error", "{e}" }
+                            }
+                        },
+                        None => rsx! {
+                            div { class: "message-empty",
+                                div { class: "spinner" }
+                            }
+                        },
                     }
 
                 }
