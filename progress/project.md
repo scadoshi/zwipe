@@ -13,29 +13,29 @@ alwaysApply: true
 
 ---
 
-**Last Updated**: Filter modal UI polish complete. Fixed accordion open animation by discovering dioxus_primitives uses conditional rendering (element not in DOM when closed), requiring @keyframes animation instead of CSS transitions. Fixed modal-header centering for apply filters button. Centered accordion containers and content. Added CSS Grid animation pattern for smooth accordion interactions.
+**Last Updated**: AlertDialog component implementation complete with global CSS loading fix. Discovered document::Link inside components doesn't reliably load CSS—solution is global loading in main.rs. Replaced all inline yes/no confirmation prompts with styled AlertDialog modals. Standardized utility bar button placement across all 20+ screens for consistent navigation UX.
 
-**Current Focus**: Card swiping UX enhancements - (1) card exit animation sliding off screen with rotation, (2) continue refining filter workflow and card browsing experience.
+**Current Focus**: Deck list and edit screen UX improvements, view deck card categorization, remove cards workflow, toast notification system for swipe feedback.
 
-**Recent Achievement**: Solved accordion animation mystery - dioxus_primitives AccordionContent uses conditional rendering (if render_element()), meaning CSS transitions can't animate opening (no "before" state in DOM). Solution: @keyframes animations trigger immediately on DOM insertion, while transitions handle closing (element exists to animate from).
+**Recent Achievement**: Solved CSS loading mystery for dioxus_primitives components—document::Link elements nested inside components don't render to <head> reliably. Moved accordion, alert-dialog, and toast CSS to global app-level loading ensuring styles available on mount.
 
-**Current Success**: Filter modal fully polished with centered accordion triggers, centered content within accordion items, smooth open/close animations, and properly aligned header buttons. CSS Grid with grid-template-rows provides clean animation infrastructure.
+**Current Success**: Complete AlertDialog modal system with centered positioning, dark backdrop, styled buttons, and proper animations. All confirmation workflows (logout, delete deck) now use consistent modal pattern. Utility bars standardized across auth, deck, and profile screens with util-btn styling.
 
-**Current Challenge**: Implement card exit animations for swipe-to-add workflow. Animation should slide card off screen with rotation when swiped left (skip) or right (add), using onanimationend to trigger next card display.
+**Current Challenge**: Improve deck list visual design for many decks, refine edit deck labels and field names, build view deck categorization by card type, implement remove cards screen with filtering.
 
 ### 🎯 Currently Working On (Top 5)
-1. **Card Exit Animation** - Slide card left off screen with rotation when swiped (300ms ease-out animation)
-2. **Deck Card Filtering** - Fetch existing deck cards and filter search results to prevent showing duplicates already added
-3. **Browser Testing - Complete Filter Workflow** - Test all 6 filters with real card data validating persistence, search, and navigation
-4. **Filter Results Display** - Enhance card browsing with visual feedback and smooth transitions
-5. **Clippy Marathon - Phase 2: Unwrap Elimination** - Systematically remove all unwrap() calls adding proper error handling
+1. **Deck List Screen Redesign** - Better list styling for many decks, improved layout working with utility bar, visual hierarchy
+2. **Edit Deck Screen Refinement** - Better labels, rename "card copy rule" to clearer terminology, improve visual coherence
+3. **View Deck Screen** - Display deck cards categorized by type (creatures, spells, lands, etc.) with counts and organization
+4. **Remove Cards Screen** - Build screen for removing cards from deck with filtering and swipe gestures
+5. **Toast Notification System** - Add toast feedback for card add/skip/remove actions teaching user which swipe directions do what
 
 ### 🤔 Next Immediate Priorities (Top 5)
-1. **Add Card Integration** - Wire quantity selection and add_card function with copy_max validation
-2. **RemoveDeckCard Filter** - Build separate filter querying deck's cards instead of all cards
-3. **Deck Metrics Screen** - Build "down" screen with mana curve, color distribution, type breakdown
-4. **Filter Sub-Component Reuse** - Extract reusable pieces (type selectors, name input) for code sharing
-5. **Single Selection Component** - Build reusable dropdown for CopyMax, card type selection, etc.
+1. **Card Filter Testing & Bug Fixes** - Test all filters thoroughly, fix clearing issues, ensure filters apply correctly, debug persistence problems
+2. **Card Exit Animation** - Slide card left/right off screen with rotation when swiped (300ms ease-out animation)
+3. **Deck Card Filtering** - Fetch existing deck cards and filter search results to prevent showing duplicates already added
+4. **Add Card Integration** - Wire quantity selection and add_card function with copy_max validation
+5. **Clippy Marathon - Phase 2: Unwrap Elimination** - Systematically remove all unwrap() calls adding proper error handling
 
 ---
 
@@ -319,6 +319,12 @@ alwaysApply: true
 - **Accordion Animation Fix**: Discovered dioxus_primitives uses conditional rendering for AccordionContent, requiring @keyframes for open animation (transitions only work for closing when element exists in DOM)
 - **CSS Grid Animation Pattern**: grid-template-rows: 0fr → 1fr with @keyframes for smooth accordion open/close animations
 - **Modal Header Centering**: Fixed apply filters button alignment by changing justify-content from space-between to center
+- **AlertDialog Component System**: Complete modal dialog implementation for confirmations (logout, delete deck) with styled buttons and dark backdrop overlay
+- **Toast Component Integration**: Added toast notification wrapper from dioxus-primitives for user feedback system
+- **Global CSS Loading Architecture**: Moved component stylesheets (accordion, alert-dialog, toast) to global app-level loading in main.rs fixing document::Link reliability issues
+- **CSS Loading Discovery**: Found document::Link inside components doesn't reliably render to <head>—components must load CSS globally at app root for consistent styling
+- **Confirmation Modal Replacement**: Replaced all inline yes/no prompts with AlertDialog modals across home, deck view, and profile screens
+- **Utility Bar Standardization**: Consolidated navigation buttons to bottom utility bars across 20+ screens (auth, deck, profile) with consistent util-btn styling
 
 ---
 
