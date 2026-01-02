@@ -1,4 +1,4 @@
-use crate::inbound::components::screens::{
+use crate::inbound::screens::{
     auth::{login::Login, register::Register},
     deck::{
         card::{
