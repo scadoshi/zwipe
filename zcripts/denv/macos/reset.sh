@@ -1,11 +1,11 @@
 #!/bin/bash
 set -e
 
-echo "resetting zwipe database for fedora..."
+echo "resetting zwipe database for macos..."
 
-# check if running on fedora
-if ! grep -q "Fedora" /etc/os-release; then
-    echo "error: this script is for fedora only"
+# check if running on macos
+if [[ "$OSTYPE" != "darwin"* ]]; then
+    echo "error: this script is for macos only"
     exit 1
 fi
 
@@ -20,12 +20,12 @@ fi
 
 # drop and recreate database
 echo "dropping database..."
-CURRENT_USER=$(whoami)
-sudo -u postgres psql -c "DROP DATABASE IF EXISTS zerver;"
+dropdb zerver 2>/dev/null || true
 
 echo "creating database..."
-sudo -u postgres createuser --createdb --no-createrole --no-superuser "$CURRENT_USER" 2>/dev/null || true
-sudo -u postgres psql -c "CREATE DATABASE zerver OWNER $CURRENT_USER;"
+CURRENT_USER=$(whoami)
+createdb "$CURRENT_USER" 2>/dev/null || true
+createdb zerver
 
 # recreate .env file
 echo "recreating .env file..."

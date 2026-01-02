@@ -1,43 +1,51 @@
 #!/bin/bash
 set -e
 
-echo "setting up zwipe development environment for fedora..."
+echo "setting up zwipe development environment for macos..."
 
-# check if running on fedora
-if ! grep -q "Fedora" /etc/os-release; then
-    echo "error: this script is for fedora only"
+# check if running on macos
+if [[ "$OSTYPE" != "darwin"* ]]; then
+    echo "error: this script is for macos only"
     exit 1
 fi
 
-# update package list
-echo "updating package list..."
-sudo dnf5 update -y
+# check for xcode command line tools
+if ! xcode-select -p &> /dev/null; then
+    echo "error: xcode command line tools required for ios development"
+    echo "install with: xcode-select --install"
+    exit 1
+fi
+
+# install/verify homebrew
+if ! command -v brew &> /dev/null; then
+    echo "installing homebrew..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+    # add to PATH for apple silicon
+    if [[ $(uname -m) == "arm64" ]]; then
+        echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+    fi
+fi
+
+# update homebrew
+echo "updating homebrew..."
+brew update
 
 # install system dependencies
 echo "installing system dependencies..."
-sudo dnf5 install -y gcc gcc-c++ make cmake
-sudo dnf5 install -y curl git openssl openssl-devel pkg-config
-
-# install dioxus dependencies
-echo "installing dioxus dependencies..."
-sudo dnf5 install -y webkit2gtk4.1-devel libxdo-devel libappindicator-gtk3-devel
-sudo dnf5 install -y gtk3-devel glib2-devel librsvg2-devel
+brew install openssl pkg-config
 
 # install postgresql
 echo "installing postgresql..."
 if ! command -v psql &> /dev/null; then
-    sudo dnf5 install -y postgresql postgresql-server postgresql-contrib
-
-    # initialize database
-    if [ ! -f /var/lib/pgsql/data/postgresql.conf ]; then
-        sudo postgresql-setup --initdb
-    fi
-
-    sudo systemctl enable postgresql
+    brew install postgresql@15
+    echo 'export PATH="/opt/homebrew/opt/postgresql@15/bin:$PATH"' >> ~/.zprofile
+    export PATH="/opt/homebrew/opt/postgresql@15/bin:$PATH"
 fi
 
 # start postgresql
-sudo systemctl start postgresql
+brew services start postgresql@15
 
 # install sqlx-cli
 echo "installing sqlx-cli..."
@@ -55,12 +63,12 @@ fi
 echo "setting up database..."
 CURRENT_USER=$(whoami)
 
-# create database user
-sudo -u postgres createuser --createdb --no-createrole --no-superuser "$CURRENT_USER" 2>/dev/null || true
+# create user database for peer auth
+createdb "$CURRENT_USER" 2>/dev/null || true
 
 # create zwipe database
-sudo -u postgres psql -c "DROP DATABASE IF EXISTS zerver;"
-sudo -u postgres psql -c "CREATE DATABASE zerver OWNER $CURRENT_USER;"
+dropdb zerver 2>/dev/null || true
+createdb zerver
 
 # create .env file
 echo "creating .env file..."
