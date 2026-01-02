@@ -73,6 +73,11 @@ pub fn Profile() -> Element {
                 }
                 button {
                     class: "util-btn",
+                    onclick: move |_| show_logout_dialog.set(true),
+                    "logout"
+                }
+                button {
+                    class: "util-btn",
                     onclick: move |_| {
                         navigator.push(Router::ChangeUsername {});
                     },
@@ -92,12 +97,7 @@ pub fn Profile() -> Element {
                     },
                     "change password"
                 }
-                button {
-                    class: "util-btn",
-                    onclick: move |_| show_logout_dialog.set(true),
-                    "logout"
-                }
-            }
+           }
 
             AlertDialogRoot {
                 open: show_logout_dialog(),
