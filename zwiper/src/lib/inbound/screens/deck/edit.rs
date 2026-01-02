@@ -232,7 +232,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
 
                             form { class: "flex-col text-center",
                                 TextInput {
-                                    label: Some("deck name"),
+                                    label: "deck name",
                                     value: deck_name,
                                     id: "deck_name",
                                     placeholder: "deck name",
