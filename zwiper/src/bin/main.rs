@@ -7,6 +7,9 @@ use zwiper::{
 
 const FAVICON: Asset = asset!("/assets/favicon/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
+const ACCORDION_CSS: Asset = asset!("/assets/accordion.css");
+const ALERT_DIALOG_CSS: Asset = asset!("/assets/alert-dialog.css");
+const TOAST_CSS: Asset = asset!("/assets/toast.css");
 
 fn main() {
     logo::Zwiper::print();
@@ -23,6 +26,10 @@ fn App() -> Element {
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
+        document::Link { rel: "stylesheet", href: ACCORDION_CSS }
+        document::Link { rel: "stylesheet", href: ALERT_DIALOG_CSS }
+        document::Link { rel: "stylesheet", href: TOAST_CSS }
+
         Router::<Router> {}
     }
 }
