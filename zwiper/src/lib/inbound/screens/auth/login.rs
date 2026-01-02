@@ -72,14 +72,14 @@ pub fn Login() -> Element {
                 form { class: "flex-col",
                     TextInput {
                         value: username_or_email,
-                        id: "identity".to_string(),
-                        placeholder: "username or email".to_string(),
+                        id: "identity",
+                        placeholder: "username or email",
                     }
                     TextInput {
                         value: password,
-                        id: "password".to_string(),
-                        placeholder: "password".to_string(),
-                        input_type: "password".to_string(),
+                        id: "password",
+                        placeholder: "password",
+                        input_type: "password",
                     }
                     if is_loading() {
                         div { class : "spinner" }
