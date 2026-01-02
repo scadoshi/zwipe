@@ -17,8 +17,8 @@ full-stack rust application:
 # prerequisites: rust 1.75+, postgresql 14+, dx cli
 
 # setup database
-./zcripts/denv/mac/setup.sh      # macos
-./zcripts/denv/fedora/reset.sh   # linux
+./zcripts/denv/macos/setup.sh    # macos
+./zcripts/denv/fedora/setup.sh   # linux
 
 # run backend
 cd zerver && cargo run --bin zerver
@@ -26,8 +26,8 @@ cd zerver && cargo run --bin zerver
 # run frontend
 cd zwiper && dx serve
 
-# background card sync (optional)
-cargo run --bin zync
+# background card sync & auth cleanup service
+cargo run --bin zervice
 ```
 
 ## architecture
