@@ -42,7 +42,7 @@ pub fn Rarity() -> Element {
                                 filter_builder.write().set_rarity_equals_any(new.into());
                             }
                         },
-                        { rarity.to_long_name() }
+                        { rarity.to_long_name().to_lowercase() }
                     }
                 }
             }
