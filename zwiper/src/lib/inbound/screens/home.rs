@@ -35,24 +35,22 @@ pub fn Home() -> Element {
                     div { class : "welcome-message", { format!("hello, {}!", sesh.user.username) } }
                 }
             }
-
             div { class: "util-bar",
+                button { class : "util-btn",
+                    onclick : move |_| {
+                        navigator.push(Router::Profile {} );
+                    }, "profile"
+                }
+                button { class : "util-btn",
+                    onclick : move |_| {
+                        navigator.push(Router::DeckList {} );
+                    }, "decks"
+                }
                 button {
                     class: "util-btn",
                     onclick: move |_| show_logout_dialog.set(true),
                     "logout"
                 }
-                    button { class : "util-btn",
-                        onclick : move |_| {
-                            navigator.push(Router::Profile {} );
-                        }, "profile"
-                    }
-                    button { class : "util-btn",
-                        onclick : move |_| {
-                            navigator.push(Router::DeckList {} );
-                        }, "decks"
-                    }
-
             }
 
             AlertDialogRoot {
