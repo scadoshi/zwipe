@@ -102,7 +102,7 @@ pub fn ChangeEmail() -> Element {
             }
 
             div { class: "sticky top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
-                style: "width: 100vw; justify-content: center; padding-top: 4rem;",
+                style: "width: 100vw; padding-top: 25vh;",
                 div { class : "container-sm",
 
                     form { class: "flex-col text-center",
