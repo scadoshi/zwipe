@@ -90,19 +90,20 @@ pub fn Login() -> Element {
                     }
                 }
             }
-            div { class: "util-bar",
-                button {
-                    class: "util-btn",
-                    onclick: move |_| attempt_submit(),
-                    "login"
+        }
+        div {
+            class: "util-bar",
+            button {
+                class: "util-btn",
+                onclick: move |_| attempt_submit(),
+                "login"
+            },
+            button {
+                class : "util-btn",
+                onclick: move |_| {
+                navigator.push(Router::Register {});
                 },
-                button {
-                    class : "util-btn",
-                    onclick: move |_| {
-                        navigator.push(Router::Register {});
-                    },
-                    "create profile"
-                }
+                "create profile"
             }
         }
     }
