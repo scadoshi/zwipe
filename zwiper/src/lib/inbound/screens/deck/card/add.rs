@@ -7,7 +7,6 @@ use crate::{
                 config::SwipeConfig, direction::Direction, state::SwipeState, Swipeable,
             },
         },
-        router::Router,
         screens::deck::card::filter::{
             combat::Combat, mana::Mana, rarity::Rarity, set::Set, text::Text, types::Types,
         },
@@ -265,7 +264,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 h2 { "add deck card" }
             }
 
-            div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
+            div { class: "sticky top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
                 style: "width: 100vw; justify-content: center; padding-top: 4rem;",
 
                 div { class : "form-container",
