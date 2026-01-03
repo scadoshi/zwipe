@@ -347,7 +347,7 @@ body {
   utilities - positioning
  ========================= */
 
-.fixed {
+.sticky {
   position: sticky;
 }
 

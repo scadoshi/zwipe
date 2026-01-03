@@ -25,7 +25,7 @@ pub fn Home() -> Element {
 
     rsx! {
         Bouncer {
-            div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
+            div { class: "sticky top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
                 style: "width: 100vw; justify-content: center;",
                 div { class : "logo", "{logo}" }
                 div { class : "container-sm text-center flex-col",

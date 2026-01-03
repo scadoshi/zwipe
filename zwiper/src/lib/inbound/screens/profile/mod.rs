@@ -31,8 +31,9 @@ pub fn Profile() -> Element {
                 h2 { "profile" }
             }
 
-            div { class: "fixed top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
-                style: "width: 100vw; justify-content: center; padding-top: 4rem;",
+            div { class: "sticky top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
+            //justify-content: center;
+                style: "width: 100vw; padding-top: 10rem;",
                 if let Some(sesh) = session().as_ref() {
                     div { class : "container-sm",
 
