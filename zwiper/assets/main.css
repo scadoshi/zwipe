@@ -18,8 +18,10 @@ body {
   line-height: 1.6;
   min-height: 100vh;
   max-width: 100vh;
-  overflow: hidden;
+  overflow: clip;
+  overflow-clip-margin: env(safe-area-inset-top, 0px);
   user-select: none;
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 /* ==================
@@ -389,7 +391,8 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 1rem 2rem;
+  padding-top: 4rem;
+  padding-bottom: 1rem;
   z-index: 50;
 }
 
@@ -417,7 +420,8 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: 0.5rem;
-  padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+  /* padding-bottom: calc(2rem + env(safe-area-inset-bottom)); */
+  padding-bottom: 2rem;
   padding-top: 1rem;
   z-index: 50;
 
