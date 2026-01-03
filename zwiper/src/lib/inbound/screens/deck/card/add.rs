@@ -9,8 +9,8 @@ use crate::{
         },
         router::Router,
         screens::deck::card::filter::{
-            combat::CombatFilterContent, mana::ManaFilterContent, rarity::RarityFilterContent,
-            set::SetFilterContent, text::TextFilterContent, types::TypesFilterContent,
+            combat::Combat, mana::Mana, rarity::Rarity,
+            set::Set, text::Text, types::Types,
         },
     },
     outbound::client::{
@@ -375,32 +375,32 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                         AccordionItem { index: 1,
                             AccordionTrigger { "combat" }
-                            AccordionContent { CombatFilterContent {} }
+                            AccordionContent { Combat {} }
                         }
 
                         AccordionItem { index: 2,
                             AccordionTrigger { "mana" }
-                            AccordionContent { ManaFilterContent {} }
+                            AccordionContent { Mana {} }
                         }
 
                         AccordionItem { index: 3,
                             AccordionTrigger { "rarity" }
-                            AccordionContent { RarityFilterContent {} }
+                            AccordionContent { Rarity {} }
                         }
 
                         AccordionItem { index: 4,
                             AccordionTrigger { "set" }
-                            AccordionContent { SetFilterContent {} }
+                            AccordionContent { Set {} }
                         }
 
                         AccordionItem { index: 5,
                             AccordionTrigger { "text" }
-                            AccordionContent { TextFilterContent {} }
+                            AccordionContent { Text {} }
                         }
 
                         AccordionItem { index: 6,
                             AccordionTrigger { "types" }
-                            AccordionContent { TypesFilterContent {} }
+                            AccordionContent { Types {} }
                         }
                   }
                 }
