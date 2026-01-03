@@ -3,10 +3,6 @@ use crate::inbound::screens::{
     deck::{
         card::{
             add::Add as AddDeckCard,
-            filter::{
-                combat::Combat, mana::Mana, rarity::Rarity, set::Set, text::Text, types::Types,
-                Filter,
-            },
             remove::Remove as RemoveDeckCard,
         },
         create::CreateDeck,
@@ -65,22 +61,6 @@ pub enum Router {
     RemoveDeckCard {
         deck_id: Uuid,
      },
-
-     // filtering
-    #[route("/deck/card/filter")]
-    Filter {},
-    #[route("/deck/card/filter/combat")]
-    Combat {},
-    #[route("/deck/card/filter/mana")]
-    Mana {},
-    #[route("/deck/card/filter/rarity")]
-    Rarity {},
-    #[route("/deck/card/filter/set")]
-    Set {},
-    #[route("/deck/card/filter/types")]
-    Types {},
-    #[route("/deck/card/filter/text")]
-    Text {},
 }
 
 impl Default for Router {
