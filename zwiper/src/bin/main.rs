@@ -29,6 +29,10 @@ fn App() -> Element {
         document::Link { rel: "stylesheet", href: ACCORDION_CSS }
         document::Link { rel: "stylesheet", href: ALERT_DIALOG_CSS }
         document::Link { rel: "stylesheet", href: TOAST_CSS }
+        document::Meta {
+            name: "viewport",
+            content: "width=device-width, initial-scale=1.0, viewport-fit=cover"
+        }
 
         Router::<Router> {}
     }
