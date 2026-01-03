@@ -100,8 +100,8 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 h2 { "deck" }
             }
 
-            div { class: "sticky top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
-                style: "width: 100vw; justify-content: center; padding-bottom: 8rem; padding-top: 4rem;",
+            div { class: "sticky top-0 left-0 h-screen flex flex-col items-center overflow-hidden",
+                style: "width: 100vw; padding-top: 8vh",
                 div { class: "flex-col",
                     style: "max-width: 40rem; width: 100%; padding: 2rem;",
                     match deck_profile_resource() {
