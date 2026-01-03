@@ -4,6 +4,13 @@ Recently encountered concepts requiring guidance and practice.
 
 ---
 
+## 🎨 iOS-Specific CSS & Modern Layout Properties (Recently Introduced)
+- **overflow: clip vs overflow: hidden**: Vague understanding - knows overflow: hidden allows programmatic scrolling, overflow: clip prevents all scrolling. Needs hands-on practice to solidify differences and use cases.
+- **overflow-clip-margin**: Not yet understood - controls where clipping begins relative to element boundary, can be combined with env() variables for precise control
+- **env(safe-area-inset-*) Variables**: Conceptual awareness - knows these are CSS environment variables that query device for safe zone dimensions (top/bottom/left/right), but not confident implementing without reference
+- **iOS CSS Debugging Techniques**: Not yet familiar - transform: translateZ(0) for GPU acceleration fixing keyboard bugs, sticky vs fixed positioning behavior on iOS, notch overlap troubleshooting patterns
+- *Note: Honest self-assessment shows learning mindset - understands existence of these tools, will gain confidence through repeated application and experimentation*
+
 ## 🔧 Clippy Linting & Code Quality
 - **Workspace Clippy Configuration**: Established 26 workspace-level lints across quality, safety, performance, and code quality categories
 - **Clippy Lint Categories**: Basic quality (redundant_clone, needless_borrow), unwrap/panic prevention (unwrap_used, expect_used, panic, indexing_slicing), performance (needless_collect, clone_on_ref_ptr, or_fun_call), code quality (too_many_arguments, unused_async, dbg_macro)
