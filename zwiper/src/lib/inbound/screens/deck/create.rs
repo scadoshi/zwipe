@@ -129,14 +129,16 @@ pub fn CreateDeck() -> Element {
 
                     form { class : "flex-col text-center",
                         TextInput {
+                            label: "deck name",
                             value: deck_name,
-                            id: "deck-name",
+                            id: "deck_name",
                             placeholder: "deck name",
                         }
 
                         div { class : "mb-4",
+                            label { class : "label", r#for : "commander", "commander" }
                             input { class : "input",
-                                id: "commander",
+                                id : "commander",
                                 r#type : "text",
                                 placeholder : "commander",
                                 value : "{commander_display}",
@@ -178,19 +180,19 @@ pub fn CreateDeck() -> Element {
 
                         label { class : "label", r#for : "copy-max", "card copy rule" }
                         div { class : "flex gap-2 mb-4 flex-center",
-                            div { class : if copy_max() == Some(CopyMax::standard()) { "copy-max-box selected" } else { "copy-max-box unselected" },
+                            div { class : if copy_max() == Some(CopyMax::standard()) { "type-box selected" } else { "type-box unselected" },
                                 onclick: move |_| {
                                     copy_max.set(Some(CopyMax::standard()));
                                 },
                                 "standard"
                             }
-                            div { class : if copy_max() == Some(CopyMax::singleton()) { "copy-max-box selected" } else { "copy-max-box unselected" },
+                            div { class : if copy_max() == Some(CopyMax::singleton()) { "type-box selected" } else { "type-box unselected" },
                                 onclick: move |_| {
                                     copy_max.set(Some(CopyMax::singleton()));
                                 },
                                 "singleton"
                             }
-                            div { class : if copy_max().is_none() { "copy-max-box selected" } else { "copy-max-box unselected" },
+                            div { class : if copy_max().is_none() { "type-box selected" } else { "type-box unselected" },
                                 onclick: move |_| {
                                     copy_max.set(None);
                                 },
