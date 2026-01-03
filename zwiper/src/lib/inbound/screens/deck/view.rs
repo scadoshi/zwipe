@@ -194,7 +194,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 button {
                     class: "util-btn",
                     onclick: move |_| show_delete_dialog.set(true),
-                    "delete"
+                    "delete deck"
                 }
             }
 
