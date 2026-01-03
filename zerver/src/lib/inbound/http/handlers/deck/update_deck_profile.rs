@@ -95,8 +95,6 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    tracing::info!("{:#?}", body);
-
     let request = UpdateDeckProfile::new(
         deck_id,
         body.name.as_deref(),
