@@ -348,7 +348,7 @@ body {
  ========================= */
 
 .fixed {
-  position: fixed;
+  position: sticky;
 }
 
 .absolute {
@@ -380,7 +380,7 @@ body {
   ======================== */
 
 .page-header {
-  position: fixed;
+  position: sticky;
   border-bottom: 1px solid #333;
   top: 0;
   left: 0;
@@ -405,7 +405,7 @@ body {
   ========================= */
 
 .util-bar {
-  position: fixed;
+  position: sticky;
   border-top: 1px solid #333;
   bottom: 0;
   left: 0;
@@ -417,9 +417,13 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: 0.5rem;
-  padding-bottom: 2rem;
+  padding-bottom: calc(2rem + env(safe-area-inset-bottom));
   padding-top: 1rem;
   z-index: 50;
+
+  /* Force GPU acceleration to fix iOS keyboard repositioning bug */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 
 /* =====================
@@ -707,7 +711,7 @@ body {
  ============================= */
 
 .swipeable {
-  position: fixed;
+  position: sticky;
   top: 0;
   left: 0;
   width: 100vw;
@@ -1025,7 +1029,7 @@ body {
 ================================== */
 
 .modal-backdrop {
-  position: fixed;
+  position: sticky;
   top: 0;
   left: 0;
   right: 0;
@@ -1042,7 +1046,7 @@ body {
 }
 
 .bottom-sheet {
-  position: fixed;
+  position: sticky;
   bottom: 0;
   left: 0;
   right: 0;
@@ -1276,7 +1280,7 @@ body {
 }
 
 .floating-button {
-  position: fixed;
+  position: sticky;
   bottom: 2rem;
   right: 2rem;
   width: 60px;
