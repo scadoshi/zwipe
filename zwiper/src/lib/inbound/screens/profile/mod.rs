@@ -32,8 +32,7 @@ pub fn Profile() -> Element {
             }
 
             div { class: "sticky top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
-            //justify-content: center;
-                style: "width: 100vw; padding-top: 10rem;",
+                style: "width: 100vw; padding-top: 25vh;",
                 if let Some(sesh) = session().as_ref() {
                     div { class : "container-sm",
 
