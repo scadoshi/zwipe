@@ -9,8 +9,7 @@ use crate::{
         },
         router::Router,
         screens::deck::card::filter::{
-            combat::Combat, mana::Mana, rarity::Rarity,
-            set::Set, text::Text, types::Types,
+            combat::Combat, mana::Mana, rarity::Rarity, set::Set, text::Text, types::Types,
         },
     },
     outbound::client::{
@@ -329,7 +328,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 button {
                     class: "util-btn",
                     onclick: move |_| {
-                        navigator.push(Router::EditDeck { deck_id });
+                        navigator.go_back();
                     },
                     "back"
                 }
