@@ -17,6 +17,7 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
+use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::collections::HashSet;
 use uuid::Uuid;
 use zwipe::{
@@ -48,8 +49,13 @@ pub fn Add(deck_id: Uuid) -> Element {
     // Filters overlay at bottom of screen state
     let mut filters_overlay_open = use_signal(|| false);
 
+    // Reset counter for collapsing accordions and clearing search queries
+    let mut filter_reset_counter: Signal<u32> = use_signal(|| 0);
+    use_context_provider(|| filter_reset_counter);
+
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
+    let toast = use_toast();
 
     // Card iteration state
     let mut current_index = use_signal(|| 0_usize);
@@ -276,12 +282,14 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 config: swipe_config,
                                 on_swipe_left: move |_| {
                                     // Skip card - trigger exit animation
+                                    toast.info("skipped".to_string(), ToastOptions::default());
                                     is_animating.set(true);
                                     animation_direction.set(Direction::Left);
                                 },
                                 on_swipe_right: move |_| {
                                     // Add card to deck then trigger exit animation
                                     add_card_to_deck();
+                                    toast.success("added to deck".to_string(), ToastOptions::default());
                                     is_animating.set(true);
                                     animation_direction.set(Direction::Right);
                                 },
@@ -359,7 +367,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                 div { class: "modal-header",
                     button {
                         class: "btn btn-sm",
-                        onclick: move |_| filters_overlay_open.set(false),
+                        onclick: move |_| {
+                            filter_reset_counter.set(filter_reset_counter() + 1);
+                            filters_overlay_open.set(false);
+                        },
                         "apply filters"
                     }
                 }
@@ -367,6 +378,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 // Content with accordion
                 div { class: "modal-content",
                     Accordion {
+                        key: "{filter_reset_counter()}",
                         id: "filter-accordion",
                         allow_multiple_open: false,
                         collapsible: true,
