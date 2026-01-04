@@ -47,12 +47,12 @@ pub fn Set() -> Element {
     use_effect(move || {
         let new_val = selected_sets();
         let current = filter_builder().set_equals_any().map(|v| v.to_vec());
-        if new_val.is_empty() {
-            if current.is_some() {
+        if current.as_ref() != Some(&new_val) {
+            if new_val.is_empty() {
                 filter_builder.write().unset_set_equals_any();
+            } else {
+                filter_builder.write().set_set_equals_any(new_val);
             }
-        } else if current.as_ref() != Some(&new_val) {
-            filter_builder.write().set_set_equals_any(new_val);
         }
     });
 
