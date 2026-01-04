@@ -13,7 +13,7 @@ pub fn Mana() -> Element {
     // CMC mode signal
     let mut cmc_mode = use_signal(|| {
         if filter_builder().cmc_range().is_some() {
-            FilterMode::Within
+            FilterMode::Range
         } else {
             FilterMode::Exact
         }
@@ -85,7 +85,7 @@ pub fn Mana() -> Element {
         if filter_builder().color_identity_equals().is_some() {
             FilterMode::Exact
         } else if filter_builder().color_identity_within().is_some() {
-            FilterMode::Within
+            FilterMode::Range
         } else {
             FilterMode::default()
         }
@@ -126,13 +126,13 @@ pub fn Mana() -> Element {
                                 cmc_range_min_string.set(String::new());
                                 cmc_range_max_string.set(String::new());
                             }
-                            FilterMode::Within => {
+                            FilterMode::Range => {
                                 fb.unset_cmc_equals();
                                 cmc_equals_string.set(String::new());
                             }
                         }
                     },
-                    "{cmc_mode()}"
+                    "{cmc_mode().to_string().to_lowercase()}"
                 }
                 if cmc_is_active {
                     button {
@@ -170,7 +170,7 @@ pub fn Mana() -> Element {
                         }
                     }
                 },
-                FilterMode::Within => rsx! {
+                FilterMode::Range => rsx! {
                     div { class: "flex-row gap-1 flex-center mb-1",
                         input { class: "input input-compact input-narrow",
                             id: "cmc-range-min",
@@ -233,7 +233,7 @@ pub fn Mana() -> Element {
                                     fb.set_color_identity_equals(colors.into());
                                 }
                             }
-                            FilterMode::Within => {
+                            FilterMode::Range => {
                                 fb.unset_color_identity_equals();
                                 if !colors.is_empty() {
                                     fb.set_color_identity_within(colors.into());
@@ -241,7 +241,7 @@ pub fn Mana() -> Element {
                             }
                         }
                     },
-                    "{color_identity_mode()}"
+                    "{color_identity_mode().to_string().to_lowercase()}"
                 }
                 if color_is_active {
                     button {
@@ -290,7 +290,7 @@ pub fn Mana() -> Element {
                                         fb.set_color_identity_equals(colors.into());
                                     }
                                 }
-                                FilterMode::Within => {
+                                FilterMode::Range => {
                                     if colors.is_empty() {
                                         fb.unset_color_identity_within();
                                     } else {
