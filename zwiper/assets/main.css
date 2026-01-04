@@ -961,6 +961,18 @@ body {
   margin-bottom: 2rem;
 }
 
+.card-info {
+  position: fixed;
+  bottom: 6rem;
+  left: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  z-index: 40;
+}
+
 /* ===================
   specific - dropdown
  ===================== */
