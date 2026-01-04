@@ -57,6 +57,32 @@ pub fn Text() -> Element {
                     filter_builder.write().set_oracle_text_contains(event.value());
                 }
             }
+
+            div { class: "label-row",
+                label { class: "label-xs", r#for: "flavor-text-contains", "flavor text contains" }
+                if filter_builder().flavor_text_contains().is_some() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| {
+                            filter_builder.write().unset_flavor_text_contains();
+                        },
+                        "×"
+                    }
+                }
+            }
+            input { class: "input input-compact",
+                id: "flavor-text-contains",
+                placeholder: "flavor text contains",
+                value: if let Some(text) = filter_builder().flavor_text_contains() {
+                    text
+                } else { "" },
+                r#type: "text",
+                autocapitalize: "none",
+                spellcheck: "false",
+                oninput: move |event| {
+                    filter_builder.write().set_flavor_text_contains(event.value());
+                }
+            }
         }
     }
 }
