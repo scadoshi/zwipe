@@ -2,18 +2,19 @@
 
 Active development tasks and immediate focus areas.
 
-**Last Updated**: Added refresh button and end-of-results toast to add card screen. Fixed filter bugs, improved toast UX, refactored filter components to use direct writes.
+**Last Updated**: Implemented Order By filter with full backend/frontend integration, card info display, and fixed sort order preservation bug.
 
-**Current Focus**: Complete card management workflows (add/remove cards), then polish deck screens and implement sorting.
+**Current Focus**: Complete card management workflows (add/remove cards with undo), then polish deck screens.
 
 **Recent Achievements**:
-- Refresh button for card search (bool toggle forcing use_effect re-run)
-- End-of-results toast with pagination exhaustion tracking
-- Filter bug fixes (set filter, session refresh loop, chip selection race condition)
-- Toast UX improvements (stacking limits, z-index, shorter durations)
-- Stepper controls for power/toughness filters
+- Order By filter (sort by name, cmc, power, toughness, rarity, release date, prices, random)
+- Card info display (prices, release date, artist) on add card screen
+- Sort order preservation fix (sleeve function now preserves DB order)
+- NULL filtering for sorted fields (excludes cards without price/power when sorting by those)
+- Empty filter toast warning ("try adding a filter")
+- Filter accordion reordered to match Scryfall (text, types, mana, combat, rarity, set, sort)
 
-**Current Success**: Add card screen fully functional with pagination, de-duplication, swipe gestures, refresh, and end-of-results feedback.
+**Current Success**: Add card screen fully functional with sorting, card info, pagination, de-duplication, and swipe gestures.
 
 ---
 
@@ -21,7 +22,7 @@ Active development tasks and immediate focus areas.
 
 1. **Remove Cards Screen** - Build UI for removing cards from deck with filtering and swipe gestures
 
-2. **Order By Filter** - Add sorting option to filters pane (Name, Cmc, Power, Toughness, Rarity, ReleasedAt, Price, Random)
+2. **Undo on Down Swipe** - Down swipe undoes last action (go back one card if skipped, remove from deck and re-show if added)
 
 3. **Commander Search Validation** - Filter to only return valid commanders (legendary creatures, vehicles with P/T, "can be your commander" text)
 
