@@ -39,6 +39,23 @@ impl OrderByOptions {
     }
 }
 
+impl std::fmt::Display for OrderByOptions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Name => write!(f, "Name"),
+            Self::Cmc => write!(f, "Mana Value"),
+            Self::Power => write!(f, "Power"),
+            Self::Toughness => write!(f, "Toughness"),
+            Self::Rarity => write!(f, "Rarity"),
+            Self::ReleasedAt => write!(f, "Release Date"),
+            Self::PriceUsd => write!(f, "Price (USD)"),
+            Self::PriceEur => write!(f, "Price (EUR)"),
+            Self::PriceTix => write!(f, "Price (TIX)"),
+            Self::Random => write!(f, "Random"),
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct CardFilter {
     // combat
