@@ -2,11 +2,11 @@ use crate::{
     inbound::components::{
         auth::{bouncer::Bouncer, session_upkeep::Upkeep},
         fields::text_input::TextInput,
-        success_messages::random_success_message,
     },
     outbound::client::{user::change_username::ClientChangeUsername, ZwipeClient},
 };
 use dioxus::prelude::*;
+use dioxus_primitives::toast::{use_toast, ToastOptions};
 use zwipe::{
     domain::{
         auth::models::{password::Password, session::Session},
@@ -43,8 +43,8 @@ pub fn ChangeUsername() -> Element {
     };
 
     let mut submission_error: Signal<Option<String>> = use_signal(|| None);
-    let mut success_message: Signal<Option<String>> = use_signal(|| None);
     let mut submit_attempted = use_signal(|| false);
+    let toast = use_toast();
 
     let mut inputs_are_valid = move || {
         validate_username();
@@ -73,9 +73,13 @@ pub fn ChangeUsername() -> Element {
 
                 match auth_client().change_username(request, &sesh).await {
                     Ok(updated_user) => {
+                        let new_name = updated_user.username.clone();
                         sesh.user.username = updated_user.username;
                         session.set(Some(sesh));
-                        success_message.set(Some(random_success_message()));
+                        toast.success(
+                            format!("username changed to {}", new_name),
+                            ToastOptions::default(),
+                        );
                         submission_error.set(None);
                         clear_inputs();
                         submit_attempted.set(false);
@@ -137,8 +141,6 @@ pub fn ChangeUsername() -> Element {
 
                     if let Some(error) = submission_error() {
                         div { class: "message-error", "{error}" }
-                    } else if let Some(success_message) = success_message() {
-                        div { class: "message-success", {success_message} }
                     }
                 }
             }

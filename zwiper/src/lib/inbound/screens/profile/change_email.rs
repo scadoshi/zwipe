@@ -1,12 +1,10 @@
 use crate::domain::error::UserFacing;
 use crate::inbound::components::fields::text_input::TextInput;
-use crate::inbound::components::{
-    auth::{bouncer::Bouncer, session_upkeep::Upkeep},
-    success_messages::random_success_message,
-};
+use crate::inbound::components::auth::{bouncer::Bouncer, session_upkeep::Upkeep};
 use crate::outbound::client::user::change_email::ClientChangeEmail;
 use crate::outbound::client::ZwipeClient;
 use dioxus::prelude::*;
+use dioxus_primitives::toast::{use_toast, ToastOptions};
 use email_address::EmailAddress;
 use std::str::FromStr;
 use zwipe::{
@@ -43,8 +41,8 @@ pub fn ChangeEmail() -> Element {
     };
 
     let mut submission_error: Signal<Option<String>> = use_signal(|| None);
-    let mut success_message: Signal<Option<String>> = use_signal(|| None);
     let mut submit_attempted = use_signal(|| false);
+    let toast = use_toast();
 
     let mut inputs_are_valid = move || {
         validate_email();
@@ -74,9 +72,13 @@ pub fn ChangeEmail() -> Element {
                 match auth_client().change_email(request, &sesh).await {
                     Ok(updated_user) => {
                         submission_error.set(None);
+                        let new_email = updated_user.email.clone();
                         sesh.user.email = updated_user.email;
                         session.set(Some(sesh));
-                        success_message.set(Some(random_success_message()));
+                        toast.success(
+                            format!("email changed to {}", new_email),
+                            ToastOptions::default(),
+                        );
                         clear_inputs();
                         submit_attempted.set(false);
                     }
@@ -137,8 +139,6 @@ pub fn ChangeEmail() -> Element {
 
                     if let Some(error) = submission_error() {
                         div { class: "message-error", "{error}" }
-                    } else if let Some(success_message) = success_message() {
-                        div { class: "message-success", {success_message} }
                     }
                 }
             }
