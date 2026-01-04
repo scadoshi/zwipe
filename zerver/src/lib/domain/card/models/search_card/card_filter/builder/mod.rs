@@ -7,7 +7,7 @@ use crate::domain::card::models::{
         rarity::Rarities,
     },
     search_card::{
-        card_filter::{error::InvalidCardFilter, CardFilter},
+        card_filter::{error::InvalidCardFilter, CardFilter, OrderByOptions},
         card_type::CardType,
     },
 };
@@ -32,6 +32,8 @@ pub struct CardFilterBuilder {
     // text
     name_contains: Option<String>,
     oracle_text_contains: Option<String>,
+    flavor_text_contains: Option<String>,
+    has_flavor_text: Option<bool>,
     // types
     type_line_contains: Option<String>,
     type_line_contains_any: Option<Vec<String>>,
@@ -39,6 +41,8 @@ pub struct CardFilterBuilder {
     // config
     limit: u32,
     offset: u32,
+    order_by: Option<OrderByOptions>,
+    ascending: bool,
 }
 
 impl Default for CardFilterBuilder {
@@ -56,11 +60,15 @@ impl Default for CardFilterBuilder {
             set_equals_any: None,
             name_contains: None,
             oracle_text_contains: None,
+            flavor_text_contains: None,
+            has_flavor_text: None,
             type_line_contains: None,
             type_line_contains_any: None,
             card_type_contains_any: None,
             limit: 100,
             offset: 0,
+            order_by: None,
+            ascending: true,
         }
     }
 }
@@ -72,10 +80,12 @@ impl CardFilterBuilder {
     }
 
     pub fn is_empty(&self) -> bool {
-        *self
-            == *Self::default()
-                .set_limit(self.limit)
-                .set_offset(self.offset)
+        let mut default = Self::default();
+        default.limit = self.limit;
+        default.offset = self.offset;
+        default.order_by = self.order_by;
+        default.ascending = self.ascending;
+        *self == default
     }
 
     // text
@@ -90,6 +100,20 @@ impl CardFilterBuilder {
         CardFilterBuilder {
             oracle_text_contains: Some(oracle_text_contains.into()),
             ..CardFilterBuilder::default()
+        }
+    }
+
+    pub fn with_flavor_text_contains(flavor_text_contains: impl Into<String>) -> Self {
+        Self {
+            flavor_text_contains: Some(flavor_text_contains.into()),
+            ..Self::default()
+        }
+    }
+
+    pub fn with_has_flavor_text(has_flavor_text: bool) -> Self {
+        Self {
+            has_flavor_text: Some(has_flavor_text),
+            ..Self::default()
         }
     }
 
@@ -210,6 +234,14 @@ impl CardFilterBuilder {
         }
     }
 
+    // config
+    pub fn with_order_by(order_by: OrderByOptions) -> CardFilterBuilder {
+        CardFilterBuilder {
+            order_by: Some(order_by),
+            ..CardFilterBuilder::default()
+        }
+    }
+
     // builder
     pub fn build(&self) -> Result<CardFilter, InvalidCardFilter> {
         if self.is_empty() {
@@ -229,11 +261,15 @@ impl CardFilterBuilder {
             set_equals_any: self.set_equals_any.clone(),
             name_contains: self.name_contains.clone(),
             oracle_text_contains: self.oracle_text_contains.clone(),
+            flavor_text_contains: self.flavor_text_contains.clone(),
+            has_flavor_text: self.has_flavor_text,
             type_line_contains: self.type_line_contains.clone(),
             type_line_contains_any: self.type_line_contains_any.clone(),
             card_type_contains_any: self.card_type_contains_any.clone(),
             limit: self.limit,
             offset: self.offset,
+            order_by: self.order_by,
+            ascending: self.ascending,
         })
     }
 }
