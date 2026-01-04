@@ -10,7 +10,18 @@ pub fn Rarity() -> Element {
 
     rsx! {
         div { class: "flex-col gap-half",
-            label { class: "label-xs", "rarity" }
+            div { class: "label-row",
+                label { class: "label-xs", "rarity" }
+                if filter_builder().rarity_equals_any().is_some() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| {
+                            filter_builder.write().unset_rarity_equals_any();
+                        },
+                        "×"
+                    }
+                }
+            }
 
             div { class: "flex flex-wrap gap-1 flex-center",
                 for rarity in CardRarity::all() {
@@ -19,9 +30,9 @@ pub fn Rarity() -> Element {
                             .rarity_equals_any()
                             .is_some_and(|r| r.contains(&rarity))
                         {
-                            "type-box-compact selected"
+                            "chip selected"
                         } else {
-                            "type-box-compact"
+                            "chip"
                         },
                         onclick: move |_| {
                             let current = filter_builder()

@@ -1,6 +1,6 @@
 use crate::{
     inbound::components::auth::session_upkeep::Upkeep,
-    outbound::client::{ZwipeClient, card::get_sets::ClientGetSets},
+    outbound::client::{card::get_sets::ClientGetSets, ZwipeClient},
 };
 use dioxus::prelude::*;
 use zwipe::{
@@ -26,33 +26,73 @@ pub fn Set() -> Element {
         client().get_sets(&sesh).await
     });
 
-    let mut set_query_string = use_signal(String::new);
-    let mut show_set_dropdown = use_signal(|| false);
+    let mut selected_sets: Signal<Vec<String>> = use_signal(|| {
+        filter_builder()
+            .set_equals_any()
+            .map(|v| v.to_vec())
+            .unwrap_or_default()
+    });
+    let mut search_query = use_signal(String::new);
+    let mut is_typing = use_signal(|| false);
+
+    // Get reset signal from parent (add.rs) to clear search on apply
+    let filter_reset: Signal<u32> = use_context();
+
+    // Clear search query when filter is applied
+    use_effect(move || {
+        let _ = filter_reset(); // Subscribe to changes
+        search_query.set(String::new());
+        is_typing.set(false);
+    });
+
+    // Sync local signal TO filter_builder (only if changed)
+    use_effect(move || {
+        let new_val = selected_sets();
+        let current = filter_builder().set_equals_any().map(|v| v.to_vec());
+        if new_val.is_empty() {
+            if current.is_some() {
+                filter_builder.write().unset_set_equals_any();
+            }
+        } else if current.as_ref() != Some(&new_val) {
+            filter_builder.write().set_set_equals_any(new_val);
+        }
+    });
+
+    // Sync FROM filter_builder (handles clear_all)
+    use_effect(move || {
+        if filter_builder().set_equals_any().is_none() {
+            selected_sets.set(Vec::new());
+            if !is_typing() {
+                search_query.set(String::new());
+            }
+        }
+    });
 
     rsx! {
         div { class: "flex-col gap-half",
-            label { class: "label-xs", r#for: "set-search", "sets" }
+            div { class: "label-row",
+                label { class: "label-xs", r#for: "set-search", "sets" }
+                if !selected_sets().is_empty() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| {
+                            selected_sets.set(Vec::new());
+                            search_query.set(String::new());
+                        },
+                        "×"
+                    }
+                }
+            }
 
-            if let Some(selected) = filter_builder().set_equals_any() && !selected.is_empty() {
+            // Selected sets (filled chips with remove button)
+            if !selected_sets().is_empty() {
                 div { class: "flex flex-wrap gap-1 mb-1",
-                    for set in selected.to_vec() {
-                        div { class: "type-chip",
-                            "{set}",
-                            button { class: "type-chip-remove",
+                    for set in selected_sets().iter().cloned() {
+                        div { class: "chip flex items-center gap-05",
+                            "{set}"
+                            button { class: "chip-remove",
                                 onclick: move |_| {
-                                    let current = filter_builder()
-                                        .set_equals_any()
-                                        .map(|s| s.to_vec())
-                                        .unwrap_or_default();
-
-                                    let mut new = current;
-                                    new.retain(|s| *s != set);
-
-                                    if new.is_empty() {
-                                        filter_builder.write().unset_set_equals_any();
-                                    } else {
-                                        filter_builder.write().set_set_equals_any(new);
-                                    }
+                                    selected_sets.write().retain(|s| *s != set);
                                 },
                                 "×"
                             }
@@ -61,68 +101,58 @@ pub fn Set() -> Element {
                 }
             }
 
-            input { class: "input input-compact",
-                id: "set-search",
-                placeholder: "type to search sets...",
-                value: "{set_query_string()}",
-                r#type: "text",
-                autocapitalize: "none",
-                spellcheck: "false",
-                oninput: move |event| {
-                    set_query_string.set(event.value());
-                    show_set_dropdown.set(!event.value().is_empty());
-                }
-            }
-
-            if show_set_dropdown() {
+            // Search result bubbles (above input, click to add)
+            if !search_query().is_empty() {
                 if let Some(Ok(sets)) = all_sets.read().as_ref() {
-                    div { class: "dropdown dropdown-compact",
-                        {
-                            let query = set_query_string().to_lowercase();
-                            let already_selected = filter_builder()
-                                .set_equals_any()
-                                .map(|s| s.to_vec())
-                                .unwrap_or_default();
+                    {
+                        let query = search_query().to_lowercase();
+                        let already_selected = selected_sets();
 
-                            let results: Vec<String> = sets
-                                .iter()
-                                .filter(|s| {
-                                    s.to_lowercase().contains(&query)
-                                    && !already_selected.contains(s)
-                                })
-                                .take(10)
-                                .cloned()
-                                .collect();
+                        let results: Vec<String> = sets
+                            .iter()
+                            .filter(|s| {
+                                s.to_lowercase().contains(&query)
+                                && !already_selected.contains(s)
+                            })
+                            .take(8)
+                            .cloned()
+                            .collect();
 
-                            if results.is_empty() {
-                                rsx! {
-                                    div { class: "dropdown-item-compact", "no matching sets" }
-                                }
-                            } else {
-                                rsx! {
+                        if !results.is_empty() {
+                            rsx! {
+                                div { class: "flex flex-wrap gap-1 mb-1",
                                     for set in results {
-                                        div { class: "dropdown-item-compact",
+                                        div { class: "chip-unselected",
                                             onclick: move |_| {
-                                                let current = filter_builder()
-                                                    .set_equals_any()
-                                                    .map(|s| s.to_vec())
-                                                    .unwrap_or_default();
-
-                                                let mut new = current;
-                                                new.push(set.clone());
-                                                filter_builder.write().set_set_equals_any(new);
-                                                set_query_string.set(String::new());
-                                                show_set_dropdown.set(false);
+                                                selected_sets.write().push(set.clone());
+                                                is_typing.set(false);
                                             },
                                             "{set}"
                                         }
                                     }
                                 }
                             }
+                        } else {
+                            rsx! {}
                         }
                     }
-                } else if all_sets.read().as_ref().is_some_and(|r| r.is_err()) {
-                    div { class: "message-error", "Failed to load sets" }
+                }
+            }
+
+            // Search input (at the bottom)
+            input { class: "input input-compact",
+                id: "set-search",
+                placeholder: "type to search",
+                value: "{search_query()}",
+                r#type: "text",
+                autocapitalize: "none",
+                spellcheck: "false",
+                oninput: move |event| {
+                    is_typing.set(true);
+                    search_query.set(event.value());
+                },
+                onblur: move |_| {
+                    is_typing.set(false);
                 }
             }
         }
