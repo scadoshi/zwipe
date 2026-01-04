@@ -6,7 +6,18 @@ pub fn Text() -> Element {
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
     rsx! {
         div { class: "flex-col gap-half",
-            label { class: "label-xs", r#for : "name-contains", "name contains" }
+            div { class: "label-row",
+                label { class: "label-xs", r#for: "name-contains", "name contains" }
+                if filter_builder().name_contains().is_some() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| {
+                            filter_builder.write().unset_name_contains();
+                        },
+                        "×"
+                    }
+                }
+            }
             input { class : "input input-compact",
                 id : "name-contains",
                 placeholder : "name contains",
@@ -21,7 +32,18 @@ pub fn Text() -> Element {
                 }
             }
 
-            label { class: "label-xs", r#for: "oracle-text-contains", "oracle text contains" }
+            div { class: "label-row",
+                label { class: "label-xs", r#for: "oracle-text-contains", "oracle text contains" }
+                if filter_builder().oracle_text_contains().is_some() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| {
+                            filter_builder.write().unset_oracle_text_contains();
+                        },
+                        "×"
+                    }
+                }
+            }
             input { class: "input input-compact",
                 id: "oracle-text-contains",
                 placeholder: "oracle text contains",
