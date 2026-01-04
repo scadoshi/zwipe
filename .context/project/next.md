@@ -32,6 +32,10 @@ Planned work after completing current tasks.
     - Card count indicators per category
     - Readable card display with proper image sizing
 
+8. **Filter Duplicate Name Cards** - Hide cards with repeated names separated by // (e.g. "Satya Aetherflux Genius // Satya Aetherflux Genius"). Investigate what these cards are (likely meld/transform variants with identical faces).
+
+9. **Refresh Excludes Deck Cards** - When clicking refresh, newly fetched cards should still exclude cards already in the current deck
+
 ---
 
 ## Bugs
