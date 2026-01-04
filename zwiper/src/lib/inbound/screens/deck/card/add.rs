@@ -419,7 +419,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         class: "btn btn-sm",
                         onclick: move |_| {
                             if filter_builder.read().is_empty() {
-                                toast.warning("try adding a filter".to_string(), ToastOptions::default());
+                                toast.warning("try adding a filter".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                             } else {
                                 filter_reset_counter.set(filter_reset_counter() + 1);
                             }
