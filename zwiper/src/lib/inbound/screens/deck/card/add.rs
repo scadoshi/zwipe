@@ -232,7 +232,8 @@ pub fn Add(deck_id: Uuid) -> Element {
             return;
         };
 
-        session.upkeep(client);
+        // Don't call session.upkeep here - it creates a loop when session updates
+        // The interval-based upkeep in Bouncer handles session refresh
         let Some(sesh) = session() else {
             search_error.set(Some("session expired".to_string()));
             return;

@@ -1,7 +1,4 @@
-use crate::{
-    inbound::components::auth::session_upkeep::Upkeep,
-    outbound::client::{card::get_card_types::ClientGetCardTypes, ZwipeClient},
-};
+use crate::outbound::client::{card::get_card_types::ClientGetCardTypes, ZwipeClient};
 use dioxus::prelude::*;
 use zwipe::{
     domain::{
@@ -23,7 +20,8 @@ pub fn Types() -> Element {
 
     let all_card_types: Resource<Result<Vec<String>, ApiError>> =
         use_resource(move || async move {
-            session.upkeep(client);
+            // Don't call session.upkeep here - use_resource re-runs frequently
+            // The interval-based upkeep in Bouncer handles session refresh
             let Some(sesh) = session() else {
                 return Err(ApiError::Unauthorized("session expired".to_string()));
             };
