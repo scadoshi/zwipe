@@ -7,7 +7,7 @@ use super::filter_mode::FilterMode;
 pub fn Combat() -> Element {
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
 
-    // Power filter mode and values (Option<i32> where None = no filter)
+    // Mode signals - needed for Exact/Within toggle UI state
     let mut power_mode = use_signal(|| {
         if filter_builder().power_range().is_some() {
             FilterMode::Within
@@ -15,11 +15,6 @@ pub fn Combat() -> Element {
             FilterMode::Exact
         }
     });
-    let mut power_equals = use_signal(|| filter_builder().power_equals());
-    let mut power_min = use_signal(|| filter_builder().power_range().map(|(min, _)| min));
-    let mut power_max = use_signal(|| filter_builder().power_range().map(|(_, max)| max));
-
-    // Toughness filter mode and values (Option<i32> where None = no filter)
     let mut toughness_mode = use_signal(|| {
         if filter_builder().toughness_range().is_some() {
             FilterMode::Within
@@ -27,90 +22,14 @@ pub fn Combat() -> Element {
             FilterMode::Exact
         }
     });
-    let mut toughness_equals = use_signal(|| filter_builder().toughness_equals());
-    let mut toughness_min = use_signal(|| filter_builder().toughness_range().map(|(min, _)| min));
-    let mut toughness_max = use_signal(|| filter_builder().toughness_range().map(|(_, max)| max));
 
-    // Sync power to filter_builder (batch writes to avoid multiple notifications)
-    use_effect(move || {
-        let mode = power_mode();
-        let mut fb = filter_builder.write();
+    // Check if power filter is active (read directly from filter_builder)
+    let power_is_active =
+        filter_builder().power_equals().is_some() || filter_builder().power_range().is_some();
 
-        match mode {
-            FilterMode::Exact => {
-                fb.unset_power_range();
-                if let Some(eq) = power_equals() {
-                    fb.set_power_equals(eq);
-                } else {
-                    fb.unset_power_equals();
-                }
-            }
-            FilterMode::Within => {
-                fb.unset_power_equals();
-                // If either min or max is set, use 0 as default for the other
-                let min = power_min();
-                let max = power_max();
-                if min.is_some() || max.is_some() {
-                    fb.set_power_range((min.unwrap_or(0), max.unwrap_or(0)));
-                } else {
-                    fb.unset_power_range();
-                }
-            }
-        }
-        // fb drops here - single notification
-    });
-
-    // Sync toughness to filter_builder (batch writes to avoid multiple notifications)
-    use_effect(move || {
-        let mode = toughness_mode();
-        let mut fb = filter_builder.write();
-
-        match mode {
-            FilterMode::Exact => {
-                fb.unset_toughness_range();
-                if let Some(eq) = toughness_equals() {
-                    fb.set_toughness_equals(eq);
-                } else {
-                    fb.unset_toughness_equals();
-                }
-            }
-            FilterMode::Within => {
-                fb.unset_toughness_equals();
-                // If either min or max is set, use 0 as default for the other
-                let min = toughness_min();
-                let max = toughness_max();
-                if min.is_some() || max.is_some() {
-                    fb.set_toughness_range((min.unwrap_or(0), max.unwrap_or(0)));
-                } else {
-                    fb.unset_toughness_range();
-                }
-            }
-        }
-        // fb drops here - single notification
-    });
-
-    // Sync FROM filter_builder (handles clear_all)
-    use_effect(move || {
-        let fb = filter_builder();
-        if fb.power_equals().is_none() && fb.power_range().is_none() {
-            power_equals.set(None);
-            power_min.set(None);
-            power_max.set(None);
-        }
-        if fb.toughness_equals().is_none() && fb.toughness_range().is_none() {
-            toughness_equals.set(None);
-            toughness_min.set(None);
-            toughness_max.set(None);
-        }
-    });
-
-    // Check if power filter is active
-    let power_is_active = power_equals().is_some()
-        || (power_min().is_some() && power_max().is_some());
-
-    // Check if toughness filter is active
-    let toughness_is_active = toughness_equals().is_some()
-        || (toughness_min().is_some() && toughness_max().is_some());
+    // Check if toughness filter is active (read directly from filter_builder)
+    let toughness_is_active = filter_builder().toughness_equals().is_some()
+        || filter_builder().toughness_range().is_some();
 
     rsx! {
         div { class: "flex-col gap-half",
@@ -120,7 +39,18 @@ pub fn Combat() -> Element {
                 button {
                     class: "clear-btn",
                     onclick: move |_| {
-                        power_mode.set(power_mode().toggle());
+                        let new_mode = power_mode().toggle();
+                        power_mode.set(new_mode);
+                        // Clear the other mode's value when switching
+                        let mut fb = filter_builder.write();
+                        match new_mode {
+                            FilterMode::Exact => {
+                                fb.unset_power_range();
+                            }
+                            FilterMode::Within => {
+                                fb.unset_power_equals();
+                            }
+                        }
                     },
                     "{power_mode()}"
                 }
@@ -128,9 +58,9 @@ pub fn Combat() -> Element {
                     button {
                         class: "clear-btn",
                         onclick: move |_| {
-                            power_equals.set(None);
-                            power_min.set(None);
-                            power_max.set(None);
+                            let mut fb = filter_builder.write();
+                            fb.unset_power_equals();
+                            fb.unset_power_range();
                         },
                         "×"
                     }
@@ -143,19 +73,19 @@ pub fn Combat() -> Element {
                         button {
                             class: "stepper-btn",
                             onclick: move |_| {
-                                let val = power_equals().unwrap_or(0);
-                                power_equals.set(Some(val.saturating_sub(1)));
+                                let current = filter_builder().power_equals().unwrap_or(0);
+                                filter_builder.write().set_power_equals(current.saturating_sub(1));
                             },
                             "-"
                         }
                         span { class: "stepper-value",
-                            if let Some(v) = power_equals() { "{v}" } else { "-" }
+                            if let Some(v) = filter_builder().power_equals() { "{v}" } else { "-" }
                         }
                         button {
                             class: "stepper-btn",
                             onclick: move |_| {
-                                let val = power_equals().unwrap_or(0);
-                                power_equals.set(Some(val.saturating_add(1)));
+                                let current = filter_builder().power_equals().unwrap_or(0);
+                                filter_builder.write().set_power_equals(current.saturating_add(1));
                             },
                             "+"
                         }
@@ -167,19 +97,19 @@ pub fn Combat() -> Element {
                             button {
                                 class: "stepper-btn",
                                 onclick: move |_| {
-                                    let val = power_min().unwrap_or(0);
-                                    power_min.set(Some(val.saturating_sub(1)));
+                                    let (min, max) = filter_builder().power_range().unwrap_or((0, 0));
+                                    filter_builder.write().set_power_range((min.saturating_sub(1), max));
                                 },
                                 "-"
                             }
                             span { class: "stepper-value",
-                                if let Some(v) = power_min() { "{v}" } else { "-" }
+                                if let Some((min, _)) = filter_builder().power_range() { "{min}" } else { "-" }
                             }
                             button {
                                 class: "stepper-btn",
                                 onclick: move |_| {
-                                    let val = power_min().unwrap_or(0);
-                                    power_min.set(Some(val.saturating_add(1)));
+                                    let (min, max) = filter_builder().power_range().unwrap_or((0, 0));
+                                    filter_builder.write().set_power_range((min.saturating_add(1), max));
                                 },
                                 "+"
                             }
@@ -189,19 +119,19 @@ pub fn Combat() -> Element {
                             button {
                                 class: "stepper-btn",
                                 onclick: move |_| {
-                                    let val = power_max().unwrap_or(0);
-                                    power_max.set(Some(val.saturating_sub(1)));
+                                    let (min, max) = filter_builder().power_range().unwrap_or((0, 0));
+                                    filter_builder.write().set_power_range((min, max.saturating_sub(1)));
                                 },
                                 "-"
                             }
                             span { class: "stepper-value",
-                                if let Some(v) = power_max() { "{v}" } else { "-" }
+                                if let Some((_, max)) = filter_builder().power_range() { "{max}" } else { "-" }
                             }
                             button {
                                 class: "stepper-btn",
                                 onclick: move |_| {
-                                    let val = power_max().unwrap_or(0);
-                                    power_max.set(Some(val.saturating_add(1)));
+                                    let (min, max) = filter_builder().power_range().unwrap_or((0, 0));
+                                    filter_builder.write().set_power_range((min, max.saturating_add(1)));
                                 },
                                 "+"
                             }
@@ -216,7 +146,18 @@ pub fn Combat() -> Element {
                 button {
                     class: "clear-btn",
                     onclick: move |_| {
-                        toughness_mode.set(toughness_mode().toggle());
+                        let new_mode = toughness_mode().toggle();
+                        toughness_mode.set(new_mode);
+                        // Clear the other mode's value when switching
+                        let mut fb = filter_builder.write();
+                        match new_mode {
+                            FilterMode::Exact => {
+                                fb.unset_toughness_range();
+                            }
+                            FilterMode::Within => {
+                                fb.unset_toughness_equals();
+                            }
+                        }
                     },
                     "{toughness_mode()}"
                 }
@@ -224,9 +165,9 @@ pub fn Combat() -> Element {
                     button {
                         class: "clear-btn",
                         onclick: move |_| {
-                            toughness_equals.set(None);
-                            toughness_min.set(None);
-                            toughness_max.set(None);
+                            let mut fb = filter_builder.write();
+                            fb.unset_toughness_equals();
+                            fb.unset_toughness_range();
                         },
                         "×"
                     }
@@ -239,19 +180,19 @@ pub fn Combat() -> Element {
                         button {
                             class: "stepper-btn",
                             onclick: move |_| {
-                                let val = toughness_equals().unwrap_or(0);
-                                toughness_equals.set(Some(val.saturating_sub(1)));
+                                let current = filter_builder().toughness_equals().unwrap_or(0);
+                                filter_builder.write().set_toughness_equals(current.saturating_sub(1));
                             },
                             "-"
                         }
                         span { class: "stepper-value",
-                            if let Some(v) = toughness_equals() { "{v}" } else { "-" }
+                            if let Some(v) = filter_builder().toughness_equals() { "{v}" } else { "-" }
                         }
                         button {
                             class: "stepper-btn",
                             onclick: move |_| {
-                                let val = toughness_equals().unwrap_or(0);
-                                toughness_equals.set(Some(val.saturating_add(1)));
+                                let current = filter_builder().toughness_equals().unwrap_or(0);
+                                filter_builder.write().set_toughness_equals(current.saturating_add(1));
                             },
                             "+"
                         }
@@ -263,19 +204,19 @@ pub fn Combat() -> Element {
                             button {
                                 class: "stepper-btn",
                                 onclick: move |_| {
-                                    let val = toughness_min().unwrap_or(0);
-                                    toughness_min.set(Some(val.saturating_sub(1)));
+                                    let (min, max) = filter_builder().toughness_range().unwrap_or((0, 0));
+                                    filter_builder.write().set_toughness_range((min.saturating_sub(1), max));
                                 },
                                 "-"
                             }
                             span { class: "stepper-value",
-                                if let Some(v) = toughness_min() { "{v}" } else { "-" }
+                                if let Some((min, _)) = filter_builder().toughness_range() { "{min}" } else { "-" }
                             }
                             button {
                                 class: "stepper-btn",
                                 onclick: move |_| {
-                                    let val = toughness_min().unwrap_or(0);
-                                    toughness_min.set(Some(val.saturating_add(1)));
+                                    let (min, max) = filter_builder().toughness_range().unwrap_or((0, 0));
+                                    filter_builder.write().set_toughness_range((min.saturating_add(1), max));
                                 },
                                 "+"
                             }
@@ -285,19 +226,19 @@ pub fn Combat() -> Element {
                             button {
                                 class: "stepper-btn",
                                 onclick: move |_| {
-                                    let val = toughness_max().unwrap_or(0);
-                                    toughness_max.set(Some(val.saturating_sub(1)));
+                                    let (min, max) = filter_builder().toughness_range().unwrap_or((0, 0));
+                                    filter_builder.write().set_toughness_range((min, max.saturating_sub(1)));
                                 },
                                 "-"
                             }
                             span { class: "stepper-value",
-                                if let Some(v) = toughness_max() { "{v}" } else { "-" }
+                                if let Some((_, max)) = filter_builder().toughness_range() { "{max}" } else { "-" }
                             }
                             button {
                                 class: "stepper-btn",
                                 onclick: move |_| {
-                                    let val = toughness_max().unwrap_or(0);
-                                    toughness_max.set(Some(val.saturating_add(1)));
+                                    let (min, max) = filter_builder().toughness_range().unwrap_or((0, 0));
+                                    filter_builder.write().set_toughness_range((min, max.saturating_add(1)));
                                 },
                                 "+"
                             }
