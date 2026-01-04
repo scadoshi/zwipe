@@ -72,10 +72,10 @@ Production-ready frontend implementations.
 ## 🔍 Card Filtering System
 
 ### Filter Architecture
-- **Modular Components**: Parent orchestrator + 5 sub-components
+- **Modular Components**: Parent orchestrator + 7 sub-components
 - **Context-Based State**: Filter Signal in app-level context
 - **Direct Mutation**: Prefer filter.write() over local signal + effect
-- **Router Structure**: Separate routes for each filter category
+- **Accordion Organization**: Collapsible sections matching Scryfall order (text, types, mana, combat, rarity, set, sort)
 
 ### Filter Components
 - **Text Filter**: Name/oracle text search with direct mutation
@@ -84,6 +84,7 @@ Production-ready frontend implementations.
 - **Mana Filter**: CMC equals/range + color identity toggles (W/U/B/R/G)
 - **Set Filter**: Multi-select searchable dropdown (pending)
 - **Rarity Filter**: 6-option keycard selector (pending)
+- **Sort Filter**: Single-select chips for order_by + ascending/descending toggle
 
 ### Filter Patterns
 - **Parsing Pattern**: String signals → onblur → validate → update builder
@@ -92,6 +93,7 @@ Production-ready frontend implementations.
 - **Chip-Based Selection**: Removable chips for multi-select values
 - **Filtered Dropdown**: Type-to-search showing top 5 results
 - **Resource Integration**: use_resource loading card types/sets from API
+- **Empty Filter Validation**: Toast warning when applying empty filter
 
 ## 🎮 Swipe Detection & Gestures
 

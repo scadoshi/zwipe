@@ -350,3 +350,10 @@ Knowledge areas where you could teach others without hesitation.
 - **Refresh Trigger Pattern**: Bool signal toggle forcing use_effect re-run for manual refresh
 - **Pagination Exhaustion Tracking**: Signal tracking when API returns no new cards, triggers end-of-results toast
 - **Toast Feedback**: toast.info/success/warning with ToastOptions for user feedback on swipe actions
+
+## 🔀 Sort & Order Patterns
+- **Sleeve Order Preservation**: HashMap loses insertion order; iterate over source data (scryfall_data) not lookup target (card_profiles) to preserve DB sort
+- **Query Builder NULL Filtering**: Add WHERE conditions to exclude NULL values when sorting by nullable fields (prices, power, toughness)
+- **ORDER BY Construction**: sqlx QueryBuilder with Separated for WHERE clauses, direct push for ORDER BY/LIMIT/OFFSET
+- **Display Trait for Enums**: impl std::fmt::Display for user-facing enum text, call .to_string().to_lowercase() at render site
+- **is_empty() Validation**: Exclude config fields (limit, offset, order_by, ascending) when checking if filter has actual conditions

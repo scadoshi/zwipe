@@ -113,6 +113,8 @@ Production-ready backend implementations.
 - **Option<Option<T>> Pattern**: Distinguishes "no update" from "set to None"
 - **Scryfall Field Binding**: Production macro for 80+ field operations
 - **PostgreSQL Advanced Queries**: JSONB operators (@>, <@, ?|), array operations, regex validation
+- **Order By Filtering**: Dynamic ORDER BY with NULL exclusion for nullable fields (prices, power, toughness)
+- **Sleeve Order Preservation**: Fixed HashMap iteration to preserve DB sort order by iterating source data
 
 ## 🗂️ Code Organization
 - **Workspace Configuration**: Multi-package setup with centralized dependencies

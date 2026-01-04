@@ -8,14 +8,17 @@ Planned work after completing current tasks.
 
 1. **Remove Card Screen** - Build UI for removing cards from deck with filtering and swipe gestures
 
-2. **Commander Search Validation** - Filter to only return valid commanders:
+2. **Undo on Down Swipe** - Down swipe undoes last action:
+    - If last action was skip: go back one card
+    - If last action was add: remove card from deck and re-show for decision
+    - Track action history for undo capability
+
+3. **Commander Search Validation** - Filter to only return valid commanders:
     - Legendary creatures
     - Legendary vehicles/spacecraft with power/toughness (flagship, starship subtypes)
     - Cards with "can be your commander" text (some planeswalkers, special cards)
 
-3. **Deck Card Search** - Exclude token cards from results
-
-4. **Order By Filter** - Add sorting option to filters pane (Name, Cmc, Power, Toughness, Rarity, ReleasedAt, Price, Random)
+4. **Deck Card Search** - Exclude token cards from results
 
 5. **Deck List Screen Redesign** - Better list styling, improved layout with utility bar, visual hierarchy
 
