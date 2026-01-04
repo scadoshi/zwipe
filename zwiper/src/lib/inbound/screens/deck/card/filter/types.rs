@@ -50,7 +50,9 @@ pub fn Types() -> Element {
     // Sync local signal TO filter_builder (only if changed)
     use_effect(move || {
         let new_val = selected_other_types();
-        let current = filter_builder().type_line_contains_any().map(|v| v.to_vec());
+        let current = filter_builder()
+            .type_line_contains_any()
+            .map(|v| v.to_vec());
         if current.as_ref() != Some(&new_val) {
             filter_builder.write().set_type_line_contains_any(new_val);
         }
