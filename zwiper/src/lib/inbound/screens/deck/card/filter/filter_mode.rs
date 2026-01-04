@@ -1,11 +1,11 @@
-#[derive(Debug, Default, Clone, Copy)]
-pub enum ColorIdentityFilterMode {
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub enum FilterMode {
     #[default]
-    Within,
     Exact,
+    Within,
 }
 
-impl ColorIdentityFilterMode {
+impl FilterMode {
     pub fn toggle(self) -> Self {
         match self {
             Self::Exact => Self::Within,
@@ -14,11 +14,11 @@ impl ColorIdentityFilterMode {
     }
 }
 
-impl std::fmt::Display for ColorIdentityFilterMode {
+impl std::fmt::Display for FilterMode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Within => write!(f, "Within"),
-            Self::Exact => write!(f, "Exact"),
+            Self::Exact => write!(f, "exact"),
+            Self::Within => write!(f, "within"),
         }
     }
 }
