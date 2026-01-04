@@ -1087,7 +1087,7 @@ body {
 ================================== */
 
 .modal-backdrop {
-  position: sticky;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
@@ -1104,7 +1104,7 @@ body {
 }
 
 .bottom-sheet {
-  position: sticky;
+  position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
@@ -1335,6 +1335,33 @@ body {
 
 .gap-half {
   gap: 0.5rem;
+}
+
+/* =========================
+  label row with clear button
+=========================== */
+
+.label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.clear-btn {
+  all: unset;
+  cursor: pointer;
+  font-size: 0.65rem;
+  color: #888;
+  padding: 0.15rem 0.35rem;
+  margin-left: 0.25rem;
+  border: 1px solid rgba(136, 136, 136, 0.8);
+  border-radius: 0.4rem;
+  transition: all 0.2s ease;
+}
+
+.clear-btn:hover {
+  color: #f5f5dc;
+  border-color: rgba(245, 245, 220, 0.8);
 }
 
 .floating-button {
