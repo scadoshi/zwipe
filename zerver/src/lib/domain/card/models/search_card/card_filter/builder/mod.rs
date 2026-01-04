@@ -80,11 +80,12 @@ impl CardFilterBuilder {
     }
 
     pub fn is_empty(&self) -> bool {
-        let mut default = Self::default();
-        default.limit = self.limit;
-        default.offset = self.offset;
-        default.order_by = self.order_by;
-        default.ascending = self.ascending;
+        let default = Self {
+            limit: self.limit,
+            offset: self.offset,
+            ascending: self.ascending,
+            ..Self::default()
+        };
         *self == default
     }
 
