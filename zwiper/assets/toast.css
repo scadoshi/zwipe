@@ -27,7 +27,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 1rem;
-    border: 1px solid #f5f5dc;
+    border: 1px solid rgba(245, 245, 220, 0.8);
     border-radius: 0.6rem;
     background: #1a1d23;
     color: #f5f5dc;
@@ -54,19 +54,19 @@
 
 /* Toast Types */
 .toast[data-type="success"] {
-    border-color: #399a55;
+    border-color: rgba(57, 154, 85, 0.8);
 }
 
 .toast[data-type="error"] {
-    border-color: #d13b3b;
+    border-color: rgba(209, 59, 59, 0.8);
 }
 
 .toast[data-type="warning"] {
-    border-color: #c9a227;
+    border-color: rgba(201, 162, 39, 0.8);
 }
 
 .toast[data-type="info"] {
-    border-color: #f5f5dc;
+    border-color: rgba(245, 245, 220, 0.8);
 }
 
 /* Toast Content */
