@@ -20,53 +20,30 @@ pub fn Types() -> Element {
 
     let all_card_types: Resource<Result<Vec<String>, ApiError>> =
         use_resource(move || async move {
-            // Don't call session.upkeep here - use_resource re-runs frequently
-            // The interval-based upkeep in Bouncer handles session refresh
             let Some(sesh) = session() else {
                 return Err(ApiError::Unauthorized("session expired".to_string()));
             };
             client().get_card_types(&sesh).await
         });
 
-    let mut selected_other_types: Signal<Vec<String>> = use_signal(|| {
-        filter_builder()
-            .type_line_contains_any()
-            .map(|v| v.to_vec())
-            .unwrap_or_default()
-    });
     let mut search_query = use_signal(String::new);
     let mut is_typing = use_signal(|| false);
 
     // Get reset signal from parent (add.rs) to clear search on apply
     let filter_reset: Signal<u32> = use_context();
 
-    // Clear search query when filter is applied
+    // Clear search query when filter is applied (keeps this effect - not a sync effect)
     use_effect(move || {
         let _ = filter_reset(); // Subscribe to changes
         search_query.set(String::new());
         is_typing.set(false);
     });
 
-    // Sync local signal TO filter_builder (only if changed)
-    use_effect(move || {
-        let new_val = selected_other_types();
-        let current = filter_builder()
-            .type_line_contains_any()
-            .map(|v| v.to_vec());
-        if current.as_ref() != Some(&new_val) {
-            filter_builder.write().set_type_line_contains_any(new_val);
-        }
-    });
-
-    // Sync FROM filter_builder (handles clear_all)
-    use_effect(move || {
-        if filter_builder().type_line_contains_any().is_none() {
-            selected_other_types.set(Vec::new());
-            if !is_typing() {
-                search_query.set(String::new());
-            }
-        }
-    });
+    // Read selected other types directly from filter_builder
+    let selected_other_types = filter_builder()
+        .type_line_contains_any()
+        .map(|v| v.to_vec())
+        .unwrap_or_default();
 
     rsx! {
         div { class: "flex-col gap-half",
@@ -110,11 +87,11 @@ pub fn Types() -> Element {
 
             div { class: "label-row",
                 label { class: "label-xs", r#for: "other-type", "other types" }
-                if !selected_other_types.read().is_empty() {
+                if !selected_other_types.is_empty() {
                     button {
                         class: "clear-btn",
                         onclick: move |_| {
-                            selected_other_types.set(Vec::new());
+                            filter_builder.write().unset_type_line_contains_any();
                             search_query.set(String::new());
                         },
                         "×"
@@ -123,14 +100,27 @@ pub fn Types() -> Element {
             }
 
             // Selected types (filled chips with remove button)
-            if !selected_other_types.read().is_empty() {
+            if !selected_other_types.is_empty() {
                 div { class: "flex flex-wrap gap-1 mb-1",
-                    for selected in selected_other_types.iter().map(|x| x.clone()) {
+                    for selected in selected_other_types.iter().cloned() {
                         div { class: "chip flex items-center gap-05",
                             "{selected}"
                             button { class: "chip-remove",
                                 onclick: move |_| {
-                                    selected_other_types.write().retain(|x| x != &selected);
+                                    // Remove from filter_builder directly
+                                    let current = filter_builder()
+                                        .type_line_contains_any()
+                                        .map(|v| v.to_vec())
+                                        .unwrap_or_default();
+                                    let new_types: Vec<String> = current
+                                        .into_iter()
+                                        .filter(|t| *t != selected)
+                                        .collect();
+                                    if new_types.is_empty() {
+                                        filter_builder.write().unset_type_line_contains_any();
+                                    } else {
+                                        filter_builder.write().set_type_line_contains_any(new_types);
+                                    }
                                 },
                                 "×"
                             }
@@ -143,12 +133,12 @@ pub fn Types() -> Element {
             if !search_query().is_empty() {
                 if let Some(Ok(all_types)) = all_card_types.read().as_ref() {
                     {
-                        let selected = selected_other_types();
+                        let already_selected = selected_other_types.clone();
                         let results: Vec<String> = all_types
                             .iter()
                             .filter(|t| {
                                 let lower = t.to_lowercase();
-                                !selected.contains(&lower)
+                                !already_selected.contains(&lower)
                                     && lower.contains(&search_query().to_lowercase())
                             })
                             .take(8)
@@ -161,7 +151,13 @@ pub fn Types() -> Element {
                                     for t in results {
                                         div { class: "chip-unselected",
                                             onclick: move |_| {
-                                                selected_other_types.write().push(t.clone());
+                                                // Add to filter_builder directly
+                                                let mut current = filter_builder()
+                                                    .type_line_contains_any()
+                                                    .map(|v| v.to_vec())
+                                                    .unwrap_or_default();
+                                                current.push(t.clone());
+                                                filter_builder.write().set_type_line_contains_any(current);
                                                 is_typing.set(false);
                                             },
                                             "{t}"

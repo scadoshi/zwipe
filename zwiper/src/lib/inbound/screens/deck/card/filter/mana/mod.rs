@@ -10,7 +10,7 @@ pub fn Mana() -> Element {
 
     let mut error = use_signal(|| None::<String>);
 
-    // CMC mode and values
+    // CMC mode signal
     let mut cmc_mode = use_signal(|| {
         if filter_builder().cmc_range().is_some() {
             FilterMode::Within
@@ -19,6 +19,7 @@ pub fn Mana() -> Element {
         }
     });
 
+    // CMC string signals for input buffering (needed for validation)
     let mut cmc_equals_string = use_signal(|| {
         filter_builder()
             .cmc_equals()
@@ -38,22 +39,32 @@ pub fn Mana() -> Element {
             .unwrap_or_default()
     });
 
+    // Parse and write CMC equals on blur
     let mut try_parse_cmc_equals = move || {
         if cmc_equals_string().is_empty() {
             filter_builder.write().unset_cmc_equals();
+            error.set(None);
             return;
         }
         if let Ok(n) = cmc_equals_string().parse::<f64>() {
             filter_builder.write().set_cmc_equals(n);
             cmc_equals_string.set(n.to_string());
+            error.set(None);
         } else {
-            error.set(Some("invalid input".to_string()));
+            error.set(Some("invalid cmc".to_string()));
         }
     };
 
+    // Parse and write CMC range on blur
     let mut try_parse_cmc_range = move || {
-        if cmc_range_min_string().is_empty() || cmc_range_max_string().is_empty() {
+        if cmc_range_min_string().is_empty() && cmc_range_max_string().is_empty() {
             filter_builder.write().unset_cmc_range();
+            error.set(None);
+            return;
+        }
+        // Need both values for a valid range
+        if cmc_range_min_string().is_empty() || cmc_range_max_string().is_empty() {
+            // Don't write partial range, wait for both
             return;
         }
         if let (Ok(min), Ok(max)) = (
@@ -63,21 +74,13 @@ pub fn Mana() -> Element {
             filter_builder.write().set_cmc_range((min, max));
             cmc_range_min_string.set(min.to_string());
             cmc_range_max_string.set(max.to_string());
+            error.set(None);
         } else {
-            error.set(Some("invalid input".to_string()));
+            error.set(Some("invalid cmc range".to_string()));
         }
     };
 
-    // Color identity mode and values
-    let mut selected_colors = use_signal(|| {
-        if let Some(colors) = filter_builder().color_identity_equals() {
-            colors.to_vec()
-        } else if let Some(colors) = filter_builder().color_identity_within() {
-            colors.to_vec()
-        } else {
-            Vec::new()
-        }
-    });
+    // Color identity mode signal
     let mut color_identity_mode = use_signal(|| {
         if filter_builder().color_identity_equals().is_some() {
             FilterMode::Exact
@@ -88,76 +91,22 @@ pub fn Mana() -> Element {
         }
     });
 
-    // Sync local colors TO filter_builder (only if changed)
-    use_effect(move || {
-        let colors = selected_colors();
-        let mode = color_identity_mode();
-        let current_equals = filter_builder().color_identity_equals().map(|v| v.to_vec());
-        let current_within = filter_builder().color_identity_within().map(|v| v.to_vec());
-
-        if colors.is_empty() {
-            if current_equals.is_some() {
-                filter_builder.write().unset_color_identity_equals();
-            }
-            if current_within.is_some() {
-                filter_builder.write().unset_color_identity_within();
-            }
-        } else {
-            match mode {
-                FilterMode::Exact => {
-                    if current_within.is_some() {
-                        filter_builder.write().unset_color_identity_within();
-                    }
-                    if current_equals.as_ref() != Some(&colors) {
-                        filter_builder.write().set_color_identity_equals(colors.into());
-                    }
-                }
-                FilterMode::Within => {
-                    if current_equals.is_some() {
-                        filter_builder.write().unset_color_identity_equals();
-                    }
-                    if current_within.as_ref() != Some(&colors) {
-                        filter_builder.write().set_color_identity_within(colors.into());
-                    }
-                }
-            }
-        }
-    });
-
-    // Track previous filter_builder CMC state to detect external clears
-    let mut prev_cmc_equals = use_signal(|| filter_builder().cmc_equals());
-    let mut prev_cmc_range = use_signal(|| filter_builder().cmc_range());
-
-    // Sync FROM filter_builder (handles clear_all)
-    // Only clear local values if filter_builder WAS set and is NOW unset (external clear)
-    use_effect(move || {
-        let fb = filter_builder();
-        let current_cmc_equals = fb.cmc_equals();
-        let current_cmc_range = fb.cmc_range();
-
-        // CMC equals: only clear if it WAS set and is now None
-        if prev_cmc_equals().is_some() && current_cmc_equals.is_none() {
-            cmc_equals_string.set(String::new());
-        }
-        prev_cmc_equals.set(current_cmc_equals);
-
-        // CMC range: only clear if it WAS set and is now None
-        if prev_cmc_range().is_some() && current_cmc_range.is_none() {
-            cmc_range_min_string.set(String::new());
-            cmc_range_max_string.set(String::new());
-        }
-        prev_cmc_range.set(current_cmc_range);
-
-        // Color identity: clear when both are None (simpler since it syncs immediately)
-        if fb.color_identity_equals().is_none() && fb.color_identity_within().is_none() {
-            selected_colors.set(Vec::new());
-            color_identity_mode.set(FilterMode::default());
-        }
-    });
-
-    // Check if CMC filter is active
+    // Check if CMC filter is active (read directly from filter_builder)
     let cmc_is_active =
         filter_builder().cmc_equals().is_some() || filter_builder().cmc_range().is_some();
+
+    // Check if color identity filter is active
+    let color_is_active = filter_builder().color_identity_equals().is_some()
+        || filter_builder().color_identity_within().is_some();
+
+    // Get current selected colors from filter_builder
+    let selected_colors = if let Some(colors) = filter_builder().color_identity_equals() {
+        colors.to_vec()
+    } else if let Some(colors) = filter_builder().color_identity_within() {
+        colors.to_vec()
+    } else {
+        Vec::new()
+    };
 
     rsx! {
         div { class: "flex-col gap-half",
@@ -167,7 +116,21 @@ pub fn Mana() -> Element {
                 button {
                     class: "clear-btn",
                     onclick: move |_| {
-                        cmc_mode.set(cmc_mode().toggle());
+                        let new_mode = cmc_mode().toggle();
+                        cmc_mode.set(new_mode);
+                        // Clear the other mode's value when switching
+                        let mut fb = filter_builder.write();
+                        match new_mode {
+                            FilterMode::Exact => {
+                                fb.unset_cmc_range();
+                                cmc_range_min_string.set(String::new());
+                                cmc_range_max_string.set(String::new());
+                            }
+                            FilterMode::Within => {
+                                fb.unset_cmc_equals();
+                                cmc_equals_string.set(String::new());
+                            }
+                        }
                     },
                     "{cmc_mode()}"
                 }
@@ -175,8 +138,13 @@ pub fn Mana() -> Element {
                     button {
                         class: "clear-btn",
                         onclick: move |_| {
-                            filter_builder.write().unset_cmc_equals();
-                            filter_builder.write().unset_cmc_range();
+                            let mut fb = filter_builder.write();
+                            fb.unset_cmc_equals();
+                            fb.unset_cmc_range();
+                            cmc_equals_string.set(String::new());
+                            cmc_range_min_string.set(String::new());
+                            cmc_range_max_string.set(String::new());
+                            error.set(None);
                         },
                         "×"
                     }
@@ -247,16 +215,41 @@ pub fn Mana() -> Element {
                 button {
                     class: "clear-btn",
                     onclick: move |_| {
-                        color_identity_mode.set(color_identity_mode().toggle());
+                        let new_mode = color_identity_mode().toggle();
+                        color_identity_mode.set(new_mode);
+                        // When switching modes, move colors to the new mode field
+                        let colors = if let Some(c) = filter_builder().color_identity_equals() {
+                            c.to_vec()
+                        } else if let Some(c) = filter_builder().color_identity_within() {
+                            c.to_vec()
+                        } else {
+                            Vec::new()
+                        };
+                        let mut fb = filter_builder.write();
+                        match new_mode {
+                            FilterMode::Exact => {
+                                fb.unset_color_identity_within();
+                                if !colors.is_empty() {
+                                    fb.set_color_identity_equals(colors.into());
+                                }
+                            }
+                            FilterMode::Within => {
+                                fb.unset_color_identity_equals();
+                                if !colors.is_empty() {
+                                    fb.set_color_identity_within(colors.into());
+                                }
+                            }
+                        }
                     },
                     "{color_identity_mode()}"
                 }
-                if filter_builder().color_identity_equals().is_some() || filter_builder().color_identity_within().is_some() {
+                if color_is_active {
                     button {
                         class: "clear-btn",
                         onclick: move |_| {
-                            filter_builder.write().unset_color_identity_equals();
-                            filter_builder.write().unset_color_identity_within();
+                            let mut fb = filter_builder.write();
+                            fb.unset_color_identity_equals();
+                            fb.unset_color_identity_within();
                         },
                         "×"
                     }
@@ -266,19 +259,45 @@ pub fn Mana() -> Element {
             div { class: "flex flex-wrap gap-1 mb-1 flex-center",
                 for color in Color::all() {
                     div {
-                        class: if selected_colors().contains(&color) {
+                        class: if selected_colors.contains(&color) {
                             "chip selected"
                         } else {
                             "chip"
                         },
                         onclick: move |_| {
-                            let mut colors = selected_colors();
+                            // Get current colors and toggle
+                            let mut colors = if let Some(c) = filter_builder().color_identity_equals() {
+                                c.to_vec()
+                            } else if let Some(c) = filter_builder().color_identity_within() {
+                                c.to_vec()
+                            } else {
+                                Vec::new()
+                            };
+
                             if colors.contains(&color) {
                                 colors.retain(|c| c != &color);
                             } else {
                                 colors.push(color);
                             }
-                            selected_colors.set(colors);
+
+                            // Write to appropriate field based on mode
+                            let mut fb = filter_builder.write();
+                            match color_identity_mode() {
+                                FilterMode::Exact => {
+                                    if colors.is_empty() {
+                                        fb.unset_color_identity_equals();
+                                    } else {
+                                        fb.set_color_identity_equals(colors.into());
+                                    }
+                                }
+                                FilterMode::Within => {
+                                    if colors.is_empty() {
+                                        fb.unset_color_identity_within();
+                                    } else {
+                                        fb.set_color_identity_within(colors.into());
+                                    }
+                                }
+                            }
                         },
                         { color.to_string().to_lowercase() }
                     }
