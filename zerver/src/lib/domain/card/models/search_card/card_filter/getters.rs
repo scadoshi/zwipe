@@ -1,6 +1,6 @@
 use crate::domain::card::models::{
     scryfall_data::{colors::Colors, rarity::Rarities},
-    search_card::{card_filter::CardFilter, card_type::CardType},
+    search_card::{card_filter::{CardFilter, OrderByOptions}, card_type::CardType},
 };
 
 impl CardFilter {
@@ -11,6 +11,14 @@ impl CardFilter {
 
     pub fn oracle_text_contains(&self) -> Option<&str> {
         self.oracle_text_contains.as_deref()
+    }
+
+    pub fn flavor_text_contains(&self) -> Option<&str> {
+        self.flavor_text_contains.as_deref()
+    }
+
+    pub fn has_flavor_text(&self) -> Option<bool> {
+        self.has_flavor_text
     }
 
     // types
@@ -26,13 +34,14 @@ impl CardFilter {
         self.card_type_contains_any.as_deref()
     }
 
-    // printing
-    pub fn set_equals_any(&self) -> Option<&[String]> {
-        self.set_equals_any.as_deref()
-    }
-
+    // rarity
     pub fn rarity_equals_any(&self) -> Option<&Rarities> {
         self.rarity_equals_any.as_ref()
+    }
+
+    // set
+    pub fn set_equals_any(&self) -> Option<&[String]> {
+        self.set_equals_any.as_deref()
     }
 
     // mana
@@ -76,5 +85,13 @@ impl CardFilter {
 
     pub fn offset(&self) -> u32 {
         self.offset
+    }
+
+    pub fn order_by(&self) -> Option<OrderByOptions> {
+        self.order_by
+    }
+
+    pub fn ascending(&self) -> bool {
+        self.ascending
     }
 }

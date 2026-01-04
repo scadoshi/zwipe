@@ -8,6 +8,20 @@ use crate::domain::card::models::{
 };
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum OrderByOptions {
+    Name,
+    Cmc,
+    Power,
+    Toughness,
+    Rarity,
+    ReleasedAt,
+    PriceUsd,
+    PriceEur,
+    PriceTix,
+    Random,
+}
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct CardFilter {
     // combat
@@ -27,6 +41,8 @@ pub struct CardFilter {
     // text
     name_contains: Option<String>,
     oracle_text_contains: Option<String>,
+    flavor_text_contains: Option<String>,
+    has_flavor_text: Option<bool>,
     // types
     type_line_contains: Option<String>,
     type_line_contains_any: Option<Vec<String>>,
@@ -34,4 +50,6 @@ pub struct CardFilter {
     // config
     limit: u32,
     offset: u32,
+    order_by: Option<OrderByOptions>,
+    ascending: bool,
 }

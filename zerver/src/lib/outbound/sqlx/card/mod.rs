@@ -8,7 +8,7 @@ use crate::domain::card::models::{
     create_card::CreateCardError,
     get_sets::GetSetsError,
     scryfall_data::get_scryfall_data::{GetScryfallData, GetScryfallDataError},
-    search_card::{card_filter::CardFilter, error::SearchCardsError},
+    search_card::{card_filter::{CardFilter, OrderByOptions}, error::SearchCardsError},
     Card,
 };
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
@@ -283,6 +283,40 @@ impl CardRepository for MyPostgres {
         if let Some(query_string) = &request.oracle_text_contains() {
             sep.push("oracle_text ILIKE ");
             sep.push_bind_unseparated(format!("%{}%", query_string));
+        }
+
+        if let Some(query_string) = &request.flavor_text_contains() {
+            sep.push("flavor_text ILIKE ");
+            sep.push_bind_unseparated(format!("%{}%", query_string));
+        }
+
+        if let Some(has_flavor_text) = request.has_flavor_text() {
+            if has_flavor_text {
+                sep.push("flavor_text IS NOT NULL AND flavor_text != ''");
+            } else {
+                sep.push("(flavor_text IS NULL OR flavor_text = '')");
+            }
+        }
+
+        // ORDER BY
+        if let Some(order_by) = request.order_by() {
+            qb.push(" ORDER BY ");
+            let col = match order_by {
+                OrderByOptions::Name => "name",
+                OrderByOptions::Cmc => "cmc",
+                OrderByOptions::Power => "CAST(NULLIF(power, '') AS INT)",
+                OrderByOptions::Toughness => "CAST(NULLIF(toughness, '') AS INT)",
+                OrderByOptions::Rarity => "rarity",
+                OrderByOptions::ReleasedAt => "released_at",
+                OrderByOptions::PriceUsd => "CAST(NULLIF(prices->>'usd', '') AS NUMERIC)",
+                OrderByOptions::PriceEur => "CAST(NULLIF(prices->>'eur', '') AS NUMERIC)",
+                OrderByOptions::PriceTix => "CAST(NULLIF(prices->>'tix', '') AS NUMERIC)",
+                OrderByOptions::Random => "RANDOM()",
+            };
+            qb.push(col);
+            if order_by != OrderByOptions::Random {
+                qb.push(if request.ascending() { " ASC" } else { " DESC" });
+            }
         }
 
         qb.push(" LIMIT ");

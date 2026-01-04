@@ -1,4 +1,4 @@
-use super::{CardFilterBuilder, CardType, Colors};
+use super::{CardFilterBuilder, CardType, Colors, OrderByOptions};
 use crate::domain::card::models::scryfall_data::rarity::Rarities;
 
 impl CardFilterBuilder {
@@ -25,6 +25,29 @@ impl CardFilterBuilder {
 
     pub fn unset_oracle_text_contains(&mut self) -> &mut Self {
         self.oracle_text_contains = None;
+        self
+    }
+
+    pub fn set_flavor_text_contains(
+        &mut self,
+        flavor_text_contains: impl Into<String>,
+    ) -> &mut Self {
+        self.flavor_text_contains = Some(flavor_text_contains.into());
+        self
+    }
+
+    pub fn unset_flavor_text_contains(&mut self) -> &mut Self {
+        self.flavor_text_contains = None;
+        self
+    }
+
+    pub fn set_has_flavor_text(&mut self, has_flavor_text: bool) -> &mut Self {
+        self.has_flavor_text = Some(has_flavor_text);
+        self
+    }
+
+    pub fn unset_has_flavor_text(&mut self) -> &mut Self {
+        self.has_flavor_text = None;
         self
     }
 
@@ -191,10 +214,27 @@ impl CardFilterBuilder {
         self
     }
 
+    pub fn set_order_by(&mut self, order_by: OrderByOptions) -> &mut Self {
+        self.order_by = Some(order_by);
+        self
+    }
+
+    pub fn unset_order_by(&mut self) -> &mut Self {
+        self.order_by = None;
+        self
+    }
+
+    pub fn set_ascending(&mut self, ascending: bool) -> &mut Self {
+        self.ascending = ascending;
+        self
+    }
+
     // clear all filters
     pub fn clear_all(&mut self) -> &mut Self {
         self.name_contains = None;
         self.oracle_text_contains = None;
+        self.flavor_text_contains = None;
+        self.has_flavor_text = None;
         self.type_line_contains = None;
         self.type_line_contains_any = None;
         self.card_type_contains_any = None;
@@ -208,6 +248,8 @@ impl CardFilterBuilder {
         self.power_range = None;
         self.toughness_equals = None;
         self.toughness_range = None;
+        self.order_by = None;
+        self.ascending = true;
         self
     }
 }
