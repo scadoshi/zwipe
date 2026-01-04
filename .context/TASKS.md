@@ -1,10 +1,15 @@
 # Enhancements
-    - Remove card screen
-    - Update commander search to only return valid commanders
-    - Update deck card search to return non-tokens
-    - Refresh cards should be a button while adding cards
-    - If you reach the end of the cards resulting from your query a toast should appear saying something like "you have reached the end of the card results for your filter setup, click refresh or change your filter".. Ohh actually this should be an alert since there will be more text.
+- Remove card screen: build UI for removing cards from deck with filtering and swipe gestures
+- Commander search: filter to only return legendary creatures (valid commanders)
+    - Commander rule: "Who Can Be Your Commander?
+    Legendary Creatures: The classic choice, like Atraxa, Praetor's Voice or Saskia the Unyielding.
+    Legendary Vehicles & Spacecraft: Introduced to be commanders if they have a power/toughness box (e.g., from Edge of Eternities), such as flagship or starship subtypes.
+    Cards with the "Commander" Ability: Certain legendary non-creatures (like Planeswalkers) or other unique cards have text allowing them to be chosen as a Commander."
+- Deck card search: exclude token cards from results
+- End of results alert: show alert when user exhausts card results for current filter
+- Order by filter: add sorting option to filters pane (Name, Cmc, Power, Toughness, Rarity, ReleasedAt, Price, Random)
+
 # Bugs
-    - First deck creation immediate navigation to back to deck list => Deck doesn't show until you go back *one more* and then into deck list 
-    - Set filter not returning results at all
-    - At deck creation, if commander is chosen meaning a commander image will show upon save, the "deck name" label is pushed up nearly clipping with the header
+- Deck list nav bug: first deck creation navigates back but deck doesn't appear until navigating back again
+- Set filter broken: not returning any results
+- Create deck layout: commander image pushes "deck name" label into header area

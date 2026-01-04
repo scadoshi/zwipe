@@ -69,6 +69,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut is_loading_more = use_signal(|| false);
     let pagination_limit = 100_u32; // Backend default
     let load_more_threshold = 10_usize;
+    let mut pagination_exhausted = use_signal(|| false);
 
     let current_card = move || {
         let idx = current_index();
@@ -131,6 +132,8 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                         // Update offset for next load
                         current_offset.set(current_offset() + pagination_limit);
+                    } else {
+                        pagination_exhausted.set(true);
                     }
 
                     is_loading_more.set(false);
@@ -154,8 +157,12 @@ pub fn Add(deck_id: Uuid) -> Element {
                 load_more_cards();
             }
         } else {
-            // At the end - try loading more
-            load_more_cards();
+            // At the end - check if exhausted or try loading more
+            if pagination_exhausted() {
+                toast.warning("end of results".to_string(), ToastOptions::default());
+            } else {
+                load_more_cards();
+            }
         }
     };
 
@@ -230,6 +237,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         // Reset pagination when filter changes or refresh triggered
         current_offset.set(0);
         current_index.set(0);
+        pagination_exhausted.set(false);
 
         let mut builder = filter_builder.read().clone();
         builder.set_limit(pagination_limit);
