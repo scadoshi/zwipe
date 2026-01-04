@@ -7,7 +7,7 @@ use crate::domain::card::models::{
         rarity::Rarities,
     },
     search_card::{
-        card_filter::{error::InvalidCardFilter, CardFilter, OrderByOptions},
+        card_filter::{CardFilter, OrderByOptions, error::InvalidCardFilter},
         card_type::CardType,
     },
 };
@@ -83,6 +83,7 @@ impl CardFilterBuilder {
         let default = Self {
             limit: self.limit,
             offset: self.offset,
+            order_by: self.order_by,
             ascending: self.ascending,
             ..Self::default()
         };

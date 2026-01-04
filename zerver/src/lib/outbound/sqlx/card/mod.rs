@@ -5,11 +5,14 @@ pub mod scryfall_data;
 pub mod sync_metrics;
 
 use crate::domain::card::models::{
+    Card,
     create_card::CreateCardError,
     get_sets::GetSetsError,
     scryfall_data::get_scryfall_data::{GetScryfallData, GetScryfallDataError},
-    search_card::{card_filter::{CardFilter, OrderByOptions}, error::SearchCardsError},
-    Card,
+    search_card::{
+        card_filter::{CardFilter, OrderByOptions},
+        error::SearchCardsError,
+    },
 };
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
 use crate::outbound::sqlx::card::helpers::upsert_card::BatchDeltaUpsertWithTx;
@@ -17,8 +20,8 @@ use crate::outbound::sqlx::postgres::Postgres as MyPostgres;
 use crate::{
     domain::card::models::{
         card_profile::{
-            get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
             CardProfile,
+            get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
         },
         get_card::GetCardError,
         get_card_types::GetCardTypesError,
@@ -39,8 +42,8 @@ use crate::{
 
 use anyhow::Context;
 use chrono::NaiveDateTime;
-use sqlx::{query_as, query_scalar, Postgres};
-use sqlx::{query_builder::Separated, QueryBuilder};
+use sqlx::{Postgres, query_as, query_scalar};
+use sqlx::{QueryBuilder, query_builder::Separated};
 
 impl CardRepository for MyPostgres {
     // ========
@@ -298,6 +301,27 @@ impl CardRepository for MyPostgres {
             }
         }
 
+        // Filter out NULLs for sorted field
+        if let Some(order_by) = request.order_by() {
+            let null_filter = match order_by {
+                OrderByOptions::Power => Some("power IS NOT NULL AND power ~ '^\\d+$'"),
+                OrderByOptions::Toughness => Some("toughness IS NOT NULL AND toughness ~ '^\\d+$'"),
+                OrderByOptions::PriceUsd => {
+                    Some("prices->>'usd' IS NOT NULL AND prices->>'usd' != ''")
+                }
+                OrderByOptions::PriceEur => {
+                    Some("prices->>'eur' IS NOT NULL AND prices->>'eur' != ''")
+                }
+                OrderByOptions::PriceTix => {
+                    Some("prices->>'tix' IS NOT NULL AND prices->>'tix' != ''")
+                }
+                _ => None,
+            };
+            if let Some(filter) = null_filter {
+                sep.push(filter);
+            }
+        }
+
         // ORDER BY
         if let Some(order_by) = request.order_by() {
             qb.push(" ORDER BY ");
@@ -308,9 +332,9 @@ impl CardRepository for MyPostgres {
                 OrderByOptions::Toughness => "CAST(NULLIF(toughness, '') AS INT)",
                 OrderByOptions::Rarity => "rarity",
                 OrderByOptions::ReleasedAt => "released_at",
-                OrderByOptions::PriceUsd => "CAST(NULLIF(prices->>'usd', '') AS NUMERIC)",
-                OrderByOptions::PriceEur => "CAST(NULLIF(prices->>'eur', '') AS NUMERIC)",
-                OrderByOptions::PriceTix => "CAST(NULLIF(prices->>'tix', '') AS NUMERIC)",
+                OrderByOptions::PriceUsd => "(prices->>'usd')::NUMERIC",
+                OrderByOptions::PriceEur => "(prices->>'eur')::NUMERIC",
+                OrderByOptions::PriceTix => "(prices->>'tix')::NUMERIC",
                 OrderByOptions::Random => "RANDOM()",
             };
             qb.push(col);

@@ -37,16 +37,19 @@ pub trait SleeveCardProfile {
 #[cfg(feature = "zerver")]
 impl SleeveCardProfile for Vec<CardProfile> {
     fn sleeve(self, scryfall_data: Vec<ScryfallData>) -> Vec<Card> {
-        let mut data_map: HashMap<Uuid, ScryfallData> = scryfall_data
+        // Build map of card profiles keyed by scryfall_data_id
+        let mut profile_map: HashMap<Uuid, CardProfile> = self
             .into_iter()
-            .map(|sfd| (sfd.id.to_owned(), sfd))
+            .map(|cp| (cp.scryfall_data_id, cp))
             .collect();
 
-        self.into_iter()
-            .filter_map(|cp| {
-                data_map
-                    .remove(&cp.scryfall_data_id)
-                    .map(|sfd| Card::new(cp, sfd))
+        // Iterate over scryfall_data to preserve DB sort order
+        scryfall_data
+            .into_iter()
+            .filter_map(|sfd| {
+                profile_map
+                    .remove(&sfd.id)
+                    .map(|cp| Card::new(cp, sfd))
             })
             .collect::<Vec<Card>>()
     }
