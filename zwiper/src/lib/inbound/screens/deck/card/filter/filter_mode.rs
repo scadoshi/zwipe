@@ -2,14 +2,14 @@
 pub enum FilterMode {
     #[default]
     Exact,
-    Within,
+    Range,
 }
 
 impl FilterMode {
     pub fn toggle(self) -> Self {
         match self {
-            Self::Exact => Self::Within,
-            Self::Within => Self::Exact,
+            Self::Exact => Self::Range,
+            Self::Range => Self::Exact,
         }
     }
 }
@@ -17,8 +17,8 @@ impl FilterMode {
 impl std::fmt::Display for FilterMode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Exact => write!(f, "exact"),
-            Self::Within => write!(f, "within"),
+            Self::Exact => write!(f, "Exact"),
+            Self::Range => write!(f, "Range"),
         }
     }
 }

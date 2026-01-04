@@ -7,17 +7,17 @@ use super::filter_mode::FilterMode;
 pub fn Combat() -> Element {
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
 
-    // Mode signals - needed for Exact/Within toggle UI state
+    // Mode signals - needed for Exact/Range toggle UI state
     let mut power_mode = use_signal(|| {
         if filter_builder().power_range().is_some() {
-            FilterMode::Within
+            FilterMode::Range
         } else {
             FilterMode::Exact
         }
     });
     let mut toughness_mode = use_signal(|| {
         if filter_builder().toughness_range().is_some() {
-            FilterMode::Within
+            FilterMode::Range
         } else {
             FilterMode::Exact
         }
@@ -47,12 +47,12 @@ pub fn Combat() -> Element {
                             FilterMode::Exact => {
                                 fb.unset_power_range();
                             }
-                            FilterMode::Within => {
+                            FilterMode::Range => {
                                 fb.unset_power_equals();
                             }
                         }
                     },
-                    "{power_mode()}"
+                    "{power_mode().to_string().to_lowercase()}"
                 }
                 if power_is_active {
                     button {
@@ -91,7 +91,7 @@ pub fn Combat() -> Element {
                         }
                     }
                 },
-                FilterMode::Within => rsx! {
+                FilterMode::Range => rsx! {
                     div { class: "flex-row gap-2 flex-center",
                         div { class: "stepper",
                             button {
@@ -154,12 +154,12 @@ pub fn Combat() -> Element {
                             FilterMode::Exact => {
                                 fb.unset_toughness_range();
                             }
-                            FilterMode::Within => {
+                            FilterMode::Range => {
                                 fb.unset_toughness_equals();
                             }
                         }
                     },
-                    "{toughness_mode()}"
+                    "{toughness_mode().to_string().to_lowercase()}"
                 }
                 if toughness_is_active {
                     button {
@@ -198,7 +198,7 @@ pub fn Combat() -> Element {
                         }
                     }
                 },
-                FilterMode::Within => rsx! {
+                FilterMode::Range => rsx! {
                     div { class: "flex-row gap-2 flex-center",
                         div { class: "stepper",
                             button {
