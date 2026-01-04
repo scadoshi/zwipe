@@ -8,7 +8,8 @@ use crate::{
     outbound::client::{ZwipeClient, card::search_cards::ClientSearchCards},
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{use_toast, ToastOptions};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
+use std::time::Duration;
 use zwipe::domain::{
     auth::models::session::Session,
     card::models::search_card::card_filter::{OrderByOptions, builder::CardFilterBuilder},
@@ -32,7 +33,7 @@ pub fn Home() -> Element {
         if let Some(sesh) = session() {
             toast.info(
                 format!("hello, {}!", sesh.user.username),
-                ToastOptions::default(),
+                ToastOptions::default().duration(Duration::from_millis(1500)),
             );
         }
     });

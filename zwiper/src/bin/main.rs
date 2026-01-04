@@ -36,6 +36,7 @@ fn App() -> Element {
         }
 
         ToastProvider {
+            max_toasts: 3_usize,
             Router::<Router> {}
         }
     }

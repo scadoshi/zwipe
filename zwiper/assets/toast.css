@@ -12,12 +12,26 @@
     flex-direction: column-reverse;
     padding: 0;
     margin: 0;
-    gap: 0.5rem;
+    gap: 0;
 }
 
 .toast-item {
     display: flex;
+    margin-top: -2.5rem;
+    transition: all 0.2s ease;
+    position: relative;
 }
+
+.toast-item:last-child {
+    margin-top: 0;
+}
+
+/* Newer toasts (first in DOM with column-reverse) get higher z-index */
+.toast-item:first-child { z-index: 5; }
+.toast-item:nth-child(2) { z-index: 4; }
+.toast-item:nth-child(3) { z-index: 3; }
+.toast-item:nth-child(4) { z-index: 2; }
+.toast-item:nth-child(5) { z-index: 1; }
 
 /* Toast */
 .toast {
@@ -34,6 +48,7 @@
     font-family: "Cascadia Code", monospace;
     font-weight: 300;
     box-shadow: var(--shadow-sm);
+    transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .toast[data-top] {
