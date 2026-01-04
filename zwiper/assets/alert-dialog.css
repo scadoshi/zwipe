@@ -2,7 +2,7 @@
 .alert-dialog-overlay {
   position: fixed;
   z-index: 1000;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--bg-overlay);
   inset: 0;
 }
 
@@ -47,10 +47,10 @@
   max-width: 20rem;
   box-sizing: border-box;
   padding: 2rem;
-  border: 1px solid rgba(245, 245, 220, 0.8);
+  border: 1px solid var(--border-primary);
   border-radius: 1rem;
-  background: #1a1d23;
-  color: #f5f5dc;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   font-family: "Cascadia Code", monospace;
   font-weight: 300;
   text-align: center;
@@ -59,7 +59,7 @@
 
 .alert-dialog-title {
   margin: 0;
-  color: #f5f5dc;
+  color: var(--text-primary);
   font-size: 1.25rem;
   font-weight: 300;
   letter-spacing: 0.1em;
@@ -67,7 +67,7 @@
 
 .alert-dialog-description {
   margin: 0;
-  color: #f5f5dc;
+  color: var(--text-primary);
   font-size: 1rem;
   font-weight: 300;
   opacity: 0.8;
@@ -84,10 +84,10 @@
 .alert-dialog-cancel,
 .alert-dialog-action {
   padding: 0.5rem 1rem;
-  border: 1px solid rgba(245, 245, 220, 0.8);
+  border: 1px solid var(--border-primary);
   border-radius: 0.6rem;
   background: none;
-  color: #f5f5dc;
+  color: var(--text-primary);
   font-family: "Cascadia Code", monospace;
   font-size: 0.8rem;
   font-weight: 300;
@@ -98,9 +98,9 @@
 .alert-dialog-cancel:hover,
 .alert-dialog-action:hover {
   transform: translateY(-2px);
-  background-color: #f5f5dc;
-  color: #1a1d23;
-  border-color: rgba(245, 245, 220, 0.8);
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--border-primary);
 }
 
 .alert-dialog-cancel:active,
