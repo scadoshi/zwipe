@@ -8,7 +8,8 @@ use crate::{
             },
         },
         screens::deck::card::filter::{
-            combat::Combat, mana::Mana, rarity::Rarity, set::Set, text::Text, types::Types,
+            combat::Combat, mana::Mana, rarity::Rarity, set::Set, sort::Sort, text::Text,
+            types::Types,
         },
     },
     outbound::client::{
@@ -329,6 +330,39 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 }
                             }
                         }
+
+                        div { class: "card-info",
+                            if card.scryfall_data.prices.usd.is_some()
+                                || card.scryfall_data.prices.eur.is_some()
+                                || card.scryfall_data.prices.tix.is_some() {
+                                    {
+                                        let mut display: String = String::from("prices:");
+                                        let mut prices_count = 0;
+                                        if let Some(usd) = card.scryfall_data.prices.usd {
+                                            display.push_str(format!(" ${usd}").as_str());
+                                            prices_count += 1;
+                                        }
+                                        if let Some(eur) = card.scryfall_data.prices.eur {
+                                            if prices_count > 0 {
+                                                display.push_str(" |");
+                                            }
+                                            display.push_str(format!(" €{eur}").as_str());
+                                            prices_count += 1;
+                                        }
+                                        if let Some(tix) = card.scryfall_data.prices.tix {
+                                            if prices_count > 0 {
+                                                display.push_str(" |");
+                                            }
+                                            display.push_str(format!(" {tix} tix").as_str());
+                                        }
+                                        rsx! { span { "{display}" } }
+                                    }
+                            }
+                            span { "released at: {card.scryfall_data.released_at}" },
+                            if let Some(artist) = card.scryfall_data.artist && !artist.is_empty() {
+                                span { "artist: {artist}" }
+                            }
+                        }
                     } else {
                         // Empty state (no cards)
                         div { class : "card-shape flex-center",
@@ -384,7 +418,11 @@ pub fn Add(deck_id: Uuid) -> Element {
                     button {
                         class: "btn btn-sm",
                         onclick: move |_| {
-                            filter_reset_counter.set(filter_reset_counter() + 1);
+                            if filter_builder.read().is_empty() {
+                                toast.warning("try adding a filter".to_string(), ToastOptions::default());
+                            } else {
+                                filter_reset_counter.set(filter_reset_counter() + 1);
+                            }
                             filters_overlay_open.set(false);
                         },
                         "apply"
@@ -400,33 +438,38 @@ pub fn Add(deck_id: Uuid) -> Element {
                         collapsible: true,
 
                         AccordionItem { index: 1,
-                            AccordionTrigger { "combat" }
-                            AccordionContent { Combat {} }
-                        }
-
-                        AccordionItem { index: 2,
-                            AccordionTrigger { "mana" }
-                            AccordionContent { Mana {} }
-                        }
-
-                        AccordionItem { index: 3,
-                            AccordionTrigger { "rarity" }
-                            AccordionContent { Rarity {} }
-                        }
-
-                        AccordionItem { index: 4,
-                            AccordionTrigger { "set" }
-                            AccordionContent { Set {} }
-                        }
-
-                        AccordionItem { index: 5,
                             AccordionTrigger { "text" }
                             AccordionContent { Text {} }
                         }
 
-                        AccordionItem { index: 6,
+                        AccordionItem { index: 2,
                             AccordionTrigger { "types" }
                             AccordionContent { Types {} }
+                        }
+
+                        AccordionItem { index: 3,
+                            AccordionTrigger { "mana" }
+                            AccordionContent { Mana {} }
+                        }
+
+                        AccordionItem { index: 4,
+                            AccordionTrigger { "combat" }
+                            AccordionContent { Combat {} }
+                        }
+
+                        AccordionItem { index: 5,
+                            AccordionTrigger { "rarity" }
+                            AccordionContent { Rarity {} }
+                        }
+
+                        AccordionItem { index: 6,
+                            AccordionTrigger { "set" }
+                            AccordionContent { Set {} }
+                        }
+
+                        AccordionItem { index: 7,
+                            AccordionTrigger { "sort" }
+                            AccordionContent { Sort {} }
                         }
                   }
                 }
