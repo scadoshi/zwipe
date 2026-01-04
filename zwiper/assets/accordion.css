@@ -19,7 +19,7 @@
     justify-content: center;
     gap: 0.5rem;
     padding: 0.75rem 1rem;
-    border: 1px solid #f5f5dc;
+    border: 1px solid rgba(245, 245, 220, 0.8);
     background-color: transparent;
     color: #f5f5dc;
     outline: none;
@@ -42,7 +42,7 @@
 .accordion-item[data-open="true"] .accordion-trigger {
     background-color: #f5f5dc;
     color: #1a1d23;
-    border-color: #f5f5dc;
+    border-color: rgba(245, 245, 220, 0.8);
     font-weight: 300;
     transform: none;
 }

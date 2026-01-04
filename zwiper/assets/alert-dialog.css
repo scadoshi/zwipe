@@ -47,7 +47,7 @@
   max-width: 20rem;
   box-sizing: border-box;
   padding: 2rem;
-  border: 1px solid #f5f5dc;
+  border: 1px solid rgba(245, 245, 220, 0.8);
   border-radius: 1rem;
   background: #1a1d23;
   color: #f5f5dc;
@@ -84,7 +84,7 @@
 .alert-dialog-cancel,
 .alert-dialog-action {
   padding: 0.5rem 1rem;
-  border: 1px solid #f5f5dc;
+  border: 1px solid rgba(245, 245, 220, 0.8);
   border-radius: 0.6rem;
   background: none;
   color: #f5f5dc;
@@ -100,7 +100,7 @@
   transform: translateY(-2px);
   background-color: #f5f5dc;
   color: #1a1d23;
-  border-color: #f5f5dc;
+  border-color: rgba(245, 245, 220, 0.8);
 }
 
 .alert-dialog-cancel:active,
