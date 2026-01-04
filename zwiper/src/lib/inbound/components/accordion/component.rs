@@ -14,7 +14,7 @@ pub fn Accordion(props: AccordionProps) -> Element {
         //document::Link { rel: "stylesheet", href: asset!("/assets/accordion.css") }
         accordion::Accordion {
             class: "accordion",
-            width: "15rem",
+            width: "100%",
             id: props.id,
             allow_multiple_open: props.allow_multiple_open,
             disabled: props.disabled,
@@ -65,7 +65,7 @@ pub fn AccordionContent(props: AccordionContentProps) -> Element {
     rsx! {
         accordion::AccordionContent {
             class: "accordion-content",
-            style: "--collapsible-content-width: 15rem",
+            style: "--collapsible-content-width: 100%",
             id: props.id,
             attributes: props.attributes,
             {props.children}
