@@ -17,7 +17,7 @@ pub fn DeckList() -> Element {
     let auth_client: Signal<ZwipeClient> = use_context();
     let session: Signal<Option<Session>> = use_context();
 
-    let deck_profiles_resource: Resource<Result<Vec<DeckProfile>, ApiError>> =
+    let mut deck_profiles_resource: Resource<Result<Vec<DeckProfile>, ApiError>> =
         use_resource(move || async move {
             session.upkeep(auth_client);
             let Some(sesh) = session() else {
@@ -26,6 +26,11 @@ pub fn DeckList() -> Element {
 
             auth_client().get_deck_profiles(&sesh).await
         });
+
+    // Restart resource on component mount to ensure fresh data
+    use_effect(move || {
+        deck_profiles_resource.restart();
+    });
 
     rsx! {
         Bouncer {
