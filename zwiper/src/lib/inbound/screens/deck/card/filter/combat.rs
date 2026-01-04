@@ -105,9 +105,39 @@ pub fn Combat() -> Element {
         }
     };
 
+    // Sync FROM filter_builder (handles clear_all)
+    use_effect(move || {
+        let fb = filter_builder();
+        if fb.power_equals().is_none() {
+            power_equals_string.set(String::new());
+        }
+        if fb.power_range().is_none() {
+            power_range_min_string.set(String::new());
+            power_range_max_string.set(String::new());
+        }
+        if fb.toughness_equals().is_none() {
+            toughness_equals_string.set(String::new());
+        }
+        if fb.toughness_range().is_none() {
+            toughness_range_min_string.set(String::new());
+            toughness_range_max_string.set(String::new());
+        }
+    });
+
     rsx! {
         div { class: "flex-col gap-half",
-            label { class: "label-xs", r#for: "power-equals", "power equals" }
+            div { class: "label-row",
+                label { class: "label-xs", r#for: "power-equals", "power equals" }
+                if filter_builder().power_equals().is_some() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| {
+                            filter_builder.write().unset_power_equals();
+                        },
+                        "×"
+                    }
+                }
+            }
             input { class: "input input-compact",
                 id: "power-equals",
                 placeholder: "power equals",
@@ -124,7 +154,18 @@ pub fn Combat() -> Element {
                 }
             }
 
-            label { class: "label-xs", r#for: "power-range", "power range" }
+            div { class: "label-row",
+                label { class: "label-xs", r#for: "power-range", "power range" }
+                if filter_builder().power_range().is_some() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| {
+                            filter_builder.write().unset_power_range();
+                        },
+                        "×"
+                    }
+                }
+            }
             div { class: "flex-row mb-1",
                 input { class: "input input-half-compact",
                     id: "power-range-min",
@@ -158,7 +199,18 @@ pub fn Combat() -> Element {
                 }
             }
 
-            label { class: "label-xs", r#for: "toughness-equals", "toughness equals" }
+            div { class: "label-row",
+                label { class: "label-xs", r#for: "toughness-equals", "toughness equals" }
+                if filter_builder().toughness_equals().is_some() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| {
+                            filter_builder.write().unset_toughness_equals();
+                        },
+                        "×"
+                    }
+                }
+            }
             input { class: "input input-compact",
                 id: "toughness-equals",
                 placeholder: "toughness equals",
@@ -175,7 +227,18 @@ pub fn Combat() -> Element {
                 }
             }
 
-            label { class: "label-xs", r#for: "toughness-range", "toughness range" }
+            div { class: "label-row",
+                label { class: "label-xs", r#for: "toughness-range", "toughness range" }
+                if filter_builder().toughness_range().is_some() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| {
+                            filter_builder.write().unset_toughness_range();
+                        },
+                        "×"
+                    }
+                }
+            }
             div { class: "flex-row mb-1",
                 input { class: "input input-half-compact",
                     id: "toughness-range-min",
