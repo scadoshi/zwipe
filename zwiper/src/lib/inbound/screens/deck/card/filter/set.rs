@@ -92,7 +92,7 @@ pub fn Set() -> Element {
                 if let Some(Ok(sets)) = all_sets.read().as_ref() {
                     {
                         let query = search_query().to_lowercase();
-                        let already_selected = selected_sets.clone();
+                        let already_selected = selected_sets.as_slice();
 
                         let results: Vec<String> = sets
                             .iter()
@@ -100,7 +100,7 @@ pub fn Set() -> Element {
                                 s.to_lowercase().contains(&query)
                                 && !already_selected.contains(s)
                             })
-                            .take(8)
+                            .take(5)
                             .cloned()
                             .collect();
 

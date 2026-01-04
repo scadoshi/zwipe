@@ -133,7 +133,7 @@ pub fn Types() -> Element {
             if !search_query().is_empty() {
                 if let Some(Ok(all_types)) = all_card_types.read().as_ref() {
                     {
-                        let already_selected = selected_other_types.clone();
+                        let already_selected = selected_other_types.as_slice();
                         let results: Vec<String> = all_types
                             .iter()
                             .filter(|t| {
