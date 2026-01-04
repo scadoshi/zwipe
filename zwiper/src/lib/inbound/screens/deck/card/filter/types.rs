@@ -1,6 +1,6 @@
 use crate::{
     inbound::components::auth::session_upkeep::Upkeep,
-    outbound::client::{ZwipeClient, card::get_card_types::ClientGetCardTypes},
+    outbound::client::{card::get_card_types::ClientGetCardTypes, ZwipeClient},
 };
 use dioxus::prelude::*;
 use zwipe::{
@@ -36,25 +36,59 @@ pub fn Types() -> Element {
             .map(|v| v.to_vec())
             .unwrap_or_default()
     });
-    let mut other_type_query_string_for_dropdown = use_signal(String::new);
-    let mut show_other_type_dropdown = use_signal(|| false);
+    let mut search_query = use_signal(String::new);
+    let mut is_typing = use_signal(|| false);
 
+    // Get reset signal from parent (add.rs) to clear search on apply
+    let filter_reset: Signal<u32> = use_context();
+
+    // Clear search query when filter is applied
     use_effect(move || {
-        filter_builder
-            .write()
-            .set_type_line_contains_any(selected_other_types());
+        let _ = filter_reset(); // Subscribe to changes
+        search_query.set(String::new());
+        is_typing.set(false);
+    });
+
+    // Sync local signal TO filter_builder (only if changed)
+    use_effect(move || {
+        let new_val = selected_other_types();
+        let current = filter_builder().type_line_contains_any().map(|v| v.to_vec());
+        if current.as_ref() != Some(&new_val) {
+            filter_builder.write().set_type_line_contains_any(new_val);
+        }
+    });
+
+    // Sync FROM filter_builder (handles clear_all)
+    use_effect(move || {
+        if filter_builder().type_line_contains_any().is_none() {
+            selected_other_types.set(Vec::new());
+            if !is_typing() {
+                search_query.set(String::new());
+            }
+        }
     });
 
     rsx! {
         div { class: "flex-col gap-half",
-            label { class: "label-xs", r#for: "card-type", "basic types" }
+            div { class: "label-row",
+                label { class: "label-xs", r#for: "card-type", "basic types" }
+                if filter_builder().card_type_contains_any().is_some() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| {
+                            filter_builder.write().unset_card_type_contains_any();
+                        },
+                        "×"
+                    }
+                }
+            }
             div { class: "flex flex-wrap gap-1 mb-1 flex-center",
                 for card_type in Vec::with_all_card_types() {
                     div { class: if let Some(card_type_contains_any) = filter_builder().card_type_contains_any() {
                             if card_type_contains_any.contains(&card_type) {
-                                "type-box-compact selected"
-                            } else { "type-box-compact" }
-                        } else { "type-box-compact" },
+                                "chip selected"
+                            } else { "chip" }
+                        } else { "chip" },
                         onclick: move |_| {
                             let mut new: Vec<CardType> = Vec::new();
                             if let Some(selected) = filter_builder().card_type_contains_any() {
@@ -74,14 +108,27 @@ pub fn Types() -> Element {
                 }
             }
 
-            label { class: "label-xs", r#for: "other-type", "other types" }
+            div { class: "label-row",
+                label { class: "label-xs", r#for: "other-type", "other types" }
+                if !selected_other_types.read().is_empty() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| {
+                            selected_other_types.set(Vec::new());
+                            search_query.set(String::new());
+                        },
+                        "×"
+                    }
+                }
+            }
 
+            // Selected types (filled chips with remove button)
             if !selected_other_types.read().is_empty() {
                 div { class: "flex flex-wrap gap-1 mb-1",
                     for selected in selected_other_types.iter().map(|x| x.clone()) {
-                        div { class: "type-chip",
-                            "{selected}",
-                            button { class: "type-chip-remove",
+                        div { class: "chip flex items-center gap-05",
+                            "{selected}"
+                            button { class: "chip-remove",
                                 onclick: move |_| {
                                     selected_other_types.write().retain(|x| x != &selected);
                                 },
@@ -92,53 +139,57 @@ pub fn Types() -> Element {
                 }
             }
 
-            input { class: "input input-compact",
-                id: "other-type-search",
-                placeholder: "type to search...",
-                value: "{other_type_query_string_for_dropdown()}",
-                r#type: "text",
-                autocapitalize: "none",
-                spellcheck: "false",
-                oninput: move |event| {
-                    other_type_query_string_for_dropdown.set(event.value());
-                    show_other_type_dropdown.set(!event.value().is_empty());
-                }
-            }
-
-            if show_other_type_dropdown() {
+            // Search result bubbles (above input, click to add)
+            if !search_query().is_empty() {
                 if let Some(Ok(all_types)) = all_card_types.read().as_ref() {
-                    div { class: "dropdown dropdown-compact",
-                        {
-                            let filter_builder = filter_builder();
-                            let results: Vec<String> = all_types
-                                .iter()
-                                .filter(|t|
-                                        !filter_builder.type_line_contains_any().is_some_and(|v| v.contains(t))
-                                        && t.to_lowercase().contains(&other_type_query_string_for_dropdown().to_lowercase())
-                                )
-                                .take(5)
-                                .map(|x| x.to_lowercase())
-                                .collect();
-                            if results.is_empty() {
-                                rsx! {
-                                    div { class: "dropdown-item-compact", "no results" }
-                                }
-                            } else {
-                                rsx! {
+                    {
+                        let selected = selected_other_types();
+                        let results: Vec<String> = all_types
+                            .iter()
+                            .filter(|t| {
+                                let lower = t.to_lowercase();
+                                !selected.contains(&lower)
+                                    && lower.contains(&search_query().to_lowercase())
+                            })
+                            .take(8)
+                            .map(|x| x.to_lowercase())
+                            .collect();
+
+                        if !results.is_empty() {
+                            rsx! {
+                                div { class: "flex flex-wrap gap-1 mb-1",
                                     for t in results {
-                                        div { class: "dropdown-item-compact",
+                                        div { class: "chip-unselected",
                                             onclick: move |_| {
                                                 selected_other_types.write().push(t.clone());
-                                                other_type_query_string_for_dropdown.set(String::new());
-                                                show_other_type_dropdown.set(false);
+                                                is_typing.set(false);
                                             },
                                             "{t}"
                                         }
                                     }
                                 }
                             }
+                        } else {
+                            rsx! {}
                         }
                     }
+                }
+            }
+
+            // Search input (at the bottom)
+            input { class: "input input-compact",
+                id: "other-type-search",
+                placeholder: "type to search",
+                value: "{search_query()}",
+                r#type: "text",
+                autocapitalize: "none",
+                spellcheck: "false",
+                oninput: move |event| {
+                    is_typing.set(true);
+                    search_query.set(event.value());
+                },
+                onblur: move |_| {
+                    is_typing.set(false);
                 }
             }
         }
