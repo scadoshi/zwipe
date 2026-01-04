@@ -298,3 +298,55 @@ Knowledge areas where you could teach others without hesitation.
 - **Opaque vs Concrete Types**: `impl UserService` vs `US: UserService` trade-offs
 - **Type Inference Patterns**: When inference works vs explicit parameters needed
 - **Generic Constraints**: Complex trait bounds and generic programming patterns
+
+## 🔐 Backend Session & Token Architecture
+- **Session-Based Authentication**: Session struct containing user + access_token + refresh_token + both expiration timestamps
+- **Rotating Token Strategy**: Security model where refresh generates new access + new refresh token, invalidating old refresh
+- **Access vs Refresh Tokens**: JWTs (self-contained, 24hr) vs opaque hex strings (64-char, 14-day, hashed with SHA-256)
+- **Token Hashing Strategy**: SHA-256 for refresh tokens (fast verification) vs Argon2 for passwords (slow, memory-hard)
+- **Multi-Device Session Support**: Multiple refresh tokens per user (max 5) enabling concurrent device authentication
+- **Token Refresh Flow**: 401 response triggers refresh, not proactive checking
+- **Session Port Architecture**: AuthService and AuthRepository traits for session management operations
+- **SQLx Session Operations**: create_user_and_refresh_token, create_refresh_token, use_refresh_token, delete_users_refresh_tokens
+- **Token Rotation Pattern**: Delete old token, create new token atomically in use_refresh_token method
+- **Session Maximum Enforcement**: SQL window functions (ROW_NUMBER() OVER PARTITION BY) for automatic oldest-token cleanup
+- **Atomic Registration**: create_user_and_refresh_token wraps user + token creation in single transaction
+- **Cross-Domain Session Creation**: AuthService orchestrates UserRepository + AuthRepository + JWT generation
+- **Middleware Session Integration**: AuthenticatedUser extractor constructs Jwt from bearer token, validates with JwtSecret
+- **Refresh/Logout Endpoints**: Complete /api/auth/refresh and /api/auth/logout POST endpoints
+- **Enhanced Error Logging**: RefreshSessionError variants include user_id for security audit trails
+
+## 📱 Frontend Session Management
+- **PersistentSession Trait**: Keyring-based storage (persist, retrieve, clear methods) for iOS Keychain/Android KeyStore
+- **Session Expiration Checking**: retrieve() checks refresh_token expiration and auto-clears expired sessions
+- **ActiveSession Wrapper**: Type-safe wrapper ensuring validated sessions for HTTP requests
+- **GetActiveSession Trait**: Three-path token handling (valid, refresh needed, re-auth needed)
+- **Session Context Integration**: use_context() pattern for accessing session state in async functions
+- **HTTP Client Session Patterns**: AuthClient methods handle session validation and refresh automatically
+
+## 🃏 Card Filtering System & Modular Architecture
+- **Modular Filter Architecture**: Refactored monolithic filter into focused sub-components (text, types, combat, mana, rarity, set)
+- **Text Filter Component**: name_contains, oracle_text_contains, flavor_text_contains with direct filter mutation
+- **Types Filter Component**: Basic type grid toggles + chip-based other-types multi-select with searchable dropdown
+- **Combat Filter Component**: Power/toughness equals + range inputs with stepper controls and FilterMode enum
+- **Mana Filter Component**: CMC equals/range + color identity grid (W/U/B/R/G) with equals/contains mode toggle
+- **Parsing Pattern**: String signals → onblur triggers parsing closure → validates → updates CardFilterBuilder → displays errors
+- **Color Identity UI**: For loop using Color::all() rendering toggle boxes, onclick modifies selected_colors signal
+- **Toggle Grid UI**: Always-visible grid of clickable boxes for basic types, onclick toggles card_type_contains_any array
+- **Chip-Based Multi-Select**: Selected items shown as removable chips, local signal + use_effect syncing to filter
+- **Filtered Dropdown**: Type-to-search input shows top matches from resource, clicking adds to selection
+- **Direct vs Reactive Patterns**: Basic types use direct filter mutation (no read/write conflict), complex use local signal
+- **JSONB Operator Debugging**: Fixed color_identity_contains_any from && (array operator) to ?| (jsonb contains any text[])
+- **Get Sets/Types Endpoints**: Full stack implementation returning Vec<String> for frontend filtering
+
+## 🃏 Deck Card Management & Swipe Navigation
+- **AddDeckCard Screen**: Card display, empty state, filter navigation, complete swipe-to-add workflow
+- **Card Swipe Integration**: Wrapped card image in Swipeable with left (skip) and right (add) gesture handlers
+- **Index-Based Card Iteration**: current_index signal tracking position without mutating list (preserves for undo)
+- **Pagination Implementation**: current_offset tracking database offset, is_loading_more preventing duplicate loads
+- **Load-More Threshold**: Triggers pagination when user within 10 cards of end, seamless infinite scroll
+- **De-duplication with HashSet**: Tracks existing card IDs preventing duplicate cards across pagination batches
+- **Pagination Reset on Filter Change**: use_effect watching filter_builder resets offset and index
+- **Refresh Trigger Pattern**: Bool signal toggle forcing use_effect re-run for manual refresh
+- **Pagination Exhaustion Tracking**: Signal tracking when API returns no new cards, triggers end-of-results toast
+- **Toast Feedback**: toast.info/success/warning with ToastOptions for user feedback on swipe actions

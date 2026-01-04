@@ -22,6 +22,23 @@ pub enum OrderByOptions {
     Random,
 }
 
+impl OrderByOptions {
+    pub fn all() -> Vec<Self> {
+        vec![
+            Self::Name,
+            Self::Cmc,
+            Self::Power,
+            Self::Toughness,
+            Self::Rarity,
+            Self::ReleasedAt,
+            Self::PriceUsd,
+            Self::PriceEur,
+            Self::PriceTix,
+            Self::Random,
+        ]
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct CardFilter {
     // combat
