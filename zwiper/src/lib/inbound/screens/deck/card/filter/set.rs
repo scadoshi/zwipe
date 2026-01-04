@@ -69,7 +69,7 @@ pub fn Set() -> Element {
     rsx! {
         div { class: "flex-col gap-half",
             div { class: "label-row",
-                label { class: "label-xs", r#for: "set-search", "sets" }
+                label { class: "label-xs", r#for: "set-search", "set equals any" }
                 if !selected_sets().is_empty() {
                     button {
                         class: "clear-btn",
