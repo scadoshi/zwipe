@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use dioxus_primitives::toast::ToastProvider;
 use zwipe::domain::logo;
 use zwiper::{
     config::Config,
@@ -31,9 +32,11 @@ fn App() -> Element {
         document::Link { rel: "stylesheet", href: TOAST_CSS }
         document::Meta {
             name: "viewport",
-            content: "width=device-width, initial-scale=1.0, viewport-fit=cover"
+            content: "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
         }
 
-        Router::<Router> {}
+        ToastProvider {
+            Router::<Router> {}
+        }
     }
 }
