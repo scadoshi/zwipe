@@ -7,6 +7,7 @@ use crate::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
+use std::time::Duration;
 use zwipe::{
     domain::{
         auth::models::{password::Password, session::Session},
@@ -78,7 +79,7 @@ pub fn ChangeUsername() -> Element {
                         session.set(Some(sesh));
                         toast.success(
                             format!("username changed to {}", new_name),
-                            ToastOptions::default(),
+                            ToastOptions::default().duration(Duration::from_millis(1500)),
                         );
                         submission_error.set(None);
                         clear_inputs();

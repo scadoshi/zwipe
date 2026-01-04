@@ -7,6 +7,7 @@ use crate::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
+use std::time::Duration;
 use zwipe::{
     domain::auth::models::{password::Password, session::Session},
     inbound::http::{handlers::auth::change_password::HttpChangePassword, ApiError},
@@ -70,7 +71,7 @@ pub fn ChangePassword() -> Element {
                     Ok(()) => {
                         toast.success(
                             "password change successful".to_string(),
-                            ToastOptions::default(),
+                            ToastOptions::default().duration(Duration::from_millis(1500)),
                         );
                         submission_error.set(None);
                         clear_inputs();

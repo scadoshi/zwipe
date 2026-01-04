@@ -7,6 +7,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use email_address::EmailAddress;
 use std::str::FromStr;
+use std::time::Duration;
 use zwipe::{
     domain::auth::models::{password::Password, session::Session},
     inbound::http::handlers::auth::change_email::HttpChangeEmail,
@@ -77,7 +78,7 @@ pub fn ChangeEmail() -> Element {
                         session.set(Some(sesh));
                         toast.success(
                             format!("email changed to {}", new_email),
-                            ToastOptions::default(),
+                            ToastOptions::default().duration(Duration::from_millis(1500)),
                         );
                         clear_inputs();
                         submit_attempted.set(false);

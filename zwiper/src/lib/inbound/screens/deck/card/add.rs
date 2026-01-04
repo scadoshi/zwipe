@@ -19,6 +19,7 @@ use crate::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::collections::HashSet;
+use std::time::Duration;
 use uuid::Uuid;
 use zwipe::{
     domain::{
@@ -283,14 +284,14 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 config: swipe_config,
                                 on_swipe_left: move |_| {
                                     // Skip card - trigger exit animation
-                                    toast.info("skipped".to_string(), ToastOptions::default());
+                                    toast.info("skipped".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                     is_animating.set(true);
                                     animation_direction.set(Direction::Left);
                                 },
                                 on_swipe_right: move |_| {
                                     // Add card to deck then trigger exit animation
                                     add_card_to_deck();
-                                    toast.success("added to deck".to_string(), ToastOptions::default());
+                                    toast.success("added to deck".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                     is_animating.set(true);
                                     animation_direction.set(Direction::Right);
                                 },
