@@ -4,7 +4,7 @@ use crate::{
             accordion::{Accordion, AccordionContent, AccordionItem, AccordionTrigger},
             auth::{bouncer::Bouncer, session_upkeep::Upkeep},
             interactions::swipe::{
-                config::SwipeConfig, direction::Direction, state::SwipeState, Swipeable,
+                Swipeable, config::SwipeConfig, direction::Direction, state::SwipeState,
             },
         },
         screens::deck::card::filter::{
@@ -12,12 +12,12 @@ use crate::{
         },
     },
     outbound::client::{
-        card::search_cards::ClientSearchCards, deck::get_deck::ClientGetDeck,
-        deck_card::create_deck_card::ClientCreateDeckCard, ZwipeClient,
+        ZwipeClient, card::search_cards::ClientSearchCards, deck::get_deck::ClientGetDeck,
+        deck_card::create_deck_card::ClientCreateDeckCard,
     },
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{use_toast, ToastOptions};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::collections::HashSet;
 use std::time::Duration;
 use uuid::Uuid;
@@ -25,8 +25,8 @@ use zwipe::{
     domain::{
         auth::models::session::Session,
         card::models::{
-            scryfall_data::image_uris::ImageUris,
-            search_card::card_filter::builder::CardFilterBuilder, Card,
+            Card, scryfall_data::image_uris::ImageUris,
+            search_card::card_filter::builder::CardFilterBuilder,
         },
     },
     inbound::http::handlers::deck_card::create_deck_card::HttpCreateDeckCard,
@@ -53,6 +53,9 @@ pub fn Add(deck_id: Uuid) -> Element {
     // Reset counter for collapsing accordions and clearing search queries
     let mut filter_reset_counter: Signal<u32> = use_signal(|| 0);
     use_context_provider(|| filter_reset_counter);
+
+    // Refresh trigger - incrementing this re-runs the card search effect
+    let mut refresh_trigger = use_signal(|| false);
 
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
@@ -221,7 +224,10 @@ pub fn Add(deck_id: Uuid) -> Element {
     });
 
     use_effect(move || {
-        // Reset pagination when filter changes
+        // Read refresh_trigger to make effect re-run when button clicked
+        let _ = refresh_trigger();
+
+        // Reset pagination when filter changes or refresh triggered
         current_offset.set(0);
         current_index.set(0);
 
@@ -349,9 +355,9 @@ pub fn Add(deck_id: Uuid) -> Element {
                 button {
                     class: "util-btn",
                     onclick: move |_| {
-                        cards.write().clear();
+                        refresh_trigger.set(!refresh_trigger());
                     },
-                    "clear cards"
+                    "refresh"
                 }
             }
 
@@ -373,7 +379,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             filter_reset_counter.set(filter_reset_counter() + 1);
                             filters_overlay_open.set(false);
                         },
-                        "apply filters"
+                        "apply"
                     }
                 }
 
@@ -424,7 +430,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         onclick: move |_| {
                             clear_filters();
                         },
-                        "clear filters"
+                        "clear"
                     }
                 }
             }
