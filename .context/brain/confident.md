@@ -142,6 +142,11 @@ Knowledge areas where you could teach others without hesitation.
 - **Global CSS Loading Requirement**: document::Link inside components doesn't reliably render to <head>—must load component CSS globally in main.rs with Asset constants
 - **CSS Loading Architecture**: Component stylesheets (accordion.css, alert-dialog.css, toast.css) loaded at app root ensures styles available on component mount
 - **Utility Bar Standardization**: Consolidated navigation buttons to bottom .util-bar divs with .util-btn styling across 20+ screens for consistent mobile-first UX
+- **Dioxus Reactivity (.read() vs .peek())**: .read() reads AND subscribes to changes (dependency tracking), .peek() reads WITHOUT subscribing (one-time read), critical for performance in use_effect
+- **Explicit Dependency Pattern**: Watch specific signals with `let _ = signal();` in use_effect, peek others to avoid unwanted re-runs
+- **Optimistic Updates**: Update local state (HashSet, Vec) immediately on API success without refetching for instant UI feedback
+- **LIFO Undo Stack**: Vec<Action> tracking user actions without storing full objects, index manipulation for undo (3000x memory savings vs storing full data)
+- **Performance Limits**: Hard caps (MAX constant) and warning thresholds for unbounded data structures, periodic warnings (modulo checks), graceful degradation
 
 ## 💾 SQLx Database Operations & Advanced Patterns
 - **Connection Pooling**: Production-ready pool configuration with optimized settings
