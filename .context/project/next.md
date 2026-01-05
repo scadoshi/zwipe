@@ -36,6 +36,26 @@ Planned work after completing current tasks.
 
 9. **Refresh Excludes Deck Cards** - When clicking refresh, newly fetched cards should still exclude cards already in the current deck
 
+10. **Cross-Deck Card Ownership Indicator** - Highlight cards that are already in other decks:
+    - Visual indicator when browsing cards for one deck (e.g., "In 2 other decks")
+    - Show which decks contain the card
+    - Helps users avoid over-buying duplicate cards
+
+11. **Toast: Card in Other Decks** - When viewing a card that exists in other decks, show a toast notification:
+    - Message options: "You use this card in other decks" or "You seem to like this card"
+    - Only show when the card is being viewed for deck-building (add/remove context)
+
+12. **Deck Profile/Grid View** - View all user decks in a grid layout on profile:
+    - Visual cards showing deck commander or key art
+    - Quick deck stats (card count, mana curve preview)
+    - Launch to build/edit deck from grid
+
+13. **EDHREC Integration** - Sort and filter cards by deck synergies:
+    - Fetch synergy data from EDHREC API for current commander
+    - Sort by "synergy score" or "popularity in decks with this commander"
+    - Highlight cards frequently paired with the current commander
+    - Helps players discover strong deck synergies
+
 ---
 
 ## Bugs
