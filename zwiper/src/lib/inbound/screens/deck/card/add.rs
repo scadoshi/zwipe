@@ -4,7 +4,7 @@ use crate::{
             accordion::{Accordion, AccordionContent, AccordionItem, AccordionTrigger},
             auth::{bouncer::Bouncer, session_upkeep::Upkeep},
             interactions::swipe::{
-                Swipeable, config::SwipeConfig, direction::Direction, state::SwipeState,
+                config::SwipeConfig, direction::Direction, state::SwipeState, Swipeable,
             },
         },
         screens::deck::card::filter::{
@@ -13,12 +13,12 @@ use crate::{
         },
     },
     outbound::client::{
-        ZwipeClient, card::search_cards::ClientSearchCards, deck::get_deck::ClientGetDeck,
-        deck_card::create_deck_card::ClientCreateDeckCard,
+        card::search_cards::ClientSearchCards, deck::get_deck::ClientGetDeck,
+        deck_card::create_deck_card::ClientCreateDeckCard, ZwipeClient,
     },
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
+use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::collections::HashSet;
 use std::time::Duration;
 use uuid::Uuid;
@@ -26,8 +26,8 @@ use zwipe::{
     domain::{
         auth::models::session::Session,
         card::models::{
-            Card, scryfall_data::image_uris::ImageUris,
-            search_card::card_filter::builder::CardFilterBuilder,
+            scryfall_data::image_uris::ImageUris,
+            search_card::card_filter::builder::CardFilterBuilder, Card,
         },
     },
     inbound::http::handlers::deck_card::create_deck_card::HttpCreateDeckCard,
@@ -360,7 +360,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                         rsx! { span { "{display}" } }
                                     }
                             }
-                            span { "released at: {card.scryfall_data.released_at}" },
+                            span { "released: {card.scryfall_data.released_at}" },
                             if let Some(artist) = card.scryfall_data.artist && !artist.is_empty() {
                                 span { "artist: {artist}" }
                             }
