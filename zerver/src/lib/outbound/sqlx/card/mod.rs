@@ -5,7 +5,6 @@ pub mod scryfall_data;
 pub mod sync_metrics;
 
 use crate::domain::card::models::{
-    Card,
     create_card::CreateCardError,
     get_sets::GetSetsError,
     scryfall_data::get_scryfall_data::{GetScryfallData, GetScryfallDataError},
@@ -13,6 +12,7 @@ use crate::domain::card::models::{
         card_filter::{CardFilter, OrderByOptions},
         error::SearchCardsError,
     },
+    Card,
 };
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
 use crate::outbound::sqlx::card::helpers::upsert_card::BatchDeltaUpsertWithTx;
@@ -20,8 +20,8 @@ use crate::outbound::sqlx::postgres::Postgres as MyPostgres;
 use crate::{
     domain::card::models::{
         card_profile::{
-            CardProfile,
             get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
+            CardProfile,
         },
         get_card::GetCardError,
         get_card_types::GetCardTypesError,
@@ -42,8 +42,8 @@ use crate::{
 
 use anyhow::Context;
 use chrono::NaiveDateTime;
-use sqlx::{Postgres, query_as, query_scalar};
-use sqlx::{QueryBuilder, query_builder::Separated};
+use sqlx::{query_as, query_scalar, Postgres};
+use sqlx::{query_builder::Separated, QueryBuilder};
 
 impl CardRepository for MyPostgres {
     // ========
@@ -193,7 +193,7 @@ impl CardRepository for MyPostgres {
         }
 
         if let Some(sets) = request.set_equals_any() {
-            sep.push("set = ANY(");
+            sep.push("set_name = ANY(");
             sep.push_bind_unseparated(sets);
             sep.push_unseparated(")");
         }

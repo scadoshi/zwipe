@@ -49,6 +49,4 @@ Planned work after completing current tasks.
 
 1. **Deck List Nav Bug** - First deck creation navigates back but deck doesn't appear until navigating back again
 
-2. **Set Filter Broken** - Not returning any results
-
-3. **Create Deck Layout** - Commander image pushes "deck name" label into header area
+2. **Create Deck Layout** - Commander image pushes "deck name" label into header area
