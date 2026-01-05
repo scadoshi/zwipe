@@ -7,14 +7,20 @@ use crate::{
                 Swipeable, config::SwipeConfig, direction::Direction, state::SwipeState,
             },
         },
-        screens::deck::card::filter::{
-            combat::Combat, mana::Mana, rarity::Rarity, set::Set, sort::Sort, text::Text,
-            types::Types,
+        screens::deck::card::{
+            action_history::{SwipeAction, MAX_CARDS_IN_STACK, CARDS_WARNING_THRESHOLD},
+            filter::{
+                combat::Combat, mana::Mana, rarity::Rarity, set::Set, sort::Sort, text::Text,
+                types::Types,
+            },
         },
     },
     outbound::client::{
         ZwipeClient, card::search_cards::ClientSearchCards, deck::get_deck::ClientGetDeck,
-        deck_card::create_deck_card::ClientCreateDeckCard,
+        deck_card::{
+            create_deck_card::ClientCreateDeckCard,
+            delete_deck_card::ClientDeleteDeckCard,
+        },
     },
 };
 use dioxus::prelude::*;
@@ -48,6 +54,9 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     let mut deck_cards_ids = use_signal(HashSet::<Uuid>::new);
 
+    // Undo action history
+    let mut action_history: Signal<Vec<SwipeAction>> = use_signal(Vec::new);
+
     // Filters overlay at bottom of screen state
     let mut filters_overlay_open = use_signal(|| false);
 
@@ -79,6 +88,16 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     // Load more cards with pagination and de-duplication
     let mut load_more_cards = move || {
+        // Check if we've hit the card limit
+        let current_card_count = cards().len();
+        if current_card_count >= MAX_CARDS_IN_STACK {
+            toast.warning(
+                "card limit reached, please refresh to continue".to_string(),
+                ToastOptions::default().duration(Duration::from_millis(3000))
+            );
+            return;
+        }
+
         if is_loading_more() {
             return;
         }
@@ -153,6 +172,16 @@ pub fn Add(deck_id: Uuid) -> Element {
         if idx + 1 < total_cards {
             current_index.set(idx + 1);
 
+            // Show warning when approaching limit
+            if total_cards >= CARDS_WARNING_THRESHOLD && total_cards < MAX_CARDS_IN_STACK {
+                if total_cards % 100 == 0 {  // Show every 100 cards after threshold
+                    toast.info(
+                        format!("approaching card limit ({}/1000), consider refreshing", total_cards),
+                        ToastOptions::default().duration(Duration::from_millis(2000))
+                    );
+                }
+            }
+
             // Check if we should load more cards (within threshold of end)
             if total_cards > 0 && idx + 1 >= total_cards.saturating_sub(load_more_threshold) {
                 load_more_cards();
@@ -170,7 +199,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     // Swipeable state
     let swipe_state = use_signal(SwipeState::new);
     let swipe_config = SwipeConfig::new(
-        vec![Direction::Left, Direction::Right],
+        vec![Direction::Left, Direction::Right, Direction::Down],
         150.0, // 150px to commit swipe
         5.0,   // 5px/ms speed threshold
     );
@@ -201,6 +230,62 @@ pub fn Add(deck_id: Uuid) -> Element {
                 }
             }
         });
+    };
+
+    let mut undo_last_action = move || {
+        // Pop last action from history
+        let Some(action) = action_history.write().pop() else {
+            toast.info("nothing to undo".to_string(), ToastOptions::default());
+            return;
+        };
+
+        // Can't undo if we're at the first card
+        if current_index() == 0 {
+            toast.warning("no previous card".to_string(), ToastOptions::default());
+            action_history.write().push(action); // Put it back
+            return;
+        }
+
+        // Go back one card
+        current_index.set(current_index() - 1);
+
+        match action {
+            SwipeAction::Skip => {
+                // Just showing previous card - done!
+                toast.info("undid skip".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+            }
+            SwipeAction::Do => {
+                // Need to delete from backend (undoing the add)
+                let Some(card) = current_card() else {
+                    toast.error("card not found".to_string(), ToastOptions::default());
+                    return;
+                };
+
+                session.upkeep(client);
+                let Some(sesh) = session() else {
+                    toast.error("session expired".to_string(), ToastOptions::default());
+                    action_history.write().push(action); // Restore history
+                    current_index.set(current_index() + 1); // Restore index
+                    return;
+                };
+
+                let card_id = card.scryfall_data.id;
+
+                spawn(async move {
+                    match client().delete_deck_card(deck_id, card_id, &sesh).await {
+                        Ok(_) => {
+                            // Remove from exclusion HashSet
+                            deck_cards_ids.write().remove(&card_id);
+                            toast.success("undid add".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                        }
+                        Err(e) => {
+                            toast.error(format!("failed to undo: {}", e), ToastOptions::default());
+                            // Don't restore action or index - user can try again by adding the card
+                        }
+                    }
+                });
+            }
+        }
     };
 
     let mut clear_filters = move || {
@@ -298,12 +383,14 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 state: swipe_state,
                                 config: swipe_config,
                                 on_swipe_left: move |_| {
+                                    action_history.write().push(SwipeAction::Skip);
                                     // Skip card - trigger exit animation
                                     toast.info("skipped".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                     is_animating.set(true);
                                     animation_direction.set(Direction::Left);
                                 },
                                 on_swipe_right: move |_| {
+                                    action_history.write().push(SwipeAction::Do);
                                     // Add card to deck then trigger exit animation
                                     add_card_to_deck();
                                     toast.success("added to deck".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
@@ -311,7 +398,9 @@ pub fn Add(deck_id: Uuid) -> Element {
                                     animation_direction.set(Direction::Right);
                                 },
                                 on_swipe_up: move |_| {},     // Not used
-                                on_swipe_down: move |_| {},   // Not used
+                                on_swipe_down: move |_| {
+                                    undo_last_action();
+                                },
 
                                 img {
                                     src: "{image_url}",
