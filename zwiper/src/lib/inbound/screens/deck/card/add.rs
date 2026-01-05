@@ -4,11 +4,11 @@ use crate::{
             accordion::{Accordion, AccordionContent, AccordionItem, AccordionTrigger},
             auth::{bouncer::Bouncer, session_upkeep::Upkeep},
             interactions::swipe::{
-                Swipeable, config::SwipeConfig, direction::Direction, state::SwipeState,
+                config::SwipeConfig, direction::Direction, state::SwipeState, Swipeable,
             },
         },
         screens::deck::card::{
-            action_history::{SwipeAction, MAX_CARDS_IN_STACK, CARDS_WARNING_THRESHOLD},
+            action_history::{SwipeAction, CARDS_WARNING_THRESHOLD, MAX_CARDS_IN_STACK},
             filter::{
                 combat::Combat, mana::Mana, rarity::Rarity, set::Set, sort::Sort, text::Text,
                 types::Types,
@@ -16,15 +16,16 @@ use crate::{
         },
     },
     outbound::client::{
-        ZwipeClient, card::search_cards::ClientSearchCards, deck::get_deck::ClientGetDeck,
+        card::search_cards::ClientSearchCards,
+        deck::get_deck::ClientGetDeck,
         deck_card::{
-            create_deck_card::ClientCreateDeckCard,
-            delete_deck_card::ClientDeleteDeckCard,
+            create_deck_card::ClientCreateDeckCard, delete_deck_card::ClientDeleteDeckCard,
         },
+        ZwipeClient,
     },
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
+use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::collections::HashSet;
 use std::time::Duration;
 use uuid::Uuid;
@@ -32,8 +33,8 @@ use zwipe::{
     domain::{
         auth::models::session::Session,
         card::models::{
-            Card, scryfall_data::image_uris::ImageUris,
-            search_card::card_filter::builder::CardFilterBuilder,
+            scryfall_data::image_uris::ImageUris,
+            search_card::card_filter::builder::CardFilterBuilder, Card,
         },
     },
     inbound::http::handlers::deck_card::create_deck_card::HttpCreateDeckCard,
@@ -93,7 +94,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         if current_card_count >= MAX_CARDS_IN_STACK {
             toast.warning(
                 "card limit reached, please refresh to continue".to_string(),
-                ToastOptions::default().duration(Duration::from_millis(3000))
+                ToastOptions::default().duration(Duration::from_millis(3000)),
             );
             return;
         }
@@ -173,13 +174,14 @@ pub fn Add(deck_id: Uuid) -> Element {
             current_index.set(idx + 1);
 
             // Show warning when approaching limit
-            if total_cards >= CARDS_WARNING_THRESHOLD && total_cards < MAX_CARDS_IN_STACK {
-                if total_cards % 100 == 0 {  // Show every 100 cards after threshold
-                    toast.info(
-                        format!("approaching card limit ({}/1000), consider refreshing", total_cards),
-                        ToastOptions::default().duration(Duration::from_millis(2000))
-                    );
-                }
+            if (CARDS_WARNING_THRESHOLD..MAX_CARDS_IN_STACK).contains(&total_cards)
+                && total_cards.is_multiple_of(100)
+            {
+                // Show every 100 cards after threshold
+                toast.info(
+                    "approaching card limit, consider refreshing".to_string(),
+                    ToastOptions::default().duration(Duration::from_millis(2000)),
+                );
             }
 
             // Check if we should load more cards (within threshold of end)
@@ -252,7 +254,10 @@ pub fn Add(deck_id: Uuid) -> Element {
         match action {
             SwipeAction::Skip => {
                 // Just showing previous card - done!
-                toast.info("undid skip".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                toast.info(
+                    "undid skip".to_string(),
+                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                );
             }
             SwipeAction::Do => {
                 // Need to delete from backend (undoing the add)
@@ -276,7 +281,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                         Ok(_) => {
                             // Remove from exclusion HashSet
                             deck_cards_ids.write().remove(&card_id);
-                            toast.success("undid add".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                            toast.success(
+                                "undid add".to_string(),
+                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                            );
                         }
                         Err(e) => {
                             toast.error(format!("failed to undo: {}", e), ToastOptions::default());
@@ -319,13 +327,14 @@ pub fn Add(deck_id: Uuid) -> Element {
     use_effect(move || {
         // Read refresh_trigger to make effect re-run when button clicked
         let _ = refresh_trigger();
+        let _ = filter_reset_counter();
 
         // Reset pagination when filter changes or refresh triggered
         current_offset.set(0);
         current_index.set(0);
         pagination_exhausted.set(false);
 
-        let mut builder = filter_builder.read().clone();
+        let mut builder = filter_builder.peek().clone();
         builder.set_limit(pagination_limit);
         builder.set_offset(0);
 
