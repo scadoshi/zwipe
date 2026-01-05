@@ -188,11 +188,13 @@ pub fn Add(deck_id: Uuid) -> Element {
 
         // For now, always add quantity 1 (will add quantity picker later)
         let request = HttpCreateDeckCard::new(&card.scryfall_data.id.to_string(), 1);
+        let card_id = card.scryfall_data.id;
 
         spawn(async move {
             match client().create_deck_card(deck_id, &request, &sesh).await {
                 Ok(_) => {
                     add_card_error.set(None);
+                    deck_cards_ids.write().insert(card_id);
                 }
                 Err(e) => {
                     add_card_error.set(Some(e.to_string()));
