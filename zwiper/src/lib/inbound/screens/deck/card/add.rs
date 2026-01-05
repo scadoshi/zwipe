@@ -4,7 +4,7 @@ use crate::{
             accordion::{Accordion, AccordionContent, AccordionItem, AccordionTrigger},
             auth::{bouncer::Bouncer, session_upkeep::Upkeep},
             interactions::swipe::{
-                config::SwipeConfig, direction::Direction, state::SwipeState, Swipeable,
+                Swipeable, config::SwipeConfig, direction::Direction, state::SwipeState,
             },
         },
         screens::deck::card::filter::{
@@ -13,12 +13,12 @@ use crate::{
         },
     },
     outbound::client::{
-        card::search_cards::ClientSearchCards, deck::get_deck::ClientGetDeck,
-        deck_card::create_deck_card::ClientCreateDeckCard, ZwipeClient,
+        ZwipeClient, card::search_cards::ClientSearchCards, deck::get_deck::ClientGetDeck,
+        deck_card::create_deck_card::ClientCreateDeckCard,
     },
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{use_toast, ToastOptions};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::collections::HashSet;
 use std::time::Duration;
 use uuid::Uuid;
@@ -26,8 +26,8 @@ use zwipe::{
     domain::{
         auth::models::session::Session,
         card::models::{
-            scryfall_data::image_uris::ImageUris,
-            search_card::card_filter::builder::CardFilterBuilder, Card,
+            Card, scryfall_data::image_uris::ImageUris,
+            search_card::card_filter::builder::CardFilterBuilder,
         },
     },
     inbound::http::handlers::deck_card::create_deck_card::HttpCreateDeckCard,
@@ -217,9 +217,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         spawn(async move {
             match client().get_deck(deck_id, &sesh).await {
                 Ok(deck) => {
-                    // Extract scryfall_data IDs from deck cards
-                    // Note: Deck struct has private fields, need to access via pattern matching
-                    let ids: std::collections::HashSet<_> = deck
+                    let ids: HashSet<_> = deck
                         .cards
                         .iter()
                         .map(|card| card.scryfall_data.id)
