@@ -1,17 +1,17 @@
 use crate::domain::card::models::card_profile::CardProfile;
 use crate::domain::card::models::helpers::SleeveScryfallData;
 use crate::domain::card::models::scryfall_data::get_scryfall_data::ScryfallDataIds;
-use crate::domain::card::models::{create_card::CreateCardError, Card};
+use crate::domain::card::models::{Card, create_card::CreateCardError};
 use crate::domain::card::models::{
     scryfall_data::ScryfallData,
     sync_metrics::{ErrorMetrics, SyncMetrics},
 };
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
 use crate::outbound::sqlx::card::helpers::scryfall_data_fields::{
-    bulk_upsert_conflict_fields, scryfall_data_fields, BindCards, BindScryfallDataFields,
+    BindCards, BindScryfallDataFields, bulk_upsert_conflict_fields, scryfall_data_fields,
 };
 use sqlx::QueryBuilder;
-use sqlx::{query_as, PgTransaction};
+use sqlx::{PgTransaction, query_as};
 use std::future::Future;
 
 /// for use in error filtering below
@@ -29,10 +29,10 @@ fn is_token(scryfall_data: &ScryfallData) -> bool {
 /// determines if a card is a valid MTG commander
 fn is_valid_commander(scryfall_data: &ScryfallData) -> bool {
     // check for special "can be your commander" text
-    if let Some(text) = &scryfall_data.oracle_text {
-        if text.to_lowercase().contains("can be your commander") {
-            return true;
-        }
+    if let Some(text) = &scryfall_data.oracle_text
+        && text.to_lowercase().contains("can be your commander")
+    {
+        return true;
     }
 
     let type_line_lower = scryfall_data.type_line.to_lowercase();
@@ -45,13 +45,12 @@ fn is_valid_commander(scryfall_data: &ScryfallData) -> bool {
     // check legendary vehicle/spacecraft with power/toughness
     if type_line_lower.contains("legendary")
         && (type_line_lower.contains("vehicle") || type_line_lower.contains("spacecraft"))
-    {
-        if let (Some(power), Some(toughness)) = (&scryfall_data.power, &scryfall_data.toughness) {
-            if !power.is_empty() && !toughness.is_empty() {
-                return true;
-            }
+        && let (Some(power), Some(toughness)) = (&scryfall_data.power, &scryfall_data.toughness)
+            && !power.is_empty()
+            && !toughness.is_empty()
+        {
+            return true;
         }
-    }
 
     false
 }
@@ -143,8 +142,9 @@ impl BulkUpsertWithTx for &[ScryfallData] {
             .build_query_as::<ScryfallData>()
             .fetch_all(&mut **tx)
             .await?;
-        let mut card_profile_query_builder =
-            QueryBuilder::new("INSERT INTO card_profiles (scryfall_data_id, is_valid_commander, is_token) VALUES");
+        let mut card_profile_query_builder = QueryBuilder::new(
+            "INSERT INTO card_profiles (scryfall_data_id, is_valid_commander, is_token) VALUES",
+        );
         for (i, scryfall_data) in database_scryfall_data.iter().enumerate() {
             if i > 0 {
                 card_profile_query_builder.push(",");
