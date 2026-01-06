@@ -9,7 +9,7 @@ use crate::domain::card::models::{
     get_sets::GetSetsError,
     scryfall_data::get_scryfall_data::{GetScryfallData, GetScryfallDataError},
     search_card::{
-        card_filter::{CardFilter, OrderByOptions},
+        card_filter::{order_by_options::OrderByOptions, CardFilter},
         error::SearchCardsError,
     },
     Card,
@@ -151,8 +151,9 @@ impl CardRepository for MyPostgres {
         &self,
         request: &CardFilter,
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
-        let mut qb: QueryBuilder<'_, Postgres> =
-            QueryBuilder::new("SELECT scryfall_data.* FROM scryfall_data JOIN card_profiles ON scryfall_data.id = card_profiles.scryfall_data_id WHERE ");
+        let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new(
+            "SELECT scryfall_data.* FROM scryfall_data JOIN card_profiles ON scryfall_data.id = card_profiles.scryfall_data_id WHERE ",
+        );
         let mut sep: Separated<Postgres, &'static str> = qb.separated(" AND ");
 
         if let Some(query_string) = &request.name_contains() {

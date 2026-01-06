@@ -250,29 +250,23 @@ impl CardFilterBuilder {
         self
     }
 
+    pub fn retain_config(&mut self) -> &mut Self {
+        let default = Self {
+            limit: self.limit,
+            offset: self.offset,
+            is_valid_commander: self.is_valid_commander,
+            is_token: self.is_token,
+            order_by: self.order_by,
+            ascending: self.ascending,
+            ..Self::default()
+        };
+        *self = default;
+        self
+    }
+
     // clear all filters
-    pub fn clear_all(&mut self) -> &mut Self {
-        self.name_contains = None;
-        self.oracle_text_contains = None;
-        self.flavor_text_contains = None;
-        self.has_flavor_text = None;
-        self.type_line_contains = None;
-        self.type_line_contains_any = None;
-        self.card_type_contains_any = None;
-        self.set_equals_any = None;
-        self.rarity_equals_any = None;
-        self.cmc_equals = None;
-        self.cmc_range = None;
-        self.color_identity_equals = None;
-        self.color_identity_within = None;
-        self.power_equals = None;
-        self.power_range = None;
-        self.toughness_equals = None;
-        self.toughness_range = None;
-        self.is_valid_commander = None;
-        self.is_token = None;
-        self.order_by = None;
-        self.ascending = true;
+    pub fn clear(&mut self) -> &mut Self {
+        *self = Self::default();
         self
     }
 }
