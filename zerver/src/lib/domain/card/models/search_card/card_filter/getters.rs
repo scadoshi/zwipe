@@ -87,6 +87,10 @@ impl CardFilter {
         self.is_token
     }
 
+    pub fn is_playable(&self) -> Option<bool> {
+        self.is_playable
+    }
+
     // config
     pub fn limit(&self) -> u32 {
         self.limit

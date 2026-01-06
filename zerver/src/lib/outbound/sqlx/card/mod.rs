@@ -45,6 +45,26 @@ use chrono::NaiveDateTime;
 use sqlx::{query_as, query_scalar, Postgres};
 use sqlx::{query_builder::Separated, QueryBuilder};
 
+// Playable layouts whitelist - layouts that represent cards playable in Magic formats
+// Unknown layouts default to hidden (safe behavior)
+const PLAYABLE_LAYOUTS: &[&str] = &[
+    "normal",
+    "split",
+    "flip",
+    "transform",
+    "modal_dfc",
+    "meld",
+    "reversible_card",
+    "leveler",
+    "saga",
+    "adventure",
+    "mutate",
+    "prototype",
+    "battle",
+    "class",
+    "case",
+];
+
 impl CardRepository for MyPostgres {
     // ========
     //  create
@@ -311,6 +331,20 @@ impl CardRepository for MyPostgres {
         if let Some(is_tok) = request.is_token() {
             sep.push(" card_profiles.is_token = ");
             sep.push_bind_unseparated(is_tok);
+        }
+
+        if let Some(is_playable) = request.is_playable() {
+            if is_playable {
+                // Only playable layouts
+                sep.push("scryfall_data.layout = ANY(");
+                sep.push_bind_unseparated(PLAYABLE_LAYOUTS);
+                sep.push_unseparated(")");
+            } else {
+                // Only non-playable layouts
+                sep.push("scryfall_data.layout != ALL(");
+                sep.push_bind_unseparated(PLAYABLE_LAYOUTS);
+                sep.push_unseparated(")");
+            }
         }
 
         // Filter out NULLs for sorted field

@@ -46,6 +46,7 @@ pub fn Home() -> Element {
 
         let mut builder = CardFilterBuilder::new();
         builder
+            .unset_is_playable()
             .set_has_flavor_text(true)
             .set_order_by(OrderByOptions::Random)
             .set_limit(1);
