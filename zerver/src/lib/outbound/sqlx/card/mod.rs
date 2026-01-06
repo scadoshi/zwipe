@@ -152,7 +152,7 @@ impl CardRepository for MyPostgres {
         request: &CardFilter,
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
         let mut qb: QueryBuilder<'_, Postgres> =
-            QueryBuilder::new("SELECT * FROM scryfall_data WHERE ");
+            QueryBuilder::new("SELECT scryfall_data.* FROM scryfall_data JOIN card_profiles ON scryfall_data.id = card_profiles.scryfall_data_id WHERE ");
         let mut sep: Separated<Postgres, &'static str> = qb.separated(" AND ");
 
         if let Some(query_string) = &request.name_contains() {
@@ -301,6 +301,17 @@ impl CardRepository for MyPostgres {
             }
         }
 
+        // flag filters
+        if let Some(is_commander) = request.is_valid_commander() {
+            sep.push(" card_profiles.is_valid_commander = ");
+            sep.push_bind_unseparated(is_commander);
+        }
+
+        if let Some(is_tok) = request.is_token() {
+            sep.push(" card_profiles.is_token = ");
+            sep.push_bind_unseparated(is_tok);
+        }
+
         // Filter out NULLs for sorted field
         if let Some(order_by) = request.order_by() {
             let null_filter = match order_by {
@@ -416,7 +427,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<CardProfile, GetCardProfileError> {
         let card_profile: CardProfile = query_as!(
             DatabaseCardProfile,
-            "SELECT id, scryfall_data_id, created_at, updated_at FROM card_profiles WHERE id = $1",
+            "SELECT id, scryfall_data_id, is_valid_commander, is_token, created_at, updated_at FROM card_profiles WHERE id = $1",
             request.id()
         )
         .fetch_one(&self.pool)
@@ -431,7 +442,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<CardProfile, GetCardProfileError> {
         let card_profile: CardProfile = query_as!(
             DatabaseCardProfile,
-            "SELECT id, scryfall_data_id, created_at, updated_at
+            "SELECT id, scryfall_data_id, is_valid_commander, is_token, created_at, updated_at
             FROM card_profiles WHERE scryfall_data_id = $1",
             request.id()
         )
@@ -447,7 +458,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
         let card_profiles: Vec<CardProfile> = query_as!(
             DatabaseCardProfile,
-            "SELECT id, scryfall_data_id, created_at, updated_at
+            "SELECT id, scryfall_data_id, is_valid_commander, is_token, created_at, updated_at
             FROM card_profiles WHERE id = ANY($1)",
             request.ids()
         )
@@ -465,7 +476,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
         let card_profiles: Vec<CardProfile> = query_as!(
             DatabaseCardProfile,
-            "SELECT id, scryfall_data_id, created_at, updated_at
+            "SELECT id, scryfall_data_id, is_valid_commander, is_token, created_at, updated_at
             FROM card_profiles WHERE scryfall_data_id = ANY($1)",
             request.ids()
         )

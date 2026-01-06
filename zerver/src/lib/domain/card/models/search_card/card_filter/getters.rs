@@ -78,6 +78,15 @@ impl CardFilter {
         self.toughness_range
     }
 
+    // flags
+    pub fn is_valid_commander(&self) -> Option<bool> {
+        self.is_valid_commander
+    }
+
+    pub fn is_token(&self) -> Option<bool> {
+        self.is_token
+    }
+
     // config
     pub fn limit(&self) -> u32 {
         self.limit

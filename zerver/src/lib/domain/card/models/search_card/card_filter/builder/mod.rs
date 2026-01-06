@@ -38,6 +38,9 @@ pub struct CardFilterBuilder {
     type_line_contains: Option<String>,
     type_line_contains_any: Option<Vec<String>>,
     card_type_contains_any: Option<Vec<CardType>>,
+    // flags
+    is_valid_commander: Option<bool>,
+    is_token: Option<bool>,
     // config
     limit: u32,
     offset: u32,
@@ -65,6 +68,8 @@ impl Default for CardFilterBuilder {
             type_line_contains: None,
             type_line_contains_any: None,
             card_type_contains_any: None,
+            is_valid_commander: None,
+            is_token: None,
             limit: 100,
             offset: 0,
             order_by: None,
@@ -85,6 +90,8 @@ impl CardFilterBuilder {
             offset: self.offset,
             order_by: self.order_by,
             ascending: self.ascending,
+            is_valid_commander: self.is_valid_commander,
+            is_token: self.is_token,
             ..Self::default()
         };
         *self == default
@@ -236,6 +243,21 @@ impl CardFilterBuilder {
         }
     }
 
+    // flags
+    pub fn with_is_valid_commander(is_valid_commander: bool) -> CardFilterBuilder {
+        CardFilterBuilder {
+            is_valid_commander: Some(is_valid_commander),
+            ..CardFilterBuilder::default()
+        }
+    }
+
+    pub fn with_is_token(is_token: bool) -> CardFilterBuilder {
+        CardFilterBuilder {
+            is_token: Some(is_token),
+            ..CardFilterBuilder::default()
+        }
+    }
+
     // config
     pub fn with_order_by(order_by: OrderByOptions) -> CardFilterBuilder {
         CardFilterBuilder {
@@ -268,6 +290,8 @@ impl CardFilterBuilder {
             type_line_contains: self.type_line_contains.clone(),
             type_line_contains_any: self.type_line_contains_any.clone(),
             card_type_contains_any: self.card_type_contains_any.clone(),
+            is_valid_commander: self.is_valid_commander,
+            is_token: self.is_token,
             limit: self.limit,
             offset: self.offset,
             order_by: self.order_by,

@@ -81,6 +81,9 @@ pub struct CardFilter {
     type_line_contains: Option<String>,
     type_line_contains_any: Option<Vec<String>>,
     card_type_contains_any: Option<Vec<CardType>>,
+    // flags
+    is_valid_commander: Option<bool>,
+    is_token: Option<bool>,
     // config
     limit: u32,
     offset: u32,
