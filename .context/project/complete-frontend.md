@@ -68,6 +68,8 @@ Production-ready frontend implementations.
 - **Dropdown UX**: Results in normal flow pushing other elements
 - **Image Display**: Large Scryfall images with text fallback
 - **Image Fallback Pattern**: Qualified match on ImageUris with graceful degradation
+- **Commander Filter Integration**: CreateDeck search filters with `set_is_valid_commander(true)` for valid commanders only
+- **Token Exclusion Integration**: AddDeckCard search excludes tokens with `set_is_token(false)` for deck building
 
 ## 🔍 Card Filtering System
 

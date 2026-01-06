@@ -181,6 +181,8 @@ Knowledge areas where you could teach others without hesitation.
 - **.as_ref() vs .as_deref() Semantics**: .as_ref() converts Option<T> → Option<&T> (keeps wrapper), .as_deref() converts Option<T> → Option<&T::Target> (uses Deref trait), crucial for Option<Newtype> handling
 - **VARCHAR vs TEXT in PostgreSQL**: Functionally identical types, TEXT preferred for modern PostgreSQL (no length limits, more flexible), VARCHAR legacy compatibility
 - **SQLx Type Compatibility**: Type impl must exactly match database column type (text vs varchar), SQLx strictly enforces type matching for safety
+- **Computed Field Pattern**: Pure helper functions calculating boolean flags during upsert (is_valid_commander, is_token), single source of truth, indexed for fast filtering
+- **Validation Function Design**: Pure functions taking immutable references, zero side effects, reusable across single and bulk upsert operations
 
 ## 🌐 Advanced HTTP & Middleware Patterns
 - **Custom Middleware**: AuthenticatedUser extractor with FromRequestParts trait
