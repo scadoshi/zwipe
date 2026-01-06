@@ -37,6 +37,7 @@ pub struct CardFilter {
     // flags
     is_valid_commander: Option<bool>,
     is_token: Option<bool>,
+    is_playable: Option<bool>,
     // config
     limit: u32,
     offset: u32,

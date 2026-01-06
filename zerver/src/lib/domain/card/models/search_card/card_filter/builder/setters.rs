@@ -224,6 +224,16 @@ impl CardFilterBuilder {
         self
     }
 
+    pub fn set_is_playable(&mut self, is_playable: bool) -> &mut Self {
+        self.is_playable = Some(is_playable);
+        self
+    }
+
+    pub fn unset_is_playable(&mut self) -> &mut Self {
+        self.is_playable = None;
+        self
+    }
+
     // config
     pub fn set_limit(&mut self, limit: u32) -> &mut Self {
         self.limit = limit;
@@ -256,6 +266,7 @@ impl CardFilterBuilder {
             offset: self.offset,
             is_valid_commander: self.is_valid_commander,
             is_token: self.is_token,
+            is_playable: self.is_playable,
             order_by: self.order_by,
             ascending: self.ascending,
             ..Self::default()

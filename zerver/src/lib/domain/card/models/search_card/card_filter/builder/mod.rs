@@ -41,6 +41,7 @@ pub struct CardFilterBuilder {
     // flags
     is_valid_commander: Option<bool>,
     is_token: Option<bool>,
+    is_playable: Option<bool>,
     // config
     limit: u32,
     offset: u32,
@@ -70,6 +71,7 @@ impl Default for CardFilterBuilder {
             card_type_contains_any: None,
             is_valid_commander: None,
             is_token: None,
+            is_playable: Some(true),
             limit: 100,
             offset: 0,
             order_by: None,
@@ -251,6 +253,13 @@ impl CardFilterBuilder {
         }
     }
 
+    pub fn with_is_playable(is_playable: bool) -> CardFilterBuilder {
+        CardFilterBuilder {
+            is_playable: Some(is_playable),
+            ..CardFilterBuilder::default()
+        }
+    }
+
     // config
     pub fn with_order_by(order_by: OrderByOptions) -> CardFilterBuilder {
         CardFilterBuilder {
@@ -285,6 +294,7 @@ impl CardFilterBuilder {
             card_type_contains_any: self.card_type_contains_any.clone(),
             is_valid_commander: self.is_valid_commander,
             is_token: self.is_token,
+            is_playable: self.is_playable,
             limit: self.limit,
             offset: self.offset,
             order_by: self.order_by,
