@@ -203,6 +203,27 @@ impl CardFilterBuilder {
         self
     }
 
+    // flags
+    pub fn set_is_valid_commander(&mut self, is_valid_commander: bool) -> &mut Self {
+        self.is_valid_commander = Some(is_valid_commander);
+        self
+    }
+
+    pub fn unset_is_valid_commander(&mut self) -> &mut Self {
+        self.is_valid_commander = None;
+        self
+    }
+
+    pub fn set_is_token(&mut self, is_token: bool) -> &mut Self {
+        self.is_token = Some(is_token);
+        self
+    }
+
+    pub fn unset_is_token(&mut self) -> &mut Self {
+        self.is_token = None;
+        self
+    }
+
     // config
     pub fn set_limit(&mut self, limit: u32) -> &mut Self {
         self.limit = limit;
@@ -248,6 +269,8 @@ impl CardFilterBuilder {
         self.power_range = None;
         self.toughness_equals = None;
         self.toughness_range = None;
+        self.is_valid_commander = None;
+        self.is_token = None;
         self.order_by = None;
         self.ascending = true;
         self

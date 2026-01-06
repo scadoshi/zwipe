@@ -64,6 +64,7 @@ pub fn CreateDeck() -> Element {
 
             if let Some(sesh) = session() {
                 let Ok(card_filter) = CardFilterBuilder::with_name_contains(&query)
+                    .set_is_valid_commander(true)
                     .set_limit(5)
                     .build()
                 else {

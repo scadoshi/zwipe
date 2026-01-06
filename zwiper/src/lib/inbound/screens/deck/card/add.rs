@@ -106,6 +106,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         is_loading_more.set(true);
 
         let mut builder = filter_builder.read().clone();
+        builder.set_is_token(false);
         builder.set_limit(pagination_limit);
         builder.set_offset(current_offset());
 
@@ -335,6 +336,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         pagination_exhausted.set(false);
 
         let mut builder = filter_builder.peek().clone();
+        builder.set_is_token(false);
         builder.set_limit(pagination_limit);
         builder.set_offset(0);
 
