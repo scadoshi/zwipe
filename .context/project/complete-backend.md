@@ -42,6 +42,10 @@ Production-ready backend implementations.
 - **Get Sets Endpoint**: Returns distinct set names for filtering UI
 - **Get Card Types**: Extracts ~670 distinct subtypes for type filtering
 - **Rarity Domain Type**: Complete Rarity enum with custom SQLx traits and flexible Scryfall parsing
+- **Computed Card Fields**: `is_valid_commander` and `is_token` boolean columns calculated during upsert
+- **Commander Validation**: 3-rule system (legendary creatures, legendary vehicles/spacecraft with P/T, oracle text "can be your commander")
+- **Token Detection**: Authoritative `layout == "token"` check from Scryfall API
+- **Optional Field Filtering**: CardFilter support for both flags enabling optional inclusion/exclusion
 
 ### Deck Management
 - **Full CRUD Operations**: Complete deck lifecycle with card composition
@@ -115,6 +119,7 @@ Production-ready backend implementations.
 - **PostgreSQL Advanced Queries**: JSONB operators (@>, <@, ?|), array operations, regex validation
 - **Order By Filtering**: Dynamic ORDER BY with NULL exclusion for nullable fields (prices, power, toughness)
 - **Sleeve Order Preservation**: Fixed HashMap iteration to preserve DB sort order by iterating source data
+- **Computed Field Validation**: Pure helper functions (is_valid_commander, is_token) called during upsert for consistent data
 
 ## 🗂️ Code Organization
 - **Workspace Configuration**: Multi-package setup with centralized dependencies

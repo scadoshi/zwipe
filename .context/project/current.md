@@ -2,19 +2,21 @@
 
 Active development tasks and immediate focus areas.
 
-**Last Updated**: Implemented Order By filter with full backend/frontend integration, card info display, and fixed sort order preservation bug.
+**Last Updated**: Implemented computed boolean fields (`is_valid_commander`, `is_token`) with full backend/frontend integration.
 
-**Current Focus**: Complete card management workflows (add/remove cards with undo), then polish deck screens.
+**Current Focus**: Complete card management workflows (remove cards screen with undo), then polish deck screens.
 
 **Recent Achievements**:
-- Order By filter (sort by name, cmc, power, toughness, rarity, release date, prices, random)
-- Card info display (prices, release date, artist) on add card screen
-- Sort order preservation fix (sleeve function now preserves DB order)
-- NULL filtering for sorted fields (excludes cards without price/power when sorting by those)
-- Empty filter toast warning ("try adding a filter")
-- Filter accordion reordered to match Scryfall (text, types, mana, combat, rarity, set, sort)
+- Computed card fields: `is_valid_commander` and `is_token` columns in `card_profiles` table
+- Commander validation (legendary creatures, vehicles with P/T, "can be your commander" text)
+- Token detection using Scryfall `layout == "token"`
+- CardFilter support for both flags (optional filtering)
+- Commander-only search in CreateDeck screen
+- Token exclusion in AddDeckCard screen
+- Database indexes for fast boolean filtering
+- Previous: Order By filter, card info display, sort preservation, NULL filtering, filter accordion
 
-**Current Success**: Add card screen fully functional with sorting, card info, pagination, de-duplication, and swipe gestures.
+**Current Success**: Add card screen fully functional with commander/token filtering, sorting, card info, pagination, de-duplication, and swipe gestures.
 
 ---
 
@@ -24,8 +26,8 @@ Active development tasks and immediate focus areas.
 
 2. **Undo on Down Swipe** - Down swipe undoes last action (go back one card if skipped, remove from deck and re-show if added)
 
-3. **Commander Search Validation** - Filter to only return valid commanders (legendary creatures, vehicles with P/T, "can be your commander" text)
+3. **View Deck Screen** - Display deck cards categorized by type with counts and organization
 
-4. **Deck Card Search** - Exclude token cards from results
+4. **Deck List Screen Redesign** - Better list styling, improved layout with utility bar, visual hierarchy
 
-5. **View Deck Screen** - Display deck cards categorized by type with counts and organization
+5. **Filter Duplicate Name Cards** - Hide cards with repeated names separated by // (likely meld/transform variants)
