@@ -298,7 +298,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     };
 
     let mut clear_filters = move || {
-        filter_builder.write().clear_all();
+        filter_builder.write().clear();
     };
 
     // Fetch deck cards on mount for filtering

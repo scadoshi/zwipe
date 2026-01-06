@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use zwipe::domain::card::models::search_card::card_filter::{
-    OrderByOptions, builder::CardFilterBuilder,
+    builder::CardFilterBuilder, order_by_options::OrderByOptions,
 };
 
 #[component]

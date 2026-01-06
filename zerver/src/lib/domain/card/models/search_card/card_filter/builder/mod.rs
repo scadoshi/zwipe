@@ -7,7 +7,7 @@ use crate::domain::card::models::{
         rarity::Rarities,
     },
     search_card::{
-        card_filter::{CardFilter, OrderByOptions, error::InvalidCardFilter},
+        card_filter::{error::InvalidCardFilter, CardFilter, OrderByOptions},
         card_type::CardType,
     },
 };
@@ -85,15 +85,8 @@ impl CardFilterBuilder {
     }
 
     pub fn is_empty(&self) -> bool {
-        let default = Self {
-            limit: self.limit,
-            offset: self.offset,
-            order_by: self.order_by,
-            ascending: self.ascending,
-            is_valid_commander: self.is_valid_commander,
-            is_token: self.is_token,
-            ..Self::default()
-        };
+        let mut default = self.clone();
+        default.retain_config();
         *self == default
     }
 
