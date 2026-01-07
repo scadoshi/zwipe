@@ -91,6 +91,22 @@ impl CardFilter {
         self.is_playable
     }
 
+    pub fn digital(&self) -> Option<bool> {
+        self.digital
+    }
+
+    pub fn oversized(&self) -> Option<bool> {
+        self.oversized
+    }
+
+    pub fn promo(&self) -> Option<bool> {
+        self.promo
+    }
+
+    pub fn content_warning(&self) -> Option<bool> {
+        self.content_warning
+    }
+
     // config
     pub fn limit(&self) -> u32 {
         self.limit

@@ -42,6 +42,10 @@ pub struct CardFilterBuilder {
     is_valid_commander: Option<bool>,
     is_token: Option<bool>,
     is_playable: Option<bool>,
+    digital: Option<bool>,
+    oversized: Option<bool>,
+    promo: Option<bool>,
+    content_warning: Option<bool>,
     // config
     limit: u32,
     offset: u32,
@@ -72,6 +76,10 @@ impl Default for CardFilterBuilder {
             is_valid_commander: None,
             is_token: None,
             is_playable: Some(true),
+            digital: Some(false),
+            oversized: Some(false),
+            promo: Some(false),
+            content_warning: Some(false),
             limit: 100,
             offset: 0,
             order_by: None,
@@ -260,6 +268,34 @@ impl CardFilterBuilder {
         }
     }
 
+    pub fn with_digital(digital: bool) -> CardFilterBuilder {
+        CardFilterBuilder {
+            digital: Some(digital),
+            ..CardFilterBuilder::default()
+        }
+    }
+
+    pub fn with_oversized(oversized: bool) -> CardFilterBuilder {
+        CardFilterBuilder {
+            oversized: Some(oversized),
+            ..CardFilterBuilder::default()
+        }
+    }
+
+    pub fn with_promo(promo: bool) -> CardFilterBuilder {
+        CardFilterBuilder {
+            promo: Some(promo),
+            ..CardFilterBuilder::default()
+        }
+    }
+
+    pub fn with_content_warning(content_warning: bool) -> CardFilterBuilder {
+        CardFilterBuilder {
+            content_warning: Some(content_warning),
+            ..CardFilterBuilder::default()
+        }
+    }
+
     // config
     pub fn with_order_by(order_by: OrderByOptions) -> CardFilterBuilder {
         CardFilterBuilder {
@@ -295,6 +331,10 @@ impl CardFilterBuilder {
             is_valid_commander: self.is_valid_commander,
             is_token: self.is_token,
             is_playable: self.is_playable,
+            digital: self.digital,
+            oversized: self.oversized,
+            promo: self.promo,
+            content_warning: self.content_warning,
             limit: self.limit,
             offset: self.offset,
             order_by: self.order_by,
