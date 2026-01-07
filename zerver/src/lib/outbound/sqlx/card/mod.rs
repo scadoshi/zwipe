@@ -5,14 +5,14 @@ pub mod scryfall_data;
 pub mod sync_metrics;
 
 use crate::domain::card::models::{
+    Card,
     create_card::CreateCardError,
     get_sets::GetSetsError,
     scryfall_data::get_scryfall_data::{GetScryfallData, GetScryfallDataError},
     search_card::{
-        card_filter::{order_by_options::OrderByOptions, CardFilter},
+        card_filter::{CardFilter, order_by_options::OrderByOptions},
         error::SearchCardsError,
     },
-    Card,
 };
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
 use crate::outbound::sqlx::card::helpers::upsert_card::BatchDeltaUpsertWithTx;
@@ -20,8 +20,8 @@ use crate::outbound::sqlx::postgres::Postgres as MyPostgres;
 use crate::{
     domain::card::models::{
         card_profile::{
-            get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
             CardProfile,
+            get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
         },
         get_card::GetCardError,
         get_card_types::GetCardTypesError,
@@ -42,8 +42,8 @@ use crate::{
 
 use anyhow::Context;
 use chrono::NaiveDateTime;
-use sqlx::{query_as, query_scalar, Postgres};
-use sqlx::{query_builder::Separated, QueryBuilder};
+use sqlx::{Postgres, query_as, query_scalar};
+use sqlx::{QueryBuilder, query_builder::Separated};
 
 // Playable layouts whitelist - layouts that represent cards playable in Magic formats
 // Unknown layouts default to hidden (safe behavior)
@@ -333,17 +333,43 @@ impl CardRepository for MyPostgres {
             sep.push_bind_unseparated(is_tok);
         }
 
-        if let Some(is_playable) = request.is_playable() {
-            if is_playable {
-                // Only playable layouts
-                sep.push("scryfall_data.layout = ANY(");
-                sep.push_bind_unseparated(PLAYABLE_LAYOUTS);
-                sep.push_unseparated(")");
+        if let Some(is_playable) = request.is_playable()
+            && is_playable
+        {
+            // Only playable layouts
+            sep.push("scryfall_data.layout = ANY(");
+            sep.push_bind_unseparated(PLAYABLE_LAYOUTS);
+            sep.push_unseparated(")");
+        } else if let Some(is_playable) = request.is_playable()
+            && !is_playable
+        {
+            // Only non-playable layouts
+            sep.push("scryfall_data.layout != ALL(");
+            sep.push_bind_unseparated(PLAYABLE_LAYOUTS);
+            sep.push_unseparated(")");
+        }
+
+        if let Some(is_digital) = request.digital() {
+            sep.push("scryfall_data.digital = ");
+            sep.push_bind_unseparated(is_digital);
+        }
+
+        if let Some(is_oversized) = request.oversized() {
+            sep.push("scryfall_data.oversized = ");
+            sep.push_bind_unseparated(is_oversized);
+        }
+
+        if let Some(is_promo) = request.promo() {
+            sep.push("scryfall_data.promo = ");
+            sep.push_bind_unseparated(is_promo);
+        }
+
+        if let Some(has_warning) = request.content_warning() {
+            if has_warning {
+                sep.push("scryfall_data.content_warning = true");
             } else {
-                // Only non-playable layouts
-                sep.push("scryfall_data.layout != ALL(");
-                sep.push_bind_unseparated(PLAYABLE_LAYOUTS);
-                sep.push_unseparated(")");
+                // Hide cards with warnings (include false OR null)
+                sep.push("(scryfall_data.content_warning = false OR scryfall_data.content_warning IS NULL)");
             }
         }
 

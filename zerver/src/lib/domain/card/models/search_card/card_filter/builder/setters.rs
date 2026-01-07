@@ -234,6 +234,46 @@ impl CardFilterBuilder {
         self
     }
 
+    pub fn set_digital(&mut self, digital: bool) -> &mut Self {
+        self.digital = Some(digital);
+        self
+    }
+
+    pub fn unset_digital(&mut self) -> &mut Self {
+        self.digital = None;
+        self
+    }
+
+    pub fn set_oversized(&mut self, oversized: bool) -> &mut Self {
+        self.oversized = Some(oversized);
+        self
+    }
+
+    pub fn unset_oversized(&mut self) -> &mut Self {
+        self.oversized = None;
+        self
+    }
+
+    pub fn set_promo(&mut self, promo: bool) -> &mut Self {
+        self.promo = Some(promo);
+        self
+    }
+
+    pub fn unset_promo(&mut self) -> &mut Self {
+        self.promo = None;
+        self
+    }
+
+    pub fn set_content_warning(&mut self, content_warning: bool) -> &mut Self {
+        self.content_warning = Some(content_warning);
+        self
+    }
+
+    pub fn unset_content_warning(&mut self) -> &mut Self {
+        self.content_warning = None;
+        self
+    }
+
     // config
     pub fn set_limit(&mut self, limit: u32) -> &mut Self {
         self.limit = limit;
@@ -267,6 +307,10 @@ impl CardFilterBuilder {
             is_valid_commander: self.is_valid_commander,
             is_token: self.is_token,
             is_playable: self.is_playable,
+            digital: self.digital,
+            oversized: self.oversized,
+            promo: self.promo,
+            content_warning: self.content_warning,
             order_by: self.order_by,
             ascending: self.ascending,
             ..Self::default()
