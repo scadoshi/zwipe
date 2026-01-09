@@ -10,8 +10,8 @@ use crate::{
         screens::deck::card::{
             action_history::{SwipeAction, CARDS_WARNING_THRESHOLD, MAX_CARDS_IN_STACK},
             filter::{
-                combat::Combat, mana::Mana, rarity::Rarity, set::Set, sort::Sort, text::Text,
-                types::Types,
+                combat::Combat, config::Config, mana::Mana, rarity::Rarity, set::Set, sort::Sort,
+                text::Text, types::Types,
             },
         },
     },
@@ -570,6 +570,11 @@ pub fn Add(deck_id: Uuid) -> Element {
                         AccordionItem { index: 7,
                             AccordionTrigger { "sort" }
                             AccordionContent { Sort {} }
+                        }
+
+                        AccordionItem { index: 8,
+                            AccordionTrigger { "config" }
+                            AccordionContent { Config {} }
                         }
                   }
                 }

@@ -31,6 +31,13 @@ Knowledge areas where you could teach others without hesitation.
 - **Foreign Key Understanding**: Database primary keys (card_profile.id) vs external IDs (scryfall_data.id) for proper relationships
 - **Direct Domain Serialization**: Serialize domain types directly when HTTP shape matches, avoiding unnecessary wrapper boilerplate
 
+## 🎴 Domain Type Patterns
+- **Enum Design**: Language, Rarity, CopyMax, OrderByOptions - type-safe domain values with full trait implementations
+- **TryFrom Pattern**: Flexible parsing from strings (case-insensitive, multiple formats) for user-facing types
+- **Display vs Code**: Separate to_name() for UI display and to_code() for API/database values
+- **all() Method Pattern**: Static method returning Vec<Self> for enumerating all variants in frontend chips
+- **Serialization Strategy**: Custom Serialize/Deserialize using TryFrom for flexible parsing, avoiding derive limitations
+
 ## 🔒 Security & Authentication
 - **JWT Security Flow**: Complete token generation/validation with proper configuration
 - **Password Security**: Argon2 hashing, salts, rainbow table prevention, timing attack mitigation
@@ -123,9 +130,11 @@ Knowledge areas where you could teach others without hesitation.
 - **Navigator Async Constraints**: Navigator can't be called inside spawn() async blocks - use signal + use_effect bridge (set signal in async, watch in effect)
 - **Debounced Search**: Implementing search with 300ms delay using tokio::time::sleep in spawned async tasks
 - **use_memo Pattern**: Computed signals deriving state from other signals, only updating when computed value changes (not when source signal content changes)
-- **Reusable Component Abstraction**: Extracting repetitive UI patterns (TextInput) into focused components with clear props interface
+- **Reusable Component Abstraction**: Extracting repetitive UI patterns (TextInput, TriStateFilter) into focused components with clear props interface
 - **Component Props Design**: Balancing required vs optional props, using Option<String> for optional labels, Signal<String> for two-way binding
 - **DRY Component Boundaries**: Knowing when to extract components (repeated 3+ times with identical structure) vs when inline is clearer
+- **TriStateFilter Pattern**: Reusable component for Option<bool> with 3 mutually-exclusive chips (yes/no/any), using EventHandler<Option<bool>>
+- **3-State UI Design**: Accurately representing backend Option<bool> types in frontend (Some(true), Some(false), None) for proper filter control
 - **Signal Initialization from Context**: Pattern of `use_signal(|| { context().field()... })` for initializing local signals from context on mount, ensuring form inputs display persisted state
 - **Mount-Time Initialization**: Understanding that signal closures run once on component mount, capturing initial values from context for local editing
 - **EventHandler Props Pattern**: Building generic components with EventHandler<()> props for flexible callback integration (on_swipe_left, on_swipe_right, etc.)
@@ -138,6 +147,7 @@ Knowledge areas where you could teach others without hesitation.
 - **CSS Grid Animation Pattern**: grid-template-rows: 0fr → 1fr animates actual content height; combined with @keyframes for open, transitions for close
 - **Hybrid Animation Strategy**: Use @keyframes for elements being inserted (open), transitions for elements being removed (close)—solves conditional rendering animation challenges
 - **AlertDialog Component System**: Built wrapper components around dioxus_primitives alert_dialog with custom styling for confirmation modals (logout, delete)
+- **Builder Getters Pattern**: CardFilterBuilder needs getters for reactive UI binding - frontend reads current state to show active filters
 - **Modal Dialog Pattern**: AlertDialogRoot, Content, Title, Description, Actions, Cancel, Action components creating consistent confirmation UX
 - **Global CSS Loading Requirement**: document::Link inside components doesn't reliably render to <head>—must load component CSS globally in main.rs with Asset constants
 - **CSS Loading Architecture**: Component stylesheets (accordion.css, alert-dialog.css, toast.css) loaded at app root ensures styles available on component mount

@@ -84,9 +84,10 @@ Production-ready frontend implementations.
 - **Types Filter**: Basic type grid + chip-based other-types multi-select
 - **Combat Filter**: Power/toughness equals + range inputs (8 fields)
 - **Mana Filter**: CMC equals/range + color identity toggles (W/U/B/R/G)
-- **Set Filter**: Multi-select searchable dropdown (pending)
-- **Rarity Filter**: 6-option keycard selector (pending)
+- **Rarity Filter**: Multi-select chips for all rarities
+- **Set Filter**: Multi-select chips for sets
 - **Sort Filter**: Single-select chips for order_by + ascending/descending toggle
+- **Config Filter**: Language selector (11 chips) + TriStateFilter for boolean config fields
 
 ### Filter Patterns
 - **Parsing Pattern**: String signals → onblur → validate → update builder
@@ -142,6 +143,7 @@ Production-ready frontend implementations.
 
 ### Reusable Components
 - **TextInput**: Consolidated label, input, binding, common attributes
+- **TriStateFilter**: 3-state Option<bool> chip selector (yes/no/any) for config filters
 - **AlertDialog**: Modal confirmation with styled buttons and backdrop
 - **Toast**: Notification system wrapper (CSS loaded, implementation pending)
 - **Accordion**: Expandable sections with @keyframes animations

@@ -4,7 +4,7 @@ pub mod getters;
 pub mod order_by_options;
 
 use crate::domain::card::models::{
-    scryfall_data::{colors::Colors, rarity::Rarities},
+    scryfall_data::{colors::Colors, language::Language, rarity::Rarities},
     search_card::{card_filter::order_by_options::OrderByOptions, card_type::CardType},
 };
 use serde::{Deserialize, Serialize};
@@ -42,6 +42,7 @@ pub struct CardFilter {
     oversized: Option<bool>,
     promo: Option<bool>,
     content_warning: Option<bool>,
+    language: Option<Language>,
     // config
     limit: u32,
     offset: u32,

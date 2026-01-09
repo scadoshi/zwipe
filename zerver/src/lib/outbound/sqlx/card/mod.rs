@@ -373,6 +373,11 @@ impl CardRepository for MyPostgres {
             }
         }
 
+        if let Some(language) = request.language() {
+            sep.push("scryfall_data.lang = ");
+            sep.push_bind_unseparated(language.to_code());
+        }
+
         // Filter out NULLs for sorted field
         if let Some(order_by) = request.order_by() {
             let null_filter = match order_by {
