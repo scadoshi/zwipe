@@ -5,4 +5,4 @@ pub mod fields;
 pub mod interactions;
 pub mod success_messages;
 pub mod toast;
-pub mod tri_state;
+pub mod tri_toggle;
