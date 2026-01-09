@@ -1,3 +1,4 @@
+use crate::domain::card::models::get_artists::GetArtistsError;
 use crate::domain::card::models::get_card_types::GetCardTypesError;
 use crate::domain::card::models::get_sets::GetSetsError;
 use crate::domain::card::models::scryfall_data::get_scryfall_data::{
@@ -89,6 +90,10 @@ impl<R: CardRepository> CardService for Service<R> {
 
     async fn search_cards(&self, request: &CardFilter) -> Result<Vec<Card>, SearchCardsError> {
         self.repo.search_cards(request).await
+    }
+
+    async fn get_artists(&self) -> Result<Vec<String>, GetArtistsError> {
+        self.repo.get_artists().await
     }
 
     async fn get_card_types(&self) -> Result<Vec<String>, GetCardTypesError> {

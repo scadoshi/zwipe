@@ -2,6 +2,7 @@ use crate::{
     domain::card::models::{
         card_profile::get_card_profile::GetCardProfileError,
         create_card::CreateCardError,
+        get_artists::GetArtistsError,
         get_card_types::GetCardTypesError,
         get_sets::GetSetsError,
         scryfall_data::get_scryfall_data::{GetScryfallDataError, SearchScryfallDataError},
@@ -49,6 +50,12 @@ impl From<sqlx::Error> for GetCardTypesError {
 }
 
 impl From<sqlx::Error> for GetSetsError {
+    fn from(value: sqlx::Error) -> Self {
+        Self::Database(value.into())
+    }
+}
+
+impl From<sqlx::Error> for GetArtistsError {
     fn from(value: sqlx::Error) -> Self {
         Self::Database(value.into())
     }
