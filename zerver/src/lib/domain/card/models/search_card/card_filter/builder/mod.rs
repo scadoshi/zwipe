@@ -30,6 +30,8 @@ pub struct CardFilterBuilder {
     rarity_equals_any: Option<Rarities>,
     // set
     set_equals_any: Option<Vec<String>>,
+    // artist
+    artist_equals_any: Option<Vec<String>>,
     // text
     name_contains: Option<String>,
     oracle_text_contains: Option<String>,
@@ -68,6 +70,7 @@ impl Default for CardFilterBuilder {
             color_identity_equals: None,
             rarity_equals_any: None,
             set_equals_any: None,
+            artist_equals_any: None,
             name_contains: None,
             oracle_text_contains: None,
             flavor_text_contains: None,
@@ -324,6 +327,7 @@ impl CardFilterBuilder {
             color_identity_equals: self.color_identity_equals.clone(),
             rarity_equals_any: self.rarity_equals_any.clone(),
             set_equals_any: self.set_equals_any.clone(),
+            artist_equals_any: self.artist_equals_any.clone(),
             name_contains: self.name_contains.clone(),
             oracle_text_contains: self.oracle_text_contains.clone(),
             flavor_text_contains: self.flavor_text_contains.clone(),

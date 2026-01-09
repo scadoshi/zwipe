@@ -39,6 +39,11 @@ impl CardFilterBuilder {
         self.set_equals_any.as_deref()
     }
 
+    // artist
+    pub fn artist_equals_any(&self) -> Option<&[String]> {
+        self.artist_equals_any.as_deref()
+    }
+
     // rarity
     pub fn rarity_equals_any(&self) -> Option<&Rarities> {
         self.rarity_equals_any.as_ref()

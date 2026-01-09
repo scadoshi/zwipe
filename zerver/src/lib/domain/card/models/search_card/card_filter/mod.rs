@@ -25,6 +25,8 @@ pub struct CardFilter {
     rarity_equals_any: Option<Rarities>,
     // set
     set_equals_any: Option<Vec<String>>,
+    // artist
+    artist_equals_any: Option<Vec<String>>,
     // text
     name_contains: Option<String>,
     oracle_text_contains: Option<String>,
