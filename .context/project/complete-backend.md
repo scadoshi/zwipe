@@ -41,6 +41,8 @@ Production-ready backend implementations.
 - **Bulk Data Processing**: 35,400+ cards with efficient batch operations
 - **Get Sets Endpoint**: Returns distinct set names for filtering UI
 - **Get Card Types**: Extracts ~670 distinct subtypes for type filtering
+- **Get Artists Endpoint**: Returns distinct artist names with NULL handling and SQLx .flatten()
+- **Artist Filtering**: artist_equals_any field with PostgreSQL ANY() operator for multi-artist search
 - **Rarity Domain Type**: Complete Rarity enum with custom SQLx traits and flexible Scryfall parsing
 - **Language Domain Type**: Complete Language enum with 11 languages (English, Spanish, French, German, Italian, Portuguese, Japanese, Korean, Russian, Simplified/Traditional Chinese)
 - **Language Filtering**: CardFilter language support with SQL `lang = 'en'` filtering, defaults to English
