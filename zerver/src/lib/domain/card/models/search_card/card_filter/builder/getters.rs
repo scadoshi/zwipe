@@ -1,5 +1,5 @@
 use crate::domain::card::models::{
-    scryfall_data::{colors::Colors, rarity::Rarities},
+    scryfall_data::{colors::Colors, language::Language, rarity::Rarities},
     search_card::{card_filter::{builder::CardFilterBuilder, OrderByOptions}, card_type::CardType},
 };
 
@@ -76,6 +76,39 @@ impl CardFilterBuilder {
 
     pub fn toughness_range(&self) -> Option<(i32, i32)> {
         self.toughness_range
+    }
+
+    // flags
+    pub fn is_valid_commander(&self) -> Option<bool> {
+        self.is_valid_commander
+    }
+
+    pub fn is_token(&self) -> Option<bool> {
+        self.is_token
+    }
+
+    pub fn is_playable(&self) -> Option<bool> {
+        self.is_playable
+    }
+
+    pub fn digital(&self) -> Option<bool> {
+        self.digital
+    }
+
+    pub fn oversized(&self) -> Option<bool> {
+        self.oversized
+    }
+
+    pub fn promo(&self) -> Option<bool> {
+        self.promo
+    }
+
+    pub fn content_warning(&self) -> Option<bool> {
+        self.content_warning
+    }
+
+    pub fn language(&self) -> Option<Language> {
+        self.language
     }
 
     // config

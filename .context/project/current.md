@@ -2,21 +2,20 @@
 
 Active development tasks and immediate focus areas.
 
-**Last Updated**: Implemented computed boolean fields (`is_valid_commander`, `is_token`) with full backend/frontend integration.
+**Last Updated**: Implemented Language filter and Configuration filters UI with TriStateFilter component.
 
 **Current Focus**: Complete card management workflows (remove cards screen with undo), then polish deck screens.
 
 **Recent Achievements**:
-- Computed card fields: `is_valid_commander` and `is_token` columns in `card_profiles` table
-- Commander validation (legendary creatures, vehicles with P/T, "can be your commander" text)
-- Token detection using Scryfall `layout == "token"`
-- CardFilter support for both flags (optional filtering)
-- Commander-only search in CreateDeck screen
-- Token exclusion in AddDeckCard screen
-- Database indexes for fast boolean filtering
-- Previous: Order By filter, card info display, sort preservation, NULL filtering, filter accordion
+- Language enum with 11 languages (English, Spanish, French, German, Italian, Portuguese, Japanese, Korean, Russian, Simplified/Traditional Chinese)
+- Language filter in CardFilter (default: English only)
+- Configuration filter accordion in frontend with TriStateFilter component
+- TriStateFilter reusable component for Option<bool> (yes/no/any chips)
+- Frontend exposure of config filters: is_playable, digital, oversized, promo, content_warning
+- CardFilterBuilder getters for all config/flag fields
+- Previous: is_valid_commander, is_token computed fields, Order By filter, card info display
 
-**Current Success**: Add card screen fully functional with commander/token filtering, sorting, card info, pagination, de-duplication, and swipe gestures.
+**Current Success**: Add card screen fully functional with language filtering, config filter toggles, commander/token filtering, sorting, card info, pagination, de-duplication, and swipe gestures.
 
 ---
 

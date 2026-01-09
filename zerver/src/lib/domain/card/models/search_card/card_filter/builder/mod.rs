@@ -4,6 +4,7 @@ pub mod setters;
 use crate::domain::card::models::{
     scryfall_data::{
         colors::{Color, Colors},
+        language::Language,
         rarity::Rarities,
     },
     search_card::{
@@ -46,6 +47,7 @@ pub struct CardFilterBuilder {
     oversized: Option<bool>,
     promo: Option<bool>,
     content_warning: Option<bool>,
+    language: Option<Language>,
     // config
     limit: u32,
     offset: u32,
@@ -80,6 +82,7 @@ impl Default for CardFilterBuilder {
             oversized: Some(false),
             promo: Some(false),
             content_warning: Some(false),
+            language: Some(Language::English),
             limit: 100,
             offset: 0,
             order_by: None,
@@ -335,6 +338,7 @@ impl CardFilterBuilder {
             oversized: self.oversized,
             promo: self.promo,
             content_warning: self.content_warning,
+            language: self.language,
             limit: self.limit,
             offset: self.offset,
             order_by: self.order_by,

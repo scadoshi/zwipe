@@ -1,4 +1,5 @@
 pub mod combat;
+pub mod config;
 pub mod filter_mode;
 pub mod mana;
 pub mod rarity;

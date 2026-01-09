@@ -1,5 +1,5 @@
 use crate::domain::card::models::{
-    scryfall_data::{colors::Colors, rarity::Rarities},
+    scryfall_data::{colors::Colors, language::Language, rarity::Rarities},
     search_card::{card_filter::{CardFilter, OrderByOptions}, card_type::CardType},
 };
 
@@ -105,6 +105,10 @@ impl CardFilter {
 
     pub fn content_warning(&self) -> Option<bool> {
         self.content_warning
+    }
+
+    pub fn language(&self) -> Option<Language> {
+        self.language
     }
 
     // config

@@ -42,10 +42,13 @@ Production-ready backend implementations.
 - **Get Sets Endpoint**: Returns distinct set names for filtering UI
 - **Get Card Types**: Extracts ~670 distinct subtypes for type filtering
 - **Rarity Domain Type**: Complete Rarity enum with custom SQLx traits and flexible Scryfall parsing
+- **Language Domain Type**: Complete Language enum with 11 languages (English, Spanish, French, German, Italian, Portuguese, Japanese, Korean, Russian, Simplified/Traditional Chinese)
+- **Language Filtering**: CardFilter language support with SQL `lang = 'en'` filtering, defaults to English
 - **Computed Card Fields**: `is_valid_commander` and `is_token` boolean columns calculated during upsert
 - **Commander Validation**: 3-rule system (legendary creatures, legendary vehicles/spacecraft with P/T, oracle text "can be your commander")
 - **Token Detection**: Authoritative `layout == "token"` check from Scryfall API
-- **Optional Field Filtering**: CardFilter support for both flags enabling optional inclusion/exclusion
+- **Config Filters**: `is_playable`, `digital`, `oversized`, `promo`, `content_warning` with Option<bool> support
+- **Optional Field Filtering**: CardFilter support for all flags enabling optional inclusion/exclusion/unset
 
 ### Deck Management
 - **Full CRUD Operations**: Complete deck lifecycle with card composition
