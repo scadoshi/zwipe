@@ -8,6 +8,7 @@ use crate::domain::card::models::{
         CardProfile,
     },
     create_card::CreateCardError,
+    get_artists::GetArtistsError,
     get_card::GetCardError,
     get_card_types::GetCardTypesError,
     get_sets::GetSetsError,
@@ -110,6 +111,9 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         request: &CardFilter,
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
+    /// gets all distinct artists from cards
+    fn get_artists(&self) -> impl Future<Output = Result<Vec<String>, GetArtistsError>> + Send;
+
     /// gets all distinct types from cards
     fn get_card_types(&self)
         -> impl Future<Output = Result<Vec<String>, GetCardTypesError>> + Send;
@@ -186,6 +190,9 @@ pub trait CardService: Clone + Send + Sync + 'static {
         &self,
         request: &CardFilter,
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
+
+    /// gets all distinct artists from cards
+    fn get_artists(&self) -> impl Future<Output = Result<Vec<String>, GetArtistsError>> + Send;
 
     /// gets all distinct types from cards
     fn get_card_types(&self)

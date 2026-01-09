@@ -7,6 +7,7 @@ pub mod sync_metrics;
 use crate::domain::card::models::{
     Card,
     create_card::CreateCardError,
+    get_artists::GetArtistsError,
     get_sets::GetSetsError,
     scryfall_data::get_scryfall_data::{GetScryfallData, GetScryfallDataError},
     search_card::{
@@ -216,6 +217,12 @@ impl CardRepository for MyPostgres {
         if let Some(sets) = request.set_equals_any() {
             sep.push("set_name = ANY(");
             sep.push_bind_unseparated(sets);
+            sep.push_unseparated(")");
+        }
+
+        if let Some(artists) = request.artist_equals_any() {
+            sep.push("artist = ANY(");
+            sep.push_bind_unseparated(artists);
             sep.push_unseparated(")");
         }
 
@@ -475,6 +482,20 @@ impl CardRepository for MyPostgres {
         .flatten()
         .collect();
         Ok(card_types)
+    }
+
+    async fn get_artists(&self) -> Result<Vec<String>, GetArtistsError> {
+        let artists: Vec<String> = query_scalar!(
+            "SELECT DISTINCT artist FROM scryfall_data
+             WHERE artist IS NOT NULL
+             ORDER BY artist"
+        )
+        .fetch_all(&self.pool)
+        .await?
+        .into_iter()
+        .flatten()
+        .collect();
+        Ok(artists)
     }
 
     async fn get_sets(&self) -> Result<Vec<String>, GetSetsError> {
