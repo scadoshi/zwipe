@@ -99,7 +99,9 @@ where
     DS: DeckService,
 {
     use crate::inbound::http::handlers::{
-        card::{get_card_types::get_card_types, get_sets::get_sets},
+        card::{
+            get_artists::get_artists, get_card_types::get_card_types, get_sets::get_sets,
+        },
         deck::get_deck_profile::get_deck_profile,
     };
 
@@ -124,6 +126,7 @@ where
                 Router::new()
                     .route("/:scryfall_data_id", get(get_card))
                     .route("/search", post(search_cards))
+                    .route("/artists", get(get_artists))
                     .route("/types", get(get_card_types))
                     .route("/sets", get(get_sets)),
             )
@@ -180,6 +183,10 @@ pub fn get_card_route(scryfall_data_id: Uuid) -> String {
 
 pub fn search_cards_route() -> String {
     "/api/card/search".to_string()
+}
+
+pub fn get_artists_route() -> String {
+    "api/card/artists".to_string()
 }
 
 pub fn get_card_types_route() -> String {
