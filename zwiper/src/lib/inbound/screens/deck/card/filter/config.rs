@@ -1,3 +1,4 @@
+use crate::inbound::components::tri_toggle::TriToggle;
 use dioxus::prelude::*;
 use zwipe::domain::card::models::{
     scryfall_data::language::Language, search_card::card_filter::builder::CardFilterBuilder,
@@ -33,93 +34,65 @@ pub fn Config() -> Element {
                 }
             }
 
-            // Toggle switches section
-            div { class: "flex-col gap-half",
-                label { class: "label-xs", "filters" }
-
-                // is_playable toggle
-                ToggleSwitch {
-                    label: "playable",
-                    checked: filter_builder().is_playable().unwrap_or(false),
-                    on_toggle: move |checked| {
-                        if checked {
-                            filter_builder.write().set_is_playable(true);
-                        } else {
-                            filter_builder.write().unset_is_playable();
-                        }
-                    }
-                }
-
-                // digital toggle
-                ToggleSwitch {
-                    label: "digital-only",
-                    checked: filter_builder().digital().is_none(),
-                    on_toggle: move |checked| {
-                        if checked {
-                            filter_builder.write().unset_digital();
-                        } else {
-                            filter_builder.write().set_digital(false);
-                        }
-                    }
-                }
-
-                // oversized toggle
-                ToggleSwitch {
-                    label: "w oversized cards",
-                    checked: filter_builder().oversized().is_none(),
-                    on_toggle: move |checked| {
-                        if checked {
-                            filter_builder.write().unset_oversized();
-                        } else {
-                            filter_builder.write().set_oversized(false);
-                        }
-                    }
-                }
-
-                // promo toggle
-                ToggleSwitch {
-                    label: "show promo cards",
-                    checked: filter_builder().promo().is_none(),
-                    on_toggle: move |checked| {
-                        if checked {
-                            filter_builder.write().unset_promo();
-                        } else {
-                            filter_builder.write().set_promo(false);
-                        }
-                    }
-                }
-
-                // content_warning toggle
-                ToggleSwitch {
-                    label: "show content warning cards",
-                    checked: filter_builder().content_warning().is_none(),
-                    on_toggle: move |checked| {
-                        if checked {
-                            filter_builder.write().unset_content_warning();
-                        } else {
-                            filter_builder.write().set_content_warning(false);
-                        }
-                    }
-                }
+            // Tri-state filters section
+            TriToggle {
+                label: "playable",
+                filter_builder,
+                getter: |fb| fb.is_playable(),
+                setter_true: |fb| { fb.set_is_playable(true); },
+                setter_false: |fb| { fb.set_is_playable(false); },
+                unsetter: |fb| { fb.unset_is_playable(); },
+                true_label: "show",
+                false_label: "hide",
+                none_label: "neither"
             }
-        }
-    }
-}
 
-#[component]
-fn ToggleSwitch(label: String, checked: bool, on_toggle: EventHandler<bool>) -> Element {
-    rsx! {
-        div { class: "toggle-row",
-            span { class: "toggle-label", "{label}" }
-            label { class: "toggle-switch",
-                input {
-                    r#type: "checkbox",
-                    checked: checked,
-                    onchange: move |evt| {
-                        on_toggle.call(evt.checked());
-                    }
-                }
-                span { class: "toggle-slider" }
+            TriToggle {
+                label: "digital",
+                filter_builder,
+                getter: |fb| fb.digital(),
+                setter_true: |fb| { fb.set_digital(true); },
+                setter_false: |fb| { fb.set_digital(false); },
+                unsetter: |fb| { fb.unset_digital(); },
+                true_label: "show",
+                false_label: "hide",
+                none_label: "neither"
+            }
+
+            TriToggle {
+                label: "oversized",
+                filter_builder,
+                getter: |fb| fb.oversized(),
+                setter_true: |fb| { fb.set_oversized(true); },
+                setter_false: |fb| { fb.set_oversized(false); },
+                unsetter: |fb| { fb.unset_oversized(); },
+                true_label: "show",
+                false_label: "hide",
+                none_label: "neither"
+            }
+
+            TriToggle {
+                label: "promo",
+                filter_builder,
+                getter: |fb| fb.promo(),
+                setter_true: |fb| { fb.set_promo(true); },
+                setter_false: |fb| { fb.set_promo(false); },
+                unsetter: |fb| { fb.unset_promo(); },
+                true_label: "show",
+                false_label: "hide",
+                none_label: "neither"
+            }
+
+            TriToggle {
+                label: "content warning",
+                filter_builder,
+                getter: |fb| fb.content_warning(),
+                setter_true: |fb| { fb.set_content_warning(true); },
+                setter_false: |fb| { fb.set_content_warning(false); },
+                unsetter: |fb| { fb.unset_content_warning(); },
+                true_label: "show",
+                false_label: "hide",
+                none_label: "neither"
             }
         }
     }
