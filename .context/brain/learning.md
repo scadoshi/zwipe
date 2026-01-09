@@ -57,6 +57,11 @@ Recently encountered concepts requiring guidance and practice.
 - **Direct Resource Chaining**: Resources can read other resources directly with `resource()` - no intermediate signals needed. Pattern: `let Some(Ok(Data { field, .. })) = other_resource() else { return Ok(None) };`
 - **When to Use Effects**: Edit screens need effects to populate form signals, but view screens can render directly from resources with pattern matching in RSX.
 - **Resource Separation of Concerns**: Keep resources pure (just fetch), use effects for side effects (populate signals), or render directly from resources for read-only display.
+- **EventHandler Limitations**: EventHandler props with complex multi-statement closures fail SuperFrom trait bounds—can't capture mutable references and perform multi-statement logic
+- **Function Pointer Workaround**: Pass fn(&mut T) instead of EventHandler closures to components for multi-statement logic—invoke directly without trait constraints
+- **TriToggle Function Pointer Pattern**: Component accepts fn getters/setters as props, invokes directly in onclick handlers—avoids EventHandler SuperFrom issues entirely
+- **Function Pointer Comparison Warning**: `unpredictable_function_pointer_comparisons` lint warns addresses not guaranteed unique—causes occasional extra re-renders but no correctness issues
+- **Suppressing Function Pointer Warning**: Use #[allow(unpredictable_function_pointer_comparisons)] on component when using fn pointers for props
 - *Note: Hook selection (effect vs future vs resource) is critical - wrong choice causes infinite loops or missing reactivity*
 
 ## 🔮 Advanced Rust Patterns

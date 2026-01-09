@@ -86,17 +86,19 @@ Production-ready frontend implementations.
 - **Mana Filter**: CMC equals/range + color identity toggles (W/U/B/R/G)
 - **Rarity Filter**: Multi-select chips for all rarities
 - **Set Filter**: Multi-select chips for sets
+- **Artist Filter**: Chip-based multi-select with searchable dropdown (top 5 results)
 - **Sort Filter**: Single-select chips for order_by + ascending/descending toggle
-- **Config Filter**: Language selector (11 chips) + TriStateFilter for boolean config fields
+- **Config Filter**: Language selector (11 chips) + TriToggle for boolean config fields
 
 ### Filter Patterns
 - **Parsing Pattern**: String signals → onblur → validate → update builder
 - **Color Mode Toggle**: Equals (exact) vs contains (any of)
 - **use_effect Sync**: Watches multiple signals, builds complex filter state
 - **Chip-Based Selection**: Removable chips for multi-select values
-- **Filtered Dropdown**: Type-to-search showing top 5 results
-- **Resource Integration**: use_resource loading card types/sets from API
+- **Filtered Dropdown**: Type-to-search showing top 5 results with duplicate prevention
+- **Resource Integration**: use_resource loading card types/sets/artists from API
 - **Empty Filter Validation**: Toast warning when applying empty filter
+- **Case-Insensitive Search**: Frontend .to_lowercase() for artist/set/type filtering
 
 ## 🎮 Swipe Detection & Gestures
 
@@ -143,7 +145,7 @@ Production-ready frontend implementations.
 
 ### Reusable Components
 - **TextInput**: Consolidated label, input, binding, common attributes
-- **TriStateFilter**: 3-state Option<bool> chip selector (yes/no/any) for config filters
+- **TriToggle**: 3-state Option<bool> chip selector using function pointers for flexible labels
 - **AlertDialog**: Modal confirmation with styled buttons and backdrop
 - **Toast**: Notification system wrapper (CSS loaded, implementation pending)
 - **Accordion**: Expandable sections with @keyframes animations

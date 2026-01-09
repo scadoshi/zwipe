@@ -133,8 +133,9 @@ Knowledge areas where you could teach others without hesitation.
 - **Reusable Component Abstraction**: Extracting repetitive UI patterns (TextInput, TriStateFilter) into focused components with clear props interface
 - **Component Props Design**: Balancing required vs optional props, using Option<String> for optional labels, Signal<String> for two-way binding
 - **DRY Component Boundaries**: Knowing when to extract components (repeated 3+ times with identical structure) vs when inline is clearer
-- **TriStateFilter Pattern**: Reusable component for Option<bool> with 3 mutually-exclusive chips (yes/no/any), using EventHandler<Option<bool>>
+- **TriToggle Component**: Reusable 3-state Option<bool> chip selector with programmable labels, using function pointers for flexible getter/setter logic
 - **3-State UI Design**: Accurately representing backend Option<bool> types in frontend (Some(true), Some(false), None) for proper filter control
+- **Function Pointer Props**: Passing fn(&CardFilterBuilder) → Option<bool> and fn(&mut CardFilterBuilder) as component props for flexible behavior
 - **Signal Initialization from Context**: Pattern of `use_signal(|| { context().field()... })` for initializing local signals from context on mount, ensuring form inputs display persisted state
 - **Mount-Time Initialization**: Understanding that signal closures run once on component mount, capturing initial values from context for local editing
 - **EventHandler Props Pattern**: Building generic components with EventHandler<()> props for flexible callback integration (on_swipe_left, on_swipe_right, etc.)
@@ -354,7 +355,8 @@ Knowledge areas where you could teach others without hesitation.
 - **Filtered Dropdown**: Type-to-search input shows top matches from resource, clicking adds to selection
 - **Direct vs Reactive Patterns**: Basic types use direct filter mutation (no read/write conflict), complex use local signal
 - **JSONB Operator Debugging**: Fixed color_identity_contains_any from && (array operator) to ?| (jsonb contains any text[])
-- **Get Sets/Types Endpoints**: Full stack implementation returning Vec<String> for frontend filtering
+- **Get Sets/Types/Artists Endpoints**: Full stack implementation returning Vec<String> for frontend filtering
+- **Artist Filter Implementation**: Complete end-to-end feature with backend ANY() operator and frontend chip-based multi-select
 
 ## 🃏 Deck Card Management & Swipe Navigation
 - **AddDeckCard Screen**: Card display, empty state, filter navigation, complete swipe-to-add workflow
