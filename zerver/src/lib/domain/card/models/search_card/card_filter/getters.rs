@@ -44,6 +44,11 @@ impl CardFilter {
         self.set_equals_any.as_deref()
     }
 
+    // artist
+    pub fn artist_equals_any(&self) -> Option<&[String]> {
+        self.artist_equals_any.as_deref()
+    }
+
     // mana
     pub fn cmc_equals(&self) -> Option<f64> {
         self.cmc_equals

@@ -107,6 +107,20 @@ impl CardFilterBuilder {
         self
     }
 
+    pub fn set_artist_equals_any(
+        &mut self,
+        artist_equals_any: impl IntoIterator<Item = impl Into<String>>,
+    ) -> &mut Self {
+        let s: Vec<String> = artist_equals_any.into_iter().map(|x| x.into()).collect();
+        self.artist_equals_any = if s.is_empty() { None } else { Some(s) };
+        self
+    }
+
+    pub fn unset_artist_equals_any(&mut self) -> &mut Self {
+        self.artist_equals_any = None;
+        self
+    }
+
     pub fn set_rarity_equals_any(&mut self, rarity_equals_any: Rarities) -> &mut Self {
         self.rarity_equals_any = if rarity_equals_any.is_empty() {
             None
