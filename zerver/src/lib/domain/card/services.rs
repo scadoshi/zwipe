@@ -4,7 +4,7 @@ use crate::domain::card::models::get_sets::GetSetsError;
 use crate::domain::card::models::scryfall_data::get_scryfall_data::{
     GetScryfallData, ScryfallDataIds,
 };
-use crate::inbound::external::scryfall::BulkEndpoint;
+use crate::inbound::external::scryfall::bulk::BulkEndpoint;
 use crate::{
     domain::card::{
         models::{
@@ -61,12 +61,11 @@ impl<R: CardRepository> CardService for Service<R> {
         self.repo.upsert(&scryfall_data).await
     }
 
-    async fn scryfall_sync(&self) -> anyhow::Result<SyncMetrics> {
+    async fn scryfall_sync(&self, bulk_endpoint: BulkEndpoint) -> anyhow::Result<SyncMetrics> {
         let mut sync_metrics = SyncMetrics::new();
         let batch_size = batch_size();
         // just going to hard code this for now
-        let bulk_endpoint = BulkEndpoint::OracleCards;
-        let scryfall_data = bulk_endpoint.amass().await?;
+        let scryfall_data = bulk_endpoint.amass(true).await?;
         sync_metrics.set_received_count(scryfall_data.len() as i32);
         self.repo
             .batch_delta_upsert(&scryfall_data, batch_size, &mut sync_metrics)

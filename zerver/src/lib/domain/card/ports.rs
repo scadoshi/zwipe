@@ -2,25 +2,28 @@ use std::future::Future;
 
 use chrono::NaiveDateTime;
 
-use crate::domain::card::models::{
-    card_profile::{
-        get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
-        CardProfile,
-    },
-    create_card::CreateCardError,
-    get_artists::GetArtistsError,
-    get_card::GetCardError,
-    get_card_types::GetCardTypesError,
-    get_sets::GetSetsError,
-    scryfall_data::{
-        get_scryfall_data::{
-            GetScryfallData, GetScryfallDataError, ScryfallDataIds, SearchScryfallDataError,
+use crate::{
+    domain::card::models::{
+        card_profile::{
+            get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
+            CardProfile,
         },
-        ScryfallData,
+        create_card::CreateCardError,
+        get_artists::GetArtistsError,
+        get_card::GetCardError,
+        get_card_types::GetCardTypesError,
+        get_sets::GetSetsError,
+        scryfall_data::{
+            get_scryfall_data::{
+                GetScryfallData, GetScryfallDataError, ScryfallDataIds, SearchScryfallDataError,
+            },
+            ScryfallData,
+        },
+        search_card::{card_filter::CardFilter, error::SearchCardsError},
+        sync_metrics::SyncMetrics,
+        Card,
     },
-    search_card::{card_filter::CardFilter, error::SearchCardsError},
-    sync_metrics::SyncMetrics,
-    Card,
+    inbound::external::scryfall::bulk::BulkEndpoint,
 };
 
 /// enables card related database operations
@@ -167,7 +170,10 @@ pub trait CardService: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = Result<Card, CreateCardError>>;
 
     /// syncs database with scryfall bulk data
-    fn scryfall_sync(&self) -> impl Future<Output = anyhow::Result<SyncMetrics>> + Send;
+    fn scryfall_sync(
+        &self,
+        bulk_endpoint: BulkEndpoint,
+    ) -> impl Future<Output = anyhow::Result<SyncMetrics>> + Send;
 
     // =====
     //  get

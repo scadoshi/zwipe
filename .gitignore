@@ -3,3 +3,4 @@ target/
 .sqlx/
 .vscode
 scratch.txt
+cache/
