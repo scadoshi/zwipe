@@ -15,19 +15,14 @@ use zwipe::{
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     logo::Zervice::print();
-
     let config = Config::from_env()?;
-
     tracing_subscriber::fmt()
         .with_max_level(config.rust_log)
         .init();
-
     let db = Postgres::new(&config.database_url).await?;
-
     let card_service = CardService::new(db.clone());
     let auth_service = AuthService::new(db.clone(), db.clone(), config.jwt_secret);
     let mut latest_token_clean_up: Option<NaiveDateTime> = None;
-
     tracing::info!("running card migration and refresh token services");
     loop {
         card_service.check_cards().await?;

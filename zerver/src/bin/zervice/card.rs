@@ -1,8 +1,11 @@
 use chrono::{Duration, Utc};
 use std::future::Future;
-use zwipe::domain::card::{
-    self,
-    ports::{CardRepository, CardService},
+use zwipe::{
+    domain::card::{
+        self,
+        ports::{CardRepository, CardService},
+    },
+    inbound::external::scryfall::bulk::BulkEndpoint,
 };
 
 pub trait CheckCards {
@@ -19,7 +22,7 @@ where
             .await?
             .is_none_or(|d| d < Utc::now().naive_utc() - Duration::days(7))
         {
-            self.scryfall_sync().await?;
+            self.scryfall_sync(BulkEndpoint::AllCards).await?;
         }
         Ok(())
     }

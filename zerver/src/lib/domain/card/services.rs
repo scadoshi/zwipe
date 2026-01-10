@@ -62,6 +62,10 @@ impl<R: CardRepository> CardService for Service<R> {
     }
 
     async fn scryfall_sync(&self, bulk_endpoint: BulkEndpoint) -> anyhow::Result<SyncMetrics> {
+        tracing::info!(
+            "performing scryfall sync with {}",
+            bulk_endpoint.to_snake_case()
+        );
         let mut sync_metrics = SyncMetrics::new();
         let batch_size = batch_size();
         // just going to hard code this for now

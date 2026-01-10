@@ -31,6 +31,7 @@ pub(super) struct BulkDataObject {
 // not sure if every endpoints returns consistent types
 // only tested `OracleCards` for now :O
 
+#[derive(Debug, Clone, Copy)]
 pub enum BulkEndpoint {
     OracleCards,
     UniqueArtwork,
