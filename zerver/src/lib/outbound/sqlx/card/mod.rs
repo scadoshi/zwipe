@@ -173,7 +173,15 @@ impl CardRepository for MyPostgres {
         request: &CardFilter,
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
         let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new(
-            "SELECT scryfall_data.* FROM scryfall_data JOIN card_profiles ON scryfall_data.id = card_profiles.scryfall_data_id WHERE ",
+            "WITH deduplicated_cards AS (
+               SELECT scryfall_data.id,
+                      ROW_NUMBER() OVER (
+                        PARTITION BY COALESCE(scryfall_data.oracle_id, scryfall_data.id)
+                        ORDER BY scryfall_data.released_at DESC
+                      ) as rn
+               FROM scryfall_data
+               JOIN card_profiles ON scryfall_data.id = card_profiles.scryfall_data_id
+               WHERE ",
         );
         let mut sep: Separated<Postgres, &'static str> = qb.separated(" AND ");
 
@@ -405,6 +413,11 @@ impl CardRepository for MyPostgres {
                 sep.push(filter);
             }
         }
+
+        // Close CTE and select scryfall_data for latest printings only
+        qb.push(") SELECT scryfall_data.* FROM scryfall_data
+                  JOIN deduplicated_cards ON scryfall_data.id = deduplicated_cards.id
+                  WHERE deduplicated_cards.rn = 1 ");
 
         // ORDER BY
         if let Some(order_by) = request.order_by() {

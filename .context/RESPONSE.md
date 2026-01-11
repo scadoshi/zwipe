@@ -1,5 +1,5 @@
 # Response to plan
-## Things that I have added you should be aware of
-- Updated .clear_all() to clear() and made it use the Default impl instead of manually unsetting everything.
-- Added a .retain_config() method to set everything but config-related fields to default
-- The above allows us in .is_empty() to do an easy impl to get a version that is defaulted (other than config) and then to compare to that to see if the CardFilter is empty
+## Questions that I am just wondering
+- What does adding `CONCURRENTLY` to indeces do?
+- Wait I read it thanks
+- Actually you don't have to create new migrations, you can update existing migratinos and just reset the entire database I don't mind

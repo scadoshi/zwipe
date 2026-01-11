@@ -46,6 +46,9 @@ Production-ready backend implementations.
 - **Rarity Domain Type**: Complete Rarity enum with custom SQLx traits and flexible Scryfall parsing
 - **Language Domain Type**: Complete Language enum with 11 languages (English, Spanish, French, German, Italian, Portuguese, Japanese, Korean, Russian, Simplified/Traditional Chinese)
 - **Language Filtering**: CardFilter language support with SQL `lang = 'en'` filtering, defaults to English
+- **Card Deduplication**: Window function-based deduplication returning only latest printing per unique card (by oracle_id)
+- **AllCards Support**: Handles 521k card printings, deduplicates to ~80k unique cards using ROW_NUMBER() OVER (PARTITION BY oracle_id ORDER BY released_at DESC)
+- **Performance Indexes**: Composite index on (oracle_id, released_at DESC) for efficient window function queries
 - **Computed Card Fields**: `is_valid_commander` and `is_token` boolean columns calculated during upsert
 - **Commander Validation**: 3-rule system (legendary creatures, legendary vehicles/spacecraft with P/T, oracle text "can be your commander")
 - **Token Detection**: Authoritative `layout == "token"` check from Scryfall API

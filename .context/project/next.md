@@ -4,6 +4,8 @@ Planned work after completing current tasks.
 
 ---
 
+---
+
 ## Enhancements
 
 1. **Remove Card Screen** - Build UI for removing cards from deck with filtering and swipe gestures
