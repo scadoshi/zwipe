@@ -69,7 +69,7 @@ impl<R: CardRepository> CardService for Service<R> {
         let mut sync_metrics = SyncMetrics::new();
         let batch_size = batch_size();
         // just going to hard code this for now
-        let scryfall_data = bulk_endpoint.amass(true).await?;
+        let scryfall_data = bulk_endpoint.amass(false).await?;
         sync_metrics.set_received_count(scryfall_data.len() as i32);
         self.repo
             .batch_delta_upsert(&scryfall_data, batch_size, &mut sync_metrics)

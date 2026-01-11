@@ -8,7 +8,7 @@ CREATE TABLE scryfall_data (
     mtgo_foil_id INT UNIQUE,
     multiverse_ids INT[],
     tcgplayer_id INT,
-    tcgplayer_etched_id INT UNIQUE,
+    tcgplayer_etched_id INT,
     cardmarket_id INT,
     object TEXT NOT NULL,
     layout TEXT NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE scryfall_data (
     -- Cards have the following properties relevant to the game rules
     all_parts JSONB DEFAULT '[]'::jsonb,
     card_faces JSONB DEFAULT '[]'::jsonb,
-    cmc FLOAT NOT NULL,
+    cmc FLOAT,
     color_identity TEXT[] DEFAULT ARRAY[]::TEXT[] NOT NULL,
     color_indicator TEXT[] DEFAULT ARRAY[]::TEXT[],
     colors TEXT[] DEFAULT ARRAY[]::TEXT[],
@@ -42,7 +42,7 @@ CREATE TABLE scryfall_data (
     produced_mana TEXT[],
     reserved BOOLEAN NOT NULL,
     toughness TEXT,
-    type_line TEXT NOT NULL,
+    type_line TEXT,
 
     -- Print Fields
     -- Cards have the following properties unique to their particular re/print

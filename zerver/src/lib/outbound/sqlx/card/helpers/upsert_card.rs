@@ -28,14 +28,16 @@ fn is_token(scryfall_data: &ScryfallData) -> bool {
 
 /// determines if a card is a valid MTG commander
 fn is_valid_commander(scryfall_data: &ScryfallData) -> bool {
+    let Some(type_line_lower) = scryfall_data.type_line.as_ref().map(|tl| tl.to_lowercase()) else {
+        return false;
+    };
+
     // check for special "can be your commander" text
     if let Some(text) = &scryfall_data.oracle_text
         && text.to_lowercase().contains("can be your commander")
     {
         return true;
     }
-
-    let type_line_lower = scryfall_data.type_line.to_lowercase();
 
     // check legendary creature
     if type_line_lower.contains("legendary") && type_line_lower.contains("creature") {
@@ -46,11 +48,11 @@ fn is_valid_commander(scryfall_data: &ScryfallData) -> bool {
     if type_line_lower.contains("legendary")
         && (type_line_lower.contains("vehicle") || type_line_lower.contains("spacecraft"))
         && let (Some(power), Some(toughness)) = (&scryfall_data.power, &scryfall_data.toughness)
-            && !power.is_empty()
-            && !toughness.is_empty()
-        {
-            return true;
-        }
+        && !power.is_empty()
+        && !toughness.is_empty()
+    {
+        return true;
+    }
 
     false
 }

@@ -1,7 +1,7 @@
 pub mod auth;
 pub mod card;
 
-use crate::{auth::CheckSessions, card::CheckCards};
+use crate::{auth::CheckSessions, card::CheckCardsAgainst};
 use chrono::NaiveDateTime;
 use std::time::Duration;
 use zwipe::{
@@ -9,6 +9,7 @@ use zwipe::{
     domain::{
         auth::services::Service as AuthService, card::services::Service as CardService, logo,
     },
+    inbound::external::scryfall::bulk::BulkEndpoint,
     outbound::sqlx::postgres::Postgres,
 };
 
@@ -25,7 +26,9 @@ async fn main() -> anyhow::Result<()> {
     let mut latest_token_clean_up: Option<NaiveDateTime> = None;
     tracing::info!("running card migration and refresh token services");
     loop {
-        card_service.check_cards().await?;
+        card_service
+            .check_cards_against(BulkEndpoint::AllCards)
+            .await?;
         auth_service
             .check_sessions(&mut latest_token_clean_up)
             .await?;

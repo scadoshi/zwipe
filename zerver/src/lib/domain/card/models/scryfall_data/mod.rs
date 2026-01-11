@@ -59,7 +59,7 @@ pub struct ScryfallData {
     // cards have the following properties relevant to the game rules
     pub all_parts: Option<AllParts>,
     pub card_faces: Option<CardFaces>,
-    pub cmc: f64,
+    pub cmc: Option<f64>,
     pub color_identity: Colors,
     pub color_indicator: Option<Colors>,
     pub colors: Option<Colors>,
@@ -79,7 +79,7 @@ pub struct ScryfallData {
     pub produced_mana: Option<Vec<String>>,
     pub reserved: bool,
     pub toughness: Option<String>,
-    pub type_line: String,
+    pub type_line: Option<String>,
 
     // print fields
     // cards have the following properties unique to their particular re/print

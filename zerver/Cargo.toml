@@ -22,10 +22,6 @@ path = "src/bin/zerver/main.rs"
 name = "zervice"
 path = "src/bin/zervice/main.rs"
 
-[[bin]]
-name = "zcrying"
-path = "src/bin/zcrying/main.rs"
-
 [dependencies]
 
 # Server-only dependencies (optional)

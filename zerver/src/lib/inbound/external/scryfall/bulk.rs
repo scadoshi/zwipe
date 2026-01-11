@@ -1,3 +1,5 @@
+use std::fs::read;
+
 use crate::{
     domain::card::models::scryfall_data::ScryfallData,
     inbound::external::scryfall::planeswalker::{Planeswalker, SCRYFALL_API_BASE},
@@ -5,7 +7,7 @@ use crate::{
 use anyhow::Context;
 use reqwest::Client;
 use serde::Deserialize;
-use serde_json::Value;
+use serde_json::{from_slice, from_value, Value};
 
 /// scryfall returns this
 /// when you get bulk data
@@ -67,46 +69,24 @@ impl BulkEndpoint {
     /// gets bulk cards with a BulkEndpoint parameter end returns `Vec<ScryfallData>`
     pub async fn amass(&self, should_use_cache: bool) -> anyhow::Result<Vec<ScryfallData>> {
         let mut should_update_cache: bool = false;
-        let full_cache_path = CACHE_BULK_PATH.to_string() + self.to_snake_case().as_str() + ".json";
+        let full_cache_path = format!("{},{}.json", CACHE_BULK_PATH, self.to_snake_case());
         if should_use_cache {
-            let cache_read_result = std::fs::read(&full_cache_path);
             let error_encountered: bool;
-            match cache_read_result {
-                Ok(bytes) => {
-                    tracing::info!("successfully read cache file");
-                    let cards_json_result = serde_json::from_slice::<Value>(&bytes);
-                    match cards_json_result {
-                        Ok(cards_json) => {
-                            tracing::info!("successfully parse card json");
-                            let cards_result =
-                                serde_json::from_value::<Vec<ScryfallData>>(cards_json);
-                            match cards_result {
-                                Ok(cards) => {
-                                    tracing::info!("successfully parse cards");
-                                    return Ok(cards);
-                                }
-                                Err(e) => {
-                                    error_encountered = true;
-                                    tracing::warn!("failed to parse `Vec<ScryfallData>`: {}", e);
-                                }
-                            }
-                        }
-                        Err(e) => {
-                            error_encountered = true;
-                            tracing::warn!("failed to parse json from cache file: {}", e);
-                        }
-                    }
-                }
+
+            let try_parse_cache = || -> anyhow::Result<Vec<ScryfallData>> {
+                let bytes = read(&full_cache_path)?;
+                let cards_json = from_slice::<Value>(&bytes)?;
+                Ok(from_value::<Vec<ScryfallData>>(cards_json)?)
+            };
+
+            match try_parse_cache() {
+                Ok(cards) => return Ok(cards),
                 Err(e) => {
                     error_encountered = true;
-                    tracing::warn!("failed to read cache file: {}", e);
+                    tracing::warn!("failed to parse cards: {}", e);
                 }
             }
-            if error_encountered {
-                tracing::info!(
-                    "cache mode is turned on but failed to read or parse; falling back to api"
-                );
-            }
+
             if error_encountered {
                 should_update_cache = true;
             }
@@ -115,7 +95,7 @@ impl BulkEndpoint {
         }
 
         // first get the bulk data object with our main url
-        let url = SCRYFALL_API_BASE.to_string() + &self.resolve();
+        let url = format!("{}{}", SCRYFALL_API_BASE, &self.resolve());
         let urza = Planeswalker::untap(Client::new(), &url);
 
         let bulk_response = urza
