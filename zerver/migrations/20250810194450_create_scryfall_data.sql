@@ -105,3 +105,4 @@ CREATE INDEX idx_scryfall_data_cmc ON scryfall_data(cmc);
 CREATE INDEX idx_scryfall_data_colors ON scryfall_data USING GIN(colors);
 CREATE INDEX idx_scryfall_data_oracle_id ON scryfall_data(oracle_id);
 CREATE INDEX idx_scryfall_data_oracle_released ON scryfall_data(oracle_id, released_at DESC);
+CREATE INDEX idx_scryfall_data_lang ON scryfall_data(lang);
