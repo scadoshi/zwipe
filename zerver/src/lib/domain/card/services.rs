@@ -1,5 +1,6 @@
 use crate::domain::card::models::get_artists::GetArtistsError;
 use crate::domain::card::models::get_card_types::GetCardTypesError;
+use crate::domain::card::models::get_languages::GetLanguagesError;
 use crate::domain::card::models::get_sets::GetSetsError;
 use crate::domain::card::models::scryfall_data::get_scryfall_data::{
     GetScryfallData, ScryfallDataIds,
@@ -8,16 +9,16 @@ use crate::inbound::external::scryfall::bulk::BulkEndpoint;
 use crate::{
     domain::card::{
         models::{
+            Card,
             card_profile::{
-                get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
                 CardProfile,
+                get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
             },
             create_card::CreateCardError,
             get_card::GetCardError,
             scryfall_data::ScryfallData,
             search_card::{card_filter::CardFilter, error::SearchCardsError},
             sync_metrics::SyncMetrics,
-            Card,
         },
         ports::{CardRepository, CardService},
     },
@@ -68,8 +69,7 @@ impl<R: CardRepository> CardService for Service<R> {
         );
         let mut sync_metrics = SyncMetrics::new();
         let batch_size = batch_size();
-        // just going to hard code this for now
-        let scryfall_data = bulk_endpoint.amass(false).await?;
+        let scryfall_data = bulk_endpoint.amass().await?;
         sync_metrics.set_received_count(scryfall_data.len() as i32);
         self.repo
             .batch_delta_upsert(&scryfall_data, batch_size, &mut sync_metrics)
@@ -105,6 +105,10 @@ impl<R: CardRepository> CardService for Service<R> {
 
     async fn get_sets(&self) -> Result<Vec<String>, GetSetsError> {
         self.repo.get_sets().await
+    }
+
+    async fn get_languages(&self) -> Result<Vec<String>, GetLanguagesError> {
+        self.repo.get_languages().await
     }
 
     async fn get_card_profile_with_id(

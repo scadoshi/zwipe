@@ -12,6 +12,7 @@ use crate::{
         get_artists::GetArtistsError,
         get_card::GetCardError,
         get_card_types::GetCardTypesError,
+        get_languages::GetLanguagesError,
         get_sets::GetSetsError,
         scryfall_data::{
             get_scryfall_data::{
@@ -124,6 +125,9 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// gets all distinct sets form cards
     fn get_sets(&self) -> impl Future<Output = Result<Vec<String>, GetSetsError>> + Send;
 
+    /// gets all distinct languages from cards
+    fn get_languages(&self) -> impl Future<Output = Result<Vec<String>, GetLanguagesError>> + Send;
+
     /// gets card profile with its uuid
     fn get_card_profile_with_id(
         &self,
@@ -206,6 +210,9 @@ pub trait CardService: Clone + Send + Sync + 'static {
 
     /// gets all distinct sets from cards
     fn get_sets(&self) -> impl Future<Output = Result<Vec<String>, GetSetsError>> + Send;
+
+    /// gets all distinct languages from cards
+    fn get_languages(&self) -> impl Future<Output = Result<Vec<String>, GetLanguagesError>> + Send;
 
     /// gets card profile with its uuid
     fn get_card_profile_with_id(
