@@ -1,36 +1,69 @@
-use crate::inbound::components::tri_toggle::TriToggle;
+use crate::{
+    domain::language::LanguageCodeToFullName,
+    inbound::components::tri_toggle::TriToggle,
+    outbound::client::{card::get_languages::ClientGetLanguages, ZwipeClient},
+};
 use dioxus::prelude::*;
-use zwipe::domain::card::models::{
-    scryfall_data::language::Language, search_card::card_filter::builder::CardFilterBuilder,
+use zwipe::{
+    domain::auth::models::session::Session,
+    domain::card::models::search_card::card_filter::builder::CardFilterBuilder,
+    inbound::http::ApiError,
 };
 
 #[component]
 pub fn Config() -> Element {
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
 
+    let session: Signal<Option<Session>> = use_context();
+    let client: Signal<ZwipeClient> = use_context();
+
+    // Fetch all languages from backend
+    let all_languages: Resource<Result<Vec<String>, ApiError>> = use_resource(move || async move {
+        let Some(sesh) = session() else {
+            return Err(ApiError::Unauthorized("session expired".to_string()));
+        };
+        client().get_languages(&sesh).await
+    });
+
     rsx! {
         div { class: "flex-col gap-1",
             // Language chips section
             div { class: "flex-col gap-half",
                 label { class: "label-xs", "language" }
-                div { class: "flex flex-wrap gap-1",
-                    for lang in Language::all() {
-                        div {
-                            class: if filter_builder().language().is_some_and(|l| l == lang) {
-                                "chip selected"
-                            } else {
-                                "chip"
-                            },
-                            onclick: move |_| {
-                                if filter_builder().language().is_some_and(|l| l == lang) {
-                                    filter_builder.write().unset_language();
-                                } else {
-                                    filter_builder.write().set_language(lang);
+
+                // Show loading or languages
+                match &*all_languages.read_unchecked() {
+                    Some(Ok(languages)) => rsx! {
+                        div { class: "flex flex-wrap gap-1",
+                            for lang_code in languages.iter() {{
+                                let lang_code = lang_code.clone();
+                                let display_name = lang_code.language_code_to_full_name().to_lowercase();
+                                rsx! {
+                                    div {
+                                        class: if filter_builder()
+                                            .language()
+                                            .is_some_and(|l| l == lang_code.as_str())
+                                        {
+                                            "chip selected"
+                                        } else {
+                                            "chip"
+                                        },
+                                        onclick: move |_| {
+                                            let lang_to_set = lang_code.clone();
+                                            filter_builder.write().set_language(lang_to_set);
+                                        },
+                                        { display_name }
+                                    }
                                 }
-                            },
-                            { lang.to_name().to_lowercase() }
+                            }}
                         }
-                    }
+                    },
+                    Some(Err(_)) => rsx! {
+                        div { class: "error", "Failed to load languages" }
+                    },
+                    None => rsx! {
+                        div { class: "loading", "Loading languages..." }
+                    },
                 }
             }
 
