@@ -1,4 +1,4 @@
-use super::{CardFilterBuilder, CardType, Colors, Language, OrderByOptions};
+use super::{CardFilterBuilder, CardType, Colors, OrderByOptions};
 use crate::domain::card::models::scryfall_data::rarity::Rarities;
 
 impl CardFilterBuilder {
@@ -288,8 +288,8 @@ impl CardFilterBuilder {
         self
     }
 
-    pub fn set_language(&mut self, language: Language) -> &mut Self {
-        self.language = Some(language);
+    pub fn set_language(&mut self, language: impl Into<String>) -> &mut Self {
+        self.language = Some(language.into());
         self
     }
 
@@ -335,7 +335,7 @@ impl CardFilterBuilder {
             oversized: self.oversized,
             promo: self.promo,
             content_warning: self.content_warning,
-            language: self.language,
+            language: self.language.clone(),
             order_by: self.order_by,
             ascending: self.ascending,
             ..Self::default()

@@ -3,7 +3,6 @@ pub mod card_faces;
 pub mod colors;
 pub mod get_scryfall_data;
 pub mod image_uris;
-pub mod language;
 pub mod legalities;
 pub mod prices;
 pub mod rarity;
@@ -12,7 +11,6 @@ use all_parts::AllParts;
 use card_faces::CardFaces;
 use colors::Colors;
 use image_uris::ImageUris;
-use language::Language;
 use legalities::Legalities;
 use prices::Prices;
 use serde::{Deserialize, Serialize};
@@ -41,7 +39,7 @@ pub struct ScryfallData {
     // cards have the following core properties
     pub arena_id: Option<i32>,
     pub id: uuid::Uuid,
-    pub lang: Language,
+    pub lang: String,
     pub mtgo_id: Option<i32>,
     pub mtgo_foil_id: Option<i32>,
     pub multiverse_ids: Option<Vec<i32>>,

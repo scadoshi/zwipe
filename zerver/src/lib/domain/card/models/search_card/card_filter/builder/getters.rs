@@ -1,5 +1,5 @@
 use crate::domain::card::models::{
-    scryfall_data::{colors::Colors, language::Language, rarity::Rarities},
+    scryfall_data::{colors::Colors, rarity::Rarities},
     search_card::{card_filter::{builder::CardFilterBuilder, OrderByOptions}, card_type::CardType},
 };
 
@@ -112,8 +112,8 @@ impl CardFilterBuilder {
         self.content_warning
     }
 
-    pub fn language(&self) -> Option<Language> {
-        self.language
+    pub fn language(&self) -> Option<&str> {
+        self.language.as_deref()
     }
 
     // config

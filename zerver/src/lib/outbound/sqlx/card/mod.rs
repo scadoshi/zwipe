@@ -8,6 +8,7 @@ use crate::domain::card::models::{
     Card,
     create_card::CreateCardError,
     get_artists::GetArtistsError,
+    get_languages::GetLanguagesError,
     get_sets::GetSetsError,
     scryfall_data::get_scryfall_data::{GetScryfallData, GetScryfallDataError},
     search_card::{
@@ -390,7 +391,7 @@ impl CardRepository for MyPostgres {
 
         if let Some(language) = request.language() {
             sep.push("scryfall_data.lang = ");
-            sep.push_bind_unseparated(language.to_code());
+            sep.push_bind_unseparated(language);
         }
 
         // Filter out NULLs for sorted field
@@ -519,6 +520,19 @@ impl CardRepository for MyPostgres {
                 .into_iter()
                 .collect();
         Ok(sets)
+    }
+
+    async fn get_languages(&self) -> Result<Vec<String>, GetLanguagesError> {
+        let languages: Vec<String> = query_scalar!(
+            "SELECT DISTINCT lang FROM scryfall_data
+             WHERE lang IS NOT NULL
+             ORDER BY lang"
+        )
+        .fetch_all(&self.pool)
+        .await?
+        .into_iter()
+        .collect();
+        Ok(languages)
     }
 
     async fn get_card_profile_with_id(
