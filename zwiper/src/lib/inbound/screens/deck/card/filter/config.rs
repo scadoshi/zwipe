@@ -77,7 +77,7 @@ pub fn Config() -> Element {
                 unsetter: |fb| { fb.unset_is_playable(); },
                 true_label: "show",
                 false_label: "hide",
-                none_label: "neither"
+                none_label: "any"
             }
 
             TriToggle {
@@ -89,7 +89,7 @@ pub fn Config() -> Element {
                 unsetter: |fb| { fb.unset_digital(); },
                 true_label: "show",
                 false_label: "hide",
-                none_label: "neither"
+                none_label: "any"
             }
 
             TriToggle {
@@ -101,7 +101,7 @@ pub fn Config() -> Element {
                 unsetter: |fb| { fb.unset_oversized(); },
                 true_label: "show",
                 false_label: "hide",
-                none_label: "neither"
+                none_label: "any"
             }
 
             TriToggle {
@@ -113,7 +113,7 @@ pub fn Config() -> Element {
                 unsetter: |fb| { fb.unset_promo(); },
                 true_label: "show",
                 false_label: "hide",
-                none_label: "neither"
+                none_label: "any"
             }
 
             TriToggle {
@@ -125,7 +125,7 @@ pub fn Config() -> Element {
                 unsetter: |fb| { fb.unset_content_warning(); },
                 true_label: "show",
                 false_label: "hide",
-                none_label: "neither"
+                none_label: "any"
             }
         }
     }
