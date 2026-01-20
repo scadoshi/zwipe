@@ -65,6 +65,33 @@ Planned work after completing current tasks.
 
 ## Bugs
 
-1. **Deck List Nav Bug** - First deck creation navigates back but deck doesn't appear until navigating back again
+1. **Layout Shift After Deck Creation** - Content smushed up ~5px after saving new deck, persists across navigation
 
-2. **Create Deck Layout** - Commander image pushes "deck name" label into header area
+   **Reproduction steps:**
+   1. Navigate to Deck List screen
+   2. Click "create deck"
+   3. Fill out deck information (name, commander, copy max)
+   4. Click "save deck"
+   5. **BUG:** ViewDeck screen renders with content shifted up ~5px
+   6. Click "back" to return to Deck List
+   7. **BUG PERSISTS:** Decks clip into page header, appears one deck is missing
+   8. Click "back" to Home, then forward to Deck List
+   9. **BUG RESOLVED:** Layout returns to normal
+
+   **Observations:**
+   - Bug triggered specifically by clicking "save" on CreateDeck
+   - Layout shift affects ViewDeck screen immediately after save
+   - Same layout issue persists when navigating to DeckList
+   - Only clears when navigating completely away and returning
+   - Not related to data fetching (deck appears in list)
+   - Possibly related to: CSS state pollution, signal state, commander image loading, save/navigation timing
+
+   **Investigated (not the cause):**
+   - ViewDeck padding-top: 8vh vs others using 4rem (tried changing, not the issue)
+   - DeckList use_effect resource restart (intentional for fresh data)
+
+   **Next steps to investigate:**
+   - is_saving signal cleanup
+   - Commander image load timing
+   - DOM state between navigation transitions
+   - Spinner/loading state CSS artifacts
