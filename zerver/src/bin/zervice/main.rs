@@ -27,7 +27,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("running card migration and refresh token services");
     loop {
         card_service
-            .check_cards_against(BulkEndpoint::AllCards)
+            .check_cards_against(BulkEndpoint::OracleCards)
             .await?;
         auth_service
             .check_sessions(&mut latest_token_clean_up)

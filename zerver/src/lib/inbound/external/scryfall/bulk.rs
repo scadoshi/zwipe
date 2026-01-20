@@ -1,5 +1,3 @@
-use std::fs::read;
-
 use crate::{
     domain::card::models::scryfall_data::ScryfallData,
     inbound::external::scryfall::planeswalker::{Planeswalker, SCRYFALL_API_BASE},
@@ -7,7 +5,7 @@ use crate::{
 use anyhow::Context;
 use reqwest::Client;
 use serde::Deserialize;
-use serde_json::{from_slice, from_value, Value};
+use serde_json::Value;
 
 /// scryfall returns this
 /// when you get bulk data
@@ -64,36 +62,9 @@ impl BulkEndpoint {
     }
 }
 
-pub const CACHE_BULK_PATH: &str = "cache/bulk/";
 impl BulkEndpoint {
     /// gets bulk cards with a BulkEndpoint parameter end returns `Vec<ScryfallData>`
-    pub async fn amass(&self, should_use_cache: bool) -> anyhow::Result<Vec<ScryfallData>> {
-        let mut should_update_cache: bool = false;
-        let full_cache_path = format!("{},{}.json", CACHE_BULK_PATH, self.to_snake_case());
-        if should_use_cache {
-            let error_encountered: bool;
-
-            let try_parse_cache = || -> anyhow::Result<Vec<ScryfallData>> {
-                let bytes = read(&full_cache_path)?;
-                let cards_json = from_slice::<Value>(&bytes)?;
-                Ok(from_value::<Vec<ScryfallData>>(cards_json)?)
-            };
-
-            match try_parse_cache() {
-                Ok(cards) => return Ok(cards),
-                Err(e) => {
-                    error_encountered = true;
-                    tracing::warn!("failed to parse cards: {}", e);
-                }
-            }
-
-            if error_encountered {
-                should_update_cache = true;
-            }
-        } else {
-            tracing::info!("cache mode is turned off; falling back to api")
-        }
-
+    pub async fn amass(&self) -> anyhow::Result<Vec<ScryfallData>> {
         // first get the bulk data object with our main url
         let url = format!("{}{}", SCRYFALL_API_BASE, &self.resolve());
         let urza = Planeswalker::untap(Client::new(), &url);
@@ -123,27 +94,6 @@ impl BulkEndpoint {
             .json()
             .await
             .context("failed to parse json from download uri result")?;
-
-        if should_use_cache && should_update_cache {
-            // ensure all directories of cache path are in place
-            let Some(cache_file_parent_directory) = std::path::Path::new(&full_cache_path).parent()
-            else {
-                return Err(anyhow::anyhow!(
-                    "unable to derive parent directory from {}",
-                    full_cache_path
-                ));
-            };
-            std::fs::create_dir_all(cache_file_parent_directory)
-                .context("failed to create bulk directories")?;
-            // then attempt writing to it
-            std::fs::write(
-                &full_cache_path,
-                serde_json::to_string(&cards_json)
-                    .context("failed to write cards_json to string for bulk caching")?,
-            )
-            .context("failed to write to cache file")?;
-            tracing::info!("successfully wrote to cache file");
-        }
 
         let cards: Vec<ScryfallData> =
             serde_json::from_value(cards_json).context("failed to parse `Vec<ScryfallData>`")?;
