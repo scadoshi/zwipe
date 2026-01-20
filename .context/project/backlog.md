@@ -49,6 +49,21 @@ Planned features and improvements for future implementation.
 - **App Signing**: Set up iOS/Android code signing for device deployment
 - **Store Submission**: Prepare assets and metadata for App Store/Play Store submission
 
+## 🌍 Multi-Language Application Support
+**Post-MVP Feature**: Internationalization (i18n) for entire application UI
+- **Card Language Infrastructure**: ✅ Complete - Dynamic language support already implemented
+  - Backend: `/api/card/languages` endpoint with 18+ languages
+  - Domain: String-based language filtering with LanguageCodeToFullName trait
+  - Database: Supports all Scryfall language codes without code changes
+  - Currently using OracleCards (English-only) but infrastructure ready for AllCards
+- **Application UI Translation**: Frontend screens, labels, and messages
+  - Translation system for all UI text (auth, deck management, filters, etc.)
+  - Language selection in user settings
+  - Locale-aware date/number formatting
+  - Right-to-left (RTL) support for Arabic/Hebrew
+- **Backend Messages**: Error messages, validation feedback, API responses
+- **Content Strategy**: Determine which languages to prioritize based on MTG player demographics
+
 ## 🔮 Future Enhancement: Intelligent Card Recommendations
 **Post-MVP Feature**: Advanced search and recommendation system
 - **Keywords extraction**: Process oracle text to extract searchable terms like "flying", "graveyard_recursion", "tribal_synergy"

@@ -40,12 +40,15 @@ Production-ready backend implementations.
 - **Comprehensive Search**: CMC/power/toughness ranges, text search, type filtering
 - **Bulk Data Processing**: 35,400+ cards with efficient batch operations
 - **Get Sets Endpoint**: Returns distinct set names for filtering UI
-- **Get Card Types**: Extracts ~670 distinct subtypes for type filtering
+- **Get Card Types Endpoint**: Extracts ~670 distinct subtypes for type filtering
 - **Get Artists Endpoint**: Returns distinct artist names with NULL handling and SQLx .flatten()
+- **Get Languages Endpoint**: Returns distinct language codes ordered alphabetically
 - **Artist Filtering**: artist_equals_any field with PostgreSQL ANY() operator for multi-artist search
 - **Rarity Domain Type**: Complete Rarity enum with custom SQLx traits and flexible Scryfall parsing
-- **Language Domain Type**: Complete Language enum with 11 languages (English, Spanish, French, German, Italian, Portuguese, Japanese, Korean, Russian, Simplified/Traditional Chinese)
-- **Language Filtering**: CardFilter language support with SQL `lang = 'en'` filtering, defaults to English
+- **Language System**: Dynamic string-based language handling (removed static enum)
+- **Language Filtering**: CardFilter language support with SQL `lang = ?` filtering, defaults to "en"
+- **Get Languages Endpoint**: `/api/card/languages` returns distinct language codes dynamically from database
+- **Language Infrastructure**: Supports 18+ languages (en, es, fr, de, it, pt, ja, ko, ru, zhs, zht, ar, grc, he, la, ph, qya, sa) without code changes
 - **Card Deduplication**: Window function-based deduplication returning only latest printing per unique card (by oracle_id)
 - **AllCards Support**: Handles 521k card printings, deduplicates to ~80k unique cards using ROW_NUMBER() OVER (PARTITION BY oracle_id ORDER BY released_at DESC)
 - **Performance Indexes**: Composite index on (oracle_id, released_at DESC) for efficient window function queries

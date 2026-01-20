@@ -88,7 +88,7 @@ Production-ready frontend implementations.
 - **Set Filter**: Multi-select chips for sets
 - **Artist Filter**: Chip-based multi-select with searchable dropdown (top 5 results)
 - **Sort Filter**: Single-select chips for order_by + ascending/descending toggle
-- **Config Filter**: Language selector (11 chips) + TriToggle for boolean config fields
+- **Config Filter**: Dynamic language selector (use_resource loading from API) + TriToggle for boolean config fields (playable, digital, oversized, promo, content_warning)
 
 ### Filter Patterns
 - **Parsing Pattern**: String signals → onblur → validate → update builder
@@ -96,7 +96,8 @@ Production-ready frontend implementations.
 - **use_effect Sync**: Watches multiple signals, builds complex filter state
 - **Chip-Based Selection**: Removable chips for multi-select values
 - **Filtered Dropdown**: Type-to-search showing top 5 results with duplicate prevention
-- **Resource Integration**: use_resource loading card types/sets/artists from API
+- **Resource Integration**: use_resource loading card types/sets/artists/languages from API
+- **LanguageCodeToFullName Trait**: Domain-layer trait converting language codes to full display names (18 languages)
 - **Empty Filter Validation**: Toast warning when applying empty filter
 - **Case-Insensitive Search**: Frontend .to_lowercase() for artist/set/type filtering
 
@@ -133,7 +134,7 @@ Production-ready frontend implementations.
 - **User Client**: get_user, change_username, change_email, change_password, delete_user (5 methods)
 - **Deck Client**: create_deck_profile, get_deck_profiles, get_deck, update_deck_profile, delete_deck (5 methods)
 - **Deck Card Client**: create_deck_card, update_deck_card, delete_deck_card (3 methods)
-- **Card Client**: get_card, search_cards (2 methods)
+- **Card Client**: get_card, search_cards, get_card_types, get_sets, get_artists, get_languages (6 methods)
 
 ### Request Patterns
 - **Authenticated Requests**: Session validation → token refresh → bearer header → API call

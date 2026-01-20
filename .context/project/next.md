@@ -21,42 +21,26 @@ Planned work after completing current tasks.
     - Card count indicators per category
     - Readable card display with proper image sizing
 
-4. **CardFilter Enhancements (Serve Only Playable Cards)** - Default CardFilter to exclude non-playable/non-standard cards while keeping filters extensible for future frontend exposure.
+4. **CardFilter Enhancements (Serve Only Playable Cards)** - Continue refining default CardFilter to exclude non-playable/non-standard cards.
 
-### Phase 1: Layout & Basic Filters
-   - **is_playable filter** - Runtime layout whitelist at database layer
-     - Whitelist: normal, split, flip, transform, modal_dfc, meld, reversible_card, leveler, saga, adventure, mutate, prototype, battle, class, case
-     - Default: `Some(true)` (only playable layouts)
-     - Database layer constant, not domain enum (avoids sync breaks)
+### Pending Improvements
+   - **tri-toggle labels** - Improve clarity of boolean filter options
+     - Current: "show / hide / neither"
+     - Proposed: "show / hide / any" (or "no filter")
+     - Applies to: playable, digital, oversized, promo, content_warning filters
 
-   - **language filter** - Language enum with database translation
-     - Domain: `Language` enum (start with `English` only)
-     - Database: translates `Language::English` → `'en'`
-     - Default: `Some(Language::English)`
+   - **Language filter refinement** - Hide language selector when using OracleCards
+     - Backend infrastructure complete and ready
+     - Frontend: Remove language chip UI from config.rs when OracleCards enabled
+     - Keeps all backend support for future language needs
 
-   - **digital filter** - Hide Arena/MTGO-only cards
-     - Default: `Some(false)` (hide digital-only)
-     - Not exposed on frontend
-
-   - **oversized filter** - Hide physically unplayable cards
-     - Default: `Some(false)` (hide oversized)
-     - Not exposed on frontend
-
-   - **promo filter** - Hide promo printings
-     - Default: `Some(false)` (hide promos)
-     - Not exposed on frontend
-
-   - **content_warning filter** - Hide flagged imagery
-     - Default: `Some(false)` (hide warnings)
-     - Not exposed on frontend
-
-### Phase 2: Set Type Filter
+### Set Type Filter (Phase 2)
    - **set_type filter** - Filter by set classification
      - Domain: `SetType` enum or string filter
      - Default: hide `funny`, `memorabilia`, `token` set types
      - Not exposed on frontend initially
 
-### Phase 3: Legality Filter (Complex)
+### Legality Filter (Phase 3 - Complex)
    - **legality/format filter** - Filter by format legality
      - Uses existing `Legality` and `LegalityKind` enums
      - Requires special UI handling (format + legal status)
