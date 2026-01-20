@@ -41,6 +41,22 @@ pub fn Text() -> Element {
         .map(|v| v.to_vec())
         .unwrap_or_default();
 
+    // Extract text filter values to avoid borrowed reference lifetime issues
+    let name_value = filter_builder()
+        .name_contains()
+        .unwrap_or("")
+        .to_string();
+
+    let oracle_text_value = filter_builder()
+        .oracle_text_contains()
+        .unwrap_or("")
+        .to_string();
+
+    let flavor_text_value = filter_builder()
+        .flavor_text_contains()
+        .unwrap_or("")
+        .to_string();
+
     rsx! {
         div { class: "flex-col gap-half",
             div { class: "label-row",
@@ -58,9 +74,7 @@ pub fn Text() -> Element {
             input { class : "input input-compact",
                 id : "name-contains",
                 placeholder : "name contains",
-                value : if let Some(name) = filter_builder().name_contains() {
-                    name
-                } else { "" },
+                value : name_value,
                 r#type : "text",
                 autocapitalize : "none",
                 spellcheck : "false",
@@ -84,9 +98,7 @@ pub fn Text() -> Element {
             input { class: "input input-compact",
                 id: "oracle-text-contains",
                 placeholder: "oracle text contains",
-                value: if let Some(text) = filter_builder().oracle_text_contains() {
-                    text
-                } else { "" },
+                value: oracle_text_value,
                 r#type: "text",
                 autocapitalize: "none",
                 spellcheck: "false",
@@ -110,9 +122,7 @@ pub fn Text() -> Element {
             input { class: "input input-compact",
                 id: "flavor-text-contains",
                 placeholder: "flavor text contains",
-                value: if let Some(text) = filter_builder().flavor_text_contains() {
-                    text
-                } else { "" },
+                value: flavor_text_value,
                 r#type: "text",
                 autocapitalize: "none",
                 spellcheck: "false",
