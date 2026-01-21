@@ -1,8 +1,6 @@
 #[cfg(feature = "zerver")]
 use crate::domain::{
-    card::models::{
-        card_profile::CardProfile, get_card::InvalidGetCards, scryfall_data::ScryfallData,
-    },
+    card::models::{card_profile::CardProfile, scryfall_data::ScryfallData},
     deck::models::deck_card::DeckCard,
 };
 use serde::Deserialize;
@@ -60,21 +58,9 @@ impl From<&CardProfile> for GetScryfallData {
 pub struct ScryfallDataIds(Vec<Uuid>);
 
 #[cfg(feature = "zerver")]
-impl ScryfallDataIds {
-    pub fn new(ids: Vec<&str>) -> Result<Self, InvalidGetCards> {
-        use uuid::Uuid;
-
-        if ids.is_empty() {
-            return Err(InvalidGetCards::MissingIds);
-        }
-        Ok(Self(
-            ids.into_iter()
-                .map(Uuid::try_parse)
-                .collect::<Result<Vec<Uuid>, uuid::Error>>()?,
-        ))
-    }
-
-    pub fn ids(&self) -> &Vec<Uuid> {
+impl std::ops::Deref for ScryfallDataIds {
+    type Target = [Uuid];
+    fn deref(&self) -> &Self::Target {
         &self.0
     }
 }

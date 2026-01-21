@@ -162,7 +162,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<Vec<ScryfallData>, GetScryfallDataError> {
         let scryfall_data: Vec<ScryfallData> =
             query_as("SELECT * FROM scryfall_data WHERE id = ANY($1)")
-                .bind(request.ids())
+                .bind(&**request)
                 .fetch_all(&self.pool)
                 .await?;
 
@@ -416,9 +416,11 @@ impl CardRepository for MyPostgres {
         }
 
         // Close CTE and select scryfall_data for latest printings only
-        qb.push(") SELECT scryfall_data.* FROM scryfall_data
+        qb.push(
+            ") SELECT scryfall_data.* FROM scryfall_data
                   JOIN deduplicated_cards ON scryfall_data.id = deduplicated_cards.id
-                  WHERE deduplicated_cards.rn = 1 ");
+                  WHERE deduplicated_cards.rn = 1 ",
+        );
 
         // ORDER BY
         if let Some(order_by) = request.order_by() {
@@ -574,7 +576,7 @@ impl CardRepository for MyPostgres {
             DatabaseCardProfile,
             "SELECT id, scryfall_data_id, is_valid_commander, is_token, created_at, updated_at
             FROM card_profiles WHERE id = ANY($1)",
-            request.ids()
+            &**request
         )
         .fetch_all(&self.pool)
         .await?
@@ -592,7 +594,7 @@ impl CardRepository for MyPostgres {
             DatabaseCardProfile,
             "SELECT id, scryfall_data_id, is_valid_commander, is_token, created_at, updated_at
             FROM card_profiles WHERE scryfall_data_id = ANY($1)",
-            request.ids()
+            &**request
         )
         .fetch_all(&self.pool)
         .await?

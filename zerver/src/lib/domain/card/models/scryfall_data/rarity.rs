@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::ops::Deref;
 use thiserror::Error;
 
 #[derive(Debug, Clone, Error)]
@@ -100,9 +99,10 @@ impl<'de> Deserialize<'de> for Rarity {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Rarities(Vec<Rarity>);
 
-impl Rarities {
-    pub fn new(rarities: Vec<Rarity>) -> Self {
-        Self(rarities)
+impl std::ops::Deref for Rarities {
+    type Target = [Rarity];
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -113,37 +113,6 @@ impl Rarities {
 
     pub fn to_long_names(&self) -> Vec<String> {
         self.0.iter().map(|c| c.to_long_name()).collect()
-    }
-
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-
-    pub fn contains(&self, rarity: &Rarity) -> bool {
-        self.0.contains(rarity)
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item = &Rarity> {
-        self.0.iter()
-    }
-
-    pub fn as_slice(&self) -> &[Rarity] {
-        self.0.as_slice()
-    }
-
-    pub fn to_vec(&self) -> Vec<Rarity> {
-        self.0.clone()
-    }
-}
-
-impl Deref for Rarities {
-    type Target = [Rarity];
-    fn deref(&self) -> &Self::Target {
-        self.0.deref()
     }
 }
 

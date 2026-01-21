@@ -1,7 +1,6 @@
 use chrono::NaiveDateTime;
 use sqlx::{encode::IsNull, types::JsonValue, Decode, Encode, Postgres, Type};
 use sqlx_macros::FromRow;
-use std::ops::Deref;
 use uuid::Uuid;
 
 use crate::domain::card::models::sync_metrics::{
@@ -155,7 +154,7 @@ impl TryFrom<DatabaseSyncMetrics> for SyncMetrics {
     type Error = anyhow::Error;
     fn try_from(value: DatabaseSyncMetrics) -> anyhow::Result<Self> {
         let status = SyncStatus::try_from(value.status.as_str())?;
-        let errors: Vec<ErrorMetrics> = value.errors.deref().to_vec();
+        let errors: Vec<ErrorMetrics> = value.errors.to_vec();
 
         let sync_metrics = SyncMetrics::new()
             .set_started_at(value.started_at)

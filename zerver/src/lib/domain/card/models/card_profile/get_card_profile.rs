@@ -59,19 +59,9 @@ impl GetCardProfile {
 pub struct CardProfileIds(Vec<Uuid>);
 
 #[cfg(feature = "zerver")]
-impl CardProfileIds {
-    pub fn new(ids: Vec<&str>) -> Result<Self, InvalidCardProfileIds> {
-        if ids.is_empty() {
-            return Err(InvalidCardProfileIds::MissingIds);
-        }
-        Ok(Self(
-            ids.into_iter()
-                .map(Uuid::try_parse)
-                .collect::<Result<Vec<Uuid>, uuid::Error>>()?,
-        ))
-    }
-
-    pub fn ids(&self) -> &Vec<Uuid> {
+impl std::ops::Deref for CardProfileIds {
+    type Target = [Uuid];
+    fn deref(&self) -> &Self::Target {
         &self.0
     }
 }

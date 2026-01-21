@@ -102,6 +102,13 @@ impl TryFrom<String> for Color {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Colors(Vec<Color>);
 
+impl std::ops::Deref for Colors {
+    type Target = [Color];
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 impl Colors {
     pub fn to_short_names(&self) -> Vec<String> {
         self.0.iter().map(|c| c.to_short_name()).collect()
@@ -109,30 +116,6 @@ impl Colors {
 
     pub fn to_long_names(&self) -> Vec<String> {
         self.0.iter().map(|c| c.to_long_name()).collect()
-    }
-
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-
-    pub fn contains(&self, color: &Color) -> bool {
-        self.0.contains(color)
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item = &Color> {
-        self.0.iter()
-    }
-
-    pub fn as_slice(&self) -> &[Color] {
-        self.0.as_slice()
-    }
-
-    pub fn to_vec(&self) -> Vec<Color> {
-        self.0.clone()
     }
 }
 

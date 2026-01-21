@@ -259,7 +259,7 @@ impl BulkDeltaUpsertWithTx for &[ScryfallData] {
     ) -> Result<(Vec<Card>, usize), CreateCardError> {
         let existing: Vec<ScryfallData> =
             query_as("SELECT * FROM scryfall_data WHERE id = ANY($1)")
-                .bind(ScryfallDataIds::from(self).ids())
+                .bind(&*ScryfallDataIds::from(self))
                 .fetch_all(&mut **tx)
                 .await
                 .map_err(|e| CreateCardError::GetScryfallData(e.into()))?;

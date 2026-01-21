@@ -1,7 +1,6 @@
 use anyhow::anyhow;
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
-use std::{fmt::Display, ops::Deref};
 use uuid::Uuid;
 
 // =======
@@ -18,7 +17,7 @@ pub enum SyncStatus {
     Failure,
 }
 
-impl Display for SyncStatus {
+impl std::fmt::Display for SyncStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Success => write!(f, "success"),
@@ -94,7 +93,7 @@ impl<'de> Deserialize<'de> for VecErrorMetrics {
     }
 }
 
-impl Deref for VecErrorMetrics {
+impl std::ops::Deref for VecErrorMetrics {
     type Target = Vec<ErrorMetrics>;
     fn deref(&self) -> &Self::Target {
         &self.0
