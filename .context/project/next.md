@@ -65,14 +65,14 @@ Planned work after completing current tasks.
 
 ## Bugs
 
-1. **Layout Shift After Deck Creation** - Content smushed up ~5px after saving new deck, persists across navigation
+1. **Layout Shift After Deck Creation** - Content shifted up ~5px (sometimes down) after saving new deck, persists across navigation
 
    **Reproduction steps:**
    1. Navigate to Deck List screen
    2. Click "create deck"
    3. Fill out deck information (name, commander, copy max)
    4. Click "save deck"
-   5. **BUG:** ViewDeck screen renders with content shifted up ~5px
+   5. **BUG:** ViewDeck screen renders with content shifted up ~5px (occasionally down)
    6. Click "back" to return to Deck List
    7. **BUG PERSISTS:** Decks clip into page header, appears one deck is missing
    8. Click "back" to Home, then forward to Deck List
@@ -82,6 +82,7 @@ Planned work after completing current tasks.
    - Bug triggered specifically by clicking "save" on CreateDeck
    - Layout shift affects ViewDeck screen immediately after save
    - Same layout issue persists when navigating to DeckList
+   - Content typically shifts UP but sometimes shifts DOWN
    - Only clears when navigating completely away and returning
    - Not related to data fetching (deck appears in list)
    - Possibly related to: CSS state pollution, signal state, commander image loading, save/navigation timing
@@ -95,3 +96,39 @@ Planned work after completing current tasks.
    - Commander image load timing
    - DOM state between navigation transitions
    - Spinner/loading state CSS artifacts
+
+2. **iOS Keyboard Pushes Content Down** - Content shifts down 5-10px when keyboard appears, particularly noticeable with enlarged card images
+
+   **Reproduction steps:**
+   1. Navigate to Add Deck Card screen (or any screen with text input)
+   2. Click into a text filter field (e.g., card name search)
+   3. **BUG:** iOS keyboard appears and pushes all content down 5-10px
+   4. Card images and other content visibly shift downward
+   5. Dismiss keyboard
+   6. Content returns to original position
+
+   **Observations:**
+   - Long-standing bug, only recently noticeable after enlarging card images to `max-height: 400px`
+   - Affects screens with text input fields (filters, search bars, etc.)
+   - Viewport height changes when iOS keyboard appears, causing layout reflow
+   - Related to container sizing using `h-screen` (100vh) and flexbox centering
+   - Likely caused by `sticky top-0` positioning + `justify-content: center` + `h-screen`
+   - When viewport shrinks (keyboard appears), centered content recalculates position
+
+   **Context:**
+   - Card images recently increased from `35vh` to `400px` max-height
+   - Makes the layout shift much more visible than before
+   - Verified in old commits - bug existed previously but was subtle
+   - Add Deck Card screen uses: `class="sticky top-0 left-0 h-screen flex flex-col items-center overflow-y-auto"`
+
+   **Potential solutions to investigate:**
+   - Remove `sticky top-0` positioning (let content flow naturally)
+   - Remove `justify-content: center` (prevents recalculation on viewport resize)
+   - Use fixed pixel `height` instead of `h-screen` (100vh)
+   - Use `position: fixed` instead of `sticky` for card container
+   - Apply iOS-specific viewport fix: `height: 100dvh` (dynamic viewport height)
+
+   **Requirements:**
+   - Add Deck Card screen should NOT be scrollable
+   - Only the card itself should move (swipe gestures)
+   - Container should remain fixed while keyboard is open
