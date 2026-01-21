@@ -38,11 +38,11 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let deck_profile_resource: Resource<Result<DeckProfile, ApiError>> =
         use_resource(move || async move {
             session.upkeep(client);
-            let Some(sesh) = session() else {
+            let Some(session) = session() else {
                 return Err(ApiError::Unauthorized("session expired".to_string()));
             };
 
-            client().get_deck_profile(deck_id, &sesh).await
+            client().get_deck_profile(deck_id, &session).await
         });
     let commander_resource: Resource<Result<Option<Card>, ApiError>> =
         use_resource(move || async move {
@@ -54,11 +54,11 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 return Ok(None);
             };
             session.upkeep(client);
-            let Some(sesh) = session() else {
+            let Some(session) = session() else {
                 return Err(ApiError::Unauthorized("session expired".to_string()));
             };
             client()
-                .get_card(original_commander_id, &sesh)
+                .get_card(original_commander_id, &session)
                 .await
                 .map(Some)
         });
@@ -76,13 +76,13 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let mut delete_error = use_signal(|| None::<String>);
     let mut attempt_delete = move || {
         session.upkeep(client);
-        let Some(sesh) = session() else {
+        let Some(session) = session() else {
             delete_error.set(Some("session expired".to_string()));
             return;
         };
 
         spawn(async move {
-            match client().delete_deck(deck_id, &sesh).await {
+            match client().delete_deck(deck_id, &session).await {
                 Ok(_) => {
                     navigator.push(Router::DeckList {});
                 }

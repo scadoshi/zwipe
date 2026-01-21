@@ -33,14 +33,14 @@ pub fn Profile() -> Element {
 
             div { class: "sticky top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
                 style: "width: 100vw; padding-top: 25vh;",
-                if let Some(sesh) = session().as_ref() {
+                if let Some(session) = session().as_ref() {
                     div { class : "container-sm",
 
                         div { class : "flex items-center flex-between mb-4 gap-2",
                             div { class : "flex-1",
                                 label { class: "label", "username" }
                                 p { class: "text-base font-light mb-1",
-                                    { sesh.user.username.to_string() }
+                                    { session.user.username.to_string() }
                                 }
                             }
                         }
@@ -49,7 +49,7 @@ pub fn Profile() -> Element {
                             div { class : "flex-1",
                                 label { class: "label", "email" }
                                 p { class: "text-base font-light mb-1",
-                                    { sesh.user.email.to_string() }
+                                    { session.user.email.to_string() }
                                 }
                             }
                         }

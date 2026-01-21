@@ -58,10 +58,10 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let original_deck_profile_resource: Resource<Result<DeckProfile, ApiError>> =
         use_resource(move || async move {
             session.upkeep(client);
-            let Some(sesh) = session() else {
+            let Some(session) = session() else {
                 return Err(ApiError::Unauthorized("session expired".to_string()));
             };
-            client().get_deck_profile(deck_id, &sesh).await
+            client().get_deck_profile(deck_id, &session).await
         });
     use_effect(move || match original_deck_profile_resource() {
         Some(Ok(original)) => {
@@ -85,11 +85,11 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 return Ok(None);
             };
             session.upkeep(client);
-            let Some(sesh) = session() else {
+            let Some(session) = session() else {
                 return Err(ApiError::Unauthorized("session expired".to_string()));
             };
             client()
-                .get_card(original_commander_id, &sesh)
+                .get_card(original_commander_id, &session)
                 .await
                 .map(Some)
         });
@@ -152,7 +152,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         is_searching.set(true);
         spawn(async move {
             sleep(Duration::from_millis(500)).await;
-            if let Some(sesh) = session() {
+            if let Some(session) = session() {
                 let Ok(card_filter) = CardFilterBuilder::with_name_contains(&query)
                     .set_limit(5)
                     .build()
@@ -160,7 +160,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                     tracing::error!("{}", InvalidCardFilter::Empty.to_string());
                     return;
                 };
-                match client().search_cards(&card_filter, &sesh).await {
+                match client().search_cards(&card_filter, &session).await {
                     Ok(cards) => {
                         search_results.set(cards);
                         is_searching.set(false);
@@ -182,7 +182,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
 
         spawn(async move {
             session.upkeep(client);
-            let Some(sesh) = session() else {
+            let Some(session) = session() else {
                 submission_error.set(Some("session expired".to_string()));
                 is_saving.set(false);
                 return;
@@ -199,7 +199,10 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 copy_max_update(),
             );
 
-            match client().update_deck_profile(deck_id, &request, &sesh).await {
+            match client()
+                .update_deck_profile(deck_id, &request, &session)
+                .await
+            {
                 Ok(_updated) => {
                     submission_error.set(None);
                     is_saving.set(false);

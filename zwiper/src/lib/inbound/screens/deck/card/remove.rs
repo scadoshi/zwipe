@@ -25,11 +25,11 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
     let _deck_cards: Resource<Result<Deck, ApiError>> = use_resource(move || async move {
         session.upkeep(client);
-        let Some(sesh) = session() else {
+        let Some(session) = session() else {
             return Err(ApiError::Unauthorized("session expired".to_string()));
         };
 
-        client().get_deck(deck_id, &sesh).await
+        client().get_deck(deck_id, &session).await
     });
 
     rsx! {

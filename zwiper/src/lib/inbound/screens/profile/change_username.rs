@@ -65,18 +65,18 @@ pub fn ChangeUsername() -> Element {
             let request = HttpChangeUsername::new(&new_username(), &password());
             spawn(async move {
                 session.upkeep(auth_client);
-                let Some(mut sesh) = session() else {
+                let Some(mut session_value) = session() else {
                     submission_error.set(Some(
                         ApiError::Unauthorized("session expired".to_string()).to_string(),
                     ));
                     return;
                 };
 
-                match auth_client().change_username(request, &sesh).await {
+                match auth_client().change_username(request, &session_value).await {
                     Ok(updated_user) => {
                         let new_name = updated_user.username.clone();
-                        sesh.user.username = updated_user.username;
-                        session.set(Some(sesh));
+                        session_value.user.username = updated_user.username;
+                        session.set(Some(session_value));
                         toast.success(
                             format!("username changed to {}", new_name),
                             ToastOptions::default().duration(Duration::from_millis(1500)),

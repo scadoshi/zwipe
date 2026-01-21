@@ -20,11 +20,11 @@ pub fn DeckList() -> Element {
     let mut deck_profiles_resource: Resource<Result<Vec<DeckProfile>, ApiError>> =
         use_resource(move || async move {
             session.upkeep(auth_client);
-            let Some(sesh) = session() else {
+            let Some(session) = session() else {
                 return Err(ApiError::Unauthorized("session expired".to_string()));
             };
 
-            auth_client().get_deck_profiles(&sesh).await
+            auth_client().get_deck_profiles(&session).await
         });
 
     // Restart resource on component mount to ensure fresh data

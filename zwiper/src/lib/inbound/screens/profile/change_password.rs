@@ -60,14 +60,14 @@ pub fn ChangePassword() -> Element {
             let request = HttpChangePassword::new(&current_password(), &new_password());
             spawn(async move {
                 session.upkeep(auth_client);
-                let Some(sesh) = session() else {
+                let Some(session) = session() else {
                     submission_error.set(Some(
                         ApiError::Unauthorized("session expired".to_string()).to_string(),
                     ));
                     return;
                 };
 
-                match auth_client().change_password(request, &sesh).await {
+                match auth_client().change_password(request, &session).await {
                     Ok(()) => {
                         toast.success(
                             "password change successful".to_string(),

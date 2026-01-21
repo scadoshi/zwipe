@@ -16,10 +16,10 @@ pub fn Set() -> Element {
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
 
     let all_sets: Resource<Result<Vec<String>, ApiError>> = use_resource(move || async move {
-        let Some(sesh) = session() else {
+        let Some(session) = session() else {
             return Err(ApiError::Unauthorized("session expired".to_string()));
         };
-        client().get_sets(&sesh).await
+        client().get_sets(&session).await
     });
 
     let mut search_query = use_signal(String::new);

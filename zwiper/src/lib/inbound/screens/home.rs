@@ -32,9 +32,9 @@ pub fn Home() -> Element {
 
     // Show welcome toast on mount
     use_effect(move || {
-        if let Some(sesh) = session() {
+        if let Some(session) = session() {
             toast.info(
-                format!("hello, {}!", sesh.user.username),
+                format!("hello, {}!", session.user.username),
                 ToastOptions::default().duration(Duration::from_millis(1500)),
             );
         }
@@ -42,7 +42,7 @@ pub fn Home() -> Element {
 
     // Fetch a random card with flavor text
     let random_flavor_card = use_resource(move || async move {
-        let sesh = session()?;
+        let session = session()?;
 
         let mut builder = CardFilterBuilder::new();
         builder
@@ -55,7 +55,7 @@ pub fn Home() -> Element {
             return None;
         };
 
-        match client().search_cards(&filter, &sesh).await {
+        match client().search_cards(&filter, &session).await {
             Ok(cards) => cards.into_iter().next(),
             Err(_) => None,
         }

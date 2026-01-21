@@ -20,10 +20,10 @@ pub fn Types() -> Element {
 
     let all_card_types: Resource<Result<Vec<String>, ApiError>> =
         use_resource(move || async move {
-            let Some(sesh) = session() else {
+            let Some(session) = session() else {
                 return Err(ApiError::Unauthorized("session expired".to_string()));
             };
-            client().get_card_types(&sesh).await
+            client().get_card_types(&session).await
         });
 
     let mut search_query = use_signal(String::new);

@@ -62,7 +62,7 @@ pub fn CreateDeck() -> Element {
         spawn(async move {
             sleep(Duration::from_millis(500)).await;
 
-            if let Some(sesh) = session() {
+            if let Some(session) = session() {
                 let Ok(card_filter) = CardFilterBuilder::with_name_contains(&query)
                     .set_is_valid_commander(true)
                     .set_limit(5)
@@ -72,7 +72,7 @@ pub fn CreateDeck() -> Element {
                     return;
                 };
 
-                match auth_client().search_cards(&card_filter, &sesh).await {
+                match auth_client().search_cards(&card_filter, &session).await {
                     Ok(cards) => {
                         search_results.set(cards);
                         is_searching.set(false);
@@ -94,7 +94,7 @@ pub fn CreateDeck() -> Element {
 
         spawn(async move {
             session.upkeep(auth_client);
-            let Some(sesh) = session() else {
+            let Some(session) = session() else {
                 submission_error.set(Some("session expired".to_string()));
                 is_saving.set(false);
                 return;
@@ -104,7 +104,7 @@ pub fn CreateDeck() -> Element {
             let request =
                 HttpCreateDeckProfile::new(&deck_name(), commander_id, copy_max().map(|x| x.max()));
 
-            match auth_client().create_deck_profile(&request, &sesh).await {
+            match auth_client().create_deck_profile(&request, &session).await {
                 Ok(created) => {
                     navigator.push(Router::ViewDeck {
                         deck_id: created.id,

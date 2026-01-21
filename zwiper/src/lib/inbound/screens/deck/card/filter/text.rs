@@ -18,10 +18,10 @@ pub fn Text() -> Element {
 
     // Fetch all artists from backend
     let all_artists: Resource<Result<Vec<String>, ApiError>> = use_resource(move || async move {
-        let Some(sesh) = session() else {
+        let Some(session) = session() else {
             return Err(ApiError::Unauthorized("session expired".to_string()));
         };
-        client().get_artists(&sesh).await
+        client().get_artists(&session).await
     });
 
     // Artist search state
@@ -42,10 +42,7 @@ pub fn Text() -> Element {
         .unwrap_or_default();
 
     // Extract text filter values to avoid borrowed reference lifetime issues
-    let name_value = filter_builder()
-        .name_contains()
-        .unwrap_or("")
-        .to_string();
+    let name_value = filter_builder().name_contains().unwrap_or("").to_string();
 
     let oracle_text_value = filter_builder()
         .oracle_text_contains()

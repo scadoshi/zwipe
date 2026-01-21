@@ -116,13 +116,13 @@ pub fn Add(deck_id: Uuid) -> Element {
         };
 
         session.upkeep(client);
-        let Some(sesh) = session() else {
+        let Some(session) = session() else {
             is_loading_more.set(false);
             return;
         };
 
         spawn(async move {
-            match client().search_cards(&filter, &sesh).await {
+            match client().search_cards(&filter, &session).await {
                 Ok(new_cards) => {
                     let existing_cards = cards();
                     let deck_ids = deck_cards_ids();
@@ -213,7 +213,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         };
 
         session.upkeep(client);
-        let Some(sesh) = session() else {
+        let Some(session) = session() else {
             add_card_error.set(Some("session expired".to_string()));
             return;
         };
@@ -223,7 +223,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         let card_id = card.scryfall_data.id;
 
         spawn(async move {
-            match client().create_deck_card(deck_id, &request, &sesh).await {
+            match client().create_deck_card(deck_id, &request, &session).await {
                 Ok(_) => {
                     add_card_error.set(None);
                     deck_cards_ids.write().insert(card_id);
@@ -268,7 +268,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 };
 
                 session.upkeep(client);
-                let Some(sesh) = session() else {
+                let Some(session) = session() else {
                     toast.error("session expired".to_string(), ToastOptions::default());
                     action_history.write().push(action); // Restore history
                     current_index.set(current_index() + 1); // Restore index
@@ -278,7 +278,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 let card_id = card.scryfall_data.id;
 
                 spawn(async move {
-                    match client().delete_deck_card(deck_id, card_id, &sesh).await {
+                    match client().delete_deck_card(deck_id, card_id, &session).await {
                         Ok(_) => {
                             // Remove from exclusion HashSet
                             deck_cards_ids.write().remove(&card_id);
@@ -304,12 +304,12 @@ pub fn Add(deck_id: Uuid) -> Element {
     // Fetch deck cards on mount for filtering
     use_effect(move || {
         session.upkeep(client);
-        let Some(sesh) = session() else {
+        let Some(session) = session() else {
             return;
         };
 
         spawn(async move {
-            match client().get_deck(deck_id, &sesh).await {
+            match client().get_deck(deck_id, &session).await {
                 Ok(deck) => {
                     let ids: HashSet<_> = deck
                         .cards
@@ -346,13 +346,13 @@ pub fn Add(deck_id: Uuid) -> Element {
 
         // Don't call session.upkeep here - it creates a loop when session updates
         // The interval-based upkeep in Bouncer handles session refresh
-        let Some(sesh) = session() else {
+        let Some(session) = session() else {
             search_error.set(Some("session expired".to_string()));
             return;
         };
 
         spawn(async move {
-            match client().search_cards(&filter, &sesh).await {
+            match client().search_cards(&filter, &session).await {
                 Ok(cards_from_search) => {
                     search_error.set(None);
                     let deck_ids = deck_cards_ids();

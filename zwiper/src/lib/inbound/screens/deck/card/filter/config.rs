@@ -19,10 +19,10 @@ pub fn Config() -> Element {
 
     // Fetch all languages from backend
     let all_languages: Resource<Result<Vec<String>, ApiError>> = use_resource(move || async move {
-        let Some(sesh) = session() else {
+        let Some(session) = session() else {
             return Err(ApiError::Unauthorized("session expired".to_string()));
         };
-        client().get_languages(&sesh).await
+        client().get_languages(&session).await
     });
 
     rsx! {

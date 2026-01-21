@@ -1,6 +1,6 @@
 use crate::domain::error::UserFacing;
-use crate::inbound::components::fields::text_input::TextInput;
 use crate::inbound::components::auth::{bouncer::Bouncer, session_upkeep::Upkeep};
+use crate::inbound::components::fields::text_input::TextInput;
 use crate::outbound::client::user::change_email::ClientChangeEmail;
 use crate::outbound::client::ZwipeClient;
 use dioxus::prelude::*;
@@ -63,19 +63,19 @@ pub fn ChangeEmail() -> Element {
             let request = HttpChangeEmail::new(&new_email(), &password());
             spawn(async move {
                 session.upkeep(auth_client);
-                let Some(mut sesh) = session() else {
+                let Some(mut session_value) = session() else {
                     submission_error.set(Some(
                         ApiError::Unauthorized("session expired".to_string()).to_string(),
                     ));
                     return;
                 };
 
-                match auth_client().change_email(request, &sesh).await {
+                match auth_client().change_email(request, &session_value).await {
                     Ok(updated_user) => {
                         submission_error.set(None);
                         let new_email = updated_user.email.clone();
-                        sesh.user.email = updated_user.email;
-                        session.set(Some(sesh));
+                        session_value.user.email = updated_user.email;
+                        session.set(Some(session_value));
                         toast.success(
                             format!("email changed to {}", new_email),
                             ToastOptions::default().duration(Duration::from_millis(1500)),
