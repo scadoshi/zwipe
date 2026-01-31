@@ -23,14 +23,7 @@ pub enum AuthenticateUserError {
     #[error("failed to generate access token: {0}")]
     FailedAccessToken(anyhow::Error),
     #[error(transparent)]
-    CreateSessionError(CreateSessionError),
-}
-
-#[cfg(feature = "zerver")]
-impl From<CreateSessionError> for AuthenticateUserError {
-    fn from(value: CreateSessionError) -> Self {
-        Self::CreateSessionError(value)
-    }
+    CreateSessionError(#[from] CreateSessionError),
 }
 
 /// errors encountered while constructing `AuthenticateUserRequest`

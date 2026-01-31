@@ -30,16 +30,9 @@ pub enum CreateDeckCardError {
     #[error(transparent)]
     Database(anyhow::Error),
     #[error(transparent)]
-    GetDeckProfileError(GetDeckProfileError),
+    GetDeckProfileError(#[from] GetDeckProfileError),
     #[error("deck does not belong to requesting user")]
     Forbidden,
-}
-
-#[cfg(feature = "zerver")]
-impl From<GetDeckProfileError> for CreateDeckCardError {
-    fn from(value: GetDeckProfileError) -> Self {
-        Self::GetDeckProfileError(value)
-    }
 }
 
 #[derive(Debug, Clone)]

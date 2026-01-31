@@ -8,21 +8,9 @@ use uuid::Uuid;
 #[derive(Debug, Error)]
 pub enum InvalidCreateDeckProfile {
     #[error(transparent)]
-    DeckName(InvalidDeckname),
+    DeckName(#[from] InvalidDeckname),
     #[error(transparent)]
-    CopyMax(InvalidCopyMax),
-}
-
-impl From<InvalidDeckname> for InvalidCreateDeckProfile {
-    fn from(value: InvalidDeckname) -> Self {
-        Self::DeckName(value)
-    }
-}
-
-impl From<InvalidCopyMax> for InvalidCreateDeckProfile {
-    fn from(value: InvalidCopyMax) -> Self {
-        Self::CopyMax(value)
-    }
+    CopyMax(#[from] InvalidCopyMax),
 }
 
 #[cfg(feature = "zerver")]

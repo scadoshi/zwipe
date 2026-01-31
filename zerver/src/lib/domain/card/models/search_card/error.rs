@@ -7,19 +7,7 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum SearchCardsError {
     #[error(transparent)]
-    SearchScryfallDataError(SearchScryfallDataError),
+    SearchScryfallDataError(#[from] SearchScryfallDataError),
     #[error(transparent)]
-    GetCardProfileError(GetCardProfileError),
-}
-
-impl From<SearchScryfallDataError> for SearchCardsError {
-    fn from(value: SearchScryfallDataError) -> Self {
-        SearchCardsError::SearchScryfallDataError(value)
-    }
-}
-
-impl From<GetCardProfileError> for SearchCardsError {
-    fn from(value: GetCardProfileError) -> Self {
-        SearchCardsError::GetCardProfileError(value)
-    }
+    GetCardProfileError(#[from] GetCardProfileError),
 }

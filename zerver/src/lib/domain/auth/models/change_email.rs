@@ -10,29 +10,11 @@ use crate::domain::auth::models::password::{InvalidPassword, Password};
 #[derive(Debug, Error)]
 pub enum InvalidChangeEmail {
     #[error(transparent)]
-    Id(uuid::Error),
+    Id(#[from] uuid::Error),
     #[error(transparent)]
-    Email(email_address::Error),
+    Email(#[from] email_address::Error),
     #[error(transparent)]
-    Password(InvalidPassword),
-}
-
-impl From<InvalidPassword> for InvalidChangeEmail {
-    fn from(value: InvalidPassword) -> Self {
-        Self::Password(value)
-    }
-}
-
-impl From<uuid::Error> for InvalidChangeEmail {
-    fn from(value: uuid::Error) -> Self {
-        Self::Id(value)
-    }
-}
-
-impl From<email_address::Error> for InvalidChangeEmail {
-    fn from(value: email_address::Error) -> Self {
-        Self::Email(value)
-    }
+    Password(#[from] InvalidPassword),
 }
 
 #[cfg(feature = "zerver")]
@@ -45,16 +27,9 @@ pub enum ChangeEmailError {
     #[error("user updated but database returned invalid object: {0}")]
     UserFromDb(anyhow::Error),
     #[error(transparent)]
-    AuthenticateUserError(AuthenticateUserError),
+    AuthenticateUserError(#[from] AuthenticateUserError),
     #[error("user with that email already exists")]
     Duplicate,
-}
-
-#[cfg(feature = "zerver")]
-impl From<AuthenticateUserError> for ChangeEmailError {
-    fn from(value: AuthenticateUserError) -> Self {
-        Self::AuthenticateUserError(value)
-    }
 }
 
 #[derive(Debug)]

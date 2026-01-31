@@ -12,39 +12,11 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum GetDeckError {
     #[error(transparent)]
-    GetDeckProfileError(GetDeckProfileError),
+    GetDeckProfileError(#[from] GetDeckProfileError),
     #[error(transparent)]
-    GetDeckCardError(GetDeckCardError),
+    GetDeckCardError(#[from] GetDeckCardError),
     #[error(transparent)]
-    GetCardProfileError(GetCardProfileError),
+    GetCardProfileError(#[from] GetCardProfileError),
     #[error(transparent)]
-    GetCardError(GetCardError),
-}
-
-#[cfg(feature = "zerver")]
-impl From<GetDeckProfileError> for GetDeckError {
-    fn from(value: GetDeckProfileError) -> Self {
-        Self::GetDeckProfileError(value)
-    }
-}
-
-#[cfg(feature = "zerver")]
-impl From<GetDeckCardError> for GetDeckError {
-    fn from(value: GetDeckCardError) -> Self {
-        Self::GetDeckCardError(value)
-    }
-}
-
-#[cfg(feature = "zerver")]
-impl From<GetCardProfileError> for GetDeckError {
-    fn from(value: GetCardProfileError) -> Self {
-        Self::GetCardProfileError(value)
-    }
-}
-
-#[cfg(feature = "zerver")]
-impl From<GetCardError> for GetDeckError {
-    fn from(value: GetCardError) -> Self {
-        Self::GetCardError(value)
-    }
+    GetCardError(#[from] GetCardError),
 }

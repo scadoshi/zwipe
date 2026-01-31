@@ -11,14 +11,7 @@ pub enum DeleteUserError {
     #[error(transparent)]
     Database(anyhow::Error),
     #[error(transparent)]
-    AuthenticateUserError(AuthenticateUserError),
-}
-
-#[cfg(feature = "zerver")]
-impl From<AuthenticateUserError> for DeleteUserError {
-    fn from(value: AuthenticateUserError) -> Self {
-        Self::AuthenticateUserError(value)
-    }
+    AuthenticateUserError(#[from] AuthenticateUserError),
 }
 
 #[derive(Debug, Error)]

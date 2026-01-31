@@ -10,29 +10,11 @@ use uuid::Uuid;
 #[derive(Debug, Error)]
 pub enum InvalidChangeUsername {
     #[error(transparent)]
-    Id(uuid::Error),
+    Id(#[from] uuid::Error),
     #[error(transparent)]
-    Username(InvalidUsername),
+    Username(#[from] InvalidUsername),
     #[error(transparent)]
-    Password(InvalidPassword),
-}
-
-impl From<uuid::Error> for InvalidChangeUsername {
-    fn from(value: uuid::Error) -> Self {
-        Self::Id(value)
-    }
-}
-
-impl From<InvalidUsername> for InvalidChangeUsername {
-    fn from(value: InvalidUsername) -> Self {
-        Self::Username(value)
-    }
-}
-
-impl From<InvalidPassword> for InvalidChangeUsername {
-    fn from(value: InvalidPassword) -> Self {
-        Self::Password(value)
-    }
+    Password(#[from] InvalidPassword),
 }
 
 #[cfg(feature = "zerver")]
@@ -47,14 +29,7 @@ pub enum ChangeUsernameError {
     #[error("database returned invalid object: {0}")]
     UserFromDb(anyhow::Error),
     #[error(transparent)]
-    AuthenticateUserError(AuthenticateUserError),
-}
-
-#[cfg(feature = "zerver")]
-impl From<AuthenticateUserError> for ChangeUsernameError {
-    fn from(value: AuthenticateUserError) -> Self {
-        Self::AuthenticateUserError(value)
-    }
+    AuthenticateUserError(#[from] AuthenticateUserError),
 }
 
 #[derive(Debug)]

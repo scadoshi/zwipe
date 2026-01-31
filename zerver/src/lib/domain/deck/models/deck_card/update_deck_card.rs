@@ -32,16 +32,9 @@ pub enum UpdateDeckCardError {
     #[error("deck card updated but database returned invalid object: {0}")]
     DeckCardFromDb(anyhow::Error),
     #[error(transparent)]
-    GetDeckProfileError(GetDeckProfileError),
+    GetDeckProfileError(#[from] GetDeckProfileError),
     #[error("deck does not belong to requesting user")]
     Forbidden,
-}
-
-#[cfg(feature = "zerver")]
-impl From<GetDeckProfileError> for UpdateDeckCardError {
-    fn from(value: GetDeckProfileError) -> Self {
-        Self::GetDeckProfileError(value)
-    }
 }
 
 #[derive(Debug, Clone)]

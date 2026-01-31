@@ -23,14 +23,7 @@ pub enum RegisterUserError {
     #[error("user created but database returned invalid object: {0}")]
     UserFromDb(anyhow::Error),
     #[error(transparent)]
-    CreateSessionError(CreateSessionError),
-}
-
-#[cfg(feature = "zerver")]
-impl From<CreateSessionError> for RegisterUserError {
-    fn from(value: CreateSessionError) -> Self {
-        Self::CreateSessionError(value)
-    }
+    CreateSessionError(#[from] CreateSessionError),
 }
 
 #[derive(Debug, Error)]

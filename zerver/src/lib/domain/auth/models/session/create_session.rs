@@ -17,14 +17,7 @@ use uuid::Uuid;
 #[derive(Debug, Error)]
 pub enum InvalidCreateSession {
     #[error(transparent)]
-    UserId(uuid::Error),
-}
-
-#[cfg(feature = "zerver")]
-impl From<uuid::Error> for InvalidCreateSession {
-    fn from(value: uuid::Error) -> Self {
-        Self::UserId(value)
-    }
+    UserId(#[from] uuid::Error),
 }
 
 #[cfg(feature = "zerver")]
@@ -33,32 +26,11 @@ pub enum CreateSessionError {
     #[error(transparent)]
     Database(anyhow::Error),
     #[error(transparent)]
-    EnforceSessionMaximumError(EnforceSessionMaximumError),
+    EnforceSessionMaximumError(#[from] EnforceSessionMaximumError),
     #[error(transparent)]
-    GetUserError(GetUserError),
+    GetUserError(#[from] GetUserError),
     #[error(transparent)]
-    InvalidJwt(InvalidJwt),
-}
-
-#[cfg(feature = "zerver")]
-impl From<InvalidJwt> for CreateSessionError {
-    fn from(value: InvalidJwt) -> Self {
-        Self::InvalidJwt(value)
-    }
-}
-
-#[cfg(feature = "zerver")]
-impl From<GetUserError> for CreateSessionError {
-    fn from(value: GetUserError) -> Self {
-        Self::GetUserError(value)
-    }
-}
-
-#[cfg(feature = "zerver")]
-impl From<EnforceSessionMaximumError> for CreateSessionError {
-    fn from(value: EnforceSessionMaximumError) -> Self {
-        Self::EnforceSessionMaximumError(value)
-    }
+    InvalidJwt(#[from] InvalidJwt),
 }
 
 #[cfg(feature = "zerver")]

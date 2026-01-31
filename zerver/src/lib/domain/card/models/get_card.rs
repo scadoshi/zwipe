@@ -10,23 +10,9 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum GetCardError {
     #[error(transparent)]
-    GetScryfallDataError(GetScryfallDataError),
+    GetScryfallDataError(#[from] GetScryfallDataError),
     #[error(transparent)]
-    GetCardProfileError(GetCardProfileError),
-}
-
-#[cfg(feature = "zerver")]
-impl From<GetScryfallDataError> for GetCardError {
-    fn from(value: GetScryfallDataError) -> Self {
-        Self::GetScryfallDataError(value)
-    }
-}
-
-#[cfg(feature = "zerver")]
-impl From<GetCardProfileError> for GetCardError {
-    fn from(value: GetCardProfileError) -> Self {
-        Self::GetCardProfileError(value)
-    }
+    GetCardProfileError(#[from] GetCardProfileError),
 }
 
 #[cfg(feature = "zerver")]

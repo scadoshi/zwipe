@@ -15,13 +15,7 @@ use uuid::Uuid;
 #[derive(Debug, Error)]
 pub enum InvalidRefreshSession {
     #[error(transparent)]
-    UserId(uuid::Error),
-}
-
-impl From<uuid::Error> for InvalidRefreshSession {
-    fn from(value: uuid::Error) -> Self {
-        Self::UserId(value)
-    }
+    UserId(#[from] uuid::Error),
 }
 
 #[cfg(feature = "zerver")]
@@ -30,7 +24,7 @@ pub enum RefreshSessionError {
     #[error(transparent)]
     Database(anyhow::Error),
     #[error(transparent)]
-    CreateSessionError(CreateSessionError),
+    CreateSessionError(#[from] CreateSessionError),
     #[error("match for given refresh token not found—user attempting: {0}")]
     NotFound(Uuid),
     #[error("given refresh token is expired—user attempting: {0}")]
@@ -40,39 +34,11 @@ pub enum RefreshSessionError {
     #[error("refresh token does not belong to the requesting user—user attempting: {0}")]
     Forbidden(Uuid),
     #[error(transparent)]
-    GetUserError(GetUserError),
+    GetUserError(#[from] GetUserError),
     #[error(transparent)]
-    InvalidJwt(InvalidJwt),
+    InvalidJwt(#[from] InvalidJwt),
     #[error(transparent)]
-    EnforceSessionMaximumError(EnforceSessionMaximumError),
-}
-
-#[cfg(feature = "zerver")]
-impl From<EnforceSessionMaximumError> for RefreshSessionError {
-    fn from(value: EnforceSessionMaximumError) -> Self {
-        Self::EnforceSessionMaximumError(value)
-    }
-}
-
-#[cfg(feature = "zerver")]
-impl From<InvalidJwt> for RefreshSessionError {
-    fn from(value: InvalidJwt) -> Self {
-        Self::InvalidJwt(value)
-    }
-}
-
-#[cfg(feature = "zerver")]
-impl From<GetUserError> for RefreshSessionError {
-    fn from(value: GetUserError) -> Self {
-        Self::GetUserError(value)
-    }
-}
-
-#[cfg(feature = "zerver")]
-impl From<CreateSessionError> for RefreshSessionError {
-    fn from(value: CreateSessionError) -> Self {
-        Self::CreateSessionError(value)
-    }
+    EnforceSessionMaximumError(#[from] EnforceSessionMaximumError),
 }
 
 #[derive(Debug, Clone)]

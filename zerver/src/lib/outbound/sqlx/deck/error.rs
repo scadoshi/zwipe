@@ -18,21 +18,9 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum IntoDeckProfileError {
     #[error(transparent)]
-    DeckName(InvalidDeckname),
+    DeckName(#[from] InvalidDeckname),
     #[error(transparent)]
-    CopyMax(InvalidCopyMax),
-}
-
-impl From<InvalidDeckname> for IntoDeckProfileError {
-    fn from(value: InvalidDeckname) -> Self {
-        Self::DeckName(value)
-    }
-}
-
-impl From<InvalidCopyMax> for IntoDeckProfileError {
-    fn from(value: InvalidCopyMax) -> Self {
-        Self::CopyMax(value)
-    }
+    CopyMax(#[from] InvalidCopyMax),
 }
 
 impl From<IntoDeckProfileError> for CreateDeckProfileError {
@@ -98,13 +86,7 @@ pub enum IntoDeckCardError {
     #[error(transparent)]
     InvalidCardId(uuid::Error),
     #[error(transparent)]
-    InvalidQuantity(InvalidQuantity),
-}
-
-impl From<InvalidQuantity> for IntoDeckCardError {
-    fn from(value: InvalidQuantity) -> Self {
-        Self::InvalidQuantity(value)
-    }
+    InvalidQuantity(#[from] InvalidQuantity),
 }
 
 impl From<IntoDeckCardError> for CreateDeckCardError {
