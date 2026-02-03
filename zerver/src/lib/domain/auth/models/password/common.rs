@@ -1,6 +1,43 @@
+
+
+//! Common password detection to prevent weak password choices.
+//!
+//! This module maintains a curated list of commonly-used weak passwords sourced from
+//! real-world data breach analysis. Preventing these passwords significantly improves
+//! account security.
+//!
+//! # Detection Strategy
+//!
+//! - **Case-Insensitive**: Checks both exact match and lowercase version
+//! - **Comprehensive List**: 170+ patterns including:
+//!   - Common passwords ("password", "123456", "qwerty")
+//!   - Keyboard patterns ("qwertyuiop", "asdfghjkl", "1q2w3e4r")
+//!   - Common substitutions ("p@ssword", "p@ssw0rd")
+//!   - Names, years, sports teams, brands
+//!   - Simple increments ("abcd1234", "password01")
+//!
+//! # Example
+//!
+//! ```rust,ignore
+//! use zwipe::domain::auth::models::password::common::IsCommonPassword;
+//!
+//! if "password123".is_common_password() {
+//!     return Err(InvalidPassword::TooCommon);
+//! }
+//! ```
+
 use once_cell::sync::Lazy;
 use std::collections::HashSet;
 
+/// List of commonly-used weak passwords to reject during validation.
+///
+/// This list is curated from:
+/// - NIST password guidelines
+/// - Pwned Passwords database (most common entries)
+/// - Default credentials from various systems
+/// - Keyboard walk patterns
+///
+/// Sourced from real-world breach data to maximize effectiveness.
 const COMMON_PASSWORDS_LIST: &[&str] = &[
     "password",
     "123456",
@@ -170,16 +207,40 @@ const COMMON_PASSWORDS_LIST: &[&str] = &[
     "hockey",
 ];
 
-/// uses above `&str` constant to get unique passwords
+/// Lazy-initialized HashSet of common passwords for O(1) lookup.
+///
+/// Initialized once on first use and shared across all checks.
+/// Contains all entries from [`COMMON_PASSWORDS_LIST`] in a HashSet
+/// for fast membership testing.
 pub static COMMON_PASSWORDS: Lazy<HashSet<&'static str>> =
     Lazy::new(|| COMMON_PASSWORDS_LIST.iter().cloned().collect());
 
-/// for checking common passwords
+/// Trait for checking if a string matches a common weak password.
+///
+/// Implemented for `&str` to provide ergonomic password validation.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use zwipe::domain::auth::models::password::common::IsCommonPassword;
+///
+/// assert!("password".is_common_password());
+/// assert!("123456".is_common_password());
+/// assert!(!"MySecurePassword123!".is_common_password());
+/// ```
 pub trait IsCommonPassword {
+    /// Returns true if the string is a known common password.
+    ///
+    /// Checks both exact match and lowercase match to catch common
+    /// variations like "Password" and "PASSWORD".
     fn is_common_password(&self) -> bool;
 }
 
-/// checks if included in common password list case insensitively
+/// Checks if a string matches any common password (case-insensitive).
+///
+/// Performs two checks for maximum coverage:
+/// 1. Exact match against the common password set
+/// 2. Lowercase match (catches "Password", "PASSWORD", etc.)
 impl IsCommonPassword for &str {
     fn is_common_password(&self) -> bool {
         COMMON_PASSWORDS.contains(self) || COMMON_PASSWORDS.contains(self.to_lowercase().as_str())

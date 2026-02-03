@@ -6,7 +6,15 @@ use std::collections::HashMap;
 use uuid::Uuid;
 
 #[cfg(feature = "zerver")]
+/// Extension trait to combine Scryfall data with card profiles into complete Card objects.
+///
+/// "Sleeving" matches Scryfall data with corresponding card profiles by UUID,
+/// creating complete Card objects. Unmatched items are filtered out.
 pub trait SleeveScryfallData {
+    /// Combines Scryfall data with card profiles, preserving card profile sort order.
+    ///
+    /// Matches by comparing `ScryfallData.id` with `CardProfile.scryfall_data_id`.
+    /// Returns only successfully matched pairs as `Card` objects.
     fn sleeve(self, card_profiles: Vec<CardProfile>) -> Vec<Card>;
 }
 
@@ -30,7 +38,15 @@ impl SleeveScryfallData for Vec<ScryfallData> {
 }
 
 #[cfg(feature = "zerver")]
+/// Extension trait to combine card profiles with Scryfall data into complete Card objects.
+///
+/// "Sleeving" matches card profiles with corresponding Scryfall data by UUID,
+/// creating complete Card objects. Unmatched items are filtered out.
 pub trait SleeveCardProfile {
+    /// Combines card profiles with Scryfall data, preserving Scryfall data sort order.
+    ///
+    /// Matches by comparing `CardProfile.scryfall_data_id` with `ScryfallData.id`.
+    /// Returns only successfully matched pairs as `Card` objects.
     fn sleeve(self, scryfall_data: Vec<ScryfallData>) -> Vec<Card>;
 }
 

@@ -2,31 +2,30 @@
 
 Active development tasks and immediate focus areas.
 
-**Last Updated**: Implemented Language filter and Configuration filters UI with TriStateFilter component.
+**Last Updated**: Completed comprehensive documentation of entire backend domain layer (zerver).
 
-**Current Focus**: Complete card management workflows (remove cards screen with undo), then polish deck screens.
+**Current Focus**: Continue documentation with lighter touch - focus on high-value items only, avoid over-documenting obvious code.
 
 **Recent Achievements**:
-- Language enum with 11 languages (English, Spanish, French, German, Italian, Portuguese, Japanese, Korean, Russian, Simplified/Traditional Chinese)
-- Language filter in CardFilter (default: English only)
-- Configuration filter accordion in frontend with TriStateFilter component
-- TriStateFilter reusable component for Option<bool> (yes/no/any chips)
-- Frontend exposure of config filters: is_playable, digital, oversized, promo, content_warning
-- CardFilterBuilder getters for all config/flag fields
-- Previous: is_valid_commander, is_token computed fields, Order By filter, card info display
+- **Complete Domain Layer Documentation**: All zerver domain code fully documented (0 warnings)
+- **Scryfall Field Mappings**: All ~100 fields with explanations for confusing terminology
+- **Service Layer Documentation**: Auth, card, deck, user, health services with architectural patterns
+- **Port Traits Documentation**: All repository and service interfaces with comprehensive method docs
+- **Documentation Quality**: Explains design decisions, security patterns, performance considerations
+- **Progress**: Eliminated 263 documentation warnings (820 → 557)
 
-**Current Success**: Add card screen fully functional with language filtering, config filter toggles, commander/token filtering, sorting, card info, pagination, de-duplication, and swipe gestures.
+**Next Documentation Session**: Pull back on verbosity, focus only on high-value documentation items (complex logic, non-obvious behavior, public APIs).
 
 ---
 
 ## Top 5 Priorities
 
-1. **Remove Cards Screen** - Build UI for removing cards from deck with filtering and swipe gestures
+1. **Documentation Refinement** - Continue with lighter touch, avoid over-documenting self-explanatory code
 
-2. **Undo on Down Swipe** - Down swipe undoes last action (go back one card if skipped, remove from deck and re-show if added)
+2. **Frontend Documentation** - Document Leptos UI components and routing with focus on complex state management
 
-3. **View Deck Screen** - Display deck cards categorized by type with counts and organization
+3. **Adapter Layer Documentation** - HTTP handlers and database repositories (selective, high-value only)
 
-4. **Deck List Screen Redesign** - Better list styling, improved layout with utility bar, visual hierarchy
+4. **Return to Feature Development** - Resume card management workflows after documentation pass
 
-5. **Filter Duplicate Name Cards** - Hide cards with repeated names separated by // (likely meld/transform variants)
+5. **Performance Optimization** - Review documented patterns for optimization opportunities

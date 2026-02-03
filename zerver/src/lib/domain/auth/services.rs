@@ -23,7 +23,16 @@ use crate::domain::{
 };
 use anyhow::anyhow;
 
-/// structure which implements `AuthService`
+/// Authentication service implementation handling user registration, login, and session management.
+///
+/// This service orchestrates authentication operations by coordinating between:
+/// - **AuthRepository**: Password hashing, refresh token rotation, credential updates
+/// - **UserRepository**: User data retrieval
+/// - **JWT Secret**: Access token generation
+///
+/// # Authorization Pattern
+/// Operations that modify user data (change username/email/password, delete user)
+/// require password re-authentication for security, even with a valid session.
 #[derive(Debug, Clone)]
 pub struct Service<AR, UR>
 where
@@ -40,6 +49,7 @@ where
     AR: AuthRepository,
     UR: UserRepository,
 {
+    /// Creates a new authentication service with the provided repositories and JWT secret.
     pub fn new(auth_repo: AR, user_repo: UR, jwt_secret: JwtSecret) -> Self {
         Self {
             auth_repo,

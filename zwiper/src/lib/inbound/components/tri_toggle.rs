@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use zwipe::domain::card::models::search_card::card_filter::builder::CardFilterBuilder;
 
-/// A 3-state filter chip selector for Option<bool> values.
+/// A 3-state filter chip selector for `Option<bool>` values.
 ///
 /// Displays three mutually-exclusive chips with programmable labels:
 /// - `Some(true)` → true_label (default: "true")

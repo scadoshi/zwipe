@@ -137,3 +137,12 @@ Production-ready backend implementations.
 - **Clippy Configuration**: 26 workspace-level lints with thresholds
 - **Modular File Organization**: Domain-specific separation with clear responsibilities
 - **Feature Flags**: Server-only code properly gated with #[cfg(feature = "zerver")]
+
+## 📚 Documentation Coverage
+- **Complete Domain Documentation**: All domain layer code fully documented with `#![warn(missing_docs)]` lint enabled
+- **Scryfall Data Documentation**: All ~100 Scryfall JSON fields documented with explanations for confusing fields
+- **Service Layer Documentation**: All 5 service implementations (auth, card, deck, user, health) with architectural patterns explained
+- **Port Traits Documentation**: All repository and service port traits with method-level documentation
+- **Domain Models**: All request/response types, value objects, and error enums documented
+- **Supporting Modules**: Legalities (23 formats), rarities, colors, card faces, image URIs, prices, related cards
+- **Documentation Quality**: Explains "why" (design decisions, security patterns, performance considerations) not just "what"

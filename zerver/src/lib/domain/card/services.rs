@@ -26,17 +26,35 @@ use crate::{
 };
 use chrono::NaiveDateTime;
 
-/// postgresql will have issues if there are more parameters than this in any single query
+/// PostgreSQL parameter limit per query (~65k parameters).
+///
+/// Exceeding this limit causes "prepared statement contains too many parameters" errors.
 const POSTGRESQL_PARAMETER_HARD_LIMIT: usize = 65_535;
 
-/// calculates batch size based on limit based on the number of fields that `ScryfallData` has
+/// Calculates optimal batch size for bulk card upserts.
 ///
-/// limits to half of maximum to keep queries running quickly
+/// Determines how many cards can be upserted in a single query without exceeding
+/// PostgreSQL's parameter limit. Uses half the limit for performance.
+///
+/// # Formula
+/// `batch_size = (POSTGRESQL_PARAM_LIMIT / 2) / scryfall_data_field_count()`
+///
+/// With ~100 fields per card and 65k param limit, this yields ~327 cards per batch.
 fn batch_size() -> usize {
     POSTGRESQL_PARAMETER_HARD_LIMIT / 2 / scryfall_data_field_count()
 }
 
-/// structure which implements `CardService`
+/// Card service implementation handling MTG card operations and Scryfall synchronization.
+///
+/// This service coordinates:
+/// - **Scryfall sync**: Bulk downloads and delta upserts with batch processing
+/// - **Card queries**: Search, get by ID, filter by various criteria
+/// - **Metadata queries**: Artists, card types, sets, languages
+/// - **Card profiles**: Internal metadata tracking (sync timestamps, DB IDs)
+///
+/// # Performance
+/// Bulk operations use batch processing to avoid PostgreSQL parameter limits.
+/// Batch size is auto-calculated based on ScryfallData field count (~327 cards/batch).
 #[derive(Debug, Clone)]
 pub struct Service<R>
 where
@@ -49,6 +67,7 @@ impl<R> Service<R>
 where
     R: CardRepository,
 {
+    /// Creates a new card service with the provided repository.
     pub fn new(repo: R) -> Self {
         Self { repo }
     }

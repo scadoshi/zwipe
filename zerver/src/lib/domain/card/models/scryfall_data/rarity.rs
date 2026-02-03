@@ -1,17 +1,37 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+/// Error returned when parsing an invalid rarity string.
 #[derive(Debug, Clone, Error)]
 #[error("invalid rarity")]
 pub struct InvalidRarity;
 
+/// Card rarity classification in Magic: The Gathering.
+///
+/// Rarities affect card availability in booster packs and overall collectibility.
+///
+/// # Standard Rarities
+/// - **Common (C)**: Most frequent, ~10 per booster pack
+/// - **Uncommon (U)**: Less frequent, ~3 per booster pack
+/// - **Rare (R)**: Rare, ~1 per booster pack
+/// - **Mythic (M)**: Mythic rare, ~1 per 8 booster packs
+///
+/// # Special Rarities
+/// - **Bonus**: Special bonus sheet cards (e.g., The List)
+/// - **Special**: Unique promotional/special printings
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Rarity {
+    /// Common rarity (C).
     Common,
+    /// Uncommon rarity (U).
     Uncommon,
+    /// Rare rarity (R).
     Rare,
+    /// Mythic rare rarity (M).
     Mythic,
+    /// Bonus sheet rarity (B) - special bonus cards in packs.
     Bonus,
+    /// Special rarity (S) - unique promotional printings.
     Special,
 }
 
@@ -38,6 +58,7 @@ impl TryFrom<String> for Rarity {
 }
 
 impl Rarity {
+    /// Returns the long display name (e.g., "Common", "Mythic").
     pub fn to_long_name(&self) -> String {
         match self {
             Self::Common => "Common".to_string(),
@@ -49,6 +70,7 @@ impl Rarity {
         }
     }
 
+    /// Returns the short code (e.g., "C", "M").
     pub fn to_short_name(&self) -> String {
         match self {
             Self::Common => "C".to_string(),
@@ -60,6 +82,7 @@ impl Rarity {
         }
     }
 
+    /// Returns all rarity variants.
     pub fn all() -> Vec<Self> {
         vec![
             Self::Common,
@@ -96,6 +119,10 @@ impl<'de> Deserialize<'de> for Rarity {
     }
 }
 
+/// Collection of card rarities (wrapper around `Vec<Rarity>`).
+///
+/// Provides utility methods for batch conversion to short/long names.
+/// Derefs to `&[Rarity]` for direct slice operations.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Rarities(Vec<Rarity>);
 
@@ -107,10 +134,12 @@ impl std::ops::Deref for Rarities {
 }
 
 impl Rarities {
+    /// Converts all rarities to short codes (e.g., ["C", "M", "R"]).
     pub fn to_short_names(&self) -> Vec<String> {
         self.0.iter().map(|c| c.to_short_name()).collect()
     }
 
+    /// Converts all rarities to long names (e.g., ["Common", "Mythic", "Rare"]).
     pub fn to_long_names(&self) -> Vec<String> {
         self.0.iter().map(|c| c.to_long_name()).collect()
     }

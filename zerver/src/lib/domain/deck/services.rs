@@ -25,6 +25,18 @@ use crate::domain::{
     },
 };
 
+/// Deck service implementation handling deck building and card management operations.
+///
+/// This service coordinates:
+/// - **Deck profiles**: Create, read, update, delete deck metadata (name, format, etc.)
+/// - **Deck cards**: Add, update, remove cards from decks with quantity tracking
+/// - **Authorization**: Enforces deck ownership checks (user can only access their own decks)
+/// - **Card data**: Fetches Scryfall card data for complete deck views
+///
+/// # Authorization Pattern
+/// All deck operations verify that the requesting user owns the deck before
+/// allowing modifications. `GetDeckProfileError::Forbidden` is returned if
+/// the user ID doesn't match the deck's owner.
 #[derive(Debug, Clone)]
 pub struct Service<DR, CR>
 where
@@ -40,6 +52,7 @@ where
     DR: DeckRepository,
     CR: CardRepository,
 {
+    /// Creates a new deck service with the provided repositories.
     pub fn new(deck_repo: DR, card_repo: CR) -> Self {
         Self {
             deck_repo,

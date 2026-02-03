@@ -1,7 +1,35 @@
+//! User-facing error message formatting.
+//!
+//! Converts technical validation errors into friendly, actionable messages for end users.
+//! Particularly useful for form validation feedback in the UI.
+
+/// Trait for converting errors into user-friendly error messages.
+///
+/// Implementations should provide clear, actionable error messages that help users
+/// understand what went wrong and how to fix it.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use zwiper::domain::error::UserFacing;
+///
+/// let result = EmailAddress::parse("invalid-email");
+/// if let Err(error) = result {
+///     let message = error.to_user_facing_string();
+///     // Display: "missing @ symbol" instead of "MissingSeparator"
+/// }
+/// ```
 pub trait UserFacing {
+    /// Converts this error into a user-friendly error message.
+    ///
+    /// Should return clear, actionable text suitable for display in UI error messages.
     fn to_user_facing_string(&self) -> String;
 }
 
+/// Converts email validation errors into user-friendly messages.
+///
+/// Wraps the technical `email_address::Error` variants with plain language
+/// explanations suitable for form validation feedback.
 impl UserFacing for email_address::Error {
     fn to_user_facing_string(&self) -> String {
         match self {

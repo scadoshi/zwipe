@@ -8,6 +8,11 @@ use crate::domain::user::{
     ports::{UserRepository, UserService},
 };
 
+/// User service implementation handling user data retrieval operations.
+///
+/// This service provides read-only access to user data. User modifications
+/// (username, email, password changes) are handled by the auth service for
+/// security reasons (require password re-authentication).
 #[derive(Debug, Clone)]
 pub struct Service<R>
 where
@@ -20,6 +25,7 @@ impl<R> Service<R>
 where
     R: UserRepository,
 {
+    /// Creates a new user service with the provided repository.
     pub fn new(repo: R) -> Self {
         Self { repo }
     }

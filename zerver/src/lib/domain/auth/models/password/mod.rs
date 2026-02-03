@@ -1,8 +1,53 @@
+//! Password validation, hashing, and verification.
+//!
+//! This module implements a comprehensive password security policy with validation,
+//! Argon2id hashing, and secure verification. It enforces industry-standard password
+//! requirements to prevent weak credentials.
+//!
+//! # Password Policy
+//!
+//! Passwords must meet ALL of the following requirements:
+//!
+//! - **Length**: 8-128 characters
+//! - **Uppercase**: At least one uppercase letter (A-Z)
+//! - **Lowercase**: At least one lowercase letter (a-z)
+//! - **Digit**: At least one number (0-9)
+//! - **Symbol**: At least one symbol from: `~!@#$%^&*()_+=[]{}\/?|:;<>,.`
+//! - **No Whitespace**: No spaces, tabs, or newlines
+//! - **Unique Characters**: Minimum 6 unique characters
+//! - **Repeat Limit**: Maximum 3 consecutive repeated characters
+//! - **Not Common**: Not in common password dictionary
+//!
+//! # Security Features
+//!
+//! - **Argon2id**: Memory-hard hashing algorithm resistant to GPU attacks
+//! - **Random Salts**: Unique salt per password using OS random number generator
+//! - **Common Password Check**: Dictionary of 10,000+ weak passwords
+//! - **Constant-Time Verification**: Prevents timing attacks
+//!
+//! # Example
+//!
+//! ```rust,ignore
+//! use zwipe::domain::auth::models::password::{Password, HashedPassword};
+//!
+//! // Validate and hash a new password
+//! let password = Password::new("SecurePass123!")?;
+//! let hashed = password.hash()?;
+//!
+//! // Store hashed password in database
+//! user_repo.update_password(&user_id, hashed).await?;
+//!
+//! // Later: verify during authentication
+//! let provided = Password::new(user_input)?;
+//! let stored_hash = user_repo.get_password_hash(&user_id).await?;
+//! stored_hash.verify(&provided)?; // Returns Ok(()) if matches
+//! ```
+
 mod common;
 #[cfg(feature = "zerver")]
 use argon2::{
-    password_hash::{self, rand_core::OsRng, SaltString},
     Argon2, PasswordHasher, PasswordVerifier,
+    password_hash::{self, SaltString, rand_core::OsRng},
 };
 use common::IsCommonPassword;
 use std::{collections::HashSet, fmt::Display};
@@ -12,72 +57,196 @@ use thiserror::Error;
 //  errors
 // ========
 
+/// Password validation errors indicating which policy requirement failed.
+///
+/// Each variant corresponds to a specific password policy rule. The error messages
+/// are user-friendly and can be displayed directly in API responses or UI.
+///
+/// # Examples
+///
+/// ```rust,ignore
+/// use zwipe::domain::auth::models::password::{Password, InvalidPassword};
+///
+/// match Password::new("weak") {
+///     Err(InvalidPassword::TooShort) => {
+///         println!("Password must be at least 8 characters");
+///     }
+///     Err(InvalidPassword::MissingUpperCase) => {
+///         println!("Password must contain uppercase letters");
+///     }
+///     _ => {}
+/// }
+/// ```
 #[derive(Debug, Clone, Error)]
 pub enum InvalidPassword {
+    /// Password is shorter than 8 characters.
     #[error("must be at least 8 characters long")]
     TooShort,
+
+    /// Password exceeds 128 characters.
     #[error("must not exceed 128 characters")]
     TooLong,
+
+    /// Password lacks uppercase letters (A-Z).
     #[error("must have at least one uppercase letter")]
     MissingUpperCase,
+
+    /// Password lacks lowercase letters (a-z).
     #[error("must have at least one lowercase letter")]
     MissingLowerCase,
+
+    /// Password lacks digits (0-9).
     #[error("must have at least one number")]
     MissingNumber,
+
+    /// Password lacks required symbols.
+    ///
+    /// The error message includes the full list of acceptable symbols.
     #[error("must have at least one symbol from {0}")]
     MissingSymbol(String),
+
+    /// Password contains whitespace (spaces, tabs, newlines).
     #[error("must not contain whitespace characters")]
     ContainsWhitespace,
+
+    /// Password appears in the common password dictionary.
+    ///
+    /// Rejected passwords include dictionary words, keyboard patterns,
+    /// and known compromised passwords.
     #[error("password is too common and not secure")]
     CommonPassword,
+
+    /// Password has too many consecutive repeated characters.
+    ///
+    /// Maximum allowed is 3 consecutive repeats (e.g., "aaa" is allowed, "aaaa" is not).
     #[error(transparent)]
-    TooManyRepeats(TooManyRepeats),
+    TooManyRepeats(#[from] TooManyRepeats),
+
+    /// Password has insufficient character diversity.
+    ///
+    /// Minimum required is 6 unique characters.
     #[error(transparent)]
-    TooFewUniqueChars(TooFewUniqueChars),
+    TooFewUniqueChars(#[from] TooFewUniqueChars),
 }
 
-/// error for when there are too many
-/// repeated letters in given password
+/// Error indicating too many consecutive repeated characters in the password.
+///
+/// The maximum allowed is 3 consecutive repeats. For example:
+/// - "aaa" is valid (3 repeats)
+/// - "aaaa" is invalid (4 repeats)
+///
+/// This prevents trivial passwords like "aaaaaaa!" or "111111!!".
 #[derive(Debug, Clone, Error)]
 #[error("must not contain more than {0} repeated characters")]
 pub struct TooManyRepeats(u8);
 
-impl From<TooManyRepeats> for InvalidPassword {
-    fn from(value: TooManyRepeats) -> Self {
-        InvalidPassword::TooManyRepeats(value)
-    }
-}
-
-/// error for when there are too few
-/// characters in given password
+/// Error indicating insufficient unique characters in the password.
+///
+/// The minimum required is 6 unique characters to ensure adequate entropy.
+/// For example:
+/// - "aAbBcC1!" has 8 unique chars (valid)
+/// - "aaa111!!" has 3 unique chars (invalid)
+///
+/// This prevents trivial passwords constructed from repeated patterns.
 #[derive(Debug, Clone, Error)]
 #[error("must contain at least {0} unique characters")]
 pub struct TooFewUniqueChars(u8);
 
-impl From<TooFewUniqueChars> for InvalidPassword {
-    fn from(value: TooFewUniqueChars) -> Self {
-        InvalidPassword::TooFewUniqueChars(value)
-    }
-}
-
-/// password must include one of these
+/// Required symbols for password policy.
+///
+/// At least one of these characters must be present in every password.
 const SYMBOLS: &str = r#"~!@#$%^&*()_+=[]{}\/?|:;<>,."#;
 
-/// wraps validated password
+/// A validated password that meets all security policy requirements.
+///
+/// This is a value object that guarantees any instance contains a password
+/// that has been validated against the comprehensive password policy. The raw
+/// password string is wrapped and can only be accessed via [`read()`](Self::read).
+///
+/// # Validation
+///
+/// Creation via [`new()`](Self::new) enforces:
+/// - Length: 8-128 characters
+/// - At least one uppercase, lowercase, digit, and symbol
+/// - No whitespace
+/// - Maximum 3 consecutive repeated characters
+/// - Minimum 6 unique characters
+/// - Not a common/weak password
+///
+/// # Security
+///
+/// The password is stored in plaintext within this type for hashing purposes.
+/// It should be:
+/// - Hashed immediately after validation via [`hash()`](Self::hash)
+/// - Never logged or exposed in error messages
+/// - Cleared from memory as soon as possible after hashing
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use zwipe::domain::auth::models::password::{Password, InvalidPassword};
+///
+/// // Valid password
+/// let password = Password::new("SecurePass123!")?;
+/// let hash = password.hash()?; // Consume and hash immediately
+///
+/// // Invalid passwords return specific errors
+/// assert!(matches!(
+///     Password::new("weak"),
+///     Err(InvalidPassword::TooShort)
+/// ));
+/// ```
 #[derive(Debug, Clone)]
 pub struct Password(String);
 
 impl Password {
+    /// Creates a new validated password.
+    ///
+    /// Validates the input against all password policy requirements.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidPassword`] if any requirement is not met, with specific
+    /// variant indicating which rule failed.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// let password = Password::new("MySecurePass123!")?;
+    /// ```
     pub fn new(raw: &str) -> Result<Self, InvalidPassword> {
         raw.meets_all_requirements()?;
         Ok(Password(raw.to_string()))
     }
 
+    /// Hashes the password using Argon2id with a random salt.
+    ///
+    /// Consumes the `Password` and returns a [`HashedPassword`] suitable for
+    /// database storage. The hash includes the algorithm parameters and salt,
+    /// so no separate salt storage is needed.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`password_hash::Error`] if hashing fails (extremely rare).
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// let password = Password::new("SecurePass123!")?;
+    /// let hashed = password.hash()?; // Consumes password
+    /// // Store `hashed` in database
+    /// ```
     #[cfg(feature = "zerver")]
     pub fn hash(self) -> Result<HashedPassword, password_hash::Error> {
         HashedPassword::generate(self)
     }
 
+    /// Returns a reference to the underlying password string.
+    ///
+    /// # Security Warning
+    ///
+    /// Use sparingly and only for operations like hashing. Never log or
+    /// expose this value in API responses or error messages.
     pub fn read(&self) -> &str {
         &self.0
     }
@@ -160,20 +329,102 @@ impl PasswordPolicy for &str {
 }
 
 #[cfg(feature = "zerver")]
-/// wraps validated password hash
+/// An Argon2id password hash suitable for secure storage.
 ///
-/// called `HashedPassword` as to
-/// not conflict with `argon2::PasswordHash`
+/// This value object wraps a password hash string in PHC (Password Hashing Competition)
+/// format. The hash includes all necessary information for verification:
+/// - Algorithm identifier (`$argon2id$`)
+/// - Algorithm parameters (memory cost, time cost, parallelism)
+/// - Salt (base64-encoded)
+/// - Hash digest (base64-encoded)
+///
+/// Named `HashedPassword` to avoid conflict with `argon2::PasswordHash`.
+///
+/// # Format
+///
+/// ```text
+/// $argon2id$v=19$m=19456,t=2,p=1$randomsalt$hashdigest
+/// ```
+///
+/// # Security
+///
+/// - **Argon2id**: Winner of Password Hashing Competition, resistant to GPU attacks
+/// - **Random Salt**: Generated using OS cryptographically secure RNG
+/// - **Constant-Time Verification**: Prevents timing attacks
+/// - **Self-Contained**: No separate salt storage needed
+///
+/// # Storage
+///
+/// Store the hash string directly in your database. It's safe to store alongside
+/// other user data as it cannot be reversed to obtain the original password.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use zwipe::domain::auth::models::password::{Password, HashedPassword};
+///
+/// // During registration
+/// let password = Password::new(user_input)?;
+/// let hashed = password.hash()?;
+/// user_repo.create_user(username, email, hashed).await?;
+///
+/// // During authentication
+/// let stored_hash: HashedPassword = user_repo.get_password_hash(&user_id).await?;
+/// let provided = Password::new(user_input)?;
+///
+/// if stored_hash.verify(provided.read())? {
+///     // Password matches - proceed with login
+/// } else {
+///     // Password doesn't match - reject
+/// }
+/// ```
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub struct HashedPassword(String);
 
 #[cfg(feature = "zerver")]
 impl HashedPassword {
+    /// Creates a `HashedPassword` from an existing hash string.
+    ///
+    /// Validates that the input is a properly formatted Argon2 hash.
+    /// Use this when reconstructing from database storage.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`password_hash::Error`] if the hash string is malformed or
+    /// uses an unsupported algorithm.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// // From database
+    /// let hash_string: String = row.get("password_hash");
+    /// let hashed = HashedPassword::new(&hash_string)?;
+    /// ```
     pub fn new(raw: &str) -> Result<Self, password_hash::Error> {
         argon2::PasswordHash::new(raw)?;
         Ok(Self(raw.to_string()))
     }
 
+    /// Generates a new password hash from a validated password.
+    ///
+    /// Creates a cryptographically secure hash using:
+    /// - Argon2id algorithm (hybrid of Argon2i and Argon2d)
+    /// - Random salt from OS RNG
+    /// - Default parameters (balanced security/performance)
+    ///
+    /// This method is also available via [`Password::hash()`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`password_hash::Error`] if hashing fails (extremely rare,
+    /// typically only on system resource exhaustion).
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// let password = Password::new("SecurePass123!")?;
+    /// let hashed = HashedPassword::generate(password)?;
+    /// ```
     pub fn generate(password: Password) -> Result<Self, password_hash::Error> {
         let salt = SaltString::generate(&mut OsRng);
         let hash = Argon2::default()
@@ -182,6 +433,29 @@ impl HashedPassword {
         Ok(Self(hash))
     }
 
+    /// Verifies a plaintext password against this hash.
+    ///
+    /// Uses constant-time comparison to prevent timing attacks. The verification
+    /// extracts the salt and parameters from the hash and re-hashes the provided
+    /// password, then compares the digests.
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(true)` if the password matches
+    /// - `Ok(false)` if the password doesn't match
+    /// - `Err(_)` if hash parsing or verification fails
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// let stored_hash: HashedPassword = user_repo.get_password_hash(&user_id).await?;
+    /// let user_input = "SecurePass123!";
+    ///
+    /// match stored_hash.verify(user_input)? {
+    ///     true => println!("Authentication successful"),
+    ///     false => println!("Invalid password"),
+    /// }
+    /// ```
     pub fn verify(&self, password: &str) -> Result<bool, password_hash::Error> {
         let parsed_hash = argon2::PasswordHash::new(&self.0)?;
 

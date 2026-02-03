@@ -9,29 +9,42 @@ use thiserror::Error;
 use uuid::Uuid;
 
 #[cfg(feature = "zerver")]
+/// Errors that can occur when retrieving Scryfall data.
 #[derive(Debug, Error)]
 pub enum GetScryfallDataError {
+    /// Scryfall data was not found in database.
     #[error("scryfall data not found")]
     NotFound,
+    /// Database query/connection error.
     #[error(transparent)]
     Database(anyhow::Error),
 }
 
 #[cfg(feature = "zerver")]
+/// Errors that can occur when searching for Scryfall data.
 #[derive(Debug, Error)]
 pub enum SearchScryfallDataError {
+    /// Database query/connection error.
     #[error(transparent)]
     Database(anyhow::Error),
 }
 
+/// Request to get Scryfall data by Scryfall UUID.
+///
+/// Wraps a UUID parsed from a string ID.
 #[derive(Debug, Clone, Copy)]
 pub struct GetScryfallData(Uuid);
 
 impl GetScryfallData {
+    /// Creates a new GetScryfallData request by parsing a UUID string.
+    ///
+    /// # Errors
+    /// Returns `uuid::Error` if the string is not a valid UUID.
     pub fn new(id: &str) -> Result<Self, uuid::Error> {
         Ok(Self(Uuid::try_parse(id)?))
     }
 
+    /// Returns the parsed UUID.
     pub fn id(&self) -> Uuid {
         self.0
     }
@@ -55,6 +68,10 @@ impl From<&CardProfile> for GetScryfallData {
 }
 
 #[cfg(feature = "zerver")]
+/// Collection of Scryfall data UUIDs for batch operations.
+///
+/// Used for bulk fetching Scryfall data by IDs.
+/// Derefs to `&[Uuid]` for direct slice operations.
 pub struct ScryfallDataIds(Vec<Uuid>);
 
 #[cfg(feature = "zerver")]

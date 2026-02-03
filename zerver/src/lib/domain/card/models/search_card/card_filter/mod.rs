@@ -1,6 +1,30 @@
+//! Card filtering and search query construction.
+//!
+//! Provides comprehensive filtering capabilities for MTG cards with builder pattern.
+//! Filters are applied using PostgreSQL JSONB operators for efficient querying.
+//!
+//! # Usage
+//!
+//! ```rust,ignore
+//! use zwipe::domain::card::models::search_card::card_filter::CardFilter;
+//!
+//! let filter = CardFilter::builder()
+//!     .name_contains("Lightning Bolt")
+//!     .color_identity(vec!["R"])
+//!     .cmc_equals(1)
+//!     .limit(20)
+//!     .build();
+//!
+//! let cards = card_service.search_cards(&filter).await?;
+//! ```
+
+/// Builder pattern for constructing card filters.
 pub mod builder;
+/// Card filter validation errors.
 pub mod error;
+/// Getter methods for accessing filter values.
 pub mod getters;
+/// Sort order options (name, CMC, rarity, etc.).
 pub mod order_by_options;
 
 use crate::domain::card::models::{
@@ -9,6 +33,11 @@ use crate::domain::card::models::{
 };
 use serde::{Deserialize, Serialize};
 
+/// Validated card search filter with all search criteria.
+///
+/// Created via [`CardFilterBuilder`](builder::CardFilterBuilder). Contains all
+/// filter criteria (text, mana, combat, flags, pagination) for searching cards.
+/// At least one filter criterion must be set (enforced by builder).
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct CardFilter {
     // combat

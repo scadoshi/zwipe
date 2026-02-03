@@ -1,4 +1,10 @@
+//! Card filter builder for constructing complex MTG card search queries.
+//!
+//! Provides fluent API for building card filters with validation.
+
+/// Getter methods for accessing filter values.
 pub mod getters;
+/// Setter methods for modifying filter values.
 pub mod setters;
 
 use crate::domain::card::models::{
@@ -13,8 +19,49 @@ use crate::domain::card::models::{
 };
 use serde::{Deserialize, Serialize};
 
+/// Builder for constructing card search filters with fluent API.
+///
+/// # Filter Categories
+///
+/// - **Combat**: Power/toughness (exact or range)
+/// - **Mana**: CMC, color identity (within/equals)
+/// - **Text**: Name, oracle text, flavor text, type line
+/// - **Metadata**: Rarity, set, artist, language
+/// - **Flags**: Commander-legal, token, digital, promo, etc.
+/// - **Pagination**: Limit, offset, ordering
+///
+/// # Usage Patterns
+///
+/// **Quick constructor** - Use `with_*` methods for single-filter searches:
+/// ```rust,ignore
+/// let filter = CardFilterBuilder::with_name_contains("Lightning Bolt").build()?;
+/// ```
+///
+/// **Fluent builder** - Chain `set_*` methods for complex searches:
+/// ```rust,ignore
+/// let filter = CardFilterBuilder::new()
+///     .set_name_contains("Dragon")
+///     .set_color_identity_within([Color::Red])
+///     .set_cmc_range((4.0, 7.0))
+///     .set_rarity_equals_any(Rarities::from([Rarity::Rare, Rarity::Mythic]))
+///     .set_limit(50)
+///     .build()?;
+/// ```
+///
+/// # Defaults
+///
+/// - `is_playable`: `true` (exclude un-cards, silver-bordered)
+/// - `digital`: `false` (exclude Arena-only cards)
+/// - `oversized`: `false`
+/// - `promo`: `false`
+/// - `content_warning`: `false`
+/// - `language`: `"en"`
+/// - `limit`: 100
+/// - `offset`: 0
+/// - `ascending`: `true`
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct CardFilterBuilder {
+    // Combat stats
     // combat
     power_equals: Option<i32>,
     power_range: Option<(i32, i32)>,
@@ -94,18 +141,29 @@ impl Default for CardFilterBuilder {
 }
 
 impl CardFilterBuilder {
-    // constructors
+    /// Creates a new filter builder with default values.
+    ///
+    /// Defaults: playable cards only, English, non-digital, non-promo, 100 result limit.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Checks if filter has any search criteria (ignoring config like limit/offset).
+    ///
+    /// Returns `true` if only config fields are set (would match all cards).
     pub fn is_empty(&self) -> bool {
         let mut default = self.clone();
         default.retain_config();
         *self == default
     }
 
-    // text
+    // =================================
+    // Quick Constructors (with_*)
+    // =================================
+    // These create a new builder with default values plus one filter.
+    // Useful for single-filter searches.
+
+    /// Creates builder with name filter (case-insensitive substring match).
     pub fn with_name_contains(name_contains: impl Into<String>) -> CardFilterBuilder {
         CardFilterBuilder {
             name_contains: Some(name_contains.into()),
@@ -113,6 +171,7 @@ impl CardFilterBuilder {
         }
     }
 
+    /// Creates builder with oracle text filter (ability text substring match).
     pub fn with_oracle_text_contains(oracle_text_contains: impl Into<String>) -> CardFilterBuilder {
         CardFilterBuilder {
             oracle_text_contains: Some(oracle_text_contains.into()),
@@ -120,6 +179,7 @@ impl CardFilterBuilder {
         }
     }
 
+    /// Creates builder with flavor text filter.
     pub fn with_flavor_text_contains(flavor_text_contains: impl Into<String>) -> Self {
         Self {
             flavor_text_contains: Some(flavor_text_contains.into()),
@@ -127,6 +187,7 @@ impl CardFilterBuilder {
         }
     }
 
+    /// Creates builder filtering by presence/absence of flavor text.
     pub fn with_has_flavor_text(has_flavor_text: bool) -> Self {
         Self {
             has_flavor_text: Some(has_flavor_text),
@@ -134,7 +195,7 @@ impl CardFilterBuilder {
         }
     }
 
-    // types
+    /// Creates builder with type line filter (e.g., "Legendary Creature — Dragon").
     pub fn with_type_line_contains(type_line_contains: impl Into<String>) -> CardFilterBuilder {
         CardFilterBuilder {
             type_line_contains: Some(type_line_contains.into()),
@@ -142,6 +203,7 @@ impl CardFilterBuilder {
         }
     }
 
+    /// Creates builder matching any of the provided type line substrings.
     pub fn with_type_line_contains_any<I, S>(type_line_contains_any: I) -> CardFilterBuilder
     where
         I: IntoIterator<Item = S>,
@@ -155,6 +217,7 @@ impl CardFilterBuilder {
         }
     }
 
+    /// Creates builder matching any of the provided card types (Creature, Instant, etc.).
     pub fn with_card_type_contains_any<I>(card_type_contains_any: I) -> CardFilterBuilder
     where
         I: IntoIterator<Item = CardType>,
@@ -165,7 +228,7 @@ impl CardFilterBuilder {
         }
     }
 
-    // printing
+    /// Creates builder matching any of the provided set codes (e.g., "MH2", "ONE").
     pub fn with_set_contains(
         set_equals_any: impl IntoIterator<Item = impl Into<String>>,
     ) -> CardFilterBuilder {
@@ -175,6 +238,7 @@ impl CardFilterBuilder {
         }
     }
 
+    /// Creates builder matching any of the provided rarities.
     pub fn with_rarity_equals_any(rarity_equals_any: Rarities) -> CardFilterBuilder {
         let rarity_equals_any = if rarity_equals_any.is_empty() {
             None
@@ -187,7 +251,7 @@ impl CardFilterBuilder {
         }
     }
 
-    // mana
+    /// Creates builder with exact CMC (converted mana cost) filter.
     pub fn with_cmc_equals(cmc_equals: f64) -> CardFilterBuilder {
         CardFilterBuilder {
             cmc_equals: Some(cmc_equals),
@@ -195,6 +259,7 @@ impl CardFilterBuilder {
         }
     }
 
+    /// Creates builder with CMC range filter (inclusive).
     pub fn with_cmc_range(cmc_range: (f64, f64)) -> CardFilterBuilder {
         CardFilterBuilder {
             cmc_range: Some(cmc_range),
@@ -202,6 +267,7 @@ impl CardFilterBuilder {
         }
     }
 
+    /// Creates builder matching exact color identity (e.g., exactly W+U, not mono-W).
     pub fn with_color_identity_equals<I>(color_identity_equals: I) -> CardFilterBuilder
     where
         I: IntoIterator<Item = Color>,
@@ -212,6 +278,9 @@ impl CardFilterBuilder {
         }
     }
 
+    /// Creates builder matching cards within color identity (subset of provided colors).
+    ///
+    /// Example: `within([R, G])` matches mono-R, mono-G, R+G, and colorless.
     pub fn with_color_identity_within<I>(color_identity_within: I) -> CardFilterBuilder
     where
         I: IntoIterator<Item = Color>,
@@ -222,7 +291,7 @@ impl CardFilterBuilder {
         }
     }
 
-    // combat
+    /// Creates builder with exact power filter (creature combat stat).
     pub fn with_power_equals(power_equals: i32) -> CardFilterBuilder {
         CardFilterBuilder {
             power_equals: Some(power_equals),
@@ -230,6 +299,7 @@ impl CardFilterBuilder {
         }
     }
 
+    /// Creates builder with power range filter (inclusive).
     pub fn with_power_range(power_range: (i32, i32)) -> CardFilterBuilder {
         CardFilterBuilder {
             power_range: Some(power_range),
@@ -237,6 +307,7 @@ impl CardFilterBuilder {
         }
     }
 
+    /// Creates builder with exact toughness filter.
     pub fn with_toughness_equals(toughness_equals: i32) -> CardFilterBuilder {
         CardFilterBuilder {
             toughness_equals: Some(toughness_equals),
@@ -244,6 +315,7 @@ impl CardFilterBuilder {
         }
     }
 
+    /// Creates builder with toughness range filter (inclusive).
     pub fn with_toughness_range(toughness_range: (i32, i32)) -> CardFilterBuilder {
         CardFilterBuilder {
             toughness_range: Some(toughness_range),
@@ -251,7 +323,7 @@ impl CardFilterBuilder {
         }
     }
 
-    // flags
+    /// Creates builder filtering by Commander format legality.
     pub fn with_is_valid_commander(is_valid_commander: bool) -> CardFilterBuilder {
         CardFilterBuilder {
             is_valid_commander: Some(is_valid_commander),
@@ -259,6 +331,7 @@ impl CardFilterBuilder {
         }
     }
 
+    /// Creates builder filtering by token status (tokens vs. real cards).
     pub fn with_is_token(is_token: bool) -> CardFilterBuilder {
         CardFilterBuilder {
             is_token: Some(is_token),
@@ -266,6 +339,7 @@ impl CardFilterBuilder {
         }
     }
 
+    /// Creates builder filtering by playability (excludes un-cards, silver-bordered).
     pub fn with_is_playable(is_playable: bool) -> CardFilterBuilder {
         CardFilterBuilder {
             is_playable: Some(is_playable),
@@ -273,6 +347,7 @@ impl CardFilterBuilder {
         }
     }
 
+    /// Creates builder filtering by digital-only status (Arena/MTGO exclusives).
     pub fn with_digital(digital: bool) -> CardFilterBuilder {
         CardFilterBuilder {
             digital: Some(digital),
@@ -280,6 +355,7 @@ impl CardFilterBuilder {
         }
     }
 
+    /// Creates builder filtering by oversized card status.
     pub fn with_oversized(oversized: bool) -> CardFilterBuilder {
         CardFilterBuilder {
             oversized: Some(oversized),
@@ -287,6 +363,7 @@ impl CardFilterBuilder {
         }
     }
 
+    /// Creates builder filtering by promotional card status.
     pub fn with_promo(promo: bool) -> CardFilterBuilder {
         CardFilterBuilder {
             promo: Some(promo),
@@ -294,6 +371,7 @@ impl CardFilterBuilder {
         }
     }
 
+    /// Creates builder filtering by content warning flag.
     pub fn with_content_warning(content_warning: bool) -> CardFilterBuilder {
         CardFilterBuilder {
             content_warning: Some(content_warning),
@@ -301,7 +379,7 @@ impl CardFilterBuilder {
         }
     }
 
-    // config
+    /// Creates builder with specific result ordering (name, CMC, rarity, etc.).
     pub fn with_order_by(order_by: OrderByOptions) -> CardFilterBuilder {
         CardFilterBuilder {
             order_by: Some(order_by),
@@ -309,7 +387,12 @@ impl CardFilterBuilder {
         }
     }
 
-    // builder
+    /// Builds the final `CardFilter` with validation.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidCardFilter::Empty`] if no search criteria are set
+    /// (only config fields like limit/offset are present).
     pub fn build(&self) -> Result<CardFilter, InvalidCardFilter> {
         if self.is_empty() {
             return Err(InvalidCardFilter::Empty);

@@ -1,21 +1,38 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+/// Error returned when parsing an invalid color string.
 #[derive(Debug, Error)]
 #[error("invalid color")]
 pub struct InvalidColor;
 
-/// stores color information in ScryfallData against various color related fields
+/// Magic: The Gathering's five colors.
+///
+/// Colors are fundamental to MTG's mana system and card identity.
+/// Each color represents a philosophy and mechanical identity (WUBRG order).
+///
+/// # Short Codes
+/// - **W**: White
+/// - **U**: Blue (U is used to avoid confusion with B for Black)
+/// - **B**: Black
+/// - **R**: Red
+/// - **G**: Green
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Color {
+    /// White (W) - order, protection, community.
     White,
+    /// Blue (U) - knowledge, control, illusion.
     Blue,
+    /// Black (B) - ambition, death, power.
     Black,
+    /// Red (R) - freedom, chaos, emotion.
     Red,
+    /// Green (G) - nature, growth, instinct.
     Green,
 }
 
 impl Color {
+    /// Returns the full color name (e.g., "White", "Blue").
     pub fn to_long_name(&self) -> String {
         let s = match self {
             Self::White => "White",
@@ -27,6 +44,7 @@ impl Color {
         s.to_string()
     }
 
+    /// Returns the single-letter color code (e.g., "W", "U", "B", "R", "G").
     pub fn to_short_name(&self) -> String {
         let s = match self {
             Self::White => "W",
@@ -38,6 +56,7 @@ impl Color {
         s.to_string()
     }
 
+    /// Returns all five colors in WUBRG order.
     pub fn all() -> [Self; 5] {
         [Self::White, Self::Blue, Self::Black, Self::Red, Self::Green]
     }
@@ -99,6 +118,16 @@ impl TryFrom<String> for Color {
     }
 }
 
+/// Collection of card colors (wrapper around `Vec<Color>`).
+///
+/// Represents a card's color identity, colors, or color indicator.
+/// Empty collection means colorless. Derefs to `&[Color]` for direct slice operations.
+///
+/// # Examples
+/// - `[]` - Colorless (e.g., artifacts, Eldrazi)
+/// - `[White]` - Monowhite
+/// - `[Blue, Red]` - Izzet colors
+/// - `[White, Blue, Black, Red, Green]` - Five-color (WUBRG)
 #[derive(Debug, Clone, PartialEq)]
 pub struct Colors(Vec<Color>);
 
@@ -110,10 +139,12 @@ impl std::ops::Deref for Colors {
 }
 
 impl Colors {
+    /// Converts all colors to short codes (e.g., ["W", "U", "B"]).
     pub fn to_short_names(&self) -> Vec<String> {
         self.0.iter().map(|c| c.to_short_name()).collect()
     }
 
+    /// Converts all colors to long names (e.g., ["White", "Blue", "Black"]).
     pub fn to_long_names(&self) -> Vec<String> {
         self.0.iter().map(|c| c.to_long_name()).collect()
     }
