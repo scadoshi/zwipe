@@ -2,29 +2,29 @@
 
 Active development tasks and immediate focus areas.
 
-**Last Updated**: Completed comprehensive documentation of entire backend domain layer (zerver).
+**Last Updated**: Established documentation philosophy and refined domain layer documentation.
 
-**Current Focus**: Continue documentation with lighter touch - focus on high-value items only, avoid over-documenting obvious code.
+**Current Focus**: Apply documentation philosophy to inbound and outbound layers (HTTP handlers, database repositories).
 
 **Recent Achievements**:
-- **Complete Domain Layer Documentation**: All zerver domain code fully documented (0 warnings)
-- **Scryfall Field Mappings**: All ~100 fields with explanations for confusing terminology
-- **Service Layer Documentation**: Auth, card, deck, user, health services with architectural patterns
-- **Port Traits Documentation**: All repository and service interfaces with comprehensive method docs
-- **Documentation Quality**: Explains design decisions, security patterns, performance considerations
-- **Progress**: Eliminated 263 documentation warnings (820 → 557)
+- **Documentation Philosophy Established**: Created `/context/rules/documentation.md` with comprehensive guidelines
+- **Domain Layer Documentation Refined**: Removed 427 lines of verbose module docs, added strategic `#[allow(missing_docs)]`
+- **ScryfallData Comprehensive Documentation**: All 63 fields documented with official Scryfall API definitions
+- **Strategic `#[allow(missing_docs)]`**: Applied to Color/Rarity enums (domain-obvious variants)
+- **Signal-to-Noise Balance**: "Document intent, not obvious implementation details"
+- **Commits**: Two clean commits establishing philosophy then applying it
 
-**Next Documentation Session**: Pull back on verbosity, focus only on high-value documentation items (complex logic, non-obvious behavior, public APIs).
+**Next Documentation Session**: Document inbound (HTTP handlers) and outbound (SQLx repositories) layers following new philosophy.
 
 ---
 
 ## Top 5 Priorities
 
-1. **Documentation Refinement** - Continue with lighter touch, avoid over-documenting self-explanatory code
+1. **Inbound Layer Documentation** - Document HTTP handlers, middleware, request/response patterns with focus on non-obvious behavior
 
-2. **Frontend Documentation** - Document Leptos UI components and routing with focus on complex state management
+2. **Outbound Layer Documentation** - Document SQLx repositories, query patterns, constraint handling (selective, high-value only)
 
-3. **Adapter Layer Documentation** - HTTP handlers and database repositories (selective, high-value only)
+3. **Frontend Documentation** - Document Dioxus UI components and routing with focus on complex state management
 
 4. **Return to Feature Development** - Resume card management workflows after documentation pass
 

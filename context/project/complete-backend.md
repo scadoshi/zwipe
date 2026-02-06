@@ -138,11 +138,21 @@ Production-ready backend implementations.
 - **Modular File Organization**: Domain-specific separation with clear responsibilities
 - **Feature Flags**: Server-only code properly gated with #[cfg(feature = "zerver")]
 
-## 📚 Documentation Coverage
+## 📚 Documentation Coverage & Philosophy
+- **Documentation Philosophy**: Established comprehensive guidelines in `/context/rules/documentation.md`
+  - Core principle: "Document intent, not obvious implementation details"
+  - Strategic `#[allow(missing_docs)]` at container level for self-documenting domain types
+  - High signal-to-noise ratio: only document what adds information beyond naming
+  - API schema documentation as integration contracts
 - **Complete Domain Documentation**: All domain layer code fully documented with `#![warn(missing_docs)]` lint enabled
-- **Scryfall Data Documentation**: All ~100 Scryfall JSON fields documented with explanations for confusing fields
+- **ScryfallData Complete**: All 63 fields documented with official Scryfall API definitions
+  - Each field has Scryfall's authoritative description
+  - Explains non-obvious semantics (oracle_id vs id, color_identity vs colors)
+  - Documents edge cases (fractional CMC, non-numeric power/toughness)
+- **Strategic `#[allow(missing_docs)]`**: Applied to Color and Rarity enums (MTG domain-obvious variants)
 - **Service Layer Documentation**: All 5 service implementations (auth, card, deck, user, health) with architectural patterns explained
 - **Port Traits Documentation**: All repository and service port traits with method-level documentation
 - **Domain Models**: All request/response types, value objects, and error enums documented
 - **Supporting Modules**: Legalities (23 formats), rarities, colors, card faces, image URIs, prices, related cards
 - **Documentation Quality**: Explains "why" (design decisions, security patterns, performance considerations) not just "what"
+- **Documentation Cleanup**: Removed 427 lines of verbose module-level docs, improved signal-to-noise ratio

@@ -376,3 +376,25 @@ Knowledge areas where you could teach others without hesitation.
 - **ORDER BY Construction**: sqlx QueryBuilder with Separated for WHERE clauses, direct push for ORDER BY/LIMIT/OFFSET
 - **Display Trait for Enums**: impl std::fmt::Display for user-facing enum text, call .to_string().to_lowercase() at render site
 - **is_empty() Validation**: Exclude config fields (limit, offset, order_by, ascending) when checking if filter has actual conditions
+
+## 📚 Documentation Philosophy & Patterns
+- **Core Principle**: "Document intent, not obvious implementation details" - only add docs that convey information beyond naming
+- **Signal-to-Noise Ratio**: High-quality documentation asks "What does this tell the reader they don't already know?"
+- **When to Document**: Non-obvious behavior, external API schemas, surprising edge cases, business logic/constraints, public APIs
+- **When NOT to Document**: Self-explanatory domain concepts, schema fields restating names, obvious standard library patterns
+- **Container-Level `#[allow(missing_docs)]`**: Strategic placement on structs/enums when ALL contained items are self-documenting
+  - Apply to domain enums with obvious variants (Color: White/Blue/Black, Rarity: Common/Uncommon/Rare)
+  - Keeps container-level docs explaining purpose while skipping redundant per-item docs
+  - Cleaner than scattering allows on individual items
+- **API Schema Documentation**: External API fields need comprehensive docs serving dual purposes:
+  - Integration reference for API contract
+  - Field semantics that may not be obvious from names
+  - Change detection when upstream API evolves
+- **Domain-Specific Judgment**: Recognize when terms are unambiguous to target audience (MTG colors in card game context)
+- **Three Documentation Questions**: Before writing docs, ask:
+  1. Would a competent developer in this domain be confused without this doc?
+  2. Does this doc add information beyond the name and type?
+  3. Would I want to read this doc, or would it feel like clutter?
+- **Documentation as Living Rules**: Codified in `/context/rules/documentation.md` for consistency and onboarding
+- **Two-Commit Strategy**: Establish philosophy first (with comprehensive example), then apply retroactively (cleanup)
+- **Documentation Cleanup**: Removing verbose module-level docs, redundant examples, and restated field names improves maintainability

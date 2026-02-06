@@ -4,6 +4,28 @@ Planned work after completing current tasks.
 
 ---
 
+## 📚 Documentation Continuation
+
+Following the documentation philosophy established in `/context/rules/documentation.md`:
+
+1. **Inbound Layer (HTTP Handlers & Middleware)** - Document following philosophy
+   - Focus on non-obvious request/response patterns
+   - Document middleware behavior and authentication flow
+   - Explain error mapping and status code decisions
+   - Skip obvious CRUD handler patterns
+
+2. **Outbound Layer (SQLx Repositories)** - Selective high-value documentation
+   - Document complex query patterns (QueryBuilder, JSONB operators, window functions)
+   - Explain constraint handling and error mapping
+   - Document transaction patterns and atomicity decisions
+   - Skip straightforward CRUD operations
+
+3. **Frontend Documentation** - Apply same philosophy to Dioxus components
+   - Document complex state management patterns
+   - Explain reactive patterns (signals, effects, resources)
+   - Document swipe gesture system and navigation
+   - Skip obvious UI component structure
+
 ---
 
 ## Enhancements
