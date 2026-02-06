@@ -2,16 +2,6 @@
 //!
 //! This module defines the interfaces (ports) for authentication in hexagonal architecture.
 //! These traits decouple the domain logic from infrastructure concerns (database, HTTP, etc.).
-//!
-//! # Hexagonal Architecture
-//!
-//! - **AuthRepository**: Database port (data persistence operations)
-//! - **AuthService**: Service port (orchestrates business logic + repository calls)
-//!
-//! # Implementation
-//!
-//! - Repositories are implemented in `outbound/sqlx/auth` (PostgreSQL)
-//! - Services are implemented in `domain/auth/services` (business logic)
 
 use crate::domain::{
     auth::models::{
