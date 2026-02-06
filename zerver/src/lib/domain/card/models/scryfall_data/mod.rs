@@ -52,275 +52,278 @@ pub struct ScryfallData {
     // Core Card Fields
     // ==================
     // Basic card identification and platform-specific IDs
-    /// Magic: The Gathering Arena ID. `None` if not available on Arena.
+
+    /// This card's Arena ID, if any. A large percentage of cards are not available on Arena and do not have this ID.
     pub arena_id: Option<i32>,
 
-    /// Scryfall UUID for this specific card printing (unique per print).
+    /// A unique ID for this card in Scryfall's database.
     pub id: uuid::Uuid,
 
-    /// Language code (e.g., "en", "ja", "de"). See Scryfall language codes.
+    /// A language code for this printing.
     pub lang: String,
 
-    /// Magic: The Gathering Online (MTGO) ID for regular version. `None` if not on MTGO.
+    /// This card's Magic Online ID (also known as the Catalog ID), if any.
     pub mtgo_id: Option<i32>,
 
-    /// MTGO ID for foil version. `None` if no foil version exists on MTGO.
+    /// This card's foil Magic Online ID (also known as the Catalog ID), if any.
     pub mtgo_foil_id: Option<i32>,
 
-    /// Multiverse IDs from Gatherer. A card may have multiple IDs. `None` if not on Gatherer.
+    /// This card's multiverse IDs on Gatherer, if any, as an array of integers.
     pub multiverse_ids: Option<Vec<i32>>,
 
-    /// TCGplayer product ID for regular version. `None` if not available.
+    /// This card's ID on TCGplayer's API, also known as the productId.
     pub tcgplayer_id: Option<i32>,
 
-    /// TCGplayer product ID for etched foil version. `None` if no etched version.
+    /// This card's ID on TCGplayer's API, for its etched version if separate.
     pub tcgplayer_etched_id: Option<i32>,
 
-    /// Cardmarket (European marketplace) product ID. `None` if not available.
+    /// This card's ID on Cardmarket's API, also known as the idProduct.
     pub cardmarket_id: Option<i32>,
 
-    /// Scryfall object type. Always "card" for card objects.
+    /// A content type for this object, always "card".
     pub object: String,
 
-    /// Card layout type. Common values: "normal", "split", "transform", "modal_dfc", "meld", "leveler", "adventure".
+    /// A code for this card's layout. Common values: "normal", "split", "transform", "modal_dfc", "meld", "leveler", "adventure".
     pub layout: String,
 
-    /// Oracle ID - shared by all printings of the same card (e.g., all "Lightning Bolt" printings share one `oracle_id`).
-    /// `None` for tokens and special cards without oracle text.
+    /// A unique ID for this card's oracle identity consistent across reprints.
+    /// Shared by all printings of the same card.
     pub oracle_id: Option<Uuid>,
 
-    /// Scryfall API URI to search for all other printings of this card.
+    /// A link to paginate all reprints for this card on Scryfall's API.
     pub prints_search_uri: String,
 
-    /// Scryfall API URI to fetch rulings for this card.
+    /// A link to this card's rulings list on Scryfall's API.
     pub rulings_uri: String,
 
-    /// Human-readable Scryfall web page URL for this card.
+    /// A link to this card's permapage on Scryfall's website.
     pub scryfall_uri: String,
 
-    /// Scryfall API URI for this specific card object.
+    /// A link to this card object on Scryfall's API.
     pub uri: String,
 
     // ==================
     // Gameplay Fields
     // ==================
     // Properties relevant to game rules and deck building
-    /// Related card parts for split/meld/transform cards. `None` for single-faced cards.
+
+    /// If this card relates to other cards, an array with Related Card Objects.
     pub all_parts: Option<AllParts>,
 
-    /// Card faces for double-faced/transform/modal cards. `None` for single-faced cards.
+    /// An array of Card Face objects, if this card is multifaced.
     pub card_faces: Option<CardFaces>,
 
-    /// Converted mana cost (CMC). `None` for cards without mana costs (lands, tokens).
+    /// The card's mana value (converted mana cost). Some funny cards have fractional mana costs.
     pub cmc: Option<f64>,
 
-    /// Color identity for Commander format (includes mana symbols in text). Always present.
+    /// This card's color identity.
     pub color_identity: Colors,
 
-    /// Color indicator (colored dot) for cards like Pact of Negation. `None` if no indicator.
+    /// The colors in this card's color indicator, if any.
     pub color_indicator: Option<Colors>,
 
-    /// Card colors based on mana cost and color indicator. `None` for colorless cards.
+    /// This card's colors, if the overall card has colors defined by rules.
     pub colors: Option<Colors>,
 
-    /// Defense value for battle cards (e.g., "3"). `None` for non-battle cards.
+    /// This face's defense, if any.
     pub defense: Option<String>,
 
-    /// EDHREC Commander format popularity ranking (lower = more popular). `None` if not ranked.
+    /// This card's overall rank/popularity on EDHREC. Lower values indicate more popular.
     pub edhrec_rank: Option<i32>,
 
-    /// Unclear - internal Scryfall flag. Rarely populated.
+    /// True if this card is on the Commander Game Changer list.
     pub game_changer: Option<bool>,
 
-    /// Starting hand size modifier for Vanguard cards (e.g., "+1", "-2"). `None` for non-Vanguard.
+    /// This card's hand modifier, if it is a Vanguard card.
     pub hand_modifier: Option<String>,
 
-    /// Keyword abilities (e.g., "Flying", "Haste"). `None` if no keywords.
+    /// An array of keywords that this card uses.
     pub keywords: Option<Vec<String>>,
 
-    /// Format legality status (Standard, Modern, Commander, etc.). Always present.
+    /// An object describing the legality of this card across play formats.
     pub legalities: Legalities,
 
-    /// Starting life modifier for Vanguard cards (e.g., "+5", "-3"). `None` for non-Vanguard.
+    /// This card's life modifier, if it is a Vanguard card.
     pub life_modifier: Option<String>,
 
-    /// Loyalty value for planeswalkers (e.g., "3"). `None` for non-planeswalkers.
+    /// This loyalty if any. Some cards have non-numeric loyalties.
     pub loyalty: Option<String>,
 
-    /// Mana cost in Scryfall notation (e.g., "{2}{R}{R}"). `None` for lands and tokens.
+    /// The mana cost for this card in Scryfall notation (e.g., "{2}{R}{R}"). Empty string if absent.
     pub mana_cost: Option<String>,
 
-    /// Card name. Always present.
+    /// The name of this card. Multiple faces separated by ␣//␣.
     pub name: String,
 
-    /// Oracle text (official rules text). `None` for cards without text (vanilla creatures, lands).
+    /// The Oracle text for this card, if any.
     pub oracle_text: Option<String>,
 
-    /// Penny Dreadful format popularity ranking. `None` if not legal in Penny Dreadful.
+    /// This card's rank/popularity on Penny Dreadful.
     pub penny_rank: Option<i32>,
 
-    /// Power value for creatures (e.g., "3", "*", "1+*"). `None` for non-creatures.
+    /// This card's power, if any. Some powers are non-numeric.
     pub power: Option<String>,
 
-    /// Mana colors this card can produce (e.g., lands). `None` if doesn't produce mana.
+    /// Colors of mana that this card could produce.
     pub produced_mana: Option<Vec<String>>,
 
-    /// Whether card is on the Reserved List (WotC will never reprint). Always present.
+    /// True if this card is on the Reserved List.
     pub reserved: bool,
 
-    /// Toughness value for creatures (e.g., "3", "*", "2+*"). `None` for non-creatures.
+    /// This card's toughness, if any. Some are non-numeric.
     pub toughness: Option<String>,
 
-    /// Type line (e.g., "Legendary Creature — Human Wizard"). `None` is rare.
+    /// The type line of this card.
     pub type_line: Option<String>,
 
     // ==================
     // Print Fields
     // ==================
     // Properties unique to this specific printing
-    /// Artist name. `None` for tokens or promotional cards without attribution.
+
+    /// The name of the illustrator of this card.
     pub artist: Option<String>,
 
-    /// Scryfall UUIDs for all contributing artists. `None` if artist not in Scryfall database.
+    /// The IDs of the artists that illustrated this card.
     pub artist_ids: Option<Vec<Uuid>>,
 
-    /// Attraction lights for Unfinity attraction cards (e.g., ["1", "3", "6"]). `None` for non-attractions.
+    /// The lit Unfinity attractions lights on this card, if any (e.g., ["1", "3", "6"]).
     #[serde(default, deserialize_with = "deserialize_int_or_string_array")]
     pub attraction_lights: Option<Vec<String>>,
 
-    /// Whether card is available in MTG Arena/MTGO boosters. Always present.
+    /// Whether this card is found in boosters.
     pub booster: bool,
 
-    /// Border color: "black", "white", "borderless", "silver", "gold". Always present.
+    /// This card's border color: black, white, borderless, yellow, silver, or gold.
     pub border_color: String,
 
-    /// UUID for the card back design. `None` for standard Magic back.
+    /// The Scryfall ID for the card back design present.
     pub card_back_id: Option<uuid::Uuid>,
 
-    /// Collector number within the set (e.g., "24", "42b", "★15"). Always present.
+    /// This card's collector number. Can contain non-numeric characters.
     pub collector_number: String,
 
-    /// Whether card has sensitive/mature content warning. `None` if no warning.
+    /// True if you should avoid using this print downstream.
     pub content_warning: Option<bool>,
 
-    /// Whether card is digital-only (not available in paper). Always present.
+    /// True if this card was only released in a video game.
     pub digital: bool,
 
-    /// Available finishes (e.g., ["nonfoil", "foil", "etched"]). Always present.
+    /// Flags indicating if this card comes in foil, nonfoil, or etched finishes.
     pub finishes: Vec<String>,
 
-    /// Special frame name for Godzilla series, etc. `None` for standard frame.
+    /// The just-for-fun name printed on the card.
     pub flavor_name: Option<String>,
 
-    /// Flavor text (italicized lore text). `None` if no flavor text.
+    /// The flavor text, if any.
     pub flavor_text: Option<String>,
 
-    /// Special frame effects (e.g., ["legendary", "nyxtouched", "showcase"]). `None` if standard frame.
+    /// This card's frame effects, if any.
     pub frame_effects: Option<Vec<String>>,
 
-    /// Frame version: "1993", "1997", "2003", "2015", "future". Always present.
+    /// This card's frame layout.
     pub frame: String,
 
-    /// Whether card has full-art frame. Always present.
+    /// True if this card's artwork is larger than normal.
     pub full_art: bool,
 
-    /// Games this print is available in (e.g., ["paper", "arena", "mtgo"]). `None` is rare.
+    /// A list of games this card is available in.
     pub games: Option<Vec<String>>,
 
-    /// Whether high-resolution scans are available. Always present.
+    /// True if this card's imagery is high resolution.
     pub highres_image: bool,
 
-    /// Scryfall UUID for the illustration (shared by alternate arts). `None` if not cataloged.
+    /// A unique identifier for the card artwork.
     pub illustration_id: Option<Uuid>,
 
-    /// Image availability: "missing", "placeholder", "lowres", "highres_scan". Always present.
+    /// A computer-readable indicator for image state.
     pub image_status: String,
 
-    /// Image URIs at various resolutions. `None` for multi-faced cards (see `card_faces`).
+    /// An object listing available imagery for this card.
     pub image_uris: Option<ImageUris>,
 
-    /// Whether card is oversized (e.g., planechase planes). Always present.
+    /// True if this card is oversized.
     pub oversized: bool,
 
-    /// Current market prices (USD, EUR, TIX). Always present.
+    /// An object containing daily price information for this card.
     pub prices: Prices,
 
-    /// Card name in printed language (for non-English cards). `None` if English or not translated.
+    /// The localized name printed on this card, if any.
     pub printed_name: Option<String>,
 
-    /// Oracle text in printed language. `None` if English or not translated.
+    /// The localized text printed on this card, if any.
     pub printed_text: Option<String>,
 
-    /// Type line in printed language. `None` if English or not translated.
+    /// The localized type line printed on this card, if any.
     pub printed_type_line: Option<String>,
 
-    /// Whether card is promotional. Always present.
+    /// True if this card is a promotional print.
     pub promo: bool,
 
-    /// Promotional types (e.g., ["prerelease", "bundle"]). `None` if not promotional.
+    /// An array describing what categories of promo cards this falls into.
     pub promo_types: Option<Vec<String>>,
 
-    /// Purchase links to retailers (TCGplayer, Cardmarket, etc.). `None` if not available.
+    /// An object providing URIs to this card's listings on marketplaces.
     pub purchase_uris: Option<serde_json::Value>,
 
-    /// Card rarity: Common, Uncommon, Rare, Mythic. Always present.
+    /// This card's rarity: common, uncommon, rare, special, mythic, or bonus.
     pub rarity: Rarity,
 
-    /// Related links (EDHREC, Gatherer, etc.). Always present.
+    /// An object providing URIs to this card on Magic resources.
     pub related_uris: serde_json::Value,
 
-    /// Official release date for this set. Always present.
+    /// The date this card was first released.
     pub released_at: chrono::NaiveDate,
 
-    /// Whether this is a reprint (false for first printing). Always present.
+    /// True if this card is a reprint.
     pub reprint: bool,
 
-    /// Scryfall set page URI. Always present.
+    /// A link to this card's set on Scryfall's website.
     pub scryfall_set_uri: String,
 
-    /// Full set name (e.g., "Innistrad: Midnight Hunt"). Always present.
+    /// This card's full set name.
     pub set_name: String,
 
-    /// Scryfall API URI to search cards in this set. Always present.
+    /// A link to paginate this card's set on the Scryfall API.
     pub set_search_uri: String,
 
-    /// Set type: "core", "expansion", "masters", "draft_innovation", "commander", etc. Always present.
+    /// The type of set this printing is in.
     pub set_type: String,
 
-    /// Scryfall set API URI. Always present.
+    /// A link to this card's set object on Scryfall's API.
     pub set_uri: String,
 
-    /// Set code (e.g., "MID", "NEO", "2XM"). Always present.
+    /// This card's set code.
     pub set: String,
 
-    /// Scryfall UUID for the set. Always present.
+    /// This card's Set object UUID.
     pub set_id: uuid::Uuid,
 
-    /// Whether card is a Story Spotlight card. Always present.
+    /// True if this card is a Story Spotlight.
     pub story_spotlight: bool,
 
-    /// Whether card has no text box. Always present.
+    /// True if the card is printed without text.
     pub textless: bool,
 
-    /// Whether this is an alternate art/frame variation. Always present.
+    /// Whether this card is a variation of another printing.
     pub variation: bool,
 
-    /// Scryfall ID of the parent card if this is a variation. `None` if not a variation.
+    /// The printing ID of the printing this card is a variation of.
     pub variation_of: Option<Uuid>,
 
-    /// Security stamp type: "oval", "triangle", "acorn", "arena". `None` if no stamp.
+    /// The security stamp on this card, if any.
     pub security_stamp: Option<String>,
 
-    /// Watermark name (e.g., "set", "colorpie", "wotc"). `None` if no watermark.
+    /// This card's watermark, if any.
     pub watermark: Option<String>,
 
-    /// Preview release date if card was previewed early. `None` if not previewed.
+    /// The date this card was previewed.
     pub preview_previewed_at: Option<chrono::NaiveDate>,
 
-    /// URI to preview source article. `None` if not previewed.
+    /// A link to the preview for this card.
     pub preview_source_uri: Option<String>,
 
-    /// Name of preview source (website/streamer). `None` if not previewed.
+    /// The name of the source that previewed this card.
     pub preview_source: Option<String>,
 }
 

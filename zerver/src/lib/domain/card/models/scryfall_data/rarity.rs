@@ -7,31 +7,14 @@ use thiserror::Error;
 pub struct InvalidRarity;
 
 /// Card rarity classification in Magic: The Gathering.
-///
-/// Rarities affect card availability in booster packs and overall collectibility.
-///
-/// # Standard Rarities
-/// - **Common (C)**: Most frequent, ~10 per booster pack
-/// - **Uncommon (U)**: Less frequent, ~3 per booster pack
-/// - **Rare (R)**: Rare, ~1 per booster pack
-/// - **Mythic (M)**: Mythic rare, ~1 per 8 booster packs
-///
-/// # Special Rarities
-/// - **Bonus**: Special bonus sheet cards (e.g., The List)
-/// - **Special**: Unique promotional/special printings
+#[allow(missing_docs)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Rarity {
-    /// Common rarity (C).
     Common,
-    /// Uncommon rarity (U).
     Uncommon,
-    /// Rare rarity (R).
     Rare,
-    /// Mythic rare rarity (M).
     Mythic,
-    /// Bonus sheet rarity (B) - special bonus cards in packs.
     Bonus,
-    /// Special rarity (S) - unique promotional printings.
     Special,
 }
 
@@ -119,10 +102,7 @@ impl<'de> Deserialize<'de> for Rarity {
     }
 }
 
-/// Collection of card rarities (wrapper around `Vec<Rarity>`).
-///
-/// Provides utility methods for batch conversion to short/long names.
-/// Derefs to `&[Rarity]` for direct slice operations.
+/// Collection of card rarities.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Rarities(Vec<Rarity>);
 

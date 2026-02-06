@@ -7,27 +7,13 @@ use thiserror::Error;
 pub struct InvalidColor;
 
 /// Magic: The Gathering's five colors.
-///
-/// Colors are fundamental to MTG's mana system and card identity.
-/// Each color represents a philosophy and mechanical identity (WUBRG order).
-///
-/// # Short Codes
-/// - **W**: White
-/// - **U**: Blue (U is used to avoid confusion with B for Black)
-/// - **B**: Black
-/// - **R**: Red
-/// - **G**: Green
+#[allow(missing_docs)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Color {
-    /// White (W) - order, protection, community.
     White,
-    /// Blue (U) - knowledge, control, illusion.
     Blue,
-    /// Black (B) - ambition, death, power.
     Black,
-    /// Red (R) - freedom, chaos, emotion.
     Red,
-    /// Green (G) - nature, growth, instinct.
     Green,
 }
 
@@ -118,16 +104,9 @@ impl TryFrom<String> for Color {
     }
 }
 
-/// Collection of card colors (wrapper around `Vec<Color>`).
+/// Collection of card colors.
 ///
-/// Represents a card's color identity, colors, or color indicator.
-/// Empty collection means colorless. Derefs to `&[Color]` for direct slice operations.
-///
-/// # Examples
-/// - `[]` - Colorless (e.g., artifacts, Eldrazi)
-/// - `[White]` - Monowhite
-/// - `[Blue, Red]` - Izzet colors
-/// - `[White, Blue, Black, Red, Green]` - Five-color (WUBRG)
+/// Empty collection means colorless.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Colors(Vec<Color>);
 
