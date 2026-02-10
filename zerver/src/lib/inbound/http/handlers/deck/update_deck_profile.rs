@@ -64,14 +64,21 @@ impl From<InvalidUpdateDeckProfile> for ApiError {
     }
 }
 
+/// Deck metadata update request body with partial update semantics.
+///
+/// Uses [`Optdate`] for nullable fields: absent means unchanged, `null` means set to `None`.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HttpUpdateDeckProfile {
+    /// New deck name, or `None` to leave unchanged.
     pub name: Option<String>,
+    /// Commander card ID with partial update semantics.
     pub commander_id: Optdate<Uuid>,
+    /// Max copies per card with partial update semantics.
     pub copy_max: Optdate<i32>,
 }
 
 impl HttpUpdateDeckProfile {
+    /// Creates a new deck update request.
     pub fn new(name: Option<&str>, commander_id: Optdate<Uuid>, copy_max: Optdate<i32>) -> Self {
         Self {
             name: name.map(|name| name.to_string()),
@@ -81,6 +88,7 @@ impl HttpUpdateDeckProfile {
     }
 }
 
+/// Updates deck metadata with ownership verification.
 #[cfg(feature = "zerver")]
 pub async fn update_deck_profile<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,

@@ -49,14 +49,19 @@ impl From<InvalidCreateDeckProfile> for ApiError {
     }
 }
 
+/// Deck creation request body.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpCreateDeckProfile {
+    /// Deck display name.
     pub name: String,
+    /// Optional commander card ID.
     pub commander_id: Option<Uuid>,
+    /// Optional maximum copies per card.
     pub copy_max: Option<i32>,
 }
 
 impl HttpCreateDeckProfile {
+    /// Creates a new deck creation request.
     pub fn new(name: &str, commander_id: Option<Uuid>, copy_max: Option<i32>) -> Self {
         Self {
             name: name.to_string(),
@@ -66,6 +71,7 @@ impl HttpCreateDeckProfile {
     }
 }
 
+/// Creates a new deck for the authenticated user.
 #[cfg(feature = "zerver")]
 pub async fn create_deck_profile<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,

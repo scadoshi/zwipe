@@ -40,6 +40,7 @@ impl From<GetDeckProfileError> for ApiError {
     }
 }
 
+/// Returns deck metadata with ownership verification.
 #[cfg(feature = "zerver")]
 pub async fn get_deck_profile<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,

@@ -23,6 +23,7 @@ impl From<GetSetsError> for ApiError {
     }
 }
 
+/// Returns distinct set names.
 #[cfg(feature = "zerver")]
 pub async fn get_sets<AS, US, HS, CS, DS>(
     _: AuthenticatedUser,

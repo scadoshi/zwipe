@@ -23,6 +23,7 @@ impl From<GetCardTypesError> for ApiError {
     }
 }
 
+/// Returns distinct card type names.
 #[cfg(feature = "zerver")]
 pub async fn get_card_types<AS, US, HS, CS, DS>(
     _: AuthenticatedUser,

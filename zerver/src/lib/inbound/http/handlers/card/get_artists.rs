@@ -23,6 +23,7 @@ impl From<GetArtistsError> for ApiError {
     }
 }
 
+/// Returns distinct artist names.
 #[cfg(feature = "zerver")]
 pub async fn get_artists<AS, US, HS, CS, DS>(
     _: AuthenticatedUser,

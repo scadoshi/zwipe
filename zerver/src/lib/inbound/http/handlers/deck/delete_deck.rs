@@ -44,6 +44,7 @@ impl From<InvalidDeleteDeck> for ApiError {
     }
 }
 
+/// Deletes a deck after ownership verification.
 #[cfg(feature = "zerver")]
 pub async fn delete_deck<AS, US, HS, CS, DS>(
     State(state): State<AppState<AS, US, HS, CS, DS>>,

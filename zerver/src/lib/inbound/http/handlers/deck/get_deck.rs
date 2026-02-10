@@ -33,6 +33,7 @@ impl From<GetDeckError> for ApiError {
     }
 }
 
+/// Returns the full deck including all cards (not just metadata like `get_deck_profile`).
 #[cfg(feature = "zerver")]
 pub async fn get_deck<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,

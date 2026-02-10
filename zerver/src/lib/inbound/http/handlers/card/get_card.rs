@@ -55,6 +55,7 @@ impl From<GetCardError> for ApiError {
     }
 }
 
+/// Returns a single card by Scryfall data ID.
 #[cfg(feature = "zerver")]
 pub async fn get_card<AS, US, HS, CS, DS>(
     _: AuthenticatedUser,

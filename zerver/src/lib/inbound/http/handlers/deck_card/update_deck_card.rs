@@ -61,17 +61,23 @@ impl From<InvalidUpdateDeckCard> for ApiError {
     }
 }
 
+/// Card quantity update request body.
+///
+/// `update_quantity` is a **delta** added to the current quantity, not an absolute value.
+/// For example, `1` adds one copy, `-1` removes one copy.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpUpdateDeckCard {
     update_quantity: i32,
 }
 
 impl HttpUpdateDeckCard {
+    /// Creates a new quantity update request.
     pub fn new(update_quantity: i32) -> Self {
         Self { update_quantity }
     }
 }
 
+/// Adjusts a card's quantity by the given delta.
 #[cfg(feature = "zerver")]
 pub async fn update_deck_card<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,

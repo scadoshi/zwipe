@@ -58,13 +58,17 @@ impl From<InvalidCreateDeckCard> for ApiError {
     }
 }
 
+/// Add card to deck request body.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpCreateDeckCard {
+    /// Scryfall data ID of the card to add.
     pub scryfall_data_id: String,
+    /// Initial quantity.
     pub quantity: i32,
 }
 
 impl HttpCreateDeckCard {
+    /// Creates a new add-card-to-deck request.
     pub fn new(scryfall_data_id: &str, quantity: i32) -> Self {
         Self {
             scryfall_data_id: scryfall_data_id.to_string(),
@@ -73,6 +77,7 @@ impl HttpCreateDeckCard {
     }
 }
 
+/// Adds a card to a deck with the specified quantity.
 #[cfg(feature = "zerver")]
 pub async fn create_deck_card<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,

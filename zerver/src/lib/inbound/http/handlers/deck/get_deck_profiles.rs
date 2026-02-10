@@ -29,6 +29,7 @@ impl From<InvalidGetDeckProfiles> for ApiError {
     }
 }
 
+/// Returns all deck profiles for the authenticated user.
 #[cfg(feature = "zerver")]
 pub async fn get_deck_profiles<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,

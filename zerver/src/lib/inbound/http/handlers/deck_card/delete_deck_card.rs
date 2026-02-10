@@ -51,6 +51,7 @@ impl From<InvalidDeleteDeckCard> for ApiError {
     }
 }
 
+/// Removes a card from a deck.
 #[cfg(feature = "zerver")]
 pub async fn delete_deck_card<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,

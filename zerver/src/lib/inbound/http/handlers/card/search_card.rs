@@ -25,6 +25,7 @@ impl From<SearchCardsError> for ApiError {
     }
 }
 
+/// Searches cards using a `CardFilter` deserialized from the JSON body.
 #[cfg(feature = "zerver")]
 pub async fn search_cards<AS, US, HS, CS, DS>(
     _: AuthenticatedUser,

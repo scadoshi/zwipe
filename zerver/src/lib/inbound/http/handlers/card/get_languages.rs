@@ -23,6 +23,7 @@ impl From<GetLanguagesError> for ApiError {
     }
 }
 
+/// Returns distinct language names.
 #[cfg(feature = "zerver")]
 pub async fn get_languages<AS, US, HS, CS, DS>(
     _: AuthenticatedUser,
