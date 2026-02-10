@@ -7,31 +7,15 @@ use reqwest::Client;
 use serde::Deserialize;
 use serde_json::Value;
 
-/// scryfall returns this
-/// when you get bulk data
+/// Scryfall bulk data metadata response (contains the download URI).
 #[derive(Deserialize, Debug)]
 pub(super) struct BulkDataObject {
-    // content_encoding: String,
-    // content_type: String,
-    // description: String,
     pub(super) download_uri: String,
-    // id: String,
-    // name: String,
-    // object: String,
-    // size: i64,
-    // #[serde(rename = "type")]
-    // bulk_type: String,
-    // updated_at: String,
-    // uri: String,
 }
 
-// ==========================
-//  bulk endpoint ergonomics
-// ==========================
-// not sure if every endpoints returns consistent types
-// only tested `OracleCards` for now :O
-
+/// Scryfall's bulk data download categories.
 #[derive(Debug, Clone, Copy)]
+#[allow(missing_docs)]
 pub enum BulkEndpoint {
     OracleCards,
     UniqueArtwork,
@@ -51,6 +35,7 @@ impl BulkEndpoint {
         }
     }
 
+    /// Returns the snake_case name for file naming.
     pub fn to_snake_case(&self) -> String {
         match self {
             Self::OracleCards => "oracle_cards".to_string(),
@@ -63,7 +48,7 @@ impl BulkEndpoint {
 }
 
 impl BulkEndpoint {
-    /// gets bulk cards with a BulkEndpoint parameter end returns `Vec<ScryfallData>`
+    /// Fetches bulk card data in two steps: metadata endpoint → download URI → card data.
     pub async fn amass(&self) -> anyhow::Result<Vec<ScryfallData>> {
         // first get the bulk data object with our main url
         let url = format!("{}{}", SCRYFALL_API_BASE, &self.resolve());

@@ -1,3 +1,10 @@
+//! HTTP request builder using MTG-themed naming conventions.
+//!
+//! - **Planeswalker** = HTTP client wrapper with Scryfall API headers
+//! - **untap** = create a new request builder
+//! - **cast** = send the request
+//! - **tutor** = search for a card
+
 use crate::domain::card::models::scryfall_data::ScryfallData;
 use anyhow::Context;
 use reqwest::{
@@ -14,30 +21,22 @@ pub(super) const ACCEPT_VALUE: &str = "*/*";
 pub(super) const SCRYFALL_API_BASE: &str = "https://api.scryfall.com";
 pub(super) const CARDS_SEARCH_ENDPOINT: &str = "/cards/search";
 
-/// scryfall returns this
-/// when you search for a card
+/// Scryfall search response wrapper.
 #[derive(Deserialize, Debug)]
 struct ScryfallDataSearchResponse {
     data: Vec<ScryfallData>,
-    // has_more: bool,
-    // object: String,
-    // total_cards: i32,
 }
 
 // =========
 //  helpers
 // =========
 
-// for building scryfall based requests
-// yes these use magic the gathering terms
-
+/// Wraps a `RequestBuilder` with Scryfall API headers (User-Agent, Accept).
 #[derive(Debug)]
-/// ensures we have a `RequestBuilder` appropriate
-/// for making calls on the Scryfall API
 pub(super) struct Planeswalker(RequestBuilder);
 
 impl Planeswalker {
-    /// main constructor
+    /// Creates a new GET request builder with Scryfall headers.
     pub(super) fn untap(client: Client, full_url: &str) -> Self {
         Self(
             client
@@ -46,19 +45,17 @@ impl Planeswalker {
                 .header(ACCEPT, ACCEPT_VALUE),
         )
     }
-    /// for sending requests
+    /// Sends the request.
     pub(super) async fn cast(self) -> Result<Response, reqwest::Error> {
         self.0.send().await
     }
 
-    /// adding the "q" parameter with value input
-    /// (meant for the tutor function)
     fn tutor_for(self, search_str: &str) -> Self {
         Planeswalker(self.0.query(&[("q", search_str)]))
     }
 
+    /// Searches for a card by name via the Scryfall search endpoint.
     #[allow(dead_code)]
-    /// for searching for a single card
     pub(super) async fn tutor(
         client: Client,
         search_str: &str,
@@ -82,9 +79,10 @@ impl Planeswalker {
     }
 }
 
-/// for getting a `RequestBuilder` ready with scryfall api url + endpoint
+/// Extension trait for creating a `Planeswalker` from a reqwest `Client`.
 #[allow(dead_code)]
 pub(super) trait CreatePlaneswalker {
+    /// Builds a Planeswalker targeting the given Scryfall endpoint.
     fn into_planeswalker(self, endpoint: &str) -> Planeswalker;
 }
 

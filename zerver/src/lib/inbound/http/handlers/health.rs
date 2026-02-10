@@ -16,7 +16,9 @@ use serde_json::{json, Value};
 //  root
 // ======
 
+/// Root endpoint response with package name, version, and status.
 #[derive(Debug, Serialize)]
+#[allow(missing_docs)]
 pub struct RootResponse {
     pub message: String,
     pub version: String,
@@ -33,6 +35,7 @@ impl RootResponse {
     }
 }
 
+/// Returns package name, version, and status.
 #[cfg(feature = "zerver")]
 pub async fn root() -> Json<Value> {
     Json(json!(RootResponse::new(
@@ -61,11 +64,13 @@ impl HealthCheckResponse {
     }
 }
 
+/// Returns healthy if the server is reachable.
 #[cfg(feature = "zerver")]
 pub async fn is_server_running() -> Json<Value> {
     Json(json!(HealthCheckResponse::new("healthy")))
 }
 
+/// Pings the database and reports connectivity status.
 #[cfg(feature = "zerver")]
 pub async fn are_server_and_database_running<AS, US, HS, CS, DS>(
     State(state): State<AppState<AS, US, HS, CS, DS>>,
