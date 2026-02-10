@@ -1,19 +1,30 @@
+//! HTTP layer: Axum server, error mapping, middleware, and route definitions.
+
+/// HTTP request handlers organized by domain.
 pub mod handlers;
+/// Partial-update helpers (`Optdate`).
 pub mod helpers;
 #[cfg(feature = "zerver")]
+/// JWT authentication middleware.
 pub mod middleware;
+/// Path constants shared between frontend and backend.
+pub mod paths;
+/// Route definitions mapping paths to handlers.
 pub mod routes;
 
 #[cfg(feature = "zerver")]
-use crate::domain::{
-    auth::ports::AuthService, card::ports::CardService, deck::ports::DeckService,
-    health::ports::HealthService, user::ports::UserService,
+use crate::{
+    domain::{
+        auth::ports::AuthService, card::ports::CardService, deck::ports::DeckService,
+        health::ports::HealthService, user::ports::UserService,
+    },
+    inbound::http::routes::{private_routes, public_routes},
 };
 #[cfg(feature = "zerver")]
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 #[cfg(feature = "zerver")]
 use axum::{
-    http::{header, HeaderValue, Method, StatusCode},
+    http::{HeaderValue, Method, StatusCode, header},
     response::IntoResponse,
 };
 #[cfg(feature = "zerver")]
@@ -28,7 +39,13 @@ use tower_http::cors::CorsLayer;
 //  error
 // =======
 
+/// Maps domain errors to HTTP status codes.
+///
+/// `InternalServerError` **strips the original message** in its `IntoResponse` impl,
+/// returning a generic `"internal server error"` to prevent leaking internals.
+/// Other variants forward the message to the client.
 #[derive(Debug, Error, Clone)]
+#[allow(missing_docs)]
 pub enum ApiError {
     #[error("{0}")]
     InternalServerError(String),
@@ -104,8 +121,12 @@ impl IntoResponse for ApiError {
     }
 }
 
+/// Logs the full error with backtrace, then returns a generic 500 to the client.
+///
+/// Prevents leaking internal details while preserving diagnostics in server logs.
 #[cfg(feature = "zerver")]
 trait Log500 {
+    /// Log the error and convert to [`ApiError::InternalServerError`].
     fn log_500(self) -> ApiError;
 }
 
@@ -124,17 +145,22 @@ where
 //  server
 // ========
 
+/// Bind address and CORS origins for the HTTP server.
 #[cfg(feature = "zerver")]
-/// contains configuration for the creation of an HttpServer
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HttpServerConfig<'a> {
+    /// Address to bind the TCP listener to (e.g. `"0.0.0.0:3000"`).
     pub bind_address: &'a str,
+    /// Origins permitted by CORS policy.
     pub allowed_origins: Vec<HeaderValue>,
 }
 
+/// Shared application state holding all service implementations.
+///
+/// Generic over five service traits so handlers can be tested with mock implementations.
 #[cfg(feature = "zerver")]
-/// contains services
 #[derive(Debug, Clone)]
+#[allow(missing_docs)]
 pub struct AppState<AS, US, HS, CS, DS>
 where
     AS: AuthService,
@@ -150,9 +176,8 @@ where
     pub deck_service: Arc<DS>,
 }
 
+/// Axum HTTP server with pre-configured routes and middleware.
 #[cfg(feature = "zerver")]
-/// server with a router and a listener
-/// for running our application server
 pub struct HttpServer {
     router: axum::Router,
     listener: net::TcpListener,
@@ -160,6 +185,7 @@ pub struct HttpServer {
 
 #[cfg(feature = "zerver")]
 impl HttpServer {
+    /// Builds routes, applies tracing and CORS middleware, and binds the TCP listener.
     pub async fn new(
         auth_service: impl AuthService,
         user_service: impl UserService,
@@ -168,8 +194,6 @@ impl HttpServer {
         deck_service: impl DeckService,
         config: HttpServerConfig<'_>,
     ) -> anyhow::Result<Self> {
-        use crate::inbound::http::routes::{private_routes, public_routes};
-
         let trace_layer = tower_http::trace::TraceLayer::new_for_http().make_span_with(
             |request: &axum::extract::Request<_>| {
                 let uri = request.uri().to_string();
@@ -204,6 +228,7 @@ impl HttpServer {
         Ok(Self { router, listener })
     }
 
+    /// Starts serving HTTP requests.
     pub async fn run(self) -> anyhow::Result<()> {
         tracing::info!(
             "server running on {}",

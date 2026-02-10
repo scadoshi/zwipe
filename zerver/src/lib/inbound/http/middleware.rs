@@ -1,3 +1,5 @@
+//! JWT authentication middleware.
+
 #[cfg(feature = "zerver")]
 use axum::{
     async_trait,
@@ -24,9 +26,21 @@ use crate::{
     },
     inbound::http::AppState,
 };
+
+/// Axum extractor that enforces JWT authentication.
+///
+/// Including this in a handler signature means the route requires a valid Bearer token.
+/// Extraction flow: `Authorization: Bearer <token>` → parse JWT → validate signature
+/// → extract claims.
+///
+/// Rejects with `400 Bad Request` if the header is missing or malformed,
+/// `401 Unauthorized` if the signature is invalid.
 pub struct AuthenticatedUser {
+    /// User ID from JWT claims.
     pub id: Uuid,
+    /// Username from JWT claims.
     pub username: Username,
+    /// Email from JWT claims.
     pub email: EmailAddress,
 }
 
