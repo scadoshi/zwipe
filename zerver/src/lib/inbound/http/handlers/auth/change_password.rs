@@ -42,6 +42,7 @@ impl From<InvalidChangePassword> for ApiError {
     }
 }
 
+/// Password change request body. Requires current password for re-verification.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpChangePassword {
     current_password: String,
@@ -49,6 +50,7 @@ pub struct HttpChangePassword {
 }
 
 impl HttpChangePassword {
+    /// Creates a new password change request.
     pub fn new(current_password: &str, new_password: &str) -> Self {
         Self {
             current_password: current_password.to_string(),
@@ -57,6 +59,7 @@ impl HttpChangePassword {
     }
 }
 
+/// Changes the user's password after verifying the current one.
 #[cfg(feature = "zerver")]
 pub async fn change_password<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,

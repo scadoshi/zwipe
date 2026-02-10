@@ -36,6 +36,7 @@ impl From<AuthenticatedUser> for GetUser {
     }
 }
 
+/// Returns the authenticated user's own profile (identity from JWT, no path params).
 #[cfg(feature = "zerver")]
 pub async fn get_user<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,

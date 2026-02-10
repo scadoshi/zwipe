@@ -48,6 +48,9 @@ impl From<InvalidAuthenticateUser> for ApiError {
     }
 }
 
+/// Login request body.
+///
+/// `identifier` accepts either an email address or a username.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpAuthenticateUser {
     identifier: String,
@@ -55,6 +58,7 @@ pub struct HttpAuthenticateUser {
 }
 
 impl HttpAuthenticateUser {
+    /// Creates a new login request.
     pub fn new(identifier: &str, password: &str) -> Self {
         Self {
             identifier: identifier.to_string(),
@@ -80,6 +84,7 @@ impl TryFrom<HttpAuthenticateUser> for AuthenticateUser {
     }
 }
 
+/// Authenticates a user by email or username and returns a session.
 #[cfg(feature = "zerver")]
 pub async fn authenticate_user<AS, US, HS, CS, DS>(
     State(state): State<AppState<AS, US, HS, CS, DS>>,

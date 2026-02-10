@@ -60,6 +60,10 @@ impl From<InvalidRefreshSession> for ApiError {
     }
 }
 
+/// Token refresh request body.
+///
+/// `user_id` is a String that gets parsed to a Uuid.
+/// On success the old refresh token is consumed and a new token pair is issued.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpRefreshSession {
     user_id: String,
@@ -67,6 +71,7 @@ pub struct HttpRefreshSession {
 }
 
 impl HttpRefreshSession {
+    /// Creates a new token refresh request.
     pub fn new(user_id: &str, refresh_token: &str) -> Self {
         Self {
             user_id: user_id.to_string(),
@@ -99,6 +104,7 @@ impl TryFrom<HttpRefreshSession> for RefreshSession {
     }
 }
 
+/// Rotates a refresh token, consuming the old one and issuing a new session.
 #[cfg(feature = "zerver")]
 pub async fn refresh_session<AS, US, HS, CS, DS>(
     State(state): State<AppState<AS, US, HS, CS, DS>>,

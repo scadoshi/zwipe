@@ -42,11 +42,14 @@ impl From<InvalidDeleteUser> for ApiError {
     }
 }
 
+/// Account deletion request body. Requires password confirmation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HttpDeleteUser {
+    /// Current password to confirm deletion.
     pub password: String,
 }
 
+/// Deletes the user's account and all associated data after password verification.
 #[cfg(feature = "zerver")]
 pub async fn delete_user<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,

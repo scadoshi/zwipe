@@ -95,6 +95,7 @@ impl From<InvalidRegisterUser> for ApiError {
     }
 }
 
+/// Registration request body.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpRegisterUser {
     username: String,
@@ -103,6 +104,7 @@ pub struct HttpRegisterUser {
 }
 
 impl HttpRegisterUser {
+    /// Creates a new registration request.
     pub fn new(username: &str, email: &str, password: &str) -> Self {
         Self {
             username: username.to_string(),
@@ -130,6 +132,7 @@ impl From<RawRegisterUser> for HttpRegisterUser {
     }
 }
 
+/// Registers a new user and returns a session (auto-login).
 #[cfg(feature = "zerver")]
 pub async fn register_user<AS, US, HS, CS, DS>(
     State(state): State<AppState<AS, US, HS, CS, DS>>,

@@ -47,6 +47,7 @@ impl From<InvalidChangeEmail> for ApiError {
     }
 }
 
+/// Email change request body. Requires password for re-verification.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpChangeEmail {
     email: String,
@@ -54,6 +55,7 @@ pub struct HttpChangeEmail {
 }
 
 impl HttpChangeEmail {
+    /// Creates a new email change request.
     pub fn new(email: &str, password: &str) -> Self {
         Self {
             email: email.to_string(),
@@ -62,6 +64,7 @@ impl HttpChangeEmail {
     }
 }
 
+/// Changes the user's email after verifying the password.
 #[cfg(feature = "zerver")]
 pub async fn change_email<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,

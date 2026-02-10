@@ -48,6 +48,7 @@ impl From<InvalidChangeUsername> for ApiError {
     }
 }
 
+/// Username change request body. Requires password for re-verification.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpChangeUsername {
     new_username: String,
@@ -55,6 +56,7 @@ pub struct HttpChangeUsername {
 }
 
 impl HttpChangeUsername {
+    /// Creates a new username change request.
     pub fn new(new_username: &str, password: &str) -> Self {
         Self {
             new_username: new_username.to_string(),
@@ -72,6 +74,7 @@ impl From<ChangeUsername> for HttpChangeUsername {
     }
 }
 
+/// Changes the user's username after verifying the password.
 #[cfg(feature = "zerver")]
 pub async fn change_username<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,

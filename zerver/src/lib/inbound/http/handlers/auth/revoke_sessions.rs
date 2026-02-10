@@ -25,6 +25,7 @@ impl From<RevokeSessionsError> for ApiError {
     }
 }
 
+/// Revokes all sessions for the authenticated user (logs out all devices).
 #[cfg(feature = "zerver")]
 pub async fn revoke_sessions<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,
