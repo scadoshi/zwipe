@@ -1,3 +1,5 @@
+//! Maps `ImageUris` to PostgreSQL JSONB via serde serialization.
+
 use sqlx::{encode::IsNull, types::JsonValue, Decode, Encode, Postgres, Type};
 
 use crate::domain::card::models::scryfall_data::image_uris::ImageUris;

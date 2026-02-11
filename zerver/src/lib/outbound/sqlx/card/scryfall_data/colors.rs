@@ -1,9 +1,7 @@
+//! Maps `Colors` to PostgreSQL `TEXT[]` using short color names (`"W"`, `"U"`, `"B"`, etc.).
+
 use crate::domain::card::models::scryfall_data::colors::{Color, Colors};
 use sqlx::{encode::IsNull, postgres::PgTypeInfo, Decode, Encode, Postgres, Type, TypeInfo};
-
-// Colors maps to PostgreSQL TEXT[]
-// Encodes as Vec<String> of short names (["W", "U", "B"])
-// Decodes from Vec<String> back to Colors
 
 impl Type<Postgres> for Colors {
     fn type_info() -> PgTypeInfo {

@@ -1,3 +1,5 @@
+//! Maps `Rarity` to PostgreSQL `TEXT` and `Rarities` to `TEXT[]` using short rarity names.
+
 use crate::domain::card::models::scryfall_data::rarity::{Rarities, Rarity};
 use sqlx::{encode::IsNull, postgres::PgTypeInfo, Decode, Encode, Postgres, Type, TypeInfo};
 

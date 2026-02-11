@@ -1,3 +1,5 @@
+//! Maps `CardFace` and `CardFaces` to PostgreSQL JSONB via serde serialization.
+
 use crate::domain::card::models::scryfall_data::card_faces::{CardFace, CardFaces};
 use sqlx::{encode::IsNull, types::JsonValue, Decode, Encode, Postgres, Type};
 
