@@ -1,5 +1,10 @@
+//! Deck management repository implementation.
+
+/// SQLx error-to-domain error mappings and intermediate conversion errors.
 pub mod error;
+/// Query-based deck ownership verification.
 pub mod helper;
+/// Database-to-domain deck model conversions.
 pub mod models;
 
 use crate::{
@@ -152,6 +157,10 @@ impl DeckRepository for Postgres {
     // ========
     //  update
     // ========
+    /// Dynamically builds an `UPDATE` query for only the provided fields.
+    ///
+    /// Always sets `updated_at` to the current timestamp regardless of which
+    /// fields are being updated.
     async fn update_deck_profile(
         &self,
         request: &UpdateDeckProfile,
@@ -190,6 +199,10 @@ impl DeckRepository for Postgres {
         Ok(deck_profile)
     }
 
+    /// Applies a **relative delta** to card quantity (`quantity + $1`).
+    ///
+    /// The database enforces a check constraint on `quantity`, so negative deltas
+    /// that would result in an invalid quantity surface as `InvalidResultingQuantity`.
     async fn update_deck_card(
         &self,
         request: &UpdateDeckCard,

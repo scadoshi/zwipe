@@ -14,7 +14,10 @@ use sqlx::QueryBuilder;
 use sqlx::{PgTransaction, query_as};
 use std::future::Future;
 
-/// for use in error filtering below
+/// Postgres error substring used to filter noise from card-by-card fallback retries.
+///
+/// When a transaction is aborted, subsequent statements produce this error instead
+/// of the root cause — so these are silently skipped during error reporting.
 const POSTGRES_TX_ABORT_MESSAGE: &str = "current transaction is aborted";
 
 // ====================
@@ -26,7 +29,12 @@ fn is_token(scryfall_data: &ScryfallData) -> bool {
     scryfall_data.layout == "token"
 }
 
-/// determines if a card is a valid MTG commander
+/// Determines if a card is a valid MTG commander.
+///
+/// A card qualifies through three paths:
+/// 1. Oracle text contains "can be your commander" (e.g. Planeswalker commanders)
+/// 2. Type line contains both "Legendary" and "Creature"
+/// 3. Legendary Vehicle/Spacecraft with power and toughness values
 fn is_valid_commander(scryfall_data: &ScryfallData) -> bool {
     let Some(type_line_lower) = scryfall_data.type_line.as_ref().map(|tl| tl.to_lowercase()) else {
         return false;
@@ -113,9 +121,10 @@ impl SingleUpsertWithTx for ScryfallData {
     }
 }
 
-/// bulk insert/update of `ScryfallData`
-/// - also inserts/updates `CardProfile`
-/// - includes no special batching
+/// Bulk insert/update of `ScryfallData` and `CardProfile` in a single query.
+///
+/// Deduplicates input by `id` before insertion to avoid constraint conflicts
+/// within the same batch.
 pub trait BulkUpsertWithTx
 where
     Self: Sized,
@@ -177,9 +186,10 @@ impl BulkUpsertWithTx for &[ScryfallData] {
     }
 }
 
-/// batch insert/update of `ScryfallData`
-/// - also inserts/updates `CardProfile`
-/// - uses `BulkUpsertWithTx` interally to perform batching
+/// Chunked batch insert/update using `BulkUpsertWithTx` per chunk.
+///
+/// On chunk failure, **falls back to card-by-card insertion** via
+/// `upsert_card_by_card` so one bad card doesn't block the entire batch.
 pub trait BatchUpsertWithTx
 where
     Self: Sized,
@@ -242,6 +252,10 @@ impl BatchUpsertWithTx for &[ScryfallData] {
     }
 }
 
+/// Delta-aware bulk upsert that **skips unchanged cards**.
+///
+/// Fetches existing records by ID, compares with input, and only upserts the
+/// diff. Returns both the upserted cards and a count of skipped (unchanged) cards.
 pub trait BulkDeltaUpsertWithTx
 where
     Self: Sized,
@@ -277,6 +291,10 @@ impl BulkDeltaUpsertWithTx for &[ScryfallData] {
     }
 }
 
+/// Combines chunked batching with delta detection.
+///
+/// Each chunk runs through `BulkDeltaUpsertWithTx` (skip unchanged, upsert diff).
+/// On chunk failure, falls back to card-by-card insertion.
 pub trait BatchDeltaUpsertWithTx
 where
     Self: Sized,

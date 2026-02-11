@@ -1,3 +1,8 @@
+//! Sync metrics database model and JSONB codecs for error tracking.
+//!
+//! `ErrorMetrics` and `VecErrorMetrics` encode to JSONB via serde, following the
+//! same pattern as the Scryfall data codecs.
+
 use chrono::NaiveDateTime;
 use sqlx::{encode::IsNull, types::JsonValue, Decode, Encode, Postgres, Type};
 use sqlx_macros::FromRow;
@@ -6,14 +11,6 @@ use uuid::Uuid;
 use crate::domain::card::models::sync_metrics::{
     ErrorMetrics, SyncMetrics, SyncStatus, VecErrorMetrics,
 };
-
-// ===============
-//  error metrics
-// ===============
-
-// ==========
-//  singular
-// ==========
 
 impl TryFrom<ErrorMetrics> for JsonValue {
     type Error = serde_json::Error;
@@ -131,11 +128,9 @@ impl Encode<'_, Postgres> for VecErrorMetrics {
     }
 }
 
-// ==============
-//  sync metrics
-// ==============
-
+/// Raw database sync metrics record.
 #[derive(Debug, FromRow)]
+#[allow(missing_docs)]
 pub struct DatabaseSyncMetrics {
     #[sqlx(rename = "id")]
     _id: Uuid,

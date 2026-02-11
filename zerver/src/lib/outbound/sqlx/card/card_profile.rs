@@ -1,13 +1,13 @@
+//! Database-to-domain conversion for card profiles.
+
 use crate::domain::card::models::card_profile::CardProfile;
 use chrono::NaiveDateTime;
 use sqlx_macros::FromRow;
 use uuid::Uuid;
 
-// ======
-//  main
-// ======
-
+/// Raw database card profile record (unvalidated data from PostgreSQL).
 #[derive(Debug, Clone, FromRow)]
+#[allow(missing_docs)]
 pub struct DatabaseCardProfile {
     pub id: Uuid,
     pub scryfall_data_id: Uuid,

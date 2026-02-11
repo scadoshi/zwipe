@@ -1,3 +1,5 @@
+//! Error mappings between SQLx errors and deck domain errors.
+
 use crate::{
     domain::deck::models::{
         deck::{
@@ -15,7 +17,9 @@ use crate::{
 };
 use thiserror::Error;
 
+/// Errors from converting a database deck profile row into domain types.
 #[derive(Debug, Error)]
+#[allow(missing_docs)]
 pub enum IntoDeckProfileError {
     #[error(transparent)]
     DeckName(#[from] InvalidDeckname),
@@ -77,7 +81,9 @@ impl From<sqlx::Error> for DeleteDeckError {
     }
 }
 
+/// Errors from converting a database deck card row into domain types.
 #[derive(Debug, Error)]
+#[allow(missing_docs)]
 pub enum IntoDeckCardError {
     #[error(transparent)]
     InvalidId(uuid::Error),

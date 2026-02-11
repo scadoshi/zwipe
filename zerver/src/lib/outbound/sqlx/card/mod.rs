@@ -1,7 +1,14 @@
+//! Card data and Scryfall sync repository implementation.
+
+/// Database-to-domain card profile conversion.
 pub mod card_profile;
+/// SQLx error-to-domain error mappings.
 pub mod error;
+/// SQL generation helpers for bulk upserts and field binding.
 pub mod helpers;
+/// SQLx type codecs for Scryfall data models.
 pub mod scryfall_data;
+/// Sync metrics JSONB codecs and database model.
 pub mod sync_metrics;
 
 use crate::domain::card::models::{
@@ -47,8 +54,10 @@ use chrono::NaiveDateTime;
 use sqlx::{Postgres, query_as, query_scalar};
 use sqlx::{QueryBuilder, query_builder::Separated};
 
-// Playable layouts whitelist - layouts that represent cards playable in Magic formats
-// Unknown layouts default to hidden (safe behavior)
+/// Layouts representing cards playable in Magic formats.
+///
+/// Unknown layouts **default to hidden** (safe behavior) — new Scryfall layouts
+/// won't appear in search results until explicitly whitelisted here.
 const PLAYABLE_LAYOUTS: &[&str] = &[
     "normal",
     "split",
@@ -116,6 +125,7 @@ impl CardRepository for MyPostgres {
         Ok(cards)
     }
 
+    /// Persists a completed sync run to `scryfall_data_sync_metrics`.
     async fn record_sync_metrics(
         &self,
         sync_metrics: &SyncMetrics,
@@ -169,6 +179,12 @@ impl CardRepository for MyPostgres {
         Ok(scryfall_data)
     }
 
+    /// Searches Scryfall data with a CTE-based deduplication strategy.
+    ///
+    /// Uses `ROW_NUMBER() OVER (PARTITION BY COALESCE(oracle_id, id))` to keep only the
+    /// latest printing per unique card. Filter clauses are composed with `AND` via
+    /// `QueryBuilder::separated`. Color identity uses `@>`/`<@` for exact match and
+    /// power-set enumeration for "within" queries.
     async fn search_scryfall_data(
         &self,
         request: &CardFilter,
@@ -470,6 +486,7 @@ impl CardRepository for MyPostgres {
         Ok(cards)
     }
 
+    /// Composes `search_scryfall_data` results with card profiles into `Card` values.
     async fn search_cards(&self, request: &CardFilter) -> Result<Vec<Card>, SearchCardsError> {
         let scryfall_data = self.search_scryfall_data(request).await?;
         if scryfall_data.is_empty() {
@@ -483,6 +500,7 @@ impl CardRepository for MyPostgres {
         Ok(cards)
     }
 
+    /// Extracts distinct card types by tokenizing `type_line` with `STRING_TO_ARRAY`.
     async fn get_card_types(&self) -> Result<Vec<String>, GetCardTypesError> {
         let card_types: Vec<String> = query_scalar!(
             "SELECT DISTINCT subtype FROM (
