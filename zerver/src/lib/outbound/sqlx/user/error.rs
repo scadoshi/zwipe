@@ -1,7 +1,11 @@
+//! Error mappings between SQLx errors and user domain errors.
+
 use crate::domain::user::models::{get_user::GetUserError, username::InvalidUsername};
 use thiserror::Error;
 
+/// Errors from converting a database user row into domain types.
 #[derive(Debug, Error)]
+#[allow(missing_docs)]
 pub enum IntoUserError {
     #[error(transparent)]
     Username(#[from] InvalidUsername),

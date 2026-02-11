@@ -1,3 +1,5 @@
+//! Health check repository implementation (`SELECT 1` connectivity test).
+
 use anyhow::anyhow;
 use sqlx::query;
 

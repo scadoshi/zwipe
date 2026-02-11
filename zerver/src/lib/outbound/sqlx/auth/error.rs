@@ -1,3 +1,5 @@
+//! Error mappings between SQLx errors and auth domain errors.
+
 use crate::{
     domain::{
         auth::models::{
@@ -19,7 +21,9 @@ use crate::{
 };
 use thiserror::Error;
 
+/// Errors from converting a database user-with-password-hash row into domain types.
 #[derive(Debug, Error)]
+#[allow(missing_docs)]
 pub enum IntoUserWithPasswordHashError {
     #[error(transparent)]
     Username(#[from] InvalidUsername),

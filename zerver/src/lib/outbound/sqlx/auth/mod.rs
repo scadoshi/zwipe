@@ -1,5 +1,10 @@
+//! Authentication and account management repository implementation.
+
+/// SQLx error-to-domain error mappings and intermediate conversion errors.
 pub mod error;
+/// Database-to-domain auth model conversions.
 pub mod models;
+/// Transaction helpers for refresh token creation and session limits.
 pub mod helpers;
 
 use chrono::{ Utc};
@@ -59,6 +64,7 @@ impl AuthRepository for Postgres {
     // =====
     //  get
     // =====
+    /// Looks up a user by ID, username, **or** email using a single `OR` query.
     async fn get_user_with_password_hash(
         &self,
         request: &AuthenticateUser,
@@ -147,6 +153,8 @@ impl AuthRepository for Postgres {
         Ok(user)
     }
 
+    /// Rotates a refresh token: validates the existing token (ownership, expiry,
+    /// revocation), deletes it, and issues a new one — all within a single transaction.
     async fn use_refresh_token(
             &self,
             request: &RefreshSession,
