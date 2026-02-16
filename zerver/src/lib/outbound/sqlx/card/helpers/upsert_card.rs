@@ -1,3 +1,13 @@
+//! Card upsert helpers for PostgreSQL transactions.
+//!
+//! Provides multiple strategies for inserting/updating Scryfall card data:
+//! - **Single**: One card at a time with full error reporting
+//! - **Bulk**: Multiple cards in a single query for maximum throughput
+//! - **Batch**: Chunked processing with automatic fallback on failure
+//! - **Delta**: Only upserts cards that have actually changed
+//!
+//! All operations work within existing transactions (caller commits).
+
 use crate::domain::card::models::card_profile::CardProfile;
 use crate::domain::card::models::helpers::SleeveScryfallData;
 use crate::domain::card::models::scryfall_data::get_scryfall_data::ScryfallDataIds;
@@ -24,7 +34,7 @@ const POSTGRES_TX_ABORT_MESSAGE: &str = "current transaction is aborted";
 //  validation helpers
 // ====================
 
-/// determines if a card is a token based on Scryfall layout field
+/// Determines if a card is a token based on Scryfall layout field.
 fn is_token(scryfall_data: &ScryfallData) -> bool {
     scryfall_data.layout == "token"
 }
@@ -73,12 +83,19 @@ fn is_valid_commander(scryfall_data: &ScryfallData) -> bool {
 // without having to create new transactions
 // these should **not** commit the transaction
 
-/// single insert/update of `ScryfallData`
-/// - also inserts/updates `CardProfile`
+/// Single-card insert/update within an existing transaction.
+///
+/// Upserts one [`ScryfallData`] record and its associated [`CardProfile`],
+/// returning the combined [`Card`]. Use this for one-off inserts or as a
+/// fallback when bulk operations fail.
 pub trait SingleUpsertWithTx
 where
     Self: Sized,
 {
+    /// Inserts or updates this card within the given transaction.
+    ///
+    /// Also creates/updates the card profile with computed `is_valid_commander`
+    /// and `is_token` flags.
     fn single_upsert_with_tx(
         &self,
         tx: &mut PgTransaction<'_>,
@@ -101,7 +118,7 @@ impl SingleUpsertWithTx for ScryfallData {
             .fetch_one(&mut **tx)
             .await?;
         let is_commander = is_valid_commander(&scryfall_data);
-        let is_tok = is_token(&scryfall_data);
+        let is_token = is_token(&scryfall_data);
         let database_card_profile = query_as!(
             DatabaseCardProfile,
             "INSERT INTO card_profiles (scryfall_data_id, is_valid_commander, is_token)
@@ -111,7 +128,7 @@ impl SingleUpsertWithTx for ScryfallData {
              RETURNING id, scryfall_data_id, is_valid_commander, is_token, created_at, updated_at",
             scryfall_data_id,
             is_commander,
-            is_tok
+            is_token
         )
         .fetch_one(&mut **tx)
         .await?;
@@ -121,14 +138,19 @@ impl SingleUpsertWithTx for ScryfallData {
     }
 }
 
-/// Bulk insert/update of `ScryfallData` and `CardProfile` in a single query.
+/// Bulk insert/update of multiple cards in a single query.
 ///
 /// Deduplicates input by `id` before insertion to avoid constraint conflicts
-/// within the same batch.
+/// within the same batch. Most efficient for large imports when all cards
+/// are expected to succeed.
 pub trait BulkUpsertWithTx
 where
     Self: Sized,
 {
+    /// Upserts all cards in a single SQL statement.
+    ///
+    /// Returns the list of upserted cards. Fails atomically if any card
+    /// causes a constraint violation.
     fn bulk_upsert_with_tx(
         &self,
         tx: &mut PgTransaction<'_>,
@@ -161,14 +183,14 @@ impl BulkUpsertWithTx for &[ScryfallData] {
                 card_profile_query_builder.push(",");
             }
             let is_commander = is_valid_commander(scryfall_data);
-            let is_tok = is_token(scryfall_data);
+            let is_token = is_token(scryfall_data);
             card_profile_query_builder
                 .push("(")
                 .push_bind(scryfall_data.id)
                 .push(",")
                 .push_bind(is_commander)
                 .push(",")
-                .push_bind(is_tok)
+                .push_bind(is_token)
                 .push(")");
         }
         card_profile_query_builder
@@ -186,14 +208,18 @@ impl BulkUpsertWithTx for &[ScryfallData] {
     }
 }
 
-/// Chunked batch insert/update using `BulkUpsertWithTx` per chunk.
+/// Chunked batch insert/update with automatic fallback.
 ///
-/// On chunk failure, **falls back to card-by-card insertion** via
-/// `upsert_card_by_card` so one bad card doesn't block the entire batch.
+/// Processes cards in chunks using [`BulkUpsertWithTx`]. On chunk failure,
+/// falls back to card-by-card insertion via [`upsert_card_by_card`] so one
+/// bad card doesn't block the entire batch.
 pub trait BatchUpsertWithTx
 where
     Self: Sized,
 {
+    /// Upserts cards in batches, tracking metrics and handling failures gracefully.
+    ///
+    /// Updates `sync_metrics` with counts of upserted cards and any errors encountered.
     fn batch_upsert_with_tx(
         self,
         tx: &mut PgTransaction<'_>,
@@ -202,9 +228,11 @@ where
     ) -> impl Future<Output = Result<Vec<Card>, CreateCardError>> + Send;
 }
 
-/// inserts/updates `ScryfallData` card by card
-/// - also inserts/updates `CardProfile`
-/// - usually in the event of a `BulkUpsertWithTx` failure
+/// Fallback function that inserts cards one at a time.
+///
+/// Used when bulk operations fail. Logs individual errors while continuing
+/// to process remaining cards. Silently skips transaction-aborted errors
+/// since they're not the root cause.
 async fn upsert_card_by_card(
     batch: &[ScryfallData],
     tx: &mut PgTransaction<'_>,
@@ -252,14 +280,18 @@ impl BatchUpsertWithTx for &[ScryfallData] {
     }
 }
 
-/// Delta-aware bulk upsert that **skips unchanged cards**.
+/// Delta-aware bulk upsert that skips unchanged cards.
 ///
 /// Fetches existing records by ID, compares with input, and only upserts the
 /// diff. Returns both the upserted cards and a count of skipped (unchanged) cards.
+/// Ideal for incremental sync operations.
 pub trait BulkDeltaUpsertWithTx
 where
     Self: Sized,
 {
+    /// Upserts only cards that differ from their existing database records.
+    ///
+    /// Returns a tuple of (upserted cards, skipped count).
     fn bulk_delta_upsert_with_tx(
         self,
         tx: &mut PgTransaction<'_>,
@@ -293,12 +325,16 @@ impl BulkDeltaUpsertWithTx for &[ScryfallData] {
 
 /// Combines chunked batching with delta detection.
 ///
-/// Each chunk runs through `BulkDeltaUpsertWithTx` (skip unchanged, upsert diff).
-/// On chunk failure, falls back to card-by-card insertion.
+/// Each chunk runs through [`BulkDeltaUpsertWithTx`] (skip unchanged, upsert diff).
+/// On chunk failure, falls back to card-by-card insertion. Best for large
+/// incremental syncs where most cards haven't changed.
 pub trait BatchDeltaUpsertWithTx
 where
     Self: Sized,
 {
+    /// Batch-processes cards with delta detection and automatic fallback.
+    ///
+    /// Updates `sync_metrics` with upserted, skipped, and error counts.
     fn batch_delta_upsert_with_tx(
         self,
         tx: &mut PgTransaction<'_>,

@@ -11,6 +11,7 @@ use crate::{
 
 /// raw database deck record
 /// (unvalidated data from `PostgreSQL`)
+#[allow(missing_docs)]
 #[derive(Debug, Clone, FromRow)]
 pub struct DatabaseDeckProfile {
     pub id: Uuid,
@@ -39,6 +40,7 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
 
 /// raw database deck card record
 /// (unvalidated data from `PostgreSQL`)
+#[allow(missing_docs)]
 #[derive(Debug, Clone, FromRow)]
 pub struct DatabaseDeckCard {
     pub deck_id: String,

@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+#[allow(missing_docs)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum OrderByOptions {
     Name,
@@ -14,6 +15,7 @@ pub enum OrderByOptions {
     Random,
 }
 
+#[allow(missing_docs)]
 impl OrderByOptions {
     pub fn all() -> Vec<Self> {
         vec![

@@ -1,8 +1,16 @@
+//! Scryfall data field helpers for SQL query building.
+//!
+//! Provides utilities for binding all 88 Scryfall card fields to SQLx query builders,
+//! enabling efficient bulk insert/update operations.
+
 use crate::domain::card::models::scryfall_data::ScryfallData;
 use sqlx::Postgres;
 use sqlx::QueryBuilder;
 
-/// every `ScryfallData` field line separated for various uses
+/// Every [`ScryfallData`] field name, line-separated for SQL generation.
+///
+/// This constant serves as the single source of truth for field ordering,
+/// ensuring consistency between INSERT column lists and VALUES bindings.
 const SCRYFALL_DATA_FIELDS: &str = r#"
     arena_id
     id
@@ -93,7 +101,9 @@ const SCRYFALL_DATA_FIELDS: &str = r#"
     preview_source
 "#;
 
-/// comma separates non-empty lines in `SCRYFALL_DATA_FIELDS`
+/// Returns a comma-separated list of all Scryfall data field names.
+///
+/// Used to build the column list for INSERT statements.
 pub fn scryfall_data_fields() -> String {
     SCRYFALL_DATA_FIELDS
         .trim()
@@ -104,7 +114,9 @@ pub fn scryfall_data_fields() -> String {
         .join(",")
 }
 
-/// counts the number of non-empty lines in `SCRYFALL_DATA_FIELDS`
+/// Returns the count of Scryfall data fields.
+///
+/// Useful for validating that bindings match the expected column count.
 pub fn scryfall_data_field_count() -> usize {
     SCRYFALL_DATA_FIELDS
         .trim()
@@ -114,7 +126,9 @@ pub fn scryfall_data_field_count() -> usize {
         .count()
 }
 
-/// prepares `SCRYFALL_DATA_FIELDS` for an `ON CONFLICT` clause for use while upserting in bulk
+/// Generates an `ON CONFLICT` clause for bulk upsert operations.
+///
+/// Returns SQL that updates all fields when a row with the same `id` already exists.
 pub fn bulk_upsert_conflict_fields() -> String {
     " ON CONFLICT (id) DO UPDATE SET ".to_string()
         + SCRYFALL_DATA_FIELDS
@@ -127,8 +141,14 @@ pub fn bulk_upsert_conflict_fields() -> String {
             .as_str()
 }
 
-/// binds all `SCRYFALL_DATA_FIELDS` onto a `QueryBuilder` with given card's data
+/// Extension trait for binding a single card's fields to a query builder.
+///
+/// Pushes all 88 Scryfall fields as SQL bind parameters in the correct order,
+/// wrapped in parentheses for use in VALUES clauses.
 pub trait BindScryfallDataFields {
+    /// Binds all fields from the given card to the query builder.
+    ///
+    /// The fields are wrapped in parentheses: `(field1, field2, ..., fieldN)`.
     fn bind_scryfall_fields(&mut self, card: &ScryfallData) -> &mut Self;
 }
 
@@ -319,8 +339,13 @@ impl BindScryfallDataFields for QueryBuilder<'_, Postgres> {
     }
 }
 
-/// binds many cards onto a `QueryBuilder` using the above
+/// Extension trait for binding multiple cards to a query builder.
+///
+/// Produces comma-separated value tuples for bulk INSERT operations.
 pub trait BindCards {
+    /// Binds all fields from each card, separated by commas.
+    ///
+    /// Output format: `(card1_fields), (card2_fields), ...`
     fn bind_cards(&mut self, scryfall_data: &[ScryfallData]) -> &mut Self;
 }
 

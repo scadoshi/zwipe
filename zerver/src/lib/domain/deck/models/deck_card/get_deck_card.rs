@@ -1,5 +1,6 @@
 use thiserror::Error;
 
+#[allow(missing_docs)]
 #[derive(Debug, Error)]
 pub enum InvalidGetDeckCard {
     #[error(transparent)]
@@ -8,6 +9,7 @@ pub enum InvalidGetDeckCard {
     ScryfallDataId(uuid::Error),
 }
 
+#[allow(missing_docs)]
 #[cfg(feature = "zerver")]
 #[derive(Debug, Error)]
 pub enum GetDeckCardError {
