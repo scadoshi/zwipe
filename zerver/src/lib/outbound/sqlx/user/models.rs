@@ -9,6 +9,7 @@ use crate::{
 
 /// raw database user record
 /// (unvalidated data from `PostgreSQL`)
+#[allow(missing_docs)]
 #[derive(Debug, Clone, FromRow)]
 pub struct DatabaseUser {
     pub id: Uuid,

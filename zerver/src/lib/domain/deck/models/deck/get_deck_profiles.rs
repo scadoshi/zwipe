@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
 
+#[allow(missing_docs)]
 #[derive(Debug, Error)]
 pub enum InvalidGetDeckProfiles {
     #[error(transparent)]
@@ -16,11 +17,13 @@ impl From<uuid::Error> for InvalidGetDeckProfiles {
     }
 }
 
+#[allow(missing_docs)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GetDeckProfiles {
     pub user_id: Uuid,
 }
 
+#[allow(missing_docs)]
 impl GetDeckProfiles {
     pub fn new(user_id: Uuid) -> Self {
         Self { user_id }

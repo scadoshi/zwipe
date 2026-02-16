@@ -1,8 +1,12 @@
 use crate::domain::card::models::{
     scryfall_data::{colors::Colors, rarity::Rarities},
-    search_card::{card_filter::{CardFilter, OrderByOptions}, card_type::CardType},
+    search_card::{
+        card_filter::{CardFilter, OrderByOptions},
+        card_type::CardType,
+    },
 };
 
+#[allow(missing_docs)]
 impl CardFilter {
     // text
     pub fn name_contains(&self) -> Option<&str> {

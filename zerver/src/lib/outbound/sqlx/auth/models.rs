@@ -1,6 +1,6 @@
 use crate::{
     domain::{
-        auth::models::{password::HashedPassword, UserWithPasswordHash},
+        auth::models::{UserWithPasswordHash, password::HashedPassword},
         user::models::username::Username,
     },
     outbound::sqlx::auth::error::IntoUserWithPasswordHashError,
@@ -13,6 +13,7 @@ use uuid::Uuid;
 
 /// raw database user with password hash record
 /// (unvalidated data from `PostgreSQL`)
+#[allow(missing_docs)]
 #[derive(Debug, Clone, FromRow)]
 pub struct DatabaseUserWithPasswordHash {
     pub id: Uuid,
@@ -29,9 +30,7 @@ impl TryFrom<DatabaseUserWithPasswordHash> for UserWithPasswordHash {
     fn try_from(value: DatabaseUserWithPasswordHash) -> Result<Self, Self::Error> {
         let username = Username::new(&value.username)?;
         let email = EmailAddress::from_str(&value.email)?;
-
         let password_hash = HashedPassword::new(&value.password_hash)?;
-
         Ok(Self {
             id: value.id,
             username,
@@ -41,6 +40,8 @@ impl TryFrom<DatabaseUserWithPasswordHash> for UserWithPasswordHash {
     }
 }
 
+/// raw database refresh token record
+#[allow(missing_docs)]
 #[derive(Debug, Clone, FromRow)]
 pub struct DatabaseRefreshToken {
     pub id: i32,
