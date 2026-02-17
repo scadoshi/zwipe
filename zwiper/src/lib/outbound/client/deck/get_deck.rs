@@ -1,3 +1,5 @@
+//! Fetch a deck with all its cards.
+
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
@@ -7,6 +9,8 @@ use zwipe::{
     inbound::http::{routes::get_deck_route, ApiError},
 };
 
+/// Trait for fetching a complete deck with all cards.
+#[allow(missing_docs)]
 pub trait ClientGetDeck {
     fn get_deck(
         &self,

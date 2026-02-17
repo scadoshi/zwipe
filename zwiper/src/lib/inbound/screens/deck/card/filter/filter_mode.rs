@@ -1,4 +1,8 @@
+//! Filter mode toggle between exact and range matching.
+
+/// The mode for numeric filters (exact value or range).
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
+#[allow(missing_docs)]
 pub enum FilterMode {
     #[default]
     Exact,
@@ -6,6 +10,7 @@ pub enum FilterMode {
 }
 
 impl FilterMode {
+    /// Toggles between Exact and Range modes.
     pub fn toggle(self) -> Self {
         match self {
             Self::Exact => Self::Range,

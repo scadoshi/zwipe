@@ -1,3 +1,5 @@
+//! Change password screen.
+
 use crate::{
     inbound::components::{
         auth::{bouncer::Bouncer, session_upkeep::Upkeep},
@@ -13,6 +15,7 @@ use zwipe::{
     inbound::http::{handlers::auth::change_password::HttpChangePassword, ApiError},
 };
 
+/// Form screen for updating user's password.
 #[component]
 pub fn ChangePassword() -> Element {
     let navigator = use_navigator();

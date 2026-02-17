@@ -1,3 +1,5 @@
+//! Fetch user profile endpoint.
+
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
@@ -6,6 +8,8 @@ use zwipe::{
     inbound::http::{routes::get_user_route, ApiError},
 };
 
+/// Trait for fetching user profile data.
+#[allow(missing_docs)]
 pub trait ClientGetUser {
     fn get_user(&self, session: &Session) -> impl Future<Output = Result<User, ApiError>> + Send;
 }

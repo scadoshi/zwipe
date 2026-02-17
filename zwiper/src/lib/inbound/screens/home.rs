@@ -1,3 +1,5 @@
+//! Home/landing page screen.
+
 use crate::inbound::components::alert_dialog::{
     AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
     AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
@@ -18,6 +20,7 @@ use zwipe::domain::{
     logo,
 };
 
+/// Home screen with navigation to main app features.
 #[component]
 pub fn Home() -> Element {
     let navigator = use_navigator();

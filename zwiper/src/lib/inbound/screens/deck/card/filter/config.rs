@@ -1,3 +1,5 @@
+//! Filter configuration accordion component.
+
 use crate::{
     domain::language::LanguageCodeToFullName,
     inbound::components::tri_toggle::TriToggle,
@@ -10,6 +12,7 @@ use zwipe::{
     inbound::http::ApiError,
 };
 
+/// Configuration panel with language, reprint, and promo filters.
 #[component]
 pub fn Config() -> Element {
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();

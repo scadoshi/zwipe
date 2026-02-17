@@ -1,3 +1,5 @@
+//! Change user password endpoint.
+
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
@@ -9,6 +11,8 @@ use zwipe::{
     },
 };
 
+/// Trait for updating user passwords.
+#[allow(missing_docs)]
 pub trait ClientChangePassword {
     fn change_password(
         &self,

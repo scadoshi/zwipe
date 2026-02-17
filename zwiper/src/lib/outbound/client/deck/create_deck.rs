@@ -1,3 +1,5 @@
+//! Create new deck.
+
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
@@ -9,6 +11,8 @@ use zwipe::{
     },
 };
 
+/// Trait for creating new deck profiles.
+#[allow(missing_docs)]
 pub trait ClientCreateDeck {
     fn create_deck_profile(
         &self,

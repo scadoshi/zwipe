@@ -1,3 +1,5 @@
+//! Fetch all deck profiles for the current user.
+
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
@@ -6,6 +8,8 @@ use zwipe::{
     inbound::http::{routes::get_deck_profiles_route, ApiError},
 };
 
+/// Trait for fetching all deck profiles for the authenticated user.
+#[allow(missing_docs)]
 pub trait ClientGetDeckList {
     fn get_deck_profiles(
         &self,

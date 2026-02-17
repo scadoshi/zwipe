@@ -1,3 +1,5 @@
+//! Card type filter component.
+
 use crate::outbound::client::{card::get_card_types::ClientGetCardTypes, ZwipeClient};
 use dioxus::prelude::*;
 use zwipe::{
@@ -11,6 +13,7 @@ use zwipe::{
     inbound::http::ApiError,
 };
 
+/// Filter component for selecting card types (creature, instant, etc.).
 #[component]
 pub fn Types() -> Element {
     let session: Signal<Option<Session>> = use_context();

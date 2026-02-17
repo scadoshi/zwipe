@@ -1,3 +1,5 @@
+//! Fetch all available languages.
+
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
@@ -6,6 +8,8 @@ use zwipe::{
     inbound::http::{routes::get_languages_route, ApiError},
 };
 
+/// Trait for fetching the list of all available card languages.
+#[allow(missing_docs)]
 pub trait ClientGetLanguages {
     fn get_languages(
         &self,

@@ -1,3 +1,5 @@
+//! Add a card to a deck.
+
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
@@ -10,6 +12,8 @@ use zwipe::{
     },
 };
 
+/// Trait for adding cards to a deck.
+#[allow(missing_docs)]
 pub trait ClientCreateDeckCard {
     fn create_deck_card(
         &self,

@@ -1,8 +1,11 @@
+//! Combat stats filter component (power/toughness).
+
 use dioxus::prelude::*;
 use zwipe::domain::card::models::search_card::card_filter::builder::CardFilterBuilder;
 
 use super::filter_mode::FilterMode;
 
+/// Filter component for card power and toughness values.
 #[component]
 pub fn Combat() -> Element {
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();

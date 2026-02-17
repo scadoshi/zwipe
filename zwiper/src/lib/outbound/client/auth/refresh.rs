@@ -1,3 +1,5 @@
+//! Access token refresh API client.
+
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
@@ -9,6 +11,8 @@ use zwipe::{
     },
 };
 
+/// Trait for refreshing access tokens using a refresh token.
+#[allow(missing_docs)]
 pub trait ClientRefresh {
     fn refresh(
         &self,

@@ -1,3 +1,5 @@
+//! Fetch all card types.
+
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
@@ -6,6 +8,8 @@ use zwipe::{
     inbound::http::{routes::get_card_types_route, ApiError},
 };
 
+/// Trait for fetching the list of all card types (creature, instant, etc.).
+#[allow(missing_docs)]
 pub trait ClientGetCardTypes {
     fn get_card_types(
         &self,

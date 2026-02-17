@@ -1,3 +1,7 @@
+//! Application routing configuration.
+//!
+//! Defines all client-side routes and maps them to their corresponding screen components.
+
 use crate::inbound::screens::{
     auth::{login::Login, register::Register},
     deck::{
@@ -19,8 +23,10 @@ use crate::inbound::screens::{
 use dioxus::prelude::*;
 use uuid::Uuid;
 
+/// Application routes mapping URLs to screen components.
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
+#[allow(missing_docs)]
 pub enum Router {
     // home
     #[route("/")]

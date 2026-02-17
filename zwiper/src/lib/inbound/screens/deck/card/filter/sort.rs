@@ -1,8 +1,11 @@
+//! Sort order selection component.
+
 use dioxus::prelude::*;
 use zwipe::domain::card::models::search_card::card_filter::{
     builder::CardFilterBuilder, order_by_options::OrderByOptions,
 };
 
+/// Component for selecting card sort order and direction.
 #[component]
 pub fn Sort() -> Element {
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();

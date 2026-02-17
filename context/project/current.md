@@ -2,25 +2,28 @@
 
 Active development tasks and immediate focus areas.
 
-**Last Updated**: Completed outbound layer (SQLx repositories) documentation.
+**Last Updated**: Completed full-stack documentation (backend + frontend).
 
-**Current Focus**: Document frontend (Dioxus UI) layer following established documentation philosophy.
+**Current Focus**: Return to feature development with documentation debt eliminated.
 
 **Recent Achievements**:
-- **Outbound Layer Documentation Completed**: Module docs, Scryfall data type conversion docs, card/deck/auth/user/health repository docs
-- **Inbound Layer Documentation Completed**: HTTP handlers, middleware, routes, Scryfall client, error mapping
-- **Documentation Philosophy Established**: Created `/context/rules/documentation.md` with comprehensive guidelines
-- **Domain Layer Documentation Refined**: Removed 427 lines of verbose module docs, added strategic `#[allow(missing_docs)]`
-- **ScryfallData Comprehensive Documentation**: All 63 fields documented with official Scryfall API definitions
+- **Frontend Documentation Completed**: All 243 `missing_docs` warnings resolved across ~40 files
+  - Module docs for all inbound/outbound layers
+  - Component documentation (accordion, alert_dialog, swipe system, toast)
+  - Screen documentation (auth, deck, profile, home)
+  - API client traits with `#[allow(missing_docs)]` for self-documenting methods
+  - Strategic `#[allow(missing_docs)]` for enum variants (Direction, Axis, FilterMode, Router)
+- **Backend Documentation Completed**: Domain, inbound, outbound layers fully documented
+- **Documentation Philosophy Established**: `/context/rules/documentation.md` with comprehensive guidelines
 - **Signal-to-Noise Balance**: "Document intent, not obvious implementation details"
 
 ---
 
 ## Top 5 Priorities
 
-1. **Frontend Documentation** - Document Dioxus UI components and routing with focus on complex state management
+1. **Feature Development** - Resume deck management workflows (Remove Card screen, Deck Cards Browser)
 
-2. **Return to Feature Development** - Resume card management workflows after documentation pass
+2. **Bug Fixes** - Address layout shift after deck creation and iOS keyboard push issues
 
 3. **Performance Optimization** - Review documented patterns for optimization opportunities
 

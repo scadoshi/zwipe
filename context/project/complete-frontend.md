@@ -243,3 +243,34 @@ Production-ready frontend implementations.
 - **Screen Organization**: One file per screen with clear naming
 - **Shared Models**: Feature-flagged types from zwipe library
 - **Client Organization**: Domain-based folders for HTTP methods
+
+## 📚 Documentation Coverage
+
+### Documentation Philosophy
+- **Core Principle**: "Document intent, not obvious implementation details"
+- **`#![warn(missing_docs)]`**: Enabled in lib.rs, enforcing documentation
+- **Strategic `#[allow(missing_docs)]`**: Applied to self-documenting items
+
+### Module Documentation (`//!`)
+- **Core Infrastructure**: lib.rs, inbound/mod.rs, outbound/mod.rs, domain/mod.rs
+- **Components**: accordion, alert_dialog, auth, fields, interactions, swipe, toast
+- **Screens**: auth, deck, profile, home with all sub-modules
+- **API Client**: All client modules (auth, card, deck, deck_card, user)
+
+### Item Documentation (`///`)
+- **Swipe System**: Full documentation of SwipeState, SwipeConfig, direction/axis enums
+- **Auth Components**: Bouncer (route guard), Upkeep (session refresh), SignalLogout
+- **Session Persistence**: Persist trait with all 6 methods documented
+- **API Client Traits**: All 23 client traits with trait-level documentation
+
+### Self-Documenting Items (`#[allow(missing_docs)]`)
+- **Enum Variants**: Direction (Left/Right/Up/Down), Axis (X/Y), FilterMode (Exact/Range)
+- **Router Variants**: All 14 route variants (Home, Login, DeckList, etc.)
+- **Trait Methods**: Client trait methods that mirror trait documentation
+- **Simple Getters**: Methods where the name fully describes the behavior
+
+### Documentation Statistics
+- **Initial Warnings**: 243 `missing_docs` warnings
+- **Final Warnings**: 0 `missing_docs` warnings
+- **Files Modified**: ~40 Rust source files
+- **Strategy**: Module docs + selective item docs + strategic `#[allow]`

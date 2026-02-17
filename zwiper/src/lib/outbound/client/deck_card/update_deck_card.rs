@@ -1,3 +1,5 @@
+//! Update card quantity in a deck.
+
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
@@ -10,6 +12,8 @@ use zwipe::{
     },
 };
 
+/// Trait for updating card quantity in a deck.
+#[allow(missing_docs)]
 pub trait ClientUpdateDeckCard {
     fn update_deck_card(
         &self,

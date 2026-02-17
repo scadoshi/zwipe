@@ -1,3 +1,8 @@
+//! Logout functionality for session signals.
+//!
+//! Provides a trait extension for session signals to perform logout operations,
+//! including server-side session invalidation and local storage cleanup.
+
 use crate::{
     inbound::components::auth::session_upkeep::Upkeep,
     outbound::{
@@ -8,7 +13,9 @@ use crate::{
 use dioxus::prelude::*;
 use zwipe::domain::auth::models::session::Session;
 
+/// Trait for session signals that can perform logout operations.
 pub trait SignalLogout {
+    /// Logs out the current user, invalidating the session on the server.
     fn logout(self, auth_client: Signal<ZwipeClient>);
 }
 

@@ -1,3 +1,5 @@
+//! Change user email endpoint.
+
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
@@ -8,6 +10,8 @@ use zwipe::{
     },
 };
 
+/// Trait for updating user email addresses.
+#[allow(missing_docs)]
 pub trait ClientChangeEmail {
     fn change_email(
         &self,

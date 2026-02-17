@@ -1,3 +1,5 @@
+//! Change email screen.
+
 use crate::domain::error::UserFacing;
 use crate::inbound::components::auth::{bouncer::Bouncer, session_upkeep::Upkeep};
 use crate::inbound::components::fields::text_input::TextInput;
@@ -14,6 +16,7 @@ use zwipe::{
     inbound::http::ApiError,
 };
 
+/// Form screen for updating user's email address.
 #[component]
 pub fn ChangeEmail() -> Element {
     let navigator = use_navigator();

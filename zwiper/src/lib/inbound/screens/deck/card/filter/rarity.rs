@@ -1,9 +1,12 @@
+//! Card rarity filter component.
+
 use dioxus::prelude::*;
 use zwipe::domain::card::models::{
     scryfall_data::rarity::Rarity as CardRarity,
     search_card::card_filter::builder::CardFilterBuilder,
 };
 
+/// Filter component for card rarity (common, uncommon, rare, mythic).
 #[component]
 pub fn Rarity() -> Element {
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();

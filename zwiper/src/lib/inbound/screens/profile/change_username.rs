@@ -1,3 +1,5 @@
+//! Change username screen.
+
 use crate::{
     inbound::components::{
         auth::{bouncer::Bouncer, session_upkeep::Upkeep},
@@ -16,6 +18,7 @@ use zwipe::{
     inbound::http::{handlers::auth::change_username::HttpChangeUsername, ApiError},
 };
 
+/// Form screen for updating user's username.
 #[component]
 pub fn ChangeUsername() -> Element {
     let navigator = use_navigator();
