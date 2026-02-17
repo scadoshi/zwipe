@@ -1,5 +1,8 @@
+//! Swipe gesture configuration.
+
 use crate::inbound::components::interactions::swipe::direction::Direction;
 
+/// Configuration for swipe gesture recognition.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SwipeConfig {
     /// Which swipe directions are valid for this swipeable entity
@@ -11,6 +14,7 @@ pub struct SwipeConfig {
 }
 
 impl SwipeConfig {
+    /// Creates a new swipe configuration with the specified thresholds.
     pub fn new(allowed_directions: Vec<Direction>, distance_threshold: f64, speed_threshold: f64) -> Self {
         Self {
             allowed_directions,

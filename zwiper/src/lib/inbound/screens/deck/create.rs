@@ -1,3 +1,5 @@
+//! Create new deck screen.
+
 use crate::{
     inbound::{
         components::{
@@ -25,6 +27,7 @@ use zwipe::{
     inbound::http::handlers::deck::create_deck_profile::HttpCreateDeckProfile,
 };
 
+/// Screen for creating a new deck with name and settings.
 #[component]
 pub fn CreateDeck() -> Element {
     let navigator = use_navigator();

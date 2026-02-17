@@ -1,3 +1,5 @@
+//! Fetch a single card by ID.
+
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
@@ -7,6 +9,8 @@ use zwipe::{
     inbound::http::{routes::get_card_route, ApiError},
 };
 
+/// Trait for fetching a single card by its profile ID.
+#[allow(missing_docs)]
 pub trait ClientGetCard {
     fn get_card(
         &self,

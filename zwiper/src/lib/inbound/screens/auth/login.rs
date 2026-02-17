@@ -1,3 +1,5 @@
+//! User login screen.
+
 use crate::{
     inbound::{components::fields::text_input::TextInput, router::Router},
     outbound::{
@@ -17,6 +19,7 @@ use zwipe::{
     inbound::http::{handlers::auth::authenticate_user::HttpAuthenticateUser, ApiError},
 };
 
+/// Login form screen for user authentication.
 #[component]
 pub fn Login() -> Element {
     let navigator = use_navigator();

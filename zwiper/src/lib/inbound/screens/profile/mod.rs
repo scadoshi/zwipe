@@ -1,5 +1,12 @@
+//! User profile management screens.
+//!
+//! Provides screens for viewing and updating user profile information.
+
+/// Change email screen.
 pub mod change_email;
+/// Change password screen.
 pub mod change_password;
+/// Change username screen.
 pub mod change_username;
 
 use crate::inbound::components::alert_dialog::{
@@ -16,6 +23,7 @@ use crate::{
 use dioxus::prelude::*;
 use zwipe::domain::auth::models::session::Session;
 
+/// User profile screen showing account details and management options.
 #[component]
 pub fn Profile() -> Element {
     let session: Signal<Option<Session>> = use_context();

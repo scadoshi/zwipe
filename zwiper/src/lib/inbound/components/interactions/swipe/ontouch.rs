@@ -1,9 +1,12 @@
+//! Touch event handlers for mobile swipe gestures.
+
 use crate::inbound::components::interactions::swipe::{
     config::SwipeConfig, onswipe::OnSwipe, state::SwipeState,
 };
 use dioxus::prelude::*;
 
-// wiring event for touch interactions to swipe behavior
+/// Trait for handling touch events as swipe gestures (mobile devices).
+#[allow(missing_docs)]
 pub trait OnTouch {
     fn ontouchstart(&mut self, e: Event<TouchData>);
     fn ontouchmove(&mut self, e: Event<TouchData>);

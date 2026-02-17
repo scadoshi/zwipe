@@ -1,3 +1,5 @@
+//! New user registration API client.
+
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
@@ -8,6 +10,8 @@ use zwipe::{
     },
 };
 
+/// Trait for registering new user accounts.
+#[allow(missing_docs)]
 pub trait ClientRegister {
     fn register(
         &self,

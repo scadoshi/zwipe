@@ -1,3 +1,5 @@
+//! Deck list screen.
+
 use crate::{
     inbound::{
         components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
@@ -11,6 +13,7 @@ use zwipe::{
     inbound::http::ApiError,
 };
 
+/// Screen displaying all user's decks with navigation to view/edit.
 #[component]
 pub fn DeckList() -> Element {
     let navigator = use_navigator();

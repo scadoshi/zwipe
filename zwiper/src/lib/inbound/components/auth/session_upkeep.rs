@@ -1,3 +1,8 @@
+//! Session upkeep and automatic token refresh.
+//!
+//! Provides background session management that periodically checks token
+//! expiration and refreshes the access token before it expires.
+
 use crate::outbound::{
     client::{auth::refresh::ClientRefresh, ZwipeClient},
     session::Persist,
@@ -13,7 +18,9 @@ use zwipe::{
     inbound::http::handlers::auth::refresh_session::HttpRefreshSession,
 };
 
+/// Trait for session signals that can perform background upkeep.
 pub trait Upkeep {
+    /// Checks the session validity and refreshes the access token if expired.
     fn upkeep(self, client: Signal<ZwipeClient>);
 }
 
@@ -51,6 +58,9 @@ impl Upkeep for Signal<Option<Session>> {
     }
 }
 
+/// Spawns a background task that periodically refreshes the user session.
+///
+/// Also initializes context providers for session, client, card filter, and cards.
 pub fn spawn_upkeeper() {
     tracing::debug!("upkeeper spawned");
     let session = use_signal(Session::infallible_load);

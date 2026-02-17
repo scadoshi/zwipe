@@ -1,3 +1,5 @@
+//! Text search filter component.
+
 use crate::outbound::client::{card::get_artists::ClientGetArtists, ZwipeClient};
 use dioxus::prelude::*;
 use zwipe::{
@@ -8,6 +10,7 @@ use zwipe::{
     inbound::http::ApiError,
 };
 
+/// Filter component for card name, oracle text, and artist search.
 #[component]
 pub fn Text() -> Element {
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();

@@ -1,3 +1,5 @@
+//! Fetch a single deck profile (metadata only).
+
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
@@ -7,6 +9,8 @@ use zwipe::{
     inbound::http::{routes::get_deck_profile_route, ApiError},
 };
 
+/// Trait for fetching deck metadata without cards.
+#[allow(missing_docs)]
 pub trait ClientGetDeckProfile {
     fn get_deck_profile(
         &self,

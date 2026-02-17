@@ -1,4 +1,8 @@
+//! Swipe direction enum.
+
+/// The four cardinal directions a swipe can resolve to.
 #[derive(Debug, Clone, PartialEq)]
+#[allow(missing_docs)]
 pub enum Direction {
     Left,
     Right,
@@ -7,6 +11,7 @@ pub enum Direction {
 }
 
 impl Direction {
+    /// Converts the direction to a signed integer (-1 for Left/Up, 1 for Right/Down).
     pub fn as_i32(&self) -> i32 {
         match self {
             Direction::Left | Direction::Up => -1,

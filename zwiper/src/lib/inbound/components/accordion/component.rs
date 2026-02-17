@@ -1,8 +1,11 @@
+//! Accordion component implementations.
+
 use dioxus::prelude::*;
 use dioxus_primitives::accordion::{
     self, AccordionContentProps, AccordionItemProps, AccordionProps, AccordionTriggerProps,
 };
 
+/// Root accordion container that manages expand/collapse state.
 #[component]
 pub fn Accordion(props: AccordionProps) -> Element {
     rsx! {
@@ -26,6 +29,7 @@ pub fn Accordion(props: AccordionProps) -> Element {
     }
 }
 
+/// Individual accordion section containing a trigger and collapsible content.
 #[component]
 pub fn AccordionItem(props: AccordionItemProps) -> Element {
     rsx! {
@@ -42,6 +46,7 @@ pub fn AccordionItem(props: AccordionItemProps) -> Element {
     }
 }
 
+/// Clickable header that toggles the accordion item's expanded state.
 #[component]
 pub fn AccordionTrigger(props: AccordionTriggerProps) -> Element {
     rsx! {
@@ -60,6 +65,7 @@ pub fn AccordionTrigger(props: AccordionTriggerProps) -> Element {
     }
 }
 
+/// Collapsible content area that appears when the accordion item is expanded.
 #[component]
 pub fn AccordionContent(props: AccordionContentProps) -> Element {
     rsx! {

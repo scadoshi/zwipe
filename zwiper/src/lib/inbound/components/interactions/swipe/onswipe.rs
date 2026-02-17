@@ -1,9 +1,15 @@
+//! Core swipe event processing.
+//!
+//! Defines the [`OnSwipe`] trait with shared functionality used by both
+//! touch and mouse event handlers.
+
 use crate::inbound::components::interactions::swipe::time_point::TimePoint;
 use crate::inbound::components::interactions::swipe::{config::SwipeConfig, state::SwipeState};
 use chrono::Utc;
 use dioxus::html::geometry::ClientPoint;
 
-// functionality shared by ontouch- and onmouse-
+/// Core swipe event handlers shared by touch and mouse implementations.
+#[allow(missing_docs)]
 pub trait OnSwipe {
     fn onswipestart(&mut self, start_point: ClientPoint);
     fn onswipemove(&mut self, current_point: ClientPoint);

@@ -1,3 +1,5 @@
+//! Edit deck screen.
+
 use crate::{
     inbound::{
         components::{
@@ -35,6 +37,7 @@ use zwipe::{
     },
 };
 
+/// Screen for editing a deck with name and settings.
 #[component]
 pub fn EditDeck(deck_id: Uuid) -> Element {
     // config
@@ -227,9 +230,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 div { class : "container-sm",
                     match &*original_deck_profile_resource.read() {
                         Some(Ok(_profile)) => rsx! {
-
                             if let Some(error) = load_error() {
-                                // {tracing::error!("{}", error);}
                                 div { class: "message-error", "{error}" }
                             }
 
@@ -266,7 +267,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                             if is_searching() {
                                                 div { "searching..." }
                                             } else {
-                                                for card in search_results().iter().map(|x| x.clone()) {
+                                                for card in search_results().iter().cloned() {
                                                     div { class: "dropdown-item",
                                                         onclick: move |_| {
                                                             commander.set(Some(card.clone()));

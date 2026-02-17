@@ -1,3 +1,5 @@
+//! New user registration screen.
+
 use crate::{
     domain::error::UserFacing,
     inbound::{components::fields::text_input::TextInput, router::Router},
@@ -18,6 +20,7 @@ use zwipe::{
     inbound::http::handlers::auth::register_user::HttpRegisterUser,
 };
 
+/// Registration form screen for creating new user accounts.
 #[component]
 pub fn Register() -> Element {
     let navigator = use_navigator();

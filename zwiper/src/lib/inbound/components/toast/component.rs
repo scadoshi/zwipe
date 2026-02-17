@@ -1,6 +1,9 @@
+//! Toast provider component implementation.
+
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{self, ToastProviderProps};
 
+/// Provider component that enables toast notifications throughout the app.
 #[component]
 pub fn ToastProvider(props: ToastProviderProps) -> Element {
     rsx! {

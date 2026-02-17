@@ -1,3 +1,5 @@
+//! Card set filter component.
+
 use crate::outbound::client::{card::get_sets::ClientGetSets, ZwipeClient};
 use dioxus::prelude::*;
 use zwipe::{
@@ -8,6 +10,7 @@ use zwipe::{
     inbound::http::ApiError,
 };
 
+/// Filter component for selecting card sets.
 #[component]
 pub fn Set() -> Element {
     let session: Signal<Option<Session>> = use_context();

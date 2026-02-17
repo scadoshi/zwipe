@@ -1,3 +1,8 @@
+//! Swipe state management.
+//!
+//! Tracks the current state of a swipe gesture including position, velocity,
+//! and the final swipe direction when the gesture completes.
+
 use crate::inbound::components::interactions::swipe::{
     axis::Axis, config::SwipeConfig, direction::Direction as Dir, time_point::TimePoint,
 };
@@ -5,18 +10,22 @@ use dioxus::html::geometry::euclid::{Point2D, UnknownUnit};
 
 type DeltaPoint = Point2D<f64, UnknownUnit>;
 
+/// Tracks the state of an ongoing swipe gesture.
 #[derive(Debug, Clone)]
 pub struct SwipeState {
-    // for direction and speed calculation
+    /// Starting position and timestamp of the swipe.
     pub start_point: Option<TimePoint>,
+    /// Previous position for velocity calculation.
     pub previous_point: Option<TimePoint>,
+    /// Current touch/mouse position.
     pub current_point: Option<TimePoint>,
-    // what direction the last swipe resolved to
+    /// The direction the last completed swipe resolved to.
     pub latest_swipe: Option<Dir>,
-    // tracks which axis user is swiping on
+    /// Which axis the user is currently swiping along (locked after initial movement).
     pub traversing_axis: Option<Axis>,
+    /// Whether a swipe gesture is currently in progress.
     pub is_swiping: bool,
-    // how quickly element returns back to start position
+    /// Duration for the return-to-origin animation in seconds.
     pub return_animation_seconds: f64,
 }
 
@@ -35,10 +44,12 @@ impl Default for SwipeState {
 }
 
 impl SwipeState {
+    /// Creates a new SwipeState with default values.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Resets the swipe state, clearing all tracked points and axis.
     pub fn reset(&mut self) {
         self.start_point = None;
         self.current_point = None;
@@ -47,6 +58,7 @@ impl SwipeState {
         self.is_swiping = false;
     }
 
+    /// Calculates the Euclidean distance from the start point to the current point.
     pub fn distance_from_start_point(&self) -> Option<f64> {
         let (Some(start), Some(curr)) = (self.start_point.as_ref(), self.current_point.as_ref())
         else {
@@ -59,6 +71,7 @@ impl SwipeState {
         Some((dx.powi(2) + dy.powi(2)).sqrt())
     }
 
+    /// Returns the (x, y) delta from the start point to the current point.
     pub fn delta_from_start_point(&self) -> Option<DeltaPoint> {
         let (Some(start), Some(curr)) = (self.start_point.as_ref(), self.current_point.as_ref())
         else {
@@ -70,6 +83,7 @@ impl SwipeState {
         ))
     }
 
+    /// Calculates the distance from the previous point to the current point.
     pub fn distance_from_previous_point(&self) -> Option<f64> {
         let (Some(prev), Some(curr)) = (self.previous_point.as_ref(), self.current_point.as_ref())
         else {
@@ -82,6 +96,7 @@ impl SwipeState {
         Some((dx.powi(2) + dy.powi(2)).sqrt())
     }
 
+    /// Returns the (x, y) delta from the previous point to the current point.
     pub fn delta_from_previous_point(&self) -> Option<DeltaPoint> {
         let (Some(prev), Some(curr)) = (self.previous_point.as_ref(), self.current_point.as_ref())
         else {
@@ -93,6 +108,7 @@ impl SwipeState {
         ))
     }
 
+    /// Returns the time elapsed in milliseconds between the previous and current points.
     pub fn milliseconds_from_previous_point(&self) -> Option<f64> {
         let (Some(prev), Some(curr)) = (self.previous_point.as_ref(), self.current_point.as_ref())
         else {
@@ -101,6 +117,7 @@ impl SwipeState {
         Some((curr.time - prev.time).num_milliseconds() as f64)
     }
 
+    /// Calculates the current swipe speed in pixels per millisecond.
     pub fn speed(&self) -> Option<f64> {
         let (Some(distance), Some(time)) = (
             self.distance_from_previous_point(),
@@ -111,9 +128,9 @@ impl SwipeState {
         Some(distance / time)
     }
 
-    // below should be used to
-    // determine how quickly the element
-    // returns to its swiped from position
+    /// Calculates the return animation duration based on swipe distance.
+    ///
+    /// Longer swipes result in longer animation times for a smooth return.
     pub fn calculate_return_animation_seconds(&mut self) {
         let mut s = 0.0;
 
@@ -135,6 +152,7 @@ impl SwipeState {
         self.return_animation_seconds = s;
     }
 
+    /// Evaluates the current swipe and sets `latest_swipe` if thresholds are met.
     pub fn set_latest_swipe(&mut self, config: &SwipeConfig) {
         const DISTANCE_THRESHOLD_FOR_SPEED_TO_BE_VALID: f64 = 10.0;
 
@@ -198,6 +216,7 @@ impl SwipeState {
         tracing::trace!("swipe dir={:?}", self.latest_swipe);
     }
 
+    /// Determines and locks the swipe axis (X or Y) based on initial movement.
     pub fn set_traversing_axis(&mut self) {
         let (Some(start), Some(curr)) = (self.start_point.as_ref(), self.current_point.as_ref())
         else {

@@ -1,3 +1,5 @@
+//! Card search with filters.
+
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
@@ -9,6 +11,8 @@ use zwipe::{
     inbound::http::{routes::search_cards_route, ApiError},
 };
 
+/// Trait for searching cards with filter criteria.
+#[allow(missing_docs)]
 pub trait ClientSearchCards {
     fn search_cards(
         &self,

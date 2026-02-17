@@ -1,10 +1,12 @@
+//! Mouse event handlers for desktop swipe emulation.
+
 use crate::inbound::components::interactions::swipe::{
     config::SwipeConfig, onswipe::OnSwipe, state::SwipeState,
 };
 use dioxus::{html::input_data::MouseButton, prelude::*};
 
-// wiring event for mouse interactions to swipe behavior
-// only used while developing on desktop emulation
+/// Trait for handling mouse events as swipe gestures (desktop development).
+#[allow(missing_docs)]
 pub trait OnMouse {
     fn onmousedown(&mut self, e: Event<MouseData>);
     fn onmousemove(&mut self, e: Event<MouseData>);

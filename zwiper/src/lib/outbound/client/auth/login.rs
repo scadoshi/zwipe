@@ -1,3 +1,5 @@
+//! User login API client.
+
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
@@ -8,6 +10,8 @@ use zwipe::{
     },
 };
 
+/// Trait for authenticating users via the login endpoint.
+#[allow(missing_docs)]
 pub trait ClientLogin {
     fn authenticate_user(
         &self,

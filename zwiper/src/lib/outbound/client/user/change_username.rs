@@ -1,3 +1,5 @@
+//! Change username endpoint.
+
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
@@ -9,6 +11,8 @@ use zwipe::{
     },
 };
 
+/// Trait for updating usernames.
+#[allow(missing_docs)]
 pub trait ClientChangeUsername {
     fn change_username(
         &self,

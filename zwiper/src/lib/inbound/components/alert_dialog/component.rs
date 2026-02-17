@@ -1,3 +1,5 @@
+//! Alert dialog component implementations.
+
 use dioxus::prelude::*;
 use dioxus_primitives::alert_dialog::{
     self, AlertDialogActionProps, AlertDialogActionsProps, AlertDialogCancelProps,
@@ -5,6 +7,7 @@ use dioxus_primitives::alert_dialog::{
     AlertDialogTitleProps,
 };
 
+/// Root container for alert dialogs, managing open/closed state.
 #[component]
 pub fn AlertDialogRoot(props: AlertDialogRootProps) -> Element {
     rsx! {
@@ -25,6 +28,7 @@ pub fn AlertDialogRoot(props: AlertDialogRootProps) -> Element {
     }
 }
 
+/// Container for the alert dialog's visible content (title, description, actions).
 #[component]
 pub fn AlertDialogContent(props: AlertDialogContentProps) -> Element {
     rsx! {
@@ -37,6 +41,7 @@ pub fn AlertDialogContent(props: AlertDialogContentProps) -> Element {
     }
 }
 
+/// Title heading for the alert dialog.
 #[component]
 pub fn AlertDialogTitle(props: AlertDialogTitleProps) -> Element {
     rsx! {
@@ -48,6 +53,7 @@ pub fn AlertDialogTitle(props: AlertDialogTitleProps) -> Element {
     }
 }
 
+/// Descriptive text explaining the alert dialog's purpose.
 #[component]
 pub fn AlertDialogDescription(props: AlertDialogDescriptionProps) -> Element {
     rsx! {
@@ -59,6 +65,7 @@ pub fn AlertDialogDescription(props: AlertDialogDescriptionProps) -> Element {
     }
 }
 
+/// Container for action buttons (confirm/cancel) in the alert dialog.
 #[component]
 pub fn AlertDialogActions(props: AlertDialogActionsProps) -> Element {
     rsx! {
@@ -66,6 +73,7 @@ pub fn AlertDialogActions(props: AlertDialogActionsProps) -> Element {
     }
 }
 
+/// Cancel button that closes the dialog without taking action.
 #[component]
 pub fn AlertDialogCancel(props: AlertDialogCancelProps) -> Element {
     rsx! {
@@ -78,6 +86,7 @@ pub fn AlertDialogCancel(props: AlertDialogCancelProps) -> Element {
     }
 }
 
+/// Confirm/action button that triggers the primary action.
 #[component]
 pub fn AlertDialogAction(props: AlertDialogActionProps) -> Element {
     rsx! {

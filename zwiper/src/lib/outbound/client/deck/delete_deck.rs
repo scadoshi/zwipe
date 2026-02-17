@@ -1,3 +1,5 @@
+//! Delete existing deck.
+
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
@@ -7,6 +9,8 @@ use zwipe::{
     inbound::http::{routes::delete_deck_route, ApiError},
 };
 
+/// Trait for deleting decks by ID.
+#[allow(missing_docs)]
 pub trait ClientDeleteDeck {
     fn delete_deck(
         &self,

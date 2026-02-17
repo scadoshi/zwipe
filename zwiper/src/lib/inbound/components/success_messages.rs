@@ -1,3 +1,7 @@
+//! Success message helpers.
+//!
+//! Provides fun, randomized success messages for user feedback.
+
 const SUCCESS_MESSAGES: [&str; 15] = [
     "bazinga!",
     "shazam!",
@@ -18,6 +22,7 @@ const SUCCESS_MESSAGES: [&str; 15] = [
 
 use rand::Rng;
 
+/// Returns a random fun success message for user feedback.
 pub fn random_success_message() -> String {
     let mut rng = rand::rng();
     let index = rng.random_range(0..SUCCESS_MESSAGES.len());

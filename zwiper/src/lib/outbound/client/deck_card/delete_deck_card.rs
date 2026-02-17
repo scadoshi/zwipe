@@ -1,3 +1,5 @@
+//! Remove a card from a deck.
+
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
@@ -7,6 +9,8 @@ use zwipe::{
     inbound::http::{routes::delete_deck_card_route, ApiError},
 };
 
+/// Trait for removing cards from a deck.
+#[allow(missing_docs)]
 pub trait ClientDeleteDeckCard {
     fn delete_deck_card(
         &self,

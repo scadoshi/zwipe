@@ -1,9 +1,12 @@
+//! Mana cost and color filter component.
+
 use dioxus::prelude::*;
 use zwipe::domain::card::models::scryfall_data::colors::Color;
 use zwipe::domain::card::models::search_card::card_filter::builder::CardFilterBuilder;
 
 use super::filter_mode::FilterMode;
 
+/// Filter component for mana cost and color identity.
 #[component]
 pub fn Mana() -> Element {
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
