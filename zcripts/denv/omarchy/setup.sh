@@ -24,7 +24,7 @@ sudo pacman -S --needed --noconfirm gtk3 glib2 librsvg
 
 # install postgresql
 echo "installing postgresql..."
-if ! command -v psql &> /dev/null; then
+if ! pacman -Qi postgresql &> /dev/null; then
     sudo pacman -S --needed --noconfirm postgresql
 
     # initialize database
