@@ -61,6 +61,26 @@ Planned work after completing current tasks.
 
 ---
 
+## Infrastructure
+
+1. **Dockerized Backend Dev Environment** - Container for zerver + zervice + postgres so devs don't need to install anything locally
+
+   **Goal:** `docker compose up` spins up the full backend stack ready to develop against
+
+   **Scope:**
+   - `Dockerfile.dev` for zerver/zervice (Arch Linux base, Rust toolchain, sqlx-cli)
+   - `docker-compose.yml` wiring the app container + postgres container together
+   - Postgres container replaces local postgres install (handle migrations on startup)
+   - Mount source code as a volume so changes reflect without rebuilding the image
+   - `.env` generation handled by compose (no manual setup)
+   - Frontend (zwiper) stays native — connects to container via `BACKEND_URL=http://127.0.0.1:3000` unchanged
+
+   **Out of scope:** zwiper/Dioxus (requires GUI libs, stays on host)
+
+   **Companion script:** `zcripts/denv/{platform}/setup-frontend.sh` — frontend-only setup for devs using the Docker backend. Installs Dioxus GUI deps (webkit2gtk, gtk3, etc.), dioxus-cli, and writes `zwiper/.env` pointing at the container. Skips postgres, sqlx-cli, and all backend setup entirely.
+
+---
+
 ## Bugs
 
 1. **Layout Shift After Deck Creation** - Content shifted up ~5px (sometimes down) after saving new deck, persists across navigation
