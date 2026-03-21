@@ -11,6 +11,7 @@ pub mod scryfall_data;
 /// Sync metrics JSONB codecs and database model.
 pub mod sync_metrics;
 
+use crate::domain::card::models::search_card::filter_cards::PLAYABLE_LAYOUTS;
 use crate::domain::card::models::{
     Card,
     create_card::CreateCardError,
@@ -53,28 +54,6 @@ use anyhow::Context;
 use chrono::NaiveDateTime;
 use sqlx::{Postgres, query_as, query_scalar};
 use sqlx::{QueryBuilder, query_builder::Separated};
-
-/// Layouts representing cards playable in Magic formats.
-///
-/// Unknown layouts **default to hidden** (safe behavior) — new Scryfall layouts
-/// won't appear in search results until explicitly whitelisted here.
-const PLAYABLE_LAYOUTS: &[&str] = &[
-    "normal",
-    "split",
-    "flip",
-    "transform",
-    "modal_dfc",
-    "meld",
-    "reversible_card",
-    "leveler",
-    "saga",
-    "adventure",
-    "mutate",
-    "prototype",
-    "battle",
-    "class",
-    "case",
-];
 
 impl CardRepository for MyPostgres {
     // ========

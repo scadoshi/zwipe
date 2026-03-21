@@ -12,6 +12,8 @@
 
 /// Card filter builder for constructing search queries.
 pub mod card_filter;
+/// In-memory card filtering trait for Vec<Card>.
+pub mod filter_cards;
 /// Card type enum (Creature, Instant, Sorcery, etc.).
 pub mod card_type;
 /// Search error types.
