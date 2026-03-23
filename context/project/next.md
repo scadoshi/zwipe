@@ -4,20 +4,19 @@ Planned work after completing current tasks.
 
 ---
 
+## Testing & Stability
+
+1. **Integration Tests** - Repository tests with real PostgreSQL, domain trait tests (FilterCards, GroupCards), frontend component tests
+
+2. **Bug Fixes** - Layout shift after deck creation, iOS keyboard push issues (see Bugs section below)
+
+---
+
 ## Enhancements
 
 1. **Deck List Screen Redesign** - Better list styling, improved layout with utility bar, visual hierarchy
 
-3. **Deck Cards Browser** - Full-screen card viewer for deck contents (MAJOR)
-    - Display deck cards categorized by type (creatures, spells, lands) with counts
-    - Swipeable navigation between cards in deck
-    - Stack-like visual format showing card depth
-    - Categorized sections (by type, category, mana cost, etc.)
-    - Swipe between categories or within category
-    - Card count indicators per category
-    - Readable card display with proper image sizing
-
-4. **CardFilter Enhancements (Serve Only Playable Cards)** - Continue refining default CardFilter to exclude non-playable/non-standard cards.
+2. **CardFilter Enhancements (Serve Only Playable Cards)** - Continue refining default CardFilter to exclude non-playable/non-standard cards.
 
 ### Pending Improvements
    - **tri-toggle labels** - Improve clarity of boolean filter options
@@ -42,16 +41,16 @@ Planned work after completing current tasks.
      - Requires special UI handling (format + legal status)
      - Deferred - needs design work
 
-5. **Cross-Deck Card Ownership Indicator** - Highlight cards that are already in other decks:
+3. **Cross-Deck Card Ownership Indicator** - Highlight cards that are already in other decks:
     - Visual indicator when browsing cards for one deck (e.g., "In 2 other decks")
     - Show which decks contain the card
     - Helps users avoid over-buying duplicate cards
 
-6. **Toast: Card in Other Decks** - When viewing a card that exists in other decks, show a toast notification:
+4. **Toast: Card in Other Decks** - When viewing a card that exists in other decks, show a toast notification:
     - Message options: "You use this card in other decks" or "You seem to like this card"
     - Only show when the card is being viewed for deck-building (add/remove context)
 
-7. **EDHREC Integration** - Sort and filter cards by deck synergies:
+5. **EDHREC Integration** - Sort and filter cards by deck synergies:
     - Fetch synergy data from EDHREC API for current commander
     - Sort by "synergy score" or "popularity in decks with this commander"
     - Highlight cards frequently paired with the current commander

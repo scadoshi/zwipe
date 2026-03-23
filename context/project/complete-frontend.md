@@ -69,6 +69,18 @@ Production-ready frontend implementations.
   - Undo skip: decrements `current_index` only (card never left the vecs)
   - `onanimationend` branches on `animation_direction`: right removes from vecs, left advances index
   - `is_empty()` guard on filter builder prevents config defaults silently filtering deck cards
+- **ViewDeckCard Screen**: Grouped card list browser for deck contents
+  - GroupCards domain trait: `Vec<Card>.group_by(GroupByOption)` → `Vec<CardGroup>` with three modes (CardType, Cmc, Color)
+  - In-memory `filter_by` → `group_by` pipeline: server hit once on mount, all filter/group changes instant
+  - Group-by chips (type / cmc / color) with `.chip` / `.chip.selected` styling
+  - Column headers (name / cmc / p/t / colors) with `.card-row-header` styling
+  - Expandable card rows: tap to show oracle text, type line, mana cost, rarity, set
+  - Commander fetched separately (get_deck_profile → get_card) and deduplicated into card list
+  - Active filter warning toast on mount when filter has values
+  - Per-screen scroll container (`height: 100vh; overflow-y: auto`) for mobile (body has `overflow: clip`)
+  - Full filter panel (8 accordion sections) shared with add/remove screens via context
+  - Color display: `{W}{U}{B}` encoded format using `Color::to_short_name()`
+  - Empty state: text "no cards" instead of card shape placeholder
 
 ### Commander Search
 - **Debounced Search**: 300ms delay using tokio::time::sleep
