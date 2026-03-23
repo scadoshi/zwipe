@@ -87,8 +87,12 @@ pub fn Remove(deck_id: Uuid) -> Element {
     );
 
     let current_card = move || {
-        let idx = current_index();
-        displayed_cards().get(idx).cloned()
+        let cards = displayed_cards();
+        if cards.is_empty() {
+            return None;
+        }
+        let idx = current_index() % cards.len();
+        cards.get(idx).cloned()
     };
 
     // Effect 1 — mount load (reads `session` reactively)
@@ -194,15 +198,13 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
         match action {
             RemoveAction::Skip => {
-                if current_index() == 0 {
-                    toast.warning(
-                        "no previous card".to_string(),
-                        ToastOptions::default(),
-                    );
-                    action_history.write().push(RemoveAction::Skip);
+                let len = displayed_cards().len();
+                if len == 0 {
                     return;
                 }
-                current_index.set(current_index() - 1);
+                let idx = current_index();
+                let prev = if idx == 0 { len - 1 } else { idx - 1 };
+                current_index.set(prev);
                 toast.info(
                     "undid skip".to_string(),
                     ToastOptions::default().duration(Duration::from_millis(1500)),
@@ -308,7 +310,10 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                         if animation_direction() == Direction::Right {
                                             remove_current_card();
                                         } else {
-                                            current_index.set(current_index() + 1);
+                                            let len = displayed_cards().len();
+                                            if len > 0 {
+                                                current_index.set((current_index() + 1) % len);
+                                            }
                                         }
                                     }
                                 }
@@ -365,6 +370,18 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     class: "util-btn",
                     onclick: move |_| navigator.go_back(),
                     "back"
+                }
+                button {
+                    class: "util-btn",
+                    onclick: move |_| {
+                        current_index.set(0);
+                        action_history.write().clear();
+                        toast.info(
+                            "back to start".to_string(),
+                            ToastOptions::default().duration(Duration::from_millis(1500)),
+                        );
+                    },
+                    "refresh"
                 }
                 button {
                     class: "util-btn",
