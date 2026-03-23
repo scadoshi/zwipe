@@ -278,7 +278,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                     let Some(card) = current_card() else { return; };
                                     action_history.write().push(RemoveAction::Removed(Box::new(card)));
                                     delete_card_from_deck();
-                                    toast.warning(
+                                    toast.success(
                                         "removed from deck".to_string(),
                                         ToastOptions::default().duration(Duration::from_millis(1500)),
                                     );
