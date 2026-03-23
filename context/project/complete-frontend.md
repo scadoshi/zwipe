@@ -61,7 +61,14 @@ Production-ready frontend implementations.
 - **Pagination**: Automatic loading when within 10 cards of end
 - **De-duplication**: HashSet tracking preventing duplicate displays
 - **Empty State UI**: .card-shape CSS with "no cards yet" messaging
-- **RemoveDeckCard Planning**: Separate screen for card removal (pending)
+- **RemoveDeckCard Screen**: Swipe-to-remove with full filter panel and undo
+  - Two-signal display model: `deck_cards` (source of truth) + `displayed_cards` (filtered view)
+  - Two-effect reactivity: mount effect reads session reactively; filter effect reads `filter_reset_counter` reactively, peeks `deck_cards` to avoid re-subscribing on card removal
+  - Local `RemoveAction` enum (`Skip` / `Removed(Box<Card>)`) — boxed to avoid large enum variant
+  - Undo remove: re-inserts card into both vecs at `current_index`, calls `create_deck_card` to restore on backend
+  - Undo skip: decrements `current_index` only (card never left the vecs)
+  - `onanimationend` branches on `animation_direction`: right removes from vecs, left advances index
+  - `is_empty()` guard on filter builder prevents config defaults silently filtering deck cards
 
 ### Commander Search
 - **Debounced Search**: 300ms delay using tokio::time::sleep
