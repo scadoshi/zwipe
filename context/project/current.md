@@ -2,36 +2,35 @@
 
 Active development tasks and immediate focus areas.
 
-**Last Updated**: Completed Remove Card screen + card_profiles schema cleanup.
+**Last Updated**: Completed GroupCards trait + Deck Cards View screen. Core deck management feature-complete.
 
-**Current Focus**: Deck card browsing and remaining deck management workflows.
+**Current Focus**: Testing coverage, bug fixes, and polish. Main functionality is in place.
 
 **Recent Achievements**:
-- **Remove Card Screen**: Full swipe-based card removal screen implemented
-  - Two-signal display model (`deck_cards` source of truth + `displayed_cards` filtered view)
-  - Two-effect reactivity split preventing filter re-triggers on card removal
-  - Local `RemoveAction` enum (Skip / Removed(Box<Card>)) for undo stack
-  - Undo remove: `create_deck_card` backend restore + vec re-insertion at current index
-  - Undo skip: decrement `current_index` only
-  - Filter panel (all 8 accordion sections) with in-memory `FilterCards::filter_by`
-  - `is_empty()` guard preventing config defaults from silently filtering deck cards
-  - Animation direction branching in `onanimationend` (right = remove, left = advance index)
-- **FilterCards Trait**: In-memory `Vec<Card>` filtering mirroring SQL adapter logic, enabling filter without server round-trip
-- **card_profiles Shared PK**: Removed surrogate `id` column, promoted `scryfall_data_id` to PRIMARY KEY
-  - `CardProfile.scryfall_data_id` is now the single identifier (no more dual-UUID ambiguity)
-  - Fixed misleading `card_profile_id` param names on 3 frontend client traits
-  - Resolved the "deck card not found" class of bug at the schema level
+- **GroupCards Trait**: Domain-layer extension trait on `Vec<Card>` partitioning cards into labelled groups
+  - Three grouping modes: CardType (8 buckets by type_line), Cmc (0–6+), Color (WUBRG + multicolor + colorless)
+  - Bucket-based O(n) classification with fixed-order labels, empty group filtering
+  - Same extension-trait-on-`Vec<Card>` pattern as `FilterCards`
+- **Deck Cards View Screen**: Grouped card list browser for deck contents
+  - `filter_by` → `group_by` in-memory data pipeline (no server round-trips after mount)
+  - Group-by chips (type / cmc / color), column headers, expandable card rows
+  - Commander fetched separately via get_deck_profile → get_card, deduplicated into card list
+  - Active filter warning toast on mount, per-screen scroll containers for mobile
+  - Full filter panel (8 accordion sections) shared with add/remove screens
+- **Deck Profile View Rework**: Name + copy rule side-by-side, commander image below with 42vh sizing
+- **Button Label Standardization**: Shortened labels across all deck screens (create, save, add, remove, view, delete)
+- **Filter Behavior Refinement**: Add screen requires filter (toast warning), remove/view screens allow empty filter
 
 ---
 
 ## Top 5 Priorities
 
-1. **Deck Cards Browser** - Full-screen card viewer for deck contents (MAJOR)
+1. **Testing Coverage** - Integration tests for repository patterns, domain traits, and frontend components
 
 2. **Bug Fixes** - Address layout shift after deck creation and iOS keyboard push issues
 
-3. **Testing Coverage** - Integration tests for repository patterns
+3. **CardFilter Enhancements** - Continue refining default filter to exclude non-playable cards
 
 4. **Performance Optimization** - Review patterns for optimization opportunities
 
-5. **API Documentation** - Consider OpenAPI/Swagger generation from documented handlers
+5. **Polish & UX** - Tri-toggle labels, language filter refinement, minor UI improvements
