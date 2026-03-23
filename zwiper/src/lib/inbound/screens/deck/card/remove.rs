@@ -397,14 +397,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     button {
                         class: "btn btn-sm",
                         onclick: move |_| {
-                            if filter_builder.read().is_empty() {
-                                toast.warning(
-                                    "try adding a filter".to_string(),
-                                    ToastOptions::default().duration(Duration::from_millis(1500)),
-                                );
-                            } else {
-                                filter_reset_counter.set(filter_reset_counter() + 1);
-                            }
+                            filter_reset_counter.set(filter_reset_counter() + 1);
                             filters_overlay_open.set(false);
                         },
                         "apply"

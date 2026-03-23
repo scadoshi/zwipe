@@ -242,6 +242,28 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                     placeholder: "deck name",
                                 }
 
+                                label { class: "label mb-2", r#for : "copy-max", "card copy rule" }
+                                div { class: "flex gap-2 mb-2 flex-center",
+                                    div { class: if copy_max() == Some(CopyMax::standard()) { "type-box selected" } else { "type-box unselected" },
+                                        onclick: move |_| {
+                                            copy_max.set(Some(CopyMax::standard()));
+                                        },
+                                        "standard"
+                                    }
+                                    div { class: if copy_max() == Some(CopyMax::singleton()) { "type-box selected" } else { "type-box unselected" },
+                                        onclick: move |_| {
+                                            copy_max.set(Some(CopyMax::singleton()));
+                                        },
+                                        "singleton"
+                                    }
+                                    div { class: if copy_max().is_none() { "type-box selected" } else { "type-box unselected" },
+                                        onclick: move |_| {
+                                            copy_max.set(None);
+                                        },
+                                        "none"
+                                    }
+                                }
+
                                 div { class: "mb-4",
                                     label { class: "label", "commander" }
                                     input { class: "input",
@@ -281,28 +303,6 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                                 }
                                             }
                                         }
-                                    }
-                                }
-
-                                label { class: "label mb-2", r#for : "copy-max", "card copy rule" }
-                                div { class: "flex gap-2 mb-2 flex-center",
-                                    div { class: if copy_max() == Some(CopyMax::standard()) { "type-box selected" } else { "type-box unselected" },
-                                        onclick: move |_| {
-                                            copy_max.set(Some(CopyMax::standard()));
-                                        },
-                                        "standard"
-                                    }
-                                    div { class: if copy_max() == Some(CopyMax::singleton()) { "type-box selected" } else { "type-box unselected" },
-                                        onclick: move |_| {
-                                            copy_max.set(Some(CopyMax::singleton()));
-                                        },
-                                        "singleton"
-                                    }
-                                    div { class: if copy_max().is_none() { "type-box selected" } else { "type-box unselected" },
-                                        onclick: move |_| {
-                                            copy_max.set(None);
-                                        },
-                                        "none"
                                     }
                                 }
 

@@ -220,7 +220,7 @@ pub fn CreateDeck() -> Element {
                 button { class : "util-btn",
                     disabled: is_saving(),
                     onclick : move |_| attempt_submit(),
-                    if is_saving() { "saving..." } else { "save deck" }
+                    if is_saving() { "saving..." } else { "save" }
                 }
             }
         }

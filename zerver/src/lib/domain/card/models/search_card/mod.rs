@@ -14,6 +14,8 @@
 pub mod card_filter;
 /// In-memory card filtering trait for Vec<Card>.
 pub mod filter_cards;
+/// In-memory card grouping trait for Vec<Card>.
+pub mod group_cards;
 /// Card type enum (Creature, Instant, Sorcery, etc.).
 pub mod card_type;
 /// Search error types.

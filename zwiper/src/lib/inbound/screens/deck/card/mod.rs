@@ -6,6 +6,8 @@
 pub mod action_history;
 /// Add cards to deck screen.
 pub mod add;
+/// View deck cards screen.
+pub mod view;
 /// Card search filter components.
 pub mod filter;
 /// Remove cards from deck screen.

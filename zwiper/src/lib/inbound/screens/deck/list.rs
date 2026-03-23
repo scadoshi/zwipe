@@ -100,7 +100,7 @@ pub fn DeckList() -> Element {
                     onclick: move |_| {
                         navigator.push(Router::CreateDeck);
                     },
-                    "create deck"
+                    "create"
                 }
             }
         }
