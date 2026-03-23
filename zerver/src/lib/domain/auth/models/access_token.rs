@@ -667,9 +667,10 @@ mod tests {
     }
 
     #[test]
-    fn test_generate_access_token_produces_consistent_results() {
+    fn test_generate_access_token_produces_consistent_claims() {
+        let user_id = Uuid::new_v4();
         let user = User::new(
-            Uuid::new_v4(),
+            user_id,
             Username::new("testuser").unwrap(),
             EmailAddress::from_str("test@email.com").unwrap(),
         );
@@ -678,7 +679,13 @@ mod tests {
 
         let token1 = AccessToken::generate(&user, &secret).unwrap();
         let token2 = AccessToken::generate(&user, &secret).unwrap();
-        assert_eq!(token1, token2);
+
+        // Tokens differ due to wall-clock timestamps (iat/exp), but claims must match
+        let claims1 = token1.value.validate(&secret).unwrap();
+        let claims2 = token2.value.validate(&secret).unwrap();
+        assert_eq!(claims1.user_id, claims2.user_id);
+        assert_eq!(claims1.username, claims2.username);
+        assert_eq!(claims1.email, claims2.email);
     }
 
     #[test]
