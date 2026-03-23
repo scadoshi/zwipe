@@ -49,13 +49,13 @@
 //! println!("Authenticated user: {}", claims.username);
 //! ```
 
-use crate::domain::user::models::username::Username;
 #[cfg(feature = "zerver")]
 use crate::domain::user::models::User;
+use crate::domain::user::models::username::Username;
 use chrono::{NaiveDateTime, Utc};
 use email_address::EmailAddress;
 #[cfg(feature = "zerver")]
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
@@ -620,7 +620,7 @@ mod tests {
         let username = Username::new("test").unwrap();
         let email = EmailAddress::from_str("test@example.com").unwrap();
         let claims1 = UserClaims {
-            user_id: id1.clone(),
+            user_id: id1,
             username: username.clone(),
             email: email.clone(),
             exp: 1234567890,

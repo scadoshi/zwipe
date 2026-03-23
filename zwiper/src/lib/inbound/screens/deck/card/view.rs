@@ -79,16 +79,14 @@ pub fn View(deck_id: Uuid) -> Element {
             };
 
             // Fetch commander separately and prepend if not already in deck
-            if let Ok(profile) = client().get_deck_profile(deck_id, &session).await {
-                if let Some(commander_id) = profile.commander_id {
+            if let Ok(profile) = client().get_deck_profile(deck_id, &session).await
+                && let Some(commander_id) = profile.commander_id {
                     let already_in_deck = cards.iter().any(|c| c.scryfall_data.id == commander_id);
-                    if !already_in_deck {
-                        if let Ok(commander) = client().get_card(commander_id, &session).await {
+                    if !already_in_deck
+                        && let Ok(commander) = client().get_card(commander_id, &session).await {
                             cards.insert(0, commander);
                         }
-                    }
                 }
-            }
 
             deck_cards.set(cards);
             deck_loaded.set(true);

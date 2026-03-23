@@ -174,11 +174,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_username_new_accepts_valid_username() {
-        assert!(matches!(Username::new("abcd"), Ok(Username(_))));
-    }
-
-    #[test]
     fn test_username_new_rejects_too_short() {
         assert!(matches!(
             Username::new("ab"),
@@ -188,7 +183,7 @@ mod tests {
 
     #[test]
     fn test_username_new_accepts_minimum_length() {
-        assert!(matches!(Username::new("abcd"), Ok(Username(_))));
+        assert!(matches!(Username::new("abc"), Ok(Username(_))));
     }
 
     #[test]

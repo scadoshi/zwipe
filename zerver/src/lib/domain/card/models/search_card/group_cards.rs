@@ -15,10 +15,7 @@
 //! }
 //! ```
 
-use crate::domain::card::models::{
-    Card,
-    scryfall_data::colors::Color,
-};
+use crate::domain::card::models::{Card, scryfall_data::colors::Color};
 
 /// Grouping strategies for partitioning cards.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -90,14 +87,16 @@ impl GroupCards for Vec<Card> {
                 "colorless",
             ],
         };
-
         let mut buckets: Vec<Vec<Card>> = vec![Vec::new(); labels.len()];
-
-        for card in self {
-            let idx = classify(&card, option);
-            buckets[idx].push(card);
-        }
-
+        self.into_iter().for_each(|card| {
+            if let Some((_, bucket)) = buckets
+                .iter_mut()
+                .enumerate()
+                .find(|(i, _)| *i == classify(&card, option))
+            {
+                bucket.push(card);
+            }
+        });
         labels
             .into_iter()
             .zip(buckets)
@@ -155,17 +154,17 @@ fn classify_cmc(card: &Card) -> usize {
 /// Color identity classification — uses WUBRG order + multicolor + colorless.
 fn classify_color(card: &Card) -> usize {
     let ci = &card.scryfall_data.color_identity;
-
     if ci.is_empty() {
         return 6; // "colorless"
     }
-
     if ci.len() >= 2 {
         return 5; // "multicolor"
     }
-
+    let Some(color) = ci.first() else {
+        return 6; // "colorless
+    };
     // Exactly one color — map to WUBRG index (0–4)
-    match ci[0] {
+    match color {
         Color::White => 0,
         Color::Blue => 1,
         Color::Black => 2,
