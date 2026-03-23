@@ -263,6 +263,21 @@ Production-ready frontend implementations.
 - **Shared Models**: Feature-flagged types from zwipe library
 - **Client Organization**: Domain-based folders for HTTP methods
 
+## 🧪 Unit Test Coverage (SwipeState)
+- **`swipe/state.rs`** — 32 tests covering all pure math methods:
+  - `distance_from_start_point`: None when no points, pure horizontal, pure vertical, 3-4-5 diagonal
+  - `delta_from_start_point`: positive and negative deltas
+  - `distance_from_previous_point`: None when missing, 3-4-5 triangle
+  - `milliseconds_from_previous_point`: None when missing, 100ms elapsed
+  - `speed`: None when missing, calculation (50px / 10ms = 5.0), zero-time → infinity
+  - `calculate_return_animation_seconds`: 0.0 with no points; 0.25 for d>0, 0.5 for d>25, 0.625 for d>50, 0.75 for d>100; boundary values exactly at thresholds
+  - `set_traversing_axis`: X when dx>dy, Y when dy>dx, None when equal
+  - `set_latest_swipe`: all 4 directions over distance threshold; below threshold → None; speed trigger; disallowed direction → None
+  - `reset`: clears all state fields
+- **`ClientPoint` construction**: `dioxus::html::geometry::ClientPoint` is `Point2D<f64, ClientSpace>` (euclid) — constructed with `Point2D::new(x, y)`
+- **`DISTANCE_THRESHOLD_FOR_SPEED_TO_BE_VALID = 10.0`**: Speed only counts if distance from start > 10px (separate from `distance_threshold=100.0` for completion)
+- **`swiping_state(dx, dy, speed)` helper**: Calculates `previous_point` such that dist(prev→curr) / 10ms = desired speed, enabling independent control of distance-from-start and speed
+
 ## 📚 Documentation Coverage
 
 ### Documentation Philosophy

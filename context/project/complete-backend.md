@@ -140,6 +140,21 @@ Production-ready backend implementations.
 - **Modular File Organization**: Domain-specific separation with clear responsibilities
 - **Feature Flags**: Server-only code properly gated with #[cfg(feature = "zerver")]
 
+## 🔧 Type System Refinements
+- **Deref Refactor**: All domain newtypes implement `std::ops::Deref` instead of bespoke getters
+  - Removed: `as_str()`, `value()`, `id()`, `max()`, `quantity()` methods across all newtypes
+  - Added: `impl Deref<Target=str>` (string types), `impl Deref<Target=Uuid>`, `impl Deref<Target=i32>`, `impl Deref<Target=[T]>` (collection types)
+  - Updated 19 zwiper HTTP client files: `session.access_token.value.as_str()` → `&*session.access_token.value`
+  - Pattern: enables coercion at call sites without leaking internal representation
+
+## 🧪 Unit Test Coverage (Domain Layer)
+- **`filter_cards.rs`** — 24 tests: text filters, CMC ranges, color identity, combat stats, flags (`is_valid_commander`, `is_token`, `is_playable`), rarity, set, sort, pagination
+  - Key insight: `is_empty()` check excludes config fields (`is_playable`, `digital`, etc.) — add `with_name_contains("")` as dummy criterion for flag-only tests
+  - `make_card()` fixture enumerates all ~70 `ScryfallData` fields (no `Default` derive)
+- **`group_cards.rs`** — 15 tests: CardType (creature/land/instant/other/first-match-wins/empty-skip), Cmc (0/5/6+/None/boundary), Color (white/multicolor/colorless/fixed-order)
+- **`copy_max.rs`** — 9 tests: valid construction (1, 4), rejection of out-of-range values, `Deref` to `i32`
+- **`quantity.rs`** — tests for both `Quantity` and `UpdateQuantity` `Deref` impls; fixed pre-existing test bugs
+
 ## 📚 Documentation Coverage & Philosophy
 - **Documentation Philosophy**: Established comprehensive guidelines in `/context/rules/documentation.md`
   - Core principle: "Document intent, not obvious implementation details"
