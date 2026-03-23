@@ -3,6 +3,7 @@
 //! Enforces MTG deck building rules for card copies (singleton vs. standard format).
 
 use serde::{Deserialize, Serialize};
+use std::ops::Deref;
 use thiserror::Error;
 
 /// Error when copy limit is neither 1 (singleton) nor 4 (standard).
@@ -40,11 +41,6 @@ impl CopyMax {
         Ok(Self(max))
     }
 
-    /// Returns the copy limit value (1 or 4).
-    pub fn max(&self) -> i32 {
-        self.0
-    }
-
     /// Creates a singleton format copy limit (1 copy per card).
     ///
     /// Used for Commander/EDH format decks.
@@ -60,12 +56,19 @@ impl CopyMax {
     }
 }
 
+impl Deref for CopyMax {
+    type Target = i32;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 impl Serialize for CopyMax {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        self.max().serialize(serializer)
+        self.0.serialize(serializer)
     }
 }
 
@@ -84,70 +87,52 @@ impl<'de> Deserialize<'de> for CopyMax {
 mod tests {
     use super::*;
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_copy_max_new_accepts_1() {
-        // singleton/Commander format → Ok
-        todo!()
+        assert!(CopyMax::new(1).is_ok());
     }
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_copy_max_new_accepts_4() {
-        // standard format → Ok
-        todo!()
+        assert!(CopyMax::new(4).is_ok());
     }
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_copy_max_new_rejects_0() {
-        todo!()
+        assert!(matches!(CopyMax::new(0), Err(InvalidCopyMax)));
     }
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_copy_max_new_rejects_2() {
-        // in-between value → Err
-        todo!()
+        assert!(matches!(CopyMax::new(2), Err(InvalidCopyMax)));
     }
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_copy_max_new_rejects_5() {
-        // above-range → Err
-        todo!()
+        assert!(matches!(CopyMax::new(5), Err(InvalidCopyMax)));
     }
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_copy_max_singleton_returns_1() {
-        todo!()
+        assert_eq!(*CopyMax::singleton(), 1);
     }
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_copy_max_standard_returns_4() {
-        todo!()
+        assert_eq!(*CopyMax::standard(), 4);
     }
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_copy_max_max_returns_inner_value() {
-        todo!()
+        assert_eq!(*CopyMax::new(1).unwrap(), 1);
+        assert_eq!(*CopyMax::new(4).unwrap(), 4);
     }
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_copy_max_serialization_round_trip() {
-        todo!()
+        let cm = CopyMax::new(4).unwrap();
+        let serialized = serde_json::to_value(cm).unwrap();
+        let deserialized = serde_json::from_value::<CopyMax>(serialized).unwrap();
+        assert_eq!(*deserialized, 4);
     }
 }

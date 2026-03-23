@@ -172,3 +172,275 @@ fn classify_color(card: &Card) -> usize {
         Color::Green => 4,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{GroupByOption, GroupCards};
+    use crate::domain::card::models::{
+        Card,
+        card_profile::CardProfile,
+        scryfall_data::{
+            ScryfallData,
+            colors::{Color, Colors},
+            legalities::Legalities,
+            prices::Prices,
+            rarity::Rarity,
+        },
+    };
+    use chrono::NaiveDate;
+    use uuid::Uuid;
+
+    fn make_card(name: &str) -> Card {
+        Card {
+            card_profile: CardProfile {
+                scryfall_data_id: Uuid::new_v4(),
+                is_valid_commander: false,
+                is_token: false,
+                created_at: NaiveDate::from_ymd_opt(2021, 1, 1)
+                    .unwrap()
+                    .and_hms_opt(0, 0, 0)
+                    .unwrap(),
+                updated_at: NaiveDate::from_ymd_opt(2021, 1, 1)
+                    .unwrap()
+                    .and_hms_opt(0, 0, 0)
+                    .unwrap(),
+            },
+            scryfall_data: ScryfallData {
+                arena_id: None,
+                id: Uuid::new_v4(),
+                lang: "en".to_string(),
+                mtgo_id: None,
+                mtgo_foil_id: None,
+                multiverse_ids: None,
+                tcgplayer_id: None,
+                tcgplayer_etched_id: None,
+                cardmarket_id: None,
+                object: "card".to_string(),
+                layout: "normal".to_string(),
+                oracle_id: None,
+                prints_search_uri: String::new(),
+                rulings_uri: String::new(),
+                scryfall_uri: String::new(),
+                uri: String::new(),
+                all_parts: None,
+                card_faces: None,
+                cmc: None,
+                color_identity: Colors::from([]),
+                color_indicator: None,
+                colors: None,
+                defense: None,
+                edhrec_rank: None,
+                game_changer: None,
+                hand_modifier: None,
+                keywords: None,
+                legalities: Legalities::default(),
+                life_modifier: None,
+                loyalty: None,
+                mana_cost: None,
+                name: name.to_string(),
+                oracle_text: None,
+                penny_rank: None,
+                power: None,
+                produced_mana: None,
+                reserved: false,
+                toughness: None,
+                type_line: None,
+                artist: None,
+                artist_ids: None,
+                attraction_lights: None,
+                booster: false,
+                border_color: String::new(),
+                card_back_id: None,
+                collector_number: String::new(),
+                content_warning: None,
+                digital: false,
+                finishes: vec![],
+                flavor_name: None,
+                flavor_text: None,
+                frame_effects: None,
+                frame: String::new(),
+                full_art: false,
+                games: None,
+                highres_image: false,
+                illustration_id: None,
+                image_status: String::new(),
+                image_uris: None,
+                oversized: false,
+                prices: Prices {
+                    usd: None,
+                    usd_foil: None,
+                    usd_etched: None,
+                    eur: None,
+                    eur_foil: None,
+                    eur_etched: None,
+                    tix: None,
+                },
+                printed_name: None,
+                printed_text: None,
+                printed_type_line: None,
+                promo: false,
+                promo_types: None,
+                purchase_uris: None,
+                rarity: Rarity::Common,
+                related_uris: serde_json::Value::Null,
+                released_at: NaiveDate::from_ymd_opt(2021, 1, 1).unwrap(),
+                reprint: false,
+                scryfall_set_uri: String::new(),
+                set_name: String::new(),
+                set_search_uri: String::new(),
+                set_type: String::new(),
+                set_uri: String::new(),
+                set: "m21".to_string(),
+                set_id: Uuid::new_v4(),
+                story_spotlight: false,
+                textless: false,
+                variation: false,
+                variation_of: None,
+                security_stamp: None,
+                watermark: None,
+                preview_previewed_at: None,
+                preview_source_uri: None,
+                preview_source: None,
+            },
+        }
+    }
+
+    // ── GroupByOption::CardType ────────────────────────────────────────────────
+
+    #[test]
+    fn test_group_by_type_creature() {
+        let mut card = make_card("Grizzly Bears");
+        card.scryfall_data.type_line = Some("Creature — Bear".to_string());
+        let result = vec![card].group_by(GroupByOption::CardType);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].label, "creatures");
+    }
+
+    #[test]
+    fn test_group_by_type_land() {
+        let mut card = make_card("Forest");
+        card.scryfall_data.type_line = Some("Basic Land — Forest".to_string());
+        let result = vec![card].group_by(GroupByOption::CardType);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].label, "lands");
+    }
+
+    #[test]
+    fn test_group_by_type_instant() {
+        let mut card = make_card("Lightning Bolt");
+        card.scryfall_data.type_line = Some("Instant".to_string());
+        let result = vec![card].group_by(GroupByOption::CardType);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].label, "instants");
+    }
+
+    #[test]
+    fn test_group_by_type_other() {
+        let card = make_card("Mystery"); // type_line = None
+        let result = vec![card].group_by(GroupByOption::CardType);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].label, "other");
+    }
+
+    #[test]
+    fn test_group_by_type_first_match_wins() {
+        // "Artifact Creature" contains both keywords; Creature (index 1) wins over Artifact (index 3)
+        let mut card = make_card("Phyrexian Juggernaut");
+        card.scryfall_data.type_line = Some("Artifact Creature — Juggernaut".to_string());
+        let result = vec![card].group_by(GroupByOption::CardType);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].label, "creatures");
+    }
+
+    #[test]
+    fn test_group_by_type_empty_groups_skipped() {
+        let mut card = make_card("Forest");
+        card.scryfall_data.type_line = Some("Basic Land — Forest".to_string());
+        let result = vec![card].group_by(GroupByOption::CardType);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].label, "lands");
+        assert!(result.iter().all(|g| g.label != "creatures"));
+    }
+
+    // ── GroupByOption::Cmc ─────────────────────────────────────────────────────
+
+    #[test]
+    fn test_group_by_cmc_zero() {
+        let mut card = make_card("Mox Pearl");
+        card.scryfall_data.cmc = Some(0.0);
+        let result = vec![card].group_by(GroupByOption::Cmc);
+        assert_eq!(result[0].label, "0");
+    }
+
+    #[test]
+    fn test_group_by_cmc_five() {
+        let mut card = make_card("Mulldrifter");
+        card.scryfall_data.cmc = Some(5.0);
+        let result = vec![card].group_by(GroupByOption::Cmc);
+        assert_eq!(result[0].label, "5");
+    }
+
+    #[test]
+    fn test_group_by_cmc_six_plus() {
+        let mut card = make_card("Emrakul");
+        card.scryfall_data.cmc = Some(15.0);
+        let result = vec![card].group_by(GroupByOption::Cmc);
+        assert_eq!(result[0].label, "6+");
+    }
+
+    #[test]
+    fn test_group_by_cmc_none_treated_as_zero() {
+        let card = make_card("Ancestral Vision"); // cmc = None
+        let result = vec![card].group_by(GroupByOption::Cmc);
+        assert_eq!(result[0].label, "0");
+    }
+
+    #[test]
+    fn test_group_by_cmc_boundary_exactly_six() {
+        let mut card = make_card("Wurmcoil Engine");
+        card.scryfall_data.cmc = Some(6.0);
+        let result = vec![card].group_by(GroupByOption::Cmc);
+        assert_eq!(result[0].label, "6+");
+    }
+
+    // ── GroupByOption::Color ───────────────────────────────────────────────────
+
+    #[test]
+    fn test_group_by_color_mono_white() {
+        let mut card = make_card("Plains");
+        card.scryfall_data.color_identity = Colors::from([Color::White]);
+        let result = vec![card].group_by(GroupByOption::Color);
+        assert_eq!(result[0].label, "white");
+    }
+
+    #[test]
+    fn test_group_by_color_multicolor() {
+        let mut card = make_card("Atraxa");
+        card.scryfall_data.color_identity =
+            Colors::from([Color::White, Color::Blue, Color::Black, Color::Green]);
+        let result = vec![card].group_by(GroupByOption::Color);
+        assert_eq!(result[0].label, "multicolor");
+    }
+
+    #[test]
+    fn test_group_by_color_colorless() {
+        let card = make_card("Eldrazi"); // color_identity = empty by default
+        let result = vec![card].group_by(GroupByOption::Color);
+        assert_eq!(result[0].label, "colorless");
+    }
+
+    #[test]
+    fn test_group_by_color_group_order() {
+        let mut white = make_card("White Card");
+        white.scryfall_data.color_identity = Colors::from([Color::White]);
+        let mut red = make_card("Red Card");
+        red.scryfall_data.color_identity = Colors::from([Color::Red]);
+        let colorless = make_card("Colorless Card"); // empty color_identity
+        // Groups emitted in fixed order: white(0), red(3), colorless(6)
+        let result = vec![colorless, red, white].group_by(GroupByOption::Color);
+        assert_eq!(result.len(), 3);
+        assert_eq!(result[0].label, "white");
+        assert_eq!(result[1].label, "red");
+        assert_eq!(result[2].label, "colorless");
+    }
+}

@@ -9,6 +9,7 @@
 //! is known. This module only validates that quantities are positive.
 
 use serde::{Deserialize, Serialize};
+use std::ops::Deref;
 use thiserror::Error;
 
 /// Error when quantity is zero or negative.
@@ -41,9 +42,12 @@ impl Quantity {
         Ok(Self(quantity))
     }
 
-    /// Returns the quantity value.
-    pub fn quantity(&self) -> i32 {
-        self.0
+}
+
+impl Deref for Quantity {
+    type Target = i32;
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -52,7 +56,7 @@ impl Serialize for Quantity {
     where
         S: serde::Serializer,
     {
-        self.quantity().serialize(serializer)
+        self.0.serialize(serializer)
     }
 }
 
@@ -96,9 +100,12 @@ impl UpdateQuantity {
         Ok(Self(add_quantity))
     }
 
-    /// Returns the delta value (positive to add, negative to remove).
-    pub fn value(&self) -> i32 {
-        self.0
+}
+
+impl Deref for UpdateQuantity {
+    type Target = i32;
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -108,82 +115,58 @@ mod tests {
 
     // --- Quantity ---
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_quantity_new_accepts_1() {
-        // minimum valid value
-        todo!()
+        assert!(Quantity::new(1).is_ok());
     }
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_quantity_new_accepts_large_value() {
-        // 99 → Ok
-        todo!()
+        assert!(Quantity::new(99).is_ok());
     }
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_quantity_new_rejects_0() {
-        // 0 → InvalidQuantity
-        todo!()
+        assert!(matches!(Quantity::new(0), Err(InvalidQuantity)));
     }
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_quantity_new_rejects_negative() {
-        // -1 → InvalidQuantity
-        todo!()
+        assert!(matches!(Quantity::new(-1), Err(InvalidQuantity)));
     }
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_quantity_value_returns_inner() {
-        todo!()
+        assert_eq!(*Quantity::new(1).unwrap(), 1);
     }
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_quantity_serialization_round_trip() {
-        todo!()
+        let quantity = Quantity::new(1).unwrap();
+        let serialized = serde_json::to_value(quantity).unwrap();
+        let deserialized = serde_json::from_value::<Quantity>(serialized).unwrap();
+        assert_eq!(*deserialized, 1);
     }
 
     // --- UpdateQuantity ---
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_update_quantity_new_accepts_positive() {
-        // +2 → Ok (add copies)
-        todo!()
+        assert!(UpdateQuantity::new(1).is_ok());
     }
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_update_quantity_new_accepts_negative() {
-        // -1 → Ok (remove copies)
-        todo!()
+        assert!(UpdateQuantity::new(-1).is_ok());
     }
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_update_quantity_new_rejects_0() {
-        // 0 → InvalidUpdateQuanity (would be a no-op)
-        todo!()
+        assert!(matches!(UpdateQuantity::new(0), Err(InvalidUpdateQuanity)));
     }
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_update_quantity_value_returns_inner() {
-        todo!()
+        assert_eq!(*UpdateQuantity::new(1).unwrap(), 1);
     }
 }

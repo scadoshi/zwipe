@@ -366,3 +366,437 @@ impl FilterCards for Vec<Card> {
         cards.into_iter().skip(offset).take(limit).collect()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::FilterCards;
+    use crate::domain::card::models::{
+        Card,
+        card_profile::CardProfile,
+        scryfall_data::{
+            ScryfallData,
+            colors::{Color, Colors},
+            legalities::Legalities,
+            prices::Prices,
+            rarity::{Rarities, Rarity},
+        },
+        search_card::card_filter::{
+            builder::CardFilterBuilder,
+            order_by_option::OrderByOption,
+        },
+    };
+    use chrono::NaiveDate;
+    use uuid::Uuid;
+
+    fn make_card(name: &str) -> Card {
+        Card {
+            card_profile: CardProfile {
+                scryfall_data_id: Uuid::new_v4(),
+                is_valid_commander: false,
+                is_token: false,
+                created_at: NaiveDate::from_ymd_opt(2021, 1, 1)
+                    .unwrap()
+                    .and_hms_opt(0, 0, 0)
+                    .unwrap(),
+                updated_at: NaiveDate::from_ymd_opt(2021, 1, 1)
+                    .unwrap()
+                    .and_hms_opt(0, 0, 0)
+                    .unwrap(),
+            },
+            scryfall_data: ScryfallData {
+                arena_id: None,
+                id: Uuid::new_v4(),
+                lang: "en".to_string(),
+                mtgo_id: None,
+                mtgo_foil_id: None,
+                multiverse_ids: None,
+                tcgplayer_id: None,
+                tcgplayer_etched_id: None,
+                cardmarket_id: None,
+                object: "card".to_string(),
+                layout: "normal".to_string(),
+                oracle_id: None,
+                prints_search_uri: String::new(),
+                rulings_uri: String::new(),
+                scryfall_uri: String::new(),
+                uri: String::new(),
+                all_parts: None,
+                card_faces: None,
+                cmc: None,
+                color_identity: Colors::from([]),
+                color_indicator: None,
+                colors: None,
+                defense: None,
+                edhrec_rank: None,
+                game_changer: None,
+                hand_modifier: None,
+                keywords: None,
+                legalities: Legalities::default(),
+                life_modifier: None,
+                loyalty: None,
+                mana_cost: None,
+                name: name.to_string(),
+                oracle_text: None,
+                penny_rank: None,
+                power: None,
+                produced_mana: None,
+                reserved: false,
+                toughness: None,
+                type_line: None,
+                artist: None,
+                artist_ids: None,
+                attraction_lights: None,
+                booster: false,
+                border_color: String::new(),
+                card_back_id: None,
+                collector_number: String::new(),
+                content_warning: None,
+                digital: false,
+                finishes: vec![],
+                flavor_name: None,
+                flavor_text: None,
+                frame_effects: None,
+                frame: String::new(),
+                full_art: false,
+                games: None,
+                highres_image: false,
+                illustration_id: None,
+                image_status: String::new(),
+                image_uris: None,
+                oversized: false,
+                prices: Prices {
+                    usd: None,
+                    usd_foil: None,
+                    usd_etched: None,
+                    eur: None,
+                    eur_foil: None,
+                    eur_etched: None,
+                    tix: None,
+                },
+                printed_name: None,
+                printed_text: None,
+                printed_type_line: None,
+                promo: false,
+                promo_types: None,
+                purchase_uris: None,
+                rarity: Rarity::Common,
+                related_uris: serde_json::Value::Null,
+                released_at: NaiveDate::from_ymd_opt(2021, 1, 1).unwrap(),
+                reprint: false,
+                scryfall_set_uri: String::new(),
+                set_name: String::new(),
+                set_search_uri: String::new(),
+                set_type: String::new(),
+                set_uri: String::new(),
+                set: "m21".to_string(),
+                set_id: Uuid::new_v4(),
+                story_spotlight: false,
+                textless: false,
+                variation: false,
+                variation_of: None,
+                security_stamp: None,
+                watermark: None,
+                preview_previewed_at: None,
+                preview_source_uri: None,
+                preview_source: None,
+            },
+        }
+    }
+
+    // ── text ──────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_name_contains_case_insensitive() {
+        let cards = vec![make_card("Lightning Bolt"), make_card("Forest")];
+        let filter = CardFilterBuilder::with_name_contains("lightning").build().unwrap();
+        let result = cards.filter_by(&filter);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].scryfall_data.name, "Lightning Bolt");
+    }
+
+    #[test]
+    fn test_name_contains_no_match() {
+        let cards = vec![make_card("Forest")];
+        let filter = CardFilterBuilder::with_name_contains("bolt").build().unwrap();
+        let result = cards.filter_by(&filter);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_oracle_text_contains() {
+        let mut bolt = make_card("Lightning Bolt");
+        bolt.scryfall_data.oracle_text = Some("deal 3 damage to any target".to_string());
+        let forest = make_card("Forest");
+        let filter = CardFilterBuilder::with_oracle_text_contains("3 damage").build().unwrap();
+        let result = vec![bolt, forest].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].scryfall_data.name, "Lightning Bolt");
+    }
+
+    #[test]
+    fn test_oracle_text_contains_skips_none() {
+        let card = make_card("Forest"); // oracle_text = None
+        let filter = CardFilterBuilder::with_oracle_text_contains("damage").build().unwrap();
+        let result = vec![card].filter_by(&filter);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_has_flavor_text_true() {
+        let mut with_flavor = make_card("Mox Pearl");
+        with_flavor.scryfall_data.flavor_text = Some("Worth its weight".to_string());
+        let without_flavor = make_card("Forest");
+        let filter = CardFilterBuilder::with_has_flavor_text(true).build().unwrap();
+        let result = vec![with_flavor, without_flavor].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].scryfall_data.name, "Mox Pearl");
+    }
+
+    #[test]
+    fn test_has_flavor_text_false() {
+        let mut with_flavor = make_card("Mox Pearl");
+        with_flavor.scryfall_data.flavor_text = Some("Worth its weight".to_string());
+        let without_flavor = make_card("Forest");
+        let filter = CardFilterBuilder::with_has_flavor_text(false).build().unwrap();
+        let result = vec![with_flavor, without_flavor].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].scryfall_data.name, "Forest");
+    }
+
+    #[test]
+    fn test_type_line_contains() {
+        let mut dragon = make_card("Shivan Dragon");
+        dragon.scryfall_data.type_line = Some("Legendary Creature — Dragon".to_string());
+        let forest = make_card("Forest");
+        let filter = CardFilterBuilder::with_type_line_contains("Dragon").build().unwrap();
+        let result = vec![dragon, forest].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].scryfall_data.name, "Shivan Dragon");
+    }
+
+    // ── mana ──────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_cmc_equals() {
+        let mut bolt = make_card("Lightning Bolt");
+        bolt.scryfall_data.cmc = Some(1.0);
+        let mut doom = make_card("Doom Blade");
+        doom.scryfall_data.cmc = Some(2.0);
+        let filter = CardFilterBuilder::with_cmc_equals(1.0).build().unwrap();
+        let result = vec![bolt, doom].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].scryfall_data.name, "Lightning Bolt");
+    }
+
+    #[test]
+    fn test_cmc_range_inclusive() {
+        let mut a = make_card("A");
+        a.scryfall_data.cmc = Some(2.0);
+        let mut b = make_card("B");
+        b.scryfall_data.cmc = Some(3.0);
+        let mut c = make_card("C");
+        c.scryfall_data.cmc = Some(4.0);
+        let filter = CardFilterBuilder::with_cmc_range((2.0, 3.0)).build().unwrap();
+        let result = vec![a, b, c].filter_by(&filter);
+        assert_eq!(result.len(), 2);
+    }
+
+    // ── color identity ─────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_color_identity_equals_exact() {
+        let mut red = make_card("Bolt");
+        red.scryfall_data.color_identity = Colors::from([Color::Red]);
+        let mut rg = make_card("Gruul");
+        rg.scryfall_data.color_identity = Colors::from([Color::Red, Color::Green]);
+        let filter = CardFilterBuilder::with_color_identity_equals([Color::Red]).build().unwrap();
+        let result = vec![red, rg].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].scryfall_data.name, "Bolt");
+    }
+
+    #[test]
+    fn test_color_identity_within_excludes_superset() {
+        let mut mono_red = make_card("Bolt");
+        mono_red.scryfall_data.color_identity = Colors::from([Color::Red]);
+        let mut rg = make_card("Gruul");
+        rg.scryfall_data.color_identity = Colors::from([Color::Red, Color::Green]);
+        // within Red only — Gruul has Green so it's excluded
+        let filter = CardFilterBuilder::with_color_identity_within([Color::Red]).build().unwrap();
+        let result = vec![mono_red, rg].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].scryfall_data.name, "Bolt");
+    }
+
+    // ── combat ────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_power_equals() {
+        let mut a = make_card("3/3");
+        a.scryfall_data.power = Some("3".to_string());
+        let mut b = make_card("5/5");
+        b.scryfall_data.power = Some("5".to_string());
+        let filter = CardFilterBuilder::with_power_equals(3).build().unwrap();
+        let result = vec![a, b].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].scryfall_data.name, "3/3");
+    }
+
+    #[test]
+    fn test_non_numeric_power_excluded() {
+        let mut star = make_card("Tarmogoyf");
+        star.scryfall_data.power = Some("*".to_string());
+        let filter = CardFilterBuilder::with_power_equals(2).build().unwrap();
+        let result = vec![star].filter_by(&filter);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_toughness_range() {
+        let mut a = make_card("A");
+        a.scryfall_data.toughness = Some("1".to_string());
+        let mut b = make_card("B");
+        b.scryfall_data.toughness = Some("3".to_string());
+        let mut c = make_card("C");
+        c.scryfall_data.toughness = Some("5".to_string());
+        let filter = CardFilterBuilder::with_toughness_range((2, 4)).build().unwrap();
+        let result = vec![a, b, c].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].scryfall_data.name, "B");
+    }
+
+    // ── flags ─────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_is_valid_commander_filter() {
+        let mut commander = make_card("Atraxa");
+        commander.card_profile.is_valid_commander = true;
+        let regular = make_card("Forest");
+        // is_valid_commander is a config field in retain_config, so we need a real
+        // search criterion (name_contains) to make the builder non-empty.
+        let mut b = CardFilterBuilder::with_name_contains("");
+        b.set_is_valid_commander(true);
+        let filter = b.build().unwrap();
+        let result = vec![commander, regular].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].scryfall_data.name, "Atraxa");
+    }
+
+    #[test]
+    fn test_is_playable_filters_token_layout() {
+        let mut token_card = make_card("Soldier Token");
+        token_card.scryfall_data.layout = "token".to_string();
+        let regular = make_card("Forest");
+        // Default builder has is_playable=Some(true); "token" is not in PLAYABLE_LAYOUTS
+        let filter = CardFilterBuilder::with_name_contains("").build().unwrap();
+        let result = vec![token_card, regular].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].scryfall_data.name, "Forest");
+    }
+
+    // ── metadata ──────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_rarity_equals_any_single() {
+        let common = make_card("Forest");
+        let mut rare = make_card("Shockland");
+        rare.scryfall_data.rarity = Rarity::Rare;
+        let filter = CardFilterBuilder::with_rarity_equals_any(Rarities::from([Rarity::Common]))
+            .build()
+            .unwrap();
+        let result = vec![common, rare].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].scryfall_data.name, "Forest");
+    }
+
+    #[test]
+    fn test_rarity_equals_any_multiple() {
+        let common = make_card("Common Card");
+        let mut rare = make_card("Rare Card");
+        rare.scryfall_data.rarity = Rarity::Rare;
+        let mut mythic = make_card("Mythic Card");
+        mythic.scryfall_data.rarity = Rarity::Mythic;
+        let filter = CardFilterBuilder::with_rarity_equals_any(Rarities::from([
+            Rarity::Rare,
+            Rarity::Mythic,
+        ]))
+        .build()
+        .unwrap();
+        let result = vec![common, rare, mythic].filter_by(&filter);
+        assert_eq!(result.len(), 2);
+    }
+
+    #[test]
+    fn test_set_equals_any() {
+        let m21_card = make_card("M21 Card"); // set = "m21" by default
+        let mut mh2_card = make_card("MH2 Card");
+        mh2_card.scryfall_data.set = "mh2".to_string();
+        let filter = CardFilterBuilder::with_set_contains(["mh2"]).build().unwrap();
+        let result = vec![m21_card, mh2_card].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].scryfall_data.name, "MH2 Card");
+    }
+
+    // ── sort ──────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_order_by_name_ascending() {
+        let cards = vec![make_card("Zap"), make_card("Aardvark"), make_card("Mox")];
+        let mut b = CardFilterBuilder::with_name_contains("");
+        b.set_order_by(OrderByOption::Name).set_ascending(true);
+        let filter = b.build().unwrap();
+        let result = cards.filter_by(&filter);
+        assert_eq!(result[0].scryfall_data.name, "Aardvark");
+        assert_eq!(result[2].scryfall_data.name, "Zap");
+    }
+
+    #[test]
+    fn test_order_by_name_descending() {
+        let cards = vec![make_card("Zap"), make_card("Aardvark"), make_card("Mox")];
+        let mut b = CardFilterBuilder::with_name_contains("");
+        b.set_order_by(OrderByOption::Name).set_ascending(false);
+        let filter = b.build().unwrap();
+        let result = cards.filter_by(&filter);
+        assert_eq!(result[0].scryfall_data.name, "Zap");
+        assert_eq!(result[2].scryfall_data.name, "Aardvark");
+    }
+
+    #[test]
+    fn test_order_by_cmc_ascending() {
+        let mut a = make_card("A");
+        a.scryfall_data.cmc = Some(5.0);
+        let mut b = make_card("B");
+        b.scryfall_data.cmc = Some(1.0);
+        let mut c = make_card("C");
+        c.scryfall_data.cmc = Some(3.0);
+        let mut builder = CardFilterBuilder::with_name_contains("");
+        builder.set_order_by(OrderByOption::Cmc);
+        let filter = builder.build().unwrap();
+        let result = vec![a, b, c].filter_by(&filter);
+        assert_eq!(result[0].scryfall_data.name, "B");
+        assert_eq!(result[2].scryfall_data.name, "A");
+    }
+
+    // ── pagination ────────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_limit_caps_results() {
+        let cards = vec![make_card("A"), make_card("B"), make_card("C")];
+        let mut b = CardFilterBuilder::with_name_contains("");
+        b.set_limit(2);
+        let filter = b.build().unwrap();
+        let result = cards.filter_by(&filter);
+        assert_eq!(result.len(), 2);
+    }
+
+    #[test]
+    fn test_offset_skips_results() {
+        let cards = vec![make_card("A"), make_card("B"), make_card("C")];
+        let mut b = CardFilterBuilder::with_name_contains("");
+        b.set_order_by(OrderByOption::Name).set_offset(1);
+        let filter = b.build().unwrap();
+        let result = cards.filter_by(&filter);
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].scryfall_data.name, "B");
+    }
+}
