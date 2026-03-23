@@ -63,9 +63,13 @@ impl GetCardProfile {
         Ok(Self(Uuid::try_parse(id)?))
     }
 
-    /// Returns the parsed UUID.
-    pub fn id(&self) -> Uuid {
-        self.0
+}
+
+#[cfg(feature = "zerver")]
+impl std::ops::Deref for GetCardProfile {
+    type Target = Uuid;
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 

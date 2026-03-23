@@ -146,7 +146,7 @@ mod tests {
     use super::*;
     use crate::domain::auth::models::access_token::{AccessToken, Jwt};
     use crate::domain::auth::models::refresh_token::RefreshToken;
-    use crate::domain::user::models::{username::Username, User};
+    use crate::domain::user::models::{User, username::Username};
     use chrono::{Duration, NaiveDateTime, Utc};
     use email_address::EmailAddress;
     use std::str::FromStr;
@@ -201,7 +201,7 @@ mod tests {
             expires_at: Utc::now().naive_utc() + Duration::hours(24),
         };
         let refresh_token = RefreshToken::generate();
-        let session = Session::new(user.clone(), access_token.clone(), refresh_token.clone());
+        let session = Session::new(user, access_token.clone(), refresh_token.clone());
         assert_eq!(session.user.id, user_id);
         assert_eq!(session.access_token, access_token);
         assert_eq!(session.refresh_token, refresh_token);

@@ -22,7 +22,7 @@ impl ClientLogout for ZwipeClient {
         let response = self
             .client
             .post(url)
-            .bearer_auth(session.access_token.value.as_str())
+            .bearer_auth(&*session.access_token.value)
             .send()
             .await?;
 

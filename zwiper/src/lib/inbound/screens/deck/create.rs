@@ -105,7 +105,7 @@ pub fn CreateDeck() -> Element {
 
             let commander_id = commander().map(|c| c.scryfall_data.id);
             let request =
-                HttpCreateDeckProfile::new(&deck_name(), commander_id, copy_max().map(|x| x.max()));
+                HttpCreateDeckProfile::new(&deck_name(), commander_id, copy_max().map(|x| *x));
 
             match auth_client().create_deck_profile(&request, &session).await {
                 Ok(created) => {

@@ -34,7 +34,7 @@ impl ClientCreateDeck for ZwipeClient {
             .client
             .post(url)
             .json(request)
-            .bearer_auth(session.access_token.value.as_str())
+            .bearer_auth(&*session.access_token.value)
             .send()
             .await?;
 

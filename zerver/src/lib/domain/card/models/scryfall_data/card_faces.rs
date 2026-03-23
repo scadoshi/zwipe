@@ -1,5 +1,6 @@
 use crate::domain::card::models::scryfall_data::image_uris::ImageUris;
 use serde::{Deserialize, Serialize};
+use std::ops::Deref;
 use uuid::Uuid;
 
 /// Data for a single face of a multi-faced card.
@@ -67,6 +68,13 @@ pub struct CardFace {
 /// Used in [`ScryfallData`](super::ScryfallData) for multi-faced cards.
 #[derive(Debug, Clone, PartialEq)]
 pub struct CardFaces(Vec<CardFace>);
+
+impl Deref for CardFaces {
+    type Target = [CardFace];
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 impl Serialize for CardFaces {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>

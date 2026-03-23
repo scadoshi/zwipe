@@ -138,7 +138,7 @@ pub static EXACT_MATCH_BANNED_SET: Lazy<HashSet<&'static str>> =
 ///     return Err(InvalidDeckName::BadWord);
 /// }
 /// ```
-pub trait ContainsBadWord {
+pub trait ContainsBadWord: AsRef<str> {
     /// Returns true if the string contains banned words or phrases.
     ///
     /// Performs two checks:
@@ -149,9 +149,12 @@ pub trait ContainsBadWord {
     fn contains_bad_word(&self) -> bool;
 }
 
-impl ContainsBadWord for &str {
+impl<T> ContainsBadWord for T
+where
+    T: AsRef<str>,
+{
     fn contains_bad_word(&self) -> bool {
-        let s = self.trim().to_lowercase();
+        let s = self.as_ref().trim().to_lowercase();
         EXACT_MATCH_BANNED_SET.contains(s.as_str())
             || SUBSTRING_BANNED_SET.iter().any(|w| s.contains(w))
     }

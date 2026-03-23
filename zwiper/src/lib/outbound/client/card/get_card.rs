@@ -27,7 +27,7 @@ impl ClientGetCard for ZwipeClient {
         let response = self
             .client
             .get(url)
-            .bearer_auth(session.access_token.value.as_str())
+            .bearer_auth(&*session.access_token.value)
             .send()
             .await?;
 

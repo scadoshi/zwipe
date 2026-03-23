@@ -22,6 +22,8 @@
 //! println!("{} ({})", user.username, user.email);
 //! ```
 
+use std::ops::Deref;
+
 #[cfg(feature = "zerver")]
 use thiserror::Error;
 use uuid::Uuid;
@@ -75,6 +77,13 @@ pub enum GetUserError {
 pub struct GetUser {
     /// The unique identifier of the user to fetch.
     pub user_id: Uuid,
+}
+
+impl Deref for GetUser {
+    type Target = Uuid;
+    fn deref(&self) -> &Self::Target {
+        &self.user_id
+    }
 }
 
 impl GetUser {

@@ -33,7 +33,7 @@ impl ClientDeleteDeckCard for ZwipeClient {
         let response = self
             .client
             .delete(url)
-            .bearer_auth(session.access_token.value.as_str())
+            .bearer_auth(&*session.access_token.value)
             .send()
             .await?;
 

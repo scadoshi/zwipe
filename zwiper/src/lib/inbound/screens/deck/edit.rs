@@ -124,7 +124,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     });
     let copy_max_update = use_memo(move || {
         if copy_max() != original_copy_max() {
-            Optdate::Set(copy_max().map(|cm| cm.max()))
+            Optdate::Set(copy_max().map(|cm| *cm))
         } else {
             Optdate::Unchanged
         }
