@@ -18,23 +18,11 @@ Working implementations where you're still building deep understanding.
 - **Conditional Load vs Feedback**: Check exhaustion before calling load_more, show toast if exhausted
 - *Note: Applied successfully in add card screen, pattern reusable for similar scenarios*
 
-## 🍞 Toast API Patterns (Recently Applied)
-- **Toast Types**: toast.info(), toast.success(), toast.warning(), toast.error() for different contexts
-- **ToastOptions Builder**: ToastOptions::default().duration(Duration::from_millis(1500)) for custom timing
-- **Swipe Feedback**: Using toast.info("skipped") and toast.success("added to deck") for immediate user feedback
-- **End State Feedback**: toast.warning() for "end of results" when pagination exhausted
-- *Note: Working well, may need to explore description field and permanent options*
-
-## 🎛️ Filter UI Patterns (Recently Applied)
-- **FilterMode Generic Enum**: Reusable enum (Equals/Range) for switching between filter modes
-- **Stepper Controls**: Increment/decrement buttons for numeric filters (power/toughness)
-- **Direct Write Pattern**: Eliminating local signal + use_effect by writing directly to context filter
-- **Filter Reset Signal**: Incrementing counter to collapse accordions and clear search queries on apply
-- *Note: Filter architecture solid, applying same patterns to new filter types*
-
 ---
 
 Previously DEVELOPING items graduated to **[confident.md](confident.md)**:
+- Toast API Patterns
+- Filter UI Patterns (Filter Reset Signal, Direct Write Pattern)
 - Frontend Deck CRUD & Complete Flow
 - Swipe-Based Navigation & Gestures
 - Service Architecture & Dependency Injection

@@ -28,7 +28,8 @@ Knowledge areas where you could teach others without hesitation.
 - **Ownership Validation Patterns**: Trait-based ownership checking (OwnsDeck) preventing unauthorized resource access
 - **Ownership Bug Patterns**: Recognizing inverted authorization logic from missing negation in ownership checks
 - **Full-Stack Debugging**: Tracing issues through frontend → domain → SQLx layers to identify root causes
-- **Foreign Key Understanding**: Database primary keys (card_profile.id) vs external IDs (scryfall_data.id) for proper relationships
+- **Shared Primary Key Pattern**: When a child table has a strict 1:1 relationship with a parent, the child's PK can be the parent's PK — no surrogate needed. Eliminates dual-UUID ambiguity at the schema level. Applied to `card_profiles.scryfall_data_id`.
+- **Surrogate Key Smell**: If a surrogate `id` is never used as a lookup key anywhere in the codebase, it's dead weight that creates naming confusion and a whole class of runtime bugs.
 - **Direct Domain Serialization**: Serialize domain types directly when HTTP shape matches, avoiding unnecessary wrapper boilerplate
 
 ## 🎴 Domain Type Patterns
@@ -155,6 +156,12 @@ Knowledge areas where you could teach others without hesitation.
 - **Utility Bar Standardization**: Consolidated navigation buttons to bottom .util-bar divs with .util-btn styling across 20+ screens for consistent mobile-first UX
 - **Dioxus Reactivity (.read() vs .peek())**: .read() reads AND subscribes to changes (dependency tracking), .peek() reads WITHOUT subscribing (one-time read), critical for performance in use_effect
 - **Explicit Dependency Pattern**: Watch specific signals with `let _ = signal();` in use_effect, peek others to avoid unwanted re-runs
+- **Two-Signal Display Model**: For screens with local mutation + filtering, keep a `source_vec` (source of truth) separate from `displayed_vec` (what the UI renders). The filter effect peeks `source_vec` to avoid subscribing — so removing items from `source_vec` doesn't re-trigger filtering and reset the user's position.
+- **Two-Effect Reactivity Split**: Mount effect reads session reactively (re-runs on session change). Filter effect reads only the filter counter reactively and peeks the data vec — prevents a card removal from triggering a full re-filter and index reset mid-session.
+- **Box<T> in Enums for large_enum_variant**: When one enum variant carries a large struct (e.g. `Removed(Card)` at ~1896 bytes) while another carries nothing (`Skip`), Clippy fires `large_enum_variant`. Fix: `Removed(Box<Card>)` — moves the data to the heap, leaving an 8-byte pointer in the variant. Deref with `let val = *boxed` to consume.
+- **GenerationalRef Dereference**: Dioxus `signal.peek()` returns a `GenerationalRef<Ref<T>>` smart pointer, not `T` directly. Must dereference explicitly (`*signal.peek()`) when using in boolean context or comparisons.
+- **In-Memory Filtering for Bounded Collections**: When a collection has a known upper bound (e.g. deck cards ~100), apply `FilterCards::filter_by` locally rather than triggering a server round-trip on every filter change. Server is hit once on mount; all subsequent filter changes are instant.
+- **is_empty() Guard on Filter Builder**: `CardFilterBuilder::build()` errors on empty builders (no criteria). Before calling `filter_by`, check `builder.is_empty()` and fall back to the full collection — prevents config defaults (like `digital: false`) from silently hiding cards.
 - **Optimistic Updates**: Update local state (HashSet, Vec) immediately on API success without refetching for instant UI feedback
 - **LIFO Undo Stack**: Vec<Action> tracking user actions without storing full objects, index manipulation for undo (3000x memory savings vs storing full data)
 - **Performance Limits**: Hard caps (MAX constant) and warning thresholds for unbounded data structures, periodic warnings (modulo checks), graceful degradation
@@ -212,7 +219,7 @@ Knowledge areas where you could teach others without hesitation.
 - *Note: Manual thread synchronization (.lock(), message passing) not yet implemented*
 
 ## 📊 Production API Design
-- **Nested Resource Routes**: Hierarchical /api/deck/{deck_id}/card/{card_profile_id} patterns
+- **Nested Resource Routes**: Hierarchical /api/deck/{deck_id}/card/{scryfall_data_id} patterns
 - **Tuple Path Extraction**: Path<(String, String)> for multi-parameter routes
 - **Composite Key Architecture**: Natural primary keys eliminating surrogate IDs
 - **Comprehensive Search System**: CMC/power/toughness ranges, dual color identity modes, input sanitization
@@ -368,7 +375,8 @@ Knowledge areas where you could teach others without hesitation.
 - **Pagination Reset on Filter Change**: use_effect watching filter_builder resets offset and index
 - **Refresh Trigger Pattern**: Bool signal toggle forcing use_effect re-run for manual refresh
 - **Pagination Exhaustion Tracking**: Signal tracking when API returns no new cards, triggers end-of-results toast
-- **Toast Feedback**: toast.info/success/warning with ToastOptions for user feedback on swipe actions
+- **Toast Feedback**: toast.info/success/warning/error with ToastOptions for user feedback on swipe actions; `ToastOptions::default().duration(Duration::from_millis(N))` for custom timing
+- **Toast Semantic Mapping**: success = green (completed action), warning = yellow (caution/end state), info = neutral (status), error = red (failure)
 
 ## 🔀 Sort & Order Patterns
 - **Sleeve Order Preservation**: HashMap loses insertion order; iterate over source data (scryfall_data) not lookup target (card_profiles) to preserve DB sort
