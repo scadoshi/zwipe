@@ -19,7 +19,7 @@ pub struct DatabaseCardProfile {
 impl From<DatabaseCardProfile> for CardProfile {
     fn from(value: DatabaseCardProfile) -> Self {
         Self {
-            id: value.scryfall_data_id,
+            scryfall_data_id: value.scryfall_data_id,
             is_valid_commander: value.is_valid_commander,
             is_token: value.is_token,
             created_at: value.created_at,

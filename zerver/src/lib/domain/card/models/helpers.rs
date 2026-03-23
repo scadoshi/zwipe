@@ -30,7 +30,7 @@ impl SleeveScryfallData for Vec<ScryfallData> {
             .into_iter()
             .filter_map(|cp| {
                 data_map
-                    .remove(&cp.id)
+                    .remove(&cp.scryfall_data_id)
                     .map(|sfd| Card::new(cp, sfd))
             })
             .collect::<Vec<Card>>()
@@ -56,7 +56,7 @@ impl SleeveCardProfile for Vec<CardProfile> {
         // Build map of card profiles keyed by scryfall_data_id
         let mut profile_map: HashMap<Uuid, CardProfile> = self
             .into_iter()
-            .map(|cp| (cp.id, cp))
+            .map(|cp| (cp.scryfall_data_id, cp))
             .collect();
 
         // Iterate over scryfall_data to preserve DB sort order
