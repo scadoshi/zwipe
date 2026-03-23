@@ -154,9 +154,9 @@ impl Sha256Hash for String {
 /// These checks happen at the service layer.
 pub struct UnvalidatedRefreshToken(String);
 
-impl UnvalidatedRefreshToken {
-    /// Returns the token value as a string slice.
-    pub fn value(&self) -> &str {
+impl std::ops::Deref for UnvalidatedRefreshToken {
+    type Target = str;
+    fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
@@ -251,7 +251,7 @@ mod tests {
         let token_str = "a".repeat(32);
         let result = UnvalidatedRefreshToken::from_str(&token_str);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap().value(), &token_str);
+        assert_eq!(&*result.unwrap(), token_str.as_str());
     }
 
     #[test]
@@ -272,6 +272,6 @@ mod tests {
         let padded = format!(" {} ", "a".repeat(32));
         let result = UnvalidatedRefreshToken::from_str(&padded);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap().value(), &padded);
+        assert_eq!(&*result.unwrap(), padded.as_str());
     }
 }

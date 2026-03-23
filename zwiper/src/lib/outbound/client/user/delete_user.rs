@@ -32,7 +32,7 @@ impl ClientDeleteUser for ZwipeClient {
             .client
             .delete(url)
             .json(&request)
-            .bearer_auth(session.access_token.value.as_str())
+            .bearer_auth(&*session.access_token.value)
             .send()
             .await?;
 

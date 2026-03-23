@@ -5,7 +5,7 @@
 
 use crate::domain::moderation::ContainsBadWord;
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
+use std::{fmt::Display, ops::Deref};
 use thiserror::Error;
 
 /// Validation errors when creating a username.
@@ -134,15 +134,11 @@ impl Username {
         Ok(Self(trimmed.to_string()))
     }
 
-    /// Returns the username as a string slice.
-    ///
-    /// # Example
-    ///
-    /// ```rust,ignore
-    /// let username = Username::new("alice")?;
-    /// assert_eq!(username.as_str(), "alice");
-    /// ```
-    pub fn as_str(&self) -> &str {
+}
+
+impl Deref for Username {
+    type Target = str;
+    fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
@@ -155,7 +151,7 @@ impl Display for Username {
 
 impl Serialize for Username {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(self.as_str())
+        serializer.serialize_str(self)
     }
 }
 
@@ -226,7 +222,7 @@ mod tests {
     #[test]
     fn test_username_as_str_returns_trimmed_value() {
         let username = Username::new("  abc  ").unwrap();
-        assert_eq!(username.as_str(), "abc");
+        assert_eq!(&*username, "abc");
     }
 
     #[test]

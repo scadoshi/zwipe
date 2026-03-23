@@ -37,7 +37,7 @@ impl ClientUpdateDeckProfile for ZwipeClient {
             .client
             .put(url)
             .json(&body)
-            .bearer_auth(session.access_token.value.as_str())
+            .bearer_auth(&*session.access_token.value)
             .send()
             .await?;
 

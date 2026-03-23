@@ -138,7 +138,7 @@ impl CardRepository for MyPostgres {
         request: &GetScryfallData,
     ) -> Result<ScryfallData, GetScryfallDataError> {
         let scryfall_data: ScryfallData = query_as("SELECT * FROM scryfall_data WHERE id = $1")
-            .bind(request.id())
+            .bind(**request)
             .fetch_one(&self.pool)
             .await?;
 
@@ -541,7 +541,7 @@ impl CardRepository for MyPostgres {
         let card_profile: CardProfile = query_as!(
             DatabaseCardProfile,
             "SELECT scryfall_data_id, is_valid_commander, is_token, created_at, updated_at FROM card_profiles WHERE scryfall_data_id = $1",
-            request.id()
+            **request
         )
         .fetch_one(&self.pool)
         .await?
@@ -557,7 +557,7 @@ impl CardRepository for MyPostgres {
             DatabaseCardProfile,
             "SELECT scryfall_data_id, is_valid_commander, is_token, created_at, updated_at
             FROM card_profiles WHERE scryfall_data_id = $1",
-            request.id()
+            **request
         )
         .fetch_one(&self.pool)
         .await?

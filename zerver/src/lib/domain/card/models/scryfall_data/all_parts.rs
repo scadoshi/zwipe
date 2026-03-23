@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::ops::Deref;
 use uuid::Uuid;
 
 /// Information about a related card component (other faces, tokens, meld pairs, etc.).
@@ -37,6 +38,13 @@ pub struct RelatedCard {
 /// - **Split cards**: Fire // Ice (2 related cards for each half)
 #[derive(Debug, Clone, PartialEq)]
 pub struct AllParts(Vec<RelatedCard>);
+
+impl Deref for AllParts {
+    type Target = [RelatedCard];
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 impl Serialize for AllParts {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>

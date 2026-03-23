@@ -48,7 +48,7 @@ impl DeckRepository for Postgres {
         request: &CreateDeckProfile,
     ) -> Result<DeckProfile, CreateDeckProfileError> {
         let mut tx = self.pool.begin().await?;
-        let database_copy_max = request.copy_max.as_ref().map(|cm| cm.max());
+        let database_copy_max = request.copy_max.map(|cm| *cm);
         let database_deck_profile = query_as!(
             DatabaseDeckProfile,
             "INSERT INTO decks (name, commander_id, copy_max, user_id) VALUES ($1, $2, $3, $4) RETURNING id, name, commander_id, copy_max, user_id",
@@ -81,7 +81,7 @@ impl DeckRepository for Postgres {
             "INSERT INTO deck_cards (deck_id, scryfall_data_id, quantity) VALUES ($1, $2, $3) RETURNING deck_id, scryfall_data_id, quantity",
             request.deck_id,
             request.scryfall_data_id,
-            request.quantity.quantity()
+            *request.quantity
         )
         .fetch_one(&mut *tx)
         .await?;
@@ -185,7 +185,7 @@ impl DeckRepository for Postgres {
         }
         if let Some(copy_max) = &request.copy_max {
             sep.push("copy_max = ")
-                .push_bind_unseparated(copy_max.as_ref().map(|cm| cm.max()));
+                .push_bind_unseparated(copy_max.as_ref().map(|cm| **cm));
         }
         let now = chrono::Utc::now().naive_utc();
         sep.push("updated_at = ").push_bind_unseparated(now);
@@ -218,7 +218,7 @@ impl DeckRepository for Postgres {
         let database_deck_card = query_as!(
             DatabaseDeckCard,
             "UPDATE deck_cards SET quantity = quantity + $1 WHERE deck_id = $2 AND scryfall_data_id = $3 RETURNING deck_id, scryfall_data_id, quantity",
-            request.update_quantity.value(),
+            *request.update_quantity,
             request.deck_id,
             request.scryfall_data_id
         )

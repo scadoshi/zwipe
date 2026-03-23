@@ -4,7 +4,7 @@
 
 use crate::domain::moderation::ContainsBadWord;
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
+use std::{fmt::Display, ops::Deref};
 use thiserror::Error;
 
 /// Errors that occur when constructing an invalid deck name.
@@ -46,24 +46,24 @@ impl DeckName {
     /// - Name is empty
     /// - Name exceeds 64 characters
     /// - Name contains profanity
-    pub fn new(name: &str) -> Result<Self, InvalidDeckname> {
+    pub fn new(name: impl Into<String>) -> Result<Self, InvalidDeckname> {
+        let name = name.into();
         if name.is_empty() {
             return Err(InvalidDeckname::TooShort);
         }
-
         if name.len() > 64 {
             return Err(InvalidDeckname::TooLong);
         }
-
         if name.contains_bad_word() {
             return Err(InvalidDeckname::BadWord);
         }
-
-        Ok(Self(name.to_string()))
+        Ok(Self(name))
     }
+}
 
-    /// Returns the deck name as a string slice.
-    pub fn as_str(&self) -> &str {
+impl Deref for DeckName {
+    type Target = str;
+    fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
@@ -79,7 +79,7 @@ impl Serialize for DeckName {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_str(self.as_str())
+        serializer.serialize_str(self)
     }
 }
 
@@ -87,73 +87,57 @@ impl Serialize for DeckName {
 mod tests {
     use super::*;
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_deck_name_new_accepts_valid_name() {
-        // "Sultai Control" → Ok
-        todo!()
+        assert!(DeckName::new("Got Ya Satya").is_ok());
     }
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_deck_name_new_accepts_single_char() {
-        // "A" → Ok (minimum length is 1)
-        todo!()
+        assert!(DeckName::new("A").is_ok());
     }
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_deck_name_new_accepts_exactly_64_chars() {
-        // boundary: 64-char name → Ok
-        todo!()
+        assert!(DeckName::new("a".repeat(64)).is_ok());
     }
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_deck_name_new_rejects_empty() {
-        // "" → TooShort
-        todo!()
+        assert!(matches!(DeckName::new(""), Err(InvalidDeckname::TooShort)));
     }
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_deck_name_new_rejects_65_chars() {
-        // 65-char name → TooLong
-        todo!()
+        assert!(matches!(
+            DeckName::new("a".repeat(65)),
+            Err(InvalidDeckname::TooLong)
+        ));
     }
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_deck_name_new_rejects_bad_word() {
-        // a banned word as the deck name → BadWord
-        todo!()
+        assert!(matches!(
+            DeckName::new("fuck"),
+            Err(InvalidDeckname::BadWord)
+        ));
     }
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_deck_name_new_allows_spaces() {
-        // "My Deck" → Ok (spaces are allowed in deck names, unlike usernames)
-        todo!()
+        assert!(DeckName::new("Got Ya Satya").is_ok());
     }
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
-    fn test_deck_name_as_str_returns_inner_value() {
-        todo!()
+    fn test_deck_name_deref_returns_inner_value() {
+        assert_eq!(&*DeckName::new("Got Ya Satya").unwrap(), "Got Ya Satya");
     }
 
-    #[allow(dead_code)]
-    #[ignore]
     #[test]
     fn test_deck_name_display_formats_correctly() {
-        todo!()
+        assert_eq!(
+            DeckName::new("Got Ya Satya").unwrap().to_string(),
+            "Got Ya Satya"
+        );
     }
 }

@@ -282,10 +282,6 @@ impl Jwt {
     /// let token_str: &str = jwt.as_str();
     /// // Send in Authorization header: "Bearer {token_str}"
     /// ```
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-
     /// Validates the JWT signature and extracts user claims.
     ///
     /// This performs:
@@ -339,15 +335,22 @@ impl FromStr for Jwt {
     }
 }
 
+impl std::ops::Deref for Jwt {
+    type Target = str;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 impl Display for Jwt {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.as_str())
+        write!(f, "{}", self.0)
     }
 }
 
 impl Serialize for Jwt {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(self.as_str())
+        serializer.serialize_str(self)
     }
 }
 
@@ -635,8 +638,8 @@ mod tests {
         };
         let claims3 = UserClaims {
             user_id: id2,
-            username: username.clone(),
-            email: email.clone(),
+            username,
+            email,
             exp: 1234567890,
             iat: 1234567890,
         };
