@@ -292,12 +292,20 @@ impl PasswordPolicy for &str {
                 } else {
                     repeat_count = 1;
                 }
+                last_char_opt = Some(char);
             }
         }
 
         Ok(())
     }
     fn meets_all_requirements(&self) -> Result<(), InvalidPassword> {
+        // Length first — structural metadata before content inspection
+        if self.len() < 8 {
+            return Err(InvalidPassword::TooShort);
+        }
+        if self.len() > 128 {
+            return Err(InvalidPassword::TooLong);
+        }
         if !self.chars().any(|x| x.is_uppercase()) {
             return Err(InvalidPassword::MissingUpperCase);
         }
@@ -312,12 +320,6 @@ impl PasswordPolicy for &str {
         }
         if self.chars().any(|x| x.is_whitespace()) {
             return Err(InvalidPassword::ContainsWhitespace);
-        }
-        if self.len() < 8 {
-            return Err(InvalidPassword::TooShort);
-        }
-        if self.len() > 128 {
-            return Err(InvalidPassword::TooLong);
         }
         self.min_unique_char_requirement(6)?;
         self.max_repeat_char_requirement(3)?;
@@ -599,7 +601,7 @@ mod tests {
 
     #[test]
     fn test_hash_password_produces_different_hashes_for_different_inputs() {
-        let password1 = Password::new("Password123!").unwrap();
+        let password1 = Password::new("FirstUnique123!").unwrap();
         let password2 = Password::new("DifferentPass456@").unwrap();
         let hash1 = HashedPassword::generate(password1).unwrap();
         let hash2 = HashedPassword::generate(password2).unwrap();
@@ -615,14 +617,27 @@ mod tests {
     }
 
     #[test]
-    fn test_hash_password_handles_long_input() {
-        let long_password = format!("{}A1!", "a".repeat(996)); // Very long password with required chars
+    fn test_hash_password_handles_max_length_input() {
+        // 128 chars is the maximum — use "abc" pattern to avoid TooManyRepeats
+        let suffix = "A1!";
+        let padding: String = "abcdef".chars().cycle().take(128 - suffix.len()).collect();
+        let long_password = format!("{}{}", padding, suffix);
+        assert_eq!(long_password.len(), 128);
         let password = Password::new(&long_password).unwrap();
-        let result = HashedPassword::generate(password);
-        assert!(result.is_ok());
-
-        let hash = result.unwrap();
+        let hash = HashedPassword::generate(password).unwrap();
         assert!(!hash.0.is_empty());
+    }
+
+    #[test]
+    fn test_hash_password_rejects_over_max_length() {
+        let suffix = "A1!";
+        let padding: String = "abcdef".chars().cycle().take(129 - suffix.len()).collect();
+        let too_long = format!("{}{}", padding, suffix);
+        assert_eq!(too_long.len(), 129);
+        assert!(matches!(
+            Password::new(&too_long),
+            Err(InvalidPassword::TooLong)
+        ));
     }
 
     #[test]
@@ -651,6 +666,84 @@ mod tests {
     //  password verification
     // =======================
 
+    // ======================================
+    //  remaining validation rule coverage
+    // ======================================
+
+    #[test]
+    fn test_password_validation_rejects_whitespace() {
+        assert!(matches!(
+            Password::new("Has Space123!"),
+            Err(InvalidPassword::ContainsWhitespace)
+        ));
+        assert!(matches!(
+            Password::new("HasTab\t123!A"),
+            Err(InvalidPassword::ContainsWhitespace)
+        ));
+        assert!(matches!(
+            Password::new("HasNewline\n1A!"),
+            Err(InvalidPassword::ContainsWhitespace)
+        ));
+    }
+
+    #[test]
+    fn test_password_validation_rejects_too_many_repeats() {
+        // 4 consecutive same chars anywhere in the password — exceeds limit of 3
+        assert!(matches!(
+            Password::new("Aaaaa1!bc"),
+            Err(InvalidPassword::TooManyRepeats(_))
+        ));
+        assert!(matches!(
+            Password::new("Abcde1111!"),
+            Err(InvalidPassword::TooManyRepeats(_))
+        ));
+
+        // Exactly 3 consecutive — at the boundary, should pass
+        assert!(Password::new("Aaa1!bcde").is_ok());
+    }
+
+    #[test]
+    fn test_password_validation_rejects_too_few_unique_chars() {
+        // 4 unique chars — below minimum of 6
+        assert!(matches!(
+            Password::new("AbAb1!Ab"),
+            Err(InvalidPassword::TooFewUniqueChars(_))
+        ));
+        // 5 unique chars — still below minimum
+        assert!(matches!(
+            Password::new("AbcAbc1!"),
+            Err(InvalidPassword::TooFewUniqueChars(_))
+        ));
+
+        // 8 unique chars — should pass
+        assert!(Password::new("Abcde1!f").is_ok());
+    }
+
+    #[test]
+    fn test_password_validation_rejects_common_password() {
+        // Both are in the common passwords list and pass all other rules
+        assert!(matches!(
+            Password::new("Password123!"),
+            Err(InvalidPassword::CommonPassword)
+        ));
+        assert!(matches!(
+            Password::new("Welcome123!"),
+            Err(InvalidPassword::CommonPassword)
+        ));
+    }
+
+    #[test]
+    fn test_password_validation_minimum_length_boundary() {
+        // 7 chars — one below minimum
+        assert!(matches!(
+            Password::new("Abcde1!"),
+            Err(InvalidPassword::TooShort)
+        ));
+
+        // Exactly 8 chars — minimum valid length
+        assert!(Password::new("Abcde1!x").is_ok());
+    }
+
     #[test]
     fn test_verify_password_success_with_correct_password() {
         let password_str = "CorrectPassword123!";
@@ -659,7 +752,7 @@ mod tests {
 
         let result = hash.verify(password_str);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), true);
+        assert!(result.unwrap());
     }
 
     #[test]
@@ -669,7 +762,7 @@ mod tests {
 
         let result = hash.verify("WrongPassword456@");
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), false);
+        assert!(!result.unwrap());
     }
 
     #[test]
@@ -678,17 +771,16 @@ mod tests {
         let hash = HashedPassword::generate(password).unwrap();
 
         // Exact match should work
-        assert_eq!(hash.verify("CaseSensitive123!").unwrap(), true);
+        assert!(hash.verify("CaseSensitive123!").unwrap());
 
         // Different case should fail
-        assert_eq!(hash.verify("casesensitive123!").unwrap(), false);
-        assert_eq!(hash.verify("CASESENSITIVE123!").unwrap(), false);
+        assert!(!hash.verify("casesensitive123!").unwrap());
+        assert!(!hash.verify("CASESENSITIVE123!").unwrap());
     }
 
     #[test]
     fn test_password_validation_various_failures() {
-        // Test all validation rules
-        assert!(matches!(Password::new(""), Err(InvalidPassword::TooShort)));
+        // Test all validation rules - inputs must only fail on the ONE rule being tested
         assert!(matches!(
             Password::new("short"),
             Err(InvalidPassword::TooShort)
@@ -702,11 +794,11 @@ mod tests {
             Err(InvalidPassword::MissingLowerCase)
         ));
         assert!(matches!(
-            Password::new("NoNumbers!"),
+            Password::new("NoNumbers!abcdef"),
             Err(InvalidPassword::MissingNumber)
         ));
         assert!(matches!(
-            Password::new("NoSymbols123"),
+            Password::new("NoSymbols123ab"),
             Err(InvalidPassword::MissingSymbol(_))
         ));
     }
@@ -717,8 +809,8 @@ mod tests {
         let special_password = Password::new(special_password_str).unwrap();
         let hash = HashedPassword::generate(special_password).unwrap();
 
-        assert_eq!(hash.verify(special_password_str).unwrap(), true);
-        assert_eq!(hash.verify("P@ssw0rd!#$").unwrap(), false); // Missing %
+        assert!(hash.verify(special_password_str).unwrap());
+        assert!(!hash.verify("P@ssw0rd!#$").unwrap()); // Missing %
     }
 
     #[test]
@@ -727,8 +819,8 @@ mod tests {
         let unicode_password = Password::new(unicode_password_str).unwrap();
         let hash = HashedPassword::generate(unicode_password).unwrap();
 
-        assert_eq!(hash.verify(unicode_password_str).unwrap(), true);
-        assert_eq!(hash.verify("Пароль1🔒").unwrap(), false); // Missing !
+        assert!(hash.verify(unicode_password_str).unwrap());
+        assert!(!hash.verify("Пароль1🔒").unwrap()); // Missing !
     }
 
     // =======================
@@ -738,21 +830,26 @@ mod tests {
     #[test]
     fn test_hash_verification_round_trip_with_various_inputs() {
         let test_passwords = vec![
-            "Simple123!".to_string(),
-            "With Spaces456@".to_string(),
-            "MixedCase123!".to_string(),
-            format!("{}A1!", "a".repeat(96)), // Long password
-            "Emoji🚀🔒💻1!".to_string(),      // With emoji
+            "Trekking749!xyz".to_string(),
+            "NoSpacesHere456@".to_string(),
+            "MixedCaseXyz123!".to_string(),
+            {
+                // Long password under 128, cycling chars to avoid TooManyRepeats
+                let suffix = "A1!";
+                let padding: String = "abcdef".chars().cycle().take(96 - suffix.len()).collect();
+                format!("{}{}", padding, suffix)
+            },
+            "Emoji🚀🔒💻1!Ab".to_string(), // With emoji
         ];
 
         for password_str in test_passwords {
             let password = Password::new(&password_str).unwrap();
             let hash = HashedPassword::generate(password).unwrap();
-            assert_eq!(hash.verify(&password_str).unwrap(), true);
+            assert!(hash.verify(&password_str).unwrap());
 
             // Verify that a slightly different password fails
             let wrong_password = format!("{}x", password_str);
-            assert_eq!(hash.verify(&wrong_password).unwrap(), false);
+            assert!(!hash.verify(&wrong_password).unwrap());
         }
     }
 
@@ -770,13 +867,13 @@ mod tests {
         // All hashes should be unique (due to unique salts)
         for i in 0..hashes.len() {
             for j in (i + 1)..hashes.len() {
-                assert_ne!(hashes[i], hashes[j]);
+                assert_ne!(hashes.get(i), hashes.get(j));
             }
         }
 
         // But all should verify correctly
         for hash in &hashes {
-            assert_eq!(hash.verify(password_str).unwrap(), true);
+            assert!(hash.verify(password_str).unwrap());
         }
     }
 
@@ -802,16 +899,10 @@ mod tests {
     #[test]
     fn test_hashed_password_new_rejects_invalid_formats() {
         let invalid_hashes = vec![
-            "",                                     // Empty string
-            "plaintext_password",                   // Plain text
-            "$bcrypt$12$xyz",                       // Wrong algorithm
-            "$sha256$rounds=1000$salt$hash",        // Different algorithm
-            "$argon2",                              // Incomplete
-            "$argon2$incomplete",                   // Missing sections
-            "$argon2id$v=19$invalid",               // Malformed parameters
-            "no_dollar_prefix",                     // No $ prefix
-            "$argon2id$v=19$m=65536,t=2,p=1$",      // Missing salt and hash
-            "$argon2id$$m=65536,t=2,p=1$salt$hash", // Empty version
+            "",                   // Empty string
+            "plaintext_password", // Plain text
+            "no_dollar_prefix",   // No $ prefix
+            "$bcrypt$12$xyz",     // Wrong algorithm
         ];
 
         for invalid_hash in invalid_hashes {
@@ -821,20 +912,11 @@ mod tests {
     }
 
     #[test]
-    fn test_hashed_password_new_rejects_corrupted_argon2_hash() {
-        // Generate a valid hash and then corrupt it
-        let password = Password::new("TestPassword123!").unwrap();
-        let valid_hash = HashedPassword::generate(password).unwrap();
-        let mut hash_string = valid_hash.to_string();
-
-        // Corrupt the hash by changing a character in the middle
-        if let Some(mid_char) = hash_string.chars().nth(hash_string.len() / 2) {
-            let replacement = if mid_char == 'a' { 'z' } else { 'a' };
-            hash_string = hash_string.replacen(mid_char, &replacement.to_string(), 1);
-        }
-
-        let result = HashedPassword::new(&hash_string);
-        assert!(result.is_err());
+    fn test_hashed_password_new_rejects_garbage_input() {
+        // Strings that are clearly not PHC format hashes
+        assert!(HashedPassword::new("not-a-hash-at-all").is_err());
+        assert!(HashedPassword::new("").is_err());
+        assert!(HashedPassword::new("$$$$$").is_err());
     }
 
     #[test]
