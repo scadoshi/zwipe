@@ -6,9 +6,7 @@ Planned work after completing current tasks.
 
 ## Enhancements
 
-1. **Remove Card Screen** - Build UI for removing cards from deck with filtering and swipe gestures
-
-2. **Deck List Screen Redesign** - Better list styling, improved layout with utility bar, visual hierarchy
+1. **Deck List Screen Redesign** - Better list styling, improved layout with utility bar, visual hierarchy
 
 3. **Deck Cards Browser** - Full-screen card viewer for deck contents (MAJOR)
     - Display deck cards categorized by type (creatures, spells, lands) with counts

@@ -24,6 +24,7 @@ Production-ready backend implementations.
 - **Advanced Query Patterns**: Dynamic QueryBuilder, bulk operations, transaction management
 - **Constraint Handling**: PostgreSQL error code mapping, unique/check constraint violations
 - **Production Data Pipeline**: Scryfall API integration with 35,400+ card processing capability
+- **Shared Primary Key on card_profiles**: Removed surrogate `id` column; `scryfall_data_id` is now both PK and FK to `scryfall_data` — canonical shared-PK pattern for 1:1 relationships. Eliminates dual-UUID ambiguity that caused runtime bugs.
 - **Composite Key Architecture**: Natural primary keys eliminating surrogate IDs where appropriate
 
 ## 📡 HTTP API & RESTful Design
@@ -52,6 +53,7 @@ Production-ready backend implementations.
 - **Card Deduplication**: Window function-based deduplication returning only latest printing per unique card (by oracle_id)
 - **AllCards Support**: Handles 521k card printings, deduplicates to ~80k unique cards using ROW_NUMBER() OVER (PARTITION BY oracle_id ORDER BY released_at DESC)
 - **Performance Indexes**: Composite index on (oracle_id, released_at DESC) for efficient window function queries
+- **FilterCards Trait**: In-memory `Vec<Card>` filtering (`filter_by`) mirroring SQL adapter logic exactly — enables frontend to filter a bounded local collection (e.g. deck cards) without a server round-trip
 - **Computed Card Fields**: `is_valid_commander` and `is_token` boolean columns calculated during upsert
 - **Commander Validation**: 3-rule system (legendary creatures, legendary vehicles/spacecraft with P/T, oracle text "can be your commander")
 - **Token Detection**: Authoritative `layout == "token"` check from Scryfall API
