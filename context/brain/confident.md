@@ -33,7 +33,7 @@ Knowledge areas where you could teach others without hesitation.
 - **Direct Domain Serialization**: Serialize domain types directly when HTTP shape matches, avoiding unnecessary wrapper boilerplate
 
 ## 🎴 Domain Type Patterns
-- **Enum Design**: Language, Rarity, CopyMax, OrderByOptions - type-safe domain values with full trait implementations
+- **Enum Design**: Language, Rarity, CopyMax, OrderByOption - type-safe domain values with full trait implementations
 - **TryFrom Pattern**: Flexible parsing from strings (case-insensitive, multiple formats) for user-facing types
 - **Display vs Code**: Separate to_name() for UI display and to_code() for API/database values
 - **all() Method Pattern**: Static method returning Vec<Self> for enumerating all variants in frontend chips

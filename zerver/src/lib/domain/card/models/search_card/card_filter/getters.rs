@@ -1,7 +1,7 @@
 use crate::domain::card::models::{
     scryfall_data::{colors::Colors, rarity::Rarities},
     search_card::{
-        card_filter::{CardFilter, OrderByOptions},
+        card_filter::{CardFilter, OrderByOption},
         card_type::CardType,
     },
 };
@@ -129,7 +129,7 @@ impl CardFilter {
         self.offset
     }
 
-    pub fn order_by(&self) -> Option<OrderByOptions> {
+    pub fn order_by(&self) -> Option<OrderByOption> {
         self.order_by
     }
 

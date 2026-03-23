@@ -25,11 +25,11 @@ pub mod error;
 /// Getter methods for accessing filter values.
 pub mod getters;
 /// Sort order options (name, CMC, rarity, etc.).
-pub mod order_by_options;
+pub mod order_by_option;
 
 use crate::domain::card::models::{
     scryfall_data::{colors::Colors, rarity::Rarities},
-    search_card::{card_filter::order_by_options::OrderByOptions, card_type::CardType},
+    search_card::{card_filter::order_by_option::OrderByOption, card_type::CardType},
 };
 use serde::{Deserialize, Serialize};
 
@@ -77,6 +77,6 @@ pub struct CardFilter {
     // config
     limit: u32,
     offset: u32,
-    order_by: Option<OrderByOptions>,
+    order_by: Option<OrderByOption>,
     ascending: bool,
 }
