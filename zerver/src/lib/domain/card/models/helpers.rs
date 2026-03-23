@@ -13,7 +13,7 @@ use uuid::Uuid;
 pub trait SleeveScryfallData {
     /// Combines Scryfall data with card profiles, preserving card profile sort order.
     ///
-    /// Matches by comparing `ScryfallData.id` with `CardProfile.scryfall_data_id`.
+    /// Matches by comparing `ScryfallData.id` with `CardProfile.id`.
     /// Returns only successfully matched pairs as `Card` objects.
     fn sleeve(self, card_profiles: Vec<CardProfile>) -> Vec<Card>;
 }
@@ -30,7 +30,7 @@ impl SleeveScryfallData for Vec<ScryfallData> {
             .into_iter()
             .filter_map(|cp| {
                 data_map
-                    .remove(&cp.scryfall_data_id)
+                    .remove(&cp.id)
                     .map(|sfd| Card::new(cp, sfd))
             })
             .collect::<Vec<Card>>()
@@ -45,7 +45,7 @@ impl SleeveScryfallData for Vec<ScryfallData> {
 pub trait SleeveCardProfile {
     /// Combines card profiles with Scryfall data, preserving Scryfall data sort order.
     ///
-    /// Matches by comparing `CardProfile.scryfall_data_id` with `ScryfallData.id`.
+    /// Matches by comparing `CardProfile.id` with `ScryfallData.id`.
     /// Returns only successfully matched pairs as `Card` objects.
     fn sleeve(self, scryfall_data: Vec<ScryfallData>) -> Vec<Card>;
 }
@@ -56,7 +56,7 @@ impl SleeveCardProfile for Vec<CardProfile> {
         // Build map of card profiles keyed by scryfall_data_id
         let mut profile_map: HashMap<Uuid, CardProfile> = self
             .into_iter()
-            .map(|cp| (cp.scryfall_data_id, cp))
+            .map(|cp| (cp.id, cp))
             .collect();
 
         // Iterate over scryfall_data to preserve DB sort order

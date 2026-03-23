@@ -18,7 +18,7 @@ pub trait ClientUpdateDeckCard {
     fn update_deck_card(
         &self,
         deck_id: Uuid,
-        card_profile_id: Uuid,
+        scryfall_data_id: Uuid,
         request: &HttpUpdateDeckCard,
         session: &Session,
     ) -> impl Future<Output = Result<DeckCard, ApiError>> + Send;
@@ -28,12 +28,12 @@ impl ClientUpdateDeckCard for ZwipeClient {
     async fn update_deck_card(
         &self,
         deck_id: Uuid,
-        card_profile_id: Uuid,
+        scryfall_data_id: Uuid,
         request: &HttpUpdateDeckCard,
         session: &Session,
     ) -> Result<DeckCard, ApiError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&update_deck_card_route(deck_id, card_profile_id));
+        url.set_path(&update_deck_card_route(deck_id, scryfall_data_id));
 
         let response = self
             .client

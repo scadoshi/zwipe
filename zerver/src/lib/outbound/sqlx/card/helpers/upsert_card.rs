@@ -125,7 +125,7 @@ impl SingleUpsertWithTx for ScryfallData {
              VALUES ($1, $2, $3)
              ON CONFLICT (scryfall_data_id)
              DO UPDATE SET updated_at = NOW(), is_valid_commander = EXCLUDED.is_valid_commander, is_token = EXCLUDED.is_token
-             RETURNING id, scryfall_data_id, is_valid_commander, is_token, created_at, updated_at",
+             RETURNING scryfall_data_id, is_valid_commander, is_token, created_at, updated_at",
             scryfall_data_id,
             is_commander,
             is_token
@@ -195,7 +195,7 @@ impl BulkUpsertWithTx for &[ScryfallData] {
         }
         card_profile_query_builder
             .push(" ON CONFLICT (scryfall_data_id) DO UPDATE SET updated_at = NOW(), is_valid_commander = EXCLUDED.is_valid_commander, is_token = EXCLUDED.is_token ");
-        card_profile_query_builder.push(" RETURNING id, scryfall_data_id, is_valid_commander, is_token, created_at, updated_at;");
+        card_profile_query_builder.push(" RETURNING scryfall_data_id, is_valid_commander, is_token, created_at, updated_at;");
         let card_profiles: Vec<CardProfile> = card_profile_query_builder
             .build_query_as::<DatabaseCardProfile>()
             .fetch_all(&mut **tx)

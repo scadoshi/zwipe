@@ -63,7 +63,7 @@ impl<'de> Deserialize<'de> for GetScryfallData {
 #[cfg(feature = "zerver")]
 impl From<&CardProfile> for GetScryfallData {
     fn from(value: &CardProfile) -> Self {
-        Self(value.scryfall_data_id)
+        Self(value.id)
     }
 }
 

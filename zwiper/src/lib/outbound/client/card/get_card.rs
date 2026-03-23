@@ -9,20 +9,20 @@ use zwipe::{
     inbound::http::{routes::get_card_route, ApiError},
 };
 
-/// Trait for fetching a single card by its profile ID.
+/// Trait for fetching a single card by its Scryfall data ID.
 #[allow(missing_docs)]
 pub trait ClientGetCard {
     fn get_card(
         &self,
-        card_profile_id: Uuid,
+        scryfall_data_id: Uuid,
         session: &Session,
     ) -> impl Future<Output = Result<Card, ApiError>> + Send;
 }
 
 impl ClientGetCard for ZwipeClient {
-    async fn get_card(&self, card_profile_id: Uuid, session: &Session) -> Result<Card, ApiError> {
+    async fn get_card(&self, scryfall_data_id: Uuid, session: &Session) -> Result<Card, ApiError> {
         let mut url = self.app_config.backend_url.clone();
-        url.set_path(&get_card_route(card_profile_id));
+        url.set_path(&get_card_route(scryfall_data_id));
 
         let response = self
             .client
