@@ -197,7 +197,11 @@ impl AuthenticateUser {
     /// ```rust,ignore
     /// let request = AuthenticateUser::new("alice", "SecurePass123!")?;
     /// ```
-    pub fn new(identifier: &str, password: &str) -> Result<Self, InvalidAuthenticateUser> {
+    pub fn new(
+        identifier: impl AsRef<str>,
+        password: impl AsRef<str>,
+    ) -> Result<Self, InvalidAuthenticateUser> {
+        let identifier = identifier.as_ref();
         if identifier.is_empty() {
             return Err(InvalidAuthenticateUser::MissingIdentifier);
         }

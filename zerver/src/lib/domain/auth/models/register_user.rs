@@ -198,12 +198,12 @@ impl RawRegisterUser {
     ///
     /// Returns [`InvalidRawRegisterUser`] if any field fails validation.
     pub fn new(
-        username: &str,
-        email: &str,
-        password: &str,
+        username: impl AsRef<str>,
+        email: impl AsRef<str>,
+        password: impl AsRef<str>,
     ) -> Result<Self, InvalidRawRegisterUser> {
         let username = Username::new(username)?;
-        let email = EmailAddress::from_str(email)?;
+        let email = EmailAddress::from_str(email.as_ref())?;
         let password = Password::new(password)?;
         Ok(Self {
             username,
@@ -296,13 +296,17 @@ impl RegisterUser {
     ///     "MySecure123!"
     /// )?;
     /// ```
-    pub fn new(username: &str, email: &str, password: &str) -> Result<Self, InvalidRegisterUser> {
+    pub fn new(
+        username: impl AsRef<str>,
+        email: impl AsRef<str>,
+        password: impl AsRef<str>,
+    ) -> Result<Self, InvalidRegisterUser> {
         use std::str::FromStr;
 
         use crate::domain::auth::models::password::Password;
 
         let username = Username::new(username)?;
-        let email = EmailAddress::from_str(email)?;
+        let email = EmailAddress::from_str(email.as_ref())?;
         let password = Password::new(password)?;
         let password_hash = HashedPassword::generate(password)
             .map_err(|e| InvalidRegisterUser::FailedPasswordHash(e.into()))?;

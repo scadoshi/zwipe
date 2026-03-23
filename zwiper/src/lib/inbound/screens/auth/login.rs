@@ -38,9 +38,9 @@ pub fn Login() -> Element {
     let mut submission_error: Signal<Option<String>> = use_signal(|| None);
 
     let inputs_are_valid = move || {
-        (Username::new(&username_or_email()).is_ok()
+        (Username::new(username_or_email()).is_ok()
             || EmailAddress::from_str(&username_or_email()).is_ok())
-            && Password::new(&password()).is_ok()
+            && Password::new(password()).is_ok()
     };
 
     let mut attempt_submit = move || {

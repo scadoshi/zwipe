@@ -28,7 +28,7 @@ impl TryFrom<DatabaseUserWithPasswordHash> for UserWithPasswordHash {
     type Error = IntoUserWithPasswordHashError;
 
     fn try_from(value: DatabaseUserWithPasswordHash) -> Result<Self, Self::Error> {
-        let username = Username::new(&value.username)?;
+        let username = Username::new(value.username)?;
         let email = EmailAddress::from_str(&value.email)?;
         let password_hash = HashedPassword::new(&value.password_hash)?;
         Ok(Self {

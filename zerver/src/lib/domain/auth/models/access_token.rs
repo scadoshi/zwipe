@@ -665,8 +665,8 @@ mod tests {
         let result = AccessToken::generate(&user, &secret);
         assert!(result.is_ok());
         let access_token = result.unwrap();
-        assert!(!access_token.value.to_string().is_empty());
-        assert_eq!(access_token.value.to_string().split('.').count(), 3); // JWT has 3 parts
+        assert!(!access_token.value.is_empty());
+        assert_eq!(access_token.value.split('.').count(), 3); // JWT has 3 parts
     }
 
     #[test]

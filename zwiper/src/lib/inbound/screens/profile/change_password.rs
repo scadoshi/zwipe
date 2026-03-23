@@ -32,7 +32,7 @@ pub fn ChangePassword() -> Element {
     let mut confirm_password = use_signal(String::new);
     let mut password_error: Signal<Option<String>> = use_signal(|| None);
     let mut validate_new_password = move || {
-        if let Err(e) = Password::new(&new_password()) {
+        if let Err(e) = Password::new(new_password()) {
             password_error.set(Some(e.to_string()));
         } else if new_password().as_str() != confirm_password().as_str() {
             password_error.set(Some("passwords do not match".to_string()));

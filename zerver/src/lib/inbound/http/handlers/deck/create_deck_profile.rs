@@ -85,7 +85,7 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let request = CreateDeckProfile::new(&body.name, body.commander_id, body.copy_max, user.id)?;
+    let request = CreateDeckProfile::new(body.name, body.commander_id, body.copy_max, user.id)?;
 
     state
         .deck_service

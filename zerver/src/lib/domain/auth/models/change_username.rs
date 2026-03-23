@@ -113,8 +113,8 @@ impl ChangeUsername {
     /// ```
     pub fn new(
         user_id: Uuid,
-        new_username: &str,
-        password: &str,
+        new_username: impl AsRef<str>,
+        password: impl AsRef<str>,
     ) -> Result<Self, InvalidChangeUsername> {
         let new_username = Username::new(new_username)?;
         let password = Password::new(password)?;

@@ -22,7 +22,7 @@ impl TryFrom<DatabaseUser> for User {
     type Error = IntoUserError;
 
     fn try_from(value: DatabaseUser) -> Result<Self, Self::Error> {
-        let username = Username::new(&value.username)?;
+        let username = Username::new(value.username)?;
         let email =
             EmailAddress::parse_with_options(&value.email, email_address::Options::default())?;
         Ok(Self {

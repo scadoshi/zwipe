@@ -25,7 +25,7 @@ pub struct DatabaseDeckProfile {
 impl TryFrom<DatabaseDeckProfile> for DeckProfile {
     type Error = IntoDeckProfileError;
     fn try_from(value: DatabaseDeckProfile) -> Result<Self, Self::Error> {
-        let name = DeckName::new(&value.name)?;
+        let name = DeckName::new(value.name)?;
         let copy_max = value.copy_max.map(CopyMax::new).transpose()?;
 
         Ok(Self {
