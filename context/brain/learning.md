@@ -28,6 +28,7 @@ Recently encountered concepts requiring guidance and practice.
 - **Infinite Loop Pattern Recognition**: Reading + writing same signal in tracked context (use_effect/use_resource) = exponential task explosion
 - **Conditional Update Pattern**: `if new_value != old_value { signal.set(new_value) }` prevents infinite loops in reactive contexts
 - **spawn() Breaks Tracking**: Signal reads inside spawn() blocks DON'T register as dependencies for parent effect/resource
+- **peek() for Intentional Non-Subscription**: In a use_effect that should only re-run on signal A, read signal B with `.peek()` — effect won't re-run when B changes. Critical when B is mutated by the effect's own downstream logic (e.g. filter effect peeks `deck_cards` so card removal doesn't re-trigger filtering).
 - **Background Task Spawning**: Use use_future for infinite loops, NOT use_effect (which would spawn new loop on every dependency change)
 - **Fire-and-Forget spawn()**: Direct spawn() in component body for one-time background tasks that don't need hook lifecycle
 - **Session Refresh Architecture**: Single centralized background loop in home.rs, individual screens use use_resource with conditional updates
