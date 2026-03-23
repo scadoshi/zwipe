@@ -4,7 +4,7 @@ use crate::{
             accordion::{Accordion, AccordionContent, AccordionItem, AccordionTrigger},
             auth::{bouncer::Bouncer, session_upkeep::Upkeep},
             interactions::swipe::{
-                config::SwipeConfig, direction::Direction, state::SwipeState, Swipeable,
+                Swipeable, config::SwipeConfig, direction::Direction, state::SwipeState,
             },
         },
         screens::deck::card::filter::{
@@ -13,26 +13,24 @@ use crate::{
         },
     },
     outbound::client::{
+        ZwipeClient,
         deck::get_deck::ClientGetDeck,
         deck_card::{
             create_deck_card::ClientCreateDeckCard, delete_deck_card::ClientDeleteDeckCard,
         },
-        ZwipeClient,
     },
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{use_toast, ToastOptions};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
 use zwipe::{
     domain::{
         auth::models::session::Session,
         card::models::{
-            scryfall_data::image_uris::ImageUris,
-            search_card::{
-                card_filter::builder::CardFilterBuilder, filter_cards::FilterCards,
-            },
             Card,
+            scryfall_data::image_uris::ImageUris,
+            search_card::{card_filter::builder::CardFilterBuilder, filter_cards::FilterCards},
         },
     },
     inbound::http::handlers::deck_card::create_deck_card::HttpCreateDeckCard,
@@ -179,7 +177,9 @@ pub fn Remove(deck_id: Uuid) -> Element {
             .get(idx)
             .map(|c| c.card_profile.scryfall_data_id);
         if let Some(id) = card_id {
-            deck_cards.write().retain(|c| c.card_profile.scryfall_data_id != id);
+            deck_cards
+                .write()
+                .retain(|c| c.card_profile.scryfall_data_id != id);
             if idx < displayed_cards.read().len() {
                 displayed_cards.write().remove(idx);
             }
@@ -189,10 +189,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
     let mut undo_last_action = move || {
         let Some(action) = action_history.write().pop() else {
-            toast.info(
-                "nothing to undo".to_string(),
-                ToastOptions::default(),
-            );
+            toast.info("nothing to undo".to_string(), ToastOptions::default());
             return;
         };
 
@@ -225,8 +222,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     return;
                 };
 
-                let request =
-                    HttpCreateDeckCard::new(&card.scryfall_data.id.to_string(), 1);
+                let request = HttpCreateDeckCard::new(&card.scryfall_data.id.to_string(), 1);
 
                 spawn(async move {
                     match client().create_deck_card(deck_id, &request, &session).await {
@@ -237,10 +233,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             );
                         }
                         Err(e) => {
-                            toast.error(
-                                format!("failed to undo: {}", e),
-                                ToastOptions::default(),
-                            );
+                            toast.error(format!("failed to undo: {}", e), ToastOptions::default());
                         }
                     }
                 });
@@ -373,6 +366,11 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 }
                 button {
                     class: "util-btn",
+                    onclick: move |_| filters_overlay_open.set(true),
+                    "filters"
+                }
+                button {
+                    class: "util-btn",
                     onclick: move |_| {
                         current_index.set(0);
                         action_history.write().clear();
@@ -382,11 +380,6 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         );
                     },
                     "refresh"
-                }
-                button {
-                    class: "util-btn",
-                    onclick: move |_| filters_overlay_open.set(true),
-                    "filters"
                 }
             }
 

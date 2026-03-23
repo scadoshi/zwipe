@@ -4,11 +4,11 @@ use crate::{
             accordion::{Accordion, AccordionContent, AccordionItem, AccordionTrigger},
             auth::{bouncer::Bouncer, session_upkeep::Upkeep},
             interactions::swipe::{
-                config::SwipeConfig, direction::Direction, state::SwipeState, Swipeable,
+                Swipeable, config::SwipeConfig, direction::Direction, state::SwipeState,
             },
         },
         screens::deck::card::{
-            action_history::{SwipeAction, CARDS_WARNING_THRESHOLD, MAX_CARDS_IN_STACK},
+            action_history::{CARDS_WARNING_THRESHOLD, MAX_CARDS_IN_STACK, SwipeAction},
             filter::{
                 combat::Combat, config::Config, mana::Mana, rarity::Rarity, set::Set, sort::Sort,
                 text::Text, types::Types,
@@ -16,16 +16,16 @@ use crate::{
         },
     },
     outbound::client::{
+        ZwipeClient,
         card::search_cards::ClientSearchCards,
         deck::get_deck::ClientGetDeck,
         deck_card::{
             create_deck_card::ClientCreateDeckCard, delete_deck_card::ClientDeleteDeckCard,
         },
-        ZwipeClient,
     },
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{use_toast, ToastOptions};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::collections::HashSet;
 use std::time::Duration;
 use uuid::Uuid;
@@ -33,8 +33,8 @@ use zwipe::{
     domain::{
         auth::models::session::Session,
         card::models::{
-            scryfall_data::image_uris::ImageUris,
-            search_card::card_filter::builder::CardFilterBuilder, Card,
+            Card, scryfall_data::image_uris::ImageUris,
+            search_card::card_filter::builder::CardFilterBuilder,
         },
     },
     inbound::http::handlers::deck_card::create_deck_card::HttpCreateDeckCard,
@@ -128,8 +128,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                     let deck_ids = deck_cards_ids();
 
                     // Get existing card IDs for de-duplication
-                    let existing_ids: HashSet<Uuid> =
-                        existing_cards.iter().map(|c| c.card_profile.scryfall_data_id).collect();
+                    let existing_ids: HashSet<Uuid> = existing_cards
+                        .iter()
+                        .map(|c| c.card_profile.scryfall_data_id)
+                        .collect();
 
                     // Filter out duplicates, deck cards, and cards without images
                     let unique_new_cards: Vec<Card> = new_cards
@@ -497,6 +499,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                 button {
                     class: "util-btn",
                     onclick: move |_| {
+                        toast.info(
+                            "search refreshed".to_string(),
+                            ToastOptions::default().duration(Duration::from_millis(1500)),
+                        );
                         refresh_trigger.set(!refresh_trigger());
                     },
                     "refresh"
