@@ -343,6 +343,10 @@ pub fn Add(deck_id: Uuid) -> Element {
         builder.set_offset(0);
 
         let Ok(filter) = builder.build() else {
+            toast.warning(
+                "try adding a filter".to_string(),
+                ToastOptions::default().duration(Duration::from_millis(1500)),
+            );
             return;
         };
 
@@ -499,11 +503,18 @@ pub fn Add(deck_id: Uuid) -> Element {
                 button {
                     class: "util-btn",
                     onclick: move |_| {
-                        toast.info(
-                            "search refreshed".to_string(),
-                            ToastOptions::default().duration(Duration::from_millis(1500)),
-                        );
-                        refresh_trigger.set(!refresh_trigger());
+                        if filter_builder.read().is_empty() {
+                            toast.warning(
+                                "try adding a filter".to_string(),
+                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                            );
+                        } else {
+                            toast.info(
+                                "search refreshed".to_string(),
+                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                            );
+                            refresh_trigger.set(!refresh_trigger());
+                        }
                     },
                     "refresh"
                 }

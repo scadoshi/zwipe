@@ -100,46 +100,23 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 h2 { "deck" }
             }
 
-            div { class: "sticky top-0 left-0 h-screen flex flex-col items-center overflow-hidden",
-                style: "width: 100vw; padding-top: 8vh",
+            div { class: "top-0 left-0 flex flex-col items-center overflow-y-auto",
+                style: "width: 100vw; height: 100vh; padding-top: 6rem; padding-bottom: 6rem;",
                 div { class: "flex-col",
-                    style: "max-width: 40rem; width: 100%; padding: 2rem;",
+                    style: "max-width: 40rem; width: 100%; padding: 0 2rem;",
                     match deck_profile_resource() {
                         Some(Ok(deck_profile)) => rsx! {
                             if let Some(error) = load_error() {
                                 div { class: "message-error", "{error}" }
                             }
 
-                            div { class: "flex items-center flex-between mb-4 gap-2",
+                            div { class: "flex items-center flex-between mb-2 gap-2",
                                 div { class: "flex-1",
                                     label { class: "label", "deck name" }
                                     p { class: "text-base font-light mb-1", "{deck_profile.name}" }
                                 }
-                            }
-
-                            div { class: "flex items-center flex-between mb-4 gap-2",
-                                div { class: "flex-1",
-                                    label { class: "label", "commander" }
-                                    if let Some(cmd) = commander() {
-                                        if let Some(ImageUris { normal: Some(image_url), .. }) = &cmd.scryfall_data.image_uris {
-                                            img { class: "card-image",
-                                                src: "{image_url}",
-                                                alt: "{cmd.scryfall_data.name}",
-                                            }
-                                        } else {
-                                            p { class: "text-base font-light mb-1",
-                                                { cmd.scryfall_data.name.to_lowercase() }
-                                            }
-                                        }
-                                    } else {
-                                        p { class: "text-base font-light mb-1", "none" }
-                                    }
-                                }
-                            }
-
-                            div { class: "flex items-center flex-between mb-4 gap-2",
-                                div { class: "flex-1",
-                                    label { class: "label", "card copy rule" }
+                                div {
+                                    label { class: "label", "copy rule" }
                                     p { class: "text-base font-light mb-1",
                                         if deck_profile.copy_max == Some(CopyMax::standard()) {
                                             "standard"
@@ -149,6 +126,27 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                             "none"
                                         }
                                     }
+                                }
+                            }
+
+                            div {
+                                label { class: "label", "commander" }
+                                if let Some(cmd) = commander() {
+                                    if let Some(ImageUris { normal: Some(image_url), .. }) = &cmd.scryfall_data.image_uris {
+                                        p { class: "text-base font-light mb-1",
+                                            { cmd.scryfall_data.name.to_lowercase() }
+                                        }
+                                        img { class: "card-image",
+                                            src: "{image_url}",
+                                            alt: "{cmd.scryfall_data.name}",
+                                        }
+                                    } else {
+                                        p { class: "text-base font-light mb-1",
+                                            { cmd.scryfall_data.name.to_lowercase() }
+                                        }
+                                    }
+                                } else {
+                                    p { class: "text-base font-light mb-1", "none" }
                                 }
                             }
 
@@ -173,16 +171,23 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 button {
                     class : "util-btn",
                     onclick : move |_| {
+                        navigator.push(Router::ViewDeckCard { deck_id });
+                    },
+                    "view"
+                }
+                button {
+                    class : "util-btn",
+                    onclick : move |_| {
                         navigator.push(Router::AddDeckCard { deck_id });
                     },
-                    "add cards"
+                    "add"
                 }
                 button {
                     class : "util-btn",
                     onclick : move |_| {
                         navigator.push(Router::RemoveDeckCard { deck_id });
                     },
-                    "remove cards"
+                    "remove"
                 }
                 button {
                     class: "util-btn",
@@ -194,7 +199,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 button {
                     class: "util-btn",
                     onclick: move |_| show_delete_dialog.set(true),
-                    "delete deck"
+                    "delete"
                 }
             }
 

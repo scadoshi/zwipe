@@ -7,6 +7,7 @@ use crate::inbound::screens::{
     deck::{
         card::{
             add::Add as AddDeckCard,
+            view::View as ViewDeckCard,
             remove::Remove as RemoveDeckCard,
         },
         create::CreateDeck,
@@ -61,6 +62,10 @@ pub enum Router {
     //deck card
     #[route("/deck/card/add/:deck_id")]
     AddDeckCard {
+        deck_id: Uuid,
+    },
+    #[route("/deck/card/view/:deck_id")]
+    ViewDeckCard {
         deck_id: Uuid,
     },
     #[route("/deck/card/remove/:deck_id")]

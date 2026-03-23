@@ -947,7 +947,7 @@ body {
 .card-image {
   display: block;
   object-fit: contain;
-  max-height: 35vh;
+  max-height: 42vh;
   height: auto;
   border-radius: 1rem;
   margin: 0 auto 2rem auto;
@@ -1486,4 +1486,109 @@ body {
   display: block;
   margin: 0 auto;
 }
+
+/* =========================
+  browse screen
+ =========================== */
+
+.chip-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.card-group {
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+}
+
+.card-group-header {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.card-row {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-secondary);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.card-row:hover {
+  background-color: var(--bg-secondary);
+}
+
+.card-row-compact {
+  display: grid;
+  grid-template-columns: 1fr 2rem 3rem auto;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+}
+
+.card-row-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 300;
+}
+
+.card-row-cmc {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.card-row-pt {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.card-row-colors {
+  text-align: right;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.card-row-detail {
+  padding: 0.5rem 0 0.25rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.card-detail-oracle {
+  margin: 0 0 0.5rem;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.4;
+}
+
+.card-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  color: var(--text-muted);
+}
+
+.card-row-header {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--border-secondary);
+  margin-bottom: 0.5rem;
+}
+
 
