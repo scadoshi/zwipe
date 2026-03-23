@@ -180,3 +180,98 @@ impl FromStr for UnvalidatedRefreshToken {
         Ok(Self(s.to_string()))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::str::FromStr;
+
+    #[test]
+    fn test_refresh_token_generate_produces_64_char_hex_value() {
+        let token = RefreshToken::generate();
+        assert_eq!(token.value.len(), 64);
+    }
+
+    #[test]
+    fn test_refresh_token_generate_produces_unique_values() {
+        let t1 = RefreshToken::generate();
+        let t2 = RefreshToken::generate();
+        assert_ne!(t1.value, t2.value);
+    }
+
+    #[test]
+    fn test_refresh_token_generate_sets_expiry_14_days_in_future() {
+        let token = RefreshToken::generate();
+        let now = Utc::now().naive_utc();
+        // Expiry should be ~14 days out: between 13 and 15 days from now
+        assert!(token.expires_at > now + Duration::days(13));
+        assert!(token.expires_at < now + Duration::days(15));
+    }
+
+    #[test]
+    fn test_refresh_token_sha256_hash_produces_64_char_hex() {
+        let token = RefreshToken::generate();
+        let hash = token.sha256_hash();
+        assert_eq!(hash.len(), 64);
+    }
+
+    #[test]
+    fn test_refresh_token_sha256_hash_is_deterministic() {
+        let token = RefreshToken::generate();
+        assert_eq!(token.sha256_hash(), token.sha256_hash());
+    }
+
+    #[test]
+    fn test_refresh_token_sha256_hash_differs_from_value() {
+        let token = RefreshToken::generate();
+        assert_ne!(token.sha256_hash(), token.value);
+    }
+
+    #[test]
+    fn test_string_sha256_hash_produces_64_char_hex() {
+        let hash = "some-string".to_string().sha256_hash();
+        assert_eq!(hash.len(), 64);
+    }
+
+    #[test]
+    fn test_string_sha256_hash_is_deterministic() {
+        let s = "some-string".to_string();
+        assert_eq!(s.sha256_hash(), s.sha256_hash());
+    }
+
+    #[test]
+    fn test_string_sha256_hash_differs_for_different_inputs() {
+        let h1 = "input-one".to_string().sha256_hash();
+        let h2 = "input-two".to_string().sha256_hash();
+        assert_ne!(h1, h2);
+    }
+
+    #[test]
+    fn test_unvalidated_refresh_token_accepts_exactly_32_chars() {
+        let token_str = "a".repeat(32);
+        let result = UnvalidatedRefreshToken::from_str(&token_str);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().value(), &token_str);
+    }
+
+    #[test]
+    fn test_unvalidated_refresh_token_rejects_too_short() {
+        let result = UnvalidatedRefreshToken::from_str("short");
+        assert!(matches!(result, Err(InvalidRefreshToken::Length)));
+    }
+
+    #[test]
+    fn test_unvalidated_refresh_token_rejects_too_long() {
+        let result = UnvalidatedRefreshToken::from_str(&"a".repeat(33));
+        assert!(matches!(result, Err(InvalidRefreshToken::Length)));
+    }
+
+    #[test]
+    fn test_unvalidated_refresh_token_trims_for_length_check() {
+        // Whitespace is trimmed when checking length, but not stripped from stored value
+        let padded = format!(" {} ", "a".repeat(32));
+        let result = UnvalidatedRefreshToken::from_str(&padded);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().value(), &padded);
+    }
+}

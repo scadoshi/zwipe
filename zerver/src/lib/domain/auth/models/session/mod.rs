@@ -140,3 +140,70 @@ impl Session {
         self.refresh_token.expires_at < Utc::now().naive_local()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::auth::models::access_token::{AccessToken, Jwt};
+    use crate::domain::auth::models::refresh_token::RefreshToken;
+    use crate::domain::user::models::{username::Username, User};
+    use chrono::{Duration, NaiveDateTime, Utc};
+    use email_address::EmailAddress;
+    use std::str::FromStr;
+    use uuid::Uuid;
+
+    fn make_session(refresh_expires_at: NaiveDateTime) -> Session {
+        let user = User::new(
+            Uuid::new_v4(),
+            Username::new("alice").unwrap(),
+            EmailAddress::from_str("alice@example.com").unwrap(),
+        );
+        let access_token = AccessToken {
+            value: Jwt::from_str("header.payload.signature").unwrap(),
+            expires_at: Utc::now().naive_utc() + Duration::hours(24),
+        };
+        let refresh_token = RefreshToken {
+            value: "x".repeat(64),
+            expires_at: refresh_expires_at,
+        };
+        Session {
+            user,
+            access_token,
+            refresh_token,
+        }
+    }
+
+    #[test]
+    fn test_session_is_expired_when_refresh_token_has_past_expiry() {
+        let past = Utc::now().naive_utc() - Duration::seconds(1);
+        let session = make_session(past);
+        assert!(session.is_expired());
+    }
+
+    #[test]
+    fn test_session_is_not_expired_when_refresh_token_is_in_future() {
+        let future = Utc::now().naive_utc() + Duration::days(14);
+        let session = make_session(future);
+        assert!(!session.is_expired());
+    }
+
+    #[cfg(feature = "zerver")]
+    #[test]
+    fn test_session_new_stores_provided_values() {
+        let user_id = Uuid::new_v4();
+        let user = User::new(
+            user_id,
+            Username::new("bob").unwrap(),
+            EmailAddress::from_str("bob@example.com").unwrap(),
+        );
+        let access_token = AccessToken {
+            value: Jwt::from_str("a.b.c").unwrap(),
+            expires_at: Utc::now().naive_utc() + Duration::hours(24),
+        };
+        let refresh_token = RefreshToken::generate();
+        let session = Session::new(user.clone(), access_token.clone(), refresh_token.clone());
+        assert_eq!(session.user.id, user_id);
+        assert_eq!(session.access_token, access_token);
+        assert_eq!(session.refresh_token, refresh_token);
+    }
+}

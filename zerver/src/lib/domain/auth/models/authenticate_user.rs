@@ -268,3 +268,90 @@ impl From<&DeleteUser> for AuthenticateUser {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_authenticate_user_new_succeeds_with_username() {
+        let result = AuthenticateUser::new("alice", "SecurePass123!");
+        assert!(result.is_ok());
+        let req = result.unwrap();
+        assert_eq!(req.identifier, "alice");
+        assert_eq!(req.password, "SecurePass123!");
+    }
+
+    #[test]
+    fn test_authenticate_user_new_succeeds_with_email() {
+        let result = AuthenticateUser::new("alice@example.com", "SecurePass123!");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_authenticate_user_new_rejects_empty_identifier() {
+        let result = AuthenticateUser::new("", "SecurePass123!");
+        assert!(matches!(result, Err(InvalidAuthenticateUser::MissingIdentifier)));
+    }
+
+    #[test]
+    fn test_authenticate_user_new_rejects_invalid_password() {
+        let result = AuthenticateUser::new("alice", "short");
+        assert!(matches!(result, Err(InvalidAuthenticateUser::Password(_))));
+    }
+
+    #[test]
+    fn test_invalid_authenticate_user_from_invalid_password() {
+        use crate::domain::auth::models::password::InvalidPassword;
+        let err = InvalidAuthenticateUser::from(InvalidPassword::TooShort);
+        assert!(matches!(err, InvalidAuthenticateUser::Password(_)));
+    }
+
+    #[cfg(feature = "zerver")]
+    #[test]
+    fn test_authenticate_user_from_change_password() {
+        use crate::domain::auth::models::change_password::ChangePassword;
+        use uuid::Uuid;
+        let user_id = Uuid::new_v4();
+        let req = ChangePassword::new(user_id, "OldPass!", "NewSecure123!").unwrap();
+        let auth: AuthenticateUser = AuthenticateUser::from(&req);
+        assert_eq!(auth.identifier, user_id.to_string());
+        assert_eq!(auth.password, "OldPass!");
+    }
+
+    #[cfg(feature = "zerver")]
+    #[test]
+    fn test_authenticate_user_from_change_username() {
+        use crate::domain::auth::models::change_username::ChangeUsername;
+        use uuid::Uuid;
+        let user_id = Uuid::new_v4();
+        let req = ChangeUsername::new(user_id, "newname", "SecurePass123!").unwrap();
+        let auth: AuthenticateUser = AuthenticateUser::from(&req);
+        assert_eq!(auth.identifier, user_id.to_string());
+        assert_eq!(auth.password, "SecurePass123!");
+    }
+
+    #[cfg(feature = "zerver")]
+    #[test]
+    fn test_authenticate_user_from_change_email() {
+        use crate::domain::auth::models::change_email::ChangeEmail;
+        use uuid::Uuid;
+        let user_id = Uuid::new_v4();
+        let req = ChangeEmail::new(user_id, "new@example.com", "SecurePass123!").unwrap();
+        let auth: AuthenticateUser = AuthenticateUser::from(&req);
+        assert_eq!(auth.identifier, user_id.to_string());
+        assert_eq!(auth.password, "SecurePass123!");
+    }
+
+    #[cfg(feature = "zerver")]
+    #[test]
+    fn test_authenticate_user_from_delete_user() {
+        use crate::domain::auth::models::delete_user::DeleteUser;
+        use uuid::Uuid;
+        let user_id = Uuid::new_v4();
+        let req = DeleteUser::new(user_id, "SomePassword!").unwrap();
+        let auth: AuthenticateUser = AuthenticateUser::from(&req);
+        assert_eq!(auth.identifier, user_id.to_string());
+        assert_eq!(auth.password, "SomePassword!");
+    }
+}
