@@ -141,6 +141,13 @@ Production-ready backend implementations.
 - **Feature Flags**: Server-only code properly gated with #[cfg(feature = "zerver")]
 
 ## 🔧 Type System Refinements
+- **Generics Sweep**: All domain validator constructors accept `impl AsRef<str>` (or `impl Into<String>` for `DeckName`)
+  - `Username::new`, `Password::new` — core domain types
+  - `RawRegisterUser::new`, `RegisterUser::new`, `ChangeUsername::new`, `ChangePassword::new`, `AuthenticateUser::new`, `CreateDeckProfile::new` — cascaded to all request constructors
+  - `EmailAddress::from_str` call sites use `.as_ref()` where needed
+  - SQLx `TryFrom` impls pass owned `String`s directly: `Username::new(value.username)` instead of `Username::new(&value.username)`
+  - Frontend screens: `Username::new(username())` instead of `Username::new(&username())`
+  - `ContainsBadWord` was already generic (`impl<T: AsRef<str>>`) — no change needed
 - **Deref Refactor**: All domain newtypes implement `std::ops::Deref` instead of bespoke getters
   - Removed: `as_str()`, `value()`, `id()`, `max()`, `quantity()` methods across all newtypes
   - Added: `impl Deref<Target=str>` (string types), `impl Deref<Target=Uuid>`, `impl Deref<Target=i32>`, `impl Deref<Target=[T]>` (collection types)
