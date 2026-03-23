@@ -156,3 +156,70 @@ impl ContainsBadWord for &str {
             || SUBSTRING_BANNED_SET.iter().any(|w| s.contains(w))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_clean_string_is_not_flagged() {
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_empty_string_is_not_flagged() {
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_exact_match_banned_word_is_flagged() {
+        // "shit" → true (in EXACT_MATCH_BANNED)
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_exact_match_is_case_insensitive() {
+        // "SHIT" → true (lowercased before check)
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_exact_match_does_not_flag_superstring() {
+        // "grasshopper" → false ("ass" is exact-only, not substring-banned)
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_substring_banned_word_is_flagged() {
+        // "fuck" is in SUBSTRING_BANNED → true
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_substring_match_inside_longer_string() {
+        // "ilovefuck" contains "fuck" → true
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_trimming_applied_before_check() {
+        // " shit " → trimmed to "shit" → exact match → true
+        todo!()
+    }
+}

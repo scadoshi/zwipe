@@ -12,6 +12,15 @@ Planned work after completing current tasks.
 
 ---
 
+## Refactoring
+
+1. **Generics sweep on domain validators** - Replace `&str`-only implementations with `impl AsRef<str>` (or `impl Into<String>`) across domain validation entry points:
+   - `ContainsBadWord` trait — currently only implemented for `&str`, should also cover `String` and `&String`
+   - `Username::new()`, `DeckName::new()`, `Password::new()` etc. — accepting `impl AsRef<str>` avoids callers needing to call `.as_str()` on owned strings
+   - Makes validators more ergonomic when working with owned data from deserializers, HTTP handlers, and database rows
+
+---
+
 ## Enhancements
 
 1. **Deck List Screen Redesign** - Better list styling, improved layout with utility bar, visual hierarchy
