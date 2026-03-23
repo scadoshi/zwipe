@@ -173,9 +173,9 @@ pub fn Remove(deck_id: Uuid) -> Element {
         let idx = current_index();
         let card_id = displayed_cards()
             .get(idx)
-            .map(|c| c.card_profile.id);
+            .map(|c| c.card_profile.scryfall_data_id);
         if let Some(id) = card_id {
-            deck_cards.write().retain(|c| c.card_profile.id != id);
+            deck_cards.write().retain(|c| c.card_profile.scryfall_data_id != id);
             if idx < displayed_cards.read().len() {
                 displayed_cards.write().remove(idx);
             }

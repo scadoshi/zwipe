@@ -129,13 +129,13 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                     // Get existing card IDs for de-duplication
                     let existing_ids: HashSet<Uuid> =
-                        existing_cards.iter().map(|c| c.card_profile.id).collect();
+                        existing_cards.iter().map(|c| c.card_profile.scryfall_data_id).collect();
 
                     // Filter out duplicates, deck cards, and cards without images
                     let unique_new_cards: Vec<Card> = new_cards
                         .into_iter()
                         .filter(|card| {
-                            !existing_ids.contains(&card.card_profile.id)
+                            !existing_ids.contains(&card.card_profile.scryfall_data_id)
                                 && !deck_ids.contains(&card.scryfall_data.id)
                                 && card
                                     .scryfall_data

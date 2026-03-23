@@ -35,7 +35,7 @@ use uuid::Uuid;
 #[derive(Debug, Clone, Serialize, PartialEq, Deserialize)]
 pub struct CardProfile {
     /// Scryfall UUID — the primary key shared with the `scryfall_data` table.
-    pub id: Uuid,
+    pub scryfall_data_id: Uuid,
     /// Pre-computed commander legality (legendary creature check).
     pub is_valid_commander: bool,
     /// Whether this is a token (not a real card).
