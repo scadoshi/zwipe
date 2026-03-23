@@ -20,7 +20,7 @@ use crate::domain::card::models::{
     get_sets::GetSetsError,
     scryfall_data::get_scryfall_data::{GetScryfallData, GetScryfallDataError},
     search_card::{
-        card_filter::{CardFilter, order_by_options::OrderByOptions},
+        card_filter::{CardFilter, order_by_option::OrderByOption},
         error::SearchCardsError,
     },
 };
@@ -392,15 +392,15 @@ impl CardRepository for MyPostgres {
         // Filter out NULLs for sorted field
         if let Some(order_by) = request.order_by() {
             let null_filter = match order_by {
-                OrderByOptions::Power => Some("power IS NOT NULL AND power ~ '^\\d+$'"),
-                OrderByOptions::Toughness => Some("toughness IS NOT NULL AND toughness ~ '^\\d+$'"),
-                OrderByOptions::PriceUsd => {
+                OrderByOption::Power => Some("power IS NOT NULL AND power ~ '^\\d+$'"),
+                OrderByOption::Toughness => Some("toughness IS NOT NULL AND toughness ~ '^\\d+$'"),
+                OrderByOption::PriceUsd => {
                     Some("prices->>'usd' IS NOT NULL AND prices->>'usd' != ''")
                 }
-                OrderByOptions::PriceEur => {
+                OrderByOption::PriceEur => {
                     Some("prices->>'eur' IS NOT NULL AND prices->>'eur' != ''")
                 }
-                OrderByOptions::PriceTix => {
+                OrderByOption::PriceTix => {
                     Some("prices->>'tix' IS NOT NULL AND prices->>'tix' != ''")
                 }
                 _ => None,
@@ -421,19 +421,19 @@ impl CardRepository for MyPostgres {
         if let Some(order_by) = request.order_by() {
             qb.push(" ORDER BY ");
             let col = match order_by {
-                OrderByOptions::Name => "name",
-                OrderByOptions::Cmc => "cmc",
-                OrderByOptions::Power => "CAST(NULLIF(power, '') AS INT)",
-                OrderByOptions::Toughness => "CAST(NULLIF(toughness, '') AS INT)",
-                OrderByOptions::Rarity => "rarity",
-                OrderByOptions::ReleasedAt => "released_at",
-                OrderByOptions::PriceUsd => "(prices->>'usd')::NUMERIC",
-                OrderByOptions::PriceEur => "(prices->>'eur')::NUMERIC",
-                OrderByOptions::PriceTix => "(prices->>'tix')::NUMERIC",
-                OrderByOptions::Random => "RANDOM()",
+                OrderByOption::Name => "name",
+                OrderByOption::Cmc => "cmc",
+                OrderByOption::Power => "CAST(NULLIF(power, '') AS INT)",
+                OrderByOption::Toughness => "CAST(NULLIF(toughness, '') AS INT)",
+                OrderByOption::Rarity => "rarity",
+                OrderByOption::ReleasedAt => "released_at",
+                OrderByOption::PriceUsd => "(prices->>'usd')::NUMERIC",
+                OrderByOption::PriceEur => "(prices->>'eur')::NUMERIC",
+                OrderByOption::PriceTix => "(prices->>'tix')::NUMERIC",
+                OrderByOption::Random => "RANDOM()",
             };
             qb.push(col);
-            if order_by != OrderByOptions::Random {
+            if order_by != OrderByOption::Random {
                 qb.push(if request.ascending() { " ASC" } else { " DESC" });
             }
         }

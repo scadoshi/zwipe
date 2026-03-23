@@ -17,7 +17,7 @@
 
 use crate::domain::card::models::{
     Card,
-    search_card::card_filter::{CardFilter, order_by_options::OrderByOptions},
+    search_card::card_filter::{CardFilter, order_by_option::OrderByOption},
 };
 use rand::seq::SliceRandom;
 
@@ -263,7 +263,7 @@ impl FilterCards for Vec<Card> {
 
         // ── sort ──────────────────────────────────────────────────────────────
         if let Some(order_by) = filter.order_by() {
-            if order_by == OrderByOptions::Random {
+            if order_by == OrderByOption::Random {
                 let mut rng = rand::rng();
                 cards.shuffle(&mut rng);
             } else {
@@ -272,13 +272,13 @@ impl FilterCards for Vec<Card> {
                     let sd_a = &a.scryfall_data;
                     let sd_b = &b.scryfall_data;
                     let ord = match order_by {
-                        OrderByOptions::Name => sd_a.name.cmp(&sd_b.name),
-                        OrderByOptions::Cmc => {
+                        OrderByOption::Name => sd_a.name.cmp(&sd_b.name),
+                        OrderByOption::Cmc => {
                             let ca = sd_a.cmc.unwrap_or(f64::MAX);
                             let cb = sd_b.cmc.unwrap_or(f64::MAX);
                             ca.partial_cmp(&cb).unwrap_or(std::cmp::Ordering::Equal)
                         }
-                        OrderByOptions::Power => {
+                        OrderByOption::Power => {
                             let pa = sd_a
                                 .power
                                 .as_deref()
@@ -291,7 +291,7 @@ impl FilterCards for Vec<Card> {
                                 .unwrap_or(i32::MAX);
                             pa.cmp(&pb)
                         }
-                        OrderByOptions::Toughness => {
+                        OrderByOption::Toughness => {
                             let ta = sd_a
                                 .toughness
                                 .as_deref()
@@ -304,11 +304,11 @@ impl FilterCards for Vec<Card> {
                                 .unwrap_or(i32::MAX);
                             ta.cmp(&tb)
                         }
-                        OrderByOptions::Rarity => {
+                        OrderByOption::Rarity => {
                             sd_a.rarity.to_long_name().cmp(&sd_b.rarity.to_long_name())
                         }
-                        OrderByOptions::ReleasedAt => sd_a.released_at.cmp(&sd_b.released_at),
-                        OrderByOptions::PriceUsd => {
+                        OrderByOption::ReleasedAt => sd_a.released_at.cmp(&sd_b.released_at),
+                        OrderByOption::PriceUsd => {
                             let pa = sd_a
                                 .prices
                                 .usd
@@ -323,7 +323,7 @@ impl FilterCards for Vec<Card> {
                                 .unwrap_or(f64::MAX);
                             pa.partial_cmp(&pb).unwrap_or(std::cmp::Ordering::Equal)
                         }
-                        OrderByOptions::PriceEur => {
+                        OrderByOption::PriceEur => {
                             let pa = sd_a
                                 .prices
                                 .eur
@@ -338,7 +338,7 @@ impl FilterCards for Vec<Card> {
                                 .unwrap_or(f64::MAX);
                             pa.partial_cmp(&pb).unwrap_or(std::cmp::Ordering::Equal)
                         }
-                        OrderByOptions::PriceTix => {
+                        OrderByOption::PriceTix => {
                             let pa = sd_a
                                 .prices
                                 .tix
@@ -353,7 +353,7 @@ impl FilterCards for Vec<Card> {
                                 .unwrap_or(f64::MAX);
                             pa.partial_cmp(&pb).unwrap_or(std::cmp::Ordering::Equal)
                         }
-                        OrderByOptions::Random => std::cmp::Ordering::Equal,
+                        OrderByOption::Random => std::cmp::Ordering::Equal,
                     };
                     if ascending { ord } else { ord.reverse() }
                 });

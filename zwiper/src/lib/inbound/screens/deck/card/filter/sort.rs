@@ -2,7 +2,7 @@
 
 use dioxus::prelude::*;
 use zwipe::domain::card::models::search_card::card_filter::{
-    builder::CardFilterBuilder, order_by_options::OrderByOptions,
+    builder::CardFilterBuilder, order_by_option::OrderByOption,
 };
 
 /// Component for selecting card sort order and direction.
@@ -27,7 +27,7 @@ pub fn Sort() -> Element {
             }
 
             div { class: "flex flex-wrap gap-1 flex-center",
-                for option in OrderByOptions::all() {
+                for option in OrderByOption::all() {
                     div {
                         class: if filter_builder().order_by() == Some(option) {
                             "chip selected"

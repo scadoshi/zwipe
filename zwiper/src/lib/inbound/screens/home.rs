@@ -15,7 +15,7 @@ use std::time::Duration;
 use zwipe::domain::{
     auth::models::session::Session,
     card::models::search_card::card_filter::{
-        builder::CardFilterBuilder, order_by_options::OrderByOptions,
+        builder::CardFilterBuilder, order_by_option::OrderByOption,
     },
     logo,
 };
@@ -51,7 +51,7 @@ pub fn Home() -> Element {
         builder
             .unset_is_playable()
             .set_has_flavor_text(true)
-            .set_order_by(OrderByOptions::Random)
+            .set_order_by(OrderByOption::Random)
             .set_limit(1);
 
         let Ok(filter) = builder.build() else {
