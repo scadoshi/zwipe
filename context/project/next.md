@@ -6,7 +6,9 @@ Planned work after completing current tasks.
 
 ## Testing & Stability
 
-1. **Integration Tests** - Repository tests with real PostgreSQL, domain trait tests (FilterCards, GroupCards), frontend component tests
+1. **Integration Tests** - Repository tests with real PostgreSQL (longer-term — requires real DB infrastructure)
+   - Unit testing phase complete: filter_cards (24 tests), group_cards (15 tests), copy_max (9 tests), quantity, SwipeState (32 tests)
+   - Remaining gap: outbound SQLx repositories have no test coverage (integration tests only viable path)
 
 2. **Bug Fixes** - Layout shift after deck creation, iOS keyboard push issues (see Bugs section below)
 

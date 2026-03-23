@@ -23,6 +23,8 @@ Knowledge areas where you could teach others without hesitation.
 - **Pragmatic API Design**: Route functions over constants when it preserves readability without adding ceremony
 - **Domain Modeling Process**: Request types, error types, response types, and port definitions before implementation
 - **Newtype Pattern**: Type-safe wrappers (RefreshToken, AccessToken) with validation and domain-specific methods
+- **Deref over Getters**: Prefer `impl std::ops::Deref<Target=T>` on newtypes over bespoke `as_str()` / `value()` / `id()` getters. Deref coercion handles &*x, function arguments, and PartialEq automatically. Use `**x` at call sites to get the inner value (double-deref when the newtype itself is behind a reference). Call sites in serialization: `serializer.serialize_str(self)` (coerces via Deref) or `&*self` to get `&str`. Watch for `str::as_str()` unstable feature — if the compiler resolves `(*newtype).as_str()` to the unstable `str::as_str`, switch to `&*newtype` or `serializer.serialize_str(self)`.
+- **Deref in SQLx Bind**: `.bind(**request)` double-derefs a `&GetScryfallDataRequest` (newtype around Uuid) through two Deref layers to `Uuid`.
 - **Pragmatic Newtype Judgment**: Knowing when newtypes add value (validation, type safety, domain methods) vs unnecessary ceremony (Set names are just display strings)
 - **Modular File Organization**: Per-operation domain model files, error/models/helpers SQLx modules, separated HTTP handlers
 - **Ownership Validation Patterns**: Trait-based ownership checking (OwnsDeck) preventing unauthorized resource access
@@ -316,6 +318,10 @@ Knowledge areas where you could teach others without hesitation.
 - **Edge Case Testing**: Validation of error conditions and boundaries
 - **Environment Testing**: Understanding environment coupling vs testable design
 - **Newtype Testing**: Testing validation at correct levels
+- **Large Struct Fixtures**: When a type has no `Default` (e.g. `ScryfallData` with ~70 fields), enumerate all fields in a `make_card()` / `make_x()` test helper with sensible defaults. Isolate per-test overrides inline (`card.scryfall_data.type_line = Some(...)`).
+- **Builder Empty Detection Nuance**: `CardFilterBuilder::is_empty()` excludes "config" fields (`is_playable`, `digital`, `oversized`, `promo`, `content_warning`, `language`, `is_valid_commander`, `is_token`). For flag-only tests, add `with_name_contains("")` as a dummy criterion — `Some("")` is not `None` so the builder is non-empty, and empty string matches all card names.
+- **`ClientPoint` in Tests**: `dioxus::html::geometry::ClientPoint` is a type alias for `Point2D<f64, ClientSpace>` (euclid). Construct with `Point2D::new(x, y)` — not `ClientPoint::new`.
+- **Speed+Distance Test Helpers**: For gesture tests needing independent control of distance-from-start and instantaneous speed, build a `swiping_state(dx, dy, speed_px_per_ms)` helper that calculates a `previous_point` position such that `dist(prev→curr) / elapsed_ms = desired_speed`.
 
 ## 🌐 External API Integration & Data Processing (Production Ready)
 - **HTTP Client Setup**: reqwest with proper headers and error handling

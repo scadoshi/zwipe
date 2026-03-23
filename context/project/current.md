@@ -2,35 +2,34 @@
 
 Active development tasks and immediate focus areas.
 
-**Last Updated**: Completed GroupCards trait + Deck Cards View screen. Core deck management feature-complete.
+**Last Updated**: Completed Deref refactor across all newtypes + unit test coverage for zerver domain and zwiper SwipeState.
 
-**Current Focus**: Testing coverage, bug fixes, and polish. Main functionality is in place.
+**Current Focus**: Bug fixes, refactoring, and polish. Unit testing phase complete.
 
 **Recent Achievements**:
-- **GroupCards Trait**: Domain-layer extension trait on `Vec<Card>` partitioning cards into labelled groups
-  - Three grouping modes: CardType (8 buckets by type_line), Cmc (0–6+), Color (WUBRG + multicolor + colorless)
-  - Bucket-based O(n) classification with fixed-order labels, empty group filtering
-  - Same extension-trait-on-`Vec<Card>` pattern as `FilterCards`
-- **Deck Cards View Screen**: Grouped card list browser for deck contents
-  - `filter_by` → `group_by` in-memory data pipeline (no server round-trips after mount)
-  - Group-by chips (type / cmc / color), column headers, expandable card rows
-  - Commander fetched separately via get_deck_profile → get_card, deduplicated into card list
-  - Active filter warning toast on mount, per-screen scroll containers for mobile
-  - Full filter panel (8 accordion sections) shared with add/remove screens
-- **Deck Profile View Rework**: Name + copy rule side-by-side, commander image below with 42vh sizing
-- **Button Label Standardization**: Shortened labels across all deck screens (create, save, add, remove, view, delete)
-- **Filter Behavior Refinement**: Add screen requires filter (toast warning), remove/view screens allow empty filter
+- **Deref Refactor (zerver)**: All domain newtypes now implement `Deref` instead of bespoke getters (`as_str()`, `value()`, `id()`, `max()`, `quantity()`). Updated all call sites across zerver outbound layer and zwiper HTTP client (19 files).
+- **Unit Tests — zerver domain**: Full coverage on all pure domain logic:
+  - `filter_cards.rs` — 24 tests (text, CMC, color identity, combat stats, flags, rarity, set, sort, pagination)
+  - `group_cards.rs` — 15 tests (CardType, Cmc, Color grouping)
+  - `copy_max.rs` — 9 tests (implemented previously-stubbed `#[ignore]` tests)
+  - `quantity.rs` — tests for both `Quantity` and `UpdateQuantity` Deref impls
+- **Unit Tests — zwiper SwipeState**: 32 tests covering all pure math in `swipe/state.rs`:
+  - `distance_from_start_point`, `delta_from_start_point`, `distance_from_previous_point`
+  - `milliseconds_from_previous_point`, `speed`, `calculate_return_animation_seconds`
+  - `set_traversing_axis`, `set_latest_swipe`, `reset`
+- **GroupCards Trait**: Domain-layer extension trait on `Vec<Card>` with 3 grouping modes
+- **Deck Cards View Screen**: Grouped card list browser with in-memory filter → group pipeline
 
 ---
 
 ## Top 5 Priorities
 
-1. **Testing Coverage** - Integration tests for repository patterns, domain traits, and frontend components
+1. **Bug Fixes** - Layout shift after deck creation, iOS keyboard push issues
 
-2. **Bug Fixes** - Address layout shift after deck creation and iOS keyboard push issues
+2. **Generics Sweep** - Replace `&str`-only validators with `impl AsRef<str>` across domain entry points
 
-3. **CardFilter Enhancements** - Continue refining default filter to exclude non-playable cards
+3. **CardFilter Enhancements** - Refine default filter to exclude non-playable cards
 
-4. **Performance Optimization** - Review patterns for optimization opportunities
+4. **Polish & UX** - Tri-toggle labels, language filter refinement, minor UI improvements
 
-5. **Polish & UX** - Tri-toggle labels, language filter refinement, minor UI improvements
+5. **Integration Tests** - Repository tests with real PostgreSQL (longer-term)
