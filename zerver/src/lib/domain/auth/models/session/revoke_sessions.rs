@@ -102,3 +102,39 @@ impl From<Uuid> for RevokeSessions {
         Self::new(value)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::str::FromStr;
+    use uuid::Uuid;
+
+    const VALID_UUID: &str = "550e8400-e29b-41d4-a716-446655440000";
+
+    #[test]
+    fn test_revoke_sessions_new_stores_user_id() {
+        let user_id = Uuid::new_v4();
+        let req = RevokeSessions::new(user_id);
+        assert_eq!(req.user_id, user_id);
+    }
+
+    #[test]
+    fn test_revoke_sessions_from_uuid() {
+        let user_id = Uuid::new_v4();
+        let req = RevokeSessions::from(user_id);
+        assert_eq!(req.user_id, user_id);
+    }
+
+    #[test]
+    fn test_revoke_sessions_from_str_succeeds_with_valid_uuid() {
+        let result = RevokeSessions::from_str(VALID_UUID);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().user_id.to_string(), VALID_UUID);
+    }
+
+    #[test]
+    fn test_revoke_sessions_from_str_rejects_invalid_uuid() {
+        let result = RevokeSessions::from_str("not-a-uuid");
+        assert!(matches!(result, Err(InvalidRevokeSessions::UserId(_))));
+    }
+}

@@ -858,6 +858,28 @@ mod tests {
         }
     }
 
+    // ==============================
+    //  `AccessToken::is_expired` tests
+    // ==============================
+
+    #[test]
+    fn test_access_token_is_not_expired_when_expiry_is_in_future() {
+        let token = AccessToken {
+            value: Jwt::from_str("header.payload.signature").unwrap(),
+            expires_at: Utc::now().naive_utc() + chrono::Duration::hours(24),
+        };
+        assert!(!token.is_expired());
+    }
+
+    #[test]
+    fn test_access_token_is_expired_when_expiry_is_in_past() {
+        let token = AccessToken {
+            value: Jwt::from_str("header.payload.signature").unwrap(),
+            expires_at: Utc::now().naive_utc() - chrono::Duration::seconds(1),
+        };
+        assert!(token.is_expired());
+    }
+
     #[test]
     fn test_complete_authentication_flow_round_trip() {
         // Simulate a complete auth flow: generate token, validate it, extract claims

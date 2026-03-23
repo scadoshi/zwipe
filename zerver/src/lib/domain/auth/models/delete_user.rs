@@ -114,3 +114,44 @@ impl DeleteUser {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use uuid::Uuid;
+
+    #[test]
+    fn test_delete_user_new_succeeds() {
+        let user_id = Uuid::new_v4();
+        let result = DeleteUser::new(user_id, "AnyPassword!");
+        assert!(result.is_ok());
+        let req = result.unwrap();
+        assert_eq!(req.user_id, user_id);
+        assert_eq!(req.password, "AnyPassword!");
+    }
+
+    #[test]
+    fn test_delete_user_new_trims_password_whitespace() {
+        let user_id = Uuid::new_v4();
+        let result = DeleteUser::new(user_id, "  AnyPassword!  ");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().password, "AnyPassword!");
+    }
+
+    #[test]
+    fn test_delete_user_new_accepts_weak_password() {
+        // DeleteUser intentionally does NOT validate password strength
+        let user_id = Uuid::new_v4();
+        let result = DeleteUser::new(user_id, "weak");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_delete_user_new_accepts_empty_password() {
+        // Empty password is accepted — verification happens at service layer
+        let user_id = Uuid::new_v4();
+        let result = DeleteUser::new(user_id, "");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().password, "");
+    }
+}

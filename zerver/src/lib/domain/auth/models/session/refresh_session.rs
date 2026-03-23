@@ -202,3 +202,61 @@ impl From<&Session> for RefreshSession {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::auth::models::access_token::{AccessToken, Jwt};
+    use crate::domain::auth::models::refresh_token::RefreshToken;
+    use crate::domain::auth::models::session::Session;
+    use crate::domain::user::models::{username::Username, User};
+    use chrono::{Duration, Utc};
+    use email_address::EmailAddress;
+    use std::str::FromStr;
+    use uuid::Uuid;
+
+    const VALID_UUID: &str = "550e8400-e29b-41d4-a716-446655440000";
+
+    fn make_session() -> Session {
+        let user_id = Uuid::try_parse(VALID_UUID).unwrap();
+        let user = User::new(
+            user_id,
+            Username::new("alice").unwrap(),
+            EmailAddress::from_str("alice@example.com").unwrap(),
+        );
+        Session {
+            user,
+            access_token: AccessToken {
+                value: Jwt::from_str("header.payload.signature").unwrap(),
+                expires_at: Utc::now().naive_utc() + Duration::hours(24),
+            },
+            refresh_token: RefreshToken {
+                value: "token-value-from-previous-session".to_string(),
+                expires_at: Utc::now().naive_utc() + Duration::days(14),
+            },
+        }
+    }
+
+    #[test]
+    fn test_refresh_session_new_succeeds_with_valid_uuid() {
+        let result = RefreshSession::new(VALID_UUID, "some-token-value");
+        assert!(result.is_ok());
+        let req = result.unwrap();
+        assert_eq!(req.user_id.to_string(), VALID_UUID);
+        assert_eq!(req.refresh_token, "some-token-value");
+    }
+
+    #[test]
+    fn test_refresh_session_new_rejects_invalid_uuid() {
+        let result = RefreshSession::new("not-a-uuid", "some-token");
+        assert!(matches!(result, Err(InvalidRefreshSession::UserId(_))));
+    }
+
+    #[test]
+    fn test_refresh_session_from_session_extracts_user_id_and_token() {
+        let session = make_session();
+        let req = RefreshSession::from(&session);
+        assert_eq!(req.user_id, session.user.id);
+        assert_eq!(req.refresh_token, session.refresh_token.value);
+    }
+}

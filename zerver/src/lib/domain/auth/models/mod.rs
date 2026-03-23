@@ -92,3 +92,37 @@ impl From<UserWithPasswordHash> for User {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #[cfg(feature = "zerver")]
+    use super::*;
+
+    #[cfg(feature = "zerver")]
+    #[test]
+    fn test_user_from_user_with_password_hash_drops_password() {
+        use crate::domain::auth::models::password::{HashedPassword, Password};
+        use crate::domain::user::models::username::Username;
+        use email_address::EmailAddress;
+        use std::str::FromStr;
+        use uuid::Uuid;
+
+        let id = Uuid::new_v4();
+        let username = Username::new("alice").unwrap();
+        let email = EmailAddress::from_str("alice@example.com").unwrap();
+        let password = Password::new("SecurePass123!").unwrap();
+        let password_hash = HashedPassword::generate(password).unwrap();
+
+        let with_hash = UserWithPasswordHash {
+            id,
+            username: username.clone(),
+            email: email.clone(),
+            password_hash,
+        };
+
+        let user: User = with_hash.into();
+        assert_eq!(user.id, id);
+        assert_eq!(user.username, username);
+        assert_eq!(user.email, email);
+    }
+}

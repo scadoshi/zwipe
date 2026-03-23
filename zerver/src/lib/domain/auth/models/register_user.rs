@@ -314,3 +314,75 @@ impl RegisterUser {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_raw_register_user_new_succeeds_with_valid_inputs() {
+        let result = RawRegisterUser::new("alice", "alice@example.com", "SecurePass123!");
+        assert!(result.is_ok());
+        let req = result.unwrap();
+        assert_eq!(req.username.to_string(), "alice");
+        assert_eq!(req.email.to_string(), "alice@example.com");
+    }
+
+    #[test]
+    fn test_raw_register_user_new_rejects_short_username() {
+        let result = RawRegisterUser::new("ab", "alice@example.com", "SecurePass123!");
+        assert!(matches!(result, Err(InvalidRawRegisterUser::Username(_))));
+    }
+
+    #[test]
+    fn test_raw_register_user_new_rejects_invalid_email() {
+        let result = RawRegisterUser::new("alice", "not-an-email", "SecurePass123!");
+        assert!(matches!(result, Err(InvalidRawRegisterUser::Email(_))));
+    }
+
+    #[test]
+    fn test_raw_register_user_new_rejects_invalid_password() {
+        let result = RawRegisterUser::new("alice", "alice@example.com", "short");
+        assert!(matches!(result, Err(InvalidRawRegisterUser::Password(_))));
+    }
+
+    #[cfg(feature = "zerver")]
+    #[test]
+    fn test_register_user_new_succeeds_with_valid_inputs() {
+        let result = RegisterUser::new("alice", "alice@example.com", "SecurePass123!");
+        assert!(result.is_ok());
+        let req = result.unwrap();
+        assert_eq!(req.username.to_string(), "alice");
+        assert_eq!(req.email.to_string(), "alice@example.com");
+    }
+
+    #[cfg(feature = "zerver")]
+    #[test]
+    fn test_register_user_new_stores_hashed_password() {
+        let req = RegisterUser::new("alice", "alice@example.com", "SecurePass123!").unwrap();
+        // Hash must not contain plaintext
+        assert!(!req.password_hash.to_string().contains("SecurePass123!"));
+        assert!(req.password_hash.to_string().starts_with("$argon2"));
+    }
+
+    #[cfg(feature = "zerver")]
+    #[test]
+    fn test_register_user_new_rejects_short_username() {
+        let result = RegisterUser::new("ab", "alice@example.com", "SecurePass123!");
+        assert!(matches!(result, Err(InvalidRegisterUser::Username(_))));
+    }
+
+    #[cfg(feature = "zerver")]
+    #[test]
+    fn test_register_user_new_rejects_invalid_email() {
+        let result = RegisterUser::new("alice", "not-an-email", "SecurePass123!");
+        assert!(matches!(result, Err(InvalidRegisterUser::Email(_))));
+    }
+
+    #[cfg(feature = "zerver")]
+    #[test]
+    fn test_register_user_new_rejects_invalid_password() {
+        let result = RegisterUser::new("alice", "alice@example.com", "short");
+        assert!(matches!(result, Err(InvalidRegisterUser::Password(_))));
+    }
+}

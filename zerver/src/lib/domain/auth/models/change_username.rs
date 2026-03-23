@@ -125,3 +125,33 @@ impl ChangeUsername {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use uuid::Uuid;
+
+    #[test]
+    fn test_change_username_new_succeeds_with_valid_inputs() {
+        let user_id = Uuid::new_v4();
+        let result = ChangeUsername::new(user_id, "newusername", "SecurePass123!");
+        assert!(result.is_ok());
+        let req = result.unwrap();
+        assert_eq!(req.user_id, user_id);
+        assert_eq!(req.new_username.to_string(), "newusername");
+    }
+
+    #[test]
+    fn test_change_username_new_rejects_too_short_username() {
+        let user_id = Uuid::new_v4();
+        let result = ChangeUsername::new(user_id, "ab", "SecurePass123!");
+        assert!(matches!(result, Err(InvalidChangeUsername::Username(_))));
+    }
+
+    #[test]
+    fn test_change_username_new_rejects_invalid_password() {
+        let user_id = Uuid::new_v4();
+        let result = ChangeUsername::new(user_id, "newusername", "short");
+        assert!(matches!(result, Err(InvalidChangeUsername::Password(_))));
+    }
+}

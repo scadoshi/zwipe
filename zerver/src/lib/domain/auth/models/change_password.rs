@@ -153,3 +153,50 @@ impl ChangePassword {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #[cfg(feature = "zerver")]
+    use super::*;
+    #[cfg(feature = "zerver")]
+    use uuid::Uuid;
+
+    #[cfg(feature = "zerver")]
+    #[test]
+    fn test_change_password_new_succeeds_with_valid_inputs() {
+        let user_id = Uuid::new_v4();
+        let result = ChangePassword::new(user_id, "OldPass!", "NewSecure123!");
+        assert!(result.is_ok());
+        let req = result.unwrap();
+        assert_eq!(req.user_id, user_id);
+        assert_eq!(req.current_password, "OldPass!");
+    }
+
+    #[cfg(feature = "zerver")]
+    #[test]
+    fn test_change_password_new_rejects_invalid_new_password() {
+        let user_id = Uuid::new_v4();
+        let result = ChangePassword::new(user_id, "OldPass!", "short");
+        assert!(matches!(result, Err(InvalidChangePassword::Password(_))));
+    }
+
+    #[cfg(feature = "zerver")]
+    #[test]
+    fn test_change_password_new_accepts_any_current_password() {
+        // Current password is NOT validated against security policy
+        let user_id = Uuid::new_v4();
+        let result = ChangePassword::new(user_id, "w", "NewSecure123!");
+        assert!(result.is_ok());
+    }
+
+    #[cfg(feature = "zerver")]
+    #[test]
+    fn test_change_password_new_stores_hashed_new_password() {
+        let user_id = Uuid::new_v4();
+        let req = ChangePassword::new(user_id, "OldPass!", "NewSecure123!").unwrap();
+        // Hash must not contain plaintext
+        assert!(!req.new_password_hash.to_string().contains("NewSecure123!"));
+        // Hash should be Argon2 PHC format
+        assert!(req.new_password_hash.to_string().starts_with("$argon2"));
+    }
+}

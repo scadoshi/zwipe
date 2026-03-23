@@ -120,3 +120,33 @@ impl ChangeEmail {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use uuid::Uuid;
+
+    #[test]
+    fn test_change_email_new_succeeds_with_valid_inputs() {
+        let user_id = Uuid::new_v4();
+        let result = ChangeEmail::new(user_id, "newemail@example.com", "SecurePass123!");
+        assert!(result.is_ok());
+        let req = result.unwrap();
+        assert_eq!(req.user_id, user_id);
+        assert_eq!(req.email.to_string(), "newemail@example.com");
+    }
+
+    #[test]
+    fn test_change_email_new_rejects_invalid_email() {
+        let user_id = Uuid::new_v4();
+        let result = ChangeEmail::new(user_id, "not-an-email", "SecurePass123!");
+        assert!(matches!(result, Err(InvalidChangeEmail::Email(_))));
+    }
+
+    #[test]
+    fn test_change_email_new_rejects_invalid_password() {
+        let user_id = Uuid::new_v4();
+        let result = ChangeEmail::new(user_id, "newemail@example.com", "short");
+        assert!(matches!(result, Err(InvalidChangeEmail::Password(_))));
+    }
+}
