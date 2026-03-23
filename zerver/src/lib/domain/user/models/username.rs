@@ -112,8 +112,8 @@ impl Username {
     /// let username = Username::new("alice")?;
     /// println!("Username: {}", username);
     /// ```
-    pub fn new(raw: &str) -> Result<Self, InvalidUsername> {
-        let trimmed = raw.trim();
+    pub fn new(raw: impl AsRef<str>) -> Result<Self, InvalidUsername> {
+        let trimmed = raw.as_ref().trim();
 
         if trimmed.contains_bad_word() {
             return Err(InvalidUsername::BadWord);
@@ -161,7 +161,7 @@ impl<'de> Deserialize<'de> for Username {
         D: serde::Deserializer<'de>,
     {
         let raw = String::deserialize(deserializer)?;
-        Username::new(raw.as_str()).map_err(serde::de::Error::custom)
+        Username::new(raw).map_err(serde::de::Error::custom)
     }
 }
 

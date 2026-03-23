@@ -89,7 +89,7 @@ impl CreateDeckProfile {
     /// - Name doesn't meet requirements
     /// - Copy limit is not 1 or 4
     pub fn new(
-        name: &str,
+        name: impl Into<String>,
         commander_id: Option<Uuid>,
         copy_max: Option<i32>,
         user_id: Uuid,

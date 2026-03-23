@@ -134,15 +134,15 @@ impl ChangePassword {
     /// ```
     pub fn new(
         user_id: Uuid,
-        current_password: &str,
-        new_password: &str,
+        current_password: impl AsRef<str>,
+        new_password: impl AsRef<str>,
     ) -> Result<Self, InvalidChangePassword> {
         use crate::domain::auth::models::password::Password;
 
         let new_password = Password::new(new_password).map_err(InvalidChangePassword::Password)?;
         // No validation of current password - allows users with weak passwords to change
         // to stronger ones without being locked out
-        let current_password = current_password.to_string();
+        let current_password = current_password.as_ref().to_string();
         let new_password_hash = HashedPassword::generate(new_password)
             .map_err(|e| InvalidChangePassword::FailedPasswordHash(e.into()))?;
 

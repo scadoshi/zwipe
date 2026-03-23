@@ -29,7 +29,7 @@ pub fn ChangeUsername() -> Element {
     let mut new_username = use_signal(String::new);
     let mut username_error: Signal<Option<String>> = use_signal(|| None);
     let mut validate_username = move || {
-        if let Err(e) = Username::new(&new_username()) {
+        if let Err(e) = Username::new(new_username()) {
             username_error.set(Some(e.to_string()));
         } else {
             username_error.set(None)
@@ -39,7 +39,7 @@ pub fn ChangeUsername() -> Element {
     let mut password = use_signal(String::new);
     let mut password_error: Signal<Option<String>> = use_signal(|| None);
     let mut validate_password = move || {
-        if Password::new(&password()).is_err() {
+        if Password::new(password()).is_err() {
             password_error.set(Some("invalid password".to_string()));
         } else {
             password_error.set(None);

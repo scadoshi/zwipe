@@ -43,7 +43,7 @@ pub fn Register() -> Element {
     let mut submission_error: Signal<Option<String>> = use_signal(|| None);
 
     let mut validate_username = move || {
-        if let Err(e) = Username::new(&username()) {
+        if let Err(e) = Username::new(username()) {
             username_error.set(Some(e.to_string()));
         } else {
             username_error.set(None)
@@ -59,7 +59,7 @@ pub fn Register() -> Element {
     };
 
     let mut validate_password = move || {
-        if let Err(e) = Password::new(&password()) {
+        if let Err(e) = Password::new(password()) {
             password_error.set(Some(e.to_string()))
         } else {
             password_error.set(None);

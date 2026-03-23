@@ -37,7 +37,7 @@ pub fn ChangeEmail() -> Element {
     let mut password = use_signal(String::new);
     let mut password_error: Signal<Option<String>> = use_signal(|| None);
     let mut validate_password = move || {
-        if Password::new(&password()).is_err() {
+        if Password::new(password()).is_err() {
             password_error.set(Some("invalid password".to_string()));
         } else {
             password_error.set(None);

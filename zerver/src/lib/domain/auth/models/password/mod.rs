@@ -214,7 +214,8 @@ impl Password {
     /// ```rust,ignore
     /// let password = Password::new("MySecurePass123!")?;
     /// ```
-    pub fn new(raw: &str) -> Result<Self, InvalidPassword> {
+    pub fn new(raw: impl AsRef<str>) -> Result<Self, InvalidPassword> {
+        let raw = raw.as_ref();
         raw.meets_all_requirements()?;
         Ok(Password(raw.to_string()))
     }
