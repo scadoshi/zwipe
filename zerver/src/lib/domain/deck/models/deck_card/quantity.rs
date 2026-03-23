@@ -101,3 +101,89 @@ impl UpdateQuantity {
         self.0
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // --- Quantity ---
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_quantity_new_accepts_1() {
+        // minimum valid value
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_quantity_new_accepts_large_value() {
+        // 99 → Ok
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_quantity_new_rejects_0() {
+        // 0 → InvalidQuantity
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_quantity_new_rejects_negative() {
+        // -1 → InvalidQuantity
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_quantity_value_returns_inner() {
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_quantity_serialization_round_trip() {
+        todo!()
+    }
+
+    // --- UpdateQuantity ---
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_update_quantity_new_accepts_positive() {
+        // +2 → Ok (add copies)
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_update_quantity_new_accepts_negative() {
+        // -1 → Ok (remove copies)
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_update_quantity_new_rejects_0() {
+        // 0 → InvalidUpdateQuanity (would be a no-op)
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_update_quantity_value_returns_inner() {
+        todo!()
+    }
+}

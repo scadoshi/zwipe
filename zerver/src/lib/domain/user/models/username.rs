@@ -168,3 +168,83 @@ impl<'de> Deserialize<'de> for Username {
         Username::new(raw.as_str()).map_err(serde::de::Error::custom)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_username_new_accepts_valid_username() {
+        assert!(matches!(Username::new("abcd"), Ok(Username(_))));
+    }
+
+    #[test]
+    fn test_username_new_rejects_too_short() {
+        assert!(matches!(
+            Username::new("ab"),
+            Err(InvalidUsername::TooShort)
+        ));
+    }
+
+    #[test]
+    fn test_username_new_accepts_minimum_length() {
+        assert!(matches!(Username::new("abcd"), Ok(Username(_))));
+    }
+
+    #[test]
+    fn test_username_new_rejects_too_long() {
+        assert!(matches!(
+            Username::new("abcdefghijklmnopqrstu"),
+            Err(InvalidUsername::TooLong)
+        ));
+    }
+
+    #[test]
+    fn test_username_new_accepts_maximum_length() {
+        assert!(matches!(
+            Username::new("abcdefghijklmnopqrst"),
+            Ok(Username(_))
+        ));
+    }
+
+    #[test]
+    fn test_username_new_rejects_internal_whitespace() {
+        assert!(matches!(
+            Username::new("abc 123"),
+            Err(InvalidUsername::Whitespace)
+        ));
+    }
+
+    #[test]
+    fn test_username_new_rejects_bad_word() {
+        assert!(matches!(
+            Username::new("fuck"),
+            Err(InvalidUsername::BadWord)
+        ));
+    }
+
+    #[test]
+    fn test_username_new_trims_surrounding_whitespace() {
+        assert!(matches!(Username::new("   abc    "), Ok(Username(_))));
+    }
+
+    #[test]
+    fn test_username_as_str_returns_trimmed_value() {
+        let username = Username::new("  abc  ").unwrap();
+        assert_eq!(username.as_str(), "abc");
+    }
+
+    #[test]
+    fn test_username_display_formats_correctly() {
+        let username = Username::new("  abc  ").unwrap();
+        assert_eq!(username.to_string(), "abc");
+    }
+
+    #[test]
+    fn test_username_serialization_round_trip() {
+        let username = Username::new("abc").unwrap();
+        let json = serde_json::to_string(&username).unwrap();
+        let deserialized: Username = serde_json::from_str(&json).unwrap();
+        assert_eq!(username, deserialized);
+    }
+}

@@ -82,3 +82,78 @@ impl Serialize for DeckName {
         serializer.serialize_str(self.as_str())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_deck_name_new_accepts_valid_name() {
+        // "Sultai Control" → Ok
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_deck_name_new_accepts_single_char() {
+        // "A" → Ok (minimum length is 1)
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_deck_name_new_accepts_exactly_64_chars() {
+        // boundary: 64-char name → Ok
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_deck_name_new_rejects_empty() {
+        // "" → TooShort
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_deck_name_new_rejects_65_chars() {
+        // 65-char name → TooLong
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_deck_name_new_rejects_bad_word() {
+        // a banned word as the deck name → BadWord
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_deck_name_new_allows_spaces() {
+        // "My Deck" → Ok (spaces are allowed in deck names, unlike usernames)
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_deck_name_as_str_returns_inner_value() {
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_deck_name_display_formats_correctly() {
+        todo!()
+    }
+}

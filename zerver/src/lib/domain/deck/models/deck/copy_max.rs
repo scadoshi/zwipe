@@ -79,3 +79,75 @@ impl<'de> Deserialize<'de> for CopyMax {
         Ok(card_copy_max)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_copy_max_new_accepts_1() {
+        // singleton/Commander format → Ok
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_copy_max_new_accepts_4() {
+        // standard format → Ok
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_copy_max_new_rejects_0() {
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_copy_max_new_rejects_2() {
+        // in-between value → Err
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_copy_max_new_rejects_5() {
+        // above-range → Err
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_copy_max_singleton_returns_1() {
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_copy_max_standard_returns_4() {
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_copy_max_max_returns_inner_value() {
+        todo!()
+    }
+
+    #[allow(dead_code)]
+    #[ignore]
+    #[test]
+    fn test_copy_max_serialization_round_trip() {
+        todo!()
+    }
+}
