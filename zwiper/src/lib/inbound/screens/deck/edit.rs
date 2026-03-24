@@ -221,12 +221,12 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
 
     rsx! {
         Bouncer {
-            div { class: "page-header",
-                h2 { "edit deck" }
-            }
+            div { class: "screen",
+                div { class: "page-header",
+                    h2 { "edit deck" }
+                }
 
-            div { class: "sticky top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
-                style: "width: 100vw; justify-content: center; padding-top: 4rem;",
+                div { class: "screen-content centered",
                 div { class : "container-sm",
                     match &*original_deck_profile_resource.read() {
                         Some(Ok(_profile)) => rsx! {
@@ -350,6 +350,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                             if is_saving() { "saving..." } else { "save changes" }
                     }
                 }
+            }
             }
         }
     }

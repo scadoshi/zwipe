@@ -3,7 +3,7 @@
     position: fixed;
     z-index: 9999;
     right: 1rem;
-    bottom: 6rem;
+    bottom: 7rem;
     max-width: 18rem;
 }
 
@@ -27,11 +27,21 @@
 }
 
 /* Newer toasts (first in DOM with column-reverse) get higher z-index */
-.toast-item:first-child { z-index: 5; }
-.toast-item:nth-child(2) { z-index: 4; }
-.toast-item:nth-child(3) { z-index: 3; }
-.toast-item:nth-child(4) { z-index: 2; }
-.toast-item:nth-child(5) { z-index: 1; }
+.toast-item:first-child {
+    z-index: 5;
+}
+.toast-item:nth-child(2) {
+    z-index: 4;
+}
+.toast-item:nth-child(3) {
+    z-index: 3;
+}
+.toast-item:nth-child(4) {
+    z-index: 2;
+}
+.toast-item:nth-child(5) {
+    z-index: 1;
+}
 
 /* Toast */
 .toast {
@@ -48,7 +58,9 @@
     font-family: "Cascadia Code", monospace;
     font-weight: 300;
     box-shadow: var(--shadow-sm);
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    transition:
+        opacity 0.2s ease,
+        transform 0.2s ease;
 }
 
 .toast[data-top] {
@@ -122,3 +134,4 @@
 .toast-close:hover {
     opacity: 1;
 }
+

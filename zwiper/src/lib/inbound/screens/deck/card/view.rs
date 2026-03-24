@@ -80,13 +80,15 @@ pub fn View(deck_id: Uuid) -> Element {
 
             // Fetch commander separately and prepend if not already in deck
             if let Ok(profile) = client().get_deck_profile(deck_id, &session).await
-                && let Some(commander_id) = profile.commander_id {
-                    let already_in_deck = cards.iter().any(|c| c.scryfall_data.id == commander_id);
-                    if !already_in_deck
-                        && let Ok(commander) = client().get_card(commander_id, &session).await {
-                            cards.insert(0, commander);
-                        }
+                && let Some(commander_id) = profile.commander_id
+            {
+                let already_in_deck = cards.iter().any(|c| c.scryfall_data.id == commander_id);
+                if !already_in_deck
+                    && let Ok(commander) = client().get_card(commander_id, &session).await
+                {
+                    cards.insert(0, commander);
                 }
+            }
 
             deck_cards.set(cards);
             deck_loaded.set(true);
@@ -139,12 +141,12 @@ pub fn View(deck_id: Uuid) -> Element {
 
     rsx! {
         Bouncer {
-            div { class: "page-header",
-                h2 { "deck cards" }
-            }
+            div { class: "screen",
+                div { class: "page-header",
+                    h2 { "deck cards" }
+                }
 
-            div { class: "top-0 left-0 flex flex-col items-center overflow-y-auto",
-                style: "width: 100vw; height: 100vh; padding-top: 6rem; padding-bottom: 6rem;",
+                div { class: "screen-content",
 
                 div { style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
                     // Group-by chips
@@ -206,11 +208,11 @@ pub fn View(deck_id: Uuid) -> Element {
                                         .join("");
 
                                     // Expanded details
-                                    let oracle_text = sd.oracle_text.clone().unwrap_or_default();
-                                    let type_line = sd.type_line.clone().unwrap_or_default();
-                                    let mana_cost = sd.mana_cost.clone().unwrap_or_default();
+                                    let oracle_text = sd.oracle_text.clone().unwrap_or_default().to_lowercase();
+                                    let type_line = sd.type_line.clone().unwrap_or_default().to_lowercase();
+                                    let mana_cost = sd.mana_cost.clone().unwrap_or_default().to_lowercase();
                                     let rarity_name = sd.rarity.to_long_name().to_lowercase();
-                                    let set_name = sd.set_name.clone();
+                                    let set_name = sd.set_name.clone().to_lowercase();
 
                                     rsx! {
                                         div {
@@ -277,17 +279,6 @@ pub fn View(deck_id: Uuid) -> Element {
                     class: "util-btn",
                     onclick: move |_| filters_overlay_open.set(true),
                     "filters"
-                }
-                button {
-                    class: "util-btn",
-                    onclick: move |_| {
-                        filter_reset_counter.set(filter_reset_counter() + 1);
-                        toast.info(
-                            "refreshed".to_string(),
-                            ToastOptions::default().duration(Duration::from_millis(1500)),
-                        );
-                    },
-                    "refresh"
                 }
             }
 
@@ -361,6 +352,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         "clear"
                     }
                 }
+            }
             }
         }
     }
