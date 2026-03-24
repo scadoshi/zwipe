@@ -51,16 +51,7 @@ Planned work after completing current tasks.
    - Respect CopyMax enforcement (see above)
    - Optimistic update in local state; revert on error
 
-4. **Deck Metrics View** - Aggregate stats for the current deck, useful for evaluating deck balance.
-
-   **Scope:**
-   - **Total card count** — sum of all quantities
-   - **Type distribution** — creature / instant / sorcery / land / etc. counts (reuse `GroupByOption::CardType` classification)
-   - **Mana curve** — CMC histogram (0 / 1 / 2 / 3 / 4 / 5 / 6+), reuse `GroupByOption::Cmc` classification
-   - **Color distribution** — pie or bar breakdown by color identity
-   - All computed in-memory from `Vec<Card>` already loaded in `ViewDeckCard` — no extra server round-trips
-
-   **Implementation note:** The `GroupCards` trait already partitions by type and CMC — metrics are just `.len()` calls on those groups.
+4. ~~**Deck Metrics View**~~ — **DONE** (2026-03-23). `DeckMetrics` in deck domain, `ComputeMetrics` trait generic over `IntoIterator<Item = &Card>`. Stats (cards, avg cmc, lands), ASCII mana curve, type/color distributions rendered on ViewDeck screen.
 
 5. **Mana Pip Balance** - Show pips produced vs. pips consumed per color so players can balance their mana base.
 
