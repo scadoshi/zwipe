@@ -134,7 +134,7 @@ impl From<sqlx::Error> for GetDeckCardError {
 impl From<sqlx::Error> for UpdateDeckCardError {
     fn from(value: sqlx::Error) -> Self {
         match value {
-            e if e.is_check_constraint_violation() => Self::InvalidResultingQuantity,
+            e if e.is_check_constraint_violation() => Self::QuantityUnderflow,
             sqlx::Error::RowNotFound => Self::NotFound,
             e => Self::Database(e.into()),
         }

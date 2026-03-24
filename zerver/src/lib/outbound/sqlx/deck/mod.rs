@@ -19,11 +19,11 @@ use crate::{
                 update_deck_profile::{UpdateDeckProfile, UpdateDeckProfileError},
             },
             deck_card::{
+                DeckCard,
                 create_deck_card::{CreateDeckCard, CreateDeckCardError},
                 delete_deck_card::{DeleteDeckCard, DeleteDeckCardError},
                 get_deck_card::GetDeckCardError,
                 update_deck_card::{UpdateDeckCard, UpdateDeckCardError},
-                DeckCard,
             },
         },
         ports::DeckRepository,
@@ -32,12 +32,12 @@ use crate::{
         deck::{
             error::{IntoDeckCardError, IntoDeckProfileError},
             helper::OwnsDeck,
-            models::{DatabaseDeckCard, DatabaseDeckProfile},
+            models::{DatabaseDeckCard, DatabaseDeckProfile, UpdateDeckCardGuard},
         },
         postgres::Postgres,
     },
 };
-use sqlx::{query, query_as, QueryBuilder};
+use sqlx::{QueryBuilder, query, query_as};
 
 impl DeckRepository for Postgres {
     // ========
@@ -201,8 +201,9 @@ impl DeckRepository for Postgres {
 
     /// Applies a **relative delta** to card quantity (`quantity + $1`).
     ///
+    /// Runs a guard SELECT to enforce copy-max limits before the update.
     /// The database enforces a check constraint on `quantity`, so negative deltas
-    /// that would result in an invalid quantity surface as `InvalidResultingQuantity`.
+    /// that would result in an invalid quantity surface as `QuantityUnderflow`.
     async fn update_deck_card(
         &self,
         request: &UpdateDeckCard,
@@ -215,6 +216,30 @@ impl DeckRepository for Postgres {
             return Err(UpdateDeckCardError::Forbidden);
         }
         let mut tx = self.pool.begin().await?;
+        if let Some(guard) = query_as!(
+            UpdateDeckCardGuard,
+            "SELECT dc.quantity, d.copy_max, sd.type_line \
+             FROM deck_cards dc \
+             JOIN decks d ON d.id = dc.deck_id \
+             JOIN scryfall_data sd ON sd.id = dc.scryfall_data_id \
+             WHERE dc.deck_id = $1 AND dc.scryfall_data_id = $2",
+            request.deck_id,
+            request.scryfall_data_id
+        )
+        .fetch_optional(&mut *tx)
+        .await?
+            && let Some(copy_max) = guard.copy_max
+        {
+            let is_basic_land = guard
+                .type_line
+                .as_deref()
+                .map(|tl| tl.to_lowercase().contains("basic land"))
+                .unwrap_or(false);
+            let resulting = guard.quantity + *request.update_quantity;
+            if !is_basic_land && resulting > copy_max {
+                return Err(UpdateDeckCardError::ExceedsCopyMax);
+            }
+        }
         let database_deck_card = query_as!(
             DatabaseDeckCard,
             "UPDATE deck_cards SET quantity = quantity + $1 WHERE deck_id = $2 AND scryfall_data_id = $3 RETURNING deck_id, scryfall_data_id, quantity",
