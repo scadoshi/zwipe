@@ -10,7 +10,7 @@ Planned work after completing current tasks.
    - Unit testing phase complete: filter_cards (24 tests), group_cards (15 tests), copy_max (9 tests), quantity, SwipeState (32 tests)
    - Remaining gap: outbound SQLx repositories have no test coverage (integration tests only viable path)
 
-2. **Bug Fixes** - Layout shift after deck creation, iOS keyboard push issues (see Bugs section below)
+2. **Bug Fixes** - ~~Layout shift after deck creation~~, ~~iOS keyboard push issues~~ (fixed via unified `.screen` layout — see Bugs section for details)
 
 ---
 
@@ -52,6 +52,17 @@ Planned work after completing current tasks.
    - All computed in-memory from `Vec<Card>` already loaded in `ViewDeckCard` — no extra server round-trips
 
    **Implementation note:** The `GroupCards` trait already partitions by type and CMC — metrics are just `.len()` calls on those groups.
+
+5. **Deck Profile Enhancements (ViewDeck screen)** - Additional deck metadata fields for future.
+
+   **Planned fields:**
+   - **Card count** — display total cards in deck on ViewDeck screen
+   - **Deck description** — free-text field the user can set (new DB column on `deck_profiles`)
+   - **Tags** — user-defined labels for organizing/categorizing decks (e.g., "aggro", "control", "jank")
+
+   **Card count approach:** Don't fetch all cards just to count them. Add a lightweight endpoint (or include count in the `DeckProfile` response) backed by `SELECT COUNT(*)`. ViewDeck already fetches the profile — piggyback the count there.
+
+   **Note:** Commander image was removed from ViewDeck to keep the screen simple and leave room for these future stats. ViewDeck now mirrors the Profile screen layout (label/value rows in `container-sm`).
 
 ### Card Intelligence
 
@@ -134,70 +145,14 @@ Planned work after completing current tasks.
 
 ## Bugs
 
-1. **Layout Shift After Deck Creation** - Content shifted up ~5px (sometimes down) after saving new deck, persists across navigation
+1. ~~**Layout Shift After Deck Creation**~~ — **FIXED** (2026-03-23)
 
-   **Reproduction steps:**
-   1. Navigate to Deck List screen
-   2. Click "create deck"
-   3. Fill out deck information (name, commander, copy max)
-   4. Click "save deck"
-   5. **BUG:** ViewDeck screen renders with content shifted up ~5px (occasionally down)
-   6. Click "back" to return to Deck List
-   7. **BUG PERSISTS:** Decks clip into page header, appears one deck is missing
-   8. Click "back" to Home, then forward to Deck List
-   9. **BUG RESOLVED:** Layout returns to normal
+   **Root cause:** 14 screens used 5 different layout patterns (`position: sticky` on header/footer + `height: 100vh` content divs). This created layouts taller than the viewport, and scroll/positioning state leaked across route changes via Dioxus DOM patching.
 
-   **Observations:**
-   - Bug triggered specifically by clicking "save" on CreateDeck
-   - Layout shift affects ViewDeck screen immediately after save
-   - Same layout issue persists when navigating to DeckList
-   - Content typically shifts UP but sometimes shifts DOWN
-   - Only clears when navigating completely away and returning
-   - Not related to data fetching (deck appears in list)
-   - Possibly related to: CSS state pollution, signal state, commander image loading, save/navigation timing
+   **Fix:** Unified all screens under a single `.screen` fixed-frame layout (`position: fixed; inset: 0` + flexbox). Header and footer are `flex-shrink: 0` items, content fills remaining space with `flex: 1; overflow-y: auto`. No body scroll, no sticky positioning, no per-screen inline layout styles.
 
-   **Investigated (not the cause):**
-   - ViewDeck padding-top: 8vh vs others using 4rem (tried changing, not the issue)
-   - DeckList use_effect resource restart (intentional for fresh data)
+2. ~~**iOS Keyboard Pushes Content Down**~~ — **FIXED** (2026-03-23)
 
-   **Next steps to investigate:**
-   - is_saving signal cleanup
-   - Commander image load timing
-   - DOM state between navigation transitions
-   - Spinner/loading state CSS artifacts
+   **Root cause:** Same as above — `sticky top-0` + `justify-content: center` + `h-screen` caused layout reflow when iOS keyboard changed the viewport height.
 
-2. **iOS Keyboard Pushes Content Down** - Content shifts down 5-10px when keyboard appears, particularly noticeable with enlarged card images
-
-   **Reproduction steps:**
-   1. Navigate to Add Deck Card screen (or any screen with text input)
-   2. Click into a text filter field (e.g., card name search)
-   3. **BUG:** iOS keyboard appears and pushes all content down 5-10px
-   4. Card images and other content visibly shift downward
-   5. Dismiss keyboard
-   6. Content returns to original position
-
-   **Observations:**
-   - Long-standing bug, only recently noticeable after enlarging card images to `max-height: 400px`
-   - Affects screens with text input fields (filters, search bars, etc.)
-   - Viewport height changes when iOS keyboard appears, causing layout reflow
-   - Related to container sizing using `h-screen` (100vh) and flexbox centering
-   - Likely caused by `sticky top-0` positioning + `justify-content: center` + `h-screen`
-   - When viewport shrinks (keyboard appears), centered content recalculates position
-
-   **Context:**
-   - Card images recently increased from `35vh` to `400px` max-height
-   - Makes the layout shift much more visible than before
-   - Verified in old commits - bug existed previously but was subtle
-   - Add Deck Card screen uses: `class="sticky top-0 left-0 h-screen flex flex-col items-center overflow-y-auto"`
-
-   **Potential solutions to investigate:**
-   - Remove `sticky top-0` positioning (let content flow naturally)
-   - Remove `justify-content: center` (prevents recalculation on viewport resize)
-   - Use fixed pixel `height` instead of `h-screen` (100vh)
-   - Use `position: fixed` instead of `sticky` for card container
-   - Apply iOS-specific viewport fix: `height: 100dvh` (dynamic viewport height)
-
-   **Requirements:**
-   - Add Deck Card screen should NOT be scrollable
-   - Only the card itself should move (swipe gestures)
-   - Container should remain fixed while keyboard is open
+   **Fix:** `position: fixed` on `.screen` is immune to viewport resize from keyboard. Safe-area insets moved from `body` to `.screen` via `env(safe-area-inset-top/bottom)`.

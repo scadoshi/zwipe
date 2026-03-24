@@ -103,12 +103,12 @@ pub fn ChangeEmail() -> Element {
 
     rsx! {
         Bouncer {
-            div { class: "page-header",
-                h2 { "change email" }
-            }
+            div { class: "screen",
+                div { class: "page-header",
+                    h2 { "change email" }
+                }
 
-            div { class: "sticky top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
-                style: "width: 100vw; padding-top: 25vh;",
+                div { class: "screen-content centered",
                 div { class : "container-sm",
 
                     form { class: "flex-col text-center",
@@ -157,6 +157,7 @@ pub fn ChangeEmail() -> Element {
                     onclick : move |_| attempt_submit(),
                     "save changes"
                 }
+            }
             }
         }
     }

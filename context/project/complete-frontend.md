@@ -50,7 +50,7 @@ Production-ready frontend implementations.
 ### Deck CRUD
 - **Create Deck**: Name input, searchable commander field, CopyMax selection
 - **Deck List**: Resource-based fetching with loading/success/error states
-- **View Deck**: Read-only display with commander image and deck profile
+- **View Deck**: Read-only profile display (deck name, copy rule, commander name) in Profile-style label/value rows
 - **Edit Deck**: Pre-populated form with change tracking and conditional updates
 - **Delete Deck**: AlertDialog confirmation with async error handling
 
@@ -77,7 +77,7 @@ Production-ready frontend implementations.
   - Expandable card rows: tap to show oracle text, type line, mana cost, rarity, set
   - Commander fetched separately (get_deck_profile → get_card) and deduplicated into card list
   - Active filter warning toast on mount when filter has values
-  - Per-screen scroll container (`height: 100vh; overflow-y: auto`) for mobile (body has `overflow: clip`)
+  - Unified `.screen` fixed-frame layout (all screens share same `position: fixed; inset: 0` + flexbox structure)
   - Full filter panel (8 accordion sections) shared with add/remove screens via context
   - Color display: `{W}{U}{B}` encoded format using `Color::to_short_name()`
   - Empty state: text "no cards" instead of card shape placeholder
@@ -179,7 +179,7 @@ Production-ready frontend implementations.
 
 ### Styling
 - **Minimal UI Design**: Lowercase text, centered layouts, clean spacing
-- **Utility Bar Standardization**: Bottom .util-bar with .util-btn across 20+ screens
+- **Utility Bar Standardization**: Bottom .util-bar with .util-btn as `flex-shrink: 0` flex item in `.screen` container
 - **CSS Class Patterns**: .card-shape, .type-box, .mana-box for consistent components
 - **Global CSS Loading**: Component stylesheets loaded in main.rs for reliability
 

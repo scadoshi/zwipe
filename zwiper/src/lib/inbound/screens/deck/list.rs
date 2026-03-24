@@ -5,7 +5,7 @@ use crate::{
         components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
         router::Router,
     },
-    outbound::client::{deck::get_deck_profiles::ClientGetDeckList, ZwipeClient},
+    outbound::client::{ZwipeClient, deck::get_deck_profiles::ClientGetDeckList},
 };
 use dioxus::prelude::*;
 use zwipe::{
@@ -37,12 +37,12 @@ pub fn DeckList() -> Element {
 
     rsx! {
         Bouncer {
-            div { class: "page-header",
-                h2 { "decks" }
-            }
+            div { class: "screen",
+                div { class: "page-header",
+                    h2 { "decks" }
+                }
 
-            div { class: "left-0 h-screen flex flex-col items-center overflow-y-auto",
-                style: "width: 100vw; padding-top: 4rem; padding-bottom: 5rem;",
+                div { class: "screen-content",
                 div { class: "flex-col",
                     style: "max-width: 40rem; width: 100%; padding: 2rem;",
 
@@ -51,7 +51,7 @@ pub fn DeckList() -> Element {
                             if deck_profiles.is_empty() {
                                 rsx! {
                                     div { class: "message-empty",
-                                        p { "no decks yet" }
+                                        p { "no decks" }
                                     }
                                 }
                             } else {
@@ -102,6 +102,7 @@ pub fn DeckList() -> Element {
                     },
                     "create"
                 }
+            }
             }
         }
     }

@@ -49,7 +49,6 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
 
-    let mut remove_card_error = use_signal(|| None::<String>);
 
     let mut is_animating = use_signal(|| false);
     let mut animation_direction = use_signal(|| Direction::Left);
@@ -109,7 +108,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     deck_loaded.set(true);
                 }
                 Err(e) => {
-                    remove_card_error.set(Some(e.to_string()));
+                    toast.error(e.to_string(), ToastOptions::default());
                 }
             }
         });
@@ -142,30 +141,25 @@ pub fn Remove(deck_id: Uuid) -> Element {
         current_index.set(0);
     });
 
-    let mut delete_card_from_deck = move || {
+    let delete_card_from_deck = move || {
         let Some(card) = current_card() else {
             return;
         };
 
         session.upkeep(client);
         let Some(session) = session() else {
-            remove_card_error.set(Some("session expired".to_string()));
+            toast.error("session expired".to_string(), ToastOptions::default());
             return;
         };
 
         let scryfall_data_id = card.scryfall_data.id;
 
         spawn(async move {
-            match client()
+            if let Err(e) = client()
                 .delete_deck_card(deck_id, scryfall_data_id, &session)
                 .await
             {
-                Ok(_) => {
-                    remove_card_error.set(None);
-                }
-                Err(e) => {
-                    remove_card_error.set(Some(e.to_string()));
-                }
+                toast.error(e.to_string(), ToastOptions::default());
             }
         });
     };
@@ -247,12 +241,12 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
     rsx! {
         Bouncer {
-            div { class: "page-header",
-                h2 { "remove deck card" }
-            }
+            div { class: "screen",
+                div { class: "page-header",
+                    h2 { "remove deck card" }
+                }
 
-            div { class: "sticky top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
-                style: "width: 100vw; justify-content: center; padding-top: 4rem;",
+                div { class: "screen-content centered",
 
                 div { class: "form-container",
                     if let Some(card) = current_card() {
@@ -352,9 +346,6 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         }
                     }
 
-                    if let Some(err) = remove_card_error() {
-                        div { class: "message-error", "{err}" }
-                    }
                 }
             }
 
@@ -453,6 +444,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         "clear"
                     }
                 }
+            }
             }
         }
     }

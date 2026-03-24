@@ -18,7 +18,7 @@ use uuid::Uuid;
 use zwipe::{
     domain::{
         auth::models::session::Session,
-        card::models::{scryfall_data::image_uris::ImageUris, Card},
+        card::models::Card,
         deck::models::deck::{copy_max::CopyMax, deck_profile::DeckProfile},
     },
     inbound::http::ApiError,
@@ -95,70 +95,64 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
     rsx! {
         Bouncer {
-            div {
-                class : "page-header",
-                h2 { "deck" }
-            }
+            div { class: "screen",
+                div {
+                    class : "page-header",
+                    h2 { "deck" }
+                }
 
-            div { class: "top-0 left-0 flex flex-col items-center overflow-y-auto",
-                style: "width: 100vw; height: 100vh; padding-top: 6rem; padding-bottom: 6rem;",
-                div { class: "flex-col",
-                    style: "max-width: 40rem; width: 100%; padding: 0 2rem;",
+                div { class: "screen-content centered",
                     match deck_profile_resource() {
                         Some(Ok(deck_profile)) => rsx! {
-                            if let Some(error) = load_error() {
-                                div { class: "message-error", "{error}" }
-                            }
-
-                            div { class: "flex items-center flex-between mb-2 gap-2",
-                                div { class: "flex-1",
-                                    label { class: "label", "deck name" }
-                                    p { class: "text-base font-light mb-1", "{deck_profile.name}" }
+                            div { class: "container-sm",
+                                if let Some(error) = load_error() {
+                                    div { class: "message-error", "{error}" }
                                 }
-                                div {
-                                    label { class: "label", "copy rule" }
-                                    p { class: "text-base font-light mb-1",
-                                        if deck_profile.copy_max == Some(CopyMax::standard()) {
-                                            "standard"
-                                        } else if deck_profile.copy_max == Some(CopyMax::singleton()) {
-                                            "singleton"
-                                        } else {
-                                            "none"
+
+                                div { class: "flex items-center flex-between mb-4 gap-2",
+                                    div { class: "flex-1",
+                                        label { class: "label", "deck name" }
+                                        p { class: "text-base font-light mb-1", "{deck_profile.name}" }
+                                    }
+                                }
+
+                                div { class: "flex items-center flex-between mb-4 gap-2",
+                                    div { class: "flex-1",
+                                        label { class: "label", "copy rule" }
+                                        p { class: "text-base font-light mb-1",
+                                            if deck_profile.copy_max == Some(CopyMax::standard()) {
+                                                "standard"
+                                            } else if deck_profile.copy_max == Some(CopyMax::singleton()) {
+                                                "singleton"
+                                            } else {
+                                                "none"
+                                            }
                                         }
                                     }
                                 }
-                            }
 
-                            div {
-                                label { class: "label", "commander" }
-                                if let Some(cmd) = commander() {
-                                    if let Some(ImageUris { normal: Some(image_url), .. }) = &cmd.scryfall_data.image_uris {
+                                div { class: "flex items-center flex-between mb-4 gap-2",
+                                    div { class: "flex-1",
+                                        label { class: "label", "commander" }
                                         p { class: "text-base font-light mb-1",
-                                            { cmd.scryfall_data.name.to_lowercase() }
-                                        }
-                                        img { class: "card-image",
-                                            src: "{image_url}",
-                                            alt: "{cmd.scryfall_data.name}",
-                                        }
-                                    } else {
-                                        p { class: "text-base font-light mb-1",
-                                            { cmd.scryfall_data.name.to_lowercase() }
+                                            if let Some(cmd) = commander() {
+                                                { cmd.scryfall_data.name.to_lowercase() }
+                                            } else {
+                                                "none"
+                                            }
                                         }
                                     }
-                                } else {
-                                    p { class: "text-base font-light mb-1", "none" }
                                 }
-                            }
 
-                            if let Some(error) = delete_error() {
-                                div { class: "message-error", "{error}" }
+                                if let Some(error) = delete_error() {
+                                    div { class: "message-error", "{error}" }
+                                }
                             }
                         },
-                    Some(Err(e)) => rsx! { div { class : "message-error", "{e}"} },
-                    None => rsx! { div { class : "spinner" } }
+                        Some(Err(e)) => rsx! { div { class: "message-error", "{e}" } },
+                        None => rsx! { div { class: "spinner" } }
                     }
                 }
-            }
 
             div { class: "util-bar",
                 button {
@@ -220,6 +214,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                         }
                     }
                 }
+            }
             }
         }
     }

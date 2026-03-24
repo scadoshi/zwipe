@@ -60,7 +60,37 @@ body {
   overflow: clip;
   overflow-clip-margin: env(safe-area-inset-top, 0px);
   user-select: none;
+}
+
+/* ==================
+  screen layout
+ ==================== */
+
+.screen {
+  position: fixed;
+  inset: 0;
   padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background-color: var(--bg-primary);
+}
+
+.screen-content {
+  flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-height: 0;
+  padding-top: 1rem;
+}
+
+.screen-content.centered {
+  justify-content: center;
 }
 
 /* ==================
@@ -421,18 +451,14 @@ body {
   ======================== */
 
 .page-header {
-  position: sticky;
+  flex-shrink: 0;
   border-bottom: 1px solid var(--border-secondary);
-  top: 0;
-  left: 0;
-  right: 0;
   background-color: var(--bg-primary);
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-top: 4rem;
+  padding-top: 1rem;
   padding-bottom: 1rem;
-  z-index: 50;
 }
 
 .page-header h2 {
@@ -447,11 +473,8 @@ body {
   ========================= */
 
 .util-bar {
-  position: sticky;
+  flex-shrink: 0;
   border-top: 1px solid var(--border-secondary);
-  bottom: 0;
-  left: 0;
-  right: 0;
   background-color: var(--bg-primary);
   display: flex;
   flex-direction: row;
@@ -459,9 +482,8 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: 0.5rem;
-  padding-bottom: 2rem;
+  padding-bottom: 1rem;
   padding-top: 1rem;
-  z-index: 50;
 
   /* Force GPU acceleration to fix iOS keyboard repositioning bug */
   -webkit-transform: translateZ(0);
@@ -962,15 +984,13 @@ body {
 }
 
 .card-info {
-  position: fixed;
-  bottom: 6rem;
-  left: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
   font-size: 0.75rem;
   color: var(--text-muted);
-  z-index: 40;
+  padding: 0.5rem 1rem;
+  align-self: flex-start;
 }
 
 /* ===================

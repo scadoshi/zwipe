@@ -68,8 +68,8 @@ pub fn Login() -> Element {
     };
 
     rsx! {
-        div { class: "sticky top-0 left-0 h-screen flex flex-col items-center overflow-hidden",
-            style: "width: 100vw; justify-content: center;",
+        div { class: "screen",
+            div { class: "screen-content centered",
             div { class: "logo",  "{logo}" }
             div { class : "container-sm text-center",
                 form { class: "flex-col",
@@ -109,5 +109,6 @@ pub fn Login() -> Element {
                 "create profile"
             }
         }
+    }
     }
 }

@@ -66,8 +66,8 @@ pub fn Home() -> Element {
 
     rsx! {
         Bouncer {
-            div { class: "sticky top-0 left-0 h-screen flex flex-col items-center overflow-hidden",
-                style: "width: 100vw; justify-content: center;",
+            div { class: "screen",
+                div { class: "screen-content centered",
                 div { class : "logo", "{logo}" }
 
                 // Display random flavor text
@@ -125,6 +125,7 @@ pub fn Home() -> Element {
                         }
                     }
                 }
+            }
             }
         }
     }

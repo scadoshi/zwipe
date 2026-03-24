@@ -38,6 +38,6 @@ Navigate to specific status files:
 
 **Tech Stack**: Rust backend (Axum, SQLx, PostgreSQL, JWT auth), Dioxus frontend (web/mobile), hexagonal architecture
 
-**Current Phase**: Feature development - deck management workflows, bug fixes, testing expansion
+**Current Phase**: Feature development - enhancements, UI polish, deck composition features
 
-**Recent Achievement**: Full-stack documentation complete. Backend and frontend layers fully documented with `#![warn(missing_docs)]` lint passing (243 warnings resolved). Documentation philosophy established in `/context/rules/documentation.md`.
+**Recent Achievement**: Unified screen layout — replaced 5 different layout patterns across 14 screens with a single `.screen` fixed-frame layout. Fixed layout shift after deck creation and iOS keyboard push bugs. ViewDeck simplified to Profile-style label/value rows.

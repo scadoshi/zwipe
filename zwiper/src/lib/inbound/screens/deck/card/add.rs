@@ -47,8 +47,6 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
     let mut cards: Signal<Vec<Card>> = use_context();
 
-    let mut add_card_error = use_signal(|| None::<String>);
-    let mut search_error = use_signal(|| None::<String>);
 
     let mut is_animating = use_signal(|| false);
     let mut animation_direction = use_signal(|| Direction::Left);
@@ -209,14 +207,14 @@ pub fn Add(deck_id: Uuid) -> Element {
         5.0,   // 5px/ms speed threshold
     );
 
-    let mut add_card_to_deck = move || {
+    let add_card_to_deck = move || {
         let Some(card) = current_card() else {
             return; // No card to add
         };
 
         session.upkeep(client);
         let Some(session) = session() else {
-            add_card_error.set(Some("session expired".to_string()));
+            toast.error("session expired".to_string(), ToastOptions::default());
             return;
         };
 
@@ -227,11 +225,10 @@ pub fn Add(deck_id: Uuid) -> Element {
         spawn(async move {
             match client().create_deck_card(deck_id, &request, &session).await {
                 Ok(_) => {
-                    add_card_error.set(None);
                     deck_cards_ids.write().insert(card_id);
                 }
                 Err(e) => {
-                    add_card_error.set(Some(e.to_string()));
+                    toast.error(e.to_string(), ToastOptions::default());
                 }
             }
         });
@@ -353,14 +350,13 @@ pub fn Add(deck_id: Uuid) -> Element {
         // Don't call session.upkeep here - it creates a loop when session updates
         // The interval-based upkeep in Bouncer handles session refresh
         let Some(session) = session() else {
-            search_error.set(Some("session expired".to_string()));
+            toast.error("session expired".to_string(), ToastOptions::default());
             return;
         };
 
         spawn(async move {
             match client().search_cards(&filter, &session).await {
                 Ok(cards_from_search) => {
-                    search_error.set(None);
                     let deck_ids = deck_cards_ids();
                     cards.set(
                         cards_from_search
@@ -378,19 +374,19 @@ pub fn Add(deck_id: Uuid) -> Element {
                     // Set offset for next page
                     current_offset.set(pagination_limit);
                 }
-                Err(e) => search_error.set(Some(e.to_string())),
+                Err(e) => toast.error(e.to_string(), ToastOptions::default()),
             }
         });
     });
 
     rsx! {
         Bouncer {
-            div { class: "page-header",
-                h2 { "add deck card" }
-            }
+            div { class: "screen",
+                div { class: "page-header",
+                    h2 { "add deck card" }
+                }
 
-            div { class: "sticky top-0 left-0 h-screen flex flex-col items-center overflow-y-auto",
-                style: "width: 100vw; justify-content: center; padding-top: 4rem;",
+                div { class: "screen-content centered",
 
                 div { class : "form-container",
                     // Show current card with Swipeable
@@ -466,7 +462,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             }
                             span { "released: {card.scryfall_data.released_at}" },
                             if let Some(artist) = card.scryfall_data.artist && !artist.is_empty() {
-                                span { "artist: {artist}" }
+                                span { "artist: {artist.to_lowercase()}" }
                             }
                         }
                     } else {
@@ -476,13 +472,6 @@ pub fn Add(deck_id: Uuid) -> Element {
                         }
                     }
 
-                    if let Some(add_card_error) = add_card_error() {
-                        div { class : "message-error", "{add_card_error}"}
-                    }
-
-                    if let Some(search_error) = search_error() {
-                        div { class : "message-error", "{search_error}" }
-                    }
                 }
             }
 
@@ -606,6 +595,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         "clear"
                     }
                 }
+            }
             }
         }
     }
