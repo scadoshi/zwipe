@@ -24,7 +24,7 @@ use uuid::Uuid;
 /// - **Singleton decks** (copy_max = 1): Only 1 copy allowed (except basic lands)
 /// - **Standard decks** (copy_max = 4): Up to 4 copies allowed (except basic lands)
 /// - **Basic lands**: Unlimited copies in either format
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeckCard {
     /// The deck containing this card.
     pub deck_id: Uuid,

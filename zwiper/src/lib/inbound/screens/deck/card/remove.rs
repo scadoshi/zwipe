@@ -49,7 +49,6 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
 
-
     let mut is_animating = use_signal(|| false);
     let mut animation_direction = use_signal(|| Direction::Left);
 
@@ -102,7 +101,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
         spawn(async move {
             match client().get_deck(deck_id, &session).await {
                 Ok(deck) => {
-                    let cards = deck.cards;
+                    let cards: Vec<Card> = deck.entries.into_iter().map(|e| e.card).collect();
                     deck_cards.set(cards.clone());
                     displayed_cards.set(cards);
                     deck_loaded.set(true);

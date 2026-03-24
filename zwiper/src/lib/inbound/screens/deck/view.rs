@@ -73,7 +73,10 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         let Some(session) = session() else {
             return Err(ApiError::Unauthorized("session expired".to_string()));
         };
-        client().get_deck(deck_id, &session).await.map(|d| d.cards)
+        client()
+            .get_deck(deck_id, &session)
+            .await
+            .map(|d| d.entries.into_iter().map(|e| e.card).collect::<Vec<_>>())
     });
     use_effect(move || match commander_resource() {
         Some(Ok(Some(original_commander))) => {

@@ -72,8 +72,8 @@ pub fn View(deck_id: Uuid) -> Element {
         };
 
         spawn(async move {
-            let mut cards = match client().get_deck(deck_id, &session).await {
-                Ok(deck) => deck.cards,
+            let mut cards: Vec<Card> = match client().get_deck(deck_id, &session).await {
+                Ok(deck) => deck.entries.into_iter().map(|e| e.card).collect(),
                 Err(e) => {
                     browse_error.set(Some(e.to_string()));
                     return;
