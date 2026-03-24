@@ -26,7 +26,7 @@ pub struct InvalidUpdateQuanity;
 ///
 /// Used when creating deck cards. Ensures quantity is positive.
 /// Upper bound (deck copy limits) is enforced separately by service layer.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Quantity(i32);
 
 impl Quantity {
@@ -41,7 +41,6 @@ impl Quantity {
         }
         Ok(Self(quantity))
     }
-
 }
 
 impl Deref for Quantity {
@@ -99,7 +98,6 @@ impl UpdateQuantity {
         }
         Ok(Self(add_quantity))
     }
-
 }
 
 impl Deref for UpdateQuantity {

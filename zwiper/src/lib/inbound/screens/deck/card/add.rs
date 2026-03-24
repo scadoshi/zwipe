@@ -316,9 +316,9 @@ pub fn Add(deck_id: Uuid) -> Element {
             match client().get_deck(deck_id, &session).await {
                 Ok(deck) => {
                     let mut ids: HashSet<_> = deck
-                        .cards
+                        .entries
                         .iter()
-                        .map(|card| card.scryfall_data.id)
+                        .map(|entry| entry.card.scryfall_data.id)
                         .collect();
                     if let Some(commander_id) = deck.deck_profile.commander_id {
                         ids.insert(commander_id);

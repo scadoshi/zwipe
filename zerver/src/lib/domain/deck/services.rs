@@ -1,10 +1,14 @@
+use std::collections::HashMap;
 use std::fmt::Debug;
+
+use uuid::Uuid;
 
 use crate::domain::{
     card::{models::scryfall_data::get_scryfall_data::ScryfallDataIds, ports::CardRepository},
     deck::{
         models::{
             deck::{
+                Deck, DeckEntry,
                 create_deck_profile::{CreateDeckProfile, CreateDeckProfileError},
                 deck_profile::DeckProfile,
                 delete_deck::{DeleteDeck, DeleteDeckError},
@@ -12,13 +16,12 @@ use crate::domain::{
                 get_deck_profile::{GetDeckProfile, GetDeckProfileError},
                 get_deck_profiles::GetDeckProfiles,
                 update_deck_profile::{UpdateDeckProfile, UpdateDeckProfileError},
-                Deck,
             },
             deck_card::{
+                DeckCard,
                 create_deck_card::{CreateDeckCard, CreateDeckCardError},
                 delete_deck_card::{DeleteDeckCard, DeleteDeckCardError},
                 update_deck_card::{UpdateDeckCard, UpdateDeckCardError},
-                DeckCard,
             },
         },
         ports::{DeckRepository, DeckService},
@@ -110,7 +113,22 @@ where
         let deck_cards = self.deck_repo.get_deck_cards(request).await?;
         let scryfall_data_ids = ScryfallDataIds::from(deck_cards.as_slice());
         let cards = self.card_repo.get_cards(&scryfall_data_ids).await?;
-        let deck = Deck::new(deck_profile, cards);
+
+        let mut deck_card_map: HashMap<Uuid, DeckCard> = deck_cards
+            .into_iter()
+            .map(|dc| (dc.scryfall_data_id, dc))
+            .collect();
+
+        let entries: Vec<DeckEntry> = cards
+            .into_iter()
+            .filter_map(|card| {
+                deck_card_map
+                    .remove(&card.scryfall_data.id)
+                    .map(|deck_card| DeckEntry { card, deck_card })
+            })
+            .collect();
+
+        let deck = Deck::new(deck_profile, entries);
         Ok(deck)
     }
 
