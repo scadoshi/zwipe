@@ -38,6 +38,15 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
     }
 }
 
+/// Data fetched to validate a deck card update against copy limits.
+#[allow(missing_docs)]
+#[derive(Debug, FromRow)]
+pub struct UpdateDeckCardGuard {
+    pub quantity: i32,
+    pub copy_max: Option<i32>,
+    pub type_line: Option<String>,
+}
+
 /// raw database deck card record
 /// (unvalidated data from `PostgreSQL`)
 #[allow(missing_docs)]

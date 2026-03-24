@@ -37,8 +37,11 @@ pub enum UpdateDeckCardError {
     #[error("deck card not found")]
     NotFound,
     /// Delta would result in quantity ≤ 0 (use delete to remove card entirely).
-    #[error("resulting quantity must remain greater than 0")]
-    InvalidResultingQuantity,
+    #[error("resulting quantity cannot be zero or less")]
+    QuantityUnderflow,
+    /// Delta would push quantity above the deck's copy limit.
+    #[error("resulting quantity exceeds deck copy limit")]
+    ExceedsCopyMax,
     /// Database operation failed.
     #[error(transparent)]
     Database(anyhow::Error),
