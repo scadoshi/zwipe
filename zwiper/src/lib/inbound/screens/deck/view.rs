@@ -8,12 +8,12 @@ use crate::{
         router::Router,
     },
     outbound::client::{
+        ZwipeClient,
         card::get_card::ClientGetCard,
         deck::{
             delete_deck::ClientDeleteDeck, get_deck::ClientGetDeck,
             get_deck_profile::ClientGetDeckProfile,
         },
-        ZwipeClient,
     },
 };
 use dioxus::prelude::*;
@@ -68,14 +68,13 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 .await
                 .map(Some)
         });
-    let deck_resource: Resource<Result<Vec<Card>, ApiError>> =
-        use_resource(move || async move {
-            session.upkeep(client);
-            let Some(session) = session() else {
-                return Err(ApiError::Unauthorized("session expired".to_string()));
-            };
-            client().get_deck(deck_id, &session).await.map(|d| d.cards)
-        });
+    let deck_resource: Resource<Result<Vec<Card>, ApiError>> = use_resource(move || async move {
+        session.upkeep(client);
+        let Some(session) = session() else {
+            return Err(ApiError::Unauthorized("session expired".to_string()));
+        };
+        client().get_deck(deck_id, &session).await.map(|d| d.cards)
+    });
     use_effect(move || match commander_resource() {
         Some(Ok(Some(original_commander))) => {
             commander.set(Some(original_commander));
@@ -117,11 +116,13 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         const MAX_HEIGHT: usize = 8;
         let max_count = m.cmc_histogram.iter().copied().max().unwrap_or(0);
         std::array::from_fn(|i| {
-            let c = m.cmc_histogram[i];
-            if c == 0 || max_count == 0 {
-                0
-            } else {
+            let opt = m.cmc_histogram.get(i);
+            if opt.is_some_and(|c| *c != 0 && max_count != 0)
+                && let Some(c) = opt
+            {
                 (c * MAX_HEIGHT / max_count).max(1)
+            } else {
+                0
             }
         })
     });
