@@ -18,9 +18,69 @@ Planned work after completing current tasks.
 
 ## Enhancements
 
-1. **Deck List Screen Redesign** - Better list styling, improved layout with utility bar, visual hierarchy
+### Deck Composition & Card Management
 
-2. **CardFilter Enhancements (Serve Only Playable Cards)** - Continue refining default CardFilter to exclude non-playable/non-standard cards.
+1. **Multi-Copy Add Flow** - Right now swiping right always adds exactly 1 copy. For standard decks (CopyMax=4) the user should be able to add up to 4 copies in one action.
+
+   **Scope:**
+   - UI: After swipe-right, show a quantity picker (1–CopyMax) before confirming the add, or allow repeat swipe to increment
+   - Backend: `AddDeckCard` / `CreateDeckCard` already stores a `Quantity` — the quantity just needs to be driven by user input rather than hardcoded to 1
+   - Validation (see CopyMax Enforcement below)
+
+2. **CopyMax Enforcement (Frontend + Backend)** - Currently copy limits are stored in the deck but not actively enforced during add/update operations.
+
+   **Scope:**
+   - Backend: `AddDeckCard` and `UpdateDeckCard` domain types must check the deck's `copy_max` and reject quantities that exceed it (singleton=1, standard=4). Backend is the source of truth — always defend here.
+   - Frontend: Assert the same rule before making the request so UX is immediate. Frontend asserts, backend defends.
+   - Migration: `CreateDeckCard` and `UpdateDeckCard` flows need to fetch the deck's `copy_max` and thread it into validation.
+
+3. **Change Quantity in View Deck Screen** - Users need a way to adjust the quantity of a card already in their deck without removing and re-adding it.
+
+   **Scope:**
+   - Add inline quantity control to `ViewDeckCard` expandable card rows (+ / − buttons or a stepper)
+   - Wire to `UpdateDeckCard` endpoint
+   - Respect CopyMax enforcement (see above)
+   - Optimistic update in local state; revert on error
+
+4. **Deck Metrics View** - Aggregate stats for the current deck, useful for evaluating deck balance.
+
+   **Scope:**
+   - **Total card count** — sum of all quantities
+   - **Type distribution** — creature / instant / sorcery / land / etc. counts (reuse `GroupByOption::CardType` classification)
+   - **Mana curve** — CMC histogram (0 / 1 / 2 / 3 / 4 / 5 / 6+), reuse `GroupByOption::Cmc` classification
+   - **Color distribution** — pie or bar breakdown by color identity
+   - All computed in-memory from `Vec<Card>` already loaded in `ViewDeckCard` — no extra server round-trips
+
+   **Implementation note:** The `GroupCards` trait already partitions by type and CMC — metrics are just `.len()` calls on those groups.
+
+### Card Intelligence
+
+5. **Card Keyword Categories (Import Pipeline)** - Tag cards during the Scryfall import with meaningful strategic categories that are hard to derive at query time.
+
+   **Proposed categories:** burn, recursion, flyers, tokens, ramp, removal, counterspells, draw, tutors, board wipes, lifegain
+
+   **Scope:**
+   - Add a `keyword_categories: Vec<String>` (or JSONB) column to `card_profiles` (or a separate `card_categories` table)
+   - During `zervice` upsert: scan `oracle_text` and `keywords` fields with pattern matching rules per category (e.g., "deals damage" → burn, "flying" keyword → flyers, "create a token" → tokens)
+   - Expose as a filter option in `CardFilter` and add a frontend chip multi-select
+   - Categories are only as good as the rules — iterate over time
+
+   **Why import-time vs query-time:** Oracle text search is fuzzy; category tagging at import gives indexed, consistent labels the frontend can filter on without complex text queries.
+
+6. **EDHREC Integration** - Synergy scores for the current commander's deck pool.
+
+   **Scope:**
+   - Hit EDHREC API (external, not via zervice) with the commander name/id to fetch top synergy cards + scores
+   - Store nothing — fetch on demand when user opens AddDeckCard for a commander deck
+   - Expose a "EDHREC synergy" sort option in the filter that reorders the card list by synergy score
+   - Cards not in EDHREC data sort to the bottom
+   - **Note:** Cannot use zervice for this — EDHREC is a read-only external API hit from the frontend client
+
+### UI & Polish
+
+7. **Deck List Screen Redesign** - Better list styling, improved layout with utility bar, visual hierarchy
+
+8. **CardFilter Enhancements (Serve Only Playable Cards)** - Continue refining default CardFilter to exclude non-playable/non-standard cards.
 
 ### Pending Improvements
    - **tri-toggle labels** - Improve clarity of boolean filter options
@@ -45,20 +105,10 @@ Planned work after completing current tasks.
      - Requires special UI handling (format + legal status)
      - Deferred - needs design work
 
-3. **Cross-Deck Card Ownership Indicator** - Highlight cards that are already in other decks:
-    - Visual indicator when browsing cards for one deck (e.g., "In 2 other decks")
-    - Show which decks contain the card
-    - Helps users avoid over-buying duplicate cards
+9. **Cross-Deck Card Ownership Indicator** - Highlight cards already in other decks when browsing.
+    - **Note:** Cards already in the current deck won't be served by the add-card query (filtered server-side), so this is only relevant for cards that appear in *other* decks. Lower priority.
 
-4. **Toast: Card in Other Decks** - When viewing a card that exists in other decks, show a toast notification:
-    - Message options: "You use this card in other decks" or "You seem to like this card"
-    - Only show when the card is being viewed for deck-building (add/remove context)
-
-5. **EDHREC Integration** - Sort and filter cards by deck synergies:
-    - Fetch synergy data from EDHREC API for current commander
-    - Sort by "synergy score" or "popularity in decks with this commander"
-    - Highlight cards frequently paired with the current commander
-    - Helps players discover strong deck synergies
+10. **EDHREC Integration** - See Card Intelligence section above.
 
 ---
 
