@@ -81,29 +81,29 @@ pub fn Profile() -> Element {
                 }
                 button {
                     class: "util-btn",
-                    onclick: move |_| show_logout_dialog.set(true),
-                    "logout"
-                }
-                button {
-                    class: "util-btn",
                     onclick: move |_| {
                         navigator.push(Router::ChangeUsername {});
                     },
-                    "change username"
+                    "username"
                 }
                 button {
                     class: "util-btn",
                     onclick: move |_| {
                         navigator.push(Router::ChangeEmail {});
                     },
-                    "change email"
+                    "email"
                 }
                 button {
                     class: "util-btn",
                     onclick: move |_| {
                         navigator.push(Router::ChangePassword {});
                     },
-                    "change password"
+                    "password"
+                }
+                button {
+                    class: "util-btn",
+                    onclick: move |_| show_logout_dialog.set(true),
+                    "logout"
                 }
            }
 

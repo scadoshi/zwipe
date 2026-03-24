@@ -20,7 +20,16 @@ Planned work after completing current tasks.
 
 ### Deck Composition & Card Management
 
-1. **Multi-Copy Add Flow** - Right now swiping right always adds exactly 1 copy. For standard decks (CopyMax=4) the user should be able to add up to 4 copies in one action.
+1. **Deck Import (Text List / URL)** - Allow users to import a deck from a plain-text card list or a shareable URL from sites like Archidekt or Moxfield.
+
+   **Scope:**
+   - **Text import**: Parse the standard deck list format (`4 Lightning Bolt`, `1 Forest`, etc.) — quantity + card name per line. Resolve each card name against the zerver search API and bulk-add to the deck via `CreateDeckCard`.
+   - **URL import**: Accept an Archidekt or Moxfield deck URL, hit their public API to fetch the card list, then pipe through the same text-import resolution flow. Moxfield and Archidekt both have public read endpoints — no auth required for public decks.
+   - **UI**: A text area on a new `ImportDeck` screen (or modal from `DeckList`) where the user pastes a list or URL, with a preview of resolved/unresolved cards before confirming the import.
+   - **Error handling**: Cards that don't resolve (misspellings, tokens, non-oracle names) surface as a list of skipped cards after import.
+   - **Note:** Resolution should prefer `is_valid_commander: false` filter (all cards) and match on exact name first, falling back to fuzzy. Quantity must respect the deck's `CopyMax`.
+
+2. **Multi-Copy Add Flow** - Right now swiping right always adds exactly 1 copy. For standard decks (CopyMax=4) the user should be able to add up to 4 copies in one action.
 
    **Scope:**
    - UI: After swipe-right, show a quantity picker (1–CopyMax) before confirming the add, or allow repeat swipe to increment
@@ -53,7 +62,21 @@ Planned work after completing current tasks.
 
    **Implementation note:** The `GroupCards` trait already partitions by type and CMC — metrics are just `.len()` calls on those groups.
 
-5. **Deck Profile Enhancements (ViewDeck screen)** - Additional deck metadata fields for future.
+5. **Mana Pip Balance** - Show pips produced vs. pips consumed per color so players can balance their mana base.
+
+   **Concept:** For each color (WUBRG + colorless), compute:
+   - **Pips consumed** — count colored mana symbols in `mana_cost` across all nonland cards (e.g. `{W}{W}{U}` → 2 white, 1 blue). Parse from the `mana_cost` string field.
+   - **Pips produced** — count land cards whose `produced_mana` field (already present on `ScryfallData`) contains each color.
+
+   Display as a per-color row: `W  ████░░  12 consumed / 8 produced`. Imbalance at a glance — if you're consuming 14 blue pips but only producing 6, you need more blue sources.
+
+   **Implementation notes:**
+   - Parse `mana_cost` string (e.g. `"{2}{U}{U}"`) by scanning for `{W}`, `{U}`, `{B}`, `{R}`, `{G}` — simple character-level scan, no regex needed
+   - `produced_mana: Option<Colors>` is already on `ScryfallData` — lands that tap for multiple colors (e.g. duals) contribute to all matching buckets
+   - Extend `DeckMetrics` with `pip_consumed: [usize; 5]` and `pip_produced: [usize; 5]` (WUBRG indexed) and add to the single-pass computation in `deck_metrics.rs`
+   - Render in ViewDeck below colors section
+
+6. **Deck Profile Enhancements (ViewDeck screen)** - Additional deck metadata fields for future.
 
    **Planned fields:**
    - **Card count** — display total cards in deck on ViewDeck screen
@@ -94,15 +117,8 @@ Planned work after completing current tasks.
 8. **CardFilter Enhancements (Serve Only Playable Cards)** - Continue refining default CardFilter to exclude non-playable/non-standard cards.
 
 ### Pending Improvements
-   - **tri-toggle labels** - Improve clarity of boolean filter options
-     - Current: "show / hide / neither"
-     - Proposed: "show / hide / any" (or "no filter")
-     - Applies to: playable, digital, oversized, promo, content_warning filters
-
-   - **Language filter refinement** - Hide language selector when using OracleCards
-     - Backend infrastructure complete and ready
-     - Frontend: Remove language chip UI from config.rs when OracleCards enabled
-     - Keeps all backend support for future language needs
+   - ~~**tri-toggle labels**~~ — **DONE**. Labels now read "show / hide / any".
+   - ~~**Language filter refinement**~~ — **DONE**. Language chip UI removed from config filter (OracleCards is always used; backend language support preserved for future).
 
 ### Set Type Filter (Phase 2)
    - **set_type filter** - Filter by set classification

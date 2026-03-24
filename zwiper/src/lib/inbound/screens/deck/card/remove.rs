@@ -236,7 +236,13 @@ pub fn Remove(deck_id: Uuid) -> Element {
     };
 
     let mut clear_filters = move || {
-        filter_builder.write().clear();
+        let opts = ToastOptions::default().duration(Duration::from_millis(1500));
+        if filter_builder.read().is_empty() {
+            toast.warning("filter already cleared".to_string(), opts);
+        } else {
+            filter_builder.write().clear();
+            toast.info("filter cleared".to_string(), opts);
+        }
     };
 
     rsx! {
@@ -337,7 +343,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             }
                             span { "released: {card.scryfall_data.released_at}" }
                             if let Some(artist) = card.scryfall_data.artist && !artist.is_empty() {
-                                span { "artist: {artist}" }
+                                span { "artist: {artist.to_lowercase()}" }
                             }
                         }
                     } else {
@@ -358,7 +364,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 button {
                     class: "util-btn",
                     onclick: move |_| filters_overlay_open.set(true),
-                    "filters"
+                    "filter"
                 }
                 button {
                     class: "util-btn",

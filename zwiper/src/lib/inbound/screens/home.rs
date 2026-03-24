@@ -93,13 +93,13 @@ pub fn Home() -> Element {
             div { class: "util-bar",
                 button { class : "util-btn",
                     onclick : move |_| {
-                        navigator.push(Router::Profile {} );
-                    }, "profile"
+                        navigator.push(Router::DeckList {} );
+                    }, "decks"
                 }
                 button { class : "util-btn",
                     onclick : move |_| {
-                        navigator.push(Router::DeckList {} );
-                    }, "decks"
+                        navigator.push(Router::Profile {} );
+                    }, "profile"
                 }
                 button {
                     class: "util-btn",

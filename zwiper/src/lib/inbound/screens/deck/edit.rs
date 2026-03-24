@@ -157,6 +157,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             sleep(Duration::from_millis(500)).await;
             if let Some(session) = session() {
                 let Ok(card_filter) = CardFilterBuilder::with_name_contains(&query)
+                    .set_is_valid_commander(true)
                     .set_limit(5)
                     .build()
                 else {
@@ -325,22 +326,6 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                         navigator.push(Router::ViewDeck { deck_id });
                     },
                     "back"
-                }
-                if !has_made_changes() {
-                    button {
-                        class : "util-btn",
-                        onclick : move |_| {
-                            navigator.push(Router::AddDeckCard { deck_id });
-                        },
-                        "add cards"
-                    }
-                    button {
-                        class : "util-btn",
-                        onclick : move |_| {
-                            navigator.push(Router::RemoveDeckCard { deck_id });
-                        },
-                        "remove cards"
-                    }
                 }
                 if has_made_changes() {
                     button {

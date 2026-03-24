@@ -47,7 +47,6 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
     let mut cards: Signal<Vec<Card>> = use_context();
 
-
     let mut is_animating = use_signal(|| false);
     let mut animation_direction = use_signal(|| Direction::Left);
 
@@ -297,7 +296,13 @@ pub fn Add(deck_id: Uuid) -> Element {
     };
 
     let mut clear_filters = move || {
-        filter_builder.write().clear();
+        let opts = ToastOptions::default().duration(Duration::from_millis(1500));
+        if filter_builder.read().is_empty() {
+            toast.warning("filter already cleared".to_string(), opts);
+        } else {
+            filter_builder.write().clear();
+            toast.info("filter cleared".to_string(), opts);
+        }
     };
 
     // Fetch deck cards on mount for filtering
@@ -310,11 +315,14 @@ pub fn Add(deck_id: Uuid) -> Element {
         spawn(async move {
             match client().get_deck(deck_id, &session).await {
                 Ok(deck) => {
-                    let ids: HashSet<_> = deck
+                    let mut ids: HashSet<_> = deck
                         .cards
                         .iter()
                         .map(|card| card.scryfall_data.id)
                         .collect();
+                    if let Some(commander_id) = deck.deck_profile.commander_id {
+                        ids.insert(commander_id);
+                    }
                     deck_cards_ids.set(ids);
                 }
                 Err(_) => {
@@ -341,7 +349,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
         let Ok(filter) = builder.build() else {
             toast.warning(
-                "try adding a filter".to_string(),
+                "filter is empty".to_string(),
                 ToastOptions::default().duration(Duration::from_millis(1500)),
             );
             return;
@@ -487,14 +495,14 @@ pub fn Add(deck_id: Uuid) -> Element {
                 button {
                     class: "util-btn",
                     onclick: move |_| filters_overlay_open.set(true),
-                    "filters"
+                    "filter"
                 }
                 button {
                     class: "util-btn",
                     onclick: move |_| {
                         if filter_builder.read().is_empty() {
                             toast.warning(
-                                "try adding a filter".to_string(),
+                                "filter is empty".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
                             );
                         } else {
@@ -525,7 +533,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         class: "btn btn-sm",
                         onclick: move |_| {
                             if filter_builder.read().is_empty() {
-                                toast.warning("try adding a filter".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                toast.warning("filter is empty".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                             } else {
                                 filter_reset_counter.set(filter_reset_counter() + 1);
                             }
