@@ -9,7 +9,10 @@ use crate::{
     },
     outbound::client::{
         card::get_card::ClientGetCard,
-        deck::{delete_deck::ClientDeleteDeck, get_deck_profile::ClientGetDeckProfile},
+        deck::{
+            delete_deck::ClientDeleteDeck, get_deck::ClientGetDeck,
+            get_deck_profile::ClientGetDeckProfile,
+        },
         ZwipeClient,
     },
 };
@@ -19,7 +22,10 @@ use zwipe::{
     domain::{
         auth::models::session::Session,
         card::models::Card,
-        deck::models::deck::{copy_max::CopyMax, deck_profile::DeckProfile},
+        deck::models::{
+            deck::{copy_max::CopyMax, deck_profile::DeckProfile},
+            deck_metrics::ComputeMetrics,
+        },
     },
     inbound::http::ApiError,
 };
@@ -62,6 +68,14 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 .await
                 .map(Some)
         });
+    let deck_resource: Resource<Result<Vec<Card>, ApiError>> =
+        use_resource(move || async move {
+            session.upkeep(client);
+            let Some(session) = session() else {
+                return Err(ApiError::Unauthorized("session expired".to_string()));
+            };
+            client().get_deck(deck_id, &session).await.map(|d| d.cards)
+        });
     use_effect(move || match commander_resource() {
         Some(Ok(Some(original_commander))) => {
             commander.set(Some(original_commander));
@@ -93,6 +107,25 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         });
     };
 
+    // pre-compute metrics and chart data before rsx!
+    let metrics = deck_resource()
+        .and_then(|r| r.ok())
+        .filter(|c| !c.is_empty())
+        .map(|c| c.compute_metrics());
+
+    let bar_heights: Option<[usize; 7]> = metrics.as_ref().map(|m| {
+        const MAX_HEIGHT: usize = 8;
+        let max_count = m.cmc_histogram.iter().copied().max().unwrap_or(0);
+        std::array::from_fn(|i| {
+            let c = m.cmc_histogram[i];
+            if c == 0 || max_count == 0 {
+                0
+            } else {
+                (c * MAX_HEIGHT / max_count).max(1)
+            }
+        })
+    });
+
     rsx! {
         Bouncer {
             div { class: "screen",
@@ -101,7 +134,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     h2 { "deck" }
                 }
 
-                div { class: "screen-content centered",
+                div { class: "screen-content",
                     match deck_profile_resource() {
                         Some(Ok(deck_profile)) => rsx! {
                             div { class: "container-sm",
@@ -144,6 +177,74 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     }
                                 }
 
+                                if let (Some(m), Some(heights)) = (metrics.as_ref(), bar_heights.as_ref()) {
+                                    // ── stats ──────────────────────────────────────
+                                    label { class: "label", "stats" }
+                                    div { class: "flex items-center flex-between mb-1",
+                                        span { class: "text-sm font-light", "cards" }
+                                        span { class: "text-sm font-light opacity-50", "{m.total_cards}" }
+                                    }
+                                    div { class: "flex items-center flex-between mb-1",
+                                        span { class: "text-sm font-light", "avg cmc" }
+                                        span { class: "text-sm font-light opacity-50", "{m.avg_cmc:.1}" }
+                                    }
+                                    div { class: "flex items-center flex-between mb-4",
+                                        span { class: "text-sm font-light", "lands" }
+                                        span { class: "text-sm font-light opacity-50", "{m.land_count}" }
+                                    }
+
+                                    // ── mana curve ─────────────────────────────────
+                                    label { class: "label", "mana curve" }
+                                    div { class: "mb-1",
+                                        for row in 0..8usize {
+                                            div { class: "flex",
+                                                for col in 0..7usize {
+                                                    span {
+                                                        style: "width:2.5ch;text-align:center;font-family:monospace;",
+                                                        if (7 - row) < heights.get(col).copied().unwrap_or(0) { "\u{2588}" } else { "\u{00a0}" }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        // count row
+                                        div { class: "flex",
+                                            for col in 0..7usize {
+                                                span {
+                                                    style: "width:2.5ch;text-align:center;font-size:0.75rem;font-family:monospace;",
+                                                    "{m.cmc_histogram.get(col).copied().unwrap_or(0)}"
+                                                }
+                                            }
+                                        }
+                                        // label row
+                                        div { class: "flex mb-4",
+                                            for label in ["0","1","2","3","4","5","6+"] {
+                                                span {
+                                                    style: "width:2.5ch;text-align:center;font-size:0.75rem;font-family:monospace;opacity:0.5;",
+                                                    "{label}"
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // ── types ──────────────────────────────────────
+                                    label { class: "label", "types" }
+                                    for (type_label, count) in m.type_counts.iter() {
+                                        div { class: "flex items-center flex-between mb-1",
+                                            span { class: "text-sm font-light", "{type_label}" }
+                                            span { class: "text-sm font-light opacity-50", "{count}" }
+                                        }
+                                    }
+
+                                    // ── colors ─────────────────────────────────────
+                                    label { class: "label mt-4", "colors" }
+                                    for (color_label, count) in m.color_counts.iter() {
+                                        div { class: "flex items-center flex-between mb-1",
+                                            span { class: "text-sm font-light", "{color_label}" }
+                                            span { class: "text-sm font-light opacity-50", "{count}" }
+                                        }
+                                    }
+                                }
+
                                 if let Some(error) = delete_error() {
                                     div { class: "message-error", "{error}" }
                                 }
@@ -163,6 +264,13 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     "back"
                 }
                 button {
+                    class: "util-btn",
+                    onclick: move |_| {
+                        navigator.push(Router::EditDeck { deck_id });
+                    },
+                    "edit"
+                }
+                button {
                     class : "util-btn",
                     onclick : move |_| {
                         navigator.push(Router::ViewDeckCard { deck_id });
@@ -176,19 +284,14 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     },
                     "add"
                 }
-                button {
-                    class : "util-btn",
-                    onclick : move |_| {
-                        navigator.push(Router::RemoveDeckCard { deck_id });
-                    },
-                    "remove"
-                }
-                button {
-                    class: "util-btn",
-                    onclick: move |_| {
-                        navigator.push(Router::EditDeck { deck_id });
-                    },
-                    "edit"
+                if metrics.is_some() {
+                    button {
+                        class : "util-btn",
+                        onclick : move |_| {
+                            navigator.push(Router::RemoveDeckCard { deck_id });
+                        },
+                        "remove"
+                    }
                 }
                 button {
                     class: "util-btn",

@@ -758,13 +758,12 @@ body {
 .card-shape {
   padding: 1rem;
   border: 1px solid var(--border-primary);
-  border-radius: 1rem;
+  border-radius: 4.5% / 3.5%;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin: 0 auto 0.5rem auto;
-  margin-bottom: 2rem;
-  width: 25vh;
-  height: 35vh;
+  margin: 0 auto 2rem auto;
+  height: 42vh;
+  aspect-ratio: 5 / 7;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1585,6 +1584,18 @@ body {
   color: var(--text-secondary);
   max-width: 100%;
   overflow: hidden;
+  animation: card-row-detail-enter 0.18s ease-out;
+}
+
+@keyframes card-row-detail-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .card-detail-oracle {

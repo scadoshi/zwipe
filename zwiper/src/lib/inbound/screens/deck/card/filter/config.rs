@@ -1,76 +1,16 @@
 //! Filter configuration accordion component.
 
-use crate::{
-    domain::language::LanguageCodeToFullName,
-    inbound::components::tri_toggle::TriToggle,
-    outbound::client::{card::get_languages::ClientGetLanguages, ZwipeClient},
-};
+use crate::inbound::components::tri_toggle::TriToggle;
 use dioxus::prelude::*;
-use zwipe::{
-    domain::auth::models::session::Session,
-    domain::card::models::search_card::card_filter::builder::CardFilterBuilder,
-    inbound::http::ApiError,
-};
+use zwipe::domain::card::models::search_card::card_filter::builder::CardFilterBuilder;
 
 /// Configuration panel with language, reprint, and promo filters.
 #[component]
 pub fn Config() -> Element {
-    let mut filter_builder: Signal<CardFilterBuilder> = use_context();
-
-    let session: Signal<Option<Session>> = use_context();
-    let client: Signal<ZwipeClient> = use_context();
-
-    // Fetch all languages from backend
-    let all_languages: Resource<Result<Vec<String>, ApiError>> = use_resource(move || async move {
-        let Some(session) = session() else {
-            return Err(ApiError::Unauthorized("session expired".to_string()));
-        };
-        client().get_languages(&session).await
-    });
+    let filter_builder: Signal<CardFilterBuilder> = use_context();
 
     rsx! {
         div { class: "flex-col gap-1",
-            // Language chips section
-            div { class: "flex-col gap-half",
-                label { class: "label-xs", "language" }
-
-                // Show loading or languages
-                match &*all_languages.read_unchecked() {
-                    Some(Ok(languages)) => rsx! {
-                        div { class: "flex flex-wrap gap-1",
-                            for lang_code in languages.iter() {{
-                                let lang_code = lang_code.clone();
-                                let display_name = lang_code.language_code_to_full_name().to_lowercase();
-                                rsx! {
-                                    div {
-                                        class: if filter_builder()
-                                            .language()
-                                            .is_some_and(|l| l == lang_code.as_str())
-                                        {
-                                            "chip selected"
-                                        } else {
-                                            "chip"
-                                        },
-                                        onclick: move |_| {
-                                            let lang_to_set = lang_code.clone();
-                                            filter_builder.write().set_language(lang_to_set);
-                                        },
-                                        { display_name }
-                                    }
-                                }
-                            }}
-                        }
-                    },
-                    Some(Err(_)) => rsx! {
-                        div { class: "error", "Failed to load languages" }
-                    },
-                    None => rsx! {
-                        div { class: "loading", "Loading languages..." }
-                    },
-                }
-            }
-
-            // Tri-state filters section
             TriToggle {
                 label: "playable",
                 filter_builder,
