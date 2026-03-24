@@ -85,7 +85,10 @@ pub fn View(deck_id: Uuid) -> Element {
             if let Ok(profile) = client().get_deck_profile(deck_id, &session).await
                 && let Some(commander_id) = profile.commander_id
             {
-                let cmd = if let Some(idx) = cards.iter().position(|c| c.scryfall_data.id == commander_id) {
+                let cmd = if let Some(idx) = cards
+                    .iter()
+                    .position(|c| c.scryfall_data.id == commander_id)
+                {
                     Some(cards.remove(idx))
                 } else {
                     client().get_card(commander_id, &session).await.ok()
@@ -186,7 +189,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                 let card_id = cmd.scryfall_data.id;
                                 let is_expanded = expanded_card() == Some(card_id);
                                 let sd = &cmd.scryfall_data;
-                                let name = sd.name.clone();
+                                let name = sd.name.to_lowercase();
                                 let cmc_display = sd.cmc
                                     .map(|c| {
                                         let floored = c.floor() as i64;
