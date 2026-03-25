@@ -36,20 +36,9 @@ Planned work after completing current tasks.
    - Backend: `AddDeckCard` / `CreateDeckCard` already stores a `Quantity` — the quantity just needs to be driven by user input rather than hardcoded to 1
    - Validation (see CopyMax Enforcement below)
 
-2. **CopyMax Enforcement (Frontend + Backend)** - Currently copy limits are stored in the deck but not actively enforced during add/update operations.
+2. ~~**CopyMax Enforcement (Frontend + Backend)**~~ — **DONE** (2026-03-24). Backend: `UpdateDeckCard` guard query enforces copy_max before applying delta. `UpdateDeckProfile` truncates existing card quantities when copy_max becomes more restrictive (single UPDATE in same transaction). Frontend: ViewDeckCard +/- controls respect copy_max with toast feedback. EditDeck shows truncation warning dialog only when actual card quantities exceed the new limit.
 
-   **Scope:**
-   - Backend: `AddDeckCard` and `UpdateDeckCard` domain types must check the deck's `copy_max` and reject quantities that exceed it (singleton=1, standard=4). Backend is the source of truth — always defend here.
-   - Frontend: Assert the same rule before making the request so UX is immediate. Frontend asserts, backend defends.
-   - Migration: `CreateDeckCard` and `UpdateDeckCard` flows need to fetch the deck's `copy_max` and thread it into validation.
-
-3. **Change Quantity in View Deck Screen** - Users need a way to adjust the quantity of a card already in their deck without removing and re-adding it.
-
-   **Scope:**
-   - Add inline quantity control to `ViewDeckCard` expandable card rows (+ / − buttons or a stepper)
-   - Wire to `UpdateDeckCard` endpoint
-   - Respect CopyMax enforcement (see above)
-   - Optimistic update in local state; revert on error
+3. ~~**Change Quantity in View Deck Screen**~~ — **DONE** (2026-03-24). Inline +/- quantity controls in ViewDeckCard expanded rows. Wired to `UpdateDeckCard` with optimistic updates and rollback on error. Singleton decks show only − (which deletes). Qty column in compact rows, omitted for singleton decks.
 
 4. ~~**Deck Metrics View**~~ — **DONE** (2026-03-23). `DeckMetrics` in deck domain, `ComputeMetrics` trait generic over `IntoIterator<Item = &Card>`. Stats (cards, avg cmc, lands), ASCII mana curve, type/color distributions rendered on ViewDeck screen.
 

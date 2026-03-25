@@ -51,7 +51,7 @@ Production-ready frontend implementations.
 - **Create Deck**: Name input, searchable commander field, CopyMax selection
 - **Deck List**: Resource-based fetching with loading/success/error states
 - **View Deck**: Read-only profile display (deck name, copy rule, commander name) in Profile-style label/value rows
-- **Edit Deck**: Pre-populated form with change tracking and conditional updates
+- **Edit Deck**: Pre-populated form with change tracking and conditional updates; fetches full `Deck` via `get_deck` to compute `would_truncate` memo; AlertDialog warns only when cards actually exceed new copy_max
 - **Delete Deck**: AlertDialog confirmation with async error handling
 
 ### Deck Composition
@@ -80,6 +80,8 @@ Production-ready frontend implementations.
   - Unified `.screen` fixed-frame layout (all screens share same `position: fixed; inset: 0` + flexbox structure)
   - Full filter panel (8 accordion sections) shared with add/remove screens via context
   - Color display: `{W}{U}{B}` encoded format using `Color::to_short_name()`
+  - Qty column: per-card quantity in compact rows via `quantity_map` signal; omitted for singleton decks using `.no-qty` CSS modifier that swaps grid-template-columns
+  - +/- quantity controls in expanded rows: optimistic local updates, CopyMax enforcement with toast, delete-on-zero, rollback on error
   - Empty state: text "no cards" instead of card shape placeholder
 
 ### Commander Search

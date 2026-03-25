@@ -38,6 +38,6 @@ Navigate to specific status files:
 
 **Tech Stack**: Rust backend (Axum, SQLx, PostgreSQL, JWT auth), Dioxus frontend (web/mobile), hexagonal architecture
 
-**Current Phase**: Feature development - enhancements, UI polish, deck composition features
+**Current Phase**: Feature development - deck import, multi-copy add flow, UI polish
 
-**Recent Achievement**: Unified screen layout — replaced 5 different layout patterns across 14 screens with a single `.screen` fixed-frame layout. Fixed layout shift after deck creation and iOS keyboard push bugs. ViewDeck simplified to Profile-style label/value rows.
+**Recent Achievement**: CopyMax enforcement complete — backend truncates card quantities on restrictive copy_max changes (atomic in same transaction), frontend warns only when actual cards exceed the new limit. Qty column in ViewDeckCard rows, omitted for singleton decks.
