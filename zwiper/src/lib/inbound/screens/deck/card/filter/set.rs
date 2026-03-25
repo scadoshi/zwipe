@@ -1,5 +1,6 @@
 //! Card set filter component.
 
+use super::deck_cards::{DeckCards, extract_sets};
 use crate::outbound::client::{card::get_sets::ClientGetSets, ZwipeClient};
 use dioxus::prelude::*;
 use zwipe::{
@@ -17,8 +18,12 @@ pub fn Set() -> Element {
     let client: Signal<ZwipeClient> = use_context();
 
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
+    let deck_ctx: Option<DeckCards> = try_use_context();
 
     let all_sets: Resource<Result<Vec<String>, ApiError>> = use_resource(move || async move {
+        if let Some(dc) = deck_ctx {
+            return Ok(extract_sets(&dc.0()));
+        }
         let Some(session) = session() else {
             return Err(ApiError::Unauthorized("session expired".to_string()));
         };

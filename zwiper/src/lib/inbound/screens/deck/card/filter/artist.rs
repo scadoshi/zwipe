@@ -1,5 +1,6 @@
 //! Artist filter component.
 
+use super::deck_cards::{DeckCards, extract_artists};
 use crate::outbound::client::{card::get_artists::ClientGetArtists, ZwipeClient};
 use dioxus::prelude::*;
 use zwipe::{
@@ -18,9 +19,13 @@ pub fn Artist() -> Element {
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let filter_reset: Signal<u32> = use_context();
+    let deck_ctx: Option<DeckCards> = try_use_context();
 
-    // Fetch all artists from backend
+    // Fetch artists from deck context (if present) or server
     let all_artists: Resource<Result<Vec<String>, ApiError>> = use_resource(move || async move {
+        if let Some(dc) = deck_ctx {
+            return Ok(extract_artists(&dc.0()));
+        }
         let Some(session) = session() else {
             return Err(ApiError::Unauthorized("session expired".to_string()));
         };

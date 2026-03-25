@@ -5,9 +5,9 @@ use crate::{
             auth::{bouncer::Bouncer, session_upkeep::Upkeep},
         },
         screens::deck::card::filter::{
-            artist::Artist, combat::Combat, config::Config, flavor_text::FlavorText, mana::Mana,
-            name::Name, oracle_text::OracleText, rarity::Rarity, set::Set, sort::Sort,
-            types::Types,
+            artist::Artist, combat::Combat, config::Config, deck_cards::DeckCards,
+            flavor_text::FlavorText, mana::Mana, name::Name, oracle_text::OracleText,
+            rarity::Rarity, set::Set, sort::Sort, types::Types,
         },
     },
     outbound::client::{
@@ -59,6 +59,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
     // Source of truth — all cards in the deck
     let mut deck_cards: Signal<Vec<Card>> = use_signal(Vec::new);
+    use_context_provider(|| DeckCards(deck_cards));
     // Guards filter effect from running before the deck has loaded
     let mut deck_loaded: Signal<bool> = use_signal(|| false);
     // What the UI renders — grouped card lists
@@ -69,6 +70,8 @@ pub fn View(deck_id: Uuid) -> Element {
     let mut expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
     // Commander is always pinned — never part of groupable deck_cards
     let mut commander_card: Signal<Option<Card>> = use_signal(|| None);
+    // Commander filtered by the active filter (None = filtered out or no commander)
+    let mut displayed_commander: Signal<Option<Card>> = use_signal(|| None);
     // Quantity per card (scryfall_data_id → quantity as i32)
     let mut quantity_map: Signal<HashMap<Uuid, i32>> = use_signal(HashMap::new);
     // Copy limit for this deck (None = unlimited, Some(1) = singleton, Some(4) = standard)
@@ -150,16 +153,23 @@ pub fn View(deck_id: Uuid) -> Element {
         let builder = filter_builder.peek().clone();
         let group_option = *group_by_option.peek();
         let lands_visible = *show_lands.peek();
+        let cmd = commander_card.peek().clone();
 
-        let mut filtered = if builder.is_empty() {
-            all_cards
+        let (mut filtered, new_displayed_commander) = if builder.is_empty() {
+            (all_cards, cmd)
         } else {
             let mut b = builder;
             b.set_limit(10_000);
             b.set_offset(0);
             match b.build() {
-                Ok(filter) => all_cards.filter_by(&filter),
-                Err(_) => deck_cards.peek().clone(),
+                Ok(filter) => {
+                    let filtered = all_cards.filter_by(&filter);
+                    let cmd_visible = cmd.filter(|c| {
+                        !vec![c.clone()].filter_by(&filter).is_empty()
+                    });
+                    (filtered, cmd_visible)
+                }
+                Err(_) => (deck_cards.peek().clone(), cmd),
             }
         };
 
@@ -169,6 +179,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
         let groups = filtered.group_by(group_option);
         displayed_groups.set(groups);
+        displayed_commander.set(new_displayed_commander);
         expanded_card.set(None);
     });
 
@@ -285,7 +296,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     }
 
                     // Pinned commander group
-                    if let Some(cmd) = commander_card() {
+                    if let Some(cmd) = displayed_commander() {
                         div { class: "card-group",
                             div { class: "card-group-header", "commander" }
                             {

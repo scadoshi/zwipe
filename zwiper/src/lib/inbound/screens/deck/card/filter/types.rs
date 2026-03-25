@@ -1,6 +1,9 @@
 //! Card type filter component.
 
-use super::match_mode::MatchMode;
+use super::{
+    deck_cards::{DeckCards, extract_type_words},
+    match_mode::MatchMode,
+};
 use crate::outbound::client::{card::get_card_types::ClientGetCardTypes, ZwipeClient};
 use dioxus::prelude::*;
 use zwipe::{
@@ -73,9 +76,13 @@ pub fn Types() -> Element {
     let client: Signal<ZwipeClient> = use_context();
 
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
+    let deck_ctx: Option<DeckCards> = try_use_context();
 
     let all_card_types: Resource<Result<Vec<String>, ApiError>> =
         use_resource(move || async move {
+            if let Some(dc) = deck_ctx {
+                return Ok(extract_type_words(&dc.0()));
+            }
             let Some(session) = session() else {
                 return Err(ApiError::Unauthorized("session expired".to_string()));
             };

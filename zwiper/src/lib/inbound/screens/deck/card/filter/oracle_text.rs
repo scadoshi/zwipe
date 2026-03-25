@@ -3,7 +3,10 @@
 //! Provides oracle text contains (free text), oracle words contains (chip multi-select),
 //! and keywords contains (chip multi-select), each with any/all matching toggles.
 
-use super::match_mode::MatchMode;
+use super::{
+    deck_cards::{DeckCards, extract_keywords, extract_oracle_words},
+    match_mode::MatchMode,
+};
 use crate::outbound::client::{
     card::{get_keywords::ClientGetKeywords, get_oracle_words::ClientGetOracleWords},
     ZwipeClient,
@@ -77,19 +80,26 @@ pub fn OracleText() -> Element {
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let filter_reset: Signal<u32> = use_context();
+    let deck_ctx: Option<DeckCards> = try_use_context();
 
-    // Fetch oracle words from backend
+    // Fetch oracle words from deck context (if present) or server
     let all_oracle_words: Resource<Result<Vec<String>, ApiError>> =
         use_resource(move || async move {
+            if let Some(dc) = deck_ctx {
+                return Ok(extract_oracle_words(&dc.0()));
+            }
             let Some(session) = session() else {
                 return Err(ApiError::Unauthorized("session expired".to_string()));
             };
             client().get_oracle_words(&session).await
         });
 
-    // Fetch keywords from backend
+    // Fetch keywords from deck context (if present) or server
     let all_keywords: Resource<Result<Vec<String>, ApiError>> =
         use_resource(move || async move {
+            if let Some(dc) = deck_ctx {
+                return Ok(extract_keywords(&dc.0()));
+            }
             let Some(session) = session() else {
                 return Err(ApiError::Unauthorized("session expired".to_string()));
             };
