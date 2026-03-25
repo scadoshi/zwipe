@@ -2,7 +2,7 @@
 use crate::{
     domain::{
         auth::ports::AuthService,
-        card::{models::get_oracle_keywords::GetOracleKeywordsError, ports::CardService},
+        card::{models::get_keywords::GetKeywordsError, ports::CardService},
         deck::ports::DeckService,
         health::ports::HealthService,
         user::ports::UserService,
@@ -15,17 +15,17 @@ use axum::{extract::State, Json};
 use reqwest::StatusCode;
 
 #[cfg(feature = "zerver")]
-impl From<GetOracleKeywordsError> for ApiError {
-    fn from(value: GetOracleKeywordsError) -> Self {
+impl From<GetKeywordsError> for ApiError {
+    fn from(value: GetKeywordsError) -> Self {
         match value {
-            GetOracleKeywordsError::Database(e) => e.log_500(),
+            GetKeywordsError::Database(e) => e.log_500(),
         }
     }
 }
 
-/// Returns distinct oracle keyword ability names.
+/// Returns distinct keyword ability names.
 #[cfg(feature = "zerver")]
-pub async fn get_oracle_keywords<AS, US, HS, CS, DS>(
+pub async fn get_keywords<AS, US, HS, CS, DS>(
     _: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
 ) -> Result<(StatusCode, Json<Vec<String>>), ApiError>
@@ -38,7 +38,7 @@ where
 {
     state
         .card_service
-        .get_oracle_keywords()
+        .get_keywords()
         .await
         .map_err(ApiError::from)
         .map(|all_keywords| (StatusCode::OK, Json(all_keywords)))

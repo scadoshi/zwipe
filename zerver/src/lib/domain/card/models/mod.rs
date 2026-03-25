@@ -8,8 +8,8 @@ pub mod get_artists;
 pub mod get_card;
 /// Get distinct card types from database.
 pub mod get_card_types;
-/// Get distinct oracle keyword abilities from database.
-pub mod get_oracle_keywords;
+/// Get distinct keyword abilities from database.
+pub mod get_keywords;
 /// Get distinct normalized words from oracle text.
 pub mod get_oracle_words;
 /// Get distinct languages from card database.

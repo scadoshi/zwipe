@@ -6,8 +6,8 @@ pub mod get_artists;
 pub mod get_card;
 /// Distinct card type names handler.
 pub mod get_card_types;
-/// Distinct oracle keyword ability names handler.
-pub mod get_oracle_keywords;
+/// Distinct keyword ability names handler.
+pub mod get_keywords;
 /// Distinct oracle text word names handler.
 pub mod get_oracle_words;
 /// Distinct language names handler.

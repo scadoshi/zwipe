@@ -85,6 +85,50 @@ impl CardFilterBuilder {
         self
     }
 
+    // =================================
+    // Keywords Filter Setters
+    // =================================
+
+    /// Sets filter matching any of multiple keywords (OR logic). Empty vec = None.
+    pub fn set_keywords_contains_any<I, S>(
+        &mut self,
+        keywords_contains_any: I,
+    ) -> &mut Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        let v: Vec<String> = keywords_contains_any.into_iter().map(Into::into).collect();
+        self.keywords_contains_any = if v.is_empty() { None } else { Some(v) };
+        self
+    }
+
+    /// Clears the keywords_contains_any filter.
+    pub fn unset_keywords_contains_any(&mut self) -> &mut Self {
+        self.keywords_contains_any = None;
+        self
+    }
+
+    /// Sets filter requiring all keywords to be present (AND logic). Empty vec = None.
+    pub fn set_keywords_contains_all<I, S>(
+        &mut self,
+        keywords_contains_all: I,
+    ) -> &mut Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        let v: Vec<String> = keywords_contains_all.into_iter().map(Into::into).collect();
+        self.keywords_contains_all = if v.is_empty() { None } else { Some(v) };
+        self
+    }
+
+    /// Clears the keywords_contains_all filter.
+    pub fn unset_keywords_contains_all(&mut self) -> &mut Self {
+        self.keywords_contains_all = None;
+        self
+    }
+
     /// Sets flavor text filter.
     pub fn set_flavor_text_contains(
         &mut self,

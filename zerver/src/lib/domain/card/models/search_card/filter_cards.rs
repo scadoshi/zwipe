@@ -95,6 +95,27 @@ impl FilterCards for Vec<Card> {
                     }
                 }
 
+                // ── keywords ──────────────────────────────────────────────────
+                if let Some(values) = filter.keywords_contains_any() {
+                    let matches = match &sd.keywords {
+                        Some(kw) => values.iter().any(|v| kw.iter().any(|k| k.eq_ignore_ascii_case(v))),
+                        None => false,
+                    };
+                    if !matches {
+                        return false;
+                    }
+                }
+
+                if let Some(values) = filter.keywords_contains_all() {
+                    let matches = match &sd.keywords {
+                        Some(kw) => values.iter().all(|v| kw.iter().any(|k| k.eq_ignore_ascii_case(v))),
+                        None => false,
+                    };
+                    if !matches {
+                        return false;
+                    }
+                }
+
                 if let Some(q) = filter.flavor_text_contains() {
                     match &sd.flavor_text {
                         Some(text) if text.to_lowercase().contains(&q.to_lowercase()) => {}
@@ -526,6 +547,123 @@ mod tests {
                 preview_source: None,
             },
         }
+    }
+
+    // ── keywords_contains_any ────────────────────────────────────────────────
+
+    #[test]
+    fn test_keywords_contains_any_matches_when_one_keyword_present() {
+        let mut card = make_card("Serra Angel");
+        card.scryfall_data.keywords = Some(vec!["flying".to_string(), "vigilance".to_string()]);
+        let filter = CardFilterBuilder::with_keywords_contains_any(["flying", "trample"])
+            .build()
+            .unwrap();
+        let result = vec![card].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].scryfall_data.name, "Serra Angel");
+    }
+
+    #[test]
+    fn test_keywords_contains_any_or_logic_either_keyword_matches() {
+        let mut angel = make_card("Serra Angel");
+        angel.scryfall_data.keywords = Some(vec!["flying".to_string(), "vigilance".to_string()]);
+        let mut wurm = make_card("Carnage Wurm");
+        wurm.scryfall_data.keywords = Some(vec!["trample".to_string()]);
+        let forest = make_card("Forest");
+        let filter = CardFilterBuilder::with_keywords_contains_any(["flying", "trample"])
+            .build()
+            .unwrap();
+        let result = vec![angel, wurm, forest].filter_by(&filter);
+        assert_eq!(result.len(), 2);
+    }
+
+    #[test]
+    fn test_keywords_contains_any_excludes_when_no_keyword_matches() {
+        let mut card = make_card("Grizzly Bears");
+        card.scryfall_data.keywords = Some(vec!["haste".to_string()]);
+        let filter = CardFilterBuilder::with_keywords_contains_any(["flying", "trample"])
+            .build()
+            .unwrap();
+        let result = vec![card].filter_by(&filter);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_keywords_contains_any_skips_card_with_no_keywords() {
+        let card = make_card("Forest"); // keywords = None
+        let filter = CardFilterBuilder::with_keywords_contains_any(["flying"])
+            .build()
+            .unwrap();
+        let result = vec![card].filter_by(&filter);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_keywords_contains_any_is_case_insensitive() {
+        let mut card = make_card("Serra Angel");
+        card.scryfall_data.keywords = Some(vec!["Flying".to_string()]);
+        let filter = CardFilterBuilder::with_keywords_contains_any(["flying"])
+            .build()
+            .unwrap();
+        let result = vec![card].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+    }
+
+    // ── keywords_contains_all ────────────────────────────────────────────────
+
+    #[test]
+    fn test_keywords_contains_all_matches_when_all_keywords_present() {
+        let mut card = make_card("Serra Angel");
+        card.scryfall_data.keywords = Some(vec!["flying".to_string(), "vigilance".to_string()]);
+        let filter = CardFilterBuilder::with_keywords_contains_all(["flying", "vigilance"])
+            .build()
+            .unwrap();
+        let result = vec![card].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].scryfall_data.name, "Serra Angel");
+    }
+
+    #[test]
+    fn test_keywords_contains_all_excludes_when_only_one_keyword_matches() {
+        let mut card = make_card("Serra Angel");
+        card.scryfall_data.keywords = Some(vec!["flying".to_string(), "vigilance".to_string()]);
+        let filter = CardFilterBuilder::with_keywords_contains_all(["flying", "trample"])
+            .build()
+            .unwrap();
+        let result = vec![card].filter_by(&filter);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_keywords_contains_all_excludes_when_no_keywords_match() {
+        let mut card = make_card("Grizzly Bears");
+        card.scryfall_data.keywords = Some(vec!["haste".to_string()]);
+        let filter = CardFilterBuilder::with_keywords_contains_all(["flying", "trample"])
+            .build()
+            .unwrap();
+        let result = vec![card].filter_by(&filter);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_keywords_contains_all_skips_card_with_no_keywords() {
+        let card = make_card("Forest"); // keywords = None
+        let filter = CardFilterBuilder::with_keywords_contains_all(["flying"])
+            .build()
+            .unwrap();
+        let result = vec![card].filter_by(&filter);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_keywords_contains_all_is_case_insensitive() {
+        let mut card = make_card("Serra Angel");
+        card.scryfall_data.keywords = Some(vec!["Flying".to_string(), "Vigilance".to_string()]);
+        let filter = CardFilterBuilder::with_keywords_contains_all(["flying", "vigilance"])
+            .build()
+            .unwrap();
+        let result = vec![card].filter_by(&filter);
+        assert_eq!(result.len(), 1);
     }
 
     // ── text ──────────────────────────────────────────────────────────────────

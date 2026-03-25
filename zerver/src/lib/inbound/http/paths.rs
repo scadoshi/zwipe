@@ -63,7 +63,7 @@ pub fn get_card_types_route() -> String {
     "api/card/types".to_string()
 }
 
-pub fn get_oracle_keywords_route() -> String {
+pub fn get_keywords_route() -> String {
     "api/card/keywords".to_string()
 }
 

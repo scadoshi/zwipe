@@ -29,6 +29,15 @@ impl CardFilter {
         self.flavor_text_contains.as_deref()
     }
 
+    // keywords
+    pub fn keywords_contains_any(&self) -> Option<&[String]> {
+        self.keywords_contains_any.as_deref()
+    }
+
+    pub fn keywords_contains_all(&self) -> Option<&[String]> {
+        self.keywords_contains_all.as_deref()
+    }
+
     pub fn has_flavor_text(&self) -> Option<bool> {
         self.has_flavor_text
     }
