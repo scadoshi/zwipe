@@ -20,6 +20,7 @@ use crate::domain::deck::models::{
         create_deck_card::{CreateDeckCard, CreateDeckCardError},
         delete_deck_card::{DeleteDeckCard, DeleteDeckCardError},
         get_deck_card::GetDeckCardError,
+        import_deck_cards::{ImportDeckCards, ImportDeckCardsError, ImportDeckCardsResult},
         update_deck_card::{UpdateDeckCard, UpdateDeckCardError},
         DeckCard,
     },
@@ -96,6 +97,13 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         &self,
         request: &DeleteDeckCard,
     ) -> impl Future<Output = Result<(), DeleteDeckCardError>> + Send;
+
+    /// Bulk upserts cards into a deck (insert or overwrite quantity).
+    fn bulk_create_deck_cards(
+        &self,
+        request: &ImportDeckCards,
+        cards: &[(uuid::Uuid, i32)],
+    ) -> impl Future<Output = Result<Vec<DeckCard>, ImportDeckCardsError>> + Send;
 }
 
 /// Service port for deck building business logic.
@@ -169,4 +177,10 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         &self,
         request: &DeleteDeckCard,
     ) -> impl Future<Output = Result<(), DeleteDeckCardError>> + Send;
+
+    /// Imports cards from a plain-text decklist with authorization check.
+    fn import_deck_cards(
+        &self,
+        request: &ImportDeckCards,
+    ) -> impl Future<Output = Result<ImportDeckCardsResult, ImportDeckCardsError>> + Send;
 }
