@@ -8,7 +8,9 @@ Planned work after completing current tasks.
 
 1. find_cards_by_exact_name() says it returns a SearchCardsError but specifically skips the cases where a name is NOT found. That is fine and to be expected but documentation should note to NOT expect an error if the names in the search do not match a card you will not get a not found error for that! Also we should change the name to note the case insensitivity please. Something like insensitive_find_cards_by_exact_name please. 
 
-2. 
+2. Accordion scroll-to-focus: when a filter accordion item is opened, the bottom sheet should scroll to bring the opened section into view. Currently it expands but doesn't scroll, so filters near the bottom are hidden and the user has to manually find them.
+
+3. Config filter labels: add "is" or "has" prefix to boolean fields so they read naturally — "is playable", "is digital only", "is oversized", "is promo", "has content warning".
 
 ---
 
