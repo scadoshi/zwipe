@@ -1,6 +1,7 @@
 use crate::domain::card::models::get_artists::GetArtistsError;
 use crate::domain::card::models::get_card_types::GetCardTypesError;
 use crate::domain::card::models::get_languages::GetLanguagesError;
+use crate::domain::card::models::get_oracle_keywords::GetOracleKeywordsError;
 use crate::domain::card::models::get_sets::GetSetsError;
 use crate::domain::card::models::scryfall_data::get_scryfall_data::{
     GetScryfallData, ScryfallDataIds,
@@ -120,6 +121,10 @@ impl<R: CardRepository> CardService for Service<R> {
 
     async fn get_card_types(&self) -> Result<Vec<String>, GetCardTypesError> {
         self.repo.get_card_types().await
+    }
+
+    async fn get_oracle_keywords(&self) -> Result<Vec<String>, GetOracleKeywordsError> {
+        self.repo.get_oracle_keywords().await
     }
 
     async fn get_sets(&self) -> Result<Vec<String>, GetSetsError> {

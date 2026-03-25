@@ -71,6 +71,18 @@ impl FilterCards for Vec<Card> {
                     }
                 }
 
+                if let Some(values) = filter.oracle_text_contains_any() {
+                    let matches = match &sd.oracle_text {
+                        Some(text) => values
+                            .iter()
+                            .any(|v| text.to_lowercase().contains(&v.to_lowercase())),
+                        None => false,
+                    };
+                    if !matches {
+                        return false;
+                    }
+                }
+
                 if let Some(q) = filter.flavor_text_contains() {
                     match &sd.flavor_text {
                         Some(text) if text.to_lowercase().contains(&q.to_lowercase()) => {}

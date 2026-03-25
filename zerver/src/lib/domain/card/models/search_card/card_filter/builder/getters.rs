@@ -23,6 +23,11 @@ impl CardFilterBuilder {
         self.oracle_text_contains.as_deref()
     }
 
+    /// Returns the oracle_text_contains_any filter value.
+    pub fn oracle_text_contains_any(&self) -> Option<&[String]> {
+        self.oracle_text_contains_any.as_deref()
+    }
+
     /// Returns the flavor text filter value.
     pub fn flavor_text_contains(&self) -> Option<&str> {
         self.flavor_text_contains.as_deref()

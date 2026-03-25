@@ -81,6 +81,7 @@ pub struct CardFilterBuilder {
     // text
     name_contains: Option<String>,
     oracle_text_contains: Option<String>,
+    oracle_text_contains_any: Option<Vec<String>>,
     flavor_text_contains: Option<String>,
     has_flavor_text: Option<bool>,
     // types
@@ -119,6 +120,7 @@ impl Default for CardFilterBuilder {
             artist_equals_any: None,
             name_contains: None,
             oracle_text_contains: None,
+            oracle_text_contains_any: None,
             flavor_text_contains: None,
             has_flavor_text: None,
             type_line_contains: None,
@@ -167,6 +169,20 @@ impl CardFilterBuilder {
     pub fn with_name_contains(name_contains: impl Into<String>) -> CardFilterBuilder {
         CardFilterBuilder {
             name_contains: Some(name_contains.into()),
+            ..CardFilterBuilder::default()
+        }
+    }
+
+    /// Creates builder matching any of the provided oracle text substrings (keyword abilities).
+    pub fn with_oracle_text_contains_any<I, S>(oracle_text_contains_any: I) -> CardFilterBuilder
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        CardFilterBuilder {
+            oracle_text_contains_any: Some(
+                oracle_text_contains_any.into_iter().map(Into::into).collect(),
+            ),
             ..CardFilterBuilder::default()
         }
     }
@@ -412,6 +428,7 @@ impl CardFilterBuilder {
             artist_equals_any: self.artist_equals_any.clone(),
             name_contains: self.name_contains.clone(),
             oracle_text_contains: self.oracle_text_contains.clone(),
+            oracle_text_contains_any: self.oracle_text_contains_any.clone(),
             flavor_text_contains: self.flavor_text_contains.clone(),
             has_flavor_text: self.has_flavor_text,
             type_line_contains: self.type_line_contains.clone(),
