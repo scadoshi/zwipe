@@ -10,7 +10,7 @@ Planned work after completing current tasks.
 
 2. Accordion scroll-to-focus: when a filter accordion item is opened, the bottom sheet should scroll to bring the opened section into view. Currently it expands but doesn't scroll, so filters near the bottom are hidden and the user has to manually find them.
 
-3. Config filter labels: add "is" or "has" prefix to boolean fields so they read naturally — "is playable", "is digital only", "is oversized", "is promo", "has content warning".
+~~3. Config filter labels: add "is" or "has" prefix to boolean fields so they read naturally — "is playable", "is digital only", "is oversized", "is promo", "has content warning".~~
 
 ---
 

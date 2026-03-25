@@ -12,7 +12,7 @@ pub fn Config() -> Element {
     rsx! {
         div { class: "flex-col gap-1",
             TriToggle {
-                label: "playable",
+                label: "is playable",
                 filter_builder,
                 getter: |fb| fb.is_playable(),
                 setter_true: |fb| { fb.set_is_playable(true); },
@@ -24,7 +24,7 @@ pub fn Config() -> Element {
             }
 
             TriToggle {
-                label: "digital",
+                label: "is digital",
                 filter_builder,
                 getter: |fb| fb.digital(),
                 setter_true: |fb| { fb.set_digital(true); },
@@ -36,7 +36,7 @@ pub fn Config() -> Element {
             }
 
             TriToggle {
-                label: "oversized",
+                label: "is oversized",
                 filter_builder,
                 getter: |fb| fb.oversized(),
                 setter_true: |fb| { fb.set_oversized(true); },
@@ -48,7 +48,7 @@ pub fn Config() -> Element {
             }
 
             TriToggle {
-                label: "promo",
+                label: "is promo",
                 filter_builder,
                 getter: |fb| fb.promo(),
                 setter_true: |fb| { fb.set_promo(true); },
@@ -60,7 +60,7 @@ pub fn Config() -> Element {
             }
 
             TriToggle {
-                label: "content warning",
+                label: "has content warning",
                 filter_builder,
                 getter: |fb| fb.content_warning(),
                 setter_true: |fb| { fb.set_content_warning(true); },
