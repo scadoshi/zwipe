@@ -1546,10 +1546,14 @@ body {
 
 .card-row-compact {
   display: grid;
-  grid-template-columns: 1fr 2rem 3rem auto;
+  grid-template-columns: 1.5rem 1fr 2rem 3rem auto;
   align-items: center;
   gap: 0.25rem;
   font-size: 0.8rem;
+}
+
+.card-row-compact.no-qty {
+  grid-template-columns: 1fr 2rem 3rem auto;
 }
 
 .card-row-name {
@@ -1566,6 +1570,12 @@ body {
 }
 
 .card-row-pt {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.card-row-qty {
   text-align: center;
   color: var(--text-muted);
   font-size: 0.75rem;

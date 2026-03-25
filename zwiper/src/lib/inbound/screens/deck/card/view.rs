@@ -260,7 +260,10 @@ pub fn View(deck_id: Uuid) -> Element {
                     }
 
                     // Column headers
-                    div { class: "card-row-compact card-row-header",
+                    div { class: if deck_copy_max() == Some(CopyMax::singleton()) { "card-row-compact card-row-header no-qty" } else { "card-row-compact card-row-header" },
+                        if deck_copy_max() != Some(CopyMax::singleton()) {
+                            span { class: "card-row-qty", "qty" }
+                        }
                         span { class: "card-row-name", "name" }
                         span { class: "card-row-cmc", "cmc" }
                         span { class: "card-row-pt", "p/t" }
@@ -306,7 +309,10 @@ pub fn View(deck_id: Uuid) -> Element {
                                                 expanded_card.set(Some(card_id));
                                             }
                                         },
-                                        div { class: "card-row-compact",
+                                        div { class: if deck_copy_max() == Some(CopyMax::singleton()) { "card-row-compact no-qty" } else { "card-row-compact" },
+                                            if deck_copy_max() != Some(CopyMax::singleton()) {
+                                                span { class: "card-row-qty", "1" }
+                                            }
                                             span { class: "card-row-name", "{name}" }
                                             span { class: "card-row-cmc", "{cmc_display}" }
                                             span { class: "card-row-pt", "{pt_display}" }
@@ -394,7 +400,12 @@ pub fn View(deck_id: Uuid) -> Element {
                                             },
 
                                             // Compact row
-                                            div { class: "card-row-compact",
+                                            div { class: if deck_copy_max() == Some(CopyMax::singleton()) { "card-row-compact no-qty" } else { "card-row-compact" },
+                                                if deck_copy_max() != Some(CopyMax::singleton()) {
+                                                    span { class: "card-row-qty",
+                                                        "{quantity_map().get(&card_id).copied().unwrap_or(1)}"
+                                                    }
+                                                }
                                                 span { class: "card-row-name", "{name}" }
                                                 span { class: "card-row-cmc", "{cmc_display}" }
                                                 span { class: "card-row-pt", "{pt_display}" }
