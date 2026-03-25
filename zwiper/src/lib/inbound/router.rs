@@ -12,6 +12,8 @@ use crate::inbound::screens::{
         },
         create::CreateDeck,
         edit::EditDeck,
+        export::ExportDeck,
+        import::ImportDeck,
         list::DeckList,
         view::ViewDeck,
     },
@@ -58,6 +60,12 @@ pub enum Router {
     EditDeck { deck_id: Uuid },
     #[route("/deck/get/:deck_id")]
     ViewDeck { deck_id: Uuid },
+
+    // deck import/export
+    #[route("/deck/card/import/:deck_id")]
+    ImportDeck { deck_id: Uuid },
+    #[route("/deck/card/export/:deck_id")]
+    ExportDeck { deck_id: Uuid },
 
     //deck card
     #[route("/deck/card/add/:deck_id")]
