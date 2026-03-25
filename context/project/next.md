@@ -11,7 +11,7 @@ Planned work after completing current tasks.
    - Remaining gap: outbound SQLx repositories have no test coverage (integration tests only viable path)
 
 2. **Bug Fixes** - ~~Layout shift after deck creation~~, ~~iOS keyboard push issues~~ (fixed via unified `.screen` layout — see Bugs section for details)
-    - Quantity is not built to affect deck profile view screen dashboard metrics and it should
+    - ~~Quantity is not built to affect deck profile view screen dashboard metrics and it should~~ — **FIXED** (2026-03-24). `DeckMetrics::from_entries(&[DeckEntry])` replaces `ComputeMetrics` trait; each card counted by its quantity. ViewDeck fetches `Vec<DeckEntry>` instead of discarding quantities.
 
 ---
 

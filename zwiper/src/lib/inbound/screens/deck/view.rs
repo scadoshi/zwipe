@@ -23,8 +23,8 @@ use zwipe::{
         auth::models::session::Session,
         card::models::Card,
         deck::models::{
-            deck::{copy_max::CopyMax, deck_profile::DeckProfile},
-            deck_metrics::ComputeMetrics,
+            deck::{copy_max::CopyMax, deck_profile::DeckProfile, DeckEntry},
+            deck_metrics::DeckMetrics,
         },
     },
     inbound::http::ApiError,
@@ -68,16 +68,17 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 .await
                 .map(Some)
         });
-    let deck_resource: Resource<Result<Vec<Card>, ApiError>> = use_resource(move || async move {
-        session.upkeep(client);
-        let Some(session) = session() else {
-            return Err(ApiError::Unauthorized("session expired".to_string()));
-        };
-        client()
-            .get_deck(deck_id, &session)
-            .await
-            .map(|d| d.entries.into_iter().map(|e| e.card).collect::<Vec<_>>())
-    });
+    let deck_resource: Resource<Result<Vec<DeckEntry>, ApiError>> =
+        use_resource(move || async move {
+            session.upkeep(client);
+            let Some(session) = session() else {
+                return Err(ApiError::Unauthorized("session expired".to_string()));
+            };
+            client()
+                .get_deck(deck_id, &session)
+                .await
+                .map(|d| d.entries)
+        });
     use_effect(move || match commander_resource() {
         Some(Ok(Some(original_commander))) => {
             commander.set(Some(original_commander));
@@ -112,8 +113,8 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     // pre-compute metrics and chart data before rsx!
     let metrics = deck_resource()
         .and_then(|r| r.ok())
-        .filter(|c| !c.is_empty())
-        .map(|c| c.compute_metrics());
+        .filter(|entries| !entries.is_empty())
+        .map(|entries| DeckMetrics::from_entries(&entries));
 
     let bar_heights: Option<[usize; 7]> = metrics.as_ref().map(|m| {
         const MAX_HEIGHT: usize = 8;
