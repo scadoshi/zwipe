@@ -72,6 +72,8 @@ pub fn View(deck_id: Uuid) -> Element {
     let mut quantity_map: Signal<HashMap<Uuid, i32>> = use_signal(HashMap::new);
     // Copy limit for this deck (None = unlimited, Some(1) = singleton, Some(4) = standard)
     let mut deck_copy_max: Signal<Option<CopyMax>> = use_signal(|| None);
+    // Toggle to show/hide land cards (default: hidden)
+    let mut show_lands: Signal<bool> = use_signal(|| false);
 
     // Effect 1 — mount load (reads `session` reactively)
     // Fetches deck cards, separates the commander into its own pinned slot.
@@ -133,10 +135,11 @@ pub fn View(deck_id: Uuid) -> Element {
         });
     });
 
-    // Effect 2 — filter + group (reads `filter_reset_counter` and `group_by_option` reactively)
+    // Effect 2 — filter + group (reads `filter_reset_counter`, `group_by_option`, `show_lands` reactively)
     use_effect(move || {
         let _ = filter_reset_counter();
         let _ = group_by_option();
+        let _ = show_lands();
 
         if !*deck_loaded.peek() {
             return;
@@ -145,8 +148,9 @@ pub fn View(deck_id: Uuid) -> Element {
         let all_cards = deck_cards.peek().clone();
         let builder = filter_builder.peek().clone();
         let group_option = *group_by_option.peek();
+        let lands_visible = *show_lands.peek();
 
-        let filtered = if builder.is_empty() {
+        let mut filtered = if builder.is_empty() {
             all_cards
         } else {
             let mut b = builder;
@@ -158,6 +162,10 @@ pub fn View(deck_id: Uuid) -> Element {
             }
         };
 
+        if !lands_visible {
+            filtered.retain(|c| !c.scryfall_data.is_land());
+        }
+
         let groups = filtered.group_by(group_option);
         displayed_groups.set(groups);
         expanded_card.set(None);
@@ -165,20 +173,20 @@ pub fn View(deck_id: Uuid) -> Element {
 
     let mut change_quantity = move |card_id: Uuid, delta: i32, is_basic_land: bool| {
         let current_qty = quantity_map.peek().get(&card_id).copied().unwrap_or(1);
-        let copy_max = deck_copy_max.peek().clone();
+        let copy_max = *deck_copy_max.peek();
         let is_singleton = copy_max == Some(CopyMax::singleton());
 
         // + at max → toast error, no-op (basic lands are exempt)
-        if delta > 0 && !is_basic_land {
-            if let Some(max) = copy_max {
-                if current_qty >= *max {
-                    toast.warning(
-                        "max copies reached".to_string(),
-                        ToastOptions::default().duration(Duration::from_millis(1500)),
-                    );
-                    return;
-                }
-            }
+        if delta > 0
+            && !is_basic_land
+            && let Some(max) = copy_max
+            && current_qty >= *max
+        {
+            toast.warning(
+                "max copies reached".to_string(),
+                ToastOptions::default().duration(Duration::from_millis(1500)),
+            );
+            return;
         }
 
         // - at 1 or any - on singleton (non-basic-land) → delete
@@ -248,7 +256,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 div { class: "screen-content",
 
                 div { style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
-                    // Group-by chips
+                    // Group-by chips + show lands toggle
                     div { class: "chip-row",
                         for option in GroupByOption::all() {
                             button {
@@ -257,6 +265,12 @@ pub fn View(deck_id: Uuid) -> Element {
                                 onclick: move |_| group_by_option.set(option),
                                 "{option}"
                             }
+                        }
+                        div { style: "flex:1;" }
+                        button {
+                            class: if show_lands() { "chip selected" } else { "chip" },
+                            onclick: move |_| show_lands.set(!show_lands()),
+                            "show lands"
                         }
                     }
 
@@ -381,7 +395,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                     // Expanded details
                                     let oracle_text = sd.oracle_text.clone().unwrap_or_default().to_lowercase();
                                     let type_line = sd.type_line.clone().unwrap_or_default().to_lowercase();
-                                    let is_basic_land = type_line.contains("basic land");
+                                    let is_basic_land = sd.is_basic_land();
                                     let rarity_name = sd.rarity.to_long_name().to_lowercase();
                                     let set_name = sd.set_name.clone().to_lowercase();
 
