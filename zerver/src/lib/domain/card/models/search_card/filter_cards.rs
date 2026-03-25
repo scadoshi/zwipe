@@ -555,6 +555,65 @@ mod tests {
     }
 
     #[test]
+    fn test_oracle_text_contains_any_matches_when_one_keyword_present() {
+        let mut bolt = make_card("Lightning Bolt");
+        bolt.scryfall_data.oracle_text = Some("deals 3 damage to any target".to_string());
+        let forest = make_card("Forest");
+        let filter = CardFilterBuilder::with_oracle_text_contains_any(["damage", "draw"])
+            .build()
+            .unwrap();
+        let result = vec![bolt, forest].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].scryfall_data.name, "Lightning Bolt");
+    }
+
+    #[test]
+    fn test_oracle_text_contains_any_or_logic_either_keyword_matches() {
+        let mut bolt = make_card("Lightning Bolt");
+        bolt.scryfall_data.oracle_text = Some("deals 3 damage to any target".to_string());
+        let mut divination = make_card("Divination");
+        divination.scryfall_data.oracle_text = Some("draw two cards".to_string());
+        let forest = make_card("Forest");
+        let filter = CardFilterBuilder::with_oracle_text_contains_any(["damage", "draw"])
+            .build()
+            .unwrap();
+        let result = vec![bolt, divination, forest].filter_by(&filter);
+        assert_eq!(result.len(), 2);
+    }
+
+    #[test]
+    fn test_oracle_text_contains_any_excludes_when_no_keyword_matches() {
+        let mut card = make_card("Island");
+        card.scryfall_data.oracle_text = Some("tap: add blue mana".to_string());
+        let filter = CardFilterBuilder::with_oracle_text_contains_any(["damage", "draw"])
+            .build()
+            .unwrap();
+        let result = vec![card].filter_by(&filter);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_oracle_text_contains_any_skips_card_with_no_oracle_text() {
+        let card = make_card("Forest"); // oracle_text = None
+        let filter = CardFilterBuilder::with_oracle_text_contains_any(["flying"])
+            .build()
+            .unwrap();
+        let result = vec![card].filter_by(&filter);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_oracle_text_contains_any_is_case_insensitive() {
+        let mut hawk = make_card("Snapping Drake");
+        hawk.scryfall_data.oracle_text = Some("Flying".to_string());
+        let filter = CardFilterBuilder::with_oracle_text_contains_any(["flying"])
+            .build()
+            .unwrap();
+        let result = vec![hawk].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+    }
+
+    #[test]
     fn test_has_flavor_text_true() {
         let mut with_flavor = make_card("Mox Pearl");
         with_flavor.scryfall_data.flavor_text = Some("Worth its weight".to_string());
