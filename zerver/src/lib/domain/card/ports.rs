@@ -165,6 +165,15 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     fn get_last_sync_date(
         &self,
     ) -> impl Future<Output = anyhow::Result<Option<NaiveDateTime>>> + Send;
+
+    /// Finds cards by exact name match (case-insensitive).
+    ///
+    /// Returns one card per unique card name, using the latest printing.
+    /// Used for bulk import operations where substring match is undesirable.
+    fn find_cards_by_exact_names(
+        &self,
+        names: &[String],
+    ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 }
 
 /// Service port for MTG card business logic.
@@ -277,4 +286,12 @@ pub trait CardService: Clone + Send + Sync + 'static {
     fn get_last_sync_date(
         &self,
     ) -> impl Future<Output = anyhow::Result<Option<NaiveDateTime>>> + Send;
+
+    /// Finds cards by exact name match (case-insensitive).
+    ///
+    /// Returns one card per unique card name, using the latest printing.
+    fn find_cards_by_exact_names(
+        &self,
+        names: &[String],
+    ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 }

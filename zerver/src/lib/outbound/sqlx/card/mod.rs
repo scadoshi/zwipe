@@ -611,4 +611,42 @@ impl CardRepository for MyPostgres {
         .context("failed to get last sync date")?;
         Ok(last_sync_date)
     }
+
+    async fn find_cards_by_exact_names(
+        &self,
+        names: &[String],
+    ) -> Result<Vec<Card>, SearchCardsError> {
+        if names.is_empty() {
+            return Ok(vec![]);
+        }
+        let lowered: Vec<String> = names.iter().map(|n| n.to_lowercase()).collect();
+        let scryfall_data: Vec<ScryfallData> = query_as(
+            "WITH deduplicated_cards AS (
+                SELECT sd.id,
+                       ROW_NUMBER() OVER (
+                         PARTITION BY COALESCE(sd.oracle_id, sd.id)
+                         ORDER BY sd.released_at DESC
+                       ) as rn
+                FROM scryfall_data sd
+                JOIN card_profiles cp ON sd.id = cp.scryfall_data_id
+                WHERE LOWER(sd.name) = ANY($1)
+            )
+            SELECT sd.* FROM scryfall_data sd
+            JOIN deduplicated_cards dc ON sd.id = dc.id
+            WHERE dc.rn = 1",
+        )
+        .bind(&lowered)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| SearchScryfallDataError::Database(e.into()))?;
+        if scryfall_data.is_empty() {
+            return Ok(vec![]);
+        }
+        let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
+        let card_profiles = self
+            .get_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
+            .await?;
+        let cards = card_profiles.sleeve(scryfall_data);
+        Ok(cards)
+    }
 }

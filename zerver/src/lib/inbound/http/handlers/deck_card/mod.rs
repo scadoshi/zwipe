@@ -6,5 +6,7 @@ pub mod create_deck_card;
 pub mod delete_deck_card;
 /// Error conversions for deck card lookups.
 pub mod get_deck_card;
+/// Import cards from plain-text decklist handler.
+pub mod import_deck_cards;
 /// Card quantity update handler.
 pub mod update_deck_card;

@@ -20,7 +20,7 @@ use crate::inbound::http::handlers::{
     },
     deck_card::{
         create_deck_card::create_deck_card, delete_deck_card::delete_deck_card,
-        update_deck_card::update_deck_card,
+        import_deck_cards::import_deck_cards, update_deck_card::update_deck_card,
     },
     health::{are_server_and_database_running, is_server_running, root},
     user::get_user::get_user,
@@ -121,6 +121,7 @@ where
                         "/:deck_id/card",
                         Router::new()
                             .route("/", post(create_deck_card))
+                            .route("/import", post(import_deck_cards))
                             .route("/:scryfall_data_id", put(update_deck_card))
                             .route("/:scryfall_data_id", delete(delete_deck_card)),
                     ),

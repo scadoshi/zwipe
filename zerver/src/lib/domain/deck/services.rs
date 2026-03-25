@@ -21,6 +21,10 @@ use crate::domain::{
                 DeckCard,
                 create_deck_card::{CreateDeckCard, CreateDeckCardError},
                 delete_deck_card::{DeleteDeckCard, DeleteDeckCardError},
+                import_deck_cards::{
+                    ImportDeckCards, ImportDeckCardsError, ImportDeckCardsResult, ImportedCard,
+                    UnresolvedCard,
+                },
                 update_deck_card::{UpdateDeckCard, UpdateDeckCardError},
             },
         },
@@ -83,7 +87,10 @@ where
         &self,
         request: &CreateDeckCard,
     ) -> Result<DeckCard, CreateDeckCardError> {
-        let _deck_profile = self.get_deck_profile(&request.into()).await?;
+        let deck_profile = self.get_deck_profile(&request.into()).await?;
+        if deck_profile.commander_id == Some(request.scryfall_data_id) {
+            return Err(CreateDeckCardError::IsCommander);
+        }
         self.deck_repo.create_deck_card(request).await
     }
 
@@ -162,5 +169,93 @@ where
     async fn delete_deck_card(&self, request: &DeleteDeckCard) -> Result<(), DeleteDeckCardError> {
         let _deck_profile = self.get_deck_profile(&request.into()).await?;
         self.deck_repo.delete_deck_card(request).await
+    }
+
+    async fn import_deck_cards(
+        &self,
+        request: &ImportDeckCards,
+    ) -> Result<ImportDeckCardsResult, ImportDeckCardsError> {
+        // Auth check
+        let get_deck = GetDeckProfile::new(request.user_id, request.deck_id);
+        let deck_profile = self.get_deck_profile(&get_deck).await?;
+        let copy_max = deck_profile.copy_max.as_ref().map(|cm| **cm);
+
+        // Collect unique lowercased card names
+        let names: Vec<String> = request
+            .lines
+            .iter()
+            .map(|l| l.card_name.to_lowercase())
+            .collect::<std::collections::HashSet<_>>()
+            .into_iter()
+            .collect();
+
+        // Resolve names (single batch query)
+        let cards = self
+            .card_repo
+            .find_cards_by_exact_names(&names)
+            .await
+            .map_err(|e| ImportDeckCardsError::Database(e.into()))?;
+
+        // Build lookup map: lowercase name -> Card
+        let card_map: HashMap<String, crate::domain::card::models::Card> = cards
+            .into_iter()
+            .map(|c| (c.scryfall_data.name.to_lowercase(), c))
+            .collect();
+
+        // Classify lines, deduplicating by summing quantities
+        // Tuple: (scryfall_id, quantity, name, is_basic_land)
+        let commander_id = deck_profile.commander_id;
+        let mut unresolved: Vec<UnresolvedCard> = Vec::new();
+        let mut insert_map: HashMap<Uuid, (Uuid, i32, String, bool)> = HashMap::new();
+
+        for line in &request.lines {
+            let key = line.card_name.to_lowercase();
+            if let Some(card) = card_map.get(&key) {
+                let scryfall_id = card.scryfall_data.id;
+                // Skip the commander — it's deck metadata, not a regular card
+                if commander_id == Some(scryfall_id) {
+                    continue;
+                }
+                let is_basic_land = card.scryfall_data.is_basic_land();
+                insert_map
+                    .entry(scryfall_id)
+                    .and_modify(|(_, qty, _, _)| *qty += line.quantity)
+                    .or_insert_with(|| {
+                        (scryfall_id, line.quantity, card.scryfall_data.name.clone(), is_basic_land)
+                    });
+            } else {
+                unresolved.push(UnresolvedCard {
+                    name: line.card_name.clone(),
+                    reason: "not found".to_string(),
+                });
+            }
+        }
+
+        // Clamp quantities to copy_max (basic lands exempt)
+        if let Some(max) = copy_max {
+            for (_, qty, _, is_basic_land) in insert_map.values_mut() {
+                if !*is_basic_land && *qty > max {
+                    *qty = max;
+                }
+            }
+        }
+
+        // Build batch insert data
+        let batch: Vec<(Uuid, i32)> =
+            insert_map.values().map(|(id, qty, _, _)| (*id, *qty)).collect();
+
+        // Bulk insert
+        let _deck_cards = self.deck_repo.bulk_create_deck_cards(request, &batch).await?;
+
+        // Build imported list from insert_map
+        let imported: Vec<ImportedCard> = insert_map
+            .into_values()
+            .map(|(_, qty, name, _)| ImportedCard { name, quantity: qty })
+            .collect();
+
+        Ok(ImportDeckCardsResult {
+            imported,
+            unresolved,
+        })
     }
 }

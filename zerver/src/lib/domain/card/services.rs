@@ -165,4 +165,11 @@ impl<R: CardRepository> CardService for Service<R> {
     async fn get_last_sync_date(&self) -> anyhow::Result<Option<NaiveDateTime>> {
         self.repo.get_last_sync_date().await
     }
+
+    async fn find_cards_by_exact_names(
+        &self,
+        names: &[String],
+    ) -> Result<Vec<Card>, SearchCardsError> {
+        self.repo.find_cards_by_exact_names(names).await
+    }
 }

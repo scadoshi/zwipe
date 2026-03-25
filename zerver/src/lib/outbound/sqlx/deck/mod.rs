@@ -23,6 +23,7 @@ use crate::{
                 create_deck_card::{CreateDeckCard, CreateDeckCardError},
                 delete_deck_card::{DeleteDeckCard, DeleteDeckCardError},
                 get_deck_card::GetDeckCardError,
+                import_deck_cards::{ImportDeckCards, ImportDeckCardsError},
                 update_deck_card::{UpdateDeckCard, UpdateDeckCardError},
             },
         },
@@ -323,5 +324,45 @@ impl DeckRepository for Postgres {
         }
         tx.commit().await?;
         Ok(())
+    }
+
+    async fn bulk_create_deck_cards(
+        &self,
+        request: &ImportDeckCards,
+        cards: &[(uuid::Uuid, i32)],
+    ) -> Result<Vec<DeckCard>, ImportDeckCardsError> {
+        if !request
+            .user_id
+            .owns_deck(request.deck_id, &self.pool)
+            .await
+            .map_err(|e| ImportDeckCardsError::Database(e.into()))?
+        {
+            return Err(ImportDeckCardsError::Forbidden);
+        }
+        if cards.is_empty() {
+            return Ok(vec![]);
+        }
+        let mut tx = self.pool.begin().await
+            .map_err(|e| ImportDeckCardsError::Database(e.into()))?;
+        let mut qb: QueryBuilder<'_, sqlx::Postgres> = QueryBuilder::new(
+            "INSERT INTO deck_cards (deck_id, scryfall_data_id, quantity) ",
+        );
+        qb.push_values(cards, |mut b, (scryfall_data_id, quantity)| {
+            b.push_bind(request.deck_id)
+                .push_bind(scryfall_data_id)
+                .push_bind(quantity);
+        });
+        qb.push(
+            " ON CONFLICT (deck_id, scryfall_data_id) DO UPDATE SET quantity = EXCLUDED.quantity RETURNING deck_id::TEXT, scryfall_data_id::TEXT, quantity",
+        );
+        let rows: Vec<DatabaseDeckCard> = qb.build_query_as().fetch_all(&mut *tx).await
+            .map_err(|e| ImportDeckCardsError::Database(e.into()))?;
+        let deck_cards: Vec<DeckCard> = rows
+            .into_iter()
+            .map(|r| r.try_into().map_err(|e: IntoDeckCardError| ImportDeckCardsError::Database(e.into())))
+            .collect::<Result<Vec<_>, _>>()?;
+        tx.commit().await
+            .map_err(|e| ImportDeckCardsError::Database(e.into()))?;
+        Ok(deck_cards)
     }
 }
