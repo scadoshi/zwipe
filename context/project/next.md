@@ -11,6 +11,7 @@ Planned work after completing current tasks.
    - Remaining gap: outbound SQLx repositories have no test coverage (integration tests only viable path)
 
 2. **Bug Fixes** - ~~Layout shift after deck creation~~, ~~iOS keyboard push issues~~ (fixed via unified `.screen` layout — see Bugs section for details)
+    - Quantity is not built to affect deck profile view screen dashboard metrics and it should
 
 ---
 
