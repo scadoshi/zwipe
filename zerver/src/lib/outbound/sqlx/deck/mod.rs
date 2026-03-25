@@ -39,6 +39,26 @@ use crate::{
 };
 use sqlx::{QueryBuilder, query, query_as};
 
+impl Postgres {
+    /// Clamps all deck_card quantities to `max` for the given deck.
+    async fn truncate_deck_card_quantities(
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        deck_id: uuid::Uuid,
+        max: i32,
+    ) -> Result<(), UpdateDeckProfileError> {
+        sqlx::query!(
+            "UPDATE deck_cards SET quantity = $1, updated_at = now()
+             WHERE deck_id = $2 AND quantity > $1",
+            max,
+            deck_id,
+        )
+        .execute(&mut **tx)
+        .await
+        .map_err(|e| UpdateDeckProfileError::Database(e.into()))?;
+        Ok(())
+    }
+}
+
 impl DeckRepository for Postgres {
     // ========
     //  create
@@ -195,6 +215,12 @@ impl DeckRepository for Postgres {
             .push(" RETURNING id, name, commander_id, copy_max, user_id");
         let database_deck: DatabaseDeckProfile = qb.build_query_as().fetch_one(&mut *tx).await?;
         let deck_profile: DeckProfile = database_deck.try_into()?;
+
+        // If copy_max was tightened, clamp existing card quantities
+        if let Some(Some(new_max)) = &request.copy_max {
+            Self::truncate_deck_card_quantities(&mut tx, request.deck_id, **new_max).await?;
+        }
+
         tx.commit().await?;
         Ok(deck_profile)
     }
