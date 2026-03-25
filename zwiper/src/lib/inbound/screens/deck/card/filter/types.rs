@@ -1,5 +1,6 @@
 //! Card type filter component.
 
+use super::match_mode::MatchMode;
 use crate::outbound::client::{card::get_card_types::ClientGetCardTypes, ZwipeClient};
 use dioxus::prelude::*;
 use zwipe::{
@@ -12,6 +13,58 @@ use zwipe::{
     },
     inbound::http::ApiError,
 };
+
+/// Read selected card types from the filter builder based on current mode.
+fn read_card_types(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<CardType> {
+    match mode {
+        MatchMode::Any => fb
+            .card_type_contains_any()
+            .map(|v| v.to_vec())
+            .unwrap_or_default(),
+        MatchMode::All => fb
+            .card_type_contains_all()
+            .map(|v| v.to_vec())
+            .unwrap_or_default(),
+    }
+}
+
+/// Write card types to the filter builder based on current mode.
+fn write_card_types(fb: &mut CardFilterBuilder, mode: MatchMode, values: Vec<CardType>) {
+    fb.unset_card_type_contains_any();
+    fb.unset_card_type_contains_all();
+    if !values.is_empty() {
+        match mode {
+            MatchMode::Any => { fb.set_card_type_contains_any(values); }
+            MatchMode::All => { fb.set_card_type_contains_all(values); }
+        }
+    }
+}
+
+/// Read selected other types from the filter builder based on current mode.
+fn read_other_types(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<String> {
+    match mode {
+        MatchMode::Any => fb
+            .type_line_contains_any()
+            .map(|v| v.to_vec())
+            .unwrap_or_default(),
+        MatchMode::All => fb
+            .type_line_contains_all()
+            .map(|v| v.to_vec())
+            .unwrap_or_default(),
+    }
+}
+
+/// Write other types to the filter builder based on current mode.
+fn write_other_types(fb: &mut CardFilterBuilder, mode: MatchMode, values: Vec<String>) {
+    fb.unset_type_line_contains_any();
+    fb.unset_type_line_contains_all();
+    if !values.is_empty() {
+        match mode {
+            MatchMode::Any => { fb.set_type_line_contains_any(values); }
+            MatchMode::All => { fb.set_type_line_contains_all(values); }
+        }
+    }
+}
 
 /// Filter component for selecting card types (creature, instant, etc.).
 #[component]
@@ -35,6 +88,22 @@ pub fn Types() -> Element {
     // Get reset signal from parent (add.rs) to clear search on apply
     let filter_reset: Signal<u32> = use_context();
 
+    // Match mode toggles (any vs all)
+    let mut card_type_mode = use_signal(|| {
+        if filter_builder().card_type_contains_all().is_some() {
+            MatchMode::All
+        } else {
+            MatchMode::Any
+        }
+    });
+    let mut other_type_mode = use_signal(|| {
+        if filter_builder().type_line_contains_all().is_some() {
+            MatchMode::All
+        } else {
+            MatchMode::Any
+        }
+    });
+
     // Clear search query when filter is applied (keeps this effect - not a sync effect)
     use_effect(move || {
         let _ = filter_reset(); // Subscribe to changes
@@ -42,21 +111,29 @@ pub fn Types() -> Element {
         is_typing.set(false);
     });
 
-    // Read selected other types directly from filter_builder
-    let selected_other_types = filter_builder()
-        .type_line_contains_any()
-        .map(|v| v.to_vec())
-        .unwrap_or_default();
+    // Read selected values for rendering
+    let selected_card_types = read_card_types(&filter_builder(), card_type_mode());
+    let selected_other_types = read_other_types(&filter_builder(), other_type_mode());
 
     rsx! {
         div { class: "flex-col gap-half",
             div { class: "label-row",
                 label { class: "label-xs", r#for: "card-type", "basic types" }
-                if filter_builder().card_type_contains_any().is_some() {
+                button {
+                    class: "clear-btn",
+                    onclick: move |_| {
+                        let new_mode = card_type_mode().toggle();
+                        let current = read_card_types(&filter_builder(), card_type_mode());
+                        write_card_types(&mut filter_builder.write(), new_mode, current);
+                        card_type_mode.set(new_mode);
+                    },
+                    "{card_type_mode().label()}"
+                }
+                if !selected_card_types.is_empty() {
                     button {
                         class: "clear-btn",
                         onclick: move |_| {
-                            filter_builder.write().unset_card_type_contains_any();
+                            write_card_types(&mut filter_builder.write(), card_type_mode(), vec![]);
                         },
                         "×"
                     }
@@ -64,24 +141,18 @@ pub fn Types() -> Element {
             }
             div { class: "flex flex-wrap gap-1 mb-1 flex-center",
                 for card_type in Vec::with_all_card_types() {
-                    div { class: if let Some(card_type_contains_any) = filter_builder().card_type_contains_any() {
-                            if card_type_contains_any.contains(&card_type) {
-                                "chip selected"
-                            } else { "chip" }
+                    div { class: if selected_card_types.contains(&card_type) {
+                            "chip selected"
                         } else { "chip" },
                         onclick: move |_| {
-                            let mut new: Vec<CardType> = Vec::new();
-                            if let Some(selected) = filter_builder().card_type_contains_any() {
-                                new = selected.to_vec();
-                                if selected.contains(&card_type) {
-                                    new.retain(|x| x != &card_type);
-                                } else {
-                                    new.push(card_type);
-                                }
+                            let mode = card_type_mode();
+                            let mut new = read_card_types(&filter_builder(), mode);
+                            if new.contains(&card_type) {
+                                new.retain(|x| x != &card_type);
                             } else {
                                 new.push(card_type);
                             }
-                            filter_builder.write().set_card_type_contains_any(new);
+                            write_card_types(&mut filter_builder.write(), mode, new);
                         },
                         "{card_type}"
                     }
@@ -90,11 +161,21 @@ pub fn Types() -> Element {
 
             div { class: "label-row",
                 label { class: "label-xs", r#for: "other-type", "other types" }
+                button {
+                    class: "clear-btn",
+                    onclick: move |_| {
+                        let new_mode = other_type_mode().toggle();
+                        let current = read_other_types(&filter_builder(), other_type_mode());
+                        write_other_types(&mut filter_builder.write(), new_mode, current);
+                        other_type_mode.set(new_mode);
+                    },
+                    "{other_type_mode().label()}"
+                }
                 if !selected_other_types.is_empty() {
                     button {
                         class: "clear-btn",
                         onclick: move |_| {
-                            filter_builder.write().unset_type_line_contains_any();
+                            write_other_types(&mut filter_builder.write(), other_type_mode(), vec![]);
                             search_query.set(String::new());
                         },
                         "×"
@@ -110,20 +191,12 @@ pub fn Types() -> Element {
                             "{selected}"
                             button { class: "chip-remove",
                                 onclick: move |_| {
-                                    // Remove from filter_builder directly
-                                    let current = filter_builder()
-                                        .type_line_contains_any()
-                                        .map(|v| v.to_vec())
-                                        .unwrap_or_default();
-                                    let new_types: Vec<String> = current
+                                    let mode = other_type_mode();
+                                    let new_types: Vec<String> = read_other_types(&filter_builder(), mode)
                                         .into_iter()
                                         .filter(|t| *t != selected)
                                         .collect();
-                                    if new_types.is_empty() {
-                                        filter_builder.write().unset_type_line_contains_any();
-                                    } else {
-                                        filter_builder.write().set_type_line_contains_any(new_types);
-                                    }
+                                    write_other_types(&mut filter_builder.write(), mode, new_types);
                                 },
                                 "×"
                             }
@@ -154,13 +227,10 @@ pub fn Types() -> Element {
                                     for t in results {
                                         div { class: "chip-unselected",
                                             onclick: move |_| {
-                                                // Add to filter_builder directly
-                                                let mut current = filter_builder()
-                                                    .type_line_contains_any()
-                                                    .map(|v| v.to_vec())
-                                                    .unwrap_or_default();
+                                                let mode = other_type_mode();
+                                                let mut current = read_other_types(&filter_builder(), mode);
                                                 current.push(t.clone());
-                                                filter_builder.write().set_type_line_contains_any(current);
+                                                write_other_types(&mut filter_builder.write(), mode, current);
                                                 is_typing.set(false);
                                             },
                                             "{t}"

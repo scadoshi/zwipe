@@ -91,7 +91,9 @@ pub struct CardFilterBuilder {
     // types
     type_line_contains: Option<String>,
     type_line_contains_any: Option<Vec<String>>,
+    type_line_contains_all: Option<Vec<String>>,
     card_type_contains_any: Option<Vec<CardType>>,
+    card_type_contains_all: Option<Vec<CardType>>,
     // flags
     is_valid_commander: Option<bool>,
     is_token: Option<bool>,
@@ -132,7 +134,9 @@ impl Default for CardFilterBuilder {
             has_flavor_text: None,
             type_line_contains: None,
             type_line_contains_any: None,
+            type_line_contains_all: None,
             card_type_contains_any: None,
+            card_type_contains_all: None,
             is_valid_commander: None,
             is_token: None,
             is_playable: Some(true),
@@ -289,6 +293,31 @@ impl CardFilterBuilder {
     {
         CardFilterBuilder {
             card_type_contains_any: Some(card_type_contains_any.into_iter().collect()),
+            ..CardFilterBuilder::default()
+        }
+    }
+
+    /// Creates builder requiring all provided type line substrings to be present (AND logic).
+    pub fn with_type_line_contains_all<I, S>(type_line_contains_all: I) -> CardFilterBuilder
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        CardFilterBuilder {
+            type_line_contains_all: Some(
+                type_line_contains_all.into_iter().map(Into::into).collect(),
+            ),
+            ..CardFilterBuilder::default()
+        }
+    }
+
+    /// Creates builder requiring all provided card types to be present (AND logic).
+    pub fn with_card_type_contains_all<I>(card_type_contains_all: I) -> CardFilterBuilder
+    where
+        I: IntoIterator<Item = CardType>,
+    {
+        CardFilterBuilder {
+            card_type_contains_all: Some(card_type_contains_all.into_iter().collect()),
             ..CardFilterBuilder::default()
         }
     }
@@ -485,7 +514,9 @@ impl CardFilterBuilder {
             has_flavor_text: self.has_flavor_text,
             type_line_contains: self.type_line_contains.clone(),
             type_line_contains_any: self.type_line_contains_any.clone(),
+            type_line_contains_all: self.type_line_contains_all.clone(),
             card_type_contains_any: self.card_type_contains_any.clone(),
+            card_type_contains_all: self.card_type_contains_all.clone(),
             is_valid_commander: self.is_valid_commander,
             is_token: self.is_token,
             is_playable: self.is_playable,

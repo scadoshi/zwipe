@@ -10,6 +10,8 @@ pub mod combat;
 pub mod config;
 /// Filter mode toggle (exact vs range).
 pub mod filter_mode;
+/// Match mode toggle (any vs all).
+pub mod match_mode;
 /// Flavor text filter.
 pub mod flavor_text;
 /// Mana cost/color filter.

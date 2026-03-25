@@ -76,6 +76,16 @@ impl CardFilterBuilder {
         self.card_type_contains_any.as_deref()
     }
 
+    /// Returns the type_line_contains_all filter value.
+    pub fn type_line_contains_all(&self) -> Option<&[String]> {
+        self.type_line_contains_all.as_deref()
+    }
+
+    /// Returns the card_type_contains_all filter value.
+    pub fn card_type_contains_all(&self) -> Option<&[CardType]> {
+        self.card_type_contains_all.as_deref()
+    }
+
     // =================================
     // Metadata Filter Getters
     // =================================

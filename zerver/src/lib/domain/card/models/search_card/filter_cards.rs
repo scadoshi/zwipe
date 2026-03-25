@@ -166,6 +166,30 @@ impl FilterCards for Vec<Card> {
                     }
                 }
 
+                if let Some(values) = filter.type_line_contains_all() {
+                    let matches = match &sd.type_line {
+                        Some(tl) => values
+                            .iter()
+                            .all(|v| tl.to_lowercase().contains(&v.to_lowercase())),
+                        None => false,
+                    };
+                    if !matches {
+                        return false;
+                    }
+                }
+
+                if let Some(card_types) = filter.card_type_contains_all() {
+                    let matches = match &sd.type_line {
+                        Some(tl) => card_types
+                            .iter()
+                            .all(|ct| tl.to_lowercase().contains(&ct.to_string())),
+                        None => false,
+                    };
+                    if !matches {
+                        return false;
+                    }
+                }
+
                 // ── mana ──────────────────────────────────────────────────────
                 if let Some(val) = filter.cmc_equals()
                     && sd.cmc != Some(val)
