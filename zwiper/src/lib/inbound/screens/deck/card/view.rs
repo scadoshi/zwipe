@@ -13,10 +13,14 @@ use crate::{
         ZwipeClient,
         card::get_card::ClientGetCard,
         deck::{get_deck::ClientGetDeck, get_deck_profile::ClientGetDeckProfile},
+        deck_card::{
+            delete_deck_card::ClientDeleteDeckCard, update_deck_card::ClientUpdateDeckCard,
+        },
     },
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
+use std::collections::HashMap;
 use std::time::Duration;
 use uuid::Uuid;
 use zwipe::domain::{
@@ -29,7 +33,9 @@ use zwipe::domain::{
             group_cards::{CardGroup, GroupByOption, GroupCards},
         },
     },
+    deck::models::deck::copy_max::CopyMax,
 };
+use zwipe::inbound::http::handlers::deck_card::update_deck_card::HttpUpdateDeckCard;
 
 #[component]
 pub fn View(deck_id: Uuid) -> Element {
@@ -62,6 +68,10 @@ pub fn View(deck_id: Uuid) -> Element {
     let mut expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
     // Commander is always pinned — never part of groupable deck_cards
     let mut commander_card: Signal<Option<Card>> = use_signal(|| None);
+    // Quantity per card (scryfall_data_id → quantity as i32)
+    let mut quantity_map: Signal<HashMap<Uuid, i32>> = use_signal(HashMap::new);
+    // Copy limit for this deck (None = unlimited, Some(1) = singleton, Some(4) = standard)
+    let mut deck_copy_max: Signal<Option<CopyMax>> = use_signal(|| None);
 
     // Effect 1 — mount load (reads `session` reactively)
     // Fetches deck cards, separates the commander into its own pinned slot.
@@ -72,28 +82,40 @@ pub fn View(deck_id: Uuid) -> Element {
         };
 
         spawn(async move {
-            let mut cards: Vec<Card> = match client().get_deck(deck_id, &session).await {
-                Ok(deck) => deck.entries.into_iter().map(|e| e.card).collect(),
-                Err(e) => {
-                    browse_error.set(Some(e.to_string()));
-                    return;
-                }
-            };
+            let (mut cards, qty_map): (Vec<Card>, HashMap<Uuid, i32>) =
+                match client().get_deck(deck_id, &session).await {
+                    Ok(deck) => {
+                        let cards = deck.entries.iter().map(|e| e.card.clone()).collect();
+                        let qty = deck
+                            .entries
+                            .iter()
+                            .map(|e| (e.card.scryfall_data.id, *e.deck_card.quantity))
+                            .collect();
+                        (cards, qty)
+                    }
+                    Err(e) => {
+                        browse_error.set(Some(e.to_string()));
+                        return;
+                    }
+                };
+
+            quantity_map.set(qty_map);
 
             // Resolve commander: pull from deck cards if present, otherwise fetch separately.
             // Either way remove it from the groupable list.
-            if let Ok(profile) = client().get_deck_profile(deck_id, &session).await
-                && let Some(commander_id) = profile.commander_id
-            {
-                let cmd = if let Some(idx) = cards
-                    .iter()
-                    .position(|c| c.scryfall_data.id == commander_id)
-                {
-                    Some(cards.remove(idx))
-                } else {
-                    client().get_card(commander_id, &session).await.ok()
-                };
-                commander_card.set(cmd);
+            if let Ok(profile) = client().get_deck_profile(deck_id, &session).await {
+                deck_copy_max.set(profile.copy_max);
+                if let Some(commander_id) = profile.commander_id {
+                    let cmd = if let Some(idx) = cards
+                        .iter()
+                        .position(|c| c.scryfall_data.id == commander_id)
+                    {
+                        Some(cards.remove(idx))
+                    } else {
+                        client().get_card(commander_id, &session).await.ok()
+                    };
+                    commander_card.set(cmd);
+                }
             }
 
             deck_cards.set(cards);
@@ -140,6 +162,70 @@ pub fn View(deck_id: Uuid) -> Element {
         displayed_groups.set(groups);
         expanded_card.set(None);
     });
+
+    let mut change_quantity = move |card_id: Uuid, delta: i32| {
+        let current_qty = quantity_map.peek().get(&card_id).copied().unwrap_or(1);
+        let copy_max = deck_copy_max.peek().clone();
+        let is_singleton = copy_max == Some(CopyMax::singleton());
+
+        // + at max → toast error, no-op
+        if delta > 0 {
+            if let Some(max) = copy_max {
+                if current_qty >= *max {
+                    toast.warning(
+                        "max copies reached".to_string(),
+                        ToastOptions::default().duration(Duration::from_millis(1500)),
+                    );
+                    return;
+                }
+            }
+        }
+
+        // - at 1 or any - on singleton → delete
+        let should_delete = current_qty + delta < 1 || (is_singleton && delta < 0);
+
+        session.upkeep(client);
+        let Some(session) = session() else {
+            toast.error("session expired".to_string(), ToastOptions::default());
+            return;
+        };
+
+        if should_delete {
+            // Optimistic: remove from local state
+            quantity_map.write().remove(&card_id);
+            deck_cards.write().retain(|c| c.scryfall_data.id != card_id);
+            // Trigger re-filter
+            let current = *filter_reset_counter.peek();
+            filter_reset_counter.set(current + 1);
+
+            spawn(async move {
+                if let Err(e) = client().delete_deck_card(deck_id, card_id, &session).await {
+                    toast.error(e.to_string(), ToastOptions::default());
+                }
+            });
+        } else {
+            // Optimistic: update local quantity
+            quantity_map
+                .write()
+                .entry(card_id)
+                .and_modify(|q| *q += delta);
+
+            let request = HttpUpdateDeckCard::new(delta);
+            spawn(async move {
+                if let Err(e) = client()
+                    .update_deck_card(deck_id, card_id, &request, &session)
+                    .await
+                {
+                    toast.error(e.to_string(), ToastOptions::default());
+                    // Rollback optimistic update
+                    quantity_map
+                        .write()
+                        .entry(card_id)
+                        .and_modify(|q| *q -= delta);
+                }
+            });
+        }
+    };
 
     let mut clear_filters = move || {
         let opts = ToastOptions::default().duration(Duration::from_millis(1500));
@@ -247,10 +333,16 @@ pub fn View(deck_id: Uuid) -> Element {
 
                     // Card groups
                     for group in displayed_groups() {
+                        {
+                            let qty_count: i32 = {
+                                let qm = quantity_map();
+                                group.cards.iter().map(|c| qm.get(&c.scryfall_data.id).copied().unwrap_or(1)).sum()
+                            };
+                            rsx! {
                         div { class: "card-group",
                             // Group header
                             div { class: "card-group-header",
-                                "{group.label} ({group.cards.len()})"
+                                "{group.label} ({qty_count})"
                             }
 
                             // Card rows
@@ -260,7 +352,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                     let is_expanded = expanded_card() == Some(card_id);
                                     let sd = &card.scryfall_data;
 
-                                    let name = sd.name.clone();
+                                    let name = sd.name.to_lowercase();
                                     let cmc_display = sd.cmc
                                         .map(|c| {
                                             let floored = c.floor() as i64;
@@ -321,11 +413,43 @@ pub fn View(deck_id: Uuid) -> Element {
                                                     div { class: "card-detail-meta",
                                                         span { "{rarity_name} | {set_name}" }
                                                     }
+                                                    // Quantity controls
+                                                    {
+                                                        let qty = quantity_map().get(&card_id).copied().unwrap_or(1);
+                                                        let copy_max = deck_copy_max();
+                                                        let is_singleton = copy_max == Some(CopyMax::singleton());
+                                                        let show_plus = !is_singleton;
+                                                        rsx! {
+                                                            div { class: "qty-row",
+                                                                button {
+                                                                    class: "qty-btn",
+                                                                    onclick: move |evt| {
+                                                                        evt.stop_propagation();
+                                                                        change_quantity(card_id, -1);
+                                                                    },
+                                                                    "-"
+                                                                }
+                                                                span { class: "qty-label", "{qty}" }
+                                                                if show_plus {
+                                                                    button {
+                                                                        class: "qty-btn",
+                                                                        onclick: move |evt| {
+                                                                            evt.stop_propagation();
+                                                                            change_quantity(card_id, 1);
+                                                                        },
+                                                                        "+"
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
                                     }
                                 }
+                            }
+                        }
                             }
                         }
                     }

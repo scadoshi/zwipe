@@ -1613,6 +1613,39 @@ body {
   color: var(--text-muted);
 }
 
+.qty-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.qty-btn {
+  padding: 0.2rem 0.6rem;
+  font-size: 0.85rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--border-primary);
+  background: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.qty-btn:hover {
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+}
+
+.qty-btn:active {
+  transform: translateY(-1px);
+}
+
+.qty-label {
+  font-size: 0.85rem;
+  min-width: 1.2rem;
+  text-align: center;
+}
+
 .card-row-header {
   font-size: 0.8rem;
   font-weight: 600;
