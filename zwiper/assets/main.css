@@ -1552,9 +1552,6 @@ body {
   font-size: 0.8rem;
 }
 
-.card-row-compact.no-qty {
-  grid-template-columns: 1fr 2rem 3rem auto;
-}
 
 .card-row-name {
   overflow: hidden;
@@ -1647,6 +1644,28 @@ body {
 }
 
 .qty-btn:active {
+  transform: translateY(-1px);
+}
+
+.qty-btn-remove {
+  padding: 0.15rem 0.5rem;
+  font-size: 0.75rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--border-primary);
+  background: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.qty-btn-remove:hover {
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+  opacity: 1;
+}
+
+.qty-btn-remove:active {
   transform: translateY(-1px);
 }
 

@@ -80,6 +80,13 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             max_entry_quantity.set(
                 deck.entries
                     .iter()
+                    .filter(|e| {
+                        !e.card
+                            .scryfall_data
+                            .type_line
+                            .as_deref()
+                            .is_some_and(|tl| tl.to_lowercase().contains("basic land"))
+                    })
                     .map(|e| *e.deck_card.quantity)
                     .max()
                     .unwrap_or(0),

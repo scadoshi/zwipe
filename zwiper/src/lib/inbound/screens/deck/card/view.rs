@@ -163,13 +163,13 @@ pub fn View(deck_id: Uuid) -> Element {
         expanded_card.set(None);
     });
 
-    let mut change_quantity = move |card_id: Uuid, delta: i32| {
+    let mut change_quantity = move |card_id: Uuid, delta: i32, is_basic_land: bool| {
         let current_qty = quantity_map.peek().get(&card_id).copied().unwrap_or(1);
         let copy_max = deck_copy_max.peek().clone();
         let is_singleton = copy_max == Some(CopyMax::singleton());
 
-        // + at max → toast error, no-op
-        if delta > 0 {
+        // + at max → toast error, no-op (basic lands are exempt)
+        if delta > 0 && !is_basic_land {
             if let Some(max) = copy_max {
                 if current_qty >= *max {
                     toast.warning(
@@ -181,8 +181,9 @@ pub fn View(deck_id: Uuid) -> Element {
             }
         }
 
-        // - at 1 or any - on singleton → delete
-        let should_delete = current_qty + delta < 1 || (is_singleton && delta < 0);
+        // - at 1 or any - on singleton (non-basic-land) → delete
+        let should_delete =
+            current_qty + delta < 1 || (is_singleton && delta < 0 && !is_basic_land);
 
         session.upkeep(client);
         let Some(session) = session() else {
@@ -260,10 +261,8 @@ pub fn View(deck_id: Uuid) -> Element {
                     }
 
                     // Column headers
-                    div { class: if deck_copy_max() == Some(CopyMax::singleton()) { "card-row-compact card-row-header no-qty" } else { "card-row-compact card-row-header" },
-                        if deck_copy_max() != Some(CopyMax::singleton()) {
-                            span { class: "card-row-qty", "qty" }
-                        }
+                    div { class: "card-row-compact card-row-header",
+                        span { class: "card-row-qty", "qty" }
                         span { class: "card-row-name", "name" }
                         span { class: "card-row-cmc", "cmc" }
                         span { class: "card-row-pt", "p/t" }
@@ -309,10 +308,8 @@ pub fn View(deck_id: Uuid) -> Element {
                                                 expanded_card.set(Some(card_id));
                                             }
                                         },
-                                        div { class: if deck_copy_max() == Some(CopyMax::singleton()) { "card-row-compact no-qty" } else { "card-row-compact" },
-                                            if deck_copy_max() != Some(CopyMax::singleton()) {
-                                                span { class: "card-row-qty", "1" }
-                                            }
+                                        div { class: "card-row-compact",
+                                            span { class: "card-row-qty", "1" }
                                             span { class: "card-row-name", "{name}" }
                                             span { class: "card-row-cmc", "{cmc_display}" }
                                             span { class: "card-row-pt", "{pt_display}" }
@@ -384,6 +381,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                     // Expanded details
                                     let oracle_text = sd.oracle_text.clone().unwrap_or_default().to_lowercase();
                                     let type_line = sd.type_line.clone().unwrap_or_default().to_lowercase();
+                                    let is_basic_land = type_line.contains("basic land");
                                     let rarity_name = sd.rarity.to_long_name().to_lowercase();
                                     let set_name = sd.set_name.clone().to_lowercase();
 
@@ -400,11 +398,9 @@ pub fn View(deck_id: Uuid) -> Element {
                                             },
 
                                             // Compact row
-                                            div { class: if deck_copy_max() == Some(CopyMax::singleton()) { "card-row-compact no-qty" } else { "card-row-compact" },
-                                                if deck_copy_max() != Some(CopyMax::singleton()) {
-                                                    span { class: "card-row-qty",
-                                                        "{quantity_map().get(&card_id).copied().unwrap_or(1)}"
-                                                    }
+                                            div { class: "card-row-compact",
+                                                span { class: "card-row-qty",
+                                                    "{quantity_map().get(&card_id).copied().unwrap_or(1)}"
                                                 }
                                                 span { class: "card-row-name", "{name}" }
                                                 span { class: "card-row-cmc", "{cmc_display}" }
@@ -429,24 +425,35 @@ pub fn View(deck_id: Uuid) -> Element {
                                                         let qty = quantity_map().get(&card_id).copied().unwrap_or(1);
                                                         let copy_max = deck_copy_max();
                                                         let is_singleton = copy_max == Some(CopyMax::singleton());
-                                                        let show_plus = !is_singleton;
+                                                        let singleton_fixed = is_singleton && !is_basic_land;
                                                         rsx! {
-                                                            div { class: "qty-row",
-                                                                button {
-                                                                    class: "qty-btn",
-                                                                    onclick: move |evt| {
-                                                                        evt.stop_propagation();
-                                                                        change_quantity(card_id, -1);
-                                                                    },
-                                                                    "-"
+                                                            if singleton_fixed {
+                                                                div { class: "qty-row",
+                                                                    button {
+                                                                        class: "qty-btn-remove",
+                                                                        onclick: move |evt| {
+                                                                            evt.stop_propagation();
+                                                                            change_quantity(card_id, -1, false);
+                                                                        },
+                                                                        "remove"
+                                                                    }
                                                                 }
-                                                                span { class: "qty-label", "{qty}" }
-                                                                if show_plus {
+                                                            } else {
+                                                                div { class: "qty-row",
                                                                     button {
                                                                         class: "qty-btn",
                                                                         onclick: move |evt| {
                                                                             evt.stop_propagation();
-                                                                            change_quantity(card_id, 1);
+                                                                            change_quantity(card_id, -1, is_basic_land);
+                                                                        },
+                                                                        "-"
+                                                                    }
+                                                                    span { class: "qty-label", "{qty}" }
+                                                                    button {
+                                                                        class: "qty-btn",
+                                                                        onclick: move |evt| {
+                                                                            evt.stop_propagation();
+                                                                            change_quantity(card_id, 1, is_basic_land);
                                                                         },
                                                                         "+"
                                                                     }
