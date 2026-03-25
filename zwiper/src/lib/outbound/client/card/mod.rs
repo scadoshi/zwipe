@@ -9,8 +9,12 @@ pub mod get_artists;
 pub mod get_card;
 /// Fetch all card types (creature, instant, etc.).
 pub mod get_card_types;
+/// Fetch all keyword abilities.
+pub mod get_keywords;
 /// Fetch all available languages.
 pub mod get_languages;
+/// Fetch all normalized oracle text words.
+pub mod get_oracle_words;
 /// Fetch all card sets.
 pub mod get_sets;
 /// Search cards with filters.

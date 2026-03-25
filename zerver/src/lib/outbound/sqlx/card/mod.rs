@@ -564,7 +564,7 @@ impl CardRepository for MyPostgres {
     async fn get_oracle_words(&self) -> Result<Vec<String>, GetOracleWordsError> {
         let words: Vec<String> = query_scalar!(
             "SELECT DISTINCT LOWER(REGEXP_REPLACE(word, '[^a-zA-Z]', '', 'g')) AS word
-             FROM scryfall_data, UNNEST(STRING_TO_ARRAY(oracle_text, ' ')) AS word
+             FROM scryfall_data, REGEXP_SPLIT_TO_TABLE(oracle_text, '\\s+') AS word
              WHERE oracle_text IS NOT NULL
                AND LOWER(REGEXP_REPLACE(word, '[^a-zA-Z]', '', 'g')) NOT IN (
                  'a', 'an', 'the', 'of', 'to', 'in', 'on', 'at', 'by', 'for', 'with',

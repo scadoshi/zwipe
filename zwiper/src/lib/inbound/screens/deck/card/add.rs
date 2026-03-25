@@ -10,8 +10,9 @@ use crate::{
         screens::deck::card::{
             action_history::{CARDS_WARNING_THRESHOLD, MAX_CARDS_IN_STACK, SwipeAction},
             filter::{
-                combat::Combat, config::Config, mana::Mana, rarity::Rarity, set::Set, sort::Sort,
-                text::Text, types::Types,
+                artist::Artist, combat::Combat, config::Config, flavor_text::FlavorText,
+                mana::Mana, name::Name, oracle_text::OracleText, rarity::Rarity, set::Set,
+                sort::Sort, types::Types,
             },
         },
     },
@@ -552,41 +553,56 @@ pub fn Add(deck_id: Uuid) -> Element {
                         collapsible: true,
 
                         AccordionItem { index: 1,
-                            AccordionTrigger { "text" }
-                            AccordionContent { Text {} }
+                            AccordionTrigger { "name" }
+                            AccordionContent { Name {} }
                         }
 
                         AccordionItem { index: 2,
+                            AccordionTrigger { "oracle text" }
+                            AccordionContent { OracleText {} }
+                        }
+
+                        AccordionItem { index: 3,
                             AccordionTrigger { "types" }
                             AccordionContent { Types {} }
                         }
 
-                        AccordionItem { index: 3,
+                        AccordionItem { index: 4,
                             AccordionTrigger { "mana" }
                             AccordionContent { Mana {} }
                         }
 
-                        AccordionItem { index: 4,
+                        AccordionItem { index: 5,
                             AccordionTrigger { "combat" }
                             AccordionContent { Combat {} }
                         }
 
-                        AccordionItem { index: 5,
+                        AccordionItem { index: 6,
+                            AccordionTrigger { "flavor text" }
+                            AccordionContent { FlavorText {} }
+                        }
+
+                        AccordionItem { index: 7,
+                            AccordionTrigger { "artist" }
+                            AccordionContent { Artist {} }
+                        }
+
+                        AccordionItem { index: 8,
                             AccordionTrigger { "rarity" }
                             AccordionContent { Rarity {} }
                         }
 
-                        AccordionItem { index: 6,
+                        AccordionItem { index: 9,
                             AccordionTrigger { "set" }
                             AccordionContent { Set {} }
                         }
 
-                        AccordionItem { index: 7,
+                        AccordionItem { index: 10,
                             AccordionTrigger { "sort" }
                             AccordionContent { Sort {} }
                         }
 
-                        AccordionItem { index: 8,
+                        AccordionItem { index: 11,
                             AccordionTrigger { "config" }
                             AccordionContent { Config {} }
                         }
