@@ -67,7 +67,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                             id: "import-text",
                             class: "input",
                             style: "width:100%;min-height:12rem;resize:vertical;font-family:monospace;",
-                            placeholder: "5 Island\n4 Mountain\n1 Guide of Souls\n1 Gonti's Aether Heart\n1 Decoction Module\n1 Whirler Virtuoso",
+                            placeholder: "5 island\n4 mountain\n1 guide of souls\n1 gonti's aether heart\n1 decoction module\n1 whirler virtuoso",
                             value: "{text}",
                             oninput: move |e| text.set(e.value()),
                         }
@@ -81,7 +81,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                                 label { class: "label mt-2", "imported" }
                                 for card in r.imported.iter() {
                                     div { class: "flex items-center flex-between mb-1",
-                                        span { class: "text-sm font-light", "{card.name}" }
+                                        span { class: "text-sm font-light", "{card.name.to_lowercase()}" }
                                         span { class: "text-sm font-light opacity-50", "x{card.quantity}" }
                                     }
                                 }
@@ -90,8 +90,8 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                                 label { class: "label mt-2", "unresolved" }
                                 for card in r.unresolved.iter() {
                                     div { class: "flex items-center flex-between mb-1",
-                                        span { class: "text-sm font-light", "{card.name}" }
-                                        span { class: "text-sm font-light opacity-50", "{card.reason}" }
+                                        span { class: "text-sm font-light", "{card.name.to_lowercase()}" }
+                                        span { class: "text-sm font-light opacity-50", "{card.reason.to_lowercase()}" }
                                     }
                                 }
                             }
