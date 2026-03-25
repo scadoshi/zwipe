@@ -19,7 +19,7 @@ use crate::{
         get_card::GetCardError,
         get_card_types::GetCardTypesError,
         get_languages::GetLanguagesError,
-        get_oracle_keywords::GetOracleKeywordsError,
+        get_keywords::GetKeywordsError,
         get_oracle_words::GetOracleWordsError,
         get_sets::GetSetsError,
         scryfall_data::{
@@ -122,10 +122,10 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     fn get_card_types(&self)
         -> impl Future<Output = Result<Vec<String>, GetCardTypesError>> + Send;
 
-    /// Retrieves all distinct oracle keyword abilities from card database.
-    fn get_oracle_keywords(
+    /// Retrieves all distinct keyword abilities from card database.
+    fn get_keywords(
         &self,
-    ) -> impl Future<Output = Result<Vec<String>, GetOracleKeywordsError>> + Send;
+    ) -> impl Future<Output = Result<Vec<String>, GetKeywordsError>> + Send;
 
     /// Retrieves all distinct normalized words from oracle text.
     fn get_oracle_words(
@@ -253,10 +253,10 @@ pub trait CardService: Clone + Send + Sync + 'static {
     fn get_card_types(&self)
         -> impl Future<Output = Result<Vec<String>, GetCardTypesError>> + Send;
 
-    /// Retrieves all distinct oracle keyword abilities from card database.
-    fn get_oracle_keywords(
+    /// Retrieves all distinct keyword abilities from card database.
+    fn get_keywords(
         &self,
-    ) -> impl Future<Output = Result<Vec<String>, GetOracleKeywordsError>> + Send;
+    ) -> impl Future<Output = Result<Vec<String>, GetKeywordsError>> + Send;
 
     /// Retrieves all distinct normalized words from oracle text.
     fn get_oracle_words(

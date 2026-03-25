@@ -83,6 +83,9 @@ pub struct CardFilterBuilder {
     oracle_text_contains: Option<String>,
     oracle_text_contains_any: Option<Vec<String>>,
     oracle_text_contains_all: Option<Vec<String>>,
+    // keywords
+    keywords_contains_any: Option<Vec<String>>,
+    keywords_contains_all: Option<Vec<String>>,
     flavor_text_contains: Option<String>,
     has_flavor_text: Option<bool>,
     // types
@@ -123,6 +126,8 @@ impl Default for CardFilterBuilder {
             oracle_text_contains: None,
             oracle_text_contains_any: None,
             oracle_text_contains_all: None,
+            keywords_contains_any: None,
+            keywords_contains_all: None,
             flavor_text_contains: None,
             has_flavor_text: None,
             type_line_contains: None,
@@ -198,6 +203,34 @@ impl CardFilterBuilder {
         CardFilterBuilder {
             oracle_text_contains_all: Some(
                 oracle_text_contains_all.into_iter().map(Into::into).collect(),
+            ),
+            ..CardFilterBuilder::default()
+        }
+    }
+
+    /// Creates builder matching any of the provided keywords (OR logic on keywords array).
+    pub fn with_keywords_contains_any<I, S>(keywords_contains_any: I) -> CardFilterBuilder
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        CardFilterBuilder {
+            keywords_contains_any: Some(
+                keywords_contains_any.into_iter().map(Into::into).collect(),
+            ),
+            ..CardFilterBuilder::default()
+        }
+    }
+
+    /// Creates builder requiring all provided keywords to be present (AND logic on keywords array).
+    pub fn with_keywords_contains_all<I, S>(keywords_contains_all: I) -> CardFilterBuilder
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        CardFilterBuilder {
+            keywords_contains_all: Some(
+                keywords_contains_all.into_iter().map(Into::into).collect(),
             ),
             ..CardFilterBuilder::default()
         }
@@ -446,6 +479,8 @@ impl CardFilterBuilder {
             oracle_text_contains: self.oracle_text_contains.clone(),
             oracle_text_contains_any: self.oracle_text_contains_any.clone(),
             oracle_text_contains_all: self.oracle_text_contains_all.clone(),
+            keywords_contains_any: self.keywords_contains_any.clone(),
+            keywords_contains_all: self.keywords_contains_all.clone(),
             flavor_text_contains: self.flavor_text_contains.clone(),
             has_flavor_text: self.has_flavor_text,
             type_line_contains: self.type_line_contains.clone(),

@@ -77,7 +77,7 @@ where
     use crate::inbound::http::handlers::{
         card::{
             get_artists::get_artists, get_card_types::get_card_types,
-            get_languages::get_languages, get_oracle_keywords::get_oracle_keywords,
+            get_keywords::get_keywords, get_languages::get_languages,
             get_oracle_words::get_oracle_words, get_sets::get_sets,
         },
         deck::get_deck_profile::get_deck_profile,
@@ -106,7 +106,7 @@ where
                     .route("/search", post(search_cards))
                     .route("/artists", get(get_artists))
                     .route("/types", get(get_card_types))
-                    .route("/keywords", get(get_oracle_keywords))
+                    .route("/keywords", get(get_keywords))
                     .route("/oracle-words", get(get_oracle_words))
                     .route("/languages", get(get_languages))
                     .route("/sets", get(get_sets)),

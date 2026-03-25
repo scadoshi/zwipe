@@ -35,7 +35,7 @@ use crate::{
         },
         get_card::GetCardError,
         get_card_types::GetCardTypesError,
-        get_oracle_keywords::GetOracleKeywordsError,
+        get_keywords::GetKeywordsError,
         get_oracle_words::GetOracleWordsError,
         helpers::SleeveCardProfile,
         scryfall_data::get_scryfall_data::{ScryfallDataIds, SearchScryfallDataError},
@@ -344,6 +344,28 @@ impl CardRepository for MyPostgres {
             }
         }
 
+        if let Some(keywords) = &request.keywords_contains_any() {
+            sep.push("keywords && ARRAY[");
+            keywords.iter().enumerate().for_each(|(i, kw)| {
+                if i > 0 {
+                    sep.push_unseparated(", ");
+                }
+                sep.push_bind_unseparated(kw.to_lowercase());
+            });
+            sep.push_unseparated("]::text[]");
+        }
+
+        if let Some(keywords) = &request.keywords_contains_all() {
+            sep.push("keywords @> ARRAY[");
+            keywords.iter().enumerate().for_each(|(i, kw)| {
+                if i > 0 {
+                    sep.push_unseparated(", ");
+                }
+                sep.push_bind_unseparated(kw.to_lowercase());
+            });
+            sep.push_unseparated("]::text[]");
+        }
+
         if let Some(query_string) = &request.flavor_text_contains() {
             sep.push("flavor_text ILIKE ");
             sep.push_bind_unseparated(format!("%{}%", query_string));
@@ -522,7 +544,7 @@ impl CardRepository for MyPostgres {
     }
 
     /// Returns distinct keyword abilities from the `keywords` array column.
-    async fn get_oracle_keywords(&self) -> Result<Vec<String>, GetOracleKeywordsError> {
+    async fn get_keywords(&self) -> Result<Vec<String>, GetKeywordsError> {
         let keywords: Vec<String> = query_scalar!(
             "SELECT DISTINCT LOWER(TRIM(keyword)) AS keyword
              FROM scryfall_data, UNNEST(keywords) AS keyword
@@ -531,7 +553,7 @@ impl CardRepository for MyPostgres {
         )
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| GetOracleKeywordsError::Database(e.into()))?
+        .map_err(|e| GetKeywordsError::Database(e.into()))?
         .into_iter()
         .flatten()
         .collect();
