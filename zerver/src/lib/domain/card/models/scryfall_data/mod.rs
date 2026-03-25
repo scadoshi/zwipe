@@ -327,6 +327,22 @@ pub struct ScryfallData {
     pub preview_source: Option<String>,
 }
 
+impl ScryfallData {
+    /// Returns `true` if this card is a basic land (e.g. Forest, Island, Mountain).
+    pub fn is_basic_land(&self) -> bool {
+        self.type_line
+            .as_deref()
+            .is_some_and(|tl| tl.to_lowercase().contains("basic land"))
+    }
+
+    /// Returns `true` if this card is any kind of land (basic, nonbasic, fetch, etc.).
+    pub fn is_land(&self) -> bool {
+        self.type_line
+            .as_deref()
+            .is_some_and(|tl| tl.to_lowercase().contains("land"))
+    }
+}
+
 /// for deserializing `INT[]`, `TEXT[]` or `VARCHAR[]` into `Vec<String>`
 ///
 /// used on a single field in ScryfallData
