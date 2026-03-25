@@ -7,5 +7,7 @@
 pub mod create_deck_card;
 /// Remove a card from a deck.
 pub mod delete_deck_card;
+/// Import cards from plain-text decklist.
+pub mod import_deck_cards;
 /// Update card quantity in a deck.
 pub mod update_deck_card;
