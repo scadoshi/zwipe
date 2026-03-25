@@ -31,6 +31,9 @@ impl From<CreateDeckCardError> for ApiError {
             CreateDeckCardError::Duplicate => {
                 Self::UnprocessableEntity("card and deck combination already exist".to_string())
             }
+            CreateDeckCardError::IsCommander => {
+                Self::UnprocessableEntity(CreateDeckCardError::IsCommander.to_string())
+            }
             CreateDeckCardError::Database(e) => e.log_500(),
             CreateDeckCardError::DeckCardFromDb(e) => e.log_500(),
             CreateDeckCardError::GetDeckProfileError(e) => ApiError::from(e),
