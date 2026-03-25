@@ -83,6 +83,18 @@ impl FilterCards for Vec<Card> {
                     }
                 }
 
+                if let Some(values) = filter.oracle_text_contains_all() {
+                    let matches = match &sd.oracle_text {
+                        Some(text) => values
+                            .iter()
+                            .all(|v| text.to_lowercase().contains(&v.to_lowercase())),
+                        None => false,
+                    };
+                    if !matches {
+                        return false;
+                    }
+                }
+
                 if let Some(q) = filter.flavor_text_contains() {
                     match &sd.flavor_text {
                         Some(text) if text.to_lowercase().contains(&q.to_lowercase()) => {}
@@ -607,6 +619,62 @@ mod tests {
         let mut hawk = make_card("Snapping Drake");
         hawk.scryfall_data.oracle_text = Some("Flying".to_string());
         let filter = CardFilterBuilder::with_oracle_text_contains_any(["flying"])
+            .build()
+            .unwrap();
+        let result = vec![hawk].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+    }
+
+    #[test]
+    fn test_oracle_text_contains_all_matches_when_all_words_present() {
+        let mut bolt = make_card("Lightning Bolt");
+        bolt.scryfall_data.oracle_text = Some("deals 3 damage to any target".to_string());
+        let forest = make_card("Forest");
+        let filter = CardFilterBuilder::with_oracle_text_contains_all(["damage", "target"])
+            .build()
+            .unwrap();
+        let result = vec![bolt, forest].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].scryfall_data.name, "Lightning Bolt");
+    }
+
+    #[test]
+    fn test_oracle_text_contains_all_excludes_when_only_one_word_matches() {
+        let mut bolt = make_card("Lightning Bolt");
+        bolt.scryfall_data.oracle_text = Some("deals 3 damage to any target".to_string());
+        let filter = CardFilterBuilder::with_oracle_text_contains_all(["damage", "flying"])
+            .build()
+            .unwrap();
+        let result = vec![bolt].filter_by(&filter);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_oracle_text_contains_all_excludes_when_no_words_match() {
+        let mut card = make_card("Island");
+        card.scryfall_data.oracle_text = Some("tap: add blue mana".to_string());
+        let filter = CardFilterBuilder::with_oracle_text_contains_all(["damage", "flying"])
+            .build()
+            .unwrap();
+        let result = vec![card].filter_by(&filter);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_oracle_text_contains_all_skips_card_with_no_oracle_text() {
+        let card = make_card("Forest"); // oracle_text = None
+        let filter = CardFilterBuilder::with_oracle_text_contains_all(["flying"])
+            .build()
+            .unwrap();
+        let result = vec![card].filter_by(&filter);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_oracle_text_contains_all_is_case_insensitive() {
+        let mut hawk = make_card("Snapping Drake");
+        hawk.scryfall_data.oracle_text = Some("Flying and Vigilance".to_string());
+        let filter = CardFilterBuilder::with_oracle_text_contains_all(["flying", "vigilance"])
             .build()
             .unwrap();
         let result = vec![hawk].filter_by(&filter);

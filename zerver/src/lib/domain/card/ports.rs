@@ -20,6 +20,7 @@ use crate::{
         get_card_types::GetCardTypesError,
         get_languages::GetLanguagesError,
         get_oracle_keywords::GetOracleKeywordsError,
+        get_oracle_words::GetOracleWordsError,
         get_sets::GetSetsError,
         scryfall_data::{
             get_scryfall_data::{
@@ -125,6 +126,11 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     fn get_oracle_keywords(
         &self,
     ) -> impl Future<Output = Result<Vec<String>, GetOracleKeywordsError>> + Send;
+
+    /// Retrieves all distinct normalized words from oracle text.
+    fn get_oracle_words(
+        &self,
+    ) -> impl Future<Output = Result<Vec<String>, GetOracleWordsError>> + Send;
 
     /// Retrieves all distinct set codes from card database.
     fn get_sets(&self) -> impl Future<Output = Result<Vec<String>, GetSetsError>> + Send;
@@ -251,6 +257,11 @@ pub trait CardService: Clone + Send + Sync + 'static {
     fn get_oracle_keywords(
         &self,
     ) -> impl Future<Output = Result<Vec<String>, GetOracleKeywordsError>> + Send;
+
+    /// Retrieves all distinct normalized words from oracle text.
+    fn get_oracle_words(
+        &self,
+    ) -> impl Future<Output = Result<Vec<String>, GetOracleWordsError>> + Send;
 
     /// Retrieves all distinct set codes from card database.
     fn get_sets(&self) -> impl Future<Output = Result<Vec<String>, GetSetsError>> + Send;

@@ -36,6 +36,7 @@ use crate::{
         get_card::GetCardError,
         get_card_types::GetCardTypesError,
         get_oracle_keywords::GetOracleKeywordsError,
+        get_oracle_words::GetOracleWordsError,
         helpers::SleeveCardProfile,
         scryfall_data::get_scryfall_data::{ScryfallDataIds, SearchScryfallDataError},
     },
@@ -336,6 +337,13 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated(") ");
         }
 
+        if let Some(query_string_array) = &request.oracle_text_contains_all() {
+            for query_string in query_string_array.iter() {
+                sep.push("oracle_text ILIKE ");
+                sep.push_bind_unseparated(format!("%{}%", query_string));
+            }
+        }
+
         if let Some(query_string) = &request.flavor_text_contains() {
             sep.push("flavor_text ILIKE ");
             sep.push_bind_unseparated(format!("%{}%", query_string));
@@ -528,6 +536,29 @@ impl CardRepository for MyPostgres {
         .flatten()
         .collect();
         Ok(keywords)
+    }
+
+    /// Returns distinct normalized words extracted from oracle text, noise-filtered.
+    async fn get_oracle_words(&self) -> Result<Vec<String>, GetOracleWordsError> {
+        let words: Vec<String> = query_scalar!(
+            "SELECT DISTINCT LOWER(REGEXP_REPLACE(word, '[^a-zA-Z]', '', 'g')) AS word
+             FROM scryfall_data, UNNEST(STRING_TO_ARRAY(oracle_text, ' ')) AS word
+             WHERE oracle_text IS NOT NULL
+               AND LOWER(REGEXP_REPLACE(word, '[^a-zA-Z]', '', 'g')) NOT IN (
+                 'a', 'an', 'the', 'of', 'to', 'in', 'on', 'at', 'by', 'for', 'with',
+                 'from', 'into', 'as', 'and', 'or', 'but', 'that', 'which', 'who',
+                 'it', 'its', 'you', 'your', 'this', 'those', 'these', 'they', 'their',
+                 'is', 'are', 'was', 'be', 'has', 'have', 'do', 'does', 'been', ''
+               )
+             ORDER BY word ASC"
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| GetOracleWordsError::Database(e.into()))?
+        .into_iter()
+        .flatten()
+        .collect();
+        Ok(words)
     }
 
     async fn get_artists(&self) -> Result<Vec<String>, GetArtistsError> {

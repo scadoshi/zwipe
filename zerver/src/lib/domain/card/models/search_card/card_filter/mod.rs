@@ -60,6 +60,7 @@ pub struct CardFilter {
     name_contains: Option<String>,
     oracle_text_contains: Option<String>,
     oracle_text_contains_any: Option<Vec<String>>,
+    oracle_text_contains_all: Option<Vec<String>>,
     flavor_text_contains: Option<String>,
     has_flavor_text: Option<bool>,
     // types

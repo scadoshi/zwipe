@@ -7,7 +7,7 @@ Planned work after completing current tasks.
 ## Testing & Stability
 
 1. **Integration Tests** - Repository tests with real PostgreSQL (longer-term — requires real DB infrastructure)
-   - Unit testing phase complete: filter_cards (24 tests), group_cards (15 tests), copy_max (9 tests), quantity, SwipeState (32 tests)
+   - Unit testing phase complete: filter_cards (34 tests), group_cards (15 tests), copy_max (9 tests), quantity, SwipeState (32 tests)
    - Remaining gap: outbound SQLx repositories have no test coverage (integration tests only viable path)
 
 2. **Bug Fixes** - ~~Layout shift after deck creation~~, ~~iOS keyboard push issues~~ (fixed via unified `.screen` layout — see Bugs section for details)
@@ -67,7 +67,9 @@ Planned work after completing current tasks.
 
 ### Card Filter: Oracle Keywords
 
-4. **Oracle Text Keyword Filter** — Add `oracle_text_contains_any: Option<Vec<String>>` to `CardFilter`, enabling multi-keyword oracle text search. Follows the exact `type_line_contains_any` + `get_card_types` pipeline pattern.
+4. ~~**Oracle Text Keyword Filter**~~ — **BACKEND DONE** (2026-03-25). `oracle_text_contains_any` (OR) on CardFilter. `get_oracle_keywords` endpoint (`/api/card/keywords`). 5 filter_cards tests. Frontend deferred (needs macOS).
+
+   **Oracle Words Pipeline** — **BACKEND DONE** (2026-03-25). `oracle_text_contains_all` (AND) on CardFilter. `get_oracle_words` endpoint (`/api/card/oracle-words`) — extracts normalized words from `oracle_text` via SQL `UNNEST` + `REGEXP_REPLACE`, noise-filtered (conservative grammatical stop-words only). 5 filter_cards tests. Frontend deferred.
 
    **Why:** Currently `oracle_text_contains` is a single string. Users want to search cards matching ANY of several keywords (e.g. "destroy" OR "exile" OR "sacrifice") to find removal spells, or "draw" OR "scry" for card advantage. The keyword list is fetched from the database so the frontend can offer autocomplete.
 
