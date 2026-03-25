@@ -206,6 +206,39 @@ impl CardFilterBuilder {
         self
     }
 
+    /// Sets filter requiring all type line substrings to be present (AND logic). Empty vec = None.
+    pub fn set_type_line_contains_all<I, S>(&mut self, type_line_contains_all: I) -> &mut Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        let v: Vec<String> = type_line_contains_all.into_iter().map(Into::into).collect();
+        self.type_line_contains_all = if v.is_empty() { None } else { Some(v) };
+        self
+    }
+
+    /// Clears the type_line_contains_all filter.
+    pub fn unset_type_line_contains_all(&mut self) -> &mut Self {
+        self.type_line_contains_all = None;
+        self
+    }
+
+    /// Sets filter requiring all card types to be present (AND logic). Empty vec = None.
+    pub fn set_card_type_contains_all<I>(&mut self, card_type_contains_all: I) -> &mut Self
+    where
+        I: IntoIterator<Item = CardType>,
+    {
+        let v: Vec<CardType> = card_type_contains_all.into_iter().collect();
+        self.card_type_contains_all = if v.is_empty() { None } else { Some(v) };
+        self
+    }
+
+    /// Clears the card_type_contains_all filter.
+    pub fn unset_card_type_contains_all(&mut self) -> &mut Self {
+        self.card_type_contains_all = None;
+        self
+    }
+
     // =================================
     // Printing/Metadata Setters
     // =================================

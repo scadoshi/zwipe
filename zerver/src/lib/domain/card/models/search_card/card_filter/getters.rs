@@ -55,6 +55,14 @@ impl CardFilter {
         self.card_type_contains_any.as_deref()
     }
 
+    pub fn type_line_contains_all(&self) -> Option<&[String]> {
+        self.type_line_contains_all.as_deref()
+    }
+
+    pub fn card_type_contains_all(&self) -> Option<&[CardType]> {
+        self.card_type_contains_all.as_deref()
+    }
+
     // rarity
     pub fn rarity_equals_any(&self) -> Option<&Rarities> {
         self.rarity_equals_any.as_ref()

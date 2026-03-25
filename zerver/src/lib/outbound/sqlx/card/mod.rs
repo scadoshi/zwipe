@@ -220,6 +220,20 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated(") ");
         }
 
+        if let Some(query_string_array) = &request.type_line_contains_all() {
+            for query_string in query_string_array.iter() {
+                sep.push("type_line ILIKE ");
+                sep.push_bind_unseparated(format!("%{}%", query_string));
+            }
+        }
+
+        if let Some(card_types) = &request.card_type_contains_all() {
+            for card_type in card_types.iter() {
+                sep.push("type_line ILIKE ");
+                sep.push_bind_unseparated(format!("%{}%", card_type));
+            }
+        }
+
         if let Some(sets) = request.set_equals_any() {
             sep.push("set_name = ANY(");
             sep.push_bind_unseparated(sets);

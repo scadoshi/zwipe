@@ -3,6 +3,7 @@
 //! Provides oracle text contains (free text), oracle words contains (chip multi-select),
 //! and keywords contains (chip multi-select), each with any/all matching toggles.
 
+use super::match_mode::MatchMode;
 use crate::outbound::client::{
     card::{get_keywords::ClientGetKeywords, get_oracle_words::ClientGetOracleWords},
     ZwipeClient,
@@ -15,30 +16,6 @@ use zwipe::{
     },
     inbound::http::ApiError,
 };
-
-/// Whether a multi-select filter uses OR ("any") or AND ("all") matching.
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
-enum MatchMode {
-    #[default]
-    Any,
-    All,
-}
-
-impl MatchMode {
-    fn toggle(self) -> Self {
-        match self {
-            Self::Any => Self::All,
-            Self::All => Self::Any,
-        }
-    }
-
-    fn label(self) -> &'static str {
-        match self {
-            Self::Any => "any",
-            Self::All => "all",
-        }
-    }
-}
 
 /// Read selected oracle words from the filter builder based on current mode.
 fn read_oracle_words(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<String> {
