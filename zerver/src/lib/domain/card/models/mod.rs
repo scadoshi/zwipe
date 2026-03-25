@@ -10,6 +10,8 @@ pub mod get_card;
 pub mod get_card_types;
 /// Get distinct oracle keyword abilities from database.
 pub mod get_oracle_keywords;
+/// Get distinct normalized words from oracle text.
+pub mod get_oracle_words;
 /// Get distinct languages from card database.
 pub mod get_languages;
 /// Get distinct set codes/names from card database.

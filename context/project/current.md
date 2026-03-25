@@ -2,21 +2,22 @@
 
 Active development tasks and immediate focus areas.
 
-**Last Updated**: 2026-03-24. Oracle keyword filter, then pip counter, then hosting.
+**Last Updated**: 2026-03-25. Oracle words pipeline complete; pip counter and hosting remain.
 
-**Current Focus**: Oracle text keyword filter (full-stack pipeline).
+**Current Focus**: Mana pip counter, then hosting.
 
 **Recent Achievements**:
 - **Deck Import/Export**: Full import pipeline (Moxfield + Archidekt format parsing, batch exact-name SQL resolution, copy-max clamping, atomic bulk upsert). Dedicated export screen with clipboard copy + toast.
 - **Commander Guard**: `CreateDeckCard` rejects adding the deck's commander. Import silently skips it.
 - **Show Lands Toggle**: Chip toggle on ViewDeckCard filters lands from card groups reactively. `ScryfallData::is_land()` + `is_basic_land()` helpers.
-- **Clippy Clean**: All clippy warnings resolved (test indexing/unwrap allows, tri-toggle function pointer suppression at module level).
+- **Oracle Keywords**: `get_oracle_keywords` endpoint (Scryfall curated abilities via `keywords` column). `oracle_text_contains_any` (OR) on `CardFilter` with 5 filter_cards tests.
+- **Oracle Words**: `get_oracle_words` endpoint (noise-filtered word extraction from `oracle_text` via SQL). `oracle_text_contains_all` (AND) on `CardFilter` with 5 filter_cards tests.
 
 ---
 
 ## Remaining Before Hosting
 
-1. **Oracle Text Keyword Filter** (in progress) — `oracle_text_contains_any` on CardFilter, `get_oracle_keywords` endpoint, frontend chip-based multi-select. Full plan in `next.md`.
+1. **Oracle Text Keyword Filter — Frontend** (deferred, needs macOS) — `get_oracle_keywords` client, chip-based multi-select filter component. Full plan in `next.md`.
 
 2. **Mana Pip Counter** — Pips consumed (from `mana_cost`) vs produced (from `produced_mana`) per WUBRG color. Single-pass extension to `DeckMetrics`. Rendered on ViewDeck below colors section. Already specced in `next.md`.
 

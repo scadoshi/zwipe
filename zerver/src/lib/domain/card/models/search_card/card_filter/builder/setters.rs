@@ -65,6 +65,26 @@ impl CardFilterBuilder {
         self
     }
 
+    /// Sets filter requiring all of multiple oracle text substrings to be present. Empty vec = None.
+    pub fn set_oracle_text_contains_all<I, S>(
+        &mut self,
+        oracle_text_contains_all: I,
+    ) -> &mut Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        let v: Vec<String> = oracle_text_contains_all.into_iter().map(Into::into).collect();
+        self.oracle_text_contains_all = if v.is_empty() { None } else { Some(v) };
+        self
+    }
+
+    /// Clears the oracle_text_contains_all filter.
+    pub fn unset_oracle_text_contains_all(&mut self) -> &mut Self {
+        self.oracle_text_contains_all = None;
+        self
+    }
+
     /// Sets flavor text filter.
     pub fn set_flavor_text_contains(
         &mut self,

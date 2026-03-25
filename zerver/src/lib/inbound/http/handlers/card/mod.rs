@@ -8,6 +8,8 @@ pub mod get_card;
 pub mod get_card_types;
 /// Distinct oracle keyword ability names handler.
 pub mod get_oracle_keywords;
+/// Distinct oracle text word names handler.
+pub mod get_oracle_words;
 /// Distinct language names handler.
 pub mod get_languages;
 /// Distinct set names handler.
