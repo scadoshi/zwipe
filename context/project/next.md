@@ -4,6 +4,14 @@ Planned work after completing current tasks.
 
 ---
 
+## User notes about minor tweaks
+
+1. find_cards_by_exact_name() says it returns a SearchCardsError but specifically skips the cases where a name is NOT found. That is fine and to be expected but documentation should note to NOT expect an error if the names in the search do not match a card you will not get a not found error for that! Also we should change the name to note the case insensitivity please. Something like insensitive_find_cards_by_exact_name please. 
+
+2. 
+
+---
+
 ## Testing & Stability
 
 1. **Integration Tests** - Repository tests with real PostgreSQL (longer-term — requires real DB infrastructure)
