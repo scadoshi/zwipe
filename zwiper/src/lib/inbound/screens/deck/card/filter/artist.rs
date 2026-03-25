@@ -1,4 +1,4 @@
-//! Text search filter component.
+//! Artist filter component.
 
 use crate::outbound::client::{card::get_artists::ClientGetArtists, ZwipeClient};
 use dioxus::prelude::*;
@@ -10,9 +10,9 @@ use zwipe::{
     inbound::http::ApiError,
 };
 
-/// Filter component for card name, oracle text, and artist search.
+/// Filter component for card artist search.
 #[component]
-pub fn Text() -> Element {
+pub fn Artist() -> Element {
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
 
     let session: Signal<Option<Session>> = use_context();
@@ -27,111 +27,23 @@ pub fn Text() -> Element {
         client().get_artists(&session).await
     });
 
-    // Artist search state
     let mut artist_search_query = use_signal(String::new);
     let mut artist_is_typing = use_signal(|| false);
 
-    // Clear artist search when filter applied
+    // Clear search query when filter applied
     use_effect(move || {
         let _ = filter_reset();
         artist_search_query.set(String::new());
         artist_is_typing.set(false);
     });
 
-    // Get selected artists
     let selected_artists = filter_builder()
         .artist_equals_any()
         .map(|v| v.to_vec())
         .unwrap_or_default();
 
-    // Extract text filter values to avoid borrowed reference lifetime issues
-    let name_value = filter_builder().name_contains().unwrap_or("").to_string();
-
-    let oracle_text_value = filter_builder()
-        .oracle_text_contains()
-        .unwrap_or("")
-        .to_string();
-
-    let flavor_text_value = filter_builder()
-        .flavor_text_contains()
-        .unwrap_or("")
-        .to_string();
-
     rsx! {
         div { class: "flex-col gap-half",
-            div { class: "label-row",
-                label { class: "label-xs", r#for: "name-contains", "name contains" }
-                if filter_builder().name_contains().is_some() {
-                    button {
-                        class: "clear-btn",
-                        onclick: move |_| {
-                            filter_builder.write().unset_name_contains();
-                        },
-                        "×"
-                    }
-                }
-            }
-            input { class : "input input-compact",
-                id : "name-contains",
-                placeholder : "name contains",
-                value : name_value,
-                r#type : "text",
-                autocapitalize : "none",
-                spellcheck : "false",
-                oninput : move |event| {
-                    filter_builder.write().set_name_contains(event.value());
-                }
-            }
-
-            div { class: "label-row",
-                label { class: "label-xs", r#for: "oracle-text-contains", "oracle text contains" }
-                if filter_builder().oracle_text_contains().is_some() {
-                    button {
-                        class: "clear-btn",
-                        onclick: move |_| {
-                            filter_builder.write().unset_oracle_text_contains();
-                        },
-                        "×"
-                    }
-                }
-            }
-            input { class: "input input-compact",
-                id: "oracle-text-contains",
-                placeholder: "oracle text contains",
-                value: oracle_text_value,
-                r#type: "text",
-                autocapitalize: "none",
-                spellcheck: "false",
-                oninput: move |event| {
-                    filter_builder.write().set_oracle_text_contains(event.value());
-                }
-            }
-
-            div { class: "label-row",
-                label { class: "label-xs", r#for: "flavor-text-contains", "flavor text contains" }
-                if filter_builder().flavor_text_contains().is_some() {
-                    button {
-                        class: "clear-btn",
-                        onclick: move |_| {
-                            filter_builder.write().unset_flavor_text_contains();
-                        },
-                        "×"
-                    }
-                }
-            }
-            input { class: "input input-compact",
-                id: "flavor-text-contains",
-                placeholder: "flavor text contains",
-                value: flavor_text_value,
-                r#type: "text",
-                autocapitalize: "none",
-                spellcheck: "false",
-                oninput: move |event| {
-                    filter_builder.write().set_flavor_text_contains(event.value());
-                }
-            }
-
-            // Artist filter (chip-based multi-select)
             div { class: "label-row",
                 label { class: "label-xs", r#for: "artist-search", "artist equals any" }
                 if !selected_artists.is_empty() {
@@ -146,7 +58,6 @@ pub fn Text() -> Element {
                 }
             }
 
-            // Selected artists (chips with remove button)
             if !selected_artists.is_empty() {
                 div { class: "flex flex-wrap gap-1 mb-1",
                     for artist in selected_artists.iter().cloned() {
@@ -175,7 +86,6 @@ pub fn Text() -> Element {
                 }
             }
 
-            // Search results (filtered suggestions)
             if !artist_search_query().is_empty() {
                 if let Some(Ok(artists)) = all_artists.read().as_ref() {
                     {
@@ -218,7 +128,6 @@ pub fn Text() -> Element {
                 }
             }
 
-            // Search input
             input { class: "input input-compact",
                 id: "artist-search",
                 placeholder: "type to search",
