@@ -47,6 +47,9 @@ pub enum CreateDeckCardError {
     /// Card already exists in this deck (use update to change quantity).
     #[error("card and deck combination already exists")]
     Duplicate,
+    /// Cannot add the deck's commander as a regular card.
+    #[error("card is this deck's commander")]
+    IsCommander,
     /// Database returned invalid data after creation.
     #[error("deck card created but database returned invalid object {0}")]
     DeckCardFromDb(anyhow::Error),
