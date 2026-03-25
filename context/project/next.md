@@ -23,9 +23,9 @@ Planned work after completing current tasks.
 
 1. ~~**Deck Import (Text List)**~~ — **DONE** (2026-03-24). Parses Moxfield (`qty name`) and Archidekt (`qtyx name (set) collector# [tags]`) formats. Exact-name batch SQL resolution via CTE dedup. Copy-max clamping (basic lands exempt). Atomic bulk upsert with `ON CONFLICT DO UPDATE`. Import screen with results display (imported + unresolved). Export button on ViewDeck copies deck to clipboard. `ScryfallData::is_basic_land()` helper used across call sites.
 
-2. **Deck Export Screen** — Replace the inline clipboard-copy "export" button on ViewDeck with a dedicated `ExportDeck` screen. Shows the full decklist as selectable text the user can copy manually, plus a "copy to clipboard" button with toast feedback. Navigated from ViewDeck util-bar.
+2. ~~**Deck Export Screen**~~ — **DONE** (2026-03-24). Dedicated `ExportDeck` screen with readonly textarea + "copy" button with toast feedback. Replaces inline clipboard-copy on ViewDeck.
 
-3. **"Show Lands" Toggle on ViewDeckCard** — Toggle button (top right of page header, default OFF) that shows/hides land cards in the deck card list. Requires `ScryfallData::is_land()` method (checks for "Land" in type_line, broader than `is_basic_land()`). `ScryfallData::is_spell()` may come later as a complementary method.
+3. ~~**"Show Lands" Toggle on ViewDeckCard**~~ — **DONE** (2026-03-24). Toggle chip in group-by chip row (right-aligned). Filters lands from displayed groups reactively. Uses `ScryfallData::is_land()`. `ScryfallData::is_spell()` may come later.
 
 2. **Multi-Copy Add Flow** - Right now swiping right always adds exactly 1 copy. For standard decks (CopyMax=4) the user should be able to add up to 4 copies in one action.
 
@@ -64,6 +64,86 @@ Planned work after completing current tasks.
    **Card count approach:** Don't fetch all cards just to count them. Add a lightweight endpoint (or include count in the `DeckProfile` response) backed by `SELECT COUNT(*)`. ViewDeck already fetches the profile — piggyback the count there.
 
    **Note:** Commander image was removed from ViewDeck to keep the screen simple and leave room for these future stats. ViewDeck now mirrors the Profile screen layout (label/value rows in `container-sm`).
+
+### Card Filter: Oracle Keywords
+
+4. **Oracle Text Keyword Filter** — Add `oracle_text_contains_any: Option<Vec<String>>` to `CardFilter`, enabling multi-keyword oracle text search. Follows the exact `type_line_contains_any` + `get_card_types` pipeline pattern.
+
+   **Why:** Currently `oracle_text_contains` is a single string. Users want to search cards matching ANY of several keywords (e.g. "destroy" OR "exile" OR "sacrifice") to find removal spells, or "draw" OR "scry" for card advantage. The keyword list is fetched from the database so the frontend can offer autocomplete.
+
+   **Backend — New endpoint: `get_oracle_keywords`**
+
+   Follows `get_card_types` pattern exactly:
+   - **Domain model:** New file `zerver/src/lib/domain/card/models/get_oracle_keywords.rs` — `GetOracleKeywordsError` enum (single `Database` variant)
+   - **Port trait:** Add `get_oracle_keywords(&self) -> Result<Vec<String>, GetOracleKeywordsError>` to `CardRepository` and `CardService`
+   - **Repository SQL** (`outbound/sqlx/card/mod.rs`):
+     ```sql
+     SELECT DISTINCT LOWER(TRIM(keyword)) AS keyword
+     FROM scryfall_data, UNNEST(keywords) AS keyword
+     WHERE keywords IS NOT NULL
+     ORDER BY keyword ASC
+     ```
+     Uses the existing `keywords: Option<Vec<String>>` field on `ScryfallData` — these are Scryfall's curated keyword abilities (flying, trample, deathtouch, ward, etc.), not raw oracle text words.
+   - **Service:** Passthrough to repo (same as `get_card_types`)
+   - **HTTP handler:** New file `handlers/card/get_oracle_keywords.rs` — mirrors `get_card_types.rs` exactly
+   - **Route:** `.route("/keywords", get(get_oracle_keywords))` in the `/api/card` nest
+   - **Path helper:** `get_oracle_keywords_route() -> String` returning `"api/card/keywords"`
+
+   **Backend — CardFilter extension**
+
+   - **CardFilter field:** `oracle_text_contains_any: Option<Vec<String>>`
+   - **Builder setter:** `set_oracle_text_contains_any<I, S>(&mut self, ...)` + `unset_oracle_text_contains_any()`
+   - **Builder getter:** `oracle_text_contains_any(&self) -> Option<&[String]>`
+   - **CardFilter getter:** Same signature
+   - **SQL generation** (`outbound/sqlx/card/mod.rs` search query builder): Loop with `oracle_text ILIKE '%keyword%'` bindings joined by `OR` in parentheses — identical pattern to `type_line_contains_any`
+   - **FilterCards** (`filter_cards.rs`): Add client-side matching for in-memory filtering on ViewDeckCard — check if `oracle_text` contains any of the filter strings (case-insensitive)
+
+   **Frontend — Client**
+
+   - New file `zwiper/src/lib/outbound/client/card/get_oracle_keywords.rs`
+   - `ClientGetOracleKeywords` trait + impl — GET `/api/card/keywords`, returns `Vec<String>`
+   - Register in `client/card/mod.rs`
+
+   **Frontend — Filter component**
+
+   - New file `zwiper/src/lib/inbound/screens/deck/card/filter/keywords.rs`
+   - Mirrors `types.rs` "other types" section: resource fetches all keywords, search input with autocomplete, chip-based multi-select with remove buttons
+   - Uses `oracle_text_contains_any` getter/setter on `CardFilterBuilder`
+   - Register in `filter/mod.rs`
+   - Add as new `AccordionItem` in `card/view.rs` filter bottom sheet (between "text" and "types", or after "types")
+
+   **Implementation order:**
+   1. Domain model (`get_oracle_keywords.rs`) + port traits
+   2. Repository SQL + service passthrough
+   3. HTTP handler + route + path
+   4. CardFilter field + builder setter/getter + SQL generation + FilterCards
+   5. Frontend client
+   6. Frontend filter component + accordion registration
+
+   **Critical files:**
+
+   | File | Action |
+   |------|--------|
+   | `zerver/src/lib/domain/card/models/get_oracle_keywords.rs` | **NEW** |
+   | `zerver/src/lib/domain/card/models/mod.rs` | Register module |
+   | `zerver/src/lib/domain/card/ports.rs` | Add to both traits |
+   | `zerver/src/lib/domain/card/services.rs` | Passthrough |
+   | `zerver/src/lib/outbound/sqlx/card/mod.rs` | SQL impl + search filter |
+   | `zerver/src/lib/inbound/http/handlers/card/get_oracle_keywords.rs` | **NEW** |
+   | `zerver/src/lib/inbound/http/handlers/card/mod.rs` | Register module |
+   | `zerver/src/lib/inbound/http/routes.rs` | Add route |
+   | `zerver/src/lib/inbound/http/paths.rs` | Add path helper |
+   | `zerver/src/lib/domain/card/models/search_card/card_filter/mod.rs` | Add field |
+   | `zerver/src/lib/domain/card/models/search_card/card_filter/builder/setters.rs` | Setter + unsetter |
+   | `zerver/src/lib/domain/card/models/search_card/card_filter/builder/getters.rs` | Getter |
+   | `zerver/src/lib/domain/card/models/search_card/card_filter/builder/mod.rs` | Quick constructor |
+   | `zerver/src/lib/domain/card/models/search_card/card_filter/getters.rs` | Getter |
+   | `zerver/src/lib/domain/card/models/search_card/filter_cards.rs` | Client-side match |
+   | `zwiper/src/lib/outbound/client/card/get_oracle_keywords.rs` | **NEW** |
+   | `zwiper/src/lib/outbound/client/card/mod.rs` | Register module |
+   | `zwiper/src/lib/inbound/screens/deck/card/filter/keywords.rs` | **NEW** |
+   | `zwiper/src/lib/inbound/screens/deck/card/filter/mod.rs` | Register module |
+   | `zwiper/src/lib/inbound/screens/deck/card/view.rs` | Add AccordionItem |
 
 ### Card Intelligence
 
