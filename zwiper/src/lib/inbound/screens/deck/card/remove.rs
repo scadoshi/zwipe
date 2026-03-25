@@ -8,9 +8,9 @@ use crate::{
             },
         },
         screens::deck::card::filter::{
-            artist::Artist, combat::Combat, config::Config, flavor_text::FlavorText, mana::Mana,
-            name::Name, oracle_text::OracleText, rarity::Rarity, set::Set, sort::Sort,
-            types::Types,
+            artist::Artist, combat::Combat, config::Config, deck_cards::DeckCards,
+            flavor_text::FlavorText, mana::Mana, name::Name, oracle_text::OracleText,
+            rarity::Rarity, set::Set, sort::Sort, types::Types,
         },
     },
     outbound::client::{
@@ -69,6 +69,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
     // Source of truth — all cards in the deck
     let mut deck_cards: Signal<Vec<Card>> = use_signal(Vec::new);
+    use_context_provider(|| DeckCards(deck_cards));
     // What the swipe UI iterates over (may be a filtered subset)
     let mut displayed_cards: Signal<Vec<Card>> = use_signal(Vec::new);
     // Guards filter effect from running before the deck has loaded

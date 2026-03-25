@@ -4,6 +4,8 @@
 
 /// Artist filter.
 pub mod artist;
+/// Deck-aware filter data extraction.
+pub mod deck_cards;
 /// Combat stats filter (power/toughness).
 pub mod combat;
 /// Filter configuration accordion.
