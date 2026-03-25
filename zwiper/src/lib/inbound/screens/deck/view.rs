@@ -239,7 +239,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                     span {
                                                         style: "width:4ch;text-align:center;font-family:monospace;font-size:0.75rem;",
                                                         {
-                                                            let h = heights[col];
+                                                            let h = *heights.get(col).unwrap_or(&0);
                                                             let c = m.cmc_histogram.get(col).copied().unwrap_or(0);
                                                             if (8 - row) < h {
                                                                 "\u{2588}".to_string()
@@ -380,6 +380,20 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                         },
                         "remove"
                     }
+                }
+                button {
+                    class: "util-btn",
+                    onclick: move |_| {
+                        navigator.push(Router::ImportDeck { deck_id });
+                    },
+                    "import"
+                }
+                button {
+                    class: "util-btn",
+                    onclick: move |_| {
+                        navigator.push(Router::ExportDeck { deck_id });
+                    },
+                    "export"
                 }
                 button {
                     class: "util-btn",
