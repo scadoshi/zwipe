@@ -174,6 +174,7 @@ fn classify_color(card: &Card) -> usize {
 }
 
 #[cfg(test)]
+#[allow(clippy::indexing_slicing)]
 mod tests {
     use super::{GroupByOption, GroupCards};
     use crate::domain::card::models::{

@@ -17,4 +17,5 @@ pub mod success_messages;
 /// Toast notification component.
 pub mod toast;
 /// Three-state toggle component (true/false/any).
+#[allow(unpredictable_function_pointer_comparisons)]
 pub mod tri_toggle;
