@@ -42,9 +42,9 @@ pub fn Profile() -> Element {
 
                 div { class: "screen-content centered",
                 if let Some(session) = session().as_ref() {
-                    div { class : "container-sm",
+                    div { style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
 
-                        div { class : "flex items-center flex-between mb-4 gap-2",
+                        div { class : "flex items-center flex-between mb-2 gap-2",
                             div { class : "flex-1",
                                 label { class: "label", "username" }
                                 p { class: "text-base font-light mb-1",
@@ -53,7 +53,7 @@ pub fn Profile() -> Element {
                             }
                         }
 
-                        div { class : "flex items-center flex-between mb-4 gap-2",
+                        div { class : "flex items-center flex-between mb-2 gap-2",
                             div { class : "flex-1",
                                 label { class: "label", "email" }
                                 p { class: "text-base font-light mb-1",
@@ -62,7 +62,7 @@ pub fn Profile() -> Element {
                             }
                         }
 
-                        div { class : "flex items-center flex-between mb-4 gap-2",
+                        div { class : "flex items-center flex-between mb-2 gap-2",
                             div { class : "flex-1",
                                 label { class: "label", "password" }
                                 p { class: "text-base font-light mb-1", "•••••••" }
