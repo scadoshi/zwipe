@@ -130,6 +130,38 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         })
     });
 
+    let type_bar_heights: Option<Vec<(&str, usize, usize)>> = metrics.as_ref().map(|m| {
+        const MAX_HEIGHT: usize = 8;
+        let max_count = m.type_counts.iter().map(|(_, c)| *c).max().unwrap_or(0);
+        m.type_counts
+            .iter()
+            .map(|(label, count)| {
+                let height = if *count > 0 && max_count > 0 {
+                    (count * MAX_HEIGHT / max_count).max(1)
+                } else {
+                    0
+                };
+                (abbreviate_type(label), *count, height)
+            })
+            .collect()
+    });
+
+    let color_bar_heights: Option<Vec<(&str, usize, usize)>> = metrics.as_ref().map(|m| {
+        const MAX_HEIGHT: usize = 8;
+        let max_count = m.color_counts.iter().map(|(_, c)| *c).max().unwrap_or(0);
+        m.color_counts
+            .iter()
+            .map(|(label, count)| {
+                let height = if *count > 0 && max_count > 0 {
+                    (count * MAX_HEIGHT / max_count).max(1)
+                } else {
+                    0
+                };
+                (abbreviate_color(label), *count, height)
+            })
+            .collect()
+    });
+
     rsx! {
         Bouncer {
             div { class: "screen",
@@ -141,19 +173,19 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 div { class: "screen-content",
                     match deck_profile_resource() {
                         Some(Ok(deck_profile)) => rsx! {
-                            div { class: "container-sm",
+                            div { style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
                                 if let Some(error) = load_error() {
                                     div { class: "message-error", "{error}" }
                                 }
 
-                                div { class: "flex items-center flex-between mb-4 gap-2",
+                                div { class: "flex items-center flex-between mb-2 gap-2",
                                     div { class: "flex-1",
                                         label { class: "label", "deck name" }
                                         p { class: "text-base font-light mb-1", "{deck_profile.name}" }
                                     }
                                 }
 
-                                div { class: "flex items-center flex-between mb-4 gap-2",
+                                div { class: "flex items-center flex-between mb-2 gap-2",
                                     div { class: "flex-1",
                                         label { class: "label", "copy rule" }
                                         p { class: "text-base font-light mb-1",
@@ -168,7 +200,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     }
                                 }
 
-                                div { class: "flex items-center flex-between mb-4 gap-2",
+                                div { class: "flex items-center flex-between mb-2 gap-2",
                                     div { class: "flex-1",
                                         label { class: "label", "commander" }
                                         p { class: "text-base font-light mb-1",
@@ -192,38 +224,39 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                         span { class: "text-sm font-light", "avg cmc" }
                                         span { class: "text-sm font-light opacity-50", "{m.avg_cmc:.1}" }
                                     }
-                                    div { class: "flex items-center flex-between mb-4",
+                                    div { class: "flex items-center flex-between mb-2",
                                         span { class: "text-sm font-light", "lands" }
                                         span { class: "text-sm font-light opacity-50", "{m.land_count}" }
                                     }
 
                                     // ── mana curve ─────────────────────────────────
                                     label { class: "label", "mana curve" }
-                                    div { class: "mb-1",
-                                        for row in 0..8usize {
+                                    div { style: "width:100%;border:1px solid rgba(255,255,255,0.1);border-radius:0.5rem;padding:0.75rem;display:flex;flex-direction:column;align-items:center;margin-bottom:0.5rem;",
+                                        for row in 0..9usize {
                                             div { class: "flex",
                                                 for col in 0..7usize {
                                                     span {
-                                                        style: "width:2.5ch;text-align:center;font-family:monospace;",
-                                                        if (7 - row) < heights.get(col).copied().unwrap_or(0) { "\u{2588}" } else { "\u{00a0}" }
+                                                        style: "width:4ch;text-align:center;font-family:monospace;font-size:0.75rem;",
+                                                        {
+                                                            let h = heights[col];
+                                                            let c = m.cmc_histogram.get(col).copied().unwrap_or(0);
+                                                            if (8 - row) < h {
+                                                                "\u{2588}".to_string()
+                                                            } else if (8 - row) == h {
+                                                                c.to_string()
+                                                            } else {
+                                                                "\u{00a0}".to_string()
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
                                         }
-                                        // count row
-                                        div { class: "flex",
-                                            for col in 0..7usize {
-                                                span {
-                                                    style: "width:2.5ch;text-align:center;font-size:0.75rem;font-family:monospace;",
-                                                    "{m.cmc_histogram.get(col).copied().unwrap_or(0)}"
-                                                }
-                                            }
-                                        }
                                         // label row
-                                        div { class: "flex mb-4",
-                                            for label in ["0","1","2","3","4","5","6+"] {
+                                        div { class: "flex",
+                                            for (i, label) in ["0","1","2","3","4","5","6+"].iter().enumerate() {
                                                 span {
-                                                    style: "width:2.5ch;text-align:center;font-size:0.75rem;font-family:monospace;opacity:0.5;",
+                                                    style: if i > 0 { "width:4ch;text-align:center;font-size:0.75rem;font-family:monospace;opacity:0.5;border-left:1px solid rgba(255,255,255,0.15);" } else { "width:4ch;text-align:center;font-size:0.75rem;font-family:monospace;opacity:0.5;" },
                                                     "{label}"
                                                 }
                                             }
@@ -231,20 +264,70 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     }
 
                                     // ── types ──────────────────────────────────────
-                                    label { class: "label", "types" }
-                                    for (type_label, count) in m.type_counts.iter() {
-                                        div { class: "flex items-center flex-between mb-1",
-                                            span { class: "text-sm font-light", "{type_label}" }
-                                            span { class: "text-sm font-light opacity-50", "{count}" }
+                                    if let Some(type_bars) = type_bar_heights.as_ref() {
+                                        label { class: "label", "types" }
+                                        div { style: "width:100%;border:1px solid rgba(255,255,255,0.1);border-radius:0.5rem;padding:0.75rem;display:flex;flex-direction:column;align-items:center;margin-bottom:0.5rem;",
+                                            for row in 0..9usize {
+                                                div { class: "flex",
+                                                    for (_label, count, height) in type_bars.iter() {
+                                                        span {
+                                                            style: "width:6ch;text-align:center;font-family:monospace;font-size:0.75rem;",
+                                                            {
+                                                                if (8 - row) < *height {
+                                                                    "\u{2588}".to_string()
+                                                                } else if (8 - row) == *height {
+                                                                    count.to_string()
+                                                                } else {
+                                                                    "\u{00a0}".to_string()
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            // label row (bottom)
+                                            div { class: "flex",
+                                                for (i, (label, _count, _height)) in type_bars.iter().enumerate() {
+                                                    span {
+                                                        style: if i > 0 { "width:6ch;text-align:center;font-size:0.75rem;font-family:monospace;opacity:0.5;border-left:1px solid rgba(255,255,255,0.15);" } else { "width:6ch;text-align:center;font-size:0.75rem;font-family:monospace;opacity:0.5;" },
+                                                        "{label}"
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
 
                                     // ── colors ─────────────────────────────────────
-                                    label { class: "label mt-4", "colors" }
-                                    for (color_label, count) in m.color_counts.iter() {
-                                        div { class: "flex items-center flex-between mb-1",
-                                            span { class: "text-sm font-light", "{color_label}" }
-                                            span { class: "text-sm font-light opacity-50", "{count}" }
+                                    if let Some(color_bars) = color_bar_heights.as_ref() {
+                                        label { class: "label", "colors" }
+                                        div { style: "width:100%;border:1px solid rgba(255,255,255,0.1);border-radius:0.5rem;padding:0.75rem;display:flex;flex-direction:column;align-items:center;margin-bottom:0.5rem;",
+                                            for row in 0..9usize {
+                                                div { class: "flex",
+                                                    for (_label, count, height) in color_bars.iter() {
+                                                        span {
+                                                            style: "width:6ch;text-align:center;font-family:monospace;font-size:0.75rem;",
+                                                            {
+                                                                if (8 - row) < *height {
+                                                                    "\u{2588}".to_string()
+                                                                } else if (8 - row) == *height {
+                                                                    count.to_string()
+                                                                } else {
+                                                                    "\u{00a0}".to_string()
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            // label row (bottom)
+                                            div { class: "flex",
+                                                for (i, (label, _count, _height)) in color_bars.iter().enumerate() {
+                                                    span {
+                                                        style: if i > 0 { "width:6ch;text-align:center;font-size:0.75rem;font-family:monospace;opacity:0.5;border-left:1px solid rgba(255,255,255,0.15);" } else { "width:6ch;text-align:center;font-size:0.75rem;font-family:monospace;opacity:0.5;" },
+                                                        "{label}"
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -324,5 +407,32 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             }
             }
         }
+    }
+}
+
+fn abbreviate_type(label: &str) -> &str {
+    match label {
+        "lands" => "lands",
+        "creatures" => "creat",
+        "planeswalkers" => "plnsw",
+        "artifacts" => "artif",
+        "enchantments" => "enchn",
+        "instants" => "instn",
+        "sorceries" => "sorcr",
+        "other" => "other",
+        _ => label,
+    }
+}
+
+fn abbreviate_color(label: &str) -> &str {
+    match label {
+        "white" => "white",
+        "blue" => "blue",
+        "black" => "black",
+        "red" => "red",
+        "green" => "green",
+        "multicolor" => "multi",
+        "colorless" => "clrls",
+        _ => label,
     }
 }
