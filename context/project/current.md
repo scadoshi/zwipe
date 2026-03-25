@@ -2,17 +2,17 @@
 
 Active development tasks and immediate focus areas.
 
-**Last Updated**: CopyMax truncation enforcement, qty column, truncation warning dialog.
+**Last Updated**: Basic land singleton exemption, ViewDeck histogram charts, layout improvements.
 
-**Current Focus**: Deck import (CopyMax enforcement complete), multi-copy add flow.
+**Current Focus**: Deck import, multi-copy add flow.
 
 **Recent Achievements**:
+- **Basic Land Singleton Exemption**: Basic lands can increment qty in singleton decks; `change_quantity` takes `is_basic_land` flag to skip copy-max checks; non-basic singleton cards show "remove" button instead of -/+; EditDeck `max_entry_quantity` ignores basic lands for truncation warning
+- **ViewDeck Histogram Charts**: Types and colors rendered as histogram bar charts (same pattern as mana curve) with 5-letter abbreviated labels, counts above bars, rounded containers, pipe separators between labels
+- **Layout Improvements**: ViewDeck and Profile screens widened from `container-sm` to `max-width: 40rem` inline style; spacing reduced from `mb-4` to `mb-2`
+- **Qty Column Always Visible**: Removed `.no-qty` CSS class; qty column always shows for all deck types
 - **CopyMax Truncation on UpdateDeckProfile**: Backend `truncate_deck_card_quantities` clamps card quantities when copy_max becomes more restrictive, atomically within the same transaction
-- **Truncation Warning Dialog**: EditDeck fetches full deck via `get_deck`, computes `would_truncate` memo comparing actual max entry quantity against new limit, shows AlertDialog only when cards actually exceed the new copy_max
-- **Qty Column in ViewDeckCard**: Added qty column to card row grid; omitted for singleton decks via `.no-qty` CSS modifier toggling grid-template-columns
-- **+/- Quantity Controls**: ViewDeckCard expanded rows have quantity controls with optimistic updates, CopyMax enforcement, and delete-on-zero
 - **Deck Metrics**: `DeckMetrics` struct + `ComputeMetrics` trait in deck domain — generic over `IntoIterator<Item = &Card>`, single-pass CMC histogram, type/color distribution, avg CMC, land counts (7 tests)
-- **ViewDeck Stats**: Fetches full deck, renders stats section, ASCII mana curve (8-row scaled bars), type/color distributions; metrics section hidden when empty
 
 ---
 
