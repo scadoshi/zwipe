@@ -21,14 +21,11 @@ Planned work after completing current tasks.
 
 ### Deck Composition & Card Management
 
-1. **Deck Import (Text List / URL)** - Allow users to import a deck from a plain-text card list or a shareable URL from sites like Archidekt or Moxfield.
+1. ~~**Deck Import (Text List)**~~ — **DONE** (2026-03-24). Parses Moxfield (`qty name`) and Archidekt (`qtyx name (set) collector# [tags]`) formats. Exact-name batch SQL resolution via CTE dedup. Copy-max clamping (basic lands exempt). Atomic bulk upsert with `ON CONFLICT DO UPDATE`. Import screen with results display (imported + unresolved). Export button on ViewDeck copies deck to clipboard. `ScryfallData::is_basic_land()` helper used across call sites.
 
-   **Scope:**
-   - **Text import**: Parse the standard deck list format (`4 Lightning Bolt`, `1 Forest`, etc.) — quantity + card name per line. Resolve each card name against the zerver search API and bulk-add to the deck via `CreateDeckCard`.
-   - **URL import**: Accept an Archidekt or Moxfield deck URL, hit their public API to fetch the card list, then pipe through the same text-import resolution flow. Moxfield and Archidekt both have public read endpoints — no auth required for public decks.
-   - **UI**: A text area on a new `ImportDeck` screen (or modal from `DeckList`) where the user pastes a list or URL, with a preview of resolved/unresolved cards before confirming the import.
-   - **Error handling**: Cards that don't resolve (misspellings, tokens, non-oracle names) surface as a list of skipped cards after import.
-   - **Note:** Resolution should prefer `is_valid_commander: false` filter (all cards) and match on exact name first, falling back to fuzzy. Quantity must respect the deck's `CopyMax`.
+2. **Deck Export Screen** — Replace the inline clipboard-copy "export" button on ViewDeck with a dedicated `ExportDeck` screen. Shows the full decklist as selectable text the user can copy manually, plus a "copy to clipboard" button with toast feedback. Navigated from ViewDeck util-bar.
+
+3. **"Show Lands" Toggle on ViewDeckCard** — Toggle button (top right of page header, default OFF) that shows/hides land cards in the deck card list. Requires `ScryfallData::is_land()` method (checks for "Land" in type_line, broader than `is_basic_land()`). `ScryfallData::is_spell()` may come later as a complementary method.
 
 2. **Multi-Copy Add Flow** - Right now swiping right always adds exactly 1 copy. For standard decks (CopyMax=4) the user should be able to add up to 4 copies in one action.
 
