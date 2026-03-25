@@ -368,6 +368,7 @@ impl FilterCards for Vec<Card> {
 }
 
 #[cfg(test)]
+#[allow(clippy::indexing_slicing)]
 mod tests {
     use super::FilterCards;
     use crate::domain::card::models::{
