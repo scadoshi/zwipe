@@ -35,6 +35,7 @@ use crate::{
         },
         get_card::GetCardError,
         get_card_types::GetCardTypesError,
+        get_oracle_keywords::GetOracleKeywordsError,
         helpers::SleeveCardProfile,
         scryfall_data::get_scryfall_data::{ScryfallDataIds, SearchScryfallDataError},
     },
@@ -320,6 +321,21 @@ impl CardRepository for MyPostgres {
             sep.push_bind_unseparated(format!("%{}%", query_string));
         }
 
+        if let Some(query_string_array) = &request.oracle_text_contains_any() {
+            sep.push(" (");
+            query_string_array
+                .iter()
+                .enumerate()
+                .for_each(|(i, query_string)| {
+                    if i > 0 {
+                        sep.push_unseparated(" OR ");
+                    }
+                    sep.push_unseparated("oracle_text ILIKE ");
+                    sep.push_bind_unseparated(format!("%{}%", query_string));
+                });
+            sep.push_unseparated(") ");
+        }
+
         if let Some(query_string) = &request.flavor_text_contains() {
             sep.push("flavor_text ILIKE ");
             sep.push_bind_unseparated(format!("%{}%", query_string));
@@ -495,6 +511,23 @@ impl CardRepository for MyPostgres {
         .flatten()
         .collect();
         Ok(card_types)
+    }
+
+    /// Returns distinct keyword abilities from the `keywords` array column.
+    async fn get_oracle_keywords(&self) -> Result<Vec<String>, GetOracleKeywordsError> {
+        let keywords: Vec<String> = query_scalar!(
+            "SELECT DISTINCT LOWER(TRIM(keyword)) AS keyword
+             FROM scryfall_data, UNNEST(keywords) AS keyword
+             WHERE keywords IS NOT NULL
+             ORDER BY keyword ASC"
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| GetOracleKeywordsError::Database(e.into()))?
+        .into_iter()
+        .flatten()
+        .collect();
+        Ok(keywords)
     }
 
     async fn get_artists(&self) -> Result<Vec<String>, GetArtistsError> {
