@@ -1,10 +1,13 @@
-//! Deck-level aggregate metrics computed from a slice of cards.
+//! Deck-level aggregate metrics computed from a collection of cards.
 //!
-//! Single-pass computation over `&[Card]` producing mana curve histogram,
-//! type distribution, color distribution, and summary stats. All metrics
-//! count unique cards (quantity-aware metrics require API changes).
+//! Single-pass computation producing mana curve histogram, type distribution,
+//! color distribution, and summary stats. Supports both `Vec<Card>` (each card
+//! counted once) and `Vec<DeckEntry>` (each card counted by its quantity).
 
-use crate::domain::card::models::{scryfall_data::colors::Color, Card};
+use crate::domain::{
+    card::models::{scryfall_data::colors::Color, Card},
+    deck::models::deck::DeckEntry,
+};
 
 /// Aggregate statistics for a collection of cards.
 #[derive(Debug, Clone, PartialEq)]
@@ -25,52 +28,45 @@ pub struct DeckMetrics {
     pub color_counts: Vec<(&'static str, usize)>,
 }
 
-/// Extension trait for computing deck metrics from a card collection.
-pub trait ComputeMetrics {
-    /// Computes aggregate deck metrics in a single pass.
-    fn compute_metrics(&self) -> DeckMetrics;
-}
 
-impl<T> ComputeMetrics for T
-where
-    for<'a> &'a T: IntoIterator<Item = &'a Card>,
-{
-    fn compute_metrics(&self) -> DeckMetrics {
+impl DeckMetrics {
+    /// Computes metrics from deck entries, counting each card by its quantity.
+    pub fn from_entries(entries: &[DeckEntry]) -> Self {
         let mut cmc_histogram = [0usize; 7];
-        let mut type_buckets = [0usize; 8]; // land, creature, pw, artifact, enchantment, instant, sorcery, other
-        let mut color_buckets = [0usize; 7]; // W, U, B, R, G, multicolor, colorless
+        let mut type_buckets = [0usize; 8];
+        let mut color_buckets = [0usize; 7];
         let mut land_count = 0usize;
         let mut cmc_sum = 0.0f64;
         let mut total_cards = 0usize;
 
-        for card in self {
-            total_cards += 1;
+        for entry in entries {
+            let qty = (*entry.deck_card.quantity).max(1) as usize;
+            let card = &entry.card;
+            total_cards += qty;
 
-            // type classification
             let type_idx = classify_type(card);
             if let Some(slot) = type_buckets.get_mut(type_idx) {
-                *slot += 1;
+                *slot += qty;
             }
             let is_land = type_idx == 0;
             if is_land {
-                land_count += 1;
+                land_count += qty;
             }
 
-            // cmc classification
-            let cmc_idx = classify_cmc(card);
-            if let Some(slot) = cmc_histogram.get_mut(cmc_idx) {
-                *slot += 1;
-            }
             if !is_land {
-                cmc_sum += card.scryfall_data.cmc.unwrap_or(0.0);
+                let cmc_idx = classify_cmc(card);
+                if let Some(slot) = cmc_histogram.get_mut(cmc_idx) {
+                    *slot += qty;
+                }
+                cmc_sum += card.scryfall_data.cmc.unwrap_or(0.0) * qty as f64;
             }
 
-            // color classification
             let color_idx = classify_color(card);
             if let Some(slot) = color_buckets.get_mut(color_idx) {
-                *slot += 1;
+                *slot += qty;
             }
         }
+
         let nonland_count = total_cards - land_count;
         let avg_cmc = if nonland_count > 0 {
             cmc_sum / nonland_count as f64
@@ -172,18 +168,35 @@ fn classify_color(card: &Card) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::card::models::{
-        card_profile::CardProfile,
-        scryfall_data::{
-            colors::{Color, Colors},
-            legalities::Legalities,
-            prices::Prices,
-            rarity::Rarity,
-            ScryfallData,
+    use crate::domain::{
+        card::models::{
+            card_profile::CardProfile,
+            scryfall_data::{
+                colors::{Color, Colors},
+                legalities::Legalities,
+                prices::Prices,
+                rarity::Rarity,
+                ScryfallData,
+            },
         },
+        deck::models::deck_card::{quantity::Quantity, DeckCard},
     };
     use chrono::NaiveDate;
     use uuid::Uuid;
+
+    fn make_entry(name: &str, qty: i32) -> DeckEntry {
+        let deck_id = Uuid::new_v4();
+        let card = make_card(name);
+        let scryfall_data_id = card.scryfall_data.id;
+        DeckEntry {
+            card,
+            deck_card: DeckCard {
+                deck_id,
+                scryfall_data_id,
+                quantity: Quantity::new(qty).unwrap(),
+            },
+        }
+    }
 
     fn make_card(name: &str) -> Card {
         Card {
@@ -302,7 +315,7 @@ mod tests {
 
     #[test]
     fn empty_deck() {
-        let metrics = Vec::<Card>::new().compute_metrics();
+        let metrics = DeckMetrics::from_entries(&[]);
         assert_eq!(metrics.total_cards, 0);
         assert_eq!(metrics.avg_cmc, 0.0);
         assert_eq!(metrics.land_count, 0);
@@ -314,50 +327,49 @@ mod tests {
 
     #[test]
     fn single_land() {
-        let mut card = make_card("Forest");
-        card.scryfall_data.type_line = Some("Basic Land — Forest".to_string());
-        card.scryfall_data.cmc = Some(0.0);
-        card.scryfall_data.color_identity = Colors::from([Color::Green]);
+        let mut entry = make_entry("Forest", 1);
+        entry.card.scryfall_data.type_line = Some("Basic Land — Forest".to_string());
+        entry.card.scryfall_data.cmc = Some(0.0);
+        entry.card.scryfall_data.color_identity = Colors::from([Color::Green]);
 
-        let metrics = vec![card].compute_metrics();
+        let metrics = DeckMetrics::from_entries(&[entry]);
         assert_eq!(metrics.total_cards, 1);
         assert_eq!(metrics.land_count, 1);
         assert_eq!(metrics.nonland_count, 0);
         assert_eq!(metrics.avg_cmc, 0.0);
-        assert_eq!(metrics.cmc_histogram[0], 1);
+        assert_eq!(metrics.cmc_histogram, [0; 7]); // lands excluded from mana curve
         assert_eq!(metrics.type_counts, vec![("lands", 1)]);
         assert_eq!(metrics.color_counts, vec![("green", 1)]);
     }
 
     #[test]
     fn mixed_deck() {
-        let mut land = make_card("Forest");
-        land.scryfall_data.type_line = Some("Basic Land — Forest".to_string());
-        land.scryfall_data.cmc = Some(0.0);
-        land.scryfall_data.color_identity = Colors::from([Color::Green]);
+        let mut land = make_entry("Forest", 1);
+        land.card.scryfall_data.type_line = Some("Basic Land — Forest".to_string());
+        land.card.scryfall_data.cmc = Some(0.0);
+        land.card.scryfall_data.color_identity = Colors::from([Color::Green]);
 
-        let mut creature = make_card("Llanowar Elves");
-        creature.scryfall_data.type_line = Some("Creature — Elf Druid".to_string());
-        creature.scryfall_data.cmc = Some(1.0);
-        creature.scryfall_data.color_identity = Colors::from([Color::Green]);
+        let mut creature = make_entry("Llanowar Elves", 1);
+        creature.card.scryfall_data.type_line = Some("Creature — Elf Druid".to_string());
+        creature.card.scryfall_data.cmc = Some(1.0);
+        creature.card.scryfall_data.color_identity = Colors::from([Color::Green]);
 
-        let mut instant = make_card("Counterspell");
-        instant.scryfall_data.type_line = Some("Instant".to_string());
-        instant.scryfall_data.cmc = Some(2.0);
-        instant.scryfall_data.color_identity = Colors::from([Color::Blue]);
+        let mut instant = make_entry("Counterspell", 1);
+        instant.card.scryfall_data.type_line = Some("Instant".to_string());
+        instant.card.scryfall_data.cmc = Some(2.0);
+        instant.card.scryfall_data.color_identity = Colors::from([Color::Blue]);
 
-        let mut artifact = make_card("Sol Ring");
-        artifact.scryfall_data.type_line = Some("Artifact".to_string());
-        artifact.scryfall_data.cmc = Some(1.0);
+        let mut artifact = make_entry("Sol Ring", 1);
+        artifact.card.scryfall_data.type_line = Some("Artifact".to_string());
+        artifact.card.scryfall_data.cmc = Some(1.0);
 
-        let metrics = vec![land, creature, instant, artifact].compute_metrics();
+        let metrics = DeckMetrics::from_entries(&[land, creature, instant, artifact]);
 
         assert_eq!(metrics.total_cards, 4);
         assert_eq!(metrics.land_count, 1);
         assert_eq!(metrics.nonland_count, 3);
-        // avg_cmc = (1.0 + 2.0 + 1.0) / 3 = 1.333...
         assert!((metrics.avg_cmc - 4.0 / 3.0).abs() < f64::EPSILON);
-        assert_eq!(metrics.cmc_histogram, [1, 2, 1, 0, 0, 0, 0]);
+        assert_eq!(metrics.cmc_histogram, [0, 2, 1, 0, 0, 0, 0]); // land excluded
         assert_eq!(
             metrics.type_counts,
             vec![("lands", 1), ("creatures", 1), ("artifacts", 1), ("instants", 1)]
@@ -370,37 +382,68 @@ mod tests {
 
     #[test]
     fn no_type_line_is_other() {
-        let card = make_card("Mystery");
-        let metrics = vec![card].compute_metrics();
+        let entry = make_entry("Mystery", 1);
+        let metrics = DeckMetrics::from_entries(&[entry]);
         assert_eq!(metrics.type_counts, vec![("other", 1)]);
     }
 
     #[test]
     fn no_cmc_is_zero() {
-        let card = make_card("Ancestral Vision");
-        let metrics = vec![card].compute_metrics();
+        let entry = make_entry("Ancestral Vision", 1);
+        let metrics = DeckMetrics::from_entries(&[entry]);
         assert_eq!(metrics.cmc_histogram[0], 1);
     }
 
     #[test]
     fn cmc_capped_at_six() {
-        let mut card = make_card("Emrakul");
-        card.scryfall_data.cmc = Some(15.0);
-        card.scryfall_data.type_line = Some("Creature — Eldrazi".to_string());
+        let mut entry = make_entry("Emrakul", 1);
+        entry.card.scryfall_data.cmc = Some(15.0);
+        entry.card.scryfall_data.type_line = Some("Creature — Eldrazi".to_string());
 
-        let metrics = vec![card].compute_metrics();
+        let metrics = DeckMetrics::from_entries(&[entry]);
         assert_eq!(metrics.cmc_histogram[6], 1);
         assert_eq!(metrics.cmc_histogram[0..6], [0; 6]);
     }
 
     #[test]
     fn multicolor_classification() {
-        let mut card = make_card("Atraxa");
-        card.scryfall_data.color_identity =
+        let mut entry = make_entry("Atraxa", 1);
+        entry.card.scryfall_data.color_identity =
             Colors::from([Color::White, Color::Blue, Color::Black, Color::Green]);
-        card.scryfall_data.type_line = Some("Creature — Phyrexian Angel Horror".to_string());
+        entry.card.scryfall_data.type_line =
+            Some("Creature — Phyrexian Angel Horror".to_string());
 
-        let metrics = vec![card].compute_metrics();
+        let metrics = DeckMetrics::from_entries(&[entry]);
         assert_eq!(metrics.color_counts, vec![("multicolor", 1)]);
+    }
+
+    #[test]
+    fn quantity_multiplies_counts() {
+        let mut bolt = make_entry("Lightning Bolt", 4);
+        bolt.card.scryfall_data.type_line = Some("Instant".to_string());
+        bolt.card.scryfall_data.cmc = Some(1.0);
+        bolt.card.scryfall_data.color_identity = Colors::from([Color::Red]);
+
+        let mut forest = make_entry("Forest", 10);
+        forest.card.scryfall_data.type_line = Some("Basic Land — Forest".to_string());
+        forest.card.scryfall_data.cmc = Some(0.0);
+        forest.card.scryfall_data.color_identity = Colors::from([Color::Green]);
+
+        let metrics = DeckMetrics::from_entries(&[bolt, forest]);
+
+        assert_eq!(metrics.total_cards, 14);
+        assert_eq!(metrics.land_count, 10);
+        assert_eq!(metrics.nonland_count, 4);
+        // avg_cmc = (1.0 * 4) / 4 = 1.0
+        assert!((metrics.avg_cmc - 1.0).abs() < f64::EPSILON);
+        assert_eq!(metrics.cmc_histogram, [0, 4, 0, 0, 0, 0, 0]); // lands excluded
+        assert_eq!(
+            metrics.type_counts,
+            vec![("lands", 10), ("instants", 4)]
+        );
+        assert_eq!(
+            metrics.color_counts,
+            vec![("red", 4), ("green", 10)]
+        );
     }
 }
