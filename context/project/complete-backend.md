@@ -65,6 +65,9 @@ Production-ready backend implementations.
 - **Cross-Domain Orchestration**: Coordinating between multiple repositories
 - **Nested Resource API**: RESTful routes for deck and deck card operations
 - **CopyMax Domain Type**: Replaced is_singleton with validated 1 (singleton) or 4 (standard)
+- **CopyMax Enforcement on UpdateDeckCard**: Guard SELECT fetches current quantity + copy_max + type_line; rejects delta if resulting quantity exceeds copy_max (basic lands exempt)
+- **CopyMax Truncation on UpdateDeckProfile**: `truncate_deck_card_quantities` clamps all deck_card quantities exceeding new copy_max in a single UPDATE, atomically within the same transaction as the profile update
+- **DeckEntry Aggregate**: `Deck` struct pairs `DeckProfile` with `Vec<DeckEntry>` (each entry = `Card` + `DeckCard`) for full deck composition views
 - **Commander Support**: Optional commander card with image display
 - **Ownership Validation**: Complete OwnsDeck trait preventing unauthorized access
 
