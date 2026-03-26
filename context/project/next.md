@@ -78,12 +78,16 @@ Planned work after completing current tasks.
 
 **Bug:** `Platform secure storage failure: A required entitlement isn't present` on every cold start. The `keyring` crate targets the iOS Keychain, which requires the `keychain-access-groups` entitlement in the app's provisioning profile. Without it, `infallible_load()` silently returns `None` — user must log in every launch.
 
-**Fix:** Requires Apple Developer account ($99/year). Steps:
-1. Register an App ID at developer.apple.com with Keychain Sharing capability enabled
-2. Create a provisioning profile for that App ID
-3. Add an `.entitlements` file to the Xcode project Dioxus generates (`dx bundle --platform ios` produces an Xcode project — open it in Xcode, add `keychain-access-groups` entitlement under Signing & Capabilities)
-4. Set a real bundle ID in `Dioxus.toml` under `[bundle]`
-5. `dx build --release --platform ios` and archive via Xcode for TestFlight / App Store
+**Status:** Apple Developer subscription purchased 2026-03-25, payment processing (up to 48h). `Dioxus.toml` already updated with `identifier = "com.scottyrayfermo.zwipe"`. Wait for portal access before doing anything in Xcode — no App ID exists yet to sign against.
+
+**Next steps once payment clears:**
+1. developer.apple.com → Identifiers → + → App IDs → App
+2. Description: `zwipe`, Bundle ID (Explicit): `com.scottyrayfermo.zwipe`, enable **Keychain Sharing** → Register
+3. In `zwiper/`: `dx build --platform ios` → generates `gen/apple/` Xcode project
+4. `open gen/apple/zwiper.xcodeproj`
+5. Target → Signing & Capabilities → **Automatically manage signing**, set Team
+6. **+ Capability** → Keychain Sharing
+7. Run — `errSecMissingEntitlement` gone, sessions persist across launches
 
 ### Backend Hosting
 
