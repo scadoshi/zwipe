@@ -73,7 +73,7 @@ Users can register with any email — no verification step. Enables typos, imper
 
 ## Password Reset
 
-**Not yet implemented.** See `context/project/security.md` password reset design section. Needs email sending infrastructure (transactional email provider — Resend or Postmark recommended).
+**Not yet implemented.** Needs email sending infrastructure. **Decided: Resend** (resend.com) — modern API, Rust-friendly, 3k emails/month free tier.
 
 Password reset flow design:
 1. User submits email on "forgot password" screen
