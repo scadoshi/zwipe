@@ -2,7 +2,7 @@
 
 Tracks project development status and provides development context for AI assistants.
 
-**Last Updated**: Restructured into modular files for better AI context management.
+**Last Updated**: 2026-03-26.
 
 ---
 
@@ -38,6 +38,6 @@ Navigate to specific status files:
 
 **Tech Stack**: Rust backend (Axum, SQLx, PostgreSQL, JWT auth), Dioxus frontend (web/mobile), hexagonal architecture
 
-**Current Phase**: Feature development - deck import, multi-copy add flow, UI polish
+**Current Phase**: Live in production — app running on iPhone, backend on Raspberry Pi 5 at `api.zwipe.net`. Active work is UX polish from first real-device testing.
 
-**Recent Achievement**: CopyMax enforcement complete — backend truncates card quantities on restrictive copy_max changes (atomic in same transaction), frontend warns only when actual cards exceed the new limit. Qty column in ViewDeckCard rows, omitted for singleton decks.
+**Recent Achievement**: Full production deployment (2026-03-26). iOS app signed and deployed to physical device via `ios-deploy`. zerver cross-compiled for aarch64 running as systemd service on Pi 5 behind Cloudflare Tunnel. iOS Keychain session persistence confirmed working.
