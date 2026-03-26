@@ -91,47 +91,57 @@ Planned work after completing current tasks.
 
 ### Backend Hosting
 
-**Decided: home server via Cloudflare Tunnel (2026-03-25)**
-- Domain: `zwipe.net` (already owned)
-- OS: **Ubuntu Server 24.04 LTS** (chosen for LTS stability — no forced OS upgrades for 5 years)
-- Networking: **Cloudflare Tunnel** (`cloudflared`) — no port forwarding, no static IP needed, TLS handled by Cloudflare's edge
-- Database: PostgreSQL on the same machine
-- Process manager: `systemd` for zerver; cron for nightly `zervice`
+**Decided: Raspberry Pi 5 (4GB) via Cloudflare Tunnel (2026-03-25)**
 
-**Stack (no Caddy needed — Cloudflare Tunnel handles TLS):**
-- Ubuntu Server 24.04 LTS
-- PostgreSQL
+POC hosting on an existing Pi 5 — if it handles the load, great. Upgrade to a proper server later if needed.
+
+- **Hardware:** Raspberry Pi 5, 4GB RAM, Debian 12 Bookworm, aarch64, SD card
+- **Domain:** `zwipe.net` — moved to Cloudflare DNS (2026-03-25, propagation pending)
+- **Networking:** Cloudflare Tunnel (`cloudflared`) — no port forwarding, no static IP, TLS at Cloudflare's edge
+- **Database:** PostgreSQL — installed and running on Pi, `zwipe` DB + user created
+- **Process manager:** `systemd` for zerver; cron for nightly `zervice`
+
+**Stack:**
+- Debian 12 (Pi)
+- PostgreSQL (installed, enabled)
 - `cloudflared` daemon (Cloudflare Tunnel)
-- `zerver` as a systemd service
+- `zerver` as a systemd service (cross-compiled for aarch64)
 - `zervice` on a nightly cron (`0 4 * * *`)
 
-**Step 1 — Install Ubuntu (in progress):**
-1. Download Ubuntu Server 24.04 LTS from ubuntu.com/download/server
-2. Flash to USB with Balena Etcher
-3. Boot PC from USB, run installer — enable OpenSSH server when offered
-4. In router: set a DHCP reservation for the PC's MAC address (gives it a stable local IP)
-5. SSH in from Mac to verify: `ssh user@<local-ip>`
+**Progress:**
+- [x] PostgreSQL installed, enabled, `zwipe` DB + user created
+- [x] `zwipe.net` added to Cloudflare, nameservers updated at Namecheap (propagating)
+- [ ] Cloudflare Tunnel setup on Pi (waiting for DNS propagation to confirm first)
+- [ ] Cross-compile zerver + zervice for aarch64 on Mac
+- [ ] Deploy binaries to Pi via scp
+- [ ] Configure zerver `.env` on Pi
+- [ ] Run SQLx migrations on Pi
+- [ ] systemd unit for zerver
+- [ ] Cron entry for zervice
+- [ ] Update zwiper `BACKEND_URL=https://zwipe.net`
 
-**Step 2 — Cloudflare Tunnel setup (after Ubuntu is up):**
-1. Move `zwipe.net` DNS to Cloudflare (if not already) — free, takes ~5 min
-2. Install `cloudflared` on the server
-3. `cloudflared tunnel login` → authenticate with Cloudflare account
-4. `cloudflared tunnel create zwipe` → creates tunnel, saves credentials
-5. Configure tunnel to route `zwipe.net` → `localhost:3000`
-6. Install `cloudflared` as a systemd service
+**Next session starting point — Cloudflare Tunnel on Pi:**
+```bash
+curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64.deb -o cloudflared.deb
+sudo dpkg -i cloudflared.deb
+cloudflared tunnel login
+cloudflared tunnel create zwipe
+```
+Then configure the tunnel to route `zwipe.net` → `localhost:3000` and install as systemd service.
 
-**Step 3 — Deploy zerver:**
-1. `cargo build --release --bin zerver --bin zervice` on Mac → `scp` binaries to server
-2. Set up `zerver/.env` on server with prod values (`DATABASE_URL`, `JWT_SECRET`, `BIND_ADDRESS=127.0.0.1:3000`, `ALLOWED_ORIGINS=https://zwipe.net`)
-3. Run SQLx migrations: `sqlx migrate run`
-4. Write systemd unit for `zerver`, enable + start
-5. Add cron entry for `zervice`: `0 4 * * * /home/user/bin/zervice`
-6. Update `zwiper/.env`: `BACKEND_URL=https://zwipe.net`
+**Cross-compile zerver for aarch64 (on Mac):**
+```bash
+rustup target add aarch64-unknown-linux-gnu
+cargo build --release --bin zerver --bin zervice --target aarch64-unknown-linux-gnu
+scp target/aarch64-unknown-linux-gnu/release/zerver pi@<pi-ip>:~/
+scp target/aarch64-unknown-linux-gnu/release/zervice pi@<pi-ip>:~/
+```
 
 **Key prod config notes:**
 - iOS requires HTTPS — Cloudflare Tunnel provides this automatically
 - iOS native clients don't send an `Origin` header, so CORS won't block them
 - Refresh token cleanup: add a periodic DELETE query for expired tokens (can be part of zervice run)
+- If Pi can't handle load at scale, migrate to a VPS — same stack, same steps
 
 ### Dockerized Backend Dev Environment (deferred)
 
