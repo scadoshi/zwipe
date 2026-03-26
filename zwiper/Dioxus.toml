@@ -1,8 +1,8 @@
 [application]
 
 [bundle]
-identifier = "com.scottyrayfermo.zwipe"
-publisher = "scottyrayfermo"
+identifier = "com.scadoshi.zwipe"
+publisher = "scadoshi"
 
 [web.app]
 
