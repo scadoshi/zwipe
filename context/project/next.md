@@ -76,18 +76,26 @@ Planned work after completing current tasks.
 
 ### iOS Session Persistence (Keychain Entitlement)
 
-**Bug:** `Platform secure storage failure: A required entitlement isn't present` on every cold start. The `keyring` crate targets the iOS Keychain, which requires the `keychain-access-groups` entitlement in the app's provisioning profile. Without it, `infallible_load()` silently returns `None` — user must log in every launch.
+**Status:** Partially complete (2026-03-26). App is running on device hitting production backend. Keychain entitlement is configured in `zwiper/Entitlements.plist` and provisioning profile has Keychain Sharing enabled.
 
-**Status:** Apple Developer subscription purchased 2026-03-25, payment processing (up to 48h). `Dioxus.toml` already updated with `identifier = "com.scottyrayfermo.zwipe"`. Wait for portal access before doing anything in Xcode — no App ID exists yet to sign against.
+**Remaining:** Verify the `errSecMissingEntitlement` error is gone on cold start — log in, kill the app, reopen and confirm session persists without re-login.
 
-**Next steps once payment clears:**
-1. developer.apple.com → Identifiers → + → App IDs → App
-2. Description: `zwipe`, Bundle ID (Explicit): `com.scottyrayfermo.zwipe`, enable **Keychain Sharing** → Register
-3. In `zwiper/`: `dx build --platform ios` → generates `gen/apple/` Xcode project
-4. `open gen/apple/zwiper.xcodeproj`
-5. Target → Signing & Capabilities → **Automatically manage signing**, set Team
-6. **+ Capability** → Keychain Sharing
-7. Run — `errSecMissingEntitlement` gone, sessions persist across launches
+**Deploy command (for future builds):**
+```bash
+cd zwiper
+dx build --platform ios --device "scotland-mobile"
+cp ~/Downloads/zwipedev.mobileprovision target/dx/main/debug/ios/Main.app/embedded.mobileprovision
+codesign -f -s "F421F2E0FF6575A04BB18520C1A699A3F9CCEB45" \
+  --entitlements zwiper/Entitlements.plist \
+  target/dx/main/debug/ios/Main.app
+ios-deploy --bundle target/dx/main/debug/ios/Main.app
+```
+
+**Key facts:**
+- Must use `--device "scotland-mobile"` flag — otherwise dx builds for simulator (platform 7, crashes on device)
+- Signing cert fingerprint: `F421F2E0FF6575A04BB18520C1A699A3F9CCEB45`
+- Team ID: `VV74WQ89GD`, Bundle ID: `com.scadoshi.zwipe`
+- Provisioning profile at `~/Downloads/zwipedev.mobileprovision`
 
 ### Backend Hosting
 
@@ -110,15 +118,20 @@ POC hosting on an existing Pi 5 — if it handles the load, great. Upgrade to a 
 
 **Progress:**
 - [x] PostgreSQL installed, enabled, `zwipe` DB + user created
-- [x] `zwipe.net` added to Cloudflare, nameservers updated at Namecheap (propagating)
-- [ ] Cloudflare Tunnel setup on Pi (waiting for DNS propagation to confirm first)
-- [ ] Cross-compile zerver + zervice for aarch64 on Mac
-- [ ] Deploy binaries to Pi via scp
-- [ ] Configure zerver `.env` on Pi
-- [ ] Run SQLx migrations on Pi
-- [ ] systemd unit for zerver
-- [ ] Cron entry for zervice
-- [ ] Update zwiper `BACKEND_URL=https://zwipe.net`
+- [x] `zwipe.net` added to Cloudflare, nameservers updated at Namecheap
+- [x] Cloudflare Tunnel (`cloudflared`) installed, configured, running as systemd service
+- [x] Cross-compile zerver + zervice for aarch64 on Mac (via `cargo zigbuild`)
+- [x] Deploy binaries to Pi via scp (`~/zwipe/`)
+- [x] Configure zerver `.env` on Pi
+- [x] Run SQLx migrations on Pi
+- [x] systemd unit for zerver — running, enabled
+- [x] Cron entry for zervice (nightly 4am)
+- [x] Update zwiper `BACKEND_URL=https://api.zwipe.net`
+- [x] App running on device, hitting production backend at `api.zwipe.net`
+
+**Remaining:**
+- [ ] Run zervice once manually to seed Scryfall card data
+- [ ] Verify iOS Keychain session persistence across cold launches
 
 **Next session starting point — Cloudflare Tunnel on Pi:**
 ```bash
