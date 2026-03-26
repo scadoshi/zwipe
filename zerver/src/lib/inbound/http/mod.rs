@@ -267,9 +267,13 @@ impl HttpServer {
             "server running on {}",
             self.listener.local_addr().map_err(|e| anyhow!(e))?
         );
-        axum::serve(self.listener, self.router)
-            .await
-            .context("received error from running server")?;
+        axum::serve(
+            self.listener,
+            self.router
+                .into_make_service_with_connect_info::<std::net::SocketAddr>(),
+        )
+        .await
+        .context("received error from running server")?;
         Ok(())
     }
 }
