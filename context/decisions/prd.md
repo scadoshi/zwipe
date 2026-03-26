@@ -1,13 +1,28 @@
-# Deck Builder - Product Requirements Document
+# Zwipe — Product Requirements Document
+
+**Status: Shipped to physical device 2026-03-26. Next milestone: App Store launch.**
 
 ## Vision
-A mobile app that makes Magic: The Gathering deck building fun and intuitive through a Tinder-like swiping interface. Users swipe through cards to build decks quickly and enjoyably.
+A mobile-first Magic: The Gathering deck builder with a swipe-based card browsing interface. Built for Commander players who want a fast, enjoyable mobile experience — not another cluttered desktop tool ported to a small screen.
 
 ## Core Problem
-Building MTG decks is overwhelming for new players and time-consuming for experienced players. Current tools are complex, desktop-focused, and lack an engaging mobile experience.
+Building MTG decks is tedious on mobile. Existing tools (Moxfield, Archidekt, TappedOut) are desktop-first with awkward mobile UX. Zwipe makes the browsing and selection experience native to how people actually use their phones.
 
 ## Solution
-A mobile-first app where users swipe right to add cards to their deck, left to skip, creating an engaging and simple deck-building experience.
+Swipe right to add cards, left to skip. Deep filter system for color, type, oracle keywords, mana cost, artist and more. Full deck analysis (mana curve, color identity, pip balance). Import/export in common formats.
+
+## Monetization
+
+Freemium. See `context/decisions/monetization.md`.
+
+- **Free**: All core features — unlimited decks, full card database, swipe interface, filters, metrics
+- **Paid subscription**: AI card suggestions, EDHREC synergy integration (post-App Store launch)
+
+## Target Audience
+
+- **Primary**: Dedicated Commander players who build multiple decks and want a better mobile tool
+- **Secondary**: Competitive and casual players across all formats
+- Solo developer, production-grade app — no "pet project" positioning
 
 ---
 
