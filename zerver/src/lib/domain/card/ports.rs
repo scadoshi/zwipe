@@ -181,6 +181,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// Finds cards by exact name match (case-insensitive).
     ///
     /// Returns one card per unique card name, using the latest printing.
+    /// Names with no matching card are silently omitted — no `NotFound` error is returned.
     /// Used for bulk import operations where substring match is undesirable.
     fn find_cards_by_exact_names(
         &self,
@@ -312,6 +313,8 @@ pub trait CardService: Clone + Send + Sync + 'static {
     /// Finds cards by exact name match (case-insensitive).
     ///
     /// Returns one card per unique card name, using the latest printing.
+    /// Names with no matching card are silently omitted — no `NotFound` error is returned.
+    /// Used for bulk import operations where substring match is undesirable.
     fn find_cards_by_exact_names(
         &self,
         names: &[String],
