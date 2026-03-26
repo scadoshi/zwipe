@@ -227,6 +227,15 @@ scp target/aarch64-unknown-linux-gnu/release/zervice pi@<pi-ip>:~/
 - Refresh token cleanup: add a periodic DELETE query for expired tokens (can be part of zervice run)
 - If Pi can't handle load at scale, migrate to a VPS — same stack, same steps
 
+### File-Based Logging for zerver
+
+Currently zerver only logs to stdout, which means logs are only visible while watching the process live (`journalctl -fu zerver`). Add rolling file-based logging so logs are retained and inspectable after the fact — useful for diagnosing issues on the Pi without needing to be attached to the service in real time.
+
+- Use `tracing-appender` (non-blocking rolling file writer) alongside the existing `tracing-subscriber` setup
+- Roll daily, keep a reasonable number of files (e.g. 7 days)
+- Write to a fixed path on the Pi (e.g. `/var/log/zwipe/zerver.log`)
+- Keep stdout logging active in parallel — file log for history, stdout for `journalctl` live tail
+
 ### Dockerized Backend Dev Environment (deferred)
 
 - `Dockerfile.dev` for zerver/zervice + compose + postgres — useful for onboarding other devs but not needed for solo shipping
