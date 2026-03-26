@@ -2,7 +2,6 @@
 
 #[cfg(feature = "zerver")]
 use axum::{
-    async_trait,
     extract::FromRequestParts,
     http::{request::Parts, StatusCode},
 };
@@ -55,7 +54,6 @@ impl From<UserClaims> for AuthenticatedUser {
 }
 
 #[cfg(feature = "zerver")]
-#[async_trait]
 impl<AS, US, HS, CS, DS> FromRequestParts<AppState<AS, US, HS, CS, DS>> for AuthenticatedUser
 where
     AS: AuthService,
