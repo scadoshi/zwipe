@@ -116,52 +116,68 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         .filter(|entries| !entries.is_empty())
         .map(|entries| DeckMetrics::from_entries(&entries));
 
-    let bar_heights: Option<[usize; 7]> = metrics.as_ref().map(|m| {
-        const MAX_HEIGHT: usize = 8;
+    let mana_curve_bars: Option<[(usize, u32); 7]> = metrics.as_ref().map(|m| {
         let max_count = m.cmc_histogram.iter().copied().max().unwrap_or(0);
         std::array::from_fn(|i| {
-            let opt = m.cmc_histogram.get(i);
-            if opt.is_some_and(|c| *c != 0 && max_count != 0)
-                && let Some(c) = opt
-            {
-                (c * MAX_HEIGHT / max_count).max(1)
+            let count = m.cmc_histogram.get(i).copied().unwrap_or(0);
+            let pct = if max_count > 0 && count > 0 {
+                ((count * 100) / max_count).max(4) as u32
             } else {
                 0
-            }
+            };
+            (count, pct)
         })
     });
 
-    let type_bar_heights: Option<Vec<(&str, usize, usize)>> = metrics.as_ref().map(|m| {
-        const MAX_HEIGHT: usize = 8;
+    let type_bars: Option<Vec<(&str, usize, u32)>> = metrics.as_ref().map(|m| {
         let max_count = m.type_counts.iter().map(|(_, c)| *c).max().unwrap_or(0);
         m.type_counts
             .iter()
             .map(|(label, count)| {
-                let height = if *count > 0 && max_count > 0 {
-                    (count * MAX_HEIGHT / max_count).max(1)
+                let pct = if max_count > 0 && *count > 0 {
+                    ((count * 100) / max_count).max(4) as u32
                 } else {
                     0
                 };
-                (abbreviate_type(label), *count, height)
+                (abbreviate_type(label), *count, pct)
             })
             .collect()
     });
 
-    let color_bar_heights: Option<Vec<(&str, usize, usize)>> = metrics.as_ref().map(|m| {
-        const MAX_HEIGHT: usize = 8;
+    let color_bars: Option<Vec<(&str, usize, u32)>> = metrics.as_ref().map(|m| {
         let max_count = m.color_counts.iter().map(|(_, c)| *c).max().unwrap_or(0);
         m.color_counts
             .iter()
             .map(|(label, count)| {
-                let height = if *count > 0 && max_count > 0 {
-                    (count * MAX_HEIGHT / max_count).max(1)
+                let pct = if max_count > 0 && *count > 0 {
+                    ((count * 100) / max_count).max(4) as u32
                 } else {
                     0
                 };
-                (abbreviate_color(label), *count, height)
+                (abbreviate_color(label), *count, pct)
             })
             .collect()
     });
+
+    // (short_name, consumed, produced, bar_fill_pct, is_surplus)
+    let mana_balance_rows = metrics.as_ref().map(|m| -> Vec<_> {
+            let labels = ["W", "U", "B", "R", "G"];
+            labels
+                .iter()
+                .zip(m.mana_balance.iter())
+                .filter(|(_, (consumed, _produced))| *consumed > 0)
+                .map(|(label, (consumed, produced))| {
+                    let bar_max = (*consumed).max(*produced);
+                    let fill_pct = if bar_max > 0 {
+                        ((produced * 100) / bar_max) as u32
+                    } else {
+                        0
+                    };
+                    let is_surplus = produced >= consumed;
+                    (*label, *consumed, *produced, fill_pct, is_surplus)
+                })
+                .collect()
+        });
 
     rsx! {
         Bouncer {
@@ -214,7 +230,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     }
                                 }
 
-                                if let (Some(m), Some(heights)) = (metrics.as_ref(), bar_heights.as_ref()) {
+                                if let (Some(m), Some(mana_curve_bars)) = (metrics.as_ref(), mana_curve_bars.as_ref()) {
                                     // ── stats ──────────────────────────────────────
                                     label { class: "label", "stats" }
                                     div { class: "flex items-center flex-between mb-1",
@@ -232,100 +248,96 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
                                     // ── mana curve ─────────────────────────────────
                                     label { class: "label", "mana curve" }
-                                    div { style: "width:100%;border:1px solid rgba(255,255,255,0.1);border-radius:0.5rem;padding:0.75rem;display:flex;flex-direction:column;align-items:center;margin-bottom:0.5rem;",
-                                        for row in 0..9usize {
-                                            div { class: "flex",
-                                                for col in 0..7usize {
-                                                    span {
-                                                        style: "width:4ch;text-align:center;font-family:monospace;font-size:0.75rem;",
-                                                        {
-                                                            let h = *heights.get(col).unwrap_or(&0);
-                                                            let c = m.cmc_histogram.get(col).copied().unwrap_or(0);
-                                                            if (8 - row) < h {
-                                                                "\u{2588}".to_string()
-                                                            } else if (8 - row) == h {
-                                                                c.to_string()
-                                                            } else {
-                                                                "\u{00a0}".to_string()
-                                                            }
-                                                        }
+                                    div { style: "width:100%;border:1px solid rgba(255,255,255,0.1);border-radius:0.5rem;padding:0.75rem;margin-bottom:0.5rem;",
+                                        div { style: "display:flex;align-items:flex-end;gap:0.25rem;height:6rem;",
+                                            for (count, pct) in mana_curve_bars.iter() {
+                                                div { style: "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:0.15rem;",
+                                                    if *count > 0 {
+                                                        span { style: "font-size:0.6rem;font-family:monospace;opacity:0.5;line-height:1;", "{count}" }
                                                     }
+                                                    div { style: format!("width:100%;height:{pct}%;background:rgba(255,255,255,0.65);border-radius:0.15rem 0.15rem 0 0;") }
                                                 }
                                             }
                                         }
-                                        // label row
-                                        div { class: "flex",
-                                            for (i, label) in ["0","1","2","3","4","5","6+"].iter().enumerate() {
-                                                span {
-                                                    style: if i > 0 { "width:4ch;text-align:center;font-size:0.75rem;font-family:monospace;opacity:0.5;border-left:1px solid rgba(255,255,255,0.15);" } else { "width:4ch;text-align:center;font-size:0.75rem;font-family:monospace;opacity:0.5;" },
-                                                    "{label}"
-                                                }
+                                        div { style: "display:flex;gap:0.25rem;margin-top:0.35rem;",
+                                            for label in ["0","1","2","3","4","5","6+"] {
+                                                span { style: "flex:1;text-align:center;font-size:0.65rem;font-family:monospace;opacity:0.5;", "{label}" }
                                             }
                                         }
                                     }
 
                                     // ── types ──────────────────────────────────────
-                                    if let Some(type_bars) = type_bar_heights.as_ref() {
+                                    if let Some(type_bars) = type_bars.as_ref() {
                                         label { class: "label", "types" }
-                                        div { style: "width:100%;border:1px solid rgba(255,255,255,0.1);border-radius:0.5rem;padding:0.75rem;display:flex;flex-direction:column;align-items:center;margin-bottom:0.5rem;",
-                                            for row in 0..9usize {
-                                                div { class: "flex",
-                                                    for (_label, count, height) in type_bars.iter() {
-                                                        span {
-                                                            style: "width:6ch;text-align:center;font-family:monospace;font-size:0.75rem;",
-                                                            {
-                                                                if (8 - row) < *height {
-                                                                    "\u{2588}".to_string()
-                                                                } else if (8 - row) == *height {
-                                                                    count.to_string()
-                                                                } else {
-                                                                    "\u{00a0}".to_string()
-                                                                }
-                                                            }
+                                        div { style: "width:100%;border:1px solid rgba(255,255,255,0.1);border-radius:0.5rem;padding:0.75rem;margin-bottom:0.5rem;",
+                                            div { style: "display:flex;align-items:flex-end;gap:0.25rem;height:6rem;",
+                                                for (_label, count, pct) in type_bars.iter() {
+                                                    div { style: "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:0.15rem;",
+                                                        if *count > 0 {
+                                                            span { style: "font-size:0.6rem;font-family:monospace;opacity:0.5;line-height:1;", "{count}" }
                                                         }
+                                                        div { style: format!("width:100%;height:{pct}%;background:rgba(255,255,255,0.65);border-radius:0.15rem 0.15rem 0 0;") }
                                                     }
                                                 }
                                             }
-                                            // label row (bottom)
-                                            div { class: "flex",
-                                                for (i, (label, _count, _height)) in type_bars.iter().enumerate() {
-                                                    span {
-                                                        style: if i > 0 { "width:6ch;text-align:center;font-size:0.75rem;font-family:monospace;opacity:0.5;border-left:1px solid rgba(255,255,255,0.15);" } else { "width:6ch;text-align:center;font-size:0.75rem;font-family:monospace;opacity:0.5;" },
-                                                        "{label}"
-                                                    }
+                                            div { style: "display:flex;gap:0.25rem;margin-top:0.35rem;",
+                                                for (label, _count, _pct) in type_bars.iter() {
+                                                    span { style: "flex:1;text-align:center;font-size:0.65rem;font-family:monospace;opacity:0.5;", "{label}" }
                                                 }
                                             }
                                         }
                                     }
 
                                     // ── colors ─────────────────────────────────────
-                                    if let Some(color_bars) = color_bar_heights.as_ref() {
+                                    if let Some(color_bars) = color_bars.as_ref() {
                                         label { class: "label", "colors" }
-                                        div { style: "width:100%;border:1px solid rgba(255,255,255,0.1);border-radius:0.5rem;padding:0.75rem;display:flex;flex-direction:column;align-items:center;margin-bottom:0.5rem;",
-                                            for row in 0..9usize {
-                                                div { class: "flex",
-                                                    for (_label, count, height) in color_bars.iter() {
-                                                        span {
-                                                            style: "width:6ch;text-align:center;font-family:monospace;font-size:0.75rem;",
-                                                            {
-                                                                if (8 - row) < *height {
-                                                                    "\u{2588}".to_string()
-                                                                } else if (8 - row) == *height {
-                                                                    count.to_string()
-                                                                } else {
-                                                                    "\u{00a0}".to_string()
-                                                                }
-                                                            }
+                                        div { style: "width:100%;border:1px solid rgba(255,255,255,0.1);border-radius:0.5rem;padding:0.75rem;margin-bottom:0.5rem;",
+                                            div { style: "display:flex;align-items:flex-end;gap:0.25rem;height:6rem;",
+                                                for (_label, count, pct) in color_bars.iter() {
+                                                    div { style: "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:0.15rem;",
+                                                        if *count > 0 {
+                                                            span { style: "font-size:0.6rem;font-family:monospace;opacity:0.5;line-height:1;", "{count}" }
                                                         }
+                                                        div { style: format!("width:100%;height:{pct}%;background:rgba(255,255,255,0.65);border-radius:0.15rem 0.15rem 0 0;") }
                                                     }
                                                 }
                                             }
-                                            // label row (bottom)
-                                            div { class: "flex",
-                                                for (i, (label, _count, _height)) in color_bars.iter().enumerate() {
-                                                    span {
-                                                        style: if i > 0 { "width:6ch;text-align:center;font-size:0.75rem;font-family:monospace;opacity:0.5;border-left:1px solid rgba(255,255,255,0.15);" } else { "width:6ch;text-align:center;font-size:0.75rem;font-family:monospace;opacity:0.5;" },
-                                                        "{label}"
+                                            div { style: "display:flex;gap:0.25rem;margin-top:0.35rem;",
+                                                for (label, _count, _pct) in color_bars.iter() {
+                                                    span { style: "flex:1;text-align:center;font-size:0.65rem;font-family:monospace;opacity:0.5;", "{label}" }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // ── mana balance ───────────────────────────────
+                                    if let Some(rows) = mana_balance_rows.as_ref() {
+                                        if !rows.is_empty() {
+                                            label { class: "label", "mana balance" }
+                                            div { style: "width:100%;border:1px solid rgba(255,255,255,0.1);border-radius:0.5rem;padding:0.75rem;margin-bottom:0.5rem;display:flex;flex-direction:column;gap:0.4rem;",
+                                                for (color_label, consumed, produced, fill_pct, is_surplus) in rows {
+                                                    div { style: "display:flex;align-items:center;gap:0.5rem;",
+                                                        // Color initial
+                                                        span { style: "width:1ch;font-family:monospace;font-size:0.75rem;opacity:0.8;",
+                                                            "{color_label}"
+                                                        }
+                                                        // Bar track
+                                                        div { style: "flex:1;height:1rem;background:rgba(255,255,255,0.1);border-radius:0.15rem;overflow:hidden;",
+                                                            div {
+                                                                style: format!(
+                                                                    "height:100%;width:{fill_pct}%;background:{};border-radius:0.15rem;",
+                                                                    if *is_surplus { "rgba(255,255,255,0.95)" } else { "rgba(255,255,255,0.65)" }
+                                                                ),
+                                                            }
+                                                        }
+                                                        // Counts
+                                                        span { style: "font-family:monospace;font-size:0.75rem;opacity:0.5;white-space:nowrap;min-width:7ch;text-align:right;",
+                                                            if *is_surplus {
+                                                                "{produced}/{consumed} +"
+                                                            } else {
+                                                                "{produced}/{consumed}"
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
