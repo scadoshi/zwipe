@@ -411,77 +411,77 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
                         AccordionItem { index: 1,
                             on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(1)'); if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' }); }, 300)"); }
+                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(1)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
                             AccordionTrigger { "name" }
                             AccordionContent { Name {} }
                         }
                         AccordionItem { index: 2,
                             on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(2)'); if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' }); }, 300)"); }
+                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(2)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
                             AccordionTrigger { "oracle text" }
                             AccordionContent { OracleText {} }
                         }
                         AccordionItem { index: 3,
                             on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(3)'); if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' }); }, 300)"); }
+                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(3)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
                             AccordionTrigger { "types" }
                             AccordionContent { Types {} }
                         }
                         AccordionItem { index: 4,
                             on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(4)'); if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' }); }, 300)"); }
+                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(4)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
                             AccordionTrigger { "mana" }
                             AccordionContent { Mana {} }
                         }
                         AccordionItem { index: 5,
                             on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(5)'); if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' }); }, 300)"); }
+                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(5)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
                             AccordionTrigger { "combat" }
                             AccordionContent { Combat {} }
                         }
                         AccordionItem { index: 6,
                             on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(6)'); if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' }); }, 300)"); }
+                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(6)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
                             AccordionTrigger { "flavor text" }
                             AccordionContent { FlavorText {} }
                         }
                         AccordionItem { index: 7,
                             on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(7)'); if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' }); }, 300)"); }
+                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(7)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
                             AccordionTrigger { "artist" }
                             AccordionContent { Artist {} }
                         }
                         AccordionItem { index: 8,
                             on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(8)'); if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' }); }, 300)"); }
+                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(8)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
                             AccordionTrigger { "rarity" }
                             AccordionContent { Rarity {} }
                         }
                         AccordionItem { index: 9,
                             on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(9)'); if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' }); }, 300)"); }
+                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(9)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
                             AccordionTrigger { "set" }
                             AccordionContent { Set {} }
                         }
                         AccordionItem { index: 10,
                             on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(10)'); if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' }); }, 300)"); }
+                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(10)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
                             AccordionTrigger { "sort" }
                             AccordionContent { Sort {} }
                         }
                         AccordionItem { index: 11,
                             on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(11)'); if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' }); }, 300)"); }
+                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(11)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
                             AccordionTrigger { "config" }
                             AccordionContent { Config {} }
