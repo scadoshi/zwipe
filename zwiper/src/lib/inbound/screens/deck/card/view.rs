@@ -343,6 +343,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                         }
                                         if is_expanded {
                                             div { class: "card-row-detail",
+                                                p { style: "margin-bottom:0.35rem;word-break:break-word;white-space:normal;", "{name}" }
                                                 if !type_line.is_empty() {
                                                     span { class: "opacity-50", style: "display:block;margin-bottom:0.5rem;", "{type_line}" }
                                                 }
@@ -437,6 +438,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                             // Expanded detail
                                             if is_expanded {
                                                 div { class: "card-row-detail",
+                                                    p { style: "margin-bottom:0.35rem;word-break:break-word;white-space:normal;", "{name}" }
                                                     if !type_line.is_empty() {
                                                         span { class: "opacity-50", style: "display:block;margin-bottom:0.5rem;", "{type_line}" }
                                                     }
