@@ -174,13 +174,13 @@ sudo systemctl enable postgresql
 sudo systemctl start postgresql
 
 # Create DB user and database
-sudo -u postgres psql -c "CREATE USER zwipe WITH PASSWORD '<zwiperN0zwiping>';"
+sudo -u postgres psql -c "CREATE USER zwipe WITH PASSWORD 'YOUR_DB_PASSWORD';"
 sudo -u postgres psql -c "CREATE DATABASE zwipe OWNER zwipe;"
 ```
 
 Test connection:
 ```bash
-PGPASSWORD='<zwiperN0zwiping>' psql -U zwipe -h 127.0.0.1 -d zwipe -c '\l'
+PGPASSWORD='YOUR_DB_PASSWORD' psql -U zwipe -h 127.0.0.1 -d zwipe -c '\l'
 ```
 
 **Note:** Use `127.0.0.1` (TCP), not `localhost` (Unix socket). Peer authentication blocks socket connections for non-system users. TCP connections use password auth.
@@ -190,7 +190,7 @@ PGPASSWORD='<zwiperN0zwiping>' psql -U zwipe -h 127.0.0.1 -d zwipe -c '\l'
 From Mac (migrations directory is in the repo):
 ```bash
 for f in zerver/migrations/*.sql; do
-  ssh scottyfermo@10.0.0.78 "PGPASSWORD='<zwiperN0zwiping>' psql -U zwipe -h 127.0.0.1 -d zwipe -f -" < "$f"
+  ssh scottyfermo@10.0.0.78 "PGPASSWORD='YOUR_DB_PASSWORD' psql -U zwipe -h 127.0.0.1 -d zwipe -f -" < "$f"
 done
 ```
 
@@ -256,7 +256,7 @@ scp zerver/migrations/*.sql scottyfermo@10.0.0.78:~/zwipe/migrations/
 Located at `~/zwipe/.env`:
 ```
 JWT_SECRET=<generated with: openssl rand -hex 32>
-DATABASE_URL=postgres://zwipe:%3CzwiperN0zwiping%3E@127.0.0.1/zwipe
+DATABASE_URL=postgres://zwipe:URL_ENCODED_DB_PASSWORD@127.0.0.1/zwipe
 BIND_ADDRESS=0.0.0.0:3000
 ALLOWED_ORIGINS=https://zwipe.net
 RUST_LOG=info
