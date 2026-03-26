@@ -268,7 +268,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
                                     // ── types ──────────────────────────────────────
                                     if let Some(type_bars) = type_bars.as_ref() {
-                                        label { class: "label", "types" }
+                                        label { class: "label", "basic type distribution" }
                                         div { style: "width:100%;border:1px solid rgba(255,255,255,0.1);border-radius:0.5rem;padding:0.75rem;margin-bottom:0.5rem;",
                                             div { style: "display:flex;align-items:flex-end;gap:0.25rem;height:6rem;",
                                                 for (_label, count, pct) in type_bars.iter() {
@@ -290,7 +290,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
                                     // ── colors ─────────────────────────────────────
                                     if let Some(color_bars) = color_bars.as_ref() {
-                                        label { class: "label", "colors" }
+                                        label { class: "label", "color distribution" }
                                         div { style: "width:100%;border:1px solid rgba(255,255,255,0.1);border-radius:0.5rem;padding:0.75rem;margin-bottom:0.5rem;",
                                             div { style: "display:flex;align-items:flex-end;gap:0.25rem;height:6rem;",
                                                 for (_label, count, pct) in color_bars.iter() {
@@ -313,7 +313,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     // ── mana balance ───────────────────────────────
                                     if let Some(rows) = mana_balance_rows.as_ref() {
                                         if !rows.is_empty() {
-                                            label { class: "label", "mana balance" }
+                                            label { class: "label", "mana cost fulfillment" }
                                             div { style: "width:100%;border:1px solid rgba(255,255,255,0.1);border-radius:0.5rem;padding:0.75rem;margin-bottom:0.5rem;display:flex;flex-direction:column;gap:0.4rem;",
                                                 for (color_label, consumed, produced, fill_pct, is_surplus) in rows {
                                                     div { style: "display:flex;align-items:center;gap:0.5rem;",
