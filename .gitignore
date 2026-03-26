@@ -2,5 +2,5 @@ target/
 .env
 .sqlx/
 .vscode
-scratch.txt
+.DS_Store
 cache/

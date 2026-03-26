@@ -1,4 +1,5 @@
 [application]
+name = "Zwipe"
 
 [bundle]
 identifier = "com.scadoshi.zwipe"
