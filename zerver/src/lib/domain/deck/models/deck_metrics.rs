@@ -26,6 +26,9 @@ pub struct DeckMetrics {
     pub type_counts: Vec<(&'static str, usize)>,
     /// Non-empty color counts in fixed order.
     pub color_counts: Vec<(&'static str, usize)>,
+    /// Per-color (WUBRG) mana balance: (consumed_pips, produced_pips).
+    /// Index 0=White 1=Blue 2=Black 3=Red 4=Green.
+    pub mana_balance: [(usize, usize); 5],
 }
 
 
@@ -38,6 +41,8 @@ impl DeckMetrics {
         let mut land_count = 0usize;
         let mut cmc_sum = 0.0f64;
         let mut total_cards = 0usize;
+        let mut pip_consumed = [0usize; 5];
+        let mut pip_produced = [0usize; 5];
 
         for entry in entries {
             let qty = (*entry.deck_card.quantity).max(1) as usize;
@@ -65,8 +70,33 @@ impl DeckMetrics {
             if let Some(slot) = color_buckets.get_mut(color_idx) {
                 *slot += qty;
             }
+
+            // Pip consumed: parse mana_cost for colored symbols
+            if let Some(mc) = &card.scryfall_data.mana_cost {
+                let pips = count_color_pips(mc);
+                for (slot, &pip) in pip_consumed.iter_mut().zip(pips.iter()) {
+                    *slot += pip * qty;
+                }
+            }
+
+            // Pip produced: walk produced_mana (covers lands, rocks, dorks — all mana producers)
+            if let Some(produced) = &card.scryfall_data.produced_mana {
+                for s in produced {
+                    if let Some(idx) = produced_color_index(s)
+                        && let Some(slot) = pip_produced.get_mut(idx)
+                    {
+                        *slot += qty;
+                    }
+                }
+            }
         }
 
+        let mana_balance: [(usize, usize); 5] = std::array::from_fn(|i| {
+            (
+                pip_consumed.get(i).copied().unwrap_or(0),
+                pip_produced.get(i).copied().unwrap_or(0),
+            )
+        });
         let nonland_count = total_cards - land_count;
         let avg_cmc = if nonland_count > 0 {
             cmc_sum / nonland_count as f64
@@ -115,6 +145,7 @@ impl DeckMetrics {
             cmc_histogram,
             type_counts,
             color_counts,
+            mana_balance,
         }
     }
 }
@@ -144,6 +175,37 @@ fn classify_type(card: &Card) -> usize {
 fn classify_cmc(card: &Card) -> usize {
     let cmc = card.scryfall_data.cmc.unwrap_or(0.0);
     (cmc.floor() as usize).min(6)
+}
+
+/// Count colored pip symbols in a Scryfall mana_cost string (e.g. "{2}{R}{R}").
+/// Only counts pure single-color symbols — skips hybrid ({W/U}), phyrexian ({W/P}), etc.
+fn count_color_pips(mana_cost: &str) -> [usize; 5] {
+    let mut counts = [0usize; 5];
+    for token in mana_cost.split('{').skip(1) {
+        let sym = token.trim_end_matches('}');
+        match sym {
+            "W" => counts[0] += 1,
+            "U" => counts[1] += 1,
+            "B" => counts[2] += 1,
+            "R" => counts[3] += 1,
+            "G" => counts[4] += 1,
+            _ => {} // {2}, {X}, {C}, {W/U}, {W/P} — ignored
+        }
+    }
+    counts
+}
+
+/// Map a produced_mana string ("W","U","B","R","G") to WUBRG index.
+/// Returns None for "C" (colorless), "S" (snow), or unknown values.
+fn produced_color_index(s: &str) -> Option<usize> {
+    match s {
+        "W" => Some(0),
+        "U" => Some(1),
+        "B" => Some(2),
+        "R" => Some(3),
+        "G" => Some(4),
+        _ => None,
+    }
 }
 
 /// Color identity classification — WUBRG order + multicolor + colorless.
@@ -445,5 +507,74 @@ mod tests {
             metrics.color_counts,
             vec![("red", 4), ("green", 10)]
         );
+    }
+
+    #[test]
+    fn pip_consumed_counts_pips() {
+        let mut entry = make_entry("Lightning Bolt", 1);
+        entry.card.scryfall_data.mana_cost = Some("{2}{R}{R}".to_string());
+        entry.card.scryfall_data.type_line = Some("Instant".to_string());
+
+        let metrics = DeckMetrics::from_entries(&[entry]);
+        // R=2, all others 0
+        assert_eq!(metrics.mana_balance[3].0, 2); // R consumed
+        assert_eq!(metrics.mana_balance[0].0, 0); // W consumed
+    }
+
+    #[test]
+    fn pip_consumed_skips_hybrid() {
+        let mut entry = make_entry("Hybrid Card", 1);
+        entry.card.scryfall_data.mana_cost = Some("{W/U}".to_string());
+        entry.card.scryfall_data.type_line = Some("Instant".to_string());
+
+        let metrics = DeckMetrics::from_entries(&[entry]);
+        assert_eq!(metrics.mana_balance, [(0, 0); 5]);
+    }
+
+    #[test]
+    fn pip_produced_from_land() {
+        let mut entry = make_entry("Forest", 1);
+        entry.card.scryfall_data.type_line = Some("Basic Land — Forest".to_string());
+        entry.card.scryfall_data.produced_mana = Some(vec!["G".to_string()]);
+
+        let metrics = DeckMetrics::from_entries(&[entry]);
+        assert_eq!(metrics.mana_balance[4].1, 1); // G produced
+    }
+
+    #[test]
+    fn pip_produced_quantity_aware() {
+        let mut entry = make_entry("Forest", 4);
+        entry.card.scryfall_data.type_line = Some("Basic Land — Forest".to_string());
+        entry.card.scryfall_data.produced_mana = Some(vec!["G".to_string()]);
+
+        let metrics = DeckMetrics::from_entries(&[entry]);
+        assert_eq!(metrics.mana_balance[4].1, 4); // G produced × 4
+    }
+
+    #[test]
+    fn pip_surplus() {
+        let mut land = make_entry("Forest", 3);
+        land.card.scryfall_data.type_line = Some("Basic Land — Forest".to_string());
+        land.card.scryfall_data.produced_mana = Some(vec!["G".to_string()]);
+
+        let mut spell = make_entry("Giant Growth", 1);
+        spell.card.scryfall_data.mana_cost = Some("{G}".to_string());
+        spell.card.scryfall_data.type_line = Some("Instant".to_string());
+
+        let metrics = DeckMetrics::from_entries(&[land, spell]);
+        let (consumed, produced) = metrics.mana_balance[4]; // G
+        assert_eq!(consumed, 1);
+        assert_eq!(produced, 3);
+        assert!(produced > consumed); // surplus
+    }
+
+    #[test]
+    fn pip_produced_skips_colorless() {
+        let mut entry = make_entry("Wastes", 1);
+        entry.card.scryfall_data.type_line = Some("Basic Land".to_string());
+        entry.card.scryfall_data.produced_mana = Some(vec!["C".to_string()]);
+
+        let metrics = DeckMetrics::from_entries(&[entry]);
+        assert_eq!(metrics.mana_balance, [(0, 0); 5]);
     }
 }
