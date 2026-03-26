@@ -1,5 +1,6 @@
 target/
 .env
+.env.prod
 .sqlx/
 .vscode
 .DS_Store
