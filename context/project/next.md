@@ -14,6 +14,10 @@ Planned work after completing current tasks.
 
 4. ORACLE_STOP_WORDS and TYPE_STOP_WORDS in zwiper/src/lib/inbound/screens/deck/card/filter/deck_cards.rs should be maintained by the zerver lib and passed to the frontend. Generally domain models or business logic should be defined there and then utilized by the frontend rather than built and maintained in the frontend. This is especially true since the backend uses the very same stop words in its queries. We should define shared logic and then use that shared logic in both places so we don't have to maintain the content in two places!
 
+~~5. Deck-aware filter dropdowns (view/remove screens)~~ — **DONE** (2026-03-25). `DeckCards` newtype context provided by view/remove screens. Filter components (artist, set, types, oracle words, keywords) use `try_use_context::<DeckCards>()` to derive selectable values from the loaded deck's cards instead of fetching from server. Add screen continues fetching from server (no context provided). Commander now also respects the active filter — hidden from the pinned slot when filtered out.
+
+~~6. Lowercase import screen text~~ — **DONE** (2026-03-25). Placeholder sample card names and post-import result card names (imported + unresolved) are now lowercase.
+
 ---
 
 ## Testing & Stability
@@ -54,17 +58,24 @@ Planned work after completing current tasks.
 
 5. **Mana Pip Balance** - Show pips produced vs. pips consumed per color so players can balance their mana base.
 
-   **Concept:** For each color (WUBRG + colorless), compute:
-   - **Pips consumed** — count colored mana symbols in `mana_cost` across all nonland cards (e.g. `{W}{W}{U}` → 2 white, 1 blue). Parse from the `mana_cost` string field.
-   - **Pips produced** — count land cards whose `produced_mana` field (already present on `ScryfallData`) contains each color.
+   **Concept:** For each color (WUBRG), compute:
+   - **Pips consumed** — count colored mana symbols in `mana_cost` across all nonland cards, quantity-aware. Parse `{W}`, `{U}`, `{B}`, `{R}`, `{G}` from the `mana_cost` string (character-level scan, no regex).
+   - **Pips produced** — walk `produced_mana: Option<Colors>` on *all* cards (not just lands). Scryfall populates this field for mana rocks, dorks, and lands alike — Sol Ring has `["C"]`, Birds of Paradise has `["W","U","B","R","G"]`, Llanowar Elves has `["G"]`. Quantity-aware.
 
-   Display as a per-color row: `W  ████░░  12 consumed / 8 produced`. Imbalance at a glance — if you're consuming 14 blue pips but only producing 6, you need more blue sources.
+   **Display:** Per-color horizontal bar row. Bar baseline = `max(produced, consumed)` so neither side overflows. Fill length = produced. Show counts for both. Only render colors where consumed > 0 or produced > 0.
+
+   ```
+   W  ██████████░░░░░  10 produced / 14 consumed
+   U  ████████████░░░  12 produced / 15 consumed
+   G  ████████████████████  20 produced / 18 consumed  (+2 surplus)
+   ```
+
+   **"Any color" producers** (Command Tower, Chromatic Lantern, etc.) — `produced_mana` includes all colors they tap for; fold them into each relevant bucket the same as single-color producers.
 
    **Implementation notes:**
-   - Parse `mana_cost` string (e.g. `"{2}{U}{U}"`) by scanning for `{W}`, `{U}`, `{B}`, `{R}`, `{G}` — simple character-level scan, no regex needed
-   - `produced_mana: Option<Colors>` is already on `ScryfallData` — lands that tap for multiple colors (e.g. duals) contribute to all matching buckets
-   - Extend `DeckMetrics` with `pip_consumed: [usize; 5]` and `pip_produced: [usize; 5]` (WUBRG indexed) and add to the single-pass computation in `deck_metrics.rs`
-   - Render in ViewDeck below colors section
+   - No new backend endpoint — pure client-side math from `deck_cards` + `quantity_map`
+   - Extend `DeckMetrics` with `pip_consumed: HashMap<Color, usize>` and `pip_produced: HashMap<Color, usize>`, computed in the single-pass `deck_metrics.rs`
+   - Render in ViewDeck below the colors section
 
 6. **Deck Profile Enhancements (ViewDeck screen)** - Additional deck metadata fields for future.
 
