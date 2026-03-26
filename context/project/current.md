@@ -2,31 +2,33 @@
 
 Active development tasks and immediate focus areas.
 
-**Last Updated**: 2026-03-25. Oracle words pipeline complete; pip counter and hosting remain.
+**Last Updated**: 2026-03-26. App is live on iPhone hitting Pi backend at api.zwipe.net.
 
-**Current Focus**: Mana pip counter, then hosting.
+**Current Focus**: UX improvements from first real-device testing.
 
 **Recent Achievements**:
-- **Deck Import/Export**: Full import pipeline (Moxfield + Archidekt format parsing, batch exact-name SQL resolution, copy-max clamping, atomic bulk upsert). Dedicated export screen with clipboard copy + toast.
-- **Commander Guard**: `CreateDeckCard` rejects adding the deck's commander. Import silently skips it.
-- **Show Lands Toggle**: Chip toggle on ViewDeckCard filters lands from card groups reactively. `ScryfallData::is_land()` + `is_basic_land()` helpers.
-- **Oracle Keywords**: `get_oracle_keywords` endpoint (Scryfall curated abilities via `keywords` column). `oracle_text_contains_any` (OR) on `CardFilter` with 5 filter_cards tests.
-- **Oracle Words**: `get_oracle_words` endpoint (noise-filtered word extraction from `oracle_text` via SQL). `oracle_text_contains_all` (AND) on `CardFilter` with 5 filter_cards tests.
+- **Production deployment**: zerver running on Raspberry Pi 5 as systemd service, exposed via Cloudflare Tunnel at `api.zwipe.net`. Full setup documented in `shipping.md`.
+- **iOS app on device**: Built with Dioxus, signed with Apple Development cert (`VV74WQ89GD`), deployed via `ios-deploy`. Key fix: must use `--device "scotland-mobile"` flag or dx defaults to simulator target.
+- **iOS Keychain session persistence**: `keychain-access-groups` entitlement in `zwiper/Entitlements.plist`, provisioning profile has Keychain Sharing enabled. Sessions survive cold launches — verified on device.
+- **Mana pip balance**: `DeckMetrics` extended with `pip_consumed`/`pip_produced` per WUBRG color. CSS vertical bar charts on ViewDeck.
+- **Oracle keywords frontend**: `get_oracle_keywords` client, chip-based filter component, accordion registration complete.
+- **Deck profile enhancements**: ASCII chart replaced with CSS bars across all metric sections.
 
 ---
 
-## Remaining Before Hosting
+## Active Priorities (from device testing 2026-03-26)
 
-1. **Oracle Text Keyword Filter — Frontend** (deferred, needs macOS) — `get_oracle_keywords` client, chip-based multi-select filter component. Full plan in `next.md`.
+1. **Card image size** — images need to expand to near full-screen on mobile. Currently too small to read comfortably.
 
-2. **Mana Pip Counter** — Pips consumed (from `mana_cost`) vs produced (from `produced_mana`) per WUBRG color. Single-pass extension to `DeckMetrics`. Rendered on ViewDeck below colors section. Already specced in `next.md`.
+2. **Filter active count badges** — each accordion group should show active filter count (e.g. "mana (2)") so user knows where to clear without opening every section.
 
-3. **Hosting** — Deploy zerver + postgres. Frontend stays as local/desktop app for now.
+3. **Filter clear empties card hand** — clearing filters on add-cards screen should reset the `Vec<Cards>` in hand, not leave stale results.
 
 ---
 
-## Post-Hosting Backlog
+## Backlog
 
-- **AI Card Categorization** — Batch-classify 35k cards via Claude API during `zervice` sync. Store category tags (burn, ramp, removal, draw, etc.) as jsonb on `card_profiles`. Expose as filter + grouper on frontend. Rule-based approach breaks down due to oracle text variance — AI is the right tool.
-- **Multi-Copy Add Flow** — Quantity picker on swipe-right for standard decks.
-- **EDHREC Integration** — External API, complex, deferred.
+- Stop-words shared between zerver and zwiper (currently duplicated)
+- AI card categorization (burn, ramp, removal, draw — via Claude API in zervice)
+- Integration tests for SQLx repositories (require real DB)
+- CI/CD for auto-deploying zerver to Pi (low priority — manual deploy is fast)
