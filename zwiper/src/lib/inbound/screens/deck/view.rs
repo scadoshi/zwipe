@@ -325,18 +325,17 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                         div { style: "flex:1;height:1rem;background:rgba(255,255,255,0.1);border-radius:0.15rem;overflow:hidden;",
                                                             div {
                                                                 style: format!(
-                                                                    "height:100%;width:{fill_pct}%;background:{};border-radius:0.15rem;",
-                                                                    if *is_surplus { "rgba(255,255,255,0.95)" } else { "rgba(255,255,255,0.65)" }
+                                                                    "height:100%;width:{fill_pct}%;background:rgba(255,255,255,0.65);border-radius:0.15rem;"
                                                                 ),
                                                             }
                                                         }
+                                                        // Surplus indicator
+                                                        span { style: "font-family:monospace;font-size:0.75rem;opacity:0.5;width:1.25rem;text-align:center;flex-shrink:0;",
+                                                            if *is_surplus { "✔" } else { "" }
+                                                        }
                                                         // Counts
-                                                        span { style: "font-family:monospace;font-size:0.75rem;opacity:0.5;white-space:nowrap;min-width:7ch;text-align:right;",
-                                                            if *is_surplus {
-                                                                "{produced}/{consumed} +"
-                                                            } else {
-                                                                "{produced}/{consumed}"
-                                                            }
+                                                        span { style: "font-family:monospace;font-size:0.75rem;opacity:0.5;white-space:nowrap;width:6ch;text-align:right;flex-shrink:0;",
+                                                            "{produced}/{consumed}"
                                                         }
                                                     }
                                                 }
