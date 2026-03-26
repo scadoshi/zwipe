@@ -6,9 +6,9 @@ Planned work after completing current tasks.
 
 ## User notes about minor tweaks
 
-1. find_cards_by_exact_name() says it returns a SearchCardsError but specifically skips the cases where a name is NOT found. That is fine and to be expected but documentation should note to NOT expect an error if the names in the search do not match a card you will not get a not found error for that! Also we should change the name to note the case insensitivity please. Something like insensitive_find_cards_by_exact_name please. 
+~~1. Silent-omit documentation on `find_cards_by_exact_names`~~ — **DONE** (2026-03-25). `ports.rs` now documents that missing names are silently omitted (no error). Rename deferred/dropped.
 
-2. Accordion scroll-to-focus: when a filter accordion item is opened, the bottom sheet should scroll to bring the opened section into view. Currently it expands but doesn't scroll, so filters near the bottom are hidden and the user has to manually find them.
+~~2. Accordion scroll-to-focus~~ — **DONE** (2026-03-25). Each `AccordionItem` in the add/view/remove filter bottom sheets fires `on_change` and calls `document::eval` with a 50ms-deferred `scrollIntoView({ behavior: 'smooth', block: 'start' })` targeting the opened item. Delay prevents phantom-open touch events and lets layout settle.
 
 ~~3. Config filter labels: add "is" or "has" prefix to boolean fields so they read naturally — "is playable", "is digital only", "is oversized", "is promo", "has content warning".~~
 
@@ -56,26 +56,7 @@ Planned work after completing current tasks.
 
 4. ~~**Deck Metrics View**~~ — **DONE** (2026-03-23). `DeckMetrics` in deck domain, `ComputeMetrics` trait generic over `IntoIterator<Item = &Card>`. Stats (cards, avg cmc, lands), ASCII mana curve, type/color distributions rendered on ViewDeck screen.
 
-5. **Mana Pip Balance** - Show pips produced vs. pips consumed per color so players can balance their mana base.
-
-   **Concept:** For each color (WUBRG), compute:
-   - **Pips consumed** — count colored mana symbols in `mana_cost` across all nonland cards, quantity-aware. Parse `{W}`, `{U}`, `{B}`, `{R}`, `{G}` from the `mana_cost` string (character-level scan, no regex).
-   - **Pips produced** — walk `produced_mana: Option<Colors>` on *all* cards (not just lands). Scryfall populates this field for mana rocks, dorks, and lands alike — Sol Ring has `["C"]`, Birds of Paradise has `["W","U","B","R","G"]`, Llanowar Elves has `["G"]`. Quantity-aware.
-
-   **Display:** Per-color horizontal bar row. Bar baseline = `max(produced, consumed)` so neither side overflows. Fill length = produced. Show counts for both. Only render colors where consumed > 0 or produced > 0.
-
-   ```
-   W  ██████████░░░░░  10 produced / 14 consumed
-   U  ████████████░░░  12 produced / 15 consumed
-   G  ████████████████████  20 produced / 18 consumed  (+2 surplus)
-   ```
-
-   **"Any color" producers** (Command Tower, Chromatic Lantern, etc.) — `produced_mana` includes all colors they tap for; fold them into each relevant bucket the same as single-color producers.
-
-   **Implementation notes:**
-   - No new backend endpoint — pure client-side math from `deck_cards` + `quantity_map`
-   - Extend `DeckMetrics` with `pip_consumed: HashMap<Color, usize>` and `pip_produced: HashMap<Color, usize>`, computed in the single-pass `deck_metrics.rs`
-   - Render in ViewDeck below the colors section
+~~5. **Mana Pip Balance**~~ — **DONE** (2026-03-25). `DeckMetrics` extended with `pip_consumed` and `pip_produced` per color, computed in a single pass in `deck_metrics.rs`. Rendered in ViewDeck as CSS vertical bar charts with surplus checkmark indicator. ASCII chart representation replaced with CSS bars across all metric sections.
 
 6. **Deck Profile Enhancements (ViewDeck screen)** - Additional deck metadata fields for future.
 
