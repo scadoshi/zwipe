@@ -1,5 +1,9 @@
 [application]
 
+[bundle]
+identifier = "com.scottyrayfermo.zwipe"
+publisher = "scottyrayfermo"
+
 [web.app]
 
 # HTML title tag content
