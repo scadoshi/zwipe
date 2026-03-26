@@ -102,7 +102,7 @@ where
             .nest(
                 "/card",
                 Router::new()
-                    .route("/:scryfall_data_id", get(get_card))
+                    .route("/{scryfall_data_id}", get(get_card))
                     .route("/search", post(search_cards))
                     .route("/artists", get(get_artists))
                     .route("/types", get(get_card_types))
@@ -114,19 +114,15 @@ where
             .nest(
                 "/deck",
                 Router::new()
-                    .route("/", post(create_deck_profile))
-                    .route("/", get(get_deck_profiles))
-                    .route("/profile/:deck_id", get(get_deck_profile))
-                    .route("/:deck_id", get(get_deck))
-                    .route("/:deck_id", put(update_deck_profile))
-                    .route("/:deck_id", delete(delete_deck))
+                    .route("/", get(get_deck_profiles).post(create_deck_profile))
+                    .route("/profile/{deck_id}", get(get_deck_profile))
+                    .route("/{deck_id}", get(get_deck).put(update_deck_profile).delete(delete_deck))
                     .nest(
-                        "/:deck_id/card",
+                        "/{deck_id}/card",
                         Router::new()
                             .route("/", post(create_deck_card))
                             .route("/import", post(import_deck_cards))
-                            .route("/:scryfall_data_id", put(update_deck_card))
-                            .route("/:scryfall_data_id", delete(delete_deck_card)),
+                            .route("/{scryfall_data_id}", put(update_deck_card).delete(delete_deck_card)),
                     ),
             ),
     )
