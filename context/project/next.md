@@ -2,6 +2,65 @@
 
 Planned work after completing current tasks.
 
+**Primary goal: Get Zwipe publicly available on the App Store.**
+
+---
+
+## App Store Submission Checklist
+
+Everything needed to go from running on one iPhone to publicly listed on the App Store.
+
+### 1. Fix App Name (shows "Main" on home screen)
+
+The binary is named `main`, so iOS displays the app as "Main". Fix in `zwiper/Dioxus.toml`:
+- Add `name = "Zwipe"` to the `[application]` section
+
+### 2. iOS App Icon
+
+The current `zwiper/assets/favicon/` icons are web favicons — iOS ignores them for the home screen icon. The App Store requires a dedicated icon set:
+- **1024×1024** — required for App Store listing
+- **180×180** (`@3x`) — iPhone home screen
+- **120×120** (`@2x`) — older iPhones
+- These go in an `AppIcon.appiconset` in the Xcode assets catalog, or via Dioxus bundle config
+
+The current icon is ASCII-art-based — needs converting to a proper rasterized image at these sizes. Consider generating from the existing logo at `android-chrome-512x512.png` as a base.
+
+Dioxus bundle icon config is likely via `[bundle] icon = [...]` in `Dioxus.toml` or a direct `Assets.xcassets` approach — needs research/testing.
+
+### 3. App Store Connect Setup
+
+1. Log into [appstoreconnect.apple.com](https://appstoreconnect.apple.com) with `scottyfermo17@gmail.com`
+2. Create new app: Bundle ID `com.scadoshi.zwipe`, name "Zwipe", primary language English
+3. Fill out:
+   - **App description** — see `context/decisions/app-store-listing.md` (TBD)
+   - **Keywords** — MTG, Magic the Gathering, deck builder, commander, card game
+   - **Screenshots** — minimum 1 per required device size (6.7" iPhone required)
+   - **Privacy Policy URL** — required for App Store, even for free apps (need a hosted page)
+   - **Support URL** — can be a simple page or GitHub
+   - **Age rating** — 4+ (no objectionable content)
+   - **Category** — Games > Card Games, or Utilities
+
+### 4. Build for Distribution (not Development)
+
+Current build uses a Development provisioning profile. App Store submission requires:
+- **Distribution certificate** (Apple Distribution, not Apple Development)
+- **App Store provisioning profile** (not iOS App Development)
+- Build with `dx build --release --platform ios --device "scotland-mobile"`
+- Archive and upload via `xcrun altool` or Transporter
+
+### 5. Privacy Policy
+
+App Store requires a privacy policy URL. Zwipe collects email + deck data. A simple hosted page (GitHub Pages, Notion, etc.) is sufficient. Must state:
+- What data is collected (email, deck contents)
+- Where it's stored (Pi backend at `api.zwipe.net`)
+- No third-party data sharing
+
+### 6. Submit
+
+- Upload build via Transporter or `xcrun altool`
+- Fill out export compliance (no encryption beyond standard HTTPS — answer No to encryption questions)
+- Submit for review — typical review time 1–3 days
+
 ---
 
 ## User notes about minor tweaks
@@ -181,6 +240,8 @@ scp target/aarch64-unknown-linux-gnu/release/zervice pi@<pi-ip>:~/
 2. **iOS Keychain Session Persistence** — `errSecMissingEntitlement (-34018)` on cold start. `keyring` crate can't access iOS Keychain without `keychain-access-groups` entitlement + provisioning profile. User must log in on every app launch. Fix: see Infrastructure section.
 
 3. ~~**iOS Keyboard Pushes Content Down**~~ — **FIXED** (2026-03-23)
+
+4. **Swipe-up triggers page scroll on card viewing screens** — on the card viewing screens, swiping up (intended as a swipe gesture) sometimes also scrolls the page. The swipe handler and the native scroll are competing. Likely needs `preventDefault` on the touch event or a scroll-lock while a swipe gesture is in progress.
 
    **Root cause:** Same as above — `sticky top-0` + `justify-content: center` + `h-screen` caused layout reflow when iOS keyboard changed the viewport height.
 
