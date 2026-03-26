@@ -44,7 +44,7 @@ pub fn Register() -> Element {
 
     let mut validate_username = move || {
         if let Err(e) = Username::new(username()) {
-            username_error.set(Some(e.to_string()));
+            username_error.set(Some(e.to_string().to_lowercase()));
         } else {
             username_error.set(None)
         }
@@ -52,7 +52,7 @@ pub fn Register() -> Element {
 
     let mut validate_email = move || {
         if let Err(e) = EmailAddress::from_str(&email()) {
-            email_error.set(Some(e.to_user_facing_string()));
+            email_error.set(Some(e.to_user_facing_string().to_lowercase()));
         } else {
             email_error.set(None);
         }
@@ -60,7 +60,7 @@ pub fn Register() -> Element {
 
     let mut validate_password = move || {
         if let Err(e) = Password::new(password()) {
-            password_error.set(Some(e.to_string()))
+            password_error.set(Some(e.to_string().to_lowercase()))
         } else {
             password_error.set(None);
         }
@@ -92,7 +92,7 @@ pub fn Register() -> Element {
                         session.set(Some(new_session));
                         navigator.push(Router::Home {});
                     }
-                    Err(e) => submission_error.set(Some(e.to_string())),
+                    Err(e) => submission_error.set(Some(e.to_string().to_lowercase())),
                 }
             });
         }
