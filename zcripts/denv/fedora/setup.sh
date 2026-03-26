@@ -66,7 +66,7 @@ sudo -u postgres psql -c "CREATE DATABASE zerver OWNER $CURRENT_USER;"
 echo "creating .env files..."
 cat > zerver/.env << EOF
 # app state
-JWT_SECRET=$(openssl rand -base64 32)
+JWT_SECRET=$(openssl rand -hex 32)
 DATABASE_URL=postgres:///zerver?user=$CURRENT_USER
 BIND_ADDRESS=127.0.0.1:3000
 # cors configuration
