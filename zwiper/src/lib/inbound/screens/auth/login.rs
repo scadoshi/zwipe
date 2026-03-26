@@ -56,12 +56,12 @@ pub fn Login() -> Element {
                         session.set(Some(new_session));
                         navigator.push(Router::Home {});
                     }
-                    Err(e) => submission_error.set(Some(e.to_string())),
+                    Err(e) => submission_error.set(Some(e.to_string().to_lowercase())),
                 }
             });
         } else {
             submission_error.set(Some(
-                ApiError::Unauthorized("invalid credentials".to_string()).to_string(),
+                ApiError::Unauthorized("invalid credentials".to_string()).to_string().to_lowercase(),
             ));
         }
         is_loading.set(false);
