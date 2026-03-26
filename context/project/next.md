@@ -91,26 +91,47 @@ Planned work after completing current tasks.
 
 ### Backend Hosting
 
-**Recommended stack:**
-- **VPS**: DigitalOcean Droplet ($6–12/mo, 1–2GB RAM; Rust binary is tiny)
-- **Database**: PostgreSQL on the same VPS (or DigitalOcean Managed DB for reliability)
-- **TLS/proxy**: Caddy — one-line HTTPS with automatic Let's Encrypt cert renewal
-- **Process manager**: `systemd` service for `zerver`; `systemd.timer` (or cron) for daily `zervice` Scryfall sync
+**Decided: home server via Cloudflare Tunnel (2026-03-25)**
+- Domain: `zwipe.net` (already owned)
+- OS: **Ubuntu Server 24.04 LTS** (chosen for LTS stability — no forced OS upgrades for 5 years)
+- Networking: **Cloudflare Tunnel** (`cloudflared`) — no port forwarding, no static IP needed, TLS handled by Cloudflare's edge
+- Database: PostgreSQL on the same machine
+- Process manager: `systemd` for zerver; cron for nightly `zervice`
 
-**Key config changes when moving to prod:**
-- `BACKEND_URL` in `zwiper/.env` → `https://your-domain.com`
-- `ALLOWED_ORIGINS` in `zerver/.env` → iOS native clients don't send a browser Origin header, but set this to `https://your-domain.com` for web clients
-- iOS **requires HTTPS** (App Transport Security blocks plain HTTP) — Caddy handles this automatically
-- Refresh token cleanup: `zervice` or a cron job should prune expired refresh tokens from the DB periodically
+**Stack (no Caddy needed — Cloudflare Tunnel handles TLS):**
+- Ubuntu Server 24.04 LTS
+- PostgreSQL
+- `cloudflared` daemon (Cloudflare Tunnel)
+- `zerver` as a systemd service
+- `zervice` on a nightly cron (`0 4 * * *`)
 
-**Rough deployment steps:**
-1. Provision VPS, install PostgreSQL + Caddy
-2. `cargo build --release --bin zerver` → copy binary to server
-3. Run migrations (`sqlx migrate run`)
-4. Write `systemd` unit for zerver, enable + start
-5. Configure Caddy reverse proxy to `127.0.0.1:3000`
-6. Set DNS A record → VPS IP, Caddy auto-provisions cert
-7. Schedule `zervice` via cron (`0 4 * * * /path/to/zervice`) for nightly Scryfall sync
+**Step 1 — Install Ubuntu (in progress):**
+1. Download Ubuntu Server 24.04 LTS from ubuntu.com/download/server
+2. Flash to USB with Balena Etcher
+3. Boot PC from USB, run installer — enable OpenSSH server when offered
+4. In router: set a DHCP reservation for the PC's MAC address (gives it a stable local IP)
+5. SSH in from Mac to verify: `ssh user@<local-ip>`
+
+**Step 2 — Cloudflare Tunnel setup (after Ubuntu is up):**
+1. Move `zwipe.net` DNS to Cloudflare (if not already) — free, takes ~5 min
+2. Install `cloudflared` on the server
+3. `cloudflared tunnel login` → authenticate with Cloudflare account
+4. `cloudflared tunnel create zwipe` → creates tunnel, saves credentials
+5. Configure tunnel to route `zwipe.net` → `localhost:3000`
+6. Install `cloudflared` as a systemd service
+
+**Step 3 — Deploy zerver:**
+1. `cargo build --release --bin zerver --bin zervice` on Mac → `scp` binaries to server
+2. Set up `zerver/.env` on server with prod values (`DATABASE_URL`, `JWT_SECRET`, `BIND_ADDRESS=127.0.0.1:3000`, `ALLOWED_ORIGINS=https://zwipe.net`)
+3. Run SQLx migrations: `sqlx migrate run`
+4. Write systemd unit for `zerver`, enable + start
+5. Add cron entry for `zervice`: `0 4 * * * /home/user/bin/zervice`
+6. Update `zwiper/.env`: `BACKEND_URL=https://zwipe.net`
+
+**Key prod config notes:**
+- iOS requires HTTPS — Cloudflare Tunnel provides this automatically
+- iOS native clients don't send an `Origin` header, so CORS won't block them
+- Refresh token cleanup: add a periodic DELETE query for expired tokens (can be part of zervice run)
 
 ### Dockerized Backend Dev Environment (deferred)
 
