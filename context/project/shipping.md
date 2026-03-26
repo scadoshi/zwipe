@@ -224,6 +224,18 @@ features = ["json", "rustls-tls"]
 default-features = false
 ```
 
+### SSH Access
+
+**Requires home WiFi.** The Pi is at `10.0.0.78` — a local LAN address. SSH is only reachable when on the same network as the Pi. There is no remote SSH access configured.
+
+```bash
+ssh scottyfermo@10.0.0.78
+```
+
+To enable remote SSH from anywhere, two options:
+- **Tailscale** — free, installs on both Mac and Pi, creates a VPN mesh. `ssh scottyfermo@<tailscale-ip>` from anywhere. Easiest path.
+- **cloudflared SSH** — Cloudflare Tunnel can proxy SSH in addition to HTTP. More setup but keeps everything in the Cloudflare ecosystem already in use.
+
 ### SSH Key Setup (Mac → Pi)
 
 ```bash

@@ -24,8 +24,10 @@ use crate::{
 use anyhow::{Context, anyhow};
 #[cfg(feature = "zerver")]
 use axum::{
+    extract::Request,
     http::{HeaderValue, Method, StatusCode, header},
-    response::IntoResponse,
+    middleware::Next,
+    response::{IntoResponse, Response},
 };
 #[cfg(feature = "zerver")]
 use std::sync::Arc;
@@ -108,9 +110,11 @@ impl IntoResponse for ApiError {
                 "internal server error".to_string(),
             )
                 .into_response(),
-            ApiError::Network(message) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, message).into_response()
-            }
+            ApiError::Network(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "internal server error".to_string(),
+            )
+                .into_response(),
             ApiError::UnprocessableEntity(message) => {
                 (StatusCode::UNPROCESSABLE_ENTITY, message).into_response()
             }
@@ -139,6 +143,34 @@ where
         tracing::error!("{:?}\n{}", self, anyhow!("{self}").backtrace());
         ApiError::InternalServerError("internal server error".to_string())
     }
+}
+
+// ========
+//  security headers
+// ========
+
+/// Adds security-relevant HTTP response headers to every response.
+///
+/// - `X-Content-Type-Options: nosniff` — prevents MIME-type sniffing
+/// - `X-Frame-Options: DENY` — prevents clickjacking via iframe embedding
+/// - `Referrer-Policy: strict-origin-when-cross-origin` — limits referrer leakage
+#[cfg(feature = "zerver")]
+async fn security_headers(request: Request, next: Next) -> Response {
+    let mut response = next.run(request).await;
+    let headers = response.headers_mut();
+    headers.insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        HeaderValue::from_static("nosniff"),
+    );
+    headers.insert(
+        header::X_FRAME_OPTIONS,
+        HeaderValue::from_static("DENY"),
+    );
+    headers.insert(
+        header::REFERRER_POLICY,
+        HeaderValue::from_static("strict-origin-when-cross-origin"),
+    );
+    response
 }
 
 // ========
@@ -217,8 +249,9 @@ impl HttpServer {
                 CorsLayer::new()
                     .allow_origin(config.allowed_origins)
                     .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
-                    .allow_headers([header::CONTENT_TYPE]),
+                    .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION]),
             )
+            .layer(axum::middleware::from_fn(security_headers))
             .with_state(state);
 
         let listener = net::TcpListener::bind(&config.bind_address)
