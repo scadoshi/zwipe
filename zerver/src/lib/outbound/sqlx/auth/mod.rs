@@ -72,7 +72,7 @@ impl AuthRepository for Postgres {
 
         let database_user: DatabaseUserWithPasswordHash = query_as!(
             DatabaseUserWithPasswordHash,
-            "SELECT id, username, email, password_hash FROM users WHERE (id::text = $1 OR username = $1 OR email = $1)",
+            "SELECT id, username, email, password_hash, lockout_until FROM users WHERE (id::text = $1 OR username = $1 OR email = $1)",
             request.identifier
         )
         .fetch_one(&self.pool)
@@ -83,8 +83,66 @@ impl AuthRepository for Postgres {
         Ok(user)
     }
     // ========
-    //  update                           
-    // ======== 
+    //  lockout
+    // ========
+
+    /// Atomically increments failed login counter with a sliding 30-minute window.
+    /// Sets `lockout_until = NOW() + 30 min` after 5 failures within the window.
+    async fn increment_failed_attempts(
+        &self,
+        user_id: Uuid,
+    ) -> Result<(), AuthenticateUserError> {
+        query!(
+            r#"
+            UPDATE users
+            SET
+                failed_login_attempts = CASE
+                    WHEN COALESCE(last_failed_at, '1970-01-01'::TIMESTAMP) < NOW() - INTERVAL '30 minutes'
+                    THEN 1
+                    ELSE failed_login_attempts + 1
+                END,
+                last_failed_at = NOW(),
+                lockout_until = CASE
+                    WHEN (
+                        CASE
+                            WHEN COALESCE(last_failed_at, '1970-01-01'::TIMESTAMP) < NOW() - INTERVAL '30 minutes'
+                            THEN 1
+                            ELSE failed_login_attempts + 1
+                        END
+                    ) >= 5
+                    THEN NOW() + INTERVAL '30 minutes'
+                    ELSE lockout_until
+                END
+            WHERE id = $1
+            "#,
+            user_id
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AuthenticateUserError::Database(e.into()))?;
+
+        Ok(())
+    }
+
+    /// Clears failed login counter and lockout on successful authentication.
+    async fn reset_failed_attempts(
+        &self,
+        user_id: Uuid,
+    ) -> Result<(), AuthenticateUserError> {
+        query!(
+            "UPDATE users SET failed_login_attempts = 0, last_failed_at = NULL, lockout_until = NULL WHERE id = $1",
+            user_id
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AuthenticateUserError::Database(e.into()))?;
+
+        Ok(())
+    }
+
+    // ========
+    //  update
+    // ========
     async fn change_password(
         &self,
         request: &ChangePassword,

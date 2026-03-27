@@ -61,6 +61,8 @@ pub enum ApiError {
     Forbidden(String),
     #[error("network error: {0}")]
     Network(String),
+    #[error("{0}")]
+    TooManyRequests(String),
 }
 
 impl From<reqwest::Error> for ApiError {
@@ -121,6 +123,9 @@ impl IntoResponse for ApiError {
             ApiError::Unauthorized(message) => (StatusCode::UNAUTHORIZED, message).into_response(),
             ApiError::NotFound(message) => (StatusCode::NOT_FOUND, message).into_response(),
             ApiError::Forbidden(message) => (StatusCode::FORBIDDEN, message).into_response(),
+            ApiError::TooManyRequests(message) => {
+                (StatusCode::TOO_MANY_REQUESTS, message).into_response()
+            }
         }
     }
 }

@@ -20,6 +20,7 @@ pub struct DatabaseUserWithPasswordHash {
     pub username: String,
     pub email: String,
     pub password_hash: String,
+    pub lockout_until: Option<NaiveDateTime>,
 }
 
 /// converts database user with password hash
@@ -36,6 +37,7 @@ impl TryFrom<DatabaseUserWithPasswordHash> for UserWithPasswordHash {
             username,
             email,
             password_hash,
+            lockout_until: value.lockout_until,
         })
     }
 }
