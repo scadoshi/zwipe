@@ -89,6 +89,8 @@ App Store requires a privacy policy URL. Zwipe collects email + deck data. A sim
 
 12. **Per Deck Card Limit** ---same idea as above but for cards per deck.
 
+13. **Numeric ID for all entities** ---Accompanying uuid-based operations for security, numeric IDs will make human identification of entries easier. Consider adding to all entities. Numeric ID is represented by a naturally incrementing integer (1, 2, 3, 4, etc.) while uuid is represented as, well, a uuid. This makes operations more secure against enumeration attacks while entries remain easily found using numeric IDs. Probably a waste of time but worth considering.
+
 ~~5. Deck-aware filter dropdowns (view/remove screens)~~ — **DONE** (2026-03-25). `DeckCards` newtype context provided by view/remove screens. Filter components (artist, set, types, oracle words, keywords) use `try_use_context::<DeckCards>()` to derive selectable values from the loaded deck's cards instead of fetching from server. Add screen continues fetching from server (no context provided). Commander now also respects the active filter — hidden from the pinned slot when filtered out.
 
 ~~6. Lowercase import screen text~~ — **DONE** (2026-03-25). Placeholder sample card names and post-import result card names (imported + unresolved) are now lowercase.
