@@ -16,6 +16,7 @@ serde_json = "1.0.145"
 sha2 = "0.10.9"
 thiserror = "2.0.17"
 tracing = "0.1"
+tracing-appender = "0.2"
 tracing-subscriber = "0.3"
 
 [workspace.dependencies.chrono]
