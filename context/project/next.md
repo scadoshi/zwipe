@@ -85,6 +85,10 @@ App Store requires a privacy policy URL. Zwipe collects email + deck data. A sim
 
 10. **Full screen integration pass: transitions + loading states** — walk every screen end-to-end on device and audit for missing loading feedback and abrupt state changes. For each async operation (data fetch, form submit, route change) add either a skeleton placeholder or a spinner where appropriate. Also add tasteful transitions between screens and between loading/loaded states — nothing heavy, just enough to make the app feel intentional rather than janky. Goal is that no screen ever appears to flash blank or jump content in.
 
+11. **Deck Count Limit** ---implement limit to the number of decks that any single user can have created against their profile. Pre-emptive limitation in anticipation for a subscription tier which would offer higher deck limits.
+
+12. **Per Deck Card Limit** ---same idea as above but for cards per deck.
+
 ~~5. Deck-aware filter dropdowns (view/remove screens)~~ — **DONE** (2026-03-25). `DeckCards` newtype context provided by view/remove screens. Filter components (artist, set, types, oracle words, keywords) use `try_use_context::<DeckCards>()` to derive selectable values from the loaded deck's cards instead of fetching from server. Add screen continues fetching from server (no context provided). Commander now also respects the active filter — hidden from the pinned slot when filtered out.
 
 ~~6. Lowercase import screen text~~ — **DONE** (2026-03-25). Placeholder sample card names and post-import result card names (imported + unresolved) are now lowercase.
