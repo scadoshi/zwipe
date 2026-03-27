@@ -235,12 +235,20 @@ scp target/aarch64-unknown-linux-gnu/release/zervice pi@<pi-ip>:~/
 
 ### File-Based Logging for zerver
 
-Currently zerver only logs to stdout, which means logs are only visible while watching the process live (`journalctl -fu zerver`). Add rolling file-based logging so logs are retained and inspectable after the fact — useful for diagnosing issues on the Pi without needing to be attached to the service in real time.
+**Implemented (2026-03-27).** Rolling daily log files written to `/var/log/zwipe/` alongside stdout. 30-day retention via `tracing-appender` non-blocking writer. Structured `event =` audit logs added at all key auth points (login success/failure/lockout, register, token refresh failures, token cleanup).
 
-- Use `tracing-appender` (non-blocking rolling file writer) alongside the existing `tracing-subscriber` setup
-- Roll daily, keep a reasonable number of files (e.g. 7 days)
-- Write to a fixed path on the Pi (e.g. `/var/log/zwipe/zerver.log`)
-- Keep stdout logging active in parallel — file log for history, stdout for `journalctl` live tail
+**Pi log directory already created:**
+```bash
+# Already run on Pi (2026-03-27):
+sudo mkdir -p /var/log/zwipe
+sudo chown scottyfermo:scottyfermo /var/log/zwipe
+```
+
+Log files appear as `/var/log/zwipe/zerver.YYYY-MM-DD.log`. Inspect with:
+```bash
+tail -f /var/log/zwipe/zerver.$(date +%Y-%m-%d).log
+grep '"token_refresh_failure"' /var/log/zwipe/zerver.$(date +%Y-%m-%d).log
+```
 
 ### Dockerized Backend Dev Environment (deferred)
 

@@ -1,6 +1,7 @@
 use crate::domain::{
     auth::{
         models::{
+            UserWithPasswordHash,
             access_token::{AccessToken, JwtSecret},
             authenticate_user::{AuthenticateUser, AuthenticateUserError},
             change_email::{ChangeEmail, ChangeEmailError},
@@ -9,13 +10,12 @@ use crate::domain::{
             delete_user::{DeleteUser, DeleteUserError},
             register_user::{RegisterUser, RegisterUserError},
             session::{
+                Session,
                 create_session::{CreateSession, CreateSessionError},
                 delete_expired_sessions::DeleteExpiredSessionsError,
                 refresh_session::{RefreshSession, RefreshSessionError},
                 revoke_sessions::{RevokeSessions, RevokeSessionsError},
-                Session,
             },
-            UserWithPasswordHash,
         },
         ports::{AuthRepository, AuthService},
     },
@@ -99,10 +99,11 @@ where
             self.auth_repo.get_user_with_password_hash(request).await?;
 
         // Check lockout before Argon2 — avoids expensive hashing for locked accounts.
-        if let Some(until) = user_with_password_hash.lockout_until {
-            if until > Utc::now().naive_utc() {
-                return Err(AuthenticateUserError::AccountLocked);
-            }
+        if let Some(until) = user_with_password_hash.lockout_until
+            && until > Utc::now().naive_utc()
+        {
+            tracing::warn!(event = "login_failure", reason = "account_locked", identifier = %request.identifier);
+            return Err(AuthenticateUserError::AccountLocked);
         }
 
         let password_hash = user_with_password_hash.password_hash.clone();
@@ -115,10 +116,12 @@ where
 
         if !verified {
             self.auth_repo.increment_failed_attempts(user.id).await?;
+            tracing::warn!(event = "login_failure", reason = "invalid_password", identifier = %request.identifier);
             return Err(AuthenticateUserError::InvalidPassword);
         }
 
         self.auth_repo.reset_failed_attempts(user.id).await?;
+        tracing::info!(event = "login_success", identifier = %request.identifier);
 
         let access_token = AccessToken::generate(&user, &self.jwt_secret)
             .map_err(|e| AuthenticateUserError::FailedAccessToken(anyhow!("{e}")))?;

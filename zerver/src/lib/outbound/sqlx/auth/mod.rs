@@ -289,9 +289,10 @@ impl AuthRepository for Postgres {
         ) -> Result<(), DeleteExpiredSessionsError> {
         let mut tx = self.pool.begin().await?;
 
-        query!("DELETE FROM refresh_tokens WHERE expires_at < NOW()")
+        let result = query!("DELETE FROM refresh_tokens WHERE expires_at < NOW()")
             .execute(&mut *tx)
             .await?;
+        tracing::info!(event = "token_cleanup", rows_deleted = result.rows_affected());
 
         tx.commit().await?;
 

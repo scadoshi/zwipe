@@ -146,7 +146,7 @@ where
     DS: DeckService,
 {
     let request = RegisterUser::new(&body.username, &body.email, &body.password)?;
-    tracing::info!("registering user: {}", body.username);
+    tracing::info!(event = "register", username = %body.username);
     state
         .auth_service
         .register_user(&request)

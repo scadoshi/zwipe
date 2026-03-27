@@ -30,19 +30,19 @@ impl From<RefreshSessionError> for ApiError {
             RefreshSessionError::InvalidJwt(e) => e.log_500(),
             RefreshSessionError::EnforceSessionMaximumError(e) => ApiError::from(e),
             RefreshSessionError::NotFound(u) => {
-                tracing::info!("{}", RefreshSessionError::NotFound(u).to_string());
+                tracing::warn!(event = "token_refresh_failure", reason = "not_found", user_id = %u);
                 Self::Unauthorized("invalid refresh token".to_string())
             }
             RefreshSessionError::Expired(u) => {
-                tracing::info!("{}", RefreshSessionError::Expired(u).to_string());
+                tracing::warn!(event = "token_refresh_failure", reason = "expired", user_id = %u);
                 Self::Unauthorized("invalid refresh token".to_string())
             }
             RefreshSessionError::Revoked(u) => {
-                tracing::warn!("{}", RefreshSessionError::Revoked(u).to_string());
+                tracing::warn!(event = "token_refresh_failure", reason = "revoked", user_id = %u);
                 Self::Unauthorized("invalid refresh token".to_string())
             }
             RefreshSessionError::Forbidden(u) => {
-                tracing::warn!("{}", RefreshSessionError::Forbidden(u).to_string());
+                tracing::warn!(event = "token_refresh_failure", reason = "forbidden", user_id = %u);
                 Self::Forbidden("invalid refresh token".to_string())
             }
         }
