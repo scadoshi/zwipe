@@ -149,6 +149,27 @@ App Store requires a privacy policy URL. Zwipe collects email + deck data. A sim
 
 ---
 
+## Rate Limiting (Planned)
+
+### Password Reset Rate Limiting
+
+Two-layer protection to prevent Resend quota exhaustion and enumeration:
+
+1. **IP-level (`tower_governor`)** — dedicated governor on `POST /api/auth/forgot-password`, tighter than the blanket private-route limit. Target: ~5 requests per hour per IP.
+2. **Per-email cooldown (domain logic)** — before issuing a reset token, check `last_reset_requested_at` on the `password_reset_tokens` table. If a token was issued for that email within the last 5 minutes, skip sending (return the same generic response). Prevents bypass via rotating IPs/VPNs.
+
+Both layers return the identical generic response ("if that email exists, a link was sent") — no oracle leakage.
+
+### Search Cards Rate Limiting
+
+The search endpoint is the heaviest DB operation (full-text search across 35k+ cards, 100 results/page). Add a dedicated `tower_governor` instance on `GET /api/cards` with tighter params than the blanket private-route limiter:
+
+- **Target:** ~1 request per 3 seconds replenishment, burst allowance of 5 (effectively ~20/min ceiling, ~1,200/hour theoretical max)
+- 100 pages × 100 cards = 10,000 cards viewable per 5 minutes at max burst — more than enough for legitimate use
+- Current limiter uses `PeerIpKeyExtractor` (IP-keyed). Future improvement: key by authenticated user ID for per-user fairness instead of per-IP.
+
+---
+
 ## Infrastructure & Shipping
 
 ### iOS Session Persistence (Keychain Entitlement)
