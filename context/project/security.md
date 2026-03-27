@@ -28,20 +28,23 @@ Audit performed 2026-03-26 ahead of App Store public launch.
 
 ## Fix Soon After Launch
 
-### No Security Event Audit Logging (Medium)
-No structured logging of login attempts, token refreshes, password changes, or account deletion. Makes detecting abuse impossible.
-- **Fix**: `tracing::info!(event = "login_attempt", success = false, ...)` on auth events. Consider audit log table long-term.
+### ✓ Security Event Audit Logging (Medium)
+- **Done**: Structured `event =` audit logs at all key auth points — `login_success`, `login_failure` (reason: `invalid_password` or `account_locked`), `register`, `token_refresh_failure` (reason: `not_found`/`expired`/`revoked`/`forbidden`), `token_cleanup`. Written to rolling daily file at `/var/log/zwipe/` alongside stdout. Commit: `440f972`.
 
-### Email Verification on Registration (Low)
-Users can register with any email — no verification step. Enables typos, impersonation, spam accounts.
-- **Fix**: Send verification email on register, require confirmation before full account access. Needs email sending infrastructure (see password reset below — same infrastructure).
-
-### Expired Token Cleanup (Low)
-`zervice` has `delete_expired_sessions` but it's not documented or guaranteed to run on a schedule. DB grows unbounded otherwise.
-- **Fix**: Ensure nightly cron for zervice covers this. Add logging when cleanup runs.
+### ✓ Expired Token Cleanup (Low)
+- **Done**: `zervice` has `delete_expired_sessions`, nightly cron confirmed on Pi (`0 4 * * *`). `token_cleanup` event now logs `rows_deleted` on each run. Commit: `440f972`.
 
 ### ✓ Refresh Token Format Validation (Low)
 - **Done**: Length corrected to 64 chars (was 32), `is_ascii_hexdigit()` check added, whitespace trimmed before storage. Commit: `e02ab5e`.
+
+---
+
+## Remaining Open Item
+
+### Email Verification on Registration (Low)
+Users can register with any email — no verification step. Enables typos, impersonation, spam accounts.
+- **Fix**: Send verification email on register, require confirmation before full account access. Needs email sending infrastructure (same as Password Reset below — implement both together via Resend).
+- **Blocked on**: Resend integration (resend.com — 3k emails/month free tier, Rust-friendly API).
 
 ---
 

@@ -230,7 +230,7 @@ scp target/aarch64-unknown-linux-gnu/release/zervice pi@<pi-ip>:~/
 **Key prod config notes:**
 - iOS requires HTTPS — Cloudflare Tunnel provides this automatically
 - iOS native clients don't send an `Origin` header, so CORS won't block them
-- Refresh token cleanup: add a periodic DELETE query for expired tokens (can be part of zervice run)
+- Refresh token cleanup: handled — `zervice` runs `delete_expired_sessions` nightly at 4am via cron, with `token_cleanup` event logged on each run
 - If Pi can't handle load at scale, migrate to a VPS — same stack, same steps
 
 ### File-Based Logging for zerver
@@ -249,6 +249,22 @@ Log files appear as `/var/log/zwipe/zerver.YYYY-MM-DD.log`. Inspect with:
 tail -f /var/log/zwipe/zerver.$(date +%Y-%m-%d).log
 grep '"token_refresh_failure"' /var/log/zwipe/zerver.$(date +%Y-%m-%d).log
 ```
+
+### Email Verification + Password Reset (next security item)
+
+**Status:** Not started. One remaining open security item — see `security.md`.
+
+Both features share the same Resend integration, so they should be built together:
+- **Email verification**: on register, send a confirmation email. Block full account access until confirmed.
+- **Password reset**: forgot-password flow with a 15-min single-use token. Full design in `security.md`.
+
+**Resend setup** (resend.com — 3k emails/month free tier):
+1. Add `resend` Rust crate (or use `reqwest` directly against Resend's REST API)
+2. Add `RESEND_API_KEY` to zerver `.env`
+3. New DB table: `email_verification_tokens (id, user_id, token_hash, expires_at, used_at)`
+4. New DB table: `password_reset_tokens (id, user_id, token_hash, expires_at, used_at)` (or reuse above with a `kind` column)
+5. New endpoints: `POST /api/auth/verify-email`, `POST /api/auth/forgot-password`, `POST /api/auth/reset-password`
+6. New `users` column: `email_verified_at TIMESTAMP` — null until confirmed
 
 ### Dockerized Backend Dev Environment (deferred)
 
