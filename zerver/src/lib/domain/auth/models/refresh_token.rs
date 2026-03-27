@@ -36,7 +36,7 @@
 use std::str::FromStr;
 
 use chrono::{Duration, NaiveDateTime, Utc};
-use rand::RngCore;
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use thiserror::Error;

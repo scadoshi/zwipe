@@ -20,7 +20,7 @@ const SUCCESS_MESSAGES: [&str; 15] = [
     "your request has ascended into the heavens!",
 ];
 
-use rand::Rng;
+use rand::RngExt;
 
 /// Returns a random fun success message for user feedback.
 pub fn random_success_message() -> String {
