@@ -95,6 +95,10 @@ pub enum AuthenticateUserError {
     /// Failed to create session after successful password verification.
     #[error(transparent)]
     CreateSessionError(#[from] CreateSessionError),
+
+    /// Account is temporarily locked after too many failed login attempts.
+    #[error("account temporarily locked")]
+    AccountLocked,
 }
 
 /// Validation errors when constructing an [`AuthenticateUser`] request.

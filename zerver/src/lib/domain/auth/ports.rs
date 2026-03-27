@@ -80,6 +80,26 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = Result<UserWithPasswordHash, AuthenticateUserError>> + Send;
 
     // ========
+    //  lockout
+    // ========
+
+    /// Increments the failed login counter for a user.
+    ///
+    /// Uses a sliding 30-minute window: if the last failure was more than 30 min ago,
+    /// the counter resets to 1. After 5 failures within the window, sets `lockout_until`
+    /// to `NOW() + 30 minutes`. All changes are a single atomic UPDATE.
+    fn increment_failed_attempts(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<(), AuthenticateUserError>> + Send;
+
+    /// Resets failed login counter and clears lockout on successful authentication.
+    fn reset_failed_attempts(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<(), AuthenticateUserError>> + Send;
+
+    // ========
     //  update
     // ========
 

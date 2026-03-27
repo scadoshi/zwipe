@@ -32,6 +32,8 @@ use crate::domain::auth::models::password::HashedPassword;
 #[cfg(feature = "zerver")]
 use crate::domain::user::models::{username::Username, User};
 #[cfg(feature = "zerver")]
+use chrono::NaiveDateTime;
+#[cfg(feature = "zerver")]
 use email_address::EmailAddress;
 #[cfg(feature = "zerver")]
 use uuid::Uuid;
@@ -80,6 +82,8 @@ pub struct UserWithPasswordHash {
     pub email: EmailAddress,
     /// Argon2id hashed password (never exposed in public APIs).
     pub password_hash: HashedPassword,
+    /// If set and in the future, the account is locked until this timestamp.
+    pub lockout_until: Option<NaiveDateTime>,
 }
 
 #[cfg(feature = "zerver")]
@@ -118,6 +122,7 @@ mod tests {
             username: username.clone(),
             email: email.clone(),
             password_hash,
+            lockout_until: None,
         };
 
         let user: User = with_hash.into();

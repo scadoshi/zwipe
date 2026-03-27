@@ -22,6 +22,7 @@ use crate::domain::{
     user::{models::User, ports::UserRepository},
 };
 use anyhow::anyhow;
+use chrono::Utc;
 
 /// Authentication service implementation handling user registration, login, and session management.
 ///
@@ -97,6 +98,13 @@ where
         let user_with_password_hash: UserWithPasswordHash =
             self.auth_repo.get_user_with_password_hash(request).await?;
 
+        // Check lockout before Argon2 — avoids expensive hashing for locked accounts.
+        if let Some(until) = user_with_password_hash.lockout_until {
+            if until > Utc::now().naive_utc() {
+                return Err(AuthenticateUserError::AccountLocked);
+            }
+        }
+
         let password_hash = user_with_password_hash.password_hash.clone();
 
         let user: User = user_with_password_hash.into();
@@ -106,8 +114,11 @@ where
             .map_err(|e| AuthenticateUserError::FailedToVerify(e.into()))?;
 
         if !verified {
+            self.auth_repo.increment_failed_attempts(user.id).await?;
             return Err(AuthenticateUserError::InvalidPassword);
         }
+
+        self.auth_repo.reset_failed_attempts(user.id).await?;
 
         let access_token = AccessToken::generate(&user, &self.jwt_secret)
             .map_err(|e| AuthenticateUserError::FailedAccessToken(anyhow!("{e}")))?;

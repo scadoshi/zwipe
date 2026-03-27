@@ -33,6 +33,9 @@ impl From<AuthenticateUserError> for ApiError {
             AuthenticateUserError::FailedToVerify(e) => e.log_500(),
             AuthenticateUserError::FailedAccessToken(e) => e.log_500(),
             AuthenticateUserError::CreateSessionError(e) => ApiError::from(e),
+            AuthenticateUserError::AccountLocked => {
+                Self::TooManyRequests("account temporarily locked".to_string())
+            }
         }
     }
 }

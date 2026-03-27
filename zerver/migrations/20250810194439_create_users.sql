@@ -4,7 +4,10 @@ CREATE TABLE users (
     username VARCHAR NOT NULL UNIQUE,
     password_hash VARCHAR NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    failed_login_attempts INT NOT NULL DEFAULT 0,
+    last_failed_at        TIMESTAMP,
+    lockout_until         TIMESTAMP
 );
 
 CREATE INDEX idx_users_email ON users(email);
