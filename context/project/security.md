@@ -4,37 +4,25 @@ Audit performed 2026-03-26 ahead of App Store public launch.
 
 ---
 
-## Must Fix Before Public Launch
+## Must Fix Before Public Launch — ALL COMPLETE ✓
 
-### Rate Limiting on Auth Endpoints (Critical)
-No rate limiting on `/api/auth/login`, `/api/auth/register`, `/api/auth/refresh`. Open to brute force.
-- **Fix**: `tower-governor` crate on auth routes — 5 attempts/IP/15 min on login, 3 registrations/IP/hour
-- **File**: `zerver/src/lib/inbound/http/mod.rs` (router setup)
+### ✓ Rate Limiting on Auth Endpoints (Critical)
+- **Done**: `tower_governor` per-route on `/login`, `/register`, `/refresh` + blanket on all private routes. IP-keyed via `PeerIpKeyExtractor`. Commit: `588f4fa`.
 
-### CORS Missing Authorization Header (High)
-CORS only allows `Content-Type`. JWT tokens are sent via `Authorization` header — any web client would be blocked. iOS native client doesn't preflight so this isn't visible yet.
-- **Fix**: Add `header::AUTHORIZATION` to `.allow_headers([...])` in CORS config
-- **File**: `zerver/src/lib/inbound/http/mod.rs` ~line 220
+### ✓ CORS Missing Authorization Header (High)
+- **Done**: `header::AUTHORIZATION` added to `.allow_headers([...])`. Commit: `da67302`.
 
-### Account Lockout (High)
-No failed login tracking. No per-account lockout after repeated failures. Rate limiting handles IP-level, lockout handles account-level (different attacks).
-- **Fix**: `failed_login_attempts` table (user_id, count, last_attempt). Lock after 5 failures in 30 min. Reset on success.
-- **Files**: new migration + `zerver/src/lib/domain/auth/services.rs`
+### ✓ Account Lockout (High)
+- **Done**: 3 columns on `users` (`failed_login_attempts`, `last_failed_at`, `lockout_until`). Atomic sliding-window UPDATE. Locks after 5 failures in 30 min, resets on success. Returns 429. Commit: `dfd7ee6`.
 
-### HTTP Security Headers (Critical)
-Missing: `X-Content-Type-Options`, `X-Frame-Options`, `Strict-Transport-Security`, `Referrer-Policy`.
-- **Fix**: `tower-http` `SetResponseHeaderLayer` — add to middleware stack
-- **File**: `zerver/src/lib/inbound/http/mod.rs`
+### ✓ HTTP Security Headers (Critical)
+- **Done**: `X-Content-Type-Options`, `X-Frame-Options`, `Strict-Transport-Security`, `Referrer-Policy` added via `SetResponseHeaderLayer`. Commit: `da67302`.
 
-### JWT Secret Length Not Validated (Medium)
-`JWT_SECRET` from `.env` accepts any string — a short/weak secret silently weakens signing.
-- **Fix**: Reject at startup if `< 32 chars`
-- **File**: `zerver/src/lib/domain/auth/models/access_token.rs`
+### ✓ JWT Secret Length Not Validated (Medium)
+- **Done**: Startup panics if `JWT_SECRET < 32 chars`. Commit: `da67302`.
 
-### `ApiError::Network` Leaks Internal Messages (Medium)
-`ApiError::Network(message)` returns the raw message to the client — could include DB errors or stack details.
-- **Fix**: Log internally, return generic `"internal server error"` to client
-- **File**: `zerver/src/lib/inbound/http/mod.rs` ~line 102-122
+### ✓ `ApiError::Network` Leaks Internal Messages (Medium)
+- **Done**: `Network` variant now logs internally and returns generic `"internal server error"`. Commit: `da67302`.
 
 ---
 
@@ -52,10 +40,8 @@ Users can register with any email — no verification step. Enables typos, imper
 `zervice` has `delete_expired_sessions` but it's not documented or guaranteed to run on a schedule. DB grows unbounded otherwise.
 - **Fix**: Ensure nightly cron for zervice covers this. Add logging when cleanup runs.
 
-### Refresh Token Format Validation (Low)
-`UnvalidatedRefreshToken` validates length (32 chars) but not character set — non-hex chars pass and reach the DB layer.
-- **Fix**: Add `chars().all(|c| c.is_ascii_hexdigit())` check in `from_str`
-- **File**: `zerver/src/lib/domain/auth/models/refresh_token.rs`
+### ✓ Refresh Token Format Validation (Low)
+- **Done**: Length corrected to 64 chars (was 32), `is_ascii_hexdigit()` check added, whitespace trimmed before storage. Commit: `e02ab5e`.
 
 ---
 
