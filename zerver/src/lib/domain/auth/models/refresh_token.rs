@@ -54,9 +54,12 @@ const REFRESH_TOKEN_LIFESPAN: Duration = Duration::days(14);
 /// Errors that can occur while validating a refresh token string.
 #[derive(Debug, Error)]
 pub enum InvalidRefreshToken {
-    /// Token string is not exactly 32 characters (hex-encoded 32 bytes).
-    #[error("must be 32 characters")]
+    /// Token string is not exactly 64 characters (32 bytes hex-encoded).
+    #[error("must be 64 characters")]
     Length,
+    /// Token contains non-hexadecimal characters.
+    #[error("must contain only hexadecimal characters")]
+    InvalidCharacters,
 }
 
 // ======
@@ -174,8 +177,12 @@ impl FromStr for UnvalidatedRefreshToken {
     ///
     /// Returns [`InvalidRefreshToken::Length`] if the trimmed string is not 32 characters.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.trim().len() != 32 {
+        let s = s.trim();
+        if s.len() != 64 {
             return Err(InvalidRefreshToken::Length);
+        }
+        if !s.chars().all(|c| c.is_ascii_hexdigit()) {
+            return Err(InvalidRefreshToken::InvalidCharacters);
         }
         Ok(Self(s.to_string()))
     }
@@ -247,8 +254,8 @@ mod tests {
     }
 
     #[test]
-    fn test_unvalidated_refresh_token_accepts_exactly_32_chars() {
-        let token_str = "a".repeat(32);
+    fn test_unvalidated_refresh_token_accepts_exactly_64_hex_chars() {
+        let token_str = "a".repeat(64);
         let result = UnvalidatedRefreshToken::from_str(&token_str);
         assert!(result.is_ok());
         assert_eq!(&*result.unwrap(), token_str.as_str());
@@ -262,16 +269,21 @@ mod tests {
 
     #[test]
     fn test_unvalidated_refresh_token_rejects_too_long() {
-        let result = UnvalidatedRefreshToken::from_str(&"a".repeat(33));
+        let result = UnvalidatedRefreshToken::from_str(&"a".repeat(65));
         assert!(matches!(result, Err(InvalidRefreshToken::Length)));
     }
 
     #[test]
-    fn test_unvalidated_refresh_token_trims_for_length_check() {
-        // Whitespace is trimmed when checking length, but not stripped from stored value
-        let padded = format!(" {} ", "a".repeat(32));
+    fn test_unvalidated_refresh_token_rejects_non_hex_characters() {
+        let invalid = format!("{}z", "a".repeat(63));
+        let result = UnvalidatedRefreshToken::from_str(&invalid);
+        assert!(matches!(result, Err(InvalidRefreshToken::InvalidCharacters)));
+    }
+
+    #[test]
+    fn test_unvalidated_refresh_token_trims_whitespace_before_validation() {
+        let padded = format!(" {} ", "a".repeat(64));
         let result = UnvalidatedRefreshToken::from_str(&padded);
         assert!(result.is_ok());
-        assert_eq!(&*result.unwrap(), padded.as_str());
     }
 }
