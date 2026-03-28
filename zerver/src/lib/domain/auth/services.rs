@@ -251,11 +251,9 @@ where
             .await
             .map_err(|e| anyhow!("{e}"))?;
 
-        let link = format!("https://zwipe.net/verify?token={raw}");
-        let html = format!(
-            r#"<p>Verify your email: <a href="{link}">{link}</a></p>
-<p>This link expires in 24 hours.</p>"#
-        );
+        let link = format!("https://zwipe.net/verify/{raw}");
+        let html = include_str!("email_templates/verify_email.html")
+            .replace("{link}", &link);
 
         self.email_sender
             .send_email(SendEmail {
@@ -308,11 +306,9 @@ where
             .store_password_reset_token(user_id, hash, expires_at)
             .await?;
 
-        let link = format!("https://zwipe.net/reset?token={raw}");
-        let html = format!(
-            r#"<p>Reset your Zwipe password: <a href="{link}">{link}</a></p>
-<p>This link expires in 15 minutes. If you didn't request this, you can ignore this email.</p>"#
-        );
+        let link = format!("https://zwipe.net/reset/{raw}");
+        let html = include_str!("email_templates/reset_password.html")
+            .replace("{link}", &link);
 
         if let Err(e) = self
             .email_sender
