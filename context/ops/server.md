@@ -277,8 +277,7 @@ cd ~/zwipe && ./zervice
 
 ## Cloudflare Tunnel
 
-Cloudflare Tunnel creates an outbound-only encrypted connection from the server to Cloudflare's
-edge — no port forwarding, no firewall rules, TLS handled by Cloudflare. Requests to
+Cloudflare Tunnel creates an outbound-only encrypted connection from the server to Cloudflare's edge — no port forwarding, no firewall rules, TLS handled by Cloudflare. Requests to
 `api.zwipe.net` from any network (home, mobile, anywhere) route through the tunnel.
 
 ### Install cloudflared
