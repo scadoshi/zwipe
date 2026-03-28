@@ -35,6 +35,7 @@ burn, recursion, ramp, removal, counterspells, draw, tutors, board wipes, lifega
 - **Store Submission**: App Store / Play Store
 
 ## Future Features
+- **Card Stack Peek Effect**: When swiping a card, the next card in the deck should already be visible underneath it — creating a physical card stack feel. Prior attempt (2026-03-27) caused auto-swiping due to interaction between Dioxus `key`-triggered remounts and `SwipeState`. Refactor plan for `SortCards` trait extraction first (`context/dev/sort_cards_refactor.md`) before retrying this.
 - **Multi-Copy Add Flow**: Quantity picker on swipe-right for standard decks
 - **EDHREC Integration**: Synergy scores for commander decks (undocumented API, complex)
 - **Deck Validation**: Format legality checking beyond copy-max
