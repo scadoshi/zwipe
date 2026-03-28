@@ -21,10 +21,10 @@ enum Route {
     Contribute {},
     #[route("/privacy")]
     Privacy {},
-    #[route("/verify")]
-    Verify {},
-    #[route("/reset")]
-    Reset {},
+    #[route("/verify/:token")]
+    Verify { token: String },
+    #[route("/reset/:token")]
+    Reset { token: String },
 }
 
 fn main() {

@@ -7,20 +7,14 @@ struct VerifyEmailRequest {
     token: String,
 }
 
-fn read_token_param() -> Option<String> {
-    let window = web_sys::window()?;
-    let search = window.location().search().ok()?;
-    let params = web_sys::UrlSearchParams::new_with_str(&search).ok()?;
-    params.get("token")
-}
-
 #[component]
-pub fn Verify() -> Element {
-    let result: Resource<Result<(), String>> = use_resource(move || async move {
-        let token = match read_token_param() {
-            Some(t) if !t.is_empty() => t,
-            _ => return Err("no token found in url".to_string()),
-        };
+pub fn Verify(token: String) -> Element {
+    let result: Resource<Result<(), String>> = use_resource(move || {
+        let token = token.clone();
+        async move {
+        if token.is_empty() {
+            return Err("no token found in url".to_string());
+        }
 
         let client = reqwest::Client::new();
         let res = client
@@ -34,6 +28,7 @@ pub fn Verify() -> Element {
             Ok(())
         } else {
             Err("token not found or expired".to_string())
+        }
         }
     });
 
