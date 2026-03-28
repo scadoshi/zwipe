@@ -1,0 +1,6 @@
+[application]
+name = "zweb"
+
+[web.app]
+title = "zwipe"
+style = ["/style.css"]
