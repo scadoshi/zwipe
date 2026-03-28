@@ -1718,4 +1718,116 @@ body {
   margin-bottom: 0.5rem;
 }
 
+/* =========================
+  specific - info list (read-only card layout)
+ =========================== */
 
+.info-list {
+  border: 1px solid var(--border-secondary);
+  border-radius: 1rem;
+  overflow: hidden;
+  width: 100%;
+}
+
+.info-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-secondary);
+  gap: 0.75rem;
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-row-label {
+  font-size: 1rem;
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.info-row-value {
+  font-size: 1rem;
+  font-weight: 300;
+  text-align: right;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* =========================
+  specific - profile list
+ =========================== */
+
+.profile-list {
+  border: 1px solid var(--border-secondary);
+  border-radius: 1rem;
+  overflow: hidden;
+  width: 100%;
+  max-width: 40rem;
+}
+
+.profile-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-secondary);
+  gap: 0.75rem;
+}
+
+.profile-row:last-child {
+  border-bottom: none;
+}
+
+.profile-row-label {
+  font-size: 1rem;
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.profile-row-value {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 300;
+  flex-shrink: 1;
+  min-width: 0;
+  justify-content: flex-end;
+  word-break: break-all;
+  text-align: right;
+}
+
+.badge-verified {
+  display: inline-block;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--border-success);
+  border-radius: 0.4rem;
+  font-size: 0.7rem;
+  color: var(--color-success);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.badge-unverified {
+  display: inline-block;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--border-muted);
+  border-radius: 0.4rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}

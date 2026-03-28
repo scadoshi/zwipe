@@ -301,7 +301,21 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                 }
 
                                 div { class: "mb-4",
-                                    label { class: "label", "commander" }
+                                    div { class: "label-row",
+                                        label { class: "label", "commander" }
+                                        if commander().is_some() {
+                                            button {
+                                                class: "clear-btn",
+                                                onclick: move |_| {
+                                                    commander.set(None);
+                                                    commander_display.set(String::new());
+                                                    search_query.set(String::new());
+                                                    show_dropdown.set(false);
+                                                },
+                                                "x"
+                                            }
+                                        }
+                                    }
                                     input { class: "input",
                                         id: "commander",
                                         r#type : "text",
