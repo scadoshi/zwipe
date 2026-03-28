@@ -129,6 +129,9 @@ pub enum ImportDeckCardsError {
     /// Deck not found or inaccessible.
     #[error(transparent)]
     DeckNotFound(#[from] GetDeckProfileError),
+    /// Import would exceed the maximum number of cards per deck.
+    #[error("card limit reached")]
+    LimitReached,
     /// Database operation failed.
     #[error(transparent)]
     Database(anyhow::Error),

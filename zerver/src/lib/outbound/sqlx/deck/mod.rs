@@ -111,6 +111,28 @@ impl DeckRepository for Postgres {
         Ok(deck_card)
     }
 
+    // =======
+    //  count
+    // =======
+    async fn count_decks_by_user(&self, user_id: uuid::Uuid) -> Result<i64, anyhow::Error> {
+        let count = sqlx::query_scalar!("SELECT COUNT(*) FROM decks WHERE user_id = $1", user_id)
+            .fetch_one(&self.pool)
+            .await?
+            .unwrap_or(0);
+        Ok(count)
+    }
+
+    async fn count_cards_in_deck(&self, deck_id: uuid::Uuid) -> Result<i64, anyhow::Error> {
+        let count = sqlx::query_scalar!(
+            "SELECT COALESCE(SUM(quantity), 0) FROM deck_cards WHERE deck_id = $1",
+            deck_id
+        )
+        .fetch_one(&self.pool)
+        .await?
+        .unwrap_or(0);
+        Ok(count)
+    }
+
     // =====
     //  get
     // =====

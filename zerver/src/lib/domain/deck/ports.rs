@@ -44,6 +44,22 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         request: &CreateDeckCard,
     ) -> impl Future<Output = Result<DeckCard, CreateDeckCardError>> + Send;
 
+    // =======
+    //  count
+    // =======
+
+    /// Returns the number of decks owned by a user.
+    fn count_decks_by_user(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<i64, anyhow::Error>> + Send;
+
+    /// Returns the total card quantity (sum of all copies) in a deck.
+    fn count_cards_in_deck(
+        &self,
+        deck_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<i64, anyhow::Error>> + Send;
+
     // =====
     //  get
     // =====

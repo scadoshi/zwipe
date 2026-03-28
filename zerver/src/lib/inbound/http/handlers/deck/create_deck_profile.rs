@@ -4,6 +4,7 @@ use crate::{
         auth::ports::AuthService,
         card::ports::CardService,
         deck::{
+            MAX_DECKS_PER_USER,
             models::deck::{
                 create_deck_profile::{
                     CreateDeckProfile, CreateDeckProfileError, InvalidCreateDeckProfile,
@@ -29,6 +30,9 @@ impl From<CreateDeckProfileError> for ApiError {
             CreateDeckProfileError::Duplicate => Self::UnprocessableEntity(
                 "deck with name and user combination already exists".to_string(),
             ),
+            CreateDeckProfileError::LimitReached => {
+                Self::UnprocessableEntity(format!("deck limit reached (max {MAX_DECKS_PER_USER})"))
+            }
             CreateDeckProfileError::Database(e) => e.log_500(),
             CreateDeckProfileError::DeckFromDb(e) => e.log_500(),
         }
