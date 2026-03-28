@@ -29,6 +29,9 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential
+
       - name: Connect to Tailscale
         uses: tailscale/github-action@v3
         with:
@@ -39,6 +42,7 @@ jobs:
       - name: Build
         env:
           SQLX_OFFLINE: true
+          CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: gcc
         run: cargo build --release --bin zerver --bin zervice
 
       - name: Deploy to server
