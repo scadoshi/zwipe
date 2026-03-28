@@ -1,4 +1,4 @@
-name: Deploy
+name: Deploy zerver
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
       - 'zerver/**'
       - 'zwipe/**'
       - 'zervice/**'
-      - '.github/workflows/deploy.yml'
+      - '.github/workflows/deploy-zerver.yml'
   workflow_dispatch:
 
 jobs:
