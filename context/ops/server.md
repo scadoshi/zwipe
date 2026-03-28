@@ -135,6 +135,14 @@ sudo chown $USER /var/log/zwipe
 Build directly on the server — no cross-compilation needed:
 
 ```bash
+# Install build tools (gcc, make, etc.)
+sudo apt install -y build-essential
+
+# The project's .cargo/config.toml specifies linker = "x86_64-unknown-linux-gnu-gcc"
+# for the x86_64 target (needed for cross-compiling from macOS).
+# On the server, gcc is installed but under a different name — bridge the gap with a symlink:
+sudo ln -s /usr/bin/gcc /usr/local/bin/x86_64-unknown-linux-gnu-gcc
+
 # Install Rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source ~/.cargo/env
