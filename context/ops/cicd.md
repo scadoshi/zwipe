@@ -62,19 +62,60 @@ cat ~/.ssh/zwipe-deploy
 
 ---
 
-## Port Forwarding (Xfinity)
+## Tailscale (SSH Access for CI/CD)
 
-GitHub Actions SSHes directly to the server — Cloudflare Tunnel only handles HTTP.
-Port 22 must be forwarded through your router to the server's local IP.
+Port forwarding via Xfinity is unreliable — xFi Advanced Security and potential CGNAT
+silently block inbound connections regardless of router config. Tailscale is used instead.
 
-- **Xfinity app** → WiFi → View WiFi equipment → Advanced settings → Port Forwarding
-- External port: `22` → Internal IP: `10.0.0.137` → Internal port: `22` → TCP
+Tailscale creates a private WireGuard mesh network (tailnet). Every device gets a stable
+`100.x.x.x` IP reachable from anywhere with no router config or inbound ports required.
 
-**Public IP is dynamic** — Xfinity can change it on reconnect. If deploys start failing:
-1. Check current public IP on server: `curl -4 ifconfig.me`
-2. Update `DEPLOY_HOST` variable in GitHub if it changed
+### Setup
 
-**Reserve the internal IP** in the Xfinity app so `10.0.0.137` never changes.
+**Server (one-time):**
+```bash
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up
+# Follow the auth URL printed to authenticate
+```
+The installer configures `tailscaled` as a systemd service automatically.
+
+**Mac (one-time):**
+Install from tailscale.com or the App Store, sign in with the same account.
+
+**Find server Tailscale IP:**
+```bash
+tailscale ip -4   # on server — e.g. 100.x.x.x
+```
+
+Update `DEPLOY_HOST` GitHub variable to this Tailscale IP. Update local `zerver` alias too.
+
+### GitHub Actions Integration
+
+Add this step before the SSH/SCP steps in `deploy.yml`:
+```yaml
+- name: Connect to Tailscale
+  uses: tailscale/github-action@v3
+  with:
+    oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+    oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+    tags: tag:ci
+```
+
+**GitHub secrets needed:**
+
+| Name | Value |
+|---|---|
+| `TS_OAUTH_CLIENT_ID` | Tailscale admin → Settings → OAuth clients → create one with `devices:write` scope |
+| `TS_OAUTH_SECRET` | Same OAuth client secret |
+
+In Tailscale admin, create an ACL tag `tag:ci` and grant it access to your server node.
+
+### Notes
+
+- Server Tailscale IP is stable — no need to update `DEPLOY_HOST` when public IP rotates
+- Works even if Xfinity changes your WAN IP or enables CGNAT
+- Local `zerver` alias should also use the Tailscale IP so it works from any network
 
 ---
 

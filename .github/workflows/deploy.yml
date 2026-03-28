@@ -1,9 +1,14 @@
 name: Deploy
 
 on:
-  # push:
-  #   branches: [main]
-  workflow_dispatch: # manual trigger only — re-enable push trigger when SSH is confirmed working
+  push:
+    branches: [main]
+    paths:
+      - 'zerver/**'
+      - 'zwipe/**'
+      - 'zervice/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -23,6 +28,13 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
 
       - name: Build
         env:
