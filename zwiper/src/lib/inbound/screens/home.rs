@@ -60,7 +60,10 @@ pub fn Home() -> Element {
 
         match client().search_cards(&filter, &session).await {
             Ok(cards) => cards.into_iter().next(),
-            Err(_) => None,
+            Err(e) => {
+                tracing::warn!("flavor card fetch failed: {e}");
+                None
+            }
         }
     });
 

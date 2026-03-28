@@ -91,15 +91,17 @@ pub fn Register() -> Element {
             spawn(async move {
                 match auth_client().register(request).await {
                     Ok(new_session) => {
-                        // tracing::info!("session={:?}", new_session);
                         new_session.infallible_save();
                         session.set(Some(new_session));
                         navigator.push(Router::Home {});
                     }
-                    Err(e) => toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    ),
+                    Err(e) => {
+                        tracing::warn!("register failed: {e}");
+                        toast.error(
+                            e.to_user_message(),
+                            ToastOptions::default().duration(Duration::from_millis(3000)),
+                        );
+                    }
                 }
             });
         }

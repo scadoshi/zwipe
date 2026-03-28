@@ -89,6 +89,7 @@ pub fn ChangeEmail() -> Element {
                         is_loading.set(false);
                     }
                     Err(e) => {
+                        tracing::warn!("change email failed: {e}");
                         toast.error(
                             e.to_user_message(),
                             ToastOptions::default().duration(Duration::from_millis(3000)),

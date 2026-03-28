@@ -56,10 +56,13 @@ pub fn Login() -> Element {
                         session.set(Some(new_session));
                         navigator.push(Router::Home {});
                     }
-                    Err(e) => toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    ),
+                    Err(e) => {
+                        tracing::warn!("login failed: {e}");
+                        toast.error(
+                            e.to_user_message(),
+                            ToastOptions::default().duration(Duration::from_millis(3000)),
+                        );
+                    }
                 }
             });
         } else {
