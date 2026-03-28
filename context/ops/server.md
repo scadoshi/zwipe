@@ -38,29 +38,53 @@ ip addr show | grep 'inet ' | grep -v 127.0.0.1
 
 Or check your router's DHCP client list — the server will appear as a connected device.
 
+### First-time access — fix "Permission denied (publickey)"
+
+Ubuntu Server disables password authentication by default. You'll get this error
+immediately if you just try to `ssh` in cold. Fix it once from the physical console
+(plug in a keyboard/monitor briefly, or use the server's existing display):
+
+**On the server (physically):**
+```bash
+sudo nano /etc/ssh/sshd_config
+# Find and change (or add) these two lines:
+#   PasswordAuthentication yes
+#   KbdInteractiveAuthentication yes
+# Save: Ctrl+O, Enter, Ctrl+X
+
+sudo systemctl restart ssh
+```
+
+Now SSH with your password works from your Mac. Set up key auth immediately so
+you never need the console again:
+
+**On your Mac:**
+```bash
+# Generate a key if you don't have one
+ssh-keygen -t ed25519 -C "zwipe-server"
+# Accept defaults
+
+# Copy the public key to the server (enter your server password once)
+ssh-copy-id scottyfermo@192.168.1.XXX
+```
+
+**Back on the server — re-disable password auth (security):**
+```bash
+sudo nano /etc/ssh/sshd_config
+# Set back to:
+#   PasswordAuthentication no
+#   KbdInteractiveAuthentication no
+
+sudo systemctl restart ssh
+```
+
+From now on `ssh scottyfermo@192.168.1.XXX` works without a password and
+password-based login is blocked.
+
 ### SSH in from your Mac
 
 ```bash
 ssh scottyfermo@192.168.1.XXX
-```
-
-### Set up SSH key auth (do this once to avoid typing password every time)
-
-From your Mac:
-```bash
-ssh-copy-id scottyfermo@192.168.1.XXX
-# Enter the server password once — future logins are passwordless
-```
-
-If `ssh-copy-id` isn't available:
-```bash
-cat ~/.ssh/id_rsa.pub | ssh scottyfermo@192.168.1.XXX "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
-```
-
-If you don't have an SSH key yet:
-```bash
-ssh-keygen -t ed25519 -C "zwipe-server"
-# Accept defaults, then run ssh-copy-id above
 ```
 
 ### Add a friendly alias (optional, saves typing)
