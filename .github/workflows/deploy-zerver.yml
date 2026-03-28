@@ -39,11 +39,6 @@ jobs:
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
 
-      - name: Verify Tailscale connectivity
-        env:
-          HOST: ${{ vars.DEPLOY_HOST }}
-        run: tailscale ping --c 5 $HOST
-
       - name: Build
         env:
           SQLX_OFFLINE: true
@@ -52,15 +47,11 @@ jobs:
 
       - name: Deploy to server
         env:
-          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           HOST: ${{ vars.DEPLOY_HOST }}
           USER: ${{ vars.DEPLOY_USER }}
         run: |
-          echo "$SSH_KEY" > /tmp/deploy_key
-          chmod 600 /tmp/deploy_key
-          scp -i /tmp/deploy_key -o StrictHostKeyChecking=no \
+          scp -o StrictHostKeyChecking=no \
             target/release/zerver target/release/zervice \
             $USER@$HOST:~/zwipe/
-          ssh -i /tmp/deploy_key -o StrictHostKeyChecking=no $USER@$HOST \
+          ssh -o StrictHostKeyChecking=no $USER@$HOST \
             "sudo systemctl restart zerver"
-          rm /tmp/deploy_key
