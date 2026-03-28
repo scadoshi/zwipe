@@ -8,10 +8,17 @@ pub fn About() -> Element {
         div { class: "page",
             div { class: "about-header section",
                 h1 { "scotty fermo" }
-                p { class: "subtitle", "software developer · scadoshi · "
-                    a { href: "https://scottyfermo.com", target: "_blank", rel: "noopener noreferrer",
-                        "scottyfermo.com ↗"
-                    }
+                p { class: "subtitle",
+                    "software developer · scadoshi | "
+                    a { href: "https://scottyfermo.com", target: "_blank", rel: "noopener noreferrer", "scottyfermo.com ↗" }
+                    " | "
+                    a { href: "https://github.com/scadoshi", target: "_blank", rel: "noopener noreferrer", "github ↗" }
+                    " | "
+                    a { href: "https://x.com/scadoshi", target: "_blank", rel: "noopener noreferrer", "x ↗" }
+                    " | "
+                    a { href: "https://www.linkedin.com/in/scotty-fermo-41a35b141/", target: "_blank", rel: "noopener noreferrer", "linkedin ↗" }
+                    " | "
+                    a { href: "https://github.com/scadoshi/zwipe", target: "_blank", rel: "noopener noreferrer", "zwipe ↗" }
                 }
             }
 
@@ -25,11 +32,7 @@ pub fn About() -> Element {
                 }
                 p {
                     "zwipe is a solo project — designed, built, and shipped by one person.
-                    it started as a personal tool for building commander decks on my phone
-                    and turned into a production-grade app i'm proud of."
-                }
-                p {
-                    "the goal was simple: make deck building feel good on mobile. every existing
+                    the goal was simple: make deck building feel good on mobile. every existing
                     tool is a desktop app awkwardly squeezed onto a small screen. zwipe is
                     built mobile-first from the ground up."
                 }

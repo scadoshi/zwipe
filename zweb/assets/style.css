@@ -66,8 +66,17 @@ nav {
   padding: 20px 24px;
   max-width: 960px;
   margin: 0 auto;
-  border-bottom: 1px solid var(--border-secondary);
   margin-bottom: 48px;
+  position: relative;
+}
+
+nav::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: calc(-50vw + 50%);
+  width: 100vw;
+  border-bottom: 1px solid var(--border-secondary);
 }
 
 .nav-brand {
@@ -197,22 +206,22 @@ code {
 
 .logo {
   font-family: "Cascadia Code", monospace;
-  font-size: clamp(0.5rem, 1.8vw, 1rem);
+  font-size: 1rem;
   line-height: 1.2;
   white-space: pre;
   text-align: left;
-  padding: 1rem;
-  margin: 1rem auto;
-  animation: logo-enter 0.5s ease-out backwards;
   display: inline-block;
+  animation: logo-enter 0.6s ease-out backwards;
 }
 
 @keyframes logo-enter {
   from {
+    letter-spacing: 10px;
     opacity: 0;
-    transform: translateY(-16px);
+    transform: translateY(-12px);
   }
   to {
+    letter-spacing: 0;
     opacity: 1;
     transform: translateY(0);
   }
@@ -224,7 +233,8 @@ code {
 
 .hero {
   text-align: center;
-  padding: 48px 0 48px;
+  padding: 48px 0;
+  overflow: hidden;
 }
 
 .hero .tagline {
