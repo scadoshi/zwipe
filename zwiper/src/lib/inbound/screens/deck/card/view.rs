@@ -29,7 +29,7 @@ use zwipe::domain::{
     card::models::{
         Card,
         search_card::{
-            card_filter::builder::CardFilterBuilder,
+            card_filter::{builder::CardFilterBuilder, order_by_option::OrderByOption},
             filter_cards::FilterCards,
             group_cards::{CardGroup, GroupByOption, GroupCards},
         },
@@ -158,7 +158,7 @@ pub fn View(deck_id: Uuid) -> Element {
         let (mut filtered, new_displayed_commander) = if builder.is_empty() {
             (all_cards, cmd)
         } else {
-            let mut b = builder;
+            let mut b = builder.clone();
             b.set_limit(10_000);
             b.set_offset(0);
             match b.build() {
@@ -172,6 +172,60 @@ pub fn View(deck_id: Uuid) -> Element {
                 Err(_) => (deck_cards.peek().clone(), cmd),
             }
         };
+
+        // Apply sort when filter is otherwise empty — filter_by handles this when build()
+        // succeeds but is_empty() treats order_by as config, bypassing filter_by
+        if builder.is_empty() {
+            if let Some(order_by) = builder.order_by() {
+                if order_by == OrderByOption::Random {
+                    use rand::seq::SliceRandom;
+                    filtered.shuffle(&mut rand::rng());
+                } else {
+                    let ascending = builder.ascending();
+                    filtered.sort_by(|a, b| {
+                        let sd_a = &a.scryfall_data;
+                        let sd_b = &b.scryfall_data;
+                        let ord = match order_by {
+                            OrderByOption::Name => sd_a.name.cmp(&sd_b.name),
+                            OrderByOption::Cmc => {
+                                let ca = sd_a.cmc.unwrap_or(f64::MAX);
+                                let cb = sd_b.cmc.unwrap_or(f64::MAX);
+                                ca.partial_cmp(&cb).unwrap_or(std::cmp::Ordering::Equal)
+                            }
+                            OrderByOption::Power => {
+                                let pa = sd_a.power.as_deref().and_then(|p| p.parse::<f64>().ok()).unwrap_or(f64::MAX);
+                                let pb = sd_b.power.as_deref().and_then(|p| p.parse::<f64>().ok()).unwrap_or(f64::MAX);
+                                pa.partial_cmp(&pb).unwrap_or(std::cmp::Ordering::Equal)
+                            }
+                            OrderByOption::Toughness => {
+                                let ta = sd_a.toughness.as_deref().and_then(|t| t.parse::<f64>().ok()).unwrap_or(f64::MAX);
+                                let tb = sd_b.toughness.as_deref().and_then(|t| t.parse::<f64>().ok()).unwrap_or(f64::MAX);
+                                ta.partial_cmp(&tb).unwrap_or(std::cmp::Ordering::Equal)
+                            }
+                            OrderByOption::Rarity => sd_a.rarity.to_long_name().cmp(&sd_b.rarity.to_long_name()),
+                            OrderByOption::ReleasedAt => sd_a.released_at.cmp(&sd_b.released_at),
+                            OrderByOption::PriceUsd => {
+                                let pa = sd_a.prices.usd.as_deref().and_then(|p| p.parse::<f64>().ok()).unwrap_or(f64::MAX);
+                                let pb = sd_b.prices.usd.as_deref().and_then(|p| p.parse::<f64>().ok()).unwrap_or(f64::MAX);
+                                pa.partial_cmp(&pb).unwrap_or(std::cmp::Ordering::Equal)
+                            }
+                            OrderByOption::PriceEur => {
+                                let pa = sd_a.prices.eur.as_deref().and_then(|p| p.parse::<f64>().ok()).unwrap_or(f64::MAX);
+                                let pb = sd_b.prices.eur.as_deref().and_then(|p| p.parse::<f64>().ok()).unwrap_or(f64::MAX);
+                                pa.partial_cmp(&pb).unwrap_or(std::cmp::Ordering::Equal)
+                            }
+                            OrderByOption::PriceTix => {
+                                let pa = sd_a.prices.tix.as_deref().and_then(|p| p.parse::<f64>().ok()).unwrap_or(f64::MAX);
+                                let pb = sd_b.prices.tix.as_deref().and_then(|p| p.parse::<f64>().ok()).unwrap_or(f64::MAX);
+                                pa.partial_cmp(&pb).unwrap_or(std::cmp::Ordering::Equal)
+                            }
+                            OrderByOption::Random => std::cmp::Ordering::Equal,
+                        };
+                        if ascending { ord } else { ord.reverse() }
+                    });
+                }
+            }
+        }
 
         if !lands_visible {
             filtered.retain(|c| !c.scryfall_data.is_land());
