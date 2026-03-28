@@ -19,6 +19,18 @@ All three are linked on the `zwipe.net/contribute` page.
 - **Domain**: zwipe.net verified in Resend dashboard
 - **DNS**: DKIM + SPF + DMARC records in Cloudflare — all verified, email lands in inbox
 
+### Email Deliverability — DNS Records
+
+| Record | Type | Purpose |
+|--------|------|---------|
+| `resend._domainkey` | TXT | DKIM — Resend signs outgoing mail |
+| `@` / `v=spf1 include:amazonses.com` | TXT | SPF — authorises Resend's servers |
+| `_dmarc` | TXT | DMARC — required by Gmail/Yahoo/Microsoft |
+
+DMARC record value: `v=DMARC1; p=none; rua=mailto:hello@zwipe.net`
+
+All three are set in Cloudflare DNS. `RESEND_EMAIL_FROM` must be `hello@zwipe.net` (not `noreply@`) — Resend flags no-reply addresses and spam filters penalise them.
+
 ## Domain Registrar
 
 - **Registrar**: Namecheap (all domains)

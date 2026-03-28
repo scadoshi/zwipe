@@ -211,35 +211,6 @@ cp target/release/zerver target/release/zervice ~/zwipe/
 
 ---
 
-## Manual Deploy
-
-When CI/CD is unavailable (e.g. no port forwarding for GitHub Actions SSH), deploy manually by building on the server and swapping binaries:
-
-```bash
-# 1. Pull latest source
-cd ~/zwipe-src && git pull
-
-# 2. Build release binaries
-cargo build --release --bin zerver --bin zervice
-
-# 3. Stop zerver (required — Linux blocks overwriting a running executable)
-sudo systemctl stop zerver
-
-# 4. Copy new binaries
-cp target/release/zerver target/release/zervice ~/zwipe/
-
-# 5. Restart zerver
-sudo systemctl start zerver
-sudo systemctl status zerver
-
-# 6. Optionally remove source to free disk space
-cd ~ && rm -rf ~/zwipe-src
-```
-
-`zervice` (cron) does not need a restart — the cron job calls the binary path directly each run, so the next scheduled execution picks up the new binary automatically.
-
----
-
 ## systemd Service
 
 systemd is Ubuntu's service manager. A unit file tells it how to run zerver — so it starts
@@ -414,18 +385,3 @@ curl https://api.zwipe.net/
 # {"message":"zerver","status":"ready","version":"0.1.0"}
 ```
 
----
-
-## Email Deliverability
-
-zwipe.net uses Resend for transactional email. DNS records required for inbox delivery:
-
-| Record | Type | Purpose |
-|--------|------|---------|
-| `resend._domainkey` | TXT | DKIM — Resend signs outgoing mail |
-| `@` / `v=spf1 include:amazonses.com` | TXT | SPF — authorises Resend's servers |
-| `_dmarc` | TXT | DMARC — required by Gmail/Yahoo/Microsoft |
-
-DMARC record value: `v=DMARC1; p=none; rua=mailto:hello@zwipe.net`
-
-All three are set in Cloudflare DNS. `RESEND_EMAIL_FROM` must be `hello@zwipe.net` (not `noreply@`) — Resend flags no-reply addresses and spam filters penalise them.
