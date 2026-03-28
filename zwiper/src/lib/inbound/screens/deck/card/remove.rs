@@ -32,8 +32,8 @@ use zwipe::{
             Card,
             scryfall_data::image_uris::ImageUris,
             search_card::{
-                card_filter::{builder::CardFilterBuilder, order_by_option::OrderByOption},
-                filter_cards::FilterCards,
+                card_filter::builder::CardFilterBuilder,
+                filter_cards::{FilterCards, SortCards},
             },
         },
     },
@@ -141,58 +141,8 @@ pub fn Remove(deck_id: Uuid) -> Element {
             }
         };
 
-        // filter_by handles sort when build() succeeds, but is_empty() treats order_by as
-        // config so the sort-only case bypasses filter_by — apply sort as a post-process
         if builder.is_empty() {
-            if let Some(order_by) = builder.order_by() {
-                if order_by == OrderByOption::Random {
-                    use rand::seq::SliceRandom;
-                    filtered.shuffle(&mut rand::rng());
-                } else {
-                    let ascending = builder.ascending();
-                    filtered.sort_by(|a, b| {
-                        let sd_a = &a.scryfall_data;
-                        let sd_b = &b.scryfall_data;
-                        let ord = match order_by {
-                            OrderByOption::Name => sd_a.name.cmp(&sd_b.name),
-                            OrderByOption::Cmc => {
-                                let ca = sd_a.cmc.unwrap_or(f64::MAX);
-                                let cb = sd_b.cmc.unwrap_or(f64::MAX);
-                                ca.partial_cmp(&cb).unwrap_or(std::cmp::Ordering::Equal)
-                            }
-                            OrderByOption::Power => {
-                                let pa = sd_a.power.as_deref().and_then(|p| p.parse::<i32>().ok()).unwrap_or(i32::MAX);
-                                let pb = sd_b.power.as_deref().and_then(|p| p.parse::<i32>().ok()).unwrap_or(i32::MAX);
-                                pa.cmp(&pb)
-                            }
-                            OrderByOption::Toughness => {
-                                let ta = sd_a.toughness.as_deref().and_then(|t| t.parse::<i32>().ok()).unwrap_or(i32::MAX);
-                                let tb = sd_b.toughness.as_deref().and_then(|t| t.parse::<i32>().ok()).unwrap_or(i32::MAX);
-                                ta.cmp(&tb)
-                            }
-                            OrderByOption::Rarity => sd_a.rarity.to_long_name().cmp(&sd_b.rarity.to_long_name()),
-                            OrderByOption::ReleasedAt => sd_a.released_at.cmp(&sd_b.released_at),
-                            OrderByOption::PriceUsd => {
-                                let pa = sd_a.prices.usd.as_deref().and_then(|p| p.parse::<f64>().ok()).unwrap_or(f64::MAX);
-                                let pb = sd_b.prices.usd.as_deref().and_then(|p| p.parse::<f64>().ok()).unwrap_or(f64::MAX);
-                                pa.partial_cmp(&pb).unwrap_or(std::cmp::Ordering::Equal)
-                            }
-                            OrderByOption::PriceEur => {
-                                let pa = sd_a.prices.eur.as_deref().and_then(|p| p.parse::<f64>().ok()).unwrap_or(f64::MAX);
-                                let pb = sd_b.prices.eur.as_deref().and_then(|p| p.parse::<f64>().ok()).unwrap_or(f64::MAX);
-                                pa.partial_cmp(&pb).unwrap_or(std::cmp::Ordering::Equal)
-                            }
-                            OrderByOption::PriceTix => {
-                                let pa = sd_a.prices.tix.as_deref().and_then(|p| p.parse::<f64>().ok()).unwrap_or(f64::MAX);
-                                let pb = sd_b.prices.tix.as_deref().and_then(|p| p.parse::<f64>().ok()).unwrap_or(f64::MAX);
-                                pa.partial_cmp(&pb).unwrap_or(std::cmp::Ordering::Equal)
-                            }
-                            OrderByOption::Random => std::cmp::Ordering::Equal,
-                        };
-                        if ascending { ord } else { ord.reverse() }
-                    });
-                }
-            }
+            filtered.sort_by_filter(&builder);
         }
 
         displayed_cards.set(filtered);
