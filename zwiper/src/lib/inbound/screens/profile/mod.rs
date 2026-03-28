@@ -18,7 +18,11 @@ use crate::{
         components::auth::{bouncer::Bouncer, session_upkeep::Upkeep, signal_logout::SignalLogout},
         router::Router,
     },
-    outbound::client::{auth::resend_verification::ClientResendEmailVerification, ZwipeClient},
+    outbound::client::{
+        auth::resend_verification::ClientResendEmailVerification,
+        user::get_user::ClientGetUser,
+        ZwipeClient,
+    },
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
@@ -28,12 +32,34 @@ use zwipe::domain::auth::models::session::Session;
 /// User profile screen showing account details and management options.
 #[component]
 pub fn Profile() -> Element {
-    let session: Signal<Option<Session>> = use_context();
+    let mut session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
 
     let mut show_logout_dialog = use_signal(|| false);
     let mut is_resending = use_signal(|| false);
     let toast = use_toast();
+
+    // Refresh user on every open so email_verified_at is current without re-login.
+    // peek() avoids a reactive subscription — runs once on mount, not on every session update.
+    use_effect(move || {
+        let Some(s) = session.peek().clone() else {
+            return;
+        };
+        spawn(async move {
+            match client().get_user(&s).await {
+                Ok(fresh_user) => {
+                    let current = session.peek().clone();
+                    if let Some(mut current) = current {
+                        current.user = fresh_user;
+                        session.set(Some(current));
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!("profile user fetch failed: {e}");
+                }
+            }
+        });
+    });
 
     let navigator = use_navigator();
 
