@@ -102,6 +102,27 @@ RESEND_EMAIL_FROM=noreply@zwipe.net
 # LOG_DIR omitted — defaults to /var/log/zwipe
 ```
 
+### ALLOWED_ORIGINS
+
+`ALLOWED_ORIGINS` is a comma-separated list of browser origins permitted by the CORS policy.
+
+**The iOS native app is not affected by CORS.** Native apps (Dioxus on iPhone, using `reqwest`)
+do not send an `Origin` header — CORS is a browser security mechanism. The iOS app will always
+reach the API regardless of what is in `ALLOWED_ORIGINS`.
+
+For production:
+```
+ALLOWED_ORIGINS=https://zwipe.net
+```
+
+If you also need the web client (`dx serve` on your Mac) to hit the live API during development,
+add localhost as a second origin:
+```
+ALLOWED_ORIGINS=https://zwipe.net,http://localhost:8080
+```
+
+The value is parsed as `HeaderValue` — no trailing slashes, no wildcards.
+
 ---
 
 ## systemd Service
@@ -151,27 +172,45 @@ cd ~/zwipe && ./zervice
 
 ## Cloudflare Tunnel
 
+Cloudflare Tunnel creates an outbound-only encrypted connection from the server to Cloudflare's
+edge — no port forwarding, no firewall rules, TLS handled by Cloudflare. Requests to
+`api.zwipe.net` from any network (home, mobile, anywhere) route through the tunnel.
+
+### Install cloudflared
+
 ```bash
 curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb \
   -o cloudflared.deb
 sudo dpkg -i cloudflared.deb
-
-cloudflared tunnel login
-
-# Reuse existing tunnel credentials
-sudo mkdir -p /etc/cloudflared
-sudo cp ~/.cloudflared/config.yml /etc/cloudflared/
-sudo cp ~/.cloudflared/70ba169b-8293-4a60-9b2d-e1f996a161db.json /etc/cloudflared/
-
-sudo cloudflared service install
-sudo systemctl enable cloudflared
-sudo systemctl start cloudflared
 ```
 
-`/etc/cloudflared/config.yml`:
+### Authenticate (one-time, opens browser)
+
+```bash
+cloudflared tunnel login
+# Opens browser to Cloudflare dashboard — select the zwipe.net zone
+# Writes ~/.cloudflared/cert.pem
+```
+
+### Create the tunnel (first time only)
+
+```bash
+cloudflared tunnel create zwipe
+# Prints a UUID — note it, e.g. 70ba169b-8293-4a60-9b2d-e1f996a161db
+# Writes ~/.cloudflared/<UUID>.json (credentials file)
+```
+
+### Create config file
+
+```bash
+mkdir -p ~/.cloudflared
+nano ~/.cloudflared/config.yml
+```
+
+`~/.cloudflared/config.yml`:
 ```yaml
 tunnel: 70ba169b-8293-4a60-9b2d-e1f996a161db
-credentials-file: /etc/cloudflared/70ba169b-8293-4a60-9b2d-e1f996a161db.json
+credentials-file: /home/scottyfermo/.cloudflared/70ba169b-8293-4a60-9b2d-e1f996a161db.json
 
 ingress:
   - hostname: api.zwipe.net
@@ -179,7 +218,51 @@ ingress:
   - service: http_status:404
 ```
 
-**Note:** `nano` and other terminal programs may fail over SSH from Ghostty with `Error opening terminal: xterm-ghostty`. Fix: `TERM=xterm-256color nano ...`
+Replace the UUID with the one printed by `tunnel create`.
+
+### Add DNS record in Cloudflare dashboard
+
+1. dash.cloudflare.com → zwipe.net → DNS
+2. Add record:
+   - Type: `CNAME`
+   - Name: `api`
+   - Target: `<UUID>.cfargotunnel.com` (e.g. `70ba169b-8293-4a60-9b2d-e1f996a161db.cfargotunnel.com`)
+   - Proxy status: Proxied (orange cloud — required)
+
+Or do it via CLI (requires tunnel login already done):
+```bash
+cloudflared tunnel route dns zwipe api.zwipe.net
+```
+
+### Install as systemd service
+
+```bash
+# Copy credentials and config to /etc/cloudflared for the service
+sudo mkdir -p /etc/cloudflared
+sudo cp ~/.cloudflared/config.yml /etc/cloudflared/
+sudo cp ~/.cloudflared/70ba169b-8293-4a60-9b2d-e1f996a161db.json /etc/cloudflared/
+
+# Update credentials-file path in /etc/cloudflared/config.yml to /etc/cloudflared/...
+sudo nano /etc/cloudflared/config.yml
+# Change: credentials-file: /etc/cloudflared/70ba169b-....json
+
+sudo cloudflared service install
+sudo systemctl enable cloudflared
+sudo systemctl start cloudflared
+sudo systemctl status cloudflared
+```
+
+### Re-deploying to a new machine
+
+If moving to a new server, the tunnel UUID and credentials file already exist in Cloudflare —
+you don't need to recreate them. Just:
+1. `cloudflared tunnel login` (re-authenticate)
+2. Copy the existing `<UUID>.json` credentials from the old server (or re-download via `tunnel token`)
+3. Write `config.yml` with the same UUID
+4. Install the service as above
+
+**Note:** `nano` and other terminal programs may fail over SSH from Ghostty with
+`Error opening terminal: xterm-ghostty`. Fix: `TERM=xterm-256color nano ...`
 
 ---
 
