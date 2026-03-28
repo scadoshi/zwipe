@@ -29,12 +29,13 @@ impl SignalLogout for Signal<Option<Session>> {
                 return;
             };
 
-            match auth_client().logout(&current).await {
-                Ok(()) => {
-                    current.infallible_delete();
-                    session.set(None);
-                }
-                Err(e) => tracing::error!("failed to logout: {e}"),
+            // Always clear the local session — the user asked to log out regardless
+            // of whether the server can be reached to invalidate the refresh token.
+            current.infallible_delete();
+            session.set(None);
+
+            if let Err(e) = auth_client().logout(&current).await {
+                tracing::warn!("server-side logout failed (token will expire naturally): {e}");
             }
         });
     }

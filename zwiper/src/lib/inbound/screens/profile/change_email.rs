@@ -13,7 +13,6 @@ use std::time::Duration;
 use zwipe::{
     domain::auth::models::{password::Password, session::Session},
     inbound::http::handlers::auth::change_email::HttpChangeEmail,
-    inbound::http::ApiError,
 };
 
 /// Form screen for updating user's email address.
@@ -69,7 +68,7 @@ pub fn ChangeEmail() -> Element {
                 session.upkeep(auth_client);
                 let Some(mut session_value) = session() else {
                     toast.error(
-                        ApiError::Unauthorized("session expired".to_string()).to_string().to_lowercase(),
+                        "session expired — please log in again".to_string(),
                         ToastOptions::default().duration(Duration::from_millis(3000)),
                     );
                     is_loading.set(false);
@@ -91,7 +90,7 @@ pub fn ChangeEmail() -> Element {
                     }
                     Err(e) => {
                         toast.error(
-                            e.to_string().to_lowercase(),
+                            e.to_user_message(),
                             ToastOptions::default().duration(Duration::from_millis(3000)),
                         );
                         is_loading.set(false);
