@@ -71,7 +71,7 @@ pub fn Home() -> Element {
                 div { class : "logo", "{logo}" }
 
                 // Display random flavor text
-                div { class: "container-sm text-center flex-col",
+                div { class: "container-sm text-center flex-col home-flavor",
                     match &*random_flavor_card.read() {
                         Some(Some(card)) => {
                             if let Some(flavor_text) = card.scryfall_data.flavor_text.as_ref() {
