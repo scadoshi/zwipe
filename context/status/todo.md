@@ -78,20 +78,19 @@ Not a full web app — just the token-handling pages, a privacy policy, and an A
 
 ## UX Polish
 
-7. **Loading indicators** — audit all screens that trigger async fetches and ensure a loading state is shown. Hard to notice locally (127.0.0.1 is instant) but visible on device hitting `api.zwipe.net`.
-
 10. **Full screen integration pass** — walk every screen on device. For each async operation add a skeleton or spinner. Add transitions between screens and loading/loaded states — nothing heavy, just enough to feel intentional.
 
 ---
 
-## Rate Limiting (Planned)
+## Rate Limiting
 
-### Password Reset
-Two-layer protection:
-1. **IP-level** — dedicated `tower_governor` on `POST /api/auth/forgot-password`. Target: ~5 req/hr per IP.
-2. **Per-email cooldown** — already implemented (5-min window in domain logic).
+### Password Reset (Partial)
+- ✅ Forgot password (`POST /api/auth/forgot-password`) — IP-level governor, ~5 req/hr
+- ✅ Reset password (`POST /api/auth/reset-password`) — IP-level governor
+- ❌ Change password (authenticated, `PUT /api/user/change-password`) — NEEDS rate limiting
+- ❌ Change email (authenticated, `PUT /api/user/change-email`) — NEEDS rate limiting
 
-### Search Cards
+### Search Cards (Outstanding)
 `GET /api/cards` is the heaviest DB operation. Add dedicated governor:
 - ~1 req/3s replenishment, burst of 5 (~20/min ceiling)
 - Future: key by authenticated user ID instead of IP for per-user fairness.
