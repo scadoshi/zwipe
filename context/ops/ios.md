@@ -4,13 +4,17 @@ Full reference for building zwiper and deploying to a physical iPhone.
 
 ---
 
-## Quick Deploy (use every time)
+## Quick Deploy — against production server (use for real device testing)
+
+`BACKEND_URL` is baked into the binary at compile time via `env!()`. The `.env` file
+points at `127.0.0.1:3000` (local dev). To hit `api.zwipe.net`, pass the variable
+inline — the shell sets it before `dx build` reads it:
 
 ```bash
 cd /path/to/zwipe/zwiper
 
-# 1. Build targeting physical device
-dx build --platform ios --device "scotland-mobile"
+# 1. Build targeting physical device with prod backend URL
+BACKEND_URL=https://api.zwipe.net dx build --platform ios --device "scotland-mobile"
 
 # 2. Embed provisioning profile
 cp ~/Downloads/zwipedev.mobileprovision \
@@ -25,8 +29,17 @@ codesign -f -s "F421F2E0FF6575A04BB18520C1A699A3F9CCEB45" \
 ios-deploy --bundle ../target/dx/main/debug/ios/Main.app
 ```
 
+Alternatively, load `.env.prod` explicitly before building:
+```bash
+export $(grep -v '^#' .env.prod | xargs) && \
+  dx build --platform ios --device "scotland-mobile"
+```
+
 **First launch only:** iOS 16+ requires Developer Mode:
 Settings → Privacy & Security → Developer Mode → toggle on → restart
+
+**Untrusted developer prompt:** If iOS shows "Untrusted Developer" on first launch:
+Settings → VPN & Device Management → your Apple ID → Trust
 
 ---
 
