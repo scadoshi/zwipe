@@ -10,8 +10,9 @@ Reference docs for deploying and operating zwipe. If rebuilding from scratch, fo
 SSH setup, PostgreSQL, log directory, `.env`, SQLx migrations, build toolchain, systemd service, zervice cron, Cloudflare Tunnel.
 
 ### 2. `cicd.md` — Automated deployment infrastructure
-Tailscale (required for GitHub Actions SSH), deploy SSH key, GitHub secrets/variables, SQLx offline mode.
-Do this before trusting CI — Tailscale must be running on the server first.
+Self-hosted GitHub Actions runner on the server — no SSH tunnels, no deploy keys.
+Runner setup, systemd service install, passwordless sudo for systemctl restart.
+Also covers Tailscale (used for local SSH access, not CI/CD) and SQLx offline mode.
 
 ### 3. `deploy-backend.md` — Verify you can deploy manually
 Build on the server, stop/copy/start zerver. Run this at least once before relying on the CI pipeline.
