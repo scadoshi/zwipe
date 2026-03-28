@@ -603,19 +603,14 @@ body {
   font-family: "Cascadia Code", monospace;
   font-weight: 300;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.1s ease;
   white-space: nowrap;
 }
 
-.util-btn:hover {
-  transform: translateY(-2px);
+.util-btn:active {
+  transform: scale(0.95);
   background-color: var(--text-primary);
   color: var(--bg-primary);
-  border-color: var(--border-primary);
-}
-
-.util-btn:active {
-  transform: translateY(-1px);
 }
 
 .util-btn:disabled {

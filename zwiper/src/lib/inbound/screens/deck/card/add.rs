@@ -302,6 +302,8 @@ pub fn Add(deck_id: Uuid) -> Element {
             toast.warning("filter already cleared".to_string(), opts);
         } else {
             filter_builder.write().clear();
+            cards.set(vec![]);
+            current_index.set(0);
             toast.info("filter cleared".to_string(), opts);
         }
     };
