@@ -93,6 +93,11 @@ body {
   justify-content: center;
 }
 
+.screen-content.card-swipe {
+  overflow-y: hidden;
+  justify-content: flex-start;
+}
+
 /* ==================
   utilities - layout
  ==================== */
@@ -761,8 +766,8 @@ body {
   border-radius: 4.5% / 3.5%;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin: 0 auto 2rem auto;
-  height: 42vh;
+  margin: 1rem auto 0.75rem auto;
+  height: calc(100svh - 13rem);
   aspect-ratio: 5 / 7;
   display: flex;
   align-items: center;
@@ -968,10 +973,11 @@ body {
 .card-image {
   display: block;
   object-fit: contain;
-  max-height: 42vh;
+  max-height: calc(100svh - 13rem);
+  max-width: calc(100% - 2rem);
   height: auto;
   border-radius: 1rem;
-  margin: 0 auto 2rem auto;
+  margin: 1rem auto 0.75rem auto;
 }
 
 .card-image-full {
