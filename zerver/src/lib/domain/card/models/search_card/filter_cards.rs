@@ -17,7 +17,7 @@
 
 use crate::domain::card::models::{
     Card,
-    search_card::card_filter::{CardFilter, order_by_option::OrderByOption},
+    search_card::card_filter::{CardFilter, builder::CardFilterBuilder, order_by_option::OrderByOption},
 };
 use rand::seq::SliceRandom;
 
@@ -433,6 +433,73 @@ impl FilterCards for Vec<Card> {
         let offset = filter.offset() as usize;
         let limit = filter.limit() as usize;
         cards.into_iter().skip(offset).take(limit).collect()
+    }
+}
+
+/// Extension trait for sorting a `Vec<Card>` in-place using a [`CardFilterBuilder`].
+///
+/// Unlike [`FilterCards`], which requires a fully-built [`CardFilter`] and returns `Err`
+/// when only `order_by` is set, `SortCards` operates on the builder directly so the
+/// sort-only case is always safe to apply.
+///
+/// No-op when `builder.order_by()` is `None`.
+pub trait SortCards {
+    /// Sorts `self` in-place according to the `order_by` field in `builder`.
+    fn sort_by_filter(&mut self, builder: &CardFilterBuilder);
+}
+
+impl SortCards for Vec<Card> {
+    fn sort_by_filter(&mut self, builder: &CardFilterBuilder) {
+        use OrderByOption::*;
+        let Some(order_by) = builder.order_by() else { return };
+
+        if order_by == Random {
+            self.shuffle(&mut rand::rng());
+            return;
+        }
+
+        let ascending = builder.ascending();
+        self.sort_by(|a, b| {
+            let sd_a = &a.scryfall_data;
+            let sd_b = &b.scryfall_data;
+            let ord = match order_by {
+                Name => sd_a.name.cmp(&sd_b.name),
+                Cmc => {
+                    let ca = sd_a.cmc.unwrap_or(f64::MAX);
+                    let cb = sd_b.cmc.unwrap_or(f64::MAX);
+                    ca.partial_cmp(&cb).unwrap_or(std::cmp::Ordering::Equal)
+                }
+                Power => {
+                    let pa = sd_a.power.as_deref().and_then(|p| p.parse::<i32>().ok()).unwrap_or(i32::MAX);
+                    let pb = sd_b.power.as_deref().and_then(|p| p.parse::<i32>().ok()).unwrap_or(i32::MAX);
+                    pa.cmp(&pb)
+                }
+                Toughness => {
+                    let ta = sd_a.toughness.as_deref().and_then(|t| t.parse::<i32>().ok()).unwrap_or(i32::MAX);
+                    let tb = sd_b.toughness.as_deref().and_then(|t| t.parse::<i32>().ok()).unwrap_or(i32::MAX);
+                    ta.cmp(&tb)
+                }
+                Rarity => sd_a.rarity.to_long_name().cmp(&sd_b.rarity.to_long_name()),
+                ReleasedAt => sd_a.released_at.cmp(&sd_b.released_at),
+                PriceUsd => {
+                    let pa = sd_a.prices.usd.as_deref().and_then(|p| p.parse::<f64>().ok()).unwrap_or(f64::MAX);
+                    let pb = sd_b.prices.usd.as_deref().and_then(|p| p.parse::<f64>().ok()).unwrap_or(f64::MAX);
+                    pa.partial_cmp(&pb).unwrap_or(std::cmp::Ordering::Equal)
+                }
+                PriceEur => {
+                    let pa = sd_a.prices.eur.as_deref().and_then(|p| p.parse::<f64>().ok()).unwrap_or(f64::MAX);
+                    let pb = sd_b.prices.eur.as_deref().and_then(|p| p.parse::<f64>().ok()).unwrap_or(f64::MAX);
+                    pa.partial_cmp(&pb).unwrap_or(std::cmp::Ordering::Equal)
+                }
+                PriceTix => {
+                    let pa = sd_a.prices.tix.as_deref().and_then(|p| p.parse::<f64>().ok()).unwrap_or(f64::MAX);
+                    let pb = sd_b.prices.tix.as_deref().and_then(|p| p.parse::<f64>().ok()).unwrap_or(f64::MAX);
+                    pa.partial_cmp(&pb).unwrap_or(std::cmp::Ordering::Equal)
+                }
+                Random => std::cmp::Ordering::Equal,
+            };
+            if ascending { ord } else { ord.reverse() }
+        });
     }
 }
 
