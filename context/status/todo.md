@@ -105,6 +105,22 @@ Not a full web app — just the token-handling pages, a privacy policy, and an A
 
 ---
 
+## CI/CD
+
+Automate deployment from Mac to server on every push to `main`:
+- GitHub Actions workflow on push → builds release binary on x86_64 Linux runner → SSHes into server → swaps binary → restarts `zerver` systemd service
+- Zero manual SSH or `cargo build` on the server
+
+---
+
+## Donate Button
+
+Add a Stripe-powered donate button to `zwipe.net` so users can support development.
+- Stripe Checkout or Payment Links (no backend needed for a simple donate flow)
+- Link from the app's About/Profile screen and from `zwipe.net`
+
+---
+
 ## Testing
 
 - **Integration tests** — SQLx repository tests require a real PostgreSQL instance. Unit test phase complete (250+ tests). Remaining gap: outbound adapters have no coverage.
