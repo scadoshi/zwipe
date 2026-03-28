@@ -1,0 +1,17 @@
+[workspace]
+
+[package]
+name = "zweb"
+version = "0.1.0"
+authors = ["scottyrayfermo"]
+edition = "2024"
+
+[[bin]]
+name = "zweb"
+path = "src/main.rs"
+
+[dependencies]
+dioxus = { version = "0.7.4", features = ["router", "web"] }
+reqwest = { version = "0.12", features = ["json"], default-features = false }
+serde = { version = "1.0", features = ["derive"] }
+web-sys = { version = "0.3", features = ["Window", "Location", "UrlSearchParams"] }
