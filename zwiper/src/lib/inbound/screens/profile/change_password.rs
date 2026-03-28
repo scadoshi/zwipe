@@ -48,6 +48,7 @@ pub fn ChangePassword() -> Element {
     let mut submission_error: Signal<Option<String>> = use_signal(|| None);
     let mut submit_attempted = use_signal(|| false);
     let mut show_confirm = use_signal(|| false);
+    let mut is_loading = use_signal(|| false);
     let toast = use_toast();
 
     let mut inputs_are_valid = move || {
@@ -66,12 +67,14 @@ pub fn ChangePassword() -> Element {
         if inputs_are_valid() {
             tracing::info!("change password");
             let request = HttpChangePassword::new(&current_password(), &new_password());
+            is_loading.set(true);
             spawn(async move {
                 session.upkeep(auth_client);
                 let Some(session) = session() else {
                     submission_error.set(Some(
                         ApiError::Unauthorized("session expired".to_string()).to_string(),
                     ));
+                    is_loading.set(false);
                     return;
                 };
 
@@ -84,8 +87,12 @@ pub fn ChangePassword() -> Element {
                         submission_error.set(None);
                         clear_inputs();
                         submit_attempted.set(false);
+                        is_loading.set(false);
                     }
-                    Err(e) => submission_error.set(Some(e.to_string())),
+                    Err(e) => {
+                        submission_error.set(Some(e.to_string()));
+                        is_loading.set(false);
+                    }
                 }
             });
         } else {
@@ -154,7 +161,9 @@ pub fn ChangePassword() -> Element {
                     onclick: move |_| navigator.go_back(),
                     "back"
                 }
-                button { class: "util-btn",
+                button {
+                    class: "util-btn",
+                    disabled: is_loading(),
                     onclick: move |_| {
                         submit_attempted.set(true);
                         validate_new_password();
@@ -164,7 +173,7 @@ pub fn ChangePassword() -> Element {
                             submission_error.set(Some("invalid input".to_string()));
                         }
                     },
-                    "save changes"
+                    if is_loading() { "saving..." } else { "save changes" }
                 }
             }
 

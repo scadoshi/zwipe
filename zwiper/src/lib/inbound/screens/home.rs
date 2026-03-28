@@ -86,7 +86,7 @@ pub fn Home() -> Element {
                             }
                         }
                         Some(None) => rsx! {},
-                        None => rsx! {},
+                        None => rsx! { div { class: "spinner" } },
                     }
                 }
             }

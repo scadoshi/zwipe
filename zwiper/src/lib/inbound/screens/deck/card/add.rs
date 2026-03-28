@@ -80,6 +80,8 @@ pub fn Add(deck_id: Uuid) -> Element {
     let load_more_threshold = 10_usize;
     let mut pagination_exhausted = use_signal(|| false);
 
+    let mut is_loading_cards = use_signal(|| false);
+
     let current_card = move || {
         let idx = current_index();
         cards().get(idx).cloned()
@@ -365,6 +367,8 @@ pub fn Add(deck_id: Uuid) -> Element {
             return;
         };
 
+        is_loading_cards.set(true);
+
         spawn(async move {
             match client().search_cards(&filter, &session).await {
                 Ok(cards_from_search) => {
@@ -384,8 +388,12 @@ pub fn Add(deck_id: Uuid) -> Element {
                     );
                     // Set offset for next page
                     current_offset.set(pagination_limit);
+                    is_loading_cards.set(false);
                 }
-                Err(e) => toast.error(e.to_string(), ToastOptions::default()),
+                Err(e) => {
+                    toast.error(e.to_string(), ToastOptions::default());
+                    is_loading_cards.set(false);
+                }
             }
         });
     });
@@ -509,9 +517,12 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 span { "artist: {artist.to_lowercase()}" }
                             }
                         }
+                    } else if is_loading_cards() {
+                        div { class: "card-shape flex-center",
+                            div { class: "spinner" }
+                        }
                     } else {
-                        // Empty state (no cards)
-                        div { class : "card-shape flex-center",
+                        div { class: "card-shape flex-center",
                             "no cards"
                         }
                     }
