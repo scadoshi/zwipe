@@ -1,0 +1,68 @@
+name: Deploy zweb
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'zweb/**'
+      - '.github/workflows/deploy-zweb.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin
+            target
+          key: ${{ runner.os }}-cargo-zweb-${{ hashFiles('zweb/Cargo.lock') }}
+
+      - name: Install dioxus-cli
+        run: cargo install dioxus-cli --version "^0.7" --locked
+
+      - name: Build
+        working-directory: zweb
+        run: dx build --release --platform web
+
+      - name: Add CNAME
+        run: echo "zwipe.net" > target/dx/zweb/release/web/public/CNAME
+
+      - name: Add 404.html for SPA routing
+        run: cp target/dx/zweb/release/web/public/index.html target/dx/zweb/release/web/public/404.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: target/dx/zweb/release/web/public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
