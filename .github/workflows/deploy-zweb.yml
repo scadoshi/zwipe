@@ -44,7 +44,7 @@ jobs:
       - name: Install dioxus-cli
         env:
           CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: gcc
-        run: cargo install dioxus-cli --version "^0.7" --locked
+        run: cargo install dioxus-cli --version "^0.7" --locked --force
 
       - name: Build
         working-directory: zweb
