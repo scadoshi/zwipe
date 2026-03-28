@@ -71,7 +71,7 @@ src/lib/
 
 ## Environment Files
 
-Backend (`zerver/.env`): `DATABASE_URL`, `JWT_SECRET`, `BIND_ADDRESS`, `ALLOWED_ORIGINS`
+Backend (`zerver/.env`): `DATABASE_URL`, `JWT_SECRET`, `BIND_ADDRESS`, `ALLOWED_ORIGINS`, `RESEND_API_KEY`, `RESEND_EMAIL_FROM`, `LOG_DIR`
 Frontend (`zwiper/.env`): `BACKEND_URL`, `RUST_LOG`, `RUST_BACKTRACE`
 
 ## Commit Guidelines
@@ -83,3 +83,16 @@ Frontend (`zwiper/.env`): `BACKEND_URL`, `RUST_LOG`, `RUST_BACKTRACE`
 - **Never** include AI-agent signatures in your commits.
     - Example: "Written with the help of Claude Opus 4.5"
     - Never commit with something like this in your message.
+
+## Context Directory
+
+```
+context/
+├── CLAUDE.md               — this file
+├── product/                — what we're building (prd, monetization)
+├── architecture/           — why things are built the way they are
+├── ops/                    — how to deploy (server.md, ios.md)
+├── dev/                    — coding standards (commits, docs, newtypes, dioxus)
+├── status/                 — where we are (todo.md, backlog.md, security.md)
+└── archive/                — no longer active (brain, complete-*, learning framework)
+```

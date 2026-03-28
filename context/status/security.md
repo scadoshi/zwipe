@@ -39,12 +39,7 @@ Audit performed 2026-03-26 ahead of App Store public launch.
 
 ---
 
-## Remaining Open Item
-
-### Email Verification on Registration (Low)
-Users can register with any email — no verification step. Enables typos, impersonation, spam accounts.
-- **Fix**: Send verification email on register, require confirmation before full account access. Needs email sending infrastructure (same as Password Reset below — implement both together via Resend).
-- **Blocked on**: Resend integration (resend.com — 3k emails/month free tier, Rust-friendly API).
+## All Security Items Complete ✓
 
 ---
 
@@ -60,23 +55,16 @@ Users can register with any email — no verification step. Enables typos, imper
 
 ---
 
-## Password Reset
+## ✓ Email Verification + Password Reset (2026-03-27)
 
-**Not yet implemented.** Needs email sending infrastructure. **Decided: Resend** (resend.com) — modern API, Rust-friendly, 3k emails/month free tier.
+Implemented via Resend (resend.com — 3k emails/month free tier). Domain: `noreply@zwipe.net`.
 
-Password reset flow design:
-1. User submits email on "forgot password" screen
-2. Server generates a cryptographically random token (32 bytes hex), stores SHA-256 hash + expiry (15 min) in `password_reset_tokens` table
-3. Server sends email with link: `https://zwipe.net/reset?token=<raw_token>`
-4. User clicks link → app/web presents new password form
-5. Client POSTs `{ token, new_password }` to `/api/auth/reset-password`
-6. Server: SHA-256 hashes the submitted token, looks up hash in DB, checks expiry, checks not already used
-7. If valid: update password hash, mark token used (or delete), revoke all existing refresh tokens (force re-login everywhere)
-8. Respond with success — user logs in fresh
-
-Security properties of this design:
-- Only the hash is stored — a DB breach doesn't expose usable reset tokens
-- 15 min expiry limits attack window
-- Token is single-use
-- All existing sessions are revoked on reset (prevents session fixation)
-- Always return "if that email exists, a reset link was sent" — no email enumeration
+- Email verification sent on register and on email change
+- `email_verified_at` on `User` model — null until confirmed
+- `POST /api/auth/verify-email` — validates token, marks verified
+- `POST /api/auth/resend-verification` — authenticated, resends if unverified
+- `POST /api/auth/forgot-password` — anti-enumeration: always 200 OK; 5-min per-email cooldown
+- `POST /api/auth/reset-password` — validates token, atomically updates password + revokes all sessions + clears lockout
+- `change_password_and_revoke_sessions` — also revokes all sessions atomically
+- `change_email` — clears `email_verified_at`, fires new verification email
+- Tokens: 32 random bytes → hex (sent to client) → SHA-256 hash (stored in DB). DB breach doesn't expose usable tokens.
