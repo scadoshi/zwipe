@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT DISTINCT LOWER(TRIM(keyword)) AS keyword\n             FROM scryfall_data, UNNEST(keywords) AS keyword\n             WHERE keywords IS NOT NULL\n             ORDER BY keyword ASC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "keyword",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "390e327d15a058a131f4d28706b0f47d6809a1697edc01e9ee5ef7cfffcbb28f"
+}

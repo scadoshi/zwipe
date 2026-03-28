@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT DISTINCT LOWER(REGEXP_REPLACE(word, '[^a-zA-Z]', '', 'g')) AS word\n             FROM scryfall_data, REGEXP_SPLIT_TO_TABLE(oracle_text, '\\s+') AS word\n             WHERE oracle_text IS NOT NULL\n               AND LOWER(REGEXP_REPLACE(word, '[^a-zA-Z]', '', 'g')) NOT IN (\n                 'a', 'an', 'the', 'of', 'to', 'in', 'on', 'at', 'by', 'for', 'with',\n                 'from', 'into', 'as', 'and', 'or', 'but', 'that', 'which', 'who',\n                 'it', 'its', 'you', 'your', 'this', 'those', 'these', 'they', 'their',\n                 'is', 'are', 'was', 'be', 'has', 'have', 'do', 'does', 'been', ''\n               )\n             ORDER BY word ASC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "word",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "519551c8bfb8370fb21dc9a35f09ff8692420c39f0d0f723e640a7148156a1e7"
+}
