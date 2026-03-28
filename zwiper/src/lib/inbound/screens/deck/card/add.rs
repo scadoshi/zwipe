@@ -395,7 +395,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     h2 { "add deck card" }
                 }
 
-                div { class: "screen-content centered",
+                div { class: "screen-content card-swipe",
 
                 div { class : "form-container",
                     // Show current card with Swipeable

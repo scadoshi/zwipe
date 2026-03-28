@@ -253,7 +253,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     h2 { "remove deck card" }
                 }
 
-                div { class: "screen-content centered",
+                div { class: "screen-content card-swipe",
 
                 div { class: "form-container",
                     if let Some(card) = current_card() {
