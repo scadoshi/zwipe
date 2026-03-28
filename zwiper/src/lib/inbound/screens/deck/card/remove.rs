@@ -112,6 +112,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     deck_loaded.set(true);
                 }
                 Err(e) => {
+                    tracing::warn!("deck load failed: {e}");
                     toast.error(e.to_string(), ToastOptions::default());
                 }
             }
@@ -167,6 +168,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 .delete_deck_card(deck_id, scryfall_data_id, &session)
                 .await
             {
+                tracing::warn!("delete deck card failed: {e}");
                 toast.error(e.to_string(), ToastOptions::default());
             }
         });
@@ -235,6 +237,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             );
                         }
                         Err(e) => {
+                            tracing::warn!("undo remove (create deck card) failed: {e}");
                             toast.error(format!("failed to undo: {}", e), ToastOptions::default());
                         }
                     }

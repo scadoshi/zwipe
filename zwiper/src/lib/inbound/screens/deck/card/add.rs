@@ -162,7 +162,8 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                     is_loading_more.set(false);
                 }
-                Err(_) => {
+                Err(e) => {
+                    tracing::warn!("pagination load failed: {e}");
                     is_loading_more.set(false);
                 }
             }
@@ -230,6 +231,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     deck_cards_ids.write().insert(card_id);
                 }
                 Err(e) => {
+                    tracing::warn!("add card to deck failed: {e}");
                     toast.error(e.to_string(), ToastOptions::default());
                 }
             }
@@ -289,6 +291,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             );
                         }
                         Err(e) => {
+                            tracing::warn!("undo add (delete deck card) failed: {e}");
                             toast.error(format!("failed to undo: {}", e), ToastOptions::default());
                             // Don't restore action or index - user can try again by adding the card
                         }
@@ -330,8 +333,8 @@ pub fn Add(deck_id: Uuid) -> Element {
                     }
                     deck_cards_ids.set(ids);
                 }
-                Err(_) => {
-                    // Continue without deck card filtering if fetch fails
+                Err(e) => {
+                    tracing::warn!("deck card filter fetch failed, continuing without filtering: {e}");
                 }
             }
         });
@@ -391,6 +394,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     is_loading_cards.set(false);
                 }
                 Err(e) => {
+                    tracing::warn!("card search failed: {e}");
                     toast.error(e.to_string(), ToastOptions::default());
                     is_loading_cards.set(false);
                 }

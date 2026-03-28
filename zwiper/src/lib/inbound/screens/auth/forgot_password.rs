@@ -45,10 +45,13 @@ pub fn ForgotPassword() -> Element {
             spawn(async move {
                 match auth_client().request_password_reset(request).await {
                     Ok(()) => submission_success.set(true),
-                    Err(e) => toast.error(
-                        e.to_user_message(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    ),
+                    Err(e) => {
+                        tracing::warn!("password reset request failed: {e}");
+                        toast.error(
+                            e.to_user_message(),
+                            ToastOptions::default().duration(Duration::from_millis(3000)),
+                        );
+                    }
                 }
                 is_loading.set(false);
             });
