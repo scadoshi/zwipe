@@ -1,22 +1,35 @@
 # CI/CD — GitHub Actions Deploy
 
-On every push to `main` that touches backend code, GitHub Actions builds `zerver` and `zervice`
-on an x86_64 Linux runner and deploys them to the server via SCP over Tailscale, then restarts
-the systemd service.
+On every push to `main` that touches backend code, a self-hosted GitHub Actions runner on
+the server checks out the repo, builds `zerver` and `zervice` in place, copies the binaries
+to `~/zwipe/`, and restarts the systemd service. No network tunnels, no deploy keys, no SCP.
 
 ---
 
 ## Workflow File
 
-`.github/workflows/deploy.yml`
+`.github/workflows/deploy-zerver.yml`
 
 Triggers automatically on push to `main` when any of these paths change:
 - `zerver/**`
 - `zwipe/**`
 - `zervice/**`
-- `.github/workflows/deploy.yml`
+- `.github/workflows/deploy-zerver.yml`
 
 Also has `workflow_dispatch` for manual runs from the GitHub Actions tab.
+
+---
+
+## What the Workflow Does
+
+1. Checks out the repo
+2. Installs stable Rust toolchain (cached)
+3. Restores cargo cache (fast subsequent builds)
+4. Builds `zerver` and `zervice` in release mode (`SQLX_OFFLINE=true`)
+5. Copies binaries to `~/zwipe/`
+6. Runs `sudo systemctl restart zerver`
+
+No Tailscale, no SSH keys, no SCP — the runner is already on the server.
 
 ---
 
@@ -26,161 +39,118 @@ Also has `workflow_dispatch` for manual runs from the GitHub Actions tab.
 
 | Name | Value |
 |---|---|
-| `DEPLOY_SSH_KEY` | Full contents of `~/.ssh/zwipe-deploy` (private key, including `-----BEGIN/END-----` lines) |
+| `TS_OAUTH_CLIENT_ID` | Tailscale OAuth client ID (kept for reference, not used in workflow) |
+| `TS_OAUTH_SECRET` | Tailscale OAuth client secret (kept for reference, not used in workflow) |
 
 ### Variables (Settings → Secrets and variables → Actions → Variables)
 
-| Name | Value |
-|---|---|
-| `DEPLOY_HOST` | Server public IP (e.g. `67.185.151.50`) — check with `curl -4 ifconfig.me` on server |
-| `DEPLOY_USER` | `scadoshi` |
+None required for self-hosted runner deployment.
 
 ---
 
-## SSH Deploy Key
+## Self-Hosted Runner Setup
 
-A dedicated key pair is used so GitHub Actions never has access to your personal keys.
+The runner is a long-running process on the server that polls GitHub for jobs. It connects
+outbound to GitHub — no inbound ports or tunnels needed. Run this setup once; after that
+deploys are fully automatic.
 
-**Generate (on Mac, one-time):**
+### Step 1 — Generate a runner token
+
+GitHub → Repository Settings → Actions → Runners → New self-hosted runner → Linux → x64
+
+Copy the token shown on that page (valid for 1 hour).
+
+### Step 2 — Download and configure the runner on the server
+
 ```bash
-ssh-keygen -t ed25519 -C "github-actions" -f ~/.ssh/zwipe-deploy
-# No passphrase
+mkdir ~/actions-runner && cd ~/actions-runner
+
+# Download — get the exact URL from the GitHub UI (version may change)
+curl -o actions-runner-linux-x64.tar.gz -L \
+  https://github.com/actions/runner/releases/download/v2.x.x/actions-runner-linux-x64-2.x.x.tar.gz
+
+tar xzf actions-runner-linux-x64.tar.gz
+
+# Configure — paste the token from Step 1 when prompted
+./config.sh --url https://github.com/scadoshi/zwipe --token YOUR_TOKEN_HERE
+# Accept defaults for runner name and work folder
 ```
 
-**Add public key to server:**
+### Step 3 — Install as a systemd service
+
 ```bash
-cat ~/.ssh/zwipe-deploy.pub
-# Copy output, then on server:
-echo "paste-public-key-here" >> ~/.ssh/authorized_keys
+sudo ./svc.sh install
+sudo ./svc.sh start
+sudo ./svc.sh status
 ```
 
-**Add private key to GitHub:**
+The runner starts automatically on every boot. Check GitHub → Settings → Actions → Runners
+to confirm it shows as **Idle** (green dot).
+
+### Step 4 — Verify passwordless sudo for systemctl
+
+The runner needs to restart zerver without a password prompt. This should already be
+configured, but verify:
+
 ```bash
-cat ~/.ssh/zwipe-deploy
-# Copy full output (including BEGIN/END lines) → GitHub secret DEPLOY_SSH_KEY
+sudo visudo
+# Confirm this line exists at the bottom:
+# scadoshi ALL=(ALL) NOPASSWD: /bin/systemctl restart zerver
 ```
+
+### Re-registering after a server rebuild
+
+If the server is rebuilt and the runner is lost:
+
+1. Go to GitHub → Settings → Actions → Runners → find the old runner → Remove
+2. Repeat Steps 1–3 above with a fresh token
+3. The workflow picks it up automatically — no workflow file changes needed
 
 ---
 
-## Tailscale (SSH Access for CI/CD)
+## Tailscale (Local SSH Access)
 
-Port forwarding via Xfinity is unreliable — xFi Advanced Security and CGNAT silently block
-inbound connections regardless of router config. Tailscale is used instead.
-
-Tailscale creates a private WireGuard mesh network (tailnet). Every device gets a stable
-`100.x.x.x` IP reachable from anywhere — no router config, no inbound ports, no ISP interference.
-All connections originate outbound so NAT is irrelevant. Traffic is encrypted end-to-end.
+Tailscale is used for SSHing into the server from your Mac or any network. It is **not**
+used for CI/CD deploys (self-hosted runner eliminated that need).
 
 **Current server Tailscale IP: `100.91.55.16`**
 
----
+### Setup
 
-### Step 1 — Create a Tailscale account
-
-Sign up at tailscale.com. The free plan supports up to 100 devices and is sufficient for this setup.
-
----
-
-### Step 2 — Install Tailscale on the server
-
-SSH into the server locally and run:
-
+**Server (one-time):**
 ```bash
 curl -fsSL https://tailscale.com/install.sh | sh
 sudo tailscale up
+# Follow the auth URL printed to authenticate
+sudo tailscale set --ssh   # enables Tailscale SSH (no deploy key needed)
 ```
 
-It will print an auth URL — open it in your browser and authenticate. The installer automatically
-configures `tailscaled` as a systemd service so Tailscale reconnects on reboot.
+**Mac:**
+Install from the App Store, sign in with the same account.
 
-Get the server's stable Tailscale IP:
-```bash
-tailscale ip -4
-# e.g. 100.91.55.16
-```
-
----
-
-### Step 3 — Install Tailscale on your Mac
-
-Install from the App Store (recommended — handles system extension permissions correctly).
-The brew CLI version (`brew install tailscale`) requires `sudo brew services start tailscale`
-and can have launchd permission issues on newer macOS. App Store version is more reliable.
-
-Sign in with the same Tailscale account. Both devices will appear in the Tailscale admin
-under Machines. You can now SSH to the server via its Tailscale IP from any network:
-
+**SSH into server from anywhere:**
 ```bash
 ssh scadoshi@100.91.55.16
 ```
 
-Update your local `zerver` alias to use the Tailscale IP so it works from anywhere, not just
-home WiFi.
+### Tailscale Admin Configuration
 
----
-
-### Step 4 — Update DEPLOY_HOST in GitHub
-
-Go to GitHub → Repository Settings → Secrets and variables → Actions → Variables.
-Update `DEPLOY_HOST` to the server's Tailscale IP (`100.91.55.16`).
-
----
-
-### Step 5 — Create an OAuth credential in Tailscale
-
-GitHub Actions runners are ephemeral VMs that need to join the tailnet for the duration of
-a deploy workflow. An OAuth credential lets the workflow authenticate without interactive login.
-
-1. Go to Tailscale admin → Access controls → Tags tab
-2. Create a tag named `tag:ci` — set owner to your GitHub user (`scadoshi@github`)
-3. Go to Settings → Trust credentials → New credential → OAuth
-4. Name it `github-actions`
-5. Under Scopes, grant only: **Devices → Core → Write**
-6. Under Tags, select `tag:ci`
-7. Save — copy the **Client ID** and **Client Secret** immediately (secret is shown once)
-
-Add both to GitHub as secrets:
-
-| GitHub Secret | Value |
-|---|---|
-| `TS_OAUTH_CLIENT_ID` | Client ID from Tailscale |
-| `TS_OAUTH_SECRET` | Client Secret from Tailscale |
-
----
-
-### Step 6 — Add Tailscale step to deploy.yml
-
-Add this step before the Build step in `.github/workflows/deploy.yml`:
-
-```yaml
-- name: Connect to Tailscale
-  uses: tailscale/github-action@v3
-  with:
-    oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-    oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-    tags: tag:ci
-```
-
-The GitHub Actions runner joins the tailnet as an ephemeral `tag:ci` device, reaches the
-server at its Tailscale IP, then automatically removes itself from the tailnet when the job ends.
-
----
+- **Tag**: `tag:ci` owned by `scadoshi@github` (Access controls → Tags)
+- **ACL rule**: `tag:ci → 100.91.55.16` all ports (kept for potential future use)
+- **OAuth credential**: `github-actions` with `devices:core` + `auth_keys` scopes (kept for reference)
 
 ### Notes
 
-- **Server IP is stable** — `100.91.55.16` never changes even if Xfinity rotates your public IP
-- **Works from any network** — laptop at a coffee shop, GitHub Actions runner, anywhere
-- **No router config ever needed** — Xfinity, CGNAT, Advanced Security all become irrelevant
-- **sshd also listens on port 2222** (in addition to 22) via a systemd socket override at
-  `/etc/systemd/system/ssh.socket.d/override.conf` — this was added during Xfinity troubleshooting
-  but is no longer needed for external access now that Tailscale is in place
+- Server Tailscale IP is stable — never changes even if Xfinity rotates public IP
+- `sshd` also listens on port 2222 via `/etc/systemd/system/ssh.socket.d/override.conf`
+  (added during Xfinity troubleshooting — not required but harmless to keep)
 
 ---
 
 ## SQLx Offline Mode
 
-The GitHub Actions runner has no database. Builds use `SQLX_OFFLINE=true` with the
-committed `.sqlx/` directory. After any query change on your Mac:
+The self-hosted runner has no database access during builds. Builds use `SQLX_OFFLINE=true`
+with the committed `.sqlx/` directory. After any query change on your Mac:
 
 ```bash
 cargo sqlx prepare --workspace
@@ -192,19 +162,7 @@ git commit -m "Update sqlx offline cache"
 
 ## Manual Trigger
 
-To trigger a deploy without pushing code:
-GitHub → Actions tab → Deploy → Run workflow → Run workflow
-
----
-
-## What the Workflow Does
-
-1. Checks out the repo
-2. Installs stable Rust toolchain
-3. Restores cargo cache (fast subsequent builds)
-4. Builds `zerver` and `zervice` in release mode (`SQLX_OFFLINE=true`)
-5. SCPs both binaries to `~/zwipe/` on the server
-6. SSHes in and runs `sudo systemctl restart zerver`
+GitHub → Actions tab → Deploy zerver → Run workflow → Run workflow
 
 ---
 
@@ -212,7 +170,8 @@ GitHub → Actions tab → Deploy → Run workflow → Run workflow
 
 `.github/workflows/deploy-zweb.yml`
 
-Triggers on push to `main` when files under `zweb/**` change (or the workflow file itself). Also has `workflow_dispatch` for manual runs.
+Triggers on push to `main` when files under `zweb/**` change (or the workflow file itself).
+Also has `workflow_dispatch` for manual runs.
 
 ## What the Workflow Does
 

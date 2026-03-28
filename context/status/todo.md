@@ -138,6 +138,31 @@ Add a `context/architecture/structure.md` walking through the full directory tre
 
 ---
 
+## Database Backups
+
+The server runs PostgreSQL locally. If the server dies, the database goes with it. Need a
+periodic backup job that gets data off the machine.
+
+Things to figure out:
+- **Backup tool** — `pg_dump` is the standard; outputs a SQL file or custom format
+- **Schedule** — nightly cron (similar to zervice)
+- **Destination** — off-machine storage: S3/R2, Backblaze B2, or a remote SSH target
+- **Retention** — how many days/weeks to keep
+- **Restore runbook** — document how to restore from a backup on a fresh server
+
+Rough sketch:
+```bash
+# Example cron: nightly pg_dump to a compressed file, upload to cloud storage
+pg_dump -U zwipe zwipe | gzip > ~/backups/zwipe-$(date +%Y%m%d).sql.gz
+# then rclone/aws-cli/restic to upload offsite
+```
+
+Related: if a self-hosted GitHub Actions runner is set up, the runner workspace on the
+server contains the full repo source — that's already in GitHub. The database is the only
+critical stateful data that isn't replicated elsewhere.
+
+---
+
 ## Testing
 
 - **Integration tests** — SQLx repository tests require a real PostgreSQL instance. Unit test phase complete (250+ tests). Remaining gap: outbound adapters have no coverage.

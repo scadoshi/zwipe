@@ -12,16 +12,9 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v3
-        with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci
-
       - uses: actions/checkout@v4
 
       - name: Install Rust
@@ -36,22 +29,12 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y build-essential
-
       - name: Build
         env:
           SQLX_OFFLINE: true
-          CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: gcc
         run: cargo build --release --bin zerver --bin zervice
 
-      - name: Deploy to server
-        env:
-          HOST: ${{ vars.DEPLOY_HOST }}
-          USER: ${{ vars.DEPLOY_USER }}
+      - name: Deploy
         run: |
-          scp -o StrictHostKeyChecking=no \
-            target/release/zerver target/release/zervice \
-            $USER@$HOST:~/zwipe/
-          ssh -o StrictHostKeyChecking=no $USER@$HOST \
-            "sudo systemctl restart zerver"
+          cp target/release/zerver target/release/zervice ~/zwipe/
+          sudo systemctl restart zerver
