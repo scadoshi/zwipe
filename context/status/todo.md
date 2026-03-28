@@ -105,6 +105,12 @@ Not a full web app — just the token-handling pages, a privacy policy, and an A
 
 ---
 
+## Project Structure Doc
+
+Add a `context/architecture/structure.md` walking through the full directory tree with explanations — useful for onboarding and AI context.
+
+---
+
 ## CI/CD
 
 Automate deployment from Mac to server on every push to `main`:
