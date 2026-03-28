@@ -190,22 +190,20 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 div { class: "screen-content",
                     match deck_profile_resource() {
                         Some(Ok(deck_profile)) => rsx! {
-                            div { style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
+                            div { style: "width: calc(100% - 4rem); display: flex; flex-direction: column; gap: 1rem; padding: 1rem 0;",
                                 if let Some(error) = load_error() {
                                     div { class: "message-error", "{error}" }
                                 }
 
-                                div { class: "flex items-center flex-between mb-2 gap-2",
-                                    div { class: "flex-1",
-                                        label { class: "label", "deck name" }
-                                        p { class: "text-base font-light mb-1", "{deck_profile.name}" }
+                                label { class: "label", "profile" }
+                                div { class: "info-list",
+                                    div { class: "info-row",
+                                        span { class: "info-row-label", "name" }
+                                        span { class: "info-row-value", "{deck_profile.name}" }
                                     }
-                                }
-
-                                div { class: "flex items-center flex-between mb-2 gap-2",
-                                    div { class: "flex-1",
-                                        label { class: "label", "copy rule" }
-                                        p { class: "text-base font-light mb-1",
+                                    div { class: "info-row",
+                                        span { class: "info-row-label", "copy rule" }
+                                        span { class: "info-row-value",
                                             if deck_profile.copy_max == Some(CopyMax::standard()) {
                                                 "standard"
                                             } else if deck_profile.copy_max == Some(CopyMax::singleton()) {
@@ -215,12 +213,9 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                             }
                                         }
                                     }
-                                }
-
-                                div { class: "flex items-center flex-between mb-2 gap-2",
-                                    div { class: "flex-1",
-                                        label { class: "label", "commander" }
-                                        p { class: "text-base font-light mb-1",
+                                    div { class: "info-row",
+                                        span { class: "info-row-label", "commander" }
+                                        span { class: "info-row-value",
                                             if let Some(cmd) = commander() {
                                                 { cmd.scryfall_data.name.to_lowercase() }
                                             } else {
@@ -231,19 +226,20 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                 }
 
                                 if let (Some(m), Some(mana_curve_bars)) = (metrics.as_ref(), mana_curve_bars.as_ref()) {
-                                    // ── stats ──────────────────────────────────────
                                     label { class: "label", "stats" }
-                                    div { class: "flex items-center flex-between mb-1",
-                                        span { class: "text-sm font-light", "cards" }
-                                        span { class: "text-sm font-light opacity-50", "{m.total_cards}" }
-                                    }
-                                    div { class: "flex items-center flex-between mb-1",
-                                        span { class: "text-sm font-light", "avg cmc" }
-                                        span { class: "text-sm font-light opacity-50", "{m.avg_cmc:.1}" }
-                                    }
-                                    div { class: "flex items-center flex-between mb-2",
-                                        span { class: "text-sm font-light", "lands" }
-                                        span { class: "text-sm font-light opacity-50", "{m.land_count}" }
+                                    div { class: "info-list",
+                                        div { class: "info-row",
+                                            span { class: "info-row-label", "cards" }
+                                            span { class: "info-row-value", "{m.total_cards}" }
+                                        }
+                                        div { class: "info-row",
+                                            span { class: "info-row-label", "avg cmc" }
+                                            span { class: "info-row-value", "{m.avg_cmc:.1}" }
+                                        }
+                                        div { class: "info-row",
+                                            span { class: "info-row-label", "lands" }
+                                            span { class: "info-row-value", "{m.land_count}" }
+                                        }
                                     }
 
                                     // ── mana curve ─────────────────────────────────

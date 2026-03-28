@@ -108,6 +108,8 @@
     font-size: 0.9rem;
     font-weight: 300;
     letter-spacing: 0.1em;
+    word-break: break-all;
+    overflow-wrap: anywhere;
 }
 
 .toast-description {
