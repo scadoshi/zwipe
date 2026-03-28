@@ -71,7 +71,7 @@ App Store requires a privacy policy URL. Zwipe collects email + deck data. A sim
 
 ~~3. Config filter labels: add "is" or "has" prefix to boolean fields so they read naturally — "is playable", "is digital only", "is oversized", "is promo", "has content warning".~~
 
-4. **Card image size** — card images need to expand to near full-screen on mobile. Should always be easy to read at a glance. Currently too small on device.
+~~4. **Card image size** — card images need to expand to near full-screen on mobile.~~ — **DONE** (2026-03-27). `.card-image` `max-height` changed from `42vh` to `calc(100svh - 13rem)`, added `max-width: calc(100% - 2rem)`, and reduced bottom margin. `.card-shape` (text fallback) height updated to match. Add/remove screens switched from `.centered` to `.card-swipe` (`overflow-y: hidden; justify-content: flex-start`) — eliminates vertical scroll competition with swipe gestures and fixes card-top clip caused by flex centering overflow above the scroll origin.
 
 5. **Filter active count badges** — each filter accordion group should show how many filters are currently active (e.g. "mana (2)") so the user knows where to go to turn things off without opening every section.
 
@@ -197,62 +197,43 @@ ios-deploy --bundle target/dx/main/debug/ios/Main.app
 
 ### Backend Hosting
 
-**Decided: Raspberry Pi 5 (4GB) via Cloudflare Tunnel (2026-03-25)**
+**Decided: Ubuntu Server (headless, x86_64) via Cloudflare Tunnel (2026-03-27)**
 
-POC hosting on an existing Pi 5 — if it handles the load, great. Upgrade to a proper server later if needed.
+Moved off Raspberry Pi 5 (4GB RAM, aarch64) to a repurposed desktop machine: 32GB RAM, x86_64, Ubuntu Server (no desktop UI — headless, managed via SSH). GPU removed before OS install.
 
-- **Hardware:** Raspberry Pi 5, 4GB RAM, Debian 12 Bookworm, aarch64, SD card
-- **Domain:** `zwipe.net` — moved to Cloudflare DNS (2026-03-25, propagation pending)
-- **Networking:** Cloudflare Tunnel (`cloudflared`) — no port forwarding, no static IP, TLS at Cloudflare's edge
-- **Database:** PostgreSQL — installed and running on Pi, `zwipe` DB + user created
+- **Hardware:** x86_64 desktop, 32GB RAM, Ubuntu Server (headless)
+- **Domain:** `zwipe.net` — Cloudflare DNS
+- **Networking:** Cloudflare Tunnel (`cloudflared`) — no port forwarding, TLS at Cloudflare's edge
+- **Database:** PostgreSQL — `zwipe` DB + user
 - **Process manager:** `systemd` for zerver; cron for nightly `zervice`
 
-**Stack:**
-- Debian 12 (Pi)
-- PostgreSQL (installed, enabled)
-- `cloudflared` daemon (Cloudflare Tunnel)
-- `zerver` as a systemd service (cross-compiled for aarch64)
-- `zervice` on a nightly cron (`0 4 * * *`)
-
-**Progress:**
-- [x] PostgreSQL installed, enabled, `zwipe` DB + user created
-- [x] `zwipe.net` added to Cloudflare, nameservers updated at Namecheap
-- [x] Cloudflare Tunnel (`cloudflared`) installed, configured, running as systemd service
-- [x] Cross-compile zerver + zervice for aarch64 on Mac (via `cargo zigbuild`)
-- [x] Deploy binaries to Pi via scp (`~/zwipe/`)
-- [x] Configure zerver `.env` on Pi
-- [x] Run SQLx migrations on Pi
-- [x] systemd unit for zerver — running, enabled
-- [x] Cron entry for zervice (nightly 4am)
-- [x] Update zwiper `BACKEND_URL=https://api.zwipe.net`
-- [x] App running on device, hitting production backend at `api.zwipe.net`
-
-**Remaining:**
+**Migration status (2026-03-27):**
+- [ ] Disassemble desktop, remove GPU, reassemble
+- [ ] Install Ubuntu Server (headless)
+- [ ] PostgreSQL installed, `zwipe` DB + user created
+- [ ] Cloudflare Tunnel configured, running as systemd service
+- [ ] Cross-compile zerver + zervice for x86_64 on Mac (via `cargo zigbuild`)
+- [ ] Deploy binaries, configure `.env`, run SQLx migrations
+- [ ] systemd unit for zerver — running, enabled
+- [ ] Cron entry for zervice (nightly 4am)
+- [ ] Create `/var/log/zwipe/` for rolling logs
 - [ ] Run zervice once manually to seed Scryfall card data
+- [ ] Verify iOS app hits `api.zwipe.net` successfully
 - [ ] Verify iOS Keychain session persistence across cold launches
 
-**Next session starting point — Cloudflare Tunnel on Pi:**
+**Cross-compile zerver for x86_64 (on Mac):**
 ```bash
-curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64.deb -o cloudflared.deb
-sudo dpkg -i cloudflared.deb
-cloudflared tunnel login
-cloudflared tunnel create zwipe
-```
-Then configure the tunnel to route `zwipe.net` → `localhost:3000` and install as systemd service.
-
-**Cross-compile zerver for aarch64 (on Mac):**
-```bash
-rustup target add aarch64-unknown-linux-gnu
-cargo build --release --bin zerver --bin zervice --target aarch64-unknown-linux-gnu
-scp target/aarch64-unknown-linux-gnu/release/zerver pi@<pi-ip>:~/
-scp target/aarch64-unknown-linux-gnu/release/zervice pi@<pi-ip>:~/
+rustup target add x86_64-unknown-linux-gnu
+cargo zigbuild --release --bin zerver --bin zervice --target x86_64-unknown-linux-gnu
+scp target/x86_64-unknown-linux-gnu/release/zerver zervice <user>@<server-ip>:~/zwipe/
+ssh <user>@<server-ip> "sudo systemctl restart zerver"
 ```
 
 **Key prod config notes:**
 - iOS requires HTTPS — Cloudflare Tunnel provides this automatically
 - iOS native clients don't send an `Origin` header, so CORS won't block them
-- Refresh token cleanup: handled — `zervice` runs `delete_expired_sessions` nightly at 4am via cron, with `token_cleanup` event logged on each run
-- If Pi can't handle load at scale, migrate to a VPS — same stack, same steps
+- Refresh token cleanup: `zervice` runs `delete_expired_sessions` nightly at 4am, `token_cleanup` event logged on each run
+- See `context/decisions/hosting.md` for full config reference
 
 ### File-Based Logging for zerver
 
@@ -305,8 +286,4 @@ Both features share the same Resend integration, so they should be built togethe
 
 3. ~~**iOS Keyboard Pushes Content Down**~~ — **FIXED** (2026-03-23)
 
-4. **Swipe-up triggers page scroll on card viewing screens** — on the card viewing screens, swiping up (intended as a swipe gesture) sometimes also scrolls the page. The swipe handler and the native scroll are competing. Likely needs `preventDefault` on the touch event or a scroll-lock while a swipe gesture is in progress.
-
-   **Root cause:** Same as above — `sticky top-0` + `justify-content: center` + `h-screen` caused layout reflow when iOS keyboard changed the viewport height.
-
-   **Fix:** `position: fixed` on `.screen` is immune to viewport resize from keyboard. Safe-area insets moved from `body` to `.screen` via `env(safe-area-inset-top/bottom)`.
+~~4. **Swipe-up triggers page scroll on card viewing screens**~~ — **FIXED** (2026-03-27). Add/remove screens switched from `.centered` to `.card-swipe` (`overflow-y: hidden`). Vertical scroll is fully locked on these screens — no longer competes with swipe gestures. Also fixed the related card-top clip bug where `justify-content: center` was pushing overflow above the scroll origin.
