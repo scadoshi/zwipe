@@ -14,6 +14,7 @@ use crate::{
         auth::ports::AuthService,
         card::ports::CardService,
         deck::{
+            MAX_CARDS_PER_DECK,
             models::deck_card::import_deck_cards::{
                 ImportDeckCards, ImportDeckCardsError, ImportDeckCardsResult,
             },
@@ -33,6 +34,9 @@ impl From<ImportDeckCardsError> for ApiError {
                 Self::Forbidden(ImportDeckCardsError::Forbidden.to_string())
             }
             ImportDeckCardsError::DeckNotFound(e) => ApiError::from(e),
+            ImportDeckCardsError::LimitReached => {
+                Self::UnprocessableEntity(format!("card limit reached (max {MAX_CARDS_PER_DECK})"))
+            }
             ImportDeckCardsError::Database(e) => e.log_500(),
         }
     }

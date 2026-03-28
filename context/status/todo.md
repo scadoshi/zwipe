@@ -99,9 +99,9 @@ Not a full web app — just the token-handling pages, a privacy policy, and an A
 
 ## Limits (Pre-Subscription Groundwork)
 
-11. **Deck count limit per user** — cap decks per account in anticipation of a subscription tier that would raise the limit.
+11. ✅ **Deck count limit per user** — 20 decks max. Enforced in service layer on `create_deck_profile`.
 
-12. **Per-deck card limit** — same idea for cards per deck.
+12. ✅ **Per-deck card limit** — 250 cards (sum of quantities) max. Enforced on `create_deck_card` and `import_deck_cards`. Constants in `domain/deck/mod.rs`.
 
 ---
 

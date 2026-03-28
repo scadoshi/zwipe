@@ -12,6 +12,7 @@ use crate::{
         auth::ports::AuthService,
         card::ports::CardService,
         deck::{
+            MAX_CARDS_PER_DECK,
             models::deck_card::{
                 create_deck_card::{CreateDeckCard, CreateDeckCardError, InvalidCreateDeckCard},
                 DeckCard,
@@ -33,6 +34,9 @@ impl From<CreateDeckCardError> for ApiError {
             }
             CreateDeckCardError::IsCommander => {
                 Self::UnprocessableEntity(CreateDeckCardError::IsCommander.to_string())
+            }
+            CreateDeckCardError::LimitReached => {
+                Self::UnprocessableEntity(format!("card limit reached (max {MAX_CARDS_PER_DECK})"))
             }
             CreateDeckCardError::Database(e) => e.log_500(),
             CreateDeckCardError::DeckCardFromDb(e) => e.log_500(),

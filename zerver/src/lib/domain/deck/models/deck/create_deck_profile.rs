@@ -38,6 +38,9 @@ pub enum CreateDeckProfileError {
     /// User already has a deck with this name.
     #[error("deck with name and user id combination already exists")]
     Duplicate,
+    /// User has reached the maximum number of decks.
+    #[error("deck limit reached")]
+    LimitReached,
     /// Database returned invalid data after creation.
     #[error("deck created but database returned invalid object {0}")]
     DeckFromDb(anyhow::Error),

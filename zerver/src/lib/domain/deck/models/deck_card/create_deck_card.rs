@@ -50,6 +50,9 @@ pub enum CreateDeckCardError {
     /// Cannot add the deck's commander as a regular card.
     #[error("card is this deck's commander")]
     IsCommander,
+    /// Deck has reached the maximum number of cards.
+    #[error("card limit reached")]
+    LimitReached,
     /// Database returned invalid data after creation.
     #[error("deck card created but database returned invalid object {0}")]
     DeckCardFromDb(anyhow::Error),

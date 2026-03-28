@@ -32,6 +32,8 @@ use crate::domain::{
     },
 };
 
+use crate::domain::deck::{MAX_CARDS_PER_DECK, MAX_DECKS_PER_USER};
+
 /// Deck service implementation handling deck building and card management operations.
 ///
 /// This service coordinates:
@@ -80,6 +82,14 @@ where
         &self,
         request: &CreateDeckProfile,
     ) -> Result<DeckProfile, CreateDeckProfileError> {
+        let deck_count = self
+            .deck_repo
+            .count_decks_by_user(request.user_id)
+            .await
+            .map_err(CreateDeckProfileError::Database)?;
+        if deck_count >= MAX_DECKS_PER_USER {
+            return Err(CreateDeckProfileError::LimitReached);
+        }
         self.deck_repo.create_deck_profile(request).await
     }
 
@@ -90,6 +100,14 @@ where
         let deck_profile = self.get_deck_profile(&request.into()).await?;
         if deck_profile.commander_id == Some(request.scryfall_data_id) {
             return Err(CreateDeckCardError::IsCommander);
+        }
+        let card_count = self
+            .deck_repo
+            .count_cards_in_deck(request.deck_id)
+            .await
+            .map_err(CreateDeckCardError::Database)?;
+        if card_count + i64::from(*request.quantity) > MAX_CARDS_PER_DECK {
+            return Err(CreateDeckCardError::LimitReached);
         }
         self.deck_repo.create_deck_card(request).await
     }
@@ -243,6 +261,17 @@ where
         // Build batch insert data
         let batch: Vec<(Uuid, i32)> =
             insert_map.values().map(|(id, qty, _, _)| (*id, *qty)).collect();
+
+        // Check card limit before inserting
+        let card_count = self
+            .deck_repo
+            .count_cards_in_deck(request.deck_id)
+            .await
+            .map_err(|e| ImportDeckCardsError::Database(e))?;
+        let import_total: i64 = batch.iter().map(|(_, qty)| i64::from(*qty)).sum();
+        if card_count + import_total > MAX_CARDS_PER_DECK {
+            return Err(ImportDeckCardsError::LimitReached);
+        }
 
         // Bulk insert
         let _deck_cards = self.deck_repo.bulk_create_deck_cards(request, &batch).await?;
