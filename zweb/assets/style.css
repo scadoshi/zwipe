@@ -206,7 +206,7 @@ code {
 
 .logo {
   font-family: "Cascadia Code", monospace;
-  font-size: 1rem;
+  font-size: clamp(0.5rem, 2.5vw, 1.4rem);
   line-height: 1.2;
   white-space: pre;
   text-align: left;

@@ -3,40 +3,12 @@ use crate::{APP_STORE_URL, Footer, Nav};
 
 const LOGO_ASCII: &str = include_str!("../../assets/logo.txt");
 
-fn fit_logo_to_viewport() {
-    let Some(window) = web_sys::window() else { return };
-    let Some(document) = window.document() else { return };
-    let Some(logo) = document.query_selector(".logo").ok().flatten() else { return };
-
-    // Reset to base size with animation paused so we measure natural width
-    let _ = logo.set_attribute("style", "animation: none; font-size: 16px;");
-    let _ = logo.scroll_width(); // force reflow
-
-    let vw = window.inner_width().ok().and_then(|v| v.as_f64()).unwrap_or(1440.0);
-    let width = logo.scroll_width() as f64;
-
-    if width > 0.0 {
-        let new_fs = 16.0 * vw / width;
-        // Set computed font-size; dropping animation:none lets the CSS animation replay
-        let _ = logo.set_attribute("style", &format!("font-size: {new_fs}px;"));
-    }
-}
-
 #[component]
 pub fn Home() -> Element {
     rsx! {
         Nav {}
         div { class: "hero",
-            div {
-                class: "logo",
-                onmounted: move |_| {
-                    spawn(async {
-                        gloo_timers::future::TimeoutFuture::new(10).await;
-                        fit_logo_to_viewport();
-                    });
-                },
-                "{LOGO_ASCII}"
-            }
+            div { class: "logo", "{LOGO_ASCII}" }
             p { class: "tagline",
                 "the mtg deck builder built for mobile. swipe right to add, left to skip."
             }
