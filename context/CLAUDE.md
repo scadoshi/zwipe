@@ -34,6 +34,13 @@ dx build --release --platform desktop
 ./zcripts/denv/fedora/reset.sh  # Linux
 ```
 
+### SQLx Offline Mode (run after any query change)
+```bash
+# Run from workspace root whenever you add/modify a query_scalar!, query!, or query_as!
+cargo sqlx prepare --workspace
+# Commit the generated .sqlx/ directory — CI builds use it instead of a live DB
+```
+
 ## Architecture
 
 ### Hexagonal (Ports & Adapters) Pattern
