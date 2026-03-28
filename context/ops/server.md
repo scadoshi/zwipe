@@ -8,6 +8,7 @@ Backend served via Cloudflare Tunnel — no port forwarding, TLS handled by Clou
 ## Setup Checklist
 
 - [ ] Boot with Ubuntu Server USB installer (headless install)
+- [ ] SSH in from Mac, set up key auth
 - [ ] Install PostgreSQL, create `zwipe` DB + user
 - [ ] Create `/var/log/zwipe/` log directory
 - [ ] Install Rust, clone repo, build binaries
@@ -18,6 +19,56 @@ Backend served via Cloudflare Tunnel — no port forwarding, TLS handled by Clou
 - [ ] Add `zervice` nightly cron
 - [ ] Run `zervice` once manually to seed Scryfall card data
 - [ ] Verify iOS app hits `api.zwipe.net` successfully
+
+---
+
+## SSH Access
+
+Everything below is done over SSH. Get onto the server first.
+
+### Find the server's IP (from the server directly on first boot)
+
+The Ubuntu Server installer leaves you at a login prompt with the IP shown on screen.
+If you miss it or need it later:
+
+```bash
+ip addr show | grep 'inet ' | grep -v 127.0.0.1
+# Look for something like: inet 192.168.1.XXX/24
+```
+
+Or check your router's DHCP client list — the server will appear as a connected device.
+
+### SSH in from your Mac
+
+```bash
+ssh scottyfermo@192.168.1.XXX
+```
+
+### Set up SSH key auth (do this once to avoid typing password every time)
+
+From your Mac:
+```bash
+ssh-copy-id scottyfermo@192.168.1.XXX
+# Enter the server password once — future logins are passwordless
+```
+
+If `ssh-copy-id` isn't available:
+```bash
+cat ~/.ssh/id_rsa.pub | ssh scottyfermo@192.168.1.XXX "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+```
+
+If you don't have an SSH key yet:
+```bash
+ssh-keygen -t ed25519 -C "zwipe-server"
+# Accept defaults, then run ssh-copy-id above
+```
+
+### Add a friendly alias (optional, saves typing)
+
+In `~/.zshrc` on your Mac:
+```bash
+alias zwipe-server='ssh scottyfermo@192.168.1.XXX'
+```
 
 ---
 
@@ -184,12 +235,21 @@ curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloud
 sudo dpkg -i cloudflared.deb
 ```
 
-### Authenticate (one-time, opens browser)
+### Authenticate (one-time — headless, no browser)
+
+The server has no display. `cloudflared tunnel login` detects this and prints a URL
+to the terminal instead of opening a browser. Copy that URL and open it on your Mac
+or phone to complete the OAuth flow. The server polls and writes `~/.cloudflared/cert.pem`
+automatically once you approve.
 
 ```bash
 cloudflared tunnel login
-# Opens browser to Cloudflare dashboard — select the zwipe.net zone
-# Writes ~/.cloudflared/cert.pem
+# Prints something like:
+# Please open the following URL and log in with your Cloudflare account:
+# https://dash.cloudflare.com/argotunnel?callback=...
+#
+# Open that URL on your Mac/phone — select the zwipe.net zone
+# Terminal will confirm: "You have successfully logged in."
 ```
 
 ### Create the tunnel (first time only)
