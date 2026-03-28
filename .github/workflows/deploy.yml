@@ -1,0 +1,43 @@
+name: Deploy
+
+on:
+  workflow_dispatch: # manual trigger only — re-enable push trigger when SSH is confirmed working
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build
+        env:
+          SQLX_OFFLINE: true
+        run: cargo build --release --bin zerver --bin zervice
+
+      - name: Deploy to server
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          HOST: ${{ vars.DEPLOY_HOST }}
+          USER: ${{ vars.DEPLOY_USER }}
+        run: |
+          echo "$SSH_KEY" > /tmp/deploy_key
+          chmod 600 /tmp/deploy_key
+          scp -i /tmp/deploy_key -o StrictHostKeyChecking=no \
+            target/release/zerver target/release/zervice \
+            $USER@$HOST:~/zwipe/
+          ssh -i /tmp/deploy_key -o StrictHostKeyChecking=no $USER@$HOST \
+            "sudo systemctl restart zerver"
+          rm /tmp/deploy_key
