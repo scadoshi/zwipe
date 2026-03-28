@@ -541,6 +541,7 @@ impl CardRepository for MyPostgres {
 
     /// Extracts distinct card types by tokenizing `type_line` with `STRING_TO_ARRAY`.
     async fn get_card_types(&self) -> Result<Vec<String>, GetCardTypesError> {
+        // Stop words: see domain::card::models::search_card::stop_words::TYPE_STOP_WORDS
         let card_types: Vec<String> = query_scalar!(
             "SELECT DISTINCT subtype FROM (
                 SELECT TRIM(BOTH ':-?, ' FROM UNNEST(STRING_TO_ARRAY(type_line, ' '))) subtype
@@ -576,6 +577,7 @@ impl CardRepository for MyPostgres {
 
     /// Returns distinct normalized words extracted from oracle text, noise-filtered.
     async fn get_oracle_words(&self) -> Result<Vec<String>, GetOracleWordsError> {
+        // Stop words: see domain::card::models::search_card::stop_words::ORACLE_STOP_WORDS
         let words: Vec<String> = query_scalar!(
             "SELECT DISTINCT LOWER(REGEXP_REPLACE(word, '[^a-zA-Z]', '', 'g')) AS word
              FROM scryfall_data, REGEXP_SPLIT_TO_TABLE(oracle_text, '\\s+') AS word

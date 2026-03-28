@@ -5,20 +5,11 @@
 
 use dioxus::prelude::*;
 use zwipe::domain::card::models::Card;
+use zwipe::domain::card::models::search_card::stop_words::{ORACLE_STOP_WORDS, TYPE_STOP_WORDS};
 
 /// Newtype so `try_use_context` doesn't collide with other `Signal<Vec<Card>>` contexts.
 #[derive(Clone, Copy)]
 pub struct DeckCards(pub Signal<Vec<Card>>);
-
-/// Stop words filtered out of type_line tokens (matches server SQL).
-const TYPE_STOP_WORDS: &[&str] = &["//", "-", "the", "of", "and/or", "you", "you'll"];
-
-/// Stop words filtered out of oracle text tokens (matches server SQL).
-const ORACLE_STOP_WORDS: &[&str] = &[
-    "a", "an", "the", "of", "to", "in", "on", "at", "by", "for", "with", "from", "into", "as",
-    "and", "or", "but", "that", "which", "who", "it", "its", "you", "your", "this", "those",
-    "these", "they", "their", "is", "are", "was", "be", "has", "have", "do", "does", "been", "",
-];
 
 /// Extracts distinct type words from deck cards' `type_line` fields.
 pub fn extract_type_words(cards: &[Card]) -> Vec<String> {

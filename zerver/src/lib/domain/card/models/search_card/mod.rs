@@ -21,3 +21,5 @@ pub mod card_type;
 /// Search error types.
 #[cfg(feature = "zerver")]
 pub mod error;
+/// Stop words for card text tokenization (shared with frontend).
+pub mod stop_words;
