@@ -141,7 +141,7 @@ ALLOWED_ORIGINS=https://zwipe.net
 RUST_LOG=info
 RUST_BACKTRACE=1
 RESEND_API_KEY=<from Resend dashboard>
-RESEND_EMAIL_FROM=noreply@zwipe.net
+RESEND_EMAIL_FROM=hello@zwipe.net
 # LOG_DIR omitted — defaults to /var/log/zwipe
 ```
 
@@ -385,3 +385,19 @@ you don't need to recreate them. Just:
 curl https://api.zwipe.net/
 # {"message":"zerver","status":"ready","version":"0.1.0"}
 ```
+
+---
+
+## Email Deliverability
+
+zwipe.net uses Resend for transactional email. DNS records required for inbox delivery:
+
+| Record | Type | Purpose |
+|--------|------|---------|
+| `resend._domainkey` | TXT | DKIM — Resend signs outgoing mail |
+| `@` / `v=spf1 include:amazonses.com` | TXT | SPF — authorises Resend's servers |
+| `_dmarc` | TXT | DMARC — required by Gmail/Yahoo/Microsoft |
+
+DMARC record value: `v=DMARC1; p=none; rua=mailto:hello@zwipe.net`
+
+All three are set in Cloudflare DNS. `RESEND_EMAIL_FROM` must be `hello@zwipe.net` (not `noreply@`) — Resend flags no-reply addresses and spam filters penalise them.

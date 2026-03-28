@@ -40,7 +40,7 @@ Base: `android-chrome-512x512.png`. Dioxus config likely via `[bundle] icon = [.
 
 ### 3. zwipe.net Web Client
 
-Minimal static site hosted on Cloudflare Pages. Full plan: `status/todo.md` web client section below.
+✅ Live at https://zwipe.net — deployed via GitHub Pages (workflow: `.github/workflows/deploy-zweb.yml`). HTTPS active. See `ops/cicd.md` for deploy details.
 
 ### 4. App Store Connect Setup
 
@@ -64,15 +64,17 @@ Current build uses Development profile. App Store requires:
 
 ## zwipe.net Web Client
 
-Static site on Cloudflare Pages. `zwipe.net` → Pages, `api.zwipe.net` → Cloudflare Tunnel → zerver.
+✅ Live at https://zwipe.net — GitHub Pages via `.github/workflows/deploy-zweb.yml`. `api.zwipe.net` → Cloudflare Tunnel → zerver.
 
-**Pages needed:**
-- `zwipe.net/verify?token=<hex>` — POST to `POST /api/auth/verify-email`, show success/error
-- `zwipe.net/reset?token=<hex>` — new password form, POST to `POST /api/auth/reset-password`
-- `zwipe.net/privacy` — privacy policy (required for App Store)
-- `zwipe.net/` — everything else redirects to App Store listing
+**Pages:**
+- ✅ `/` — home/landing with ASCII logo, tagline, App Store link
+- ✅ `/about` — about page
+- ✅ `/contribute` — Stripe, Buy Me a Coffee, and GitHub Sponsors links
+- ✅ `/privacy` — privacy policy
+- ✅ `/verify/:token` — POST to `POST /api/auth/verify-email`, shows success/error (token in path segment, not query param — Dioxus Router strips query params on SPA init)
+- ✅ `/reset/:token` — new password form, POST to `POST /api/auth/reset-password`
 
-Not a full web app — just the token-handling pages, a privacy policy, and an App Store redirect. Static HTML + minimal JS.
+Token links in emails use path segments: `https://zwipe.net/verify/{token}` and `https://zwipe.net/reset/{token}`. SPA routing handled by `404.html` (copy of `index.html`) in the deploy workflow.
 
 ---
 
@@ -113,17 +115,15 @@ Add a `context/architecture/structure.md` walking through the full directory tre
 
 ## CI/CD
 
-Automate deployment from Mac to server on every push to `main`:
-- GitHub Actions workflow on push → builds release binary on x86_64 Linux runner → SSHes into server → swaps binary → restarts `zerver` systemd service
-- Zero manual SSH or `cargo build` on the server
+✅ **zerver/zervice**: GitHub Actions workflow on push → builds release binaries → SSHes into server → restarts `zerver` systemd service. See `ops/cicd.md`.
+
+✅ **zweb**: GitHub Actions workflow on push (when `zweb/**` changes) → `dx build --release --platform web` → deploys to GitHub Pages at `zwipe.net`. See `ops/cicd.md`.
 
 ---
 
-## Donate Button (Post-Launch)
+## Donate Button
 
-Add a Stripe Payment Link donate button to `zwipe.net` after the app is approved.
-- Stripe Payment Links — no backend needed
-- `zwipe.net` only — do not add to the app until after initial App Store approval
+✅ Done. Contribute page live at `zwipe.net/contribute` with Stripe Payment Link, Buy Me a Coffee, and GitHub Sponsors. FUNDING.yml in repo adds Sponsor button to GitHub repo. GitHub Sponsors application pending approval.
 
 ---
 
