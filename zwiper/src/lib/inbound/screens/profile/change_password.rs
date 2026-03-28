@@ -16,7 +16,7 @@ use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
 use zwipe::{
     domain::auth::models::{password::Password, session::Session},
-    inbound::http::{handlers::auth::change_password::HttpChangePassword, ApiError},
+    inbound::http::handlers::auth::change_password::HttpChangePassword,
 };
 
 /// Form screen for updating user's password.
@@ -71,7 +71,7 @@ pub fn ChangePassword() -> Element {
                 session.upkeep(auth_client);
                 let Some(session) = session() else {
                     toast.error(
-                        ApiError::Unauthorized("session expired".to_string()).to_string().to_lowercase(),
+                        "session expired — please log in again".to_string(),
                         ToastOptions::default().duration(Duration::from_millis(3000)),
                     );
                     is_loading.set(false);
@@ -90,7 +90,7 @@ pub fn ChangePassword() -> Element {
                     }
                     Err(e) => {
                         toast.error(
-                            e.to_string().to_lowercase(),
+                            e.to_user_message(),
                             ToastOptions::default().duration(Duration::from_millis(3000)),
                         );
                         is_loading.set(false);

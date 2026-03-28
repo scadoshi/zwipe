@@ -8,15 +8,17 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
+use dioxus_primitives::toast::{use_toast, ToastOptions};
 use email_address::EmailAddress;
 use std::str::FromStr;
+use std::time::Duration;
 use zwipe::{
     domain::{
         auth::models::{password::Password, session::Session},
         logo,
         user::models::username::Username,
     },
-    inbound::http::{handlers::auth::authenticate_user::HttpAuthenticateUser, ApiError},
+    inbound::http::handlers::auth::authenticate_user::HttpAuthenticateUser,
 };
 
 /// Login form screen for user authentication.
@@ -34,8 +36,7 @@ pub fn Login() -> Element {
 
     let mut submit_attempted = use_signal(|| false);
     let mut is_loading = use_signal(|| false);
-
-    let mut submission_error: Signal<Option<String>> = use_signal(|| None);
+    let toast = use_toast();
 
     let inputs_are_valid = move || {
         (Username::new(username_or_email()).is_ok()
@@ -51,18 +52,21 @@ pub fn Login() -> Element {
             spawn(async move {
                 match auth_client().authenticate_user(request).await {
                     Ok(new_session) => {
-                        submission_error.set(None);
                         new_session.infallible_save();
                         session.set(Some(new_session));
                         navigator.push(Router::Home {});
                     }
-                    Err(e) => submission_error.set(Some(e.to_string().to_lowercase())),
+                    Err(e) => toast.error(
+                        e.to_user_message(),
+                        ToastOptions::default().duration(Duration::from_millis(3000)),
+                    ),
                 }
             });
         } else {
-            submission_error.set(Some(
-                ApiError::Unauthorized("invalid credentials".to_string()).to_string().to_lowercase(),
-            ));
+            toast.error(
+                "invalid credentials".to_string(),
+                ToastOptions::default().duration(Duration::from_millis(3000)),
+            );
         }
         is_loading.set(false);
     };
@@ -88,10 +92,6 @@ pub fn Login() -> Element {
                     }
                     if is_loading() {
                         div { class : "spinner" }
-                    } else if let Some(error) = submission_error() {
-                        div { class: "message-error",
-                            { error }
-                        }
                     }
                 }
             }

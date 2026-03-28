@@ -5,8 +5,10 @@ use crate::{
     outbound::client::{auth::forgot_password::ClientForgotPassword, ZwipeClient},
 };
 use dioxus::prelude::*;
+use dioxus_primitives::toast::{use_toast, ToastOptions};
 use email_address::EmailAddress;
 use std::str::FromStr;
+use std::time::Duration;
 use zwipe::{
     domain::logo,
     inbound::http::handlers::auth::request_password_reset::HttpRequestPasswordReset,
@@ -23,8 +25,8 @@ pub fn ForgotPassword() -> Element {
     let mut submit_attempted = use_signal(|| false);
     let mut is_loading = use_signal(|| false);
     let mut email_error: Signal<Option<String>> = use_signal(|| None);
-    let mut submission_error: Signal<Option<String>> = use_signal(|| None);
     let mut submission_success = use_signal(|| false);
+    let toast = use_toast();
 
     let mut validate_email = move || {
         if let Err(_) = EmailAddress::from_str(&email()) {
@@ -42,11 +44,11 @@ pub fn ForgotPassword() -> Element {
             let request = HttpRequestPasswordReset::new(&email());
             spawn(async move {
                 match auth_client().request_password_reset(request).await {
-                    Ok(()) => {
-                        submission_error.set(None);
-                        submission_success.set(true);
-                    }
-                    Err(e) => submission_error.set(Some(e.to_string().to_lowercase())),
+                    Ok(()) => submission_success.set(true),
+                    Err(e) => toast.error(
+                        e.to_user_message(),
+                        ToastOptions::default().duration(Duration::from_millis(3000)),
+                    ),
                 }
                 is_loading.set(false);
             });
@@ -77,8 +79,6 @@ pub fn ForgotPassword() -> Element {
                             }
                             if is_loading() {
                                 div { class: "spinner" }
-                            } else if let Some(error) = submission_error() {
-                                div { class: "message-error", { error } }
                             }
                         }
                     }

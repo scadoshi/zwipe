@@ -92,7 +92,7 @@ pub fn Profile() -> Element {
                                                             ToastOptions::default().duration(Duration::from_millis(3000)),
                                                         ),
                                                         Err(e) => toast.error(
-                                                            e.to_string().to_lowercase(),
+                                                            e.to_user_message(),
                                                             ToastOptions::default().duration(Duration::from_millis(5000)),
                                                         ),
                                                     }
