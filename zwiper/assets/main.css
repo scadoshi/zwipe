@@ -798,16 +798,20 @@ body {
   text-align: left;
   padding: 1rem;
   margin: 1rem;
-  animation: logo-enter 1s forwards;
+  animation: logo-enter 0.5s ease-out backwards;
 }
 
 @keyframes logo-enter {
   from {
     letter-spacing: 10px;
+    opacity: 0;
+    transform: translateY(-12px);
   }
 
   to {
     letter-spacing: 0;
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -1457,8 +1461,27 @@ body {
   transform: scale(0.95);
 }
 
+.home-flavor {
+  min-height: 6rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+@keyframes flavor-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .flavor-quote {
   color: var(--text-subtle);
+  animation: flavor-enter 0.4s ease-out 0.1s backwards;
 }
 
 .flavor-source {
