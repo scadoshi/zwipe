@@ -390,6 +390,39 @@ pub fn Add(deck_id: Uuid) -> Element {
         });
     });
 
+    // Filter active state — used to show dots on accordion triggers
+    let fb = filter_builder();
+    let def = CardFilterBuilder::default();
+    let name_active = fb.name_contains().is_some();
+    let oracle_active = fb.oracle_text_contains().is_some()
+        || fb.oracle_text_contains_any().is_some()
+        || fb.oracle_text_contains_all().is_some()
+        || fb.keywords_contains_any().is_some()
+        || fb.keywords_contains_all().is_some();
+    let types_active = fb.type_line_contains().is_some()
+        || fb.type_line_contains_any().is_some()
+        || fb.type_line_contains_all().is_some()
+        || fb.card_type_contains_any().is_some()
+        || fb.card_type_contains_all().is_some();
+    let mana_active = fb.cmc_equals().is_some()
+        || fb.cmc_range().is_some()
+        || fb.color_identity_equals().is_some()
+        || fb.color_identity_within().is_some();
+    let combat_active = fb.power_equals().is_some()
+        || fb.power_range().is_some()
+        || fb.toughness_equals().is_some()
+        || fb.toughness_range().is_some();
+    let flavor_active = fb.flavor_text_contains().is_some() || fb.has_flavor_text().is_some();
+    let artist_active = fb.artist_equals_any().is_some();
+    let rarity_active = fb.rarity_equals_any().is_some();
+    let set_active = fb.set_equals_any().is_some();
+    let sort_active = fb.order_by().is_some();
+    let config_active = fb.is_playable() != def.is_playable()
+        || fb.digital() != def.digital()
+        || fb.oversized() != def.oversized()
+        || fb.promo() != def.promo()
+        || fb.content_warning() != def.content_warning();
+
     rsx! {
         Bouncer {
             div { class: "screen",
@@ -558,7 +591,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                             on_change: move |is_open| {
                                 if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(1)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
-                            AccordionTrigger { "name" }
+                            AccordionTrigger {
+                                "name"
+                                if name_active { span { class: "filter-dot" } }
+                            }
                             AccordionContent { Name {} }
                         }
 
@@ -566,7 +602,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                             on_change: move |is_open| {
                                 if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(2)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
-                            AccordionTrigger { "oracle text" }
+                            AccordionTrigger {
+                                "oracle text"
+                                if oracle_active { span { class: "filter-dot" } }
+                            }
                             AccordionContent { OracleText {} }
                         }
 
@@ -574,7 +613,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                             on_change: move |is_open| {
                                 if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(3)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
-                            AccordionTrigger { "types" }
+                            AccordionTrigger {
+                                "types"
+                                if types_active { span { class: "filter-dot" } }
+                            }
                             AccordionContent { Types {} }
                         }
 
@@ -582,7 +624,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                             on_change: move |is_open| {
                                 if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(4)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
-                            AccordionTrigger { "mana" }
+                            AccordionTrigger {
+                                "mana"
+                                if mana_active { span { class: "filter-dot" } }
+                            }
                             AccordionContent { Mana {} }
                         }
 
@@ -590,7 +635,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                             on_change: move |is_open| {
                                 if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(5)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
-                            AccordionTrigger { "combat" }
+                            AccordionTrigger {
+                                "combat"
+                                if combat_active { span { class: "filter-dot" } }
+                            }
                             AccordionContent { Combat {} }
                         }
 
@@ -598,7 +646,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                             on_change: move |is_open| {
                                 if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(6)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
-                            AccordionTrigger { "flavor text" }
+                            AccordionTrigger {
+                                "flavor text"
+                                if flavor_active { span { class: "filter-dot" } }
+                            }
                             AccordionContent { FlavorText {} }
                         }
 
@@ -606,7 +657,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                             on_change: move |is_open| {
                                 if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(7)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
-                            AccordionTrigger { "artist" }
+                            AccordionTrigger {
+                                "artist"
+                                if artist_active { span { class: "filter-dot" } }
+                            }
                             AccordionContent { Artist {} }
                         }
 
@@ -614,7 +668,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                             on_change: move |is_open| {
                                 if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(8)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
-                            AccordionTrigger { "rarity" }
+                            AccordionTrigger {
+                                "rarity"
+                                if rarity_active { span { class: "filter-dot" } }
+                            }
                             AccordionContent { Rarity {} }
                         }
 
@@ -622,7 +679,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                             on_change: move |is_open| {
                                 if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(9)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
-                            AccordionTrigger { "set" }
+                            AccordionTrigger {
+                                "set"
+                                if set_active { span { class: "filter-dot" } }
+                            }
                             AccordionContent { Set {} }
                         }
 
@@ -630,7 +690,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                             on_change: move |is_open| {
                                 if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(10)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
-                            AccordionTrigger { "sort" }
+                            AccordionTrigger {
+                                "sort"
+                                if sort_active { span { class: "filter-dot" } }
+                            }
                             AccordionContent { Sort {} }
                         }
 
@@ -638,7 +701,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                             on_change: move |is_open| {
                                 if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(11)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
-                            AccordionTrigger { "config" }
+                            AccordionTrigger {
+                                "config"
+                                if config_active { span { class: "filter-dot" } }
+                            }
                             AccordionContent { Config {} }
                         }
                   }

@@ -613,6 +613,16 @@ body {
   color: var(--bg-primary);
 }
 
+.filter-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--text-primary);
+  flex-shrink: 0;
+  display: inline-block;
+  align-self: center;
+}
+
 .util-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;

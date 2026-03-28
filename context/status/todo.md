@@ -80,17 +80,13 @@ Not a full web app — just the token-handling pages, a privacy policy, and an A
 
 5. **Filter active count badges** — each filter accordion group should show active filter count (e.g. "mana (2)") so the user knows where to clear without opening every section.
 
-6. **Filter clear empties card hand** — clearing filters on the add-cards screen should reset the `Vec<Cards>` in hand, not leave stale results.
-
 7. **Loading indicators** — audit all screens that trigger async fetches and ensure a loading state is shown. Hard to notice locally (127.0.0.1 is instant) but visible on device hitting `api.zwipe.net`.
 
 8. **Stop-words: move to zerver** — `ORACLE_STOP_WORDS` and `TYPE_STOP_WORDS` in `zwiper/src/lib/inbound/screens/deck/card/filter/deck_cards.rs` should be defined in zerver and shared, not duplicated. Backend uses the same stop words in queries.
 
 9. **Password change/reset session alert** — both `change_password_and_revoke_sessions` and `reset_password` now revoke all sessions. Frontend should show a confirmation before submitting: "Changing your password will log you out on all other devices."
 
-10. **Util bar button tap feedback** — `.util-btn` should animate on press (brief scale-down or opacity dip via `:active`). Remove any `:hover` styles — they're meaningless on touch and can leave buttons stuck after a tap on iOS.
-
-11. **Full screen integration pass** — walk every screen on device. For each async operation add a skeleton or spinner. Add transitions between screens and loading/loaded states — nothing heavy, just enough to feel intentional.
+10. **Full screen integration pass** — walk every screen on device. For each async operation add a skeleton or spinner. Add transitions between screens and loading/loaded states — nothing heavy, just enough to feel intentional.
 
 ---
 
