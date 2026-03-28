@@ -107,6 +107,17 @@ Token links in emails use path segments: `https://zwipe.net/verify/{token}` and 
 
 ---
 
+## Binary Versioning
+
+Add a version string to `zerver` and `zervice` that prints on startup — makes it immediately obvious after a manual or CI deploy whether the new binary is live.
+
+- Add `version` to workspace `Cargo.toml` (e.g. `0.1.0`)
+- Print version on startup: `zerver v0.1.0 starting...` / `zervice v0.1.0 starting...` using `env!("CARGO_PKG_VERSION")`
+- Scrape codebase for all hardcoded version strings (e.g. `"0.1.0"`, `version:`) and replace with `env!("CARGO_PKG_VERSION")`
+- Expose on health endpoint: `GET /` already returns a `version` field — verify it uses `CARGO_PKG_VERSION` and not a hardcoded string
+
+---
+
 ## Project Structure Doc
 
 Add a `context/architecture/structure.md` walking through the full directory tree with explanations — useful for onboarding and AI context.

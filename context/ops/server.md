@@ -65,7 +65,7 @@ ssh-keygen -t ed25519 -C "zwipe-server"
 # Accept defaults
 
 # Copy the public key to the server (enter your server password once)
-ssh-copy-id scottyfermo@192.168.1.XXX
+ssh-copy-id scadoshi@192.168.1.XXX
 ```
 
 **Back on the server — re-disable password auth (security):**
@@ -78,20 +78,20 @@ sudo nano /etc/ssh/sshd_config
 sudo systemctl restart ssh
 ```
 
-From now on `ssh scottyfermo@192.168.1.XXX` works without a password and
+From now on `ssh scadoshi@192.168.1.XXX` works without a password and
 password-based login is blocked.
 
 ### SSH in from your Mac
 
 ```bash
-ssh scottyfermo@192.168.1.XXX
+ssh scadoshi@192.168.1.XXX
 ```
 
 ### Add a friendly alias (optional, saves typing)
 
 In `~/.zshrc` on your Mac:
 ```bash
-alias zwipe-server='ssh scottyfermo@192.168.1.XXX'
+alias zwipe-server='ssh scadoshi@192.168.1.XXX'
 ```
 
 ---
@@ -205,10 +205,38 @@ cd ~/zwipe-src
 cargo build --release --bin zerver --bin zervice
 
 # Deploy binaries — output is in workspace root target/, not zerver/target/
-# Use ~/zwipe/bin/ to avoid naming conflict with the zwipe directory itself
-mkdir -p ~/zwipe/bin
-cp target/release/zerver target/release/zervice ~/zwipe/bin/
+mkdir -p ~/zwipe
+cp target/release/zerver target/release/zervice ~/zwipe/
 ```
+
+---
+
+## Manual Deploy
+
+When CI/CD is unavailable (e.g. no port forwarding for GitHub Actions SSH), deploy manually by building on the server and swapping binaries:
+
+```bash
+# 1. Pull latest source
+cd ~/zwipe-src && git pull
+
+# 2. Build release binaries
+cargo build --release --bin zerver --bin zervice
+
+# 3. Stop zerver (required — Linux blocks overwriting a running executable)
+sudo systemctl stop zerver
+
+# 4. Copy new binaries
+cp target/release/zerver target/release/zervice ~/zwipe/
+
+# 5. Restart zerver
+sudo systemctl start zerver
+sudo systemctl status zerver
+
+# 6. Optionally remove source to free disk space
+cd ~ && rm -rf ~/zwipe-src
+```
+
+`zervice` (cron) does not need a restart — the cron job calls the binary path directly each run, so the next scheduled execution picks up the new binary automatically.
 
 ---
 
@@ -237,7 +265,7 @@ Type=simple
 User=scadoshi
 WorkingDirectory=/home/scadoshi/zwipe
 EnvironmentFile=/home/scadoshi/zwipe/.env
-ExecStart=/home/scadoshi/zwipe/bin/zerver
+ExecStart=/home/scadoshi/zwipe/zerver
 Restart=on-failure
 RestartSec=5
 
@@ -265,7 +293,7 @@ What each command does:
 
 ```bash
 crontab -e
-# Add: 0 4 * * * /home/scottyfermo/zwipe/zervice >> /home/scottyfermo/zwipe/zervice.log 2>&1
+# Add: 0 4 * * * /home/scadoshi/zwipe/zervice >> /home/scadoshi/zwipe/zervice.log 2>&1
 ```
 
 Run manually first to seed card data:
