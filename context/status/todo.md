@@ -78,7 +78,7 @@ Not a full web app — just the token-handling pages, a privacy policy, and an A
 
 ## UX Polish
 
-10. **Full screen integration pass** — walk every screen on device. For each async operation add a skeleton or spinner. Add transitions between screens and loading/loaded states — nothing heavy, just enough to feel intentional.
+10. **Full screen integration pass** — walk every screen on device.
 
 ---
 
@@ -113,11 +113,11 @@ Automate deployment from Mac to server on every push to `main`:
 
 ---
 
-## Donate Button
+## Donate Button (Post-Launch)
 
-Add a Stripe-powered donate button to `zwipe.net` so users can support development.
-- Stripe Checkout or Payment Links (no backend needed for a simple donate flow)
-- Link from the app's About/Profile screen and from `zwipe.net`
+Add a Stripe Payment Link donate button to `zwipe.net` after the app is approved.
+- Stripe Payment Links — no backend needed
+- `zwipe.net` only — do not add to the app until after initial App Store approval
 
 ---
 

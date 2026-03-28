@@ -47,6 +47,11 @@
   transform: none;
 }
 
+/* Dot must invert when banner is highlighted */
+.accordion-item[data-open="true"] .accordion-trigger .filter-dot {
+  background-color: var(--bg-primary);
+}
+
 .accordion-content {
   display: grid;
   grid-template-rows: 0fr;
