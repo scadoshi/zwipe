@@ -11,9 +11,9 @@ Backend served via Cloudflare Tunnel — no port forwarding, TLS handled by Clou
 - [ ] SSH in from Mac, set up key auth
 - [ ] Install PostgreSQL, create `zwipe` DB + user
 - [ ] Create `/var/log/zwipe/` log directory
-- [ ] Install Rust, clone repo, build binaries
-- [ ] Run SQLx migrations
 - [ ] Configure zerver `.env`
+- [ ] Install sqlx-cli, run migrations
+- [ ] Install Rust, clone repo, build binaries
 - [ ] Install `cloudflared`, configure tunnel to `api.zwipe.net`
 - [ ] Start `zerver` systemd service
 - [ ] Add `zervice` nightly cron
@@ -130,46 +130,6 @@ sudo chown $USER /var/log/zwipe
 
 ---
 
-## Build
-
-Build directly on the server — no cross-compilation needed:
-
-```bash
-# Install build tools (gcc, make, etc.)
-sudo apt install -y build-essential
-
-# The project's .cargo/config.toml specifies linker = "x86_64-unknown-linux-gnu-gcc"
-# for the x86_64 target (needed for cross-compiling from macOS).
-# On the server, gcc is installed but under a different name — bridge the gap with a symlink:
-sudo ln -s /usr/bin/gcc /usr/local/bin/x86_64-unknown-linux-gnu-gcc
-
-# Install Rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source ~/.cargo/env
-
-# Clone and build
-git clone <repo-url> ~/zwipe-src
-cd ~/zwipe-src/zerver
-cargo build --release --bin zerver --bin zervice
-
-# Deploy binaries
-mkdir -p ~/zwipe
-cp target/release/zerver target/release/zervice ~/zwipe/
-```
-
----
-
-## Migrations
-
-```bash
-cargo install sqlx-cli --no-default-features --features postgres
-
-cd ~/zwipe-src/zerver
-DATABASE_URL=postgres://zwipe:YOUR_DB_PASSWORD@127.0.0.1/zwipe sqlx migrate run
-```
-
----
-
 ## .env
 
 Located at `~/zwipe/.env`:
@@ -205,6 +165,49 @@ ALLOWED_ORIGINS=https://zwipe.net,http://localhost:8080
 ```
 
 The value is parsed as `HeaderValue` — no trailing slashes, no wildcards.
+
+---
+
+## Migrations
+
+`query_scalar!` and other SQLx macros verify SQL against real database tables **at compile time**.
+The database must exist and migrations must have run before `cargo build` will succeed.
+
+```bash
+cargo install sqlx-cli --no-default-features --features postgres
+
+cd ~/zwipe-src/zerver
+DATABASE_URL=postgres://zwipe:YOUR_DB_PASSWORD@127.0.0.1/zwipe sqlx migrate run
+```
+
+---
+
+## Build
+
+Build directly on the server — no cross-compilation needed:
+
+```bash
+# Install build tools (gcc, make, etc.)
+sudo apt install -y build-essential
+
+# The project's .cargo/config.toml specifies linker = "x86_64-unknown-linux-gnu-gcc"
+# for the x86_64 target (needed for cross-compiling from macOS).
+# On the server, gcc is installed but under a different name — bridge the gap with a symlink:
+sudo ln -s /usr/bin/gcc /usr/local/bin/x86_64-unknown-linux-gnu-gcc
+
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source ~/.cargo/env
+
+# Clone and build
+git clone <repo-url> ~/zwipe-src
+cd ~/zwipe-src/zerver
+cargo build --release --bin zerver --bin zervice
+
+# Deploy binaries
+mkdir -p ~/zwipe
+cp target/release/zerver target/release/zervice ~/zwipe/
+```
 
 ---
 
