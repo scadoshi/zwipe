@@ -1,21 +1,45 @@
 use dioxus::prelude::*;
 use crate::{Footer, Nav};
 
+const STRIPE_URL: &str = "https://buy.stripe.com/5kQdRa5tUeNm9pd8BY9Zm00";
+const BMC_URL: &str = "https://buymeacoffee.com/scadoshi";
+
 #[component]
 pub fn Contribute() -> Element {
     rsx! {
         Nav {}
         div { class: "page",
-            div { class: "coming-soon",
+            div { class: "section",
                 h1 { "contribute" }
-                h2 { "coming soon" }
                 p {
-                    "zwipe is a solo indie project. if you're enjoying it, support is
-                    always appreciated — it goes directly toward server costs and
+                    "zwipe is a solo indie project — designed, built, and shipped by one person.
+                    if you're enjoying it, any support goes directly toward server costs and
                     keeping development moving."
                 }
-                p {
-                    "stripe donations will be available here shortly."
+            }
+
+            div { class: "section",
+                div { class: "card",
+                    h3 { "one-time contribution" }
+                    p { "pay what you want via stripe. no account required." }
+                    a {
+                        href: STRIPE_URL,
+                        target: "_blank",
+                        rel: "noopener noreferrer",
+                        class: "appstore-btn",
+                        "contribute via stripe ↗"
+                    }
+                }
+                div { class: "card",
+                    h3 { "buy me a coffee" }
+                    p { "quick one-off support through buy me a coffee." }
+                    a {
+                        href: BMC_URL,
+                        target: "_blank",
+                        rel: "noopener noreferrer",
+                        class: "appstore-btn",
+                        "buymeacoffee.com/scadoshi ↗"
+                    }
                 }
             }
         }
