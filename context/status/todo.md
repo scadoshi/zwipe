@@ -24,7 +24,7 @@ Moving from Raspberry Pi 5 to Ubuntu Server (Intel i5, 32GB RAM, x86_64). Full s
 
 ## App Store Submission
 
-### 1. Fix App Name (shows "Main" on home screen)
+### ✓ 1. Fix App Name (shows "Main" on home screen)
 
 Binary is named `main`, so iOS displays the app as "Main". Fix in `zwiper/Dioxus.toml`:
 - Add `name = "Zwipe"` to the `[application]` section
@@ -87,12 +87,12 @@ Not a full web app — just the token-handling pages, a privacy policy, and an A
 ### Password Reset (Partial)
 - ✅ Forgot password (`POST /api/auth/forgot-password`) — IP-level governor, ~5 req/hr
 - ✅ Reset password (`POST /api/auth/reset-password`) — IP-level governor
-- ❌ Change password (authenticated, `PUT /api/user/change-password`) — NEEDS rate limiting
-- ❌ Change email (authenticated, `PUT /api/user/change-email`) — NEEDS rate limiting
+- ✅ Change password (authenticated, `PUT /api/user/change-password`) — burst 2, then 1 req/30min
+- ✅ Change username (authenticated, `PUT /api/user/change-username`) — burst 2, then 1 req/30min
+- ✅ Change email (authenticated, `PUT /api/user/change-email`) — burst 2, then 1 req/30min
 
-### Search Cards (Outstanding)
-`GET /api/cards` is the heaviest DB operation. Add dedicated governor:
-- ~1 req/3s replenishment, burst of 5 (~20/min ceiling)
+### Search Cards
+- ✅ `POST /api/card/search` — burst 5, then 1 req/10s (100-card batches make higher rate unrealistic)
 - Future: key by authenticated user ID instead of IP for per-user fairness.
 
 ---
