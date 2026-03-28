@@ -165,6 +165,24 @@ where
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
+    // burst 2, then 1 req/30min — account mutations are done once; 2 attempts covers typos
+    let sensitive_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(1800))
+            .burst_size(2)
+            .key_extractor(PeerIpKeyExtractor)
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
+    // burst 5, then 1 req/10s — heavy DB search, 100-card batches make >5/min unrealistic
+    let card_search_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(10))
+            .burst_size(5)
+            .key_extractor(PeerIpKeyExtractor)
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
 
     Router::new()
         .nest(
@@ -180,16 +198,16 @@ where
                     "/user",
                     Router::new()
                         .route("/", get(get_user))
-                        .route("/change-password", put(change_password))
-                        .route("/change-username", put(change_username))
-                        .route("/change-email", put(change_email))
+                        .route("/change-password", put(change_password).layer(GovernorLayer::new(sensitive_config.clone())))
+                        .route("/change-username", put(change_username).layer(GovernorLayer::new(sensitive_config.clone())))
+                        .route("/change-email", put(change_email).layer(GovernorLayer::new(sensitive_config)))
                         .route("/delete-user", delete(delete_user)),
                 )
                 .nest(
                     "/card",
                     Router::new()
                         .route("/{scryfall_data_id}", get(get_card))
-                        .route("/search", post(search_cards))
+                        .route("/search", post(search_cards).layer(GovernorLayer::new(card_search_config)))
                         .route("/artists", get(get_artists))
                         .route("/types", get(get_card_types))
                         .route("/keywords", get(get_keywords))
