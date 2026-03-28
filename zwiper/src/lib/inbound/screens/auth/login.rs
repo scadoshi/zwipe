@@ -76,11 +76,13 @@ pub fn Login() -> Element {
                     TextInput {
                         value: username_or_email,
                         id: "identity",
+                        label: "username or email",
                         placeholder: "username or email",
                     }
                     TextInput {
                         value: password,
                         id: "password",
+                        label: "password",
                         placeholder: "password",
                         input_type: "password",
                     }
@@ -107,6 +109,11 @@ pub fn Login() -> Element {
                 navigator.push(Router::Register {});
                 },
                 "create profile"
+            }
+            button {
+                class: "util-btn",
+                onclick: move |_| { navigator.push(Router::ForgotPassword {}); },
+                "forgot password"
             }
         }
     }

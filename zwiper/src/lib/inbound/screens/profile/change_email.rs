@@ -44,7 +44,6 @@ pub fn ChangeEmail() -> Element {
         }
     };
 
-    let mut submission_error: Signal<Option<String>> = use_signal(|| None);
     let mut submit_attempted = use_signal(|| false);
     let mut is_loading = use_signal(|| false);
     let toast = use_toast();
@@ -69,16 +68,16 @@ pub fn ChangeEmail() -> Element {
             spawn(async move {
                 session.upkeep(auth_client);
                 let Some(mut session_value) = session() else {
-                    submission_error.set(Some(
-                        ApiError::Unauthorized("session expired".to_string()).to_string(),
-                    ));
+                    toast.error(
+                        ApiError::Unauthorized("session expired".to_string()).to_string().to_lowercase(),
+                        ToastOptions::default().duration(Duration::from_millis(3000)),
+                    );
                     is_loading.set(false);
                     return;
                 };
 
                 match auth_client().change_email(request, &session_value).await {
                     Ok(updated_user) => {
-                        submission_error.set(None);
                         let new_email = updated_user.email.clone();
                         session_value.user.email = updated_user.email;
                         session.set(Some(session_value));
@@ -91,13 +90,14 @@ pub fn ChangeEmail() -> Element {
                         is_loading.set(false);
                     }
                     Err(e) => {
-                        submission_error.set(Some(e.to_string()));
+                        toast.error(
+                            e.to_string().to_lowercase(),
+                            ToastOptions::default().duration(Duration::from_millis(3000)),
+                        );
                         is_loading.set(false);
                     }
                 }
             });
-        } else {
-            submission_error.set(Some("invalid input".to_string()));
         }
     };
 
@@ -146,10 +146,6 @@ pub fn ChangeEmail() -> Element {
                             placeholder: "password",
                             input_type: "password",
                         }
-                    }
-
-                    if let Some(error) = submission_error() {
-                        div { class: "message-error", "{error}" }
                     }
                 }
             }

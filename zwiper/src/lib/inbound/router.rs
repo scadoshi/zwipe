@@ -3,7 +3,7 @@
 //! Defines all client-side routes and maps them to their corresponding screen components.
 
 use crate::inbound::screens::{
-    auth::{login::Login, register::Register},
+    auth::{login::Login, register::Register, forgot_password::ForgotPassword},
     deck::{
         card::{
             add::Add as AddDeckCard,
@@ -40,6 +40,8 @@ pub enum Router {
     Login {},
     #[route("/register")]
     Register {},
+    #[route("/forgot-password")]
+    ForgotPassword {},
 
     // user
     #[route("/user")]

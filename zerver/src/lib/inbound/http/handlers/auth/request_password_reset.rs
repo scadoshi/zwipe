@@ -32,6 +32,13 @@ pub struct HttpRequestPasswordReset {
     email: String,
 }
 
+impl HttpRequestPasswordReset {
+    /// Creates a new password reset request for the given email address.
+    pub fn new(email: &str) -> Self {
+        Self { email: email.to_string() }
+    }
+}
+
 /// Initiates the password reset flow for the given email address.
 ///
 /// Always returns `200 OK` regardless of whether the email is registered,
