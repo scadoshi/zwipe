@@ -50,7 +50,7 @@ a:hover {
  ==================== */
 
 .page {
-  max-width: 720px;
+  max-width: 960px;
   margin: 0 auto;
   padding: 0 24px 80px;
 }
@@ -64,7 +64,7 @@ nav {
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px;
-  max-width: 720px;
+  max-width: 960px;
   margin: 0 auto;
   border-bottom: 1px solid var(--border-secondary);
   margin-bottom: 48px;
@@ -197,7 +197,7 @@ code {
 
 .logo {
   font-family: "Cascadia Code", monospace;
-  font-size: clamp(0.45rem, 2.2vw, 1.1rem);
+  font-size: clamp(0.5rem, 1.8vw, 1rem);
   line-height: 1.2;
   white-space: pre;
   text-align: left;
@@ -209,12 +209,10 @@ code {
 
 @keyframes logo-enter {
   from {
-    letter-spacing: 10px;
     opacity: 0;
-    transform: translateY(-12px);
+    transform: translateY(-16px);
   }
   to {
-    letter-spacing: 0;
     opacity: 1;
     transform: translateY(0);
   }
