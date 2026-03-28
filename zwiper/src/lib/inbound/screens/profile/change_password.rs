@@ -2,6 +2,10 @@
 
 use crate::{
     inbound::components::{
+        alert_dialog::{
+            AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
+            AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
+        },
         auth::{bouncer::Bouncer, session_upkeep::Upkeep},
         fields::text_input::TextInput,
     },
@@ -43,6 +47,7 @@ pub fn ChangePassword() -> Element {
 
     let mut submission_error: Signal<Option<String>> = use_signal(|| None);
     let mut submit_attempted = use_signal(|| false);
+    let mut show_confirm = use_signal(|| false);
     let toast = use_toast();
 
     let mut inputs_are_valid = move || {
@@ -150,8 +155,40 @@ pub fn ChangePassword() -> Element {
                     "back"
                 }
                 button { class: "util-btn",
-                    onclick : move |_| attempt_submit(),
+                    onclick: move |_| {
+                        submit_attempted.set(true);
+                        validate_new_password();
+                        if password_error().is_none() {
+                            show_confirm.set(true);
+                        } else {
+                            submission_error.set(Some("invalid input".to_string()));
+                        }
+                    },
                     "save changes"
+                }
+            }
+
+            AlertDialogRoot {
+                open: show_confirm(),
+                on_open_change: move |open| show_confirm.set(open),
+                AlertDialogContent {
+                    AlertDialogTitle { "change password" }
+                    AlertDialogDescription {
+                        "changing your password will log you out on all other devices."
+                    }
+                    AlertDialogActions {
+                        AlertDialogCancel {
+                            on_click: move |_| show_confirm.set(false),
+                            "cancel"
+                        }
+                        AlertDialogAction {
+                            on_click: move |_| {
+                                show_confirm.set(false);
+                                attempt_submit();
+                            },
+                            "confirm"
+                        }
+                    }
                 }
             }
             }
