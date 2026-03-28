@@ -13,7 +13,9 @@ use crate::inbound::http::handlers::{
         authenticate_user::authenticate_user, change_email::change_email,
         change_password::change_password, change_username::change_username,
         delete_user::delete_user, refresh_session::refresh_session, register_user::register_user,
-        revoke_sessions::revoke_sessions,
+        request_password_reset::request_password_reset, resend_verification::resend_verification,
+        reset_password::reset_password, revoke_sessions::revoke_sessions,
+        verify_email::verify_email,
     },
     card::{
         get_artists::get_artists, get_card::get_card, get_card_types::get_card_types,
@@ -83,6 +85,24 @@ where
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
+    // 5 req / 1hr per IP — password reset is rare
+    let forgot_password_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(720))
+            .burst_size(5)
+            .key_extractor(PeerIpKeyExtractor)
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
+    // 10 req / 1hr per IP — verify-email + reset-password
+    let verify_reset_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(360))
+            .burst_size(10)
+            .key_extractor(PeerIpKeyExtractor)
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
 
     Router::new()
         .route("/", get(root))
@@ -108,6 +128,18 @@ where
                     .route(
                         "/refresh",
                         post(refresh_session).layer(GovernorLayer::new(refresh_config)),
+                    )
+                    .route(
+                        "/verify-email",
+                        post(verify_email).layer(GovernorLayer::new(verify_reset_config.clone())),
+                    )
+                    .route(
+                        "/forgot-password",
+                        post(request_password_reset).layer(GovernorLayer::new(forgot_password_config)),
+                    )
+                    .route(
+                        "/reset-password",
+                        post(reset_password).layer(GovernorLayer::new(verify_reset_config)),
                     ),
             ),
         )
@@ -140,7 +172,9 @@ where
             Router::new()
                 .nest(
                     "/auth",
-                    Router::new().route("/logout", post(revoke_sessions)),
+                    Router::new()
+                        .route("/logout", post(revoke_sessions))
+                        .route("/resend-verification", post(resend_verification)),
                 )
                 .nest(
                     "/user",

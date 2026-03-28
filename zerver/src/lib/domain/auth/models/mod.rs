@@ -25,7 +25,10 @@ pub mod delete_user;
 pub mod password;
 pub mod refresh_token;
 pub mod register_user;
+pub mod request_password_reset;
+pub mod reset_password;
 pub mod session;
+pub mod verify_email;
 
 #[cfg(feature = "zerver")]
 use crate::domain::auth::models::password::HashedPassword;
@@ -59,6 +62,7 @@ use uuid::Uuid;
 /// * `username` - Validated username (3-20 chars, no profanity)
 /// * `email` - Validated email address
 /// * `password_hash` - Argon2id password hash with embedded salt
+/// * `email_verified_at` - When the email was verified, if at all
 ///
 /// # Example
 ///
@@ -84,6 +88,8 @@ pub struct UserWithPasswordHash {
     pub password_hash: HashedPassword,
     /// If set and in the future, the account is locked until this timestamp.
     pub lockout_until: Option<NaiveDateTime>,
+    /// When the user's email was verified. `None` means not yet verified.
+    pub email_verified_at: Option<NaiveDateTime>,
 }
 
 #[cfg(feature = "zerver")]
@@ -93,6 +99,7 @@ impl From<UserWithPasswordHash> for User {
             id: value.id,
             username: value.username,
             email: value.email,
+            email_verified_at: value.email_verified_at,
         }
     }
 }
@@ -123,6 +130,7 @@ mod tests {
             email: email.clone(),
             password_hash,
             lockout_until: None,
+            email_verified_at: None,
         };
 
         let user: User = with_hash.into();

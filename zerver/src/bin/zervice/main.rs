@@ -10,7 +10,7 @@ use zwipe::{
         auth::services::Service as AuthService, card::services::Service as CardService, logo,
     },
     inbound::external::scryfall::bulk::BulkEndpoint,
-    outbound::sqlx::postgres::Postgres,
+    outbound::{resend::Resend, sqlx::postgres::Postgres},
 };
 
 #[tokio::main]
@@ -22,7 +22,8 @@ async fn main() -> anyhow::Result<()> {
         .init();
     let db = Postgres::new(&config.database_url).await?;
     let card_service = CardService::new(db.clone());
-    let auth_service = AuthService::new(db.clone(), db.clone(), config.jwt_secret);
+    let resend = Resend::new(config.resend_api_key, config.resend_from_email);
+    let auth_service = AuthService::new(db.clone(), db.clone(), resend, config.jwt_secret);
     let mut latest_token_clean_up: Option<NaiveDateTime> = None;
     tracing::info!("running card migration and refresh token services");
     loop {

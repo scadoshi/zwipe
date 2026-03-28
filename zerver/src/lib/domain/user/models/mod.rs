@@ -6,6 +6,7 @@ pub mod get_user;
 pub mod username;
 
 use crate::domain::user::models::username::Username;
+use chrono::NaiveDateTime;
 use email_address::EmailAddress;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -56,6 +57,9 @@ pub struct User {
 
     /// The user's validated email address.
     pub email: EmailAddress,
+
+    /// When the user's email was verified. `None` means not yet verified.
+    pub email_verified_at: Option<NaiveDateTime>,
 }
 
 impl User {
@@ -80,6 +84,7 @@ impl User {
             id,
             username,
             email,
+            email_verified_at: None,
         }
     }
 }

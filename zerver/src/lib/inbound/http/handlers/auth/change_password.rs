@@ -77,7 +77,7 @@ where
 
     state
         .auth_service
-        .change_password(&request)
+        .change_password_and_revoke_sessions(&request)
         .await
         .map_err(ApiError::from)
         .map(|_| (StatusCode::OK, Json(())))

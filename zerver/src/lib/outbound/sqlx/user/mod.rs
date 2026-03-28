@@ -20,7 +20,7 @@ impl UserRepository for Postgres {
     async fn get_user(&self, user_id: Uuid) -> Result<User, GetUserError> {
         let database_user = query_as!(
             DatabaseUser,
-            "SELECT id, username, email FROM users WHERE id = $1",
+            "SELECT id, username, email, email_verified_at FROM users WHERE id = $1",
             user_id
         )
         .fetch_one(&self.pool)

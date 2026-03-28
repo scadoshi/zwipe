@@ -81,7 +81,9 @@ App Store requires a privacy policy URL. Zwipe collects email + deck data. A sim
 
 8. ORACLE_STOP_WORDS and TYPE_STOP_WORDS in zwiper/src/lib/inbound/screens/deck/card/filter/deck_cards.rs should be maintained by the zerver lib and passed to the frontend. Generally domain models or business logic should be defined there and then utilized by the frontend rather than built and maintained in the frontend. This is especially true since the backend uses the very same stop words in its queries. We should define shared logic and then use that shared logic in both places so we don't have to maintain the content in two places!
 
-9. **Util bar button tap feedback** — `.util-btn` should animate on press (e.g. brief scale-down or opacity dip via `active` pseudo-class) but have no hover effect. Hover states are meaningless on touch screens and can leave buttons visually stuck after a tap on iOS. Remove any existing `:hover` styles on `.util-btn` and replace with a `:active` transition only.
+9. **Password change/reset session alert** — both `change_password` and `reset_password` now revoke all sessions on all devices. The frontend should show a brief alert/confirmation before submitting (e.g. "Changing your password will log you out on all other devices.") so users aren't surprised. Applies to both the settings change-password flow and the reset-password screen.
+
+10. **Util bar button tap feedback** — `.util-btn` should animate on press (e.g. brief scale-down or opacity dip via `active` pseudo-class) but have no hover effect. Hover states are meaningless on touch screens and can leave buttons visually stuck after a tap on iOS. Remove any existing `:hover` styles on `.util-btn` and replace with a `:active` transition only.
 
 10. **Full screen integration pass: transitions + loading states** — walk every screen end-to-end on device and audit for missing loading feedback and abrupt state changes. For each async operation (data fetch, form submit, route change) add either a skeleton placeholder or a spinner where appropriate. Also add tasteful transitions between screens and between loading/loaded states — nothing heavy, just enough to make the app feel intentional rather than janky. Goal is that no screen ever appears to flash blank or jump content in.
 
@@ -94,6 +96,36 @@ App Store requires a privacy policy URL. Zwipe collects email + deck data. A sim
 ~~5. Deck-aware filter dropdowns (view/remove screens)~~ — **DONE** (2026-03-25). `DeckCards` newtype context provided by view/remove screens. Filter components (artist, set, types, oracle words, keywords) use `try_use_context::<DeckCards>()` to derive selectable values from the loaded deck's cards instead of fetching from server. Add screen continues fetching from server (no context provided). Commander now also respects the active filter — hidden from the pinned slot when filtered out.
 
 ~~6. Lowercase import screen text~~ — **DONE** (2026-03-25). Placeholder sample card names and post-import result card names (imported + unresolved) are now lowercase.
+
+---
+
+## zwipe.net Web Client
+
+A minimal static web client hosted at `zwipe.net`. Primary purpose is to handle deep-link flows
+that require a browser (email verification, password reset) and route everyone else to the App Store.
+
+### What it needs to do
+
+- `zwipe.net/verify?token=<hex>` — POST token to `POST /api/auth/verify-email`, show success/error
+- `zwipe.net/reset?token=<hex>` — show a "new password" form, POST to `POST /api/auth/reset-password`, show success/error
+- All other routes (`zwipe.net/`, `zwipe.net/*`) — redirect or link to the App Store listing
+
+### What it doesn't need to be
+
+Not a full web app — no login, no deck management, no session handling. Just the two token-handling
+pages and a landing/redirect page. Keep it static HTML + minimal JS or a tiny Dioxus web build.
+
+### Hosting
+
+Cloudflare Pages (free tier) is the natural fit — already using Cloudflare for the tunnel and DNS.
+Static files deploy via `wrangler` or direct Git integration. `zwipe.net` points to Pages,
+`api.zwipe.net` continues to point to the Cloudflare Tunnel → zerver.
+
+### Privacy Policy
+
+The App Store requires a hosted privacy policy URL. This page can live at `zwipe.net/privacy` —
+a simple static page stating what data is collected (email, deck contents), where it's stored
+(`api.zwipe.net`), and that there is no third-party data sharing.
 
 ---
 
