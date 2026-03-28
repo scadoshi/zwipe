@@ -2,30 +2,31 @@
 
 mobile-first magic: the gathering deck builder with swipe-based navigation.
 
-**status:** in active development
+**status:** shipped to ios — approaching app store submission
 
 ## tech stack
 
 full-stack rust application:
-- **backend**: axum, postgresql, sqlx, jwt auth
-- **frontend**: dioxus (web/ios/android), swipe gesture system
+- **zerver**: axum rest api, postgresql, sqlx, jwt auth, scryfall sync
+- **zwiper**: dioxus mobile/ios/android app, swipe gesture system
+- **zweb**: dioxus web client (zwipe.net)
 - **architecture**: hexagonal/ports-and-adapters pattern
 
 ## quick start
 
 ```bash
 # prerequisites
-# - rust 1.75+ (https://rustup.rs)
+# - rust (https://rustup.rs)
 # - macos: xcode command line tools (xcode-select --install)
 
 # run setup script (installs postgres, dx, sqlx-cli, creates database)
-./zcripts/denv/macos/setup.sh    # macos
+./zcripts/denv/mac/setup.sh      # macos
 ./zcripts/denv/fedora/setup.sh   # linux
 
 # start development
-cd zerver && cargo run --bin zerver  # backend
-cd zwiper && dx serve                # frontend
-cargo run --bin zervice              # background sync (optional)
+cargo run --bin zerver            # backend api
+cd zwiper && dx serve             # mobile app (web preview)
+cargo run --bin zervice           # scryfall card sync (run once to seed)
 ```
 
 ## architecture
@@ -33,7 +34,9 @@ cargo run --bin zervice              # background sync (optional)
 hexagonal architecture with domain-driven design:
 - clean domain layer with type-safe newtypes
 - port/adapter separation between business logic and infrastructure
-- shared rust types between frontend and backend
+- shared rust types between frontend and backend (zwiper depends on zerver domain)
+
+see [contributing](CONTRIBUTING.md) for project structure detail.
 
 ## license
 
