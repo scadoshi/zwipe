@@ -1,14 +1,15 @@
 use dioxus::prelude::*;
 use crate::{APP_STORE_URL, Footer, Nav};
 
+const LOGO_ASCII: &str = include_str!("../../assets/logo.txt");
+
 #[component]
 pub fn Home() -> Element {
     rsx! {
         Nav {}
         div { class: "page",
             div { class: "hero",
-                img { class: "hero-logo", src: "/assets/logo.png", alt: "zwipe" }
-                h1 { "zwipe" }
+                pre { class: "logo", "{LOGO_ASCII}" }
                 p { class: "tagline",
                     "the mtg deck builder built for mobile. swipe right to add, left to skip."
                 }

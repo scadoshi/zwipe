@@ -8,6 +8,9 @@ pub const API_BASE: &str = "https://api.zwipe.net";
 // App Store URL — update once live on the App Store
 pub const APP_STORE_URL: &str = "#";
 
+const STYLE: Asset = asset!("/assets/style.css");
+const LOGO: Asset = asset!("/assets/logo.png");
+
 #[derive(Routable, Clone, PartialEq)]
 #[rustfmt::skip]
 enum Route {
@@ -31,6 +34,7 @@ fn main() {
 
 fn App() -> Element {
     rsx! {
+        document::Stylesheet { href: STYLE }
         Router::<Route> {}
     }
 }
@@ -40,7 +44,7 @@ pub fn Nav() -> Element {
     rsx! {
         nav {
             Link { to: Route::Home {}, class: "nav-brand",
-                img { src: "/assets/logo.png", alt: "zwipe logo" }
+                img { src: LOGO, alt: "zwipe logo" }
                 span { "zwipe" }
             }
             ul { class: "nav-links",
