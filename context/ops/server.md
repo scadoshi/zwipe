@@ -201,12 +201,13 @@ source ~/.cargo/env
 
 # Clone and build
 git clone <repo-url> ~/zwipe-src
-cd ~/zwipe-src/zerver
+cd ~/zwipe-src
 cargo build --release --bin zerver --bin zervice
 
-# Deploy binaries
-mkdir -p ~/zwipe
-cp target/release/zerver target/release/zervice ~/zwipe/
+# Deploy binaries — output is in workspace root target/, not zerver/target/
+# Use ~/zwipe/bin/ to avoid naming conflict with the zwipe directory itself
+mkdir -p ~/zwipe/bin
+cp target/release/zerver target/release/zervice ~/zwipe/bin/
 ```
 
 ---
@@ -233,10 +234,10 @@ Requires=postgresql.service
 
 [Service]
 Type=simple
-User=scottyfermo
-WorkingDirectory=/home/scottyfermo/zwipe
-EnvironmentFile=/home/scottyfermo/zwipe/.env
-ExecStart=/home/scottyfermo/zwipe/zerver
+User=scadoshi
+WorkingDirectory=/home/scadoshi/zwipe
+EnvironmentFile=/home/scadoshi/zwipe/.env
+ExecStart=/home/scadoshi/zwipe/bin/zerver
 Restart=on-failure
 RestartSec=5
 
