@@ -46,7 +46,6 @@ pub fn ChangeUsername() -> Element {
         }
     };
 
-    let mut submission_error: Signal<Option<String>> = use_signal(|| None);
     let mut submit_attempted = use_signal(|| false);
     let mut is_loading = use_signal(|| false);
     let toast = use_toast();
@@ -71,9 +70,10 @@ pub fn ChangeUsername() -> Element {
             spawn(async move {
                 session.upkeep(auth_client);
                 let Some(mut session_value) = session() else {
-                    submission_error.set(Some(
-                        ApiError::Unauthorized("session expired".to_string()).to_string(),
-                    ));
+                    toast.error(
+                        ApiError::Unauthorized("session expired".to_string()).to_string().to_lowercase(),
+                        ToastOptions::default().duration(Duration::from_millis(3000)),
+                    );
                     is_loading.set(false);
                     return;
                 };
@@ -87,19 +87,19 @@ pub fn ChangeUsername() -> Element {
                             format!("username changed to {}", new_name),
                             ToastOptions::default().duration(Duration::from_millis(1500)),
                         );
-                        submission_error.set(None);
                         clear_inputs();
                         submit_attempted.set(false);
                         is_loading.set(false);
                     }
                     Err(e) => {
-                        submission_error.set(Some(e.to_string()));
+                        toast.error(
+                            e.to_string().to_lowercase(),
+                            ToastOptions::default().duration(Duration::from_millis(3000)),
+                        );
                         is_loading.set(false);
                     }
                 }
             });
-        } else {
-            submission_error.set(Some("invalid input".to_string()));
         }
     };
 
@@ -148,10 +148,6 @@ pub fn ChangeUsername() -> Element {
                             placeholder: "password",
                             input_type: "password",
                         }
-                    }
-
-                    if let Some(error) = submission_error() {
-                        div { class: "message-error", "{error}" }
                     }
                 }
             }

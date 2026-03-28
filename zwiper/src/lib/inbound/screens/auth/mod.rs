@@ -6,3 +6,5 @@
 pub mod login;
 /// New user registration screen.
 pub mod register;
+/// Forgot password / reset initiation screen.
+pub mod forgot_password;

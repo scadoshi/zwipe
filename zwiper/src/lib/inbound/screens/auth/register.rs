@@ -33,6 +33,7 @@ pub fn Register() -> Element {
     let username = use_signal(String::new);
     let email = use_signal(String::new);
     let password = use_signal(String::new);
+    let confirm_password = use_signal(String::new);
 
     let mut submit_attempted = use_signal(|| false);
     let mut is_loading = use_signal(|| false);
@@ -61,6 +62,8 @@ pub fn Register() -> Element {
     let mut validate_password = move || {
         if let Err(e) = Password::new(password()) {
             password_error.set(Some(e.to_string().to_lowercase()))
+        } else if password().as_str() != confirm_password().as_str() {
+            password_error.set(Some("passwords do not match".to_string()));
         } else {
             password_error.set(None);
         }
@@ -121,8 +124,9 @@ pub fn Register() -> Element {
                     TextInput {
                         value: username,
                         id: "username",
+                        label: "username",
                         placeholder: "username",
-                     }
+                    }
                     if submit_attempted() {
                         if let Some(error) = email_error() {
                             div { class : "message-error", "{error}" }
@@ -131,6 +135,7 @@ pub fn Register() -> Element {
                     TextInput {
                         value: email,
                         id: "email",
+                        label: "email",
                         placeholder: "email",
                     }
                     if submit_attempted() && let Some(error) = password_error() {
@@ -139,7 +144,15 @@ pub fn Register() -> Element {
                     TextInput {
                         value: password,
                         id: "password",
+                        label: "password",
                         placeholder: "password",
+                        input_type: "password",
+                    }
+                    TextInput {
+                        value: confirm_password,
+                        id: "confirm_password",
+                        label: "confirm password",
+                        placeholder: "confirm password",
                         input_type: "password",
                     }
                     if is_loading() {
