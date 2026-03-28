@@ -45,6 +45,11 @@ jobs:
           CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: gcc
         run: cargo build --release --bin zerver --bin zervice
 
+      - name: Verify Tailscale connectivity
+        env:
+          HOST: ${{ vars.DEPLOY_HOST }}
+        run: tailscale ping --c 5 $HOST
+
       - name: Deploy to server
         env:
           SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
