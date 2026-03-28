@@ -8,13 +8,6 @@ struct ResetPasswordRequest {
     new_password: String,
 }
 
-fn read_token_param() -> Option<String> {
-    let window = web_sys::window()?;
-    let search = window.location().search().ok()?;
-    let params = web_sys::UrlSearchParams::new_with_str(&search).ok()?;
-    params.get("token")
-}
-
 #[derive(Clone, PartialEq)]
 enum ResetState {
     Form,
@@ -24,12 +17,10 @@ enum ResetState {
 }
 
 #[component]
-pub fn Reset() -> Element {
+pub fn Reset(token: String) -> Element {
     let mut password = use_signal(String::new);
     let mut confirm = use_signal(String::new);
     let mut state = use_signal(|| ResetState::Form);
-
-    let token = read_token_param();
 
     let on_submit = move |e: FormEvent| {
         e.prevent_default();
@@ -46,13 +37,11 @@ pub fn Reset() -> Element {
             return;
         }
 
-        let token = match token.clone() {
-            Some(t) if !t.is_empty() => t,
-            _ => {
-                state.set(ResetState::Error("no token found in url".to_string()));
-                return;
-            }
-        };
+        let token = token.clone();
+        if token.is_empty() {
+            state.set(ResetState::Error("no token found in url".to_string()));
+            return;
+        }
 
         state.set(ResetState::Loading);
 
