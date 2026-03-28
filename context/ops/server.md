@@ -118,6 +118,53 @@ PGPASSWORD='YOUR_DB_PASSWORD' psql -U zwipe -h 127.0.0.1 -d zwipe -c '\l'
 
 ---
 
+## Wipe and Rebuild the Database
+
+Use this when you need to reset all data but keep the schema — e.g. clearing test/dev data
+from production, or recovering from a corrupt state.
+
+### Why not `sqlx database reset`?
+
+`sqlx database reset` requires the `zwipe` user to have `CREATEDB` permission. Since we use
+a least-privilege user, it will fail with `permission denied to create database`. Use the
+postgres superuser instead.
+
+### Steps
+
+**1. Stop zerver** (releases the database connection):
+```bash
+sudo systemctl stop zerver
+```
+
+**2. Drop the database** (must be run as two separate commands — postgres won't accept both in one `-c` call):
+```bash
+sudo -u postgres psql -c "DROP DATABASE zwipe;"
+sudo -u postgres psql -c "CREATE DATABASE zwipe OWNER zwipe;"
+```
+
+**3. Run migrations** (recreates all tables and indexes):
+```bash
+cd ~/zwipe-src/zerver
+DATABASE_URL=postgres://zwipe:YOUR_PASSWORD@127.0.0.1/zwipe sqlx migrate run
+```
+
+Migrations live in `zerver/migrations/` — `zwipe-src` must be cloned and up to date.
+
+**4. Restart zerver:**
+```bash
+sudo systemctl start zerver
+sudo systemctl status zerver
+```
+
+**5. Optionally reseed card data:**
+```bash
+cd ~/zwipe && ./zervice
+```
+
+This re-syncs all 35k+ cards from Scryfall. Takes a few minutes.
+
+---
+
 ## Log Directory
 
 zerver writes rolling daily logs to `/var/log/zwipe/`. The app calls `create_dir_all` on startup
