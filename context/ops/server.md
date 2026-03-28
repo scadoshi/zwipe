@@ -213,6 +213,17 @@ cp target/release/zerver target/release/zervice ~/zwipe/
 
 ## systemd Service
 
+systemd is Ubuntu's service manager. A unit file tells it how to run zerver — so it starts
+automatically on boot and restarts itself if it crashes, instead of you running `./zerver`
+manually in a terminal.
+
+**Create the file:**
+```bash
+sudo nano /etc/systemd/system/zerver.service
+```
+
+Paste in the following, save with `Ctrl+O` → Enter → `Ctrl+X`:
+
 `/etc/systemd/system/zerver.service`:
 ```ini
 [Unit]
@@ -233,12 +244,19 @@ RestartSec=5
 WantedBy=multi-user.target
 ```
 
+**Register and start the service:**
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl enable zerver
-sudo systemctl start zerver
-sudo systemctl status zerver
+sudo systemctl daemon-reload   # tells systemd to pick up the new file
+sudo systemctl enable zerver   # start automatically on every boot
+sudo systemctl start zerver    # start it right now
+sudo systemctl status zerver   # verify it's running
 ```
+
+What each command does:
+- `enable` — registers zerver to start on boot
+- `start` — starts it immediately without rebooting
+- `Restart=on-failure` — if zerver crashes, systemd brings it back automatically
+- `status` — shows running state and the last few log lines
 
 ---
 
