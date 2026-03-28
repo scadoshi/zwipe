@@ -106,3 +106,47 @@ GitHub → Actions tab → Deploy → Run workflow → Run workflow
 4. Builds `zerver` and `zervice` in release mode (`SQLX_OFFLINE=true`)
 5. SCPs both binaries to `~/zwipe/` on the server
 6. SSHes in and runs `sudo systemctl restart zerver`
+
+---
+
+# zweb — GitHub Pages Deploy
+
+`.github/workflows/deploy-zweb.yml`
+
+Triggers on push to `main` when files under `zweb/**` change (or the workflow file itself). Also has `workflow_dispatch` for manual runs.
+
+## What the Workflow Does
+
+1. Installs `build-essential` (needed because Rust compiles proc-macro crates for the host target even when targeting WASM)
+2. Installs `dioxus-cli` from source with `--force` (uses cargo cache keyed to `zweb/Cargo.lock` to speed up repeat runs)
+3. Runs `dx build --release --platform web` from `zweb/` directory
+4. Writes `CNAME` (zwipe.net) into the build output at `zweb/target/dx/zweb/release/web/public/`
+5. Copies `index.html` → `404.html` in the same directory (SPA routing — GitHub Pages serves 404.html for unknown routes, Dioxus Router takes over)
+6. Uploads the build output as a GitHub Pages artifact
+7. Deploys to GitHub Pages
+
+## GitHub Pages Configuration
+
+- **Repository Settings → Pages → Source**: GitHub Actions
+- **Custom domain**: zwipe.net
+- **Enforce HTTPS**: enabled
+
+## DNS (Cloudflare)
+
+Four A records for the apex domain (DNS only, not proxied):
+```
+A  @  185.199.108.153
+A  @  185.199.109.153
+A  @  185.199.110.153
+A  @  185.199.111.153
+```
+CNAME for www:
+```
+CNAME  www  scadoshi.github.io
+```
+
+## Notes
+
+- First run after a Cargo.lock change takes ~8–10 minutes (compiles dioxus-cli from source)
+- Subsequent runs restore dx from cache and finish much faster
+- The `CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: gcc` env var is set on both the install and build steps to resolve the host-target linker name mismatch on ubuntu-latest runners
