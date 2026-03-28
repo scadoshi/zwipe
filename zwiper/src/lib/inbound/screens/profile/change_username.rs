@@ -48,6 +48,7 @@ pub fn ChangeUsername() -> Element {
 
     let mut submission_error: Signal<Option<String>> = use_signal(|| None);
     let mut submit_attempted = use_signal(|| false);
+    let mut is_loading = use_signal(|| false);
     let toast = use_toast();
 
     let mut inputs_are_valid = move || {
@@ -66,12 +67,14 @@ pub fn ChangeUsername() -> Element {
         if inputs_are_valid() {
             tracing::info!("change username to {}", new_username());
             let request = HttpChangeUsername::new(&new_username(), &password());
+            is_loading.set(true);
             spawn(async move {
                 session.upkeep(auth_client);
                 let Some(mut session_value) = session() else {
                     submission_error.set(Some(
                         ApiError::Unauthorized("session expired".to_string()).to_string(),
                     ));
+                    is_loading.set(false);
                     return;
                 };
 
@@ -87,8 +90,12 @@ pub fn ChangeUsername() -> Element {
                         submission_error.set(None);
                         clear_inputs();
                         submit_attempted.set(false);
+                        is_loading.set(false);
                     }
-                    Err(e) => submission_error.set(Some(e.to_string())),
+                    Err(e) => {
+                        submission_error.set(Some(e.to_string()));
+                        is_loading.set(false);
+                    }
                 }
             });
         } else {
@@ -155,9 +162,11 @@ pub fn ChangeUsername() -> Element {
                     onclick: move |_| navigator.go_back(),
                     "back"
                 }
-                button { class: "util-btn",
-                    onclick : move |_| attempt_submit(),
-                    "save changes"
+                button {
+                    class: "util-btn",
+                    disabled: is_loading(),
+                    onclick: move |_| attempt_submit(),
+                    if is_loading() { "saving..." } else { "save changes" }
                 }
             }
             }
