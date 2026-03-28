@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM deck_cards WHERE deck_id = $1 AND scryfall_data_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f6eb363e93be31e8aefb97de2bdc4a1870869ed7c9a881a38f31fb800f6cc2f6"
+}

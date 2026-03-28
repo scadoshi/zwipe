@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT dc.quantity, d.copy_max, sd.type_line FROM deck_cards dc JOIN decks d ON d.id = dc.deck_id JOIN scryfall_data sd ON sd.id = dc.scryfall_data_id WHERE dc.deck_id = $1 AND dc.scryfall_data_id = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "quantity",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "copy_max",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "type_line",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "3b97c8e5f647944a2549029ef6a5616faca44bf82550510a19bb430741ac3afa"
+}

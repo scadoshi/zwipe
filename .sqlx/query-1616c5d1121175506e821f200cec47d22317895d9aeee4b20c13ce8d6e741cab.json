@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE deck_cards SET quantity = $1, updated_at = now()\n             WHERE deck_id = $2 AND quantity > $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1616c5d1121175506e821f200cec47d22317895d9aeee4b20c13ce8d6e741cab"
+}
