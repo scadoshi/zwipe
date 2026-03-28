@@ -9,6 +9,8 @@ use crate::domain::{
             change_username::{ChangeUsername, ChangeUsernameError},
             delete_user::{DeleteUser, DeleteUserError},
             register_user::{RegisterUser, RegisterUserError},
+            request_password_reset::{RequestPasswordReset, RequestPasswordResetError},
+            reset_password::{ResetPassword, ResetPasswordError},
             session::{
                 Session,
                 create_session::{CreateSession, CreateSessionError},
@@ -16,54 +18,80 @@ use crate::domain::{
                 refresh_session::{RefreshSession, RefreshSessionError},
                 revoke_sessions::{RevokeSessions, RevokeSessionsError},
             },
+            verify_email::{VerifyEmail, VerifyEmailError},
         },
         ports::{AuthRepository, AuthService},
+    },
+    email::{
+        models::SendEmail,
+        ports::EmailSender,
     },
     user::{models::User, ports::UserRepository},
 };
 use anyhow::anyhow;
-use chrono::Utc;
+use chrono::{Duration, Utc};
+use rand::Rng;
+use sha2::Digest;
+use uuid::Uuid;
 
 /// Authentication service implementation handling user registration, login, and session management.
 ///
 /// This service orchestrates authentication operations by coordinating between:
 /// - **AuthRepository**: Password hashing, refresh token rotation, credential updates
 /// - **UserRepository**: User data retrieval
+/// - **EmailSender**: Transactional email delivery (verification, password reset)
 /// - **JWT Secret**: Access token generation
 ///
 /// # Authorization Pattern
 /// Operations that modify user data (change username/email/password, delete user)
 /// require password re-authentication for security, even with a valid session.
 #[derive(Debug, Clone)]
-pub struct Service<AR, UR>
+pub struct Service<AR, UR, ES>
 where
     AR: AuthRepository,
     UR: UserRepository,
+    ES: EmailSender,
 {
     auth_repo: AR,
     user_repo: UR,
+    email_sender: ES,
     jwt_secret: JwtSecret,
 }
 
-impl<AR, UR> Service<AR, UR>
+impl<AR, UR, ES> Service<AR, UR, ES>
 where
     AR: AuthRepository,
     UR: UserRepository,
+    ES: EmailSender,
 {
-    /// Creates a new authentication service with the provided repositories and JWT secret.
-    pub fn new(auth_repo: AR, user_repo: UR, jwt_secret: JwtSecret) -> Self {
+    /// Creates a new authentication service with the provided repositories, email sender, and JWT secret.
+    pub fn new(auth_repo: AR, user_repo: UR, email_sender: ES, jwt_secret: JwtSecret) -> Self {
         Self {
             auth_repo,
             user_repo,
+            email_sender,
             jwt_secret,
         }
     }
 }
 
-impl<AR, UR> AuthService for Service<AR, UR>
+/// Generates a (raw, hash) hex-token pair.
+///
+/// 32 random bytes → hex-encode → raw token sent to client.
+/// SHA-256 hash of raw → stored in database.
+fn generate_hex_token() -> (String, String) {
+    let mut bytes = [0u8; 32];
+    rand::rng().fill_bytes(&mut bytes);
+    let raw = hex::encode(bytes);
+    let hash = hex::encode(sha2::Sha256::digest(raw.as_bytes()));
+    (raw, hash)
+}
+
+impl<AR, UR, ES> AuthService for Service<AR, UR, ES>
 where
     AR: AuthRepository + Clone,
     UR: UserRepository + Clone,
+    ES: EmailSender,
 {
     // ========
     //  config
@@ -83,6 +111,11 @@ where
 
         let access_token = AccessToken::generate(&user, &self.jwt_secret)
             .map_err(|e| RegisterUserError::FailedAccessToken(anyhow!("{e}")))?;
+
+        // Fire-and-forget: don't fail registration if email sending fails.
+        if let Err(e) = self.send_verification_email(user.id, user.email.as_ref()).await {
+            tracing::error!(event = "verification_email_failed", user_id = %user.id, error = %e);
+        }
 
         Ok(Session {
             user,
@@ -182,9 +215,9 @@ where
         self.auth_repo.change_email(request).await
     }
 
-    async fn change_password(&self, request: &ChangePassword) -> Result<(), ChangePasswordError> {
+    async fn change_password_and_revoke_sessions(&self, request: &ChangePassword) -> Result<(), ChangePasswordError> {
         self.authenticate_user(&request.into()).await?;
-        self.auth_repo.change_password(request).await
+        self.auth_repo.change_password_and_revoke_sessions(request).await
     }
 
     // ========
@@ -197,5 +230,113 @@ where
 
     async fn delete_expired_sessions(&self) -> Result<(), DeleteExpiredSessionsError> {
         self.auth_repo.delete_expired_refresh_tokens().await
+    }
+
+    // ========================
+    //  email verification
+    // ========================
+
+    async fn send_verification_email(
+        &self,
+        user_id: Uuid,
+        to_email: &str,
+    ) -> Result<(), anyhow::Error> {
+        self.auth_repo.delete_email_verification_tokens(user_id).await?;
+
+        let (raw, hash) = generate_hex_token();
+        let expires_at = Utc::now().naive_utc() + Duration::hours(24);
+
+        self.auth_repo
+            .store_email_verification_token(user_id, hash, expires_at)
+            .await
+            .map_err(|e| anyhow!("{e}"))?;
+
+        let link = format!("https://zwipe.net/verify?token={raw}");
+        let html = format!(
+            r#"<p>Verify your email: <a href="{link}">{link}</a></p>
+<p>This link expires in 24 hours.</p>"#
+        );
+
+        self.email_sender
+            .send_email(SendEmail {
+                to: to_email.to_string(),
+                subject: "Verify your Zwipe email".to_string(),
+                html_body: html,
+            })
+            .await
+            .map_err(|e| anyhow!("{e}"))?;
+
+        Ok(())
+    }
+
+    async fn verify_email(&self, request: &VerifyEmail) -> Result<(), VerifyEmailError> {
+        let hash = hex::encode(sha2::Sha256::digest(request.token.as_bytes()));
+        let user_id = self.auth_repo.use_email_verification_token(&hash).await?;
+        self.auth_repo.mark_email_verified(user_id).await?;
+        tracing::info!(event = "email_verified", user_id = %user_id);
+        Ok(())
+    }
+
+    // ========================
+    //  password reset
+    // ========================
+
+    async fn request_password_reset(
+        &self,
+        request: &RequestPasswordReset,
+    ) -> Result<(), RequestPasswordResetError> {
+        let user_id = match self.auth_repo.get_user_id_by_email(&request.email).await? {
+            Some(id) => id,
+            // Silently return Ok — never reveal whether an email is registered
+            None => {
+                tracing::debug!(event = "password_reset_unknown_email");
+                return Ok(());
+            }
+        };
+
+        if self.auth_repo.is_password_reset_on_cooldown(user_id).await? {
+            tracing::debug!(event = "password_reset_cooldown", user_id = %user_id);
+            return Ok(());
+        }
+
+        self.auth_repo.delete_password_reset_tokens(user_id).await?;
+
+        let (raw, hash) = generate_hex_token();
+        let expires_at = Utc::now().naive_utc() + Duration::minutes(15);
+
+        self.auth_repo
+            .store_password_reset_token(user_id, hash, expires_at)
+            .await?;
+
+        let link = format!("https://zwipe.net/reset?token={raw}");
+        let html = format!(
+            r#"<p>Reset your Zwipe password: <a href="{link}">{link}</a></p>
+<p>This link expires in 15 minutes. If you didn't request this, you can ignore this email.</p>"#
+        );
+
+        if let Err(e) = self
+            .email_sender
+            .send_email(SendEmail {
+                to: request.email.clone(),
+                subject: "Reset your Zwipe password".to_string(),
+                html_body: html,
+            })
+            .await
+        {
+            tracing::error!(event = "email_send_failure", error = %e);
+        }
+
+        tracing::info!(event = "password_reset_requested", user_id = %user_id);
+        Ok(())
+    }
+
+    async fn reset_password(&self, request: &ResetPassword) -> Result<(), ResetPasswordError> {
+        let hash = hex::encode(sha2::Sha256::digest(request.token.as_bytes()));
+        let user_id = self.auth_repo.use_password_reset_token(&hash).await?;
+        self.auth_repo
+            .reset_password_and_revoke_sessions(user_id, request.new_password_hash.clone())
+            .await?;
+        tracing::info!(event = "password_reset_success", user_id = %user_id);
+        Ok(())
     }
 }

@@ -385,6 +385,170 @@ curl https://api.zwipe.net/
 
 ---
 
+---
+
+## Part 4: Ubuntu Server Backend (Current)
+
+Migrated from Raspberry Pi 5 to a repurposed desktop — Intel i5, 32GB RAM, x86_64, Ubuntu Server (headless).
+Same stack (systemd, PostgreSQL, cloudflared) — clean reinstall, not a redesign.
+
+### Hardware
+
+- Intel i5, 32GB RAM, x86_64
+- Ubuntu Server (headless — no desktop environment)
+- Managed entirely via SSH
+
+### PostgreSQL Setup
+
+```bash
+sudo apt update && sudo apt install -y postgresql postgresql-contrib
+sudo systemctl enable postgresql
+sudo systemctl start postgresql
+
+sudo -u postgres psql -c "CREATE USER zwipe WITH PASSWORD 'YOUR_DB_PASSWORD';"
+sudo -u postgres psql -c "CREATE DATABASE zwipe OWNER zwipe;"
+```
+
+Test connection:
+```bash
+PGPASSWORD='YOUR_DB_PASSWORD' psql -U zwipe -h 127.0.0.1 -d zwipe -c '\l'
+```
+
+**Note:** Use `127.0.0.1` (TCP), not `localhost` (Unix socket). Peer authentication blocks socket connections for non-system users.
+
+### Log Directory
+
+zerver writes rolling daily logs to `/var/log/zwipe/`. Create it before first run:
+
+```bash
+sudo mkdir -p /var/log/zwipe
+sudo chown $USER /var/log/zwipe
+```
+
+zerver calls `create_dir_all` on startup (idempotent), but `/var/log/` is root-owned so this
+one-time setup is required. After this, no sudo needed.
+
+### Building on the Server
+
+With 32GB RAM and an Intel i5, building directly on the server is practical — no cross-compilation needed:
+
+```bash
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source ~/.cargo/env
+
+# Clone repo and build
+git clone <repo-url> ~/zwipe-src
+cd ~/zwipe-src/zerver
+cargo build --release --bin zerver --bin zervice
+
+# Copy binaries to deployment directory
+mkdir -p ~/zwipe
+cp target/release/zerver target/release/zervice ~/zwipe/
+```
+
+### Running Migrations
+
+```bash
+# Install sqlx-cli if not present
+cargo install sqlx-cli --no-default-features --features postgres
+
+# Run from the repo
+cd ~/zwipe-src/zerver
+DATABASE_URL=postgres://zwipe:YOUR_DB_PASSWORD@127.0.0.1/zwipe sqlx migrate run
+```
+
+### zerver .env on Server
+
+Located at `~/zwipe/.env`:
+```
+JWT_SECRET=<generated with: openssl rand -hex 32>
+DATABASE_URL=postgres://zwipe:URL_ENCODED_DB_PASSWORD@127.0.0.1/zwipe
+BIND_ADDRESS=0.0.0.0:3000
+ALLOWED_ORIGINS=https://zwipe.net
+RUST_LOG=info
+RUST_BACKTRACE=1
+RESEND_API_KEY=<from Resend dashboard>
+RESEND_EMAIL_FROM=noreply@zwipe.net
+```
+
+**Note:** `<` and `>` in the password are URL-encoded as `%3C` and `%3E` in the connection string.
+
+### zerver systemd Service
+
+`/etc/systemd/system/zerver.service`:
+```ini
+[Unit]
+Description=zerver - zwipe backend
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=scottyfermo
+WorkingDirectory=/home/scottyfermo/zwipe
+EnvironmentFile=/home/scottyfermo/zwipe/.env
+ExecStart=/home/scottyfermo/zwipe/zerver
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable zerver
+sudo systemctl start zerver
+sudo systemctl status zerver
+```
+
+### zervice Cron (Nightly Scryfall Sync)
+
+```bash
+crontab -e
+# Add: 0 4 * * * /home/scottyfermo/zwipe/zervice >> /home/scottyfermo/zwipe/zervice.log 2>&1
+```
+
+Run manually first time to seed card data:
+```bash
+cd ~/zwipe && ./zervice
+```
+
+### Cloudflare Tunnel
+
+Same tunnel ID and DNS config as the Pi — just reinstall cloudflared on the new machine.
+Use the `linux-amd64` binary (not `linux-arm64`):
+
+```bash
+curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb \
+  -o cloudflared.deb
+sudo dpkg -i cloudflared.deb
+
+# Re-authenticate (or copy credentials from old machine)
+cloudflared tunnel login
+
+# If reusing existing tunnel — copy credentials JSON and config.yml to /etc/cloudflared/
+sudo mkdir -p /etc/cloudflared
+sudo cp ~/.cloudflared/config.yml /etc/cloudflared/
+sudo cp ~/.cloudflared/<tunnel-id>.json /etc/cloudflared/
+
+sudo cloudflared service install
+sudo systemctl enable cloudflared
+sudo systemctl start cloudflared
+```
+
+Tunnel config (`/etc/cloudflared/config.yml`) is identical to the Pi config — no changes needed.
+
+### Verify
+
+```bash
+curl https://api.zwipe.net/
+# {"message":"zerver","status":"ready","version":"0.1.0"}
+```
+
+---
+
 ## Key Files Reference
 
 | File | Purpose |

@@ -4,6 +4,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
 use zwipe::config::Config;
 use zwipe::domain::{auth, card, deck, health, logo, user};
 use zwipe::inbound::http::{HttpServer, HttpServerConfig};
+use zwipe::outbound::resend::Resend;
 use zwipe::outbound::sqlx::postgres::Postgres;
 
 #[tokio::main]
@@ -11,7 +12,7 @@ async fn main() {
     logo::Zerver::print();
     match run().await {
         Ok(_) => (),
-        Err(e) => tracing::error!("main failed: {:?}", e),
+        Err(e) => eprintln!("main failed: {e:?}"),
     }
 }
 
@@ -20,14 +21,17 @@ async fn run() -> anyhow::Result<()> {
 
     let level_filter = LevelFilter::from(config.rust_log);
 
-    // Rolling daily log file: /var/log/zwipe/zerver.YYYY-MM-DD.log
+    std::fs::create_dir_all(&config.log_dir)
+        .map_err(|e| anyhow::anyhow!("failed to create log directory: {e}"))?;
+
+    // Rolling daily log file: $LOG_DIR/zerver.YYYY-MM-DD.log (default: /var/log/zwipe)
     // max_log_files(30) automatically deletes files older than 30 days
     let file_appender = RollingFileAppender::builder()
         .rotation(Rotation::DAILY)
         .filename_prefix("zerver")
         .filename_suffix("log")
         .max_log_files(30)
-        .build("/var/log/zwipe")
+        .build(&config.log_dir)
         .map_err(|e| anyhow::anyhow!("failed to build log file appender: {e}"))?;
 
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
@@ -45,7 +49,8 @@ async fn run() -> anyhow::Result<()> {
         )
         .init();
     let db = Postgres::new(&config.database_url).await?;
-    let auth_service = auth::services::Service::new(db.clone(), db.clone(), config.jwt_secret);
+    let resend = Resend::new(config.resend_api_key, config.resend_from_email);
+    let auth_service = auth::services::Service::new(db.clone(), db.clone(), resend, config.jwt_secret);
     let user_service = user::services::Service::new(db.clone());
     let health_service = health::services::Service::new(db.clone());
     let card_service = card::services::Service::new(db.clone());

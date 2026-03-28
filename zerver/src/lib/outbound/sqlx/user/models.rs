@@ -1,3 +1,4 @@
+use chrono::NaiveDateTime;
 use email_address::EmailAddress;
 use sqlx_macros::FromRow;
 use uuid::Uuid;
@@ -15,6 +16,7 @@ pub struct DatabaseUser {
     pub id: Uuid,
     pub username: String,
     pub email: String,
+    pub email_verified_at: Option<NaiveDateTime>,
 }
 
 /// converts database user to validated domain user
@@ -29,6 +31,7 @@ impl TryFrom<DatabaseUser> for User {
             id: value.id,
             username,
             email,
+            email_verified_at: value.email_verified_at,
         })
     }
 }

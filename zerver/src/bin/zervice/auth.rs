@@ -5,6 +5,7 @@ use zwipe::domain::{
         self,
         ports::{AuthRepository, AuthService},
     },
+    email::ports::EmailSender,
     user::ports::UserRepository,
 };
 
@@ -15,10 +16,11 @@ pub trait CheckSessions {
     ) -> impl Future<Output = anyhow::Result<()>> + Send;
 }
 
-impl<AR, UR> CheckSessions for auth::services::Service<AR, UR>
+impl<AR, UR, ES> CheckSessions for auth::services::Service<AR, UR, ES>
 where
     AR: AuthRepository,
     UR: UserRepository,
+    ES: EmailSender,
 {
     async fn check_sessions(&self, latest: &mut Option<NaiveDateTime>) -> anyhow::Result<()> {
         if latest.is_none_or(|d| d < Utc::now().naive_utc() - Duration::days(7)) {

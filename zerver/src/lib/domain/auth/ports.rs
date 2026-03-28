@@ -13,6 +13,8 @@ use crate::domain::{
         delete_user::{DeleteUser, DeleteUserError},
         refresh_token::RefreshToken,
         register_user::{RegisterUser, RegisterUserError},
+        request_password_reset::{RequestPasswordReset, RequestPasswordResetError},
+        reset_password::{ResetPassword, ResetPasswordError},
         session::{
             create_session::{CreateSession, CreateSessionError},
             delete_expired_sessions::DeleteExpiredSessionsError,
@@ -20,10 +22,12 @@ use crate::domain::{
             revoke_sessions::{RevokeSessions, RevokeSessionsError},
             Session,
         },
+        verify_email::{VerifyEmail, VerifyEmailError},
         UserWithPasswordHash,
     },
     user::models::User,
 };
+use chrono::NaiveDateTime;
 use std::future::Future;
 use uuid::Uuid;
 
@@ -103,10 +107,10 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
     //  update
     // ========
 
-    /// Updates a user's password after verification.
+    /// Updates a user's password after verification and revokes all active sessions.
     ///
-    /// Verifies current password, then updates to new password hash.
-    fn change_password(
+    /// Verifies current password, then updates to new password hash and revokes all sessions.
+    fn change_password_and_revoke_sessions(
         &self,
         request: &ChangePassword,
     ) -> impl Future<Output = Result<(), ChangePasswordError>> + Send;
@@ -153,6 +157,87 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
         &self,
         user_id: Uuid,
     ) -> impl Future<Output = Result<(), RevokeSessionsError>> + Send;
+
+    // ========================
+    //  email verification
+    // ========================
+
+    /// Stores a new email verification token for the given user.
+    fn store_email_verification_token(
+        &self,
+        user_id: Uuid,
+        token_hash: String,
+        expires_at: NaiveDateTime,
+    ) -> impl Future<Output = Result<(), RegisterUserError>> + Send;
+
+    /// Validates expiry, deletes the token, and returns the owning `user_id`.
+    ///
+    /// Returns [`VerifyEmailError::InvalidToken`] if the token is not found or expired.
+    fn use_email_verification_token(
+        &self,
+        token_hash: &str,
+    ) -> impl Future<Output = Result<Uuid, VerifyEmailError>> + Send;
+
+    /// Sets `email_verified_at = NOW()` for the given user.
+    fn mark_email_verified(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<(), VerifyEmailError>> + Send;
+
+    /// Deletes all pending verification tokens for a user (called before issuing a new one).
+    fn delete_email_verification_tokens(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
+
+    // ========================
+    //  password reset
+    // ========================
+
+    /// Looks up a user ID by email. Returns `None` if the email is not registered.
+    ///
+    /// Never exposes `UserNotFound` in error — only DB failures are returned.
+    fn get_user_id_by_email(
+        &self,
+        email: &str,
+    ) -> impl Future<Output = Result<Option<Uuid>, anyhow::Error>> + Send;
+
+    /// Returns `true` if a password reset token was issued for this user in the last 5 minutes.
+    fn is_password_reset_on_cooldown(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<bool, anyhow::Error>> + Send;
+
+    /// Deletes all pending password reset tokens for a user.
+    fn delete_password_reset_tokens(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
+
+    /// Stores a new password reset token for the given user.
+    fn store_password_reset_token(
+        &self,
+        user_id: Uuid,
+        token_hash: String,
+        expires_at: NaiveDateTime,
+    ) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
+
+    /// Validates expiry, deletes the token, and returns the owning `user_id`.
+    ///
+    /// Returns [`ResetPasswordError::InvalidToken`] if the token is not found or expired.
+    fn use_password_reset_token(
+        &self,
+        token_hash: &str,
+    ) -> impl Future<Output = Result<Uuid, ResetPasswordError>> + Send;
+
+    /// Atomically updates the password hash and revokes all sessions for the user.
+    ///
+    /// Forces re-login on all devices after a password reset.
+    fn reset_password_and_revoke_sessions(
+        &self,
+        user_id: Uuid,
+        new_hash: crate::domain::auth::models::password::HashedPassword,
+    ) -> impl Future<Output = Result<(), ResetPasswordError>> + Send;
 }
 
 /// Service port for authentication business logic.
@@ -219,10 +304,10 @@ pub trait AuthService: Clone + Send + Sync + 'static {
     //  update
     // ========
 
-    /// Changes a user's password after verifying current password.
+    /// Changes a user's password after verifying current password and revokes all active sessions.
     ///
-    /// Verifies current password, updates to new password hash.
-    fn change_password(
+    /// Verifies current password, updates to new password hash and revokes all sessions.
+    fn change_password_and_revoke_sessions(
         &self,
         request: &ChangePassword,
     ) -> impl Future<Output = Result<(), ChangePasswordError>> + Send;
@@ -269,4 +354,45 @@ pub trait AuthService: Clone + Send + Sync + 'static {
         &self,
         request: &RevokeSessions,
     ) -> impl Future<Output = Result<(), RevokeSessionsError>> + Send;
+
+    // ========================
+    //  email verification
+    // ========================
+
+    /// Generates and stores a verification token, then sends the verification email.
+    ///
+    /// Called on registration and on `resend-verification`. Fire-and-forget on registration
+    /// (errors are logged but do not fail the registration).
+    fn send_verification_email(
+        &self,
+        user_id: Uuid,
+        to_email: &str,
+    ) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
+
+    /// Marks the email address as verified using the one-time token.
+    fn verify_email(
+        &self,
+        request: &VerifyEmail,
+    ) -> impl Future<Output = Result<(), VerifyEmailError>> + Send;
+
+    // ========================
+    //  password reset
+    // ========================
+
+    /// Initiates a password reset flow for the given email.
+    ///
+    /// Always returns `Ok(())` — user-not-found and cooldown are silently swallowed
+    /// to prevent email enumeration.
+    fn request_password_reset(
+        &self,
+        request: &RequestPasswordReset,
+    ) -> impl Future<Output = Result<(), RequestPasswordResetError>> + Send;
+
+    /// Completes a password reset using the one-time token and updates the password.
+    ///
+    /// Revokes all existing sessions after a successful reset.
+    fn reset_password(
+        &self,
+        request: &ResetPassword,
+    ) -> impl Future<Output = Result<(), ResetPasswordError>> + Send;
 }

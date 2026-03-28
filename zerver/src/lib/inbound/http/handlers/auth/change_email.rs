@@ -80,10 +80,19 @@ where
 {
     let request = ChangeEmail::new(user.id, &body.email, &body.password)?;
 
-    state
+    let updated_user = state
         .auth_service
         .change_email(&request)
         .await
-        .map_err(ApiError::from)
-        .map(|user| (StatusCode::OK, Json(user)))
+        .map_err(ApiError::from)?;
+
+    if let Err(e) = state
+        .auth_service
+        .send_verification_email(updated_user.id, updated_user.email.as_ref())
+        .await
+    {
+        tracing::error!(event = "verification_email_failed", user_id = %updated_user.id, error = %e);
+    }
+
+    Ok((StatusCode::OK, Json(updated_user)))
 }

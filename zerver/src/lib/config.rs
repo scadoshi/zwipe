@@ -28,6 +28,18 @@ const RUST_BACKTRACE_KEY: &str = "RUST_BACKTRACE";
 /// Environment variable key for allowed CORS origins (comma-separated).
 const ALLOWED_ORIGINS_KEY: &str = "ALLOWED_ORIGINS";
 
+/// Environment variable key for the Resend email API key.
+const RESEND_API_KEY_KEY: &str = "RESEND_API_KEY";
+
+/// Environment variable key for the outbound email sender address.
+const RESEND_EMAIL_FROM_KEY: &str = "RESEND_EMAIL_FROM";
+
+/// Environment variable key for the log file directory.
+const LOG_DIR_KEY: &str = "LOG_DIR";
+
+/// Default log directory on production servers.
+const LOG_DIR_DEFAULT: &str = "/var/log/zwipe";
+
 /// Application configuration loaded from environment variables.
 ///
 /// All fields are required and validated at construction time.
@@ -49,6 +61,15 @@ pub struct Config {
 
     /// CORS allowed origins for cross-origin requests.
     pub allowed_origins: Vec<HeaderValue>,
+
+    /// Resend API key for sending transactional email.
+    pub resend_api_key: String,
+
+    /// Sender address for outbound email (e.g. `"noreply@zwipe.net"`).
+    pub resend_from_email: String,
+
+    /// Directory for rolling log files. Defaults to `/var/log/zwipe` if not set.
+    pub log_dir: String,
 }
 
 impl Config {
@@ -71,6 +92,9 @@ impl Config {
             .split(',')
             .map(|x| x.parse())
             .collect::<Result<Vec<HeaderValue>, _>>()?;
+        let resend_api_key = env_var_by_key(RESEND_API_KEY_KEY)?;
+        let resend_from_email = env_var_by_key(RESEND_EMAIL_FROM_KEY)?;
+        let log_dir = std::env::var(LOG_DIR_KEY).unwrap_or_else(|_| LOG_DIR_DEFAULT.to_string());
         Ok(Self {
             jwt_secret,
             database_url,
@@ -78,6 +102,9 @@ impl Config {
             rust_log,
             rust_backtrace,
             allowed_origins,
+            resend_api_key,
+            resend_from_email,
+            log_dir,
         })
     }
 }

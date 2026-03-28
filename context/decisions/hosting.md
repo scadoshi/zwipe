@@ -1,44 +1,58 @@
 # Hosting Decision
 
-**Decided: Raspberry Pi 5 via Cloudflare Tunnel (2026-03-26)**
+**Decided: Ubuntu Server (headless) via Cloudflare Tunnel (2026-03-27)**
+
+Previous host was a Raspberry Pi 5 (4GB RAM). Moved to a proper server — 32GB RAM, repurposed from a desktop build (GPU removed before OS install). Overkill for current load but gives real headroom and removes Pi's memory/aarch64 constraints.
 
 ---
 
 ## What We're Running
 
-- **Hardware**: Raspberry Pi 5, 4GB RAM, Debian 12 Bookworm, aarch64, local IP `10.0.0.78`
-- **Backend**: `zerver` as a systemd service (`/home/scottyfermo/zwipe/zerver`)
-- **Database**: PostgreSQL on the Pi — `zwipe` DB, `zwipe` user
+- **Hardware**: Ubuntu Server (headless, no desktop UI), x86_64, 32GB RAM
+- **OS**: Ubuntu Server — no GUI, managed entirely via SSH
+- **Backend**: `zerver` as a systemd service
+- **Database**: PostgreSQL — `zwipe` DB, `zwipe` user
 - **Tunnel**: Cloudflare Tunnel → `api.zwipe.net` routes to `localhost:3000`
 - **Nightly sync**: `zervice` via cron at 4am
 
-## Why Pi + Cloudflare Tunnel
+## Why Ubuntu Server (headless)
 
-- Already owned hardware, $0/month hosting cost
-- Cloudflare Tunnel avoids port forwarding, dynamic IP issues, and handles TLS at the edge
-- POC approach — if load ever becomes a real problem, migrate to a VPS with same stack
+- 32GB RAM vs Pi's 4GB — real headroom for DB + backend under actual load
+- x86_64 eliminates cross-compilation to aarch64 — `cargo build` on the server itself is viable, or cross-compile Mac → x86_64-unknown-linux-gnu
+- No UI needed — everything managed via SSH. Desktop environment would be wasted RAM on a server
+- Same stack (systemd, PostgreSQL, cloudflared) — migration is a clean reinstall, not a redesign
 
-## Key Config
+## Cross-Compilation (Mac → x86_64-unknown-linux-gnu)
 
-- Tunnel ID: `70ba169b-8293-4a60-9b2d-e1f996a161db`
-- Tunnel config: `/etc/cloudflared/config.yml` on Pi
-- zerver .env: `/home/scottyfermo/zwipe/.env` on Pi
+```bash
+rustup target add x86_64-unknown-linux-gnu
+cargo zigbuild --release --bin zerver --bin zervice --target x86_64-unknown-linux-gnu
+scp target/x86_64-unknown-linux-gnu/release/zerver zervice <user>@<server-ip>:~/zwipe/
+ssh <user>@<server-ip> "sudo systemctl restart zerver"
+```
+
+Note: Update `.cargo/config.toml` linker config if it still points at aarch64 toolchain.
+
+## Key Config (carry over from Pi — update IPs/paths as needed)
+
+- Tunnel config: `/etc/cloudflared/config.yml` on server
+- zerver .env: `~/zwipe/.env` on server
 - DATABASE_URL uses `127.0.0.1` (TCP), not `localhost` (socket) — peer auth blocks socket for non-system users
 - `<` and `>` in DB password URL-encoded as `%3C` / `%3E` in connection string
 
-## Cross-Compilation (Mac → aarch64)
+## Status (2026-03-27)
 
-```bash
-rustup target add aarch64-unknown-linux-gnu
-brew install messense/macos-cross-toolchains/aarch64-unknown-linux-gnu
-brew install zig && cargo install cargo-zigbuild
-cargo zigbuild --release --bin zerver --bin zervice --target aarch64-unknown-linux-gnu
-scp target/aarch64-unknown-linux-gnu/release/zerver zervice scottyfermo@10.0.0.78:~/zwipe/
-ssh scottyfermo@10.0.0.78 "sudo systemctl restart zerver"
-```
-
-`cargo-zigbuild` required because reqwest uses `rustls-tls` (pure Rust TLS, no OpenSSL headers). `.cargo/config.toml` has the aarch64 linker configured.
+- [ ] Disassemble desktop, remove GPU, reassemble
+- [ ] Boot with Ubuntu Server USB installer (headless install)
+- [ ] Install PostgreSQL, create `zwipe` DB + user
+- [ ] Install `cloudflared`, configure tunnel to `api.zwipe.net`
+- [ ] Deploy zerver + zervice binaries (cross-compiled x86_64 from Mac or built on server)
+- [ ] Configure zerver `.env`, run SQLx migrations
+- [ ] Start `zerver` systemd service, add `zervice` cron
+- [ ] Create `/var/log/zwipe/` for rolling log files
+- [ ] Run `zervice` once manually to seed Scryfall card data
+- [ ] Verify iOS app hits `api.zwipe.net` successfully
 
 ## Full Step-by-Step Reference
 
-See `context/project/shipping.md`.
+See `context/project/shipping.md` — update that file with x86_64 steps once migration is complete.

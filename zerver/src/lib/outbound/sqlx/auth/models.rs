@@ -21,6 +21,7 @@ pub struct DatabaseUserWithPasswordHash {
     pub email: String,
     pub password_hash: String,
     pub lockout_until: Option<NaiveDateTime>,
+    pub email_verified_at: Option<NaiveDateTime>,
 }
 
 /// converts database user with password hash
@@ -38,6 +39,7 @@ impl TryFrom<DatabaseUserWithPasswordHash> for UserWithPasswordHash {
             email,
             password_hash,
             lockout_until: value.lockout_until,
+            email_verified_at: value.email_verified_at,
         })
     }
 }

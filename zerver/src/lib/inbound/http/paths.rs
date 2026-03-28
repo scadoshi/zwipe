@@ -47,6 +47,22 @@ pub fn logout_route() -> String {
     "/api/auth/logout".to_string()
 }
 
+pub fn verify_email_route() -> String {
+    "/api/auth/verify-email".to_string()
+}
+
+pub fn forgot_password_route() -> String {
+    "/api/auth/forgot-password".to_string()
+}
+
+pub fn reset_password_route() -> String {
+    "/api/auth/reset-password".to_string()
+}
+
+pub fn resend_verification_route() -> String {
+    "/api/auth/resend-verification".to_string()
+}
+
 pub fn get_card_route(scryfall_data_id: Uuid) -> String {
     format!("/api/card/{}", scryfall_data_id)
 }
