@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT scryfall_data_id, is_valid_commander, is_token, created_at, updated_at FROM card_profiles WHERE scryfall_data_id = $1",
+  "query": "INSERT INTO card_profiles (scryfall_data_id, is_commander, is_token)\n             VALUES ($1, $2, $3)\n             ON CONFLICT (scryfall_data_id)\n             DO UPDATE SET updated_at = NOW(), is_commander = EXCLUDED.is_commander, is_token = EXCLUDED.is_token\n             RETURNING scryfall_data_id, is_commander, is_token, created_at, updated_at",
   "describe": {
     "columns": [
       {
@@ -10,7 +10,7 @@
       },
       {
         "ordinal": 1,
-        "name": "is_valid_commander",
+        "name": "is_commander",
         "type_info": "Bool"
       },
       {
@@ -31,7 +31,9 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Uuid",
+        "Bool",
+        "Bool"
       ]
     },
     "nullable": [
@@ -42,5 +44,5 @@
       false
     ]
   },
-  "hash": "003f1846bd01eff136b64177cc6ff6d7ba4b09a30356f290bfc83335df497b4a"
+  "hash": "eebea3fa153dd0a8d81bf3b1f3652e019c374c8a065bdd7860e232349f58da4e"
 }
