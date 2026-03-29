@@ -127,36 +127,33 @@ pub fn Reset(token: String) -> Element {
                 },
                 _ => rsx! {
                     h1 { "reset password" }
-                    p { class: "subtitle", "enter your new password below." }
+                    p { class: "subtitle", "choose a new password for your account." }
 
                     form { onsubmit: on_submit,
                         div { class: "form-group",
                             label { "new password" }
                             input {
                                 r#type: "password",
-                                placeholder: "min 8 chars, upper, lower, number, symbol",
+                                placeholder: "new password",
                                 value: "{password}",
                                 oninput: move |e| password.set(e.value()),
                                 disabled: current_state == ResetState::Loading,
                             }
                         }
-                        div { class: "password-hint",
+                        details { class: "password-hint-toggle",
+                            summary { "password requirements" }
                             ul {
                                 li { "8–128 characters" }
-                                li { "at least one uppercase letter (A–Z)" }
-                                li { "at least one lowercase letter (a–z)" }
-                                li { "at least one number (0–9)" }
-                                li { "at least one symbol (~!@#$%^&*()_+=[]{{}}\\/? |:;<>,.)" }
-                                li { "no whitespace" }
-                                li { "at least 6 unique characters" }
-                                li { "no more than 3 consecutive repeated characters" }
+                                li { "uppercase, lowercase, number, symbol" }
+                                li { "no whitespace, 6+ unique chars" }
+                                li { "max 3 consecutive repeated characters" }
                             }
                         }
                         div { class: "form-group",
                             label { "confirm password" }
                             input {
                                 r#type: "password",
-                                placeholder: "repeat password",
+                                placeholder: "confirm password",
                                 value: "{confirm}",
                                 oninput: move |e| confirm.set(e.value()),
                                 disabled: current_state == ResetState::Loading,
