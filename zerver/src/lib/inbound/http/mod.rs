@@ -103,12 +103,14 @@ impl From<uuid::Error> for ApiError {
 impl From<(reqwest::StatusCode, String)> for ApiError {
     fn from(value: (reqwest::StatusCode, String)) -> Self {
         let (status, message) = value;
+        let message = message.to_lowercase();
         match status {
             reqwest::StatusCode::INTERNAL_SERVER_ERROR => Self::InternalServerError(message),
             reqwest::StatusCode::UNAUTHORIZED => Self::Unauthorized(message),
             reqwest::StatusCode::FORBIDDEN => Self::Forbidden(message),
             reqwest::StatusCode::NOT_FOUND => Self::NotFound(message),
             reqwest::StatusCode::UNPROCESSABLE_ENTITY => Self::UnprocessableEntity(message),
+            reqwest::StatusCode::TOO_MANY_REQUESTS => Self::TooManyRequests(message),
             _ => Self::InternalServerError(message),
         }
     }
