@@ -685,6 +685,21 @@ pub fn View(deck_id: Uuid) -> Element {
                     }
                 }
 
+                div { class: "modal-footer",
+                    button {
+                        class: "btn btn-sm",
+                        onclick: move |_| {
+                            filter_builder.write().clear();
+                            let current = *filter_reset_counter.peek();
+                            filter_reset_counter.set(current + 1);
+                            toast.info(
+                                "filter cleared".to_string(),
+                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                            );
+                        },
+                        "clear"
+                    }
+                }
             }
 
             // Image preview overlay
