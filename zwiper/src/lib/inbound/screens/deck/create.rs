@@ -13,6 +13,7 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use tokio::time::sleep;
 use zwipe::{
@@ -48,7 +49,7 @@ pub fn CreateDeck() -> Element {
     let mut show_dropdown = use_signal(|| false);
 
     // save state
-    let mut submission_error = use_signal(|| None::<String>);
+    let toast = use_toast();
     let mut is_saving = use_signal(|| false);
 
     // debounced search effect
@@ -92,13 +93,12 @@ pub fn CreateDeck() -> Element {
     });
 
     let mut attempt_submit = move || {
-        submission_error.set(None);
         is_saving.set(true);
 
         spawn(async move {
             session.upkeep(auth_client);
             let Some(session) = session() else {
-                submission_error.set(Some("session expired".to_string()));
+                toast.error("session expired".to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
                 is_saving.set(false);
                 return;
             };
@@ -114,7 +114,7 @@ pub fn CreateDeck() -> Element {
                     });
                 }
                 Err(e) => {
-                    submission_error.set(Some(e.to_string()));
+                    toast.error(e.to_string().to_lowercase(), ToastOptions::default().duration(Duration::from_millis(3000)));
                     is_saving.set(false);
                 }
             }
@@ -204,9 +204,6 @@ pub fn CreateDeck() -> Element {
                             }
                         }
 
-                        if let Some(error) = submission_error() {
-                            div { class : "message-error", "{error}" }
-                        }
                     }
                 }
             }
