@@ -76,7 +76,7 @@ pub struct CardFilter {
     card_type_contains_any: Option<Vec<CardType>>,
     card_type_contains_all: Option<Vec<CardType>>,
     // flags
-    is_valid_commander: Option<bool>,
+    is_commander: Option<bool>,
     is_token: Option<bool>,
     is_playable: Option<bool>,
     digital: Option<bool>,

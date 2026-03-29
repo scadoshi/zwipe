@@ -18,8 +18,8 @@ pub fn Config() -> Element {
                 setter_true: |fb| { fb.set_is_playable(true); },
                 setter_false: |fb| { fb.set_is_playable(false); },
                 unsetter: |fb| { fb.unset_is_playable(); },
-                true_label: "show",
-                false_label: "hide",
+                true_label: "yes",
+                false_label: "no",
                 none_label: "any"
             }
 
@@ -30,8 +30,8 @@ pub fn Config() -> Element {
                 setter_true: |fb| { fb.set_digital(true); },
                 setter_false: |fb| { fb.set_digital(false); },
                 unsetter: |fb| { fb.unset_digital(); },
-                true_label: "show",
-                false_label: "hide",
+                true_label: "yes",
+                false_label: "no",
                 none_label: "any"
             }
 
@@ -42,8 +42,8 @@ pub fn Config() -> Element {
                 setter_true: |fb| { fb.set_oversized(true); },
                 setter_false: |fb| { fb.set_oversized(false); },
                 unsetter: |fb| { fb.unset_oversized(); },
-                true_label: "show",
-                false_label: "hide",
+                true_label: "yes",
+                false_label: "no",
                 none_label: "any"
             }
 
@@ -54,8 +54,8 @@ pub fn Config() -> Element {
                 setter_true: |fb| { fb.set_promo(true); },
                 setter_false: |fb| { fb.set_promo(false); },
                 unsetter: |fb| { fb.unset_promo(); },
-                true_label: "show",
-                false_label: "hide",
+                true_label: "yes",
+                false_label: "no",
                 none_label: "any"
             }
 
@@ -66,8 +66,8 @@ pub fn Config() -> Element {
                 setter_true: |fb| { fb.set_content_warning(true); },
                 setter_false: |fb| { fb.set_content_warning(false); },
                 unsetter: |fb| { fb.unset_content_warning(); },
-                true_label: "show",
-                false_label: "hide",
+                true_label: "yes",
+                false_label: "no",
                 none_label: "any"
             }
         }

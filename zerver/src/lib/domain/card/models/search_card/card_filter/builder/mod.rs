@@ -98,7 +98,7 @@ pub struct CardFilterBuilder {
     card_type_contains_any: Option<Vec<CardType>>,
     card_type_contains_all: Option<Vec<CardType>>,
     // flags
-    is_valid_commander: Option<bool>,
+    is_commander: Option<bool>,
     is_token: Option<bool>,
     is_playable: Option<bool>,
     digital: Option<bool>,
@@ -142,7 +142,7 @@ impl Default for CardFilterBuilder {
             type_line_contains_all: None,
             card_type_contains_any: None,
             card_type_contains_all: None,
-            is_valid_commander: None,
+            is_commander: None,
             is_token: None,
             is_playable: Some(true),
             digital: Some(false),
@@ -461,9 +461,9 @@ impl CardFilterBuilder {
     }
 
     /// Creates builder filtering by Commander format legality.
-    pub fn with_is_valid_commander(is_valid_commander: bool) -> CardFilterBuilder {
+    pub fn with_is_commander(is_commander: bool) -> CardFilterBuilder {
         CardFilterBuilder {
-            is_valid_commander: Some(is_valid_commander),
+            is_commander: Some(is_commander),
             ..CardFilterBuilder::default()
         }
     }
@@ -562,7 +562,7 @@ impl CardFilterBuilder {
             type_line_contains_all: self.type_line_contains_all.clone(),
             card_type_contains_any: self.card_type_contains_any.clone(),
             card_type_contains_all: self.card_type_contains_all.clone(),
-            is_valid_commander: self.is_valid_commander,
+            is_commander: self.is_commander,
             is_token: self.is_token,
             is_playable: self.is_playable,
             digital: self.digital,

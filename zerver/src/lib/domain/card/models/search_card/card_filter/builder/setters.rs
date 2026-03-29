@@ -450,14 +450,14 @@ impl CardFilterBuilder {
     // =================================
 
     /// Sets filter for Commander format legality.
-    pub fn set_is_valid_commander(&mut self, is_valid_commander: bool) -> &mut Self {
-        self.is_valid_commander = Some(is_valid_commander);
+    pub fn set_is_commander(&mut self, is_commander: bool) -> &mut Self {
+        self.is_commander = Some(is_commander);
         self
     }
 
-    /// Clears the is_valid_commander filter.
-    pub fn unset_is_valid_commander(&mut self) -> &mut Self {
-        self.is_valid_commander = None;
+    /// Clears the is_commander filter.
+    pub fn unset_is_commander(&mut self) -> &mut Self {
+        self.is_commander = None;
         self
     }
 
@@ -590,7 +590,6 @@ impl CardFilterBuilder {
         let default = Self {
             limit: self.limit,
             offset: self.offset,
-            is_valid_commander: self.is_valid_commander,
             is_token: self.is_token,
             is_playable: self.is_playable,
             digital: self.digital,

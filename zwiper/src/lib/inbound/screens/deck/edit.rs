@@ -175,16 +175,26 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     // debounced search effect
     use_effect(move || {
         let query = search_query();
-        if query.is_empty() {
+
+        if query.len() < 3 {
             show_dropdown.set(false);
+            is_searching.set(false);
             return;
         }
+
         is_searching.set(true);
+
         spawn(async move {
-            sleep(Duration::from_millis(500)).await;
+            sleep(Duration::from_millis(800)).await;
+
+            // only proceed if the query hasn't changed during the delay
+            if search_query() != query {
+                return;
+            }
+
             if let Some(session) = session() {
                 let Ok(card_filter) = CardFilterBuilder::with_name_contains(&query)
-                    .set_is_valid_commander(true)
+                    .set_is_commander(true)
                     .set_limit(5)
                     .build()
                 else {

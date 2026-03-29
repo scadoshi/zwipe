@@ -303,8 +303,8 @@ impl FilterCards for Vec<Card> {
                 }
 
                 // ── flags ─────────────────────────────────────────────────────
-                if let Some(val) = filter.is_valid_commander()
-                    && cp.is_valid_commander != val
+                if let Some(val) = filter.is_commander()
+                    && cp.is_commander != val
                 {
                     return false;
                 }
@@ -550,7 +550,7 @@ mod tests {
         Card {
             card_profile: CardProfile {
                 scryfall_data_id: Uuid::new_v4(),
-                is_valid_commander: false,
+                is_commander: false,
                 is_token: false,
                 created_at: NaiveDate::from_ymd_opt(2021, 1, 1)
                     .unwrap()
@@ -1166,15 +1166,13 @@ mod tests {
     // ── flags ─────────────────────────────────────────────────────────────────
 
     #[test]
-    fn test_is_valid_commander_filter() {
+    fn test_is_commander_filter() {
         let mut commander = make_card("Atraxa");
-        commander.card_profile.is_valid_commander = true;
+        commander.card_profile.is_commander = true;
         let regular = make_card("Forest");
-        // is_valid_commander is a config field in retain_config, so we need a real
-        // search criterion (name_contains) to make the builder non-empty.
-        let mut b = CardFilterBuilder::with_name_contains("");
-        b.set_is_valid_commander(true);
-        let filter = b.build().unwrap();
+        let filter = CardFilterBuilder::with_is_commander(true)
+            .build()
+            .unwrap();
         let result = vec![commander, regular].filter_by(&filter);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].scryfall_data.name, "Atraxa");
