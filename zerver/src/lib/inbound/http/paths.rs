@@ -43,6 +43,10 @@ pub fn delete_user_route() -> String {
     "/api/user/delete-user".to_string()
 }
 
+pub fn preferences_route() -> String {
+    "/api/user/preferences".to_string()
+}
+
 pub fn logout_route() -> String {
     "/api/auth/logout".to_string()
 }
