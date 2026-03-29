@@ -1187,6 +1187,43 @@ body {
     pointer-events: auto;
 }
 
+/* ================================
+  specific - card image preview
+================================== */
+
+@keyframes image-drop-in {
+    from { opacity: 0; transform: translateY(-40px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes image-drop-out {
+    from { opacity: 1; transform: translateY(0); }
+    to   { opacity: 0; transform: translateY(-40px); }
+}
+
+.image-preview-container {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 202; /* above modal-backdrop (200) and bottom-sheet (201) */
+    pointer-events: none;
+}
+
+.image-preview-container.show {
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.image-preview-container.show .card-image {
+    animation: image-drop-in 0.3s ease-out both;
+}
+
+.image-preview-container.dismissing .card-image {
+    animation: image-drop-out 0.2s ease-in both;
+}
+
 .bottom-sheet {
     position: fixed;
     bottom: 0;
