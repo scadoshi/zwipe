@@ -177,11 +177,11 @@ where
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
-    // burst 5, then 1 req/10s — heavy DB search, 100-card batches make >5/min unrealistic
+    // burst 20, then 1 req/10s — commander autocomplete needs headroom for fast typers
     let card_search_config = Arc::new(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(10))
-            .burst_size(5)
+            .burst_size(20)
             .key_extractor(PeerIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
