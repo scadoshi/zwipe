@@ -32,7 +32,10 @@ use crate::domain::{
     },
 };
 
-use crate::domain::deck::{MAX_CARDS_PER_DECK, MAX_DECKS_PER_USER};
+use crate::domain::deck::{
+    MAX_CARDS_PER_DECK, MAX_DECKS_PER_USER, UNVERIFIED_MAX_CARDS_PER_DECK,
+    UNVERIFIED_MAX_DECKS_PER_USER,
+};
 
 /// Deck service implementation handling deck building and card management operations.
 ///
@@ -87,7 +90,12 @@ where
             .count_decks_by_user(request.user_id)
             .await
             .map_err(CreateDeckProfileError::Database)?;
-        if deck_count >= MAX_DECKS_PER_USER {
+        let deck_limit = if request.email_verified {
+            MAX_DECKS_PER_USER
+        } else {
+            UNVERIFIED_MAX_DECKS_PER_USER
+        };
+        if deck_count >= deck_limit {
             return Err(CreateDeckProfileError::LimitReached);
         }
         self.deck_repo.create_deck_profile(request).await
@@ -106,7 +114,12 @@ where
             .count_cards_in_deck(request.deck_id)
             .await
             .map_err(CreateDeckCardError::Database)?;
-        if card_count + i64::from(*request.quantity) > MAX_CARDS_PER_DECK {
+        let card_limit = if request.email_verified {
+            MAX_CARDS_PER_DECK
+        } else {
+            UNVERIFIED_MAX_CARDS_PER_DECK
+        };
+        if card_count + i64::from(*request.quantity) > card_limit {
             return Err(CreateDeckCardError::LimitReached);
         }
         self.deck_repo.create_deck_card(request).await
@@ -269,7 +282,12 @@ where
             .await
             .map_err(|e| ImportDeckCardsError::Database(e))?;
         let import_total: i64 = batch.iter().map(|(_, qty)| i64::from(*qty)).sum();
-        if card_count + import_total > MAX_CARDS_PER_DECK {
+        let card_limit = if request.email_verified {
+            MAX_CARDS_PER_DECK
+        } else {
+            UNVERIFIED_MAX_CARDS_PER_DECK
+        };
+        if card_count + import_total > card_limit {
             return Err(ImportDeckCardsError::LimitReached);
         }
 

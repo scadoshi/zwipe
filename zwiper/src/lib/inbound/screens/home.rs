@@ -33,13 +33,16 @@ pub fn Home() -> Element {
 
     let logo = logo::ZWIPE;
 
-    // Show welcome toast on mount
+    // Show welcome toast on mount — only for verified users to avoid
+    // stacking with the "verify your email" nudge toast from login.
     use_effect(move || {
         if let Some(session) = session() {
-            toast.info(
-                format!("hello, {}!", session.user.username),
-                ToastOptions::default().duration(Duration::from_millis(1500)),
-            );
+            if session.user.email_verified_at.is_some() {
+                toast.info(
+                    format!("hello, {}!", session.user.username),
+                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                );
+            }
         }
     });
 

@@ -14,7 +14,6 @@ use crate::{
         auth::ports::AuthService,
         card::ports::CardService,
         deck::{
-            MAX_CARDS_PER_DECK,
             models::deck_card::import_deck_cards::{
                 ImportDeckCards, ImportDeckCardsError, ImportDeckCardsResult,
             },
@@ -35,7 +34,7 @@ impl From<ImportDeckCardsError> for ApiError {
             }
             ImportDeckCardsError::DeckNotFound(e) => ApiError::from(e),
             ImportDeckCardsError::LimitReached => {
-                Self::UnprocessableEntity(format!("card limit reached (max {MAX_CARDS_PER_DECK})"))
+                Self::UnprocessableEntity("card limit reached — verify your email to unlock more".to_string())
             }
             ImportDeckCardsError::Database(e) => e.log_500(),
         }
@@ -65,7 +64,7 @@ where
     DS: DeckService,
 {
     let deck_id = uuid::Uuid::try_parse(&deck_id)?;
-    let request = ImportDeckCards::parse(user.id, deck_id, &body.text);
+    let request = ImportDeckCards::parse(user.id, deck_id, &body.text, user.email_verified);
 
     state
         .deck_service

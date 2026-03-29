@@ -53,6 +53,12 @@ pub fn Login() -> Element {
                 match auth_client().authenticate_user(request).await {
                     Ok(new_session) => {
                         new_session.infallible_save();
+                        if new_session.user.email_verified_at.is_none() {
+                            toast.info(
+                                "verify your email to enable password recovery".to_string(),
+                                ToastOptions::default().duration(Duration::from_millis(5000)),
+                            );
+                        }
                         session.set(Some(new_session));
                         navigator.push(Router::Home {});
                     }

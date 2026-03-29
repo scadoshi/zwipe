@@ -41,6 +41,8 @@ pub struct AuthenticatedUser {
     pub username: Username,
     /// Email from JWT claims.
     pub email: EmailAddress,
+    /// Whether the user's email was verified at token generation time.
+    pub email_verified: bool,
 }
 
 impl From<UserClaims> for AuthenticatedUser {
@@ -49,6 +51,7 @@ impl From<UserClaims> for AuthenticatedUser {
             id: value.user_id,
             username: value.username,
             email: value.email,
+            email_verified: value.email_verified,
         }
     }
 }

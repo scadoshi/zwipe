@@ -28,6 +28,9 @@ pub struct ImportDeckCards {
     pub deck_id: Uuid,
     /// Parsed import lines.
     pub lines: Vec<ImportLine>,
+    /// Whether the requesting user's email is verified (from JWT claim).
+    /// Used to select the appropriate card count limit.
+    pub email_verified: bool,
 }
 
 impl ImportDeckCards {
@@ -36,7 +39,7 @@ impl ImportDeckCards {
     /// Format: `[qty] [card name]` per line.
     /// Quantity defaults to 1 if the first word is not a number.
     /// Empty and whitespace-only lines are skipped.
-    pub fn parse(user_id: Uuid, deck_id: Uuid, text: &str) -> Self {
+    pub fn parse(user_id: Uuid, deck_id: Uuid, text: &str, email_verified: bool) -> Self {
         let lines = text
             .lines()
             .filter_map(|line| {
@@ -69,6 +72,7 @@ impl ImportDeckCards {
             user_id,
             deck_id,
             lines,
+            email_verified,
         }
     }
 }
@@ -143,7 +147,7 @@ mod tests {
     use super::*;
 
     fn parse_lines(text: &str) -> Vec<ImportLine> {
-        ImportDeckCards::parse(Uuid::nil(), Uuid::nil(), text).lines
+        ImportDeckCards::parse(Uuid::nil(), Uuid::nil(), text, false).lines
     }
 
     #[test]

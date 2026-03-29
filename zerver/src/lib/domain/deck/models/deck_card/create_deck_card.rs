@@ -93,6 +93,9 @@ pub struct CreateDeckCard {
     pub scryfall_data_id: Uuid,
     /// How many copies (validated against deck copy limits).
     pub quantity: Quantity,
+    /// Whether the requesting user's email is verified (from JWT claim).
+    /// Used to select the appropriate card count limit.
+    pub email_verified: bool,
 }
 
 impl CreateDeckCard {
@@ -104,6 +107,7 @@ impl CreateDeckCard {
     /// - `deck_id`: Deck ID as string (will be parsed)
     /// - `scryfall_data_id`: Card ID as string (will be parsed)
     /// - `quantity`: Number of copies (will be validated)
+    /// - `email_verified`: Whether the user's email is verified
     ///
     /// # Errors
     ///
@@ -116,6 +120,7 @@ impl CreateDeckCard {
         deck_id: &str,
         scryfall_data_id: &str,
         quantity: i32,
+        email_verified: bool,
     ) -> Result<Self, InvalidCreateDeckCard> {
         let deck_id = Uuid::try_parse(deck_id).map_err(InvalidCreateDeckCard::DeckId)?;
         let scryfall_data_id =
@@ -127,6 +132,7 @@ impl CreateDeckCard {
             scryfall_data_id,
             quantity,
             user_id,
+            email_verified,
         })
     }
 }
