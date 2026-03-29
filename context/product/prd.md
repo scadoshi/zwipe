@@ -1,6 +1,6 @@
 # Zwipe — Product Requirements Document
 
-**Status: Shipped to physical device 2026-03-26. Next milestone: App Store launch.**
+**Status: Feature complete. Ready for App Store submission (2026-03-29).**
 
 ## Vision
 A mobile-first Magic: The Gathering deck builder with a swipe-based card browsing interface. Built for Commander players who want a fast, enjoyable mobile experience — not another cluttered desktop tool ported to a small screen.
