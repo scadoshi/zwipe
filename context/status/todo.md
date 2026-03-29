@@ -26,10 +26,25 @@ Moving from Raspberry Pi 5 to Ubuntu Server (Intel i5, 32GB RAM, x86_64). Full s
 
 ## App Store Submission
 
-### ✓ 1. Fix App Name (shows "Main" on home screen)
+### 1. Fix App Name (shows "Main" on home screen)
 
-Binary is named `main`, so iOS displays the app as "Main". Fix in `zwiper/Dioxus.toml`:
-- Add `name = "Zwipe"` to the `[application]` section
+App still shows as "Main" on the iOS home screen after deploy. Needs investigation.
+
+Known starting point from earlier research:
+- Binary is named `main`, so iOS reads that as the display name
+- Attempted fix: add `name = "Zwipe"` to `[application]` section in `zwiper/Dioxus.toml`
+- **Status: not confirmed working** — still shows "Main" on device as of 2026-03-29
+
+#### Investigation needed
+
+1. Check `zwiper/Dioxus.toml` — does `[application] name = "Zwipe"` exist?
+2. If not, add it and rebuild
+3. If it does exist, the fix may need to go in `Info.plist` instead:
+   - `CFBundleDisplayName` = `Zwipe`
+   - `CFBundleName` = `Zwipe`
+   - Dioxus generates `Info.plist` at build time — check if it respects the `Dioxus.toml` name field or if it needs to be set elsewhere
+4. Check if `dx build` output contains an `Info.plist` at
+   `target/dx/main/debug/ios/Main.app/Info.plist` and inspect `CFBundleDisplayName`
 
 ### 2. Account Deletion (App Store Required)
 
