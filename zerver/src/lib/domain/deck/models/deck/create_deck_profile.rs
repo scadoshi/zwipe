@@ -74,6 +74,9 @@ pub struct CreateDeckProfile {
     pub copy_max: Option<CopyMax>,
     /// Owner of this deck.
     pub user_id: Uuid,
+    /// Whether the requesting user's email is verified (from JWT claim).
+    /// Used to select the appropriate deck count limit.
+    pub email_verified: bool,
 }
 
 impl CreateDeckProfile {
@@ -85,6 +88,7 @@ impl CreateDeckProfile {
     /// - `commander_id`: Optional commander card ID
     /// - `copy_max`: Optional copy limit (1 or 4)
     /// - `user_id`: Owner's user ID
+    /// - `email_verified`: Whether the user's email is verified
     ///
     /// # Errors
     ///
@@ -96,6 +100,7 @@ impl CreateDeckProfile {
         commander_id: Option<Uuid>,
         copy_max: Option<i32>,
         user_id: Uuid,
+        email_verified: bool,
     ) -> Result<Self, InvalidCreateDeckProfile> {
         let name = DeckName::new(name)?;
         let copy_max: Option<CopyMax> = copy_max.map(CopyMax::new).transpose()?;
@@ -104,6 +109,7 @@ impl CreateDeckProfile {
             commander_id,
             copy_max,
             user_id,
+            email_verified,
         })
     }
 }

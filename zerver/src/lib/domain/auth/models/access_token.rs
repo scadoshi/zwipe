@@ -226,6 +226,13 @@ pub struct UserClaims {
     /// Email of the authenticated user (cached from database).
     pub email: EmailAddress,
 
+    /// Whether the user's email address was verified at token generation time.
+    ///
+    /// Used to apply reduced deck/card limits for unverified accounts without
+    /// an extra database lookup on every request. May be stale by up to 24h
+    /// (the access token lifetime), which is acceptable for soft limits.
+    pub email_verified: bool,
+
     /// Expiry time as Unix timestamp (seconds since epoch).
     ///
     /// Tokens expire 24 hours after issuance.
@@ -474,6 +481,7 @@ impl AccessToken {
             user_id: user.id,
             username: user.username.clone(),
             email: user.email.clone(),
+            email_verified: user.email_verified_at.is_some(),
             exp: expires_at.and_utc().timestamp(),
             iat: issued_at.and_utc().timestamp(),
         };
@@ -606,6 +614,7 @@ mod tests {
             user_id,
             username,
             email,
+            email_verified: false,
             exp: 1234567890,
             iat: 1234567890,
         };
@@ -626,6 +635,7 @@ mod tests {
             user_id: id1,
             username: username.clone(),
             email: email.clone(),
+            email_verified: false,
             exp: 1234567890,
             iat: 1234567890,
         };
@@ -633,6 +643,7 @@ mod tests {
             user_id: id1,
             username: username.clone(),
             email: email.clone(),
+            email_verified: false,
             exp: 1234567890,
             iat: 1234567890,
         };
@@ -640,6 +651,7 @@ mod tests {
             user_id: id2,
             username,
             email,
+            email_verified: false,
             exp: 1234567890,
             iat: 1234567890,
         };

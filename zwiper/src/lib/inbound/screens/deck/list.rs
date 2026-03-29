@@ -107,7 +107,24 @@ pub fn DeckList() -> Element {
                 button {
                     class: "util-btn",
                     onclick: move |_| {
-                        navigator.push(Router::CreateDeck);
+                        // Proactive guard: unverified users are limited to 1 deck.
+                        // The backend enforces this too, but we surface it here first.
+                        let at_limit = session().map_or(false, |s| {
+                            s.user.email_verified_at.is_none()
+                                && deck_profiles_resource
+                                    .read()
+                                    .as_ref()
+                                    .and_then(|r| r.as_ref().ok())
+                                    .map_or(false, |p| p.len() >= 1)
+                        });
+                        if at_limit {
+                            toast.info(
+                                "verify your email to create more than 1 deck".to_string(),
+                                ToastOptions::default().duration(Duration::from_millis(4000)),
+                            );
+                        } else {
+                            navigator.push(Router::CreateDeck);
+                        }
                     },
                     "create"
                 }
