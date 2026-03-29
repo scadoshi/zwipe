@@ -7,6 +7,7 @@ use pages::{About, Contribute, Download, Home, Privacy, Reset, Verify};
 pub const API_BASE: &str = "https://api.zwipe.net";
 
 const STYLE: Asset = asset!("/assets/style.css");
+const FAVICON: Asset = asset!("/assets/favicon.ico");
 const Z_LOGO: &str = include_str!("../assets/z.txt");
 
 #[derive(Routable, Clone, PartialEq)]
@@ -34,6 +35,7 @@ fn main() {
 
 fn App() -> Element {
     rsx! {
+        document::Link { rel: "icon", href: FAVICON }
         document::Stylesheet { href: STYLE }
         Router::<Route> {}
     }
