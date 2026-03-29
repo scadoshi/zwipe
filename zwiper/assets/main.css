@@ -877,6 +877,26 @@ body {
     }
 }
 
+.input-with-spinner {
+    position: relative;
+}
+
+.input-with-spinner .input {
+    padding-right: 2.5rem;
+}
+
+.input-spinner {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0.85rem;
+    height: 1.1rem;
+    margin: 0;
+    margin-bottom: 0;
+    border-width: 2px;
+}
+
 /* ========================
   specific - card animation
  ========================== */
