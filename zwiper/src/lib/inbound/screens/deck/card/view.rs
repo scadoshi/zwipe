@@ -301,7 +301,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
                     // Pinned commander group
                     if let Some(cmd) = displayed_commander() {
-                        div { class: "card-group",
+                        div { class: "card-group row-enter",
                             div { class: "card-group-header", "commander" }
                             {
                                 let card_id = cmd.scryfall_data.id;
@@ -373,7 +373,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                 group.cards.iter().map(|c| qm.get(&c.scryfall_data.id).copied().unwrap_or(1)).sum()
                             };
                             rsx! {
-                        div { class: "card-group",
+                        div { class: "card-group row-enter",
                             // Group header
                             div { class: "card-group-header",
                                 "{group.label} ({qty_count})"
