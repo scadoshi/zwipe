@@ -200,8 +200,8 @@ where
                         .route("/", get(get_user))
                         .route("/change-password", put(change_password).layer(GovernorLayer::new(sensitive_config.clone())))
                         .route("/change-username", put(change_username).layer(GovernorLayer::new(sensitive_config.clone())))
-                        .route("/change-email", put(change_email).layer(GovernorLayer::new(sensitive_config)))
-                        .route("/delete-user", delete(delete_user)),
+                        .route("/change-email", put(change_email).layer(GovernorLayer::new(sensitive_config.clone())))
+                        .route("/delete-user", delete(delete_user).layer(GovernorLayer::new(sensitive_config))),
                 )
                 .nest(
                     "/card",
