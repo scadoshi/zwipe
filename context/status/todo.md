@@ -74,7 +74,8 @@ Current build uses Development profile. App Store requires:
 - [x] zweb reset password mobile UX (`15585ae`)
 - [x] zweb nav: replace text brand with ASCII z logo, sticky on scroll, re-triggers logo animation on click (`351fff5`, `79f7914`, `241bf48`)
 - [x] zweb logo line-height tightened so block characters stack flush (`8deb2b2`)
-- [ ] Unverified email toast on login (uncommitted — in progress)
+- [x] Unverified email toast on login + soft limits for unverified accounts (`cf9071c`)
+- [x] Toast word-wrap: prefer word boundaries over mid-word breaks (`67eadf1`)
 - [ ] Full screen integration pass — walk every screen on device
 
 ---
@@ -90,9 +91,9 @@ Current build uses Development profile. App Store requires:
 
 ---
 
-## Limits (Pre-Subscription Groundwork)
+## Limits
 
-✅ Done. 20 decks max per user, 250 cards max per deck.
+✅ Done. Verified: 20 decks, 250 cards/deck. Unverified: 1 deck, 100 cards/deck (`cf9071c`). Limit selected via `email_verified` JWT claim — no extra DB query.
 
 ---
 
