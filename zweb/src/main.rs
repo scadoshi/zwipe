@@ -2,12 +2,9 @@ use dioxus::document::eval;
 use dioxus::prelude::*;
 
 mod pages;
-use pages::{About, Contribute, Home, Privacy, Reset, Verify};
+use pages::{About, Contribute, Download, Home, Privacy, Reset, Verify};
 
 pub const API_BASE: &str = "https://api.zwipe.net";
-
-// App Store URL — update once live on the App Store
-pub const APP_STORE_URL: &str = "#";
 
 const STYLE: Asset = asset!("/assets/style.css");
 const Z_LOGO: &str = include_str!("../assets/z.txt");
@@ -21,6 +18,8 @@ enum Route {
     About {},
     #[route("/contribute")]
     Contribute {},
+    #[route("/download")]
+    Download {},
     #[route("/privacy")]
     Privacy {},
     #[route("/verify/:token")]
@@ -74,7 +73,7 @@ pub fn Nav() -> Element {
                     Link { to: Route::Contribute {}, "contribute" }
                 }
                 li {
-                    a { href: APP_STORE_URL, class: "appstore-link", "app store ↗" }
+                    Link { to: Route::Download {}, class: "appstore-link", "app store ↗" }
                 }
             }
         }

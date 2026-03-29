@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use crate::{APP_STORE_URL, Footer, Nav};
+use crate::{Footer, Nav, Route};
 
 const LOGO_ASCII: &str = include_str!("../../assets/logo.txt");
 
@@ -12,7 +12,7 @@ pub fn Home() -> Element {
             p { class: "tagline",
                 "the mtg deck builder built for mobile. swipe right to add, left to skip."
             }
-            a { href: APP_STORE_URL, class: "appstore-btn", "download on the app store" }
+            Link { to: Route::Download {}, class: "appstore-btn", "download on the app store" }
         }
         div { class: "page content-enter",
             div { class: "features-grid",
