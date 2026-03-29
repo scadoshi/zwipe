@@ -25,6 +25,7 @@ async fn main() -> anyhow::Result<()> {
     let resend = Resend::new(config.resend_api_key, config.resend_from_email);
     let auth_service = AuthService::new(db.clone(), db.clone(), resend, config.jwt_secret);
     let mut latest_token_clean_up: Option<NaiveDateTime> = None;
+    tracing::info!("zervice v{} starting", env!("CARGO_PKG_VERSION"));
     tracing::info!("running card migration and refresh token services");
     loop {
         card_service
