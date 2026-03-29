@@ -124,15 +124,7 @@ Bump `actions/checkout@v4` and `actions/cache@v4` in both `deploy-zerver.yml` an
 
 ## Database Backups
 
-Nightly `pg_dump` → Cloudflare R2 via `rclone`. Full runbook: `ops/backups.md`.
-
-- [ ] Create R2 bucket `zwipe-backups` in Cloudflare dashboard
-- [ ] Create R2 API token (read/write, scoped to bucket)
-- [ ] Install `rclone` on server, configure R2 remote
-- [ ] Create `~/scripts/backup-db.sh`
-- [ ] Add cron: `0 5 * * *` (5am daily, after zervice)
-- [ ] Set 30-day lifecycle rule on bucket
-- [ ] Test manual backup + restore
+✅ Done. Nightly `pg_dump` → Cloudflare R2 via `rclone`. Cron at 5am daily. 30-day lifecycle retention. Full runbook: `ops/backups.md`.
 
 ---
 
