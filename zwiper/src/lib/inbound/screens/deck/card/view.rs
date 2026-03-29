@@ -44,7 +44,6 @@ pub fn View(deck_id: Uuid) -> Element {
 
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
 
-    let mut browse_error = use_signal(|| None::<String>);
 
     // Filter overlay state
     let mut filters_overlay_open = use_signal(|| false);
@@ -100,7 +99,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         (cards, qty)
                     }
                     Err(e) => {
-                        browse_error.set(Some(e.to_string()));
+                        toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
                         return;
                     }
                 };
@@ -508,9 +507,6 @@ pub fn View(deck_id: Uuid) -> Element {
                         p { class: "text-muted", "no cards" }
                     }
 
-                    if let Some(err) = browse_error() {
-                        div { class: "message-error", "{err}" }
-                    }
                 }
             }
 

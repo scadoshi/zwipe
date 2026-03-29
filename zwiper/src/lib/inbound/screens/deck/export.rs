@@ -23,8 +23,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let toast = use_toast();
 
-    let deck_text: Resource<Result<String, ApiError>> =
-        use_resource(move || async move {
+    let deck_text: Resource<Result<String, ApiError>> = use_resource(move || async move {
             session.upkeep(client);
             let Some(session) = session() else {
                 return Err(ApiError::Unauthorized("session expired".to_string()));
@@ -39,6 +38,12 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
             Ok(text)
         });
 
+    use_effect(move || {
+        if let Some(Err(e)) = &*deck_text.read() {
+            toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+        }
+    });
+
     rsx! {
         Bouncer {
             div { class: "screen",
@@ -46,7 +51,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                     h2 { "export" }
                 }
 
-                div { class: "screen-content centered",
+                div { class: "screen-content centered content-enter",
                     div { class: "container-sm",
                         match &*deck_text.read() {
                             Some(Ok(text)) => rsx! {
@@ -59,7 +64,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                                     value: "{text}",
                                 }
                             },
-                            Some(Err(e)) => rsx! { div { class: "message-error", "{e}" } },
+                            Some(Err(_)) => rsx! { p { class: "text-muted", "could not load deck" } },
                             None => rsx! { div { class: "spinner" } }
                         }
                     }

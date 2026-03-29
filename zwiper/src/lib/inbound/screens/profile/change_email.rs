@@ -115,7 +115,7 @@ pub fn ChangeEmail() -> Element {
                     h2 { "change email" }
                 }
 
-                div { class: "screen-content centered",
+                div { class: "screen-content centered content-enter",
                 div { class : "container-sm",
 
                     form { class: "flex-col text-center",
