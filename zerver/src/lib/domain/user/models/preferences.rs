@@ -107,3 +107,99 @@ pub enum GetPreferencesError {
     #[error("database error")]
     Database(#[from] anyhow::Error),
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // =========
+    //  default
+    // =========
+
+    #[test]
+    fn default_is_zwipe_dark() {
+        let prefs = UserPreferences::default();
+        assert_eq!(prefs.theme, "zwipe");
+        assert!(prefs.dark_mode);
+    }
+
+    // ====================
+    //  valid theme names
+    // ====================
+
+    #[test]
+    fn accepts_all_allowed_themes() {
+        let id = Uuid::new_v4();
+        for theme in ALLOWED_THEMES {
+            let result = UpdatePreferences::new(id, Some(theme), Some(true));
+            assert!(result.is_ok(), "should accept theme: {theme}");
+        }
+    }
+
+    #[test]
+    fn rejects_unknown_theme() {
+        let result = UpdatePreferences::new(Uuid::new_v4(), Some("solarized"), Some(true));
+        assert!(matches!(
+            result,
+            Err(InvalidUpdatePreferences::InvalidTheme)
+        ));
+    }
+
+    #[test]
+    fn rejects_empty_theme() {
+        let result = UpdatePreferences::new(Uuid::new_v4(), Some(""), Some(true));
+        assert!(matches!(
+            result,
+            Err(InvalidUpdatePreferences::InvalidTheme)
+        ));
+    }
+
+    // =========================
+    //  dark-only theme forcing
+    // =========================
+
+    #[test]
+    fn forces_dark_mode_for_zwipe() {
+        let result = UpdatePreferences::new(Uuid::new_v4(), Some("zwipe"), Some(false)).unwrap();
+        assert_eq!(result.dark_mode, Some(true));
+    }
+
+    #[test]
+    fn forces_dark_mode_for_vantablack() {
+        let result =
+            UpdatePreferences::new(Uuid::new_v4(), Some("vantablack"), Some(false)).unwrap();
+        assert_eq!(result.dark_mode, Some(true));
+    }
+
+    #[test]
+    fn allows_light_mode_for_non_dark_only_themes() {
+        let result =
+            UpdatePreferences::new(Uuid::new_v4(), Some("gruvbox"), Some(false)).unwrap();
+        assert_eq!(result.dark_mode, Some(false));
+    }
+
+    // =======================
+    //  partial update (None)
+    // =======================
+
+    #[test]
+    fn none_theme_passes_through() {
+        let result = UpdatePreferences::new(Uuid::new_v4(), None, Some(false)).unwrap();
+        assert!(result.theme.is_none());
+        assert_eq!(result.dark_mode, Some(false));
+    }
+
+    #[test]
+    fn none_dark_mode_passes_through() {
+        let result = UpdatePreferences::new(Uuid::new_v4(), Some("dracula"), None).unwrap();
+        assert_eq!(result.theme.as_deref(), Some("dracula"));
+        assert!(result.dark_mode.is_none());
+    }
+
+    #[test]
+    fn both_none_is_valid() {
+        let result = UpdatePreferences::new(Uuid::new_v4(), None, None).unwrap();
+        assert!(result.theme.is_none());
+        assert!(result.dark_mode.is_none());
+    }
+}
