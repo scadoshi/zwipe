@@ -121,6 +121,7 @@ nav::after {
   padding: 4px 12px;
   border-radius: 4px;
   font-size: 0.8rem;
+  white-space: nowrap;
 }
 
 .nav-links .appstore-link:hover {
