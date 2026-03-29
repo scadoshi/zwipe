@@ -258,15 +258,6 @@ pub fn View(deck_id: Uuid) -> Element {
         }
     };
 
-    let mut clear_filters = move || {
-        let opts = ToastOptions::default().duration(Duration::from_millis(1500));
-        if filter_builder.read().is_empty() {
-            toast.warning("filter already cleared".to_string(), opts);
-        } else {
-            filter_builder.write().clear();
-            toast.info("filter cleared".to_string(), opts);
-        }
-    };
 
     rsx! {
         Bouncer {
@@ -569,6 +560,21 @@ pub fn View(deck_id: Uuid) -> Element {
                     onclick: move |_| filters_overlay_open.set(true),
                     "filter"
                 }
+                if !filter_builder.read().is_empty() {
+                    button {
+                        class: "util-btn util-btn-clear",
+                        onclick: move |_| {
+                            filter_builder.write().clear();
+                            let current = *filter_reset_counter.peek();
+                            filter_reset_counter.set(current + 1);
+                            toast.info(
+                                "filter cleared".to_string(),
+                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                            );
+                        },
+                        "clear"
+                    }
+                }
             }
 
             // Modal backdrop
@@ -679,13 +685,6 @@ pub fn View(deck_id: Uuid) -> Element {
                     }
                 }
 
-                div { class: "modal-footer",
-                    button {
-                        class: "btn btn-sm",
-                        onclick: move |_| clear_filters(),
-                        "clear"
-                    }
-                }
             }
 
             // Image preview overlay

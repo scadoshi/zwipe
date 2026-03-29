@@ -635,6 +635,10 @@ body {
     transform: none;
 }
 
+.util-btn-clear {
+    animation: row-enter 0.2s ease-out both;
+}
+
 /* ===========================
   common components - inputs
  ============================= */
