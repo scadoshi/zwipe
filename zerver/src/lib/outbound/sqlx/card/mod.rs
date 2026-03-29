@@ -380,6 +380,28 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated("]::text[]");
         }
 
+        if let Some(colors) = &request.produced_mana_contains_any() {
+            sep.push("produced_mana && ARRAY[");
+            colors.iter().enumerate().for_each(|(i, c)| {
+                if i > 0 {
+                    sep.push_unseparated(", ");
+                }
+                sep.push_bind_unseparated(c.to_uppercase());
+            });
+            sep.push_unseparated("]::text[]");
+        }
+
+        if let Some(colors) = &request.produced_mana_contains_all() {
+            sep.push("produced_mana @> ARRAY[");
+            colors.iter().enumerate().for_each(|(i, c)| {
+                if i > 0 {
+                    sep.push_unseparated(", ");
+                }
+                sep.push_bind_unseparated(c.to_uppercase());
+            });
+            sep.push_unseparated("]::text[]");
+        }
+
         if let Some(query_string) = &request.flavor_text_contains() {
             sep.push("flavor_text ILIKE ");
             sep.push_bind_unseparated(format!("%{}%", query_string));

@@ -116,6 +116,27 @@ impl FilterCards for Vec<Card> {
                     }
                 }
 
+                // ── produced mana ────────────────────────────────────────────
+                if let Some(values) = filter.produced_mana_contains_any() {
+                    let matches = match &sd.produced_mana {
+                        Some(pm) => values.iter().any(|v| pm.iter().any(|p| p.eq_ignore_ascii_case(v))),
+                        None => false,
+                    };
+                    if !matches {
+                        return false;
+                    }
+                }
+
+                if let Some(values) = filter.produced_mana_contains_all() {
+                    let matches = match &sd.produced_mana {
+                        Some(pm) => values.iter().all(|v| pm.iter().any(|p| p.eq_ignore_ascii_case(v))),
+                        None => false,
+                    };
+                    if !matches {
+                        return false;
+                    }
+                }
+
                 if let Some(q) = filter.flavor_text_contains() {
                     match &sd.flavor_text {
                         Some(text) if text.to_lowercase().contains(&q.to_lowercase()) => {}
@@ -751,6 +772,114 @@ mod tests {
         let mut card = make_card("Serra Angel");
         card.scryfall_data.keywords = Some(vec!["Flying".to_string(), "Vigilance".to_string()]);
         let filter = CardFilterBuilder::with_keywords_contains_all(["flying", "vigilance"])
+            .build()
+            .unwrap();
+        let result = vec![card].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+    }
+
+    // ── produced_mana_contains_any ──────────────────────────────────────────
+
+    #[test]
+    fn test_produced_mana_contains_any_matches_when_one_color_present() {
+        let mut card = make_card("Sol Ring");
+        card.scryfall_data.produced_mana = Some(vec!["C".to_string()]);
+        let filter = CardFilterBuilder::with_produced_mana_contains_any(["C", "R"])
+            .build()
+            .unwrap();
+        let result = vec![card].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+    }
+
+    #[test]
+    fn test_produced_mana_contains_any_or_logic() {
+        let mut sol_ring = make_card("Sol Ring");
+        sol_ring.scryfall_data.produced_mana = Some(vec!["C".to_string()]);
+        let mut birds = make_card("Birds of Paradise");
+        birds.scryfall_data.produced_mana =
+            Some(vec!["W".to_string(), "U".to_string(), "B".to_string(), "R".to_string(), "G".to_string()]);
+        let forest = make_card("Forest");
+        let filter = CardFilterBuilder::with_produced_mana_contains_any(["R", "G"])
+            .build()
+            .unwrap();
+        let result = vec![sol_ring, birds, forest].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].scryfall_data.name, "Birds of Paradise");
+    }
+
+    #[test]
+    fn test_produced_mana_contains_any_excludes_when_no_color_matches() {
+        let mut card = make_card("Sol Ring");
+        card.scryfall_data.produced_mana = Some(vec!["C".to_string()]);
+        let filter = CardFilterBuilder::with_produced_mana_contains_any(["W", "U"])
+            .build()
+            .unwrap();
+        let result = vec![card].filter_by(&filter);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_produced_mana_contains_any_skips_card_with_no_produced_mana() {
+        let card = make_card("Lightning Bolt"); // produced_mana = None
+        let filter = CardFilterBuilder::with_produced_mana_contains_any(["R"])
+            .build()
+            .unwrap();
+        let result = vec![card].filter_by(&filter);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_produced_mana_contains_any_is_case_insensitive() {
+        let mut card = make_card("Arcane Signet");
+        card.scryfall_data.produced_mana = Some(vec!["W".to_string(), "U".to_string()]);
+        let filter = CardFilterBuilder::with_produced_mana_contains_any(["w"])
+            .build()
+            .unwrap();
+        let result = vec![card].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+    }
+
+    // ── produced_mana_contains_all ──────────────────────────────────────────
+
+    #[test]
+    fn test_produced_mana_contains_all_matches_when_all_colors_present() {
+        let mut card = make_card("Birds of Paradise");
+        card.scryfall_data.produced_mana =
+            Some(vec!["W".to_string(), "U".to_string(), "B".to_string(), "R".to_string(), "G".to_string()]);
+        let filter = CardFilterBuilder::with_produced_mana_contains_all(["W", "U"])
+            .build()
+            .unwrap();
+        let result = vec![card].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+    }
+
+    #[test]
+    fn test_produced_mana_contains_all_excludes_when_only_one_matches() {
+        let mut card = make_card("Arcane Signet");
+        card.scryfall_data.produced_mana = Some(vec!["W".to_string(), "U".to_string()]);
+        let filter = CardFilterBuilder::with_produced_mana_contains_all(["W", "R"])
+            .build()
+            .unwrap();
+        let result = vec![card].filter_by(&filter);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_produced_mana_contains_all_skips_card_with_no_produced_mana() {
+        let card = make_card("Lightning Bolt");
+        let filter = CardFilterBuilder::with_produced_mana_contains_all(["R"])
+            .build()
+            .unwrap();
+        let result = vec![card].filter_by(&filter);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_produced_mana_contains_all_is_case_insensitive() {
+        let mut card = make_card("Birds of Paradise");
+        card.scryfall_data.produced_mana =
+            Some(vec!["W".to_string(), "U".to_string(), "B".to_string(), "R".to_string(), "G".to_string()]);
+        let filter = CardFilterBuilder::with_produced_mana_contains_all(["w", "u"])
             .build()
             .unwrap();
         let result = vec![card].filter_by(&filter);

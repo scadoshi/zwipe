@@ -95,6 +95,15 @@ impl CardFilter {
         self.color_identity_within.as_ref()
     }
 
+    // produced mana
+    pub fn produced_mana_contains_any(&self) -> Option<&[String]> {
+        self.produced_mana_contains_any.as_deref()
+    }
+
+    pub fn produced_mana_contains_all(&self) -> Option<&[String]> {
+        self.produced_mana_contains_all.as_deref()
+    }
+
     // combat
     pub fn power_equals(&self) -> Option<i32> {
         self.power_equals

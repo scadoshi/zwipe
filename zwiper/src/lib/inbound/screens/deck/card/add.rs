@@ -459,7 +459,9 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mana_active = fb.cmc_equals().is_some()
         || fb.cmc_range().is_some()
         || fb.color_identity_equals().is_some()
-        || fb.color_identity_within().is_some();
+        || fb.color_identity_within().is_some()
+        || fb.produced_mana_contains_any().is_some()
+        || fb.produced_mana_contains_all().is_some();
     let combat_active = fb.power_equals().is_some()
         || fb.power_range().is_some()
         || fb.toughness_equals().is_some()
@@ -556,6 +558,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                         rsx! { span { "{display}" } }
                                     }
                             }
+                            span { "set: {card.scryfall_data.set_name.to_lowercase()}" }
                             span { "released: {card.scryfall_data.released_at}" },
                             if let Some(artist) = card.scryfall_data.artist && !artist.is_empty() {
                                 span { "artist: {artist.to_lowercase()}" }

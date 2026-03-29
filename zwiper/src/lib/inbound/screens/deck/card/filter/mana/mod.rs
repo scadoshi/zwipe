@@ -7,6 +7,47 @@ use zwipe::domain::card::models::scryfall_data::colors::Color;
 use zwipe::domain::card::models::search_card::card_filter::builder::CardFilterBuilder;
 
 use super::filter_mode::FilterMode;
+use super::match_mode::MatchMode;
+
+/// Mana symbols for the produced mana filter (WUBRG + colorless).
+const MANA_SYMBOLS: &[(&str, &str)] = &[
+    ("W", "white"),
+    ("U", "blue"),
+    ("B", "black"),
+    ("R", "red"),
+    ("G", "green"),
+    ("C", "colorless"),
+];
+
+/// Read selected produced mana colors from the filter builder based on current mode.
+fn read_produced_mana(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<String> {
+    match mode {
+        MatchMode::Any => fb
+            .produced_mana_contains_any()
+            .map(|v| v.to_vec())
+            .unwrap_or_default(),
+        MatchMode::All => fb
+            .produced_mana_contains_all()
+            .map(|v| v.to_vec())
+            .unwrap_or_default(),
+    }
+}
+
+/// Write produced mana colors to the filter builder based on current mode.
+fn write_produced_mana(fb: &mut CardFilterBuilder, mode: MatchMode, values: Vec<String>) {
+    fb.unset_produced_mana_contains_any();
+    fb.unset_produced_mana_contains_all();
+    if !values.is_empty() {
+        match mode {
+            MatchMode::Any => {
+                fb.set_produced_mana_contains_any(values);
+            }
+            MatchMode::All => {
+                fb.set_produced_mana_contains_all(values);
+            }
+        }
+    }
+}
 
 /// Filter component for mana cost and color identity.
 #[component]
@@ -92,6 +133,15 @@ pub fn Mana() -> Element {
         }
     });
 
+    // Produced mana mode signal (any vs all)
+    let mut produced_mana_mode = use_signal(|| {
+        if filter_builder().produced_mana_contains_all().is_some() {
+            MatchMode::All
+        } else {
+            MatchMode::Any
+        }
+    });
+
     // Check if CMC filter is active (read directly from filter_builder)
     let cmc_is_active =
         filter_builder().cmc_equals().is_some() || filter_builder().cmc_range().is_some();
@@ -99,6 +149,9 @@ pub fn Mana() -> Element {
     // Check if color identity filter is active
     let color_is_active = filter_builder().color_identity_equals().is_some()
         || filter_builder().color_identity_within().is_some();
+
+    // Get current selected produced mana colors
+    let selected_produced_mana = read_produced_mana(&filter_builder(), produced_mana_mode());
 
     // Get current selected colors from filter_builder
     let selected_colors = if let Some(colors) = filter_builder().color_identity_equals() {
@@ -297,6 +350,54 @@ pub fn Mana() -> Element {
                             }
                         },
                         { color.to_string().to_lowercase() }
+                    }
+                }
+            }
+
+            // Produced mana filter
+            div { class: "label-row",
+                label { class: "label-xs", "produces" }
+                button {
+                    class: "clear-btn",
+                    onclick: move |_| {
+                        let new_mode = produced_mana_mode().toggle();
+                        let current = read_produced_mana(&filter_builder(), produced_mana_mode());
+                        write_produced_mana(&mut filter_builder.write(), new_mode, current);
+                        produced_mana_mode.set(new_mode);
+                    },
+                    "{produced_mana_mode().label()}"
+                }
+                if !selected_produced_mana.is_empty() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| {
+                            write_produced_mana(&mut filter_builder.write(), produced_mana_mode(), vec![]);
+                        },
+                        "×"
+                    }
+                }
+            }
+
+            div { class: "flex flex-wrap gap-1 mb-1 flex-center",
+                for &(code, label) in MANA_SYMBOLS.iter() {
+                    div {
+                        class: if selected_produced_mana.contains(&code.to_string()) {
+                            "chip selected"
+                        } else {
+                            "chip"
+                        },
+                        onclick: move |_| {
+                            let mode = produced_mana_mode();
+                            let mut colors = read_produced_mana(&filter_builder(), mode);
+                            let code_str = code.to_string();
+                            if colors.contains(&code_str) {
+                                colors.retain(|c| c != &code_str);
+                            } else {
+                                colors.push(code_str);
+                            }
+                            write_produced_mana(&mut filter_builder.write(), mode, colors);
+                        },
+                        "{label}"
                     }
                 }
             }
