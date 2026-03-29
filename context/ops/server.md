@@ -420,8 +420,8 @@ you don't need to recreate them. Just:
 3. Write `config.yml` with the same UUID
 4. Install the service as above
 
-**Note:** `nano` and other terminal programs may fail over SSH from Ghostty with
-`Error opening terminal: xterm-ghostty`. Fix: `TERM=xterm-256color nano ...`
+**Note:** `nano` and other interactive terminal programs fail over Ghostty SSH with
+`Error opening terminal: xterm-ghostty`. See `ops/tips.md` for the fix.
 
 ---
 

@@ -28,6 +28,12 @@ Build, sign, and deploy zwiper to a physical iPhone. Provisioning profile, certi
 
 ---
 
+## Reference
+
+- `tips.md` — Gotchas and one-off fixes (Ghostty terminal, etc.)
+
+---
+
 ## Future
 
 - `deploy-appstore.md` — App Store submission: Distribution cert, App Store provisioning profile, versioning (`CFBundleShortVersionString`), upload via Transporter, App Store Connect review.
