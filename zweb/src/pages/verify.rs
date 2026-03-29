@@ -34,11 +34,14 @@ pub fn Verify(token: String) -> Element {
 
     rsx! {
         Nav {}
-        div { class: "form-page",
+        div { class: "form-page content-enter",
             match &*result.read() {
                 None => rsx! {
-                    h1 { "verifying..." }
-                    p { class: "subtitle", "please wait." }
+                    h1 { "verifying" }
+                    p { class: "subtitle", "checking your verification link." }
+                    div { class: "spinner-row",
+                        div { class: "spinner" }
+                    }
                 },
                 Some(Ok(())) => rsx! {
                     h1 { "email verified" }
@@ -47,7 +50,7 @@ pub fn Verify(token: String) -> Element {
                 },
                 Some(Err(e)) => rsx! {
                     h1 { "verification failed" }
-                    p { class: "subtitle", "this link may have expired. request a new one from the app." }
+                    p { class: "subtitle", "this link may have expired or already been used. request a new one from the app." }
                     div { class: "status-message error", "{e}" }
                 },
             }

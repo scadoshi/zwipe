@@ -9,7 +9,7 @@ const GITHUB_SPONSORS_URL: &str = "https://github.com/sponsors/scadoshi";
 pub fn Contribute() -> Element {
     rsx! {
         Nav {}
-        div { class: "page",
+        div { class: "page content-enter",
             div { class: "section",
                 h1 { "contribute" }
                 p {

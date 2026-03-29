@@ -14,6 +14,15 @@
   --color-error: #d13b3b;
   --color-success: #399a55;
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+
+  /* from the app */
+  --bg-overlay: rgba(0, 0, 0, 0.6);
+  --color-warning: #c9a227;
+  --border-error: #8b3030;
+  --border-success: #2d7040;
+  --border-warning: #8a7020;
+  --border-muted: #666666;
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 /* ==================
@@ -229,6 +238,48 @@ code {
 }
 
 /* ==================
+        content-enter
+ ==================== */
+
+@keyframes content-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.content-enter {
+  animation: content-enter 0.3s ease-out both;
+}
+
+/* ==================
+        spinner
+ ==================== */
+
+.spinner-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-secondary);
+  border-top-color: var(--text-primary);
+  border-radius: 50%;
+  animation: spin 0.5s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ==================
         hero
  ==================== */
 
@@ -438,12 +489,12 @@ code {
 }
 
 .status-message.success {
-  border: 1px solid var(--color-success);
+  border: 1px solid var(--border-success);
   color: var(--color-success);
 }
 
 .status-message.error {
-  border: 1px solid var(--color-error);
+  border: 1px solid var(--border-error);
   color: var(--color-error);
 }
 
@@ -498,4 +549,5 @@ footer {
   font-size: 0.78rem;
   border-top: 1px solid var(--border-secondary);
   margin-top: 60px;
+  animation: content-enter 0.3s ease-out 0.15s both;
 }
