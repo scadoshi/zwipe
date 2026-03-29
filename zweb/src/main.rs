@@ -42,6 +42,7 @@ fn App() -> Element {
 #[component]
 pub fn Nav() -> Element {
     rsx! {
+        div { class: "nav-wrapper",
         nav {
             Link { to: Route::Home {}, class: "nav-brand",
                 span { class: "nav-logo", "{Z_LOGO}" }
@@ -61,6 +62,7 @@ pub fn Nav() -> Element {
                 }
             }
         }
+        } // nav-wrapper
     }
 }
 
