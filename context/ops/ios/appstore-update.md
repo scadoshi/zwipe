@@ -104,9 +104,21 @@ zip -r Zwipe.ipa Payload
 rm -rf Payload
 ```
 
-## 6. Upload
+## 6. Validate and Upload
 
-Open **Transporter** (Mac App Store) → drag `Zwipe.ipa` → **Deliver**.
+```bash
+# Validate first (catches errors before uploading)
+xcrun altool --validate-app -f ~/Developer/zwipe/Zwipe.ipa -t ios \
+  --apiKey C2L47TDDPV --apiIssuer 644db668-17b6-4d50-ac1a-70f8ea838d0d
+
+# Upload
+xcrun altool --upload-app -f ~/Developer/zwipe/Zwipe.ipa -t ios \
+  --apiKey C2L47TDDPV --apiIssuer 644db668-17b6-4d50-ac1a-70f8ea838d0d
+```
+
+API key file lives at `~/.private_keys/AuthKey_C2L47TDDPV.p8`.
+
+**Do not use Transporter** — `altool` is faster, scriptable, and gives detailed errors.
 
 ## 7. Submit
 

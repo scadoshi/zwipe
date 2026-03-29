@@ -19,8 +19,8 @@ MinimumOSVersion = "16.0"
 DTPlatformName = "iphoneos"
 DTPlatformVersion = "26.4"
 DTSDKName = "iphoneos26.4"
-DTXcode = "1640"
-DTXcodeBuild = "16A242d"
+DTXcode = "2640"
+DTXcodeBuild = "17E192"
 DTCompiler = "com.apple.compilers.llvm.clang.1_0"
 
 [web.resource.dev]
