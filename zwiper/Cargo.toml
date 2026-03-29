@@ -1,6 +1,6 @@
 [package]
 name = "zwiper"
-version = "0.1.0"
+version.workspace = true
 authors = ["scottyrayfermo"]
 edition = "2024"
 

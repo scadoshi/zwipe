@@ -18,6 +18,7 @@ fn main() {
     tracing_subscriber::fmt()
         .with_max_level(config.rust_log)
         .init();
+    tracing::info!("zwiper v{} starting", env!("CARGO_PKG_VERSION"));
     dioxus::launch(App);
 }
 
