@@ -26,7 +26,7 @@ use crate::domain::{
         models::SendEmail,
         ports::EmailSender,
     },
-    user::{models::User, ports::UserRepository},
+    user::{models::User, models::preferences::UserPreferences, ports::UserRepository},
 };
 use anyhow::anyhow;
 use chrono::{Duration, Utc};
@@ -109,7 +109,9 @@ where
             .create_user_and_refresh_token(request)
             .await?;
 
-        let access_token = AccessToken::generate(&user, &self.jwt_secret)
+        let preferences = UserPreferences::default();
+
+        let access_token = AccessToken::generate(&user, &preferences, &self.jwt_secret)
             .map_err(|e| RegisterUserError::FailedAccessToken(anyhow!("{e}")))?;
 
         // Fire-and-forget: don't fail registration if email sending fails.
@@ -121,6 +123,7 @@ where
             user,
             access_token,
             refresh_token,
+            preferences,
         })
     }
 
@@ -156,7 +159,9 @@ where
         self.auth_repo.reset_failed_attempts(user.id).await?;
         tracing::info!(event = "login_success", identifier = %request.identifier);
 
-        let access_token = AccessToken::generate(&user, &self.jwt_secret)
+        let preferences = self.user_repo.get_preferences(user.id).await.unwrap_or_default();
+
+        let access_token = AccessToken::generate(&user, &preferences, &self.jwt_secret)
             .map_err(|e| AuthenticateUserError::FailedAccessToken(anyhow!("{e}")))?;
 
         let refresh_token = self.auth_repo.create_refresh_token(user.id).await?;
@@ -165,17 +170,19 @@ where
             user,
             access_token,
             refresh_token,
+            preferences,
         })
     }
 
     async fn create_session(&self, request: &CreateSession) -> Result<Session, CreateSessionError> {
         let user = self.user_repo.get_user(request.user_id).await?;
+        let preferences = self.user_repo.get_preferences(request.user_id).await.unwrap_or_default();
 
         let refresh_token = self.auth_repo.create_refresh_token(request.user_id).await?;
 
-        let access_token = AccessToken::generate(&user, self.jwt_secret())?;
+        let access_token = AccessToken::generate(&user, &preferences, self.jwt_secret())?;
 
-        let session = Session::new(user, access_token, refresh_token);
+        let session = Session::new(user, access_token, refresh_token, preferences);
 
         Ok(session)
     }
@@ -185,12 +192,13 @@ where
         request: &RefreshSession,
     ) -> Result<Session, RefreshSessionError> {
         let user = self.user_repo.get_user(request.user_id).await?;
+        let preferences = self.user_repo.get_preferences(request.user_id).await.unwrap_or_default();
 
         let refresh_token = self.auth_repo.use_refresh_token(request).await?;
 
-        let access_token = AccessToken::generate(&user, self.jwt_secret())?;
+        let access_token = AccessToken::generate(&user, &preferences, self.jwt_secret())?;
 
-        let session = Session::new(user, access_token, refresh_token);
+        let session = Session::new(user, access_token, refresh_token, preferences);
 
         Ok(session)
     }

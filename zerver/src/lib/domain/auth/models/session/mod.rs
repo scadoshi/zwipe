@@ -38,6 +38,7 @@ pub mod revoke_sessions;
 use crate::domain::auth::models::access_token::AccessToken;
 use crate::domain::auth::models::refresh_token::RefreshToken;
 use crate::domain::user::models::User;
+use crate::domain::user::models::preferences::UserPreferences;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
@@ -98,6 +99,9 @@ pub struct Session {
 
     /// Long-lived refresh token for obtaining new access tokens (14d expiry).
     pub refresh_token: RefreshToken,
+
+    /// User's display preferences (theme, dark mode).
+    pub preferences: UserPreferences,
 }
 
 impl Session {
@@ -111,11 +115,17 @@ impl Session {
     /// let session = Session::new(user, access_token, refresh_token);
     /// ```
     #[cfg(feature = "zerver")]
-    pub fn new(user: User, access_token: AccessToken, refresh_token: RefreshToken) -> Self {
+    pub fn new(
+        user: User,
+        access_token: AccessToken,
+        refresh_token: RefreshToken,
+        preferences: UserPreferences,
+    ) -> Self {
         Session {
             user,
             access_token,
             refresh_token,
+            preferences,
         }
     }
 
@@ -170,6 +180,7 @@ mod tests {
             user,
             access_token,
             refresh_token,
+            preferences: UserPreferences::default(),
         }
     }
 
@@ -201,7 +212,7 @@ mod tests {
             expires_at: Utc::now().naive_utc() + Duration::hours(24),
         };
         let refresh_token = RefreshToken::generate();
-        let session = Session::new(user, access_token.clone(), refresh_token.clone());
+        let session = Session::new(user, access_token.clone(), refresh_token.clone(), UserPreferences::default());
         assert_eq!(session.user.id, user_id);
         assert_eq!(session.access_token, access_token);
         assert_eq!(session.refresh_token, refresh_token);
