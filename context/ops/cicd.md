@@ -113,7 +113,7 @@ If the server is rebuilt and the runner is lost:
 Tailscale is used for SSHing into the server from your Mac or any network. It is **not**
 used for CI/CD deploys (self-hosted runner eliminated that need).
 
-**Current server Tailscale IP: `100.91.55.16`**
+**Current server Tailscale IP**: check Tailscale admin console — stable, never changes even if ISP rotates public IP.
 
 ### Setup
 
@@ -130,18 +130,18 @@ Install from the App Store, sign in with the same account.
 
 **SSH into server from anywhere:**
 ```bash
-ssh scadoshi@100.91.55.16
+ssh scadoshi@<tailscale-ip>
 ```
 
 ### Tailscale Admin Configuration
 
-- **Tag**: `tag:ci` owned by `scadoshi@github` (Access controls → Tags)
-- **ACL rule**: `tag:ci → 100.91.55.16` all ports (kept for potential future use)
+- **Tag**: `tag:ci` (Access controls → Tags)
+- **ACL rule**: `tag:ci → <server-tailscale-ip>` all ports (kept for potential future use)
 - **OAuth credential**: `github-actions` with `devices:core` + `auth_keys` scopes (kept for reference)
 
 ### Notes
 
-- Server Tailscale IP is stable — never changes even if Xfinity rotates public IP
+- Server Tailscale IP is stable — never changes even if ISP rotates public IP
 - `sshd` also listens on port 2222 via `/etc/systemd/system/ssh.socket.d/override.conf`
   (added during Xfinity troubleshooting — not required but harmless to keep)
 

@@ -355,7 +355,7 @@ cloudflared tunnel login
 
 ```bash
 cloudflared tunnel create zwipe
-# Prints a UUID — note it, e.g. 70ba169b-8293-4a60-9b2d-e1f996a161db
+# Prints a UUID — note it, e.g. <tunnel-uuid>
 # Writes ~/.cloudflared/<UUID>.json (credentials file)
 ```
 
@@ -368,8 +368,8 @@ nano ~/.cloudflared/config.yml
 
 `~/.cloudflared/config.yml`:
 ```yaml
-tunnel: 70ba169b-8293-4a60-9b2d-e1f996a161db
-credentials-file: /home/scottyfermo/.cloudflared/70ba169b-8293-4a60-9b2d-e1f996a161db.json
+tunnel: <tunnel-uuid>
+credentials-file: /home/scottyfermo/.cloudflared/<tunnel-uuid>.json
 
 ingress:
   - hostname: api.zwipe.net
@@ -385,7 +385,7 @@ Replace the UUID with the one printed by `tunnel create`.
 2. Add record:
    - Type: `CNAME`
    - Name: `api`
-   - Target: `<UUID>.cfargotunnel.com` (e.g. `70ba169b-8293-4a60-9b2d-e1f996a161db.cfargotunnel.com`)
+   - Target: `<UUID>.cfargotunnel.com` (e.g. `<tunnel-uuid>.cfargotunnel.com`)
    - Proxy status: Proxied (orange cloud — required)
 
 Or do it via CLI (requires tunnel login already done):
@@ -399,11 +399,11 @@ cloudflared tunnel route dns zwipe api.zwipe.net
 # Copy credentials and config to /etc/cloudflared for the service
 sudo mkdir -p /etc/cloudflared
 sudo cp ~/.cloudflared/config.yml /etc/cloudflared/
-sudo cp ~/.cloudflared/70ba169b-8293-4a60-9b2d-e1f996a161db.json /etc/cloudflared/
+sudo cp ~/.cloudflared/<tunnel-uuid>.json /etc/cloudflared/
 
 # Update credentials-file path in /etc/cloudflared/config.yml to /etc/cloudflared/...
 sudo nano /etc/cloudflared/config.yml
-# Change: credentials-file: /etc/cloudflared/70ba169b-....json
+# Change: credentials-file: /etc/cloudflared/<tunnel-uuid>.json
 
 sudo cloudflared service install
 sudo systemctl enable cloudflared
