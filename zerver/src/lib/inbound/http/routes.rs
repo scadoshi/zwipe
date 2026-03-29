@@ -32,7 +32,10 @@ use crate::inbound::http::handlers::{
         import_deck_cards::import_deck_cards, update_deck_card::update_deck_card,
     },
     health::{are_server_and_database_running, is_server_running, root},
-    user::get_user::get_user,
+    user::{
+        get_preferences::get_preferences, get_user::get_user,
+        update_preferences::update_preferences,
+    },
 };
 #[cfg(feature = "zerver")]
 use axum::Router;
@@ -131,7 +134,7 @@ where
                     )
                     .route(
                         "/verify-email",
-                        post(verify_email).layer(GovernorLayer::new(verify_reset_config.clone())),
+                        post(verify_email).layer(GovernorLayer::new(Arc::clone(&verify_reset_config))),
                     )
                     .route(
                         "/forgot-password",
@@ -198,10 +201,11 @@ where
                     "/user",
                     Router::new()
                         .route("/", get(get_user))
-                        .route("/change-password", put(change_password).layer(GovernorLayer::new(sensitive_config.clone())))
-                        .route("/change-username", put(change_username).layer(GovernorLayer::new(sensitive_config.clone())))
-                        .route("/change-email", put(change_email).layer(GovernorLayer::new(sensitive_config.clone())))
-                        .route("/delete-user", delete(delete_user).layer(GovernorLayer::new(sensitive_config))),
+                        .route("/change-password", put(change_password).layer(GovernorLayer::new(Arc::clone(&sensitive_config))))
+                        .route("/change-username", put(change_username).layer(GovernorLayer::new(Arc::clone(&sensitive_config))))
+                        .route("/change-email", put(change_email).layer(GovernorLayer::new(Arc::clone(&sensitive_config))))
+                        .route("/delete-user", delete(delete_user).layer(GovernorLayer::new(sensitive_config)))
+                        .route("/preferences", get(get_preferences).put(update_preferences)),
                 )
                 .nest(
                     "/card",
