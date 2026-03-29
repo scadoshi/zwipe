@@ -138,6 +138,26 @@ Add a `context/architecture/structure.md` walking through the full directory tre
 
 ---
 
+## Extract Password Validation into a Shared Crate
+
+`zweb/src/pages/reset.rs` currently duplicates the password policy rules from
+`zerver/src/lib/domain/auth/models/password/mod.rs`. Both must be updated together
+if the policy changes.
+
+The right fix is a new minimal crate (e.g. `zwipe-domain` or `zwipe-validation`) that:
+- Lives at the workspace root alongside `zerver`/`zwiper`
+- Has no heavy deps (no reqwest, no axum, no argon2)
+- Compiles cleanly for both native (`zerver`, `zwiper`) and WASM (`zweb`)
+- Exports `Password::new()` and the `InvalidPassword` error type
+- Can optionally be published to crates.io so `zweb` can depend on it without
+  being added to the main workspace
+
+The `zerver` crate would then depend on this crate instead of owning the type.
+
+For now the rules are duplicated in `zweb` with a comment pointing at the source.
+
+---
+
 ## Database Backups
 
 The server runs PostgreSQL locally. If the server dies, the database goes with it. Need a

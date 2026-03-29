@@ -1,6 +1,59 @@
 use dioxus::prelude::*;
 use serde::Serialize;
+use std::collections::HashSet;
 use crate::{API_BASE, Nav};
+
+const SYMBOLS: &str = r#"~!@#$%^&*()_+=[]{}\\/?|:;<>,."#;
+
+/// Validate a candidate password against the server's policy.
+///
+/// Rules must stay in sync with:
+///   `zerver/src/lib/domain/auth/models/password/mod.rs`
+///
+/// The common-password dictionary check is intentionally omitted here —
+/// the server enforces it as the final gate; the client validation is for
+/// immediate feedback only.
+fn validate_password(pw: &str) -> Option<&'static str> {
+    if pw.len() < 8 {
+        return Some("must be at least 8 characters long");
+    }
+    if pw.len() > 128 {
+        return Some("must not exceed 128 characters");
+    }
+    if !pw.chars().any(|c| c.is_uppercase()) {
+        return Some("must have at least one uppercase letter");
+    }
+    if !pw.chars().any(|c| c.is_lowercase()) {
+        return Some("must have at least one lowercase letter");
+    }
+    if !pw.chars().any(|c| c.is_numeric()) {
+        return Some("must have at least one number");
+    }
+    if !pw.chars().any(|c| SYMBOLS.contains(c)) {
+        return Some("must have at least one symbol (~!@#$%^&*()_+=[]{}\\/?|:;<>,.)");
+    }
+    if pw.chars().any(|c| c.is_whitespace()) {
+        return Some("must not contain whitespace characters");
+    }
+    let unique: HashSet<char> = pw.chars().collect();
+    if unique.len() < 6 {
+        return Some("must contain at least 6 unique characters");
+    }
+    let mut repeat = 1u8;
+    let mut prev: Option<char> = None;
+    for c in pw.chars() {
+        if prev == Some(c) {
+            repeat += 1;
+            if repeat > 3 {
+                return Some("must not contain more than 3 repeated characters");
+            }
+        } else {
+            repeat = 1;
+        }
+        prev = Some(c);
+    }
+    None
+}
 
 #[derive(Serialize)]
 struct ResetPasswordRequest {
@@ -28,12 +81,12 @@ pub fn Reset(token: String) -> Element {
         let pw = password.read().clone();
         let cf = confirm.read().clone();
 
-        if pw != cf {
-            state.set(ResetState::Error("passwords do not match".to_string()));
+        if let Some(err) = validate_password(&pw) {
+            state.set(ResetState::Error(err.to_string()));
             return;
         }
-        if pw.len() < 8 {
-            state.set(ResetState::Error("password must be at least 8 characters".to_string()));
+        if pw != cf {
+            state.set(ResetState::Error("passwords do not match".to_string()));
             return;
         }
 
@@ -81,7 +134,7 @@ pub fn Reset(token: String) -> Element {
                             label { "new password" }
                             input {
                                 r#type: "password",
-                                placeholder: "at least 8 characters",
+                                placeholder: "min 8 chars, upper, lower, number, symbol",
                                 value: "{password}",
                                 oninput: move |e| password.set(e.value()),
                                 disabled: current_state == ResetState::Loading,
