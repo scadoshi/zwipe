@@ -17,6 +17,8 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
+use dioxus_primitives::toast::{use_toast, ToastOptions};
+use std::time::Duration;
 use uuid::Uuid;
 use zwipe::{
     domain::{
@@ -39,7 +41,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
     // original deck information
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
-    let mut load_error = use_signal(|| None::<String>);
+    let toast = use_toast();
 
     let deck_profile_resource: Resource<Result<DeckProfile, ApiError>> =
         use_resource(move || async move {
@@ -79,22 +81,27 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 .await
                 .map(|d| d.entries)
         });
+    use_effect(move || {
+        if let Some(Err(e)) = &*deck_profile_resource.read() {
+            toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+        }
+    });
+
     use_effect(move || match commander_resource() {
         Some(Ok(Some(original_commander))) => {
             commander.set(Some(original_commander));
         }
         Some(Err(e)) => {
-            load_error.set(Some(e.to_string()));
+            toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
         }
         Some(Ok(None)) | None => (),
     });
 
     let mut show_delete_dialog = use_signal(|| false);
-    let mut delete_error = use_signal(|| None::<String>);
-    let mut attempt_delete = move || {
+    let attempt_delete = move || {
         session.upkeep(client);
         let Some(session) = session() else {
-            delete_error.set(Some("session expired".to_string()));
+            toast.error("session expired".to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
             return;
         };
 
@@ -104,7 +111,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     navigator.push(Router::DeckList {});
                 }
                 Err(e) => {
-                    delete_error.set(Some(e.to_string()));
+                    toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
                 }
             }
         });
@@ -192,10 +199,6 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                         Some(Ok(deck_profile)) => rsx! {
                             div { class: "content-enter",
                                   style: "width: calc(100% - 4rem); display: flex; flex-direction: column; gap: 1rem; padding: 1rem 0;",
-                                if let Some(error) = load_error() {
-                                    div { class: "message-error", "{error}" }
-                                }
-
                                 label { class: "label", "profile" }
                                 div { class: "info-list",
                                     div { class: "info-row",
@@ -341,12 +344,9 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     }
                                 }
 
-                                if let Some(error) = delete_error() {
-                                    div { class: "message-error", "{error}" }
-                                }
                             }
                         },
-                        Some(Err(e)) => rsx! { div { class: "message-error", "{e}" } },
+                        Some(Err(_)) => rsx! { p { class: "text-muted", "could not load deck" } },
                         None => rsx! { div { class: "spinner" } }
                     }
                 }

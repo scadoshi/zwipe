@@ -1,6 +1,8 @@
 //! Mana cost and color filter component.
 
 use dioxus::prelude::*;
+use dioxus_primitives::toast::{use_toast, ToastOptions};
+use std::time::Duration;
 use zwipe::domain::card::models::scryfall_data::colors::Color;
 use zwipe::domain::card::models::search_card::card_filter::builder::CardFilterBuilder;
 
@@ -11,7 +13,7 @@ use super::filter_mode::FilterMode;
 pub fn Mana() -> Element {
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
 
-    let mut error = use_signal(|| None::<String>);
+    let toast = use_toast();
 
     // CMC mode signal
     let mut cmc_mode = use_signal(|| {
@@ -46,15 +48,13 @@ pub fn Mana() -> Element {
     let mut try_parse_cmc_equals = move || {
         if cmc_equals_string().is_empty() {
             filter_builder.write().unset_cmc_equals();
-            error.set(None);
             return;
         }
         if let Ok(n) = cmc_equals_string().parse::<f64>() {
             filter_builder.write().set_cmc_equals(n);
             cmc_equals_string.set(n.to_string());
-            error.set(None);
         } else {
-            error.set(Some("invalid cmc".to_string()));
+            toast.error("invalid cmc".to_string(), ToastOptions::default().duration(Duration::from_millis(2000)));
         }
     };
 
@@ -62,7 +62,6 @@ pub fn Mana() -> Element {
     let mut try_parse_cmc_range = move || {
         if cmc_range_min_string().is_empty() && cmc_range_max_string().is_empty() {
             filter_builder.write().unset_cmc_range();
-            error.set(None);
             return;
         }
         // Need both values for a valid range
@@ -77,9 +76,8 @@ pub fn Mana() -> Element {
             filter_builder.write().set_cmc_range((min, max));
             cmc_range_min_string.set(min.to_string());
             cmc_range_max_string.set(max.to_string());
-            error.set(None);
         } else {
-            error.set(Some("invalid cmc range".to_string()));
+            toast.error("invalid cmc range".to_string(), ToastOptions::default().duration(Duration::from_millis(2000)));
         }
     };
 
@@ -147,7 +145,6 @@ pub fn Mana() -> Element {
                             cmc_equals_string.set(String::new());
                             cmc_range_min_string.set(String::new());
                             cmc_range_max_string.set(String::new());
-                            error.set(None);
                         },
                         "×"
                     }
@@ -165,7 +162,6 @@ pub fn Mana() -> Element {
                         autocapitalize: "none",
                         spellcheck: "false",
                         oninput: move |event| {
-                            error.set(None);
                             cmc_equals_string.set(event.value())
                         },
                         onblur: move |_| {
@@ -184,7 +180,6 @@ pub fn Mana() -> Element {
                             autocapitalize: "none",
                             spellcheck: "false",
                             oninput: move |event| {
-                                error.set(None);
                                 cmc_range_min_string.set(event.value())
                             },
                             onblur: move |_| {
@@ -201,7 +196,6 @@ pub fn Mana() -> Element {
                             autocapitalize: "none",
                             spellcheck: "false",
                             oninput: move |event| {
-                                error.set(None);
                                 cmc_range_max_string.set(event.value())
                             },
                             onblur: move |_| {
@@ -307,9 +301,6 @@ pub fn Mana() -> Element {
                 }
             }
 
-            if let Some(error) = error() {
-                div { class: "message-error", "{error}" }
-            }
         }
     }
 }

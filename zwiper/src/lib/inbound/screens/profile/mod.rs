@@ -41,7 +41,6 @@ pub fn Profile() -> Element {
     let mut show_delete_dialog = use_signal(|| false);
     let mut delete_countdown = use_signal(|| 5u8);
     let mut delete_password = use_signal(String::new);
-    let mut delete_error: Signal<Option<String>> = use_signal(|| None);
     let mut is_deleting = use_signal(|| false);
     let mut is_resending = use_signal(|| false);
     let toast = use_toast();
@@ -77,7 +76,7 @@ pub fn Profile() -> Element {
                     h2 { "profile" }
                 }
 
-                div { class: "screen-content centered",
+                div { class: "screen-content centered content-enter",
                     if let Some(s) = session().as_ref() {
                         div { class: "profile-list", style: "width: calc(100% - 4rem);",
 
@@ -174,7 +173,6 @@ pub fn Profile() -> Element {
                         class: "util-btn",
                         onclick: move |_| {
                             delete_password.set(String::new());
-                            delete_error.set(None);
                             delete_countdown.set(5);
                             show_delete_dialog.set(true);
                             spawn(async move {
@@ -224,11 +222,7 @@ pub fn Profile() -> Element {
                             value: "{delete_password}",
                             oninput: move |evt| {
                                 delete_password.set(evt.value());
-                                delete_error.set(None);
                             },
-                        }
-                        if let Some(err) = delete_error() {
-                            p { class: "message-error", "{err}" }
                         }
                         AlertDialogActions {
                             AlertDialogCancel {
@@ -240,12 +234,11 @@ pub fn Profile() -> Element {
                                 disabled: delete_countdown() > 0 || is_deleting(),
                                 onclick: move |_| {
                                     is_deleting.set(true);
-                                    delete_error.set(None);
                                     let password = delete_password();
                                     spawn(async move {
                                         session.upkeep(client);
                                         let Some(s) = session() else {
-                                            delete_error.set(Some("session expired — please log in again".to_string()));
+                                            toast.error("session expired — please log in again".to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
                                             is_deleting.set(false);
                                             return;
                                         };
@@ -255,7 +248,7 @@ pub fn Profile() -> Element {
                                                 session.logout(client);
                                             }
                                             Err(e) => {
-                                                delete_error.set(Some(e.to_user_message()));
+                                                toast.error(e.to_user_message(), ToastOptions::default().duration(Duration::from_millis(3000)));
                                                 is_deleting.set(false);
                                             }
                                         }

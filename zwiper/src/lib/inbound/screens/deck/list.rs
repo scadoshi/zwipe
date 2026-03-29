@@ -8,6 +8,8 @@ use crate::{
     outbound::client::{ZwipeClient, deck::get_deck_profiles::ClientGetDeckList},
 };
 use dioxus::prelude::*;
+use dioxus_primitives::toast::{use_toast, ToastOptions};
+use std::time::Duration;
 use zwipe::{
     domain::{auth::models::session::Session, deck::models::deck::deck_profile::DeckProfile},
     inbound::http::ApiError,
@@ -19,6 +21,7 @@ pub fn DeckList() -> Element {
     let navigator = use_navigator();
     let auth_client: Signal<ZwipeClient> = use_context();
     let session: Signal<Option<Session>> = use_context();
+    let toast = use_toast();
 
     let mut deck_profiles_resource: Resource<Result<Vec<DeckProfile>, ApiError>> =
         use_resource(move || async move {
@@ -33,6 +36,12 @@ pub fn DeckList() -> Element {
     // Restart resource on component mount to ensure fresh data
     use_effect(move || {
         deck_profiles_resource.restart();
+    });
+
+    use_effect(move || {
+        if let Some(Err(e)) = &*deck_profiles_resource.read() {
+            toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+        }
     });
 
     rsx! {
@@ -57,7 +66,7 @@ pub fn DeckList() -> Element {
                             } else {
                                 rsx! {
                                     for profile in deck_profiles.iter().map(|x| x.to_owned()) {
-                                        div { class : "card",
+                                        div { class : "card row-enter",
                                             key : "{profile.id}",
                                             onclick : move |_| {
                                                 navigator.push(Router::ViewDeck {
@@ -72,9 +81,9 @@ pub fn DeckList() -> Element {
                                 }
                             }
                         }
-                        Some(Err(e)) => rsx!{
+                        Some(Err(_)) => rsx!{
                             div { class : "message-empty",
-                                p { class : "message-error", "{e}" }
+                                p { "could not load decks" }
                             }
                         },
                         None => rsx! {

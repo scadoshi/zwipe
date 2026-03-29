@@ -10,6 +10,8 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
+use dioxus_primitives::toast::{use_toast, ToastOptions};
+use std::time::Duration;
 use uuid::Uuid;
 use zwipe::domain::{
     auth::models::session::Session,
@@ -25,17 +27,16 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
     let mut text = use_signal(String::new);
     let mut loading = use_signal(|| false);
     let mut result: Signal<Option<ImportDeckCardsResult>> = use_signal(|| None);
-    let mut error: Signal<Option<String>> = use_signal(|| None);
+    let toast = use_toast();
 
     let mut attempt_import = move || {
-        error.set(None);
         result.set(None);
         loading.set(true);
 
         spawn(async move {
             session.upkeep(client);
             let Some(session) = session() else {
-                error.set(Some("session expired".to_string()));
+                toast.error("session expired".to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
                 loading.set(false);
                 return;
             };
@@ -46,7 +47,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                     loading.set(false);
                 }
                 Err(e) => {
-                    error.set(Some(e.to_string()));
+                    toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
                     loading.set(false);
                 }
             }
@@ -60,7 +61,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                     h2 { "import" }
                 }
 
-                div { class: "screen-content centered",
+                div { class: "screen-content centered content-enter",
                     div { class: "container-sm",
                         label { class: "label", r#for: "import-text", "paste decklist" }
                         textarea {
@@ -70,10 +71,6 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                             placeholder: "5 island\n4 mountain\n1 guide of souls\n1 gonti's aether heart\n1 decoction module\n1 whirler virtuoso",
                             value: "{text}",
                             oninput: move |e| text.set(e.value()),
-                        }
-
-                        if let Some(err) = error() {
-                            div { class: "message-error", "{err}" }
                         }
 
                         if let Some(r) = result() {

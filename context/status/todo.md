@@ -24,8 +24,8 @@ Moving from Raspberry Pi 5 to Ubuntu Server (Intel i5, 32GB RAM, x86_64). Full s
     - This was recently achieved. Tested: password reset, email verification, password reset, deck operations, profile operations
 - [ ] Minor issues observed
     - [ ] Empty card shape persists in mobile application. I thought we fixed this in fact I have clear memory of us indeed doing so so maybe need to clean from phone then re-push but on second thought I want the shape just need to make it bigger.
-    - [ ] Deck limit reached error needs to be a toast. Check all submission errors they should be extended toasts rather than red text at the bottom of the screen
-    - [ ] Clicking clear filter still doesn't clear out the cards currently in the stack. Upon entrance into the add.rs screen filter should be checked and if empty clear cards and if has filter it needs to immediately run in case they changed the filter on another screen!
+    - [ ] Deck limit reached error needs to be a toast. Check all submission errors they should be extended toasts rather than red text at the bottom of the screen (deck create screen done — `a1bff36`)
+    - [ ] Clicking clear filter still doesn't clear out the cards currently in the stack. Upon entrance into the add.rs screen filter should be checked and if empty clear cards and if has filter it needs to immediately run in case they changed the filter on another screen! (cards now persist across navigation when filter unchanged — `82c67f0`, but clear-filter behavior still needs work)
     - [ ] Errors from rate limiting are coming in with capital letters. They should be translated to lowercase. 
     - [ ] Question more than anything that I want to jot down. What do we do with a user whose email is NOT verified? What do other applications do? Right now it is just a badge. Not sure if we should change anything or leave it? 
     - [ ] When I sort by random on remove screen and click refresh it returns to the start of the list without randomizing again it should re-apply the sorting filter causing refresh in this instance to continually randomize the card stack showing 
@@ -56,36 +56,7 @@ Known starting point from earlier research:
 
 ### 2. Account Deletion (App Store Required)
 
-Apple guideline 5.1.1 **requires** apps with account creation to offer in-app account
-deletion. This is a hard blocker for App Store approval.
-
-#### Backend — `DELETE /api/user`
-
-New authenticated endpoint that:
-1. Verifies the JWT (same as all other authenticated routes)
-2. Deletes all of the user's deck cards (cascade likely handles this via FK)
-3. Deletes all of the user's decks
-4. Deletes all of the user's refresh tokens
-5. Deletes the user record itself
-6. Returns `200 OK`
-
-Rate limit: low burst, long refill (same pattern as change-password) to prevent abuse.
-
-#### Frontend (zwiper)
-
-- Add "Delete Account" button to the profile screen (bottom of util-bar or a dedicated
-  danger zone section)
-- Require a confirmation dialog: "This will permanently delete your account and all
-  decks. This cannot be undone."
-- On confirm: call `DELETE /api/user`, clear the local session, navigate to login screen
-- Button should be visually distinct — red or muted, not the same style as normal actions
-
-#### Notes
-
-- No email confirmation step required, but the confirmation dialog is essential UX
-- Apple reviewers will specifically look for this — it must be discoverable in the app,
-  not buried or hidden
-- Data deletion must be immediate (or near-immediate), not "submitted for deletion"
+✅ Done (`af7fd87`, `70a7042`). Backend `DELETE /api/user` with cascading deletes + rate limiting. Frontend profile screen has "delete account" button with confirmation dialog, clears session, navigates to login.
 
 ---
 
@@ -187,6 +158,7 @@ Token links in emails use path segments: `https://zwipe.net/verify/{token}` and 
 - ✅ Change password (authenticated, `PUT /api/user/change-password`) — burst 2, then 1 req/30min
 - ✅ Change username (authenticated, `PUT /api/user/change-username`) — burst 2, then 1 req/30min
 - ✅ Change email (authenticated, `PUT /api/user/change-email`) — burst 2, then 1 req/30min
+- ✅ Delete user (authenticated, `DELETE /api/user`) — same governor as change-password
 
 ### Search Cards
 - ✅ `POST /api/card/search` — burst 5, then 1 req/10s (100-card batches make higher rate unrealistic)

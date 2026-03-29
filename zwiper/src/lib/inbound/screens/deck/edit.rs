@@ -21,6 +21,7 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
+use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
 use tokio::time::sleep;
 use uuid::Uuid;
@@ -61,7 +62,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut original_copy_max: Signal<Option<CopyMax>> = use_signal(|| None);
     let mut max_entry_quantity: Signal<i32> = use_signal(|| 0);
 
-    let mut load_error = use_signal(|| None::<String>);
+    let toast = use_toast();
 
     let original_deck_resource: Resource<Result<Deck, ApiError>> =
         use_resource(move || async move {
@@ -89,7 +90,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             );
         }
         Some(Err(e)) => {
-            load_error.set(Some(e.to_string()));
+            toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
         }
         None => (),
     });
@@ -123,7 +124,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         }
         Some(Ok(None)) | None => (),
         Some(Err(e)) => {
-            load_error.set(Some(e.to_string()));
+            toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
         }
     });
 
@@ -161,7 +162,6 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut show_dropdown = use_signal(|| false);
 
     // save state
-    let mut submission_error = use_signal(|| None::<String>);
     let mut is_saving = use_signal(|| false);
     let mut show_truncation_warning = use_signal(|| false);
 
@@ -208,19 +208,19 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     });
 
     let mut do_submit = move || {
-        submission_error.set(None);
         is_saving.set(true);
 
         spawn(async move {
             session.upkeep(client);
             let Some(session) = session() else {
-                submission_error.set(Some("session expired".to_string()));
+                toast.error("session expired".to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
                 is_saving.set(false);
                 return;
             };
 
             if !has_made_changes() {
-                submission_error.set(Some(InvalidUpdateDeckProfile::NoUpdates.to_string()));
+                toast.error(InvalidUpdateDeckProfile::NoUpdates.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                is_saving.set(false);
                 return;
             }
 
@@ -235,12 +235,11 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 .await
             {
                 Ok(_updated) => {
-                    submission_error.set(None);
                     is_saving.set(false);
                     navigator.push(Router::ViewDeck { deck_id });
                 }
                 Err(e) => {
-                    submission_error.set(Some(e.to_string()));
+                    toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
                     is_saving.set(false);
                 }
             }
@@ -262,14 +261,10 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                     h2 { "edit deck" }
                 }
 
-                div { class: "screen-content centered",
+                div { class: "screen-content centered content-enter",
                 div { class : "container-sm",
                     match &*original_deck_resource.read() {
                         Some(Ok(_deck)) => rsx! {
-                            if let Some(error) = load_error() {
-                                div { class: "message-error", "{error}" }
-                            }
-
                             form { class: "flex-col text-center",
                                 TextInput {
                                     label: "deck name",
@@ -356,13 +351,10 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                     }
                                 }
 
-                                if let Some(error) = submission_error() {
-                                    div { class: "message-error", "{error}" }
-                                }
                             }
 
                         },
-                        Some(Err(e)) => rsx! { div { class : "message-error", "{e}"} },
+                        Some(Err(_)) => rsx! { p { class: "text-muted", "could not load deck" } },
                         None => rsx! { div { class : "spinner" } }
                     }
                 }

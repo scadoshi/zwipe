@@ -60,7 +60,7 @@ pub fn ForgotPassword() -> Element {
 
     rsx! {
         div { class: "screen",
-            div { class: "screen-content centered",
+            div { class: "screen-content centered content-enter",
                 div { class: "logo", "{logo}" }
                 div { class: "container-sm text-center",
                     if submission_success() {

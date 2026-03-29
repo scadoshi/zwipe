@@ -114,7 +114,7 @@ pub fn ChangePassword() -> Element {
                     h2 { "change password" }
                 }
 
-                div { class: "screen-content centered",
+                div { class: "screen-content centered content-enter",
                 div { class : "container-sm",
 
                     form { class: "flex-col text-center",
