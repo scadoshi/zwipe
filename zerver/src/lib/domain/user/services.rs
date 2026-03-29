@@ -1,8 +1,13 @@
 use std::fmt::Debug;
 
+use uuid::Uuid;
+
 use crate::domain::user::{
     models::{
         get_user::{GetUser, GetUserError},
+        preferences::{
+            GetPreferencesError, UpdatePreferences, UpdatePreferencesError, UserPreferences,
+        },
         User,
     },
     ports::{UserRepository, UserService},
@@ -32,10 +37,26 @@ where
 }
 
 impl<R: UserRepository> UserService for Service<R> {
+    // =====
+    //  get
+    // =====
+
     async fn get_user(&self, request: &GetUser) -> Result<User, GetUserError> {
-        // =====
-        //  get
-        // =====
         self.repo.get_user(request.user_id).await
+    }
+
+    // ===============
+    //  preferences
+    // ===============
+
+    async fn get_preferences(&self, user_id: Uuid) -> Result<UserPreferences, GetPreferencesError> {
+        self.repo.get_preferences(user_id).await
+    }
+
+    async fn update_preferences(
+        &self,
+        request: &UpdatePreferences,
+    ) -> Result<UserPreferences, UpdatePreferencesError> {
+        self.repo.update_preferences(request).await
     }
 }

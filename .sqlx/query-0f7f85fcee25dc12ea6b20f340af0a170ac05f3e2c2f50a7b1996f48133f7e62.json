@@ -1,0 +1,36 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO user_preferences (user_id, theme, dark_mode, updated_at)\n               VALUES ($1, COALESCE($2, 'zwipe'), COALESCE($3, true), NOW())\n               ON CONFLICT (user_id)\n               DO UPDATE SET\n                   theme = COALESCE($2, user_preferences.theme),\n                   dark_mode = COALESCE($3, user_preferences.dark_mode),\n                   updated_at = NOW()\n               RETURNING user_id, theme, dark_mode",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "theme",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "dark_mode",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "0f7f85fcee25dc12ea6b20f340af0a170ac05f3e2c2f50a7b1996f48133f7e62"
+}
