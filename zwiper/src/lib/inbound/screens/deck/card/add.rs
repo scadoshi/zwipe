@@ -47,6 +47,8 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
     let mut cards: Signal<Vec<Card>> = use_context();
+    let mut last_search_filter: Signal<Option<CardFilterBuilder>> = use_context();
+    let is_first_run = use_hook(|| std::cell::Cell::new(true));
 
     let mut is_animating = use_signal(|| false);
     let mut animation_direction = use_signal(|| Direction::Left);
@@ -62,6 +64,9 @@ pub fn Add(deck_id: Uuid) -> Element {
     // Reset counter for collapsing accordions and clearing search queries
     let mut filter_reset_counter: Signal<u32> = use_signal(|| 0);
     use_context_provider(|| filter_reset_counter);
+
+    // Key for remounting the filter accordion — incremented on every apply to close open groups
+    let mut accordion_key: Signal<u32> = use_signal(|| 0);
 
     // Refresh trigger - incrementing this re-runs the card search effect
     let mut refresh_trigger = use_signal(|| false);
@@ -334,7 +339,9 @@ pub fn Add(deck_id: Uuid) -> Element {
                     deck_cards_ids.set(ids);
                 }
                 Err(e) => {
-                    tracing::warn!("deck card filter fetch failed, continuing without filtering: {e}");
+                    tracing::warn!(
+                        "deck card filter fetch failed, continuing without filtering: {e}"
+                    );
                 }
             }
         });
@@ -345,21 +352,49 @@ pub fn Add(deck_id: Uuid) -> Element {
         let _ = refresh_trigger();
         let _ = filter_reset_counter();
 
-        // Reset pagination when filter changes or refresh triggered
-        current_offset.set(0);
-        current_index.set(0);
-        pagination_exhausted.set(false);
+        let first = is_first_run.get();
+        is_first_run.set(false);
 
         let mut builder = filter_builder.peek().clone();
         builder.set_is_token(false);
         builder.set_limit(pagination_limit);
         builder.set_offset(0);
 
+        if first {
+            // ── Initial mount ─────────────────────────────────────────
+            // Preserve cards if the filter hasn't changed since last search.
+            let filter_unchanged = last_search_filter
+                .peek()
+                .as_ref()
+                .map(|prev| {
+                    let mut prev_b = prev.clone();
+                    prev_b.set_is_token(false);
+                    prev_b.set_limit(pagination_limit);
+                    prev_b.set_offset(0);
+                    prev_b == builder
+                })
+                .unwrap_or(false);
+
+            if filter_unchanged && !cards.peek().is_empty() {
+                // Restore pagination offset so load-more picks up from the right place.
+                current_offset.set(cards.peek().len() as u32);
+                return;
+            }
+        }
+
+        // ── Clear and re-fetch ────────────────────────────────────────
+        // Reaches here when:
+        //   - explicit user action (refresh / apply filter), OR
+        //   - initial mount with a different/new filter, OR
+        //   - initial mount with no existing cards
+        cards.set(vec![]);
+        last_search_filter.set(None);
+        current_offset.set(0);
+        current_index.set(0);
+        pagination_exhausted.set(false);
+
         let Ok(filter) = builder.build() else {
-            toast.warning(
-                "filter is empty".to_string(),
-                ToastOptions::default().duration(Duration::from_millis(1500)),
-            );
+            // Filter is empty — cards already cleared above, nothing to do
             return;
         };
 
@@ -371,6 +406,9 @@ pub fn Add(deck_id: Uuid) -> Element {
         };
 
         is_loading_cards.set(true);
+
+        // Snapshot the filter builder state before the async block owns context.
+        let filter_snapshot = filter_builder.peek().clone();
 
         spawn(async move {
             match client().search_cards(&filter, &session).await {
@@ -389,6 +427,8 @@ pub fn Add(deck_id: Uuid) -> Element {
                             })
                             .collect(),
                     );
+                    // Record the filter that produced these results.
+                    last_search_filter.set(Some(filter_snapshot));
                     // Set offset for next page
                     current_offset.set(pagination_limit);
                     is_loading_cards.set(false);
@@ -583,6 +623,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     button {
                         class: "btn btn-sm",
                         onclick: move |_| {
+                            accordion_key.set(accordion_key() + 1);
                             if filter_builder.read().is_empty() {
                                 toast.warning("filter is empty".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                             } else {
@@ -597,7 +638,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 // Content with accordion
                 div { class: "modal-content",
                     Accordion {
-                        key: "{filter_reset_counter()}",
+                        key: "{accordion_key()}",
                         id: "filter-accordion",
                         allow_multiple_open: false,
                         collapsible: true,
