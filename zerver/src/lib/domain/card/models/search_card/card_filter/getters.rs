@@ -122,8 +122,8 @@ impl CardFilter {
     }
 
     // flags
-    pub fn is_valid_commander(&self) -> Option<bool> {
-        self.is_valid_commander
+    pub fn is_commander(&self) -> Option<bool> {
+        self.is_commander
     }
 
     pub fn is_token(&self) -> Option<bool> {

@@ -37,7 +37,7 @@ pub struct CardProfile {
     /// Scryfall UUID — the primary key shared with the `scryfall_data` table.
     pub scryfall_data_id: Uuid,
     /// Pre-computed commander legality (legendary creature check).
-    pub is_valid_commander: bool,
+    pub is_commander: bool,
     /// Whether this is a token (not a real card).
     pub is_token: bool,
     /// When this profile was created in database.

@@ -171,9 +171,9 @@ impl CardFilterBuilder {
     // Card Flag Getters
     // =================================
 
-    /// Returns the is_valid_commander filter value.
-    pub fn is_valid_commander(&self) -> Option<bool> {
-        self.is_valid_commander
+    /// Returns the is_commander filter value.
+    pub fn is_commander(&self) -> Option<bool> {
+        self.is_commander
     }
 
     /// Returns the is_token filter value.

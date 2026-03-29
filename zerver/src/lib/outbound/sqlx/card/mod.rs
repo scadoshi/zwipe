@@ -416,8 +416,8 @@ impl CardRepository for MyPostgres {
         }
 
         // flag filters
-        if let Some(is_commander) = request.is_valid_commander() {
-            sep.push(" card_profiles.is_valid_commander = ");
+        if let Some(is_commander) = request.is_commander() {
+            sep.push(" card_profiles.is_commander = ");
             sep.push_bind_unseparated(is_commander);
         }
 
@@ -664,7 +664,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<CardProfile, GetCardProfileError> {
         let card_profile: CardProfile = query_as!(
             DatabaseCardProfile,
-            "SELECT scryfall_data_id, is_valid_commander, is_token, created_at, updated_at FROM card_profiles WHERE scryfall_data_id = $1",
+            "SELECT scryfall_data_id, is_commander, is_token, created_at, updated_at FROM card_profiles WHERE scryfall_data_id = $1",
             **request
         )
         .fetch_one(&self.pool)
@@ -679,7 +679,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<CardProfile, GetCardProfileError> {
         let card_profile: CardProfile = query_as!(
             DatabaseCardProfile,
-            "SELECT scryfall_data_id, is_valid_commander, is_token, created_at, updated_at
+            "SELECT scryfall_data_id, is_commander, is_token, created_at, updated_at
             FROM card_profiles WHERE scryfall_data_id = $1",
             **request
         )
@@ -695,7 +695,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
         let card_profiles: Vec<CardProfile> = query_as!(
             DatabaseCardProfile,
-            "SELECT scryfall_data_id, is_valid_commander, is_token, created_at, updated_at
+            "SELECT scryfall_data_id, is_commander, is_token, created_at, updated_at
             FROM card_profiles WHERE scryfall_data_id = ANY($1)",
             &**request
         )
@@ -713,7 +713,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
         let card_profiles: Vec<CardProfile> = query_as!(
             DatabaseCardProfile,
-            "SELECT scryfall_data_id, is_valid_commander, is_token, created_at, updated_at
+            "SELECT scryfall_data_id, is_commander, is_token, created_at, updated_at
             FROM card_profiles WHERE scryfall_data_id = ANY($1)",
             &**request
         )
