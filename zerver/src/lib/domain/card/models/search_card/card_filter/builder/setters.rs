@@ -344,6 +344,56 @@ impl CardFilterBuilder {
     }
 
     // =================================
+    // Produced Mana Filter Setters
+    // =================================
+
+    /// Sets filter matching cards that produce any of the listed mana colors (OR logic). Empty vec = None.
+    pub fn set_produced_mana_contains_any<I, S>(
+        &mut self,
+        produced_mana_contains_any: I,
+    ) -> &mut Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        let v: Vec<String> = produced_mana_contains_any
+            .into_iter()
+            .map(Into::into)
+            .collect();
+        self.produced_mana_contains_any = if v.is_empty() { None } else { Some(v) };
+        self
+    }
+
+    /// Clears the produced_mana_contains_any filter.
+    pub fn unset_produced_mana_contains_any(&mut self) -> &mut Self {
+        self.produced_mana_contains_any = None;
+        self
+    }
+
+    /// Sets filter matching cards that produce all of the listed mana colors (AND logic). Empty vec = None.
+    pub fn set_produced_mana_contains_all<I, S>(
+        &mut self,
+        produced_mana_contains_all: I,
+    ) -> &mut Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        let v: Vec<String> = produced_mana_contains_all
+            .into_iter()
+            .map(Into::into)
+            .collect();
+        self.produced_mana_contains_all = if v.is_empty() { None } else { Some(v) };
+        self
+    }
+
+    /// Clears the produced_mana_contains_all filter.
+    pub fn unset_produced_mana_contains_all(&mut self) -> &mut Self {
+        self.produced_mana_contains_all = None;
+        self
+    }
+
+    // =================================
     // Combat Stat Setters
     // =================================
 

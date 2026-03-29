@@ -72,6 +72,9 @@ pub struct CardFilterBuilder {
     cmc_range: Option<(f64, f64)>,
     color_identity_within: Option<Colors>,
     color_identity_equals: Option<Colors>,
+    // produced mana
+    produced_mana_contains_any: Option<Vec<String>>,
+    produced_mana_contains_all: Option<Vec<String>>,
     // rarity
     rarity_equals_any: Option<Rarities>,
     // set
@@ -121,6 +124,8 @@ impl Default for CardFilterBuilder {
             cmc_range: None,
             color_identity_within: None,
             color_identity_equals: None,
+            produced_mana_contains_any: None,
+            produced_mana_contains_all: None,
             rarity_equals_any: None,
             set_equals_any: None,
             artist_equals_any: None,
@@ -385,6 +390,44 @@ impl CardFilterBuilder {
         }
     }
 
+    /// Creates builder matching cards that produce any of the listed mana colors (OR logic).
+    ///
+    /// Example: `with_produced_mana_contains_any(["R", "G"])` matches cards producing Red or Green.
+    pub fn with_produced_mana_contains_any<I, S>(produced_mana_contains_any: I) -> CardFilterBuilder
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        CardFilterBuilder {
+            produced_mana_contains_any: Some(
+                produced_mana_contains_any
+                    .into_iter()
+                    .map(Into::into)
+                    .collect(),
+            ),
+            ..CardFilterBuilder::default()
+        }
+    }
+
+    /// Creates builder matching cards that produce all of the listed mana colors (AND logic).
+    ///
+    /// Example: `with_produced_mana_contains_all(["W", "U"])` matches cards producing both White and Blue.
+    pub fn with_produced_mana_contains_all<I, S>(produced_mana_contains_all: I) -> CardFilterBuilder
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        CardFilterBuilder {
+            produced_mana_contains_all: Some(
+                produced_mana_contains_all
+                    .into_iter()
+                    .map(Into::into)
+                    .collect(),
+            ),
+            ..CardFilterBuilder::default()
+        }
+    }
+
     /// Creates builder with exact power filter (creature combat stat).
     pub fn with_power_equals(power_equals: i32) -> CardFilterBuilder {
         CardFilterBuilder {
@@ -501,6 +544,8 @@ impl CardFilterBuilder {
             cmc_range: self.cmc_range,
             color_identity_within: self.color_identity_within.clone(),
             color_identity_equals: self.color_identity_equals.clone(),
+            produced_mana_contains_any: self.produced_mana_contains_any.clone(),
+            produced_mana_contains_all: self.produced_mana_contains_all.clone(),
             rarity_equals_any: self.rarity_equals_any.clone(),
             set_equals_any: self.set_equals_any.clone(),
             artist_equals_any: self.artist_equals_any.clone(),

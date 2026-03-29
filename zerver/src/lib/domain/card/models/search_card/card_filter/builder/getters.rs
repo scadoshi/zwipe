@@ -130,6 +130,20 @@ impl CardFilterBuilder {
     }
 
     // =================================
+    // Produced Mana Filter Getters
+    // =================================
+
+    /// Returns the produced_mana_contains_any filter value.
+    pub fn produced_mana_contains_any(&self) -> Option<&[String]> {
+        self.produced_mana_contains_any.as_deref()
+    }
+
+    /// Returns the produced_mana_contains_all filter value.
+    pub fn produced_mana_contains_all(&self) -> Option<&[String]> {
+        self.produced_mana_contains_all.as_deref()
+    }
+
+    // =================================
     // Combat Stat Getters
     // =================================
 

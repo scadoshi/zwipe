@@ -50,6 +50,9 @@ pub struct CardFilter {
     cmc_range: Option<(f64, f64)>,
     color_identity_within: Option<Colors>,
     color_identity_equals: Option<Colors>,
+    // produced mana
+    produced_mana_contains_any: Option<Vec<String>>,
+    produced_mana_contains_all: Option<Vec<String>>,
     // rarity
     rarity_equals_any: Option<Rarities>,
     // set
