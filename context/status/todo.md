@@ -8,16 +8,18 @@
 
 Moving from Raspberry Pi 5 to Ubuntu Server (Intel i5, 32GB RAM, x86_64). Full setup guide: `ops/server.md`.
 
-- [ ] Disassemble desktop, remove GPU, reassemble
-- [ ] Install Ubuntu Server (headless)
-- [ ] PostgreSQL installed, `zwipe` DB + user created
-- [ ] Create `/var/log/zwipe/` log directory (`sudo mkdir -p /var/log/zwipe && sudo chown $USER /var/log/zwipe`)
-- [ ] Install Rust, clone repo, build and deploy binaries
-- [ ] Configure `.env`, run SQLx migrations
-- [ ] systemd unit for zerver — running and enabled
-- [ ] Install cloudflared, configure tunnel to `api.zwipe.net`
-- [ ] Cron entry for zervice (nightly 4am)
-- [ ] Run `zervice` once manually to seed Scryfall card data
+- [x] Disassemble desktop, remove GPU, reassemble
+- [x] Install Ubuntu Server (headless)
+- [x] PostgreSQL installed, `zwipe` DB + user created
+- [x] Create `/var/log/zwipe/` log directory (`sudo mkdir -p /var/log/zwipe && sudo chown $USER /var/log/zwipe`)
+- [x] Install Rust, clone repo, build and deploy binaries
+- [x] Configure `.env`, run SQLx migrations
+- [x] systemd unit for zerver — running and enabled
+- [x] Install cloudflared, configure tunnel to `api.zwipe.net`
+- [x] Cron entry for zervice (nightly 4am)
+- [x] Run `zervice` once manually to seed Scryfall card data
+- [x] Self-hosted GitHub Actions runner installed, registered, running as systemd service
+- [x] CI/CD pipeline live — push to main deploys zerver automatically
 - [ ] Verify iOS app hits `api.zwipe.net` successfully
 
 ---
@@ -29,7 +31,42 @@ Moving from Raspberry Pi 5 to Ubuntu Server (Intel i5, 32GB RAM, x86_64). Full s
 Binary is named `main`, so iOS displays the app as "Main". Fix in `zwiper/Dioxus.toml`:
 - Add `name = "Zwipe"` to the `[application]` section
 
-### 2. iOS App Icon
+### 2. Account Deletion (App Store Required)
+
+Apple guideline 5.1.1 **requires** apps with account creation to offer in-app account
+deletion. This is a hard blocker for App Store approval.
+
+#### Backend — `DELETE /api/user`
+
+New authenticated endpoint that:
+1. Verifies the JWT (same as all other authenticated routes)
+2. Deletes all of the user's deck cards (cascade likely handles this via FK)
+3. Deletes all of the user's decks
+4. Deletes all of the user's refresh tokens
+5. Deletes the user record itself
+6. Returns `200 OK`
+
+Rate limit: low burst, long refill (same pattern as change-password) to prevent abuse.
+
+#### Frontend (zwiper)
+
+- Add "Delete Account" button to the profile screen (bottom of util-bar or a dedicated
+  danger zone section)
+- Require a confirmation dialog: "This will permanently delete your account and all
+  decks. This cannot be undone."
+- On confirm: call `DELETE /api/user`, clear the local session, navigate to login screen
+- Button should be visually distinct — red or muted, not the same style as normal actions
+
+#### Notes
+
+- No email confirmation step required, but the confirmation dialog is essential UX
+- Apple reviewers will specifically look for this — it must be discoverable in the app,
+  not buried or hidden
+- Data deletion must be immediate (or near-immediate), not "submitted for deletion"
+
+---
+
+### 3. iOS App Icon
 
 Current `zwiper/assets/favicon/` icons are web favicons — iOS ignores them. App Store requires:
 - **1024×1024** — App Store listing
@@ -38,17 +75,17 @@ Current `zwiper/assets/favicon/` icons are web favicons — iOS ignores them. Ap
 
 Base: `android-chrome-512x512.png`. Dioxus config likely via `[bundle] icon = [...]` in `Dioxus.toml` — needs research.
 
-### 3. zwipe.net Web Client
+### 4. zwipe.net Web Client
 
 ✅ Live at https://zwipe.net — deployed via GitHub Pages (workflow: `.github/workflows/deploy-zweb.yml`). HTTPS active. See `ops/cicd.md` for deploy details.
 
-### 4. App Store Connect Setup
+### 5. App Store Connect Setup
 
 1. [appstoreconnect.apple.com](https://appstoreconnect.apple.com) — `scottyfermo17@gmail.com`
 2. Create app: Bundle ID `com.scadoshi.zwipe`, name "Zwipe", English
 3. Fill out: description, keywords (MTG, Magic the Gathering, deck builder, commander), screenshots (6.7" iPhone required), privacy policy URL, support URL, age rating 4+, category: Games > Card Games
 
-### 5. Build for Distribution
+### 6. Build for Distribution
 
 Current build uses Development profile. App Store requires:
 - Distribution certificate (Apple Distribution)
@@ -126,9 +163,41 @@ Add a `context/architecture/structure.md` walking through the full directory tre
 
 ## CI/CD
 
-✅ **zerver/zervice**: GitHub Actions workflow on push → builds release binaries → SSHes into server → restarts `zerver` systemd service. See `ops/cicd.md`.
+✅ **zerver/zervice**: GitHub Actions workflow on push → builds release binaries → stops zerver, copies binaries, starts zerver via self-hosted runner. See `ops/cicd.md`.
 
 ✅ **zweb**: GitHub Actions workflow on push (when `zweb/**` changes) → `dx build --release --platform web` → deploys to GitHub Pages at `zwipe.net`. See `ops/cicd.md`.
+
+---
+
+## GitHub Actions Node.js 20 Deprecation
+
+Actions running on Node.js 20 will be **forced to Node.js 24** starting **June 2, 2026**.
+Node.js 20 will be **removed from runners entirely** on **September 16, 2026**.
+
+The following actions in `.github/workflows/deploy-zerver.yml` are affected:
+- `actions/checkout@v4`
+- `actions/cache@v4`
+
+### What to do
+
+Before June 2, 2026, bump both to a version that ships with Node.js 24 support.
+Check the release notes for each action — newer patch/minor releases of `@v4` are
+expected to add Node 24 support before the deadline.
+
+```yaml
+# In .github/workflows/deploy-zerver.yml:
+- uses: actions/checkout@v4        # bump to latest @v4 patch when Node 24 lands
+- uses: actions/cache@v4           # same
+```
+
+To opt in early (test Node 24 compatibility now), add this env var to the workflow or
+runner:
+```yaml
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+```
+
+`deploy-zweb.yml` uses the same actions and will need the same update.
 
 ---
 
