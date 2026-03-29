@@ -17,8 +17,10 @@ Backend served via Cloudflare Tunnel — no port forwarding, TLS handled by Clou
 - [ ] Run initial migrations: `cargo sqlx migrate run --source zerver/migrations`
 - [ ] Install `cloudflared`, configure tunnel to `api.zwipe.net`
 - [ ] Start `zerver` systemd service
-- [ ] Add `zervice` nightly cron
+- [ ] Add `zervice` nightly cron (4am daily)
+- [ ] Add backup cron (5am daily) — see `ops/backups.md`
 - [ ] Run `zervice` once manually to seed Scryfall card data
+- [ ] Install self-hosted GitHub Actions runner (see `ops/cicd.md`) — this is what deploys code, runs migrations, and restarts zerver on every push to main
 - [ ] Verify iOS app hits `api.zwipe.net` successfully
 
 ---
