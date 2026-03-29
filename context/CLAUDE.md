@@ -98,7 +98,7 @@ context/
 ├── CLAUDE.md               — this file
 ├── product/                — what we're building (prd, monetization)
 ├── architecture/           — why things are built the way they are
-├── ops/                    — how to deploy (server.md, ios.md)
+├── ops/                    — how to deploy (server.md, ios/)
 ├── dev/                    — coding standards (commits, docs, newtypes, dioxus)
 ├── status/                 — where we are (todo.md, backlog.md, security.md)
 └── archive/                — no longer active (brain, complete-*, learning framework)
