@@ -118,7 +118,7 @@ pub fn Reset(token: String) -> Element {
 
     rsx! {
         Nav {}
-        div { class: "form-page",
+        div { class: "form-page content-enter",
             match current_state {
                 ResetState::Success => rsx! {
                     h1 { "password reset" }

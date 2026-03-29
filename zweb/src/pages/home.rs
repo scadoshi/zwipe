@@ -14,7 +14,7 @@ pub fn Home() -> Element {
             }
             a { href: APP_STORE_URL, class: "appstore-btn", "download on the app store" }
         }
-        div { class: "page",
+        div { class: "page content-enter",
             div { class: "features-grid",
                 div { class: "feature-card",
                     h3 { "swipe to build" }

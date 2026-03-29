@@ -5,7 +5,7 @@ use crate::{Footer, Nav};
 pub fn About() -> Element {
     rsx! {
         Nav {}
-        div { class: "page",
+        div { class: "page content-enter",
             div { class: "about-header section",
                 h1 { "scotty fermo" }
                 p { class: "subtitle",

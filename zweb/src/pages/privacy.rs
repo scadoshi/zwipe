@@ -5,7 +5,7 @@ use crate::{Footer, Nav};
 pub fn Privacy() -> Element {
     rsx! {
         Nav {}
-        div { class: "page",
+        div { class: "page content-enter",
             div { class: "section",
                 h1 { "privacy policy" }
                 p { "last updated: march 2026" }
