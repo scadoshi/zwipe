@@ -32,7 +32,7 @@ use zwipe::{
             Card,
             scryfall_data::image_uris::ImageUris,
             search_card::{
-                card_filter::builder::CardFilterBuilder,
+                card_filter::{builder::CardFilterBuilder, order_by_option::OrderByOption},
                 filter_cards::{FilterCards, SortCards},
             },
         },
@@ -382,6 +382,10 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     onclick: move |_| {
                         current_index.set(0);
                         action_history.write().clear();
+                        if filter_builder.peek().order_by() == Some(OrderByOption::Random) {
+                            let current = *filter_reset_counter.peek();
+                            filter_reset_counter.set(current + 1);
+                        }
                         toast.info(
                             "back to start".to_string(),
                             ToastOptions::default().duration(Duration::from_millis(1500)),
