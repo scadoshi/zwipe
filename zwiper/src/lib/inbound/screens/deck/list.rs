@@ -109,13 +109,13 @@ pub fn DeckList() -> Element {
                     onclick: move |_| {
                         // Proactive guard: unverified users are limited to 1 deck.
                         // The backend enforces this too, but we surface it here first.
-                        let at_limit = session().map_or(false, |s| {
+                        let at_limit = session().is_some_and(|s| {
                             s.user.email_verified_at.is_none()
                                 && deck_profiles_resource
                                     .read()
                                     .as_ref()
                                     .and_then(|r| r.as_ref().ok())
-                                    .map_or(false, |p| p.len() >= 1)
+                                    .is_some_and(|p| !p.is_empty())
                         });
                         if at_limit {
                             toast.info(

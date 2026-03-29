@@ -280,7 +280,7 @@ where
             .deck_repo
             .count_cards_in_deck(request.deck_id)
             .await
-            .map_err(|e| ImportDeckCardsError::Database(e))?;
+            .map_err(ImportDeckCardsError::Database)?;
         let import_total: i64 = batch.iter().map(|(_, qty)| i64::from(*qty)).sum();
         let card_limit = if request.email_verified {
             MAX_CARDS_PER_DECK

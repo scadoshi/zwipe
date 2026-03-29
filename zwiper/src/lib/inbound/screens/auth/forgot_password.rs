@@ -29,7 +29,7 @@ pub fn ForgotPassword() -> Element {
     let toast = use_toast();
 
     let mut validate_email = move || {
-        if let Err(_) = EmailAddress::from_str(&email()) {
+        if EmailAddress::from_str(&email()).is_err() {
             email_error.set(Some("please enter a valid email address".to_string()));
         } else {
             email_error.set(None);

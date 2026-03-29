@@ -8,6 +8,7 @@ use zwipe::outbound::resend::Resend;
 use zwipe::outbound::sqlx::postgres::Postgres;
 
 #[tokio::main]
+#[allow(clippy::print_stderr)]
 async fn main() {
     logo::Zerver::print();
     match run().await {
