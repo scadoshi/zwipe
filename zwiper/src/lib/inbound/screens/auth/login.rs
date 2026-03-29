@@ -57,12 +57,6 @@ pub fn Login() -> Element {
                         // Apply theme from preferences
                         let mut theme: Signal<ThemeConfig> = use_context();
                         theme.set(ThemeConfig::from(&new_session.preferences));
-                        if new_session.user.email_verified_at.is_none() {
-                            toast.info(
-                                "verify your email to enable password recovery".to_string(),
-                                ToastOptions::default().duration(Duration::from_millis(5000)),
-                            );
-                        }
                         session.set(Some(new_session));
                         navigator.push(Router::Home {});
                     }
