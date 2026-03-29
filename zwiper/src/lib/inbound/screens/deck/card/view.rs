@@ -23,11 +23,13 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::collections::HashMap;
 use std::time::Duration;
+use tokio::time::sleep;
 use uuid::Uuid;
 use zwipe::domain::{
     auth::models::session::Session,
     card::models::{
         Card,
+        scryfall_data::image_uris::ImageUris,
         search_card::{
             card_filter::builder::CardFilterBuilder,
             filter_cards::{FilterCards, SortCards},
@@ -77,6 +79,11 @@ pub fn View(deck_id: Uuid) -> Element {
     let mut deck_copy_max: Signal<Option<CopyMax>> = use_signal(|| None);
     // Toggle to show/hide land cards (default: hidden)
     let mut show_lands: Signal<bool> = use_signal(|| false);
+
+    // Card image preview — stores the image URL of the card to preview (None = closed)
+    let mut preview_image_url: Signal<Option<String>> = use_signal(|| None);
+    // Controls the dismiss animation before clearing the URL
+    let mut preview_dismissing: Signal<bool> = use_signal(|| false);
 
     // Effect 1 — mount load (reads `session` reactively)
     // Fetches deck cards, separates the commander into its own pinned slot.
@@ -356,6 +363,24 @@ pub fn View(deck_id: Uuid) -> Element {
                                                 div { class: "card-detail-meta",
                                                     span { "{rarity_name} | {set_name}" }
                                                 }
+                                                if let Some(ImageUris { large: Some(url), .. }) = &sd.image_uris {
+                                                    {
+                                                        let url = url.clone();
+                                                        rsx! {
+                                                            div { class: "qty-row",
+                                                                button {
+                                                                    class: "qty-btn-remove",
+                                                                    onclick: move |evt| {
+                                                                        evt.stop_propagation();
+                                                                        preview_image_url.set(Some(url.clone()));
+                                                                        preview_dismissing.set(false);
+                                                                    },
+                                                                    "show image"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -457,9 +482,21 @@ pub fn View(deck_id: Uuid) -> Element {
                                                         let copy_max = deck_copy_max();
                                                         let is_singleton = copy_max == Some(CopyMax::singleton());
                                                         let singleton_fixed = is_singleton && !is_basic_land;
+                                                        let image_url: Option<String> = sd.image_uris.as_ref().and_then(|iu| iu.large.clone());
                                                         rsx! {
                                                             if singleton_fixed {
                                                                 div { class: "qty-row",
+                                                                    if let Some(url) = image_url.clone() {
+                                                                        button {
+                                                                            class: "qty-btn-remove",
+                                                                            onclick: move |evt| {
+                                                                                evt.stop_propagation();
+                                                                                preview_image_url.set(Some(url.clone()));
+                                                                                preview_dismissing.set(false);
+                                                                            },
+                                                                            "show image"
+                                                                        }
+                                                                    }
                                                                     button {
                                                                         class: "qty-btn-remove",
                                                                         onclick: move |evt| {
@@ -471,6 +508,17 @@ pub fn View(deck_id: Uuid) -> Element {
                                                                 }
                                                             } else {
                                                                 div { class: "qty-row",
+                                                                    if let Some(url) = image_url {
+                                                                        button {
+                                                                            class: "qty-btn",
+                                                                            onclick: move |evt| {
+                                                                                evt.stop_propagation();
+                                                                                preview_image_url.set(Some(url.clone()));
+                                                                                preview_dismissing.set(false);
+                                                                            },
+                                                                            "show image"
+                                                                        }
+                                                                    }
                                                                     button {
                                                                         class: "qty-btn",
                                                                         onclick: move |evt| {
@@ -636,6 +684,35 @@ pub fn View(deck_id: Uuid) -> Element {
                         class: "btn btn-sm",
                         onclick: move |_| clear_filters(),
                         "clear"
+                    }
+                }
+            }
+
+            // Image preview overlay
+            if preview_image_url().is_some() || preview_dismissing() {
+                div {
+                    class: "modal-backdrop show",
+                }
+                div {
+                    class: if preview_dismissing() {
+                        "image-preview-container show dismissing"
+                    } else {
+                        "image-preview-container show"
+                    },
+                    onclick: move |_| {
+                        preview_dismissing.set(true);
+                        spawn(async move {
+                            sleep(Duration::from_millis(200)).await;
+                            preview_image_url.set(None);
+                            preview_dismissing.set(false);
+                        });
+                    },
+                    if let Some(url) = preview_image_url() {
+                        img {
+                            src: "{url}",
+                            alt: "card preview",
+                            class: "card-image",
+                        }
                     }
                 }
             }
