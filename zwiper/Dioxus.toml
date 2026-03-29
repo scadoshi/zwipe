@@ -13,4 +13,14 @@ title = "zwipe"
 # Additional CSS style files
 style = ["/main.css"]
 
+[ios.plist]
+CFBundlePackageType = "APPL"
+MinimumOSVersion = "16.0"
+DTPlatformName = "iphoneos"
+DTPlatformVersion = "26.4"
+DTSDKName = "iphoneos26.4"
+DTXcode = "1640"
+DTXcodeBuild = "16A242d"
+DTCompiler = "com.apple.compilers.llvm.clang.1_0"
+
 [web.resource.dev]
