@@ -31,7 +31,9 @@ jobs:
 
       - name: Run migrations
         run: |
+          set -a
           source ~/zwipe/.env
+          set +a
           cargo sqlx migrate run --source zerver/migrations
 
       - name: Build
