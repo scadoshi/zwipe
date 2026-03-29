@@ -23,17 +23,14 @@ GitHub Actions auto-deploys zweb to GitHub Pages on push. Manual trigger availab
 ### 5. `services.md` — External services
 Resend (transactional email + DNS records), Stripe/Buy Me a Coffee/GitHub Sponsors (donations), domain registrar and DNS setup.
 
-### 6. `ios.md` — iOS dev setup
-Build, sign, and deploy zwiper to a physical iPhone. Provisioning profile, certificates, keychain entitlements.
+### 6. `ios/` — iOS build, deploy, and App Store
+Full guide set for iOS development and distribution. See [ios/README.md](ios/README.md) for index.
 
 ---
 
 ## Reference
 
+- `backups.md` — Nightly PostgreSQL backups to Cloudflare R2
+- `manual-run.md` — Running zerver/zervice manually on the server
+- `simulator.md` — iOS Simulator management for screenshots
 - `tips.md` — Gotchas and one-off fixes (Ghostty terminal, etc.)
-
----
-
-## Future
-
-- `deploy-appstore.md` — App Store submission: Distribution cert, App Store provisioning profile, versioning (`CFBundleShortVersionString`), upload via Transporter, App Store Connect review.
