@@ -343,6 +343,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                         div { class: "dropdown",
                                             if is_searching() {
                                                 div { "searching..." }
+                                            } else if search_results().is_empty() {
+                                                div { "no results" }
                                             } else {
                                                 for card in search_results().iter().cloned() {
                                                     div { class: "dropdown-item",

@@ -1180,12 +1180,17 @@ body {
     margin-top: 0;
     margin-bottom: 1rem;
     border: 1px solid var(--border-primary);
-    border-radius: 1rem;
+    border-radius: 0.4rem;
     background-color: var(--bg-primary);
     max-height: 20rem;
     overflow-y: auto;
     box-shadow: 0 4px 12px var(--shadow-md);
-    transition: ease all 0.5s;
+    animation: dropdown-enter 0.3s ease;
+}
+
+@keyframes dropdown-enter {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .dropdown-item {

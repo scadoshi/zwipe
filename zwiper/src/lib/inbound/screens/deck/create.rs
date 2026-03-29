@@ -147,25 +147,20 @@ pub fn CreateDeck() -> Element {
 
                         div { class : "mb-4",
                             label { class : "label", r#for : "commander", "commander" }
-                            div { class : "input-with-spinner",
-                                input { class : "input",
-                                    id : "commander",
-                                    r#type : "text",
-                                    placeholder : "commander",
-                                    value : "{commander_display}",
-                                    autocapitalize : "none",
-                                    spellcheck : "false",
-                                    onclick : move |_| {
-                                        search_query.set(String::new());
-                                        commander_display.set(String::new());
-                                    },
-                                    oninput : move |event| {
-                                        search_query.set(event.value());
-                                        commander_display.set(event.value());
-                                    }
-                                }
-                                if is_searching() {
-                                    div { class : "input-spinner spinner" }
+                            input { class : "input",
+                                id : "commander",
+                                r#type : "text",
+                                placeholder : "commander",
+                                value : "{commander_display}",
+                                autocapitalize : "none",
+                                spellcheck : "false",
+                                onclick : move |_| {
+                                    search_query.set(String::new());
+                                    commander_display.set(String::new());
+                                },
+                                oninput : move |event| {
+                                    search_query.set(event.value());
+                                    commander_display.set(event.value());
                                 }
                             }
 
