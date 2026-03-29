@@ -113,3 +113,36 @@
   outline: none;
 }
 
+/* Danger action — used for irreversible destructive operations */
+.alert-dialog-action-danger {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-error);
+  border-radius: 0.6rem;
+  background: none;
+  color: var(--color-error);
+  font-family: "Cascadia Code", monospace;
+  font-size: 0.8rem;
+  font-weight: 300;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.alert-dialog-action-danger:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background-color: var(--color-error);
+  color: var(--bg-primary);
+  border-color: var(--color-error);
+}
+
+.alert-dialog-action-danger:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.alert-dialog-action-danger:focus-visible {
+  outline: none;
+}
+
+.alert-dialog-action-danger:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

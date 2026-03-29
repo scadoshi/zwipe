@@ -20,10 +20,12 @@ use crate::{
     },
     outbound::client::{
         auth::resend_verification::ClientResendEmailVerification,
+        user::delete_user::ClientDeleteUser,
         user::get_user::ClientGetUser,
         ZwipeClient,
     },
 };
+use zwipe::inbound::http::handlers::auth::delete_user::HttpDeleteUser;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
@@ -36,6 +38,11 @@ pub fn Profile() -> Element {
     let client: Signal<ZwipeClient> = use_context();
 
     let mut show_logout_dialog = use_signal(|| false);
+    let mut show_delete_dialog = use_signal(|| false);
+    let mut delete_countdown = use_signal(|| 5u8);
+    let mut delete_password = use_signal(String::new);
+    let mut delete_error: Signal<Option<String>> = use_signal(|| None);
+    let mut is_deleting = use_signal(|| false);
     let mut is_resending = use_signal(|| false);
     let toast = use_toast();
 
@@ -163,6 +170,22 @@ pub fn Profile() -> Element {
                         onclick: move |_| show_logout_dialog.set(true),
                         "logout"
                     }
+                    button {
+                        class: "util-btn",
+                        onclick: move |_| {
+                            delete_password.set(String::new());
+                            delete_error.set(None);
+                            delete_countdown.set(5);
+                            show_delete_dialog.set(true);
+                            spawn(async move {
+                                for i in (0..5u8).rev() {
+                                    tokio::time::sleep(Duration::from_secs(1)).await;
+                                    delete_countdown.set(i);
+                                }
+                            });
+                        },
+                        "delete account"
+                    }
                 }
 
                 AlertDialogRoot {
@@ -179,6 +202,72 @@ pub fn Profile() -> Element {
                             AlertDialogAction {
                                 on_click: move |_| session.logout(client),
                                 "logout"
+                            }
+                        }
+                    }
+                }
+
+                AlertDialogRoot {
+                    open: show_delete_dialog(),
+                    on_open_change: move |open: bool| {
+                        if !open { show_delete_dialog.set(false); }
+                    },
+                    AlertDialogContent {
+                        AlertDialogTitle { "delete account" }
+                        AlertDialogDescription {
+                            "this will permanently delete your account, all decks, and all card data. this cannot be undone."
+                        }
+                        input {
+                            r#type: "password",
+                            class: "input",
+                            placeholder: "confirm your password",
+                            value: "{delete_password}",
+                            oninput: move |evt| {
+                                delete_password.set(evt.value());
+                                delete_error.set(None);
+                            },
+                        }
+                        if let Some(err) = delete_error() {
+                            p { class: "message-error", "{err}" }
+                        }
+                        AlertDialogActions {
+                            AlertDialogCancel {
+                                on_click: move |_| show_delete_dialog.set(false),
+                                "cancel"
+                            }
+                            button {
+                                class: "alert-dialog-action-danger",
+                                disabled: delete_countdown() > 0 || is_deleting(),
+                                onclick: move |_| {
+                                    is_deleting.set(true);
+                                    delete_error.set(None);
+                                    let password = delete_password();
+                                    spawn(async move {
+                                        session.upkeep(client);
+                                        let Some(s) = session() else {
+                                            delete_error.set(Some("session expired — please log in again".to_string()));
+                                            is_deleting.set(false);
+                                            return;
+                                        };
+                                        match client().delete_user(HttpDeleteUser { password }, &s).await {
+                                            Ok(()) => {
+                                                show_delete_dialog.set(false);
+                                                session.logout(client);
+                                            }
+                                            Err(e) => {
+                                                delete_error.set(Some(e.to_user_message()));
+                                                is_deleting.set(false);
+                                            }
+                                        }
+                                    });
+                                },
+                                if delete_countdown() > 0 {
+                                    "delete ({delete_countdown()})"
+                                } else if is_deleting() {
+                                    "deleting..."
+                                } else {
+                                    "delete"
+                                }
                             }
                         }
                     }

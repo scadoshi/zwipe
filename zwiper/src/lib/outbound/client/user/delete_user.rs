@@ -39,7 +39,7 @@ impl ClientDeleteUser for ZwipeClient {
         let status = response.status();
 
         match status {
-            StatusCode::OK => Ok(()),
+            StatusCode::NO_CONTENT => Ok(()),
             _ => {
                 let message = response.text().await?;
                 Err((status, message).into())
