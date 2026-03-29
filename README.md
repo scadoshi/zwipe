@@ -2,14 +2,15 @@
 
 mobile-first magic: the gathering deck builder with swipe-based navigation.
 
-**status:** shipped to ios — approaching app store submission
+**status:** feature complete — ready for app store submission
 
 ## tech stack
 
 full-stack rust application:
-- **zerver**: axum rest api, postgresql, sqlx, jwt auth, scryfall sync
-- **zwiper**: dioxus mobile/ios/android app, swipe gesture system
-- **zweb**: dioxus web client (zwipe.net)
+- **zerver**: axum rest api, postgresql, sqlx, jwt auth, scryfall sync, user preferences
+- **zwiper**: dioxus mobile/ios app, swipe gestures, 9 themes, dark mode
+- **zweb**: dioxus web client at [zwipe.net](https://zwipe.net)
+- **zervice**: background jobs (scryfall sync, session cleanup)
 - **architecture**: hexagonal/ports-and-adapters pattern
 
 ## quick start

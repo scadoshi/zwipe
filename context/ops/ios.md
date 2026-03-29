@@ -110,11 +110,6 @@ security find-identity -v -p codesigning
 
 ---
 
-## App Store Distribution (future)
+## App Store Distribution
 
-Current setup uses a Development profile. App Store requires:
-- Distribution certificate (Apple Distribution, not Apple Development)
-- App Store provisioning profile
-- Archive + upload via `xcrun altool` or Transporter
-
-See `status/todo.md` for App Store submission checklist.
+Full step-by-step guide: `ops/appstore.md`.

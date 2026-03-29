@@ -25,7 +25,7 @@ Also has `workflow_dispatch` for manual runs from the GitHub Actions tab.
 1. Checks out the repo
 2. Installs stable Rust toolchain (cached)
 3. Restores cargo cache (fast subsequent builds)
-4. Runs SQLx migrations (`source ~/zwipe/.env` for `DATABASE_URL`, then `cargo sqlx migrate run`)
+4. Runs SQLx migrations (`set -a && source ~/zwipe/.env` to export `DATABASE_URL`, then `cargo sqlx migrate run`)
 5. Builds `zerver` and `zervice` in release mode (`SQLX_OFFLINE=true`)
 6. Stops zerver, copies binaries to `~/zwipe/`, starts zerver
 
