@@ -1,6 +1,7 @@
 //! User login screen.
 
 use crate::{
+    domain::theme::ThemeConfig,
     inbound::{components::fields::text_input::TextInput, router::Router},
     outbound::{
         client::{auth::login::ClientLogin, ZwipeClient},
@@ -53,6 +54,9 @@ pub fn Login() -> Element {
                 match auth_client().authenticate_user(request).await {
                     Ok(new_session) => {
                         new_session.infallible_save();
+                        // Apply theme from preferences
+                        let mut theme: Signal<ThemeConfig> = use_context();
+                        theme.set(ThemeConfig::from(&new_session.preferences));
                         if new_session.user.email_verified_at.is_none() {
                             toast.info(
                                 "verify your email to enable password recovery".to_string(),

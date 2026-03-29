@@ -1,0 +1,91 @@
+//! User preferences API client operations.
+
+use crate::outbound::client::ZwipeClient;
+use reqwest::StatusCode;
+use std::future::Future;
+use zwipe::{
+    domain::{
+        auth::models::session::Session,
+        user::models::preferences::UserPreferences,
+    },
+    inbound::http::{
+        handlers::user::update_preferences::HttpUpdatePreferences, paths::preferences_route,
+        ApiError,
+    },
+};
+
+/// Trait for fetching user display preferences.
+#[allow(missing_docs)]
+pub trait ClientGetPreferences {
+    fn get_preferences(
+        &self,
+        session: &Session,
+    ) -> impl Future<Output = Result<UserPreferences, ApiError>> + Send;
+}
+
+/// Trait for updating user display preferences.
+#[allow(missing_docs)]
+pub trait ClientUpdatePreferences {
+    fn update_preferences(
+        &self,
+        request: HttpUpdatePreferences,
+        session: &Session,
+    ) -> impl Future<Output = Result<UserPreferences, ApiError>> + Send;
+}
+
+impl ClientGetPreferences for ZwipeClient {
+    async fn get_preferences(&self, session: &Session) -> Result<UserPreferences, ApiError> {
+        let mut url = self.app_config.backend_url.clone();
+        url.set_path(&preferences_route());
+        let response = self
+            .client
+            .get(url)
+            .bearer_auth(&*session.access_token.value)
+            .send()
+            .await?;
+
+        let status = response.status();
+
+        match status {
+            StatusCode::OK => {
+                let prefs: UserPreferences = response.json().await?;
+                Ok(prefs)
+            }
+            _ => {
+                let message = response.text().await?;
+                Err((status, message).into())
+            }
+        }
+    }
+}
+
+impl ClientUpdatePreferences for ZwipeClient {
+    async fn update_preferences(
+        &self,
+        request: HttpUpdatePreferences,
+        session: &Session,
+    ) -> Result<UserPreferences, ApiError> {
+        let mut url = self.app_config.backend_url.clone();
+        url.set_path(&preferences_route());
+        let response = self
+            .client
+            .put(url)
+            .json(&request)
+            .bearer_auth(&*session.access_token.value)
+            .send()
+            .await?;
+
+        let status = response.status();
+
+        match status {
+            StatusCode::OK => {
+                let prefs: UserPreferences = response.json().await?;
+                Ok(prefs)
+            }
+            _ => {
+                let message = response.text().await?;
+                Err((status, message).into())
+            }
+        }
+    }
+}
