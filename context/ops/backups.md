@@ -26,8 +26,8 @@ stateful data not replicated elsewhere — everything else is in GitHub.
 ### 2. Create R2 API Token
 
 1. R2 → Manage R2 API Tokens → Create API Token
-2. Permissions: Object Read & Write
-3. Scope: `zwipe-backups` bucket only
+2. Permissions: **Admin Read & Write** (Object Read & Write alone is insufficient — rclone needs bucket list operations)
+3. Scope: Apply to all buckets (bucket-scoped tokens may fail with 403 even with correct naming)
 4. Save the **Access Key ID** and **Secret Access Key** — you won't see them again
 
 ### 3. Install and Configure rclone
@@ -72,14 +72,19 @@ Create `~/scripts/backup-db.sh`:
 #!/bin/bash
 set -euo pipefail
 
+DATABASE_URL="postgres://zwipe:N0zwiping@127.0.0.1/zwipe"
 BACKUP_FILE="/tmp/zwipe-$(date +%Y%m%d).sql.gz"
 
-pg_dump -U zwipe zwipe | gzip > "$BACKUP_FILE"
+pg_dump "$DATABASE_URL" | gzip > "$BACKUP_FILE"
 rclone copy "$BACKUP_FILE" r2:zwipe-backups/
 rm "$BACKUP_FILE"
 
 echo "backup complete: zwipe-$(date +%Y%m%d).sql.gz"
 ```
+
+**Note:** `pg_dump` must receive the full connection URL as a positional argument — not
+via `-U`. Using `-U` with a URL causes PostgreSQL to treat the entire URL as a username
+and fail with peer authentication errors.
 
 Make it executable:
 
@@ -116,30 +121,63 @@ Output goes to the same log directory as zerver logs.
 
 ## Restore from Backup
 
+**This is destructive — it drops and recreates all tables.** Stop zerver first so nothing
+is writing to the database during restore.
+
 ```bash
-# List available backups
+# 1. Stop zerver
+sudo systemctl stop zerver
+
+# 2. List available backups
 rclone ls r2:zwipe-backups/
 
-# Download the one you need
+# 3. Download the one you need
 rclone copy r2:zwipe-backups/zwipe-20260329.sql.gz /tmp/
 
-# Decompress
+# 4. Decompress
 gunzip /tmp/zwipe-20260329.sql.gz
 
-# Restore (this replaces all data in the zwipe database)
-psql -U zwipe zwipe < /tmp/zwipe-20260329.sql
+# 5. Drop and recreate the database (clean slate)
+sudo -u postgres dropdb zwipe
+sudo -u postgres createdb -O zwipe zwipe
 
-# Clean up
+# 6. Restore
+psql "postgres://zwipe:N0zwiping@127.0.0.1/zwipe" < /tmp/zwipe-20260329.sql
+
+# 7. Restart zerver
+sudo systemctl start zerver
+
+# 8. Clean up
 rm /tmp/zwipe-20260329.sql
+
+# 9. Verify
+curl https://api.zwipe.net/health | jq
 ```
 
-If restoring to a fresh server, create the database first:
+### Restore on a fresh server
+
+If rebuilding from scratch, create the user first:
 
 ```bash
-sudo -u postgres createuser zwipe
+sudo -u postgres createuser zwipe -P   # prompts for password
 sudo -u postgres createdb -O zwipe zwipe
-psql -U zwipe zwipe < /tmp/zwipe-20260329.sql
+psql "postgres://zwipe:N0zwiping@127.0.0.1/zwipe" < /tmp/zwipe-20260329.sql
 ```
+
+### Partial restore (single table)
+
+If you only need to restore one table (e.g. user data got corrupted but cards are fine):
+
+```bash
+# Extract just that table's data from the dump
+pg_restore --data-only --table=users /tmp/zwipe-20260329.sql | \
+  psql "postgres://zwipe:N0zwiping@127.0.0.1/zwipe"
+```
+
+**Note:** This only works if the backup was created with `pg_dump --format=custom`.
+The default plain-text format (which our script uses) requires manual editing of the
+`.sql` file to extract specific tables — doable but tedious. For most scenarios, a full
+restore is simpler and safer.
 
 ---
 
