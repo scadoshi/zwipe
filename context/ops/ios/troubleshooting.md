@@ -2,6 +2,23 @@
 
 Common errors and fixes when building, signing, or submitting Zwipe.
 
+## Dioxus post-build patching checklist
+
+Dioxus `dx build` generates an incomplete `.app` bundle for App Store submission.
+These patches must be applied **after every release build, before signing**:
+
+1. **CFBundleSupportedPlatforms** — remove iPadOS, keep only iPhoneOS
+2. **UIDeviceFamily** — remove iPad (2), keep only iPhone (1)
+3. **App icons** — compile asset catalog with `actool`
+4. **CFBundleIcons** — add icon references to Info.plist
+
+The following are handled by `[ios.plist]` in `Dioxus.toml` (no manual patching):
+- DTPlatformName, DTPlatformVersion, DTSDKName, DTXcode, DTXcodeBuild, DTCompiler
+- MinimumOSVersion
+- CFBundlePackageType
+
+See `appstore-update.md` for the full build → patch → sign → package workflow.
+
 ---
 
 ## "Incorrect Platform" rejection on upload
@@ -25,24 +42,166 @@ copy the binary in, embed the provisioning profile, and sign.
 
 ---
 
-## Missing Info.plist keys
+## Missing Info.plist keys (Transporter validation failures)
 
-If Apple rejects for missing metadata, add these to the generated `Info.plist`:
+Dioxus `dx build` doesn't inject the `DT*` (Developer Tools) metadata or `MinimumOSVersion`
+that Apple's Transporter requires. Xcode normally adds these during archiving, but since
+we bypass Xcode, we have to provide them ourselves.
 
-```xml
-<key>DTPlatformName</key>
-<string>iphoneos</string>
-<key>MinimumOSVersion</key>
-<string>16.0</string>
-<key>CFBundlePackageType</key>
-<string>APPL</string>
-```
+**Errors you'll see:**
+- `Missing Info.plist value. A value for the key 'DTPlatformName' in bundle Zwipe.app is required.`
+- `Invalid MinimumOSVersion. Apps that only support 64-bit devices must specify a deployment target of 8.0 or later. MinimumOSVersion in 'Zwipe.app' is ''.`
 
-Patch after build:
+**Permanent fix:** These keys are now in `zwiper/Dioxus.toml` under `[ios.plist]`, so
+future `dx build` runs include them automatically. If you still hit this error, check
+that the `[ios.plist]` section hasn't been removed.
+
+**Manual fix (if patching an existing build):**
 ```bash
-/usr/libexec/PlistBuddy -c "Add :DTPlatformName string iphoneos" \
+/usr/libexec/PlistBuddy \
+  -c "Add :DTPlatformName string iphoneos" \
+  -c "Add :DTPlatformVersion string 26.4" \
+  -c "Add :DTSDKName string iphoneos26.4" \
+  -c "Add :DTXcode string 1640" \
+  -c "Add :DTXcodeBuild string 16A242d" \
+  -c "Add :DTCompiler string com.apple.compilers.llvm.clang.1_0" \
+  -c "Add :MinimumOSVersion string 16.0" \
   ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/Info.plist
 ```
+
+After patching, you **must** re-sign and re-package the IPA — changing the plist
+invalidates the code signature.
+
+**Version mismatch:** Dioxus generates `CFBundleShortVersionString` from `Cargo.toml`
+(e.g. `0.1.0`), but App Store Connect expects what you set there (e.g. `1.0`). Patch
+if needed:
+```bash
+/usr/libexec/PlistBuddy \
+  -c "Set :CFBundleShortVersionString 1.0" \
+  -c "Set :CFBundleVersion 1" \
+  ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/Info.plist
+```
+
+---
+
+## CFBundleSupportedPlatforms contains multiple values
+
+Dioxus generates `CFBundleSupportedPlatforms` with both `iPhoneOS` and `iPadOS`. Apple
+requires exactly one value. This cannot be fixed via `Dioxus.toml` (it's an array, not
+a string), so it must be patched after every release build.
+
+**Error:**
+`Invalid CFBundleSupportedPlatforms value ... contains multiple platform values: [iPhoneOS, iPadOS]`
+
+**Fix (after build, before signing):**
+```bash
+/usr/libexec/PlistBuddy \
+  -c "Delete :CFBundleSupportedPlatforms" \
+  -c "Add :CFBundleSupportedPlatforms array" \
+  -c "Add :CFBundleSupportedPlatforms:0 string iPhoneOS" \
+  ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/Info.plist
+```
+
+Then re-sign and re-package.
+
+---
+
+## CFBundlePackageType missing
+
+Dioxus doesn't set `CFBundlePackageType` which Apple requires to identify the bundle as
+an application.
+
+**Error:**
+`Invalid Bundle OS Type code. The CFBundlePackageType value ... must be one of the following Bundle OS Type codes: [APPL].`
+
+**Permanent fix:** Added to `zwiper/Dioxus.toml` under `[ios.plist]`:
+```toml
+CFBundlePackageType = "APPL"
+```
+
+**Manual fix:**
+```bash
+/usr/libexec/PlistBuddy -c "Add :CFBundlePackageType string APPL" \
+  ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/Info.plist
+```
+
+---
+
+## UIDeviceFamily includes iPad — missing iPad icons
+
+Dioxus sets `UIDeviceFamily` to `[1, 2]` (iPhone + iPad). If you don't want to support
+iPad, Apple will still require iPad icon sizes (152×152, 167×167, etc.).
+
+**Error:**
+`Missing required icon file. The bundle does not contain an app icon for iPad of exactly '152x152' pixels...`
+
+**Fix — remove iPad from UIDeviceFamily (after build, before signing):**
+```bash
+/usr/libexec/PlistBuddy \
+  -c "Delete :UIDeviceFamily" \
+  -c "Add :UIDeviceFamily array" \
+  -c "Add :UIDeviceFamily:0 integer 1" \
+  ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/Info.plist
+```
+
+This cannot be fixed via `Dioxus.toml` (array value). Must be patched after every build.
+
+---
+
+## Missing app icons (no Assets.car)
+
+Dioxus doesn't run `actool` to compile app icons into an asset catalog. Without
+`Assets.car` in the `.app` bundle, Apple rejects the upload.
+
+**Error:**
+`Missing required icon file. The bundle does not contain an app icon for iPhone / iPod Touch of exactly '120x120' pixels...`
+
+**Fix — compile an asset catalog and embed it:**
+```bash
+# 1. Create the asset catalog source
+mkdir -p /tmp/Assets.xcassets/AppIcon.appiconset
+cat > /tmp/Assets.xcassets/AppIcon.appiconset/Contents.json << 'EOF'
+{
+  "images": [
+    {"size":"20x20","idiom":"iphone","scale":"2x","filename":"icon-40.png"},
+    {"size":"20x20","idiom":"iphone","scale":"3x","filename":"icon-60.png"},
+    {"size":"29x29","idiom":"iphone","scale":"2x","filename":"icon-60.png"},
+    {"size":"29x29","idiom":"iphone","scale":"3x","filename":"icon-87.png"},
+    {"size":"40x40","idiom":"iphone","scale":"2x","filename":"icon-80.png"},
+    {"size":"40x40","idiom":"iphone","scale":"3x","filename":"icon-120.png"},
+    {"size":"60x60","idiom":"iphone","scale":"2x","filename":"icon-120.png"},
+    {"size":"60x60","idiom":"iphone","scale":"3x","filename":"icon-180.png"},
+    {"size":"1024x1024","idiom":"ios-marketing","scale":"1x","filename":"icon-1024.png"}
+  ],
+  "info":{"version":1,"author":"xcode"}
+}
+EOF
+cat > /tmp/Assets.xcassets/Contents.json << 'EOF'
+{"info":{"version":1,"author":"xcode"}}
+EOF
+
+# 2. Copy icon PNGs into the asset catalog
+cp ~/Developer/zwipe/zwiper/assets/favicon/icon-{40,60,80,87,120,180,1024}.png \
+   /tmp/Assets.xcassets/AppIcon.appiconset/
+
+# 3. Compile with actool
+actool --compile ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app \
+  --platform iphoneos --minimum-deployment-target 16.0 --app-icon AppIcon \
+  --output-partial-info-plist /tmp/assetcatalog_generated_info.plist \
+  /tmp/Assets.xcassets
+
+# 4. Add icon references to Info.plist
+/usr/libexec/PlistBuddy \
+  -c "Add :CFBundleIcons dict" \
+  -c "Add :CFBundleIcons:CFBundlePrimaryIcon dict" \
+  -c "Add :CFBundleIcons:CFBundlePrimaryIcon:CFBundleIconFiles array" \
+  -c "Add :CFBundleIcons:CFBundlePrimaryIcon:CFBundleIconFiles:0 string AppIcon60x60" \
+  -c "Add :CFBundleIcons:CFBundlePrimaryIcon:CFBundleIconName string AppIcon" \
+  ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/Info.plist
+```
+
+This produces `Assets.car` and `AppIcon60x60@2x.png` inside the `.app` bundle.
+Must be done after every release build, before signing.
 
 ---
 
