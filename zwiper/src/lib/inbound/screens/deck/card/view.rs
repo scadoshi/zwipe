@@ -46,7 +46,6 @@ pub fn View(deck_id: Uuid) -> Element {
 
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
 
-
     // Filter overlay state
     let mut filters_overlay_open = use_signal(|| false);
 
@@ -106,7 +105,10 @@ pub fn View(deck_id: Uuid) -> Element {
                         (cards, qty)
                     }
                     Err(e) => {
-                        toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                        toast.error(
+                            e.to_string(),
+                            ToastOptions::default().duration(Duration::from_millis(3000)),
+                        );
                         return;
                     }
                 };
@@ -170,9 +172,8 @@ pub fn View(deck_id: Uuid) -> Element {
             match b.build() {
                 Ok(filter) => {
                     let filtered = all_cards.filter_by(&filter);
-                    let cmd_visible = cmd.filter(|c| {
-                        !vec![c.clone()].filter_by(&filter).is_empty()
-                    });
+                    let cmd_visible =
+                        cmd.filter(|c| !vec![c.clone()].filter_by(&filter).is_empty());
                     (filtered, cmd_visible)
                 }
                 Err(_) => (deck_cards.peek().clone(), cmd),
@@ -257,7 +258,6 @@ pub fn View(deck_id: Uuid) -> Element {
             });
         }
     };
-
 
     rsx! {
         Bouncer {
@@ -366,7 +366,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                                                         preview_image_url.set(Some(url.clone()));
                                                                         preview_dismissing.set(false);
                                                                     },
-                                                                    "show image"
+                                                                    "image"
                                                                 }
                                                             }
                                                         }
@@ -485,7 +485,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                                                                 preview_image_url.set(Some(url.clone()));
                                                                                 preview_dismissing.set(false);
                                                                             },
-                                                                            "show image"
+                                                                            "image"
                                                                         }
                                                                     }
                                                                     button {
@@ -507,7 +507,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                                                                 preview_image_url.set(Some(url.clone()));
                                                                                 preview_dismissing.set(false);
                                                                             },
-                                                                            "show image"
+                                                                            "image"
                                                                         }
                                                                     }
                                                                     button {
