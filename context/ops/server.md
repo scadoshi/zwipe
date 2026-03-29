@@ -11,9 +11,10 @@ Backend served via Cloudflare Tunnel — no port forwarding, TLS handled by Clou
 - [ ] SSH in from Mac, set up key auth
 - [ ] Install PostgreSQL, create `zwipe` DB + user
 - [ ] Create `/var/log/zwipe/` log directory
-- [ ] Configure zerver `.env`
-- [ ] Install sqlx-cli, run migrations
 - [ ] Install Rust, clone repo, build binaries
+- [ ] Configure zerver `.env` (must include `DATABASE_URL` — CI/CD sources this for migrations)
+- [ ] Install sqlx-cli: `cargo install sqlx-cli --no-default-features --features rustls,postgres`
+- [ ] Run initial migrations: `cargo sqlx migrate run --source zerver/migrations`
 - [ ] Install `cloudflared`, configure tunnel to `api.zwipe.net`
 - [ ] Start `zerver` systemd service
 - [ ] Add `zervice` nightly cron

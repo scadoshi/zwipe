@@ -25,11 +25,12 @@ Also has `workflow_dispatch` for manual runs from the GitHub Actions tab.
 1. Checks out the repo
 2. Installs stable Rust toolchain (cached)
 3. Restores cargo cache (fast subsequent builds)
-4. Builds `zerver` and `zervice` in release mode (`SQLX_OFFLINE=true`)
-5. Copies binaries to `~/zwipe/`
-6. Runs `sudo systemctl restart zerver`
+4. Runs SQLx migrations (`source ~/zwipe/.env` for `DATABASE_URL`, then `cargo sqlx migrate run`)
+5. Builds `zerver` and `zervice` in release mode (`SQLX_OFFLINE=true`)
+6. Stops zerver, copies binaries to `~/zwipe/`, starts zerver
 
 No Tailscale, no SSH keys, no SCP — the runner is already on the server.
+Migrations run before the build so new tables exist before the new binary starts.
 
 ---
 
@@ -147,16 +148,23 @@ ssh scadoshi@<tailscale-ip>
 
 ---
 
-## SQLx Offline Mode
+## SQLx
 
-The self-hosted runner has no database access during builds. Builds use `SQLX_OFFLINE=true`
-with the committed `.sqlx/` directory. After any query change on your Mac:
+**Migrations** run automatically on every deploy (step 4 in the workflow). The runner
+sources `~/zwipe/.env` to get `DATABASE_URL` and runs `cargo sqlx migrate run`. Already-run
+migrations are skipped (idempotent). New migrations land automatically on push.
+
+**Builds** still use `SQLX_OFFLINE=true` with the committed `.sqlx/` directory so the
+build step doesn't need a live database connection. After any query change on your Mac:
 
 ```bash
 cargo sqlx prepare --workspace
 git add .sqlx/
 git commit -m "Update sqlx offline cache"
 ```
+
+**Prerequisite**: `sqlx-cli` must be installed on the server (see `ops/server.md` setup
+checklist).
 
 ---
 

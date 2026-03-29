@@ -29,6 +29,11 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
+      - name: Run migrations
+        run: |
+          source ~/zwipe/.env
+          cargo sqlx migrate run --source zerver/migrations
+
       - name: Build
         env:
           SQLX_OFFLINE: true
