@@ -16,23 +16,36 @@ use uuid::Uuid;
 
 use crate::domain::user::models::{
     get_user::{GetUser, GetUserError},
+    preferences::{
+        GetPreferencesError, UpdatePreferences, UpdatePreferencesError, UserPreferences,
+    },
     User,
 };
 
 /// Database port for user profile operations.
 ///
-/// Provides read-only access to user data. Write operations are in `auth` module.
+/// Provides read access to user data and preferences. Auth mutations
+/// (register, change password, etc.) are in the `auth` module.
 pub trait UserRepository: Clone + Send + Sync + 'static {
     /// Retrieves a user profile by ID.
     ///
     /// Returns user data without password hash (use AuthRepository for that).
     fn get_user(&self, user_id: Uuid) -> impl Future<Output = Result<User, GetUserError>> + Send;
+
+    /// Fetches display preferences for a user. Returns defaults if no row exists.
+    fn get_preferences(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<UserPreferences, GetPreferencesError>> + Send;
+
+    /// Upserts display preferences for a user. Creates the row on first update.
+    fn update_preferences(
+        &self,
+        request: &UpdatePreferences,
+    ) -> impl Future<Output = Result<UserPreferences, UpdatePreferencesError>> + Send;
 }
 
 /// Service port for user profile business logic.
-///
-/// Currently minimal - just passes through to repository.
-/// Future expansion: user statistics, profile caching, etc.
 pub trait UserService: Clone + Send + Sync + 'static {
     // =====
     //  get
@@ -45,4 +58,20 @@ pub trait UserService: Clone + Send + Sync + 'static {
         &self,
         request: &GetUser,
     ) -> impl Future<Output = Result<User, GetUserError>> + Send;
+
+    // ===============
+    //  preferences
+    // ===============
+
+    /// Fetches display preferences for a user.
+    fn get_preferences(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<UserPreferences, GetPreferencesError>> + Send;
+
+    /// Validates and updates display preferences for a user.
+    fn update_preferences(
+        &self,
+        request: &UpdatePreferences,
+    ) -> impl Future<Output = Result<UserPreferences, UpdatePreferencesError>> + Send;
 }

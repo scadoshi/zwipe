@@ -3,6 +3,8 @@
 //! This module contains the core user entity and related types for user operations.
 
 pub mod get_user;
+/// User display preferences (theme, dark mode).
+pub mod preferences;
 pub mod username;
 
 use crate::domain::user::models::username::Username;
