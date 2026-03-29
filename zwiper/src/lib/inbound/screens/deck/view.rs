@@ -190,7 +190,8 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 div { class: "screen-content",
                     match deck_profile_resource() {
                         Some(Ok(deck_profile)) => rsx! {
-                            div { style: "width: calc(100% - 4rem); display: flex; flex-direction: column; gap: 1rem; padding: 1rem 0;",
+                            div { class: "content-enter",
+                                  style: "width: calc(100% - 4rem); display: flex; flex-direction: column; gap: 1rem; padding: 1rem 0;",
                                 if let Some(error) = load_error() {
                                     div { class: "message-error", "{error}" }
                                 }
@@ -350,7 +351,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     }
                 }
 
-            div { class: "util-bar",
+            div { class: "util-bar content-enter-delayed",
                 button {
                     class: "util-btn",
                     onclick: move |_| {
