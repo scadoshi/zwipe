@@ -274,6 +274,15 @@ code {
   .features-grid {
     grid-template-columns: 1fr;
   }
+  .form-group {
+    margin-bottom: 12px;
+  }
+  .form-page {
+    margin-top: 36px;
+  }
+  .form-page .subtitle {
+    margin-bottom: 20px;
+  }
 }
 
 .feature-card {
@@ -438,20 +447,28 @@ code {
   color: var(--color-error);
 }
 
-.password-hint {
-  margin-bottom: 16px;
-  padding: 10px 12px;
-  border-left: 2px solid var(--border-secondary);
+.password-hint-toggle {
+  margin-bottom: 12px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
 }
 
-.password-hint ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.password-hint-toggle summary {
+  cursor: pointer;
   color: var(--text-muted);
+  font-size: 0.78rem;
+  padding: 4px 0;
+  letter-spacing: 0.03em;
+}
+
+.password-hint-toggle ul {
+  list-style: none;
+  padding: 6px 0 0 12px;
+  margin: 0;
   font-size: 0.75rem;
-  letter-spacing: 0.02em;
   line-height: 1.7;
+  border-left: 2px solid var(--border-secondary);
 }
 
 /* ==================
