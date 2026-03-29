@@ -76,6 +76,9 @@ pub fn spawn_upkeeper() {
     let cards = use_signal(Vec::<Card>::new);
     use_context_provider(|| cards);
 
+    let last_search_filter: Signal<Option<CardFilterBuilder>> = use_signal(|| None);
+    use_context_provider(|| last_search_filter);
+
     spawn(async move {
         let mut interval = interval(Duration::from_secs(60));
         loop {
