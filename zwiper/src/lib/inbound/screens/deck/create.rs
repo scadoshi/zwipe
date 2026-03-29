@@ -56,15 +56,21 @@ pub fn CreateDeck() -> Element {
     use_effect(move || {
         let query = search_query();
 
-        if query.is_empty() {
+        if query.len() < 3 {
             show_dropdown.set(false);
+            is_searching.set(false);
             return;
         }
 
         is_searching.set(true);
 
         spawn(async move {
-            sleep(Duration::from_millis(500)).await;
+            sleep(Duration::from_millis(800)).await;
+
+            // only proceed if the query hasn't changed during the delay
+            if search_query() != query {
+                return;
+            }
 
             if let Some(session) = session() {
                 let Ok(card_filter) = CardFilterBuilder::with_name_contains(&query)
@@ -141,20 +147,25 @@ pub fn CreateDeck() -> Element {
 
                         div { class : "mb-4",
                             label { class : "label", r#for : "commander", "commander" }
-                            input { class : "input",
-                                id : "commander",
-                                r#type : "text",
-                                placeholder : "commander",
-                                value : "{commander_display}",
-                                autocapitalize : "none",
-                                spellcheck : "false",
-                                onclick : move |_| {
-                                    search_query.set(String::new());
-                                    commander_display.set(String::new());
-                                },
-                                oninput : move |event| {
-                                    search_query.set(event.value());
-                                    commander_display.set(event.value());
+                            div { class : "input-with-spinner",
+                                input { class : "input",
+                                    id : "commander",
+                                    r#type : "text",
+                                    placeholder : "commander",
+                                    value : "{commander_display}",
+                                    autocapitalize : "none",
+                                    spellcheck : "false",
+                                    onclick : move |_| {
+                                        search_query.set(String::new());
+                                        commander_display.set(String::new());
+                                    },
+                                    oninput : move |event| {
+                                        search_query.set(event.value());
+                                        commander_display.set(event.value());
+                                    }
+                                }
+                                if is_searching() {
+                                    div { class : "input-spinner spinner" }
                                 }
                             }
 
