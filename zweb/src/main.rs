@@ -44,7 +44,21 @@ pub fn Nav() -> Element {
     rsx! {
         div { class: "nav-wrapper",
         nav {
-            Link { to: Route::Home {}, class: "nav-brand",
+            Link {
+                to: Route::Home {},
+                class: "nav-brand",
+                onclick: move |_| {
+                    spawn(async {
+                        let _ = eval(r#"
+                            const el = document.querySelector('.logo');
+                            if (el) {
+                                el.style.animation = 'none';
+                                void el.offsetHeight;
+                                el.style.animation = '';
+                            }
+                        "#).await;
+                    });
+                },
                 span { class: "nav-logo", "{Z_LOGO}" }
             }
             ul { class: "nav-links",
