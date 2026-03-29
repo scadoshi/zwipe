@@ -68,6 +68,14 @@ a:hover {
         nav
  ==================== */
 
+.nav-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: var(--bg-primary);
+  margin-bottom: 48px;
+}
+
 nav {
   display: flex;
   align-items: center;
@@ -75,7 +83,6 @@ nav {
   padding: 20px 24px;
   max-width: 960px;
   margin: 0 auto;
-  margin-bottom: 48px;
   position: relative;
 }
 
