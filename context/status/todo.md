@@ -20,7 +20,15 @@ Moving from Raspberry Pi 5 to Ubuntu Server (Intel i5, 32GB RAM, x86_64). Full s
 - [x] Run `zervice` once manually to seed Scryfall card data
 - [x] Self-hosted GitHub Actions runner installed, registered, running as systemd service
 - [x] CI/CD pipeline live — push to main deploys zerver automatically
-- [ ] Verify iOS app hits `api.zwipe.net` successfully
+- [x] Verify iOS app hits `api.zwipe.net` successfully
+    - This was recently achieved. Tested: password reset, email verification, password reset, deck operations, profile operations
+- [ ] Minor issues observed
+    - [ ] Empty card shape persists in mobile application. I thought we fixed this in fact I have clear memory of us indeed doing so so maybe need to clean from phone then re-push but on second thought I want the shape just need to make it bigger.
+    - [ ] Deck limit reached error needs to be a toast. Check all submission errors they should be extended toasts rather than red text at the bottom of the screen
+    - [ ] Clicking clear filter still doesn't clear out the cards currently in the stack. Upon entrance into the add.rs screen filter should be checked and if empty clear cards and if has filter it needs to immediately run in case they changed the filter on another screen!
+    - [ ] Errors from rate limiting are coming in with capital letters. They should be translated to lowercase. 
+    - [ ] Question more than anything that I want to jot down. What do we do with a user whose email is NOT verified? What do other applications do? Right now it is just a badge. Not sure if we should change anything or leave it? 
+    - [ ] When I sort by random on remove screen and click refresh it returns to the start of the list without randomizing again it should re-apply the sorting filter causing refresh in this instance to continually randomize the card stack showing 
 
 ---
 
