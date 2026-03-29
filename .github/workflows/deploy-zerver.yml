@@ -36,5 +36,6 @@ jobs:
 
       - name: Deploy
         run: |
+          sudo systemctl stop zerver
           cp target/release/zerver target/release/zervice ~/zwipe/
-          sudo systemctl restart zerver
+          sudo systemctl start zerver

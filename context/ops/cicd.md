@@ -95,7 +95,7 @@ configured, but verify:
 ```bash
 sudo visudo
 # Confirm this line exists at the bottom:
-# scadoshi ALL=(ALL) NOPASSWD: /bin/systemctl restart zerver
+# scadoshi ALL=(ALL) NOPASSWD: /bin/systemctl stop zerver, /bin/systemctl start zerver, /bin/systemctl restart zerver
 ```
 
 ### Re-registering after a server rebuild
