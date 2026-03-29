@@ -343,6 +343,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                     rsx! { span { "{display}" } }
                                 }
                             }
+                            span { "set: {card.scryfall_data.set_name.to_lowercase()}" }
                             span { "released: {card.scryfall_data.released_at}" }
                             if let Some(artist) = card.scryfall_data.artist && !artist.is_empty() {
                                 span { "artist: {artist.to_lowercase()}" }

@@ -9,15 +9,15 @@ use uuid::Uuid;
 
 /// Allowed theme identifiers. Validated on update.
 pub const ALLOWED_THEMES: &[&str] = &[
-    "rustbox",
-    "gruvbox",
+    "catppuccin",
     "dracula",
     "everforest",
-    "catppuccin",
-    "tokyo-night",
+    "gruvbox",
     "nord",
-    "zwipe",
+    "rustbox",
+    "tokyo-night",
     "vantablack",
+    "zwipe",
 ];
 
 /// Themes that do not support light mode.
