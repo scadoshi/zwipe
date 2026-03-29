@@ -17,7 +17,7 @@ Manual deploy process for the backend binaries. Use when CI/CD is unavailable or
 ### 1. SSH into the server
 
 ```bash
-ssh scadoshi@100.91.55.16
+ssh scadoshi@<tailscale-ip>
 # or use the local alias:
 zerver
 ```

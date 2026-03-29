@@ -81,7 +81,7 @@ Base: `android-chrome-512x512.png`. Dioxus config likely via `[bundle] icon = [.
 
 ### 5. App Store Connect Setup
 
-1. [appstoreconnect.apple.com](https://appstoreconnect.apple.com) — `scottyfermo17@gmail.com`
+1. [appstoreconnect.apple.com](https://appstoreconnect.apple.com) — sign in with Apple ID
 2. Create app: Bundle ID `com.scadoshi.zwipe`, name "Zwipe", English
 3. Fill out: description, keywords (MTG, Magic the Gathering, deck builder, commander), screenshots (6.7" iPhone required), privacy policy URL, support URL, age rating 4+, category: Games > Card Games
 

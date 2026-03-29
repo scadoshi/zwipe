@@ -21,7 +21,7 @@ cp ~/Downloads/zwipedev.mobileprovision \
   ../target/dx/main/debug/ios/Main.app/embedded.mobileprovision
 
 # 3. Sign with correct cert + entitlements
-codesign -f -s "F421F2E0FF6575A04BB18520C1A699A3F9CCEB45" \
+codesign -f -s "<cert-fingerprint>" \
   --entitlements zwiper/Entitlements.plist \
   ../target/dx/main/debug/ios/Main.app
 
@@ -47,12 +47,12 @@ Settings → VPN & Device Management → your Apple ID → Trust
 
 | Thing | Value |
 |-------|-------|
-| Apple ID | `scottyfermo17@gmail.com` |
-| Paid Team ID | `VV74WQ89GD` (SCOTTY RAY FERMO) |
+| Apple ID | see 1Password |
+| Paid Team ID | see 1Password |
 | Bundle ID | `com.scadoshi.zwipe` |
-| Signing cert fingerprint | `F421F2E0FF6575A04BB18520C1A699A3F9CCEB45` |
+| Signing cert fingerprint | see Keychain Access |
 | Device name | `scotland-mobile` |
-| Device UDID | `00008140-00166D6C3482801C` |
+| Device UDID | see Xcode → Devices and Simulators |
 | Provisioning profile | `~/Downloads/zwipedev.mobileprovision` |
 | Profile expiry | 2027-03-26 |
 
@@ -90,7 +90,7 @@ The entitlement is in `zwiper/Entitlements.plist` — requires a paid Apple Deve
 
 1. developer.apple.com → Profiles → + → iOS App Development
 2. App ID: `com.scadoshi.zwipe` (must have Keychain Sharing enabled)
-3. Certificate: Apple Development cert under team `VV74WQ89GD`
+3. Certificate: Apple Development cert under team `<team-id>`
 4. Device: `scotland-mobile`
 5. Download → `cp ~/Downloads/zwipedev.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/`
 
@@ -99,7 +99,7 @@ The entitlement is in `zwiper/Entitlements.plist` — requires a paid Apple Deve
 ```bash
 openssl genrsa -out zwipe-key.pem 2048
 openssl req -new -key zwipe-key.pem -out zwipe.certSigningRequest \
-  -subj "/emailAddress=scottyfermo17@gmail.com,CN=SCOTTY RAY FERMO,C=US"
+  -subj "/emailAddress=<apple-id>,CN=<your-name>,C=US"
 security import ~/Desktop/zwipe-key.pem -k ~/Library/Keychains/login.keychain-db -T /usr/bin/codesign
 ```
 
@@ -108,7 +108,7 @@ Upload CSR to developer.apple.com → Certificates → + → Apple Development.
 **Note on team IDs:** Xcode's "Manage Certificates" creates certs under the Personal Team (`NVSWB62C54`), not the paid team. The `(NVSWB62C54)` shown by `security find-identity` is the CN display name — the OU field is the actual team ID. Verify with:
 ```bash
 security find-identity -v -p codesigning
-# Entry with VV74WQ89GD in OU is the correct cert
+# Entry with <team-id> in OU is the correct cert
 ```
 
 ---
