@@ -140,6 +140,18 @@ pub fn Reset(token: String) -> Element {
                                 disabled: current_state == ResetState::Loading,
                             }
                         }
+                        div { class: "password-hint",
+                            ul {
+                                li { "8–128 characters" }
+                                li { "at least one uppercase letter (A–Z)" }
+                                li { "at least one lowercase letter (a–z)" }
+                                li { "at least one number (0–9)" }
+                                li { "at least one symbol (~!@#$%^&*()_+=[]{{}}\\/? |:;<>,.)" }
+                                li { "no whitespace" }
+                                li { "at least 6 unique characters" }
+                                li { "no more than 3 consecutive repeated characters" }
+                            }
+                        }
                         div { class: "form-group",
                             label { "confirm password" }
                             input {

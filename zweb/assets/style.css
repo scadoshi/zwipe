@@ -438,6 +438,22 @@ code {
   color: var(--color-error);
 }
 
+.password-hint {
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border-left: 2px solid var(--border-secondary);
+}
+
+.password-hint ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  line-height: 1.7;
+}
+
 /* ==================
         privacy
  ==================== */
