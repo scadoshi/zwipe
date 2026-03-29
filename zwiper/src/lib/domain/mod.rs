@@ -8,3 +8,5 @@
 pub mod error;
 /// Language code to display name conversions.
 pub mod language;
+/// Theme configuration for UI display.
+pub mod theme;

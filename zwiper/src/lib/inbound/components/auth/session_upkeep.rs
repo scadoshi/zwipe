@@ -3,9 +3,12 @@
 //! Provides background session management that periodically checks token
 //! expiration and refreshes the access token before it expires.
 
-use crate::outbound::{
-    client::{auth::refresh::ClientRefresh, ZwipeClient},
-    session::Persist,
+use crate::{
+    domain::theme::ThemeConfig,
+    outbound::{
+        client::{auth::refresh::ClientRefresh, ZwipeClient},
+        session::Persist,
+    },
 };
 use dioxus::prelude::*;
 use std::time::Duration;
@@ -78,6 +81,16 @@ pub fn spawn_upkeeper() {
 
     let last_search_filter: Signal<Option<CardFilterBuilder>> = use_signal(|| None);
     use_context_provider(|| last_search_filter);
+
+    // Theme — initialize from session preferences if logged in
+    let theme = use_signal(|| {
+        session
+            .peek()
+            .as_ref()
+            .map(|s| ThemeConfig::from(&s.preferences))
+            .unwrap_or_default()
+    });
+    use_context_provider(|| theme);
 
     spawn(async move {
         let mut interval = interval(Duration::from_secs(60));

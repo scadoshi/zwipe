@@ -13,3 +13,5 @@ pub mod change_username;
 pub mod delete_user;
 /// Fetch user profile endpoint.
 pub mod get_user;
+/// User preferences endpoints.
+pub mod preferences;

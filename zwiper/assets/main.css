@@ -1,7 +1,142 @@
 @import url("https://fonts.googleapis.com/css2?family=Cascadia+Code:wght@200;300;400;500;600;700&display=swap");
 
 /* ==================
-        colors
+        themes
+ ==================== */
+
+/* Default theme (zwipe) is defined in :root below.
+   Theme classes override these variables when applied to the .screen element. */
+
+.theme-rustbox-dark {
+    --bg-primary: #1c1210; --bg-overlay: rgba(0,0,0,0.6);
+    --text-primary: #e8c8a8; --text-muted: #906848; --text-subtle: #b08868;
+    --border-primary: #5a3525; --border-secondary: #341c12; --border-muted: #482a1c;
+    --color-error: #c44030; --color-success: #7a8a4a; --color-warning: #c48030;
+    --border-error: #8b2a1a; --border-success: #4a5a2a; --border-warning: #8a5a18;
+    --shadow-sm: 0 4px 12px rgba(0,0,0,0.3); --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+}
+.theme-rustbox-light {
+    --bg-primary: #f0dac5; --bg-overlay: rgba(0,0,0,0.3);
+    --text-primary: #2a1510; --text-muted: #6a3e2a; --text-subtle: #4a2e1e;
+    --border-primary: #c09060; --border-secondary: #e6c8a8; --border-muted: #d4aa85;
+    --color-error: #a03018; --color-success: #5a6a30; --color-warning: #a06820;
+    --border-error: #802010; --border-success: #404a20; --border-warning: #805010;
+    --shadow-sm: 0 4px 12px rgba(0,0,0,0.1); --shadow-md: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.theme-gruvbox-dark {
+    --bg-primary: #282828; --bg-overlay: rgba(0,0,0,0.6);
+    --text-primary: #fbf1c7; --text-muted: #bdae93; --text-subtle: #d5c4a1;
+    --border-primary: #665c54; --border-secondary: #3c3836; --border-muted: #504945;
+    --color-error: #fb4934; --color-success: #b8bb26; --color-warning: #fabd2f;
+    --border-error: #cc241d; --border-success: #98971a; --border-warning: #d79921;
+    --shadow-sm: 0 4px 12px rgba(0,0,0,0.3); --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+}
+.theme-gruvbox-light {
+    --bg-primary: #fbf1c7; --bg-overlay: rgba(0,0,0,0.3);
+    --text-primary: #282828; --text-muted: #665c54; --text-subtle: #504945;
+    --border-primary: #bdae93; --border-secondary: #f2e5bc; --border-muted: #d5c4a1;
+    --color-error: #9d0006; --color-success: #79740e; --color-warning: #b57614;
+    --border-error: #cc241d; --border-success: #98971a; --border-warning: #d79921;
+    --shadow-sm: 0 4px 12px rgba(0,0,0,0.1); --shadow-md: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.theme-dracula-dark {
+    --bg-primary: #282a36; --bg-overlay: rgba(0,0,0,0.6);
+    --text-primary: #f8f8f2; --text-muted: #bfbfb8; --text-subtle: #e0e0da;
+    --border-primary: #565a70; --border-secondary: #343746; --border-muted: #44475a;
+    --color-error: #ff6e6e; --color-success: #69ff94; --color-warning: #ffffa5;
+    --border-error: #ff5555; --border-success: #50fa7b; --border-warning: #f1fa8c;
+    --shadow-sm: 0 4px 12px rgba(0,0,0,0.3); --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+}
+.theme-dracula-light {
+    --bg-primary: #f8f8f2; --bg-overlay: rgba(0,0,0,0.3);
+    --text-primary: #282a36; --text-muted: #565a70; --text-subtle: #44475a;
+    --border-primary: #c0c0ba; --border-secondary: #e8e8e2; --border-muted: #d8d8d2;
+    --color-error: #cc3333; --color-success: #1f9e3a; --color-warning: #a88d10;
+    --border-error: #ff5555; --border-success: #2dba4e; --border-warning: #c4a616;
+    --shadow-sm: 0 4px 12px rgba(0,0,0,0.1); --shadow-md: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.theme-everforest-dark {
+    --bg-primary: #2d353b; --bg-overlay: rgba(0,0,0,0.6);
+    --text-primary: #d3c6aa; --text-muted: #859289; --text-subtle: #9da9a0;
+    --border-primary: #475258; --border-secondary: #343f44; --border-muted: #3d484d;
+    --color-error: #e67e80; --color-success: #a7c080; --color-warning: #dbbc7f;
+    --border-error: #c65c5e; --border-success: #87a060; --border-warning: #bb9c5f;
+    --shadow-sm: 0 4px 12px rgba(0,0,0,0.3); --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+}
+.theme-everforest-light {
+    --bg-primary: #fdf6e3; --bg-overlay: rgba(0,0,0,0.3);
+    --text-primary: #4a5860; --text-muted: #6a7a6a; --text-subtle: #5a6a68;
+    --border-primary: #8a9080; --border-secondary: #b0b0a0; --border-muted: #a0a090;
+    --color-error: #f85552; --color-success: #8da101; --color-warning: #dfa000;
+    --border-error: #d83530; --border-success: #6d8100; --border-warning: #bf8000;
+    --shadow-sm: 0 4px 12px rgba(0,0,0,0.1); --shadow-md: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.theme-catppuccin-dark {
+    --bg-primary: #1e1e2e; --bg-overlay: rgba(0,0,0,0.6);
+    --text-primary: #cdd6f4; --text-muted: #a6adc8; --text-subtle: #bac2de;
+    --border-primary: #585b70; --border-secondary: #313244; --border-muted: #45475a;
+    --color-error: #f38ba8; --color-success: #a6e3a1; --color-warning: #f9e2af;
+    --border-error: #d36b88; --border-success: #86c381; --border-warning: #d9c28f;
+    --shadow-sm: 0 4px 12px rgba(0,0,0,0.3); --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+}
+.theme-catppuccin-light {
+    --bg-primary: #eff1f5; --bg-overlay: rgba(0,0,0,0.3);
+    --text-primary: #4c4f69; --text-muted: #6c6f85; --text-subtle: #5c5f77;
+    --border-primary: #8a8ea0; --border-secondary: #a8acb8; --border-muted: #9ca0b0;
+    --color-error: #d20f39; --color-success: #40a02b; --color-warning: #df8e1d;
+    --border-error: #b20029; --border-success: #30800b; --border-warning: #bf6e0d;
+    --shadow-sm: 0 4px 12px rgba(0,0,0,0.1); --shadow-md: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.theme-tokyo-night-dark {
+    --bg-primary: #1a1b26; --bg-overlay: rgba(0,0,0,0.6);
+    --text-primary: #c0caf5; --text-muted: #9aa5ce; --text-subtle: #a9b1d6;
+    --border-primary: #565f89; --border-secondary: #24283b; --border-muted: #414868;
+    --color-error: #f7768e; --color-success: #9ece6a; --color-warning: #e0af68;
+    --border-error: #d7566e; --border-success: #7eae4a; --border-warning: #c08f48;
+    --shadow-sm: 0 4px 12px rgba(0,0,0,0.3); --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+}
+.theme-tokyo-night-light {
+    --bg-primary: #d5d6db; --bg-overlay: rgba(0,0,0,0.3);
+    --text-primary: #343b58; --text-muted: #6172b0; --text-subtle: #4c505e;
+    --border-primary: #4c505e; --border-secondary: #9498a0; --border-muted: #808590;
+    --color-error: #f52a65; --color-success: #587539; --color-warning: #8c6c3e;
+    --border-error: #d50a45; --border-success: #385519; --border-warning: #6c4c1e;
+    --shadow-sm: 0 4px 12px rgba(0,0,0,0.1); --shadow-md: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.theme-nord-dark {
+    --bg-primary: #2e3440; --bg-overlay: rgba(0,0,0,0.6);
+    --text-primary: #eceff4; --text-muted: #c0c8d8; --text-subtle: #d8dee9;
+    --border-primary: #4c566a; --border-secondary: #3b4252; --border-muted: #434c5e;
+    --color-error: #bf616a; --color-success: #a3be8c; --color-warning: #ebcb8b;
+    --border-error: #9f414a; --border-success: #839e6c; --border-warning: #cbab6b;
+    --shadow-sm: 0 4px 12px rgba(0,0,0,0.3); --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+}
+.theme-nord-light {
+    --bg-primary: #eceff4; --bg-overlay: rgba(0,0,0,0.3);
+    --text-primary: #2e3440; --text-muted: #4c566a; --text-subtle: #434c5e;
+    --border-primary: #7b88a1; --border-secondary: #a0a8b8; --border-muted: #9098a8;
+    --color-error: #bf616a; --color-success: #a3be8c; --color-warning: #ebcb8b;
+    --border-error: #9f414a; --border-success: #839e6c; --border-warning: #cbab6b;
+    --shadow-sm: 0 4px 12px rgba(0,0,0,0.1); --shadow-md: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.theme-vantablack {
+    --bg-primary: #000000; --bg-overlay: rgba(0,0,0,0.8);
+    --text-primary: #ffffff; --text-muted: #808080; --text-subtle: #b0b0b0;
+    --border-primary: #1e1e1e; --border-secondary: #0a0a0a; --border-muted: #141414;
+    --color-error: #ff6b6b; --color-success: #51cf66; --color-warning: #fcc419;
+    --border-error: #df4b4b; --border-success: #31af46; --border-warning: #dca409;
+    --shadow-sm: 0 4px 12px rgba(0,0,0,0.5); --shadow-md: 0 4px 12px rgba(0,0,0,0.7);
+}
+
+/* ==================
+        colors (default: zwipe)
  ==================== */
 
 :root {
@@ -75,6 +210,7 @@ body {
     flex-direction: column;
     width: 100%;
     background-color: var(--bg-primary);
+    color: var(--text-primary);
 }
 
 .screen-content {
@@ -645,16 +781,16 @@ body {
 
 .input {
     width: 100%;
-    padding: 1rem;
+    padding: 0.75rem 1rem;
     background: none;
     border: 1px solid var(--border-primary);
-    border-radius: 1rem;
+    border-radius: 0.4rem;
     color: var(--text-primary);
     font-family: "Cascadia Code", monospace;
     font-size: 1rem;
     font-weight: 300;
     transition: all 0.2s ease;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
 }
 
 .input:focus {
@@ -703,7 +839,7 @@ body {
     font-weight: 300;
     letter-spacing: 0.1em;
     opacity: 0.5;
-    margin-bottom: 0.8rem;
+    margin-bottom: 0.4rem;
 }
 
 .label-sm {
@@ -1929,4 +2065,63 @@ body {
     color: var(--text-muted);
     white-space: nowrap;
     flex-shrink: 0;
+}
+
+/* =========================
+  specific - preferences
+=========================== */
+
+.pref-row {
+    display: block;
+    width: 100%;
+    padding: 0.6rem 1rem;
+    background: transparent;
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.4rem;
+    color: var(--text-muted);
+    font-family: "Cascadia Code", monospace;
+    font-weight: 300;
+    font-size: 0.85rem;
+    text-align: left;
+    margin-bottom: 0.4rem;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+}
+
+.pref-row.selected {
+    border-color: var(--border-primary);
+    color: var(--text-primary);
+}
+
+.pref-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 1rem;
+    margin-top: 0.8rem;
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.pref-toggle.disabled {
+    opacity: 0.4;
+}
+
+.pref-toggle-btn {
+    background: transparent;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.3rem;
+    color: var(--text-primary);
+    font-family: "Cascadia Code", monospace;
+    font-weight: 300;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.6rem;
+    cursor: pointer;
+}
+
+.pref-toggle-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }

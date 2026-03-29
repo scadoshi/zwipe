@@ -8,6 +8,8 @@ pub mod change_email;
 pub mod change_password;
 /// Change username screen.
 pub mod change_username;
+/// User preferences screen.
+pub mod preferences;
 
 use crate::inbound::components::alert_dialog::{
     AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
@@ -163,6 +165,11 @@ pub fn Profile() -> Element {
                         class: "util-btn",
                         onclick: move |_| navigator.go_back(),
                         "back"
+                    }
+                    button {
+                        class: "util-btn",
+                        onclick: move |_| { navigator.push(Router::Preferences {}); },
+                        "preferences"
                     }
                     button {
                         class: "util-btn",

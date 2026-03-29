@@ -3,6 +3,7 @@ use dioxus_primitives::toast::ToastProvider;
 use zwipe::domain::logo;
 use zwiper::{
     config::Config,
+    domain::theme::ThemeConfig,
     inbound::{components::auth::session_upkeep::spawn_upkeeper, router::Router},
 };
 
@@ -23,6 +24,17 @@ fn main() {
 }
 
 #[component]
+fn ThemeWrapper(children: Element) -> Element {
+    let theme: Signal<ThemeConfig> = use_context();
+    let class = theme.read().css_class();
+    rsx! {
+        div { class: "{class}",
+            {children}
+        }
+    }
+}
+
+#[component]
 fn App() -> Element {
     spawn_upkeeper();
     rsx! {
@@ -36,9 +48,11 @@ fn App() -> Element {
             content: "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
         }
 
-        ToastProvider {
-            max_toasts: 3_usize,
-            Router::<Router> {}
+        ThemeWrapper {
+            ToastProvider {
+                max_toasts: 3_usize,
+                Router::<Router> {}
+            }
         }
     }
 }
