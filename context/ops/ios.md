@@ -14,20 +14,17 @@ inline — the shell sets it before `dx build` reads it:
 cd /path/to/zwipe/zwiper
 
 # 1. Build targeting physical device with prod backend URL
+#    dx build handles code signing automatically using the provisioning profile
+#    from ~/Library/Developer/Xcode/UserData/Provisioning Profiles/
 BACKEND_URL=https://api.zwipe.net dx build --platform ios --device "scotland-mobile"
 
-# 2. Embed provisioning profile
-cp ~/Downloads/zwipedev.mobileprovision \
-  ../target/dx/main/debug/ios/Main.app/embedded.mobileprovision
-
-# 3. Sign with correct cert + entitlements
-codesign -f -s "<cert-fingerprint>" \
-  --entitlements zwiper/Entitlements.plist \
-  ../target/dx/main/debug/ios/Main.app
-
-# 4. Deploy to connected iPhone
+# 2. Deploy to connected iPhone
 ios-deploy --bundle ../target/dx/main/debug/ios/Main.app
 ```
+
+`dx build` picks up the provisioning profile and signs the app automatically — no manual
+`codesign` or profile embedding step needed as long as the profile is installed in
+`~/Library/Developer/Xcode/UserData/Provisioning Profiles/`.
 
 Alternatively, load `.env.prod` explicitly before building:
 ```bash
