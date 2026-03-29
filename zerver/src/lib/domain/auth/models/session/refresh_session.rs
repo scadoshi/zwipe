@@ -209,7 +209,7 @@ mod tests {
     use crate::domain::auth::models::access_token::{AccessToken, Jwt};
     use crate::domain::auth::models::refresh_token::RefreshToken;
     use crate::domain::auth::models::session::Session;
-    use crate::domain::user::models::{username::Username, User};
+    use crate::domain::user::models::{preferences::UserPreferences, username::Username, User};
     use chrono::{Duration, Utc};
     use email_address::EmailAddress;
     use std::str::FromStr;
@@ -234,6 +234,7 @@ mod tests {
                 value: "token-value-from-previous-session".to_string(),
                 expires_at: Utc::now().naive_utc() + Duration::days(14),
             },
+            preferences: UserPreferences::default(),
         }
     }
 
