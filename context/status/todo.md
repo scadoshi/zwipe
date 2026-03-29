@@ -68,12 +68,47 @@ Rate limit: low burst, long refill (same pattern as change-password) to prevent 
 
 ### 3. iOS App Icon
 
-Current `zwiper/assets/favicon/` icons are web favicons — iOS ignores them. App Store requires:
-- **1024×1024** — App Store listing
-- **180×180** (`@3x`) — iPhone home screen
-- **120×120** (`@2x`) — older iPhones
+Current `zwiper/assets/favicon/` icons are web favicons — iOS ignores them.
 
-Base: `android-chrome-512x512.png`. Dioxus config likely via `[bundle] icon = [...]` in `Dioxus.toml` — needs research.
+#### Required sizes
+
+| Size | Usage |
+|------|-------|
+| **1024×1024** | App Store listing (required, no alpha channel) |
+| **180×180** | iPhone home screen @3x (iPhone 6 Plus and newer) |
+| **120×120** | iPhone home screen @2x (older iPhones) |
+| **87×87** | Spotlight @3x |
+| **80×80** | Spotlight @2x |
+| **60×60** | Notification @3x |
+| **40×40** | Notification @2x |
+
+The 1024×1024 is the hard requirement — App Store Connect will reject the build without
+it. The others improve the appearance on-device but missing them won't block submission.
+
+#### How to produce them
+
+Start from a single high-resolution master (at least 1024×1024, ideally vector/SVG):
+- **Figma** (free) — design at 1024×1024, export all sizes at once
+- **Sketch** / **Affinity Designer** — same approach
+- **makeappicon.com** — upload a 1024×1024 PNG, download a zip with all sizes
+- **ImageMagick** (CLI) — `convert master.png -resize 180x180 icon-180.png`
+
+#### Dioxus config
+
+Add to `zwiper/Dioxus.toml` under `[bundle]`:
+```toml
+[bundle]
+icon = ["assets/icons/icon-1024.png"]
+```
+
+Dioxus/Tauri will handle resizing for the other slots from the single source image.
+Confirm exact config key by checking the Dioxus mobile docs — this may have changed
+between versions.
+
+#### Current base asset
+
+`zwiper/assets/favicon/android-chrome-512x512.png` is the closest existing asset — only
+512×512 which is borderline. Better to create a clean 1024×1024 master.
 
 ### 4. zwipe.net Web Client
 
