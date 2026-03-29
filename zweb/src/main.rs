@@ -9,6 +9,7 @@ pub const API_BASE: &str = "https://api.zwipe.net";
 pub const APP_STORE_URL: &str = "#";
 
 const STYLE: Asset = asset!("/assets/style.css");
+const Z_LOGO: &str = include_str!("../assets/z.txt");
 
 #[derive(Routable, Clone, PartialEq)]
 #[rustfmt::skip]
@@ -43,7 +44,7 @@ pub fn Nav() -> Element {
     rsx! {
         nav {
             Link { to: Route::Home {}, class: "nav-brand",
-                span { "zwipe" }
+                span { class: "nav-logo", "{Z_LOGO}" }
             }
             ul { class: "nav-links",
                 li { class: "hide-mobile",

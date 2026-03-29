@@ -98,6 +98,14 @@ nav::after {
   letter-spacing: 0.05em;
 }
 
+.nav-logo {
+  font-family: "Cascadia Code", monospace;
+  font-size: 0.35rem;
+  line-height: 1;
+  white-space: pre;
+  display: block;
+}
+
 .nav-brand img {
   width: 28px;
   height: 28px;
