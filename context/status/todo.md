@@ -10,9 +10,9 @@
 
 ### Remaining minor issues
 
-- [ ] Empty card shape persists in mobile application — needs to be bigger
-- [ ] Clicking clear filter still doesn't clear out the cards currently in the stack. Upon entrance into the add.rs screen filter should be checked and if empty clear cards and if has filter it needs to immediately run in case they changed the filter on another screen! (cards now persist across navigation when filter unchanged — `82c67f0`, but clear-filter behavior still needs work)
-- [ ] When I sort by random on remove screen and click refresh it returns to the start of the list without randomizing again it should re-apply the sorting filter causing refresh in this instance to continually randomize the card stack showing
+- [x] Clear filter now clears card stack + inline clear button added (`bc46b5f`, `a198d60`)
+- [x] Random sort refresh now re-shuffles (`2cd61b2`)
+- [x] Empty card shape sizing fixed
 
 ---
 
@@ -28,17 +28,7 @@
 
 ### 3. iOS App Icon
 
-Current `zwiper/assets/favicon/` icons are web favicons — iOS ignores them.
-
-**Hard requirement:** 1024×1024 PNG (no alpha) for App Store listing. Other sizes (180, 120, 87, 80, 60, 40) improve on-device appearance but won't block submission.
-
-Closest existing asset: `zwiper/assets/favicon/android-chrome-512x512.png` (only 512×512). Need a clean 1024×1024 master.
-
-Add to `zwiper/Dioxus.toml`:
-```toml
-[bundle]
-icon = ["assets/icons/icon-1024.png"]
-```
+✅ Done (`5cf5d79`). Full icon set generated from 1024×1024 master (no alpha). All sizes in `zwiper/assets/favicon/icon-*.png`. Webmanifest updated.
 
 ### 4. zwipe.net Web Client
 
@@ -76,7 +66,11 @@ Current build uses Development profile. App Store requires:
 - [x] zweb logo line-height tightened so block characters stack flush (`8deb2b2`)
 - [x] Unverified email toast on login + soft limits for unverified accounts (`cf9071c`)
 - [x] Toast word-wrap: prefer word boundaries over mid-word breaks (`67eadf1`)
-- [ ] Full screen integration pass — walk every screen on device
+- [x] iOS app icons: full set from 1024×1024 master (`5cf5d79`)
+- [x] Clear filter clears card stack + inline clear button (`bc46b5f`, `a198d60`)
+- [x] Random sort refresh re-shuffles (`2cd61b2`)
+- [x] Binary versioning: startup logs + workspace version (`7041918`)
+- [x] Full screen integration pass
 
 ---
 
@@ -99,11 +93,7 @@ Current build uses Development profile. App Store requires:
 
 ## Binary Versioning
 
-Add a version string to `zerver` and `zervice` that prints on startup — makes it immediately obvious after a manual or CI deploy whether the new binary is live.
-
-- Add `version` to workspace `Cargo.toml` (e.g. `0.1.0`)
-- Print version on startup using `env!("CARGO_PKG_VERSION")`
-- Expose on health endpoint: `GET /` already returns a `version` field — verify it uses `CARGO_PKG_VERSION` and not a hardcoded string
+✅ Done (`7041918`). Workspace-level version in root `Cargo.toml`. All binaries (zerver, zervice, zwiper) print version on startup via `tracing::info!`. Health endpoint (`GET /`) returns version field.
 
 ---
 
@@ -134,15 +124,15 @@ Bump `actions/checkout@v4` and `actions/cache@v4` in both `deploy-zerver.yml` an
 
 ## Database Backups
 
-The server runs PostgreSQL locally. Need a periodic backup job that gets data off the machine.
+Nightly `pg_dump` → Cloudflare R2 via `rclone`. Full runbook: `ops/backups.md`.
 
-- **Tool**: `pg_dump`
-- **Schedule**: nightly cron
-- **Destination**: S3/R2, Backblaze B2, or remote SSH
-- **Retention**: TBD
-- **Restore runbook**: TBD
-
-The database is the only critical stateful data not replicated elsewhere.
+- [ ] Create R2 bucket `zwipe-backups` in Cloudflare dashboard
+- [ ] Create R2 API token (read/write, scoped to bucket)
+- [ ] Install `rclone` on server, configure R2 remote
+- [ ] Create `~/scripts/backup-db.sh`
+- [ ] Add cron: `0 5 * * *` (5am daily, after zervice)
+- [ ] Set 30-day lifecycle rule on bucket
+- [ ] Test manual backup + restore
 
 ---
 
