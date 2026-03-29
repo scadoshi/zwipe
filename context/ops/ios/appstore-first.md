@@ -131,30 +131,29 @@ Go to [appstoreconnect.apple.com](https://appstoreconnect.apple.com).
 
 ## Step 6 — Upload
 
-### Option A: Transporter (recommended for first time)
+### Prerequisites: App Store Connect API key
 
-1. Download **Transporter** from the Mac App Store (free, made by Apple)
-2. Sign in with your Apple ID
-3. Drag `Zwipe.ipa` into the window
-4. Click **Deliver**
-
-### Option B: CLI with altool
-
-Create an App Store Connect API key first:
+If you haven't created one yet:
 1. App Store Connect → Users and Access → Integrations → App Store Connect API
-2. Click **+**, name it, give it Admin access
-3. Download the `.p8` file → save to `~/.private_keys/AuthKey_<KEY_ID>.p8`
+2. Click **+**, name it "CLI Upload", give it **Admin** access
+3. Download the `.p8` file (one-time download!) → `~/.private_keys/AuthKey_<KEY_ID>.p8`
 4. Note the **Key ID** and **Issuer ID**
 
+### Validate and upload
+
 ```bash
-# Validate first
+# Validate first (catches errors before uploading)
 xcrun altool --validate-app -f ~/Developer/zwipe/Zwipe.ipa -t ios \
-  --apiKey <KEY_ID> --apiIssuer <ISSUER_ID>
+  --apiKey C2L47TDDPV --apiIssuer 644db668-17b6-4d50-ac1a-70f8ea838d0d
 
 # Upload
 xcrun altool --upload-app -f ~/Developer/zwipe/Zwipe.ipa -t ios \
-  --apiKey <KEY_ID> --apiIssuer <ISSUER_ID>
+  --apiKey C2L47TDDPV --apiIssuer 644db668-17b6-4d50-ac1a-70f8ea838d0d
 ```
+
+API key file: `~/.private_keys/AuthKey_C2L47TDDPV.p8`
+
+**Do not use Transporter** — `altool` gives detailed errors and is scriptable.
 
 ---
 
