@@ -51,6 +51,7 @@ pub fn Nav() -> Element {
                 onclick: move |_| {
                     spawn(async {
                         let _ = eval(r#"
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
                             const el = document.querySelector('.logo');
                             if (el) {
                                 el.style.animation = 'none';
