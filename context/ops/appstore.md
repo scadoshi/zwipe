@@ -22,12 +22,28 @@ Already done:
 
 You have a Development cert already. App Store requires a separate **Apple Distribution** cert.
 
-1. Open **Keychain Access** → Certificate Assistant → Request a Certificate From a Certificate Authority
-2. Enter your Apple ID email, select "Saved to disk", save the `.certSigningRequest` file
-3. Go to [developer.apple.com](https://developer.apple.com/account) → Certificates, Identifiers & Profiles → Certificates
-4. Click **+** → select **Apple Distribution** (not Apple Development, not iOS Distribution)
-5. Upload your CSR, download the `.cer` file
-6. Double-click the `.cer` to install in Keychain Access
+**Do NOT use Keychain Access → Certificate Assistant.** It consistently fails with
+"The specified item could not be found in the keychain." Generate the CSR from the
+command line instead:
+
+```bash
+# 1. Generate a private key
+openssl genrsa -out zwipe-dist-key.pem 2048
+
+# 2. Create the CSR
+openssl req -new -key zwipe-dist-key.pem -out CertificateSigningRequest.certSigningRequest \
+  -subj "/emailAddress=<apple-id-email>,CN=<your-name>,C=US"
+
+# 3. Import the private key into your login keychain (codesign needs it there)
+security import zwipe-dist-key.pem -k ~/Library/Keychains/login.keychain-db -T /usr/bin/codesign
+```
+
+Then on Apple's site:
+
+1. Go to [developer.apple.com](https://developer.apple.com/account) → Certificates, Identifiers & Profiles → Certificates
+2. Click **+** → select **Apple Distribution** (not Apple Development, not iOS Distribution)
+3. Upload `CertificateSigningRequest.certSigningRequest`
+4. Download the `.cer` file and double-click to install in Keychain Access (no visible feedback — it installs silently)
 
 Verify it installed:
 ```bash
@@ -35,22 +51,64 @@ security find-identity -v -p codesigning
 # Look for: "Apple Distribution: <your name> (VV74WQ89GD)"
 ```
 
+### What to keep
+
+| File | Where | Why |
+|------|-------|-----|
+| `zwipe-dist-key.pem` | `~/certs/` (NOT in repo) | Private key backup — if your Mac dies and this is gone, you must revoke + recreate the cert |
+| `distribution.cer` | `~/certs/` | Apple names it just `distribution.cer` — can re-download from developer.apple.com, but keep a copy |
+| `CertificateSigningRequest.certSigningRequest` | `~/certs/` | Safe to delete after Apple issues the cert, but harmless to keep |
+
+**Keep `~/certs/` backed up** (Time Machine, iCloud, etc.). The private key cannot be
+recovered from Apple — losing it means revoking the cert and creating a new one.
+
 ---
 
-## Step 2 — Create an App Store Provisioning Profile
+## Step 2 — Register the App ID (if not already done)
+
+The App ID must exist before you can create a provisioning profile. If you already
+registered `com.scadoshi.zwipe` for development, skip to Step 3.
+
+1. developer.apple.com → Certificates, Identifiers & Profiles → Identifiers
+2. Click **+** → select **App IDs** → Continue
+3. Select **App** (not App Clip) → Continue
+4. Fill out:
+   - **Description**: Zwipe
+   - **Bundle ID**: select **Explicit**, enter `com.scadoshi.zwipe`
+5. Under **Capabilities**, enable **Keychain Sharing** (required for session storage via `keyring` crate)
+6. Click **Continue** → **Register**
+
+---
+
+## Step 3 — Create an App Store Provisioning Profile
 
 1. developer.apple.com → Certificates, Identifiers & Profiles → Profiles
-2. Click **+** → under **Distribution**, select **App Store** (not Ad Hoc)
-3. Select App ID: `com.scadoshi.zwipe`
-4. Select the Apple Distribution certificate from Step 1
-5. Name it "Zwipe App Store", click Generate
-6. Download the `.mobileprovision` file
+2. Click **+** → under **Distribution**, select **App Store Connect** (not Ad Hoc)
+3. Click **Continue**
+4. Select App ID: `com.scadoshi.zwipe` from the dropdown → **Continue**
+5. Select the Apple Distribution certificate from Step 1 → **Continue**
+6. Name it "Zwipe App Store" → click **Generate**
+7. Click **Download** — file will be named something like `Zwipe_App_Store.mobileprovision`
 
 No device UUIDs needed — App Store profiles aren't device-specific.
 
+Back up the profile:
+```bash
+cp ~/Downloads/Zwipe_App_Store.mobileprovision ~/certs/
+```
+
+### Updated backup table
+
+| File | Where | Why |
+|------|-------|-----|
+| `zwipe-dist-key.pem` | `~/certs/` | Private key — cannot be recovered from Apple |
+| `distribution.cer` | `~/certs/` | Distribution cert — re-downloadable but keep a copy |
+| `Zwipe_App_Store.mobileprovision` | `~/certs/` | App Store provisioning profile — re-downloadable but keep a copy |
+| `CertificateSigningRequest.certSigningRequest` | `~/certs/` | Safe to delete after cert is issued |
+
 ---
 
-## Step 3 — Create Release Entitlements
+## Step 4 — Create Release Entitlements
 
 The current `Entitlements.plist` has `get-task-allow` set to `true` — this is a
 debug-only entitlement that lets the debugger attach. Apple will reject it.
@@ -72,18 +130,18 @@ Everything else stays the same (`application-identifier`, `keychain-access-group
 
 ---
 
-## Step 4 — Build Release .app
+## Step 5 — Build Release .app
+
+All paths below are absolute from the repo root (`~/Developer/zwipe`).
 
 ```bash
-cd zwiper
-
-# Build release targeting physical iOS device
+cd ~/Developer/zwipe/zwiper
 BACKEND_URL=https://api.zwipe.net dx build --release --platform ios --device "scotland-mobile"
 ```
 
-Find the `.app` bundle:
+Verify the `.app` was created:
 ```bash
-ls ../target/dx/zwipe/release/ios/
+ls ~/Developer/zwipe/target/dx/zwipe/release/ios/
 # Should contain Zwipe.app
 ```
 
@@ -93,42 +151,53 @@ This is a known Dioxus gotcha ([DioxusLabs/dioxus#3817](https://github.com/Dioxu
 If the platform metadata is wrong, Apple will reject the upload.
 
 ```bash
-vtool -show ../target/dx/zwipe/release/ios/Zwipe.app/zwipe
-# Must show: platform: IOS
-# If it shows: platform: MACOS — see "Troubleshooting" at the bottom
+vtool -show ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/zwipe
+# Look for: LC_VERSION_MIN_IPHONEOS — this confirms the binary targets iOS
+# As of 2026-03-29 the output looks like:
+#   cmd LC_VERSION_MIN_IPHONEOS
+#   version 10.0
+#   sdk 26.4
+# Apple may change this format in future Xcode/SDK versions, but the key
+# thing is seeing "IPHONEOS" somewhere in the output — NOT "MACOS" or "platform 7" (simulator)
+# If it shows MACOS — see "Troubleshooting" at the bottom
 ```
 
 ---
 
-## Step 5 — Sign for Distribution
+## Step 6 — Sign for Distribution
 
 ```bash
 # 1. Embed the App Store provisioning profile
-cp ~/path/to/ZwipeAppStore.mobileprovision \
-   ../target/dx/zwipe/release/ios/Zwipe.app/embedded.mobileprovision
+cp ~/certs/Zwipe_App_Store.mobileprovision \
+   ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app/embedded.mobileprovision
 
-# 2. Re-sign with your Apple Distribution cert + release entitlements
-codesign --force --sign "Apple Distribution: <your name> (VV74WQ89GD)" \
-  --entitlements zwiper/Entitlements-Release.plist \
-  ../target/dx/zwipe/release/ios/Zwipe.app
+# 2. Get your signing identity (either the hash or the full name works)
+security find-identity -v -p codesigning
+# Copy the hash (e.g. D398244D...) or the quoted name (e.g. "Apple Distribution: ...")
+
+# 3. Re-sign with release entitlements
+codesign --force --sign "<HASH-OR-NAME>" \
+  --entitlements ~/Developer/zwipe/zwiper/Entitlements-Release.plist \
+  ~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app
+# Should print: "replacing existing signature"
 ```
-
-Replace `<your name>` with the CN from `security find-identity -v -p codesigning`.
 
 ---
 
-## Step 6 — Package as IPA
+## Step 7 — Package as IPA
 
 ```bash
+cd ~/Developer/zwipe
 mkdir -p Payload
-cp -r ../target/dx/zwipe/release/ios/Zwipe.app Payload/
+cp -r target/dx/zwipe/release/ios/Zwipe.app Payload/
 zip -r Zwipe.ipa Payload
 rm -rf Payload
+# Zwipe.ipa is now in ~/Developer/zwipe/
 ```
 
 ---
 
-## Step 7 — App Store Connect Setup
+## Step 8 — App Store Connect Setup
 
 Go to [appstoreconnect.apple.com](https://appstoreconnect.apple.com).
 
@@ -137,7 +206,7 @@ Go to [appstoreconnect.apple.com](https://appstoreconnect.apple.com).
 | Field | Value |
 |-------|-------|
 | Platform | iOS |
-| Name | Zwipe |
+| Name | Zwipe MTG (note: "Zwipe" alone was taken) |
 | Primary Language | English (U.S.) |
 | Bundle ID | com.scadoshi.zwipe |
 | SKU | zwipe001 |
@@ -176,7 +245,7 @@ Select "Used for App Functionality" and "Not linked to user's identity" as appro
 
 ---
 
-## Step 8 — Upload
+## Step 9 — Upload
 
 ### Option A: Transporter (recommended for first time)
 
@@ -206,7 +275,7 @@ xcrun altool --upload-app -f Zwipe.ipa -t ios \
 
 ---
 
-## Step 9 — Submit for Review
+## Step 10 — Submit for Review
 
 1. Back in App Store Connect, the build should appear under your app version (may take 5–10 min to process)
 2. Select the build

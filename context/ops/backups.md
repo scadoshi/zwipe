@@ -72,7 +72,9 @@ Create `~/scripts/backup-db.sh`:
 #!/bin/bash
 set -euo pipefail
 
-DATABASE_URL="postgres://zwipe:N0zwiping@127.0.0.1/zwipe"
+set -a
+source ~/zwipe/.env
+set +a
 BACKUP_FILE="/tmp/zwipe-$(date +%Y%m%d).sql.gz"
 
 pg_dump "$DATABASE_URL" | gzip > "$BACKUP_FILE"
@@ -141,8 +143,9 @@ gunzip /tmp/zwipe-20260329.sql.gz
 sudo -u postgres dropdb zwipe
 sudo -u postgres createdb -O zwipe zwipe
 
-# 6. Restore
-psql "postgres://zwipe:N0zwiping@127.0.0.1/zwipe" < /tmp/zwipe-20260329.sql
+# 6. Restore (source .env for DATABASE_URL)
+set -a && source ~/zwipe/.env && set +a
+psql "$DATABASE_URL" < /tmp/zwipe-20260329.sql
 
 # 7. Restart zerver
 sudo systemctl start zerver
@@ -161,7 +164,8 @@ If rebuilding from scratch, create the user first:
 ```bash
 sudo -u postgres createuser zwipe -P   # prompts for password
 sudo -u postgres createdb -O zwipe zwipe
-psql "postgres://zwipe:N0zwiping@127.0.0.1/zwipe" < /tmp/zwipe-20260329.sql
+set -a && source ~/zwipe/.env && set +a
+psql "$DATABASE_URL" < /tmp/zwipe-20260329.sql
 ```
 
 ### Partial restore (single table)
@@ -170,8 +174,9 @@ If you only need to restore one table (e.g. user data got corrupted but cards ar
 
 ```bash
 # Extract just that table's data from the dump
+set -a && source ~/zwipe/.env && set +a
 pg_restore --data-only --table=users /tmp/zwipe-20260329.sql | \
-  psql "postgres://zwipe:N0zwiping@127.0.0.1/zwipe"
+  psql "$DATABASE_URL"
 ```
 
 **Note:** This only works if the backup was created with `pg_dump --format=custom`.
