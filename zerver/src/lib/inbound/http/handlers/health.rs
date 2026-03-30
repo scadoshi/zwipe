@@ -52,6 +52,7 @@ pub async fn root() -> Json<Value> {
 #[derive(Debug, Serialize)]
 struct HealthCheckResponse {
     status: String,
+    version: String,
     timestamp: String,
 }
 
@@ -59,6 +60,7 @@ impl HealthCheckResponse {
     fn new(status: &str) -> Self {
         Self {
             status: status.to_string(),
+            version: env!("CARGO_PKG_VERSION").to_string(),
             timestamp: Utc::now().to_rfc3339(),
         }
     }
