@@ -62,7 +62,129 @@ The same builds show **"Ready to Submit"** on the **TestFlight** tab with no war
 is stuck on the app record in App Store Connect, likely because the app was first created
 and uploaded from macOS 26.3.1 before Xcode 26.4 went GM on Mar 24.
 
-**Next step:** Delete the app record entirely and recreate it fresh (Test 5).
+**Next step:** Contact Apple Developer Support — we've exhausted all technical options.
+
+### Test 5 result: Fresh app record (completed 2026-03-29)
+- Registered new bundle ID `com.scadoshi.zwipetest`
+- Created new App Store provisioning profile for it
+- Created fresh app "Zwipe Test" in App Store Connect
+- Patched IPA with new bundle ID, entitlements, and provisioning profile
+- `altool --validate-app` passed with ZERO errors
+- `altool --upload-app` succeeded with ZERO errors
+- App Store Connect **STILL shows the same "beta Xcode" error**
+
+**Conclusion: The error is NOT tied to the app record.** A brand new app with a different
+bundle ID gets the same rejection. This rules out a cached/stuck flag on the original app.
+
+### Updated conclusion (2026-03-29)
+Every technical avenue has been exhausted:
+- Binary metadata is identical to native Xcode builds ✅
+- Signing infrastructure is clean ✅
+- `altool` validation passes with zero errors ✅
+- Fresh app record with different bundle ID — same error ✅
+- macOS 26.4 GM + Xcode 26.4 GM (from Mac App Store) ✅
+
+The error appears to be either:
+1. **An Apple-side bug** with Xcode 26.4 (released just 5 days ago on Mar 24)
+2. **A check in the App Store Connect web UI** that's stricter/different than `altool` validation
+3. **Something specific to non-Xcode-archived builds** that the web UI detects but `altool` doesn't
+
+### Forum research (completed 2026-03-29)
+
+**Relevant Apple Developer Forum threads:**
+- `developer.apple.com/forums/thread/819456` — "26.4 beta and RC versions are unable to..." — directly about Xcode 26.4
+- `developer.apple.com/forums/thread/812032` — "Xcode 26.2: Can't submit build to..." — same class of error with earlier Xcode
+- `developer.apple.com/forums/thread/806141` — "Clarification on Mandatory Xcode Version" — Xcode 26 requirements discussion
+- `developer.apple.com/forums/thread/725737` — "App created outside Xcode gets 'Xcode Beta'" — non-Xcode toolchain flagging
+
+**Key finding: Apple uses a backend flag system.**
+Apple's App Store Connect has a server-side flag that controls which Xcode versions are accepted for Distribution (separate from TestFlight/altool validation). Multiple developers across different Xcode releases report that **this flag lags behind the actual release by days**. This is a known pattern — "this happens every time new tools are released."
+
+This perfectly explains our situation:
+- Xcode 26.4 released Mar 24 (5 days ago) — flag likely not updated yet
+- TestFlight accepts builds ✅ (different validation path)
+- `altool --validate-app` passes ✅ (different validation path)
+- `altool --upload-app` succeeds ✅ (different validation path)
+- Only "Add for Review" in App Store Connect UI rejects ❌ (uses the backend flag)
+
+**Other relevant resources:**
+- `georgegarside.com/blog/ios/submit-apps-built-beta-xcode/` — explains BuildMachineOSBuild mechanism
+- `pmbaty.com/iosbuildenv/help/...` — comprehensive breakdown of DT keys for non-Xcode toolchains
+- `github.com/electron/electron/issues/33054` — Electron hit the same error (not Rust-specific)
+- `github.com/DioxusLabs/dioxus/issues/3817` — Dioxus iOS App Store docs (missing DTPlatformName), but no one reported this specific beta rejection
+- `dev.to/arshtechpro/xcode-264-here-is-what-actually-matters-for-devs-2hke` — confirms Xcode 26.4 build 17E192, released Mar 24
+- Apple mandates Xcode 26 for all App Store submissions by **April 28, 2026**
+
+**Possible workaround not yet tried:**
+- Install Xcode 26.3 side-by-side and rebuild — its backend flag should already be active since it's been out longer. Requires downloading from developer.apple.com/download/more.
+
+### TestFlight also blocked (2026-03-29)
+TestFlight external distribution (Submit for Beta Review) also rejects with the same error.
+Internal testing status shows "Ready to Submit" but cannot actually be submitted.
+Same backend flag blocks both App Store and TestFlight submission paths.
+
+### Attempting Xcode 26.3 workaround (2026-03-29)
+Since Apple's backend flag hasn't whitelisted Xcode 26.4 yet (released Mar 24, 5 days ago),
+rebuilding with Xcode 26.3 (which has been out for months) should bypass the flag.
+
+Steps:
+1. Download Xcode 26.3 from developer.apple.com/download/all
+2. Install to `/Applications/Xcode-26.3.app`
+3. `sudo xcode-select -s /Applications/Xcode-26.3.app`
+4. Rebuild, patch, sign, package, upload
+5. Switch back to 26.4 after Apple updates: `sudo xcode-select -s /Applications/Xcode.app`
+
+### Xcode 26.3 also rejected (2026-03-29)
+- Rebuilt with Xcode 26.3 (17C529), SDK 26.2, LD 1230.1
+- Build 9 validated and uploaded successfully via altool
+- App Store Connect STILL shows the same "beta Xcode" error
+- This rules out the "backend flag lag" theory — Xcode 26.3 has been out for months
+
+### Test 1 result: Native Swift binary (completed 2026-03-29)
+Built a minimal Swift iOS app with `xcrun -sdk iphoneos swiftc`, packaged identically
+to our Zwipe builds, uploaded to the Zwipe Test app (com.scadoshi.zwipetest).
+
+**Result: SAME "beta Xcode" ERROR.**
+
+**This definitively proves the issue is ACCOUNT-LEVEL, not binary/toolchain-level.**
+A native Swift binary compiled by Apple's own compiler, with Apple's own SDK and linker,
+gets rejected with the same error. Rust, Dioxus, cargo — none of these are the problem.
+
+### Root cause: Account-level issue
+The "beta Xcode" error message is likely **misleading**. Possible actual causes:
+1. **Pending license agreement** — Apple may have updated the Developer Program License Agreement
+   and it hasn't been accepted yet. Check developer.apple.com/account for banners.
+2. **App Store Connect agreements** — paid apps agreement, tax forms, or updated terms
+   may need to be accepted. Check appstoreconnect.apple.com → Business tab.
+3. **Account flag** — the account may have been enrolled or first used while on beta macOS,
+   creating a server-side flag that blocks submission.
+4. **Apple-side bug** — their validation system may be broken for recently created accounts
+   or for accounts using Xcode 26.4.
+
+### Status: Support ticket filed (2026-03-29)
+Filed with Apple Developer Support at developer.apple.com/contact.
+Awaiting response.
+
+**Summary of evidence for Apple Support:**
+- 9 builds uploaded, 2 bundle IDs, 2 Xcode versions (26.3 + 26.4)
+- Native Swift binary (not Rust) also rejected with same error
+- `xcrun altool --validate-app` passes with ZERO errors on all builds
+- `xcrun altool --upload-app` succeeds with ZERO errors on all builds
+- TestFlight shows all builds as "Ready to Submit"
+- Only "Add for Review" in App Store Connect UI rejects
+- macOS 26.4 GM (Mac App Store) + Xcode 26.4 GM (Mac App Store)
+- Account: SCOTTY RAY FERMO, Team ID VV74WQ89GD
+
+### Things to check while waiting
+1. developer.apple.com/account → any banner about pending agreements?
+2. appstoreconnect.apple.com → Business tab → any pending tax/banking forms?
+3. appstoreconnect.apple.com → Agreements, Tax, Banking → any "Review" buttons?
+4. Try a different browser or incognito window
+
+### Recommended next steps
+1. **Wait for Apple Support response** — this is an account-level issue only they can fix
+2. **Check for pending agreements** — this is the most likely quick fix
+3. **Try again in a few days** — if it's a server-side flag, it may resolve on its own
 
 ### Key observation
 **TestFlight accepts all builds as "Ready to Submit"** but Distribution rejects them.
