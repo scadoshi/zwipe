@@ -12,8 +12,6 @@ to `~/zwipe/`, and restarts the systemd service. No network tunnels, no deploy k
 
 Triggers automatically on push to `main` when any of these paths change:
 - `zerver/**`
-- `zwipe/**`
-- `zervice/**`
 - `.github/workflows/deploy-zerver.yml`
 
 Also has `workflow_dispatch` for manual runs from the GitHub Actions tab.

@@ -310,16 +310,21 @@ What each command does:
 
 ---
 
-## zervice Cron (Nightly Scryfall Sync)
+## zervice Cron (Nightly Scryfall Sync + Session Cleanup)
 
 ```bash
 crontab -e
-# Add: 0 4 * * * /home/scadoshi/zwipe/zervice >> /home/scadoshi/zwipe/zervice.log 2>&1
+# Add: 0 4 * * * set -a && source /home/scadoshi/zwipe/.env && set +a && /home/scadoshi/zwipe/zervice
 ```
+
+zervice is a run-once binary — it syncs cards from Scryfall, cleans expired sessions,
+and exits. Logs are written to `$LOG_DIR/zervice.YYYY-MM-DD.log` (default: `/var/log/zwipe/`).
 
 Run manually first to seed card data:
 ```bash
-cd ~/zwipe && ./zervice
+cd ~/zwipe
+set -a && source .env && set +a
+./zervice
 ```
 
 ---
