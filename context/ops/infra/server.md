@@ -168,6 +168,28 @@ This re-syncs all 35k+ cards from Scryfall. Takes a few minutes.
 
 ---
 
+## Change Database Password
+
+```bash
+# 1. Generate a new password
+openssl rand -hex 24
+
+# 2. Change it in PostgreSQL
+sudo -u postgres psql -c "ALTER USER zwipe WITH PASSWORD 'NEW_PASSWORD';"
+
+# 3. Update DATABASE_URL in ~/zwipe/.env
+nano ~/zwipe/.env
+
+# 4. Restart zerver
+sudo systemctl restart zerver
+sudo systemctl status zerver
+```
+
+URL-encode special characters in `DATABASE_URL` if needed (e.g. `<` → `%3C`).
+No cron or CI changes required — both source the same `.env`.
+
+---
+
 ## Log Directory
 
 zerver writes rolling daily logs to `/var/log/zwipe/`. The app calls `create_dir_all` on startup
