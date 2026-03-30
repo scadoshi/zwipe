@@ -112,7 +112,7 @@ If the server is rebuilt and the runner is lost:
 Tailscale is used for SSHing into the server from your Mac or any network. It is **not**
 used for CI/CD deploys (self-hosted runner eliminated that need).
 
-**Current server Tailscale IP**: check Tailscale admin console — stable, never changes even if ISP rotates public IP.
+**Current server Tailscale IP**: `100.91.55.16` — stable, never changes even if ISP rotates public IP. This is a private Tailscale IP, not publicly routable.
 
 ### Setup
 
@@ -129,13 +129,13 @@ Install from the App Store, sign in with the same account.
 
 **SSH into server from anywhere:**
 ```bash
-ssh scadoshi@<tailscale-ip>
+ssh scadoshi@100.91.55.16
 ```
 
 ### Tailscale Admin Configuration
 
 - **Tag**: `tag:ci` (Access controls → Tags)
-- **ACL rule**: `tag:ci → <server-tailscale-ip>` all ports (kept for potential future use)
+- **ACL rule**: `tag:ci → 100.91.55.16` all ports (kept for potential future use)
 - **OAuth credential**: `github-actions` with `devices:core` + `auth_keys` scopes (kept for reference)
 
 ### Notes
