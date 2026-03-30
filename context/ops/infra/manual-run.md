@@ -6,7 +6,7 @@ require sourcing the `.env` first.
 
 ---
 
-## Run zervice manually (Scryfall sync)
+## Run zervice manually (Scryfall sync + session cleanup)
 
 ```bash
 cd ~/zwipe
@@ -14,7 +14,8 @@ set -a && source .env && set +a
 ./zervice
 ```
 
-Useful after dropping/recreating the database to repopulate cards immediately
+zervice is a run-once binary — it syncs cards from Scryfall, cleans expired sessions,
+and exits. Useful after dropping/recreating the database to repopulate cards immediately
 instead of waiting for the nightly cron.
 
 ---
