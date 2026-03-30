@@ -16,11 +16,11 @@ path = "src/lib/lib.rs"
 
 [[bin]]
 name = "zerver"
-path = "src/bin/zerver/main.rs"
+path = "src/bin/zerver.rs"
 
 [[bin]]
 name = "zervice"
-path = "src/bin/zervice/main.rs"
+path = "src/bin/zervice.rs"
 
 [dependencies]
 
