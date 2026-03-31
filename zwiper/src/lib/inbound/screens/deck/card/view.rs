@@ -560,6 +560,20 @@ pub fn View(deck_id: Uuid) -> Element {
                     onclick: move |_| filters_overlay_open.set(true),
                     "filter"
                 }
+                button {
+                    class: "util-btn",
+                    onclick: move |_| {
+                        navigator.push(crate::inbound::router::Router::AddDeckCard { deck_id });
+                    },
+                    "add"
+                }
+                button {
+                    class: "util-btn",
+                    onclick: move |_| {
+                        navigator.push(crate::inbound::router::Router::RemoveDeckCard { deck_id });
+                    },
+                    "remove"
+                }
                 if !filter_builder.read().is_empty() {
                     button {
                         class: "util-btn util-btn-clear",
