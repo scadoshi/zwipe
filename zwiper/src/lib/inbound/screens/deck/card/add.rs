@@ -68,9 +68,6 @@ pub fn Add(deck_id: Uuid) -> Element {
     // Key for remounting the filter accordion — incremented on every apply to close open groups
     let mut accordion_key: Signal<u32> = use_signal(|| 0);
 
-    // Refresh trigger - incrementing this re-runs the card search effect
-    let mut refresh_trigger = use_signal(|| false);
-
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let toast = use_toast();
@@ -348,8 +345,6 @@ pub fn Add(deck_id: Uuid) -> Element {
     });
 
     use_effect(move || {
-        // Read refresh_trigger to make effect re-run when button clicked
-        let _ = refresh_trigger();
         let _ = filter_reset_counter();
 
         let first = is_first_run.get();
@@ -362,6 +357,9 @@ pub fn Add(deck_id: Uuid) -> Element {
 
         if first {
             // ── Initial mount ─────────────────────────────────────────
+            if builder.is_empty() {
+                toast.warning("filter is empty".to_string(), ToastOptions::default().duration(Duration::from_millis(2000)));
+            }
             // Preserve cards if the filter hasn't changed since last search.
             let filter_unchanged = last_search_filter
                 .peek()
@@ -398,9 +396,9 @@ pub fn Add(deck_id: Uuid) -> Element {
             return;
         };
 
-        // Don't call session.upkeep here - it creates a loop when session updates
-        // The interval-based upkeep in Bouncer handles session refresh
-        let Some(session) = session() else {
+        // Peek session to avoid subscribing this effect to session changes.
+        // The interval-based upkeep in Bouncer handles session refresh.
+        let Some(session) = session.peek().clone() else {
             toast.error("session expired".to_string(), ToastOptions::default());
             return;
         };
@@ -565,8 +563,16 @@ pub fn Add(deck_id: Uuid) -> Element {
                             }
                         }
                     } else if is_loading_cards() {
-                        div { class: "card-shape flex-center",
-                            div { class: "spinner" }
+                        div { class: "skeleton-card",
+                            div { class: "skeleton-image",
+                                div { class: "spinner" }
+                            }
+                            div { class: "skeleton-info",
+                                div { class: "skeleton-bar skeleton-bar-price" }
+                                div { class: "skeleton-bar skeleton-bar-set" }
+                                div { class: "skeleton-bar skeleton-bar-date" }
+                                div { class: "skeleton-bar skeleton-bar-artist" }
+                            }
                         }
                     } else {
                         div { class: "skeleton-card",
@@ -600,18 +606,66 @@ pub fn Add(deck_id: Uuid) -> Element {
                 button {
                     class: "util-btn",
                     onclick: move |_| {
-                        if filter_builder.read().is_empty() {
+                        let mut builder = filter_builder.peek().clone();
+                        builder.set_is_token(false);
+                        builder.set_limit(pagination_limit);
+                        builder.set_offset(0);
+
+                        let Ok(filter) = builder.build() else {
                             toast.warning(
                                 "filter is empty".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
                             );
-                        } else {
-                            toast.info(
-                                "search refreshed".to_string(),
-                                ToastOptions::default().duration(Duration::from_millis(1500)),
-                            );
-                            refresh_trigger.set(!refresh_trigger());
-                        }
+                            return;
+                        };
+
+                        let Some(session) = session.peek().clone() else {
+                            toast.error("session expired".to_string(), ToastOptions::default());
+                            return;
+                        };
+
+                        cards.set(vec![]);
+                        last_search_filter.set(None);
+                        current_offset.set(0);
+                        current_index.set(0);
+                        pagination_exhausted.set(false);
+                        is_loading_cards.set(true);
+
+                        let filter_snapshot = filter_builder.peek().clone();
+
+                        spawn(async move {
+                            match client().search_cards(&filter, &session).await {
+                                Ok(cards_from_search) => {
+                                    let deck_ids = deck_cards_ids();
+                                    cards.set(
+                                        cards_from_search
+                                            .into_iter()
+                                            .filter(|card| {
+                                                card.scryfall_data
+                                                    .image_uris
+                                                    .as_ref()
+                                                    .and_then(|x| x.large.as_ref())
+                                                    .is_some()
+                                                    && !deck_ids.contains(&card.scryfall_data.id)
+                                            })
+                                            .collect(),
+                                    );
+                                    last_search_filter.set(Some(filter_snapshot));
+                                    current_offset.set(pagination_limit);
+                                    is_loading_cards.set(false);
+                                }
+                                Err(e) => {
+                                    tracing::warn!("card search failed: {e}");
+                                    toast.error(e.to_string(), ToastOptions::default());
+                                    is_loading_cards.set(false);
+                                }
+                            }
+                        });
+
+                        toast.info(
+                            "search refreshed".to_string(),
+                            ToastOptions::default().duration(Duration::from_millis(1500)),
+                        );
                     },
                     "refresh"
                 }

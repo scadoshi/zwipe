@@ -350,8 +350,14 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             }
                         }
                     } else {
-                        div { class: "card-shape flex-center",
-                            "no cards"
+                        div { class: "skeleton-card",
+                            div { class: "skeleton-image", "no cards" }
+                            div { class: "skeleton-info",
+                                div { class: "skeleton-bar skeleton-bar-price" }
+                                div { class: "skeleton-bar skeleton-bar-set" }
+                                div { class: "skeleton-bar skeleton-bar-date" }
+                                div { class: "skeleton-bar skeleton-bar-artist" }
+                            }
                         }
                     }
 

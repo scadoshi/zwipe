@@ -909,22 +909,6 @@ body {
     width: 100%;
 }
 
-.card-shape {
-    padding: 1rem;
-    border: 1px solid var(--border-primary);
-    border-radius: 4.5% / 3.5%;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    margin: 1rem auto 0.75rem auto;
-    width: calc(100vw - 2rem);
-    flex: 1;
-    min-height: 0;
-    max-width: calc(100vw - 2rem);
-    aspect-ratio: 5 / 7;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
 
 /* ===========================
   specific - skeleton
@@ -949,7 +933,7 @@ body {
     align-items: center;
     justify-content: center;
     color: var(--text-muted);
-    font-size: 0.85rem;
+    font-size: 0.975rem;
     animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
