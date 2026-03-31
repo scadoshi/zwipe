@@ -69,8 +69,12 @@ impl ApiError {
     /// Returns a safe, user-facing message — never leaks internal details like URLs or stack traces.
     pub fn to_user_message(&self) -> String {
         match self {
-            ApiError::Network(_) => "connection error — check your network and try again".to_string(),
-            ApiError::InternalServerError(_) => "something went wrong — please try again".to_string(),
+            ApiError::Network(_) => {
+                "connection error — check your network and try again".to_string()
+            }
+            ApiError::InternalServerError(_) => {
+                "something went wrong — please try again".to_string()
+            }
             other => other.to_string(),
         }
     }
@@ -180,10 +184,7 @@ async fn security_headers(request: Request, next: Next) -> Response {
         header::X_CONTENT_TYPE_OPTIONS,
         HeaderValue::from_static("nosniff"),
     );
-    headers.insert(
-        header::X_FRAME_OPTIONS,
-        HeaderValue::from_static("DENY"),
-    );
+    headers.insert(header::X_FRAME_OPTIONS, HeaderValue::from_static("DENY"));
     headers.insert(
         header::REFERRER_POLICY,
         HeaderValue::from_static("strict-origin-when-cross-origin"),
@@ -251,6 +252,7 @@ impl HttpServer {
             },
         );
 
+        let jwt_secret = auth_service.jwt_secret().clone();
         let state = AppState {
             auth_service: Arc::new(auth_service),
             user_service: Arc::new(user_service),
@@ -260,7 +262,7 @@ impl HttpServer {
         };
 
         let router = axum::Router::new()
-            .merge(private_routes())
+            .merge(private_routes(jwt_secret))
             .merge(public_routes())
             .layer(trace_layer)
             .layer(
