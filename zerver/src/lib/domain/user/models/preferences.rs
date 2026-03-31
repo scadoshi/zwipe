@@ -14,6 +14,7 @@ pub const ALLOWED_THEMES: &[&str] = &[
     "everforest",
     "gruvbox",
     "nord",
+    "rose-pine",
     "rustbox",
     "tokyo-night",
     "zwipe",

@@ -26,13 +26,26 @@ pub fn Preferences() -> Element {
     let mut theme_config: Signal<ThemeConfig> = use_context();
     let toast = use_toast();
 
+    // Snapshot the original theme so we can restore on back-without-save
+    let original_theme = use_signal(|| theme_config.read().clone());
+
     let mut selected_theme = use_signal(|| theme_config.read().name.clone());
     let mut selected_dark = use_signal(|| theme_config.read().is_dark);
     let mut is_loading = use_signal(|| false);
+    let mut saved = use_signal(|| false);
 
     let is_dark_only = move || {
         let t = selected_theme();
         t == "zwipe"
+    };
+
+    // Live preview: update theme_config whenever selection changes
+    let mut apply_preview = move || {
+        let dark = if is_dark_only() { true } else { selected_dark() };
+        theme_config.set(ThemeConfig {
+            name: selected_theme(),
+            is_dark: dark,
+        });
     };
 
     let mut save = move || {
@@ -55,6 +68,7 @@ pub fn Preferences() -> Element {
             match client().update_preferences(request, &session_val).await {
                 Ok(prefs) => {
                     theme_config.set(ThemeConfig::from(&prefs));
+                    saved.set(true);
                     toast.success(
                         "preferences saved".to_string(),
                         ToastOptions::default().duration(Duration::from_millis(1500)),
@@ -91,6 +105,7 @@ pub fn Preferences() -> Element {
                                     if *theme == "zwipe" {
                                         selected_dark.set(true);
                                     }
+                                    apply_preview();
                                 },
                                 "{theme}"
                             }
@@ -104,6 +119,7 @@ pub fn Preferences() -> Element {
                                 disabled: is_dark_only(),
                                 onclick: move |_| {
                                     selected_dark.set(!selected_dark());
+                                    apply_preview();
                                 },
                                 if selected_dark() { "on" } else { "off" }
                             }
@@ -114,7 +130,12 @@ pub fn Preferences() -> Element {
                 div { class: "util-bar",
                     button {
                         class: "util-btn",
-                        onclick: move |_| navigator.go_back(),
+                        onclick: move |_| {
+                            if !saved() {
+                                theme_config.set(original_theme());
+                            }
+                            navigator.go_back();
+                        },
                         "back"
                     }
                     button {
