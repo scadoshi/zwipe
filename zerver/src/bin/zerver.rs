@@ -49,7 +49,7 @@ async fn run() -> anyhow::Result<()> {
                 .with_filter(level_filter),
         )
         .init();
-    tracing::info!("zerver v{} starting", env!("CARGO_PKG_VERSION"));
+    tracing::info!("zerver running v{}", env!("CARGO_PKG_VERSION"));
     let db = Postgres::new(&config.database_url).await?;
     let resend = Resend::new(config.resend_api_key, config.resend_from_email);
     let auth_service = auth::services::Service::new(db.clone(), db.clone(), resend, config.jwt_secret);

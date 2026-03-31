@@ -52,7 +52,7 @@ async fn main() -> anyhow::Result<()> {
                 .with_filter(level_filter),
         )
         .init();
-    tracing::info!("zervice v{} starting", env!("CARGO_PKG_VERSION"));
+    tracing::info!("zervice running v{}", env!("CARGO_PKG_VERSION"));
 
     let db = Postgres::new(&config.database_url).await?;
     let card_service = CardService_::new(db.clone());

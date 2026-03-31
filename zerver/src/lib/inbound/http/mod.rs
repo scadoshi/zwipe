@@ -284,7 +284,7 @@ impl HttpServer {
     /// Starts serving HTTP requests.
     pub async fn run(self) -> anyhow::Result<()> {
         tracing::info!(
-            "server running on {}",
+            "listening on {}",
             self.listener.local_addr().map_err(|e| anyhow!(e))?
         );
         axum::serve(
