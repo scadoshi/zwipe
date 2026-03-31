@@ -663,7 +663,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         });
 
                         toast.info(
-                            "search refreshed".to_string(),
+                            "stack refreshed".to_string(),
                             ToastOptions::default().duration(Duration::from_millis(1500)),
                         );
                     },

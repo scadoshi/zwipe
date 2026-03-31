@@ -385,7 +385,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             filter_reset_counter.set(current + 1);
                         }
                         toast.info(
-                            "back to start".to_string(),
+                            "stack refreshed".to_string(),
                             ToastOptions::default().duration(Duration::from_millis(1500)),
                         );
                     },
