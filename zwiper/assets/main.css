@@ -908,6 +908,15 @@ body {
     color: var(--bg-primary);
 }
 
+.form-container {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
 .card-shape {
     padding: 1rem;
     border: 1px solid var(--border-primary);
@@ -916,7 +925,9 @@ body {
     transition: all 0.2s ease;
     margin: 1rem auto 0.75rem auto;
     width: calc(100vw - 2rem);
-    max-height: calc(100svh - 13rem);
+    flex: 1;
+    min-height: 0;
+    max-width: calc(100vw - 2rem);
     aspect-ratio: 5 / 7;
     display: flex;
     align-items: center;
@@ -928,15 +939,12 @@ body {
  ============================= */
 
 .swipeable {
-    position: sticky;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    overflow-y: auto;
     justify-content: center;
 }
 
@@ -1147,9 +1155,9 @@ body {
 .card-image {
     display: block;
     object-fit: contain;
-    max-height: calc(100svh - 13rem);
+    flex: 1;
+    min-height: 0;
     max-width: calc(100% - 2rem);
-    height: auto;
     border-radius: 1rem;
     margin: 1rem auto 0.75rem auto;
 }
@@ -1165,6 +1173,7 @@ body {
 .card-info {
     display: flex;
     flex-direction: column;
+    flex-shrink: 0;
     gap: 0.25rem;
     font-size: 0.75rem;
     color: var(--text-muted);

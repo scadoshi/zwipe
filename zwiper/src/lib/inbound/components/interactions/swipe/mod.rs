@@ -83,6 +83,7 @@ pub fn Swipeable(
 
     rsx! {
             div {
+                    class: "swipeable",
                     style : format!(
                     "transform: translate({xpx}px, {ypx}px);
                     transition: transform {return_animation_seconds}s;"
