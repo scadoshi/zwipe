@@ -1,23 +1,13 @@
 //! JWT authentication middleware.
 
-#[cfg(feature = "zerver")]
-use axum::{
-    extract::FromRequestParts,
-    http::{request::Parts, StatusCode},
-};
-#[cfg(feature = "zerver")]
-use axum_extra::{
-    headers::{authorization::Bearer, Authorization},
-    TypedHeader,
-};
-use email_address::EmailAddress;
-use uuid::Uuid;
-
 use crate::domain::user::models::username::Username;
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
-        auth::{models::access_token::UserClaims, ports::AuthService},
+        auth::{
+            models::access_token::{Jwt, JwtSecret, UserClaims},
+            ports::AuthService,
+        },
         card::ports::CardService,
         deck::ports::DeckService,
         health::ports::HealthService,
@@ -25,6 +15,24 @@ use crate::{
     },
     inbound::http::AppState,
 };
+#[cfg(feature = "zerver")]
+use axum::http::header::AUTHORIZATION;
+#[cfg(feature = "zerver")]
+use axum::{
+    extract::FromRequestParts,
+    http::{StatusCode, request::Parts},
+};
+#[cfg(feature = "zerver")]
+use axum_extra::{
+    TypedHeader,
+    headers::{Authorization, authorization::Bearer},
+};
+use email_address::EmailAddress;
+#[cfg(feature = "zerver")]
+use std::str::FromStr;
+#[cfg(feature = "zerver")]
+use tower_governor::{GovernorError, key_extractor::KeyExtractor};
+use uuid::Uuid;
 
 /// Axum extractor that enforces JWT authentication.
 ///
@@ -43,6 +51,48 @@ pub struct AuthenticatedUser {
     pub email: EmailAddress,
     /// Whether the user's email was verified at token generation time.
     pub email_verified: bool,
+}
+
+/// Rate-limit key extractor that keys by authenticated user ID from the JWT.
+///
+/// Used on private routes so each user gets their own rate limit bucket
+/// regardless of IP address. Falls back to `UnableToExtractKey` for
+/// missing or invalid tokens — the auth middleware rejects those downstream.
+#[cfg(feature = "zerver")]
+#[derive(Debug, Clone)]
+pub struct UserIdKeyExtractor {
+    jwt_secret: JwtSecret,
+}
+
+#[cfg(feature = "zerver")]
+impl UserIdKeyExtractor {
+    /// Creates a new extractor with the given JWT secret for token validation.
+    pub fn new(jwt_secret: JwtSecret) -> Self {
+        Self { jwt_secret }
+    }
+}
+
+#[cfg(feature = "zerver")]
+impl KeyExtractor for UserIdKeyExtractor {
+    type Key = Uuid;
+    fn extract<T>(
+        &self,
+        req: &axum::http::Request<T>,
+    ) -> Result<Self::Key, tower_governor::errors::GovernorError> {
+        let token = req
+            .headers()
+            .get(AUTHORIZATION)
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.strip_prefix("Bearer "))
+            .ok_or(GovernorError::UnableToExtractKey)?;
+
+        let jwt = Jwt::from_str(token).map_err(|_| GovernorError::UnableToExtractKey)?;
+        let claims = jwt
+            .validate(&self.jwt_secret)
+            .map_err(|_| GovernorError::UnableToExtractKey)?;
+
+        Ok(claims.user_id)
+    }
 }
 
 impl From<UserClaims> for AuthenticatedUser {

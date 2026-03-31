@@ -1,6 +1,8 @@
 //! Route definitions and path constants shared between frontend and backend.
 
 #[cfg(feature = "zerver")]
+use crate::domain::auth::models::access_token::JwtSecret;
+#[cfg(feature = "zerver")]
 use crate::domain::{
     auth::ports::AuthService, card::ports::CardService, deck::ports::DeckService,
     health::ports::HealthService, user::ports::UserService,
@@ -37,6 +39,8 @@ use crate::inbound::http::handlers::{
         update_preferences::update_preferences,
     },
 };
+#[cfg(feature = "zerver")]
+use crate::inbound::http::middleware::UserIdKeyExtractor;
 #[cfg(feature = "zerver")]
 use axum::Router;
 #[cfg(feature = "zerver")]
@@ -134,11 +138,13 @@ where
                     )
                     .route(
                         "/verify-email",
-                        post(verify_email).layer(GovernorLayer::new(Arc::clone(&verify_reset_config))),
+                        post(verify_email)
+                            .layer(GovernorLayer::new(Arc::clone(&verify_reset_config))),
                     )
                     .route(
                         "/forgot-password",
-                        post(request_password_reset).layer(GovernorLayer::new(forgot_password_config)),
+                        post(request_password_reset)
+                            .layer(GovernorLayer::new(forgot_password_config)),
                     )
                     .route(
                         "/reset-password",
@@ -151,7 +157,9 @@ where
 /// Routes that require `AuthenticatedUser` (JWT Bearer token).
 #[cfg(feature = "zerver")]
 #[allow(clippy::expect_used)]
-pub fn private_routes<AS, US, HS, CS, DS>() -> Router<AppState<AS, US, HS, CS, DS>>
+pub fn private_routes<AS, US, HS, CS, DS>(
+    jwt_secret: JwtSecret,
+) -> Router<AppState<AS, US, HS, CS, DS>>
 where
     AS: AuthService,
     US: UserService,
@@ -159,12 +167,12 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    // 500 req / 5min (~1.67/s avg) — generous for swiping, IP-based since JWT already guards routes
+    // 500 req / 5min (~1.67/s avg) — generous for swiping, keyed by user ID
     let private_config = Arc::new(
         GovernorConfigBuilder::default()
             .period(Duration::from_millis(600))
             .burst_size(500)
-            .key_extractor(PeerIpKeyExtractor)
+            .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
@@ -173,7 +181,7 @@ where
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(1800))
             .burst_size(2)
-            .key_extractor(PeerIpKeyExtractor)
+            .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
@@ -182,7 +190,7 @@ where
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(10))
             .burst_size(20)
-            .key_extractor(PeerIpKeyExtractor)
+            .key_extractor(UserIdKeyExtractor::new(jwt_secret))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
@@ -201,17 +209,35 @@ where
                     "/user",
                     Router::new()
                         .route("/", get(get_user))
-                        .route("/change-password", put(change_password).layer(GovernorLayer::new(Arc::clone(&sensitive_config))))
-                        .route("/change-username", put(change_username).layer(GovernorLayer::new(Arc::clone(&sensitive_config))))
-                        .route("/change-email", put(change_email).layer(GovernorLayer::new(Arc::clone(&sensitive_config))))
-                        .route("/delete-user", delete(delete_user).layer(GovernorLayer::new(sensitive_config)))
+                        .route(
+                            "/change-password",
+                            put(change_password)
+                                .layer(GovernorLayer::new(Arc::clone(&sensitive_config))),
+                        )
+                        .route(
+                            "/change-username",
+                            put(change_username)
+                                .layer(GovernorLayer::new(Arc::clone(&sensitive_config))),
+                        )
+                        .route(
+                            "/change-email",
+                            put(change_email)
+                                .layer(GovernorLayer::new(Arc::clone(&sensitive_config))),
+                        )
+                        .route(
+                            "/delete-user",
+                            delete(delete_user).layer(GovernorLayer::new(sensitive_config)),
+                        )
                         .route("/preferences", get(get_preferences).put(update_preferences)),
                 )
                 .nest(
                     "/card",
                     Router::new()
                         .route("/{scryfall_data_id}", get(get_card))
-                        .route("/search", post(search_cards).layer(GovernorLayer::new(card_search_config)))
+                        .route(
+                            "/search",
+                            post(search_cards).layer(GovernorLayer::new(card_search_config)),
+                        )
                         .route("/artists", get(get_artists))
                         .route("/types", get(get_card_types))
                         .route("/keywords", get(get_keywords))
