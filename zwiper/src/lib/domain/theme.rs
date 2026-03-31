@@ -14,7 +14,7 @@ pub struct ThemeConfig {
 impl ThemeConfig {
     /// Returns the CSS class to apply to the screen root.
     ///
-    /// Dark-only themes (zwipe, vantablack) get `theme-{name}`.
+    /// Dark-only themes (zwipe) get `theme-{name}`.
     /// Others get `theme-{name}-{dark|light}`.
     /// The default zwipe theme returns an empty string since `:root` already
     /// defines the zwipe colors.

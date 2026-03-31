@@ -126,14 +126,6 @@
     --shadow-sm: 0 4px 12px rgba(0,0,0,0.1); --shadow-md: 0 4px 12px rgba(0,0,0,0.15);
 }
 
-.theme-vantablack {
-    --bg-primary: #000000; --bg-overlay: rgba(0,0,0,0.8);
-    --text-primary: #ffffff; --text-muted: #808080; --text-subtle: #b0b0b0;
-    --border-primary: #1e1e1e; --border-secondary: #0a0a0a; --border-muted: #141414;
-    --color-error: #ff6b6b; --color-success: #51cf66; --color-warning: #fcc419;
-    --border-error: #df4b4b; --border-success: #31af46; --border-warning: #dca409;
-    --shadow-sm: 0 4px 12px rgba(0,0,0,0.5); --shadow-md: 0 4px 12px rgba(0,0,0,0.7);
-}
 
 /* ==================
         colors (default: zwipe)

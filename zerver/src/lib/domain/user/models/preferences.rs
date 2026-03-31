@@ -16,12 +16,11 @@ pub const ALLOWED_THEMES: &[&str] = &[
     "nord",
     "rustbox",
     "tokyo-night",
-    "vantablack",
     "zwipe",
 ];
 
 /// Themes that do not support light mode.
-pub const DARK_ONLY_THEMES: &[&str] = &["zwipe", "vantablack"];
+pub const DARK_ONLY_THEMES: &[&str] = &["zwipe"];
 
 /// User display preferences.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -57,7 +56,7 @@ pub struct UpdatePreferences {
 impl UpdatePreferences {
     /// Validates and constructs the request.
     ///
-    /// Forces `dark_mode = true` for dark-only themes (zwipe, vantablack).
+    /// Forces `dark_mode = true` for dark-only themes (zwipe).
     pub fn new(
         user_id: Uuid,
         theme: Option<&str>,
@@ -161,13 +160,6 @@ mod tests {
     #[test]
     fn forces_dark_mode_for_zwipe() {
         let result = UpdatePreferences::new(Uuid::new_v4(), Some("zwipe"), Some(false)).unwrap();
-        assert_eq!(result.dark_mode, Some(true));
-    }
-
-    #[test]
-    fn forces_dark_mode_for_vantablack() {
-        let result =
-            UpdatePreferences::new(Uuid::new_v4(), Some("vantablack"), Some(false)).unwrap();
         assert_eq!(result.dark_mode, Some(true));
     }
 

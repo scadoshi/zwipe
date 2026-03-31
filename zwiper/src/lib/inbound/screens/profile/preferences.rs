@@ -32,7 +32,7 @@ pub fn Preferences() -> Element {
 
     let is_dark_only = move || {
         let t = selected_theme();
-        t == "zwipe" || t == "vantablack"
+        t == "zwipe"
     };
 
     let mut save = move || {
@@ -88,7 +88,7 @@ pub fn Preferences() -> Element {
                                 class: if selected_theme() == *theme { "pref-row selected" } else { "pref-row" },
                                 onclick: move |_| {
                                     selected_theme.set(theme.to_string());
-                                    if *theme == "zwipe" || *theme == "vantablack" {
+                                    if *theme == "zwipe" {
                                         selected_dark.set(true);
                                     }
                                 },
