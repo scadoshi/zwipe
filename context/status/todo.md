@@ -22,10 +22,13 @@
 
 ---
 
-## Android
+## Android — Near Submission Ready
 
-- [ ] Card images showing white corners (border-radius not clipping properly)
-- [ ] Refresh with filters set doesn't reset card index — image/stats stick on old card
+Android build compiles and runs. Remaining polish before Play Store submission:
+
+- [ ] Card images show white corners — the white is baked into the image data from Scryfall (white-bordered card editions). iOS clips correctly via WKWebView; Android WebView does not honor `overflow: hidden` + `border-radius` on `object-fit: contain` images. Tried: `overflow: hidden` on img, wrapper div with `border-radius` + `overflow: hidden`, `-webkit-mask-image` hack. None work on Android WebView. Options: crop with `object-fit: cover` (loses card edges), mask SVG overlay, or accept as-is for black-bordered cards (majority) and revisit for white-bordered.
+- [ ] Swipe gesture doesn't tilt the card — cards should rotate slightly during drag like they do on iOS
+- [x] Refresh with filters set doesn't reset card index — fixed by inlining refresh logic in onclick handler instead of signal-triggered effect (`59e5298`)
 
 ---
 
