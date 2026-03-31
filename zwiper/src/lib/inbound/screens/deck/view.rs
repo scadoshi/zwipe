@@ -230,6 +230,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                 }
 
                                 if let (Some(m), Some(mana_curve_bars)) = (metrics.as_ref(), mana_curve_bars.as_ref()) {
+                                  div { class: "content-enter",
                                     label { class: "label", "stats" }
                                     div { class: "info-list",
                                         div { class: "info-row",
@@ -342,6 +343,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                             }
                                         }
                                     }
+                                  }
                                 }
 
                             }
