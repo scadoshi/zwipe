@@ -382,14 +382,13 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     },
                     "add"
                 }
-                if metrics.is_some() {
-                    button {
-                        class : "util-btn",
-                        onclick : move |_| {
-                            navigator.push(Router::RemoveDeckCard { deck_id });
-                        },
-                        "remove"
-                    }
+                button {
+                    class: "util-btn",
+                    disabled: metrics.is_none(),
+                    onclick: move |_| {
+                        navigator.push(Router::RemoveDeckCard { deck_id });
+                    },
+                    "remove"
                 }
                 button {
                     class: "util-btn",
@@ -400,6 +399,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 }
                 button {
                     class: "util-btn",
+                    disabled: metrics.is_none(),
                     onclick: move |_| {
                         navigator.push(Router::ExportDeck { deck_id });
                     },
