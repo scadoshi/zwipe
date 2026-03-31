@@ -79,6 +79,9 @@ pub fn Nav() -> Element {
                     Link { to: Route::Contribute {}, "contribute" }
                 }
                 li {
+                    a { href: "https://discord.gg/s2UReqUUeg", target: "_blank", rel: "noopener noreferrer", "discord" }
+                }
+                li {
                     Link { to: Route::Download {}, class: "appstore-link", "app store ↗" }
                 }
             }
