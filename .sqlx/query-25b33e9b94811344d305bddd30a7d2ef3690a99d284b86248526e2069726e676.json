@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT d.id, d.name, d.commander_id, d.copy_max, d.user_id,\n                      COALESCE(SUM(dc.quantity), 0) as \"card_count\",\n                      sd.name as commander_name\n               FROM decks d\n               LEFT JOIN deck_cards dc ON d.id = dc.deck_id\n               LEFT JOIN scryfall_data sd ON d.commander_id = sd.id\n               WHERE d.user_id = $1\n               GROUP BY d.id, d.name, d.commander_id, d.copy_max, d.user_id, sd.name",
+  "query": "INSERT INTO decks (name, commander_id, format, user_id)\n               VALUES ($1, $2, $3, $4)\n               RETURNING id, name, commander_id, format, user_id,\n                         0::bigint as \"card_count\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = commander_id) as \"commander_name?\"",
   "describe": {
     "columns": [
       {
@@ -20,8 +20,8 @@
       },
       {
         "ordinal": 3,
-        "name": "copy_max",
-        "type_info": "Int4"
+        "name": "format",
+        "type_info": "Text"
       },
       {
         "ordinal": 4,
@@ -35,12 +35,15 @@
       },
       {
         "ordinal": 6,
-        "name": "commander_name",
+        "name": "commander_name?",
         "type_info": "Text"
       }
     ],
     "parameters": {
       "Left": [
+        "Varchar",
+        "Uuid",
+        "Text",
         "Uuid"
       ]
     },
@@ -51,8 +54,8 @@
       true,
       false,
       null,
-      false
+      null
     ]
   },
-  "hash": "fb6bf14be34ae571ded5a6b265240b1a35c8a76607ebf9eba7aee261b2e89968"
+  "hash": "25b33e9b94811344d305bddd30a7d2ef3690a99d284b86248526e2069726e676"
 }
