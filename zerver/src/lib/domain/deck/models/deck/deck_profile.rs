@@ -2,7 +2,7 @@
 //!
 //! Contains deck configuration and ownership information.
 
-use crate::domain::deck::models::deck::deck_name::DeckName;
+use crate::domain::deck::models::deck::{deck_name::DeckName, format::Format};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -12,7 +12,7 @@ use uuid::Uuid;
 ///
 /// - **name**: Validated deck name (1-64 chars, no profanity)
 /// - **commander_id**: Optional commander card for Commander format
-/// - **copy_max**: Optional copy limit (1 = singleton, 4 = standard, defaults to 4 if None)
+/// - **format**: Optional deck format (Commander, Standard, Modern, etc.)
 /// - **user_id**: Deck owner (for authorization)
 ///
 /// # Relationship to Deck
@@ -27,6 +27,8 @@ pub struct DeckProfile {
     pub name: DeckName,
     /// Optional commander card ID (for Commander format).
     pub commander_id: Option<Uuid>,
+    /// Optional deck format.
+    pub format: Option<Format>,
     /// Owner of this deck (for authorization).
     pub user_id: Uuid,
     /// Total number of cards in the deck (sum of quantities).

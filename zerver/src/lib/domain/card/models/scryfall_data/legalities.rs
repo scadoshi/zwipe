@@ -1,3 +1,4 @@
+use crate::domain::deck::models::deck::format::Format;
 use serde::{Deserialize, Serialize};
 
 /// Card legality status across all Magic: The Gathering formats.
@@ -52,6 +53,37 @@ pub struct Legalities {
     pub explorer: Option<LegalityKind>,
     /// Historic Brawl format (MTG Arena Brawl with Historic pool).
     pub historicbrawl: Option<LegalityKind>,
+}
+
+impl Legalities {
+    /// Looks up a card's legality for the given format.
+    pub fn get(&self, format: &Format) -> Option<&LegalityKind> {
+        match format {
+            Format::Standard => self.standard.as_ref(),
+            Format::Future => self.future.as_ref(),
+            Format::Historic => self.historic.as_ref(),
+            Format::Timeless => self.timeless.as_ref(),
+            Format::Gladiator => self.gladiator.as_ref(),
+            Format::Pioneer => self.pioneer.as_ref(),
+            Format::Modern => self.modern.as_ref(),
+            Format::Legacy => self.legacy.as_ref(),
+            Format::Pauper => self.pauper.as_ref(),
+            Format::Vintage => self.vintage.as_ref(),
+            Format::Penny => self.penny.as_ref(),
+            Format::Commander => self.commander.as_ref(),
+            Format::Oathbreaker => self.oathbreaker.as_ref(),
+            Format::StandardBrawl => self.standardbrawl.as_ref(),
+            Format::Brawl => self.brawl.as_ref(),
+            Format::Alchemy => self.alchemy.as_ref(),
+            Format::PauperCommander => self.paupercommander.as_ref(),
+            Format::Duel => self.duel.as_ref(),
+            Format::OldSchool => self.oldschool.as_ref(),
+            Format::Premodern => self.premodern.as_ref(),
+            Format::Predh => self.predh.as_ref(),
+            Format::Explorer => self.explorer.as_ref(),
+            Format::HistoricBrawl => self.historicbrawl.as_ref(),
+        }
+    }
 }
 
 /// Card legality status within a format.

@@ -5,16 +5,22 @@
 
 /// Create deck profile operation.
 pub mod create_deck_profile;
+/// Deck warning value object.
+pub mod deck_warning;
 /// Deck name validation (1-64 chars, no profanity).
 pub mod deck_name;
 /// Deck profile entity (deck metadata).
 pub mod deck_profile;
 /// Delete deck operation.
 pub mod delete_deck;
+/// Deck format classification (Commander, Standard, Modern, etc.).
+pub mod format;
 /// Get complete deck operation (profile + cards).
 pub mod get_deck;
 /// Get single deck profile operation.
 pub mod get_deck_profile;
+/// Deck validation logic (generates warnings).
+pub mod validate_deck;
 /// Get multiple deck profiles operation (list user's decks).
 pub mod get_deck_profiles;
 /// Update deck profile operation.
@@ -22,7 +28,10 @@ pub mod update_deck_profile;
 
 use crate::domain::{
     card::models::Card,
-    deck::models::{deck::deck_profile::DeckProfile, deck_card::DeckCard},
+    deck::models::{
+        deck::{deck_profile::DeckProfile, deck_warning::DeckWarning},
+        deck_card::DeckCard,
+    },
 };
 use serde::{Deserialize, Serialize};
 
@@ -72,11 +81,14 @@ pub struct DeckEntry {
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Deck {
-    /// Deck metadata (name, commander, settings, owner).
+    /// Deck metadata (name, commander, format, owner).
     pub deck_profile: DeckProfile,
 
     /// Card entries, each pairing a [`Card`] with its [`DeckCard`] join data.
     pub entries: Vec<DeckEntry>,
+
+    /// Deck-building warnings (informational, not blocking).
+    pub warnings: Vec<DeckWarning>,
 }
 
 impl Deck {
@@ -90,10 +102,11 @@ impl Deck {
     /// ```rust,ignore
     /// let deck = Deck::new(deck_profile, entries);
     /// ```
-    pub fn new(deck_profile: DeckProfile, entries: Vec<DeckEntry>) -> Self {
+    pub fn new(deck_profile: DeckProfile, entries: Vec<DeckEntry>, warnings: Vec<DeckWarning>) -> Self {
         Self {
             deck_profile,
             entries,
+            warnings,
         }
     }
 }

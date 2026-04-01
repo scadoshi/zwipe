@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT DISTINCT subtype FROM (\n                SELECT TRIM(BOTH ':-?, ' FROM UNNEST(STRING_TO_ARRAY(type_line, ' '))) subtype\n                FROM scryfall_data\n            ) subtypes\n            WHERE subtype NOT IN ('//', '-', 'the', 'of', 'and/or', 'you', 'you''ll')\n            ORDER BY subtype ASC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "subtype",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "db12681f3362f4a92c265cce2da4cb5bcb5fbc83dff01f3eec50434190292c13"
+}

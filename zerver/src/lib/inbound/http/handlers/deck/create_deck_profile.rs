@@ -45,6 +45,9 @@ impl From<InvalidCreateDeckProfile> for ApiError {
             InvalidCreateDeckProfile::DeckName(e) => {
                 Self::UnprocessableEntity(format!("invalid deck name: {}", e))
             }
+            InvalidCreateDeckProfile::Format(e) => {
+                Self::UnprocessableEntity(format!("invalid format: {}", e))
+            }
         }
     }
 }
@@ -56,14 +59,17 @@ pub struct HttpCreateDeckProfile {
     pub name: String,
     /// Optional commander card ID.
     pub commander_id: Option<Uuid>,
+    /// Optional deck format.
+    pub format: Option<String>,
 }
 
 impl HttpCreateDeckProfile {
     /// Creates a new deck creation request.
-    pub fn new(name: &str, commander_id: Option<Uuid>) -> Self {
+    pub fn new(name: &str, commander_id: Option<Uuid>, format: Option<String>) -> Self {
         Self {
             name: name.to_string(),
             commander_id,
+            format,
         }
     }
 }
@@ -82,7 +88,7 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let request = CreateDeckProfile::new(body.name, body.commander_id, user.id, user.email_verified)?;
+    let request = CreateDeckProfile::new(body.name, body.commander_id, body.format.as_deref(), user.id, user.email_verified)?;
 
     state
         .deck_service

@@ -16,7 +16,10 @@
 
 #[cfg(feature = "zerver")]
 use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
-use crate::domain::deck::models::deck::deck_name::{DeckName, InvalidDeckname};
+use crate::domain::deck::models::deck::{
+    deck_name::{DeckName, InvalidDeckname},
+    format::{Format, InvalidFormat},
+};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -26,6 +29,9 @@ pub enum InvalidUpdateDeckProfile {
     /// Deck name doesn't meet requirements.
     #[error(transparent)]
     DeckName(InvalidDeckname),
+    /// Format string is not a recognized format.
+    #[error(transparent)]
+    Format(InvalidFormat),
     /// No fields specified for update.
     #[error("must update at least one field")]
     NoUpdates,
@@ -34,6 +40,12 @@ pub enum InvalidUpdateDeckProfile {
 impl From<InvalidDeckname> for InvalidUpdateDeckProfile {
     fn from(value: InvalidDeckname) -> Self {
         Self::DeckName(value)
+    }
+}
+
+impl From<InvalidFormat> for InvalidUpdateDeckProfile {
+    fn from(value: InvalidFormat) -> Self {
+        Self::Format(value)
     }
 }
 
@@ -95,6 +107,8 @@ pub struct UpdateDeckProfile {
     pub name: Option<DeckName>,
     /// Optional commander update (None = no change, Some(None) = remove commander, Some(Some(id)) = set commander).
     pub commander_id: Option<Option<Uuid>>,
+    /// Optional format update (None = no change, Some(None) = remove format, Some(Some(format)) = set format).
+    pub format: Option<Option<Format>>,
     /// Requesting user (for authorization).
     pub user_id: Uuid,
 }
@@ -118,17 +132,22 @@ impl UpdateDeckProfile {
         deck_id: Uuid,
         name: Option<&str>,
         commander_id: Option<Option<Uuid>>,
+        format: Option<Option<&str>>,
         user_id: Uuid,
     ) -> Result<Self, InvalidUpdateDeckProfile> {
-        if name.is_none() && commander_id.is_none() {
+        if name.is_none() && commander_id.is_none() && format.is_none() {
             return Err(InvalidUpdateDeckProfile::NoUpdates);
         }
         let name = name.map(DeckName::new).transpose()?;
+        let format = format
+            .map(|update| update.map(Format::try_from).transpose())
+            .transpose()?;
 
         Ok(Self {
             deck_id,
             name,
             commander_id,
+            format,
             user_id,
         })
     }

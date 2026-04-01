@@ -2,6 +2,8 @@
 
 /// SQLx error-to-domain error mappings and intermediate conversion errors.
 pub mod error;
+/// Format enum SQLx type mapping.
+pub mod format;
 /// Query-based deck ownership verification.
 pub mod helper;
 /// Database-to-domain deck model conversions.
@@ -51,13 +53,14 @@ impl DeckRepository for Postgres {
         let mut tx = self.pool.begin().await?;
         let database_deck_profile = query_as!(
             DatabaseDeckProfile,
-            r#"INSERT INTO decks (name, commander_id, user_id)
-               VALUES ($1, $2, $3)
-               RETURNING id, name, commander_id, user_id,
+            r#"INSERT INTO decks (name, commander_id, format, user_id)
+               VALUES ($1, $2, $3, $4)
+               RETURNING id, name, commander_id, format, user_id,
                          0::bigint as "card_count",
-                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = commander_id) as commander_name"#,
+                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = commander_id) as "commander_name?""#,
             request.name.to_string(),
             request.commander_id,
+            request.format.map(|f| f.to_legality_key().to_string()) as Option<String>,
             request.user_id
         )
         .fetch_one(&mut *tx)
@@ -124,14 +127,14 @@ impl DeckRepository for Postgres {
     ) -> Result<DeckProfile, GetDeckProfileError> {
         let database_deck_profile = query_as!(
             DatabaseDeckProfile,
-            r#"SELECT d.id, d.name, d.commander_id, d.user_id,
+            r#"SELECT d.id, d.name, d.commander_id, d.format, d.user_id,
                       COALESCE(SUM(dc.quantity), 0) as "card_count",
-                      sd.name as commander_name
+                      sd.name as "commander_name?"
                FROM decks d
                LEFT JOIN deck_cards dc ON d.id = dc.deck_id
                LEFT JOIN scryfall_data sd ON d.commander_id = sd.id
                WHERE d.id = $1
-               GROUP BY d.id, d.name, d.commander_id, d.user_id, sd.name"#,
+               GROUP BY d.id, d.name, d.commander_id, d.format, d.user_id, sd.name"#,
             request.deck_id
         )
         .fetch_one(&self.pool)
@@ -149,14 +152,14 @@ impl DeckRepository for Postgres {
     ) -> Result<Vec<DeckProfile>, GetDeckProfileError> {
         let database_deck_profiles = query_as!(
             DatabaseDeckProfile,
-            r#"SELECT d.id, d.name, d.commander_id, d.user_id,
+            r#"SELECT d.id, d.name, d.commander_id, d.format, d.user_id,
                       COALESCE(SUM(dc.quantity), 0) as "card_count",
-                      sd.name as commander_name
+                      sd.name as "commander_name?"
                FROM decks d
                LEFT JOIN deck_cards dc ON d.id = dc.deck_id
                LEFT JOIN scryfall_data sd ON d.commander_id = sd.id
                WHERE d.user_id = $1
-               GROUP BY d.id, d.name, d.commander_id, d.user_id, sd.name"#,
+               GROUP BY d.id, d.name, d.commander_id, d.format, d.user_id, sd.name"#,
             request.user_id
         )
         .fetch_all(&self.pool)
@@ -222,12 +225,16 @@ impl DeckRepository for Postgres {
             sep.push("commander_id = ")
                 .push_bind_unseparated(commander_id);
         }
+        if let Some(format) = &request.format {
+            sep.push("format = ")
+                .push_bind_unseparated(format.map(|f| f.to_legality_key().to_string()));
+        }
         let now = chrono::Utc::now().naive_utc();
         sep.push("updated_at = ").push_bind_unseparated(now);
 
         qb.push(" WHERE id = ")
             .push_bind(request.deck_id)
-            .push(r#" RETURNING id, name, commander_id, user_id,
+            .push(r#" RETURNING id, name, commander_id, format, user_id,
                        (SELECT COALESCE(SUM(dc.quantity), 0) FROM deck_cards dc WHERE dc.deck_id = decks.id) as card_count,
                        (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.commander_id) as commander_name"#);
         let database_deck: DatabaseDeckProfile = qb.build_query_as().fetch_one(&mut *tx).await?;
@@ -328,11 +335,13 @@ impl DeckRepository for Postgres {
         if cards.is_empty() {
             return Ok(vec![]);
         }
-        let mut tx = self.pool.begin().await
+        let mut tx = self
+            .pool
+            .begin()
+            .await
             .map_err(|e| ImportDeckCardsError::Database(e.into()))?;
-        let mut qb: QueryBuilder<'_, sqlx::Postgres> = QueryBuilder::new(
-            "INSERT INTO deck_cards (deck_id, scryfall_data_id, quantity) ",
-        );
+        let mut qb: QueryBuilder<'_, sqlx::Postgres> =
+            QueryBuilder::new("INSERT INTO deck_cards (deck_id, scryfall_data_id, quantity) ");
         qb.push_values(cards, |mut b, (scryfall_data_id, quantity)| {
             b.push_bind(request.deck_id)
                 .push_bind(scryfall_data_id)
@@ -341,13 +350,20 @@ impl DeckRepository for Postgres {
         qb.push(
             " ON CONFLICT (deck_id, scryfall_data_id) DO UPDATE SET quantity = EXCLUDED.quantity RETURNING deck_id::TEXT, scryfall_data_id::TEXT, quantity",
         );
-        let rows: Vec<DatabaseDeckCard> = qb.build_query_as().fetch_all(&mut *tx).await
+        let rows: Vec<DatabaseDeckCard> = qb
+            .build_query_as()
+            .fetch_all(&mut *tx)
+            .await
             .map_err(|e| ImportDeckCardsError::Database(e.into()))?;
         let deck_cards: Vec<DeckCard> = rows
             .into_iter()
-            .map(|r| r.try_into().map_err(|e: IntoDeckCardError| ImportDeckCardsError::Database(e.into())))
+            .map(|r| {
+                r.try_into()
+                    .map_err(|e: IntoDeckCardError| ImportDeckCardsError::Database(e.into()))
+            })
             .collect::<Result<Vec<_>, _>>()?;
-        tx.commit().await
+        tx.commit()
+            .await
             .map_err(|e| ImportDeckCardsError::Database(e.into()))?;
         Ok(deck_cards)
     }
