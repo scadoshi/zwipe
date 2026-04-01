@@ -54,13 +54,9 @@ Android build compiles and runs. Remaining polish before Play Store submission:
 ## GitHub Actions Node.js 20 Deprecation
 
 Actions running on Node.js 20 will be **forced to Node.js 24** starting **June 2, 2026**.
-Bump `actions/checkout@v4` and `actions/cache@v4` in both `deploy-zerver.yml` and `deploy-zweb.yml` before then.
+All workflows already use latest major versions (`actions/checkout@v4`, `actions/cache@v4`, `actions/deploy-pages@v4`, `actions/upload-pages-artifact@v3`). No changes needed — just monitor for v5 releases before the deadline.
 
 ---
-
-## Extract Password Validation into a Shared Crate
-
-`zweb/src/pages/reset.rs` duplicates the password policy from `zerver`. Low priority — duplication is fine for now. See full notes in git history (`46c0f68`).
 
 ---
 
@@ -83,6 +79,24 @@ Bump `actions/checkout@v4` and `actions/cache@v4` in both `deploy-zerver.yml` an
 
 ---
 
+## Incremental Domain Extraction into `zwipe-core`
+
+Long-term goal: move all pure domain logic into `zwipe-core` so `zerver` and `zwiper` become thin adapter shells. Migrate **incrementally** — one module at a time, as each module is touched or needs to be shared. Do not attempt a single large migration.
+
+**Done:**
+- [x] Password validation + common password dictionary
+
+**Next natural candidates** (do when touched, not proactively):
+- [ ] `EmailAddress` newtype
+- [ ] `Username` newtype
+- [ ] Shared error types
+- [ ] Card filter builders
+
+**Hard / defer until needed:**
+- Anything coupled to `sqlx::FromRow`, `jsonwebtoken`, or other infrastructure deps — requires deciding whether `zwipe-core` takes those deps or adapters handle conversion.
+
+---
+
 ## Project Structure Doc
 
 Add a `context/architecture/structure.md` walking through the full directory tree — useful for onboarding and AI context.
@@ -90,6 +104,11 @@ Add a `context/architecture/structure.md` walking through the full directory tre
 ---
 
 ## Recently Completed
+
+### Shared Password Validation Crate (2026-04-01)
+
+- [x] Extract password validation + common password dictionary into `zwipe-core` crate
+- [x] Wire into zerver and zweb, delete duplicated code
 
 ### Per-User Rate Limiting (2026-03-30)
 
