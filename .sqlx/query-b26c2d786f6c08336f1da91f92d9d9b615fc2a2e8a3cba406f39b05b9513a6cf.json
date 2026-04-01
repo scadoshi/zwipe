@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT scryfall_data_id, is_commander, is_token, created_at, updated_at\n            FROM card_profiles WHERE scryfall_data_id = $1",
+  "query": "SELECT scryfall_data_id, is_token, created_at, updated_at\n            FROM card_profiles WHERE scryfall_data_id = ANY($1)",
   "describe": {
     "columns": [
       {
@@ -10,37 +10,31 @@
       },
       {
         "ordinal": 1,
-        "name": "is_commander",
-        "type_info": "Bool"
-      },
-      {
-        "ordinal": 2,
         "name": "is_token",
         "type_info": "Bool"
       },
       {
-        "ordinal": 3,
+        "ordinal": 2,
         "name": "created_at",
         "type_info": "Timestamp"
       },
       {
-        "ordinal": 4,
+        "ordinal": 3,
         "name": "updated_at",
         "type_info": "Timestamp"
       }
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "UuidArray"
       ]
     },
     "nullable": [
       false,
       false,
       false,
-      false,
       false
     ]
   },
-  "hash": "a41dbb822b4d87ba8857f282ded6c0f563ec34e8cb31eb9b397e64f2c61652bf"
+  "hash": "b26c2d786f6c08336f1da91f92d9d9b615fc2a2e8a3cba406f39b05b9513a6cf"
 }
