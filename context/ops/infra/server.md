@@ -8,7 +8,11 @@ Backend served via Cloudflare Tunnel — no port forwarding, TLS handled by Clou
 ## Setup Checklist
 
 - [ ] Boot with Ubuntu Server USB installer (headless install)
+- [ ] Configure WiFi via netplan (see WiFi section below)
+- [ ] Verify SSH is enabled on boot: `sudo systemctl enable ssh`
 - [ ] SSH in from Mac, set up key auth
+- [ ] Install NetworkManager for `nmtui`/`nmcli`: `sudo apt install network-manager`
+- [ ] Install Tailscale for stable SSH access (see Tailscale section below)
 - [ ] Install PostgreSQL, create `zwipe` DB + user
 - [ ] Create `/var/log/zwipe/` log directory
 - [ ] Install Rust, clone repo, build binaries
@@ -22,6 +26,82 @@ Backend served via Cloudflare Tunnel — no port forwarding, TLS handled by Clou
 - [ ] Run `zervice` once manually to seed Scryfall card data
 - [ ] Install self-hosted GitHub Actions runner (see `ops/cicd.md`) — this is what deploys code, runs migrations, and restarts zerver on every push to main
 - [ ] Verify iOS app hits `api.zwipe.net` successfully
+
+---
+
+## WiFi (netplan)
+
+The server connects over WiFi. Netplan is built into Ubuntu Server — no extra packages needed.
+
+**Find the wireless interface name:**
+```bash
+ip link show
+# Look for wlp3s0 or similar (not lo, not enp*)
+```
+
+**Create or edit the netplan config:**
+```bash
+sudo nano /etc/netplan/50-cloud-init.yaml
+```
+
+```yaml
+network:
+  version: 2
+  wifis:
+    wlp3s0:
+      dhcp4: true
+      access-points:
+        "YOUR_SSID":
+          password: "YOUR_PASSWORD"
+```
+
+**Apply and verify:**
+```bash
+sudo chmod 600 /etc/netplan/50-cloud-init.yaml
+sudo netplan apply
+ip addr show wlp3s0
+# Should show an inet line with an IP address
+```
+
+The config is persistent — WiFi reconnects automatically on boot.
+
+**Optional:** Install NetworkManager for the friendlier `nmtui` and `nmcli` tools:
+```bash
+sudo apt install network-manager
+```
+
+---
+
+## Tailscale
+
+Tailscale provides a stable IP for SSH access regardless of local DHCP changes. Once installed,
+you can SSH via the Tailscale IP instead of the local network IP.
+
+**Install:**
+```bash
+curl -fsSL https://tailscale.com/install.sh | sh
+```
+
+**Authenticate (headless — no browser):**
+```bash
+sudo tailscale up
+# Prints a URL — open it on your Mac/phone to authenticate
+```
+
+**Verify:**
+```bash
+tailscale status
+# Shows this machine and any other devices on your tailnet
+tailscale ip -4
+# Shows your stable Tailscale IP (100.x.x.x)
+```
+
+**SSH via Tailscale from your Mac:**
+```bash
+ssh scadoshi@<tailscale-ip>
+```
+
+Tailscale runs as a systemd service (`tailscaled`) and starts automatically on boot.
 
 ---
 
