@@ -53,7 +53,47 @@ mv zwipe-dev-key.pem DevCSR.certSigningRequest ~/certs/
 
 ---
 
-## 3. Create an Apple Distribution Certificate
+## 3. Register Your Device
+
+Required for dev provisioning profiles — only registered devices can install debug builds.
+
+1. Plug in your iPhone, open Finder, click on it in the sidebar
+2. Click the device info area until you see the **UDID** — copy it
+3. developer.apple.com → Certificates, Identifiers & Profiles → Devices → **+**
+4. Name: `scotland-mobile`, UDID: paste from above
+5. Click **Continue** → **Register**
+
+Or via CLI:
+```bash
+ios-deploy -c  # Lists connected device UDIDs
+```
+
+---
+
+## 4. Create a Development Provisioning Profile
+
+Links the dev certificate + device + App ID so you can deploy debug builds to your phone.
+
+1. developer.apple.com → Certificates, Identifiers & Profiles → Profiles → **+**
+2. Under **Development**, select **iOS App Development** → Continue
+3. Select App ID: `com.scadoshi.zwipe` → Continue
+4. Select your **Apple Development** certificate → Continue
+5. Select your device (`scotland-mobile`) → Continue
+6. Name it "Zwipe Development" → **Generate**
+7. Download the `.mobileprovision` file and **double-click** to install
+
+The profile installs to `~/Library/Developer/Xcode/UserData/Provisioning Profiles/`. `dx build` finds it automatically by matching the bundle ID.
+
+Back up:
+```bash
+cp ~/Downloads/Zwipe_Development.mobileprovision ~/certs/
+```
+
+**If you regenerate your dev certificate** (step 2), you must also regenerate this profile — edit it on Apple's site, select the new cert, download, and double-click to install.
+
+---
+
+## 5. Create an Apple Distribution Certificate
 
 Used for App Store submissions. Same CLI process, different cert type.
 
@@ -79,7 +119,7 @@ cp ~/Downloads/distribution.cer ~/certs/
 
 ---
 
-## 4. Create an App Store Provisioning Profile
+## 6. Create an App Store Provisioning Profile
 
 1. developer.apple.com → Certificates, Identifiers & Profiles → Profiles
 2. Click **+** → under **Distribution**, select **App Store Connect** (not Ad Hoc)
