@@ -139,7 +139,7 @@ nav::after {
   color: var(--text-primary);
 }
 
-.nav-links .appstore-link {
+.nav-links .store-link {
   color: var(--text-primary);
   border: 1px solid var(--border-primary);
   padding: 4px 12px;
@@ -148,7 +148,7 @@ nav::after {
   white-space: nowrap;
 }
 
-.nav-links .appstore-link:hover {
+.nav-links .store-link:hover {
   background-color: var(--text-primary);
   color: var(--bg-primary);
 }
@@ -313,7 +313,7 @@ code {
   margin-right: auto;
 }
 
-.appstore-btn {
+.store-btn {
   display: inline-block;
   border: 1px solid var(--border-primary);
   padding: 10px 28px;
@@ -324,9 +324,16 @@ code {
   transition: background-color 0.15s, color 0.15s;
 }
 
-.appstore-btn:hover {
+.store-btn:hover {
   background-color: var(--text-primary);
   color: var(--bg-primary);
+}
+
+.store-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .features-grid {
