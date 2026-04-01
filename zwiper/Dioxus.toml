@@ -22,5 +22,7 @@ DTSDKName = "iphoneos26.4"
 DTXcode = "2640"
 DTXcodeBuild = "17E192"
 DTCompiler = "com.apple.compilers.llvm.clang.1_0"
+UISupportedInterfaceOrientations = ["UIInterfaceOrientationPortrait"]
+"UISupportedInterfaceOrientations~ipad" = ["UIInterfaceOrientationPortrait"]
 
 [web.resource.dev]
