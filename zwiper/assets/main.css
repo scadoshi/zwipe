@@ -454,6 +454,10 @@ body {
     font-size: 0.75rem;
 }
 
+.text-muted {
+    color: var(--text-muted);
+}
+
 .text-sm {
     font-size: 0.875rem;
 }
