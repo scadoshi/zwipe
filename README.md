@@ -9,6 +9,7 @@ mobile-first magic: the gathering deck builder with swipe-based navigation.
 full-stack rust application:
 - **zerver**: axum rest api, postgresql, sqlx, jwt auth, scryfall sync, user preferences
 - **zwiper**: dioxus mobile/ios app, swipe gestures, 9 themes, dark mode
+- **zwipe-core**: shared domain logic (password validation, common dictionaries)
 - **zweb**: dioxus web client at [zwipe.net](https://zwipe.net)
 - **zervice**: background jobs (scryfall sync, session cleanup)
 - **architecture**: hexagonal/ports-and-adapters pattern
@@ -35,7 +36,7 @@ cargo run --bin zervice           # scryfall card sync (run once to seed)
 hexagonal architecture with domain-driven design:
 - clean domain layer with type-safe newtypes
 - port/adapter separation between business logic and infrastructure
-- shared rust types between frontend and backend (zwiper depends on zerver domain)
+- shared domain logic in `zwipe-core`, consumed by both `zerver` and `zwiper`
 
 see [contributing](CONTRIBUTING.md) for project structure detail.
 
