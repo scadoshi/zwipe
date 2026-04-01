@@ -171,11 +171,6 @@ impl CardFilterBuilder {
     // Card Flag Getters
     // =================================
 
-    /// Returns the is_commander filter value.
-    pub fn is_commander(&self) -> Option<bool> {
-        self.is_commander
-    }
-
     /// Returns the is_token filter value.
     pub fn is_token(&self) -> Option<bool> {
         self.is_token
@@ -209,6 +204,15 @@ impl CardFilterBuilder {
     /// Returns the language filter value.
     pub fn language(&self) -> Option<&str> {
         self.language.as_deref()
+    }
+
+    // =================================
+    // Legalities Filter Getters
+    // =================================
+
+    /// Returns the legalities_contains_any filter value.
+    pub fn legalities_contains_any(&self) -> Option<&[String]> {
+        self.legalities_contains_any.as_deref()
     }
 
     // =================================

@@ -303,11 +303,7 @@ impl FilterCards for Vec<Card> {
                 }
 
                 // ── flags ─────────────────────────────────────────────────────
-                if let Some(val) = filter.is_commander()
-                    && cp.is_commander != val
-                {
-                    return false;
-                }
+
 
                 if let Some(val) = filter.is_token()
                     && cp.is_token != val
@@ -550,7 +546,7 @@ mod tests {
         Card {
             card_profile: CardProfile {
                 scryfall_data_id: Uuid::new_v4(),
-                is_commander: false,
+
                 is_token: false,
                 created_at: NaiveDate::from_ymd_opt(2021, 1, 1)
                     .unwrap()
@@ -1165,18 +1161,7 @@ mod tests {
 
     // ── flags ─────────────────────────────────────────────────────────────────
 
-    #[test]
-    fn test_is_commander_filter() {
-        let mut commander = make_card("Atraxa");
-        commander.card_profile.is_commander = true;
-        let regular = make_card("Forest");
-        let filter = CardFilterBuilder::with_is_commander(true)
-            .build()
-            .unwrap();
-        let result = vec![commander, regular].filter_by(&filter);
-        assert_eq!(result.len(), 1);
-        assert_eq!(result[0].scryfall_data.name, "Atraxa");
-    }
+
 
     #[test]
     fn test_is_playable_filters_token_layout() {

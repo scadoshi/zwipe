@@ -122,10 +122,6 @@ impl CardFilter {
     }
 
     // flags
-    pub fn is_commander(&self) -> Option<bool> {
-        self.is_commander
-    }
-
     pub fn is_token(&self) -> Option<bool> {
         self.is_token
     }
@@ -152,6 +148,11 @@ impl CardFilter {
 
     pub fn language(&self) -> Option<&str> {
         self.language.as_deref()
+    }
+
+    // legalities
+    pub fn legalities_contains_any(&self) -> Option<&[String]> {
+        self.legalities_contains_any.as_deref()
     }
 
     // config

@@ -76,7 +76,6 @@ pub struct CardFilter {
     card_type_contains_any: Option<Vec<CardType>>,
     card_type_contains_all: Option<Vec<CardType>>,
     // flags
-    is_commander: Option<bool>,
     is_token: Option<bool>,
     is_playable: Option<bool>,
     digital: Option<bool>,
@@ -84,6 +83,8 @@ pub struct CardFilter {
     promo: Option<bool>,
     content_warning: Option<bool>,
     language: Option<String>,
+    // legalities
+    legalities_contains_any: Option<Vec<String>>,
     // config
     limit: u32,
     offset: u32,

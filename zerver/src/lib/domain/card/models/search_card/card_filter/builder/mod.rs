@@ -98,7 +98,6 @@ pub struct CardFilterBuilder {
     card_type_contains_any: Option<Vec<CardType>>,
     card_type_contains_all: Option<Vec<CardType>>,
     // flags
-    is_commander: Option<bool>,
     is_token: Option<bool>,
     is_playable: Option<bool>,
     digital: Option<bool>,
@@ -106,6 +105,8 @@ pub struct CardFilterBuilder {
     promo: Option<bool>,
     content_warning: Option<bool>,
     language: Option<String>,
+    // legalities
+    legalities_contains_any: Option<Vec<String>>,
     // config
     limit: u32,
     offset: u32,
@@ -142,7 +143,6 @@ impl Default for CardFilterBuilder {
             type_line_contains_all: None,
             card_type_contains_any: None,
             card_type_contains_all: None,
-            is_commander: None,
             is_token: None,
             is_playable: Some(true),
             digital: Some(false),
@@ -150,6 +150,7 @@ impl Default for CardFilterBuilder {
             promo: Some(false),
             content_warning: Some(false),
             language: Some("en".to_string()),
+            legalities_contains_any: None,
             limit: 100,
             offset: 0,
             order_by: None,
@@ -173,6 +174,16 @@ impl CardFilterBuilder {
         let mut default = self.clone();
         default.retain_config();
         *self == default
+    }
+
+    /// Like `is_empty()` but also ignores legalities_contains_any.
+    ///
+    /// Used in deck context where format legality is pre-populated from the deck
+    /// and shouldn't count as a user-set filter.
+    pub fn is_empty_ignoring_legalities(&self) -> bool {
+        let mut test = self.clone();
+        test.unset_legalities_contains_any();
+        test.is_empty()
     }
 
     // =================================
@@ -240,6 +251,20 @@ impl CardFilterBuilder {
         CardFilterBuilder {
             keywords_contains_all: Some(
                 keywords_contains_all.into_iter().map(Into::into).collect(),
+            ),
+            ..CardFilterBuilder::default()
+        }
+    }
+
+    /// Creates builder matching cards legal in any of the provided formats (OR logic on legalities JSONB).
+    pub fn with_legalities_contains_any<I, S>(legalities_contains_any: I) -> CardFilterBuilder
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        CardFilterBuilder {
+            legalities_contains_any: Some(
+                legalities_contains_any.into_iter().map(Into::into).collect(),
             ),
             ..CardFilterBuilder::default()
         }
@@ -460,14 +485,6 @@ impl CardFilterBuilder {
         }
     }
 
-    /// Creates builder filtering by Commander format legality.
-    pub fn with_is_commander(is_commander: bool) -> CardFilterBuilder {
-        CardFilterBuilder {
-            is_commander: Some(is_commander),
-            ..CardFilterBuilder::default()
-        }
-    }
-
     /// Creates builder filtering by token status (tokens vs. real cards).
     pub fn with_is_token(is_token: bool) -> CardFilterBuilder {
         CardFilterBuilder {
@@ -562,7 +579,6 @@ impl CardFilterBuilder {
             type_line_contains_all: self.type_line_contains_all.clone(),
             card_type_contains_any: self.card_type_contains_any.clone(),
             card_type_contains_all: self.card_type_contains_all.clone(),
-            is_commander: self.is_commander,
             is_token: self.is_token,
             is_playable: self.is_playable,
             digital: self.digital,
@@ -570,6 +586,7 @@ impl CardFilterBuilder {
             promo: self.promo,
             content_warning: self.content_warning,
             language: self.language.clone(),
+            legalities_contains_any: self.legalities_contains_any.clone(),
             limit: self.limit,
             offset: self.offset,
             order_by: self.order_by,

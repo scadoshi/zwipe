@@ -264,7 +264,6 @@ mod tests {
         Card {
             card_profile: CardProfile {
                 scryfall_data_id: Uuid::new_v4(),
-                is_commander: false,
                 is_token: false,
                 created_at: NaiveDate::from_ymd_opt(2021, 1, 1)
                     .unwrap()

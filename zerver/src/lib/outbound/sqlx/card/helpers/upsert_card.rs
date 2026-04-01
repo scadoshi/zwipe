@@ -39,41 +39,6 @@ fn is_token(scryfall_data: &ScryfallData) -> bool {
     scryfall_data.layout == "token"
 }
 
-/// Determines if a card is a valid MTG commander.
-///
-/// A card qualifies through three paths:
-/// 1. Oracle text contains "can be your commander" (e.g. Planeswalker commanders)
-/// 2. Type line contains both "Legendary" and "Creature"
-/// 3. Legendary Vehicle/Spacecraft with power and toughness values
-fn is_commander(scryfall_data: &ScryfallData) -> bool {
-    let Some(type_line_lower) = scryfall_data.type_line.as_ref().map(|tl| tl.to_lowercase()) else {
-        return false;
-    };
-
-    // check for special "can be your commander" text
-    if let Some(text) = &scryfall_data.oracle_text
-        && text.to_lowercase().contains("can be your commander")
-    {
-        return true;
-    }
-
-    // check legendary creature
-    if type_line_lower.contains("legendary") && type_line_lower.contains("creature") {
-        return true;
-    }
-
-    // check legendary vehicle/spacecraft with power/toughness
-    if type_line_lower.contains("legendary")
-        && (type_line_lower.contains("vehicle") || type_line_lower.contains("spacecraft"))
-        && let (Some(power), Some(toughness)) = (&scryfall_data.power, &scryfall_data.toughness)
-        && !power.is_empty()
-        && !toughness.is_empty()
-    {
-        return true;
-    }
-
-    false
-}
 
 // ===========
 //  insertion
@@ -94,8 +59,7 @@ where
 {
     /// Inserts or updates this card within the given transaction.
     ///
-    /// Also creates/updates the card profile with computed `is_commander`
-    /// and `is_token` flags.
+    /// Also creates/updates the card profile with computed `is_token` flag.
     fn single_upsert_with_tx(
         &self,
         tx: &mut PgTransaction<'_>,
@@ -117,17 +81,15 @@ impl SingleUpsertWithTx for ScryfallData {
             .build_query_as::<ScryfallData>()
             .fetch_one(&mut **tx)
             .await?;
-        let is_commander = is_commander(&scryfall_data);
         let is_token = is_token(&scryfall_data);
         let database_card_profile = query_as!(
             DatabaseCardProfile,
-            "INSERT INTO card_profiles (scryfall_data_id, is_commander, is_token)
-             VALUES ($1, $2, $3)
+            "INSERT INTO card_profiles (scryfall_data_id, is_token)
+             VALUES ($1, $2)
              ON CONFLICT (scryfall_data_id)
-             DO UPDATE SET updated_at = NOW(), is_commander = EXCLUDED.is_commander, is_token = EXCLUDED.is_token
-             RETURNING scryfall_data_id, is_commander, is_token, created_at, updated_at",
+             DO UPDATE SET updated_at = NOW(), is_token = EXCLUDED.is_token
+             RETURNING scryfall_data_id, is_token, created_at, updated_at",
             scryfall_data_id,
-            is_commander,
             is_token
         )
         .fetch_one(&mut **tx)
@@ -176,26 +138,23 @@ impl BulkUpsertWithTx for &[ScryfallData] {
             .fetch_all(&mut **tx)
             .await?;
         let mut card_profile_query_builder = QueryBuilder::new(
-            "INSERT INTO card_profiles (scryfall_data_id, is_commander, is_token) VALUES",
+            "INSERT INTO card_profiles (scryfall_data_id, is_token) VALUES",
         );
         for (i, scryfall_data) in database_scryfall_data.iter().enumerate() {
             if i > 0 {
                 card_profile_query_builder.push(",");
             }
-            let is_commander = is_commander(scryfall_data);
             let is_token = is_token(scryfall_data);
             card_profile_query_builder
                 .push("(")
                 .push_bind(scryfall_data.id)
                 .push(",")
-                .push_bind(is_commander)
-                .push(",")
                 .push_bind(is_token)
                 .push(")");
         }
         card_profile_query_builder
-            .push(" ON CONFLICT (scryfall_data_id) DO UPDATE SET updated_at = NOW(), is_commander = EXCLUDED.is_commander, is_token = EXCLUDED.is_token ");
-        card_profile_query_builder.push(" RETURNING scryfall_data_id, is_commander, is_token, created_at, updated_at;");
+            .push(" ON CONFLICT (scryfall_data_id) DO UPDATE SET updated_at = NOW(), is_token = EXCLUDED.is_token ");
+        card_profile_query_builder.push(" RETURNING scryfall_data_id, is_token, created_at, updated_at;");
         let card_profiles: Vec<CardProfile> = card_profile_query_builder
             .build_query_as::<DatabaseCardProfile>()
             .fetch_all(&mut **tx)

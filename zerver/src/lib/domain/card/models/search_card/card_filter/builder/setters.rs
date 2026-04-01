@@ -449,18 +449,6 @@ impl CardFilterBuilder {
     // Card Flag Setters
     // =================================
 
-    /// Sets filter for Commander format legality.
-    pub fn set_is_commander(&mut self, is_commander: bool) -> &mut Self {
-        self.is_commander = Some(is_commander);
-        self
-    }
-
-    /// Clears the is_commander filter.
-    pub fn unset_is_commander(&mut self) -> &mut Self {
-        self.is_commander = None;
-        self
-    }
-
     /// Sets filter for token status.
     pub fn set_is_token(&mut self, is_token: bool) -> &mut Self {
         self.is_token = Some(is_token);
@@ -542,6 +530,30 @@ impl CardFilterBuilder {
     /// Clears the language filter (defaults to "en").
     pub fn unset_language(&mut self) -> &mut Self {
         self.language = None;
+        self
+    }
+
+    // =================================
+    // Legalities Filter Setters
+    // =================================
+
+    /// Sets filter matching cards legal in any of the provided formats. Empty vec = None.
+    pub fn set_legalities_contains_any<I, S>(
+        &mut self,
+        legalities_contains_any: I,
+    ) -> &mut Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        let v: Vec<String> = legalities_contains_any.into_iter().map(Into::into).collect();
+        self.legalities_contains_any = if v.is_empty() { None } else { Some(v) };
+        self
+    }
+
+    /// Clears the legalities_contains_any filter.
+    pub fn unset_legalities_contains_any(&mut self) -> &mut Self {
+        self.legalities_contains_any = None;
         self
     }
 
