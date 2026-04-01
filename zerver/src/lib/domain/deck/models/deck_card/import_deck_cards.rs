@@ -28,7 +28,7 @@ pub struct ImportDeckCards {
     pub deck_id: Uuid,
     /// Parsed import lines.
     pub lines: Vec<ImportLine>,
-    /// Whether the requesting user's email is verified (from JWT claim).
+    /// Whether the requesting user's email is verified (fresh from database lookup).
     /// Used to select the appropriate card count limit.
     pub email_verified: bool,
 }

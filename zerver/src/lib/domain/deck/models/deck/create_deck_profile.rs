@@ -72,7 +72,7 @@ pub struct CreateDeckProfile {
     pub format: Option<Format>,
     /// Owner of this deck.
     pub user_id: Uuid,
-    /// Whether the requesting user's email is verified (from JWT claim).
+    /// Whether the requesting user's email is verified (fresh from database lookup).
     /// Used to select the appropriate deck count limit.
     pub email_verified: bool,
 }

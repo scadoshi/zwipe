@@ -20,7 +20,7 @@ use crate::{
             ports::DeckService,
         },
         health::ports::HealthService,
-        user::ports::UserService,
+        user::{models::get_user::GetUser, ports::UserService},
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
 };
@@ -64,7 +64,9 @@ where
     DS: DeckService,
 {
     let deck_id = uuid::Uuid::try_parse(&deck_id)?;
-    let request = ImportDeckCards::parse(user.id, deck_id, &body.text, user.email_verified);
+    let db_user = state.user_service.get_user(&GetUser::from(user.id)).await?;
+    let email_verified = db_user.email_verified_at.is_some();
+    let request = ImportDeckCards::parse(user.id, deck_id, &body.text, email_verified);
 
     state
         .deck_service
