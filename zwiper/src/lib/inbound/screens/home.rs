@@ -9,7 +9,9 @@ use crate::inbound::router::Router;
 use crate::{
     inbound::components::auth::{bouncer::Bouncer, signal_logout::SignalLogout},
     outbound::client::{
-        card::search_cards::ClientSearchCards, user::preferences::ClientGetPreferences, ZwipeClient,
+        card::search_cards::ClientSearchCards,
+        user::{get_user::ClientGetUser, preferences::ClientGetPreferences},
+        ZwipeClient,
     },
 };
 use dioxus::prelude::*;
@@ -29,7 +31,7 @@ pub fn Home() -> Element {
     let navigator = use_navigator();
 
     let client: Signal<ZwipeClient> = use_context();
-    let session: Signal<Option<Session>> = use_context();
+    let mut session: Signal<Option<Session>> = use_context();
 
     let mut show_logout_dialog = use_signal(|| false);
     let toast = use_toast();
@@ -38,19 +40,42 @@ pub fn Home() -> Element {
 
     let mut theme_config: Signal<ThemeConfig> = use_context();
 
+    // Greet user on mount.
     use_effect(move || {
-        if let Some(session) = session() {
+        if let Some(session) = session.peek().clone() {
             toast.info(
                 format!("hello, {}!", session.user.username),
                 ToastOptions::default().duration(Duration::from_millis(1500)),
             );
-            if session.user.email_verified_at.is_none() {
-                toast.warning(
-                    "verify your email to enable password recovery!".to_string(),
-                    ToastOptions::default().duration(Duration::from_millis(1500)),
-                );
-            }
         }
+    });
+
+    // Refresh user on mount so email_verified_at is current without re-login.
+    use_effect(move || {
+        let Some(s) = session.peek().clone() else {
+            return;
+        };
+        spawn(async move {
+            match client().get_user(&s).await {
+                Ok(fresh_user) => {
+                    let needs_verification = fresh_user.email_verified_at.is_none();
+                    let current = session.peek().clone();
+                    if let Some(mut current) = current {
+                        current.user = fresh_user;
+                        session.set(Some(current));
+                    }
+                    if needs_verification {
+                        toast.warning(
+                            "verify your email to enable password recovery!".to_string(),
+                            ToastOptions::default().duration(Duration::from_millis(1500)),
+                        );
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!("home user fetch failed: {e}");
+                }
+            }
+        });
     });
 
     // Fetch fresh preferences on mount so theme stays current mid-session.
