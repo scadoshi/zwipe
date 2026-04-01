@@ -127,7 +127,7 @@ pub fn DeckList() -> Element {
                                     .is_some_and(|p| !p.is_empty())
                         });
                         if at_limit {
-                            toast.info(
+                            toast.warning(
                                 "verify your email to create more than 1 deck".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(4000)),
                             );
