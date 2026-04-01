@@ -1,0 +1,58 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT d.id, d.name, d.commander_id, d.copy_max, d.user_id,\n                      COALESCE(SUM(dc.quantity), 0) as \"card_count\",\n                      sd.name as commander_name\n               FROM decks d\n               LEFT JOIN deck_cards dc ON d.id = dc.deck_id\n               LEFT JOIN scryfall_data sd ON d.commander_id = sd.id\n               WHERE d.user_id = $1\n               GROUP BY d.id, d.name, d.commander_id, d.copy_max, d.user_id, sd.name",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "commander_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "copy_max",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 5,
+        "name": "card_count",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "commander_name",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false,
+      null,
+      false
+    ]
+  },
+  "hash": "fb6bf14be34ae571ded5a6b265240b1a35c8a76607ebf9eba7aee261b2e89968"
+}
