@@ -2,12 +2,14 @@ use dioxus::document::eval;
 use dioxus::prelude::*;
 
 mod pages;
-use pages::{About, Android, Contribute, Home, Ios, Privacy, Reset, Verify};
+use pages::{About, Android, Contribute, Discord, Home, Ios, Privacy, Reset, Verify};
 
 pub const API_BASE: &str = "https://api.zwipe.net";
 
 const STYLE: Asset = asset!("/assets/style.css");
 const FAVICON: Asset = asset!("/assets/favicon.ico");
+const FAVICON_16: Asset = asset!("/assets/favicon-16x16.png");
+const FAVICON_32: Asset = asset!("/assets/favicon-32x32.png");
 const APPLE_TOUCH_ICON: Asset = asset!("/assets/icon-180.png");
 const MANIFEST: Asset = asset!("/assets/site.webmanifest");
 const Z_LOGO: &str = include_str!("../assets/z.txt");
@@ -21,6 +23,8 @@ enum Route {
     About {},
     #[route("/contribute")]
     Contribute {},
+    #[route("/discord")]
+    Discord {},
     #[route("/download/ios")]
     Ios {},
     #[route("/download/android")]
@@ -40,6 +44,8 @@ fn main() {
 fn App() -> Element {
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
+        document::Link { rel: "icon", r#type: "image/png", sizes: "16x16", href: FAVICON_16 }
+        document::Link { rel: "icon", r#type: "image/png", sizes: "32x32", href: FAVICON_32 }
         document::Link { rel: "apple-touch-icon", href: APPLE_TOUCH_ICON }
         document::Link { rel: "manifest", href: MANIFEST }
         document::Stylesheet { href: STYLE }
@@ -71,9 +77,6 @@ pub fn Nav() -> Element {
                 span { class: "nav-logo", "{Z_LOGO}" }
             }
             ul { class: "nav-links",
-                li { class: "hide-mobile",
-                    Link { to: Route::Home {}, "home" }
-                }
                 li {
                     Link { to: Route::About {}, "about" }
                 }
@@ -81,7 +84,7 @@ pub fn Nav() -> Element {
                     Link { to: Route::Contribute {}, "contribute" }
                 }
                 li {
-                    a { href: "https://discord.gg/s2UReqUUeg", target: "_blank", rel: "noopener noreferrer", "discord" }
+                    Link { to: Route::Discord {}, "discord" }
                 }
                 li {
                     Link { to: Route::Ios {}, class: "store-link", "app store ↗" }
