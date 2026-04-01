@@ -16,9 +16,13 @@ BACKEND_URL=https://api.zwipe.net dx build --platform ios --device "scotland-mob
 
 # Deploy to connected iPhone
 ios-deploy --bundle ~/Developer/zwipe/target/dx/zwipe/debug/ios/Zwipe.app
+
+# Full command for convenience
+cd ~/Developer/zwipe/zwiper && BACKEND_URL=https://api.zwipe.net dx build --platform ios --device "scotland-mobile" && ios-deploy --bundle ~/Developer/zwipe/target/dx/zwipe/debug/ios/Zwipe.app
 ```
 
 That's it. The app is installed and ready to open.
+
 
 ---
 
