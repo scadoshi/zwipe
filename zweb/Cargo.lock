@@ -3545,4 +3545,12 @@ dependencies = [
  "reqwest",
  "serde",
  "web-sys",
+ "zwipe-core",
+]
+
+[[package]]
+name = "zwipe-core"
+version = "0.1.0"
+dependencies = [
+ "thiserror 2.0.18",
 ]

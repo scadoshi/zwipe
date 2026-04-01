@@ -2,6 +2,7 @@
 members = [
     "zerver",
     "zwiper",
+    "zwipe-core",
 ]
 resolver = "2"
 
