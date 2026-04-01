@@ -19,6 +19,8 @@ pub struct DatabaseDeckProfile {
     pub commander_id: Option<Uuid>,
     pub copy_max: Option<i32>,
     pub user_id: Uuid,
+    pub card_count: Option<i64>,
+    pub commander_name: Option<String>,
 }
 
 /// converts database deck to validated domain deck
@@ -34,6 +36,8 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
             commander_id: value.commander_id,
             copy_max,
             user_id: value.user_id,
+            card_count: value.card_count.unwrap_or(0),
+            commander_name: value.commander_name,
         })
     }
 }

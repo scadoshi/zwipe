@@ -31,4 +31,8 @@ pub struct DeckProfile {
     pub copy_max: Option<CopyMax>,
     /// Owner of this deck (for authorization).
     pub user_id: Uuid,
+    /// Total number of cards in the deck (sum of quantities).
+    pub card_count: i64,
+    /// Commander card name (if a commander is set).
+    pub commander_name: Option<String>,
 }
