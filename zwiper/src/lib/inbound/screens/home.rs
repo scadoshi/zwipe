@@ -1,5 +1,6 @@
 //! Home/landing page screen.
 
+use crate::domain::theme::ThemeConfig;
 use crate::inbound::components::alert_dialog::{
     AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
     AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
@@ -7,7 +8,9 @@ use crate::inbound::components::alert_dialog::{
 use crate::inbound::router::Router;
 use crate::{
     inbound::components::auth::{bouncer::Bouncer, signal_logout::SignalLogout},
-    outbound::client::{card::search_cards::ClientSearchCards, ZwipeClient},
+    outbound::client::{
+        card::search_cards::ClientSearchCards, user::preferences::ClientGetPreferences, ZwipeClient,
+    },
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
@@ -33,6 +36,8 @@ pub fn Home() -> Element {
 
     let logo = logo::ZWIPE;
 
+    let mut theme_config: Signal<ThemeConfig> = use_context();
+
     use_effect(move || {
         if let Some(session) = session() {
             toast.info(
@@ -46,6 +51,23 @@ pub fn Home() -> Element {
                 );
             }
         }
+    });
+
+    // Fetch fresh preferences on mount so theme stays current mid-session.
+    use_effect(move || {
+        let Some(s) = session.peek().clone() else {
+            return;
+        };
+        spawn(async move {
+            match client().get_preferences(&s).await {
+                Ok(prefs) => {
+                    theme_config.set(ThemeConfig::from(&prefs));
+                }
+                Err(e) => {
+                    tracing::warn!("preferences fetch failed: {e}");
+                }
+            }
+        });
     });
 
     // Fetch a random card with flavor text

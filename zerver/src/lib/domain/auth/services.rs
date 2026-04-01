@@ -111,7 +111,7 @@ where
 
         let preferences = UserPreferences::default();
 
-        let access_token = AccessToken::generate(&user, &preferences, &self.jwt_secret)
+        let access_token = AccessToken::generate(&user, &self.jwt_secret)
             .map_err(|e| RegisterUserError::FailedAccessToken(anyhow!("{e}")))?;
 
         // Fire-and-forget: don't fail registration if email sending fails.
@@ -161,7 +161,7 @@ where
 
         let preferences = self.user_repo.get_preferences(user.id).await.unwrap_or_default();
 
-        let access_token = AccessToken::generate(&user, &preferences, &self.jwt_secret)
+        let access_token = AccessToken::generate(&user, &self.jwt_secret)
             .map_err(|e| AuthenticateUserError::FailedAccessToken(anyhow!("{e}")))?;
 
         let refresh_token = self.auth_repo.create_refresh_token(user.id).await?;
@@ -180,7 +180,7 @@ where
 
         let refresh_token = self.auth_repo.create_refresh_token(request.user_id).await?;
 
-        let access_token = AccessToken::generate(&user, &preferences, self.jwt_secret())?;
+        let access_token = AccessToken::generate(&user, self.jwt_secret())?;
 
         let session = Session::new(user, access_token, refresh_token, preferences);
 
@@ -196,7 +196,7 @@ where
 
         let refresh_token = self.auth_repo.use_refresh_token(request).await?;
 
-        let access_token = AccessToken::generate(&user, &preferences, self.jwt_secret())?;
+        let access_token = AccessToken::generate(&user, self.jwt_secret())?;
 
         let session = Session::new(user, access_token, refresh_token, preferences);
 

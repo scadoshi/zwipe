@@ -39,7 +39,7 @@
 //!
 //! // Generate token for user
 //! let secret = JwtSecret::new(&std::env::var("JWT_SECRET")?)?;
-//! let token = AccessToken::generate(&user, &UserPreferences::default(), &secret)?;
+//! let token = AccessToken::generate(&user, &secret)?;
 //!
 //! // Token is sent to client
 //! println!("Access token: {}", token);
@@ -51,8 +51,6 @@
 
 #[cfg(feature = "zerver")]
 use crate::domain::user::models::User;
-#[cfg(feature = "zerver")]
-use crate::domain::user::models::preferences::UserPreferences;
 use crate::domain::user::models::username::Username;
 use chrono::{NaiveDateTime, Utc};
 use email_address::EmailAddress;
@@ -146,7 +144,7 @@ impl From<jsonwebtoken::errors::Error> for InvalidJwt {
 /// let secret = JwtSecret::new(&std::env::var("JWT_SECRET")?)?;
 ///
 /// // Use for signing and validation
-/// let token = AccessToken::generate(&user, &UserPreferences::default(), &secret)?;
+/// let token = AccessToken::generate(&user, &secret)?;
 /// let claims = token.value.validate(&secret)?;
 /// ```
 #[derive(Debug, Clone)]
@@ -227,22 +225,6 @@ pub struct UserClaims {
 
     /// Email of the authenticated user (cached from database).
     pub email: EmailAddress,
-
-    /// Whether the user's email address was verified at token generation time.
-    ///
-    /// Used to apply reduced deck/card limits for unverified accounts without
-    /// an extra database lookup on every request. May be stale by up to 24h
-    /// (the access token lifetime), which is acceptable for soft limits.
-    pub email_verified: bool,
-
-    /// User's selected theme (e.g. "gruvbox", "zwipe").
-    ///
-    /// Embedded in claims so the frontend can apply the theme immediately
-    /// on login without an extra API call. May be stale by up to 24h.
-    pub theme: String,
-
-    /// Whether the user has dark mode enabled.
-    pub dark_mode: bool,
 
     /// Expiry time as Unix timestamp (seconds since epoch).
     ///
@@ -415,7 +397,7 @@ impl<'de> Deserialize<'de> for Jwt {
 /// use zwipe::domain::auth::models::access_token::AccessToken;
 ///
 /// // Generate token for user
-/// let token = AccessToken::generate(&user, &preferences, &jwt_secret)?;
+/// let token = AccessToken::generate(&user, &jwt_secret)?;
 ///
 /// // Send to client
 /// println!("Token: {}", token.value);
@@ -478,13 +460,12 @@ impl AccessToken {
     /// ```rust,ignore
     /// use zwipe::domain::auth::models::access_token::AccessToken;
     ///
-    /// let token = AccessToken::generate(&user, &preferences, &jwt_secret)?;
+    /// let token = AccessToken::generate(&user, &jwt_secret)?;
     /// // Token expires 24 hours from now
     /// ```
     #[cfg(feature = "zerver")]
     pub fn generate(
         user: &User,
-        preferences: &UserPreferences,
         secret: &JwtSecret,
     ) -> Result<AccessToken, InvalidJwt> {
         use chrono::{Duration, Utc};
@@ -496,9 +477,6 @@ impl AccessToken {
             user_id: user.id,
             username: user.username.clone(),
             email: user.email.clone(),
-            email_verified: user.email_verified_at.is_some(),
-            theme: preferences.theme.clone(),
-            dark_mode: preferences.dark_mode,
             exp: expires_at.and_utc().timestamp(),
             iat: issued_at.and_utc().timestamp(),
         };
@@ -524,7 +502,6 @@ impl AccessToken {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::user::models::preferences::UserPreferences;
     use std::str::FromStr;
 
     // ========================
@@ -632,9 +609,6 @@ mod tests {
             user_id,
             username,
             email,
-            email_verified: false,
-            theme: "zwipe".to_string(),
-            dark_mode: true,
             exp: 1234567890,
             iat: 1234567890,
         };
@@ -655,9 +629,6 @@ mod tests {
             user_id: id1,
             username: username.clone(),
             email: email.clone(),
-            email_verified: false,
-            theme: "zwipe".to_string(),
-            dark_mode: true,
             exp: 1234567890,
             iat: 1234567890,
         };
@@ -665,9 +636,6 @@ mod tests {
             user_id: id1,
             username: username.clone(),
             email: email.clone(),
-            email_verified: false,
-            theme: "zwipe".to_string(),
-            dark_mode: true,
             exp: 1234567890,
             iat: 1234567890,
         };
@@ -675,9 +643,6 @@ mod tests {
             user_id: id2,
             username,
             email,
-            email_verified: false,
-            theme: "zwipe".to_string(),
-            dark_mode: true,
             exp: 1234567890,
             iat: 1234567890,
         };
@@ -700,7 +665,7 @@ mod tests {
 
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let result = AccessToken::generate(&user, &UserPreferences::default(), &secret);
+        let result = AccessToken::generate(&user, &secret);
         assert!(result.is_ok());
         let access_token = result.unwrap();
         assert!(!access_token.value.is_empty());
@@ -718,8 +683,8 @@ mod tests {
 
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token1 = AccessToken::generate(&user, &UserPreferences::default(), &secret).unwrap();
-        let token2 = AccessToken::generate(&user, &UserPreferences::default(), &secret).unwrap();
+        let token1 = AccessToken::generate(&user, &secret).unwrap();
+        let token2 = AccessToken::generate(&user, &secret).unwrap();
 
         // Tokens differ due to wall-clock timestamps (iat/exp), but claims must match
         let claims1 = token1.value.validate(&secret).unwrap();
@@ -745,8 +710,8 @@ mod tests {
 
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token1 = AccessToken::generate(&user1, &UserPreferences::default(), &secret).unwrap();
-        let token2 = AccessToken::generate(&user2, &UserPreferences::default(), &secret).unwrap();
+        let token1 = AccessToken::generate(&user1, &secret).unwrap();
+        let token2 = AccessToken::generate(&user2, &secret).unwrap();
         assert_ne!(token1, token2);
     }
 
@@ -760,8 +725,8 @@ mod tests {
         let secret1 = JwtSecret::new("secret-1-that-is-long-enough-for-validation").unwrap();
         let secret2 = JwtSecret::new("secret-2-that-is-long-enough-for-validation").unwrap();
 
-        let token1 = AccessToken::generate(&user, &UserPreferences::default(), &secret1).unwrap();
-        let token2 = AccessToken::generate(&user, &UserPreferences::default(), &secret2).unwrap();
+        let token1 = AccessToken::generate(&user, &secret1).unwrap();
+        let token2 = AccessToken::generate(&user, &secret2).unwrap();
         assert_ne!(token1, token2);
     }
 
@@ -774,7 +739,7 @@ mod tests {
         );
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token = AccessToken::generate(&user, &UserPreferences::default(), &secret).unwrap();
+        let token = AccessToken::generate(&user, &secret).unwrap();
         let claims = token.value.validate(&secret).unwrap();
         assert_eq!(claims.email.to_string(), "test@email.com");
     }
@@ -792,7 +757,7 @@ mod tests {
         );
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token = AccessToken::generate(&user, &UserPreferences::default(), &secret).unwrap();
+        let token = AccessToken::generate(&user, &secret).unwrap();
         let claims = token.value.validate(&secret).unwrap();
 
         assert_eq!(claims.user_id, user.id);
@@ -828,7 +793,7 @@ mod tests {
         let wrong_secret =
             JwtSecret::new("wrong-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token = AccessToken::generate(&user, &UserPreferences::default(), &correct_secret).unwrap();
+        let token = AccessToken::generate(&user, &correct_secret).unwrap();
         let result = token.value.validate(&wrong_secret);
         assert!(result.is_err());
     }
@@ -846,7 +811,7 @@ mod tests {
         );
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token = AccessToken::generate(&user, &UserPreferences::default(), &secret).unwrap();
+        let token = AccessToken::generate(&user, &secret).unwrap();
         let claims = token.value.validate(&secret).unwrap();
 
         let now = chrono::Utc::now().timestamp();
@@ -870,7 +835,7 @@ mod tests {
         );
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
-        let token = AccessToken::generate(&user, &UserPreferences::default(), &secret).unwrap();
+        let token = AccessToken::generate(&user, &secret).unwrap();
         let claims = token.value.validate(&secret).unwrap();
 
         assert_eq!(claims.user_id, user.id);
@@ -893,7 +858,7 @@ mod tests {
 
         for user_id in user_ids {
             let user = User::new(user_id, username.clone(), email.clone());
-            let token = AccessToken::generate(&user, &UserPreferences::default(), &secret).unwrap();
+            let token = AccessToken::generate(&user, &secret).unwrap();
             let claims = token.value.validate(&secret).unwrap();
             assert_eq!(claims.user_id, user_id);
         }
@@ -932,7 +897,7 @@ mod tests {
         let secret = JwtSecret::new("production-grade-secret-that-is-long-enough").unwrap();
 
         // Generate token (like during login)
-        let token = AccessToken::generate(&original_user, &UserPreferences::default(), &secret).unwrap();
+        let token = AccessToken::generate(&original_user, &secret).unwrap();
 
         // Validate token (like during protected route access)
         let claims = token.value.validate(&secret).unwrap();
