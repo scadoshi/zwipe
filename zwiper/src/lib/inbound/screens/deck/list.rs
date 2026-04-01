@@ -78,6 +78,9 @@ pub fn DeckList() -> Element {
                                             }
                                             span { class: "text-muted text-sm",
                                                 "{profile.card_count} cards"
+                                                if let Some(ref fmt) = profile.format {
+                                                    " | {fmt.display_name().to_lowercase()}"
+                                                }
                                                 if let Some(ref cmd) = profile.commander_name {
                                                     " | {cmd.to_lowercase()}"
                                                 }

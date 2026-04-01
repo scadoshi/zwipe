@@ -23,6 +23,7 @@ use zwipe::{
             search_card::card_filter::{builder::CardFilterBuilder, error::InvalidCardFilter},
             Card,
         },
+        deck::models::deck::format::Format,
     },
     inbound::http::handlers::deck::create_deck_profile::HttpCreateDeckProfile,
 };
@@ -37,6 +38,9 @@ pub fn CreateDeck() -> Element {
 
     // form
     let deck_name = use_signal(String::new);
+    let mut selected_format: Signal<Option<Format>> = use_signal(|| None);
+    let mut format_display = use_signal(String::new);
+    let mut format_show_dropdown = use_signal(|| false);
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
     let mut commander_display = use_signal(String::new);
     // commander search state
@@ -49,7 +53,12 @@ pub fn CreateDeck() -> Element {
     let toast = use_toast();
     let mut is_saving = use_signal(|| false);
 
-    // debounced search effect
+    // commander enabled only when format has_commander
+    let commander_enabled = use_memo(move || {
+        selected_format().is_some_and(|f| f.has_commander())
+    });
+
+    // debounced commander search effect
     use_effect(move || {
         let query = search_query();
 
@@ -107,8 +116,9 @@ pub fn CreateDeck() -> Element {
             };
 
             let commander_id = commander().map(|c| c.scryfall_data.id);
+            let format_str = selected_format().map(|f| f.to_legality_key().to_string());
             let request =
-                HttpCreateDeckProfile::new(&deck_name(), commander_id);
+                HttpCreateDeckProfile::new(&deck_name(), commander_id, format_str);
 
             match auth_client().create_deck_profile(&request, &session).await {
                 Ok(created) => {
@@ -122,6 +132,20 @@ pub fn CreateDeck() -> Element {
                 }
             }
         });
+    };
+
+    // filtered format list based on typed input
+    let format_options: Vec<Format> = {
+        let query = format_display().to_lowercase();
+        if query.is_empty() {
+            Format::all().to_vec()
+        } else {
+            Format::all()
+                .iter()
+                .filter(|f| f.display_name().to_lowercase().contains(&query))
+                .copied()
+                .collect()
+        }
     };
 
     rsx! {
@@ -142,26 +166,85 @@ pub fn CreateDeck() -> Element {
                             placeholder: "deck name",
                         }
 
-                        div { class : "mb-4",
-                            label { class : "label", r#for : "commander", "commander" }
-                            input { class : "input",
-                                id : "commander",
-                                r#type : "text",
-                                placeholder : "commander",
-                                value : "{commander_display}",
-                                autocapitalize : "none",
-                                spellcheck : "false",
-                                onclick : move |_| {
-                                    search_query.set(String::new());
+                        // format selector
+                        div { class: "mb-4",
+                            label { class: "label", r#for: "format", "format" }
+                            input { class: "input",
+                                id: "format",
+                                r#type: "text",
+                                placeholder: "format",
+                                value: "{format_display}",
+                                autocapitalize: "none",
+                                spellcheck: "false",
+                                onclick: move |_| {
+                                    format_display.set(String::new());
+                                    selected_format.set(None);
+                                    commander.set(None);
                                     commander_display.set(String::new());
+                                    format_show_dropdown.set(true);
                                 },
-                                oninput : move |event| {
-                                    search_query.set(event.value());
-                                    commander_display.set(event.value());
+                                oninput: move |event| {
+                                    format_display.set(event.value());
+                                    selected_format.set(None);
+                                    format_show_dropdown.set(true);
                                 }
                             }
 
-                            if show_dropdown() {
+                            if format_show_dropdown() {
+                                div { class: "dropdown",
+                                    if format_options.is_empty() {
+                                        div { "no results" }
+                                    } else {
+                                        for fmt in format_options.iter().copied() {
+                                            div { class: "dropdown-item",
+                                                onclick: move |_| {
+                                                    selected_format.set(Some(fmt));
+                                                    format_display.set(fmt.display_name().to_lowercase());
+                                                    format_show_dropdown.set(false);
+                                                    // clear commander if format doesn't support it
+                                                    if !fmt.has_commander() {
+                                                        commander.set(None);
+                                                        commander_display.set(String::new());
+                                                    }
+                                                },
+                                                { fmt.display_name().to_lowercase() }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // commander selector (greyed out unless format has_commander)
+                        div { class: "mb-4",
+                            label {
+                                class: if commander_enabled() { "label" } else { "label text-muted" },
+                                r#for: "commander",
+                                "commander"
+                            }
+                            input { class: if commander_enabled() { "input" } else { "input disabled" },
+                                id: "commander",
+                                r#type: "text",
+                                placeholder: if commander_enabled() { "commander" } else { "select a commander format" },
+                                value: "{commander_display}",
+                                autocapitalize: "none",
+                                spellcheck: "false",
+                                disabled: !commander_enabled(),
+                                onclick: move |_| {
+                                    if commander_enabled() {
+                                        search_query.set(String::new());
+                                        commander_display.set(String::new());
+                                    }
+                                },
+                                oninput: move |event| {
+                                    if commander_enabled() {
+                                        search_query.set(event.value());
+                                        commander_display.set(event.value());
+                                    }
+                                }
+                            }
+
+                            if show_dropdown() && commander_enabled() {
                                 div { class : "dropdown",
                                     if is_searching() {
                                         div { "searching..." }

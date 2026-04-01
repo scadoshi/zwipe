@@ -25,7 +25,7 @@ use zwipe::{
         auth::models::session::Session,
         card::models::Card,
         deck::models::{
-            deck::{deck_profile::DeckProfile, DeckEntry},
+            deck::{deck_profile::DeckProfile, deck_warning::DeckWarning, DeckEntry},
             deck_metrics::DeckMetrics,
         },
     },
@@ -70,7 +70,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 .await
                 .map(Some)
         });
-    let deck_resource: Resource<Result<Vec<DeckEntry>, ApiError>> =
+    let deck_resource: Resource<Result<(Vec<DeckEntry>, Vec<DeckWarning>), ApiError>> =
         use_resource(move || async move {
             session.upkeep(client);
             let Some(session) = session() else {
@@ -79,7 +79,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             client()
                 .get_deck(deck_id, &session)
                 .await
-                .map(|d| d.entries)
+                .map(|d| (d.entries, d.warnings))
         });
     use_effect(move || {
         if let Some(Err(e)) = &*deck_profile_resource.read() {
@@ -118,10 +118,12 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     };
 
     // pre-compute metrics and chart data before rsx!
-    let metrics = deck_resource()
-        .and_then(|r| r.ok())
-        .filter(|entries| !entries.is_empty())
-        .map(|entries| DeckMetrics::from_entries(&entries));
+    let deck_data = deck_resource().and_then(|r| r.ok());
+    let warnings: Vec<DeckWarning> = deck_data.as_ref().map(|(_, w)| w.clone()).unwrap_or_default();
+    let metrics = deck_data
+        .as_ref()
+        .filter(|(entries, _)| !entries.is_empty())
+        .map(|(entries, _)| DeckMetrics::from_entries(entries));
 
     let mana_curve_bars: Option<[(usize, u32); 7]> = metrics.as_ref().map(|m| {
         let max_count = m.cmc_histogram.iter().copied().max().unwrap_or(0);
@@ -206,12 +208,36 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                         span { class: "info-row-value", "{deck_profile.name}" }
                                     }
                                     div { class: "info-row",
-                                        span { class: "info-row-label", "commander" }
+                                        span { class: "info-row-label", "format" }
                                         span { class: "info-row-value",
-                                            if let Some(cmd) = commander() {
-                                                { cmd.scryfall_data.name.to_lowercase() }
+                                            if let Some(fmt) = deck_profile.format {
+                                                { fmt.display_name().to_lowercase() }
                                             } else {
                                                 "none"
+                                            }
+                                        }
+                                    }
+                                    if deck_profile.format.is_some_and(|f| f.has_commander()) {
+                                        div { class: "info-row",
+                                            span { class: "info-row-label", "commander" }
+                                            span { class: "info-row-value",
+                                                if let Some(cmd) = commander() {
+                                                    { cmd.scryfall_data.name.to_lowercase() }
+                                                } else {
+                                                    "none"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if !warnings.is_empty() {
+                                    label { class: "label", "warnings" }
+                                    div { class: "info-list",
+                                        for warning in warnings.iter() {
+                                            div { class: "info-row",
+                                                style: "justify-content: flex-start; gap: 0.5rem;",
+                                                span { class: "text-muted", "{warning.to_lowercase()}" }
                                             }
                                         }
                                     }
