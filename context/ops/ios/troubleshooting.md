@@ -269,6 +269,35 @@ security find-identity -v -p codesigning
 
 ---
 
+## Certificate deleted / "identity no longer valid" (0xe8008018) or "valid provisioning profile not found" (0xe8008015)
+
+Happens when duplicate certificates are cleaned up from Keychain Access — the provisioning profile was tied to the deleted cert.
+
+**Fix:**
+
+1. Create a new development cert in **Xcode > Settings > Accounts > Manage Certificates > + > Apple Development**
+2. Delete any remaining old/duplicate certs from Keychain Access (keep only the newest one — check the date)
+3. Go to [developer.apple.com/account/resources/profiles](https://developer.apple.com/account/resources/profiles)
+4. Edit (or create) the iOS Development profile for `com.scadoshi.zwipe`
+5. Select the new certificate (Xcode may label it with your Mac hostname, e.g. "scotland2")
+6. Make sure your device is included
+7. Download the `.mobileprovision` file and **double-click** it to install
+8. Delete the old cached profile and clean build:
+
+```bash
+rm /Users/scottyrayfermo/Library/Developer/Xcode/UserData/Provisioning\ Profiles/*.mobileprovision
+rm -rf ~/Developer/zwipe/target/dx/zwipe/debug/ios/
+cd ~/Developer/zwipe/zwiper
+BACKEND_URL=https://api.zwipe.net dx build --platform ios --device "scotland-mobile"
+ios-deploy --bundle ~/Developer/zwipe/target/dx/zwipe/debug/ios/Zwipe.app
+```
+
+**Why duplicates happen:** Each time you create a cert in Xcode or via Keychain Access, Apple issues a new cert with the same team ID but a different serial. The old one stays in your keychain. If `dx build` picks the wrong one (ambiguous match), the signature won't match the provisioning profile.
+
+**Prevention:** After creating a new cert, immediately delete all older certs with the same name from Keychain Access before building.
+
+---
+
 ## "Untrusted Developer" on first launch
 
 Settings → VPN & Device Management → your Apple ID → Trust
