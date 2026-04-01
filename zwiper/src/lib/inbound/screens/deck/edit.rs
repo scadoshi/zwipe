@@ -29,7 +29,7 @@ use zwipe::{
             Card,
         },
         deck::models::deck::{
-            Deck, deck_profile::DeckProfile,
+            Deck, deck_profile::DeckProfile, format::Format,
             update_deck_profile::InvalidUpdateDeckProfile,
         },
     },
@@ -50,10 +50,14 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut deck_name: Signal<String> = use_signal(String::new);
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
     let mut commander_display = use_signal(String::new);
+    let mut selected_format: Signal<Option<Format>> = use_signal(|| None);
+    let mut format_display = use_signal(String::new);
+    let mut format_show_dropdown = use_signal(|| false);
 
     // original
     let mut original_deck_name: Signal<String> = use_signal(String::new);
     let mut original_commander: Signal<Option<Card>> = use_signal(|| None);
+    let mut original_format: Signal<Option<Format>> = use_signal(|| None);
 
     let toast = use_toast();
 
@@ -69,6 +73,11 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         Some(Ok(deck)) => {
             original_deck_name.set(deck.deck_profile.name.to_string());
             deck_name.set(deck.deck_profile.name.to_string());
+            original_format.set(deck.deck_profile.format);
+            selected_format.set(deck.deck_profile.format);
+            if let Some(fmt) = deck.deck_profile.format {
+                format_display.set(fmt.display_name().to_lowercase());
+            }
         }
         Some(Err(e)) => {
             toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
@@ -123,9 +132,22 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             Optdate::Unchanged
         }
     });
+    let format_update = use_memo(move || {
+        if selected_format() != original_format() {
+            Optdate::Set(selected_format().map(|f| f.to_legality_key().to_string()))
+        } else {
+            Optdate::Unchanged
+        }
+    });
     let has_made_changes = use_memo(move || {
         deck_name_update().is_some()
             || commander_id_update().is_changed()
+            || format_update().is_changed()
+    });
+
+    // commander enabled only when format has_commander
+    let commander_enabled = use_memo(move || {
+        selected_format().is_some_and(|f| f.has_commander())
     });
 
     // commander search state
@@ -137,7 +159,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     // save state
     let mut is_saving = use_signal(|| false);
 
-    // debounced search effect
+    // debounced commander search effect
     use_effect(move || {
         let query = search_query();
 
@@ -202,6 +224,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             let request = HttpUpdateDeckProfile::new(
                 deck_name_update().as_deref(),
                 commander_id_update(),
+                format_update(),
             );
 
             match client()
@@ -224,6 +247,20 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         do_submit();
     };
 
+    // filtered format list based on typed input
+    let format_options: Vec<Format> = {
+        let query = format_display().to_lowercase();
+        if query.is_empty() {
+            Format::all().to_vec()
+        } else {
+            Format::all()
+                .iter()
+                .filter(|f| f.display_name().to_lowercase().contains(&query))
+                .copied()
+                .collect()
+        }
+    };
+
     rsx! {
         Bouncer {
             div { class: "screen",
@@ -243,10 +280,77 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                     placeholder: "deck name",
                                 }
 
+                                // format selector
                                 div { class: "mb-4",
                                     div { class: "label-row",
-                                        label { class: "label", "commander" }
-                                        if commander().is_some() {
+                                        label { class: "label", "format" }
+                                        if selected_format().is_some() {
+                                            button {
+                                                class: "clear-btn",
+                                                onclick: move |_| {
+                                                    selected_format.set(None);
+                                                    format_display.set(String::new());
+                                                    format_show_dropdown.set(false);
+                                                    commander.set(None);
+                                                    commander_display.set(String::new());
+                                                },
+                                                "x"
+                                            }
+                                        }
+                                    }
+                                    input { class: "input",
+                                        id: "format",
+                                        r#type: "text",
+                                        placeholder: "format",
+                                        value: "{format_display}",
+                                        autocapitalize: "none",
+                                        spellcheck: "false",
+                                        onclick: move |_| {
+                                            format_display.set(String::new());
+                                            selected_format.set(None);
+                                            commander.set(None);
+                                            commander_display.set(String::new());
+                                            format_show_dropdown.set(true);
+                                        },
+                                        oninput: move |event| {
+                                            format_display.set(event.value());
+                                            selected_format.set(None);
+                                            format_show_dropdown.set(true);
+                                        }
+                                    }
+
+                                    if format_show_dropdown() {
+                                        div { class: "dropdown",
+                                            if format_options.is_empty() {
+                                                div { "no results" }
+                                            } else {
+                                                for fmt in format_options.iter().copied() {
+                                                    div { class: "dropdown-item",
+                                                        onclick: move |_| {
+                                                            selected_format.set(Some(fmt));
+                                                            format_display.set(fmt.display_name().to_lowercase());
+                                                            format_show_dropdown.set(false);
+                                                            if !fmt.has_commander() {
+                                                                commander.set(None);
+                                                                commander_display.set(String::new());
+                                                            }
+                                                        },
+                                                        { fmt.display_name().to_lowercase() }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // commander selector (greyed out unless format has_commander)
+                                div { class: "mb-4",
+                                    div { class: "label-row",
+                                        label {
+                                            class: if commander_enabled() { "label" } else { "label text-muted" },
+                                            "commander"
+                                        }
+                                        if commander().is_some() && commander_enabled() {
                                             button {
                                                 class: "clear-btn",
                                                 onclick: move |_| {
@@ -259,25 +363,30 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                             }
                                         }
                                     }
-                                    input { class: "input",
+                                    input { class: if commander_enabled() { "input" } else { "input disabled" },
                                         id: "commander",
                                         r#type : "text",
-                                        placeholder : "commander",
+                                        placeholder: if commander_enabled() { "commander" } else { "select a commander format" },
                                         value : "{commander_display}",
                                         autocapitalize : "none",
                                         spellcheck : "false",
+                                        disabled: !commander_enabled(),
                                         onclick : move |_| {
-                                            search_query.set(String::new());
-                                            commander_display.set(String::new());
-                                            commander.set(None);
+                                            if commander_enabled() {
+                                                search_query.set(String::new());
+                                                commander_display.set(String::new());
+                                                commander.set(None);
+                                            }
                                         },
                                         oninput : move |event| {
-                                            search_query.set(event.value());
-                                            commander_display.set(event.value());
+                                            if commander_enabled() {
+                                                search_query.set(event.value());
+                                                commander_display.set(event.value());
+                                            }
                                         }
                                     }
 
-                                    if show_dropdown() {
+                                    if show_dropdown() && commander_enabled() {
                                         div { class: "dropdown",
                                             if is_searching() {
                                                 div { "searching..." }
