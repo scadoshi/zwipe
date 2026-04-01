@@ -1,10 +1,11 @@
-[workspace]
-
 [package]
 name = "zweb"
-version = "0.1.0"
+version.workspace = true
 authors = ["scottyrayfermo"]
 edition = "2024"
+
+[lints]
+workspace = true
 
 [[bin]]
 name = "zweb"
@@ -13,6 +14,8 @@ path = "src/main.rs"
 [dependencies]
 zwipe-core = { path = "../zwipe-core" }
 dioxus = { version = "0.7.4", features = ["router", "web"] }
-reqwest = { version = "0.12", features = ["json"], default-features = false }
-serde = { version = "1.0", features = ["derive"] }
+serde = { workspace = true }
 web-sys = { version = "0.3", features = ["Window", "Location", "UrlSearchParams", "Document", "Element"] }
+
+# Local declaration — workspace reqwest has rustls-tls which doesn't compile to wasm32
+reqwest = { version = "0.12", features = ["json"], default-features = false }
