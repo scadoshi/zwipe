@@ -40,9 +40,9 @@ pub fn Home() -> Element {
                 ToastOptions::default().duration(Duration::from_millis(1500)),
             );
             if session.user.email_verified_at.is_none() {
-                toast.info(
+                toast.warning(
                     "verify your email to enable password recovery!".to_string(),
-                    ToastOptions::default().duration(Duration::from_millis(5000)),
+                    ToastOptions::default().duration(Duration::from_millis(1500)),
                 );
             }
         }
