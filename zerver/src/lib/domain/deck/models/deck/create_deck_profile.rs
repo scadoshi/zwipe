@@ -12,7 +12,10 @@
 //!
 //! Users cannot have multiple decks with the same name (user_id + name combination is unique).
 
-use crate::domain::deck::models::deck::deck_name::{DeckName, InvalidDeckname};
+use crate::domain::deck::models::deck::{
+    deck_name::{DeckName, InvalidDeckname},
+    format::{Format, InvalidFormat},
+};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -22,6 +25,9 @@ pub enum InvalidCreateDeckProfile {
     /// Deck name doesn't meet requirements (length, profanity).
     #[error(transparent)]
     DeckName(#[from] InvalidDeckname),
+    /// Format string is not a recognized format.
+    #[error(transparent)]
+    Format(#[from] InvalidFormat),
 }
 
 /// Errors that can occur during deck profile creation execution.
@@ -62,6 +68,8 @@ pub struct CreateDeckProfile {
     pub name: DeckName,
     /// Optional commander card ID for Commander format.
     pub commander_id: Option<Uuid>,
+    /// Optional deck format.
+    pub format: Option<Format>,
     /// Owner of this deck.
     pub user_id: Uuid,
     /// Whether the requesting user's email is verified (from JWT claim).
@@ -85,13 +93,16 @@ impl CreateDeckProfile {
     pub fn new(
         name: impl Into<String>,
         commander_id: Option<Uuid>,
+        format: Option<&str>,
         user_id: Uuid,
         email_verified: bool,
     ) -> Result<Self, InvalidCreateDeckProfile> {
         let name = DeckName::new(name)?;
+        let format = format.map(Format::try_from).transpose()?;
         Ok(Self {
             name,
             commander_id,
+            format,
             user_id,
             email_verified,
         })

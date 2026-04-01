@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT user_id, theme, dark_mode FROM user_preferences WHERE user_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "theme",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "dark_mode",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "577a9cafd737593bd20eaa9ccc52b4573bf3adb9c2c136a9587970ca9160a444"
+}

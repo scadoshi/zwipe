@@ -5,6 +5,7 @@ use crate::{
         deck::{
             create_deck_profile::CreateDeckProfileError,
             deck_name::InvalidDeckname, delete_deck::DeleteDeckError,
+            format::InvalidFormat,
             get_deck_profile::GetDeckProfileError, update_deck_profile::UpdateDeckProfileError,
         },
         deck_card::{
@@ -23,6 +24,8 @@ use thiserror::Error;
 pub enum IntoDeckProfileError {
     #[error(transparent)]
     DeckName(#[from] InvalidDeckname),
+    #[error(transparent)]
+    Format(#[from] InvalidFormat),
 }
 
 impl From<IntoDeckProfileError> for CreateDeckProfileError {

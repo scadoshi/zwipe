@@ -1,0 +1,61 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO decks (name, commander_id, format, user_id)\n               VALUES ($1, $2, $3, $4)\n               RETURNING id, name, commander_id, format, user_id,\n                         0::bigint as \"card_count\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = commander_id) as \"commander_name?\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "commander_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "format",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 5,
+        "name": "card_count",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "commander_name?",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Uuid",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "25b33e9b94811344d305bddd30a7d2ef3690a99d284b86248526e2069726e676"
+}

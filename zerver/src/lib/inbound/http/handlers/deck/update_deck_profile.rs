@@ -54,6 +54,9 @@ impl From<InvalidUpdateDeckProfile> for ApiError {
             InvalidUpdateDeckProfile::DeckName(e) => {
                 Self::UnprocessableEntity(format!("invalid deck name: {}", e))
             }
+            InvalidUpdateDeckProfile::Format(e) => {
+                Self::UnprocessableEntity(format!("invalid format: {}", e))
+            }
             InvalidUpdateDeckProfile::NoUpdates => {
                 Self::UnprocessableEntity("must update at least one field".to_string())
             }
@@ -70,14 +73,17 @@ pub struct HttpUpdateDeckProfile {
     pub name: Option<String>,
     /// Commander card ID with partial update semantics.
     pub commander_id: Optdate<Uuid>,
+    /// Format with partial update semantics.
+    pub format: Optdate<String>,
 }
 
 impl HttpUpdateDeckProfile {
     /// Creates a new deck update request.
-    pub fn new(name: Option<&str>, commander_id: Optdate<Uuid>) -> Self {
+    pub fn new(name: Option<&str>, commander_id: Optdate<Uuid>, format: Optdate<String>) -> Self {
         Self {
             name: name.map(|name| name.to_string()),
             commander_id,
+            format,
         }
     }
 }
@@ -97,10 +103,15 @@ where
     CS: CardService,
     DS: DeckService,
 {
+    let format_raw: Option<Option<String>> = body.format.into_option();
+    let format_option: Option<Option<&str>> = format_raw
+        .as_ref()
+        .map(|opt| opt.as_deref());
     let request = UpdateDeckProfile::new(
         deck_id,
         body.name.as_deref(),
         body.commander_id.into_option(),
+        format_option,
         user.id,
     )?;
 

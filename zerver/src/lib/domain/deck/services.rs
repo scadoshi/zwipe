@@ -166,7 +166,24 @@ where
             })
             .collect();
 
-        let deck = Deck::new(deck_profile, entries);
+        // Fetch commander card for color identity checks if not in entries
+        let commander_card = if let Some(commander_id) = deck_profile.commander_id {
+            if !entries.iter().any(|e| e.card.scryfall_data.id == commander_id) {
+                let ids: ScryfallDataIds = vec![commander_id].into_iter().collect();
+                self.card_repo.get_cards(&ids).await.ok().and_then(|mut cards| cards.pop())
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        let warnings = crate::domain::deck::models::deck::validate_deck::validate_deck(
+            &deck_profile,
+            &entries,
+            commander_card.as_ref(),
+        );
+        let deck = Deck::new(deck_profile, entries, warnings);
         Ok(deck)
     }
 

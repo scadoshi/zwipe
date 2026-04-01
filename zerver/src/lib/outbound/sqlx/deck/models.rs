@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::{
     domain::deck::models::{
-        deck::{deck_name::DeckName, deck_profile::DeckProfile},
+        deck::{deck_name::DeckName, deck_profile::DeckProfile, format::Format},
         deck_card::{quantity::Quantity, DeckCard},
     },
     outbound::sqlx::deck::error::{IntoDeckCardError, IntoDeckProfileError},
@@ -17,6 +17,7 @@ pub struct DatabaseDeckProfile {
     pub id: Uuid,
     pub name: String,
     pub commander_id: Option<Uuid>,
+    pub format: Option<String>,
     pub user_id: Uuid,
     pub card_count: Option<i64>,
     pub commander_name: Option<String>,
@@ -27,11 +28,13 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
     type Error = IntoDeckProfileError;
     fn try_from(value: DatabaseDeckProfile) -> Result<Self, Self::Error> {
         let name = DeckName::new(value.name)?;
+        let format = value.format.map(Format::try_from).transpose()?;
 
         Ok(Self {
             id: value.id,
             name,
             commander_id: value.commander_id,
+            format,
             user_id: value.user_id,
             card_count: value.card_count.unwrap_or(0),
             commander_name: value.commander_name,
