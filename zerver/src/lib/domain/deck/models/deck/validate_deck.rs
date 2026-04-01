@@ -40,7 +40,12 @@ fn plural(n: u32) -> &'static str {
 }
 
 fn check_card_count(format: &Format, profile: &DeckProfile, warnings: &mut Vec<DeckWarning>) {
-    let count = profile.card_count as u32;
+    let mut count = profile.card_count as u32;
+
+    // The commander is stored separately from deck entries, so include it in the total.
+    if format.has_commander() && profile.commander_id.is_some() {
+        count += 1;
+    }
 
     if let Some(min) = format.min_cards() {
         if count < min {
