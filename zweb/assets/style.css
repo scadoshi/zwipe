@@ -42,6 +42,7 @@ html, body {
   font-weight: 300;
   line-height: 1.6;
   min-height: 100vh;
+  max-width: 100vw;
 }
 
 a {
@@ -79,7 +80,8 @@ a:hover {
 nav {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 32px;
   padding: 20px 24px;
   max-width: 960px;
   margin: 0 auto;
@@ -103,6 +105,7 @@ nav::after {
   font-weight: 400;
   font-size: 1.1rem;
   letter-spacing: 0.05em;
+  cursor: pointer;
 }
 
 .nav-logo {
@@ -111,6 +114,12 @@ nav::after {
   line-height: 1;
   white-space: pre;
   display: block;
+  letter-spacing: 0;
+  transition: letter-spacing 0.15s;
+}
+
+.nav-brand:hover .nav-logo {
+  letter-spacing: 1px;
 }
 
 .nav-brand img {
@@ -154,11 +163,25 @@ nav::after {
 }
 
 @media (max-width: 560px) {
-  .nav-links {
-    gap: 14px;
+  nav {
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 16px 12px;
   }
-  .nav-links .hide-mobile {
+  nav::-webkit-scrollbar {
     display: none;
+  }
+  .nav-links {
+    gap: 10px;
+  }
+  .nav-links a {
+    font-size: 0.75rem;
+  }
+  .nav-links .store-link {
+    padding: 3px 8px;
+    font-size: 0.7rem;
   }
 }
 
