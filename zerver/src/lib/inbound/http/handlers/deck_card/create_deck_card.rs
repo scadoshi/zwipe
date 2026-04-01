@@ -19,7 +19,7 @@ use crate::{
             ports::DeckService,
         },
         health::ports::HealthService,
-        user::ports::UserService,
+        user::{models::get_user::GetUser, ports::UserService},
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
 };
@@ -98,7 +98,9 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let request = CreateDeckCard::new(user.id, &deck_id, &body.scryfall_data_id, body.quantity, user.email_verified)?;
+    let db_user = state.user_service.get_user(&GetUser::from(user.id)).await?;
+    let email_verified = db_user.email_verified_at.is_some();
+    let request = CreateDeckCard::new(user.id, &deck_id, &body.scryfall_data_id, body.quantity, email_verified)?;
 
     state
         .deck_service

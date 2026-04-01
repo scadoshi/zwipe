@@ -90,7 +90,7 @@ pub struct CreateDeckCard {
     pub scryfall_data_id: Uuid,
     /// How many copies (validated against deck copy limits).
     pub quantity: Quantity,
-    /// Whether the requesting user's email is verified (from JWT claim).
+    /// Whether the requesting user's email is verified (fresh from database lookup).
     /// Used to select the appropriate card count limit.
     pub email_verified: bool,
 }

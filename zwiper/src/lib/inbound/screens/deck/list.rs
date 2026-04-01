@@ -5,7 +5,7 @@ use crate::{
         components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
         router::Router,
     },
-    outbound::client::{ZwipeClient, deck::get_deck_profiles::ClientGetDeckList},
+    outbound::client::{ZwipeClient, deck::get_deck_profiles::ClientGetDeckList, user::get_user::ClientGetUser},
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
@@ -20,8 +20,29 @@ use zwipe::{
 pub fn DeckList() -> Element {
     let navigator = use_navigator();
     let auth_client: Signal<ZwipeClient> = use_context();
-    let session: Signal<Option<Session>> = use_context();
+    let mut session: Signal<Option<Session>> = use_context();
     let toast = use_toast();
+
+    // Refresh user on mount so email_verified_at is current without re-login.
+    use_effect(move || {
+        let Some(s) = session.peek().clone() else {
+            return;
+        };
+        spawn(async move {
+            match auth_client().get_user(&s).await {
+                Ok(fresh_user) => {
+                    let current = session.peek().clone();
+                    if let Some(mut current) = current {
+                        current.user = fresh_user;
+                        session.set(Some(current));
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!("deck list user fetch failed: {e}");
+                }
+            }
+        });
+    });
 
     let mut deck_profiles_resource: Resource<Result<Vec<DeckProfile>, ApiError>> =
         use_resource(move || async move {

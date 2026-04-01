@@ -49,8 +49,6 @@ pub struct AuthenticatedUser {
     pub username: Username,
     /// Email from JWT claims.
     pub email: EmailAddress,
-    /// Whether the user's email was verified at token generation time.
-    pub email_verified: bool,
 }
 
 /// Rate-limit key extractor that keys by authenticated user ID from the JWT.
@@ -101,7 +99,6 @@ impl From<UserClaims> for AuthenticatedUser {
             id: value.user_id,
             username: value.username,
             email: value.email,
-            email_verified: value.email_verified,
         }
     }
 }

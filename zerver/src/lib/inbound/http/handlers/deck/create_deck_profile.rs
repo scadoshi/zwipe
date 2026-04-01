@@ -13,7 +13,7 @@ use crate::{
             ports::DeckService,
         },
         health::ports::HealthService,
-        user::ports::UserService,
+        user::{models::get_user::GetUser, ports::UserService},
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
 };
@@ -88,7 +88,9 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let request = CreateDeckProfile::new(body.name, body.commander_id, body.format.as_deref(), user.id, user.email_verified)?;
+    let db_user = state.user_service.get_user(&GetUser::from(user.id)).await?;
+    let email_verified = db_user.email_verified_at.is_some();
+    let request = CreateDeckProfile::new(body.name, body.commander_id, body.format.as_deref(), user.id, email_verified)?;
 
     state
         .deck_service
