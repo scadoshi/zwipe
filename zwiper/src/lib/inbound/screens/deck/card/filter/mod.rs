@@ -12,6 +12,8 @@ pub mod combat;
 pub mod config;
 /// Filter mode toggle (exact vs range).
 pub mod filter_mode;
+/// Format legality filter.
+pub mod format;
 /// Match mode toggle (any vs all).
 pub mod match_mode;
 /// Flavor text filter.

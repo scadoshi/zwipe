@@ -11,8 +11,8 @@ use crate::{
             action_history::{CARDS_WARNING_THRESHOLD, MAX_CARDS_IN_STACK, SwipeAction},
             filter::{
                 artist::Artist, combat::Combat, config::Config, flavor_text::FlavorText,
-                mana::Mana, name::Name, oracle_text::OracleText, rarity::Rarity, set::Set,
-                sort::Sort, types::Types,
+                format::FormatFilter, mana::Mana, name::Name, oracle_text::OracleText,
+                rarity::Rarity, set::Set, sort::Sort, types::Types,
             },
         },
     },
@@ -37,6 +37,7 @@ use zwipe::{
             Card, scryfall_data::image_uris::ImageUris,
             search_card::card_filter::builder::CardFilterBuilder,
         },
+        deck::models::deck::format::Format,
     },
     inbound::http::handlers::deck_card::create_deck_card::HttpCreateDeckCard,
 };
@@ -54,6 +55,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut animation_direction = use_signal(|| Direction::Left);
 
     let mut deck_cards_ids = use_signal(HashSet::<Uuid>::new);
+    let mut deck_format: Signal<Option<Format>> = use_signal(|| None);
 
     // Undo action history
     let mut action_history: Signal<Vec<SwipeAction>> = use_signal(Vec::new);
@@ -305,10 +307,16 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     let mut clear_filters = move || {
         let opts = ToastOptions::default().duration(Duration::from_millis(1500));
-        if filter_builder.read().is_empty() {
+        if filter_builder.read().is_empty_ignoring_legalities() {
             toast.warning("filter already cleared".to_string(), opts);
         } else {
             filter_builder.write().clear();
+            // Re-apply deck format after clear
+            if let Some(fmt) = deck_format() {
+                filter_builder.write().set_legalities_contains_any(
+                    vec![fmt.to_legality_key().to_string()]
+                );
+            }
             cards.set(vec![]);
             current_index.set(0);
             toast.info("filter cleared".to_string(), opts);
@@ -334,6 +342,16 @@ pub fn Add(deck_id: Uuid) -> Element {
                         ids.insert(commander_id);
                     }
                     deck_cards_ids.set(ids);
+
+                    // Pre-populate format filter from deck
+                    if let Some(fmt) = deck.deck_profile.format {
+                        deck_format.set(Some(fmt));
+                        if filter_builder.peek().legalities_contains_any().is_none() {
+                            filter_builder.write().set_legalities_contains_any(
+                                vec![fmt.to_legality_key().to_string()]
+                            );
+                        }
+                    }
                 }
                 Err(e) => {
                     tracing::warn!(
@@ -355,10 +373,18 @@ pub fn Add(deck_id: Uuid) -> Element {
         builder.set_limit(pagination_limit);
         builder.set_offset(0);
 
+        let effectively_empty = builder.is_empty_ignoring_legalities();
+
         if first {
             // ── Initial mount ─────────────────────────────────────────
-            if builder.is_empty() {
+            if effectively_empty {
+                // Filter is default — clear any stale cards and don't search
+                cards.set(vec![]);
+                last_search_filter.set(None);
+                current_offset.set(0);
+                current_index.set(0);
                 toast.warning("filter is empty".to_string(), ToastOptions::default().duration(Duration::from_millis(2000)));
+                return;
             }
             // Preserve cards if the filter hasn't changed since last search.
             let filter_unchanged = last_search_filter
@@ -391,8 +417,12 @@ pub fn Add(deck_id: Uuid) -> Element {
         current_index.set(0);
         pagination_exhausted.set(false);
 
+        if effectively_empty {
+            // Filter is default (empty or only deck format) — don't search
+            return;
+        }
+
         let Ok(filter) = builder.build() else {
-            // Filter is empty — cards already cleared above, nothing to do
             return;
         };
 
@@ -474,6 +504,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         || fb.oversized() != def.oversized()
         || fb.promo() != def.promo()
         || fb.content_warning() != def.content_warning();
+    let format_active = fb.legalities_contains_any().is_some();
 
     rsx! {
         Bouncer {
@@ -687,7 +718,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         class: "btn btn-sm",
                         onclick: move |_| {
                             accordion_key.set(accordion_key() + 1);
-                            if filter_builder.read().is_empty() {
+                            if filter_builder.read().is_empty_ignoring_legalities() {
                                 toast.warning("filter is empty".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                             } else {
                                 filter_reset_counter.set(filter_reset_counter() + 1);
@@ -810,15 +841,26 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(10)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
                             AccordionTrigger {
+                                "format"
+                                if format_active { span { class: "filter-dot" } }
+                            }
+                            AccordionContent { FormatFilter {} }
+                        }
+
+                        AccordionItem { index: 11,
+                            on_change: move |is_open| {
+                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(11)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
+                            },
+                            AccordionTrigger {
                                 "sort"
                                 if sort_active { span { class: "filter-dot" } }
                             }
                             AccordionContent { Sort {} }
                         }
 
-                        AccordionItem { index: 11,
+                        AccordionItem { index: 12,
                             on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(11)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
+                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(12)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
                             AccordionTrigger {
                                 "config"

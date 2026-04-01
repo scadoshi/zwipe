@@ -51,8 +51,6 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
     let mut commander_display = use_signal(String::new);
     let mut selected_format: Signal<Option<Format>> = use_signal(|| None);
-    let mut format_display = use_signal(String::new);
-    let mut format_show_dropdown = use_signal(|| false);
 
     // original
     let mut original_deck_name: Signal<String> = use_signal(String::new);
@@ -75,9 +73,6 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             deck_name.set(deck.deck_profile.name.to_string());
             original_format.set(deck.deck_profile.format);
             selected_format.set(deck.deck_profile.format);
-            if let Some(fmt) = deck.deck_profile.format {
-                format_display.set(fmt.display_name().to_lowercase());
-            }
         }
         Some(Err(e)) => {
             toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
@@ -181,7 +176,6 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
 
             if let Some(session) = session() {
                 let Ok(card_filter) = CardFilterBuilder::with_name_contains(&query)
-                    .set_is_commander(true)
                     .set_limit(5)
                     .build()
                 else {
@@ -247,20 +241,6 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         do_submit();
     };
 
-    // filtered format list based on typed input
-    let format_options: Vec<Format> = {
-        let query = format_display().to_lowercase();
-        if query.is_empty() {
-            Format::all().to_vec()
-        } else {
-            Format::all()
-                .iter()
-                .filter(|f| f.display_name().to_lowercase().contains(&query))
-                .copied()
-                .collect()
-        }
-    };
-
     rsx! {
         Bouncer {
             div { class: "screen",
@@ -280,7 +260,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                     placeholder: "deck name",
                                 }
 
-                                // format selector
+                                // format selector (chips)
                                 div { class: "mb-4",
                                     div { class: "label-row",
                                         label { class: "label", "format" }
@@ -289,55 +269,31 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                                 class: "clear-btn",
                                                 onclick: move |_| {
                                                     selected_format.set(None);
-                                                    format_display.set(String::new());
-                                                    format_show_dropdown.set(false);
                                                     commander.set(None);
                                                     commander_display.set(String::new());
                                                 },
-                                                "x"
+                                                "\u{00d7}"
                                             }
                                         }
                                     }
-                                    input { class: "input",
-                                        id: "format",
-                                        r#type: "text",
-                                        placeholder: "format",
-                                        value: "{format_display}",
-                                        autocapitalize: "none",
-                                        spellcheck: "false",
-                                        onclick: move |_| {
-                                            format_display.set(String::new());
-                                            selected_format.set(None);
-                                            commander.set(None);
-                                            commander_display.set(String::new());
-                                            format_show_dropdown.set(true);
-                                        },
-                                        oninput: move |event| {
-                                            format_display.set(event.value());
-                                            selected_format.set(None);
-                                            format_show_dropdown.set(true);
-                                        }
-                                    }
-
-                                    if format_show_dropdown() {
-                                        div { class: "dropdown",
-                                            if format_options.is_empty() {
-                                                div { "no results" }
-                                            } else {
-                                                for fmt in format_options.iter().copied() {
-                                                    div { class: "dropdown-item",
-                                                        onclick: move |_| {
-                                                            selected_format.set(Some(fmt));
-                                                            format_display.set(fmt.display_name().to_lowercase());
-                                                            format_show_dropdown.set(false);
-                                                            if !fmt.has_commander() {
-                                                                commander.set(None);
-                                                                commander_display.set(String::new());
-                                                            }
-                                                        },
-                                                        { fmt.display_name().to_lowercase() }
+                                    div { class: "flex flex-wrap gap-1 flex-center",
+                                        for fmt in Format::all().iter().copied() {
+                                            div {
+                                                class: if selected_format() == Some(fmt) { "chip selected" } else { "chip" },
+                                                onclick: move |_| {
+                                                    if selected_format() == Some(fmt) {
+                                                        selected_format.set(None);
+                                                        commander.set(None);
+                                                        commander_display.set(String::new());
+                                                    } else {
+                                                        selected_format.set(Some(fmt));
+                                                        if !fmt.has_commander() {
+                                                            commander.set(None);
+                                                            commander_display.set(String::new());
+                                                        }
                                                     }
-                                                }
+                                                },
+                                                { fmt.display_name().to_lowercase() }
                                             }
                                         }
                                     }

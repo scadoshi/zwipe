@@ -39,8 +39,6 @@ pub fn CreateDeck() -> Element {
     // form
     let deck_name = use_signal(String::new);
     let mut selected_format: Signal<Option<Format>> = use_signal(|| None);
-    let mut format_display = use_signal(String::new);
-    let mut format_show_dropdown = use_signal(|| false);
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
     let mut commander_display = use_signal(String::new);
     // commander search state
@@ -80,7 +78,6 @@ pub fn CreateDeck() -> Element {
 
             if let Some(session) = session() {
                 let Ok(card_filter) = CardFilterBuilder::with_name_contains(&query)
-                    .set_is_commander(true)
                     .set_limit(5)
                     .build()
                 else {
@@ -134,20 +131,6 @@ pub fn CreateDeck() -> Element {
         });
     };
 
-    // filtered format list based on typed input
-    let format_options: Vec<Format> = {
-        let query = format_display().to_lowercase();
-        if query.is_empty() {
-            Format::all().to_vec()
-        } else {
-            Format::all()
-                .iter()
-                .filter(|f| f.display_name().to_lowercase().contains(&query))
-                .copied()
-                .collect()
-        }
-    };
-
     rsx! {
         Bouncer {
             div { class: "screen",
@@ -166,50 +149,40 @@ pub fn CreateDeck() -> Element {
                             placeholder: "deck name",
                         }
 
-                        // format selector
+                        // format selector (chips)
                         div { class: "mb-4",
-                            label { class: "label", r#for: "format", "format" }
-                            input { class: "input",
-                                id: "format",
-                                r#type: "text",
-                                placeholder: "format",
-                                value: "{format_display}",
-                                autocapitalize: "none",
-                                spellcheck: "false",
-                                onclick: move |_| {
-                                    format_display.set(String::new());
-                                    selected_format.set(None);
-                                    commander.set(None);
-                                    commander_display.set(String::new());
-                                    format_show_dropdown.set(true);
-                                },
-                                oninput: move |event| {
-                                    format_display.set(event.value());
-                                    selected_format.set(None);
-                                    format_show_dropdown.set(true);
+                            div { class: "label-row",
+                                label { class: "label", "format" }
+                                if selected_format().is_some() {
+                                    button {
+                                        class: "clear-btn",
+                                        onclick: move |_| {
+                                            selected_format.set(None);
+                                            commander.set(None);
+                                            commander_display.set(String::new());
+                                        },
+                                        "\u{00d7}"
+                                    }
                                 }
                             }
-
-                            if format_show_dropdown() {
-                                div { class: "dropdown",
-                                    if format_options.is_empty() {
-                                        div { "no results" }
-                                    } else {
-                                        for fmt in format_options.iter().copied() {
-                                            div { class: "dropdown-item",
-                                                onclick: move |_| {
-                                                    selected_format.set(Some(fmt));
-                                                    format_display.set(fmt.display_name().to_lowercase());
-                                                    format_show_dropdown.set(false);
-                                                    // clear commander if format doesn't support it
-                                                    if !fmt.has_commander() {
-                                                        commander.set(None);
-                                                        commander_display.set(String::new());
-                                                    }
-                                                },
-                                                { fmt.display_name().to_lowercase() }
+                            div { class: "flex flex-wrap gap-1 flex-center",
+                                for fmt in Format::all().iter().copied() {
+                                    div {
+                                        class: if selected_format() == Some(fmt) { "chip selected" } else { "chip" },
+                                        onclick: move |_| {
+                                            if selected_format() == Some(fmt) {
+                                                selected_format.set(None);
+                                                commander.set(None);
+                                                commander_display.set(String::new());
+                                            } else {
+                                                selected_format.set(Some(fmt));
+                                                if !fmt.has_commander() {
+                                                    commander.set(None);
+                                                    commander_display.set(String::new());
+                                                }
                                             }
-                                        }
+                                        },
+                                        { fmt.display_name().to_lowercase() }
                                     }
                                 }
                             }

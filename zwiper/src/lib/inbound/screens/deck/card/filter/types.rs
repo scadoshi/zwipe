@@ -4,7 +4,6 @@ use super::{
     deck_cards::{DeckCards, extract_type_words},
     match_mode::MatchMode,
 };
-use crate::inbound::components::tri_toggle::TriToggle;
 use crate::outbound::client::{card::get_card_types::ClientGetCardTypes, ZwipeClient};
 use dioxus::prelude::*;
 use zwipe::{
@@ -125,18 +124,6 @@ pub fn Types() -> Element {
 
     rsx! {
         div { class: "flex-col gap-half",
-            TriToggle {
-                label: "is commander",
-                filter_builder,
-                getter: |fb| fb.is_commander(),
-                setter_true: |fb| { fb.set_is_commander(true); },
-                setter_false: |fb| { fb.set_is_commander(false); },
-                unsetter: |fb| { fb.unset_is_commander(); },
-                true_label: "yes",
-                false_label: "no",
-                none_label: "any"
-            }
-
             div { class: "label-row",
                 label { class: "label-xs", r#for: "card-type", "basic types" }
                 button {
