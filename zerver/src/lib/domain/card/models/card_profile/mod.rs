@@ -1,7 +1,6 @@
 //! User-specific card metadata and computed properties.
 //!
 //! CardProfile stores application-computed metadata for each card:
-//! - Commander legality (derived from Scryfall data)
 //! - Token status (whether this is a token vs. real card)
 //! - Timestamps (when card was added/updated in database)
 //!
@@ -21,7 +20,6 @@ use uuid::Uuid;
 ///
 /// # Current Fields
 ///
-/// - **Commander Legality**: Pre-computed from Scryfall type_line (is it a legendary creature?)
 /// - **Token Status**: Whether this is a token (not a real card for deck building)
 /// - **Timestamps**: Database record creation/update times
 ///
@@ -36,8 +34,6 @@ use uuid::Uuid;
 pub struct CardProfile {
     /// Scryfall UUID — the primary key shared with the `scryfall_data` table.
     pub scryfall_data_id: Uuid,
-    /// Pre-computed commander legality (legendary creature check).
-    pub is_commander: bool,
     /// Whether this is a token (not a real card).
     pub is_token: bool,
     /// When this profile was created in database.

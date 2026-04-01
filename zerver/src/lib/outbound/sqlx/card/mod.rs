@@ -416,11 +416,6 @@ impl CardRepository for MyPostgres {
         }
 
         // flag filters
-        if let Some(is_commander) = request.is_commander() {
-            sep.push(" card_profiles.is_commander = ");
-            sep.push_bind_unseparated(is_commander);
-        }
-
         if let Some(is_tok) = request.is_token() {
             sep.push(" card_profiles.is_token = ");
             sep.push_bind_unseparated(is_tok);
@@ -469,6 +464,19 @@ impl CardRepository for MyPostgres {
         if let Some(language) = request.language() {
             sep.push("scryfall_data.lang = ");
             sep.push_bind_unseparated(language);
+        }
+
+        if let Some(formats) = request.legalities_contains_any() {
+            sep.push("(");
+            for (i, format_key) in formats.iter().enumerate() {
+                if i > 0 {
+                    sep.push_unseparated(" OR ");
+                }
+                sep.push_unseparated("legalities->>");
+                sep.push_bind_unseparated(format_key.clone());
+                sep.push_unseparated(" IN ('legal', 'restricted')");
+            }
+            sep.push_unseparated(")");
         }
 
         // Filter out NULLs for sorted field
@@ -664,7 +672,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<CardProfile, GetCardProfileError> {
         let card_profile: CardProfile = query_as!(
             DatabaseCardProfile,
-            "SELECT scryfall_data_id, is_commander, is_token, created_at, updated_at FROM card_profiles WHERE scryfall_data_id = $1",
+            "SELECT scryfall_data_id, is_token, created_at, updated_at FROM card_profiles WHERE scryfall_data_id = $1",
             **request
         )
         .fetch_one(&self.pool)
@@ -679,7 +687,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<CardProfile, GetCardProfileError> {
         let card_profile: CardProfile = query_as!(
             DatabaseCardProfile,
-            "SELECT scryfall_data_id, is_commander, is_token, created_at, updated_at
+            "SELECT scryfall_data_id, is_token, created_at, updated_at
             FROM card_profiles WHERE scryfall_data_id = $1",
             **request
         )
@@ -695,7 +703,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
         let card_profiles: Vec<CardProfile> = query_as!(
             DatabaseCardProfile,
-            "SELECT scryfall_data_id, is_commander, is_token, created_at, updated_at
+            "SELECT scryfall_data_id, is_token, created_at, updated_at
             FROM card_profiles WHERE scryfall_data_id = ANY($1)",
             &**request
         )
@@ -713,7 +721,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
         let card_profiles: Vec<CardProfile> = query_as!(
             DatabaseCardProfile,
-            "SELECT scryfall_data_id, is_commander, is_token, created_at, updated_at
+            "SELECT scryfall_data_id, is_token, created_at, updated_at
             FROM card_profiles WHERE scryfall_data_id = ANY($1)",
             &**request
         )

@@ -64,6 +64,19 @@ Bump `actions/checkout@v4` and `actions/cache@v4` in both `deploy-zerver.yml` an
 
 ---
 
+## Format-Aware Commander Querying
+
+`is_commander` was removed from the database (was a persisted boolean on `card_profiles`). Commander eligibility will be computed in-memory via query filters. Each format has different rules for what constitutes a valid commander:
+
+- [ ] **Commander / Duel / PreDH** — legendary creature, legendary vehicle/spacecraft with P/T, or "can be your commander" oracle text
+- [ ] **Brawl / Standard Brawl / Historic Brawl** — legendary creature OR legendary planeswalker
+- [ ] **Pauper Commander** — uncommon creature
+- [ ] **Oathbreaker** — planeswalker (+ signature spell concept, future work)
+- [ ] Wire format-aware filtering into commander search on create/edit screens (currently serves all cards)
+- [ ] Validate commander selection against format rules and surface as deck warning if mismatched
+
+---
+
 ## Testing
 
 - **Integration tests** — SQLx repository tests require a real PostgreSQL instance. Unit test phase complete (269 tests). Remaining gap: outbound adapters have no coverage.

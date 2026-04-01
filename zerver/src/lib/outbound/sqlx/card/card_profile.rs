@@ -10,7 +10,6 @@ use uuid::Uuid;
 #[allow(missing_docs)]
 pub struct DatabaseCardProfile {
     pub scryfall_data_id: Uuid,
-    pub is_commander: bool,
     pub is_token: bool,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
@@ -20,7 +19,6 @@ impl From<DatabaseCardProfile> for CardProfile {
     fn from(value: DatabaseCardProfile) -> Self {
         Self {
             scryfall_data_id: value.scryfall_data_id,
-            is_commander: value.is_commander,
             is_token: value.is_token,
             created_at: value.created_at,
             updated_at: value.updated_at,
