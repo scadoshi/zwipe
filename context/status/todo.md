@@ -105,6 +105,11 @@ Add a `context/architecture/structure.md` walking through the full directory tre
 
 ## Recently Completed
 
+### zweb & README Updates (2026-04-01)
+
+- [x] Split download page into separate iOS and Android store pages (`b6acebe8`)
+- [x] Add zwipe-core to README tech stack and architecture (`519305b6`)
+
 ### Shared Password Validation Crate (2026-04-01)
 
 - [x] Extract password validation + common password dictionary into `zwipe-core` crate
@@ -169,7 +174,7 @@ Add a `context/architecture/structure.md` walking through the full directory tre
 
 - [x] Design alignment — entrance animations, CSS tokens, spinner (`24704b8`)
 - [x] Nav: ASCII z logo, sticky on scroll, animation on click (`351fff5`, `79f7914`, `241bf48`)
-- [x] Download page for app store pending status (`5e38f78`)
+- [x] Download page for app store pending status (`5e38f78`), split into separate iOS/Android pages (`b6acebe8`)
 - [x] Favicon (`5026d4b`)
 
 ### Infrastructure
