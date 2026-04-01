@@ -79,21 +79,45 @@ All workflows already use latest major versions (`actions/checkout@v4`, `actions
 
 ---
 
-## Incremental Domain Extraction into `zwipe-core`
+## Domain Extraction into `zwipe-core`
 
-Long-term goal: move all pure domain logic into `zwipe-core` so `zerver` and `zwiper` become thin adapter shells. Migrate **incrementally** — one module at a time, as each module is touched or needs to be shared. Do not attempt a single large migration.
+**Goal:** `zwipe-core` becomes the single source of truth for all domain types and API contract types. No feature flags — everything in core is meant to be shared.
+
+**Why:** Today `zwiper` depends on `zerver` (with `default-features = false`) just to reuse domain types and HTTP request/response models. This pulls ~17 transitive deps zwiper doesn't need and creates a backwards dependency (client → server). After extraction:
+
+```
+zwiper ──→ zwipe-core ←── zerver
+zweb  ──→ zwipe-core
+```
+
+**What lives where after extraction:**
+
+| Crate | Owns |
+|-------|------|
+| `zwipe-core` | Domain types (newtypes, models, validation, error types), API contract types (request/response structs for HTTP endpoints — `Serialize`/`Deserialize` only) |
+| `zerver` | Inbound (Axum handlers, routes, middleware) + outbound (SQLx repos, Scryfall client). Maps between its own row/infra types and `zwipe-core` domain types. Owns `impl From<DomainError> for HttpError`, `impl sqlx::FromRow` via manual impls on its own row structs, etc. |
+| `zwiper` | Inbound (Dioxus screens/components) + outbound (HTTP client, keychain). Depends on `zwipe-core` only — no `zerver` dependency. |
+| `zweb` | Dioxus web pages. Depends on `zwipe-core` for password validation, and any other domain types it needs. |
+
+**Key decisions:**
+- **No feature flags in `zwipe-core`** — if something needs infrastructure deps (sqlx, axum) it stays in the adapter crate
+- **No `sqlx::FromRow` in core** — zerver's outbound layer defines its own row types and maps into core domain types (consistent with how all other types already work)
+- **API contracts live in core** — request/response structs like `DeleteUser { password }` and `UpdateDeckCard { update_quantity }` move from `zerver/inbound/http/handlers/` into core so both sides share them without zwiper depending on zerver
+
+**Migrate incrementally** — one module at a time, as each module is touched. Do not attempt a single large migration.
 
 **Done:**
 - [x] Password validation + common password dictionary
+- [x] Add zweb to Cargo workspace (unified lockfile, workspace lints)
 
 **Next natural candidates** (do when touched, not proactively):
 - [ ] `EmailAddress` newtype
 - [ ] `Username` newtype
 - [ ] Shared error types
-- [ ] Card filter builders
-
-**Hard / defer until needed:**
-- Anything coupled to `sqlx::FromRow`, `jsonwebtoken`, or other infrastructure deps — requires deciding whether `zwipe-core` takes those deps or adapters handle conversion.
+- [ ] Card domain types (models, filter builders, `ScryffallData` without sqlx derives)
+- [ ] API contract types (HTTP request/response structs currently in `zerver/inbound/http/handlers/`)
+- [ ] Auth domain types (`Session`, token models)
+- [ ] Deck domain types (models, validation)
 
 ---
 
