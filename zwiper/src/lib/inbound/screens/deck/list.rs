@@ -76,6 +76,12 @@ pub fn DeckList() -> Element {
                                             h3 { class: "font-light text-base tracking-wide",
                                                 { profile.name.to_string() }
                                             }
+                                            span { class: "text-muted text-sm",
+                                                "{profile.card_count} cards"
+                                                if let Some(ref cmd) = profile.commander_name {
+                                                    " | {cmd.to_lowercase()}"
+                                                }
+                                            }
                                         }
                                     }
                                 }
