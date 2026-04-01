@@ -12,7 +12,10 @@ pub fn Home() -> Element {
             p { class: "tagline",
                 "the mtg deck builder built for mobile. swipe right to add, left to skip."
             }
-            Link { to: Route::Download {}, class: "appstore-btn", "download on the app store" }
+            div { class: "store-buttons",
+                Link { to: Route::Ios {}, class: "store-btn", "download on the app store" }
+                Link { to: Route::Android {}, class: "store-btn", "download on google play" }
+            }
         }
         div { class: "page content-enter",
             div { class: "features-grid",

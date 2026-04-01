@@ -2,7 +2,7 @@ use dioxus::document::eval;
 use dioxus::prelude::*;
 
 mod pages;
-use pages::{About, Contribute, Download, Home, Privacy, Reset, Verify};
+use pages::{About, Android, Contribute, Home, Ios, Privacy, Reset, Verify};
 
 pub const API_BASE: &str = "https://api.zwipe.net";
 
@@ -21,8 +21,10 @@ enum Route {
     About {},
     #[route("/contribute")]
     Contribute {},
-    #[route("/download")]
-    Download {},
+    #[route("/download/ios")]
+    Ios {},
+    #[route("/download/android")]
+    Android {},
     #[route("/privacy")]
     Privacy {},
     #[route("/verify/:token")]
@@ -82,7 +84,10 @@ pub fn Nav() -> Element {
                     a { href: "https://discord.gg/s2UReqUUeg", target: "_blank", rel: "noopener noreferrer", "discord" }
                 }
                 li {
-                    Link { to: Route::Download {}, class: "appstore-link", "app store ↗" }
+                    Link { to: Route::Ios {}, class: "store-link", "app store ↗" }
+                }
+                li {
+                    Link { to: Route::Android {}, class: "store-link", "play store ↗" }
                 }
             }
         }
