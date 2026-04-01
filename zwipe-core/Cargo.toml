@@ -1,0 +1,11 @@
+[package]
+name = "zwipe-core"
+version.workspace = true
+edition = "2024"
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+thiserror = { workspace = true }

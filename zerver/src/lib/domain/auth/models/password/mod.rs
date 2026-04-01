@@ -16,13 +16,11 @@
 //! - **No Whitespace**: No spaces, tabs, or newlines
 //! - **Unique Characters**: Minimum 6 unique characters
 //! - **Repeat Limit**: Maximum 3 consecutive repeated characters
-//! - **Not Common**: Not in common password dictionary
 //!
 //! # Security Features
 //!
 //! - **Argon2id**: Memory-hard hashing algorithm resistant to GPU attacks
 //! - **Random Salts**: Unique salt per password using OS random number generator
-//! - **Common Password Check**: Dictionary of 10,000+ weak passwords
 //! - **Constant-Time Verification**: Prevents timing attacks
 //!
 //! # Example
@@ -43,119 +41,16 @@
 //! stored_hash.verify(&provided)?; // Returns Ok(()) if matches
 //! ```
 
-mod common;
 #[cfg(feature = "zerver")]
 use argon2::{
     Argon2, PasswordHasher, PasswordVerifier,
     password_hash::{self, SaltString, rand_core::OsRng},
 };
-use common::IsCommonPassword;
-use std::{collections::HashSet, fmt::Display};
-use thiserror::Error;
+use std::fmt::Display;
 
-// ========
-//  errors
-// ========
-
-/// Password validation errors indicating which policy requirement failed.
-///
-/// Each variant corresponds to a specific password policy rule. The error messages
-/// are user-friendly and can be displayed directly in API responses or UI.
-///
-/// # Examples
-///
-/// ```rust,ignore
-/// use zwipe::domain::auth::models::password::{Password, InvalidPassword};
-///
-/// match Password::new("weak") {
-///     Err(InvalidPassword::TooShort) => {
-///         println!("Password must be at least 8 characters");
-///     }
-///     Err(InvalidPassword::MissingUpperCase) => {
-///         println!("Password must contain uppercase letters");
-///     }
-///     _ => {}
-/// }
-/// ```
-#[derive(Debug, Clone, Error)]
-pub enum InvalidPassword {
-    /// Password is shorter than 8 characters.
-    #[error("must be at least 8 characters long")]
-    TooShort,
-
-    /// Password exceeds 128 characters.
-    #[error("must not exceed 128 characters")]
-    TooLong,
-
-    /// Password lacks uppercase letters (A-Z).
-    #[error("must have at least one uppercase letter")]
-    MissingUpperCase,
-
-    /// Password lacks lowercase letters (a-z).
-    #[error("must have at least one lowercase letter")]
-    MissingLowerCase,
-
-    /// Password lacks digits (0-9).
-    #[error("must have at least one number")]
-    MissingNumber,
-
-    /// Password lacks required symbols.
-    ///
-    /// The error message includes the full list of acceptable symbols.
-    #[error("must have at least one symbol from {0}")]
-    MissingSymbol(String),
-
-    /// Password contains whitespace (spaces, tabs, newlines).
-    #[error("must not contain whitespace characters")]
-    ContainsWhitespace,
-
-    /// Password appears in the common password dictionary.
-    ///
-    /// Rejected passwords include dictionary words, keyboard patterns,
-    /// and known compromised passwords.
-    #[error("password is too common and not secure")]
-    CommonPassword,
-
-    /// Password has too many consecutive repeated characters.
-    ///
-    /// Maximum allowed is 3 consecutive repeats (e.g., "aaa" is allowed, "aaaa" is not).
-    #[error(transparent)]
-    TooManyRepeats(#[from] TooManyRepeats),
-
-    /// Password has insufficient character diversity.
-    ///
-    /// Minimum required is 6 unique characters.
-    #[error(transparent)]
-    TooFewUniqueChars(#[from] TooFewUniqueChars),
-}
-
-/// Error indicating too many consecutive repeated characters in the password.
-///
-/// The maximum allowed is 3 consecutive repeats. For example:
-/// - "aaa" is valid (3 repeats)
-/// - "aaaa" is invalid (4 repeats)
-///
-/// This prevents trivial passwords like "aaaaaaa!" or "111111!!".
-#[derive(Debug, Clone, Error)]
-#[error("must not contain more than {0} repeated characters")]
-pub struct TooManyRepeats(u8);
-
-/// Error indicating insufficient unique characters in the password.
-///
-/// The minimum required is 6 unique characters to ensure adequate entropy.
-/// For example:
-/// - "aAbBcC1!" has 8 unique chars (valid)
-/// - "aaa111!!" has 3 unique chars (invalid)
-///
-/// This prevents trivial passwords constructed from repeated patterns.
-#[derive(Debug, Clone, Error)]
-#[error("must contain at least {0} unique characters")]
-pub struct TooFewUniqueChars(u8);
-
-/// Required symbols for password policy.
-///
-/// At least one of these characters must be present in every password.
-const SYMBOLS: &str = r#"~!@#$%^&*()_+=[]{}\/?|:;<>,."#;
+// Re-export validation types from zwipe-core so downstream consumers
+// (handlers, services) can continue importing from this module.
+pub use zwipe_core::password::{InvalidPassword, SYMBOLS, TooFewUniqueChars, TooManyRepeats};
 
 /// A validated password that meets all security policy requirements.
 ///
@@ -216,7 +111,7 @@ impl Password {
     /// ```
     pub fn new(raw: impl AsRef<str>) -> Result<Self, InvalidPassword> {
         let raw = raw.as_ref();
-        raw.meets_all_requirements()?;
+        zwipe_core::password::validate(raw)?;
         Ok(Password(raw.to_string()))
     }
 
@@ -256,78 +151,6 @@ impl Password {
 impl Display for Password {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
-    }
-}
-
-/// enables password policy validation
-trait PasswordPolicy {
-    fn min_unique_char_requirement(&self, at_least: u8) -> Result<(), TooFewUniqueChars>;
-    fn max_repeat_char_requirement(&self, at_most: u8) -> Result<(), TooManyRepeats>;
-    fn meets_all_requirements(&self) -> Result<(), InvalidPassword>;
-}
-
-impl PasswordPolicy for &str {
-    fn min_unique_char_requirement(&self, at_least: u8) -> Result<(), TooFewUniqueChars> {
-        let unique_chars: HashSet<char> = self.chars().collect();
-        if unique_chars.len() < 6 {
-            return Err(TooFewUniqueChars(at_least));
-        }
-        Ok(())
-    }
-    fn max_repeat_char_requirement(&self, at_most: u8) -> Result<(), TooManyRepeats> {
-        let mut repeat_count = 1;
-        let mut last_char_opt: Option<char> = None;
-
-        for char in self.chars() {
-            if last_char_opt.is_none() {
-                last_char_opt = Some(char);
-                continue;
-            }
-
-            if let Some(last_char) = last_char_opt {
-                if char == last_char {
-                    repeat_count += 1;
-                    if repeat_count > at_most {
-                        return Err(TooManyRepeats(at_most));
-                    }
-                } else {
-                    repeat_count = 1;
-                }
-                last_char_opt = Some(char);
-            }
-        }
-
-        Ok(())
-    }
-    fn meets_all_requirements(&self) -> Result<(), InvalidPassword> {
-        // Length first — structural metadata before content inspection
-        if self.len() < 8 {
-            return Err(InvalidPassword::TooShort);
-        }
-        if self.len() > 128 {
-            return Err(InvalidPassword::TooLong);
-        }
-        if !self.chars().any(|x| x.is_uppercase()) {
-            return Err(InvalidPassword::MissingUpperCase);
-        }
-        if !self.chars().any(|x| x.is_lowercase()) {
-            return Err(InvalidPassword::MissingLowerCase);
-        }
-        if !self.chars().any(|x| x.is_numeric()) {
-            return Err(InvalidPassword::MissingNumber);
-        }
-        if !self.chars().any(|x| SYMBOLS.contains(x)) {
-            return Err(InvalidPassword::MissingSymbol(SYMBOLS.to_string()));
-        }
-        if self.chars().any(|x| x.is_whitespace()) {
-            return Err(InvalidPassword::ContainsWhitespace);
-        }
-        self.min_unique_char_requirement(6)?;
-        self.max_repeat_char_requirement(3)?;
-        if self.is_common_password() {
-            return Err(InvalidPassword::CommonPassword);
-        }
-        Ok(())
     }
 }
 
@@ -718,19 +541,6 @@ mod tests {
 
         // 8 unique chars — should pass
         assert!(Password::new("Abcde1!f").is_ok());
-    }
-
-    #[test]
-    fn test_password_validation_rejects_common_password() {
-        // Both are in the common passwords list and pass all other rules
-        assert!(matches!(
-            Password::new("Password123!"),
-            Err(InvalidPassword::CommonPassword)
-        ));
-        assert!(matches!(
-            Password::new("Welcome123!"),
-            Err(InvalidPassword::CommonPassword)
-        ));
     }
 
     #[test]
