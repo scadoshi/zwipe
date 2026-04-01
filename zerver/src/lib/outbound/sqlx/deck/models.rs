@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::{
     domain::deck::models::{
-        deck::{copy_max::CopyMax, deck_name::DeckName, deck_profile::DeckProfile},
+        deck::{deck_name::DeckName, deck_profile::DeckProfile},
         deck_card::{quantity::Quantity, DeckCard},
     },
     outbound::sqlx::deck::error::{IntoDeckCardError, IntoDeckProfileError},
@@ -17,7 +17,6 @@ pub struct DatabaseDeckProfile {
     pub id: Uuid,
     pub name: String,
     pub commander_id: Option<Uuid>,
-    pub copy_max: Option<i32>,
     pub user_id: Uuid,
     pub card_count: Option<i64>,
     pub commander_name: Option<String>,
@@ -28,27 +27,16 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
     type Error = IntoDeckProfileError;
     fn try_from(value: DatabaseDeckProfile) -> Result<Self, Self::Error> {
         let name = DeckName::new(value.name)?;
-        let copy_max = value.copy_max.map(CopyMax::new).transpose()?;
 
         Ok(Self {
             id: value.id,
             name,
             commander_id: value.commander_id,
-            copy_max,
             user_id: value.user_id,
             card_count: value.card_count.unwrap_or(0),
             commander_name: value.commander_name,
         })
     }
-}
-
-/// Data fetched to validate a deck card update against copy limits.
-#[allow(missing_docs)]
-#[derive(Debug, FromRow)]
-pub struct UpdateDeckCardGuard {
-    pub quantity: i32,
-    pub copy_max: Option<i32>,
-    pub type_line: Option<String>,
 }
 
 /// raw database deck card record

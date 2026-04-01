@@ -45,9 +45,6 @@ impl From<InvalidCreateDeckProfile> for ApiError {
             InvalidCreateDeckProfile::DeckName(e) => {
                 Self::UnprocessableEntity(format!("invalid deck name: {}", e))
             }
-            InvalidCreateDeckProfile::CopyMax(e) => {
-                Self::UnprocessableEntity(format!("invalid card copy max: {}", e))
-            }
         }
     }
 }
@@ -59,17 +56,14 @@ pub struct HttpCreateDeckProfile {
     pub name: String,
     /// Optional commander card ID.
     pub commander_id: Option<Uuid>,
-    /// Optional maximum copies per card.
-    pub copy_max: Option<i32>,
 }
 
 impl HttpCreateDeckProfile {
     /// Creates a new deck creation request.
-    pub fn new(name: &str, commander_id: Option<Uuid>, copy_max: Option<i32>) -> Self {
+    pub fn new(name: &str, commander_id: Option<Uuid>) -> Self {
         Self {
             name: name.to_string(),
             commander_id,
-            copy_max,
         }
     }
 }
@@ -88,7 +82,7 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let request = CreateDeckProfile::new(body.name, body.commander_id, body.copy_max, user.id, user.email_verified)?;
+    let request = CreateDeckProfile::new(body.name, body.commander_id, user.id, user.email_verified)?;
 
     state
         .deck_service

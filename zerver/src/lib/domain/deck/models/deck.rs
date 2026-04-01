@@ -3,8 +3,6 @@
 //! This module provides the complete deck entity (profile + cards) and all
 //! deck profile management operations.
 
-/// Copy limit validation (singleton vs. standard deck building rules).
-pub mod copy_max;
 /// Create deck profile operation.
 pub mod create_deck_profile;
 /// Deck name validation (1-64 chars, no profanity).
@@ -44,7 +42,7 @@ pub struct DeckEntry {
 ///
 /// # Structure
 ///
-/// - **DeckProfile**: Name, commander, copy limit, owner ID
+/// - **DeckProfile**: Name, commander, owner ID
 /// - **Entries**: Each entry pairs a card with its deck membership data (quantity, etc.)
 ///
 /// # Use Cases

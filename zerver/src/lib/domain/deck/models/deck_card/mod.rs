@@ -6,7 +6,7 @@ pub mod delete_deck_card;
 pub mod get_deck_card;
 /// Bulk import cards from plain-text decklist.
 pub mod import_deck_cards;
-/// Quantity validation (1-99 cards, respects deck copy limits).
+/// Quantity validation (1-99 cards).
 pub mod quantity;
 /// Update card quantity in deck operation.
 pub mod update_deck_card;
@@ -22,10 +22,7 @@ use uuid::Uuid;
 ///
 /// # Quantity Limits
 ///
-/// Quantity is validated against deck copy limits:
-/// - **Singleton decks** (copy_max = 1): Only 1 copy allowed (except basic lands)
-/// - **Standard decks** (copy_max = 4): Up to 4 copies allowed (except basic lands)
-/// - **Basic lands**: Unlimited copies in either format
+/// Quantity is validated to be between 1 and 99.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DeckCard {
     /// The deck containing this card.

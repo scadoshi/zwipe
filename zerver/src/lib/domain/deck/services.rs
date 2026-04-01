@@ -209,8 +209,6 @@ where
         // Auth check
         let get_deck = GetDeckProfile::new(request.user_id, request.deck_id);
         let deck_profile = self.get_deck_profile(&get_deck).await?;
-        let copy_max = deck_profile.copy_max.as_ref().map(|cm| **cm);
-
         // Collect unique lowercased card names
         let names: Vec<String> = request
             .lines
@@ -259,15 +257,6 @@ where
                     name: line.card_name.clone(),
                     reason: "not found".to_string(),
                 });
-            }
-        }
-
-        // Clamp quantities to copy_max (basic lands exempt)
-        if let Some(max) = copy_max {
-            for (_, qty, _, is_basic_land) in insert_map.values_mut() {
-                if !*is_basic_land && *qty > max {
-                    *qty = max;
-                }
             }
         }
 

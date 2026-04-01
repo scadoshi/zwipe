@@ -25,7 +25,7 @@ use zwipe::{
         auth::models::session::Session,
         card::models::Card,
         deck::models::{
-            deck::{copy_max::CopyMax, deck_profile::DeckProfile, DeckEntry},
+            deck::{deck_profile::DeckProfile, DeckEntry},
             deck_metrics::DeckMetrics,
         },
     },
@@ -204,18 +204,6 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     div { class: "info-row",
                                         span { class: "info-row-label", "name" }
                                         span { class: "info-row-value", "{deck_profile.name}" }
-                                    }
-                                    div { class: "info-row",
-                                        span { class: "info-row-label", "copy rule" }
-                                        span { class: "info-row-value",
-                                            if deck_profile.copy_max == Some(CopyMax::standard()) {
-                                                "standard"
-                                            } else if deck_profile.copy_max == Some(CopyMax::singleton()) {
-                                                "singleton"
-                                            } else {
-                                                "none"
-                                            }
-                                        }
                                     }
                                     div { class: "info-row",
                                         span { class: "info-row-label", "commander" }

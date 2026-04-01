@@ -36,7 +36,6 @@ use zwipe::domain::{
             group_cards::{CardGroup, GroupByOption, GroupCards},
         },
     },
-    deck::models::deck::copy_max::CopyMax,
 };
 use zwipe::inbound::http::handlers::deck_card::update_deck_card::HttpUpdateDeckCard;
 
@@ -74,8 +73,6 @@ pub fn View(deck_id: Uuid) -> Element {
     let mut displayed_commander: Signal<Option<Card>> = use_signal(|| None);
     // Quantity per card (scryfall_data_id → quantity as i32)
     let mut quantity_map: Signal<HashMap<Uuid, i32>> = use_signal(HashMap::new);
-    // Copy limit for this deck (None = unlimited, Some(1) = singleton, Some(4) = standard)
-    let mut deck_copy_max: Signal<Option<CopyMax>> = use_signal(|| None);
     // Toggle to show/hide land cards (default: hidden)
     let mut show_lands: Signal<bool> = use_signal(|| false);
 
@@ -118,7 +115,6 @@ pub fn View(deck_id: Uuid) -> Element {
             // Resolve commander: pull from deck cards if present, otherwise fetch separately.
             // Either way remove it from the groupable list.
             if let Ok(profile) = client().get_deck_profile(deck_id, &session).await {
-                deck_copy_max.set(profile.copy_max);
                 if let Some(commander_id) = profile.commander_id {
                     let cmd = if let Some(idx) = cards
                         .iter()
@@ -194,27 +190,11 @@ pub fn View(deck_id: Uuid) -> Element {
         expanded_card.set(None);
     });
 
-    let mut change_quantity = move |card_id: Uuid, delta: i32, is_basic_land: bool| {
+    let mut change_quantity = move |card_id: Uuid, delta: i32, _is_basic_land: bool| {
         let current_qty = quantity_map.peek().get(&card_id).copied().unwrap_or(1);
-        let copy_max = *deck_copy_max.peek();
-        let is_singleton = copy_max == Some(CopyMax::singleton());
 
-        // + at max → toast error, no-op (basic lands are exempt)
-        if delta > 0
-            && !is_basic_land
-            && let Some(max) = copy_max
-            && current_qty >= *max
-        {
-            toast.warning(
-                "max copies reached".to_string(),
-                ToastOptions::default().duration(Duration::from_millis(1500)),
-            );
-            return;
-        }
-
-        // - at 1 or any - on singleton (non-basic-land) → delete
-        let should_delete =
-            current_qty + delta < 1 || (is_singleton && delta < 0 && !is_basic_land);
+        // - at 1 → delete
+        let should_delete = current_qty + delta < 1;
 
         session.upkeep(client);
         let Some(session) = session() else {
@@ -470,63 +450,36 @@ pub fn View(deck_id: Uuid) -> Element {
                                                     // Quantity controls
                                                     {
                                                         let qty = quantity_map().get(&card_id).copied().unwrap_or(1);
-                                                        let copy_max = deck_copy_max();
-                                                        let is_singleton = copy_max == Some(CopyMax::singleton());
-                                                        let singleton_fixed = is_singleton && !is_basic_land;
                                                         let image_url: Option<String> = sd.image_uris.as_ref().and_then(|iu| iu.large.clone());
                                                         rsx! {
-                                                            if singleton_fixed {
-                                                                div { class: "qty-row",
-                                                                    if let Some(url) = image_url.clone() {
-                                                                        button {
-                                                                            class: "qty-btn-remove",
-                                                                            onclick: move |evt| {
-                                                                                evt.stop_propagation();
-                                                                                preview_image_url.set(Some(url.clone()));
-                                                                                preview_dismissing.set(false);
-                                                                            },
-                                                                            "image"
-                                                                        }
-                                                                    }
+                                                            div { class: "qty-row",
+                                                                if let Some(url) = image_url {
                                                                     button {
-                                                                        class: "qty-btn-remove",
+                                                                        class: "qty-btn",
                                                                         onclick: move |evt| {
                                                                             evt.stop_propagation();
-                                                                            change_quantity(card_id, -1, false);
+                                                                            preview_image_url.set(Some(url.clone()));
+                                                                            preview_dismissing.set(false);
                                                                         },
-                                                                        "remove"
+                                                                        "image"
                                                                     }
                                                                 }
-                                                            } else {
-                                                                div { class: "qty-row",
-                                                                    if let Some(url) = image_url {
-                                                                        button {
-                                                                            class: "qty-btn",
-                                                                            onclick: move |evt| {
-                                                                                evt.stop_propagation();
-                                                                                preview_image_url.set(Some(url.clone()));
-                                                                                preview_dismissing.set(false);
-                                                                            },
-                                                                            "image"
-                                                                        }
-                                                                    }
-                                                                    button {
-                                                                        class: "qty-btn",
-                                                                        onclick: move |evt| {
-                                                                            evt.stop_propagation();
-                                                                            change_quantity(card_id, -1, is_basic_land);
-                                                                        },
-                                                                        "-"
-                                                                    }
-                                                                    span { class: "qty-label", "{qty}" }
-                                                                    button {
-                                                                        class: "qty-btn",
-                                                                        onclick: move |evt| {
-                                                                            evt.stop_propagation();
-                                                                            change_quantity(card_id, 1, is_basic_land);
-                                                                        },
-                                                                        "+"
-                                                                    }
+                                                                button {
+                                                                    class: "qty-btn",
+                                                                    onclick: move |evt| {
+                                                                        evt.stop_propagation();
+                                                                        change_quantity(card_id, -1, is_basic_land);
+                                                                    },
+                                                                    "-"
+                                                                }
+                                                                span { class: "qty-label", "{qty}" }
+                                                                button {
+                                                                    class: "qty-btn",
+                                                                    onclick: move |evt| {
+                                                                        evt.stop_propagation();
+                                                                        change_quantity(card_id, 1, is_basic_land);
+                                                                    },
+                                                                    "+"
                                                                 }
                                                             }
                                                         }
