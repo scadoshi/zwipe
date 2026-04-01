@@ -3,7 +3,7 @@
 use crate::{
     domain::deck::models::{
         deck::{
-            copy_max::InvalidCopyMax, create_deck_profile::CreateDeckProfileError,
+            create_deck_profile::CreateDeckProfileError,
             deck_name::InvalidDeckname, delete_deck::DeleteDeckError,
             get_deck_profile::GetDeckProfileError, update_deck_profile::UpdateDeckProfileError,
         },
@@ -23,8 +23,6 @@ use thiserror::Error;
 pub enum IntoDeckProfileError {
     #[error(transparent)]
     DeckName(#[from] InvalidDeckname),
-    #[error(transparent)]
-    CopyMax(#[from] InvalidCopyMax),
 }
 
 impl From<IntoDeckProfileError> for CreateDeckProfileError {

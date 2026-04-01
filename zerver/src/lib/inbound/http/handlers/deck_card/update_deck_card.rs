@@ -31,9 +31,6 @@ impl From<UpdateDeckCardError> for ApiError {
             UpdateDeckCardError::QuantityUnderflow => Self::UnprocessableEntity(
                 "resulting quantity cannot be zero or less".to_string(),
             ),
-            UpdateDeckCardError::ExceedsCopyMax => Self::UnprocessableEntity(
-                "resulting quantity exceeds deck copy limit".to_string(),
-            ),
             UpdateDeckCardError::NotFound => {
                 Self::UnprocessableEntity("deck card not found".to_string())
             }

@@ -33,32 +33,12 @@ use crate::{
         deck::{
             error::{IntoDeckCardError, IntoDeckProfileError},
             helper::OwnsDeck,
-            models::{DatabaseDeckCard, DatabaseDeckProfile, UpdateDeckCardGuard},
+            models::{DatabaseDeckCard, DatabaseDeckProfile},
         },
         postgres::Postgres,
     },
 };
 use sqlx::{QueryBuilder, query, query_as};
-
-impl Postgres {
-    /// Clamps all deck_card quantities to `max` for the given deck.
-    async fn truncate_deck_card_quantities(
-        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-        deck_id: uuid::Uuid,
-        max: i32,
-    ) -> Result<(), UpdateDeckProfileError> {
-        sqlx::query!(
-            "UPDATE deck_cards SET quantity = $1, updated_at = now()
-             WHERE deck_id = $2 AND quantity > $1",
-            max,
-            deck_id,
-        )
-        .execute(&mut **tx)
-        .await
-        .map_err(|e| UpdateDeckProfileError::Database(e.into()))?;
-        Ok(())
-    }
-}
 
 impl DeckRepository for Postgres {
     // ========
@@ -69,17 +49,15 @@ impl DeckRepository for Postgres {
         request: &CreateDeckProfile,
     ) -> Result<DeckProfile, CreateDeckProfileError> {
         let mut tx = self.pool.begin().await?;
-        let database_copy_max = request.copy_max.map(|cm| *cm);
         let database_deck_profile = query_as!(
             DatabaseDeckProfile,
-            r#"INSERT INTO decks (name, commander_id, copy_max, user_id)
-               VALUES ($1, $2, $3, $4)
-               RETURNING id, name, commander_id, copy_max, user_id,
+            r#"INSERT INTO decks (name, commander_id, user_id)
+               VALUES ($1, $2, $3)
+               RETURNING id, name, commander_id, user_id,
                          0::bigint as "card_count",
                          (SELECT sd.name FROM scryfall_data sd WHERE sd.id = commander_id) as commander_name"#,
             request.name.to_string(),
             request.commander_id,
-            database_copy_max,
             request.user_id
         )
         .fetch_one(&mut *tx)
@@ -146,14 +124,14 @@ impl DeckRepository for Postgres {
     ) -> Result<DeckProfile, GetDeckProfileError> {
         let database_deck_profile = query_as!(
             DatabaseDeckProfile,
-            r#"SELECT d.id, d.name, d.commander_id, d.copy_max, d.user_id,
+            r#"SELECT d.id, d.name, d.commander_id, d.user_id,
                       COALESCE(SUM(dc.quantity), 0) as "card_count",
                       sd.name as commander_name
                FROM decks d
                LEFT JOIN deck_cards dc ON d.id = dc.deck_id
                LEFT JOIN scryfall_data sd ON d.commander_id = sd.id
                WHERE d.id = $1
-               GROUP BY d.id, d.name, d.commander_id, d.copy_max, d.user_id, sd.name"#,
+               GROUP BY d.id, d.name, d.commander_id, d.user_id, sd.name"#,
             request.deck_id
         )
         .fetch_one(&self.pool)
@@ -171,14 +149,14 @@ impl DeckRepository for Postgres {
     ) -> Result<Vec<DeckProfile>, GetDeckProfileError> {
         let database_deck_profiles = query_as!(
             DatabaseDeckProfile,
-            r#"SELECT d.id, d.name, d.commander_id, d.copy_max, d.user_id,
+            r#"SELECT d.id, d.name, d.commander_id, d.user_id,
                       COALESCE(SUM(dc.quantity), 0) as "card_count",
                       sd.name as commander_name
                FROM decks d
                LEFT JOIN deck_cards dc ON d.id = dc.deck_id
                LEFT JOIN scryfall_data sd ON d.commander_id = sd.id
                WHERE d.user_id = $1
-               GROUP BY d.id, d.name, d.commander_id, d.copy_max, d.user_id, sd.name"#,
+               GROUP BY d.id, d.name, d.commander_id, d.user_id, sd.name"#,
             request.user_id
         )
         .fetch_all(&self.pool)
@@ -244,25 +222,16 @@ impl DeckRepository for Postgres {
             sep.push("commander_id = ")
                 .push_bind_unseparated(commander_id);
         }
-        if let Some(copy_max) = &request.copy_max {
-            sep.push("copy_max = ")
-                .push_bind_unseparated(copy_max.as_ref().map(|cm| **cm));
-        }
         let now = chrono::Utc::now().naive_utc();
         sep.push("updated_at = ").push_bind_unseparated(now);
 
         qb.push(" WHERE id = ")
             .push_bind(request.deck_id)
-            .push(r#" RETURNING id, name, commander_id, copy_max, user_id,
+            .push(r#" RETURNING id, name, commander_id, user_id,
                        (SELECT COALESCE(SUM(dc.quantity), 0) FROM deck_cards dc WHERE dc.deck_id = decks.id) as card_count,
                        (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.commander_id) as commander_name"#);
         let database_deck: DatabaseDeckProfile = qb.build_query_as().fetch_one(&mut *tx).await?;
         let deck_profile: DeckProfile = database_deck.try_into()?;
-
-        // If copy_max was tightened, clamp existing card quantities
-        if let Some(Some(new_max)) = &request.copy_max {
-            Self::truncate_deck_card_quantities(&mut tx, request.deck_id, **new_max).await?;
-        }
 
         tx.commit().await?;
         Ok(deck_profile)
@@ -270,7 +239,6 @@ impl DeckRepository for Postgres {
 
     /// Applies a **relative delta** to card quantity (`quantity + $1`).
     ///
-    /// Runs a guard SELECT to enforce copy-max limits before the update.
     /// The database enforces a check constraint on `quantity`, so negative deltas
     /// that would result in an invalid quantity surface as `QuantityUnderflow`.
     async fn update_deck_card(
@@ -285,30 +253,6 @@ impl DeckRepository for Postgres {
             return Err(UpdateDeckCardError::Forbidden);
         }
         let mut tx = self.pool.begin().await?;
-        if let Some(guard) = query_as!(
-            UpdateDeckCardGuard,
-            "SELECT dc.quantity, d.copy_max, sd.type_line \
-             FROM deck_cards dc \
-             JOIN decks d ON d.id = dc.deck_id \
-             JOIN scryfall_data sd ON sd.id = dc.scryfall_data_id \
-             WHERE dc.deck_id = $1 AND dc.scryfall_data_id = $2",
-            request.deck_id,
-            request.scryfall_data_id
-        )
-        .fetch_optional(&mut *tx)
-        .await?
-            && let Some(copy_max) = guard.copy_max
-        {
-            let is_basic_land = guard
-                .type_line
-                .as_deref()
-                .map(|tl| tl.to_lowercase().contains("basic land"))
-                .unwrap_or(false);
-            let resulting = guard.quantity + *request.update_quantity;
-            if !is_basic_land && resulting > copy_max {
-                return Err(UpdateDeckCardError::ExceedsCopyMax);
-            }
-        }
         let database_deck_card = query_as!(
             DatabaseDeckCard,
             "UPDATE deck_cards SET quantity = quantity + $1 WHERE deck_id = $2 AND scryfall_data_id = $3 RETURNING deck_id, scryfall_data_id, quantity",

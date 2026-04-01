@@ -1,13 +1,13 @@
 //! Update deck profile operation.
 //!
-//! Allows users to modify deck metadata (name, commander, copy limit).
+//! Allows users to modify deck metadata (name, commander).
 //! Uses partial update semantics - only specified fields are updated.
 //!
 //! # Partial Updates
 //!
 //! Fields use `Option<Option<T>>` to distinguish:
 //! - `None`: Don't update this field (keep existing value)
-//! - `Some(None)`: Set field to NULL (remove commander, use default copy limit)
+//! - `Some(None)`: Set field to NULL (remove commander)
 //! - `Some(Some(value))`: Update to new value
 //!
 //! # Authorization
@@ -16,10 +16,7 @@
 
 #[cfg(feature = "zerver")]
 use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
-use crate::domain::deck::models::deck::{
-    copy_max::{CopyMax, InvalidCopyMax},
-    deck_name::{DeckName, InvalidDeckname},
-};
+use crate::domain::deck::models::deck::deck_name::{DeckName, InvalidDeckname};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -29,9 +26,6 @@ pub enum InvalidUpdateDeckProfile {
     /// Deck name doesn't meet requirements.
     #[error(transparent)]
     DeckName(InvalidDeckname),
-    /// Copy limit is invalid (must be 1 or 4).
-    #[error(transparent)]
-    CopyMax(InvalidCopyMax),
     /// No fields specified for update.
     #[error("must update at least one field")]
     NoUpdates,
@@ -40,12 +34,6 @@ pub enum InvalidUpdateDeckProfile {
 impl From<InvalidDeckname> for InvalidUpdateDeckProfile {
     fn from(value: InvalidDeckname) -> Self {
         Self::DeckName(value)
-    }
-}
-
-impl From<InvalidCopyMax> for InvalidUpdateDeckProfile {
-    fn from(value: InvalidCopyMax) -> Self {
-        Self::CopyMax(value)
     }
 }
 
@@ -88,7 +76,6 @@ pub enum UpdateDeckProfileError {
 ///     deck_id,
 ///     Some("New Deck Name"),
 ///     None,  // Don't change commander
-///     None,  // Don't change copy limit
 ///     user_id
 /// )?;
 ///
@@ -97,7 +84,6 @@ pub enum UpdateDeckProfileError {
 ///     deck_id,
 ///     None,
 ///     Some(None),  // Set commander to NULL
-///     None,
 ///     user_id
 /// )?;
 /// ```
@@ -109,8 +95,6 @@ pub struct UpdateDeckProfile {
     pub name: Option<DeckName>,
     /// Optional commander update (None = no change, Some(None) = remove commander, Some(Some(id)) = set commander).
     pub commander_id: Option<Option<Uuid>>,
-    /// Optional copy limit update (None = no change, Some(None) = default, Some(Some(limit)) = set limit).
-    pub copy_max: Option<Option<CopyMax>>,
     /// Requesting user (for authorization).
     pub user_id: Uuid,
 }
@@ -123,35 +107,28 @@ impl UpdateDeckProfile {
     /// - `deck_id`: ID of deck to update
     /// - `name`: Optional new name
     /// - `commander_id`: Optional commander update
-    /// - `copy_max`: Optional copy limit update
     /// - `user_id`: Requesting user ID
     ///
     /// # Errors
     ///
     /// Returns [`InvalidUpdateDeckProfile`] if:
     /// - Name doesn't meet requirements
-    /// - Copy limit is not 1 or 4
     /// - No fields specified for update
     pub fn new(
         deck_id: Uuid,
         name: Option<&str>,
         commander_id: Option<Option<Uuid>>,
-        copy_max: Option<Option<i32>>,
         user_id: Uuid,
     ) -> Result<Self, InvalidUpdateDeckProfile> {
-        if name.is_none() && commander_id.is_none() && copy_max.is_none() {
+        if name.is_none() && commander_id.is_none() {
             return Err(InvalidUpdateDeckProfile::NoUpdates);
         }
         let name = name.map(DeckName::new).transpose()?;
-        let copy_max = copy_max
-            .map(|update| update.map(CopyMax::new).transpose())
-            .transpose()?;
 
         Ok(Self {
             deck_id,
             name,
             commander_id,
-            copy_max,
             user_id,
         })
     }

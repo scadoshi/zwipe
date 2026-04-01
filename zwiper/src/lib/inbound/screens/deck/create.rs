@@ -23,7 +23,6 @@ use zwipe::{
             search_card::card_filter::{builder::CardFilterBuilder, error::InvalidCardFilter},
             Card,
         },
-        deck::models::deck::copy_max::CopyMax,
     },
     inbound::http::handlers::deck::create_deck_profile::HttpCreateDeckProfile,
 };
@@ -40,8 +39,6 @@ pub fn CreateDeck() -> Element {
     let deck_name = use_signal(String::new);
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
     let mut commander_display = use_signal(String::new);
-    let mut copy_max: Signal<Option<CopyMax>> = use_signal(|| None);
-
     // commander search state
     let mut search_query = use_signal(String::new);
     let mut search_results = use_signal(Vec::<Card>::new);
@@ -111,7 +108,7 @@ pub fn CreateDeck() -> Element {
 
             let commander_id = commander().map(|c| c.scryfall_data.id);
             let request =
-                HttpCreateDeckProfile::new(&deck_name(), commander_id, copy_max().map(|x| *x));
+                HttpCreateDeckProfile::new(&deck_name(), commander_id);
 
             match auth_client().create_deck_profile(&request, &session).await {
                 Ok(created) => {
@@ -188,27 +185,6 @@ pub fn CreateDeck() -> Element {
                             }
                         }
 
-                        label { class : "label", r#for : "copy-max", "card copy rule" }
-                        div { class : "flex gap-2 mb-4 flex-center",
-                            div { class : if copy_max() == Some(CopyMax::standard()) { "type-box selected" } else { "type-box unselected" },
-                                onclick: move |_| {
-                                    copy_max.set(Some(CopyMax::standard()));
-                                },
-                                "standard"
-                            }
-                            div { class : if copy_max() == Some(CopyMax::singleton()) { "type-box selected" } else { "type-box unselected" },
-                                onclick: move |_| {
-                                    copy_max.set(Some(CopyMax::singleton()));
-                                },
-                                "singleton"
-                            }
-                            div { class : if copy_max().is_none() { "type-box selected" } else { "type-box unselected" },
-                                onclick: move |_| {
-                                    copy_max.set(None);
-                                },
-                                "none"
-                            }
-                        }
 
                     }
                 }

@@ -54,9 +54,6 @@ impl From<InvalidUpdateDeckProfile> for ApiError {
             InvalidUpdateDeckProfile::DeckName(e) => {
                 Self::UnprocessableEntity(format!("invalid deck name: {}", e))
             }
-            InvalidUpdateDeckProfile::CopyMax(e) => {
-                Self::UnprocessableEntity(format!("invalid copy max: {}", e))
-            }
             InvalidUpdateDeckProfile::NoUpdates => {
                 Self::UnprocessableEntity("must update at least one field".to_string())
             }
@@ -73,17 +70,14 @@ pub struct HttpUpdateDeckProfile {
     pub name: Option<String>,
     /// Commander card ID with partial update semantics.
     pub commander_id: Optdate<Uuid>,
-    /// Max copies per card with partial update semantics.
-    pub copy_max: Optdate<i32>,
 }
 
 impl HttpUpdateDeckProfile {
     /// Creates a new deck update request.
-    pub fn new(name: Option<&str>, commander_id: Optdate<Uuid>, copy_max: Optdate<i32>) -> Self {
+    pub fn new(name: Option<&str>, commander_id: Optdate<Uuid>) -> Self {
         Self {
             name: name.map(|name| name.to_string()),
             commander_id,
-            copy_max,
         }
     }
 }
@@ -107,7 +101,6 @@ where
         deck_id,
         body.name.as_deref(),
         body.commander_id.into_option(),
-        body.copy_max.into_option(),
         user.id,
     )?;
 

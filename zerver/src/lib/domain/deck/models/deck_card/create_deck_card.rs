@@ -5,10 +5,7 @@
 //!
 //! # Quantity Validation
 //!
-//! Quantity must respect deck copy limits:
-//! - **Singleton decks** (copy_max = 1): 1 copy only (except basic lands)
-//! - **Standard decks** (copy_max = 4): 1-4 copies (except basic lands)
-//! - **Basic lands**: Unlimited (1-99) in any format
+//! Quantity must be between 1 and 99.
 //!
 //! # Authorization
 //!

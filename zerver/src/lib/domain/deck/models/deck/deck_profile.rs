@@ -2,7 +2,7 @@
 //!
 //! Contains deck configuration and ownership information.
 
-use crate::domain::deck::models::deck::{copy_max::CopyMax, deck_name::DeckName};
+use crate::domain::deck::models::deck::deck_name::DeckName;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -27,8 +27,6 @@ pub struct DeckProfile {
     pub name: DeckName,
     /// Optional commander card ID (for Commander format).
     pub commander_id: Option<Uuid>,
-    /// Optional copy limit (1 = singleton, 4 = standard, None = use default of 4).
-    pub copy_max: Option<CopyMax>,
     /// Owner of this deck (for authorization).
     pub user_id: Uuid,
     /// Total number of cards in the deck (sum of quantities).

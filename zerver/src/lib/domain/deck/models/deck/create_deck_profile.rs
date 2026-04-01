@@ -1,22 +1,18 @@
 //! Create deck profile operation.
 //!
-//! Allows users to create a new empty deck with metadata (name, commander, copy limit).
+//! Allows users to create a new empty deck with metadata (name, commander).
 //! Decks start empty and cards are added via separate operations.
 //!
 //! # Validation
 //!
 //! - **Name**: 1-64 characters, no profanity
-//! - **Copy Limit**: 1 (singleton) or 4 (standard) - defaults to 4 if not specified
 //! - **Commander**: Optional card ID for commander format decks
 //!
 //! # Uniqueness
 //!
 //! Users cannot have multiple decks with the same name (user_id + name combination is unique).
 
-use crate::domain::deck::models::deck::{
-    copy_max::{CopyMax, InvalidCopyMax},
-    deck_name::{DeckName, InvalidDeckname},
-};
+use crate::domain::deck::models::deck::deck_name::{DeckName, InvalidDeckname};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -26,9 +22,6 @@ pub enum InvalidCreateDeckProfile {
     /// Deck name doesn't meet requirements (length, profanity).
     #[error(transparent)]
     DeckName(#[from] InvalidDeckname),
-    /// Copy limit is invalid (must be 1 or 4).
-    #[error(transparent)]
-    CopyMax(#[from] InvalidCopyMax),
 }
 
 /// Errors that can occur during deck profile creation execution.
@@ -60,7 +53,6 @@ pub enum CreateDeckProfileError {
 /// let create = CreateDeckProfile::new(
 ///     "My EDH Deck",
 ///     Some(commander_card_id),
-///     Some(1), // Singleton (Commander)
 ///     user_id
 /// )?;
 /// ```
@@ -70,8 +62,6 @@ pub struct CreateDeckProfile {
     pub name: DeckName,
     /// Optional commander card ID for Commander format.
     pub commander_id: Option<Uuid>,
-    /// Optional copy limit (1 = singleton, 4 = standard). Defaults to 4.
-    pub copy_max: Option<CopyMax>,
     /// Owner of this deck.
     pub user_id: Uuid,
     /// Whether the requesting user's email is verified (from JWT claim).
@@ -86,28 +76,22 @@ impl CreateDeckProfile {
     ///
     /// - `name`: Deck name (will be validated)
     /// - `commander_id`: Optional commander card ID
-    /// - `copy_max`: Optional copy limit (1 or 4)
     /// - `user_id`: Owner's user ID
     /// - `email_verified`: Whether the user's email is verified
     ///
     /// # Errors
     ///
-    /// Returns [`InvalidCreateDeckProfile`] if:
-    /// - Name doesn't meet requirements
-    /// - Copy limit is not 1 or 4
+    /// Returns [`InvalidCreateDeckProfile`] if name doesn't meet requirements.
     pub fn new(
         name: impl Into<String>,
         commander_id: Option<Uuid>,
-        copy_max: Option<i32>,
         user_id: Uuid,
         email_verified: bool,
     ) -> Result<Self, InvalidCreateDeckProfile> {
         let name = DeckName::new(name)?;
-        let copy_max: Option<CopyMax> = copy_max.map(CopyMax::new).transpose()?;
         Ok(Self {
             name,
             commander_id,
-            copy_max,
             user_id,
             email_verified,
         })

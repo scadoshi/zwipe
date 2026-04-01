@@ -1,12 +1,6 @@
 //! Card quantity validation for deck building.
 //!
-//! Ensures card quantities are valid (1-99) and enforces deck copy limits:
-//! - **Singleton decks** (Commander format): 1 copy max per card (except basic lands)
-//! - **Standard decks**: 4 copies max per card (except basic lands)
-//! - **Basic lands**: Unlimited (up to 99) in any format
-//!
-//! Copy limit enforcement happens at the service layer where deck copy_max
-//! is known. This module only validates that quantities are positive.
+//! Ensures card quantities are valid (1-99).
 
 use serde::{Deserialize, Serialize};
 use std::ops::Deref;

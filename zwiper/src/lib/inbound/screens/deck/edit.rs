@@ -1,9 +1,5 @@
 //! Edit deck screen.
 
-use crate::inbound::components::alert_dialog::{
-    AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
-    AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
-};
 use crate::{
     inbound::{
         components::{
@@ -33,7 +29,7 @@ use zwipe::{
             Card,
         },
         deck::models::deck::{
-            Deck, copy_max::CopyMax, deck_profile::DeckProfile,
+            Deck, deck_profile::DeckProfile,
             update_deck_profile::InvalidUpdateDeckProfile,
         },
     },
@@ -54,13 +50,10 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut deck_name: Signal<String> = use_signal(String::new);
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
     let mut commander_display = use_signal(String::new);
-    let mut copy_max: Signal<Option<CopyMax>> = use_signal(|| None);
 
     // original
     let mut original_deck_name: Signal<String> = use_signal(String::new);
     let mut original_commander: Signal<Option<Card>> = use_signal(|| None);
-    let mut original_copy_max: Signal<Option<CopyMax>> = use_signal(|| None);
-    let mut max_entry_quantity: Signal<i32> = use_signal(|| 0);
 
     let toast = use_toast();
 
@@ -76,18 +69,6 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         Some(Ok(deck)) => {
             original_deck_name.set(deck.deck_profile.name.to_string());
             deck_name.set(deck.deck_profile.name.to_string());
-            original_copy_max.set(deck.deck_profile.copy_max);
-            copy_max.set(deck.deck_profile.copy_max);
-            max_entry_quantity.set(
-                deck.entries
-                    .iter()
-                    .filter(|e| {
-                        !e.card.scryfall_data.is_basic_land()
-                    })
-                    .map(|e| *e.deck_card.quantity)
-                    .max()
-                    .unwrap_or(0),
-            );
         }
         Some(Err(e)) => {
             toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
@@ -142,17 +123,9 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             Optdate::Unchanged
         }
     });
-    let copy_max_update = use_memo(move || {
-        if copy_max() != original_copy_max() {
-            Optdate::Set(copy_max().map(|cm| *cm))
-        } else {
-            Optdate::Unchanged
-        }
-    });
     let has_made_changes = use_memo(move || {
         deck_name_update().is_some()
             || commander_id_update().is_changed()
-            || copy_max_update().is_changed()
     });
 
     // commander search state
@@ -163,14 +136,6 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
 
     // save state
     let mut is_saving = use_signal(|| false);
-    let mut show_truncation_warning = use_signal(|| false);
-
-    let would_truncate = use_memo(move || {
-        let Some(new_max) = copy_max() else {
-            return false;
-        };
-        max_entry_quantity() > *new_max
-    });
 
     // debounced search effect
     use_effect(move || {
@@ -237,7 +202,6 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             let request = HttpUpdateDeckProfile::new(
                 deck_name_update().as_deref(),
                 commander_id_update(),
-                copy_max_update(),
             );
 
             match client()
@@ -257,10 +221,6 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     };
 
     let mut attempt_submit = move || {
-        if would_truncate() {
-            show_truncation_warning.set(true);
-            return;
-        }
         do_submit();
     };
 
@@ -281,28 +241,6 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                     value: deck_name,
                                     id: "deck_name",
                                     placeholder: "deck name",
-                                }
-
-                                label { class: "label mb-2", r#for : "copy-max", "card copy rule" }
-                                div { class: "flex gap-2 mb-2 flex-center",
-                                    div { class: if copy_max() == Some(CopyMax::standard()) { "type-box selected" } else { "type-box unselected" },
-                                        onclick: move |_| {
-                                            copy_max.set(Some(CopyMax::standard()));
-                                        },
-                                        "standard"
-                                    }
-                                    div { class: if copy_max() == Some(CopyMax::singleton()) { "type-box selected" } else { "type-box unselected" },
-                                        onclick: move |_| {
-                                            copy_max.set(Some(CopyMax::singleton()));
-                                        },
-                                        "singleton"
-                                    }
-                                    div { class: if copy_max().is_none() { "type-box selected" } else { "type-box unselected" },
-                                        onclick: move |_| {
-                                            copy_max.set(None);
-                                        },
-                                        "none"
-                                    }
                                 }
 
                                 div { class: "mb-4",
@@ -390,31 +328,6 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 }
             }
 
-            AlertDialogRoot {
-                open: show_truncation_warning(),
-                on_open_change: move |open| show_truncation_warning.set(open),
-                AlertDialogContent {
-                    AlertDialogTitle { "copy rule warning" }
-                    AlertDialogDescription {
-                        "some cards in this deck exceed the new copy limit. "
-                        "their quantities will be truncated down to the new maximum. "
-                        "this cannot be undone."
-                    }
-                    AlertDialogActions {
-                        AlertDialogCancel {
-                            on_click: move |_| show_truncation_warning.set(false),
-                            "cancel"
-                        }
-                        AlertDialogAction {
-                            on_click: move |_| {
-                                show_truncation_warning.set(false);
-                                do_submit();
-                            },
-                            "confirm"
-                        }
-                    }
-                }
-            }
             }
         }
     }
