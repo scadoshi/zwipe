@@ -234,6 +234,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                 if !warnings.is_empty() {
                                     label { class: "label", "warnings" }
                                     div { class: "info-list",
+                                        style: "border-color: var(--border-warning);",
                                         for warning in warnings.iter() {
                                             div { class: "info-row",
                                                 style: "justify-content: flex-start; gap: 0.5rem;",
