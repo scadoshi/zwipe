@@ -175,16 +175,26 @@ Awaiting response.
 - macOS 26.4 GM (Mac App Store) + Xcode 26.4 GM (Mac App Store)
 - Account: SCOTTY RAY FERMO, Team ID VV74WQ89GD
 
+### Retry attempt (2026-04-01)
+Fresh build 10 uploaded with latest codebase. Same Xcode 26.4 (17E192), same SDK 26.4.
+- `altool --validate-app` → ZERO errors
+- `altool --upload-app` → ZERO errors (delivery UUID cec25a6b-8626-4f2a-a2f8-46bf1acaf331)
+- App Store Connect → **same "beta Xcode" rejection**
+- 11 days since Xcode 26.4 GM release (Mar 24), 3 days since support ticket — no response from Apple
+
+Still waiting on Apple Support. The issue is definitively account-level/server-side.
+
 ### Things to check while waiting
 1. developer.apple.com/account → any banner about pending agreements?
 2. appstoreconnect.apple.com → Business tab → any pending tax/banking forms?
 3. appstoreconnect.apple.com → Agreements, Tax, Banking → any "Review" buttons?
 4. Try a different browser or incognito window
+5. Follow up on support ticket if no response by 2026-04-03
 
 ### Recommended next steps
 1. **Wait for Apple Support response** — this is an account-level issue only they can fix
 2. **Check for pending agreements** — this is the most likely quick fix
-3. **Try again in a few days** — if it's a server-side flag, it may resolve on its own
+3. **Follow up on support ticket** — if no response by Apr 3, file again or call
 
 ### Key observation
 **TestFlight accepts all builds as "Ready to Submit"** but Distribution rejects them.
