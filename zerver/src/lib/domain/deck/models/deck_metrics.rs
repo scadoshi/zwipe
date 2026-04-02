@@ -29,6 +29,18 @@ pub struct DeckMetrics {
     /// Per-color (WUBRG) mana balance: (consumed_pips, produced_pips).
     /// Index 0=White 1=Blue 2=Black 3=Red 4=Green.
     pub mana_balance: [(usize, usize); 5],
+    /// Total deck price in USD (nonfoil preferred, foil/etched fallback). `None` if no cards priced.
+    pub total_price_usd: Option<f64>,
+    /// Average card price in USD. `None` if no cards priced.
+    pub avg_price_usd: Option<f64>,
+    /// Total deck price in EUR. `None` if no cards priced.
+    pub total_price_eur: Option<f64>,
+    /// Average card price in EUR. `None` if no cards priced.
+    pub avg_price_eur: Option<f64>,
+    /// Total deck price in MTGO Event Tickets. `None` if no cards priced.
+    pub total_price_tix: Option<f64>,
+    /// Average card price in MTGO Event Tickets. `None` if no cards priced.
+    pub avg_price_tix: Option<f64>,
 }
 
 
@@ -43,6 +55,12 @@ impl DeckMetrics {
         let mut total_cards = 0usize;
         let mut pip_consumed = [0usize; 5];
         let mut pip_produced = [0usize; 5];
+        let mut usd_sum = 0.0f64;
+        let mut usd_count = 0usize;
+        let mut eur_sum = 0.0f64;
+        let mut eur_count = 0usize;
+        let mut tix_sum = 0.0f64;
+        let mut tix_count = 0usize;
 
         for entry in entries {
             let qty = (*entry.deck_card.quantity).max(1) as usize;
@@ -88,6 +106,27 @@ impl DeckMetrics {
                         *slot += qty;
                     }
                 }
+            }
+
+            // Price: prefer nonfoil → foil → etched
+            let prices = &card.scryfall_data.prices;
+            if let Some(p) = parse_price(&prices.usd)
+                .or_else(|| parse_price(&prices.usd_foil))
+                .or_else(|| parse_price(&prices.usd_etched))
+            {
+                usd_sum += p * qty as f64;
+                usd_count += qty;
+            }
+            if let Some(p) = parse_price(&prices.eur)
+                .or_else(|| parse_price(&prices.eur_foil))
+                .or_else(|| parse_price(&prices.eur_etched))
+            {
+                eur_sum += p * qty as f64;
+                eur_count += qty;
+            }
+            if let Some(p) = parse_price(&prices.tix) {
+                tix_sum += p * qty as f64;
+                tix_count += qty;
             }
         }
 
@@ -137,6 +176,13 @@ impl DeckMetrics {
             .map(|(&label, &count)| (label, count))
             .collect();
 
+        let total_price_usd = if usd_count > 0 { Some(usd_sum) } else { None };
+        let avg_price_usd = if usd_count > 0 { Some(usd_sum / usd_count as f64) } else { None };
+        let total_price_eur = if eur_count > 0 { Some(eur_sum) } else { None };
+        let avg_price_eur = if eur_count > 0 { Some(eur_sum / eur_count as f64) } else { None };
+        let total_price_tix = if tix_count > 0 { Some(tix_sum) } else { None };
+        let avg_price_tix = if tix_count > 0 { Some(tix_sum / tix_count as f64) } else { None };
+
         DeckMetrics {
             total_cards,
             avg_cmc,
@@ -146,6 +192,12 @@ impl DeckMetrics {
             type_counts,
             color_counts,
             mana_balance,
+            total_price_usd,
+            avg_price_usd,
+            total_price_eur,
+            avg_price_eur,
+            total_price_tix,
+            avg_price_tix,
         }
     }
 }
@@ -206,6 +258,11 @@ fn produced_color_index(s: &str) -> Option<usize> {
         "G" => Some(4),
         _ => None,
     }
+}
+
+/// Parse an optional price string (e.g. "1.50") into f64.
+fn parse_price(price: &Option<String>) -> Option<f64> {
+    price.as_ref().and_then(|s| s.parse::<f64>().ok())
 }
 
 /// Color identity classification — WUBRG order + multicolor + colorless.
@@ -384,6 +441,12 @@ mod tests {
         assert_eq!(metrics.cmc_histogram, [0; 7]);
         assert!(metrics.type_counts.is_empty());
         assert!(metrics.color_counts.is_empty());
+        assert_eq!(metrics.total_price_usd, None);
+        assert_eq!(metrics.avg_price_usd, None);
+        assert_eq!(metrics.total_price_eur, None);
+        assert_eq!(metrics.avg_price_eur, None);
+        assert_eq!(metrics.total_price_tix, None);
+        assert_eq!(metrics.avg_price_tix, None);
     }
 
     #[test]
@@ -575,5 +638,60 @@ mod tests {
 
         let metrics = DeckMetrics::from_entries(&[entry]);
         assert_eq!(metrics.mana_balance, [(0, 0); 5]);
+    }
+
+    #[test]
+    fn price_aggregation_usd() {
+        let mut a = make_entry("Sol Ring", 2);
+        a.card.scryfall_data.prices.usd = Some("1.50".to_string());
+        let mut b = make_entry("Mana Crypt", 3);
+        b.card.scryfall_data.prices.usd = Some("1.50".to_string());
+
+        let metrics = DeckMetrics::from_entries(&[a, b]);
+        assert!((metrics.total_price_usd.unwrap() - 7.50).abs() < f64::EPSILON);
+        assert!((metrics.avg_price_usd.unwrap() - 1.50).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn price_none_when_no_prices() {
+        let entry = make_entry("Mystery Card", 1);
+        let metrics = DeckMetrics::from_entries(&[entry]);
+        assert_eq!(metrics.total_price_usd, None);
+        assert_eq!(metrics.avg_price_usd, None);
+        assert_eq!(metrics.total_price_eur, None);
+        assert_eq!(metrics.avg_price_eur, None);
+        assert_eq!(metrics.total_price_tix, None);
+        assert_eq!(metrics.avg_price_tix, None);
+    }
+
+    #[test]
+    fn price_mixed_availability() {
+        let mut priced = make_entry("Sol Ring", 1);
+        priced.card.scryfall_data.prices.usd = Some("2.00".to_string());
+        let unpriced = make_entry("Mystery Card", 1);
+
+        let metrics = DeckMetrics::from_entries(&[priced, unpriced]);
+        assert!((metrics.total_price_usd.unwrap() - 2.00).abs() < f64::EPSILON);
+        assert!((metrics.avg_price_usd.unwrap() - 2.00).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn price_foil_fallback() {
+        let mut entry = make_entry("Foil Only", 1);
+        entry.card.scryfall_data.prices.usd = None;
+        entry.card.scryfall_data.prices.usd_foil = Some("5.00".to_string());
+
+        let metrics = DeckMetrics::from_entries(&[entry]);
+        assert!((metrics.total_price_usd.unwrap() - 5.00).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn price_quantity_multiplied() {
+        let mut entry = make_entry("Lightning Bolt", 4);
+        entry.card.scryfall_data.prices.usd = Some("1.00".to_string());
+
+        let metrics = DeckMetrics::from_entries(&[entry]);
+        assert!((metrics.total_price_usd.unwrap() - 4.00).abs() < f64::EPSILON);
+        assert!((metrics.avg_price_usd.unwrap() - 1.00).abs() < f64::EPSILON);
     }
 }

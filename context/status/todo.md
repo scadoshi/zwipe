@@ -33,13 +33,6 @@ Android build compiles and runs. Remaining polish before Play Store submission:
 
 ---
 
-## UX — Skeleton Loading
-
-- [x] Add screen empty state: skeleton placeholder with ghost bars for price, set, artist (`beba43a`)
-- [ ] Deck card list: skeleton rows while cards load
-
----
-
 ## Rate Limiting
 
 ✅ All critical endpoints covered. Per-user rate limiting on private routes (`0e9e8be`).
@@ -57,6 +50,23 @@ Actions running on Node.js 20 will be **forced to Node.js 24** starting **June 2
 All workflows already use latest major versions (`actions/checkout@v4`, `actions/cache@v4`, `actions/deploy-pages@v4`, `actions/upload-pages-artifact@v3`). No changes needed — just monitor for v5 releases before the deadline.
 
 ---
+
+## Deck View Enhancements
+
+Plans in `context/plans/`. Execute in order:
+
+1. **Component extraction** — extract view deck screen into `deck_profile_section`, `deck_stats_section`, `deck_charts` (`context/plans/deck-view-component-extraction.md`)
+2. **Price stats** — total cost + avg cost per card with USD/EUR/TIX currency chips (`context/plans/deck-price-stats.md`)
+3. **Buy deck links** — TCGplayer + CardKingdom bulk purchase links (`context/plans/buy-links.md`)
+
+---
+
+## EDHREC Integration
+
+- [ ] Salt score data import — requires scraping/syncing from EDHREC (no public API)
+- [ ] Salt score display per card and aggregate per deck
+- [ ] Salt score filtering and sorting on card search
+- [ ] Popularity / synergy suggestions (future)
 
 ---
 
