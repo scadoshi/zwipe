@@ -931,6 +931,10 @@ body {
     align-self: center;
 }
 
+.util-btn .filter-dot {
+    margin-left: 0.3rem;
+}
+
 .util-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;

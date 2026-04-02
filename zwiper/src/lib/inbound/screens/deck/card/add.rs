@@ -536,6 +536,9 @@ pub fn Add(deck_id: Uuid) -> Element {
                     class: "util-btn",
                     onclick: move |_| filters_overlay_open.set(true),
                     "filter"
+                    if !filter_builder.read().is_empty_ignoring_legalities() {
+                        span { class: "filter-dot" }
+                    }
                 }
                 button {
                     class: "util-btn",
