@@ -1,6 +1,7 @@
 use super::components::deck_charts::{abbreviate_color, abbreviate_type, DeckCharts, ManaBalanceRow};
 use super::components::deck_profile::DeckProfileSection;
 use super::components::deck_stats::DeckStats;
+use super::components::more_buttons::MoreButtons;
 use crate::inbound::components::alert_dialog::{
     AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
     AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
@@ -103,7 +104,8 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         Some(Ok(None)) | None => (),
     });
 
-    let mut show_buy_sheet = use_signal(|| false);
+    let show_buy_sheet = use_signal(|| false);
+    let mut show_more_sheet = use_signal(|| false);
     let mut show_delete_dialog = use_signal(|| false);
     let attempt_delete = move || {
         session.upkeep(client);
@@ -230,6 +232,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                   div { class: "content-enter",
                                     DeckStats {
                                         metrics: m.clone(),
+                                        show_buy_sheet: show_buy_sheet,
                                     }
 
                                     DeckCharts {
@@ -264,52 +267,16 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     "edit"
                 }
                 button {
-                    class : "util-btn",
-                    onclick : move |_| {
+                    class: "util-btn",
+                    onclick: move |_| {
                         navigator.push(Router::ViewDeckCard { deck_id });
                     },
-                    "view"
-                }
-                button {
-                    class : "util-btn",
-                    onclick : move |_| {
-                        navigator.push(Router::AddDeckCard { deck_id });
-                    },
-                    "add"
+                    "cards"
                 }
                 button {
                     class: "util-btn",
-                    disabled: metrics.is_none(),
-                    onclick: move |_| {
-                        navigator.push(Router::RemoveDeckCard { deck_id });
-                    },
-                    "remove"
-                }
-                button {
-                    class: "util-btn",
-                    onclick: move |_| {
-                        navigator.push(Router::ImportDeck { deck_id });
-                    },
-                    "import"
-                }
-                button {
-                    class: "util-btn",
-                    disabled: metrics.is_none(),
-                    onclick: move |_| {
-                        navigator.push(Router::ExportDeck { deck_id });
-                    },
-                    "export"
-                }
-                button {
-                    class: "util-btn",
-                    disabled: metrics.is_none(),
-                    onclick: move |_| show_buy_sheet.set(true),
-                    "buy"
-                }
-                button {
-                    class: "util-btn",
-                    onclick: move |_| show_delete_dialog.set(true),
-                    "delete"
+                    onclick: move |_| show_more_sheet.set(true),
+                    "more"
                 }
             }
 
@@ -332,44 +299,14 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 }
             }
 
-            div {
-                class: if show_buy_sheet() { "modal-backdrop show" } else { "modal-backdrop" },
-                onclick: move |_| show_buy_sheet.set(false),
-            }
-            div {
-                class: if show_buy_sheet() { "bottom-sheet show" } else { "bottom-sheet" },
-                div { class: "modal-header",
-                    h3 { "buy deck" }
-                }
-                div { class: "modal-content",
-                    div { style: "display:flex;flex-direction:column;gap:0.75rem;padding:0.5rem 0;",
-                        if let Some(ref url) = tcg_url {
-                            a {
-                                class: "btn",
-                                href: "{url}",
-                                target: "_blank",
-                                onclick: move |_| show_buy_sheet.set(false),
-                                "tcgplayer"
-                            }
-                        }
-                        if let Some(ref url) = ck_url {
-                            a {
-                                class: "btn",
-                                href: "{url}",
-                                target: "_blank",
-                                onclick: move |_| show_buy_sheet.set(false),
-                                "card kingdom"
-                            }
-                        }
-                    }
-                }
-                div { class: "modal-footer",
-                    button {
-                        class: "btn btn-sm",
-                        onclick: move |_| show_buy_sheet.set(false),
-                        "close"
-                    }
-                }
+            MoreButtons {
+                deck_id: deck_id,
+                show_buy_sheet: show_buy_sheet,
+                show_more_sheet: show_more_sheet,
+                show_delete_dialog: show_delete_dialog,
+                has_cards: metrics.is_some(),
+                tcg_url: tcg_url,
+                ck_url: ck_url,
             }
 
             }

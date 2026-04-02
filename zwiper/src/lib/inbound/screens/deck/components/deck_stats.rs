@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 use zwipe::domain::deck::models::deck_metrics::DeckMetrics;
 
 #[component]
-pub(crate) fn DeckStats(metrics: DeckMetrics) -> Element {
+pub(crate) fn DeckStats(metrics: DeckMetrics, show_buy_sheet: Signal<bool>) -> Element {
     let mut selected_currency = use_signal(|| "usd");
 
     let (total, avg, symbol) = match selected_currency() {
@@ -18,6 +18,21 @@ pub(crate) fn DeckStats(metrics: DeckMetrics) -> Element {
 
     rsx! {
         label { class: "label", "stats" }
+        div { class: "chip-row", style: "padding-bottom: 0.5rem; align-items: center;",
+            for (label, key) in [("usd", "usd"), ("eur", "eur"), ("tix", "tix")] {
+                div {
+                    class: if selected_currency() == key { "chip selected" } else { "chip" },
+                    onclick: move |_| selected_currency.set(key),
+                    "{label}"
+                }
+            }
+            span { class: "text-muted", "|" }
+            div {
+                class: "chip",
+                onclick: move |_| show_buy_sheet.set(true),
+                "buy"
+            }
+        }
         div { class: "info-list",
             div { class: "info-row",
                 span { class: "info-row-label", "cards" }
@@ -31,17 +46,6 @@ pub(crate) fn DeckStats(metrics: DeckMetrics) -> Element {
                 span { class: "info-row-label", "lands" }
                 span { class: "info-row-value", "{metrics.land_count}" }
             }
-        }
-        div { class: "chip-row", style: "padding-top: 1rem;",
-            for (label, key) in [("usd", "usd"), ("eur", "eur"), ("tix", "tix")] {
-                div {
-                    class: if selected_currency() == key { "chip selected" } else { "chip" },
-                    onclick: move |_| selected_currency.set(key),
-                    "{label}"
-                }
-            }
-        }
-        div { class: "info-list",
             div { class: "info-row",
                 span { class: "info-row-label", "total price" }
                 span { class: "info-row-value", "{fmt(total)}" }

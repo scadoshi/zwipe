@@ -8,3 +8,5 @@ pub(crate) mod deck_fields;
 pub(crate) mod deck_profile;
 /// Deck stats summary section for the view screen.
 pub(crate) mod deck_stats;
+/// Buy sheet and more actions bottom sheets for the view screen.
+pub(crate) mod more_buttons;
