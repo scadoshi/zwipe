@@ -112,7 +112,7 @@ pub const SYMBOLS: &str = r#"~!@#$%^&*()_+=[]{}\/?|:;<>,."#;
 /// # Example
 ///
 /// ```
-/// use zwipe_core::password::{validate, InvalidPassword};
+/// use zwipe_core::domain::auth::password::{validate, InvalidPassword};
 ///
 /// assert!(validate("SecurePass123!").is_ok());
 /// assert!(matches!(validate("weak"), Err(InvalidPassword::TooShort)));
