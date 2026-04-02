@@ -17,20 +17,22 @@ pub(crate) fn DeckStats(metrics: DeckMetrics, show_buy_sheet: Signal<bool>) -> E
     };
 
     rsx! {
-        label { class: "label", "stats" }
-        div { class: "chip-row", style: "padding-bottom: 0.5rem; align-items: center;",
-            for (label, key) in [("usd", "usd"), ("eur", "eur"), ("tix", "tix")] {
-                div {
-                    class: if selected_currency() == key { "chip selected" } else { "chip" },
-                    onclick: move |_| selected_currency.set(key),
-                    "{label}"
+        div { style: "display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.4rem;",
+            label { class: "label", style: "margin-bottom: 0;", "stats" }
+            div { class: "chip-row", style: "margin-bottom: 0; align-items: center;",
+                for (label, key) in [("usd", "usd"), ("eur", "eur"), ("tix", "tix")] {
+                    div {
+                        class: if selected_currency() == key { "chip selected" } else { "chip" },
+                        onclick: move |_| selected_currency.set(key),
+                        "{label}"
+                    }
                 }
-            }
-            span { class: "text-muted", "|" }
-            div {
-                class: "chip",
-                onclick: move |_| show_buy_sheet.set(true),
-                "buy"
+                span { class: "text-muted", "|" }
+                div {
+                    class: "chip",
+                    onclick: move |_| show_buy_sheet.set(true),
+                    "buy"
+                }
             }
         }
         div { class: "info-list",
