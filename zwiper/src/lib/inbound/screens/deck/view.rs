@@ -10,6 +10,7 @@ use crate::{
         components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
         router::Router,
     },
+    outbound::buy_links,
     outbound::client::{
         ZwipeClient,
         card::get_card::ClientGetCard,
@@ -102,6 +103,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         Some(Ok(None)) | None => (),
     });
 
+    let mut show_buy_sheet = use_signal(|| false);
     let mut show_delete_dialog = use_signal(|| false);
     let attempt_delete = move || {
         session.upkeep(client);
@@ -129,6 +131,13 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         .as_ref()
         .filter(|(entries, _)| !entries.is_empty())
         .map(|(entries, _)| DeckMetrics::from_entries(entries));
+
+    let tcg_url = deck_data
+        .as_ref()
+        .map(|(entries, _)| buy_links::tcgplayer_url(entries));
+    let ck_url = deck_data
+        .as_ref()
+        .map(|(entries, _)| buy_links::cardkingdom_url(entries));
 
     let mana_curve_bars: Option<[(usize, u32); 7]> = metrics.as_ref().map(|m| {
         let max_count = m.cmc_histogram.iter().copied().max().unwrap_or(0);
@@ -293,6 +302,12 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 }
                 button {
                     class: "util-btn",
+                    disabled: metrics.is_none(),
+                    onclick: move |_| show_buy_sheet.set(true),
+                    "buy"
+                }
+                button {
+                    class: "util-btn",
                     onclick: move |_| show_delete_dialog.set(true),
                     "delete"
                 }
@@ -313,6 +328,46 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                             on_click: move |_| attempt_delete(),
                             "delete"
                         }
+                    }
+                }
+            }
+
+            div {
+                class: if show_buy_sheet() { "modal-backdrop show" } else { "modal-backdrop" },
+                onclick: move |_| show_buy_sheet.set(false),
+            }
+            div {
+                class: if show_buy_sheet() { "bottom-sheet show" } else { "bottom-sheet" },
+                div { class: "modal-header",
+                    h3 { "buy deck" }
+                }
+                div { class: "modal-content",
+                    div { style: "display:flex;flex-direction:column;gap:0.75rem;padding:0.5rem 0;",
+                        if let Some(ref url) = tcg_url {
+                            a {
+                                class: "btn",
+                                href: "{url}",
+                                target: "_blank",
+                                onclick: move |_| show_buy_sheet.set(false),
+                                "tcgplayer"
+                            }
+                        }
+                        if let Some(ref url) = ck_url {
+                            a {
+                                class: "btn",
+                                href: "{url}",
+                                target: "_blank",
+                                onclick: move |_| show_buy_sheet.set(false),
+                                "card kingdom"
+                            }
+                        }
+                    }
+                }
+                div { class: "modal-footer",
+                    button {
+                        class: "btn btn-sm",
+                        onclick: move |_| show_buy_sheet.set(false),
+                        "close"
                     }
                 }
             }
