@@ -114,18 +114,18 @@ pub fn View(deck_id: Uuid) -> Element {
 
             // Resolve commander: pull from deck cards if present, otherwise fetch separately.
             // Either way remove it from the groupable list.
-            if let Ok(profile) = client().get_deck_profile(deck_id, &session).await {
-                if let Some(commander_id) = profile.commander_id {
-                    let cmd = if let Some(idx) = cards
-                        .iter()
-                        .position(|c| c.scryfall_data.id == commander_id)
-                    {
-                        Some(cards.remove(idx))
-                    } else {
-                        client().get_card(commander_id, &session).await.ok()
-                    };
-                    commander_card.set(cmd);
-                }
+            if let Ok(profile) = client().get_deck_profile(deck_id, &session).await
+                && let Some(commander_id) = profile.commander_id
+            {
+                let cmd = if let Some(idx) = cards
+                    .iter()
+                    .position(|c| c.scryfall_data.id == commander_id)
+                {
+                    Some(cards.remove(idx))
+                } else {
+                    client().get_card(commander_id, &session).await.ok()
+                };
+                commander_card.set(cmd);
             }
 
             deck_cards.set(cards);
