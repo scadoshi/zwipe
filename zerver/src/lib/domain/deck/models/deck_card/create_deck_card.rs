@@ -1,41 +1,13 @@
 //! Add card to deck operation.
 //!
-//! Adds a card to a deck with specified quantity. If the card already exists
-//! in the deck, this operation will fail with a duplicate error (use update instead).
-//!
-//! # Quantity Validation
-//!
-//! Quantity must be between 1 and 99.
-//!
-//! # Authorization
-//!
-//! Only the deck owner can add cards to their deck.
+//! Re-exported from `zwipe_core`. Service-layer error type remains here.
+
+pub use zwipe_core::domain::deck::requests::create_deck_card::*;
 
 #[cfg(feature = "zerver")]
 use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
-use crate::domain::deck::models::deck_card::quantity::{InvalidQuantity, Quantity};
+#[cfg(feature = "zerver")]
 use thiserror::Error;
-use uuid::Uuid;
-
-/// Errors that can occur while constructing a [`CreateDeckCard`] request.
-#[derive(Debug, Error)]
-pub enum InvalidCreateDeckCard {
-    /// Invalid deck ID format.
-    #[error(transparent)]
-    DeckId(uuid::Error),
-    /// Invalid card ID format.
-    #[error(transparent)]
-    ScryfallDataId(uuid::Error),
-    /// Quantity is invalid (violates copy limits or out of range).
-    #[error(transparent)]
-    Quantity(InvalidQuantity),
-}
-
-impl From<InvalidQuantity> for InvalidCreateDeckCard {
-    fn from(value: InvalidQuantity) -> Self {
-        Self::Quantity(value)
-    }
-}
 
 /// Errors that can occur during deck card creation execution.
 #[cfg(feature = "zerver")]
@@ -62,74 +34,4 @@ pub enum CreateDeckCardError {
     /// Requesting user doesn't own this deck.
     #[error("deck does not belong to requesting user")]
     Forbidden,
-}
-
-/// Request to add a card to a deck.
-///
-/// Creates a new deck_card entry with the specified quantity.
-/// If the card already exists in the deck, returns duplicate error.
-///
-/// # Example
-///
-/// ```rust,ignore
-/// let add_card = CreateDeckCard::new(
-///     user_id,
-///     "deck-uuid",
-///     "card-uuid",
-///     4  // 4 copies
-/// )?;
-/// deck_service.create_deck_card(&add_card).await?;
-/// ```
-#[derive(Debug, Clone)]
-pub struct CreateDeckCard {
-    /// Requesting user (for authorization).
-    pub user_id: Uuid,
-    /// Deck to add card to.
-    pub deck_id: Uuid,
-    /// Card to add (Scryfall data ID).
-    pub scryfall_data_id: Uuid,
-    /// How many copies (validated against deck copy limits).
-    pub quantity: Quantity,
-    /// Whether the requesting user's email is verified (fresh from database lookup).
-    /// Used to select the appropriate card count limit.
-    pub email_verified: bool,
-}
-
-impl CreateDeckCard {
-    /// Creates a new deck card addition request with validation.
-    ///
-    /// # Parameters
-    ///
-    /// - `user_id`: Requesting user's ID
-    /// - `deck_id`: Deck ID as string (will be parsed)
-    /// - `scryfall_data_id`: Card ID as string (will be parsed)
-    /// - `quantity`: Number of copies (will be validated)
-    /// - `email_verified`: Whether the user's email is verified
-    ///
-    /// # Errors
-    ///
-    /// Returns [`InvalidCreateDeckCard`] if:
-    /// - Deck ID is not a valid UUID
-    /// - Card ID is not a valid UUID
-    /// - Quantity is invalid (0, negative, or violates copy limits)
-    pub fn new(
-        user_id: Uuid,
-        deck_id: &str,
-        scryfall_data_id: &str,
-        quantity: i32,
-        email_verified: bool,
-    ) -> Result<Self, InvalidCreateDeckCard> {
-        let deck_id = Uuid::try_parse(deck_id).map_err(InvalidCreateDeckCard::DeckId)?;
-        let scryfall_data_id =
-            Uuid::try_parse(scryfall_data_id).map_err(InvalidCreateDeckCard::ScryfallDataId)?;
-        let quantity = Quantity::new(quantity)?;
-
-        Ok(Self {
-            deck_id,
-            scryfall_data_id,
-            quantity,
-            user_id,
-            email_verified,
-        })
-    }
 }
