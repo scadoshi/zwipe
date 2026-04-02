@@ -1,6 +1,7 @@
 use super::components::deck_charts::{abbreviate_color, abbreviate_type, DeckCharts, ManaBalanceRow};
 use super::components::deck_profile::DeckProfileSection;
 use super::components::deck_stats::DeckStats;
+use super::components::deck_warnings::DeckWarnings;
 use super::components::more_buttons::MoreButtons;
 use crate::inbound::components::alert_dialog::{
     AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
@@ -77,7 +78,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 .await
                 .map(Some)
         });
-    let deck_resource: Resource<DeckResult> =
+    let mut deck_resource: Resource<DeckResult> =
         use_resource(move || async move {
             session.upkeep(client);
             let Some(session) = session() else {
@@ -225,11 +226,11 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                 DeckProfileSection {
                                     deck_profile: deck_profile,
                                     commander: commander(),
-                                    warnings: warnings,
                                 }
 
                                 if let (Some(m), Some(mana_curve_bars)) = (metrics.as_ref(), mana_curve_bars.as_ref()) {
                                   div { class: "content-enter",
+                                        style: "display: flex; flex-direction: column; gap: 1rem;",
                                     DeckStats {
                                         metrics: m.clone(),
                                         show_buy_sheet: show_buy_sheet,
@@ -242,6 +243,16 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                         mana_balance_rows: mana_balance_rows,
                                     }
                                   }
+                                }
+
+                                if !warnings.is_empty() {
+                                    DeckWarnings {
+                                        warnings: warnings,
+                                        deck_id: deck_id,
+                                        on_remove: move |_| {
+                                            deck_resource.restart();
+                                        },
+                                    }
                                 }
 
                             }

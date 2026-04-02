@@ -91,18 +91,24 @@ fn check_legality(format: &Format, entries: &[DeckEntry], warnings: &mut Vec<Dec
 
         match legality {
             Some(LegalityKind::NotLegal) => {
-                warnings.push(DeckWarning::new(format!(
-                    "{} is not legal in {}",
-                    entry.card.scryfall_data.name.to_lowercase(),
-                    format.display_name().to_lowercase()
-                )));
+                warnings.push(DeckWarning::with_card(
+                    format!(
+                        "{} is not legal in {}",
+                        entry.card.scryfall_data.name.to_lowercase(),
+                        format.display_name().to_lowercase()
+                    ),
+                    entry.card.scryfall_data.id,
+                ));
             }
             Some(LegalityKind::Banned) => {
-                warnings.push(DeckWarning::new(format!(
-                    "{} is banned in {}",
-                    entry.card.scryfall_data.name.to_lowercase(),
-                    format.display_name().to_lowercase()
-                )));
+                warnings.push(DeckWarning::with_card(
+                    format!(
+                        "{} is banned in {}",
+                        entry.card.scryfall_data.name.to_lowercase(),
+                        format.display_name().to_lowercase()
+                    ),
+                    entry.card.scryfall_data.id,
+                ));
             }
             _ => {}
         }
@@ -130,10 +136,13 @@ fn check_copy_limits(format: &Format, entries: &[DeckEntry], warnings: &mut Vec<
         };
 
         if qty > max {
-            warnings.push(DeckWarning::new(format!(
-                "{} exceeds copy limit ({}/{})",
-                entry.card.scryfall_data.name.to_lowercase(), qty, max
-            )));
+            warnings.push(DeckWarning::with_card(
+                format!(
+                    "{} exceeds copy limit ({}/{})",
+                    entry.card.scryfall_data.name.to_lowercase(), qty, max
+                ),
+                entry.card.scryfall_data.id,
+            ));
         }
     }
 }
@@ -170,10 +179,13 @@ fn check_color_identity(
 
         for color in entry.card.scryfall_data.color_identity.iter() {
             if !commander_colors.contains(color) {
-                warnings.push(DeckWarning::new(format!(
-                    "{} is outside commander's color identity",
-                    entry.card.scryfall_data.name.to_lowercase()
-                )));
+                warnings.push(DeckWarning::with_card(
+                    format!(
+                        "{} is outside commander's color identity",
+                        entry.card.scryfall_data.name.to_lowercase()
+                    ),
+                    entry.card.scryfall_data.id,
+                ));
                 break;
             }
         }
