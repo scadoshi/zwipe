@@ -7,8 +7,9 @@ use crate::{
                 Swipeable, config::SwipeConfig, direction::Direction, state::SwipeState,
             },
         },
-        screens::deck::card::filter::{
-            card_filter_sheet::CardFilterSheet, deck_cards::DeckCards,
+        screens::deck::card::{
+            components::action_history::SwipeAction,
+            filter::{card_filter_sheet::CardFilterSheet, deck_cards::DeckCards},
         },
     },
     outbound::client::{
@@ -38,13 +39,6 @@ use zwipe::{
     inbound::http::handlers::deck_card::create_deck_card::HttpCreateDeckCard,
 };
 
-/// Local undo action for the remove screen.
-#[derive(Clone)]
-enum RemoveAction {
-    Skip,
-    Removed(Box<Card>),
-}
-
 #[component]
 pub fn Remove(deck_id: Uuid) -> Element {
     let navigator = use_navigator();
@@ -55,7 +49,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
     let mut animation_direction = use_signal(|| Direction::Left);
 
     // Local undo stack
-    let mut action_history: Signal<Vec<RemoveAction>> = use_signal(Vec::new);
+    let mut action_history: Signal<Vec<SwipeAction>> = use_signal(Vec::new);
 
     // Filter overlay state
     let mut filters_overlay_open = use_signal(|| false);
@@ -196,7 +190,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
         };
 
         match action {
-            RemoveAction::Skip => {
+            SwipeAction::Skip(_) => {
                 let len = displayed_cards().len();
                 if len == 0 {
                     return;
@@ -209,7 +203,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     ToastOptions::default().duration(Duration::from_millis(1500)),
                 );
             }
-            RemoveAction::Removed(card) => {
+            SwipeAction::Do(card) => {
                 // Re-insert into both vecs so the card reappears
                 let card = *card;
                 let idx = current_index();
@@ -261,7 +255,8 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                 state: swipe_state,
                                 config: swipe_config,
                                 on_swipe_left: move |_| {
-                                    action_history.write().push(RemoveAction::Skip);
+                                    let Some(card) = current_card() else { return; };
+                                    action_history.write().push(SwipeAction::Skip(Box::new(card)));
                                     toast.info(
                                         "skipped".to_string(),
                                         ToastOptions::default().duration(Duration::from_millis(1500)),
@@ -271,7 +266,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                 },
                                 on_swipe_right: move |_| {
                                     let Some(card) = current_card() else { return; };
-                                    action_history.write().push(RemoveAction::Removed(Box::new(card)));
+                                    action_history.write().push(SwipeAction::Do(Box::new(card)));
                                     delete_card_from_deck();
                                     toast.success(
                                         "removed from deck".to_string(),
@@ -313,7 +308,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             }
                         }
 
-                        CardInfoDisplay { card: card.clone() }
+                        CardInfoDisplay { card }
                     } else {
                         CardSkeleton {}
                     }
