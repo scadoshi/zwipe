@@ -53,15 +53,15 @@ jobs:
         run: dx build --release --platform web
 
       - name: Add CNAME
-        run: echo "zwipe.net" > zweb/target/dx/zweb/release/web/public/CNAME
+        run: echo "zwipe.net" > target/dx/zweb/release/web/public/CNAME
 
       - name: Add 404.html for SPA routing
-        run: cp zweb/target/dx/zweb/release/web/public/index.html zweb/target/dx/zweb/release/web/public/404.html
+        run: cp target/dx/zweb/release/web/public/index.html target/dx/zweb/release/web/public/404.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: zweb/target/dx/zweb/release/web/public
+          path: target/dx/zweb/release/web/public
 
   deploy:
     needs: build
