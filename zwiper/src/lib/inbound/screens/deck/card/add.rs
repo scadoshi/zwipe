@@ -1,7 +1,6 @@
 use crate::{
     inbound::{
         components::{
-            accordion::{Accordion, AccordionContent, AccordionItem, AccordionTrigger},
             auth::{bouncer::Bouncer, session_upkeep::Upkeep},
             interactions::swipe::{
                 Swipeable, config::SwipeConfig, direction::Direction, state::SwipeState,
@@ -9,11 +8,7 @@ use crate::{
         },
         screens::deck::card::{
             action_history::{CARDS_WARNING_THRESHOLD, MAX_CARDS_IN_STACK, SwipeAction},
-            filter::{
-                artist::Artist, combat::Combat, config::Config, flavor_text::FlavorText,
-                format::FormatFilter, mana::Mana, name::Name, oracle_text::OracleText,
-                rarity::Rarity, set::Set, sort::Sort, types::Types,
-            },
+            filter::card_filter_sheet::CardFilterSheet,
         },
     },
     outbound::client::{
@@ -64,11 +59,8 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut filters_overlay_open = use_signal(|| false);
 
     // Reset counter for collapsing accordions and clearing search queries
-    let mut filter_reset_counter: Signal<u32> = use_signal(|| 0);
+    let filter_reset_counter: Signal<u32> = use_signal(|| 0);
     use_context_provider(|| filter_reset_counter);
-
-    // Key for remounting the filter accordion — incremented on every apply to close open groups
-    let mut accordion_key: Signal<u32> = use_signal(|| 0);
 
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
@@ -470,42 +462,6 @@ pub fn Add(deck_id: Uuid) -> Element {
         });
     });
 
-    // Filter active state — used to show dots on accordion triggers
-    let fb = filter_builder();
-    let def = CardFilterBuilder::default();
-    let name_active = fb.name_contains().is_some();
-    let oracle_active = fb.oracle_text_contains().is_some()
-        || fb.oracle_text_contains_any().is_some()
-        || fb.oracle_text_contains_all().is_some()
-        || fb.keywords_contains_any().is_some()
-        || fb.keywords_contains_all().is_some();
-    let types_active = fb.type_line_contains().is_some()
-        || fb.type_line_contains_any().is_some()
-        || fb.type_line_contains_all().is_some()
-        || fb.card_type_contains_any().is_some()
-        || fb.card_type_contains_all().is_some();
-    let mana_active = fb.cmc_equals().is_some()
-        || fb.cmc_range().is_some()
-        || fb.color_identity_equals().is_some()
-        || fb.color_identity_within().is_some()
-        || fb.produced_mana_contains_any().is_some()
-        || fb.produced_mana_contains_all().is_some();
-    let combat_active = fb.power_equals().is_some()
-        || fb.power_range().is_some()
-        || fb.toughness_equals().is_some()
-        || fb.toughness_range().is_some();
-    let flavor_active = fb.flavor_text_contains().is_some() || fb.has_flavor_text().is_some();
-    let artist_active = fb.artist_equals_any().is_some();
-    let rarity_active = fb.rarity_equals_any().is_some();
-    let set_active = fb.set_equals_any().is_some();
-    let sort_active = fb.order_by().is_some();
-    let config_active = fb.is_playable() != def.is_playable()
-        || fb.digital() != def.digital()
-        || fb.oversized() != def.oversized()
-        || fb.promo() != def.promo()
-        || fb.content_warning() != def.content_warning();
-    let format_active = fb.legalities_contains_any().is_some();
-
     rsx! {
         Bouncer {
             div { class: "screen",
@@ -702,185 +658,12 @@ pub fn Add(deck_id: Uuid) -> Element {
                 }
             }
 
-            // Modal backdrop (always rendered for CSS animation)
-            div {
-                class: if filters_overlay_open() { "modal-backdrop show" } else { "modal-backdrop" },
-                onclick: move |_| filters_overlay_open.set(false),
-            }
-
-            // Bottom sheet (always rendered for CSS animation)
-            div {
-                class: if filters_overlay_open() { "bottom-sheet show" } else { "bottom-sheet" },
-
-                // Header with apply button
-                div { class: "modal-header",
-                    button {
-                        class: "btn btn-sm",
-                        onclick: move |_| {
-                            accordion_key.set(accordion_key() + 1);
-                            if filter_builder.read().is_empty_ignoring_legalities() {
-                                toast.warning("filter is empty".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
-                            } else {
-                                filter_reset_counter.set(filter_reset_counter() + 1);
-                            }
-                            filters_overlay_open.set(false);
-                        },
-                        "apply"
-                    }
-                }
-
-                // Content with accordion
-                div { class: "modal-content",
-                    Accordion {
-                        key: "{accordion_key()}",
-                        id: "filter-accordion",
-                        allow_multiple_open: false,
-                        collapsible: true,
-
-                        AccordionItem { index: 1,
-                            on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(1)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
-                            },
-                            AccordionTrigger {
-                                "name"
-                                if name_active { span { class: "filter-dot" } }
-                            }
-                            AccordionContent { Name {} }
-                        }
-
-                        AccordionItem { index: 2,
-                            on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(2)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
-                            },
-                            AccordionTrigger {
-                                "oracle text"
-                                if oracle_active { span { class: "filter-dot" } }
-                            }
-                            AccordionContent { OracleText {} }
-                        }
-
-                        AccordionItem { index: 3,
-                            on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(3)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
-                            },
-                            AccordionTrigger {
-                                "types"
-                                if types_active { span { class: "filter-dot" } }
-                            }
-                            AccordionContent { Types {} }
-                        }
-
-                        AccordionItem { index: 4,
-                            on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(4)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
-                            },
-                            AccordionTrigger {
-                                "mana"
-                                if mana_active { span { class: "filter-dot" } }
-                            }
-                            AccordionContent { Mana {} }
-                        }
-
-                        AccordionItem { index: 5,
-                            on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(5)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
-                            },
-                            AccordionTrigger {
-                                "combat"
-                                if combat_active { span { class: "filter-dot" } }
-                            }
-                            AccordionContent { Combat {} }
-                        }
-
-                        AccordionItem { index: 6,
-                            on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(6)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
-                            },
-                            AccordionTrigger {
-                                "flavor text"
-                                if flavor_active { span { class: "filter-dot" } }
-                            }
-                            AccordionContent { FlavorText {} }
-                        }
-
-                        AccordionItem { index: 7,
-                            on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(7)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
-                            },
-                            AccordionTrigger {
-                                "artist"
-                                if artist_active { span { class: "filter-dot" } }
-                            }
-                            AccordionContent { Artist {} }
-                        }
-
-                        AccordionItem { index: 8,
-                            on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(8)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
-                            },
-                            AccordionTrigger {
-                                "rarity"
-                                if rarity_active { span { class: "filter-dot" } }
-                            }
-                            AccordionContent { Rarity {} }
-                        }
-
-                        AccordionItem { index: 9,
-                            on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(9)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
-                            },
-                            AccordionTrigger {
-                                "set"
-                                if set_active { span { class: "filter-dot" } }
-                            }
-                            AccordionContent { Set {} }
-                        }
-
-                        AccordionItem { index: 10,
-                            on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(10)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
-                            },
-                            AccordionTrigger {
-                                "format"
-                                if format_active { span { class: "filter-dot" } }
-                            }
-                            AccordionContent { FormatFilter {} }
-                        }
-
-                        AccordionItem { index: 11,
-                            on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(11)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
-                            },
-                            AccordionTrigger {
-                                "sort"
-                                if sort_active { span { class: "filter-dot" } }
-                            }
-                            AccordionContent { Sort {} }
-                        }
-
-                        AccordionItem { index: 12,
-                            on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(12)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
-                            },
-                            AccordionTrigger {
-                                "config"
-                                if config_active { span { class: "filter-dot" } }
-                            }
-                            AccordionContent { Config {} }
-                        }
-                  }
-                }
-
-                // Footer with clear button
-                div { class: "modal-footer",
-                    button {
-                        class: "btn btn-sm",
-                        onclick: move |_| {
-                            clear_filters();
-                        },
-                        "clear"
-                    }
-                }
+            CardFilterSheet {
+                open: filters_overlay_open,
+                show_format_filter: true,
+                show_active_indicators: true,
+                validate_before_apply: true,
+                on_clear: move |_| clear_filters(),
             }
             }
         }

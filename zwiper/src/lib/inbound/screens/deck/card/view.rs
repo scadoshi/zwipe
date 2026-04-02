@@ -1,13 +1,8 @@
 use crate::{
     inbound::{
-        components::{
-            accordion::{Accordion, AccordionContent, AccordionItem, AccordionTrigger},
-            auth::{bouncer::Bouncer, session_upkeep::Upkeep},
-        },
+        components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
         screens::deck::card::filter::{
-            artist::Artist, combat::Combat, config::Config, deck_cards::DeckCards,
-            flavor_text::FlavorText, mana::Mana, name::Name, oracle_text::OracleText,
-            rarity::Rarity, set::Set, sort::Sort, types::Types,
+            card_filter_sheet::CardFilterSheet, deck_cards::DeckCards,
         },
     },
     outbound::client::{
@@ -544,129 +539,10 @@ pub fn View(deck_id: Uuid) -> Element {
                 }
             }
 
-            // Modal backdrop
-            div {
-                class: if filters_overlay_open() { "modal-backdrop show" } else { "modal-backdrop" },
-                onclick: move |_| filters_overlay_open.set(false),
-            }
-
-            // Bottom sheet
-            div {
-                class: if filters_overlay_open() { "bottom-sheet show" } else { "bottom-sheet" },
-
-                div { class: "modal-header",
-                    button {
-                        class: "btn btn-sm",
-                        onclick: move |_| {
-                            filter_reset_counter.set(filter_reset_counter() + 1);
-                            filters_overlay_open.set(false);
-                        },
-                        "apply"
-                    }
-                }
-
-                div { class: "modal-content",
-                    Accordion {
-                        key: "{filter_reset_counter()}",
-                        id: "filter-accordion",
-                        allow_multiple_open: false,
-                        collapsible: true,
-
-                        AccordionItem { index: 1,
-                            on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(1)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
-                            },
-                            AccordionTrigger { "name" }
-                            AccordionContent { Name {} }
-                        }
-                        AccordionItem { index: 2,
-                            on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(2)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
-                            },
-                            AccordionTrigger { "oracle text" }
-                            AccordionContent { OracleText {} }
-                        }
-                        AccordionItem { index: 3,
-                            on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(3)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
-                            },
-                            AccordionTrigger { "types" }
-                            AccordionContent { Types {} }
-                        }
-                        AccordionItem { index: 4,
-                            on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(4)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
-                            },
-                            AccordionTrigger { "mana" }
-                            AccordionContent { Mana {} }
-                        }
-                        AccordionItem { index: 5,
-                            on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(5)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
-                            },
-                            AccordionTrigger { "combat" }
-                            AccordionContent { Combat {} }
-                        }
-                        AccordionItem { index: 6,
-                            on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(6)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
-                            },
-                            AccordionTrigger { "flavor text" }
-                            AccordionContent { FlavorText {} }
-                        }
-                        AccordionItem { index: 7,
-                            on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(7)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
-                            },
-                            AccordionTrigger { "artist" }
-                            AccordionContent { Artist {} }
-                        }
-                        AccordionItem { index: 8,
-                            on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(8)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
-                            },
-                            AccordionTrigger { "rarity" }
-                            AccordionContent { Rarity {} }
-                        }
-                        AccordionItem { index: 9,
-                            on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(9)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
-                            },
-                            AccordionTrigger { "set" }
-                            AccordionContent { Set {} }
-                        }
-                        AccordionItem { index: 10,
-                            on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(10)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
-                            },
-                            AccordionTrigger { "sort" }
-                            AccordionContent { Sort {} }
-                        }
-                        AccordionItem { index: 11,
-                            on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(11)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
-                            },
-                            AccordionTrigger { "config" }
-                            AccordionContent { Config {} }
-                        }
-                    }
-                }
-
-                div { class: "modal-footer",
-                    button {
-                        class: "btn btn-sm",
-                        onclick: move |_| {
-                            filter_builder.write().clear();
-                            let current = *filter_reset_counter.peek();
-                            filter_reset_counter.set(current + 1);
-                            toast.info(
-                                "filter cleared".to_string(),
-                                ToastOptions::default().duration(Duration::from_millis(1500)),
-                            );
-                        },
-                        "clear"
-                    }
-                }
+            CardFilterSheet {
+                open: filters_overlay_open,
+                show_format_filter: true,
+                show_active_indicators: true,
             }
 
             // Image preview overlay

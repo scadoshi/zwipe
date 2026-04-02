@@ -32,3 +32,5 @@ pub mod set;
 pub mod sort;
 /// Card type filter.
 pub mod types;
+/// Shared bottom-sheet filter accordion.
+pub(crate) mod card_filter_sheet;
