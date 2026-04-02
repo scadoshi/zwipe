@@ -4,7 +4,10 @@ use std::fmt::Debug;
 use uuid::Uuid;
 
 use crate::domain::{
-    card::{models::scryfall_data::get_scryfall_data::ScryfallDataIds, ports::CardRepository},
+    card::{
+        models::{scryfall_data::get_scryfall_data::ScryfallDataIds, Card},
+        ports::CardRepository,
+    },
     deck::{
         models::{
             deck::{
@@ -15,6 +18,7 @@ use crate::domain::{
                 get_deck::GetDeckError,
                 get_deck_profile::{GetDeckProfile, GetDeckProfileError},
                 get_deck_profiles::GetDeckProfiles,
+                get_deck_tokens::GetDeckTokensError,
                 update_deck_profile::{UpdateDeckProfile, UpdateDeckProfileError},
             },
             deck_card::{
@@ -185,6 +189,31 @@ where
         );
         let deck = Deck::new(deck_profile, entries, warnings);
         Ok(deck)
+    }
+
+    async fn get_deck_tokens(
+        &self,
+        request: &GetDeckProfile,
+    ) -> Result<Vec<Card>, GetDeckTokensError> {
+        let deck = self.get_deck(request).await?;
+
+        let token_ids: ScryfallDataIds = deck
+            .entries
+            .iter()
+            .filter_map(|e| e.card.scryfall_data.all_parts.as_ref())
+            .flat_map(|parts| parts.iter())
+            .filter(|rc| rc.component == "token")
+            .map(|rc| rc.id)
+            .collect::<std::collections::HashSet<_>>()
+            .into_iter()
+            .collect();
+
+        if token_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let tokens = self.card_repo.get_cards(&token_ids).await?;
+        Ok(tokens)
     }
 
     // ========

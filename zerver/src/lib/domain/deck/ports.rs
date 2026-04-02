@@ -5,6 +5,7 @@
 
 use std::future::Future;
 
+use crate::domain::card::models::Card;
 use crate::domain::deck::models::{
     deck::{
         create_deck_profile::{CreateDeckProfile, CreateDeckProfileError},
@@ -13,6 +14,7 @@ use crate::domain::deck::models::{
         get_deck::GetDeckError,
         get_deck_profile::{GetDeckProfile, GetDeckProfileError},
         get_deck_profiles::GetDeckProfiles,
+        get_deck_tokens::GetDeckTokensError,
         update_deck_profile::{UpdateDeckProfile, UpdateDeckProfileError},
         Deck,
     },
@@ -161,6 +163,12 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         &self,
         request: &GetDeckProfile,
     ) -> impl Future<Output = Result<Deck, GetDeckError>> + Send;
+
+    /// Retrieves all token cards produced by the cards in a deck.
+    fn get_deck_tokens(
+        &self,
+        request: &GetDeckProfile,
+    ) -> impl Future<Output = Result<Vec<Card>, GetDeckTokensError>> + Send;
 
     // ========
     //  update

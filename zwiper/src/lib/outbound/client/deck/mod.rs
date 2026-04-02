@@ -9,6 +9,8 @@ pub mod create_deck;
 pub mod delete_deck;
 /// Fetch a deck with all its cards.
 pub mod get_deck;
+/// Fetch tokens produced by a deck's cards.
+pub mod get_deck_tokens;
 /// Fetch a single deck profile (metadata only).
 pub mod get_deck_profile;
 /// Fetch all deck profiles for the current user.
