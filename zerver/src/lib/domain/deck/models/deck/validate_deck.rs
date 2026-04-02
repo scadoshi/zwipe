@@ -47,28 +47,28 @@ fn check_card_count(format: &Format, profile: &DeckProfile, warnings: &mut Vec<D
         count += 1;
     }
 
-    if let Some(min) = format.min_cards() {
-        if count < min {
-            warnings.push(DeckWarning::new(format!(
-                "deck has {} {}, {} requires at least {}",
-                count,
-                plural(count),
-                format.display_name().to_lowercase(),
-                min
-            )));
-        }
+    if let Some(min) = format.min_cards()
+        && count < min
+    {
+        warnings.push(DeckWarning::new(format!(
+            "deck has {} {}, {} requires at least {}",
+            count,
+            plural(count),
+            format.display_name().to_lowercase(),
+            min
+        )));
     }
 
-    if let Some(max) = format.max_cards() {
-        if count > max {
-            warnings.push(DeckWarning::new(format!(
-                "deck has {} {}, {} allows at most {}",
-                count,
-                plural(count),
-                format.display_name().to_lowercase(),
-                max
-            )));
-        }
+    if let Some(max) = format.max_cards()
+        && count > max
+    {
+        warnings.push(DeckWarning::new(format!(
+            "deck has {} {}, {} allows at most {}",
+            count,
+            plural(count),
+            format.display_name().to_lowercase(),
+            max
+        )));
     }
 }
 
@@ -145,12 +145,14 @@ fn check_color_identity(
     commander_card: Option<&Card>,
     warnings: &mut Vec<DeckWarning>,
 ) {
-    if !format.checks_color_identity() || profile.commander_id.is_none() {
+    if !format.checks_color_identity() {
         return;
     }
 
     // Find commander's color identity — check entries first, fall back to provided card
-    let commander_id = profile.commander_id.unwrap();
+    let Some(commander_id) = profile.commander_id else {
+        return;
+    };
     let commander_identity = entries
         .iter()
         .find(|e| e.card.scryfall_data.id == commander_id)
