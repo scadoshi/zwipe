@@ -3,9 +3,7 @@ use super::components::image_preview::ImagePreview;
 use crate::{
     inbound::{
         components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
-        screens::deck::card::filter::{
-            card_filter_sheet::CardFilterSheet, deck_cards::DeckCards,
-        },
+        screens::deck::card::filter::{card_filter_sheet::CardFilterSheet, deck_cards::DeckCards},
     },
     outbound::client::{
         ZwipeClient,
@@ -143,14 +141,13 @@ pub fn View(deck_id: Uuid) -> Element {
         });
     });
 
-    let tokens_resource: Resource<Result<Vec<Card>, ApiError>> =
-        use_resource(move || async move {
-            session.upkeep(client);
-            let Some(session) = session() else {
-                return Ok(Vec::new());
-            };
-            client().get_deck_tokens(deck_id, &session).await
-        });
+    let tokens_resource: Resource<Result<Vec<Card>, ApiError>> = use_resource(move || async move {
+        session.upkeep(client);
+        let Some(session) = session() else {
+            return Ok(Vec::new());
+        };
+        client().get_deck_tokens(deck_id, &session).await
+    });
 
     // Effect 2 — filter + group (reads `filter_reset_counter`, `group_by_option`, `show_lands` reactively)
     use_effect(move || {
@@ -373,11 +370,6 @@ pub fn View(deck_id: Uuid) -> Element {
                 }
                 button {
                     class: "util-btn",
-                    onclick: move |_| filters_overlay_open.set(true),
-                    "filter"
-                }
-                button {
-                    class: "util-btn",
                     onclick: move |_| {
                         navigator.push(crate::inbound::router::Router::AddDeckCard { deck_id });
                     },
@@ -389,6 +381,11 @@ pub fn View(deck_id: Uuid) -> Element {
                         navigator.push(crate::inbound::router::Router::RemoveDeckCard { deck_id });
                     },
                     "remove"
+                }
+                button {
+                    class: "util-btn",
+                    onclick: move |_| filters_overlay_open.set(true),
+                    "filter"
                 }
                 if !filter_builder.read().is_empty() {
                     button {
@@ -402,7 +399,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
                             );
                         },
-                        "clear"
+                        "clear filter"
                     }
                 }
             }
