@@ -1,4 +1,4 @@
-use super::card_info::{CardInfoDisplay, CardSkeleton};
+use super::components::card_info::{CardInfoDisplay, CardSkeleton};
 use crate::{
     inbound::{
         components::{

@@ -3,7 +3,7 @@ use zwipe::domain::card::models::Card;
 
 /// Displays card metadata: prices, set, release date, artist.
 #[component]
-pub(super) fn CardInfoDisplay(card: Card) -> Element {
+pub(crate) fn CardInfoDisplay(card: Card) -> Element {
     rsx! {
         div { class: "card-info",
             if card.scryfall_data.prices.usd.is_some()
@@ -44,7 +44,7 @@ pub(super) fn CardInfoDisplay(card: Card) -> Element {
 
 /// Skeleton placeholder for when no card is loaded.
 #[component]
-pub(super) fn CardSkeleton(#[props(default = false)] is_loading: bool) -> Element {
+pub(crate) fn CardSkeleton(#[props(default = false)] is_loading: bool) -> Element {
     rsx! {
         div { class: "skeleton-card",
             div { class: "skeleton-image",

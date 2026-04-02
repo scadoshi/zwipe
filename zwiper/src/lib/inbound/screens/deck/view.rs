@@ -1,6 +1,6 @@
-use super::deck_charts::{abbreviate_color, abbreviate_type, DeckCharts, ManaBalanceRow};
-use super::deck_profile_section::DeckProfileSection;
-use super::deck_stats_section::DeckStatsSection;
+use super::components::deck_charts::{abbreviate_color, abbreviate_type, DeckCharts, ManaBalanceRow};
+use super::components::deck_profile::DeckProfileSection;
+use super::components::deck_stats::DeckStats;
 use crate::inbound::components::alert_dialog::{
     AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
     AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
@@ -17,6 +17,7 @@ use crate::{
         deck::{
             delete_deck::ClientDeleteDeck, get_deck::ClientGetDeck,
             get_deck_profile::ClientGetDeckProfile,
+            get_deck_tokens::ClientGetDeckTokens,
         },
     },
 };
@@ -86,6 +87,14 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 .get_deck(deck_id, &session)
                 .await
                 .map(|d| (d.entries, d.warnings))
+        });
+    let tokens_resource: Resource<Result<Vec<Card>, ApiError>> =
+        use_resource(move || async move {
+            session.upkeep(client);
+            let Some(session) = session() else {
+                return Err(ApiError::Unauthorized("session expired".to_string()));
+            };
+            client().get_deck_tokens(deck_id, &session).await
         });
     use_effect(move || {
         if let Some(Err(e)) = &*deck_profile_resource.read() {
@@ -228,7 +237,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
                                 if let (Some(m), Some(mana_curve_bars)) = (metrics.as_ref(), mana_curve_bars.as_ref()) {
                                   div { class: "content-enter",
-                                    DeckStatsSection {
+                                    DeckStats {
                                         metrics: m.clone(),
                                     }
 
@@ -239,6 +248,40 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                         mana_balance_rows: mana_balance_rows,
                                     }
                                   }
+                                }
+
+                                match tokens_resource() {
+                                    Some(Ok(tokens)) if !tokens.is_empty() => rsx! {
+                                        div { class: "card-group row-enter",
+                                            div { class: "card-group-header", "tokens ({tokens.len()})" }
+                                            div { class: "card-row-compact card-row-header",
+                                                span { class: "card-row-name", "name" }
+                                                span { class: "card-row-colors", "colors" }
+                                            }
+                                            for token in tokens.iter() {
+                                                {
+                                                    let sd = &token.scryfall_data;
+                                                    let name = sd.name.to_lowercase();
+                                                    let color_display = sd.color_identity
+                                                        .iter()
+                                                        .map(|c| format!("{{{}}}", c.to_short_name()))
+                                                        .collect::<Vec<_>>()
+                                                        .join("");
+                                                    let type_line = sd.type_line.clone().unwrap_or_default().to_lowercase();
+                                                    rsx! {
+                                                        div { class: "card-row",
+                                                            div { class: "card-row-compact",
+                                                                span { class: "card-row-name", "{name}" }
+                                                                span { class: "card-row-colors", "{color_display}" }
+                                                            }
+                                                            span { class: "opacity-50", style: "padding: 0 0.75rem 0.5rem;", "{type_line}" }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    _ => rsx! {},
                                 }
 
                             }

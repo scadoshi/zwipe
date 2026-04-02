@@ -1,12 +1,15 @@
-use crate::outbound::client::{card::search_cards::ClientSearchCards, ZwipeClient};
+use crate::{
+    inbound::components::fields::text_input::TextInput,
+    outbound::client::{ZwipeClient, card::search_cards::ClientSearchCards},
+};
 use dioxus::prelude::*;
 use std::time::Duration;
 use tokio::time::sleep;
 use zwipe::domain::{
     auth::models::session::Session,
     card::models::{
-        search_card::card_filter::{builder::CardFilterBuilder, error::InvalidCardFilter},
         Card,
+        search_card::card_filter::{builder::CardFilterBuilder, error::InvalidCardFilter},
     },
     deck::models::deck::format::Format,
 };
@@ -15,7 +18,8 @@ use zwipe::domain::{
 ///
 /// Reads `Signal<Option<Session>>` and `Signal<ZwipeClient>` from context.
 #[component]
-pub(super) fn DeckFormFields(
+pub(crate) fn DeckFields(
+    mut deck_name: Signal<String>,
     mut selected_format: Signal<Option<Format>>,
     mut commander: Signal<Option<Card>>,
     mut commander_display: Signal<String>,
@@ -29,9 +33,7 @@ pub(super) fn DeckFormFields(
     let mut is_searching = use_signal(|| false);
     let mut show_dropdown = use_signal(|| false);
 
-    let commander_enabled = use_memo(move || {
-        selected_format().is_some_and(|f| f.has_commander())
-    });
+    let commander_enabled = use_memo(move || selected_format().is_some_and(|f| f.has_commander()));
 
     // debounced commander search effect
     use_effect(move || {
@@ -77,6 +79,14 @@ pub(super) fn DeckFormFields(
     });
 
     rsx! {
+        // name
+        TextInput {
+            label: "deck name",
+            value: deck_name,
+            id: "deck_name",
+            placeholder: "deck name",
+        }
+
         // format selector (chips)
         div { class: "mb-4",
             div { class: "label-row",

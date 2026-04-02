@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
 #[derive(Clone, PartialEq)]
-pub(super) struct ManaBalanceRow {
+pub(crate) struct ManaBalanceRow {
     pub label: &'static str,
     pub consumed: usize,
     pub produced: usize,
@@ -10,7 +10,7 @@ pub(super) struct ManaBalanceRow {
 }
 
 #[component]
-pub(super) fn DeckCharts(
+pub(crate) fn DeckCharts(
     mana_curve_bars: [(usize, u32); 7],
     type_bars: Option<Vec<(&'static str, usize, u32)>>,
     color_bars: Option<Vec<(&'static str, usize, u32)>>,
@@ -112,7 +112,7 @@ pub(super) fn DeckCharts(
     }
 }
 
-pub(super) fn abbreviate_type(label: &str) -> &str {
+pub(crate) fn abbreviate_type(label: &str) -> &str {
     match label {
         "lands" => "lands",
         "creatures" => "creat",
@@ -126,7 +126,7 @@ pub(super) fn abbreviate_type(label: &str) -> &str {
     }
 }
 
-pub(super) fn abbreviate_color(label: &str) -> &str {
+pub(crate) fn abbreviate_color(label: &str) -> &str {
     match label {
         "white" => "white",
         "blue" => "blue",
