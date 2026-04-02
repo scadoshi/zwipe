@@ -31,55 +31,67 @@ use uuid::Uuid;
 #[rustfmt::skip]
 #[allow(missing_docs)]
 pub enum Router {
-    // home
+    /// Landing screen — greeting, navigation to login/register/decks.
     #[route("/")]
     Home {},
 
-    // auth
+    /// Email + password login form.
     #[route("/login")]
     Login {},
+    /// New account registration form.
     #[route("/register")]
     Register {},
+    /// Request a password reset email.
     #[route("/forgot-password")]
     ForgotPassword {},
 
-    // user
+    /// User profile overview — links to change username/email/password, preferences, delete account.
     #[route("/user")]
     Profile {},
+    /// Change username form.
     #[route("/user/change-username")]
     ChangeUsername {},
+    /// Change email form (triggers re-verification).
     #[route("/user/change-email")]
     ChangeEmail {},
+    /// Change password form.
     #[route("/user/change-password")]
     ChangePassword {},
+    /// Theme and display preferences.
     #[route("/user/preferences")]
     Preferences {},
 
-    // deck
+    /// List all user's decks with name, format, and card count.
     #[route("/deck")]
     DeckList {},
+    /// Create a new deck — name, format, commander selection.
     #[route("/deck/create")]
     CreateDeck,
+    /// Edit an existing deck's profile — name, format, commander.
     #[route("/deck/update/:deck_id")]
     EditDeck { deck_id: Uuid },
+    /// View deck details — profile, stats, price breakdown, mana curve, type/color distribution.
     #[route("/deck/get/:deck_id")]
     ViewDeck { deck_id: Uuid },
 
-    // deck import/export
+    /// Import cards from a plain-text decklist into the deck.
     #[route("/deck/card/import/:deck_id")]
     ImportDeck { deck_id: Uuid },
+    /// Export the deck as a plain-text decklist for sharing.
     #[route("/deck/card/export/:deck_id")]
     ExportDeck { deck_id: Uuid },
 
-    //deck card
+    /// Swipe-based card search — swipe right to add cards to the deck.
     #[route("/deck/card/add/:deck_id")]
     AddDeckCard {
         deck_id: Uuid,
     },
+    /// Browse all cards in the deck — expandable rows with card details and image preview.
     #[route("/deck/card/view/:deck_id")]
     ViewDeckCard {
         deck_id: Uuid,
     },
+    /// Swipe-based card removal — swipe right to remove cards from the deck.
     #[route("/deck/card/remove/:deck_id")]
     RemoveDeckCard {
         deck_id: Uuid,
