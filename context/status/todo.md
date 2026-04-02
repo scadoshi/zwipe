@@ -53,11 +53,9 @@ All workflows already use latest major versions (`actions/checkout@v4`, `actions
 
 ## Deck View Enhancements
 
-Plans in `context/plans/`. Execute in order:
-
-1. **Component extraction** — extract view deck screen into `deck_profile_section`, `deck_stats_section`, `deck_charts` (`context/plans/deck-view-component-extraction.md`)
-2. **Price stats** — total cost + avg cost per card with USD/EUR/TIX currency chips (`context/plans/deck-price-stats.md`)
-3. **Buy deck links** — TCGplayer + CardKingdom bulk purchase links (`context/plans/buy-links.md`)
+1. ~~**Component extraction**~~ — done (`995dc9e8`, `7b8cf497`)
+2. ~~**Price stats**~~ — done (`9959dc16`)
+3. ~~**Buy deck links**~~ — done (`28326c10`)
 
 ---
 
@@ -138,6 +136,13 @@ Add a `context/architecture/structure.md` walking through the full directory tre
 ---
 
 ## Recently Completed
+
+### Deck View Enhancements (2026-04-02)
+
+- [x] Extract deck view into profile, stats, and charts components (`995dc9e8`)
+- [x] Add deck price stats with currency selection chips — USD/EUR/TIX (`9959dc16`)
+- [x] Add buy deck links for TCGplayer and CardKingdom (`28326c10`)
+- [x] Extract shared CardFilterSheet component from add, view, and remove screens (`9e0c6044`)
 
 ### zweb & README Updates (2026-04-01)
 

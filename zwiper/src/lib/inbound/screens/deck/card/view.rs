@@ -10,7 +10,10 @@ use crate::{
     outbound::client::{
         ZwipeClient,
         card::get_card::ClientGetCard,
-        deck::{get_deck::ClientGetDeck, get_deck_profile::ClientGetDeckProfile},
+        deck::{
+            get_deck::ClientGetDeck, get_deck_profile::ClientGetDeckProfile,
+            get_deck_tokens::ClientGetDeckTokens,
+        },
         deck_card::{
             delete_deck_card::ClientDeleteDeckCard, update_deck_card::ClientUpdateDeckCard,
         },
@@ -32,7 +35,7 @@ use zwipe::domain::{
         },
     },
 };
-use zwipe::inbound::http::handlers::deck_card::update_deck_card::HttpUpdateDeckCard;
+use zwipe::inbound::http::{ApiError, handlers::deck_card::update_deck_card::HttpUpdateDeckCard};
 
 #[component]
 pub fn View(deck_id: Uuid) -> Element {
@@ -70,6 +73,8 @@ pub fn View(deck_id: Uuid) -> Element {
     let mut quantity_map: Signal<HashMap<Uuid, i32>> = use_signal(HashMap::new);
     // Toggle to show/hide land cards (default: hidden)
     let mut show_lands: Signal<bool> = use_signal(|| false);
+    // Toggle to show/hide tokens at the top of the list
+    let mut show_tokens: Signal<bool> = use_signal(|| false);
 
     // Card image preview — stores the image URL of the card to preview (None = closed)
     let preview_image_url: Signal<Option<String>> = use_signal(|| None);
@@ -137,6 +142,15 @@ pub fn View(deck_id: Uuid) -> Element {
             filter_reset_counter.set(current + 1);
         });
     });
+
+    let tokens_resource: Resource<Result<Vec<Card>, ApiError>> =
+        use_resource(move || async move {
+            session.upkeep(client);
+            let Some(session) = session() else {
+                return Ok(Vec::new());
+            };
+            client().get_deck_tokens(deck_id, &session).await
+        });
 
     // Effect 2 — filter + group (reads `filter_reset_counter`, `group_by_option`, `show_lands` reactively)
     use_effect(move || {
@@ -260,6 +274,11 @@ pub fn View(deck_id: Uuid) -> Element {
                             onclick: move |_| show_lands.set(!show_lands()),
                             "show lands"
                         }
+                        button {
+                            class: if show_tokens() { "chip selected" } else { "chip" },
+                            onclick: move |_| show_tokens.set(!show_tokens()),
+                            "show tokens"
+                        }
                     }
 
                     // Column headers
@@ -269,6 +288,26 @@ pub fn View(deck_id: Uuid) -> Element {
                         span { class: "card-row-cmc", "cmc" }
                         span { class: "card-row-pt", "p/t" }
                         span { class: "card-row-colors", "colors" }
+                    }
+
+                    // Token list (above everything when toggled)
+                    if show_tokens() {
+                        if let Some(Ok(tokens)) = tokens_resource() {
+                            if !tokens.is_empty() {
+                                div { class: "card-group row-enter",
+                                    div { class: "card-group-header", "tokens ({tokens.len()})" }
+                                    for token in tokens.iter() {
+                                        CardRow {
+                                            card: token.clone(),
+                                            qty: 1,
+                                            expanded_card,
+                                            preview_image_url,
+                                            preview_dismissing,
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     // Pinned commander group

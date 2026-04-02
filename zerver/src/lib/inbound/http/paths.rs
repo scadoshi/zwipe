@@ -107,6 +107,10 @@ pub fn get_deck_route(deck_id: Uuid) -> String {
     format!("/api/deck/{}", deck_id)
 }
 
+pub fn get_deck_tokens_route(deck_id: Uuid) -> String {
+    format!("/api/deck/{}/tokens", deck_id)
+}
+
 pub fn get_deck_profiles_route() -> String {
     "/api/deck".to_string()
 }

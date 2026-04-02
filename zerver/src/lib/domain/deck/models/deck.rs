@@ -17,6 +17,8 @@ pub mod delete_deck;
 pub mod format;
 /// Get complete deck operation (profile + cards).
 pub mod get_deck;
+/// Get tokens produced by all cards in a deck.
+pub mod get_deck_tokens;
 /// Get single deck profile operation.
 pub mod get_deck_profile;
 /// Deck validation logic (generates warnings).
