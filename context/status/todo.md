@@ -29,33 +29,13 @@ Android build compiles and runs. Remaining polish before Play Store submission:
 - [ ] Card images show white corners — the white is baked into the image data from Scryfall (white-bordered card editions). iOS clips correctly via WKWebView; Android WebView does not honor `overflow: hidden` + `border-radius` on `object-fit: contain` images. Tried: `overflow: hidden` on img, wrapper div with `border-radius` + `overflow: hidden`, `-webkit-mask-image` hack. None work on Android WebView. Options: crop with `object-fit: cover` (loses card edges), mask SVG overlay, or accept as-is for black-bordered cards (majority) and revisit for white-bordered.
 - [ ] Swipe gesture doesn't tilt the card — cards should rotate slightly during drag like they do on iOS
 - [ ] Lock screen orientation to portrait — need `android:screenOrientation="portrait"` on main activity. Dioxus may support this via `[android.raw.manifest]` or activity-level config. Test on Pixel once available.
-- [x] Refresh with filters set doesn't reset card index — fixed by inlining refresh logic in onclick handler instead of signal-triggered effect (`59e5298`)
 
 ---
 
-## Rate Limiting
+## UX — Future
 
-✅ All critical endpoints covered. Per-user rate limiting on private routes (`0e9e8be`).
-
-- Forgot password, reset password — IP-level governor
-- Change password/username/email, delete user — burst 2, then 1 req/30min (keyed by user ID)
-- Card search — burst 20, then 1 req/10s (keyed by user ID)
-- General private routes — burst 500, 1 req/600ms (keyed by user ID)
-
----
-
-## GitHub Actions Node.js 20 Deprecation
-
-Actions running on Node.js 20 will be **forced to Node.js 24** starting **June 2, 2026**.
-All workflows already use latest major versions (`actions/checkout@v4`, `actions/cache@v4`, `actions/deploy-pages@v4`, `actions/upload-pages-artifact@v3`). No changes needed — just monitor for v5 releases before the deadline.
-
----
-
-## Deck View Enhancements
-
-1. ~~**Component extraction**~~ — done (`995dc9e8`, `7b8cf497`)
-2. ~~**Price stats**~~ — done (`9959dc16`)
-3. ~~**Buy deck links**~~ — done (`28326c10`)
+- [ ] Rethink the util bar — consider removing it and placing buttons in more natural-feeling locations per screen
+- [ ] Token counting chart on deck view screen
 
 ---
 
@@ -98,20 +78,6 @@ zwiper ──→ zwipe-core ←── zerver
 zweb  ──→ zwipe-core
 ```
 
-**What lives where after extraction:**
-
-| Crate | Owns |
-|-------|------|
-| `zwipe-core` | Domain types (newtypes, models, validation, error types), API contract types (request/response structs for HTTP endpoints — `Serialize`/`Deserialize` only) |
-| `zerver` | Inbound (Axum handlers, routes, middleware) + outbound (SQLx repos, Scryfall client). Maps between its own row/infra types and `zwipe-core` domain types. Owns `impl From<DomainError> for HttpError`, `impl sqlx::FromRow` via manual impls on its own row structs, etc. |
-| `zwiper` | Inbound (Dioxus screens/components) + outbound (HTTP client, keychain). Depends on `zwipe-core` only — no `zerver` dependency. |
-| `zweb` | Dioxus web pages. Depends on `zwipe-core` for password validation, and any other domain types it needs. |
-
-**Key decisions:**
-- **No feature flags in `zwipe-core`** — if something needs infrastructure deps (sqlx, axum) it stays in the adapter crate
-- **No `sqlx::FromRow` in core** — zerver's outbound layer defines its own row types and maps into core domain types (consistent with how all other types already work)
-- **API contracts live in core** — request/response structs like `DeleteUser { password }` and `UpdateDeckCard { update_quantity }` move from `zerver/inbound/http/handlers/` into core so both sides share them without zwiper depending on zerver
-
 **Migrate incrementally** — one module at a time, as each module is touched. Do not attempt a single large migration.
 
 **Done:**
@@ -135,14 +101,24 @@ Add a `context/architecture/structure.md` walking through the full directory tre
 
 ---
 
+## Maintenance
+
+- **GitHub Actions Node.js 20 deprecation** — forced to Node.js 24 on June 2, 2026. All workflows already on latest major versions. No action needed — monitor for v5 releases.
+
+---
+
 ## Recently Completed
 
-### Deck View Enhancements (2026-04-02)
+### Component Extraction & Deck Enhancements (2026-04-02)
 
 - [x] Extract deck view into profile, stats, and charts components (`995dc9e8`)
 - [x] Add deck price stats with currency selection chips — USD/EUR/TIX (`9959dc16`)
 - [x] Add buy deck links for TCGplayer and CardKingdom (`28326c10`)
 - [x] Extract shared CardFilterSheet component from add, view, and remove screens (`9e0c6044`)
+- [x] Extract CardInfoDisplay, CardSkeleton, DeckFormFields components (`249a6ed9`)
+- [x] Move extracted components into components/ directories (`0a5e6bf9`)
+- [x] Unify SwipeAction across add and remove screens, move to components (`2491c043`)
+- [x] Add deck tokens endpoint and display on deck cards screen (`b8026582`)
 
 ### zweb & README Updates (2026-04-01)
 
