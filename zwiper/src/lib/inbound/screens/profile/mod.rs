@@ -10,27 +10,23 @@ pub mod change_password;
 pub mod change_username;
 /// User preferences screen.
 pub mod preferences;
+/// Extracted components for the profile screen.
+mod components;
 
-use crate::inbound::components::alert_dialog::{
-    AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
-    AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
-};
+use components::delete_account_dialog::DeleteAccountDialog;
+use components::email_verification::EmailVerification;
+use components::logout_dialog::LogoutDialog;
 use crate::{
     inbound::{
-        components::auth::{bouncer::Bouncer, session_upkeep::Upkeep, signal_logout::SignalLogout},
+        components::auth::bouncer::Bouncer,
         router::Router,
     },
     outbound::client::{
-        auth::resend_verification::ClientResendEmailVerification,
-        user::delete_user::ClientDeleteUser,
         user::get_user::ClientGetUser,
         ZwipeClient,
     },
 };
-use zwipe::inbound::http::handlers::auth::delete_user::HttpDeleteUser;
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{use_toast, ToastOptions};
-use std::time::Duration;
 use zwipe::domain::auth::models::session::Session;
 
 /// User profile screen showing account details and management options.
@@ -41,14 +37,8 @@ pub fn Profile() -> Element {
 
     let mut show_logout_dialog = use_signal(|| false);
     let mut show_delete_dialog = use_signal(|| false);
-    let mut delete_countdown = use_signal(|| 5u8);
-    let mut delete_password = use_signal(String::new);
-    let mut is_deleting = use_signal(|| false);
-    let mut is_resending = use_signal(|| false);
-    let toast = use_toast();
 
     // Refresh user on every open so email_verified_at is current without re-login.
-    // peek() avoids a reactive subscription — runs once on mount, not on every session update.
     use_effect(move || {
         let Some(s) = session.peek().clone() else {
             return;
@@ -99,42 +89,9 @@ pub fn Profile() -> Element {
                                 class: "profile-row",
                                 span { class: "profile-row-label", "email" }
                                 div { class: "profile-row-value",
-                                    span { { s.user.email.to_string() } }
-                                    if s.user.email_verified_at.is_some() {
-                                        span { class: "badge-verified", "verified" }
-                                    } else {
-                                        span { class: "badge-unverified", "unverified" }
-                                        button {
-                                            class: "util-btn",
-                                            disabled: is_resending(),
-                                            onclick: move |evt| {
-                                                evt.stop_propagation();
-                                                is_resending.set(true);
-                                                spawn(async move {
-                                                    session.upkeep(client);
-                                                    let Some(s) = session() else {
-                                                        toast.error(
-                                                            "session expired — please log in again".to_string(),
-                                                            ToastOptions::default().duration(Duration::from_millis(5000)),
-                                                        );
-                                                        is_resending.set(false);
-                                                        return;
-                                                    };
-                                                    match client().resend_verification(&s).await {
-                                                        Ok(()) => toast.success(
-                                                            "verification email sent".to_string(),
-                                                            ToastOptions::default().duration(Duration::from_millis(3000)),
-                                                        ),
-                                                        Err(e) => toast.error(
-                                                            e.to_user_message(),
-                                                            ToastOptions::default().duration(Duration::from_millis(5000)),
-                                                        ),
-                                                    }
-                                                    is_resending.set(false);
-                                                });
-                                            },
-                                            if is_resending() { "sending..." } else { "resend" }
-                                        }
+                                    EmailVerification {
+                                        email: s.user.email.to_string(),
+                                        is_verified: s.user.email_verified_at.is_some(),
                                     }
                                     button {
                                         class: "util-btn",
@@ -178,100 +135,13 @@ pub fn Profile() -> Element {
                     }
                     button {
                         class: "util-btn",
-                        onclick: move |_| {
-                            delete_password.set(String::new());
-                            delete_countdown.set(5);
-                            show_delete_dialog.set(true);
-                            spawn(async move {
-                                for i in (0..5u8).rev() {
-                                    tokio::time::sleep(Duration::from_secs(1)).await;
-                                    delete_countdown.set(i);
-                                }
-                            });
-                        },
+                        onclick: move |_| show_delete_dialog.set(true),
                         "delete account"
                     }
                 }
 
-                AlertDialogRoot {
-                    open: show_logout_dialog(),
-                    on_open_change: move |open| show_logout_dialog.set(open),
-                    AlertDialogContent {
-                        AlertDialogTitle { "logout" }
-                        AlertDialogDescription { "are you sure you want to logout?" }
-                        AlertDialogActions {
-                            AlertDialogCancel {
-                                on_click: move |_| show_logout_dialog.set(false),
-                                "cancel"
-                            }
-                            AlertDialogAction {
-                                on_click: move |_| session.logout(client),
-                                "logout"
-                            }
-                        }
-                    }
-                }
-
-                AlertDialogRoot {
-                    open: show_delete_dialog(),
-                    on_open_change: move |open: bool| {
-                        if !open { show_delete_dialog.set(false); }
-                    },
-                    AlertDialogContent {
-                        AlertDialogTitle { "delete account" }
-                        AlertDialogDescription {
-                            "this will permanently delete your account, all decks, and all card data. this cannot be undone."
-                        }
-                        input {
-                            r#type: "password",
-                            class: "input",
-                            placeholder: "confirm your password",
-                            value: "{delete_password}",
-                            oninput: move |evt| {
-                                delete_password.set(evt.value());
-                            },
-                        }
-                        AlertDialogActions {
-                            AlertDialogCancel {
-                                on_click: move |_| show_delete_dialog.set(false),
-                                "cancel"
-                            }
-                            button {
-                                class: "alert-dialog-action-danger",
-                                disabled: delete_countdown() > 0 || is_deleting(),
-                                onclick: move |_| {
-                                    is_deleting.set(true);
-                                    let password = delete_password();
-                                    spawn(async move {
-                                        session.upkeep(client);
-                                        let Some(s) = session() else {
-                                            toast.error("session expired — please log in again".to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
-                                            is_deleting.set(false);
-                                            return;
-                                        };
-                                        match client().delete_user(HttpDeleteUser { password }, &s).await {
-                                            Ok(()) => {
-                                                show_delete_dialog.set(false);
-                                                session.logout(client);
-                                            }
-                                            Err(e) => {
-                                                toast.error(e.to_user_message(), ToastOptions::default().duration(Duration::from_millis(3000)));
-                                                is_deleting.set(false);
-                                            }
-                                        }
-                                    });
-                                },
-                                if delete_countdown() > 0 {
-                                    "delete ({delete_countdown()})"
-                                } else if is_deleting() {
-                                    "deleting..."
-                                } else {
-                                    "delete"
-                                }
-                            }
-                        }
-                    }
-                }
+                LogoutDialog { open: show_logout_dialog }
+                DeleteAccountDialog { open: show_delete_dialog }
             }
         }
     }
