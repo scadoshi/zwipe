@@ -1,3 +1,4 @@
+use super::card_info::{CardInfoDisplay, CardSkeleton};
 use crate::{
     inbound::{
         components::{
@@ -516,61 +517,11 @@ pub fn Add(deck_id: Uuid) -> Element {
                             }
                         }
 
-                        div { class: "card-info",
-                            if card.scryfall_data.prices.usd.is_some()
-                                || card.scryfall_data.prices.eur.is_some()
-                                || card.scryfall_data.prices.tix.is_some() {
-                                    {
-                                        let mut display: String = String::from("prices:");
-                                        let mut prices_count = 0;
-                                        if let Some(usd) = card.scryfall_data.prices.usd {
-                                            display.push_str(format!(" ${usd}").as_str());
-                                            prices_count += 1;
-                                        }
-                                        if let Some(eur) = card.scryfall_data.prices.eur {
-                                            if prices_count > 0 {
-                                                display.push_str(" |");
-                                            }
-                                            display.push_str(format!(" €{eur}").as_str());
-                                            prices_count += 1;
-                                        }
-                                        if let Some(tix) = card.scryfall_data.prices.tix {
-                                            if prices_count > 0 {
-                                                display.push_str(" |");
-                                            }
-                                            display.push_str(format!(" {tix} tix").as_str());
-                                        }
-                                        rsx! { span { "{display}" } }
-                                    }
-                            }
-                            span { "set: {card.scryfall_data.set_name.to_lowercase()}" }
-                            span { "released: {card.scryfall_data.released_at}" },
-                            if let Some(artist) = card.scryfall_data.artist && !artist.is_empty() {
-                                span { "artist: {artist.to_lowercase()}" }
-                            }
-                        }
+                        CardInfoDisplay { card: card.clone() }
                     } else if is_loading_cards() {
-                        div { class: "skeleton-card",
-                            div { class: "skeleton-image",
-                                div { class: "spinner" }
-                            }
-                            div { class: "skeleton-info",
-                                div { class: "skeleton-bar skeleton-bar-price" }
-                                div { class: "skeleton-bar skeleton-bar-set" }
-                                div { class: "skeleton-bar skeleton-bar-date" }
-                                div { class: "skeleton-bar skeleton-bar-artist" }
-                            }
-                        }
+                        CardSkeleton { is_loading: true }
                     } else {
-                        div { class: "skeleton-card",
-                            div { class: "skeleton-image", "no cards" }
-                            div { class: "skeleton-info",
-                                div { class: "skeleton-bar skeleton-bar-price" }
-                                div { class: "skeleton-bar skeleton-bar-set" }
-                                div { class: "skeleton-bar skeleton-bar-date" }
-                                div { class: "skeleton-bar skeleton-bar-artist" }
-                            }
-                        }
+                        CardSkeleton {}
                     }
 
                 }

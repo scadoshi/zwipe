@@ -23,3 +23,5 @@ mod deck_profile_section;
 mod deck_stats_section;
 /// Deck chart visualizations for the view screen.
 mod deck_charts;
+/// Shared format selector and commander search for create/edit screens.
+mod deck_form_fields;
