@@ -8,7 +8,7 @@ use crate::{
             },
         },
         screens::deck::card::{
-            action_history::{CARDS_WARNING_THRESHOLD, MAX_CARDS_IN_STACK, SwipeAction},
+            components::action_history::{CARDS_WARNING_THRESHOLD, MAX_CARDS_IN_STACK, SwipeAction},
             filter::card_filter_sheet::CardFilterSheet,
         },
     },
@@ -253,20 +253,15 @@ pub fn Add(deck_id: Uuid) -> Element {
         current_index.set(current_index() - 1);
 
         match action {
-            SwipeAction::Skip => {
+            SwipeAction::Skip(_) => {
                 // Just showing previous card - done!
                 toast.info(
                     "undid skip".to_string(),
                     ToastOptions::default().duration(Duration::from_millis(1500)),
                 );
             }
-            SwipeAction::Do => {
+            SwipeAction::Do(ref card) => {
                 // Need to delete from backend (undoing the add)
-                let Some(card) = current_card() else {
-                    toast.error("card not found".to_string(), ToastOptions::default());
-                    return;
-                };
-
                 session.upkeep(client);
                 let Some(session) = session() else {
                     toast.error("session expired".to_string(), ToastOptions::default());
@@ -480,14 +475,15 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 state: swipe_state,
                                 config: swipe_config,
                                 on_swipe_left: move |_| {
-                                    action_history.write().push(SwipeAction::Skip);
-                                    // Skip card - trigger exit animation
+                                    let Some(card) = current_card() else { return; };
+                                    action_history.write().push(SwipeAction::Skip(Box::new(card)));
                                     toast.info("skipped".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                     is_animating.set(true);
                                     animation_direction.set(Direction::Left);
                                 },
                                 on_swipe_right: move |_| {
-                                    action_history.write().push(SwipeAction::Do);
+                                    let Some(card) = current_card() else { return; };
+                                    action_history.write().push(SwipeAction::Do(Box::new(card)));
                                     // Add card to deck then trigger exit animation
                                     add_card_to_deck();
                                     toast.success("added to deck".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
@@ -517,7 +513,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             }
                         }
 
-                        CardInfoDisplay { card: card.clone() }
+                        CardInfoDisplay { card }
                     } else if is_loading_cards() {
                         CardSkeleton { is_loading: true }
                     } else {

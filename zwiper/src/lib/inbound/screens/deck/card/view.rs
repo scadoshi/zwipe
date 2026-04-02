@@ -276,7 +276,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         div { class: "card-group row-enter",
                             div { class: "card-group-header", "commander" }
                             CardRow {
-                                card: cmd.clone(),
+                                card: cmd,
                                 qty: 1,
                                 expanded_card,
                                 preview_image_url,

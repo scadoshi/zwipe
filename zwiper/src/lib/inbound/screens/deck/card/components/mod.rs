@@ -1,5 +1,7 @@
 //! Extracted components for card screens.
 
+/// Undo/redo action history for card swipe operations.
+pub(crate) mod action_history;
 /// Card info display and skeleton components.
 pub(crate) mod card_info;
 /// Expandable card row component.
