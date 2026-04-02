@@ -4,7 +4,7 @@ use crate::{API_BASE, Nav};
 
 /// Validate a candidate password against the shared password policy.
 fn validate_password(pw: &str) -> Option<String> {
-    zwipe_core::password::validate(pw).err().map(|e| e.to_string())
+    zwipe_core::domain::auth::password::validate(pw).err().map(|e| e.to_string())
 }
 
 #[derive(Serialize)]

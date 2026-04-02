@@ -7548,6 +7548,10 @@ dependencies = [
 name = "zwipe-core"
 version = "0.1.0"
 dependencies = [
+ "email_address",
+ "once_cell",
+ "serde",
+ "serde_json",
  "thiserror 2.0.18",
 ]
 

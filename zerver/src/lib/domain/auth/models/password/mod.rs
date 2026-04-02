@@ -50,7 +50,9 @@ use std::fmt::Display;
 
 // Re-export validation types from zwipe-core so downstream consumers
 // (handlers, services) can continue importing from this module.
-pub use zwipe_core::password::{InvalidPassword, SYMBOLS, TooFewUniqueChars, TooManyRepeats};
+pub use zwipe_core::domain::auth::password::{
+    InvalidPassword, SYMBOLS, TooFewUniqueChars, TooManyRepeats,
+};
 
 /// A validated password that meets all security policy requirements.
 ///
@@ -111,7 +113,7 @@ impl Password {
     /// ```
     pub fn new(raw: impl AsRef<str>) -> Result<Self, InvalidPassword> {
         let raw = raw.as_ref();
-        zwipe_core::password::validate(raw)?;
+        zwipe_core::domain::auth::password::validate(raw)?;
         Ok(Password(raw.to_string()))
     }
 
