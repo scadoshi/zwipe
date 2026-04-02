@@ -83,15 +83,21 @@ zweb  ──→ zwipe-core
 **Done:**
 - [x] Password validation + common password dictionary
 - [x] Add zweb to Cargo workspace (unified lockfile, workspace lints)
+- [x] Content moderation (`ContainsBadWord` trait + ban lists)
+- [x] `EmailAddress` re-export from `email_address` crate
+- [x] Newtypes: `Username`, `DeckName`, `Quantity`, `UpdateQuantity`
+- [x] User domain: `User`, `UserPreferences`, `UpdatePreferences`, `GetUser`
+- [x] Deck domain: `Format`, `DeckProfile`, `DeckCard`, `DeckWarning`, all request types
+- [x] Organize `requests/` subdirectories for user and deck modules
+- [x] Remove redundant custom SQLx `Type/Encode/Decode` impls for `Format` (see `architecture/decisions.md`)
 
-**Next natural candidates** (do when touched, not proactively):
-- [ ] `EmailAddress` newtype
-- [ ] `Username` newtype
-- [ ] Shared error types
-- [ ] Card domain types (models, filter builders, `ScryffallData` without sqlx derives)
-- [ ] API contract types (HTTP request/response structs currently in `zerver/inbound/http/handlers/`)
+**Next:**
+- [ ] Remove remaining custom SQLx impls on card domain types (Rarity, Colors, Legalities, Prices, CardFaces, AllParts, ImageUris) — replace with `Json<T>` wrapper and `String` + `TryFrom` in adapter layer
+- [ ] Card domain types → zwipe-core (blocked until SQLx impls are removed)
+- [ ] `Deck`, `DeckEntry` aggregate → zwipe-core (blocked on Card types)
+- [ ] `validate_deck()` → zwipe-core (blocked on Card types)
 - [ ] Auth domain types (`Session`, token models)
-- [ ] Deck domain types (models, validation)
+- [ ] API contract types (HTTP request/response structs)
 
 ---
 
