@@ -4,6 +4,8 @@
 
 /// Expandable accordion component.
 pub mod accordion;
+/// Slide-up bottom sheet overlay component.
+pub mod bottom_sheet;
 /// Modal alert/confirmation dialog component.
 pub mod alert_dialog;
 /// Authentication-related components (login form, register form).
