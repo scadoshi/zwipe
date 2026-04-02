@@ -16,3 +16,10 @@ pub mod import;
 pub mod list;
 /// View deck details screen.
 pub mod view;
+
+/// Deck profile info and warnings section for the view screen.
+mod deck_profile_section;
+/// Deck stats summary section for the view screen.
+mod deck_stats_section;
+/// Deck chart visualizations for the view screen.
+mod deck_charts;

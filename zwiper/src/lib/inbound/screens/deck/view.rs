@@ -1,3 +1,6 @@
+use super::deck_charts::{abbreviate_color, abbreviate_type, DeckCharts, ManaBalanceRow};
+use super::deck_profile_section::DeckProfileSection;
+use super::deck_stats_section::DeckStatsSection;
 use crate::inbound::components::alert_dialog::{
     AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
     AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
@@ -31,6 +34,8 @@ use zwipe::{
     },
     inbound::http::ApiError,
 };
+
+type DeckResult = Result<(Vec<DeckEntry>, Vec<DeckWarning>), ApiError>;
 
 #[component]
 pub fn ViewDeck(deck_id: Uuid) -> Element {
@@ -70,7 +75,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 .await
                 .map(Some)
         });
-    let deck_resource: Resource<Result<(Vec<DeckEntry>, Vec<DeckWarning>), ApiError>> =
+    let deck_resource: Resource<DeckResult> =
         use_resource(move || async move {
             session.upkeep(client);
             let Some(session) = session() else {
@@ -168,7 +173,6 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             .collect()
     });
 
-    // (short_name, consumed, produced, bar_fill_pct, is_surplus)
     let mana_balance_rows = metrics.as_ref().map(|m| -> Vec<_> {
             let labels = ["W", "U", "B", "R", "G"];
             labels
@@ -183,7 +187,13 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                         0
                     };
                     let is_surplus = produced >= consumed;
-                    (*label, *consumed, *produced, fill_pct, is_surplus)
+                    ManaBalanceRow {
+                        label,
+                        consumed: *consumed,
+                        produced: *produced,
+                        fill_pct,
+                        is_surplus,
+                    }
                 })
                 .collect()
         });
@@ -201,162 +211,23 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                         Some(Ok(deck_profile)) => rsx! {
                             div { class: "content-enter",
                                   style: "width: calc(100% - 4rem); display: flex; flex-direction: column; gap: 1rem; padding: 1rem 0;",
-                                label { class: "label", "profile" }
-                                div { class: "info-list",
-                                    div { class: "info-row",
-                                        span { class: "info-row-label", "name" }
-                                        span { class: "info-row-value", "{deck_profile.name}" }
-                                    }
-                                    div { class: "info-row",
-                                        span { class: "info-row-label", "format" }
-                                        span { class: "info-row-value",
-                                            if let Some(fmt) = deck_profile.format {
-                                                { fmt.display_name().to_lowercase() }
-                                            } else {
-                                                "none"
-                                            }
-                                        }
-                                    }
-                                    if deck_profile.format.is_some_and(|f| f.has_commander()) {
-                                        div { class: "info-row",
-                                            span { class: "info-row-label", "commander" }
-                                            span { class: "info-row-value",
-                                                if let Some(cmd) = commander() {
-                                                    { cmd.scryfall_data.name.to_lowercase() }
-                                                } else {
-                                                    "none"
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                if !warnings.is_empty() {
-                                    label { class: "label", "warnings" }
-                                    div { class: "info-list",
-                                        style: "border-color: var(--border-warning);",
-                                        for warning in warnings.iter() {
-                                            div { class: "info-row",
-                                                style: "justify-content: flex-start; gap: 0.5rem;",
-                                                span { class: "text-muted", "{warning.to_lowercase()}" }
-                                            }
-                                        }
-                                    }
+                                DeckProfileSection {
+                                    deck_profile: deck_profile,
+                                    commander: commander(),
+                                    warnings: warnings,
                                 }
 
                                 if let (Some(m), Some(mana_curve_bars)) = (metrics.as_ref(), mana_curve_bars.as_ref()) {
                                   div { class: "content-enter",
-                                    label { class: "label", "stats" }
-                                    div { class: "info-list",
-                                        div { class: "info-row",
-                                            span { class: "info-row-label", "cards" }
-                                            span { class: "info-row-value", "{m.total_cards}" }
-                                        }
-                                        div { class: "info-row",
-                                            span { class: "info-row-label", "avg cmc" }
-                                            span { class: "info-row-value", "{m.avg_cmc:.1}" }
-                                        }
-                                        div { class: "info-row",
-                                            span { class: "info-row-label", "lands" }
-                                            span { class: "info-row-value", "{m.land_count}" }
-                                        }
+                                    DeckStatsSection {
+                                        metrics: m.clone(),
                                     }
 
-                                    // ── mana curve ─────────────────────────────────
-                                    label { class: "label", "mana curve" }
-                                    div { style: "width:100%;border:1px solid var(--border-secondary);border-radius:0.5rem;padding:0.75rem;margin-bottom:0.5rem;",
-                                        div { style: "display:flex;align-items:flex-end;gap:0.25rem;height:6rem;",
-                                            for (count, pct) in mana_curve_bars.iter() {
-                                                div { style: "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:0.15rem;",
-                                                    if *count > 0 {
-                                                        span { style: "font-size:0.6rem;font-family:monospace;opacity:0.5;line-height:1;", "{count}" }
-                                                    }
-                                                    div { style: format!("width:100%;height:{pct}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem 0.15rem 0 0;") }
-                                                }
-                                            }
-                                        }
-                                        div { style: "display:flex;gap:0.25rem;margin-top:0.35rem;",
-                                            for label in ["0","1","2","3","4","5","6+"] {
-                                                span { style: "flex:1;text-align:center;font-size:0.65rem;font-family:monospace;opacity:0.5;", "{label}" }
-                                            }
-                                        }
-                                    }
-
-                                    // ── types ──────────────────────────────────────
-                                    if let Some(type_bars) = type_bars.as_ref() {
-                                        label { class: "label", "basic type distribution" }
-                                        div { style: "width:100%;border:1px solid var(--border-secondary);border-radius:0.5rem;padding:0.75rem;margin-bottom:0.5rem;",
-                                            div { style: "display:flex;align-items:flex-end;gap:0.25rem;height:6rem;",
-                                                for (_label, count, pct) in type_bars.iter() {
-                                                    div { style: "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:0.15rem;",
-                                                        if *count > 0 {
-                                                            span { style: "font-size:0.6rem;font-family:monospace;opacity:0.5;line-height:1;", "{count}" }
-                                                        }
-                                                        div { style: format!("width:100%;height:{pct}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem 0.15rem 0 0;") }
-                                                    }
-                                                }
-                                            }
-                                            div { style: "display:flex;gap:0.25rem;margin-top:0.35rem;",
-                                                for (label, _count, _pct) in type_bars.iter() {
-                                                    span { style: "flex:1;text-align:center;font-size:0.65rem;font-family:monospace;opacity:0.5;", "{label}" }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    // ── colors ─────────────────────────────────────
-                                    if let Some(color_bars) = color_bars.as_ref() {
-                                        label { class: "label", "color distribution" }
-                                        div { style: "width:100%;border:1px solid var(--border-secondary);border-radius:0.5rem;padding:0.75rem;margin-bottom:0.5rem;",
-                                            div { style: "display:flex;align-items:flex-end;gap:0.25rem;height:6rem;",
-                                                for (_label, count, pct) in color_bars.iter() {
-                                                    div { style: "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:0.15rem;",
-                                                        if *count > 0 {
-                                                            span { style: "font-size:0.6rem;font-family:monospace;opacity:0.5;line-height:1;", "{count}" }
-                                                        }
-                                                        div { style: format!("width:100%;height:{pct}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem 0.15rem 0 0;") }
-                                                    }
-                                                }
-                                            }
-                                            div { style: "display:flex;gap:0.25rem;margin-top:0.35rem;",
-                                                for (label, _count, _pct) in color_bars.iter() {
-                                                    span { style: "flex:1;text-align:center;font-size:0.65rem;font-family:monospace;opacity:0.5;", "{label}" }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    // ── mana balance ───────────────────────────────
-                                    if let Some(rows) = mana_balance_rows.as_ref() {
-                                        if !rows.is_empty() {
-                                            label { class: "label", "mana cost fulfillment" }
-                                            div { style: "width:100%;border:1px solid var(--border-secondary);border-radius:0.5rem;padding:0.75rem;margin-bottom:0.5rem;display:flex;flex-direction:column;gap:0.4rem;",
-                                                for (color_label, consumed, produced, fill_pct, is_surplus) in rows {
-                                                    div { style: "display:flex;align-items:center;gap:0.5rem;",
-                                                        // Color initial
-                                                        span { style: "width:1ch;font-family:monospace;font-size:0.75rem;opacity:0.8;",
-                                                            "{color_label}"
-                                                        }
-                                                        // Bar track
-                                                        div { style: "flex:1;height:1rem;background:var(--border-secondary);border-radius:0.15rem;overflow:hidden;",
-                                                            div {
-                                                                style: format!(
-                                                                    "height:100%;width:{fill_pct}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem;"
-                                                                ),
-                                                            }
-                                                        }
-                                                        // Surplus indicator
-                                                        span { style: "font-family:monospace;font-size:0.75rem;opacity:0.5;width:1.25rem;text-align:center;flex-shrink:0;",
-                                                            if *is_surplus { "✔" } else { "" }
-                                                        }
-                                                        // Counts
-                                                        span { style: "font-family:monospace;font-size:0.75rem;opacity:0.5;white-space:nowrap;width:6ch;text-align:right;flex-shrink:0;",
-                                                            "{produced}/{consumed}"
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
+                                    DeckCharts {
+                                        mana_curve_bars: *mana_curve_bars,
+                                        type_bars: type_bars.clone(),
+                                        color_bars: color_bars.clone(),
+                                        mana_balance_rows: mana_balance_rows,
                                     }
                                   }
                                 }
@@ -447,32 +318,5 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             }
             }
         }
-    }
-}
-
-fn abbreviate_type(label: &str) -> &str {
-    match label {
-        "lands" => "lands",
-        "creatures" => "creat",
-        "planeswalkers" => "plnsw",
-        "artifacts" => "artif",
-        "enchantments" => "enchn",
-        "instants" => "instn",
-        "sorceries" => "sorcr",
-        "other" => "other",
-        _ => label,
-    }
-}
-
-fn abbreviate_color(label: &str) -> &str {
-    match label {
-        "white" => "white",
-        "blue" => "blue",
-        "black" => "black",
-        "red" => "red",
-        "green" => "green",
-        "multicolor" => "multi",
-        "colorless" => "clrls",
-        _ => label,
     }
 }
