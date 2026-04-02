@@ -26,19 +26,78 @@ Full iOS signing + deploy reference: `ops/ios/`.
 
 ---
 
-## Shared Models: zwiper imports from zerver
+## Shared Models: zwipe-core as shared domain crate
 
-**Decided: early development.**
+**Decided: early development. Revised: 2026-04-02.**
 
-Both zerver and zwiper need the same domain types (User, Deck, Card, request/response structs). Three options were considered:
+Both zerver and zwiper need the same domain types (User, Deck, Card, request/response structs). Originally zwiper imported directly from zerver with `default-features = false`. This worked but created a backwards dependency (client → server) pulling ~17 unnecessary transitive deps.
 
-1. Separate shared library (`ztructs`) — clean but breaks the domain-first workflow, requires three-way coordination
-2. Shared library with feature flags — same problems
-3. **zwiper imports directly from zerver** ← chosen
+**Current approach**: `zwipe-core` is a pure shared domain crate. Both zerver and zwiper depend on it:
 
-The insight: zerver IS the domain layer. In hexagonal architecture, adapters depend on the domain — and zwiper is just another adapter (the UI adapter). The `#[cfg(feature = "zerver")]` flag hides server-only code (SQLx, Axum) from the frontend build.
+```
+zwiper ──→ zwipe-core ←── zerver
+zweb   ──→ zwipe-core
+```
 
-**Result**: single source of truth, no extraction work, no duplication. `zwiper/Cargo.toml` depends on `zerver` without the `zerver` feature.
+**Rules for zwipe-core:**
+- No feature flags, no conditional compilation
+- No server-only dependencies (sqlx, anyhow, argon2, axum, tokio)
+- Only types genuinely shared between frontend and backend
+- All domain validation and tests live in core; zerver re-exports via `pub use`
+- Service-layer errors (wrapping `anyhow::Error`) stay in zerver — the frontend never sees them
+
+**What lives in zwipe-core:** domain entities (User, DeckProfile, DeckCard), value objects (Username, DeckName, Quantity, Format, DeckWarning), request types (CreateDeckProfile, UpdateDeckCard, etc.), validation errors, content moderation, password validation.
+
+**What stays in zerver:** service-layer errors, port traits, service implementations, database adapters, HTTP handlers/routes, any type that requires server-only dependencies.
+
+Zerver files for extracted types become one-liners: `pub use zwipe_core::domain::deck::format::*;`
+
+---
+
+## Database Adapter Pattern: No Custom SQLx Impls on Domain Types
+
+**Decided: 2026-04-02.**
+
+Domain types must NOT have custom `impl Type<Postgres>`, `impl Encode`, or `impl Decode` — even if the impl code lives in the adapter layer (`outbound/sqlx/`). This is both an architectural choice and a Rust compiler requirement.
+
+### Why
+
+**Rust's orphan rule** prevents implementing a foreign trait (like `sqlx::Type`) on a type from another crate. If `Format` lives in `zwipe-core`, zerver cannot `impl Type<Postgres> for Format` — neither the trait nor the type is local to zerver.
+
+But even without the orphan rule, custom SQLx impls on domain types are the wrong pattern. Domain types shouldn't know how they're persisted. The database is an adapter — it should handle its own serialization.
+
+### Pattern
+
+Use intermediate `Database*` structs with primitive fields that SQLx understands natively, then convert at the boundary:
+
+```rust
+// outbound/sqlx/deck/models.rs — the adapter layer
+#[derive(FromRow)]
+struct DatabaseDeckProfile {
+    pub format: Option<String>,   // ← primitive, SQLx handles natively
+    pub name: String,
+    // ...
+}
+
+impl TryFrom<DatabaseDeckProfile> for DeckProfile {
+    fn try_from(db: DatabaseDeckProfile) -> Result<Self, _> {
+        let format = db.format.map(Format::try_from).transpose()?;
+        let name = DeckName::new(db.name)?;
+        // ...
+    }
+}
+```
+
+For **enums** (Format, Rarity): store as `String` (TEXT column), convert with `TryFrom<&str>` / `to_legality_key()`.
+
+For **JSONB types** (Colors, Legalities, Prices, CardFaces): use `sqlx::types::Json<T>` wrapper in queries, which works automatically with any `Serialize + Deserialize` type. No custom impls needed.
+
+### Result
+
+- Domain types are portable across crates (no orphan rule conflicts)
+- Database serialization is explicit and visible in the adapter layer
+- Correct hexagonal architecture — the domain doesn't depend on infrastructure
+- Existing `Database*` wrapper types (DatabaseUser, DatabaseDeckProfile, etc.) already followed this pattern; custom SQLx impls were redundant
 
 ---
 
