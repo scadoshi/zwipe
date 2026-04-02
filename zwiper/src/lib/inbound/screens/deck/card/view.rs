@@ -386,6 +386,9 @@ pub fn View(deck_id: Uuid) -> Element {
                     class: "util-btn",
                     onclick: move |_| filters_overlay_open.set(true),
                     "filter"
+                    if !filter_builder.read().is_empty() {
+                        span { class: "filter-dot" }
+                    }
                 }
                 if !filter_builder.read().is_empty() {
                     button {
