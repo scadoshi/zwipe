@@ -87,47 +87,9 @@ pub(crate) fn DeckFields(
             placeholder: "deck name",
         }
 
-        // format selector (chips)
-        div { class: "mb-4",
-            div { class: "label-row",
-                label { class: "label", "format" }
-                if selected_format().is_some() {
-                    button {
-                        class: "clear-btn",
-                        onclick: move |_| {
-                            selected_format.set(None);
-                            commander.set(None);
-                            commander_display.set(String::new());
-                        },
-                        "\u{00d7}"
-                    }
-                }
-            }
-            div { class: "flex flex-wrap gap-1 flex-center",
-                for fmt in Format::all().iter().copied() {
-                    div {
-                        class: if selected_format() == Some(fmt) { "chip selected" } else { "chip" },
-                        onclick: move |_| {
-                            if selected_format() == Some(fmt) {
-                                selected_format.set(None);
-                                commander.set(None);
-                                commander_display.set(String::new());
-                            } else {
-                                selected_format.set(Some(fmt));
-                                if !fmt.has_commander() {
-                                    commander.set(None);
-                                    commander_display.set(String::new());
-                                }
-                            }
-                        },
-                        { fmt.display_name().to_lowercase() }
-                    }
-                }
-            }
-        }
 
         // commander selector
-        div { class: "mb-4",
+        div { class: "",
             div { class: "label-row",
                 label {
                     class: if commander_enabled() { "label" } else { "label text-muted" },
@@ -186,6 +148,45 @@ pub(crate) fn DeckFields(
                                 { card.scryfall_data.name.to_lowercase() }
                             }
                         }
+                    }
+                }
+            }
+        }
+
+        // format selector (chips)
+        div { class: "mb-4",
+            div { class: "label-row",
+                label { class: "label", "format" }
+                if selected_format().is_some() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| {
+                            selected_format.set(None);
+                            commander.set(None);
+                            commander_display.set(String::new());
+                        },
+                        "\u{00d7}"
+                    }
+                }
+            }
+            div { class: "flex flex-wrap gap-1 flex-center",
+                for fmt in Format::all().iter().copied() {
+                    div {
+                        class: if selected_format() == Some(fmt) { "chip selected" } else { "chip" },
+                        onclick: move |_| {
+                            if selected_format() == Some(fmt) {
+                                selected_format.set(None);
+                                commander.set(None);
+                                commander_display.set(String::new());
+                            } else {
+                                selected_format.set(Some(fmt));
+                                if !fmt.has_commander() {
+                                    commander.set(None);
+                                    commander_display.set(String::new());
+                                }
+                            }
+                        },
+                        { fmt.display_name().to_lowercase() }
                     }
                 }
             }
