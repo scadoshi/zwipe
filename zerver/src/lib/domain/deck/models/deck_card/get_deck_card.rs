@@ -1,13 +1,11 @@
-use thiserror::Error;
+//! Get deck card operation.
+//!
+//! Re-exported from `zwipe_core`. Service-layer error type remains here.
 
-#[allow(missing_docs)]
-#[derive(Debug, Error)]
-pub enum InvalidGetDeckCard {
-    #[error(transparent)]
-    DeckId(uuid::Error),
-    #[error(transparent)]
-    ScryfallDataId(uuid::Error),
-}
+pub use zwipe_core::domain::deck::requests::get_deck_card::*;
+
+#[cfg(feature = "zerver")]
+use thiserror::Error;
 
 #[allow(missing_docs)]
 #[cfg(feature = "zerver")]

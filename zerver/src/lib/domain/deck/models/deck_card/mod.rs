@@ -11,24 +11,4 @@ pub mod quantity;
 /// Update card quantity in deck operation.
 pub mod update_deck_card;
 
-use crate::domain::deck::models::deck_card::quantity::Quantity;
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-
-/// A card in a deck (join table entity).
-///
-/// Represents the many-to-many relationship between decks and cards.
-/// Each entry specifies which card, in which deck, and how many copies.
-///
-/// # Quantity Limits
-///
-/// Quantity is validated to be between 1 and 99.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DeckCard {
-    /// The deck containing this card.
-    pub deck_id: Uuid,
-    /// The card (Scryfall data ID).
-    pub scryfall_data_id: Uuid,
-    /// How many copies (1-99, validated against deck copy limit).
-    pub quantity: Quantity,
-}
+pub use zwipe_core::domain::deck::deck_card::*;

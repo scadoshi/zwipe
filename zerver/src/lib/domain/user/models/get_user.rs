@@ -2,7 +2,7 @@
 //!
 //! Request type re-exported from `zwipe_core`. Service-layer error type remains here.
 
-pub use zwipe_core::domain::user::get_user::*;
+pub use zwipe_core::domain::user::requests::get_user::*;
 
 #[cfg(feature = "zerver")]
 use thiserror::Error;

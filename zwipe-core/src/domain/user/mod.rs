@@ -1,8 +1,8 @@
-pub mod get_user;
 pub mod preferences;
+pub mod requests;
 pub mod username;
 
-pub use get_user::GetUser;
+pub use requests::*;
 pub use preferences::{
     ALLOWED_THEMES, DARK_ONLY_THEMES, InvalidUpdatePreferences, UpdatePreferences, UserPreferences,
 };

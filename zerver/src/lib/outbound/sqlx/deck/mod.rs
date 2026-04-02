@@ -2,8 +2,6 @@
 
 /// SQLx error-to-domain error mappings and intermediate conversion errors.
 pub mod error;
-/// Format enum SQLx type mapping.
-pub mod format;
 /// Query-based deck ownership verification.
 pub mod helper;
 /// Database-to-domain deck model conversions.
