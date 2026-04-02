@@ -1,15 +1,8 @@
 use dioxus::prelude::*;
-use zwipe::domain::{
-    card::models::Card,
-    deck::models::deck::{deck_profile::DeckProfile, deck_warning::DeckWarning},
-};
+use zwipe::domain::{card::models::Card, deck::models::deck::deck_profile::DeckProfile};
 
 #[component]
-pub(crate) fn DeckProfileSection(
-    deck_profile: DeckProfile,
-    commander: Option<Card>,
-    warnings: Vec<DeckWarning>,
-) -> Element {
+pub(crate) fn DeckProfileSection(deck_profile: DeckProfile, commander: Option<Card>) -> Element {
     rsx! {
         label { class: "label", "profile" }
         div { class: "info-list",
@@ -36,19 +29,6 @@ pub(crate) fn DeckProfileSection(
                         } else {
                             "none"
                         }
-                    }
-                }
-            }
-        }
-
-        if !warnings.is_empty() {
-            label { class: "label", "warnings" }
-            div { class: "info-list",
-                style: "border-color: var(--border-warning);",
-                for warning in warnings.iter() {
-                    div { class: "info-row",
-                        style: "justify-content: flex-start; gap: 0.5rem;",
-                        span { class: "text-muted", "{warning.to_lowercase()}" }
                     }
                 }
             }
