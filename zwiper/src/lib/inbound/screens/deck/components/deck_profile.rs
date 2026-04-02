@@ -5,7 +5,7 @@ use zwipe::domain::{
 };
 
 #[component]
-pub(super) fn DeckProfileSection(
+pub(crate) fn DeckProfileSection(
     deck_profile: DeckProfile,
     commander: Option<Card>,
     warnings: Vec<DeckWarning>,

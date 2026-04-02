@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 use zwipe::domain::deck::models::deck_metrics::DeckMetrics;
 
 #[component]
-pub(super) fn DeckStatsSection(metrics: DeckMetrics) -> Element {
+pub(crate) fn DeckStats(metrics: DeckMetrics) -> Element {
     let mut selected_currency = use_signal(|| "usd");
 
     let (total, avg, symbol) = match selected_currency() {

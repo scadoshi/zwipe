@@ -1,12 +1,9 @@
 //! Edit deck screen.
 
-use super::deck_form_fields::DeckFormFields;
+use super::components::deck_fields::DeckFields;
 use crate::{
     inbound::{
-        components::{
-            auth::{bouncer::Bouncer, session_upkeep::Upkeep},
-            fields::text_input::TextInput,
-        },
+        components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
         router::Router,
     },
     outbound::client::{
@@ -195,17 +192,11 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                     match &*original_deck_resource.read() {
                         Some(Ok(_deck)) => rsx! {
                             form { class: "flex-col text-center",
-                                TextInput {
-                                    label: "deck name",
-                                    value: deck_name,
-                                    id: "deck_name",
-                                    placeholder: "deck name",
-                                }
-
-                                DeckFormFields {
-                                    selected_format: selected_format,
-                                    commander: commander,
-                                    commander_display: commander_display,
+                                DeckFields {
+                                    deck_name,
+                                    selected_format,
+                                    commander,
+                                    commander_display,
                                 }
 
                             }

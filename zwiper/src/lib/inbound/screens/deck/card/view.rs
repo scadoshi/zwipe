@@ -1,3 +1,5 @@
+use super::components::card_row::CardRow;
+use super::components::image_preview::ImagePreview;
 use crate::{
     inbound::{
         components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
@@ -18,13 +20,11 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::collections::HashMap;
 use std::time::Duration;
-use tokio::time::sleep;
 use uuid::Uuid;
 use zwipe::domain::{
     auth::models::session::Session,
     card::models::{
         Card,
-        scryfall_data::image_uris::ImageUris,
         search_card::{
             card_filter::builder::CardFilterBuilder,
             filter_cards::{FilterCards, SortCards},
@@ -72,9 +72,9 @@ pub fn View(deck_id: Uuid) -> Element {
     let mut show_lands: Signal<bool> = use_signal(|| false);
 
     // Card image preview — stores the image URL of the card to preview (None = closed)
-    let mut preview_image_url: Signal<Option<String>> = use_signal(|| None);
+    let preview_image_url: Signal<Option<String>> = use_signal(|| None);
     // Controls the dismiss animation before clearing the URL
-    let mut preview_dismissing: Signal<bool> = use_signal(|| false);
+    let preview_dismissing: Signal<bool> = use_signal(|| false);
 
     // Effect 1 — mount load (reads `session` reactively)
     // Fetches deck cards, separates the commander into its own pinned slot.
@@ -275,82 +275,12 @@ pub fn View(deck_id: Uuid) -> Element {
                     if let Some(cmd) = displayed_commander() {
                         div { class: "card-group row-enter",
                             div { class: "card-group-header", "commander" }
-                            {
-                                let card_id = cmd.scryfall_data.id;
-                                let is_expanded = expanded_card() == Some(card_id);
-                                let sd = &cmd.scryfall_data;
-                                let name = sd.name.to_lowercase();
-                                let cmc_display = sd.cmc
-                                    .map(|c| {
-                                        let floored = c.floor() as i64;
-                                        if c == c.floor() { format!("{floored}") } else { format!("{c}") }
-                                    })
-                                    .unwrap_or_default();
-                                let pt_display = match (&sd.power, &sd.toughness) {
-                                    (Some(p), Some(t)) => format!("{p}/{t}"),
-                                    _ => String::new(),
-                                };
-                                let color_display = sd.color_identity
-                                    .iter()
-                                    .map(|c| format!("{{{}}}", c.to_short_name()))
-                                    .collect::<Vec<_>>()
-                                    .join("");
-                                let oracle_text = sd.oracle_text.clone().unwrap_or_default().to_lowercase();
-                                let type_line = sd.type_line.clone().unwrap_or_default().to_lowercase();
-                                let rarity_name = sd.rarity.to_long_name().to_lowercase();
-                                let set_name = sd.set_name.clone().to_lowercase();
-                                rsx! {
-                                    div {
-                                        key: "{card_id}",
-                                        class: if is_expanded { "card-row expanded" } else { "card-row" },
-                                        onclick: move |_| {
-                                            if expanded_card() == Some(card_id) {
-                                                expanded_card.set(None);
-                                            } else {
-                                                expanded_card.set(Some(card_id));
-                                            }
-                                        },
-                                        div { class: "card-row-compact",
-                                            span { class: "card-row-qty", "1" }
-                                            span { class: "card-row-name", "{name}" }
-                                            span { class: "card-row-cmc", "{cmc_display}" }
-                                            span { class: "card-row-pt", "{pt_display}" }
-                                            span { class: "card-row-colors", "{color_display}" }
-                                        }
-                                        if is_expanded {
-                                            div { class: "card-row-detail",
-                                                p { style: "margin-bottom:0.35rem;word-break:break-word;white-space:normal;", "{name}" }
-                                                if !type_line.is_empty() {
-                                                    span { class: "opacity-50", style: "display:block;margin-bottom:0.5rem;", "{type_line}" }
-                                                }
-                                                if !oracle_text.is_empty() {
-                                                    p { class: "card-detail-oracle", "{oracle_text}" }
-                                                }
-                                                div { class: "card-detail-meta",
-                                                    span { "{rarity_name} | {set_name}" }
-                                                }
-                                                if let Some(ImageUris { large: Some(url), .. }) = &sd.image_uris {
-                                                    {
-                                                        let url = url.clone();
-                                                        rsx! {
-                                                            div { class: "qty-row",
-                                                                button {
-                                                                    class: "qty-btn-remove",
-                                                                    onclick: move |evt| {
-                                                                        evt.stop_propagation();
-                                                                        preview_image_url.set(Some(url.clone()));
-                                                                        preview_dismissing.set(false);
-                                                                    },
-                                                                    "image"
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                            CardRow {
+                                card: cmd.clone(),
+                                qty: 1,
+                                expanded_card,
+                                preview_image_url,
+                                preview_dismissing,
                             }
                         }
                     }
@@ -364,123 +294,22 @@ pub fn View(deck_id: Uuid) -> Element {
                             };
                             rsx! {
                         div { class: "card-group row-enter",
-                            // Group header
                             div { class: "card-group-header",
                                 "{group.label} ({qty_count})"
                             }
-
-                            // Card rows
                             for card in group.cards.iter() {
                                 {
                                     let card_id = card.scryfall_data.id;
-                                    let is_expanded = expanded_card() == Some(card_id);
-                                    let sd = &card.scryfall_data;
-
-                                    let name = sd.name.to_lowercase();
-                                    let cmc_display = sd.cmc
-                                        .map(|c| {
-                                            let floored = c.floor() as i64;
-                                            if c == c.floor() {
-                                                format!("{floored}")
-                                            } else {
-                                                format!("{c}")
-                                            }
-                                        })
-                                        .unwrap_or_default();
-
-                                    let pt_display = match (&sd.power, &sd.toughness) {
-                                        (Some(p), Some(t)) => format!("{p}/{t}"),
-                                        _ => String::new(),
-                                    };
-
-                                    let color_display = sd.color_identity
-                                        .iter()
-                                        .map(|c| format!("{{{}}}", c.to_short_name()))
-                                        .collect::<Vec<_>>()
-                                        .join("");
-
-                                    // Expanded details
-                                    let oracle_text = sd.oracle_text.clone().unwrap_or_default().to_lowercase();
-                                    let type_line = sd.type_line.clone().unwrap_or_default().to_lowercase();
-                                    let is_basic_land = sd.is_basic_land();
-                                    let rarity_name = sd.rarity.to_long_name().to_lowercase();
-                                    let set_name = sd.set_name.clone().to_lowercase();
-
+                                    let is_basic_land = card.scryfall_data.is_basic_land();
+                                    let qty = quantity_map().get(&card_id).copied().unwrap_or(1);
                                     rsx! {
-                                        div {
-                                            key: "{card_id}",
-                                            class: if is_expanded { "card-row expanded" } else { "card-row" },
-                                            onclick: move |_| {
-                                                if expanded_card() == Some(card_id) {
-                                                    expanded_card.set(None);
-                                                } else {
-                                                    expanded_card.set(Some(card_id));
-                                                }
-                                            },
-
-                                            // Compact row
-                                            div { class: "card-row-compact",
-                                                span { class: "card-row-qty",
-                                                    "{quantity_map().get(&card_id).copied().unwrap_or(1)}"
-                                                }
-                                                span { class: "card-row-name", "{name}" }
-                                                span { class: "card-row-cmc", "{cmc_display}" }
-                                                span { class: "card-row-pt", "{pt_display}" }
-                                                span { class: "card-row-colors", "{color_display}" }
-                                            }
-
-                                            // Expanded detail
-                                            if is_expanded {
-                                                div { class: "card-row-detail",
-                                                    p { style: "margin-bottom:0.35rem;word-break:break-word;white-space:normal;", "{name}" }
-                                                    if !type_line.is_empty() {
-                                                        span { class: "opacity-50", style: "display:block;margin-bottom:0.5rem;", "{type_line}" }
-                                                    }
-                                                    if !oracle_text.is_empty() {
-                                                        p { class: "card-detail-oracle", "{oracle_text}" }
-                                                    }
-                                                    div { class: "card-detail-meta",
-                                                        span { "{rarity_name} | {set_name}" }
-                                                    }
-                                                    // Quantity controls
-                                                    {
-                                                        let qty = quantity_map().get(&card_id).copied().unwrap_or(1);
-                                                        let image_url: Option<String> = sd.image_uris.as_ref().and_then(|iu| iu.large.clone());
-                                                        rsx! {
-                                                            div { class: "qty-row",
-                                                                if let Some(url) = image_url {
-                                                                    button {
-                                                                        class: "qty-btn",
-                                                                        onclick: move |evt| {
-                                                                            evt.stop_propagation();
-                                                                            preview_image_url.set(Some(url.clone()));
-                                                                            preview_dismissing.set(false);
-                                                                        },
-                                                                        "image"
-                                                                    }
-                                                                }
-                                                                button {
-                                                                    class: "qty-btn",
-                                                                    onclick: move |evt| {
-                                                                        evt.stop_propagation();
-                                                                        change_quantity(card_id, -1, is_basic_land);
-                                                                    },
-                                                                    "-"
-                                                                }
-                                                                span { class: "qty-label", "{qty}" }
-                                                                button {
-                                                                    class: "qty-btn",
-                                                                    onclick: move |evt| {
-                                                                        evt.stop_propagation();
-                                                                        change_quantity(card_id, 1, is_basic_land);
-                                                                    },
-                                                                    "+"
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
+                                        CardRow {
+                                            card: card.clone(),
+                                            qty,
+                                            expanded_card,
+                                            preview_image_url,
+                                            preview_dismissing,
+                                            on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land),
                                         }
                                     }
                                 }
@@ -545,34 +374,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 show_active_indicators: true,
             }
 
-            // Image preview overlay
-            if preview_image_url().is_some() || preview_dismissing() {
-                div {
-                    class: "modal-backdrop show",
-                }
-                div {
-                    class: if preview_dismissing() {
-                        "image-preview-container show dismissing"
-                    } else {
-                        "image-preview-container show"
-                    },
-                    onclick: move |_| {
-                        preview_dismissing.set(true);
-                        spawn(async move {
-                            sleep(Duration::from_millis(200)).await;
-                            preview_image_url.set(None);
-                            preview_dismissing.set(false);
-                        });
-                    },
-                    if let Some(url) = preview_image_url() {
-                        img {
-                            src: "{url}",
-                            alt: "card preview",
-                            class: "card-image",
-                        }
-                    }
-                }
-            }
+            ImagePreview { url: preview_image_url, dismissing: preview_dismissing }
             }
         }
     }

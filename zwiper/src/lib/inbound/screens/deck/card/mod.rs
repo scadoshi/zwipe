@@ -12,5 +12,5 @@ pub mod view;
 pub mod filter;
 /// Remove cards from deck screen.
 pub mod remove;
-/// Card info display and skeleton components.
-mod card_info;
+/// Extracted components for card screens.
+mod components;
