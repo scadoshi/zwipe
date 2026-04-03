@@ -29,7 +29,7 @@
   font-weight: 300;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin: 0.5rem 0;
+  margin: 0;
   font-family: "Cascadia Code", monospace;
 }
 
@@ -83,7 +83,7 @@
   /* overflow: hidden; */
   box-sizing: border-box;
   /* border-bottom: 1px solid #333; */
-  margin-top: 1rem;
+  margin-top: 0.5rem;
   width: 100%;
 }
 
