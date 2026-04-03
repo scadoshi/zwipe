@@ -13,5 +13,6 @@ email_address = { workspace = true }
 once_cell = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+rand = { workspace = true }
 thiserror = { workspace = true }
 uuid = { workspace = true }
