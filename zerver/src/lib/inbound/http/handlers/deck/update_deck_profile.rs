@@ -1,4 +1,3 @@
-use crate::inbound::http::helpers::Optdate;
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
@@ -24,7 +23,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use serde::{Deserialize, Serialize};
+pub use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use uuid::Uuid;
 
 #[cfg(feature = "zerver")]
@@ -60,30 +59,6 @@ impl From<InvalidUpdateDeckProfile> for ApiError {
             InvalidUpdateDeckProfile::NoUpdates => {
                 Self::UnprocessableEntity("must update at least one field".to_string())
             }
-        }
-    }
-}
-
-/// Deck metadata update request body with partial update semantics.
-///
-/// Uses [`Optdate`] for nullable fields: absent means unchanged, `null` means set to `None`.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct HttpUpdateDeckProfile {
-    /// New deck name, or `None` to leave unchanged.
-    pub name: Option<String>,
-    /// Commander card ID with partial update semantics.
-    pub commander_id: Optdate<Uuid>,
-    /// Format with partial update semantics.
-    pub format: Optdate<String>,
-}
-
-impl HttpUpdateDeckProfile {
-    /// Creates a new deck update request.
-    pub fn new(name: Option<&str>, commander_id: Optdate<Uuid>, format: Optdate<String>) -> Self {
-        Self {
-            name: name.map(|name| name.to_string()),
-            commander_id,
-            format,
         }
     }
 }

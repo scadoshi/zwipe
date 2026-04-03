@@ -15,7 +15,7 @@ use crate::{
 };
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
-use serde::{Deserialize, Serialize};
+pub use zwipe_core::http::contracts::auth::HttpRefreshSession;
 
 #[cfg(feature = "zerver")]
 impl From<RefreshSessionError> for ApiError {
@@ -57,42 +57,6 @@ impl From<InvalidRefreshSession> for ApiError {
                 Self::UnprocessableEntity("invalid user id".to_string())
             }
         }
-    }
-}
-
-/// Token refresh request body.
-///
-/// `user_id` is a String that gets parsed to a Uuid.
-/// On success the old refresh token is consumed and a new token pair is issued.
-#[derive(Debug, Deserialize, Serialize)]
-pub struct HttpRefreshSession {
-    user_id: String,
-    refresh_token: String,
-}
-
-impl HttpRefreshSession {
-    /// Creates a new token refresh request.
-    pub fn new(user_id: &str, refresh_token: &str) -> Self {
-        Self {
-            user_id: user_id.to_string(),
-            refresh_token: refresh_token.to_string(),
-        }
-    }
-}
-
-impl From<RefreshSession> for HttpRefreshSession {
-    fn from(value: RefreshSession) -> Self {
-        Self {
-            user_id: value.user_id.to_string(),
-            refresh_token: value.refresh_token,
-        }
-    }
-}
-
-impl From<&Session> for HttpRefreshSession {
-    fn from(value: &Session) -> Self {
-        let refresh_session = RefreshSession::from(value);
-        Self::from(refresh_session)
     }
 }
 

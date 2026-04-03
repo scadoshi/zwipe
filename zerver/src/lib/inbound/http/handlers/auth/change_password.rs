@@ -1,6 +1,6 @@
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
-use serde::{Deserialize, Serialize};
+pub use zwipe_core::http::contracts::auth::HttpChangePassword;
 
 #[cfg(feature = "zerver")]
 use crate::{
@@ -38,23 +38,6 @@ impl From<InvalidChangePassword> for ApiError {
                 Self::UnprocessableEntity(format!("invalid password {}", e))
             }
             InvalidChangePassword::FailedPasswordHash(e) => e.log_500(),
-        }
-    }
-}
-
-/// Password change request body. Requires current password for re-verification.
-#[derive(Debug, Deserialize, Serialize)]
-pub struct HttpChangePassword {
-    current_password: String,
-    new_password: String,
-}
-
-impl HttpChangePassword {
-    /// Creates a new password change request.
-    pub fn new(current_password: &str, new_password: &str) -> Self {
-        Self {
-            current_password: current_password.to_string(),
-            new_password: new_password.to_string(),
         }
     }
 }

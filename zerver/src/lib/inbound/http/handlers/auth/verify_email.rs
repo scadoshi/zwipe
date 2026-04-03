@@ -1,6 +1,6 @@
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
-use serde::{Deserialize, Serialize};
+pub use zwipe_core::http::contracts::auth::HttpVerifyEmail;
 
 #[cfg(feature = "zerver")]
 use crate::{
@@ -27,12 +27,6 @@ impl From<VerifyEmailError> for ApiError {
             VerifyEmailError::Database(e) => e.log_500(),
         }
     }
-}
-
-/// Email verification request body.
-#[derive(Debug, Deserialize, Serialize)]
-pub struct HttpVerifyEmail {
-    token: String,
 }
 
 /// Verifies a user's email address using a one-time token.

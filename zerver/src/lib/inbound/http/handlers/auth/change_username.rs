@@ -1,10 +1,9 @@
-use crate::domain::auth::requests::change_username::ChangeUsername;
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
         auth::{
             ports::AuthService,
-            requests::change_username::{ChangeUsernameError, InvalidChangeUsername},
+            requests::change_username::{ChangeUsername, ChangeUsernameError, InvalidChangeUsername},
         },
         card::ports::CardService,
         deck::ports::DeckService,
@@ -15,7 +14,7 @@ use crate::{
 };
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
-use serde::{Deserialize, Serialize};
+pub use zwipe_core::http::contracts::auth::HttpChangeUsername;
 
 #[cfg(feature = "zerver")]
 impl From<ChangeUsernameError> for ApiError {
@@ -44,32 +43,6 @@ impl From<InvalidChangeUsername> for ApiError {
             InvalidChangeUsername::Password(_) => {
                 Self::Unauthorized("invalid credentials".to_string())
             }
-        }
-    }
-}
-
-/// Username change request body. Requires password for re-verification.
-#[derive(Debug, Deserialize, Serialize)]
-pub struct HttpChangeUsername {
-    new_username: String,
-    password: String,
-}
-
-impl HttpChangeUsername {
-    /// Creates a new username change request.
-    pub fn new(new_username: &str, password: &str) -> Self {
-        Self {
-            new_username: new_username.to_string(),
-            password: password.to_string(),
-        }
-    }
-}
-
-impl From<ChangeUsername> for HttpChangeUsername {
-    fn from(value: ChangeUsername) -> Self {
-        Self {
-            new_username: value.new_username.to_string(),
-            password: value.password.to_string(),
         }
     }
 }

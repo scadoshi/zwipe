@@ -4,7 +4,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use serde::{Deserialize, Serialize};
+pub use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
 
 #[cfg(feature = "zerver")]
 use crate::{
@@ -60,25 +60,6 @@ impl From<InvalidCreateDeckCard> for ApiError {
             InvalidCreateDeckCard::Quantity(e) => {
                 Self::UnprocessableEntity(format!("invalid quantity: {}", e))
             }
-        }
-    }
-}
-
-/// Add card to deck request body.
-#[derive(Debug, Deserialize, Serialize)]
-pub struct HttpCreateDeckCard {
-    /// Scryfall data ID of the card to add.
-    pub scryfall_data_id: String,
-    /// Initial quantity.
-    pub quantity: i32,
-}
-
-impl HttpCreateDeckCard {
-    /// Creates a new add-card-to-deck request.
-    pub fn new(scryfall_data_id: &str, quantity: i32) -> Self {
-        Self {
-            scryfall_data_id: scryfall_data_id.to_string(),
-            quantity,
         }
     }
 }

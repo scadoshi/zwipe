@@ -1,6 +1,6 @@
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
-use serde::{Deserialize, Serialize};
+pub use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
 
 use crate::domain::auth::requests::authenticate_user::AuthenticateUser;
 #[cfg(feature = "zerver")]
@@ -45,34 +45,6 @@ impl From<InvalidAuthenticateUser> for ApiError {
             InvalidAuthenticateUser::MissingIdentifier | InvalidAuthenticateUser::Password(_) => {
                 Self::UnprocessableEntity("invalid credentials".to_string())
             }
-        }
-    }
-}
-
-/// Login request body.
-///
-/// `identifier` accepts either an email address or a username.
-#[derive(Debug, Deserialize, Serialize)]
-pub struct HttpAuthenticateUser {
-    identifier: String,
-    password: String,
-}
-
-impl HttpAuthenticateUser {
-    /// Creates a new login request.
-    pub fn new(identifier: &str, password: &str) -> Self {
-        Self {
-            identifier: identifier.to_string(),
-            password: password.to_string(),
-        }
-    }
-}
-
-impl From<AuthenticateUser> for HttpAuthenticateUser {
-    fn from(value: AuthenticateUser) -> Self {
-        Self {
-            identifier: value.identifier,
-            password: value.password,
         }
     }
 }

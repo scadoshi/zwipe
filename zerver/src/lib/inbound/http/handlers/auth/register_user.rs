@@ -2,9 +2,7 @@
 use crate::inbound::http::Log500;
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
-use serde::{Deserialize, Serialize};
-
-use crate::domain::auth::requests::register_user::RawRegisterUser;
+pub use zwipe_core::http::contracts::auth::HttpRegisterUser;
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
@@ -93,40 +91,11 @@ impl From<InvalidRegisterUser> for ApiError {
     }
 }
 
-/// Registration request body.
-#[derive(Debug, Deserialize, Serialize)]
-pub struct HttpRegisterUser {
-    username: String,
-    email: String,
-    password: String,
-}
-
-impl HttpRegisterUser {
-    /// Creates a new registration request.
-    pub fn new(username: &str, email: &str, password: &str) -> Self {
-        Self {
-            username: username.to_string(),
-            email: email.to_string(),
-            password: password.to_string(),
-        }
-    }
-}
-
 #[cfg(feature = "zerver")]
 impl TryFrom<HttpRegisterUser> for RegisterUser {
     type Error = InvalidRegisterUser;
     fn try_from(value: HttpRegisterUser) -> Result<Self, Self::Error> {
         RegisterUser::new(&value.username, &value.email, &value.password)
-    }
-}
-
-impl From<RawRegisterUser> for HttpRegisterUser {
-    fn from(value: RawRegisterUser) -> Self {
-        Self::new(
-            &value.username.to_string(),
-            value.email.as_ref(),
-            value.password.read(),
-        )
     }
 }
 

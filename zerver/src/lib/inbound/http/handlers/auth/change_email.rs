@@ -1,6 +1,6 @@
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
-use serde::{Deserialize, Serialize};
+pub use zwipe_core::http::contracts::auth::HttpChangeEmail;
 
 #[cfg(feature = "zerver")]
 use crate::{
@@ -43,23 +43,6 @@ impl From<InvalidChangeEmail> for ApiError {
             InvalidChangeEmail::Password(_) => {
                 Self::Unauthorized("invalid credentials".to_string())
             }
-        }
-    }
-}
-
-/// Email change request body. Requires password for re-verification.
-#[derive(Debug, Deserialize, Serialize)]
-pub struct HttpChangeEmail {
-    email: String,
-    password: String,
-}
-
-impl HttpChangeEmail {
-    /// Creates a new email change request.
-    pub fn new(email: &str, password: &str) -> Self {
-        Self {
-            email: email.to_string(),
-            password: password.to_string(),
         }
     }
 }

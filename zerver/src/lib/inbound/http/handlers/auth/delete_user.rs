@@ -1,6 +1,6 @@
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
-use serde::{Deserialize, Serialize};
+pub use zwipe_core::http::contracts::auth::HttpDeleteUser;
 
 use crate::{domain::auth::requests::delete_user::InvalidDeleteUser, inbound::http::ApiError};
 #[cfg(feature = "zerver")]
@@ -40,13 +40,6 @@ impl From<InvalidDeleteUser> for ApiError {
             }
         }
     }
-}
-
-/// Account deletion request body. Requires password confirmation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct HttpDeleteUser {
-    /// Current password to confirm deletion.
-    pub password: String,
 }
 
 /// Deletes the user's account and all associated data after password verification.
