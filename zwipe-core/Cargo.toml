@@ -10,8 +10,10 @@ workspace = true
 [dependencies]
 chrono = { workspace = true }
 email_address = { workspace = true }
+hex = { workspace = true }
 once_cell = { workspace = true }
 serde = { workspace = true }
+sha2 = { workspace = true }
 serde_json = { workspace = true }
 rand = { workspace = true }
 thiserror = { workspace = true }
