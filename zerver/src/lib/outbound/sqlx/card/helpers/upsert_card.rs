@@ -20,6 +20,7 @@ use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
 use crate::outbound::sqlx::card::helpers::scryfall_data_fields::{
     BindCards, BindScryfallDataFields, bulk_upsert_conflict_fields, scryfall_data_fields,
 };
+use crate::outbound::sqlx::card::models::DatabaseScryfallData;
 use sqlx::QueryBuilder;
 use sqlx::{PgTransaction, query_as};
 use std::future::Future;
@@ -77,10 +78,12 @@ impl SingleUpsertWithTx for ScryfallData {
         sfd_qb.bind_scryfall_fields(self);
         sfd_qb.push(bulk_upsert_conflict_fields());
         sfd_qb.push(" RETURNING *");
-        let scryfall_data: ScryfallData = sfd_qb
-            .build_query_as::<ScryfallData>()
+        let db: DatabaseScryfallData = sfd_qb
+            .build_query_as::<DatabaseScryfallData>()
             .fetch_one(&mut **tx)
             .await?;
+        let scryfall_data: ScryfallData =
+            db.try_into().map_err(CreateCardError::ScryfallDataFromDb)?;
         let is_token = is_token(&scryfall_data);
         let database_card_profile = query_as!(
             DatabaseCardProfile,
@@ -133,10 +136,15 @@ impl BulkUpsertWithTx for &[ScryfallData] {
             .bind_cards(scryfall_data.as_slice())
             .push(bulk_upsert_conflict_fields())
             .push(" RETURNING *;");
-        let database_scryfall_data: Vec<ScryfallData> = scryfall_data_query_builder
-            .build_query_as::<ScryfallData>()
+        let db_rows: Vec<DatabaseScryfallData> = scryfall_data_query_builder
+            .build_query_as::<DatabaseScryfallData>()
             .fetch_all(&mut **tx)
             .await?;
+        let database_scryfall_data: Vec<ScryfallData> = db_rows
+            .into_iter()
+            .map(ScryfallData::try_from)
+            .collect::<Result<_, _>>()
+            .map_err(CreateCardError::ScryfallDataFromDb)?;
         let mut card_profile_query_builder = QueryBuilder::new(
             "INSERT INTO card_profiles (scryfall_data_id, is_token) VALUES",
         );
@@ -262,12 +270,17 @@ impl BulkDeltaUpsertWithTx for &[ScryfallData] {
         self,
         tx: &mut PgTransaction<'_>,
     ) -> Result<(Vec<Card>, usize), CreateCardError> {
-        let existing: Vec<ScryfallData> =
+        let existing_db: Vec<DatabaseScryfallData> =
             query_as("SELECT * FROM scryfall_data WHERE id = ANY($1)")
                 .bind(&*ScryfallDataIds::from(self))
                 .fetch_all(&mut **tx)
                 .await
                 .map_err(|e| CreateCardError::GetScryfallData(e.into()))?;
+        let existing: Vec<ScryfallData> = existing_db
+            .into_iter()
+            .map(ScryfallData::try_from)
+            .collect::<Result<_, _>>()
+            .map_err(CreateCardError::ScryfallDataFromDb)?;
         let delta: Vec<ScryfallData> = self
             .iter()
             .filter(|x| !existing.contains(x))

@@ -39,13 +39,6 @@ use crate::domain::card::models::scryfall_data::rarity::Rarity;
 /// - **Gameplay fields**: Rules-relevant properties (CMC, colors, oracle text)
 /// - **Print fields**: Printing-specific properties (artist, set, rarity)
 ///
-/// # Design Note
-///
-/// This struct derives `sqlx::FromRow` (when `zerver` feature is enabled) to avoid
-/// maintaining separate domain and database models for this large structure.
-/// If the database ever changes, only the derive macro needs replacement.
-// =]:^{O
-#[cfg_attr(feature = "zerver", derive(sqlx::FromRow))]
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct ScryfallData {
     // ==================

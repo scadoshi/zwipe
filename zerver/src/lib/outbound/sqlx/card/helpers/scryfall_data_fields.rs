@@ -6,6 +6,7 @@
 use crate::domain::card::models::scryfall_data::ScryfallData;
 use sqlx::Postgres;
 use sqlx::QueryBuilder;
+use sqlx::types::Json;
 
 /// Every [`ScryfallData`] field name, line-separated for SQL generation.
 ///
@@ -191,17 +192,17 @@ impl BindScryfallDataFields for QueryBuilder<'_, Postgres> {
         self.push(", ");
         // gameplay fields
         // cards have the following properties relevant to the game rules
-        self.push_bind(card.all_parts.clone());
+        self.push_bind(card.all_parts.clone().map(Json));
         self.push(", ");
-        self.push_bind(card.card_faces.clone());
+        self.push_bind(card.card_faces.clone().map(Json));
         self.push(", ");
         self.push_bind(card.cmc);
         self.push(", ");
-        self.push_bind(card.color_identity.clone());
+        self.push_bind(card.color_identity.to_short_names());
         self.push(", ");
-        self.push_bind(card.color_indicator.clone());
+        self.push_bind(card.color_indicator.as_ref().map(|c| c.to_short_names()));
         self.push(", ");
-        self.push_bind(card.colors.clone());
+        self.push_bind(card.colors.as_ref().map(|c| c.to_short_names()));
         self.push(", ");
         self.push_bind(card.defense.clone());
         self.push(", ");
@@ -213,7 +214,7 @@ impl BindScryfallDataFields for QueryBuilder<'_, Postgres> {
         self.push(", ");
         self.push_bind(card.keywords.clone());
         self.push(", ");
-        self.push_bind(card.legalities.clone());
+        self.push_bind(Json(card.legalities.clone()));
         self.push(", ");
         self.push_bind(card.life_modifier.clone());
         self.push(", ");
@@ -277,11 +278,11 @@ impl BindScryfallDataFields for QueryBuilder<'_, Postgres> {
         self.push(", ");
         self.push_bind(card.image_status.clone());
         self.push(", ");
-        self.push_bind(card.image_uris.clone());
+        self.push_bind(card.image_uris.clone().map(Json));
         self.push(", ");
         self.push_bind(card.oversized);
         self.push(", ");
-        self.push_bind(card.prices.clone());
+        self.push_bind(Json(card.prices.clone()));
         self.push(", ");
         self.push_bind(card.printed_name.clone());
         self.push(", ");
@@ -295,7 +296,7 @@ impl BindScryfallDataFields for QueryBuilder<'_, Postgres> {
         self.push(", ");
         self.push_bind(card.purchase_uris.clone());
         self.push(", ");
-        self.push_bind(card.rarity);
+        self.push_bind(card.rarity.to_short_name());
         self.push(", ");
         self.push_bind(card.related_uris.clone());
         self.push(", ");
