@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     domain::{
         auth::{
-            models::verify_email::{VerifyEmail, VerifyEmailError},
+            requests::verify_email::{VerifyEmail, VerifyEmailError},
             ports::AuthService,
         },
         card::ports::CardService,

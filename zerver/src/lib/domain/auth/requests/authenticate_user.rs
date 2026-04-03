@@ -44,9 +44,9 @@
 
 use crate::domain::auth::models::password::{InvalidPassword, Password};
 #[cfg(feature = "zerver")]
-use crate::domain::auth::models::{
+use crate::domain::auth::requests::{
     change_email::ChangeEmail, change_password::ChangePassword, change_username::ChangeUsername,
-    delete_user::DeleteUser, session::create_session::CreateSessionError,
+    create_session::CreateSessionError, delete_user::DeleteUser,
 };
 use thiserror::Error;
 
@@ -318,7 +318,7 @@ mod tests {
     #[cfg(feature = "zerver")]
     #[test]
     fn test_authenticate_user_from_change_password() {
-        use crate::domain::auth::models::change_password::ChangePassword;
+        use crate::domain::auth::requests::change_password::ChangePassword;
         use uuid::Uuid;
         let user_id = Uuid::new_v4();
         let req = ChangePassword::new(user_id, "OldPass!", "NewSecure123!").unwrap();
@@ -330,7 +330,7 @@ mod tests {
     #[cfg(feature = "zerver")]
     #[test]
     fn test_authenticate_user_from_change_username() {
-        use crate::domain::auth::models::change_username::ChangeUsername;
+        use crate::domain::auth::requests::change_username::ChangeUsername;
         use uuid::Uuid;
         let user_id = Uuid::new_v4();
         let req = ChangeUsername::new(user_id, "newname", "SecurePass123!").unwrap();
@@ -342,7 +342,7 @@ mod tests {
     #[cfg(feature = "zerver")]
     #[test]
     fn test_authenticate_user_from_change_email() {
-        use crate::domain::auth::models::change_email::ChangeEmail;
+        use crate::domain::auth::requests::change_email::ChangeEmail;
         use uuid::Uuid;
         let user_id = Uuid::new_v4();
         let req = ChangeEmail::new(user_id, "new@example.com", "SecurePass123!").unwrap();
@@ -354,7 +354,7 @@ mod tests {
     #[cfg(feature = "zerver")]
     #[test]
     fn test_authenticate_user_from_delete_user() {
-        use crate::domain::auth::models::delete_user::DeleteUser;
+        use crate::domain::auth::requests::delete_user::DeleteUser;
         use uuid::Uuid;
         let user_id = Uuid::new_v4();
         let req = DeleteUser::new(user_id, "SomePassword!").unwrap();

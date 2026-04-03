@@ -4,8 +4,6 @@ pub mod all_parts;
 pub mod card_faces;
 /// Color and color identity types and conversions.
 pub mod colors;
-/// Get Scryfall data operations.
-pub mod get_scryfall_data;
 /// Card image URIs at various resolutions.
 pub mod image_uris;
 /// Format legality status (Standard, Modern, Commander, etc.).

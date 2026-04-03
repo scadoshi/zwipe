@@ -21,20 +21,6 @@
 //! - **Refresh Token Rotation**: Single-use refresh tokens prevent replay attacks
 //! - **SHA-256 Hashing**: Refresh tokens hashed in database
 //!
-//! # Submodules
-//!
-//! - [`create_session`]: Create new session for a user
-//! - [`refresh_session`]: Exchange refresh token for new access token
-//! - [`revoke_sessions`]: Delete all user sessions (logout)
-//! - [`enforce_session_maximum`]: Enforce max session limit per user
-//! - [`delete_expired_sessions`]: Cleanup expired sessions
-
-pub mod create_session;
-pub mod delete_expired_sessions;
-pub mod enforce_session_maximum;
-pub mod refresh_session;
-pub mod revoke_sessions;
-
 use crate::domain::auth::models::access_token::AccessToken;
 use crate::domain::auth::models::refresh_token::RefreshToken;
 use crate::domain::user::models::User;
@@ -212,7 +198,12 @@ mod tests {
             expires_at: Utc::now().naive_utc() + Duration::hours(24),
         };
         let refresh_token = RefreshToken::generate();
-        let session = Session::new(user, access_token.clone(), refresh_token.clone(), UserPreferences::default());
+        let session = Session::new(
+            user,
+            access_token.clone(),
+            refresh_token.clone(),
+            UserPreferences::default(),
+        );
         assert_eq!(session.user.id, user_id);
         assert_eq!(session.access_token, access_token);
         assert_eq!(session.refresh_token, refresh_token);

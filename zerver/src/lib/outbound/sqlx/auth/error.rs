@@ -2,18 +2,17 @@
 
 use crate::{
     domain::{
-        auth::models::{
+        auth::requests::{
             authenticate_user::AuthenticateUserError,
             change_email::ChangeEmailError,
             change_username::ChangeUsernameError,
+            create_session::CreateSessionError,
+            delete_expired_sessions::DeleteExpiredSessionsError,
             delete_user::DeleteUserError,
+            enforce_session_maximum::EnforceSessionMaximumError,
+            refresh_session::RefreshSessionError,
             register_user::RegisterUserError,
-            session::{
-                create_session::CreateSessionError,
-                delete_expired_sessions::DeleteExpiredSessionsError,
-                enforce_session_maximum::EnforceSessionMaximumError,
-                refresh_session::RefreshSessionError, revoke_sessions::RevokeSessionsError,
-            },
+            revoke_sessions::RevokeSessionsError,
         },
         user::models::username::InvalidUsername,
     },

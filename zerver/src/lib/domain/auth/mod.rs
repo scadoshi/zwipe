@@ -10,8 +10,13 @@
 //! - **ports/**: Repository and service trait interfaces for dependency injection
 //! - **services/**: Business logic implementations orchestrating auth workflows
 
-/// Authentication models and value objects.
+/// Authentication entities and value objects.
 pub mod models;
+pub use models::*;
+
+/// Authentication request types (login, registration, password changes, etc.).
+pub mod requests;
+pub use requests::*;
 
 /// Port traits (interfaces) for authentication operations.
 #[cfg(feature = "zerver")]

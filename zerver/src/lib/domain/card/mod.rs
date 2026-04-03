@@ -9,6 +9,11 @@
 
 /// Card models and value objects (ScryfallData, CardProfile, Card, filters).
 pub mod models;
+pub use models::*;
+
+/// Card request types (get, create, search operations).
+pub mod requests;
+pub use requests::*;
 
 /// Port traits (interfaces) for card operations.
 #[cfg(feature = "zerver")]

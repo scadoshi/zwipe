@@ -1,10 +1,10 @@
-use crate::domain::auth::models::change_username::ChangeUsername;
+use crate::domain::auth::requests::change_username::ChangeUsername;
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
         auth::{
-            models::change_username::{ChangeUsernameError, InvalidChangeUsername},
             ports::AuthService,
+            requests::change_username::{ChangeUsernameError, InvalidChangeUsername},
         },
         card::ports::CardService,
         deck::ports::DeckService,

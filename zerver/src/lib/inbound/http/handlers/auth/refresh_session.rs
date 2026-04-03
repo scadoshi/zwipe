@@ -1,10 +1,10 @@
-use crate::domain::auth::models::session::{refresh_session::RefreshSession, Session};
+use crate::domain::auth::{models::session::Session, requests::refresh_session::RefreshSession};
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
         auth::{
-            models::session::refresh_session::{InvalidRefreshSession, RefreshSessionError},
             ports::AuthService,
+            requests::refresh_session::{InvalidRefreshSession, RefreshSessionError},
         },
         card::ports::CardService,
         deck::ports::DeckService,

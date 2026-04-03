@@ -3,13 +3,13 @@ use crate::{
     domain::{
         auth::ports::AuthService,
         card::{
-            models::{
-                card_profile::get_card_profile::GetCardProfileError,
-                get_card::GetCardError,
-                scryfall_data::get_scryfall_data::{GetScryfallData, GetScryfallDataError},
-                Card,
-            },
+            models::Card,
             ports::CardService,
+            requests::{
+                get_card::GetCardError,
+                get_card_profile::GetCardProfileError,
+                get_scryfall_data::{GetScryfallData, GetScryfallDataError},
+            },
         },
         deck::ports::DeckService,
         health::ports::HealthService,

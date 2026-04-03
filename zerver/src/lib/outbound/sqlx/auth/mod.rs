@@ -9,22 +9,20 @@ pub mod models;
 
 use crate::domain::auth::models::password::HashedPassword;
 use crate::domain::auth::models::refresh_token::{RefreshToken, Sha256Hash};
-use crate::domain::auth::models::reset_password::ResetPasswordError;
-use crate::domain::auth::models::session::{
-    create_session::CreateSessionError,
-    delete_expired_sessions::DeleteExpiredSessionsError,
-    refresh_session::{RefreshSession, RefreshSessionError},
-    revoke_sessions::RevokeSessionsError,
-};
-use crate::domain::auth::models::verify_email::VerifyEmailError;
-use crate::domain::auth::models::{
-    UserWithPasswordHash,
+use crate::domain::auth::models::UserWithPasswordHash;
+use crate::domain::auth::requests::{
     authenticate_user::{AuthenticateUser, AuthenticateUserError},
     change_email::{ChangeEmail, ChangeEmailError},
     change_password::{ChangePassword, ChangePasswordError},
     change_username::{ChangeUsername, ChangeUsernameError},
+    create_session::CreateSessionError,
+    delete_expired_sessions::DeleteExpiredSessionsError,
     delete_user::{DeleteUser, DeleteUserError},
+    refresh_session::{RefreshSession, RefreshSessionError},
     register_user::{RegisterUser, RegisterUserError},
+    reset_password::ResetPasswordError,
+    revoke_sessions::RevokeSessionsError,
+    verify_email::VerifyEmailError,
 };
 use crate::domain::auth::ports::AuthRepository;
 use crate::domain::user::models::User;

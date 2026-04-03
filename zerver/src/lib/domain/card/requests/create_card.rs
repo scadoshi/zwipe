@@ -4,7 +4,7 @@
 //! Used during Scryfall sync to populate the card database.
 
 #[cfg(feature = "zerver")]
-use crate::domain::card::models::scryfall_data::get_scryfall_data::GetScryfallDataError;
+use crate::domain::card::requests::get_scryfall_data::GetScryfallDataError;
 #[cfg(feature = "zerver")]
 use thiserror::Error;
 

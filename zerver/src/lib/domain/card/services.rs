@@ -1,28 +1,26 @@
-use crate::domain::card::models::get_artists::GetArtistsError;
-use crate::domain::card::models::get_card_types::GetCardTypesError;
-use crate::domain::card::models::get_languages::GetLanguagesError;
-use crate::domain::card::models::get_keywords::GetKeywordsError;
-use crate::domain::card::models::get_oracle_words::GetOracleWordsError;
-use crate::domain::card::models::get_sets::GetSetsError;
-use crate::domain::card::models::scryfall_data::get_scryfall_data::{
-    GetScryfallData, ScryfallDataIds,
-};
 use crate::inbound::external::scryfall::bulk::BulkEndpoint;
 use crate::{
     domain::card::{
         models::{
             Card,
-            card_profile::{
-                CardProfile,
-                get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
-            },
-            create_card::CreateCardError,
-            get_card::GetCardError,
+            card_profile::CardProfile,
             scryfall_data::ScryfallData,
             search_card::{card_filter::CardFilter, error::SearchCardsError},
             sync_metrics::SyncMetrics,
         },
         ports::{CardRepository, CardService},
+        requests::{
+            create_card::CreateCardError,
+            get_artists::GetArtistsError,
+            get_card::GetCardError,
+            get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
+            get_card_types::GetCardTypesError,
+            get_keywords::GetKeywordsError,
+            get_languages::GetLanguagesError,
+            get_oracle_words::GetOracleWordsError,
+            get_scryfall_data::{GetScryfallData, ScryfallDataIds},
+            get_sets::GetSetsError,
+        },
     },
     outbound::sqlx::card::helpers::scryfall_data_fields::scryfall_data_field_count,
 };

@@ -1,6 +1,5 @@
-use crate::domain::card::models::{
-    card_profile::get_card_profile::GetCardProfileError,
-    scryfall_data::get_scryfall_data::SearchScryfallDataError,
+use crate::domain::card::requests::{
+    get_card_profile::GetCardProfileError, get_scryfall_data::SearchScryfallDataError,
 };
 use thiserror::Error;
 

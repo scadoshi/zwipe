@@ -4,20 +4,18 @@ use crate::inbound::http::Log500;
 use axum::{extract::State, http::StatusCode, Json};
 use serde::{Deserialize, Serialize};
 
-use crate::domain::auth::models::register_user::RawRegisterUser;
+use crate::domain::auth::requests::register_user::RawRegisterUser;
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
         auth::{
-            models::{
-                access_token::InvalidJwt,
-                register_user::{InvalidRegisterUser, RegisterUser, RegisterUserError},
-                session::{
-                    create_session::CreateSessionError,
-                    enforce_session_maximum::EnforceSessionMaximumError, Session,
-                },
-            },
+            models::{access_token::InvalidJwt, session::Session},
             ports::AuthService,
+            requests::{
+                create_session::CreateSessionError,
+                enforce_session_maximum::EnforceSessionMaximumError,
+                register_user::{InvalidRegisterUser, RegisterUser, RegisterUserError},
+            },
         },
         card::ports::CardService,
         deck::ports::DeckService,

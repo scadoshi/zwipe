@@ -2,13 +2,13 @@
 use axum::{extract::State, http::StatusCode, Json};
 use serde::{Deserialize, Serialize};
 
-use crate::{domain::auth::models::delete_user::InvalidDeleteUser, inbound::http::ApiError};
+use crate::{domain::auth::requests::delete_user::InvalidDeleteUser, inbound::http::ApiError};
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
         auth::{
-            models::delete_user::{DeleteUser, DeleteUserError},
             ports::AuthService,
+            requests::delete_user::{DeleteUser, DeleteUserError},
         },
         card::ports::CardService,
         deck::ports::DeckService,
