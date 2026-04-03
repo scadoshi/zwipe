@@ -4,21 +4,13 @@
 
 ---
 
-## App Store Submission — Ready
+## App Store Submission — Waiting on Apple
 
-1. **App Store Connect Setup**
-   - [appstoreconnect.apple.com](https://appstoreconnect.apple.com) — sign in with Apple ID
-   - Create app: Bundle ID `com.scadoshi.zwipe`, name "Zwipe", English
-   - Fill out: description, keywords (MTG, Magic the Gathering, deck builder, commander), screenshots (6.7" iPhone required), privacy policy URL, support URL, age rating 4+, category: Games > Card Games
+Submission steps are ready but blocked on Apple Support ticket (filed 2026-03-28, no response as of 2026-04-02). Revisit week of 2026-04-07.
 
-2. **Build for Distribution**
-   - Distribution certificate (Apple Distribution)
-   - App Store provisioning profile
-   - Archive and upload via `xcrun altool` or Transporter
-
-3. **Submit**
-   - Export compliance: no encryption beyond HTTPS — answer No
-   - Submit for review — typical 1–3 days
+1. **App Store Connect Setup** — Bundle ID `com.scadoshi.zwipe`, name "Zwipe"
+2. **Build for Distribution** — Distribution certificate + App Store provisioning profile
+3. **Submit** — Export compliance: no encryption beyond HTTPS
 
 ---
 
@@ -29,13 +21,6 @@ Android build compiles and runs. Remaining polish before Play Store submission:
 - [ ] Card images show white corners — the white is baked into the image data from Scryfall (white-bordered card editions). iOS clips correctly via WKWebView; Android WebView does not honor `overflow: hidden` + `border-radius` on `object-fit: contain` images. Tried: `overflow: hidden` on img, wrapper div with `border-radius` + `overflow: hidden`, `-webkit-mask-image` hack. None work on Android WebView. Options: crop with `object-fit: cover` (loses card edges), mask SVG overlay, or accept as-is for black-bordered cards (majority) and revisit for white-bordered.
 - [ ] Swipe gesture doesn't tilt the card — cards should rotate slightly during drag like they do on iOS
 - [ ] Lock screen orientation to portrait — need `android:screenOrientation="portrait"` on main activity. Dioxus may support this via `[android.raw.manifest]` or activity-level config. Test on Pixel once available.
-
----
-
-## UX — Future
-
-- [ ] Rethink the util bar — consider removing it and placing buttons in more natural-feeling locations per screen
-- [ ] Token counting chart on deck view screen
 
 ---
 
@@ -63,41 +48,13 @@ Android build compiles and runs. Remaining polish before Play Store submission:
 
 ## Testing
 
-- **Integration tests** — SQLx repository tests require a real PostgreSQL instance. Unit test phase complete (269 tests). Remaining gap: outbound adapters have no coverage.
+- **Integration tests** — SQLx repository tests require a real PostgreSQL instance. Unit test phase complete (308+ tests, ~100 in zwipe-core). Remaining gap: outbound adapters have no coverage.
 
 ---
 
 ## Domain Extraction into `zwipe-core`
 
-**Goal:** `zwipe-core` becomes the single source of truth for all domain types and API contract types. No feature flags — everything in core is meant to be shared.
-
-**Why:** Today `zwiper` depends on `zerver` (with `default-features = false`) just to reuse domain types and HTTP request/response models. This pulls ~17 transitive deps zwiper doesn't need and creates a backwards dependency (client → server). After extraction:
-
-```
-zwiper ──→ zwipe-core ←── zerver
-zweb  ──→ zwipe-core
-```
-
-**Migrate incrementally** — one module at a time, as each module is touched. Do not attempt a single large migration.
-
-**Done:**
-- [x] Password validation + common password dictionary
-- [x] Add zweb to Cargo workspace (unified lockfile, workspace lints)
-- [x] Content moderation (`ContainsBadWord` trait + ban lists)
-- [x] `EmailAddress` re-export from `email_address` crate
-- [x] Newtypes: `Username`, `DeckName`, `Quantity`, `UpdateQuantity`
-- [x] User domain: `User`, `UserPreferences`, `UpdatePreferences`, `GetUser`
-- [x] Deck domain: `Format`, `DeckProfile`, `DeckCard`, `DeckWarning`, all request types
-- [x] Organize `requests/` subdirectories for user and deck modules
-- [x] Remove redundant custom SQLx `Type/Encode/Decode` impls for `Format` (see `architecture/decisions.md`)
-
-**Next:**
-- [ ] Remove remaining custom SQLx impls on card domain types (Rarity, Colors, Legalities, Prices, CardFaces, AllParts, ImageUris) — replace with `Json<T>` wrapper and `String` + `TryFrom` in adapter layer
-- [ ] Card domain types → zwipe-core (blocked until SQLx impls are removed)
-- [ ] `Deck`, `DeckEntry` aggregate → zwipe-core (blocked on Card types)
-- [ ] `validate_deck()` → zwipe-core (blocked on Card types)
-- [ ] Auth domain types (`Session`, token models)
-- [ ] API contract types (HTTP request/response structs)
+**Complete.** `zwipe-core` is the single source of truth for all shared types. See `architecture/decisions.md` for the full rationale and purity rules.
 
 ---
 
@@ -114,6 +71,22 @@ Add a `context/architecture/structure.md` walking through the full directory tre
 ---
 
 ## Recently Completed
+
+### zwipe-core Domain Extraction (2026-04-02)
+
+- [x] Extract newtypes + moderation into zwipe-core (`6d75e675`)
+- [x] Extract User, UserPreferences, GetUser (`2b4201d7`)
+- [x] Extract deck + deck_card domain types (`b8dc8836`)
+- [x] Document SQLx adapter pattern decision (`8d3ea8eb`)
+- [x] Replace custom SQLx impls with DatabaseScryfallData adapter (`a9618e4b`)
+- [x] Extract Card, CardProfile, ScryfallData + all nested types (`7dc2e487`)
+- [x] Extract CardFilter, search types (`75670892`)
+- [x] Extract Deck/DeckEntry aggregate, validate_deck, DeckMetrics (`98982af3`)
+- [x] Add models/ directories to zwipe-core modules (`7ef56603`)
+- [x] Separate requests/ from models/ in zerver auth and card (`d71ef8e8`)
+- [x] Extract Session, AccessToken, RefreshToken, Jwt (`38617714`)
+- [x] Extract logo module to zwipe-core (`32fc23ba`)
+- [x] Extract HTTP contract types, paths, ApiError, Optdate (`fab717c1`)
 
 ### Component Extraction & Deck Enhancements (2026-04-02)
 

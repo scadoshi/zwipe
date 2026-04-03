@@ -7,25 +7,25 @@ mobile-first magic: the gathering deck builder with swipe-based navigation.
 ## tech stack
 
 full-stack rust application:
-- **zerver**: axum rest api, postgresql, sqlx, jwt auth, scryfall sync, user preferences
+- **zwipe-core**: shared domain types, validation, HTTP contracts — the single source of truth
+- **zerver**: axum rest api, postgresql, sqlx, jwt auth, scryfall sync
 - **zwiper**: dioxus mobile/ios app, swipe gestures, 9 themes, dark mode
-- **zwipe-core**: shared domain logic (password validation, common dictionaries)
 - **zweb**: dioxus web client at [zwipe.net](https://zwipe.net)
 - **zervice**: background jobs (scryfall sync, session cleanup)
-- **architecture**: hexagonal/ports-and-adapters pattern
+
+```
+zwiper ──→ zwipe-core ←── zerver
+zweb   ──→ zwipe-core
+```
 
 ## quick start
 
 ```bash
-# prerequisites
-# - rust (https://rustup.rs)
-# - macos: xcode command line tools (xcode-select --install)
+# prerequisites: rust (https://rustup.rs), macos: xcode-select --install
 
-# run setup script (installs postgres, dx, sqlx-cli, creates database)
-./zcripts/denv/mac/setup.sh      # macos
-./zcripts/denv/fedora/setup.sh   # linux
+./zcripts/denv/mac/setup.sh      # macos setup (postgres, dx, sqlx-cli, database)
+./zcripts/denv/fedora/setup.sh   # linux setup
 
-# start development
 cargo run --bin zerver            # backend api
 cd zwiper && dx serve             # mobile app (web preview)
 cargo run --bin zervice           # scryfall card sync (run once to seed)
@@ -33,12 +33,7 @@ cargo run --bin zervice           # scryfall card sync (run once to seed)
 
 ## architecture
 
-hexagonal architecture with domain-driven design:
-- clean domain layer with type-safe newtypes
-- port/adapter separation between business logic and infrastructure
-- shared domain logic in `zwipe-core`, consumed by both `zerver` and `zwiper`
-
-see [contributing](CONTRIBUTING.md) for project structure detail.
+hexagonal architecture with domain-driven design. `zwipe-core` owns all shared domain types — zerver re-exports them and adds server-specific layers (database adapters, HTTP handlers, service orchestration). See `context/architecture/decisions.md` for key decisions.
 
 ## license
 
