@@ -33,11 +33,6 @@
   font-family: "Cascadia Code", monospace;
 }
 
-.accordion-trigger:hover:not([data-open="true"]) {
-  transform: translateY(-2px);
-  background-color: rgba(245, 245, 220, 0.05);
-}
-
 /* Selected/open state */
 .accordion-item[data-open="true"] .accordion-trigger {
   background-color: var(--text-primary);

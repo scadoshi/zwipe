@@ -95,19 +95,6 @@
   transition: all 0.2s ease;
 }
 
-.alert-dialog-cancel:hover,
-.alert-dialog-action:hover {
-  transform: translateY(-2px);
-  background-color: var(--text-primary);
-  color: var(--bg-primary);
-  border-color: var(--border-primary);
-}
-
-.alert-dialog-cancel:active,
-.alert-dialog-action:active {
-  transform: translateY(0);
-}
-
 .alert-dialog-cancel:focus-visible,
 .alert-dialog-action:focus-visible {
   outline: none;
@@ -125,17 +112,6 @@
   font-weight: 300;
   cursor: pointer;
   transition: all 0.2s ease;
-}
-
-.alert-dialog-action-danger:hover:not(:disabled) {
-  transform: translateY(-2px);
-  background-color: var(--color-error);
-  color: var(--bg-primary);
-  border-color: var(--color-error);
-}
-
-.alert-dialog-action-danger:active:not(:disabled) {
-  transform: translateY(0);
 }
 
 .alert-dialog-action-danger:focus-visible {
