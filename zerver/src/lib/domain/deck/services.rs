@@ -182,7 +182,7 @@ where
             None
         };
 
-        let warnings = crate::domain::deck::models::deck::validate_deck::validate_deck(
+        let warnings = zwipe_core::domain::deck::validate_deck::validate_deck(
             &deck_profile,
             &entries,
             commander_card.as_ref(),
