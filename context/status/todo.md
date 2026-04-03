@@ -26,10 +26,13 @@ Android build compiles and runs. Remaining polish before Play Store submission:
 
 ## EDHREC Integration
 
-- [ ] Salt score data import — requires scraping/syncing from EDHREC (no public API)
-- [ ] Salt score display per card and aggregate per deck
-- [ ] Salt score filtering and sorting on card search
-- [ ] Popularity / synergy suggestions (future)
+Closed API — must request access at edhrec.com/api. Full scope pending what they expose.
+
+- [ ] Request API access
+- [ ] Salt score import, display per card and aggregate per deck, filtering and sorting on card search
+- [ ] Synergy scores — surface cards with high synergy to the deck's commander
+- [ ] Popularity data — most-played cards for a given commander
+- [ ] Evaluate other EDHREC data (themes, combos, etc.) once API access granted
 
 ---
 
@@ -87,6 +90,53 @@ A dedicated swiping flow for commander selection. Future work — only build if 
 - [ ] First swipe-right sets the commander and returns to the create/edit screen
 - [ ] Format filter defaults to deck's format but user can change it
 - [ ] Works on both create and edit screens
+
+---
+
+## Maybeboard
+
+Add a maybeboard flag to `deck_cards` so cards can be staged without being part of the active deck.
+
+**Data model:**
+- [ ] Add `maybeboard: bool` column to `deck_cards` (migration required)
+- [ ] Deck metrics, validate_deck, and card limits treat maybeboard cards as excluded from the active deck
+
+**Swipe screens (add):**
+- [ ] Up-swipe adds card to maybeboard — toast "Added to maybeboard"
+- [ ] Undo handles maybeboard adds correctly
+
+**Deck view screen:**
+- [ ] "Show maybeboard" toggle below tokens section (display priority: tokens → maybeboard → lands)
+- [ ] Maybeboard cards show a "To deck" button — toast "Added to deck"
+- [ ] Active deck cards show a "To maybeboard" button — toast "Added to maybeboard"
+- [ ] Consolidate grouping/show controls bar to accommodate the new toggle without crowding
+
+**Remove screen:**
+- [ ] Decide: does the remove swipe screen show maybeboard cards, offer a filter, or exclude them entirely?
+
+---
+
+## Mechanical Category
+
+Structural grouping for cards by mechanical role (e.g., Ramp, Draw, Removal, Wipe, Counterspell, Threat, Utility Land, etc.).
+
+- [ ] Define the category taxonomy — finite list of mechanical roles stored in zwipe-core
+- [ ] Schema: add `mechanical_category: Option<MechanicalCategory>` to `Card` or as a separate mapping table (AI augmentation to populate values later — build the structure now)
+- [ ] Deck view screen: group by mechanical category alongside existing groupings (type, CMC, color)
+- [ ] Deck metrics: show category breakdown (e.g., "8 removal, 12 ramp")
+- [ ] Card search filtering: filter by mechanical category
+
+---
+
+## Deck View Polish
+
+Small UX improvements to the deck view screen and related flows.
+
+- [ ] Update "average price per card" label on the stats table — current wording unclear
+- [ ] Toast "Card removed" when a card is removed by decrementing its quantity to 0
+- [ ] Toast "Card removed" when the invalid-card-in-deck warning's remove button is used
+- [ ] Card quantity warning should offer an action button to correct quantity to the legal maximum (4, or 1 for basic lands) — consistent with the invalid-card remove button pattern
+- [ ] Audit other deck warnings — identify any that could offer a one-tap convenience action
 
 ---
 
