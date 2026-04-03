@@ -17,12 +17,18 @@ pub mod refresh_token;
 /// Session entity and constants (re-exported from zwipe-core).
 pub mod session;
 
+#[cfg(feature = "zerver")]
 use crate::domain::auth::models::password::HashedPassword;
+#[cfg(feature = "zerver")]
 use crate::domain::user::models::{username::Username, User};
+#[cfg(feature = "zerver")]
 use chrono::NaiveDateTime;
+#[cfg(feature = "zerver")]
 use email_address::EmailAddress;
+#[cfg(feature = "zerver")]
 use uuid::Uuid;
 
+#[cfg(feature = "zerver")]
 /// User entity with password hash for authentication operations.
 ///
 /// This internal domain type extends the public [`User`] entity with the password hash,
@@ -48,6 +54,7 @@ pub struct UserWithPasswordHash {
     pub email_verified_at: Option<NaiveDateTime>,
 }
 
+#[cfg(feature = "zerver")]
 impl From<UserWithPasswordHash> for User {
     fn from(value: UserWithPasswordHash) -> Self {
         Self {
@@ -61,6 +68,7 @@ impl From<UserWithPasswordHash> for User {
 
 #[cfg(test)]
 mod tests {
+    #[allow(unused_imports)]
     use super::*;
 
     #[test]
