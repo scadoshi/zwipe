@@ -1,33 +1,22 @@
 # zwipe-core
 
-Shared domain logic for the Zwipe ecosystem.
-
-Provides domain types, validation, and business rules shared across crates. As Zwipe grows, additional shared logic lands here rather than being duplicated.
+Shared domain types, validation, and business rules for the Zwipe ecosystem. Pure Rust — no feature flags, no server-only dependencies.
 
 ## Consumers
 
-- **zerver** — backend API server
-- **zweb** — web frontend (client-side validation)
+- **zerver** — backend API server (re-exports all types, adds service-layer errors and database adapters)
 - **zwiper** — mobile app
+- **zweb** — web frontend
 
 ## What's inside
 
 | Module | Purpose |
 |--------|---------|
-| `domain::auth::password` | Password policy validation, error types |
-| `domain::deck::deck_name` | Deck name validation (1-64 chars, no profanity) |
-| `domain::deck::quantity` | Card quantity validation |
+| `domain::auth::password` | Password policy validation |
+| `domain::card` | Card, CardProfile, ScryfallData and all nested types (Colors, Rarity, Legalities, Prices, ImageUris, CardFaces, AllParts) |
+| `domain::deck` | DeckProfile, DeckCard, Deck, DeckEntry, DeckWarning, Format, DeckName, Quantity, validate_deck(), DeckMetrics |
+| `domain::deck::requests` | CreateDeckProfile, UpdateDeckProfile, DeleteDeck, CreateDeckCard, UpdateDeckCard, DeleteDeckCard, ImportDeckCards, etc. |
 | `domain::moderation` | Content moderation (profanity filtering) |
-| `domain::user::username` | Username validation (3-20 chars, no profanity) |
+| `domain::user` | User, UserPreferences, Username |
+| `domain::user::requests` | GetUser |
 | `domain::EmailAddress` | Re-exported from `email_address` crate |
-
-## Usage
-
-```rust
-use zwipe_core::domain::auth::password::{validate, InvalidPassword};
-
-match validate("candidate_password") {
-    Ok(()) => println!("password meets all requirements"),
-    Err(e) => println!("validation failed: {e}"),
-}
-```
