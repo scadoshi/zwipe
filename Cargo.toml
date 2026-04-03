@@ -45,6 +45,7 @@ features = ["full"]
 version = "1.18.1"
 features = [
     "v4",
+    "rng-rand",
     "serde",
 ]
 

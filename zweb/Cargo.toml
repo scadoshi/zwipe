@@ -19,3 +19,6 @@ web-sys = { version = "0.3", features = ["Window", "Location", "UrlSearchParams"
 
 # Local declaration — workspace reqwest has rustls-tls which doesn't compile to wasm32
 reqwest = { version = "0.12", features = ["json"], default-features = false }
+
+# getrandom 0.4+ requires explicit wasm_js feature for wasm32-unknown-unknown
+getrandom = { version = "0.4", features = ["wasm_js"] }
