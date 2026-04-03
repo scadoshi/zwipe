@@ -104,6 +104,17 @@ impl TryFrom<String> for Color {
     }
 }
 
+impl Colors {
+    /// Parses a `Vec<String>` of short color codes into `Colors`.
+    pub fn from_short_names(names: Vec<String>) -> Result<Self, InvalidColor> {
+        names
+            .into_iter()
+            .map(Color::try_from)
+            .collect::<Result<Vec<Color>, _>>()
+            .map(Colors)
+    }
+}
+
 /// Collection of card colors.
 ///
 /// Empty collection means colorless.

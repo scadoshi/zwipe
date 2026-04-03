@@ -6,8 +6,8 @@ pub mod card_profile;
 pub mod error;
 /// SQL generation helpers for bulk upserts and field binding.
 pub mod helpers;
-/// SQLx type codecs for Scryfall data models.
-pub mod scryfall_data;
+/// Database-to-domain Scryfall data conversion.
+pub mod models;
 /// Sync metrics JSONB codecs and database model.
 pub mod sync_metrics;
 
@@ -26,6 +26,7 @@ use crate::domain::card::models::{
 };
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
 use crate::outbound::sqlx::card::helpers::upsert_card::BatchDeltaUpsertWithTx;
+use crate::outbound::sqlx::card::models::DatabaseScryfallData;
 use crate::outbound::sqlx::postgres::Postgres as MyPostgres;
 use crate::{
     domain::card::models::{
@@ -139,10 +140,13 @@ impl CardRepository for MyPostgres {
         &self,
         request: &GetScryfallData,
     ) -> Result<ScryfallData, GetScryfallDataError> {
-        let scryfall_data: ScryfallData = query_as("SELECT * FROM scryfall_data WHERE id = $1")
+        let db: DatabaseScryfallData = query_as("SELECT * FROM scryfall_data WHERE id = $1")
             .bind(**request)
             .fetch_one(&self.pool)
             .await?;
+        let scryfall_data: ScryfallData = db
+            .try_into()
+            .map_err(GetScryfallDataError::Database)?;
 
         Ok(scryfall_data)
     }
@@ -151,11 +155,16 @@ impl CardRepository for MyPostgres {
         &self,
         request: &ScryfallDataIds,
     ) -> Result<Vec<ScryfallData>, GetScryfallDataError> {
-        let scryfall_data: Vec<ScryfallData> =
+        let db_rows: Vec<DatabaseScryfallData> =
             query_as("SELECT * FROM scryfall_data WHERE id = ANY($1)")
                 .bind(&**request)
                 .fetch_all(&self.pool)
                 .await?;
+        let scryfall_data: Vec<ScryfallData> = db_rows
+            .into_iter()
+            .map(ScryfallData::try_from)
+            .collect::<Result<_, _>>()
+            .map_err(GetScryfallDataError::Database)?;
 
         Ok(scryfall_data)
     }
@@ -248,7 +257,7 @@ impl CardRepository for MyPostgres {
 
         if let Some(rarities) = request.rarity_equals_any() {
             sep.push("rarity = ANY(");
-            sep.push_bind_unseparated(rarities);
+            sep.push_bind_unseparated(rarities.to_short_names());
             sep.push_unseparated(")");
         }
 
@@ -296,9 +305,9 @@ impl CardRepository for MyPostgres {
 
         if let Some(colors) = request.color_identity_equals() {
             sep.push("color_identity @> ");
-            sep.push_bind_unseparated(colors);
+            sep.push_bind_unseparated(colors.to_short_names());
             sep.push("color_identity <@ ");
-            sep.push_bind_unseparated(colors);
+            sep.push_bind_unseparated(colors.to_short_names());
         }
 
         if let Some(colors) = request.color_identity_within() {
@@ -534,7 +543,13 @@ impl CardRepository for MyPostgres {
         qb.push(" OFFSET ");
         qb.push_bind(request.offset() as i32);
 
-        let scryfall_data: Vec<ScryfallData> = qb.build_query_as().fetch_all(&self.pool).await?;
+        let db_rows: Vec<DatabaseScryfallData> =
+            qb.build_query_as().fetch_all(&self.pool).await?;
+        let scryfall_data: Vec<ScryfallData> = db_rows
+            .into_iter()
+            .map(ScryfallData::try_from)
+            .collect::<Result<_, _>>()
+            .map_err(SearchScryfallDataError::Database)?;
         Ok(scryfall_data)
     }
 
@@ -752,7 +767,7 @@ impl CardRepository for MyPostgres {
             return Ok(vec![]);
         }
         let lowered: Vec<String> = names.iter().map(|n| n.to_lowercase()).collect();
-        let scryfall_data: Vec<ScryfallData> = query_as(
+        let db_rows: Vec<DatabaseScryfallData> = query_as(
             "WITH deduplicated_cards AS (
                 SELECT sd.id,
                        ROW_NUMBER() OVER (
@@ -771,6 +786,11 @@ impl CardRepository for MyPostgres {
         .fetch_all(&self.pool)
         .await
         .map_err(|e| SearchScryfallDataError::Database(e.into()))?;
+        let scryfall_data: Vec<ScryfallData> = db_rows
+            .into_iter()
+            .map(ScryfallData::try_from)
+            .collect::<Result<_, _>>()
+            .map_err(SearchScryfallDataError::Database)?;
         if scryfall_data.is_empty() {
             return Ok(vec![]);
         }
