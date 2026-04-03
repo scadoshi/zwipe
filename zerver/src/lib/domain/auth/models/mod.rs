@@ -12,21 +12,17 @@
 
 pub mod access_token;
 pub mod password;
+/// Long-lived refresh token management (re-exported from zwipe-core).
 pub mod refresh_token;
+/// Session entity and constants (re-exported from zwipe-core).
 pub mod session;
 
-#[cfg(feature = "zerver")]
 use crate::domain::auth::models::password::HashedPassword;
-#[cfg(feature = "zerver")]
 use crate::domain::user::models::{username::Username, User};
-#[cfg(feature = "zerver")]
 use chrono::NaiveDateTime;
-#[cfg(feature = "zerver")]
 use email_address::EmailAddress;
-#[cfg(feature = "zerver")]
 use uuid::Uuid;
 
-#[cfg(feature = "zerver")]
 /// User entity with password hash for authentication operations.
 ///
 /// This internal domain type extends the public [`User`] entity with the password hash,
@@ -36,31 +32,6 @@ use uuid::Uuid;
 ///
 /// The password hash is an Argon2id hash and should never be exposed in API responses.
 /// This type is only used internally within the auth service and repository layers.
-///
-/// # Conversion
-///
-/// Can be converted to a public [`User`] (without password hash) via [`From`].
-///
-/// # Fields
-///
-/// * `id` - Unique user identifier
-/// * `username` - Validated username (3-20 chars, no profanity)
-/// * `email` - Validated email address
-/// * `password_hash` - Argon2id password hash with embedded salt
-/// * `email_verified_at` - When the email was verified, if at all
-///
-/// # Example
-///
-/// ```rust,ignore
-/// // Retrieved from database during authentication
-/// let user_with_hash: UserWithPasswordHash = user_repo.get_by_email(&email).await?;
-///
-/// // Verify password
-/// user_with_hash.password_hash.verify(&provided_password)?;
-///
-/// // Convert to public user for response
-/// let public_user: User = user_with_hash.into();
-/// ```
 #[derive(Debug)]
 pub struct UserWithPasswordHash {
     /// Unique user identifier.
@@ -77,7 +48,6 @@ pub struct UserWithPasswordHash {
     pub email_verified_at: Option<NaiveDateTime>,
 }
 
-#[cfg(feature = "zerver")]
 impl From<UserWithPasswordHash> for User {
     fn from(value: UserWithPasswordHash) -> Self {
         Self {
@@ -91,10 +61,8 @@ impl From<UserWithPasswordHash> for User {
 
 #[cfg(test)]
 mod tests {
-    #[cfg(feature = "zerver")]
     use super::*;
 
-    #[cfg(feature = "zerver")]
     #[test]
     fn test_user_from_user_with_password_hash_drops_password() {
         use crate::domain::auth::models::password::{HashedPassword, Password};

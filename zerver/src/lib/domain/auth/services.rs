@@ -2,7 +2,7 @@ use crate::domain::{
     auth::{
         models::{
             UserWithPasswordHash,
-            access_token::{AccessToken, JwtSecret},
+            access_token::{AccessToken, AccessTokenExt, JwtSecret},
             session::Session,
         },
         ports::{AuthRepository, AuthService},
@@ -182,7 +182,7 @@ where
 
         let access_token = AccessToken::generate(&user, self.jwt_secret())?;
 
-        let session = Session::new(user, access_token, refresh_token, preferences);
+        let session = Session { user, access_token, refresh_token, preferences };
 
         Ok(session)
     }
@@ -198,7 +198,7 @@ where
 
         let access_token = AccessToken::generate(&user, self.jwt_secret())?;
 
-        let session = Session::new(user, access_token, refresh_token, preferences);
+        let session = Session { user, access_token, refresh_token, preferences };
 
         Ok(session)
     }

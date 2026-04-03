@@ -5,7 +5,7 @@ use crate::domain::user::models::username::Username;
 use crate::{
     domain::{
         auth::{
-            models::access_token::{Jwt, JwtSecret, UserClaims},
+            models::access_token::{Jwt, JwtSecret, JwtValidate, UserClaims},
             ports::AuthService,
         },
         card::ports::CardService,
