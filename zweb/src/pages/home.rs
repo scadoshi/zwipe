@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use crate::{Footer, Nav, Route};
 
-const LOGO_ASCII: &str = include_str!("../../assets/logo.txt");
+const LOGO_ASCII: &str = zwipe_core::domain::logo::ZWIPE;
 
 #[component]
 pub fn Home() -> Element {

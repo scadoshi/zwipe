@@ -12,7 +12,7 @@ const FAVICON_16: Asset = asset!("/assets/favicon-16x16.png");
 const FAVICON_32: Asset = asset!("/assets/favicon-32x32.png");
 const APPLE_TOUCH_ICON: Asset = asset!("/assets/icon-180.png");
 const MANIFEST: Asset = asset!("/assets/site.webmanifest");
-const Z_LOGO: &str = include_str!("../assets/z.txt");
+const Z_LOGO: &str = zwipe_core::domain::logo::Z;
 
 #[derive(Routable, Clone, PartialEq)]
 #[rustfmt::skip]
