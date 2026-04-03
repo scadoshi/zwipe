@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     domain::{
         auth::{
-            models::request_password_reset::{RequestPasswordReset, RequestPasswordResetError},
+            requests::request_password_reset::{RequestPasswordReset, RequestPasswordResetError},
             ports::AuthService,
         },
         card::ports::CardService,

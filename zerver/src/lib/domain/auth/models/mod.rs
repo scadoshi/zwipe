@@ -1,34 +1,19 @@
-//! Authentication domain models and value objects.
+//! Authentication domain entities and value objects.
 //!
-//! This module contains all request/response types, entities, and value objects
-//! used in authentication workflows.
+//! This module contains entities and value objects used in authentication workflows.
+//! Request types live in the sibling [`super::requests`] module.
 //!
 //! # Module Organization
 //!
 //! - [`access_token`]: JWT access token generation and validation
-//! - [`authenticate_user`]: User login requests and responses
-//! - [`change_email`]: Email change requests with password verification
-//! - [`change_password`]: Password change requests with current password verification
-//! - [`change_username`]: Username change requests with password verification
-//! - [`delete_user`]: Account deletion requests with password verification
 //! - [`password`]: Password validation, hashing, and verification
 //! - [`refresh_token`]: Long-lived refresh token management
-//! - [`register_user`]: New user registration requests
-//! - [`session`]: Session creation, refresh, and management
+//! - [`session`]: Session entity and constants
 
 pub mod access_token;
-pub mod authenticate_user;
-pub mod change_email;
-pub mod change_password;
-pub mod change_username;
-pub mod delete_user;
 pub mod password;
 pub mod refresh_token;
-pub mod register_user;
-pub mod request_password_reset;
-pub mod reset_password;
 pub mod session;
-pub mod verify_email;
 
 #[cfg(feature = "zerver")]
 use crate::domain::auth::models::password::HashedPassword;

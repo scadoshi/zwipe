@@ -4,7 +4,7 @@
 
 #[cfg(feature = "zerver")]
 use crate::domain::{
-    card::models::{card_profile::get_card_profile::GetCardProfileError, get_card::GetCardError},
+    card::requests::{get_card::GetCardError, get_card_profile::GetCardProfileError},
     deck::models::{
         deck::get_deck_profile::GetDeckProfileError, deck_card::get_deck_card::GetDeckCardError,
     },

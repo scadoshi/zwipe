@@ -10,11 +10,14 @@
 
 use crate::domain::card::models::card_profile::CardProfile;
 use crate::domain::card::models::helpers::SleeveScryfallData;
-use crate::domain::card::models::scryfall_data::get_scryfall_data::ScryfallDataIds;
-use crate::domain::card::models::{Card, create_card::CreateCardError};
 use crate::domain::card::models::{
+    Card,
     scryfall_data::ScryfallData,
     sync_metrics::{ErrorMetrics, SyncMetrics},
+};
+use crate::domain::card::requests::{
+    create_card::CreateCardError,
+    get_scryfall_data::ScryfallDataIds,
 };
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
 use crate::outbound::sqlx::card::helpers::scryfall_data_fields::{

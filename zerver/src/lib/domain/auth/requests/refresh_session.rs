@@ -34,10 +34,11 @@
 use crate::domain::auth::models::session::Session;
 #[cfg(feature = "zerver")]
 use crate::domain::{
-    auth::models::{
-        access_token::InvalidJwt,
-        session::{
-            create_session::CreateSessionError, enforce_session_maximum::EnforceSessionMaximumError,
+    auth::{
+        models::access_token::InvalidJwt,
+        requests::{
+            create_session::CreateSessionError,
+            enforce_session_maximum::EnforceSessionMaximumError,
         },
     },
     user::models::get_user::GetUserError,

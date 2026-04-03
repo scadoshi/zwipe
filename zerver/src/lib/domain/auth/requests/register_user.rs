@@ -57,7 +57,7 @@
 #[cfg(feature = "zerver")]
 use crate::domain::auth::models::password::HashedPassword;
 #[cfg(feature = "zerver")]
-use crate::domain::auth::models::session::create_session::CreateSessionError;
+use crate::domain::auth::requests::create_session::CreateSessionError;
 use crate::domain::user::models::username::Username;
 use crate::domain::{
     auth::models::password::{InvalidPassword, Password},

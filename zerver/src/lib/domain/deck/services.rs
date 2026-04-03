@@ -5,7 +5,8 @@ use uuid::Uuid;
 
 use crate::domain::{
     card::{
-        models::{scryfall_data::get_scryfall_data::ScryfallDataIds, Card},
+        models::Card,
+        requests::get_scryfall_data::ScryfallDataIds,
         ports::CardRepository,
     },
     deck::{

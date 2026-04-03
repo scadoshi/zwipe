@@ -6,11 +6,14 @@
 use std::future::Future;
 
 use crate::{
-    domain::auth::models::{
-        refresh_token::{RefreshToken, Sha256Hash},
-        session::{
-            create_session::CreateSessionError, enforce_session_maximum::EnforceSessionMaximumError,
-            MAXIMUM_SESSION_COUNT,
+    domain::auth::{
+        models::{
+            refresh_token::{RefreshToken, Sha256Hash},
+            session::MAXIMUM_SESSION_COUNT,
+        },
+        requests::{
+            create_session::CreateSessionError,
+            enforce_session_maximum::EnforceSessionMaximumError,
         },
     },
     outbound::sqlx::auth::models::DatabaseRefreshToken,

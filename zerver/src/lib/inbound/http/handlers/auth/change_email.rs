@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     domain::{
         auth::{
-            models::change_email::{ChangeEmail, ChangeEmailError, InvalidChangeEmail},
+            requests::change_email::{ChangeEmail, ChangeEmailError, InvalidChangeEmail},
             ports::AuthService,
         },
         card::ports::CardService,

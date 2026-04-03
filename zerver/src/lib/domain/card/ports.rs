@@ -9,28 +9,28 @@ use std::future::Future;
 use chrono::NaiveDateTime;
 
 use crate::{
-    domain::card::models::{
-        card_profile::{
-            get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
-            CardProfile,
+    domain::card::{
+        models::{
+            card_profile::CardProfile,
+            scryfall_data::ScryfallData,
+            search_card::{card_filter::CardFilter, error::SearchCardsError},
+            sync_metrics::SyncMetrics,
+            Card,
         },
-        create_card::CreateCardError,
-        get_artists::GetArtistsError,
-        get_card::GetCardError,
-        get_card_types::GetCardTypesError,
-        get_languages::GetLanguagesError,
-        get_keywords::GetKeywordsError,
-        get_oracle_words::GetOracleWordsError,
-        get_sets::GetSetsError,
-        scryfall_data::{
+        requests::{
+            create_card::CreateCardError,
+            get_artists::GetArtistsError,
+            get_card::GetCardError,
+            get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
+            get_card_types::GetCardTypesError,
+            get_keywords::GetKeywordsError,
+            get_languages::GetLanguagesError,
+            get_oracle_words::GetOracleWordsError,
             get_scryfall_data::{
                 GetScryfallData, GetScryfallDataError, ScryfallDataIds, SearchScryfallDataError,
             },
-            ScryfallData,
+            get_sets::GetSetsError,
         },
-        search_card::{card_filter::CardFilter, error::SearchCardsError},
-        sync_metrics::SyncMetrics,
-        Card,
     },
     inbound::external::scryfall::bulk::BulkEndpoint,
 };

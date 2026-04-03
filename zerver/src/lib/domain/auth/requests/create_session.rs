@@ -31,8 +31,9 @@ use std::str::FromStr;
 
 #[cfg(feature = "zerver")]
 use crate::domain::{
-    auth::models::{
-        access_token::InvalidJwt, session::enforce_session_maximum::EnforceSessionMaximumError,
+    auth::{
+        models::access_token::InvalidJwt,
+        requests::enforce_session_maximum::EnforceSessionMaximumError,
     },
     user::models::get_user::GetUserError,
 };

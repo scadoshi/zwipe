@@ -1,12 +1,12 @@
 use crate::{
-    domain::card::models::{
-        card_profile::get_card_profile::GetCardProfileError,
+    domain::card::requests::{
         create_card::CreateCardError,
         get_artists::GetArtistsError,
+        get_card_profile::GetCardProfileError,
         get_card_types::GetCardTypesError,
         get_languages::GetLanguagesError,
+        get_scryfall_data::{GetScryfallDataError, SearchScryfallDataError},
         get_sets::GetSetsError,
-        scryfall_data::get_scryfall_data::{GetScryfallDataError, SearchScryfallDataError},
     },
     outbound::sqlx::postgres::IsConstraintViolation,
 };

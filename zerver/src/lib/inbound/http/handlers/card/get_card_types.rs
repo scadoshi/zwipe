@@ -2,7 +2,7 @@
 use crate::{
     domain::{
         auth::ports::AuthService,
-        card::{models::get_card_types::GetCardTypesError, ports::CardService},
+        card::{ports::CardService, requests::get_card_types::GetCardTypesError},
         deck::ports::DeckService,
         health::ports::HealthService,
         user::ports::UserService,

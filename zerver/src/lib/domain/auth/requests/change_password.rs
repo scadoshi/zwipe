@@ -32,8 +32,9 @@ use crate::domain::auth::models::password::InvalidPassword;
 use thiserror::Error;
 
 #[cfg(feature = "zerver")]
-use crate::domain::auth::models::{
-    authenticate_user::AuthenticateUserError, password::HashedPassword,
+use crate::domain::auth::{
+    models::password::HashedPassword,
+    requests::authenticate_user::AuthenticateUserError,
 };
 #[cfg(feature = "zerver")]
 use uuid::Uuid;

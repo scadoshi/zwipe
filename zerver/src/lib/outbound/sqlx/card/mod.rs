@@ -14,44 +14,40 @@ pub mod sync_metrics;
 use crate::domain::card::models::search_card::filter_cards::PLAYABLE_LAYOUTS;
 use crate::domain::card::models::{
     Card,
-    create_card::CreateCardError,
-    get_artists::GetArtistsError,
-    get_languages::GetLanguagesError,
-    get_sets::GetSetsError,
-    scryfall_data::get_scryfall_data::{GetScryfallData, GetScryfallDataError},
+    card_profile::CardProfile,
+    helpers::SleeveCardProfile,
+    scryfall_data::ScryfallData,
     search_card::{
         card_filter::{CardFilter, order_by_option::OrderByOption},
         error::SearchCardsError,
     },
+    sync_metrics::SyncMetrics,
+};
+use crate::domain::card::requests::{
+    create_card::CreateCardError,
+    get_artists::GetArtistsError,
+    get_card::GetCardError,
+    get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
+    get_card_types::GetCardTypesError,
+    get_keywords::GetKeywordsError,
+    get_languages::GetLanguagesError,
+    get_oracle_words::GetOracleWordsError,
+    get_scryfall_data::{
+        GetScryfallData, GetScryfallDataError, ScryfallDataIds, SearchScryfallDataError,
+    },
+    get_sets::GetSetsError,
 };
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
 use crate::outbound::sqlx::card::helpers::upsert_card::BatchDeltaUpsertWithTx;
 use crate::outbound::sqlx::card::models::DatabaseScryfallData;
 use crate::outbound::sqlx::postgres::Postgres as MyPostgres;
 use crate::{
-    domain::card::models::{
-        card_profile::{
-            CardProfile,
-            get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
-        },
-        get_card::GetCardError,
-        get_card_types::GetCardTypesError,
-        get_keywords::GetKeywordsError,
-        get_oracle_words::GetOracleWordsError,
-        helpers::SleeveCardProfile,
-        scryfall_data::get_scryfall_data::{ScryfallDataIds, SearchScryfallDataError},
-    },
+    domain::card::ports::CardRepository,
     outbound::sqlx::card::helpers::upsert_card::{
         BatchUpsertWithTx, BulkUpsertWithTx, SingleUpsertWithTx,
     },
 };
-use crate::{
-    domain::card::{
-        models::{scryfall_data::ScryfallData, sync_metrics::SyncMetrics},
-        ports::CardRepository,
-    },
-    outbound::sqlx::card::sync_metrics::DatabaseSyncMetrics,
-};
+use crate::outbound::sqlx::card::sync_metrics::DatabaseSyncMetrics;
 
 use anyhow::Context;
 use chrono::NaiveDateTime;

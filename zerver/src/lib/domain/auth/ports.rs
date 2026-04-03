@@ -4,26 +4,28 @@
 //! These traits decouple the domain logic from infrastructure concerns (database, HTTP, etc.).
 
 use crate::domain::{
-    auth::models::{
-        access_token::JwtSecret,
-        authenticate_user::{AuthenticateUser, AuthenticateUserError},
-        change_email::{ChangeEmail, ChangeEmailError},
-        change_password::{ChangePassword, ChangePasswordError},
-        change_username::{ChangeUsername, ChangeUsernameError},
-        delete_user::{DeleteUser, DeleteUserError},
-        refresh_token::RefreshToken,
-        register_user::{RegisterUser, RegisterUserError},
-        request_password_reset::{RequestPasswordReset, RequestPasswordResetError},
-        reset_password::{ResetPassword, ResetPasswordError},
-        session::{
+    auth::{
+        models::{
+            UserWithPasswordHash,
+            access_token::JwtSecret,
+            refresh_token::RefreshToken,
+            session::Session,
+        },
+        requests::{
+            authenticate_user::{AuthenticateUser, AuthenticateUserError},
+            change_email::{ChangeEmail, ChangeEmailError},
+            change_password::{ChangePassword, ChangePasswordError},
+            change_username::{ChangeUsername, ChangeUsernameError},
             create_session::{CreateSession, CreateSessionError},
             delete_expired_sessions::DeleteExpiredSessionsError,
+            delete_user::{DeleteUser, DeleteUserError},
             refresh_session::{RefreshSession, RefreshSessionError},
+            register_user::{RegisterUser, RegisterUserError},
+            request_password_reset::{RequestPasswordReset, RequestPasswordResetError},
+            reset_password::{ResetPassword, ResetPasswordError},
             revoke_sessions::{RevokeSessions, RevokeSessionsError},
-            Session,
+            verify_email::{VerifyEmail, VerifyEmailError},
         },
-        verify_email::{VerifyEmail, VerifyEmailError},
-        UserWithPasswordHash,
     },
     user::models::User,
 };

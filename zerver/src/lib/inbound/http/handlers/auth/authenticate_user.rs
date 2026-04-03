@@ -2,16 +2,14 @@
 use axum::{extract::State, http::StatusCode, Json};
 use serde::{Deserialize, Serialize};
 
-use crate::domain::auth::models::authenticate_user::AuthenticateUser;
+use crate::domain::auth::requests::authenticate_user::AuthenticateUser;
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
         auth::{
-            models::{
-                authenticate_user::{AuthenticateUserError, InvalidAuthenticateUser},
-                session::Session,
-            },
+            models::session::Session,
             ports::AuthService,
+            requests::authenticate_user::{AuthenticateUserError, InvalidAuthenticateUser},
         },
         card::ports::CardService,
         deck::ports::DeckService,

@@ -25,7 +25,7 @@
 //! ```
 
 #[cfg(feature = "zerver")]
-use crate::domain::auth::models::authenticate_user::AuthenticateUserError;
+use crate::domain::auth::requests::authenticate_user::AuthenticateUserError;
 use crate::domain::{
     auth::models::password::{InvalidPassword, Password},
     user::models::username::{InvalidUsername, Username},
