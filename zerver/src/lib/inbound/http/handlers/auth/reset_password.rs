@@ -1,6 +1,6 @@
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
-use serde::{Deserialize, Serialize};
+pub use zwipe_core::http::contracts::auth::HttpResetPassword;
 
 #[cfg(feature = "zerver")]
 use crate::{
@@ -28,13 +28,6 @@ impl From<ResetPasswordError> for ApiError {
             ResetPasswordError::Database(e) => e.log_500(),
         }
     }
-}
-
-/// Password reset completion request body.
-#[derive(Debug, Deserialize, Serialize)]
-pub struct HttpResetPassword {
-    token: String,
-    new_password: String,
 }
 
 /// Completes the password reset flow using a one-time token.

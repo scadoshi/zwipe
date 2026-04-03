@@ -19,8 +19,7 @@ use crate::{
 };
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
+pub use zwipe_core::http::contracts::deck::HttpCreateDeckProfile;
 
 #[cfg(feature = "zerver")]
 impl From<CreateDeckProfileError> for ApiError {
@@ -48,28 +47,6 @@ impl From<InvalidCreateDeckProfile> for ApiError {
             InvalidCreateDeckProfile::Format(e) => {
                 Self::UnprocessableEntity(format!("invalid format: {}", e))
             }
-        }
-    }
-}
-
-/// Deck creation request body.
-#[derive(Debug, Deserialize, Serialize)]
-pub struct HttpCreateDeckProfile {
-    /// Deck display name.
-    pub name: String,
-    /// Optional commander card ID.
-    pub commander_id: Option<Uuid>,
-    /// Optional deck format.
-    pub format: Option<String>,
-}
-
-impl HttpCreateDeckProfile {
-    /// Creates a new deck creation request.
-    pub fn new(name: &str, commander_id: Option<Uuid>, format: Option<String>) -> Self {
-        Self {
-            name: name.to_string(),
-            commander_id,
-            format,
         }
     }
 }

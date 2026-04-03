@@ -6,7 +6,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use serde::{Deserialize, Serialize};
+pub use zwipe_core::http::contracts::deck_card::HttpImportDeckCards;
 
 #[cfg(feature = "zerver")]
 use crate::{
@@ -39,13 +39,6 @@ impl From<ImportDeckCardsError> for ApiError {
             ImportDeckCardsError::Database(e) => e.log_500(),
         }
     }
-}
-
-/// Import deck cards request body.
-#[derive(Debug, Deserialize, Serialize)]
-pub struct HttpImportDeckCards {
-    /// Plain-text decklist (one card per line).
-    pub text: String,
 }
 
 /// Imports cards from plain-text decklist into a deck.

@@ -44,7 +44,10 @@ impl Upkeep for Signal<Option<Session>> {
             }
 
             if current.access_token.is_expired() {
-                let request = HttpRefreshSession::from(&current);
+                let request = HttpRefreshSession::new(
+                    &current.user.id.to_string(),
+                    &current.refresh_token.value,
+                );
                 match client().refresh(&request).await {
                     Ok(new) => {
                         session.set(Some(new));
