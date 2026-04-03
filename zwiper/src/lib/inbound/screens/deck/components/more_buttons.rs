@@ -77,7 +77,6 @@ pub(crate) fn MoreButtons(
             button {
                 class: "btn",
                 onclick: move |_| {
-                    show_more_sheet.set(false);
                     show_delete_dialog.set(true);
                 },
                 "delete deck"
