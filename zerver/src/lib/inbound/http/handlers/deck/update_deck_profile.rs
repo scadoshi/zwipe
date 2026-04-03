@@ -24,6 +24,7 @@ use axum::{
     Json,
 };
 pub use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
+#[cfg(feature = "zerver")]
 use uuid::Uuid;
 
 #[cfg(feature = "zerver")]

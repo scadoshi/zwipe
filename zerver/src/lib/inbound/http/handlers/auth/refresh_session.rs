@@ -1,3 +1,4 @@
+#[cfg(feature = "zerver")]
 use crate::domain::auth::{models::session::Session, requests::refresh_session::RefreshSession};
 #[cfg(feature = "zerver")]
 use crate::{
