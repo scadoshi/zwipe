@@ -1680,6 +1680,10 @@ body {
     align-items: stretch;
 }
 
+.modal-content .btn {
+    margin-bottom: 0;
+}
+
 .modal-footer {
     padding: 1.5rem;
     border-top: 1px solid var(--border-secondary);

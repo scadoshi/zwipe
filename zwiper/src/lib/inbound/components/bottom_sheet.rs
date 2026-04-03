@@ -16,8 +16,8 @@ pub fn BottomSheet(open: Signal<bool>, title: String, children: Element) -> Elem
                 span { style: "font-size: 1rem;", "{title}" }
             }
             div { class: "modal-content",
-                div { class: "flex-col gap-half",
-                    style: "padding: 0.5rem 0;",
+                div { class: "flex-col",
+                    style: "gap: 0.5rem;",
                     {children}
                 }
             }
