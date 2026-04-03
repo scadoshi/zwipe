@@ -21,6 +21,7 @@ ZWIPE is a mobile-first Magic: The Gathering deck builder with swipe-based navig
 - **No SQLx derives or annotations.** No `#[derive(FromRow)]`, no `#[sqlx(...)]`. Domain types must not know about Postgres.
 - **No service-layer errors.** Error types that wrap `anyhow::Error` (database failures, not-found, etc.) stay in zerver.
 - **Only truly shared types.** If only the server needs it, it stays in zerver.
+- **No types with `From` impls in zerver's handlers.** `ApiError` stays in zerver because its `From<DomainError>` impls would violate the orphan rule if both types were in core. See `architecture/decisions.md`.
 - **All domain validation and tests live here.** Zerver re-exports via `pub use zwipe_core::...` — it adds only server-specific behavior.
 
 **Allowed dependencies:** serde, thiserror, uuid, chrono, email_address, once_cell, serde_json, sha2, rand — crates that both frontend and backend legitimately use.
