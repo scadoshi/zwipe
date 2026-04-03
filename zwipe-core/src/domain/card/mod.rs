@@ -4,6 +4,8 @@
 pub mod card_profile;
 /// Scryfall API data models.
 pub mod scryfall_data;
+/// Card search with comprehensive filtering.
+pub mod search_card;
 
 use card_profile::CardProfile;
 use scryfall_data::ScryfallData;
