@@ -11,16 +11,22 @@ pub use zwipe_core::domain::auth::models::access_token::{
     InvalidJwt as CoreInvalidJwt,
 };
 
+#[cfg(feature = "zerver")]
 use crate::domain::user::models::User;
+#[cfg(feature = "zerver")]
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
+#[cfg(feature = "zerver")]
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "zerver")]
 use std::str::FromStr;
+#[cfg(feature = "zerver")]
 use thiserror::Error;
 
 // ========
 //  errors
 // ========
 
+#[cfg(feature = "zerver")]
 /// Errors when constructing a JWT secret.
 #[derive(Debug, Clone, Error)]
 pub enum JwtSecretError {
@@ -33,6 +39,7 @@ pub enum JwtSecretError {
     MissingSecret,
 }
 
+#[cfg(feature = "zerver")]
 /// Errors when creating or validating JWT tokens.
 ///
 /// Extends the core [`CoreInvalidJwt`] with the server-only `EncodingError` variant.
@@ -51,6 +58,7 @@ pub enum InvalidJwt {
     EncodingError(jsonwebtoken::errors::Error),
 }
 
+#[cfg(feature = "zerver")]
 impl From<CoreInvalidJwt> for InvalidJwt {
     fn from(e: CoreInvalidJwt) -> Self {
         match e {
@@ -60,6 +68,7 @@ impl From<CoreInvalidJwt> for InvalidJwt {
     }
 }
 
+#[cfg(feature = "zerver")]
 impl From<jsonwebtoken::errors::Error> for InvalidJwt {
     fn from(value: jsonwebtoken::errors::Error) -> Self {
         Self::EncodingError(value)
@@ -70,16 +79,19 @@ impl From<jsonwebtoken::errors::Error> for InvalidJwt {
 //  newtypes
 // ==========
 
+#[cfg(feature = "zerver")]
 /// Server-side secret key for signing and validating JWT tokens.
 #[derive(Debug, Clone)]
 pub struct JwtSecret(String);
 
+#[cfg(feature = "zerver")]
 impl AsRef<[u8]> for JwtSecret {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
     }
 }
 
+#[cfg(feature = "zerver")]
 impl JwtSecret {
     /// Creates a new JWT secret with validation.
     ///
@@ -101,12 +113,14 @@ impl JwtSecret {
 //  extension traits
 // ===================
 
+#[cfg(feature = "zerver")]
 /// Extension trait for validating JWT signatures on the server.
 pub trait JwtValidate {
     /// Validates the JWT signature and extracts user claims.
     fn validate(&self, secret: &JwtSecret) -> Result<UserClaims, jsonwebtoken::errors::Error>;
 }
 
+#[cfg(feature = "zerver")]
 impl JwtValidate for Jwt {
     fn validate(&self, secret: &JwtSecret) -> Result<UserClaims, jsonwebtoken::errors::Error> {
         let token_data = decode::<UserClaims>(
@@ -118,12 +132,14 @@ impl JwtValidate for Jwt {
     }
 }
 
+#[cfg(feature = "zerver")]
 /// Extension trait for server-side access token operations.
 pub trait AccessTokenExt {
     /// Generates a new access token for a user.
     fn generate(user: &User, secret: &JwtSecret) -> Result<AccessToken, InvalidJwt>;
 }
 
+#[cfg(feature = "zerver")]
 impl AccessTokenExt for AccessToken {
     fn generate(
         user: &User,
@@ -159,12 +175,14 @@ impl AccessTokenExt for AccessToken {
 //  serde for InvalidJwt
 // =======================
 
+#[cfg(feature = "zerver")]
 impl Serialize for InvalidJwt {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.serialize_str(&self.to_string())
     }
 }
 
+#[cfg(feature = "zerver")]
 impl<'de> Deserialize<'de> for InvalidJwt {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
