@@ -33,16 +33,73 @@ Android build compiles and runs. Remaining polish before Play Store submission:
 
 ---
 
-## Format-Aware Commander Querying
+## Commander System
 
-`is_commander` was removed from the database (was a persisted boolean on `card_profiles`). Commander eligibility will be computed in-memory via query filters. Each format has different rules for what constitutes a valid commander:
+Commander eligibility is computed via query filters, not persisted. Three phases, each building on the last.
 
+### Phase 1: Commander Search Filter + Validation
+
+Add `commander_for_format: Option<Format>` to `CardFilter`. When set, filters results to cards that are valid commanders for that format. The commander search dropdown on create/edit screens auto-sets this from the deck's format. Users are not forced to use it — they can select any card as commander, and warnings surface mismatches.
+
+**Commander eligibility rules per format:**
 - [ ] **Commander / Duel / PreDH** — legendary creature, legendary vehicle/spacecraft with P/T, or "can be your commander" oracle text
 - [ ] **Brawl / Standard Brawl / Historic Brawl** — legendary creature OR legendary planeswalker
 - [ ] **Pauper Commander** — uncommon creature
-- [ ] **Oathbreaker** — planeswalker (+ signature spell concept, future work)
-- [ ] Wire format-aware filtering into commander search on create/edit screens (currently serves all cards)
-- [ ] Validate commander selection against format rules and surface as deck warning if mismatched
+- [ ] **Oathbreaker** — planeswalker
+
+**Implementation:**
+- [ ] Add `commander_for_format: Option<Format>` to `CardFilter` / `CardFilterBuilder` (zwipe-core)
+- [ ] Implement eligibility logic — pure function that checks type_line, oracle_text, rarity against format rules (zwipe-core)
+- [ ] Backend: apply filter in SQL query (type_line ILIKE '%Legendary%Creature%' etc.) or in-memory post-filter
+- [ ] Frontend: commander search on create/edit screens auto-sets `commander_for_format` from deck's selected format
+- [ ] Default behavior: filter is ON when deck has a format, OFF when no format selected
+- [ ] `validate_deck()`: add warning if selected commander is not valid for the deck's format ("sol ring is not a valid commander for commander format")
+
+### Phase 2: Partner, Background, and Oathbreaker Support
+
+Changes the deck data model to support multi-commander formats. Do NOT mix with Phase 1.
+
+**Partner commanders:**
+- [ ] Allow 2 commander slots on `DeckProfile` — `commander_id` becomes `commander_ids: Vec<Uuid>` or add `partner_id: Option<Uuid>`
+- [ ] Validate both commanders have "Partner" keyword or are a named partner pair
+- [ ] Color identity = union of both commanders' color identities
+- [ ] `validate_deck()`: warn if partner rules violated
+
+**Background:**
+- [ ] Second commander slot for Background enchantment (Commander Legends: Battle for Baldur's Gate)
+- [ ] First commander must have "Choose a Background" text
+- [ ] Second commander must have "Background" type
+
+**Oathbreaker:**
+- [ ] Add `signature_spell_id: Option<Uuid>` to `DeckProfile`
+- [ ] Signature spell must be an instant or sorcery within the planeswalker's color identity
+- [ ] `validate_deck()`: warn if signature spell is outside color identity or wrong card type
+- [ ] Database migration for new column
+
+### Phase 3: Zwipe for Commander (UX Enhancement)
+
+A dedicated swiping flow for commander selection. Future work — only build if users want it.
+
+**Concept:**
+- [ ] On create/edit screen, when format has a commander, show "Zwipe for Commander" button
+- [ ] Opens the swiping interface pre-filtered to valid commanders for the selected format
+- [ ] User can adjust filters (colors, mana cost, set, etc.) and swipe through candidates
+- [ ] First swipe-right sets the commander and returns to the create/edit screen
+- [ ] Format filter defaults to deck's format but user can change it
+- [ ] Works on both create and edit screens
+
+---
+
+## Theme Audit & Color System
+
+Full audit of all 9 themes to make the app more colorful and ensure visual consistency.
+
+**Steps:**
+1. **Define Zwipe color scheme** — select distinct, vibrant colors for the default theme
+2. **Audit CSS variable usage** — map which variables apply where across the app (backgrounds, borders, text, accents, buttons). Ensure semantic consistency: `--primary-border` should mean the same thing on every screen
+3. **Ensure contrast consistency** — every theme must meet the same contrast ratios (e.g., text on background, border against background). Document the target contrast rules
+4. **Per-theme color pass** — go through each of the 9 themes, ensure they have ample color variety within their flavor (not just 2 shades of one hue). Adjust to meet contrast rules from step 3
+5. **Full visual test** — test every theme on every screen, tweak as needed
 
 ---
 
