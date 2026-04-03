@@ -48,9 +48,23 @@ zweb   ──→ zwipe-core
 
 **What lives in zwipe-core:** domain entities (User, DeckProfile, DeckCard), value objects (Username, DeckName, Quantity, Format, DeckWarning), request types (CreateDeckProfile, UpdateDeckCard, etc.), validation errors, content moderation, password validation.
 
-**What stays in zerver:** service-layer errors, port traits, service implementations, database adapters, HTTP handlers/routes, any type that requires server-only dependencies.
+**What stays in zerver:** service-layer errors, port traits, service implementations, database adapters, HTTP handlers/routes, `ApiError`, any type that requires server-only dependencies.
 
 Zerver files for extracted types become one-liners: `pub use zwipe_core::domain::deck::format::*;`
+
+---
+
+## ApiError Must Stay in Zerver
+
+**Decided: 2026-04-02.**
+
+`ApiError` is the HTTP error enum that maps domain errors to status codes. It lives in `zerver/src/lib/inbound/http/mod.rs`. It was considered for extraction to zwipe-core but **cannot move** due to Rust's orphan rule.
+
+**Why:** Zerver has ~10 `impl From<DomainError> for ApiError` conversions across its handler files (e.g., `impl From<InvalidCreateDeckProfile> for ApiError`). If `ApiError` moves to zwipe-core, both the error type AND the domain error type become foreign to zerver — Rust's orphan rule forbids implementing a foreign trait (`From`) for two foreign types. Every handler-level error mapping would break.
+
+**Consequence:** Zwiper must keep zerver as a dependency (with `default-features = false`) to access `ApiError`. This is acceptable — `ApiError` is an inbound HTTP adapter type, not domain logic. Its `From` impls are handler-level glue that maps domain errors to HTTP status codes, which is exactly where adapter logic belongs.
+
+**All server-only code in zerver must be gated with `#[cfg(feature = "zerver")]`** so zwiper's build doesn't pull in axum, sqlx, jsonwebtoken, etc.
 
 ---
 
