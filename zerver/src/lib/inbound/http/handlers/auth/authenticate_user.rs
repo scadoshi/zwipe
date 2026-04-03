@@ -2,6 +2,7 @@
 use axum::{extract::State, http::StatusCode, Json};
 pub use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
 
+#[cfg(feature = "zerver")]
 use crate::domain::auth::requests::authenticate_user::AuthenticateUser;
 #[cfg(feature = "zerver")]
 use crate::{
