@@ -74,25 +74,29 @@ pub fn FormatFilter() -> Element {
                     div {
                         class: if filter_builder()
                             .legalities_contains_any()
-                            .and_then(|v| v.first())
-                            .is_some_and(|k| k == fmt.to_legality_key())
+                            .is_some_and(|v| v.contains(&fmt.to_legality_key().to_string()))
                         {
                             "chip selected"
                         } else {
                             "chip"
                         },
                         onclick: move |_| {
-                            let currently_selected = filter_builder()
+                            let mut current = filter_builder()
                                 .legalities_contains_any()
-                                .and_then(|v| v.first())
-                                .is_some_and(|k| k == fmt.to_legality_key());
+                                .map(|v| v.to_vec())
+                                .unwrap_or_default();
 
-                            if currently_selected {
+                            let key = fmt.to_legality_key().to_string();
+                            if current.contains(&key) {
+                                current.retain(|k| k != &key);
+                            } else {
+                                current.push(key);
+                            }
+
+                            if current.is_empty() {
                                 filter_builder.write().unset_legalities_contains_any();
                             } else {
-                                filter_builder.write().set_legalities_contains_any(
-                                    vec![fmt.to_legality_key().to_string()]
-                                );
+                                filter_builder.write().set_legalities_contains_any(current);
                             }
                         },
                         { fmt.display_name().to_lowercase() }
