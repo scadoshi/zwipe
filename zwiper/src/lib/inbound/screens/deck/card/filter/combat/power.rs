@@ -22,7 +22,7 @@ pub(crate) fn PowerFilter() -> Element {
         filter_builder().power_equals().is_some() || filter_builder().power_range().is_some();
 
     rsx! {
-        div { class: "label-row",
+        div { class: "label-row mt-2",
             label { class: "label-xs", "power" }
             button {
                 class: "clear-btn",

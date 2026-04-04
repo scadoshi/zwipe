@@ -64,7 +64,7 @@ pub(crate) fn ProducedManaFilter() -> Element {
 
     rsx! {
         // Produced mana filter
-        div { class: "label-row",
+        div { class: "label-row mt-2",
             label { class: "label-xs", "produces" }
             button {
                 class: "clear-btn",

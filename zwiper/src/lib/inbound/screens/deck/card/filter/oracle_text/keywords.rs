@@ -78,7 +78,7 @@ pub(crate) fn Keywords() -> Element {
     let selected_keywords = read_keywords(&filter_builder(), keywords_mode());
 
     rsx! {
-        div { class: "label-row",
+        div { class: "label-row mt-2",
             label { class: "label-xs", r#for: "keyword-search", "keywords contains" }
             button {
                 class: "clear-btn",

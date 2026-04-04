@@ -37,7 +37,7 @@ pub(crate) fn ColorIdentityFilter() -> Element {
 
     rsx! {
         // Color identity filter
-        div { class: "label-row",
+        div { class: "label-row mt-2",
             label { class: "label-xs", "color identity" }
             button {
                 class: "clear-btn",

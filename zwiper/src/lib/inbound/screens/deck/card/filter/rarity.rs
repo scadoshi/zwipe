@@ -13,7 +13,7 @@ pub fn Rarity() -> Element {
 
     rsx! {
         div { class: "flex-col gap-half",
-            div { class: "label-row",
+            div { class: "label-row mt-2",
                 label { class: "label-xs", "rarity equals any" }
                 if filter_builder().rarity_equals_any().is_some() {
                     button {

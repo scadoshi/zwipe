@@ -49,7 +49,7 @@ pub fn Artist() -> Element {
 
     rsx! {
         div { class: "flex-col gap-half",
-            div { class: "label-row",
+            div { class: "label-row mt-2",
                 label { class: "label-xs", r#for: "artist-search", "artist equals any" }
                 if !selected_artists.is_empty() {
                     button {

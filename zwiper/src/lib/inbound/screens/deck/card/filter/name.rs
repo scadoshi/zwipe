@@ -12,7 +12,7 @@ pub fn Name() -> Element {
 
     rsx! {
         div { class: "flex-col gap-half",
-            div { class: "label-row",
+            div { class: "label-row mt-2",
                 label { class: "label-xs", r#for: "name-contains", "name contains" }
                 if filter_builder().name_contains().is_some() {
                     button {
