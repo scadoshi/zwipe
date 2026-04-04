@@ -59,11 +59,14 @@ impl From<InvalidUpdateDeckCard> for ApiError {
             InvalidUpdateDeckCard::UpdateQuantity(e) => {
                 Self::UnprocessableEntity(format!("invalid update quantity: {}", e))
             }
+            InvalidUpdateDeckCard::NothingToUpdate => {
+                Self::UnprocessableEntity(InvalidUpdateDeckCard::NothingToUpdate.to_string())
+            }
         }
     }
 }
 
-/// Adjusts a card's quantity by the given delta.
+/// Updates a card's quantity and/or maybeboard status.
 #[cfg(feature = "zerver")]
 pub async fn update_deck_card<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,
@@ -78,7 +81,7 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let request = UpdateDeckCard::new(user.id, &deck_id, &scryfall_data_id, body.update_quantity)?;
+    let request = UpdateDeckCard::new(user.id, &deck_id, &scryfall_data_id, body.update_quantity, body.maybeboard)?;
 
     state
         .deck_service
