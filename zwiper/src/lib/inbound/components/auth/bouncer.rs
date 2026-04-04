@@ -2,7 +2,7 @@
 
 use crate::inbound::router::Router;
 use dioxus::prelude::*;
-use zwipe::domain::auth::models::session::Session;
+use zwipe_core::domain::auth::models::session::Session;
 
 /// Route guard that redirects unauthenticated users to the login page.
 ///

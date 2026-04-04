@@ -48,11 +48,7 @@ use argon2::{
 };
 use std::fmt::Display;
 
-// Re-export validation types from zwipe-core so downstream consumers
-// (handlers, services) can continue importing from this module.
-pub use zwipe_core::domain::auth::password::{
-    InvalidPassword, SYMBOLS, TooFewUniqueChars, TooManyRepeats,
-};
+use zwipe_core::domain::auth::password::InvalidPassword;
 
 /// A validated password that meets all security policy requirements.
 ///

@@ -5,7 +5,7 @@ use crate::outbound::client::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
-use zwipe::domain::auth::models::session::Session;
+use zwipe_core::domain::auth::models::session::Session;
 
 /// Email display row with verified/unverified badge and resend verification button.
 #[component]

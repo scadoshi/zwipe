@@ -11,7 +11,7 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
-use zwipe::domain::auth::models::session::Session;
+use zwipe_core::domain::auth::models::session::Session;
 
 /// Trait for session signals that can perform logout operations.
 pub trait SignalLogout {

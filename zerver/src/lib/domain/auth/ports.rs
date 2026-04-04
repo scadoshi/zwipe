@@ -8,8 +8,6 @@ use crate::domain::{
         models::{
             UserWithPasswordHash,
             access_token::JwtSecret,
-            refresh_token::RefreshToken,
-            session::Session,
         },
         requests::{
             authenticate_user::{AuthenticateUser, AuthenticateUserError},
@@ -28,7 +26,10 @@ use crate::domain::{
         },
     },
 };
-use zwipe_core::domain::user::User;
+use zwipe_core::domain::{
+    auth::models::{refresh_token::RefreshToken, session::Session},
+    user::User,
+};
 use chrono::NaiveDateTime;
 use std::future::Future;
 use uuid::Uuid;

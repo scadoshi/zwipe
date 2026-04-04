@@ -12,10 +12,6 @@
 
 pub mod access_token;
 pub mod password;
-/// Long-lived refresh token management (re-exported from zwipe-core).
-pub mod refresh_token;
-/// Session entity and constants (re-exported from zwipe-core).
-pub mod session;
 
 #[cfg(feature = "zerver")]
 use crate::domain::auth::models::password::HashedPassword;

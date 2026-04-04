@@ -7,7 +7,7 @@ use crate::outbound::client::{user::delete_user::ClientDeleteUser, ZwipeClient};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
-use zwipe::domain::auth::models::session::Session;
+use zwipe_core::domain::auth::models::session::Session;
 use zwipe::inbound::http::handlers::auth::delete_user::HttpDeleteUser;
 
 /// Delete account dialog with 5-second countdown, password confirmation, and deletion logic.

@@ -2,8 +2,7 @@ use crate::domain::{
     auth::{
         models::{
             UserWithPasswordHash,
-            access_token::{AccessToken, AccessTokenExt, JwtSecret},
-            session::Session,
+            access_token::{AccessTokenExt, JwtSecret},
         },
         ports::{AuthRepository, AuthService},
         requests::{
@@ -29,7 +28,10 @@ use crate::domain::{
     user::ports::UserRepository,
 };
 use anyhow::anyhow;
-use zwipe_core::domain::user::{preferences::UserPreferences, User};
+use zwipe_core::domain::{
+    auth::models::{access_token::AccessToken, session::Session},
+    user::{preferences::UserPreferences, User},
+};
 use chrono::{Duration, Utc};
 use rand::Rng;
 use sha2::Digest;

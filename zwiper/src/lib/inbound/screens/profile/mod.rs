@@ -27,7 +27,7 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
-use zwipe::domain::auth::models::session::Session;
+use zwipe_core::domain::auth::models::session::Session;
 
 /// User profile screen showing account details and management options.
 #[component]

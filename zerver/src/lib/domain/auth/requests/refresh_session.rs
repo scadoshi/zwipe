@@ -31,7 +31,7 @@
 //! // Client now has fresh access token (24h) and refresh token (14d)
 //! ```
 
-use crate::domain::auth::models::session::Session;
+use zwipe_core::domain::auth::models::session::Session;
 #[cfg(feature = "zerver")]
 use crate::domain::{
     auth::{
@@ -207,9 +207,9 @@ impl From<&Session> for RefreshSession {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::auth::models::access_token::{AccessToken, Jwt};
-    use crate::domain::auth::models::refresh_token::RefreshToken;
-    use crate::domain::auth::models::session::Session;
+    use zwipe_core::domain::auth::models::access_token::{AccessToken, Jwt};
+    use zwipe_core::domain::auth::models::refresh_token::RefreshToken;
+    use zwipe_core::domain::auth::models::session::Session;
     use zwipe_core::domain::user::{preferences::UserPreferences, username::Username, User};
     use chrono::{Duration, Utc};
     use email_address::EmailAddress;

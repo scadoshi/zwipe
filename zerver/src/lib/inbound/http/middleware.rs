@@ -1,11 +1,14 @@
 //! JWT authentication middleware.
 
-use zwipe_core::domain::user::username::Username;
+use zwipe_core::domain::{
+    auth::models::access_token::{Jwt, UserClaims},
+    user::username::Username,
+};
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
         auth::{
-            models::access_token::{Jwt, JwtSecret, JwtValidate, UserClaims},
+            models::access_token::{JwtSecret, JwtValidate},
             ports::AuthService,
         },
         card::ports::CardService,
@@ -119,7 +122,7 @@ where
     ) -> Result<Self, Self::Rejection> {
         use std::str::FromStr;
 
-        use crate::domain::auth::models::access_token::Jwt;
+        use zwipe_core::domain::auth::models::access_token::Jwt;
 
         let TypedHeader(Authorization(bearer)) =
             TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)

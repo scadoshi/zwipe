@@ -28,7 +28,7 @@
 //! )?;
 //! ```
 
-use crate::domain::auth::models::password::InvalidPassword;
+use zwipe_core::domain::auth::password::InvalidPassword;
 use thiserror::Error;
 
 #[cfg(feature = "zerver")]
