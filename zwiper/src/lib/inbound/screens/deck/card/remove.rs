@@ -17,6 +17,7 @@ use crate::{
         deck::get_deck::ClientGetDeck,
         deck_card::{
             create_deck_card::ClientCreateDeckCard, delete_deck_card::ClientDeleteDeckCard,
+            update_deck_card::ClientUpdateDeckCard,
         },
     },
 };
@@ -24,7 +25,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
+use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpUpdateDeckCard};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::{
     Card,
@@ -70,7 +71,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
     let swipe_state = use_signal(SwipeState::new);
     let swipe_config = SwipeConfig::new(
-        vec![Direction::Left, Direction::Right, Direction::Down],
+        vec![Direction::Left, Direction::Right, Direction::Up, Direction::Down],
         150.0,
         5.0,
     );
@@ -162,6 +163,31 @@ pub fn Remove(deck_id: Uuid) -> Element {
         });
     };
 
+    let move_card_to_maybeboard = move || {
+        let Some(card) = current_card() else {
+            return;
+        };
+
+        session.upkeep(client);
+        let Some(session) = session() else {
+            toast.error("session expired".to_string(), ToastOptions::default());
+            return;
+        };
+
+        let scryfall_data_id = card.scryfall_data.id;
+        let request = HttpUpdateDeckCard::new(None, Some(true));
+
+        spawn(async move {
+            if let Err(e) = client()
+                .update_deck_card(deck_id, scryfall_data_id, &request, &session)
+                .await
+            {
+                tracing::warn!("move card to maybeboard failed: {e}");
+                toast.error(e.to_string(), ToastOptions::default());
+            }
+        });
+    };
+
     // Called at animation end to physically remove the card from both vecs.
     let mut remove_current_card = move || {
         let idx = current_index();
@@ -231,6 +257,41 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     }
                 });
             }
+            SwipeAction::Maybeboard(card) => {
+                // Re-insert into both vecs so the card reappears
+                let card = *card;
+                let idx = current_index();
+                deck_cards.write().push(card.clone());
+                displayed_cards.write().insert(idx, card.clone());
+
+                // Move back from maybeboard to active on the backend
+                session.upkeep(client);
+                let Some(session) = session() else {
+                    toast.error("session expired".to_string(), ToastOptions::default());
+                    return;
+                };
+
+                let scryfall_data_id = card.scryfall_data.id;
+                let request = HttpUpdateDeckCard::new(None, Some(false));
+
+                spawn(async move {
+                    match client()
+                        .update_deck_card(deck_id, scryfall_data_id, &request, &session)
+                        .await
+                    {
+                        Ok(_) => {
+                            toast.success(
+                                "undid maybeboard".to_string(),
+                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                            );
+                        }
+                        Err(e) => {
+                            tracing::warn!("undo maybeboard (update deck card) failed: {e}");
+                            toast.error(format!("failed to undo: {}", e), ToastOptions::default());
+                        }
+                    }
+                });
+            }
         }
     };
 
@@ -271,7 +332,14 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                     is_animating.set(true);
                                     animation_direction.set(Direction::Right);
                                 },
-                                on_swipe_up: move |_| {},
+                                on_swipe_up: move |_| {
+                                    let Some(card) = current_card() else { return; };
+                                    action_history.write().push(SwipeAction::Maybeboard(Box::new(card)));
+                                    move_card_to_maybeboard();
+                                    toast.info("moved to maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                    is_animating.set(true);
+                                    animation_direction.set(Direction::Up);
+                                },
                                 on_swipe_down: move |_| {
                                     undo_last_action();
                                 },
@@ -291,7 +359,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                     },
                                     onanimationend: move |_| {
                                         is_animating.set(false);
-                                        if animation_direction() == Direction::Right {
+                                        if matches!(animation_direction(), Direction::Right | Direction::Up) {
                                             remove_current_card();
                                         } else {
                                             let len = displayed_cards().len();

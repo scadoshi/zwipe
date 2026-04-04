@@ -195,7 +195,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     // Swipeable state
     let swipe_state = use_signal(SwipeState::new);
     let swipe_config = SwipeConfig::new(
-        vec![Direction::Left, Direction::Right, Direction::Down],
+        vec![Direction::Left, Direction::Right, Direction::Up, Direction::Down],
         150.0, // 150px to commit swipe
         5.0,   // 5px/ms speed threshold
     );
@@ -222,6 +222,33 @@ pub fn Add(deck_id: Uuid) -> Element {
                 }
                 Err(e) => {
                     tracing::warn!("add card to deck failed: {e}");
+                    toast.error(e.to_string(), ToastOptions::default());
+                }
+            }
+        });
+    };
+
+    let add_card_to_maybeboard = move || {
+        let Some(card) = current_card() else {
+            return;
+        };
+
+        session.upkeep(client);
+        let Some(session) = session() else {
+            toast.error("session expired".to_string(), ToastOptions::default());
+            return;
+        };
+
+        let request = HttpCreateDeckCard::new(&card.scryfall_data.id.to_string(), 1, Some(true));
+        let card_id = card.scryfall_data.id;
+
+        spawn(async move {
+            match client().create_deck_card(deck_id, &request, &session).await {
+                Ok(_) => {
+                    deck_cards_ids.write().insert(card_id);
+                }
+                Err(e) => {
+                    tracing::warn!("add card to maybeboard failed: {e}");
                     toast.error(e.to_string(), ToastOptions::default());
                 }
             }
@@ -279,6 +306,33 @@ pub fn Add(deck_id: Uuid) -> Element {
                             tracing::warn!("undo add (delete deck card) failed: {e}");
                             toast.error(format!("failed to undo: {}", e), ToastOptions::default());
                             // Don't restore action or index - user can try again by adding the card
+                        }
+                    }
+                });
+            }
+            SwipeAction::Maybeboard(ref card) => {
+                session.upkeep(client);
+                let Some(session) = session() else {
+                    toast.error("session expired".to_string(), ToastOptions::default());
+                    action_history.write().push(action);
+                    current_index.set(current_index() + 1);
+                    return;
+                };
+
+                let card_id = card.scryfall_data.id;
+
+                spawn(async move {
+                    match client().delete_deck_card(deck_id, card_id, &session).await {
+                        Ok(_) => {
+                            deck_cards_ids.write().remove(&card_id);
+                            toast.success(
+                                "undid maybeboard".to_string(),
+                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                            );
+                        }
+                        Err(e) => {
+                            tracing::warn!("undo maybeboard (delete deck card) failed: {e}");
+                            toast.error(format!("failed to undo: {}", e), ToastOptions::default());
                         }
                     }
                 });
@@ -483,7 +537,14 @@ pub fn Add(deck_id: Uuid) -> Element {
                                     is_animating.set(true);
                                     animation_direction.set(Direction::Right);
                                 },
-                                on_swipe_up: move |_| {},     // Not used
+                                on_swipe_up: move |_| {
+                                    let Some(card) = current_card() else { return; };
+                                    action_history.write().push(SwipeAction::Maybeboard(Box::new(card)));
+                                    add_card_to_maybeboard();
+                                    toast.info("added to maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                    is_animating.set(true);
+                                    animation_direction.set(Direction::Up);
+                                },
                                 on_swipe_down: move |_| {
                                     undo_last_action();
                                 },

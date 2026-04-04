@@ -8,6 +8,7 @@ use zwipe_core::domain::card::Card;
 pub enum SwipeAction {
     Skip(Box<Card>),
     Do(Box<Card>),
+    Maybeboard(Box<Card>),
 }
 
 /// Maximum cards to keep in memory before requiring refresh.
