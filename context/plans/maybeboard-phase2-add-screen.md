@@ -155,38 +155,7 @@ Follow the existing swipe hint pattern on the add screen. If there's already a h
 
 ## Step 7: Update Client API
 
-**File:** `zwiper/src/lib/outbound/client/deck_card/create_deck_card.rs`
-
-Ensure the client sends the `maybeboard` field in the request body. The `HttpCreateDeckCard` struct was updated in Phase 1 to include `maybeboard: Option<bool>`.
-
-Also add a client method for the toggle endpoint:
-
-**File:** Create `zwiper/src/lib/outbound/client/deck_card/toggle_maybeboard.rs`
-
-```rust
-pub trait ClientToggleMaybeboard {
-    fn toggle_maybeboard(
-        &self,
-        deck_id: Uuid,
-        scryfall_data_id: Uuid,
-        maybeboard: bool,
-        session: &Session,
-    ) -> impl Future<Output = Result<DeckCard, ApiError>> + Send;
-}
-
-impl ClientToggleMaybeboard for ZwipeClient {
-    async fn toggle_maybeboard(
-        &self,
-        deck_id: Uuid,
-        scryfall_data_id: Uuid,
-        maybeboard: bool,
-        session: &Session,
-    ) -> Result<DeckCard, ApiError> {
-        // PUT /decks/{deck_id}/cards/{scryfall_data_id}/maybeboard
-        // Body: HttpToggleMaybeboard { maybeboard }
-    }
-}
-```
+> **NOTE: No separate toggle client was created. Maybeboard toggling uses the existing `ClientUpdateDeckCard::update_deck_card()` with `HttpUpdateDeckCard::new(None, Some(true/false))`. The `HttpCreateDeckCard` struct includes `maybeboard: Option<bool>` for creating cards directly onto the maybeboard.**
 
 ---
 
@@ -199,7 +168,7 @@ impl ClientToggleMaybeboard for ZwipeClient {
 - [ ] Undo (down-swipe) correctly deletes maybeboard cards
 - [ ] Visual hint for up-swipe present
 - [ ] Client sends maybeboard flag on create
-- [ ] Toggle client method exists for later phases
+- [ ] Maybeboard toggling uses existing `update_deck_card` client (no separate toggle method)
 
 ---
 
@@ -209,6 +178,5 @@ impl ClientToggleMaybeboard for ZwipeClient {
 |------|--------|
 | `zwiper/.../deck/card/components/action_history.rs` | Add SwipeAction::Maybeboard |
 | `zwiper/.../deck/card/add.rs` | Add Direction::Up, up-swipe handler, undo for maybeboard |
-| `zwiper/.../outbound/client/deck_card/create_deck_card.rs` | Pass maybeboard in request |
-| `zwiper/.../outbound/client/deck_card/toggle_maybeboard.rs` | **NEW** — toggle client |
-| `zwiper/.../outbound/client/deck_card/mod.rs` | Register toggle module |
+| `zwiper/.../deck/card/remove.rs` | Add Direction::Up, move-to-maybeboard handler via update_deck_card, undo |
+| `zwiper/assets/main.css` | Add card-exit-up animation |

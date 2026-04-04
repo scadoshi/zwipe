@@ -1,5 +1,7 @@
 # Maybeboard — Phase 1: Core + Backend (Data Model + API)
 
+> **NOTE: This is the original plan. The actual implementation diverged — we reuse `UpdateDeckCard` with `HttpUpdateDeckCard::new(None, Some(bool))` instead of creating a separate `toggle_maybeboard` endpoint, handler, service, or repository method. No `ToggleMaybeboard` request type, `HttpToggleMaybeboard` contract, or toggle route exists. All maybeboard toggling goes through `PUT /api/deck/{deck_id}/card/{scryfall_data_id}` with `{ "maybeboard": true/false }`.**
+
 Add `maybeboard: bool` to the deck card pipeline — migration, domain model, HTTP contracts, repository queries, metrics exclusion, validation exclusion.
 
 ---
