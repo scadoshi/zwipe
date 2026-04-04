@@ -2,13 +2,9 @@
 
 /// HTTP request handlers organized by domain.
 pub mod handlers;
-/// Partial-update helpers (`Optdate`).
-pub mod helpers;
 #[cfg(feature = "zerver")]
 /// JWT authentication middleware.
 pub mod middleware;
-/// Path constants shared between frontend and backend.
-pub mod paths;
 /// Route definitions mapping paths to handlers.
 pub mod routes;
 
