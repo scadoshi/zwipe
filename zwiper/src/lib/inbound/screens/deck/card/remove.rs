@@ -35,6 +35,19 @@ use zwipe_core::domain::card::{
         filter_cards::{FilterCards, SortCards},
     },
 };
+use zwipe_core::domain::deck::DeckEntry;
+
+/// Tri-state filter for maybeboard status on the remove screen.
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+enum MaybeboardFilter {
+    /// Show only active deck cards (default).
+    #[default]
+    Deck,
+    /// Show only maybeboard cards.
+    Maybeboard,
+    /// Show all cards regardless of maybeboard status.
+    All,
+}
 
 #[component]
 pub fn Remove(deck_id: Uuid) -> Element {
@@ -59,13 +72,19 @@ pub fn Remove(deck_id: Uuid) -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let toast = use_toast();
 
-    // Source of truth — all cards in the deck
-    let mut deck_cards: Signal<Vec<Card>> = use_signal(Vec::new);
-    use_context_provider(|| DeckCards(deck_cards));
+    // Source of truth — all entries in the deck
+    let mut deck_entries: Signal<Vec<DeckEntry>> = use_signal(Vec::new);
+
+    // Provide Card list context for filter sheet
+    let mut deck_cards_for_filter: Signal<Vec<Card>> = use_signal(Vec::new);
+    use_context_provider(|| DeckCards(deck_cards_for_filter));
+
     // What the swipe UI iterates over (may be a filtered subset)
     let mut displayed_cards: Signal<Vec<Card>> = use_signal(Vec::new);
     // Guards filter effect from running before the deck has loaded
     let mut deck_loaded: Signal<bool> = use_signal(|| false);
+    // Maybeboard filter state
+    let mut maybeboard_filter: Signal<MaybeboardFilter> = use_signal(MaybeboardFilter::default);
 
     let mut current_index = use_signal(|| 0_usize);
 
@@ -95,9 +114,10 @@ pub fn Remove(deck_id: Uuid) -> Element {
         spawn(async move {
             match client().get_deck(deck_id, &session).await {
                 Ok(deck) => {
-                    let cards: Vec<Card> = deck.entries.into_iter().map(|e| e.card).collect();
-                    deck_cards.set(cards.clone());
-                    displayed_cards.set(cards);
+                    let all_cards: Vec<Card> =
+                        deck.entries.iter().map(|e| e.card.clone()).collect();
+                    deck_cards_for_filter.set(all_cards);
+                    deck_entries.set(deck.entries);
                     deck_loaded.set(true);
                 }
                 Err(e) => {
@@ -108,26 +128,40 @@ pub fn Remove(deck_id: Uuid) -> Element {
         });
     });
 
-    // Effect 2 — filter (reads `filter_reset_counter` reactively; peeks `deck_cards`)
+    // Effect 2 — filter (reads `filter_reset_counter`, `maybeboard_filter` reactively; peeks entries)
     use_effect(move || {
         let _ = filter_reset_counter();
+        let _ = maybeboard_filter();
 
         if !*deck_loaded.peek() {
             return;
         }
 
-        let all_cards = deck_cards.peek().clone();
+        let entries = deck_entries.peek().clone();
+        let mb_filter = *maybeboard_filter.peek();
         let builder = filter_builder.peek().clone();
 
+        // Step 1: filter by maybeboard status
+        let mb_filtered_cards: Vec<Card> = entries
+            .iter()
+            .filter(|e| match mb_filter {
+                MaybeboardFilter::Deck => !e.deck_card.maybeboard,
+                MaybeboardFilter::Maybeboard => e.deck_card.maybeboard,
+                MaybeboardFilter::All => true,
+            })
+            .map(|e| e.card.clone())
+            .collect();
+
+        // Step 2: apply card attribute filter
         let mut filtered = if builder.is_empty() {
-            all_cards
+            mb_filtered_cards
         } else {
             let mut b = builder.clone();
             b.set_limit(10_000);
             b.set_offset(0);
             match b.build() {
-                Ok(filter) => all_cards.filter_by(&filter),
-                Err(_) => deck_cards.peek().clone(),
+                Ok(filter) => mb_filtered_cards.filter_by(&filter),
+                Err(_) => mb_filtered_cards,
             }
         };
 
@@ -195,9 +229,9 @@ pub fn Remove(deck_id: Uuid) -> Element {
             .get(idx)
             .map(|c| c.card_profile.scryfall_data_id);
         if let Some(id) = card_id {
-            deck_cards
+            deck_entries
                 .write()
-                .retain(|c| c.card_profile.scryfall_data_id != id);
+                .retain(|e| e.card.card_profile.scryfall_data_id != id);
             if idx < displayed_cards.read().len() {
                 displayed_cards.write().remove(idx);
             }
@@ -226,12 +260,10 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 );
             }
             SwipeAction::Do(card) => {
-                // Re-insert into both vecs so the card reappears
+                // Re-insert into displayed cards so the card reappears
                 let card = *card;
                 let idx = current_index();
-                deck_cards.write().push(card.clone());
                 displayed_cards.write().insert(idx, card.clone());
-                // current_index is unchanged — it now points to the restored card
 
                 // Restore on the backend
                 session.upkeep(client);
@@ -240,11 +272,16 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     return;
                 };
 
-                let request = HttpCreateDeckCard::new(&card.scryfall_data.id.to_string(), 1, None);
-
+                let request =
+                    HttpCreateDeckCard::new(&card.scryfall_data.id.to_string(), 1, None);
                 spawn(async move {
                     match client().create_deck_card(deck_id, &request, &session).await {
-                        Ok(_) => {
+                        Ok(deck_card) => {
+                            // Re-add entry to source of truth
+                            deck_entries.write().push(DeckEntry {
+                                card,
+                                deck_card,
+                            });
                             toast.success(
                                 "undid remove".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
@@ -252,16 +289,18 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         }
                         Err(e) => {
                             tracing::warn!("undo remove (create deck card) failed: {e}");
-                            toast.error(format!("failed to undo: {}", e), ToastOptions::default());
+                            toast.error(
+                                format!("failed to undo: {}", e),
+                                ToastOptions::default(),
+                            );
                         }
                     }
                 });
             }
             SwipeAction::Maybeboard(card) => {
-                // Re-insert into both vecs so the card reappears
+                // Re-insert into displayed cards so the card reappears
                 let card = *card;
                 let idx = current_index();
-                deck_cards.write().push(card.clone());
                 displayed_cards.write().insert(idx, card.clone());
 
                 // Move back from maybeboard to active on the backend
@@ -280,6 +319,14 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         .await
                     {
                         Ok(_) => {
+                            // Flip the flag back in the source of truth
+                            if let Some(entry) = deck_entries
+                                .write()
+                                .iter_mut()
+                                .find(|e| e.card.scryfall_data.id == scryfall_data_id)
+                            {
+                                entry.deck_card.maybeboard = false;
+                            }
                             toast.success(
                                 "undid maybeboard".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
@@ -287,14 +334,16 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         }
                         Err(e) => {
                             tracing::warn!("undo maybeboard (update deck card) failed: {e}");
-                            toast.error(format!("failed to undo: {}", e), ToastOptions::default());
+                            toast.error(
+                                format!("failed to undo: {}", e),
+                                ToastOptions::default(),
+                            );
                         }
                     }
                 });
             }
         }
     };
-
 
     rsx! {
         Bouncer {
@@ -304,6 +353,40 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 }
 
                 div { class: "screen-content card-swipe content-enter",
+
+                // Maybeboard filter chips
+                div { style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
+                    div { class: "chip-row",
+                        span { class: "chip-row-label", "show:" }
+                        button {
+                            class: if maybeboard_filter() == MaybeboardFilter::Deck { "chip selected" } else { "chip" },
+                            onclick: move |_| {
+                                maybeboard_filter.set(MaybeboardFilter::Deck);
+                                let current = *filter_reset_counter.peek();
+                                filter_reset_counter.set(current + 1);
+                            },
+                            "deck"
+                        }
+                        button {
+                            class: if maybeboard_filter() == MaybeboardFilter::Maybeboard { "chip selected" } else { "chip" },
+                            onclick: move |_| {
+                                maybeboard_filter.set(MaybeboardFilter::Maybeboard);
+                                let current = *filter_reset_counter.peek();
+                                filter_reset_counter.set(current + 1);
+                            },
+                            "maybeboard"
+                        }
+                        button {
+                            class: if maybeboard_filter() == MaybeboardFilter::All { "chip selected" } else { "chip" },
+                            onclick: move |_| {
+                                maybeboard_filter.set(MaybeboardFilter::All);
+                                let current = *filter_reset_counter.peek();
+                                filter_reset_counter.set(current + 1);
+                            },
+                            "all"
+                        }
+                    }
+                }
 
                 div { class: "form-container",
                     if let Some(card) = current_card() {
@@ -410,11 +493,12 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     },
                     "refresh"
                 }
-                if !filter_builder.read().is_empty() {
+                if !filter_builder.read().is_empty() || maybeboard_filter() != MaybeboardFilter::Deck {
                     button {
                         class: "util-btn util-btn-clear",
                         onclick: move |_| {
                             filter_builder.write().clear();
+                            maybeboard_filter.set(MaybeboardFilter::Deck);
                             let current = *filter_reset_counter.peek();
                             filter_reset_counter.set(current + 1);
                             toast.info(
