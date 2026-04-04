@@ -4,11 +4,9 @@ use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use uuid::Uuid;
-use zwipe::{
-    domain::{deck::models::deck::Deck},
-    inbound::http::{routes::get_deck_route, ApiError},
-};
+use zwipe::inbound::http::{routes::get_deck_route, ApiError};
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::deck::Deck;
 
 /// Trait for fetching a complete deck with all cards.
 #[allow(missing_docs)]

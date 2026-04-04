@@ -20,10 +20,7 @@ use std::time::Duration;
 use uuid::Uuid;
 use zwipe_core::http::helpers::Optdate;
 use zwipe::domain::card::models::Card;
-use zwipe::domain::deck::models::deck::{
-    Deck, deck_profile::DeckProfile, format::Format,
-    update_deck_profile::InvalidUpdateDeckProfile,
-};
+use zwipe_core::domain::deck::{Deck, deck_profile::DeckProfile, format::Format, requests::update_deck_profile::InvalidUpdateDeckProfile};
 use zwipe::inbound::http::{
     handlers::deck::update_deck_profile::HttpUpdateDeckProfile, ApiError,
 };

@@ -47,7 +47,7 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfile;
+    use zwipe_core::domain::deck::requests::get_deck_profile::GetDeckProfile;
 
     let request = GetDeckProfile::new(user.id, deck_id);
 

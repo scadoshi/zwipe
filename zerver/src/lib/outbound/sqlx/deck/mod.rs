@@ -11,20 +11,17 @@ use crate::{
     domain::deck::{
         models::{
             deck::{
-                create_deck_profile::{CreateDeckProfile, CreateDeckProfileError},
-                deck_profile::DeckProfile,
-                delete_deck::{DeleteDeck, DeleteDeckError},
-                get_deck_profile::{GetDeckProfile, GetDeckProfileError},
-                get_deck_profiles::GetDeckProfiles,
-                update_deck_profile::{UpdateDeckProfile, UpdateDeckProfileError},
+                create_deck_profile::CreateDeckProfileError,
+                delete_deck::DeleteDeckError,
+                get_deck_profile::GetDeckProfileError,
+                update_deck_profile::UpdateDeckProfileError,
             },
             deck_card::{
-                DeckCard,
-                create_deck_card::{CreateDeckCard, CreateDeckCardError},
-                delete_deck_card::{DeleteDeckCard, DeleteDeckCardError},
+                create_deck_card::CreateDeckCardError,
+                delete_deck_card::DeleteDeckCardError,
                 get_deck_card::GetDeckCardError,
-                import_deck_cards::{ImportDeckCards, ImportDeckCardsError},
-                update_deck_card::{UpdateDeckCard, UpdateDeckCardError},
+                import_deck_cards::ImportDeckCardsError,
+                update_deck_card::UpdateDeckCardError,
             },
         },
         ports::DeckRepository,
@@ -36,6 +33,21 @@ use crate::{
             models::{DatabaseDeckCard, DatabaseDeckProfile},
         },
         postgres::Postgres,
+    },
+};
+use zwipe_core::domain::deck::{
+    DeckCard,
+    deck_profile::DeckProfile,
+    requests::{
+        create_deck_card::CreateDeckCard,
+        create_deck_profile::CreateDeckProfile,
+        delete_deck::DeleteDeck,
+        delete_deck_card::DeleteDeckCard,
+        get_deck_profile::GetDeckProfile,
+        get_deck_profiles::GetDeckProfiles,
+        import_deck_cards::ImportDeckCards,
+        update_deck_card::UpdateDeckCard,
+        update_deck_profile::UpdateDeckProfile,
     },
 };
 use sqlx::{QueryBuilder, query, query_as};

@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use zwipe::domain::deck::models::deck_metrics::DeckMetrics;
+use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 
 #[component]
 pub(crate) fn DeckStats(metrics: DeckMetrics, show_buy_sheet: Signal<bool>) -> Element {

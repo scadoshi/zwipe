@@ -12,16 +12,18 @@ use crate::{
         auth::ports::AuthService,
         card::ports::CardService,
         deck::{
-            models::deck_card::{
-                update_deck_card::{InvalidUpdateDeckCard, UpdateDeckCard, UpdateDeckCardError},
-                DeckCard,
-            },
+            models::deck_card::update_deck_card::UpdateDeckCardError,
             ports::DeckService,
         },
         health::ports::HealthService,
         user::ports::UserService,
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+};
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::deck::{
+    DeckCard,
+    requests::update_deck_card::{InvalidUpdateDeckCard, UpdateDeckCard},
 };
 
 #[cfg(feature = "zerver")]

@@ -4,14 +4,12 @@ use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use uuid::Uuid;
-use zwipe::{
-    domain::{deck::models::deck_card::DeckCard},
-    inbound::http::{
-        handlers::deck_card::update_deck_card::HttpUpdateDeckCard, routes::update_deck_card_route,
-        ApiError,
-    },
+use zwipe::inbound::http::{
+    handlers::deck_card::update_deck_card::HttpUpdateDeckCard, routes::update_deck_card_route,
+    ApiError,
 };
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::deck::deck_card::DeckCard;
 
 /// Trait for updating card quantity in a deck.
 #[allow(missing_docs)]

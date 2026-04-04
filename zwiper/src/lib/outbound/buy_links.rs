@@ -1,6 +1,6 @@
 //! URL construction for external card retailer bulk-buy tools.
 
-use zwipe::domain::deck::models::deck::DeckEntry;
+use zwipe_core::domain::deck::DeckEntry;
 
 /// Returns the front face name for double-faced cards, or the full name otherwise.
 fn front_face(name: &str) -> &str {

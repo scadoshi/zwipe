@@ -13,7 +13,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe::domain::deck::models::deck_card::import_deck_cards::ImportDeckCardsResult;
+use zwipe_core::domain::deck::requests::import_deck_cards::ImportDeckCardsResult;
 use zwipe_core::domain::auth::models::session::Session;
 
 #[component]

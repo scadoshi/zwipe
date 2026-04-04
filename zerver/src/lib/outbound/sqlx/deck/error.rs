@@ -4,17 +4,23 @@ use crate::{
     domain::deck::models::{
         deck::{
             create_deck_profile::CreateDeckProfileError,
-            deck_name::InvalidDeckname, delete_deck::DeleteDeckError,
-            format::InvalidFormat,
-            get_deck_profile::GetDeckProfileError, update_deck_profile::UpdateDeckProfileError,
+            delete_deck::DeleteDeckError,
+            get_deck_profile::GetDeckProfileError,
+            update_deck_profile::UpdateDeckProfileError,
         },
         deck_card::{
-            create_deck_card::CreateDeckCardError, delete_deck_card::DeleteDeckCardError,
-            get_deck_card::GetDeckCardError, quantity::InvalidQuantity,
+            create_deck_card::CreateDeckCardError,
+            delete_deck_card::DeleteDeckCardError,
+            get_deck_card::GetDeckCardError,
             update_deck_card::UpdateDeckCardError,
         },
     },
     outbound::sqlx::postgres::IsConstraintViolation,
+};
+use zwipe_core::domain::deck::{
+    deck_name::InvalidDeckname,
+    format::InvalidFormat,
+    quantity::InvalidQuantity,
 };
 use thiserror::Error;
 

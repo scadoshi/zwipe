@@ -4,7 +4,7 @@ use crate::{
         auth::ports::AuthService,
         card::ports::CardService,
         deck::{
-            models::deck::{get_deck::GetDeckError, Deck},
+            models::deck::get_deck::GetDeckError,
             ports::DeckService,
         },
         health::ports::HealthService,
@@ -12,6 +12,8 @@ use crate::{
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState},
 };
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::deck::Deck;
 #[cfg(feature = "zerver")]
 use axum::{
     extract::{Path, State},
@@ -47,7 +49,7 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfile;
+    use zwipe_core::domain::deck::requests::get_deck_profile::GetDeckProfile;
 
     let request = GetDeckProfile::new(user.id, deck_id);
 

@@ -1,12 +1,13 @@
 use sqlx_macros::FromRow;
 use uuid::Uuid;
 
-use crate::{
-    domain::deck::models::{
-        deck::{deck_name::DeckName, deck_profile::DeckProfile, format::Format},
-        deck_card::{quantity::Quantity, DeckCard},
-    },
-    outbound::sqlx::deck::error::{IntoDeckCardError, IntoDeckProfileError},
+use crate::outbound::sqlx::deck::error::{IntoDeckCardError, IntoDeckProfileError};
+use zwipe_core::domain::deck::{
+    DeckCard,
+    deck_name::DeckName,
+    deck_profile::DeckProfile,
+    format::Format,
+    quantity::Quantity,
 };
 
 /// raw database deck record
