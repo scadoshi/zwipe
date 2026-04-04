@@ -14,7 +14,7 @@ use crate::{
 };
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
-pub use zwipe_core::http::contracts::auth::HttpChangeUsername;
+use zwipe_core::http::contracts::auth::HttpChangeUsername;
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::user::User;
 

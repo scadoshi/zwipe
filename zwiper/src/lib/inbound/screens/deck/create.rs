@@ -12,7 +12,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe_core::domain::deck::format::Format;
-use zwipe::inbound::http::handlers::deck::create_deck_profile::HttpCreateDeckProfile;
+use zwipe_core::http::contracts::deck::HttpCreateDeckProfile;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 

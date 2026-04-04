@@ -23,7 +23,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
-pub use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
+use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 #[cfg(feature = "zerver")]
 use uuid::Uuid;
 

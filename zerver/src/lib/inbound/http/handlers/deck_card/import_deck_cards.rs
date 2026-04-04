@@ -6,7 +6,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
-pub use zwipe_core::http::contracts::deck_card::HttpImportDeckCards;
+use zwipe_core::http::contracts::deck_card::HttpImportDeckCards;
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::user::requests::get_user::GetUser;
 

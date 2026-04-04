@@ -18,7 +18,7 @@ use crate::{
 };
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
-pub use zwipe_core::http::contracts::auth::HttpRefreshSession;
+use zwipe_core::http::contracts::auth::HttpRefreshSession;
 
 #[cfg(feature = "zerver")]
 impl From<RefreshSessionError> for ApiError {

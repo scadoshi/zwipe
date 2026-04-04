@@ -11,7 +11,7 @@ use email_address::EmailAddress;
 use std::str::FromStr;
 use std::time::Duration;
 use zwipe::domain::auth::models::password::Password;
-use zwipe::inbound::http::handlers::auth::change_email::HttpChangeEmail;
+use zwipe_core::http::contracts::auth::HttpChangeEmail;
 use zwipe_core::domain::auth::models::session::Session;
 
 /// Form screen for updating user's email address.

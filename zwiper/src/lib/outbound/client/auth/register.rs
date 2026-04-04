@@ -3,9 +3,8 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
-use zwipe::inbound::http::{
-    handlers::auth::register_user::HttpRegisterUser, routes::register_route, ApiError,
-};
+use zwipe::inbound::http::{routes::register_route, ApiError};
+use zwipe_core::http::contracts::auth::HttpRegisterUser;
 use zwipe_core::domain::auth::models::session::Session;
 
 /// Trait for registering new user accounts.

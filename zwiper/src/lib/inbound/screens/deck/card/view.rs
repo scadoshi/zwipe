@@ -22,7 +22,8 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::collections::HashMap;
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe::inbound::http::{ApiError, handlers::deck_card::update_deck_card::HttpUpdateDeckCard};
+use zwipe::inbound::http::ApiError;
+use zwipe_core::http::contracts::deck_card::HttpUpdateDeckCard;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::{
     Card,

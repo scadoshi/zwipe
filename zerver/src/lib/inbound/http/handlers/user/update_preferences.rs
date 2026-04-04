@@ -16,7 +16,7 @@ use crate::{
 };
 #[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
-pub use zwipe_core::http::contracts::user::HttpUpdatePreferences;
+use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::user::preferences::{UpdatePreferences, UserPreferences};
 

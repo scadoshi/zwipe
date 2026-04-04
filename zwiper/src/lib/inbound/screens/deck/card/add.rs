@@ -28,7 +28,7 @@ use std::time::Duration;
 use uuid::Uuid;
 use zwipe_core::domain::card::{Card, scryfall_data::image_uris::ImageUris, search_card::card_filter::builder::CardFilterBuilder};
 use zwipe_core::domain::deck::format::Format;
-use zwipe::inbound::http::handlers::deck_card::create_deck_card::HttpCreateDeckCard;
+use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
 use zwipe_core::domain::auth::models::session::Session;
 
 #[component]

@@ -3,11 +3,8 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
-use zwipe::inbound::http::{
-    handlers::auth::request_password_reset::HttpRequestPasswordReset,
-    routes::forgot_password_route,
-    ApiError,
-};
+use zwipe::inbound::http::{routes::forgot_password_route, ApiError};
+use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
 
 /// Trait for initiating a password reset via the forgot-password endpoint.
 #[allow(missing_docs)]

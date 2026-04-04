@@ -3,10 +3,8 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
-use zwipe::inbound::http::{
-    handlers::auth::change_password::HttpChangePassword, routes::change_password_route,
-    ApiError,
-};
+use zwipe::inbound::http::{routes::change_password_route, ApiError};
+use zwipe_core::http::contracts::auth::HttpChangePassword;
 use zwipe_core::domain::auth::models::session::Session;
 
 /// Trait for updating user passwords.

@@ -4,7 +4,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
-pub use zwipe_core::http::contracts::deck_card::HttpUpdateDeckCard;
+use zwipe_core::http::contracts::deck_card::HttpUpdateDeckCard;
 
 #[cfg(feature = "zerver")]
 use crate::{
