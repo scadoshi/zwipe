@@ -19,7 +19,9 @@ use crate::{
         deck::{
             delete_deck::ClientDeleteDeck, get_deck::ClientGetDeck,
             get_deck_profile::ClientGetDeckProfile,
+            update_deck_profile::ClientUpdateDeckProfile,
         },
+        deck_card::update_deck_card::ClientUpdateDeckCard,
     },
 };
 use dioxus::prelude::*;
@@ -30,6 +32,9 @@ use zwipe_core::domain::deck::{DeckEntry, deck_profile::DeckProfile, deck_warnin
 use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
+use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
+use zwipe_core::http::contracts::deck_card::HttpUpdateDeckCard;
+use zwipe_core::http::helpers::Opdate;
 
 type DeckResult = Result<(Vec<DeckEntry>, Vec<DeckWarning>), ApiError>;
 
@@ -44,7 +49,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
     let toast = use_toast();
 
-    let deck_profile_resource: Resource<Result<DeckProfile, ApiError>> =
+    let mut deck_profile_resource: Resource<Result<DeckProfile, ApiError>> =
         use_resource(move || async move {
             session.upkeep(client);
             let Some(session) = session() else {
@@ -126,7 +131,30 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let metrics = deck_data
         .as_ref()
         .filter(|(entries, _)| !entries.is_empty())
-        .map(|(entries, _)| DeckMetrics::from_entries(entries));
+        .map(|(entries, _)| {
+            let mut m = DeckMetrics::from_entries(entries);
+
+            // Count variant cards (commander, partner, etc.) stored on the profile
+            // but not in deck_cards — mirrors check_card_count in validate_deck.
+            if let Some(Ok(p)) = deck_profile_resource() {
+                let in_entries = |id: Uuid| entries.iter().any(|e| e.card.scryfall_data.id == id);
+                let has_commander_format = p.format.as_ref().is_some_and(|f| f.has_commander());
+                if has_commander_format && p.commander_id.is_some_and(|id| !in_entries(id)) {
+                    m.total_cards += 1;
+                }
+                if p.partner_commander_id.is_some_and(|id| !in_entries(id)) {
+                    m.total_cards += 1;
+                }
+                if p.background_id.is_some_and(|id| !in_entries(id)) {
+                    m.total_cards += 1;
+                }
+                if p.signature_spell_id.is_some_and(|id| !in_entries(id)) {
+                    m.total_cards += 1;
+                }
+            }
+
+            m
+        });
 
     let tcg_url = deck_data.as_ref().map(|(entries, _)| {
         let active: Vec<_> = entries
@@ -254,6 +282,61 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                         deck_id: deck_id,
                                         on_remove: move |_| {
                                             deck_resource.restart();
+                                        },
+                                        on_fix_quantity: move |(card_id, target_qty): (Uuid, i32)| {
+                                            session.upkeep(client);
+                                            let Some(session) = session() else { return; };
+
+                                            let current_qty = deck_resource()
+                                                .and_then(|r| r.ok())
+                                                .and_then(|(entries, _)| {
+                                                    entries.iter()
+                                                        .find(|e| e.card.scryfall_data.id == card_id)
+                                                        .map(|e| *e.deck_card.quantity)
+                                                })
+                                                .unwrap_or(1);
+                                            let delta = target_qty - current_qty;
+                                            let request = HttpUpdateDeckCard::new(Some(delta), None);
+
+                                            spawn(async move {
+                                                match client().update_deck_card(deck_id, card_id, &request, &session).await {
+                                                    Ok(_) => {
+                                                        toast.info(
+                                                            format!("quantity set to {target_qty}"),
+                                                            ToastOptions::default().duration(Duration::from_millis(1500)),
+                                                        );
+                                                        deck_resource.restart();
+                                                    }
+                                                    Err(e) => {
+                                                        toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                                                    }
+                                                }
+                                            });
+                                        },
+                                        on_clear_commander: move |_| {
+                                            session.upkeep(client);
+                                            let Some(session) = session() else { return; };
+
+                                            let request = HttpUpdateDeckProfile::builder()
+                                                .commander_id(Opdate::Set(None))
+                                                .build();
+
+                                            spawn(async move {
+                                                match client().update_deck_profile(deck_id, &request, &session).await {
+                                                    Ok(_) => {
+                                                        toast.info(
+                                                            "commander cleared".to_string(),
+                                                            ToastOptions::default().duration(Duration::from_millis(1500)),
+                                                        );
+                                                        commander.set(None);
+                                                        deck_profile_resource.restart();
+                                                        deck_resource.restart();
+                                                    }
+                                                    Err(e) => {
+                                                        toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                                                    }
+                                                }
+                                            });
                                         },
                                     }
                                 }

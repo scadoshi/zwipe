@@ -4,6 +4,17 @@ use serde::{Deserialize, Serialize};
 use std::ops::Deref;
 use uuid::Uuid;
 
+/// Suggested fix action for a deck warning.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum WarningAction {
+    /// Remove the card from the deck entirely.
+    Remove,
+    /// Set the card's quantity to this value.
+    FixQuantity(i32),
+    /// Clear the commander from the deck profile.
+    ClearCommander,
+}
+
 /// A deck-building warning message (informational, not blocking).
 ///
 /// Card-specific warnings carry a `scryfall_data_id` so the client
@@ -12,6 +23,8 @@ use uuid::Uuid;
 pub struct DeckWarning {
     message: String,
     scryfall_data_id: Option<Uuid>,
+    #[serde(default)]
+    action: Option<WarningAction>,
 }
 
 impl DeckWarning {
@@ -20,6 +33,7 @@ impl DeckWarning {
         Self {
             message: message.into(),
             scryfall_data_id: None,
+            action: None,
         }
     }
 
@@ -28,12 +42,31 @@ impl DeckWarning {
         Self {
             message: message.into(),
             scryfall_data_id: Some(scryfall_data_id),
+            action: None,
+        }
+    }
+
+    /// Creates a card-specific warning with a suggested action.
+    pub fn with_action(
+        message: impl Into<String>,
+        scryfall_data_id: Uuid,
+        action: WarningAction,
+    ) -> Self {
+        Self {
+            message: message.into(),
+            scryfall_data_id: Some(scryfall_data_id),
+            action: Some(action),
         }
     }
 
     /// Returns the scryfall_data_id of the offending card, if any.
     pub fn scryfall_data_id(&self) -> Option<Uuid> {
         self.scryfall_data_id
+    }
+
+    /// Returns the suggested action, if any.
+    pub fn action(&self) -> Option<&WarningAction> {
+        self.action.as_ref()
     }
 }
 
