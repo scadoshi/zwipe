@@ -26,17 +26,13 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::collections::HashSet;
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe::{
-    domain::{
-        auth::models::session::Session,
-        card::models::{
-            Card, scryfall_data::image_uris::ImageUris,
-            search_card::card_filter::builder::CardFilterBuilder,
-        },
-        deck::models::deck::format::Format,
-    },
-    inbound::http::handlers::deck_card::create_deck_card::HttpCreateDeckCard,
+use zwipe::domain::card::models::{
+    Card, scryfall_data::image_uris::ImageUris,
+    search_card::card_filter::builder::CardFilterBuilder,
 };
+use zwipe::domain::deck::models::deck::format::Format;
+use zwipe::inbound::http::handlers::deck_card::create_deck_card::HttpCreateDeckCard;
+use zwipe_core::domain::auth::models::session::Session;
 
 #[component]
 pub fn Add(deck_id: Uuid) -> Element {

@@ -24,20 +24,16 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe::{
-    domain::{
-        auth::models::session::Session,
-        card::models::{
-            Card,
-            scryfall_data::image_uris::ImageUris,
-            search_card::{
-                card_filter::{builder::CardFilterBuilder, order_by_option::OrderByOption},
-                filter_cards::{FilterCards, SortCards},
-            },
-        },
+use zwipe::domain::card::models::{
+    Card,
+    scryfall_data::image_uris::ImageUris,
+    search_card::{
+        card_filter::{builder::CardFilterBuilder, order_by_option::OrderByOption},
+        filter_cards::{FilterCards, SortCards},
     },
-    inbound::http::handlers::deck_card::create_deck_card::HttpCreateDeckCard,
 };
+use zwipe::inbound::http::handlers::deck_card::create_deck_card::HttpCreateDeckCard;
+use zwipe_core::domain::auth::models::session::Session;
 
 #[component]
 pub fn Remove(deck_id: Uuid) -> Element {

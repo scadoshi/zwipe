@@ -4,12 +4,10 @@ use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use zwipe::{
-    domain::{
-        auth::models::session::Session,
-        card::models::{search_card::card_filter::CardFilter, Card},
-    },
+    domain::card::models::{search_card::card_filter::CardFilter, Card},
     inbound::http::{routes::search_cards_route, ApiError},
 };
+use zwipe_core::domain::auth::models::session::Session;
 
 /// Trait for searching cards with filter criteria.
 #[allow(missing_docs)]

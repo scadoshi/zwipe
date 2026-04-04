@@ -11,14 +11,10 @@ use crate::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
-use zwipe::{
-    domain::{
-        auth::models::session::Session,
-        card::models::Card,
-        deck::models::deck::format::Format,
-    },
-    inbound::http::handlers::deck::create_deck_profile::HttpCreateDeckProfile,
-};
+use zwipe::domain::card::models::Card;
+use zwipe::domain::deck::models::deck::format::Format;
+use zwipe::inbound::http::handlers::deck::create_deck_profile::HttpCreateDeckProfile;
+use zwipe_core::domain::auth::models::session::Session;
 
 /// Screen for creating a new deck with name and settings.
 #[component]

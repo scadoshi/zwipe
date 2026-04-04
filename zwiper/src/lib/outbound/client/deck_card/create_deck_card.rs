@@ -5,12 +5,13 @@ use reqwest::StatusCode;
 use std::future::Future;
 use uuid::Uuid;
 use zwipe::{
-    domain::{auth::models::session::Session, deck::models::deck_card::DeckCard},
+    domain::{deck::models::deck_card::DeckCard},
     inbound::http::{
         handlers::deck_card::create_deck_card::HttpCreateDeckCard, routes::create_deck_card_route,
         ApiError,
     },
 };
+use zwipe_core::domain::auth::models::session::Session;
 
 /// Trait for adding cards to a deck.
 #[allow(missing_docs)]

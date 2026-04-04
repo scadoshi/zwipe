@@ -13,13 +13,9 @@ use crate::{
 use dioxus::prelude::*;
 use std::time::Duration;
 use tokio::time::interval;
-use zwipe::{
-    domain::{
-        auth::models::session::Session,
-        card::models::{search_card::card_filter::builder::CardFilterBuilder, Card},
-    },
-    inbound::http::handlers::auth::refresh_session::HttpRefreshSession,
-};
+use zwipe::domain::card::models::{search_card::card_filter::builder::CardFilterBuilder, Card};
+use zwipe::inbound::http::handlers::auth::refresh_session::HttpRefreshSession;
+use zwipe_core::domain::auth::models::session::Session;
 
 /// Trait for session signals that can perform background upkeep.
 pub trait Upkeep {

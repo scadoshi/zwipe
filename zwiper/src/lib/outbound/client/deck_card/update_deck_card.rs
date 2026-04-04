@@ -5,12 +5,13 @@ use reqwest::StatusCode;
 use std::future::Future;
 use uuid::Uuid;
 use zwipe::{
-    domain::{auth::models::session::Session, deck::models::deck_card::DeckCard},
+    domain::{deck::models::deck_card::DeckCard},
     inbound::http::{
         handlers::deck_card::update_deck_card::HttpUpdateDeckCard, routes::update_deck_card_route,
         ApiError,
     },
 };
+use zwipe_core::domain::auth::models::session::Session;
 
 /// Trait for updating card quantity in a deck.
 #[allow(missing_docs)]

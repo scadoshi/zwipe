@@ -5,9 +5,10 @@ use reqwest::StatusCode;
 use std::future::Future;
 use uuid::Uuid;
 use zwipe::{
-    domain::{auth::models::session::Session, deck::models::deck::deck_profile::DeckProfile},
+    domain::{deck::models::deck::deck_profile::DeckProfile},
     inbound::http::{routes::get_deck_profile_route, ApiError},
 };
+use zwipe_core::domain::auth::models::session::Session;
 
 /// Trait for fetching deck metadata without cards.
 #[allow(missing_docs)]

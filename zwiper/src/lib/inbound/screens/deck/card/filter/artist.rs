@@ -3,13 +3,9 @@
 use super::deck_cards::{DeckCards, extract_artists};
 use crate::outbound::client::{card::get_artists::ClientGetArtists, ZwipeClient};
 use dioxus::prelude::*;
-use zwipe::{
-    domain::{
-        auth::models::session::Session,
-        card::models::search_card::card_filter::builder::CardFilterBuilder,
-    },
-    inbound::http::ApiError,
-};
+use zwipe::domain::card::models::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe::inbound::http::ApiError;
+use zwipe_core::domain::auth::models::session::Session;
 
 /// Filter component for card artist search.
 #[component]

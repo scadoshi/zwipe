@@ -5,12 +5,13 @@ use reqwest::StatusCode;
 use std::future::Future;
 use uuid::Uuid;
 use zwipe::{
-    domain::{auth::models::session::Session, deck::models::deck::deck_profile::DeckProfile},
+    domain::{deck::models::deck::deck_profile::DeckProfile},
     inbound::http::{
         handlers::deck::update_deck_profile::HttpUpdateDeckProfile, routes::update_deck_route,
         ApiError,
     },
 };
+use zwipe_core::domain::auth::models::session::Session;
 
 /// Trait for updating deck profile metadata.
 #[allow(missing_docs)]

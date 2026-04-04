@@ -5,10 +5,9 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe::{
-    domain::{auth::models::session::Session, deck::models::deck::deck_warning::DeckWarning},
-    inbound::http::ApiError,
-};
+use zwipe::domain::deck::models::deck::deck_warning::DeckWarning;
+use zwipe::inbound::http::ApiError;
+use zwipe_core::domain::auth::models::session::Session;
 
 #[component]
 pub(crate) fn DeckWarnings(

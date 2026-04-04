@@ -3,10 +3,8 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
-use zwipe::{
-    domain::auth::models::session::Session,
-    inbound::http::{routes::logout_route, ApiError},
-};
+use zwipe::inbound::http::{routes::logout_route, ApiError};
+use zwipe_core::domain::auth::models::session::Session;
 
 /// Trait for logging out users and invalidating sessions.
 #[allow(missing_docs)]
