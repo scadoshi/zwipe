@@ -1413,6 +1413,23 @@ body {
     color: var(--bg-primary);
 }
 
+.chip-xs {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: var(--bg-primary);
+}
+
+.chip-xs.selected {
+    background-color: var(--text-primary);
+    color: var(--bg-primary);
+}
+
 .chip-unselected {
     display: inline-block;
     padding: 0.3rem 0.6rem;
