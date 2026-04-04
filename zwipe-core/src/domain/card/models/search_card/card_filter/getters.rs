@@ -163,6 +163,19 @@ impl CardFilter {
         self.is_commander_in_format.as_ref()
     }
 
+    // partner/background/spell
+    pub fn is_partner(&self) -> Option<bool> {
+        self.is_partner
+    }
+
+    pub fn is_background(&self) -> Option<bool> {
+        self.is_background
+    }
+
+    pub fn is_signature_spell(&self) -> Option<bool> {
+        self.is_signature_spell
+    }
+
     // config
     pub fn limit(&self) -> u32 {
         self.limit

@@ -90,6 +90,10 @@ pub struct CardFilter {
     legalities_contains_any: Option<Vec<String>>,
     // commander
     is_commander_in_format: Option<Format>,
+    // partner/background/spell
+    is_partner: Option<bool>,
+    is_background: Option<bool>,
+    is_signature_spell: Option<bool>,
     // config
     limit: u32,
     offset: u32,

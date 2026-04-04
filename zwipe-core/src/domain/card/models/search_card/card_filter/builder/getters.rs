@@ -228,6 +228,25 @@ impl CardFilterBuilder {
     }
 
     // =================================
+    // Partner/Background/Spell Getters
+    // =================================
+
+    /// Returns the partner card filter.
+    pub fn is_partner(&self) -> Option<bool> {
+        self.is_partner
+    }
+
+    /// Returns the background card filter.
+    pub fn is_background(&self) -> Option<bool> {
+        self.is_background
+    }
+
+    /// Returns the signature spell filter.
+    pub fn is_signature_spell(&self) -> Option<bool> {
+        self.is_signature_spell
+    }
+
+    // =================================
     // Pagination & Config Getters
     // =================================
 

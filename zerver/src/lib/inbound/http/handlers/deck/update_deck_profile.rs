@@ -83,13 +83,14 @@ where
     let format_option: Option<Option<&str>> = format_raw
         .as_ref()
         .map(|opt| opt.as_deref());
-    let request = UpdateDeckProfile::new(
-        deck_id,
-        body.name.as_deref(),
-        body.commander_id.into_option(),
-        format_option,
-        user.id,
-    )?;
+    let request = UpdateDeckProfile::builder(deck_id, user.id)
+        .name(body.name.as_deref())
+        .commander_id(body.commander_id.into_option())
+        .partner_commander_id(body.partner_commander_id.into_option())
+        .background_id(body.background_id.into_option())
+        .signature_spell_id(body.signature_spell_id.into_option())
+        .format(format_option)
+        .build()?;
 
     state
         .deck_service

@@ -13,6 +13,12 @@ pub struct DeckProfile {
     pub name: DeckName,
     /// Optional commander card ID (for Commander format).
     pub commander_id: Option<Uuid>,
+    /// Optional partner commander card ID (Partner / Friends Forever / Doctor's Companion).
+    pub partner_commander_id: Option<Uuid>,
+    /// Optional background enchantment card ID (Choose a Background).
+    pub background_id: Option<Uuid>,
+    /// Optional signature spell card ID (Oathbreaker).
+    pub signature_spell_id: Option<Uuid>,
     /// Optional deck format.
     pub format: Option<Format>,
     /// Owner of this deck (for authorization).
@@ -21,4 +27,10 @@ pub struct DeckProfile {
     pub card_count: i64,
     /// Commander card name (if a commander is set).
     pub commander_name: Option<String>,
+    /// Partner commander card name (if set).
+    pub partner_commander_name: Option<String>,
+    /// Background enchantment card name (if set).
+    pub background_name: Option<String>,
+    /// Signature spell card name (if set).
+    pub signature_spell_name: Option<String>,
 }

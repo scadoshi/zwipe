@@ -63,13 +63,19 @@ impl DeckRepository for Postgres {
         let mut tx = self.pool.begin().await?;
         let database_deck_profile = query_as!(
             DatabaseDeckProfile,
-            r#"INSERT INTO decks (name, commander_id, format, user_id)
-               VALUES ($1, $2, $3, $4)
-               RETURNING id, name, commander_id, format, user_id,
+            r#"INSERT INTO decks (name, commander_id, partner_commander_id, background_id, signature_spell_id, format, user_id)
+               VALUES ($1, $2, $3, $4, $5, $6, $7)
+               RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, user_id,
                          0::bigint as "card_count",
-                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = commander_id) as "commander_name?""#,
+                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = commander_id) as "commander_name?",
+                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = partner_commander_id) as "partner_commander_name?",
+                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = background_id) as "background_name?",
+                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = signature_spell_id) as "signature_spell_name?""#,
             request.name.to_string(),
             request.commander_id,
+            request.partner_commander_id,
+            request.background_id,
+            request.signature_spell_id,
             request.format.map(|f| f.to_legality_key().to_string()) as Option<String>,
             request.user_id
         )
@@ -138,14 +144,19 @@ impl DeckRepository for Postgres {
     ) -> Result<DeckProfile, GetDeckProfileError> {
         let database_deck_profile = query_as!(
             DatabaseDeckProfile,
-            r#"SELECT d.id, d.name, d.commander_id, d.format, d.user_id,
+            r#"SELECT d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,
+                      d.format, d.user_id,
                       COALESCE(SUM(dc.quantity) FILTER (WHERE dc.maybeboard = false), 0) as "card_count",
-                      sd.name as "commander_name?"
+                      sd.name as "commander_name?",
+                      (SELECT s2.name FROM scryfall_data s2 WHERE s2.id = d.partner_commander_id) as "partner_commander_name?",
+                      (SELECT s3.name FROM scryfall_data s3 WHERE s3.id = d.background_id) as "background_name?",
+                      (SELECT s4.name FROM scryfall_data s4 WHERE s4.id = d.signature_spell_id) as "signature_spell_name?"
                FROM decks d
                LEFT JOIN deck_cards dc ON d.id = dc.deck_id
                LEFT JOIN scryfall_data sd ON d.commander_id = sd.id
                WHERE d.id = $1
-               GROUP BY d.id, d.name, d.commander_id, d.format, d.user_id, sd.name"#,
+               GROUP BY d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,
+                        d.format, d.user_id, sd.name"#,
             request.deck_id
         )
         .fetch_one(&self.pool)
@@ -163,14 +174,19 @@ impl DeckRepository for Postgres {
     ) -> Result<Vec<DeckProfile>, GetDeckProfileError> {
         let database_deck_profiles = query_as!(
             DatabaseDeckProfile,
-            r#"SELECT d.id, d.name, d.commander_id, d.format, d.user_id,
+            r#"SELECT d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,
+                      d.format, d.user_id,
                       COALESCE(SUM(dc.quantity) FILTER (WHERE dc.maybeboard = false), 0) as "card_count",
-                      sd.name as "commander_name?"
+                      sd.name as "commander_name?",
+                      (SELECT s2.name FROM scryfall_data s2 WHERE s2.id = d.partner_commander_id) as "partner_commander_name?",
+                      (SELECT s3.name FROM scryfall_data s3 WHERE s3.id = d.background_id) as "background_name?",
+                      (SELECT s4.name FROM scryfall_data s4 WHERE s4.id = d.signature_spell_id) as "signature_spell_name?"
                FROM decks d
                LEFT JOIN deck_cards dc ON d.id = dc.deck_id
                LEFT JOIN scryfall_data sd ON d.commander_id = sd.id
                WHERE d.user_id = $1
-               GROUP BY d.id, d.name, d.commander_id, d.format, d.user_id, sd.name"#,
+               GROUP BY d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,
+                        d.format, d.user_id, sd.name"#,
             request.user_id
         )
         .fetch_all(&self.pool)
@@ -236,6 +252,18 @@ impl DeckRepository for Postgres {
             sep.push("commander_id = ")
                 .push_bind_unseparated(commander_id);
         }
+        if let Some(partner_commander_id) = &request.partner_commander_id {
+            sep.push("partner_commander_id = ")
+                .push_bind_unseparated(partner_commander_id);
+        }
+        if let Some(background_id) = &request.background_id {
+            sep.push("background_id = ")
+                .push_bind_unseparated(background_id);
+        }
+        if let Some(signature_spell_id) = &request.signature_spell_id {
+            sep.push("signature_spell_id = ")
+                .push_bind_unseparated(signature_spell_id);
+        }
         if let Some(format) = &request.format {
             sep.push("format = ")
                 .push_bind_unseparated(format.map(|f| f.to_legality_key().to_string()));
@@ -245,9 +273,12 @@ impl DeckRepository for Postgres {
 
         qb.push(" WHERE id = ")
             .push_bind(request.deck_id)
-            .push(r#" RETURNING id, name, commander_id, format, user_id,
+            .push(r#" RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, user_id,
                        (SELECT COALESCE(SUM(dc.quantity) FILTER (WHERE dc.maybeboard = false), 0) FROM deck_cards dc WHERE dc.deck_id = decks.id) as card_count,
-                       (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.commander_id) as commander_name"#);
+                       (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.commander_id) as commander_name,
+                       (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.partner_commander_id) as partner_commander_name,
+                       (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.background_id) as background_name,
+                       (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.signature_spell_id) as signature_spell_name"#);
         let database_deck: DatabaseDeckProfile = qb.build_query_as().fetch_one(&mut *tx).await?;
         let deck_profile: DeckProfile = database_deck.try_into()?;
 

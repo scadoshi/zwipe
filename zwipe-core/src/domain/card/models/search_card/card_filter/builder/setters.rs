@@ -574,6 +574,46 @@ impl CardFilterBuilder {
     }
 
     // =================================
+    // Partner/Background/Spell Setters
+    // =================================
+
+    /// Sets the partner card filter.
+    pub fn set_is_partner(&mut self, val: bool) -> &mut Self {
+        self.is_partner = Some(val);
+        self
+    }
+
+    /// Clears the partner card filter.
+    pub fn unset_is_partner(&mut self) -> &mut Self {
+        self.is_partner = None;
+        self
+    }
+
+    /// Sets the background card filter.
+    pub fn set_is_background(&mut self, val: bool) -> &mut Self {
+        self.is_background = Some(val);
+        self
+    }
+
+    /// Clears the background card filter.
+    pub fn unset_is_background(&mut self) -> &mut Self {
+        self.is_background = None;
+        self
+    }
+
+    /// Sets the signature spell filter.
+    pub fn set_is_signature_spell(&mut self, val: bool) -> &mut Self {
+        self.is_signature_spell = Some(val);
+        self
+    }
+
+    /// Clears the signature spell filter.
+    pub fn unset_is_signature_spell(&mut self) -> &mut Self {
+        self.is_signature_spell = None;
+        self
+    }
+
+    // =================================
     // Pagination & Config Setters
     // =================================
 
