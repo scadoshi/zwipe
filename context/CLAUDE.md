@@ -9,7 +9,7 @@ ZWIPE is a mobile-first Magic: The Gathering deck builder with swipe-based navig
 - **Shared domain (zwipe-core/)**: Pure domain types, validation, and business rules — see rules below
 - **Backend (zerver/)**: Axum REST API with PostgreSQL, SQLx, JWT auth
 - **Frontend (zwiper/)**: Dioxus cross-platform app (web/iOS/Android)
-- **Website (zweb/)**: Dioxus static site
+- **Website (zite/)**: Dioxus static site
 - **Database**: 35k+ MTG cards synced from Scryfall API
 
 ## zwipe-core Purity Rules
@@ -65,10 +65,10 @@ cargo sqlx prepare --workspace
 
 ```
 zwiper ──→ zwipe-core ←── zerver
-zweb   ──→ zwipe-core
+zite   ──→ zwipe-core
 ```
 
-zwipe-core owns all shared domain types. zerver re-exports them and adds server-specific layers (ports, services, database adapters, HTTP handlers). zwiper and zweb import from zwipe-core for domain types and from zerver only for HTTP contract types (routes, ApiError, Http* structs).
+zwipe-core owns all shared domain types. zerver re-exports them and adds server-specific layers (ports, services, database adapters, HTTP handlers). zwiper and zite import from zwipe-core for domain types and from zerver only for HTTP contract types (routes, ApiError, Http* structs).
 
 ### Hexagonal (Ports & Adapters) Pattern
 

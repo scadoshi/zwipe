@@ -10,12 +10,12 @@ full-stack rust application:
 - **zwipe-core**: shared domain types, validation, HTTP contracts — the single source of truth
 - **zerver**: axum rest api, postgresql, sqlx, jwt auth, scryfall sync
 - **zwiper**: dioxus mobile/ios app, swipe gestures, 9 themes, dark mode
-- **zweb**: dioxus web client at [zwipe.net](https://zwipe.net)
+- **zite**: dioxus web client at [zwipe.net](https://zwipe.net)
 - **zervice**: background jobs (scryfall sync, session cleanup)
 
 ```
 zwiper ──→ zwipe-core ←── zerver
-zweb   ──→ zwipe-core
+zite   ──→ zwipe-core
 ```
 
 ## quick start

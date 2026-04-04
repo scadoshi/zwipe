@@ -14,7 +14,7 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 | Cloudflare Tunnel → `api.zwipe.net` | ✅ Live, TLS handled by Cloudflare |
 | Self-hosted GitHub Actions runner | ✅ Live, deploys on push to main |
 | CI/CD — zerver/zervice auto-deploy | ✅ Live, includes automatic migrations |
-| CI/CD — zweb → GitHub Pages | ✅ Live |
+| CI/CD — zite → GitHub Pages | ✅ Live |
 | Tailscale (local SSH access) | ✅ Configured |
 | zervice nightly cron (Scryfall sync) | ✅ Configured |
 | SQLx offline mode (.sqlx/ committed) | ✅ Configured |

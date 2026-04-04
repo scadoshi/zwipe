@@ -1,4 +1,4 @@
-# zweb
+# zite
 
 Dioxus static website for Zwipe at [zwipe.net](https://zwipe.net).
 

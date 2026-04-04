@@ -172,19 +172,19 @@ GitHub → Actions tab → Deploy zerver → Run workflow → Run workflow
 
 ---
 
-# zweb — GitHub Pages Deploy
+# zite — GitHub Pages Deploy
 
-`.github/workflows/deploy-zweb.yml`
+`.github/workflows/deploy-zite.yml`
 
-Triggers on push to `main` when files under `zweb/**` change (or the workflow file itself).
+Triggers on push to `main` when files under `zite/**` change (or the workflow file itself).
 Also has `workflow_dispatch` for manual runs.
 
 ## What the Workflow Does
 
 1. Installs `build-essential` (needed because Rust compiles proc-macro crates for the host target even when targeting WASM)
-2. Installs `dioxus-cli` from source with `--force` (uses cargo cache keyed to `zweb/Cargo.lock` to speed up repeat runs)
-3. Runs `dx build --release --platform web` from `zweb/` directory
-4. Writes `CNAME` (zwipe.net) into the build output at `zweb/target/dx/zweb/release/web/public/`
+2. Installs `dioxus-cli` from source with `--force` (uses cargo cache keyed to `zite/Cargo.lock` to speed up repeat runs)
+3. Runs `dx build --release --platform web` from `zite/` directory
+4. Writes `CNAME` (zwipe.net) into the build output at `zite/target/dx/zite/release/web/public/`
 5. Copies `index.html` → `404.html` in the same directory (SPA routing — GitHub Pages serves 404.html for unknown routes, Dioxus Router takes over)
 6. Uploads the build output as a GitHub Pages artifact
 7. Deploys to GitHub Pages
