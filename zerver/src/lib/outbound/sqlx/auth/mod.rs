@@ -8,7 +8,7 @@ pub mod helpers;
 pub mod models;
 
 use crate::domain::auth::models::password::HashedPassword;
-use crate::domain::auth::models::refresh_token::{RefreshToken, Sha256Hash};
+use zwipe_core::domain::auth::models::refresh_token::{RefreshToken, Sha256Hash};
 use crate::domain::auth::models::UserWithPasswordHash;
 use crate::domain::auth::requests::{
     authenticate_user::{AuthenticateUser, AuthenticateUserError},

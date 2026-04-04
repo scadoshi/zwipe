@@ -42,7 +42,8 @@
 //! println!("Logged in as: {}", session.user.username);
 //! ```
 
-use crate::domain::auth::models::password::{InvalidPassword, Password};
+use crate::domain::auth::models::password::Password;
+use zwipe_core::domain::auth::password::InvalidPassword;
 #[cfg(feature = "zerver")]
 use crate::domain::auth::requests::{
     change_email::ChangeEmail, change_password::ChangePassword, change_username::ChangeUsername,
@@ -310,7 +311,7 @@ mod tests {
 
     #[test]
     fn test_invalid_authenticate_user_from_invalid_password() {
-        use crate::domain::auth::models::password::InvalidPassword;
+        use zwipe_core::domain::auth::password::InvalidPassword;
         let err = InvalidAuthenticateUser::from(InvalidPassword::TooShort);
         assert!(matches!(err, InvalidAuthenticateUser::Password(_)));
     }

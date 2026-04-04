@@ -30,7 +30,8 @@ use uuid::Uuid;
 
 #[cfg(feature = "zerver")]
 use crate::domain::auth::requests::authenticate_user::AuthenticateUserError;
-use crate::domain::auth::models::password::{InvalidPassword, Password};
+use crate::domain::auth::models::password::Password;
+use zwipe_core::domain::auth::password::InvalidPassword;
 
 /// Errors that can occur while constructing a [`ChangeEmail`] request.
 #[derive(Debug, Error)]

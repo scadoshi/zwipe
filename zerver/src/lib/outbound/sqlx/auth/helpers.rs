@@ -7,10 +7,6 @@ use std::future::Future;
 
 use crate::{
     domain::auth::{
-        models::{
-            refresh_token::{RefreshToken, Sha256Hash},
-            session::MAXIMUM_SESSION_COUNT,
-        },
         requests::{
             create_session::CreateSessionError,
             enforce_session_maximum::EnforceSessionMaximumError,
@@ -19,6 +15,10 @@ use crate::{
     outbound::sqlx::auth::models::DatabaseRefreshToken,
 };
 use sqlx::{query, query_as, PgTransaction};
+use zwipe_core::domain::auth::models::{
+    refresh_token::{RefreshToken, Sha256Hash},
+    session::MAXIMUM_SESSION_COUNT,
+};
 use uuid::Uuid;
 
 /// Extension trait for refresh token operations within a PostgreSQL transaction.

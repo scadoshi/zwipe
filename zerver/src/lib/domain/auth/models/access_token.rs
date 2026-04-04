@@ -5,8 +5,7 @@
 //! - [`JwtValidate`]: Extension trait for JWT signature verification
 //! - [`AccessTokenExt`]: Extension trait for token generation
 
-// Re-export core types
-pub use zwipe_core::domain::auth::models::access_token::{
+use zwipe_core::domain::auth::models::access_token::{
     AccessToken, Jwt, UserClaims,
     InvalidJwt as CoreInvalidJwt,
 };

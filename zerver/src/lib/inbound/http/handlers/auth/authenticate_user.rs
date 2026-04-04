@@ -1,6 +1,8 @@
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
 pub use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::auth::models::session::Session;
 
 #[cfg(feature = "zerver")]
 use crate::domain::auth::requests::authenticate_user::AuthenticateUser;
@@ -8,7 +10,6 @@ use crate::domain::auth::requests::authenticate_user::AuthenticateUser;
 use crate::{
     domain::{
         auth::{
-            models::session::Session,
             ports::AuthService,
             requests::authenticate_user::{AuthenticateUserError, InvalidAuthenticateUser},
         },

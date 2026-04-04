@@ -4,7 +4,7 @@
 //! allowing sessions to persist across application restarts.
 
 use keyring::default;
-use zwipe::domain::auth::models::session::Session;
+use zwipe_core::domain::auth::models::session::Session;
 
 fn credential_username() -> String {
     env!("CARGO_PKG_NAME").to_string() + "-user"

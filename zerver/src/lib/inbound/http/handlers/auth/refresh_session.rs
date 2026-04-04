@@ -1,5 +1,6 @@
 #[cfg(feature = "zerver")]
-use crate::domain::auth::{models::session::Session, requests::refresh_session::RefreshSession};
+use crate::domain::auth::requests::refresh_session::RefreshSession;
+use zwipe_core::domain::auth::models::session::Session;
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{

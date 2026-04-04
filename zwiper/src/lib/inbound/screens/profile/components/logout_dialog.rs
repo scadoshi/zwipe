@@ -5,7 +5,7 @@ use crate::inbound::components::alert_dialog::{
 use crate::inbound::components::auth::signal_logout::SignalLogout;
 use crate::outbound::client::ZwipeClient;
 use dioxus::prelude::*;
-use zwipe::domain::auth::models::session::Session;
+use zwipe_core::domain::auth::models::session::Session;
 
 /// Simple logout confirmation dialog.
 #[component]

@@ -4,10 +4,12 @@ use crate::inbound::http::Log500;
 use axum::{extract::State, http::StatusCode, Json};
 pub use zwipe_core::http::contracts::auth::HttpRegisterUser;
 #[cfg(feature = "zerver")]
+use zwipe_core::domain::auth::models::session::Session;
+#[cfg(feature = "zerver")]
 use crate::{
     domain::{
         auth::{
-            models::{access_token::InvalidJwt, session::Session},
+            models::access_token::InvalidJwt,
             ports::AuthService,
             requests::{
                 create_session::CreateSessionError,
