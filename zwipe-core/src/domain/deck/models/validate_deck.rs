@@ -29,6 +29,7 @@ pub fn validate_deck(
     check_legality(format, entries, &mut warnings);
     check_copy_limits(format, entries, &mut warnings);
     check_color_identity(format, deck_profile, entries, commander_card, &mut warnings);
+    check_commander_eligibility(format, deck_profile, entries, commander_card, &mut warnings);
 
     warnings
 }
@@ -190,6 +191,46 @@ fn check_color_identity(
     }
 }
 
+fn check_commander_eligibility(
+    format: &Format,
+    profile: &DeckProfile,
+    entries: &[DeckEntry],
+    commander_card: Option<&Card>,
+    warnings: &mut Vec<DeckWarning>,
+) {
+    if !format.has_commander() {
+        return;
+    }
+
+    let Some(commander_id) = profile.commander_id else {
+        return; // Already warned by check_commander_required
+    };
+
+    // Find the commander card from entries or the provided card
+    let commander = entries
+        .iter()
+        .find(|e| e.card.scryfall_data.id == commander_id)
+        .map(|e| &e.card)
+        .or(commander_card);
+
+    let Some(card) = commander else {
+        return; // Can't validate without the card data
+    };
+
+    use crate::domain::card::search_card::commander_eligibility::is_valid_commander;
+
+    if !is_valid_commander(card, format) {
+        warnings.push(DeckWarning::with_card(
+            format!(
+                "{} is not a valid commander for {}",
+                card.scryfall_data.name.to_lowercase(),
+                format.display_name().to_lowercase()
+            ),
+            card.scryfall_data.id,
+        ));
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -211,6 +252,113 @@ mod tests {
             user_id: uuid::Uuid::new_v4(),
             card_count: 0,
             commander_name: None,
+        }
+    }
+
+    mod commander_eligibility {
+        use super::*;
+        use crate::domain::card::scryfall_data::rarity::Rarity;
+        use crate::test_utils::make_card;
+
+        #[test]
+        fn valid_legendary_creature_no_warning() {
+            let mut card = make_card("Atraxa, Praetors' Voice");
+            card.scryfall_data.type_line =
+                Some("Legendary Creature — Phyrexian Angel Horror".to_string());
+            let commander_id = card.scryfall_data.id;
+
+            let mut profile = test_profile(Some(Format::Commander));
+            profile.commander_id = Some(commander_id);
+
+            let warnings = validate_deck(&profile, &[], Some(&card));
+            assert!(
+                !warnings.iter().any(|w| w.to_string().contains("not a valid commander")),
+                "expected no commander eligibility warning"
+            );
+        }
+
+        #[test]
+        fn non_legendary_creature_as_commander_warns() {
+            let mut card = make_card("Llanowar Elves");
+            card.scryfall_data.type_line = Some("Creature — Elf Druid".to_string());
+            let commander_id = card.scryfall_data.id;
+
+            let mut profile = test_profile(Some(Format::Commander));
+            profile.commander_id = Some(commander_id);
+
+            let warnings = validate_deck(&profile, &[], Some(&card));
+            assert!(
+                warnings.iter().any(|w| w.to_string().contains("not a valid commander")),
+                "expected commander eligibility warning"
+            );
+        }
+
+        #[test]
+        fn planeswalker_as_brawl_commander_no_warning() {
+            let mut card = make_card("Teferi, Hero of Dominaria");
+            card.scryfall_data.type_line =
+                Some("Legendary Planeswalker — Teferi".to_string());
+            let commander_id = card.scryfall_data.id;
+
+            let mut profile = test_profile(Some(Format::Brawl));
+            profile.commander_id = Some(commander_id);
+
+            let warnings = validate_deck(&profile, &[], Some(&card));
+            assert!(
+                !warnings.iter().any(|w| w.to_string().contains("not a valid commander")),
+                "expected no commander eligibility warning for brawl planeswalker"
+            );
+        }
+
+        #[test]
+        fn planeswalker_as_commander_format_warns() {
+            let mut card = make_card("Teferi, Hero of Dominaria");
+            card.scryfall_data.type_line =
+                Some("Legendary Planeswalker — Teferi".to_string());
+            let commander_id = card.scryfall_data.id;
+
+            let mut profile = test_profile(Some(Format::Commander));
+            profile.commander_id = Some(commander_id);
+
+            let warnings = validate_deck(&profile, &[], Some(&card));
+            assert!(
+                warnings.iter().any(|w| w.to_string().contains("not a valid commander")),
+                "expected commander eligibility warning"
+            );
+        }
+
+        #[test]
+        fn uncommon_creature_as_pauper_commander_no_warning() {
+            let mut card = make_card("Burning-Tree Emissary");
+            card.scryfall_data.type_line = Some("Creature — Human Shaman".to_string());
+            card.scryfall_data.rarity = Rarity::Uncommon;
+            let commander_id = card.scryfall_data.id;
+
+            let mut profile = test_profile(Some(Format::PauperCommander));
+            profile.commander_id = Some(commander_id);
+
+            let warnings = validate_deck(&profile, &[], Some(&card));
+            assert!(
+                !warnings.iter().any(|w| w.to_string().contains("not a valid commander")),
+                "expected no commander eligibility warning for uncommon creature"
+            );
+        }
+
+        #[test]
+        fn rare_creature_as_pauper_commander_warns() {
+            let mut card = make_card("Tarmogoyf");
+            card.scryfall_data.type_line = Some("Creature — Lhurgoyf".to_string());
+            card.scryfall_data.rarity = Rarity::Rare;
+            let commander_id = card.scryfall_data.id;
+
+            let mut profile = test_profile(Some(Format::PauperCommander));
+            profile.commander_id = Some(commander_id);
+
+            let warnings = validate_deck(&profile, &[], Some(&card));
+            assert!(
+                warnings.iter().any(|w| w.to_string().contains("not a valid commander")),
+                "expected commander eligibility warning for rare creature"
+            );
         }
     }
 }

@@ -8,7 +8,7 @@
 //! Text filters (`set_name_contains`, etc.) treat empty strings as `None`
 //! to avoid ineffective filters.
 
-use super::{CardFilterBuilder, CardType, Colors, OrderByOption};
+use super::{CardFilterBuilder, CardType, Colors, Format, OrderByOption};
 use crate::domain::card::scryfall_data::rarity::Rarities;
 
 impl CardFilterBuilder {
@@ -554,6 +554,22 @@ impl CardFilterBuilder {
     /// Clears the legalities_contains_any filter.
     pub fn unset_legalities_contains_any(&mut self) -> &mut Self {
         self.legalities_contains_any = None;
+        self
+    }
+
+    // =================================
+    // Commander Filter Setters
+    // =================================
+
+    /// Sets the commander eligibility filter for a specific format.
+    pub fn set_is_commander_in_format(&mut self, format: Format) -> &mut Self {
+        self.is_commander_in_format = Some(format);
+        self
+    }
+
+    /// Clears the commander eligibility filter.
+    pub fn unset_is_commander_in_format(&mut self) -> &mut Self {
+        self.is_commander_in_format = None;
         self
     }
 

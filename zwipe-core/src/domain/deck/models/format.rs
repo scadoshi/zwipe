@@ -154,6 +154,20 @@ impl Format {
         self.has_commander()
     }
 
+    /// Formats that require a commander, alphabetical.
+    pub fn commander_formats() -> &'static [Format] {
+        &[
+            Self::Brawl,
+            Self::Commander,
+            Self::Duel,
+            Self::HistoricBrawl,
+            Self::Oathbreaker,
+            Self::PauperCommander,
+            Self::Predh,
+            Self::StandardBrawl,
+        ]
+    }
+
     /// All format variants, commander formats first then alphabetical.
     pub fn all() -> &'static [Format] {
         &[

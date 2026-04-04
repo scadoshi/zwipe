@@ -1,9 +1,12 @@
-use crate::domain::card::{
-    scryfall_data::{colors::Colors, rarity::Rarities},
-    search_card::{
-        card_filter::{CardFilter, OrderByOption},
-        card_type::CardType,
+use crate::domain::{
+    card::{
+        scryfall_data::{colors::Colors, rarity::Rarities},
+        search_card::{
+            card_filter::{CardFilter, OrderByOption},
+            card_type::CardType,
+        },
     },
+    deck::Format,
 };
 
 #[allow(missing_docs)]
@@ -153,6 +156,11 @@ impl CardFilter {
     // legalities
     pub fn legalities_contains_any(&self) -> Option<&[String]> {
         self.legalities_contains_any.as_deref()
+    }
+
+    // commander
+    pub fn is_commander_in_format(&self) -> Option<&Format> {
+        self.is_commander_in_format.as_ref()
     }
 
     // config

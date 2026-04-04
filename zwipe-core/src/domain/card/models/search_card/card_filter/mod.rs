@@ -27,9 +27,12 @@ pub mod getters;
 /// Sort order options (name, CMC, rarity, etc.).
 pub mod order_by_option;
 
-use crate::domain::card::{
-    scryfall_data::{colors::Colors, rarity::Rarities},
-    search_card::{card_filter::order_by_option::OrderByOption, card_type::CardType},
+use crate::domain::{
+    card::{
+        scryfall_data::{colors::Colors, rarity::Rarities},
+        search_card::{card_filter::order_by_option::OrderByOption, card_type::CardType},
+    },
+    deck::Format,
 };
 use serde::{Deserialize, Serialize};
 
@@ -85,6 +88,8 @@ pub struct CardFilter {
     language: Option<String>,
     // legalities
     legalities_contains_any: Option<Vec<String>>,
+    // commander
+    is_commander_in_format: Option<Format>,
     // config
     limit: u32,
     offset: u32,

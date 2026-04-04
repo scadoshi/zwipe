@@ -295,7 +295,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     let mut clear_filters = move || {
         let opts = ToastOptions::default().duration(Duration::from_millis(1500));
-        if filter_builder.read().is_empty_ignoring_legalities() {
+        if filter_builder.read().is_empty_ignoring_deck_context() {
             toast.warning("filter already cleared".to_string(), opts);
         } else {
             filter_builder.write().clear();
@@ -361,7 +361,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         builder.set_limit(pagination_limit);
         builder.set_offset(0);
 
-        let effectively_empty = builder.is_empty_ignoring_legalities();
+        let effectively_empty = builder.is_empty_ignoring_deck_context();
 
         if first {
             // ── Initial mount ─────────────────────────────────────────
@@ -536,7 +536,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     class: "util-btn",
                     onclick: move |_| filters_overlay_open.set(true),
                     "filter"
-                    if !filter_builder.read().is_empty_ignoring_legalities() {
+                    if !filter_builder.read().is_empty_ignoring_deck_context() {
                         span { class: "filter-dot" }
                     }
                 }

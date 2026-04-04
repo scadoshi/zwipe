@@ -40,6 +40,7 @@ use crate::domain::card::requests::{
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
 use crate::outbound::sqlx::card::helpers::upsert_card::BatchDeltaUpsertWithTx;
 use crate::outbound::sqlx::card::models::DatabaseScryfallData;
+use crate::outbound::sqlx::card::sync_metrics::DatabaseSyncMetrics;
 use crate::outbound::sqlx::postgres::Postgres as MyPostgres;
 use crate::{
     domain::card::ports::CardRepository,
@@ -47,7 +48,7 @@ use crate::{
         BatchUpsertWithTx, BulkUpsertWithTx, SingleUpsertWithTx,
     },
 };
-use crate::outbound::sqlx::card::sync_metrics::DatabaseSyncMetrics;
+use zwipe_core::domain::deck::Format;
 
 use anyhow::Context;
 use chrono::NaiveDateTime;
@@ -140,9 +141,7 @@ impl CardRepository for MyPostgres {
             .bind(**request)
             .fetch_one(&self.pool)
             .await?;
-        let scryfall_data: ScryfallData = db
-            .try_into()
-            .map_err(GetScryfallDataError::Database)?;
+        let scryfall_data: ScryfallData = db.try_into().map_err(GetScryfallDataError::Database)?;
 
         Ok(scryfall_data)
     }
@@ -484,6 +483,36 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated(")");
         }
 
+        if let Some(format) = request.is_commander_in_format() {
+            match format {
+                // Legendary creature, legendary vehicle with P/T, or "can be your commander"
+                Format::Commander | Format::Duel | Format::Predh => {
+                    sep.push(
+                        "((type_line ILIKE '%Legendary%' AND type_line ILIKE '%Creature%') \
+                         OR (type_line ILIKE '%Legendary%' AND power IS NOT NULL AND toughness IS NOT NULL) \
+                         OR oracle_text ILIKE '%can be your commander%')",
+                    );
+                }
+                // Legendary creature or legendary planeswalker
+                Format::Brawl | Format::StandardBrawl | Format::HistoricBrawl => {
+                    sep.push(
+                        "(type_line ILIKE '%Legendary%' AND \
+                         (type_line ILIKE '%Creature%' OR type_line ILIKE '%Planeswalker%'))",
+                    );
+                }
+                // Uncommon creature
+                Format::PauperCommander => {
+                    sep.push("(type_line ILIKE '%Creature%' AND rarity = 'uncommon')");
+                }
+                // Any planeswalker
+                Format::Oathbreaker => {
+                    sep.push("type_line ILIKE '%Planeswalker%'");
+                }
+                // Non-commander formats: no filter (should not happen, but safe)
+                _ => {}
+            }
+        }
+
         // Filter out NULLs for sorted field
         if let Some(order_by) = request.order_by() {
             let null_filter = match order_by {
@@ -539,8 +568,7 @@ impl CardRepository for MyPostgres {
         qb.push(" OFFSET ");
         qb.push_bind(request.offset() as i32);
 
-        let db_rows: Vec<DatabaseScryfallData> =
-            qb.build_query_as().fetch_all(&self.pool).await?;
+        let db_rows: Vec<DatabaseScryfallData> = qb.build_query_as().fetch_all(&self.pool).await?;
         let scryfall_data: Vec<ScryfallData> = db_rows
             .into_iter()
             .map(ScryfallData::try_from)
