@@ -3,13 +3,9 @@
 use super::deck_cards::{DeckCards, extract_sets};
 use crate::outbound::client::{card::get_sets::ClientGetSets, ZwipeClient};
 use dioxus::prelude::*;
-use zwipe::{
-    domain::{
-        auth::models::session::Session,
-        card::models::search_card::card_filter::builder::CardFilterBuilder,
-    },
-    inbound::http::ApiError,
-};
+use zwipe::domain::card::models::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe::inbound::http::ApiError;
+use zwipe_core::domain::auth::models::session::Session;
 
 /// Filter component for selecting card sets.
 #[component]

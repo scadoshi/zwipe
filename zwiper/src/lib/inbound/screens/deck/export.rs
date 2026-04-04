@@ -11,10 +11,8 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe::{
-    domain::auth::models::session::Session,
-    inbound::http::ApiError,
-};
+use zwipe::inbound::http::ApiError;
+use zwipe_core::domain::auth::models::session::Session;
 
 #[component]
 pub fn ExportDeck(deck_id: Uuid) -> Element {

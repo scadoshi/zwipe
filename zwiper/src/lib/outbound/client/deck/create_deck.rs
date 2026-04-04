@@ -4,12 +4,13 @@ use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use zwipe::{
-    domain::{auth::models::session::Session, deck::models::deck::deck_profile::DeckProfile},
+    domain::{deck::models::deck::deck_profile::DeckProfile},
     inbound::http::{
         handlers::deck::create_deck_profile::HttpCreateDeckProfile, routes::create_deck_route,
         ApiError,
     },
 };
+use zwipe_core::domain::auth::models::session::Session;
 
 /// Trait for creating new deck profiles.
 #[allow(missing_docs)]

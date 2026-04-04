@@ -3,13 +3,11 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
-use zwipe::{
-    domain::auth::models::session::Session,
-    inbound::http::{
-        handlers::auth::refresh_session::HttpRefreshSession, routes::refresh_session_route,
-        ApiError,
-    },
+use zwipe::inbound::http::{
+    handlers::auth::refresh_session::HttpRefreshSession, routes::refresh_session_route,
+    ApiError,
 };
+use zwipe_core::domain::auth::models::session::Session;
 
 /// Trait for refreshing access tokens using a refresh token.
 #[allow(missing_docs)]

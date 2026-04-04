@@ -6,13 +6,9 @@ use super::super::{
 };
 use crate::outbound::client::{card::get_keywords::ClientGetKeywords, ZwipeClient};
 use dioxus::prelude::*;
-use zwipe::{
-    domain::{
-        auth::models::session::Session,
-        card::models::search_card::card_filter::builder::CardFilterBuilder,
-    },
-    inbound::http::ApiError,
-};
+use zwipe::domain::card::models::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe::inbound::http::ApiError;
+use zwipe_core::domain::auth::models::session::Session;
 
 /// Read selected keywords from the filter builder based on current mode.
 fn read_keywords(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<String> {

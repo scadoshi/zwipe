@@ -22,18 +22,16 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::collections::HashMap;
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe::domain::{
-    auth::models::session::Session,
-    card::models::{
-        Card,
-        search_card::{
-            card_filter::builder::CardFilterBuilder,
-            filter_cards::{FilterCards, SortCards},
-            group_cards::{CardGroup, GroupByOption, GroupCards},
-        },
+use zwipe::domain::card::models::{
+    Card,
+    search_card::{
+        card_filter::builder::CardFilterBuilder,
+        filter_cards::{FilterCards, SortCards},
+        group_cards::{CardGroup, GroupByOption, GroupCards},
     },
 };
 use zwipe::inbound::http::{ApiError, handlers::deck_card::update_deck_card::HttpUpdateDeckCard};
+use zwipe_core::domain::auth::models::session::Session;
 
 #[component]
 pub fn View(deck_id: Uuid) -> Element {

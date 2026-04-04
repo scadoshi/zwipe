@@ -3,10 +3,8 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
-use zwipe::{
-    domain::auth::models::session::Session,
-    inbound::http::{routes::get_card_types_route, ApiError},
-};
+use zwipe::inbound::http::{routes::get_card_types_route, ApiError};
+use zwipe_core::domain::auth::models::session::Session;
 
 /// Trait for fetching the list of all card types (creature, instant, etc.).
 #[allow(missing_docs)]

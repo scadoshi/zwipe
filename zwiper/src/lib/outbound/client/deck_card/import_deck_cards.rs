@@ -6,7 +6,6 @@ use std::future::Future;
 use uuid::Uuid;
 use zwipe::{
     domain::{
-        auth::models::session::Session,
         deck::models::deck_card::import_deck_cards::ImportDeckCardsResult,
     },
     inbound::http::{
@@ -14,6 +13,7 @@ use zwipe::{
         routes::import_deck_cards_route, ApiError,
     },
 };
+use zwipe_core::domain::auth::models::session::Session;
 
 /// Trait for importing cards into a deck from plain text.
 #[allow(missing_docs)]

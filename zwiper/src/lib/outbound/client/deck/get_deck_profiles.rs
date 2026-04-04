@@ -4,9 +4,10 @@ use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use zwipe::{
-    domain::{auth::models::session::Session, deck::models::deck::deck_profile::DeckProfile},
+    domain::{deck::models::deck::deck_profile::DeckProfile},
     inbound::http::{routes::get_deck_profiles_route, ApiError},
 };
+use zwipe_core::domain::auth::models::session::Session;
 
 /// Trait for fetching all deck profiles for the authenticated user.
 #[allow(missing_docs)]

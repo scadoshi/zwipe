@@ -5,14 +5,12 @@ use crate::{
 use dioxus::prelude::*;
 use std::time::Duration;
 use tokio::time::sleep;
-use zwipe::domain::{
-    auth::models::session::Session,
-    card::models::{
-        Card,
-        search_card::card_filter::{builder::CardFilterBuilder, error::InvalidCardFilter},
-    },
-    deck::models::deck::format::Format,
+use zwipe::domain::card::models::{
+    Card,
+    search_card::card_filter::{builder::CardFilterBuilder, error::InvalidCardFilter},
 };
+use zwipe::domain::deck::models::deck::format::Format;
+use zwipe_core::domain::auth::models::session::Session;
 
 /// Format chip selector and commander search input with debounced dropdown.
 ///

@@ -17,12 +17,10 @@ use crate::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
-use zwipe::domain::{
-    auth::models::session::Session,
-    card::models::search_card::card_filter::{
-        builder::CardFilterBuilder, order_by_option::OrderByOption,
-    },
+use zwipe::domain::card::models::search_card::card_filter::{
+    builder::CardFilterBuilder, order_by_option::OrderByOption,
 };
+use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::logo;
 
 /// Home screen with navigation to main app features.

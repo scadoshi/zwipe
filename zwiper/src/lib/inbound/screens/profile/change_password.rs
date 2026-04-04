@@ -14,10 +14,9 @@ use crate::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
-use zwipe::{
-    domain::auth::models::{password::Password, session::Session},
-    inbound::http::handlers::auth::change_password::HttpChangePassword,
-};
+use zwipe::domain::auth::models::password::Password;
+use zwipe::inbound::http::handlers::auth::change_password::HttpChangePassword;
+use zwipe_core::domain::auth::models::session::Session;
 
 /// Form screen for updating user's password.
 #[component]

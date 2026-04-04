@@ -5,9 +5,9 @@ use reqwest::StatusCode;
 use std::future::Future;
 use uuid::Uuid;
 use zwipe::{
-    domain::auth::models::session::Session,
     inbound::http::{routes::delete_deck_card_route, ApiError},
 };
+use zwipe_core::domain::auth::models::session::Session;
 
 /// Trait for removing cards from a deck.
 #[allow(missing_docs)]

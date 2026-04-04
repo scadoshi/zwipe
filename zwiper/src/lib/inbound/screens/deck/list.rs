@@ -10,10 +10,9 @@ use crate::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
-use zwipe::{
-    domain::{auth::models::session::Session, deck::models::deck::deck_profile::DeckProfile},
-    inbound::http::ApiError,
-};
+use zwipe::domain::deck::models::deck::deck_profile::DeckProfile;
+use zwipe::inbound::http::ApiError;
+use zwipe_core::domain::auth::models::session::Session;
 
 /// Screen displaying all user's decks with navigation to view/edit.
 #[component]
