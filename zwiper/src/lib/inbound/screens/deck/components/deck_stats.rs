@@ -53,7 +53,7 @@ pub(crate) fn DeckStats(metrics: DeckMetrics, show_buy_sheet: Signal<bool>) -> E
                 span { class: "info-row-value", "{fmt(total)}" }
             }
             div { class: "info-row",
-                span { class: "info-row-label", "avg price / card" }
+                span { class: "info-row-label", "avg card price" }
                 span { class: "info-row-value", "{fmt(avg)}" }
             }
         }
