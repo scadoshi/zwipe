@@ -118,13 +118,29 @@ Add a maybeboard flag to `deck_cards` so cards can be staged without being part 
 
 ## Mechanical Category
 
-Structural grouping for cards by mechanical role (e.g., Ramp, Draw, Removal, Wipe, Counterspell, Threat, Utility Land, etc.).
+Multi-tag strategic role system for cards (Ramp, Draw, Removal, etc.). Cards can have multiple categories. Taxonomy: 24 categories defined. See `context/plans/mechanical-category.md` for full plan.
 
-- [ ] Define the category taxonomy — finite list of mechanical roles stored in zwipe-core
-- [ ] Schema: add `mechanical_category: Option<MechanicalCategory>` to `Card` or as a separate mapping table (AI augmentation to populate values later — build the structure now)
-- [ ] Deck view screen: group by mechanical category alongside existing groupings (type, CMC, color)
-- [ ] Deck metrics: show category breakdown (e.g., "8 removal, 12 ramp")
-- [ ] Card search filtering: filter by mechanical category
+**Taxonomy (finalized):** Ramp, Draw, Removal, Wipe, Counterspell, Protection, Evasion, Finisher, Tokens, Lifegain, Blink, Recursion, Mill, Burn, Drain, Pump, Anthem, Counters, Copy, Sacrifice, Stax, Untap, Tutor, Graveyard Hate
+
+**Schema + Domain:**
+- [ ] `MechanicalCategory` enum (24 variants) in zwipe-core
+- [ ] `mechanical_categories: JSONB` on `card_profiles` table (GIN indexed) — update existing migration
+- [ ] `CardProfile.mechanical_categories: Vec<MechanicalCategory>`
+
+**Classification (three layers):**
+- [ ] Layer 1: Runtime oracle text heuristics — `classify_by_heuristics()` pure function, ~70-80% accuracy, runs during Scryfall sync
+- [ ] Layer 2: AI classification client — standalone binary, reads DB in batches, LLM-classifies, writes tags back. Corrects heuristic errors. ~90-95% accuracy
+- [ ] Layer 3 (future): Fine-tuned lightweight model trained on Layer 2's corrected data. ~95-99% accuracy. Embeddable in sync pipeline
+
+**Filtering + Grouping:**
+- [ ] `CardFilter`: `mechanical_categories_contains_any/all` with `?|`/`@>` SQL operators
+- [ ] `GroupByOption::Category` — multi-bucket grouping (card appears in every matching group)
+- [ ] `DeckMetrics.category_counts` — breakdown per category
+
+**Frontend:**
+- [ ] Category filter section in CardFilterSheet (chip-based multi-select)
+- [ ] "category" grouping chip on deck card view
+- [ ] Category breakdown in deck stats
 
 ---
 
@@ -206,7 +222,7 @@ Add a `context/architecture/structure.md` walking through the full directory tre
 - [x] Unify SwipeAction across add and remove screens, move to components (`2491c043`)
 - [x] Add deck tokens endpoint and display on deck cards screen (`b8026582`)
 
-### zweb & README Updates (2026-04-01)
+### zite & README Updates (2026-04-01)
 
 - [x] Split download page into separate iOS and Android store pages (`b6acebe8`)
 - [x] Add zwipe-core to README tech stack and architecture (`519305b6`)
@@ -214,7 +230,7 @@ Add a `context/architecture/structure.md` walking through the full directory tre
 ### Shared Password Validation Crate (2026-04-01)
 
 - [x] Extract password validation + common password dictionary into `zwipe-core` crate
-- [x] Wire into zerver and zweb, delete duplicated code
+- [x] Wire into zerver and zite, delete duplicated code
 
 ### Per-User Rate Limiting (2026-03-30)
 
@@ -223,7 +239,7 @@ Add a `context/architecture/structure.md` walking through the full directory tre
 ### Community & Web (2026-03-30)
 
 - [x] Discord server setup (Zwipers) with channel structure
-- [x] Discord invite link added to zweb nav (`63a7a3d`)
+- [x] Discord invite link added to zite nav (`63a7a3d`)
 - [x] GitHub webhook integration for #change-log
 
 ### Card Info Text Clipping Fix (2026-03-30)
@@ -242,7 +258,7 @@ Add a `context/architecture/structure.md` walking through the full directory tre
 - [x] Document App Store submission errors and post-build patching (`f0bb7e1`)
 - [x] Document beta Xcode rejection and Apple Support ticket (`fa49916`)
 - [x] Update app icon with centered Z design (`72fdbb9`)
-- [x] Add PWA icons and apple-touch-icon to zweb (`62d3b0c`)
+- [x] Add PWA icons and apple-touch-icon to zite (`62d3b0c`)
 
 ### User Preferences & Themes (2026-03-28)
 
@@ -271,7 +287,7 @@ Add a `context/architecture/structure.md` walking through the full directory tre
 - [x] Show hello and verify toasts on home screen for all flows (`fbc74c2`)
 - [x] Full screen integration pass
 
-### zweb
+### zite
 
 - [x] Design alignment — entrance animations, CSS tokens, spinner (`24704b8`)
 - [x] Nav: ASCII z logo, sticky on scroll, animation on click (`351fff5`, `79f7914`, `241bf48`)

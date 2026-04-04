@@ -4,21 +4,28 @@ Planned features and improvements for after App Store launch.
 
 ---
 
-## AI Card Categorization (Post-Launch, High Priority)
+## AI Card Categorization — Layer 2 & 3
 
-Batch-classify all 35k cards with Claude API to tag strategic categories:
-burn, recursion, ramp, removal, counterspells, draw, tutors, board wipes, lifegain, tokens, flyers
+Layer 1 (oracle text heuristics, ~70-80%) ships with the mechanical category feature. Layers 2 and 3 are post-launch improvements.
 
-**Why AI:** Rule-based pattern matching breaks down fast — "destroy target creature", "exile target nonland permanent", "deals 3 damage to any target", and "target creature gets -3/-3" are all removal but share no keywords. Oracle text variance across thousands of cards is fundamentally non-deterministic.
+**Layer 2: AI Classification Client** (post-launch, high priority)
+- Standalone Rust binary (`zort`) in its own workspace crate, connecting directly to Postgres
+- Reads cards in batches, sends (name, type_line, oracle_text) to LLM API (Claude Haiku)
+- Writes category tags back via UPDATE on card_profiles.mechanical_categories
+- Subcommands: `zort classify` (untagged), `zort reclassify` (all), `zort delta` (changed), `zort audit` (compare vs heuristics)
+- Cost: ~$5-15 for full 35k card run
+- Target accuracy: 90-95%
 
-**Approach:**
-- Run as batch job in `zervice` sync pipeline (after Scryfall data upsert)
-- Send oracle text in batches to Claude API, receive category tags
-- Store as jsonb column on `card_profiles` (e.g. `categories: ["removal", "burn"]`)
-- Re-run only on new/changed cards (delta sync)
-- Expose as `CardFilter` option + `GroupByOption` variant on frontend
+**Layer 3: Fine-Tuned Lightweight Model** (future, when Layer 2 data is mature)
+- Train a small model on Layer 2's corrected tags as training data
+- Input: oracle_text + type_line → Output: category tags
+- Runs locally, no API costs, embeddable in zervice sync pipeline
+- Target accuracy: 95-99%
+- Build when: Layer 2 has run multiple cycles and tags have been spot-checked
 
-**Cost:** Low — oracle texts are short strings, 35k cards in batches of ~100 = ~350 API calls.
+**Why three layers:** Rule-based heuristics get you launched. LLM classification corrects the 20-30% that heuristics miss. A fine-tuned model makes it self-sustaining without ongoing API costs. Each layer builds on the last.
+
+See `context/plans/mechanical-category.md` for full implementation plan including taxonomy and schema.
 
 ---
 
