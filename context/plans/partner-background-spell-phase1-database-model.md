@@ -234,11 +234,11 @@ Update the `new()` constructor to accept the new fields.
 ```rust
 pub struct HttpUpdateDeckProfile {
     pub name: Option<String>,
-    pub commander_id: Optdate<Uuid>,
-    pub partner_commander_id: Optdate<Uuid>,   // NEW
-    pub background_id: Optdate<Uuid>,          // NEW
-    pub signature_spell_id: Optdate<Uuid>,     // NEW
-    pub format: Optdate<String>,
+    pub commander_id: Opdate<Uuid>,
+    pub partner_commander_id: Opdate<Uuid>,   // NEW
+    pub background_id: Opdate<Uuid>,          // NEW
+    pub signature_spell_id: Opdate<Uuid>,     // NEW
+    pub format: Opdate<String>,
 }
 ```
 
@@ -266,7 +266,7 @@ Pass the new fields from `body` through to `CreateDeckProfile::new()`.
 
 **File:** `zerver/src/lib/inbound/http/handlers/deck/update_deck_profile.rs`
 
-Convert the new `Optdate<Uuid>` fields to `Option<Option<Uuid>>` via `.into_option()` and pass to `UpdateDeckProfile::new()`.
+Convert the new `Opdate<Uuid>` fields to `Option<Option<Uuid>>` via `.into_option()` and pass to `UpdateDeckProfile::new()`.
 
 ---
 

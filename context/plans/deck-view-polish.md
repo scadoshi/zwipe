@@ -289,8 +289,8 @@ on_clear_commander: move |_| {
         let Some(session) = session() else { return };
         let request = HttpUpdateDeckProfile::new(
             None,                           // no name change
-            Optdate::Set(None),             // clear commander
-            Optdate::Unchanged,             // no format change
+            Opdate::Set(None),             // clear commander
+            Opdate::Unchanged,             // no format change
         );
         match client().update_deck_profile(deck_id, &request, &session).await {
             Ok(_) => {
@@ -309,7 +309,7 @@ on_clear_commander: move |_| {
 }
 ```
 
-**Import needed:** Add `HttpUpdateDeckProfile`, `Optdate`, and `ClientUpdateDeckProfile` to the imports in the file where this handler lives.
+**Import needed:** Add `HttpUpdateDeckProfile`, `Opdate`, and `ClientUpdateDeckProfile` to the imports in the file where this handler lives.
 
 ---
 
