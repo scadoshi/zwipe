@@ -18,6 +18,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
 use uuid::Uuid;
+use zwipe_core::http::helpers::Optdate;
 use zwipe::{
     domain::{
         auth::models::session::Session,
@@ -28,7 +29,7 @@ use zwipe::{
         },
     },
     inbound::http::{
-        handlers::deck::update_deck_profile::HttpUpdateDeckProfile, helpers::Optdate, ApiError,
+        handlers::deck::update_deck_profile::HttpUpdateDeckProfile, ApiError,
     },
 };
 

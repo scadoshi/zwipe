@@ -52,7 +52,7 @@ use tower_governor::{
     GovernorLayer, governor::GovernorConfigBuilder, key_extractor::PeerIpKeyExtractor,
 };
 
-pub use crate::inbound::http::paths::*;
+pub use zwipe_core::http::paths::*;
 
 /// Routes that don't require authentication.
 #[cfg(feature = "zerver")]

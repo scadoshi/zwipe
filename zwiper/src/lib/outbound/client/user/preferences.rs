@@ -4,7 +4,7 @@ use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use zwipe::inbound::http::{
-    handlers::user::update_preferences::HttpUpdatePreferences, paths::preferences_route,
+    handlers::user::update_preferences::HttpUpdatePreferences, routes::preferences_route,
     ApiError,
 };
 use zwipe_core::domain::{
