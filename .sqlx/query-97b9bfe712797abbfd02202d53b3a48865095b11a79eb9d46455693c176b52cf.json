@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT d.id, d.name, d.commander_id, d.format, d.user_id,\n                      COALESCE(SUM(dc.quantity), 0) as \"card_count\",\n                      sd.name as \"commander_name?\"\n               FROM decks d\n               LEFT JOIN deck_cards dc ON d.id = dc.deck_id\n               LEFT JOIN scryfall_data sd ON d.commander_id = sd.id\n               WHERE d.id = $1\n               GROUP BY d.id, d.name, d.commander_id, d.format, d.user_id, sd.name",
+  "query": "SELECT d.id, d.name, d.commander_id, d.format, d.user_id,\n                      COALESCE(SUM(dc.quantity) FILTER (WHERE dc.maybeboard = false), 0) as \"card_count\",\n                      sd.name as \"commander_name?\"\n               FROM decks d\n               LEFT JOIN deck_cards dc ON d.id = dc.deck_id\n               LEFT JOIN scryfall_data sd ON d.commander_id = sd.id\n               WHERE d.id = $1\n               GROUP BY d.id, d.name, d.commander_id, d.format, d.user_id, sd.name",
   "describe": {
     "columns": [
       {
@@ -54,5 +54,5 @@
       false
     ]
   },
-  "hash": "a4d91686624aae4002a57200dd11d50981bca9a5de0658a30a8d8ead2a044e58"
+  "hash": "97b9bfe712797abbfd02202d53b3a48865095b11a79eb9d46455693c176b52cf"
 }

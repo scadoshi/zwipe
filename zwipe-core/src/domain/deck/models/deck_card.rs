@@ -16,4 +16,6 @@ pub struct DeckCard {
     pub scryfall_data_id: Uuid,
     /// How many copies (1-99, validated against deck copy limit).
     pub quantity: Quantity,
+    /// Whether this card is on the maybeboard (considering, not in active deck).
+    pub maybeboard: bool,
 }

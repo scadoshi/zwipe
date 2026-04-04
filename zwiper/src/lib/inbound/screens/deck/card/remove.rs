@@ -214,7 +214,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     return;
                 };
 
-                let request = HttpCreateDeckCard::new(&card.scryfall_data.id.to_string(), 1);
+                let request = HttpCreateDeckCard::new(&card.scryfall_data.id.to_string(), 1, None);
 
                 spawn(async move {
                     match client().create_deck_card(deck_id, &request, &session).await {
