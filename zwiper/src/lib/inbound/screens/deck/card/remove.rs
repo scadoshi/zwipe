@@ -493,7 +493,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     },
                     "refresh"
                 }
-                if !filter_builder.read().is_empty() || maybeboard_filter() != MaybeboardFilter::Deck {
+                if !filter_builder.read().is_empty() {
                     button {
                         class: "util-btn util-btn-clear",
                         onclick: move |_| {

@@ -13,6 +13,7 @@ use std::time::Duration;
 use uuid::Uuid;
 use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::deck::Deck;
 
 #[component]
 pub fn ExportDeck(deck_id: Uuid) -> Element {
@@ -21,26 +22,50 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let toast = use_toast();
 
-    let deck_text: Resource<Result<String, ApiError>> = use_resource(move || async move {
-            session.upkeep(client);
-            let Some(session) = session() else {
-                return Err(ApiError::Unauthorized("session expired".to_string()));
-            };
-            let deck = client().get_deck(deck_id, &session).await?;
-            let text = deck
-                .entries
-                .iter()
-                .map(|e| format!("{} {}", *e.deck_card.quantity, e.card.scryfall_data.name))
-                .collect::<Vec<_>>()
-                .join("\n");
-            Ok(text)
-        });
+    let mut include_maybeboard: Signal<bool> = use_signal(|| false);
+
+    let deck_resource: Resource<Result<Deck, ApiError>> = use_resource(move || async move {
+        session.upkeep(client);
+        let Some(session) = session() else {
+            return Err(ApiError::Unauthorized("session expired".to_string()));
+        };
+        client().get_deck(deck_id, &session).await
+    });
 
     use_effect(move || {
-        if let Some(Err(e)) = &*deck_text.read() {
+        if let Some(Err(e)) = &*deck_resource.read() {
             toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
         }
     });
+
+    // Derive export text reactively from deck data + maybeboard toggle
+    let export_text: Memo<Option<String>> = use_memo(move || {
+        let deck = deck_resource()?.ok()?;
+        let mut lines: Vec<String> = Vec::new();
+
+        // Active deck cards
+        for entry in deck.entries.iter().filter(|e| !e.deck_card.maybeboard) {
+            lines.push(format!("{} {}", *entry.deck_card.quantity, entry.card.scryfall_data.name));
+        }
+
+        // Maybeboard section (only if toggled on AND cards exist)
+        if include_maybeboard() {
+            let mb: Vec<_> = deck.entries.iter().filter(|e| e.deck_card.maybeboard).collect();
+            if !mb.is_empty() {
+                lines.push(String::new());
+                lines.push("// Maybeboard".to_string());
+                for entry in mb {
+                    lines.push(format!("{} {}", *entry.deck_card.quantity, entry.card.scryfall_data.name));
+                }
+            }
+        }
+
+        Some(lines.join("\n"))
+    });
+
+    let has_maybeboard = deck_resource()
+        .and_then(|r| r.ok())
+        .is_some_and(|d| d.entries.iter().any(|e| e.deck_card.maybeboard));
 
     rsx! {
         Bouncer {
@@ -51,8 +76,20 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
 
                 div { class: "screen-content centered content-enter",
                     div { class: "container-sm",
-                        match &*deck_text.read() {
-                            Some(Ok(text)) => rsx! {
+
+                        if has_maybeboard {
+                            div { class: "chip-row",
+                                span { class: "chip-row-label", "include:" }
+                                button {
+                                    class: if include_maybeboard() { "chip selected" } else { "chip" },
+                                    onclick: move |_| include_maybeboard.set(!include_maybeboard()),
+                                    "maybeboard"
+                                }
+                            }
+                        }
+
+                        match export_text() {
+                            Some(text) => rsx! {
                                 label { class: "label", r#for: "export-text", "decklist" }
                                 textarea {
                                     id: "export-text",
@@ -62,8 +99,13 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                                     value: "{text}",
                                 }
                             },
-                            Some(Err(_)) => rsx! { p { class: "text-muted", "could not load deck" } },
-                            None => rsx! { div { class: "spinner" } }
+                            None => {
+                                if deck_resource().is_some_and(|r| r.is_err()) {
+                                    rsx! { p { class: "text-muted", "could not load deck" } }
+                                } else {
+                                    rsx! { div { class: "spinner" } }
+                                }
+                            }
                         }
                     }
                 }
@@ -79,7 +121,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                     button {
                         class: "util-btn",
                         onclick: move |_| {
-                            if let Some(Ok(text)) = deck_text() {
+                            if let Some(text) = export_text() {
                                 let js = format!(
                                     "navigator.clipboard.writeText({})",
                                     serde_json::to_string(&text).unwrap_or_default()
