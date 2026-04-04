@@ -22,19 +22,46 @@ The oathbreaker planeswalker reuses `commander_id`. The `format` field already t
 
 ---
 
-## Step 1: Database Migration
+## Step 1: Update Existing Migration (Not a New Migration)
 
-**Create:** `zerver/migrations/<timestamp>_add_partner_background_signature_spell.sql`
+**The database is not live yet.** Instead of creating a new ALTER TABLE migration, modify the existing `create_decks` migration in place.
+
+**File:** `zerver/migrations/20250810194454_create_decks.sql`
+
+Add the three new columns directly to the CREATE TABLE statement:
 
 ```sql
-ALTER TABLE decks ADD COLUMN partner_commander_id UUID;
-ALTER TABLE decks ADD COLUMN background_id UUID;
-ALTER TABLE decks ADD COLUMN signature_spell_id UUID;
+CREATE TABLE decks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR NOT NULL,
+    commander_id UUID,
+    partner_commander_id UUID,
+    background_id UUID,
+    signature_spell_id UUID,
+    format TEXT,
+    user_id UUID NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_user
+        FOREIGN KEY (user_id)
+        REFERENCES users (id)
+        ON DELETE CASCADE,
+    CONSTRAINT unique_deck_name_per_user
+        UNIQUE(user_id, name)
+);
+
+CREATE INDEX idx_decks_user_id ON decks(user_id);
 ```
 
-No foreign key constraints on these columns — same pattern as `commander_id` (which also has no FK to scryfall_data). The card IDs reference Scryfall data that may be updated independently.
+No foreign key constraints on the new columns — same pattern as `commander_id` (which also has no FK to scryfall_data). The card IDs reference Scryfall data that may be updated independently.
 
 No indexes needed yet — these columns are not used in WHERE clauses for bulk queries.
+
+**Important:** After modifying the migration, you must reset and re-run migrations locally:
+```bash
+sqlx database drop && sqlx database create && sqlx migrate run
+```
+Then re-sync card data via zervice and run `cargo sqlx prepare --workspace`.
 
 ---
 
@@ -309,7 +336,7 @@ pub fn has_signature_spell(&self) -> bool {
 
 ## Verification Checklist
 
-- [ ] Migration adds 3 new nullable UUID columns
+- [ ] Existing `create_decks` migration updated with 3 new columns (no new migration file)
 - [ ] `DeckProfile` has 6 new fields (3 IDs + 3 names)
 - [ ] `DatabaseDeckProfile` has matching fields with `FromRow`
 - [ ] All 4 SQL queries (create, get, get_list, update) select new columns
@@ -329,7 +356,7 @@ pub fn has_signature_spell(&self) -> bool {
 
 | File | Change |
 |------|--------|
-| `zerver/migrations/<timestamp>_add_partner_background_signature_spell.sql` | **NEW** — 3 ALTER TABLE statements |
+| `zerver/migrations/20250810194454_create_decks.sql` | Add 3 columns to existing CREATE TABLE |
 | `zwipe-core/.../deck/models/deck_profile.rs` | Add 6 fields |
 | `zwipe-core/.../deck/models/format.rs` | Add `supports_partner()`, `supports_background()`, `has_signature_spell()` |
 | `zwipe-core/.../deck/models/validate_deck.rs` | Update `check_card_count` |
