@@ -27,10 +27,7 @@ use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
 use uuid::Uuid;
 use zwipe::domain::card::models::Card;
-use zwipe::domain::deck::models::{
-    deck::{deck_profile::DeckProfile, deck_warning::DeckWarning, DeckEntry},
-    deck_metrics::DeckMetrics,
-};
+use zwipe_core::domain::deck::{DeckEntry, deck_profile::DeckProfile, deck_warning::DeckWarning, deck_metrics::DeckMetrics};
 use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::auth::models::session::Session;
 

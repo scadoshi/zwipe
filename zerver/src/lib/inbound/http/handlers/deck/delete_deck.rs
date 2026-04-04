@@ -10,7 +10,7 @@ use crate::{
         auth::ports::AuthService,
         card::ports::CardService,
         deck::{
-            models::deck::delete_deck::{DeleteDeck, DeleteDeckError, InvalidDeleteDeck},
+            models::deck::delete_deck::DeleteDeckError,
             ports::DeckService,
         },
         health::ports::HealthService,
@@ -18,6 +18,8 @@ use crate::{
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
 };
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::deck::requests::delete_deck::{DeleteDeck, InvalidDeleteDeck};
 
 #[cfg(feature = "zerver")]
 impl From<DeleteDeckError> for ApiError {

@@ -12,28 +12,36 @@ use crate::domain::{
     deck::{
         models::{
             deck::{
-                Deck, DeckEntry,
-                create_deck_profile::{CreateDeckProfile, CreateDeckProfileError},
-                deck_profile::DeckProfile,
-                delete_deck::{DeleteDeck, DeleteDeckError},
+                create_deck_profile::CreateDeckProfileError,
+                delete_deck::DeleteDeckError,
                 get_deck::GetDeckError,
-                get_deck_profile::{GetDeckProfile, GetDeckProfileError},
-                get_deck_profiles::GetDeckProfiles,
+                get_deck_profile::GetDeckProfileError,
                 get_deck_tokens::GetDeckTokensError,
-                update_deck_profile::{UpdateDeckProfile, UpdateDeckProfileError},
+                update_deck_profile::UpdateDeckProfileError,
             },
             deck_card::{
-                DeckCard,
-                create_deck_card::{CreateDeckCard, CreateDeckCardError},
-                delete_deck_card::{DeleteDeckCard, DeleteDeckCardError},
-                import_deck_cards::{
-                    ImportDeckCards, ImportDeckCardsError, ImportDeckCardsResult, ImportedCard,
-                    UnresolvedCard,
-                },
-                update_deck_card::{UpdateDeckCard, UpdateDeckCardError},
+                create_deck_card::CreateDeckCardError,
+                delete_deck_card::DeleteDeckCardError,
+                import_deck_cards::ImportDeckCardsError,
+                update_deck_card::UpdateDeckCardError,
             },
         },
         ports::{DeckRepository, DeckService},
+    },
+};
+use zwipe_core::domain::deck::{
+    Deck, DeckCard, DeckEntry,
+    deck_profile::DeckProfile,
+    requests::{
+        create_deck_card::CreateDeckCard,
+        create_deck_profile::CreateDeckProfile,
+        delete_deck::DeleteDeck,
+        delete_deck_card::DeleteDeckCard,
+        get_deck_profile::GetDeckProfile,
+        get_deck_profiles::GetDeckProfiles,
+        import_deck_cards::{ImportDeckCards, ImportDeckCardsResult, ImportedCard, UnresolvedCard},
+        update_deck_card::UpdateDeckCard,
+        update_deck_profile::UpdateDeckProfile,
     },
 };
 

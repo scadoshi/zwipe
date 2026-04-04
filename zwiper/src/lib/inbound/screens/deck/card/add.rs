@@ -30,7 +30,7 @@ use zwipe::domain::card::models::{
     Card, scryfall_data::image_uris::ImageUris,
     search_card::card_filter::builder::CardFilterBuilder,
 };
-use zwipe::domain::deck::models::deck::format::Format;
+use zwipe_core::domain::deck::format::Format;
 use zwipe::inbound::http::handlers::deck_card::create_deck_card::HttpCreateDeckCard;
 use zwipe_core::domain::auth::models::session::Session;
 

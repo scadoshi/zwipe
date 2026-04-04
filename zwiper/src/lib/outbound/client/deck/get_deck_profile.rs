@@ -4,11 +4,9 @@ use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use uuid::Uuid;
-use zwipe::{
-    domain::{deck::models::deck::deck_profile::DeckProfile},
-    inbound::http::{routes::get_deck_profile_route, ApiError},
-};
+use zwipe::inbound::http::{routes::get_deck_profile_route, ApiError};
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::deck::deck_profile::DeckProfile;
 
 /// Trait for fetching deck metadata without cards.
 #[allow(missing_docs)]

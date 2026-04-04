@@ -14,16 +14,18 @@ use crate::{
         auth::ports::AuthService,
         card::ports::CardService,
         deck::{
-            models::deck_card::{
-                create_deck_card::{CreateDeckCard, CreateDeckCardError, InvalidCreateDeckCard},
-                DeckCard,
-            },
+            models::deck_card::create_deck_card::CreateDeckCardError,
             ports::DeckService,
         },
         health::ports::HealthService,
         user::ports::UserService,
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+};
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::deck::{
+    DeckCard,
+    requests::create_deck_card::{CreateDeckCard, InvalidCreateDeckCard},
 };
 
 #[cfg(feature = "zerver")]

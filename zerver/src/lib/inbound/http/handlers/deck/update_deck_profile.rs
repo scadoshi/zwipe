@@ -4,18 +4,18 @@ use crate::{
         auth::ports::AuthService,
         card::ports::CardService,
         deck::{
-            models::deck::{
-                deck_profile::DeckProfile,
-                update_deck_profile::{
-                    InvalidUpdateDeckProfile, UpdateDeckProfile, UpdateDeckProfileError,
-                },
-            },
+            models::deck::update_deck_profile::UpdateDeckProfileError,
             ports::DeckService,
         },
         health::ports::HealthService,
         user::ports::UserService,
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+};
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::deck::{
+    deck_profile::DeckProfile,
+    requests::update_deck_profile::{InvalidUpdateDeckProfile, UpdateDeckProfile},
 };
 #[cfg(feature = "zerver")]
 use axum::{

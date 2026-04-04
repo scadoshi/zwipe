@@ -3,17 +3,16 @@ use crate::{
     domain::{
         auth::ports::AuthService,
         card::ports::CardService,
-        deck::{
-            models::deck::{
-                deck_profile::DeckProfile,
-                get_deck_profiles::{GetDeckProfiles, InvalidGetDeckProfiles},
-            },
-            ports::DeckService,
-        },
+        deck::ports::DeckService,
         health::ports::HealthService,
         user::ports::UserService,
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState},
+};
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::deck::{
+    deck_profile::DeckProfile,
+    requests::get_deck_profiles::{GetDeckProfiles, InvalidGetDeckProfiles},
 };
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};

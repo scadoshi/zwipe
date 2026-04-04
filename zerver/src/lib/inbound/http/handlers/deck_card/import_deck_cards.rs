@@ -16,9 +16,7 @@ use crate::{
         auth::ports::AuthService,
         card::ports::CardService,
         deck::{
-            models::deck_card::import_deck_cards::{
-                ImportDeckCards, ImportDeckCardsError, ImportDeckCardsResult,
-            },
+            models::deck_card::import_deck_cards::ImportDeckCardsError,
             ports::DeckService,
         },
         health::ports::HealthService,
@@ -26,6 +24,8 @@ use crate::{
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
 };
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::deck::requests::import_deck_cards::{ImportDeckCards, ImportDeckCardsResult};
 
 #[cfg(feature = "zerver")]
 impl From<ImportDeckCardsError> for ApiError {
