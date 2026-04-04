@@ -7,15 +7,18 @@ pub mod getters;
 /// Setter methods for modifying filter values.
 pub mod setters;
 
-use crate::domain::card::{
-    scryfall_data::{
-        colors::{Color, Colors},
-        rarity::Rarities,
+use crate::domain::{
+    card::{
+        scryfall_data::{
+            colors::{Color, Colors},
+            rarity::Rarities,
+        },
+        search_card::{
+            card_filter::{error::InvalidCardFilter, CardFilter, OrderByOption},
+            card_type::CardType,
+        },
     },
-    search_card::{
-        card_filter::{error::InvalidCardFilter, CardFilter, OrderByOption},
-        card_type::CardType,
-    },
+    deck::Format,
 };
 use serde::{Deserialize, Serialize};
 
@@ -107,6 +110,8 @@ pub struct CardFilterBuilder {
     language: Option<String>,
     // legalities
     legalities_contains_any: Option<Vec<String>>,
+    // commander
+    is_commander_in_format: Option<Format>,
     // config
     limit: u32,
     offset: u32,
@@ -151,6 +156,7 @@ impl Default for CardFilterBuilder {
             content_warning: Some(false),
             language: Some("en".to_string()),
             legalities_contains_any: None,
+            is_commander_in_format: None,
             limit: 100,
             offset: 0,
             order_by: None,
@@ -176,13 +182,14 @@ impl CardFilterBuilder {
         *self == default
     }
 
-    /// Like `is_empty()` but also ignores legalities_contains_any.
+    /// Like `is_empty()` but also ignores deck-context filters (legalities, commander).
     ///
-    /// Used in deck context where format legality is pre-populated from the deck
-    /// and shouldn't count as a user-set filter.
-    pub fn is_empty_ignoring_legalities(&self) -> bool {
+    /// Used in deck context where format legality and commander eligibility are
+    /// pre-populated from the deck and shouldn't count as user-set filters.
+    pub fn is_empty_ignoring_deck_context(&self) -> bool {
         let mut test = self.clone();
         test.unset_legalities_contains_any();
+        test.unset_is_commander_in_format();
         test.is_empty()
     }
 
@@ -587,6 +594,7 @@ impl CardFilterBuilder {
             content_warning: self.content_warning,
             language: self.language.clone(),
             legalities_contains_any: self.legalities_contains_any.clone(),
+            is_commander_in_format: self.is_commander_in_format,
             limit: self.limit,
             offset: self.offset,
             order_by: self.order_by,

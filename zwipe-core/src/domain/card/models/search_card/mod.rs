@@ -2,6 +2,8 @@
 
 /// Card filter builder for constructing search queries.
 pub mod card_filter;
+/// Commander eligibility rules by format.
+pub mod commander_eligibility;
 /// Card type enum (Creature, Instant, Sorcery, etc.).
 pub mod card_type;
 /// In-memory card filtering trait for Vec<Card>.

@@ -3,9 +3,12 @@
 //! All getters return `Option` types since filters may be unset.
 //! String fields return `Option<&str>`, collections return `Option<&[T]>`.
 
-use crate::domain::card::{
-    scryfall_data::{colors::Colors, rarity::Rarities},
-    search_card::{card_filter::{builder::CardFilterBuilder, OrderByOption}, card_type::CardType},
+use crate::domain::{
+    card::{
+        scryfall_data::{colors::Colors, rarity::Rarities},
+        search_card::{card_filter::{builder::CardFilterBuilder, OrderByOption}, card_type::CardType},
+    },
+    deck::Format,
 };
 
 impl CardFilterBuilder {
@@ -213,6 +216,15 @@ impl CardFilterBuilder {
     /// Returns the legalities_contains_any filter value.
     pub fn legalities_contains_any(&self) -> Option<&[String]> {
         self.legalities_contains_any.as_deref()
+    }
+
+    // =================================
+    // Commander Filter Getters
+    // =================================
+
+    /// Returns the commander eligibility format filter.
+    pub fn is_commander_in_format(&self) -> Option<&Format> {
+        self.is_commander_in_format.as_ref()
     }
 
     // =================================

@@ -104,7 +104,7 @@ pub(crate) fn CardFilterSheet(
                 button {
                     class: "btn btn-sm",
                     onclick: move |_| {
-                        if validate_before_apply && filter_builder.read().is_empty_ignoring_legalities() {
+                        if validate_before_apply && filter_builder.read().is_empty_ignoring_deck_context() {
                             toast.warning("filter is empty".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                         } else {
                             filter_reset_counter.set(filter_reset_counter() + 1);
