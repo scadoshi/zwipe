@@ -4,8 +4,8 @@
 //! derive selectable values from the deck's cards instead of fetching from the server.
 
 use dioxus::prelude::*;
-use zwipe::domain::card::models::Card;
-use zwipe::domain::card::models::search_card::stop_words::{ORACLE_STOP_WORDS, TYPE_STOP_WORDS};
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::stop_words::{ORACLE_STOP_WORDS, TYPE_STOP_WORDS};
 
 /// Newtype so `try_use_context` doesn't collide with other `Signal<Vec<Card>>` contexts.
 #[derive(Clone, Copy)]
