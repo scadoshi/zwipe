@@ -128,12 +128,22 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         .filter(|(entries, _)| !entries.is_empty())
         .map(|(entries, _)| DeckMetrics::from_entries(entries));
 
-    let tcg_url = deck_data
-        .as_ref()
-        .map(|(entries, _)| buy_links::tcgplayer_url(entries));
-    let ck_url = deck_data
-        .as_ref()
-        .map(|(entries, _)| buy_links::cardkingdom_url(entries));
+    let tcg_url = deck_data.as_ref().map(|(entries, _)| {
+        let active: Vec<_> = entries
+            .iter()
+            .filter(|e| !e.deck_card.maybeboard)
+            .cloned()
+            .collect();
+        buy_links::tcgplayer_url(&active)
+    });
+    let ck_url = deck_data.as_ref().map(|(entries, _)| {
+        let active: Vec<_> = entries
+            .iter()
+            .filter(|e| !e.deck_card.maybeboard)
+            .cloned()
+            .collect();
+        buy_links::cardkingdom_url(&active)
+    });
 
     let mana_curve_bars: Option<[(usize, u32); 7]> = metrics.as_ref().map(|m| {
         let max_count = m.cmc_histogram.iter().copied().max().unwrap_or(0);
