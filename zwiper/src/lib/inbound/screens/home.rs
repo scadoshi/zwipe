@@ -22,8 +22,8 @@ use zwipe::domain::{
     card::models::search_card::card_filter::{
         builder::CardFilterBuilder, order_by_option::OrderByOption,
     },
-    logo,
 };
+use zwipe_core::domain::logo;
 
 /// Home screen with navigation to main app features.
 #[component]

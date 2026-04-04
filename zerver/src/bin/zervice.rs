@@ -12,11 +12,11 @@ use zwipe::{
             ports::CardService,
             services::Service as CardService_,
         },
-        logo,
     },
     inbound::external::scryfall::bulk::BulkEndpoint,
     outbound::{resend::Resend, sqlx::postgres::Postgres},
 };
+use zwipe_core::domain::logo;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

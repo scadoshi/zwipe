@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use dioxus_primitives::toast::ToastProvider;
-use zwipe::domain::logo;
+use zwipe_core::domain::logo;
 use zwiper::{
     config::Config,
     domain::theme::ThemeConfig,

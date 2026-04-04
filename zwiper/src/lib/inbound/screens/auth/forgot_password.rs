@@ -9,10 +9,8 @@ use dioxus_primitives::toast::{use_toast, ToastOptions};
 use email_address::EmailAddress;
 use std::str::FromStr;
 use std::time::Duration;
-use zwipe::{
-    domain::logo,
-    inbound::http::handlers::auth::request_password_reset::HttpRequestPasswordReset,
-};
+use zwipe::inbound::http::handlers::auth::request_password_reset::HttpRequestPasswordReset;
+use zwipe_core::domain::logo;
 
 /// Forgot password screen for initiating a password reset.
 #[component]
