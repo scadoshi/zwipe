@@ -5,18 +5,14 @@ use crate::{
         card::ports::CardService,
         deck::ports::DeckService,
         health::ports::HealthService,
-        user::{
-            models::{
-                get_user::{GetUser, GetUserError},
-                User,
-            },
-            ports::UserService,
-        },
+        user::{models::get_user::GetUserError, ports::UserService},
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
 };
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::user::{requests::get_user::GetUser, User};
 
 #[cfg(feature = "zerver")]
 impl From<GetUserError> for ApiError {

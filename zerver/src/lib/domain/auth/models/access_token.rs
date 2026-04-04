@@ -12,7 +12,7 @@ pub use zwipe_core::domain::auth::models::access_token::{
 };
 
 #[cfg(feature = "zerver")]
-use crate::domain::user::models::User;
+use zwipe_core::domain::user::User;
 #[cfg(feature = "zerver")]
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 #[cfg(feature = "zerver")]
@@ -203,7 +203,7 @@ mod tests {
     use email_address::EmailAddress;
     use std::str::FromStr;
     use uuid::Uuid;
-    use crate::domain::user::models::username::Username;
+    use zwipe_core::domain::user::username::Username;
 
     // ========================
     //  `JwtSecret` tests

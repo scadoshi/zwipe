@@ -8,12 +8,10 @@ use crate::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
-use zwipe::{
-    domain::{
-        auth::models::session::Session,
-        user::models::preferences::ALLOWED_THEMES,
-    },
-    inbound::http::handlers::user::update_preferences::HttpUpdatePreferences,
+use zwipe::inbound::http::handlers::user::update_preferences::HttpUpdatePreferences;
+use zwipe_core::domain::{
+    auth::models::session::Session,
+    user::preferences::ALLOWED_THEMES,
 };
 
 /// Preferences screen for selecting theme and light/dark mode.

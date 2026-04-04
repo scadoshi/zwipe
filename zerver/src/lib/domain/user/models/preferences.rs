@@ -1,10 +1,9 @@
 //! User display preferences.
 //!
-//! Domain types re-exported from `zwipe_core`. Service-layer error types remain here.
-
-pub use zwipe_core::domain::user::preferences::*;
+//! Service-layer error types for preference operations. Domain types live in zwipe-core.
 
 use thiserror::Error;
+pub use zwipe_core::domain::user::preferences::InvalidUpdatePreferences;
 
 /// Error from the update preferences operation.
 #[derive(Debug, Error)]

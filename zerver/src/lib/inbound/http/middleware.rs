@@ -1,6 +1,6 @@
 //! JWT authentication middleware.
 
-use crate::domain::user::models::username::Username;
+use zwipe_core::domain::user::username::Username;
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{

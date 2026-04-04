@@ -1,10 +1,8 @@
-//! User domain models and value objects.
+//! User domain models — server-side error types only.
 //!
-//! Re-exported from `zwipe_core`. Service-layer error types remain here.
+//! Domain types (User, Username, UserPreferences) live in zwipe-core.
 
+/// User profile retrieval errors.
 pub mod get_user;
-/// User display preferences (theme, dark mode).
+/// User preference operation errors.
 pub mod preferences;
-pub mod username;
-
-pub use zwipe_core::domain::user::User;

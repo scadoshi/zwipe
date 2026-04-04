@@ -7595,4 +7595,5 @@ dependencies = [
  "tracing-subscriber",
  "uuid",
  "zerver",
+ "zwipe-core",
 ]

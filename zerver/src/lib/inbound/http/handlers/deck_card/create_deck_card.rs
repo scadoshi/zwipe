@@ -5,6 +5,8 @@ use axum::{
     Json,
 };
 pub use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::user::requests::get_user::GetUser;
 
 #[cfg(feature = "zerver")]
 use crate::{
@@ -19,7 +21,7 @@ use crate::{
             ports::DeckService,
         },
         health::ports::HealthService,
-        user::{models::get_user::GetUser, ports::UserService},
+        user::ports::UserService,
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
 };

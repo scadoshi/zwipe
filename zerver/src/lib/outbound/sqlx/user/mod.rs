@@ -8,12 +8,13 @@ pub mod models;
 use crate::domain::user::{
     models::{
         get_user::GetUserError,
-        preferences::{
-            GetPreferencesError, UpdatePreferences, UpdatePreferencesError, UserPreferences,
-        },
-        User,
+        preferences::{GetPreferencesError, UpdatePreferencesError},
     },
     ports::UserRepository,
+};
+use zwipe_core::domain::user::{
+    preferences::{UpdatePreferences, UserPreferences},
+    User,
 };
 use crate::outbound::sqlx::{postgres::Postgres, user::models::DatabaseUser};
 use sqlx::query_as;

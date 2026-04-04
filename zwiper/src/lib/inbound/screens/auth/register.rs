@@ -14,12 +14,13 @@ use email_address::EmailAddress;
 use std::str::FromStr;
 use std::time::Duration;
 use zwipe::{
-    domain::{
-        auth::models::{password::Password, session::Session},
-        logo,
-        user::models::username::Username,
-    },
+    domain::auth::models::password::Password,
     inbound::http::handlers::auth::register_user::HttpRegisterUser,
+};
+use zwipe_core::domain::{
+    auth::models::session::Session,
+    logo,
+    user::username::Username,
 };
 
 /// Registration form screen for creating new user accounts.

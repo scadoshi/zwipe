@@ -8,10 +8,7 @@ use crate::{
         deck::ports::DeckService,
         health::ports::HealthService,
         user::{
-            models::preferences::{
-                InvalidUpdatePreferences, UpdatePreferences, UpdatePreferencesError,
-                UserPreferences,
-            },
+            models::preferences::{InvalidUpdatePreferences, UpdatePreferencesError},
             ports::UserService,
         },
     },
@@ -20,6 +17,8 @@ use crate::{
 #[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
 pub use zwipe_core::http::contracts::user::HttpUpdatePreferences;
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::user::preferences::{UpdatePreferences, UserPreferences};
 
 #[cfg(feature = "zerver")]
 impl From<InvalidUpdatePreferences> for ApiError {

@@ -7,15 +7,14 @@ use crate::{
         card::ports::CardService,
         deck::ports::DeckService,
         health::ports::HealthService,
-        user::{
-            models::preferences::{GetPreferencesError, UserPreferences},
-            ports::UserService,
-        },
+        user::{models::preferences::GetPreferencesError, ports::UserService},
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
 };
 #[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::user::preferences::UserPreferences;
 
 #[cfg(feature = "zerver")]
 impl From<GetPreferencesError> for ApiError {

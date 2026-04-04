@@ -15,10 +15,12 @@ use std::future::Future;
 use uuid::Uuid;
 
 use crate::domain::user::models::{
-    get_user::{GetUser, GetUserError},
-    preferences::{
-        GetPreferencesError, UpdatePreferences, UpdatePreferencesError, UserPreferences,
-    },
+    get_user::GetUserError,
+    preferences::{GetPreferencesError, UpdatePreferencesError},
+};
+use zwipe_core::domain::user::{
+    preferences::{UpdatePreferences, UserPreferences},
+    requests::get_user::GetUser,
     User,
 };
 

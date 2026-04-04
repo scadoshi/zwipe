@@ -1,10 +1,8 @@
 use crate::{
-    domain::{
-        auth::models::{UserWithPasswordHash, password::HashedPassword},
-        user::models::username::Username,
-    },
+    domain::auth::models::{UserWithPasswordHash, password::HashedPassword},
     outbound::sqlx::auth::error::IntoUserWithPasswordHashError,
 };
+use zwipe_core::domain::user::username::Username;
 use chrono::NaiveDateTime;
 use email_address::EmailAddress;
 use sqlx_macros::FromRow;

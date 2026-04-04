@@ -58,11 +58,8 @@
 use crate::domain::auth::models::password::HashedPassword;
 #[cfg(feature = "zerver")]
 use crate::domain::auth::requests::create_session::CreateSessionError;
-use crate::domain::user::models::username::Username;
-use crate::domain::{
-    auth::models::password::{InvalidPassword, Password},
-    user::models::username::InvalidUsername,
-};
+use crate::domain::auth::models::password::{InvalidPassword, Password};
+use zwipe_core::domain::user::username::{InvalidUsername, Username};
 use email_address::EmailAddress;
 use std::str::FromStr;
 use thiserror::Error;

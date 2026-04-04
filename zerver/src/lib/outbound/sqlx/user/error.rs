@@ -1,6 +1,7 @@
 //! Error mappings between SQLx errors and user domain errors.
 
-use crate::domain::user::models::{get_user::GetUserError, username::InvalidUsername};
+use crate::domain::user::models::get_user::GetUserError;
+use zwipe_core::domain::user::username::InvalidUsername;
 use thiserror::Error;
 
 /// Errors from converting a database user row into domain types.
