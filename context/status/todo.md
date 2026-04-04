@@ -172,7 +172,7 @@ Full audit of all 9 themes to make the app more colorful and ensure visual consi
 
 ## Domain Extraction into `zwipe-core`
 
-**Complete.** `zwipe-core` is the single source of truth for all shared types. Proxy re-export cleanup also complete — zerver and zwiper import directly from zwipe-core. See `architecture/decisions.md` for the full rationale and purity rules.
+**Complete.** `zwipe-core` is the single source of truth for all shared types. Proxy re-export cleanup complete — ~35 proxy files deleted, ~200 import rewrites across zerver and zwiper. `zwipe-core` is a direct dependency of both zwiper and zite. Zerver only owns server-specific code (error types, Password/HashedPassword, JwtSecret, ports, services, database adapters). See `architecture/decisions.md` for the full rationale and purity rules.
 
 ---
 
@@ -211,6 +211,9 @@ Add a `context/architecture/structure.md` walking through the full directory tre
 - [x] Clean up deck domain proxy re-exports in zerver and zwiper (`d5395b22`)
 - [x] Migrate zwiper card imports from zerver proxy to zwipe-core (`e3c72218`)
 - [x] Clean up user domain proxy re-exports (`b2903f2e`)
+- [x] Clean up card domain proxy re-exports in zerver and zwiper (`da5fbc36`)
+- [x] Downgrade handler pub use to use, migrate zwiper Http imports to zwipe-core (`75fa3208`)
+- [x] Add zwipe-core as direct dependency of zwiper — frontend no longer routes domain types through zerver
 
 ### zwipe-core Domain Extraction (2026-04-02)
 
