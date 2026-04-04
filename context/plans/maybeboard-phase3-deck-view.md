@@ -105,14 +105,14 @@ The maybeboard section:
 ### On maybeboard cards: "To Deck" button
 
 When tapped:
-1. Call `client.toggle_maybeboard(deck_id, scryfall_data_id, false, &session)` — sets maybeboard=false
+1. Call `client.update_deck_card(deck_id, scryfall_data_id, &HttpUpdateDeckCard::new(None, Some(false)), &session)` — sets maybeboard=false
 2. On success: move card from maybeboard_cards to active cards in local state (optimistic update)
 3. Toast: "added to deck"
 
 ### On active deck cards: "To Maybeboard" button
 
 When tapped:
-1. Call `client.toggle_maybeboard(deck_id, scryfall_data_id, true, &session)` — sets maybeboard=true
+1. Call `client.update_deck_card(deck_id, scryfall_data_id, &HttpUpdateDeckCard::new(None, Some(true)), &session)` — sets maybeboard=true
 2. On success: move card from active to maybeboard in local state
 3. Toast: "moved to maybeboard"
 

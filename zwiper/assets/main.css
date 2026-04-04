@@ -1221,24 +1221,36 @@ body {
 
 @keyframes card-exit-right {
     from {
-        transform: translateX(0) rotate(0deg);
+        transform: translateX(0);
         opacity: 1;
     }
 
     to {
-        transform: translateX(50) rotate(30deg);
+        transform: translateX(50px);
         opacity: 0;
     }
 }
 
 @keyframes card-exit-left {
     from {
-        transform: translateX(0) rotate(0deg);
+        transform: translateX(0);
         opacity: 1;
     }
 
     to {
-        transform: translateX(-50) rotate(-30deg);
+        transform: translateX(-50px);
+        opacity: 0;
+    }
+}
+
+@keyframes card-exit-up {
+    from {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateY(-50px) scale(0.95);
         opacity: 0;
     }
 }
