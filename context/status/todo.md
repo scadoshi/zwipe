@@ -182,6 +182,12 @@ Add a `context/architecture/structure.md` walking through the full directory tre
 
 ---
 
+## Low Priority
+
+- [ ] **Token cards missing from database** — Some token cards referenced in `all_parts` don't exist in `scryfall_data` (e.g. Whirler Virtuoso's Thopter token). Needs a full Scryfall sync that includes token cards. Causes empty results on the "tokens" toggle in deck card view.
+
+---
+
 ## Maintenance
 
 - **GitHub Actions Node.js 20 deprecation** — forced to Node.js 24 on June 2, 2026. All workflows already on latest major versions. No action needed — monitor for v5 releases.
