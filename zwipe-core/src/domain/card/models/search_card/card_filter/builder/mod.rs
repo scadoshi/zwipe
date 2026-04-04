@@ -112,6 +112,10 @@ pub struct CardFilterBuilder {
     legalities_contains_any: Option<Vec<String>>,
     // commander
     is_commander_in_format: Option<Format>,
+    // partner/background/spell
+    is_partner: Option<bool>,
+    is_background: Option<bool>,
+    is_signature_spell: Option<bool>,
     // config
     limit: u32,
     offset: u32,
@@ -157,6 +161,9 @@ impl Default for CardFilterBuilder {
             language: Some("en".to_string()),
             legalities_contains_any: None,
             is_commander_in_format: None,
+            is_partner: None,
+            is_background: None,
+            is_signature_spell: None,
             limit: 100,
             offset: 0,
             order_by: None,
@@ -190,6 +197,9 @@ impl CardFilterBuilder {
         let mut test = self.clone();
         test.unset_legalities_contains_any();
         test.unset_is_commander_in_format();
+        test.unset_is_partner();
+        test.unset_is_background();
+        test.unset_is_signature_spell();
         test.is_empty()
     }
 
@@ -595,6 +605,9 @@ impl CardFilterBuilder {
             language: self.language.clone(),
             legalities_contains_any: self.legalities_contains_any.clone(),
             is_commander_in_format: self.is_commander_in_format,
+            is_partner: self.is_partner,
+            is_background: self.is_background,
+            is_signature_spell: self.is_signature_spell,
             limit: self.limit,
             offset: self.offset,
             order_by: self.order_by,

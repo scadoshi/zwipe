@@ -191,10 +191,16 @@ where
             None
         };
 
+        let command_zone = zwipe_core::domain::deck::validate_deck::DeckCommandZone {
+            commander: commander_card.as_ref(),
+            partner_commander: None,
+            background: None,
+            signature_spell: None,
+        };
         let warnings = zwipe_core::domain::deck::validate_deck::validate_deck(
             &deck_profile,
             &entries,
-            commander_card.as_ref(),
+            &command_zone,
         );
         let deck = Deck::new(deck_profile, entries, warnings);
         Ok(deck)

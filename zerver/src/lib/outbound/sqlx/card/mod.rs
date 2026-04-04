@@ -515,6 +515,30 @@ impl CardRepository for MyPostgres {
             }
         }
 
+        // partner/background/spell filters
+        if let Some(true) = request.is_partner() {
+            sep.push(
+                "(type_line ILIKE '%Legendary%' AND type_line ILIKE '%Creature%' AND (\
+                 keywords @> ARRAY['Partner']::text[] \
+                 OR keywords @> ARRAY['Friends forever']::text[] \
+                 OR keywords @> ARRAY['Doctor''s companion']::text[] \
+                 OR oracle_text ILIKE '%partner with%'))",
+            );
+        }
+
+        if let Some(true) = request.is_background() {
+            sep.push(
+                "(type_line ILIKE '%Legendary%' AND type_line ILIKE '%Enchantment%' \
+                 AND type_line ILIKE '%Background%')",
+            );
+        }
+
+        if let Some(true) = request.is_signature_spell() {
+            sep.push(
+                "(type_line ILIKE '%Instant%' OR type_line ILIKE '%Sorcery%')",
+            );
+        }
+
         // Filter out NULLs for sorted field
         if let Some(order_by) = request.order_by() {
             let null_filter = match order_by {

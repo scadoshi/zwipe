@@ -18,10 +18,16 @@ pub struct DatabaseDeckProfile {
     pub id: Uuid,
     pub name: String,
     pub commander_id: Option<Uuid>,
+    pub partner_commander_id: Option<Uuid>,
+    pub background_id: Option<Uuid>,
+    pub signature_spell_id: Option<Uuid>,
     pub format: Option<String>,
     pub user_id: Uuid,
     pub card_count: Option<i64>,
     pub commander_name: Option<String>,
+    pub partner_commander_name: Option<String>,
+    pub background_name: Option<String>,
+    pub signature_spell_name: Option<String>,
 }
 
 /// converts database deck to validated domain deck
@@ -35,10 +41,16 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
             id: value.id,
             name,
             commander_id: value.commander_id,
+            partner_commander_id: value.partner_commander_id,
+            background_id: value.background_id,
+            signature_spell_id: value.signature_spell_id,
             format,
             user_id: value.user_id,
             card_count: value.card_count.unwrap_or(0),
             commander_name: value.commander_name,
+            partner_commander_name: value.partner_commander_name,
+            background_name: value.background_name,
+            signature_spell_name: value.signature_spell_name,
         })
     }
 }

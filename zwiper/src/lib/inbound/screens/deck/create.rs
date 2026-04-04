@@ -47,8 +47,10 @@ pub fn CreateDeck() -> Element {
 
             let commander_id = commander().map(|c| c.scryfall_data.id);
             let format_str = selected_format().map(|f| f.to_legality_key().to_string());
-            let request =
-                HttpCreateDeckProfile::new(&deck_name(), commander_id, format_str);
+            let request = HttpCreateDeckProfile::builder(&deck_name())
+                .commander_id(commander_id)
+                .format(format_str)
+                .build();
 
             match auth_client().create_deck_profile(&request, &session).await {
                 Ok(created) => {

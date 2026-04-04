@@ -4,19 +4,39 @@
 //! based on the deck's format. Does not prevent invalid states.
 
 use crate::domain::{
-    card::{scryfall_data::legalities::LegalityKind, Card},
-    deck::{deck::DeckEntry, DeckProfile, DeckWarning, Format},
+    card::{
+        scryfall_data::legalities::LegalityKind,
+        search_card::commander_eligibility::{
+            are_valid_partners, has_choose_a_background, is_background_card,
+            is_signature_spell_in_color_identity, is_valid_commander,
+            is_valid_signature_spell_type, partner_kind,
+        },
+        Card,
+    },
+    deck::{deck::DeckEntry, DeckProfile, DeckWarning, Format, WarningAction},
 };
+
+/// Cards in the command zone (stored on the profile, not in deck_cards).
+pub struct DeckCommandZone<'a> {
+    /// Primary commander (or oathbreaker planeswalker).
+    pub commander: Option<&'a Card>,
+    /// Partner commander (Partner / Friends Forever / Doctor's Companion).
+    pub partner_commander: Option<&'a Card>,
+    /// Background enchantment (Choose a Background).
+    pub background: Option<&'a Card>,
+    /// Signature spell (Oathbreaker instant/sorcery).
+    pub signature_spell: Option<&'a Card>,
+}
 
 /// Validates a deck against its format rules and returns warnings.
 ///
 /// If the deck has no format set, returns an empty list.
-/// The optional `commander_card` is needed for color identity checks
-/// when the commander is not part of the deck entries.
+/// The `command_zone` provides card data for commander/partner/background/spell
+/// when they are not part of the deck entries.
 pub fn validate_deck(
     deck_profile: &DeckProfile,
     entries: &[DeckEntry],
-    commander_card: Option<&Card>,
+    command_zone: &DeckCommandZone,
 ) -> Vec<DeckWarning> {
     let Some(format) = &deck_profile.format else {
         return vec![];
@@ -36,8 +56,11 @@ pub fn validate_deck(
     check_commander_required(format, deck_profile, &mut warnings);
     check_legality(format, entries, &mut warnings);
     check_copy_limits(format, entries, &mut warnings);
-    check_color_identity(format, deck_profile, entries, commander_card, &mut warnings);
-    check_commander_eligibility(format, deck_profile, entries, commander_card, &mut warnings);
+    check_color_identity(format, deck_profile, entries, command_zone, &mut warnings);
+    check_commander_eligibility(format, deck_profile, entries, command_zone, &mut warnings);
+    check_partner_validity(format, deck_profile, command_zone, &mut warnings);
+    check_background_validity(format, deck_profile, command_zone, &mut warnings);
+    check_signature_spell_validity(format, deck_profile, command_zone, &mut warnings);
 
     warnings
 }
@@ -51,6 +74,15 @@ fn check_card_count(format: &Format, profile: &DeckProfile, warnings: &mut Vec<D
 
     // The commander is stored separately from deck entries, so include it in the total.
     if format.has_commander() && profile.commander_id.is_some() {
+        count += 1;
+    }
+    if profile.partner_commander_id.is_some() {
+        count += 1;
+    }
+    if profile.background_id.is_some() {
+        count += 1;
+    }
+    if profile.signature_spell_id.is_some() {
         count += 1;
     }
 
@@ -143,12 +175,13 @@ fn check_copy_limits(format: &Format, entries: &[DeckEntry], warnings: &mut Vec<
         };
 
         if qty > max {
-            warnings.push(DeckWarning::with_card(
+            warnings.push(DeckWarning::with_action(
                 format!(
                     "{} exceeds copy limit ({}/{})",
                     entry.card.scryfall_data.name.to_lowercase(), qty, max
                 ),
                 entry.card.scryfall_data.id,
+                WarningAction::FixQuantity(max as i32),
             ));
         }
     }
@@ -158,26 +191,47 @@ fn check_color_identity(
     format: &Format,
     profile: &DeckProfile,
     entries: &[DeckEntry],
-    commander_card: Option<&Card>,
+    command_zone: &DeckCommandZone,
     warnings: &mut Vec<DeckWarning>,
 ) {
     if !format.checks_color_identity() {
         return;
     }
 
-    // Find commander's color identity — check entries first, fall back to provided card
+    // Find commander's color identity — check entries first, fall back to command zone
     let Some(commander_id) = profile.commander_id else {
         return;
     };
+
+    // Collect the commander's color identity
     let commander_identity = entries
         .iter()
         .find(|e| e.card.scryfall_data.id == commander_id)
         .map(|e| &e.card.scryfall_data.color_identity)
-        .or_else(|| commander_card.map(|c| &c.scryfall_data.color_identity));
+        .or_else(|| command_zone.commander.map(|c| &c.scryfall_data.color_identity));
 
-    let Some(commander_colors) = commander_identity else {
+    let Some(base_colors) = commander_identity else {
         return;
     };
+
+    // Build unified color identity: commander + partner + background
+    let mut allowed_colors: Vec<_> = base_colors.iter().collect();
+
+    if let Some(partner) = command_zone.partner_commander {
+        for color in partner.scryfall_data.color_identity.iter() {
+            if !allowed_colors.contains(&color) {
+                allowed_colors.push(color);
+            }
+        }
+    }
+
+    if let Some(bg) = command_zone.background {
+        for color in bg.scryfall_data.color_identity.iter() {
+            if !allowed_colors.contains(&color) {
+                allowed_colors.push(color);
+            }
+        }
+    }
 
     for entry in entries {
         if entry.card.scryfall_data.id == commander_id {
@@ -185,7 +239,7 @@ fn check_color_identity(
         }
 
         for color in entry.card.scryfall_data.color_identity.iter() {
-            if !commander_colors.contains(color) {
+            if !allowed_colors.contains(&color) {
                 warnings.push(DeckWarning::with_card(
                     format!(
                         "{} is outside commander's color identity",
@@ -203,7 +257,7 @@ fn check_commander_eligibility(
     format: &Format,
     profile: &DeckProfile,
     entries: &[DeckEntry],
-    commander_card: Option<&Card>,
+    command_zone: &DeckCommandZone,
     warnings: &mut Vec<DeckWarning>,
 ) {
     if !format.has_commander() {
@@ -214,28 +268,176 @@ fn check_commander_eligibility(
         return; // Already warned by check_commander_required
     };
 
-    // Find the commander card from entries or the provided card
+    // Find the commander card from entries or the command zone
     let commander = entries
         .iter()
         .find(|e| e.card.scryfall_data.id == commander_id)
         .map(|e| &e.card)
-        .or(commander_card);
+        .or(command_zone.commander);
 
     let Some(card) = commander else {
         return; // Can't validate without the card data
     };
 
-    use crate::domain::card::search_card::commander_eligibility::is_valid_commander;
-
     if !is_valid_commander(card, format) {
-        warnings.push(DeckWarning::with_card(
+        warnings.push(DeckWarning::with_action(
             format!(
                 "{} is not a valid commander for {}",
                 card.scryfall_data.name.to_lowercase(),
                 format.display_name().to_lowercase()
             ),
             card.scryfall_data.id,
+            WarningAction::ClearCommander,
         ));
+    }
+}
+
+fn check_partner_validity(
+    format: &Format,
+    profile: &DeckProfile,
+    command_zone: &DeckCommandZone,
+    warnings: &mut Vec<DeckWarning>,
+) {
+    let Some(partner_id) = profile.partner_commander_id else {
+        return;
+    };
+
+    if !format.supports_partner() {
+        warnings.push(DeckWarning::new(format!(
+            "{} does not support partner commanders",
+            format.display_name().to_lowercase()
+        )));
+        return;
+    }
+
+    if let (Some(commander), Some(partner)) =
+        (command_zone.commander, command_zone.partner_commander)
+    {
+        // Both must have a partner ability
+        if partner_kind(commander).is_none() {
+            warnings.push(DeckWarning::with_card(
+                format!(
+                    "{} does not have a partner ability",
+                    commander.scryfall_data.name.to_lowercase()
+                ),
+                commander.scryfall_data.id,
+            ));
+            return;
+        }
+
+        if !are_valid_partners(commander, partner) {
+            warnings.push(DeckWarning::with_card(
+                format!(
+                    "{} and {} cannot be partners",
+                    commander.scryfall_data.name.to_lowercase(),
+                    partner.scryfall_data.name.to_lowercase()
+                ),
+                partner_id,
+            ));
+        }
+    }
+}
+
+fn check_background_validity(
+    format: &Format,
+    profile: &DeckProfile,
+    command_zone: &DeckCommandZone,
+    warnings: &mut Vec<DeckWarning>,
+) {
+    let Some(bg_id) = profile.background_id else {
+        return;
+    };
+
+    if !format.supports_background() {
+        warnings.push(DeckWarning::new(format!(
+            "{} does not support backgrounds",
+            format.display_name().to_lowercase()
+        )));
+        return;
+    }
+
+    // Commander must have "Choose a Background"
+    if let Some(commander) = command_zone.commander
+        && !has_choose_a_background(commander)
+    {
+        warnings.push(DeckWarning::with_card(
+            format!(
+                "{} does not have 'choose a background'",
+                commander.scryfall_data.name.to_lowercase()
+            ),
+            commander.scryfall_data.id,
+        ));
+    }
+
+    // Background card must actually be a Background
+    if let Some(bg) = command_zone.background
+        && !is_background_card(bg)
+    {
+        warnings.push(DeckWarning::with_card(
+            format!(
+                "{} is not a valid background enchantment",
+                bg.scryfall_data.name.to_lowercase()
+            ),
+            bg_id,
+        ));
+    }
+
+    // Mutual exclusivity: can't have both partner and background
+    if profile.partner_commander_id.is_some() {
+        warnings.push(DeckWarning::new(
+            "a commander cannot have both a partner and a background".to_string(),
+        ));
+    }
+}
+
+fn check_signature_spell_validity(
+    format: &Format,
+    profile: &DeckProfile,
+    command_zone: &DeckCommandZone,
+    warnings: &mut Vec<DeckWarning>,
+) {
+    if profile.signature_spell_id.is_none() {
+        // Warn if format requires one but none selected
+        if format.has_signature_spell() {
+            warnings.push(DeckWarning::new(
+                "oathbreaker format requires a signature spell".to_string(),
+            ));
+        }
+        return;
+    }
+
+    if !format.has_signature_spell() {
+        warnings.push(DeckWarning::new(format!(
+            "{} does not use signature spells",
+            format.display_name().to_lowercase()
+        )));
+        return;
+    }
+
+    if let Some(spell) = command_zone.signature_spell {
+        // Must be instant or sorcery
+        if !is_valid_signature_spell_type(spell) {
+            warnings.push(DeckWarning::with_card(
+                format!(
+                    "{} must be an instant or sorcery to be a signature spell",
+                    spell.scryfall_data.name.to_lowercase()
+                ),
+                spell.scryfall_data.id,
+            ));
+        }
+
+        // Must be within oathbreaker's color identity
+        if let Some(oathbreaker) = command_zone.commander
+            && !is_signature_spell_in_color_identity(spell, oathbreaker)
+        {
+            warnings.push(DeckWarning::with_card(
+                format!(
+                    "{} is outside the oathbreaker's color identity",
+                    spell.scryfall_data.name.to_lowercase()
+                ),
+                spell.scryfall_data.id,
+            ));
+        }
     }
 }
 
@@ -244,10 +446,19 @@ mod tests {
     use super::*;
     use crate::domain::deck::DeckName;
 
+    fn empty_command_zone() -> DeckCommandZone<'static> {
+        DeckCommandZone {
+            commander: None,
+            partner_commander: None,
+            background: None,
+            signature_spell: None,
+        }
+    }
+
     #[test]
     fn no_warnings_without_format() {
         let profile = test_profile(None);
-        let warnings = validate_deck(&profile, &[], None);
+        let warnings = validate_deck(&profile, &[], &empty_command_zone());
         assert!(warnings.is_empty());
     }
 
@@ -256,10 +467,16 @@ mod tests {
             id: uuid::Uuid::new_v4(),
             name: DeckName::new("test").unwrap(),
             commander_id: None,
+            partner_commander_id: None,
+            background_id: None,
+            signature_spell_id: None,
             format,
             user_id: uuid::Uuid::new_v4(),
             card_count: 0,
             commander_name: None,
+            partner_commander_name: None,
+            background_name: None,
+            signature_spell_name: None,
         }
     }
 
@@ -278,9 +495,15 @@ mod tests {
             let mut profile = test_profile(Some(Format::Commander));
             profile.commander_id = Some(commander_id);
 
-            let warnings = validate_deck(&profile, &[], Some(&card));
+            let cz = DeckCommandZone {
+                commander: Some(&card),
+                ..empty_command_zone()
+            };
+            let warnings = validate_deck(&profile, &[], &cz);
             assert!(
-                !warnings.iter().any(|w| w.to_string().contains("not a valid commander")),
+                !warnings
+                    .iter()
+                    .any(|w| w.to_string().contains("not a valid commander")),
                 "expected no commander eligibility warning"
             );
         }
@@ -294,9 +517,15 @@ mod tests {
             let mut profile = test_profile(Some(Format::Commander));
             profile.commander_id = Some(commander_id);
 
-            let warnings = validate_deck(&profile, &[], Some(&card));
+            let cz = DeckCommandZone {
+                commander: Some(&card),
+                ..empty_command_zone()
+            };
+            let warnings = validate_deck(&profile, &[], &cz);
             assert!(
-                warnings.iter().any(|w| w.to_string().contains("not a valid commander")),
+                warnings
+                    .iter()
+                    .any(|w| w.to_string().contains("not a valid commander")),
                 "expected commander eligibility warning"
             );
         }
@@ -311,9 +540,15 @@ mod tests {
             let mut profile = test_profile(Some(Format::Brawl));
             profile.commander_id = Some(commander_id);
 
-            let warnings = validate_deck(&profile, &[], Some(&card));
+            let cz = DeckCommandZone {
+                commander: Some(&card),
+                ..empty_command_zone()
+            };
+            let warnings = validate_deck(&profile, &[], &cz);
             assert!(
-                !warnings.iter().any(|w| w.to_string().contains("not a valid commander")),
+                !warnings
+                    .iter()
+                    .any(|w| w.to_string().contains("not a valid commander")),
                 "expected no commander eligibility warning for brawl planeswalker"
             );
         }
@@ -328,9 +563,15 @@ mod tests {
             let mut profile = test_profile(Some(Format::Commander));
             profile.commander_id = Some(commander_id);
 
-            let warnings = validate_deck(&profile, &[], Some(&card));
+            let cz = DeckCommandZone {
+                commander: Some(&card),
+                ..empty_command_zone()
+            };
+            let warnings = validate_deck(&profile, &[], &cz);
             assert!(
-                warnings.iter().any(|w| w.to_string().contains("not a valid commander")),
+                warnings
+                    .iter()
+                    .any(|w| w.to_string().contains("not a valid commander")),
                 "expected commander eligibility warning"
             );
         }
@@ -345,9 +586,15 @@ mod tests {
             let mut profile = test_profile(Some(Format::PauperCommander));
             profile.commander_id = Some(commander_id);
 
-            let warnings = validate_deck(&profile, &[], Some(&card));
+            let cz = DeckCommandZone {
+                commander: Some(&card),
+                ..empty_command_zone()
+            };
+            let warnings = validate_deck(&profile, &[], &cz);
             assert!(
-                !warnings.iter().any(|w| w.to_string().contains("not a valid commander")),
+                !warnings
+                    .iter()
+                    .any(|w| w.to_string().contains("not a valid commander")),
                 "expected no commander eligibility warning for uncommon creature"
             );
         }
@@ -362,9 +609,15 @@ mod tests {
             let mut profile = test_profile(Some(Format::PauperCommander));
             profile.commander_id = Some(commander_id);
 
-            let warnings = validate_deck(&profile, &[], Some(&card));
+            let cz = DeckCommandZone {
+                commander: Some(&card),
+                ..empty_command_zone()
+            };
+            let warnings = validate_deck(&profile, &[], &cz);
             assert!(
-                warnings.iter().any(|w| w.to_string().contains("not a valid commander")),
+                warnings
+                    .iter()
+                    .any(|w| w.to_string().contains("not a valid commander")),
                 "expected commander eligibility warning for rare creature"
             );
         }

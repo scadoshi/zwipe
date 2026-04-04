@@ -69,7 +69,13 @@ where
 {
     let db_user = state.user_service.get_user(&GetUser::from(user.id)).await?;
     let email_verified = db_user.email_verified_at.is_some();
-    let request = CreateDeckProfile::new(body.name, body.commander_id, body.format.as_deref(), user.id, email_verified)?;
+    let request = CreateDeckProfile::builder(body.name, user.id, email_verified)
+        .commander_id(body.commander_id)
+        .partner_commander_id(body.partner_commander_id)
+        .background_id(body.background_id)
+        .signature_spell_id(body.signature_spell_id)
+        .format(body.format.as_deref())
+        .build()?;
 
     state
         .deck_service

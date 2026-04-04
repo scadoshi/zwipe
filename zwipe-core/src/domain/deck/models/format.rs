@@ -198,6 +198,21 @@ impl Format {
             Self::Vintage,
         ]
     }
+
+    /// Whether this format supports a partner commander.
+    pub fn supports_partner(&self) -> bool {
+        matches!(self, Self::Commander | Self::Duel | Self::Predh)
+    }
+
+    /// Whether this format supports a background enchantment.
+    pub fn supports_background(&self) -> bool {
+        matches!(self, Self::Commander | Self::Duel | Self::Predh)
+    }
+
+    /// Whether this format has a signature spell (Oathbreaker only).
+    pub fn has_signature_spell(&self) -> bool {
+        matches!(self, Self::Oathbreaker)
+    }
 }
 
 impl TryFrom<&str> for Format {
