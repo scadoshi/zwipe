@@ -2,6 +2,7 @@ CREATE TABLE deck_cards (
     deck_id UUID NOT NULL,
     scryfall_data_id UUID NOT NULL,
     quantity INT NOT NULL,
+    maybeboard BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     CONSTRAINT fk_deck

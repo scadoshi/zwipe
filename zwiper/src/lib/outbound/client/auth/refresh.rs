@@ -3,10 +3,8 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
-use zwipe::inbound::http::{
-    handlers::auth::refresh_session::HttpRefreshSession, routes::refresh_session_route,
-    ApiError,
-};
+use zwipe::inbound::http::{routes::refresh_session_route, ApiError};
+use zwipe_core::http::contracts::auth::HttpRefreshSession;
 use zwipe_core::domain::auth::models::session::Session;
 
 /// Trait for refreshing access tokens using a refresh token.

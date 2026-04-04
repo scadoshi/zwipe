@@ -4,10 +4,8 @@ use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use uuid::Uuid;
-use zwipe::inbound::http::{
-    handlers::deck_card::import_deck_cards::HttpImportDeckCards,
-    routes::import_deck_cards_route, ApiError,
-};
+use zwipe::inbound::http::{routes::import_deck_cards_route, ApiError};
+use zwipe_core::http::contracts::deck_card::HttpImportDeckCards;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::deck::requests::import_deck_cards::ImportDeckCardsResult;
 

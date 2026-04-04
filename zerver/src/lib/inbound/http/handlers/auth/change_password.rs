@@ -1,6 +1,6 @@
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
-pub use zwipe_core::http::contracts::auth::HttpChangePassword;
+use zwipe_core::http::contracts::auth::HttpChangePassword;
 
 #[cfg(feature = "zerver")]
 use crate::{

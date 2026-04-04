@@ -19,7 +19,7 @@ use zwipe_core::domain::deck::{
 };
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
-pub use zwipe_core::http::contracts::deck::HttpCreateDeckProfile;
+use zwipe_core::http::contracts::deck::HttpCreateDeckProfile;
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::user::requests::get_user::GetUser;
 

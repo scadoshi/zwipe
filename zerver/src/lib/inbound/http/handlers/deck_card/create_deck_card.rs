@@ -4,7 +4,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
-pub use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
+use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::user::requests::get_user::GetUser;
 

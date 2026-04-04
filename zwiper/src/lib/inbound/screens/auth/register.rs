@@ -13,10 +13,8 @@ use dioxus_primitives::toast::{use_toast, ToastOptions};
 use email_address::EmailAddress;
 use std::str::FromStr;
 use std::time::Duration;
-use zwipe::{
-    domain::auth::models::password::Password,
-    inbound::http::handlers::auth::register_user::HttpRegisterUser,
-};
+use zwipe::domain::auth::models::password::Password;
+use zwipe_core::http::contracts::auth::HttpRegisterUser;
 use zwipe_core::domain::{
     auth::models::session::Session,
     logo,

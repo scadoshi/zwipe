@@ -8,7 +8,7 @@ use crate::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
-use zwipe::inbound::http::handlers::user::update_preferences::HttpUpdatePreferences;
+use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 use zwipe_core::domain::{
     auth::models::session::Session,
     user::preferences::ALLOWED_THEMES,

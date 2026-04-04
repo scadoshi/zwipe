@@ -10,10 +10,8 @@ use crate::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
-use zwipe::{
-    domain::auth::models::password::Password,
-    inbound::http::handlers::auth::change_username::HttpChangeUsername,
-};
+use zwipe::domain::auth::models::password::Password;
+use zwipe_core::http::contracts::auth::HttpChangeUsername;
 use zwipe_core::domain::{
     auth::models::session::Session,
     user::username::Username,
