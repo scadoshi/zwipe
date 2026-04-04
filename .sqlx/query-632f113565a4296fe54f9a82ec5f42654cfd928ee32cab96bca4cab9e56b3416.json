@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT COALESCE(SUM(quantity), 0) FROM deck_cards WHERE deck_id = $1",
+  "query": "SELECT COALESCE(SUM(quantity), 0) FROM deck_cards WHERE deck_id = $1 AND maybeboard = false",
   "describe": {
     "columns": [
       {
@@ -18,5 +18,5 @@
       null
     ]
   },
-  "hash": "7d937a033cf86ca8155465890e8f3c074a2e4914c085f75d9d0c20f889832b82"
+  "hash": "632f113565a4296fe54f9a82ec5f42654cfd928ee32cab96bca4cab9e56b3416"
 }

@@ -227,7 +227,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 .entry(card_id)
                 .and_modify(|q| *q += delta);
 
-            let request = HttpUpdateDeckCard::new(delta);
+            let request = HttpUpdateDeckCard::new(Some(delta), None);
             spawn(async move {
                 if let Err(e) = client()
                     .update_deck_card(deck_id, card_id, &request, &session)

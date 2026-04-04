@@ -35,6 +35,8 @@ pub struct CreateDeckCard {
     pub scryfall_data_id: Uuid,
     /// How many copies.
     pub quantity: Quantity,
+    /// Whether this card is on the maybeboard.
+    pub maybeboard: bool,
     /// Whether the requesting user's email is verified.
     pub email_verified: bool,
 }
@@ -46,6 +48,7 @@ impl CreateDeckCard {
         deck_id: &str,
         scryfall_data_id: &str,
         quantity: i32,
+        maybeboard: Option<bool>,
         email_verified: bool,
     ) -> Result<Self, InvalidCreateDeckCard> {
         let deck_id = Uuid::try_parse(deck_id).map_err(InvalidCreateDeckCard::DeckId)?;
@@ -57,6 +60,7 @@ impl CreateDeckCard {
             deck_id,
             scryfall_data_id,
             quantity,
+            maybeboard: maybeboard.unwrap_or(false),
             user_id,
             email_verified,
         })

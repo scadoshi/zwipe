@@ -94,10 +94,11 @@ impl DeckRepository for Postgres {
         let mut tx = self.pool.begin().await?;
         let database_deck_card = query_as!(
             DatabaseDeckCard,
-            "INSERT INTO deck_cards (deck_id, scryfall_data_id, quantity) VALUES ($1, $2, $3) RETURNING deck_id, scryfall_data_id, quantity",
+            "INSERT INTO deck_cards (deck_id, scryfall_data_id, quantity, maybeboard) VALUES ($1, $2, $3, $4) RETURNING deck_id, scryfall_data_id, quantity, maybeboard",
             request.deck_id,
             request.scryfall_data_id,
-            *request.quantity
+            *request.quantity,
+            request.maybeboard
         )
         .fetch_one(&mut *tx)
         .await?;
@@ -119,7 +120,7 @@ impl DeckRepository for Postgres {
 
     async fn count_cards_in_deck(&self, deck_id: uuid::Uuid) -> Result<i64, anyhow::Error> {
         let count = sqlx::query_scalar!(
-            "SELECT COALESCE(SUM(quantity), 0) FROM deck_cards WHERE deck_id = $1",
+            "SELECT COALESCE(SUM(quantity), 0) FROM deck_cards WHERE deck_id = $1 AND maybeboard = false",
             deck_id
         )
         .fetch_one(&self.pool)
@@ -138,7 +139,7 @@ impl DeckRepository for Postgres {
         let database_deck_profile = query_as!(
             DatabaseDeckProfile,
             r#"SELECT d.id, d.name, d.commander_id, d.format, d.user_id,
-                      COALESCE(SUM(dc.quantity), 0) as "card_count",
+                      COALESCE(SUM(dc.quantity) FILTER (WHERE dc.maybeboard = false), 0) as "card_count",
                       sd.name as "commander_name?"
                FROM decks d
                LEFT JOIN deck_cards dc ON d.id = dc.deck_id
@@ -163,7 +164,7 @@ impl DeckRepository for Postgres {
         let database_deck_profiles = query_as!(
             DatabaseDeckProfile,
             r#"SELECT d.id, d.name, d.commander_id, d.format, d.user_id,
-                      COALESCE(SUM(dc.quantity), 0) as "card_count",
+                      COALESCE(SUM(dc.quantity) FILTER (WHERE dc.maybeboard = false), 0) as "card_count",
                       sd.name as "commander_name?"
                FROM decks d
                LEFT JOIN deck_cards dc ON d.id = dc.deck_id
@@ -194,7 +195,7 @@ impl DeckRepository for Postgres {
         }
         let database_deck_cards = query_as!(
             DatabaseDeckCard,
-            "SELECT deck_id, scryfall_data_id, quantity FROM deck_cards WHERE deck_id = $1",
+            "SELECT deck_id, scryfall_data_id, quantity, maybeboard FROM deck_cards WHERE deck_id = $1",
             request.deck_id
         )
         .fetch_all(&self.pool)
@@ -245,7 +246,7 @@ impl DeckRepository for Postgres {
         qb.push(" WHERE id = ")
             .push_bind(request.deck_id)
             .push(r#" RETURNING id, name, commander_id, format, user_id,
-                       (SELECT COALESCE(SUM(dc.quantity), 0) FROM deck_cards dc WHERE dc.deck_id = decks.id) as card_count,
+                       (SELECT COALESCE(SUM(dc.quantity) FILTER (WHERE dc.maybeboard = false), 0) FROM deck_cards dc WHERE dc.deck_id = decks.id) as card_count,
                        (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.commander_id) as commander_name"#);
         let database_deck: DatabaseDeckProfile = qb.build_query_as().fetch_one(&mut *tx).await?;
         let deck_profile: DeckProfile = database_deck.try_into()?;
@@ -254,8 +255,9 @@ impl DeckRepository for Postgres {
         Ok(deck_profile)
     }
 
-    /// Applies a **relative delta** to card quantity (`quantity + $1`).
+    /// Dynamically builds an `UPDATE` query for the provided fields.
     ///
+    /// Supports updating quantity (relative delta) and/or maybeboard status.
     /// The database enforces a check constraint on `quantity`, so negative deltas
     /// that would result in an invalid quantity surface as `QuantityUnderflow`.
     async fn update_deck_card(
@@ -270,16 +272,26 @@ impl DeckRepository for Postgres {
             return Err(UpdateDeckCardError::Forbidden);
         }
         let mut tx = self.pool.begin().await?;
-        let database_deck_card = query_as!(
-            DatabaseDeckCard,
-            "UPDATE deck_cards SET quantity = quantity + $1 WHERE deck_id = $2 AND scryfall_data_id = $3 RETURNING deck_id, scryfall_data_id, quantity",
-            *request.update_quantity,
-            request.deck_id,
-            request.scryfall_data_id
-        )
-        .fetch_one(&mut *tx)
-        .await?;
-        let deck_card = database_deck_card.try_into()?;
+        let mut qb: QueryBuilder<'_, sqlx::Postgres> =
+            QueryBuilder::new("UPDATE deck_cards SET ");
+        let mut sep = qb.separated(", ");
+        if let Some(update_quantity) = &request.update_quantity {
+            sep.push("quantity = quantity + ")
+                .push_bind_unseparated(**update_quantity);
+        }
+        if let Some(maybeboard) = request.maybeboard {
+            sep.push("maybeboard = ").push_bind_unseparated(maybeboard);
+        }
+        let now = chrono::Utc::now().naive_utc();
+        sep.push("updated_at = ").push_bind_unseparated(now);
+        qb.push(" WHERE deck_id = ")
+            .push_bind(request.deck_id)
+            .push(" AND scryfall_data_id = ")
+            .push_bind(request.scryfall_data_id)
+            .push(" RETURNING deck_id::TEXT, scryfall_data_id::TEXT, quantity, maybeboard");
+        let database_deck_card: DatabaseDeckCard =
+            qb.build_query_as().fetch_one(&mut *tx).await?;
+        let deck_card: DeckCard = database_deck_card.try_into()?;
         tx.commit().await?;
         Ok(deck_card)
     }
@@ -351,14 +363,15 @@ impl DeckRepository for Postgres {
             .await
             .map_err(|e| ImportDeckCardsError::Database(e.into()))?;
         let mut qb: QueryBuilder<'_, sqlx::Postgres> =
-            QueryBuilder::new("INSERT INTO deck_cards (deck_id, scryfall_data_id, quantity) ");
+            QueryBuilder::new("INSERT INTO deck_cards (deck_id, scryfall_data_id, quantity, maybeboard) ");
         qb.push_values(cards, |mut b, (scryfall_data_id, quantity)| {
             b.push_bind(request.deck_id)
                 .push_bind(scryfall_data_id)
-                .push_bind(quantity);
+                .push_bind(quantity)
+                .push_bind(false); // imports always go to mainboard
         });
         qb.push(
-            " ON CONFLICT (deck_id, scryfall_data_id) DO UPDATE SET quantity = EXCLUDED.quantity RETURNING deck_id::TEXT, scryfall_data_id::TEXT, quantity",
+            " ON CONFLICT (deck_id, scryfall_data_id) DO UPDATE SET quantity = EXCLUDED.quantity, maybeboard = EXCLUDED.maybeboard RETURNING deck_id::TEXT, scryfall_data_id::TEXT, quantity, maybeboard",
         );
         let rows: Vec<DatabaseDeckCard> = qb
             .build_query_as()

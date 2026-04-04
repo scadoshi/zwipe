@@ -51,6 +51,7 @@ pub struct DatabaseDeckCard {
     pub deck_id: String,
     pub scryfall_data_id: String,
     pub quantity: i32,
+    pub maybeboard: bool,
 }
 
 /// converts database deck card to validated domain deck card
@@ -65,6 +66,7 @@ impl TryFrom<DatabaseDeckCard> for DeckCard {
             deck_id,
             scryfall_data_id,
             quantity,
+            maybeboard: value.maybeboard,
         })
     }
 }

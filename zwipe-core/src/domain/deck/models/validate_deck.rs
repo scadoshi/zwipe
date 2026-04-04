@@ -22,6 +22,14 @@ pub fn validate_deck(
         return vec![];
     };
 
+    // Only validate active deck cards, not maybeboard
+    let active_entries: Vec<DeckEntry> = entries
+        .iter()
+        .filter(|e| !e.deck_card.maybeboard)
+        .cloned()
+        .collect();
+    let entries = &active_entries;
+
     let mut warnings = Vec::new();
 
     check_card_count(format, deck_profile, &mut warnings);

@@ -46,7 +46,15 @@ pub struct DeckMetrics {
 
 impl DeckMetrics {
     /// Computes metrics from deck entries, counting each card by its quantity.
+    ///
+    /// Maybeboard cards are excluded — metrics reflect the active deck only.
     pub fn from_entries(entries: &[DeckEntry]) -> Self {
+        let active_entries: Vec<DeckEntry> = entries
+            .iter()
+            .filter(|e| !e.deck_card.maybeboard)
+            .cloned()
+            .collect();
+        let entries = &active_entries;
         let mut cmc_histogram = [0usize; 7];
         let mut type_buckets = [0usize; 8];
         let mut color_buckets = [0usize; 7];

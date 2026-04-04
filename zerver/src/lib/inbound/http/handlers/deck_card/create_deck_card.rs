@@ -85,7 +85,7 @@ where
 {
     let db_user = state.user_service.get_user(&GetUser::from(user.id)).await?;
     let email_verified = db_user.email_verified_at.is_some();
-    let request = CreateDeckCard::new(user.id, &deck_id, &body.scryfall_data_id, body.quantity, email_verified)?;
+    let request = CreateDeckCard::new(user.id, &deck_id, &body.scryfall_data_id, body.quantity, body.maybeboard, email_verified)?;
 
     state
         .deck_service

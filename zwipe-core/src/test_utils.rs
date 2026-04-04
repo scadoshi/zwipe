@@ -28,6 +28,7 @@ pub fn make_entry(name: &str, qty: i32) -> DeckEntry {
             deck_id,
             scryfall_data_id,
             quantity: Quantity::new(qty).unwrap(),
+            maybeboard: false,
         },
     }
 }

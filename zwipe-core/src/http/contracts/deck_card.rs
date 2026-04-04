@@ -9,31 +9,41 @@ pub struct HttpCreateDeckCard {
     pub scryfall_data_id: String,
     /// Initial quantity.
     pub quantity: i32,
+    /// Whether the card is on the maybeboard. Defaults to `false` if absent.
+    pub maybeboard: Option<bool>,
 }
 
 impl HttpCreateDeckCard {
     /// Creates a new add-card-to-deck request.
-    pub fn new(scryfall_data_id: &str, quantity: i32) -> Self {
+    pub fn new(scryfall_data_id: &str, quantity: i32, maybeboard: Option<bool>) -> Self {
         Self {
             scryfall_data_id: scryfall_data_id.to_string(),
             quantity,
+            maybeboard,
         }
     }
 }
 
-/// Card quantity update request body.
+/// Card update request body.
 ///
-/// `update_quantity` is a **delta** added to the current quantity, not an absolute value.
-/// For example, `1` adds one copy, `-1` removes one copy.
+/// At least one field must be provided. `update_quantity` is a **delta** added
+/// to the current quantity, not an absolute value (e.g. `1` adds one copy,
+/// `-1` removes one copy). `maybeboard` sets the card's maybeboard status.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpUpdateDeckCard {
-    pub update_quantity: i32,
+    /// Quantity delta (positive = add copies, negative = remove copies).
+    pub update_quantity: Option<i32>,
+    /// Set maybeboard status.
+    pub maybeboard: Option<bool>,
 }
 
 impl HttpUpdateDeckCard {
-    /// Creates a new quantity update request.
-    pub fn new(update_quantity: i32) -> Self {
-        Self { update_quantity }
+    /// Creates a new update request.
+    pub fn new(update_quantity: Option<i32>, maybeboard: Option<bool>) -> Self {
+        Self {
+            update_quantity,
+            maybeboard,
+        }
     }
 }
 
