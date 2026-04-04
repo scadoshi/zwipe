@@ -11,6 +11,8 @@ pub(crate) fn CardRow(
     mut preview_image_url: Signal<Option<String>>,
     mut preview_dismissing: Signal<bool>,
     on_qty_change: Option<EventHandler<i32>>,
+    on_maybeboard_toggle: Option<EventHandler<()>>,
+    maybeboard_label: Option<String>,
 ) -> Element {
     let card_id = card.scryfall_data.id;
     let is_expanded = expanded_card() == Some(card_id);
@@ -77,6 +79,16 @@ pub(crate) fn CardRow(
                         span { "{rarity_name} | {set_name}" }
                     }
                     div { class: "qty-row",
+                        if let Some(handler) = on_maybeboard_toggle {
+                            button {
+                                class: "qty-btn",
+                                onclick: move |evt| {
+                                    evt.stop_propagation();
+                                    handler.call(());
+                                },
+                                "{maybeboard_label.clone().unwrap_or(\"maybe\".to_string())}"
+                            }
+                        }
                         if let Some(url) = image_url {
                             button {
                                 class: "qty-btn",

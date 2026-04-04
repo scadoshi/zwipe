@@ -1938,7 +1938,14 @@ body {
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
-    margin-bottom: 1rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.chip-row-label {
+    font-size: 0.75rem;
+    opacity: 0.5;
+    white-space: nowrap;
 }
 
 .card-group {
