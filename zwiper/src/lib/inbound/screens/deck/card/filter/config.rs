@@ -2,7 +2,7 @@
 
 use crate::inbound::components::tri_toggle::TriToggle;
 use dioxus::prelude::*;
-use zwipe::domain::card::models::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
 
 /// Configuration panel with language, reprint, and promo filters.
 #[component]
