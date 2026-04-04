@@ -32,8 +32,15 @@ pub(crate) fn DeckFields(
     let mut search_results = use_signal(Vec::<Card>::new);
     let mut is_searching = use_signal(|| false);
     let mut show_dropdown = use_signal(|| false);
+    let mut commander_filter_on = use_signal(|| true);
 
     let commander_enabled = use_memo(move || selected_format().is_some_and(|f| f.has_commander()));
+
+    // Reset toggle when format changes
+    use_effect(move || {
+        let _ = selected_format();
+        commander_filter_on.set(true);
+    });
 
     // debounced commander search effect
     use_effect(move || {
@@ -55,9 +62,14 @@ pub(crate) fn DeckFields(
             }
 
             if let Some(session) = session() {
-                let Ok(card_filter) = CardFilterBuilder::with_name_contains(&query)
-                    .set_limit(5)
-                    .build()
+                let mut builder = CardFilterBuilder::with_name_contains(&query);
+                if commander_filter_on()
+                    && let Some(fmt) = selected_format()
+                {
+                    builder.set_is_commander_in_format(fmt);
+                }
+                builder.set_limit(5);
+                let Ok(card_filter) = builder.build()
                 else {
                     tracing::error!("{}", InvalidCardFilter::Empty.to_string());
                     return;
@@ -85,72 +97,6 @@ pub(crate) fn DeckFields(
             value: deck_name,
             id: "deck_name",
             placeholder: "deck name",
-        }
-
-
-        // commander selector
-        div { class: "",
-            div { class: "label-row",
-                label {
-                    class: if commander_enabled() { "label" } else { "label text-muted" },
-                    "commander"
-                }
-                if commander().is_some() && commander_enabled() {
-                    button {
-                        class: "clear-btn",
-                        onclick: move |_| {
-                            commander.set(None);
-                            commander_display.set(String::new());
-                            search_query.set(String::new());
-                            show_dropdown.set(false);
-                        },
-                        "\u{00d7}"
-                    }
-                }
-            }
-            input { class: if commander_enabled() { "input" } else { "input disabled" },
-                id: "commander",
-                r#type: "text",
-                placeholder: if commander_enabled() { "commander" } else { "select a commander format" },
-                value: "{commander_display}",
-                autocapitalize: "none",
-                spellcheck: "false",
-                disabled: !commander_enabled(),
-                onclick: move |_| {
-                    if commander_enabled() {
-                        search_query.set(String::new());
-                        commander_display.set(String::new());
-                        commander.set(None);
-                    }
-                },
-                oninput: move |event| {
-                    if commander_enabled() {
-                        search_query.set(event.value());
-                        commander_display.set(event.value());
-                    }
-                }
-            }
-
-            if show_dropdown() && commander_enabled() {
-                div { class: "dropdown",
-                    if is_searching() {
-                        div { "searching..." }
-                    } else if search_results().is_empty() {
-                        div { "no results" }
-                    } else {
-                        for card in search_results().iter().cloned() {
-                            div { class: "dropdown-item",
-                                onclick: move |_| {
-                                    commander.set(Some(card.clone()));
-                                    commander_display.set(card.scryfall_data.name.to_lowercase());
-                                    show_dropdown.set(false);
-                                },
-                                { card.scryfall_data.name.to_lowercase() }
-                            }
-                        }
-                    }
-                }
-            }
         }
 
         // format selector (chips)
@@ -189,6 +135,79 @@ pub(crate) fn DeckFields(
                         { fmt.display_name().to_lowercase() }
                     }
                 }
+            }
+        }
+
+        // commander selector (only visible for commander formats)
+        if commander_enabled() {
+            div {
+                div { class: "label-row",
+                    label { class: "label", "commander" }
+                    div {
+                        class: if commander_filter_on() { "chip-xs selected" } else { "chip-xs" },
+                        onclick: move |_| {
+                            commander_filter_on.set(!commander_filter_on());
+                        },
+                        "filter"
+                    }
+                    if commander().is_some() {
+                        button {
+                            class: "clear-btn",
+                            onclick: move |_| {
+                                commander.set(None);
+                                commander_display.set(String::new());
+                                search_query.set(String::new());
+                                show_dropdown.set(false);
+                            },
+                            "\u{00d7}"
+                        }
+                    }
+                }
+
+                // search result chips (above input, like artist/set pattern)
+                if show_dropdown() {
+                    if is_searching() {
+                        div { class: "flex flex-wrap gap-1 mb-1 flex-center",
+                            div { class: "chip-unselected", "searching..." }
+                        }
+                    } else if search_results().is_empty() {
+                        div { class: "flex flex-wrap gap-1 mb-1 flex-center",
+                            div { class: "chip-unselected", "no results" }
+                        }
+                    } else {
+                        div { class: "flex flex-wrap gap-1 mb-1 flex-center",
+                            for card in search_results().iter().cloned() {
+                                div { class: "chip-unselected",
+                                    onclick: move |_| {
+                                        commander.set(Some(card.clone()));
+                                        commander_display.set(card.scryfall_data.name.to_lowercase());
+                                        show_dropdown.set(false);
+                                    },
+                                    { card.scryfall_data.name.to_lowercase() }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                input { class: "input",
+                    id: "commander",
+                    r#type: "text",
+                    placeholder: "commander",
+                    value: "{commander_display}",
+                    autocapitalize: "none",
+                    spellcheck: "false",
+                    onclick: move |_| {
+                        search_query.set(String::new());
+                        commander_display.set(String::new());
+                        commander.set(None);
+                    },
+                    oninput: move |event| {
+                        search_query.set(event.value());
+                        commander_display.set(event.value());
+                    }
+                }
+
             }
         }
     }
