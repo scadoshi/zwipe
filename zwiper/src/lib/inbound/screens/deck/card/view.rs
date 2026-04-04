@@ -241,6 +241,11 @@ pub fn View(deck_id: Uuid) -> Element {
             let current = *filter_reset_counter.peek();
             filter_reset_counter.set(current + 1);
 
+            toast.info(
+                "card removed".to_string(),
+                ToastOptions::default().duration(Duration::from_millis(1500)),
+            );
+
             spawn(async move {
                 if let Err(e) = client().delete_deck_card(deck_id, card_id, &session).await {
                     toast.error(e.to_string(), ToastOptions::default());
