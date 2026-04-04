@@ -5,7 +5,7 @@
 //! - **cast** = send the request
 //! - **tutor** = search for a card
 
-use crate::domain::card::models::scryfall_data::ScryfallData;
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use anyhow::Context;
 use reqwest::{
     header::{ACCEPT, USER_AGENT},

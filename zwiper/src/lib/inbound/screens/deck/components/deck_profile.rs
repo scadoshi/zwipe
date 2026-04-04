@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use zwipe::domain::card::models::Card;
+use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 
 #[component]

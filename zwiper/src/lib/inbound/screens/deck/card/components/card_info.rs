@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use zwipe::domain::card::models::Card;
+use zwipe_core::domain::card::Card;
 
 /// Displays card metadata: prices, set, release date, artist.
 #[component]

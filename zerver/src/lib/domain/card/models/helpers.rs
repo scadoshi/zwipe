@@ -1,5 +1,5 @@
 #[cfg(feature = "zerver")]
-use crate::domain::card::models::{card_profile::CardProfile, scryfall_data::ScryfallData, Card};
+use zwipe_core::domain::card::{Card, card_profile::CardProfile, scryfall_data::ScryfallData};
 #[cfg(feature = "zerver")]
 use std::collections::HashMap;
 #[cfg(feature = "zerver")]

@@ -8,13 +8,9 @@
 //!
 //! All operations work within existing transactions (caller commits).
 
-use crate::domain::card::models::card_profile::CardProfile;
+use zwipe_core::domain::card::{Card, card_profile::CardProfile, scryfall_data::ScryfallData};
 use crate::domain::card::models::helpers::SleeveScryfallData;
-use crate::domain::card::models::{
-    Card,
-    scryfall_data::ScryfallData,
-    sync_metrics::{ErrorMetrics, SyncMetrics},
-};
+use crate::domain::card::models::sync_metrics::{ErrorMetrics, SyncMetrics};
 use crate::domain::card::requests::{
     create_card::CreateCardError,
     get_scryfall_data::ScryfallDataIds,

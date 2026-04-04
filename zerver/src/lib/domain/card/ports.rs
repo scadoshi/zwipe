@@ -8,14 +8,17 @@ use std::future::Future;
 
 use chrono::NaiveDateTime;
 
+use zwipe_core::domain::card::{
+    Card,
+    card_profile::CardProfile,
+    scryfall_data::ScryfallData,
+    search_card::card_filter::CardFilter,
+};
 use crate::{
     domain::card::{
         models::{
-            card_profile::CardProfile,
-            scryfall_data::ScryfallData,
-            search_card::{card_filter::CardFilter, error::SearchCardsError},
+            search_card::error::SearchCardsError,
             sync_metrics::SyncMetrics,
-            Card,
         },
         requests::{
             create_card::CreateCardError,

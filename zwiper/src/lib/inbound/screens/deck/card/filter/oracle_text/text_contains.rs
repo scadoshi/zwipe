@@ -1,7 +1,7 @@
 //! Free-text oracle text search component.
 
 use dioxus::prelude::*;
-use zwipe::domain::card::models::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
 
 /// Free-text oracle text contains input.
 #[component]

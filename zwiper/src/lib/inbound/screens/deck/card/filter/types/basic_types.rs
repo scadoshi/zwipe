@@ -2,10 +2,8 @@
 
 use super::super::match_mode::MatchMode;
 use dioxus::prelude::*;
-use zwipe::domain::card::models::search_card::{
-    card_filter::builder::CardFilterBuilder,
-    card_type::{CardType, WithCardTypes},
-};
+use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe_core::domain::card::search_card::card_type::{CardType, WithCardTypes};
 
 /// Read selected card types from the filter builder based on current mode.
 fn read_card_types(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<CardType> {

@@ -6,7 +6,7 @@ use super::super::{
 };
 use crate::outbound::client::{card::get_oracle_words::ClientGetOracleWords, ZwipeClient};
 use dioxus::prelude::*;
-use zwipe::domain::card::models::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
 use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::auth::models::session::Session;
 

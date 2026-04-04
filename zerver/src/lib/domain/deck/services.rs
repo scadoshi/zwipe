@@ -3,9 +3,9 @@ use std::fmt::Debug;
 
 use uuid::Uuid;
 
+use zwipe_core::domain::card::Card;
 use crate::domain::{
     card::{
-        models::Card,
         requests::get_scryfall_data::ScryfallDataIds,
         ports::CardRepository,
     },
@@ -281,7 +281,7 @@ where
             .map_err(|e| ImportDeckCardsError::Database(e.into()))?;
 
         // Build lookup map: lowercase name -> Card
-        let card_map: HashMap<String, crate::domain::card::models::Card> = cards
+        let card_map: HashMap<String, Card> = cards
             .into_iter()
             .map(|c| (c.scryfall_data.name.to_lowercase(), c))
             .collect();

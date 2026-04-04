@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use uuid::Uuid;
-use zwipe::domain::card::models::Card;
+use zwipe_core::domain::card::Card;
 
 /// Expandable card row with compact view and optional quantity controls.
 #[component]

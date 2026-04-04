@@ -1,7 +1,5 @@
-use crate::{
-    domain::card::models::scryfall_data::ScryfallData,
-    inbound::external::scryfall::planeswalker::{Planeswalker, SCRYFALL_API_BASE},
-};
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
+use crate::inbound::external::scryfall::planeswalker::{Planeswalker, SCRYFALL_API_BASE};
 use anyhow::Context;
 use reqwest::Client;
 use serde::Deserialize;
