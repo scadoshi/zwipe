@@ -82,7 +82,7 @@ pub(crate) fn OtherTypes() -> Element {
     let selected_other_types = read_other_types(&filter_builder(), other_type_mode());
 
     rsx! {
-        div { class: "label-row",
+        div { class: "label-row mt-2",
             label { class: "label-xs", r#for: "other-type", "other types" }
             button {
                 class: "clear-btn",

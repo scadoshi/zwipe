@@ -14,7 +14,7 @@ pub(crate) fn TextContains() -> Element {
         .to_string();
 
     rsx! {
-        div { class: "label-row",
+        div { class: "label-row mt-2",
             label { class: "label-xs", r#for: "oracle-text-contains", "oracle text contains" }
             if filter_builder().oracle_text_contains().is_some() {
                 button {

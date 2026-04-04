@@ -13,7 +13,7 @@ pub fn Sort() -> Element {
     rsx! {
         div { class: "flex-col gap-half",
             // Order By selection
-            div { class: "label-row",
+            div { class: "label-row mt-2",
                 label { class: "label-xs", "sort by" }
                 if filter_builder().order_by().is_some() {
                     button {
@@ -47,7 +47,7 @@ pub fn Sort() -> Element {
                 }
             }
 
-            div { class: "label-row",
+            div { class: "label-row mt-2",
                 label { class: "label-xs", "sort order" }
             }
 

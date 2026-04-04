@@ -86,7 +86,7 @@ pub(crate) fn CmcFilter() -> Element {
 
     rsx! {
         // CMC filter
-        div { class: "label-row",
+        div { class: "label-row mt-2",
             label { class: "label-xs", "cmc" }
             button {
                 class: "clear-btn",

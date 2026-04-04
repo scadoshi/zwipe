@@ -49,7 +49,7 @@ pub(crate) fn BasicTypes() -> Element {
     let selected_card_types = read_card_types(&filter_builder(), card_type_mode());
 
     rsx! {
-        div { class: "label-row",
+        div { class: "label-row mt-2",
             label { class: "label-xs", r#for: "card-type", "basic types" }
             button {
                 class: "clear-btn",

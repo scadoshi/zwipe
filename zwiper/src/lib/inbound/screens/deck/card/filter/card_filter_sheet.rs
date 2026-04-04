@@ -76,7 +76,7 @@ pub(crate) fn CardFilterSheet(
                 || fb.oversized() != def.oversized()
                 || fb.promo() != def.promo()
                 || fb.content_warning() != def.content_warning(),
-            fb.legalities_contains_any().is_some(),
+            fb.legalities_contains_any().is_some() || fb.is_commander_in_format().is_some(),
         )
     } else {
         (false, false, false, false, false, false, false, false, false, false, false, false)

@@ -78,7 +78,7 @@ pub(crate) fn OracleWords() -> Element {
     let selected_oracle_words = read_oracle_words(&filter_builder(), oracle_words_mode());
 
     rsx! {
-        div { class: "label-row",
+        div { class: "label-row mt-2",
             label { class: "label-xs", r#for: "oracle-words-search", "oracle words contains" }
             button {
                 class: "clear-btn",
