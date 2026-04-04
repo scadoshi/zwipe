@@ -142,6 +142,8 @@ Small UX improvements to the deck view screen and related flows.
 
 - [x] Update "average price per card" label → "avg card price" (`e16bd01d`)
 - [ ] Clear filter button on filter groups — allow clearing individual filter sections without opening them or clearing the entire filter
+- [ ] Bug: "remove" button on invalid commander warning calls delete_deck_card — should send an update_deck_profile request to clear the commander instead
+- [ ] Bug: `is_commander_in_format` alone should count as a non-empty filter — currently `is_empty_ignoring_deck_context()` strips it, so the add screen won't search when only commander eligibility is set
 - [ ] Toast "Card removed" when a card is removed by decrementing its quantity to 0
 - [ ] Toast "Card removed" when the invalid-card-in-deck warning's remove button is used
 - [ ] Card quantity warning should offer an action button to correct quantity to the legal maximum (4, or 1 for basic lands) — consistent with the invalid-card remove button pattern
