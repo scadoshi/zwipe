@@ -4,6 +4,4 @@ pub mod deck;
 pub mod email;
 #[cfg(feature = "zerver")]
 pub mod health;
-pub mod logo;
-pub mod moderation;
 pub mod user;
