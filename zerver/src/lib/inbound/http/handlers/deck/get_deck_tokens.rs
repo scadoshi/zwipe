@@ -1,10 +1,12 @@
 //! Get tokens produced by a deck's cards.
 
 #[cfg(feature = "zerver")]
+use zwipe_core::domain::card::Card;
+#[cfg(feature = "zerver")]
 use crate::{
     domain::{
         auth::ports::AuthService,
-        card::{models::Card, ports::CardService},
+        card::ports::CardService,
         deck::{
             models::deck::get_deck_tokens::GetDeckTokensError,
             ports::DeckService,

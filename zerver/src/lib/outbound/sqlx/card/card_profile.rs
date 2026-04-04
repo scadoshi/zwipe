@@ -1,6 +1,6 @@
 //! Database-to-domain conversion for card profiles.
 
-use crate::domain::card::models::card_profile::CardProfile;
+use zwipe_core::domain::card::card_profile::CardProfile;
 use chrono::NaiveDateTime;
 use sqlx_macros::FromRow;
 use uuid::Uuid;

@@ -1,5 +1,5 @@
 #[cfg(feature = "zerver")]
-use crate::domain::card::models::scryfall_data::ScryfallData;
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
 #[cfg(feature = "zerver")]
 use thiserror::Error;
 #[cfg(feature = "zerver")]

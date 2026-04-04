@@ -1,13 +1,13 @@
 //! Database-to-domain conversion for Scryfall card data.
 
-use crate::domain::card::models::scryfall_data::all_parts::AllParts;
-use crate::domain::card::models::scryfall_data::card_faces::CardFaces;
-use crate::domain::card::models::scryfall_data::colors::Colors;
-use crate::domain::card::models::scryfall_data::image_uris::ImageUris;
-use crate::domain::card::models::scryfall_data::legalities::Legalities;
-use crate::domain::card::models::scryfall_data::prices::Prices;
-use crate::domain::card::models::scryfall_data::rarity::Rarity;
-use crate::domain::card::models::scryfall_data::ScryfallData;
+use zwipe_core::domain::card::scryfall_data::all_parts::AllParts;
+use zwipe_core::domain::card::scryfall_data::card_faces::CardFaces;
+use zwipe_core::domain::card::scryfall_data::colors::Colors;
+use zwipe_core::domain::card::scryfall_data::image_uris::ImageUris;
+use zwipe_core::domain::card::scryfall_data::legalities::Legalities;
+use zwipe_core::domain::card::scryfall_data::prices::Prices;
+use zwipe_core::domain::card::scryfall_data::rarity::Rarity;
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use sqlx::types::Json;
 use sqlx_macros::FromRow;
 

@@ -11,16 +11,18 @@ pub mod models;
 /// Sync metrics JSONB codecs and database model.
 pub mod sync_metrics;
 
-use crate::domain::card::models::search_card::filter_cards::PLAYABLE_LAYOUTS;
-use crate::domain::card::models::{
+use zwipe_core::domain::card::{
     Card,
     card_profile::CardProfile,
-    helpers::SleeveCardProfile,
     scryfall_data::ScryfallData,
     search_card::{
         card_filter::{CardFilter, order_by_option::OrderByOption},
-        error::SearchCardsError,
+        filter_cards::PLAYABLE_LAYOUTS,
     },
+};
+use crate::domain::card::models::{
+    helpers::SleeveCardProfile,
+    search_card::error::SearchCardsError,
     sync_metrics::SyncMetrics,
 };
 use crate::domain::card::requests::{

@@ -5,6 +5,7 @@
 //! - [`JwtValidate`]: Extension trait for JWT signature verification
 //! - [`AccessTokenExt`]: Extension trait for token generation
 
+#[cfg(feature = "zerver")]
 use zwipe_core::domain::auth::models::access_token::{
     AccessToken, Jwt, UserClaims,
     InvalidJwt as CoreInvalidJwt,

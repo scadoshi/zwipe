@@ -19,12 +19,12 @@ use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
 use uuid::Uuid;
 use zwipe_core::http::helpers::Optdate;
-use zwipe::domain::card::models::Card;
 use zwipe_core::domain::deck::{Deck, deck_profile::DeckProfile, format::Format, requests::update_deck_profile::InvalidUpdateDeckProfile};
 use zwipe::inbound::http::{
     handlers::deck::update_deck_profile::HttpUpdateDeckProfile, ApiError,
 };
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::card::Card;
 
 /// Screen for editing a deck with name and settings.
 #[component]

@@ -5,7 +5,7 @@
 
 use std::future::Future;
 
-use crate::domain::card::models::Card;
+use zwipe_core::domain::card::Card;
 use crate::domain::deck::models::{
     deck::{
         create_deck_profile::CreateDeckProfileError,

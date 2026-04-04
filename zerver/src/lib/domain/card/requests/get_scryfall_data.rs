@@ -1,5 +1,5 @@
 #[cfg(feature = "zerver")]
-use crate::domain::card::models::{card_profile::CardProfile, scryfall_data::ScryfallData};
+use zwipe_core::domain::card::{card_profile::CardProfile, scryfall_data::ScryfallData};
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::deck::DeckCard;
 use serde::Deserialize;

@@ -1,7 +1,7 @@
 //! Card name filter component.
 
 use dioxus::prelude::*;
-use zwipe::domain::card::models::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
 
 /// Filter component for card name search.
 #[component]

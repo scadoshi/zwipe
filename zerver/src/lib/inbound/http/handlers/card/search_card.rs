@@ -1,12 +1,11 @@
 #[cfg(feature = "zerver")]
+use zwipe_core::domain::card::{Card, search_card::card_filter::CardFilter};
+#[cfg(feature = "zerver")]
 use crate::{
     domain::{
         auth::ports::AuthService,
         card::{
-            models::{
-                search_card::{card_filter::CardFilter, error::SearchCardsError},
-                Card,
-            },
+            models::search_card::error::SearchCardsError,
             ports::CardService,
         },
         deck::ports::DeckService,

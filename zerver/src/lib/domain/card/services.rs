@@ -1,11 +1,14 @@
 use crate::inbound::external::scryfall::bulk::BulkEndpoint;
+use zwipe_core::domain::card::{
+    Card,
+    card_profile::CardProfile,
+    scryfall_data::ScryfallData,
+    search_card::card_filter::CardFilter,
+};
 use crate::{
     domain::card::{
         models::{
-            Card,
-            card_profile::CardProfile,
-            scryfall_data::ScryfallData,
-            search_card::{card_filter::CardFilter, error::SearchCardsError},
+            search_card::error::SearchCardsError,
             sync_metrics::SyncMetrics,
         },
         ports::{CardRepository, CardService},
@@ -88,7 +91,7 @@ impl<R: CardRepository> CardService for Service<R> {
         );
         let mut sync_metrics = SyncMetrics::new();
         let batch_size = batch_size();
-        let scryfall_data = bulk_endpoint.amass().await?;
+        let scryfall_data: Vec<ScryfallData> = bulk_endpoint.amass().await?;
         sync_metrics.set_received_count(scryfall_data.len() as i32);
         self.repo
             .batch_delta_upsert(&scryfall_data, batch_size, &mut sync_metrics)

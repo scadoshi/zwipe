@@ -5,10 +5,10 @@ use reqwest::StatusCode;
 use std::future::Future;
 use uuid::Uuid;
 use zwipe::{
-    domain::card::models::Card,
     inbound::http::{routes::get_card_route, ApiError},
 };
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::card::Card;
 
 /// Trait for fetching a single card by its Scryfall data ID.
 #[allow(missing_docs)]

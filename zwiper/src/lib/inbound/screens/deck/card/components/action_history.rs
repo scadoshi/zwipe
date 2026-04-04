@@ -1,6 +1,6 @@
 //! Swipe action history for undo/redo functionality.
 
-use zwipe::domain::card::models::Card;
+use zwipe_core::domain::card::Card;
 
 /// The type of swipe action performed on a card.
 #[derive(Clone, Debug, PartialEq)]
