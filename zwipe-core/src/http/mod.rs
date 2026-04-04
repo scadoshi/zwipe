@@ -5,7 +5,7 @@
 
 /// HTTP request/response contract structs organized by domain.
 pub mod contracts;
-/// Partial-update helpers (`Optdate`).
+/// Partial-update helpers (`Opdate`).
 pub mod helpers;
 /// Path constants shared between frontend and backend for URL consistency.
 pub mod paths;

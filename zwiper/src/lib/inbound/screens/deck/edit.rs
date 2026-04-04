@@ -18,7 +18,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe_core::http::helpers::Optdate;
+use zwipe_core::http::helpers::Opdate;
 use zwipe_core::domain::deck::{Deck, deck_profile::DeckProfile, format::Format, requests::update_deck_profile::InvalidUpdateDeckProfile};
 use zwipe::inbound::http::ApiError;
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
@@ -109,16 +109,16 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     });
     let commander_id_update = use_memo(move || {
         if commander() != original_commander() {
-            Optdate::Set(commander().map(|c| c.scryfall_data.id))
+            Opdate::Set(commander().map(|c| c.scryfall_data.id))
         } else {
-            Optdate::Unchanged
+            Opdate::Unchanged
         }
     });
     let format_update = use_memo(move || {
         if selected_format() != original_format() {
-            Optdate::Set(selected_format().map(|f| f.to_legality_key().to_string()))
+            Opdate::Set(selected_format().map(|f| f.to_legality_key().to_string()))
         } else {
-            Optdate::Unchanged
+            Opdate::Unchanged
         }
     });
     let has_made_changes = use_memo(move || {
@@ -147,11 +147,11 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 return;
             }
 
-            let request = HttpUpdateDeckProfile::new(
-                deck_name_update().as_deref(),
-                commander_id_update(),
-                format_update(),
-            );
+            let request = HttpUpdateDeckProfile::builder()
+                .name(deck_name_update().as_deref())
+                .commander_id(commander_id_update())
+                .format(format_update())
+                .build();
 
             match client()
                 .update_deck_profile(deck_id, &request, &session)

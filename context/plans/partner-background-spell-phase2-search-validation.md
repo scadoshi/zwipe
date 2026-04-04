@@ -6,6 +6,242 @@ Add CardFilter fields for searching partner-eligible cards, backgrounds, and sig
 
 ---
 
+## Step 0: Builder Pattern for Deck Request Types
+
+Phase 1 left `#[allow(clippy::too_many_arguments)]` on `CreateDeckProfile::new()` and `UpdateDeckProfile::new()` (8 params each, threshold is 7). Clean this up before adding more complexity. Also refactor `HttpCreateDeckProfile::new()` (6 params) and `HttpUpdateDeckProfile::new()` (6 params) since they'll keep growing too.
+
+### 0a. CreateDeckProfile builder
+
+**File:** `zwipe-core/src/domain/deck/requests/create_deck_profile.rs`
+
+Replace `new()` with a builder that takes only the required fields (`name`, `user_id`, `email_verified`) and uses chained setters for optional fields:
+
+```rust
+impl CreateDeckProfile {
+    /// Creates a builder with required fields.
+    pub fn builder(
+        name: impl Into<String>,
+        user_id: Uuid,
+        email_verified: bool,
+    ) -> CreateDeckProfileBuilder {
+        CreateDeckProfileBuilder {
+            name: name.into(),
+            user_id,
+            email_verified,
+            commander_id: None,
+            partner_commander_id: None,
+            background_id: None,
+            signature_spell_id: None,
+            format: None,
+        }
+    }
+}
+
+pub struct CreateDeckProfileBuilder {
+    name: String,
+    user_id: Uuid,
+    email_verified: bool,
+    commander_id: Option<Uuid>,
+    partner_commander_id: Option<Uuid>,
+    background_id: Option<Uuid>,
+    signature_spell_id: Option<Uuid>,
+    format: Option<String>,
+}
+
+impl CreateDeckProfileBuilder {
+    pub fn commander_id(mut self, id: Option<Uuid>) -> Self { self.commander_id = id; self }
+    pub fn partner_commander_id(mut self, id: Option<Uuid>) -> Self { self.partner_commander_id = id; self }
+    pub fn background_id(mut self, id: Option<Uuid>) -> Self { self.background_id = id; self }
+    pub fn signature_spell_id(mut self, id: Option<Uuid>) -> Self { self.signature_spell_id = id; self }
+    pub fn format(mut self, format: Option<&str>) -> Self { self.format = format.map(|s| s.to_string()); self }
+
+    pub fn build(self) -> Result<CreateDeckProfile, InvalidCreateDeckProfile> {
+        let name = DeckName::new(self.name)?;
+        let format = self.format.as_deref().map(Format::try_from).transpose()?;
+        Ok(CreateDeckProfile {
+            name,
+            commander_id: self.commander_id,
+            partner_commander_id: self.partner_commander_id,
+            background_id: self.background_id,
+            signature_spell_id: self.signature_spell_id,
+            format,
+            user_id: self.user_id,
+            email_verified: self.email_verified,
+        })
+    }
+}
+```
+
+Remove the `#[allow(clippy::too_many_arguments)]` and the old `new()` method.
+
+**Call site update** (`zerver/src/lib/inbound/http/handlers/deck/create_deck_profile.rs`):
+
+```rust
+let request = CreateDeckProfile::builder(body.name, user.id, email_verified)
+    .commander_id(body.commander_id)
+    .partner_commander_id(body.partner_commander_id)
+    .background_id(body.background_id)
+    .signature_spell_id(body.signature_spell_id)
+    .format(body.format.as_deref())
+    .build()?;
+```
+
+### 0b. UpdateDeckProfile builder
+
+**File:** `zwipe-core/src/domain/deck/requests/update_deck_profile.rs`
+
+Replace `new()` with a builder taking required fields (`deck_id`, `user_id`):
+
+```rust
+impl UpdateDeckProfile {
+    pub fn builder(deck_id: Uuid, user_id: Uuid) -> UpdateDeckProfileBuilder {
+        UpdateDeckProfileBuilder {
+            deck_id,
+            user_id,
+            name: None,
+            commander_id: None,
+            partner_commander_id: None,
+            background_id: None,
+            signature_spell_id: None,
+            format: None,
+        }
+    }
+}
+
+pub struct UpdateDeckProfileBuilder {
+    deck_id: Uuid,
+    user_id: Uuid,
+    name: Option<String>,
+    commander_id: Option<Option<Uuid>>,
+    partner_commander_id: Option<Option<Uuid>>,
+    background_id: Option<Option<Uuid>>,
+    signature_spell_id: Option<Option<Uuid>>,
+    format: Option<Option<String>>,
+}
+
+impl UpdateDeckProfileBuilder {
+    pub fn name(mut self, name: Option<&str>) -> Self { self.name = name.map(|s| s.to_string()); self }
+    pub fn commander_id(mut self, id: Option<Option<Uuid>>) -> Self { self.commander_id = id; self }
+    pub fn partner_commander_id(mut self, id: Option<Option<Uuid>>) -> Self { self.partner_commander_id = id; self }
+    pub fn background_id(mut self, id: Option<Option<Uuid>>) -> Self { self.background_id = id; self }
+    pub fn signature_spell_id(mut self, id: Option<Option<Uuid>>) -> Self { self.signature_spell_id = id; self }
+    pub fn format(mut self, format: Option<Option<&str>>) -> Self {
+        self.format = format.map(|opt| opt.map(|s| s.to_string()));
+        self
+    }
+
+    pub fn build(self) -> Result<UpdateDeckProfile, InvalidUpdateDeckProfile> {
+        if self.name.is_none()
+            && self.commander_id.is_none()
+            && self.partner_commander_id.is_none()
+            && self.background_id.is_none()
+            && self.signature_spell_id.is_none()
+            && self.format.is_none()
+        {
+            return Err(InvalidUpdateDeckProfile::NoUpdates);
+        }
+        let name = self.name.as_deref().map(DeckName::new).transpose()?;
+        let format = self.format
+            .map(|update| update.as_deref().map(Format::try_from).transpose())
+            .transpose()?;
+        Ok(UpdateDeckProfile {
+            deck_id: self.deck_id,
+            name,
+            commander_id: self.commander_id,
+            partner_commander_id: self.partner_commander_id,
+            background_id: self.background_id,
+            signature_spell_id: self.signature_spell_id,
+            format,
+            user_id: self.user_id,
+        })
+    }
+}
+```
+
+**Call site update** (`zerver/src/lib/inbound/http/handlers/deck/update_deck_profile.rs`):
+
+```rust
+let request = UpdateDeckProfile::builder(deck_id, user.id)
+    .name(body.name.as_deref())
+    .commander_id(body.commander_id.into_option())
+    .partner_commander_id(body.partner_commander_id.into_option())
+    .background_id(body.background_id.into_option())
+    .signature_spell_id(body.signature_spell_id.into_option())
+    .format(format_option)
+    .build()?;
+```
+
+### 0c. HttpCreateDeckProfile builder
+
+**File:** `zwipe-core/src/http/contracts/deck.rs`
+
+Replace `new()` with a builder taking only `name`:
+
+```rust
+impl HttpCreateDeckProfile {
+    pub fn builder(name: &str) -> HttpCreateDeckProfileBuilder {
+        HttpCreateDeckProfileBuilder {
+            name: name.to_string(),
+            commander_id: None,
+            partner_commander_id: None,
+            background_id: None,
+            signature_spell_id: None,
+            format: None,
+        }
+    }
+}
+```
+
+Builder struct with chained setters for all optional fields, `build(self) -> Self` (no validation needed at HTTP layer).
+
+**Call site update** (`zwiper/src/lib/inbound/screens/deck/create.rs`):
+
+```rust
+let request = HttpCreateDeckProfile::builder(&deck_name())
+    .commander_id(commander_id)
+    .format(format_str)
+    .build();
+```
+
+### 0d. HttpUpdateDeckProfile builder
+
+**File:** `zwipe-core/src/http/contracts/deck.rs`
+
+Replace `new()` with a builder taking no required fields (all are optional updates):
+
+```rust
+impl HttpUpdateDeckProfile {
+    pub fn builder() -> HttpUpdateDeckProfileBuilder {
+        HttpUpdateDeckProfileBuilder::default()
+    }
+}
+```
+
+Builder defaults all `Opdate` fields to `Opdate::Unchanged` and `name` to `None`. Chained setters for each field, `build(self) -> Self`.
+
+**Call site update** (`zwiper/src/lib/inbound/screens/deck/edit.rs`):
+
+```rust
+let request = HttpUpdateDeckProfile::builder()
+    .name(deck_name_update().as_deref())
+    .commander_id(commander_id_update())
+    .format(format_update())
+    .build();
+```
+
+### Call sites to update (6 total)
+
+| Call site | File |
+|-----------|------|
+| `CreateDeckProfile::new()` | `zerver/.../handlers/deck/create_deck_profile.rs` (line 72) |
+| `UpdateDeckProfile::new()` | `zerver/.../handlers/deck/update_deck_profile.rs` (line 86) |
+| `HttpCreateDeckProfile::new()` | `zwiper/.../screens/deck/create.rs` (line 51) |
+| `HttpUpdateDeckProfile::new()` | `zwiper/.../screens/deck/edit.rs` (line 150) |
+| `HttpUpdateDeckProfile::new()` | `context/plans/deck-view-polish.md` (line 290) — update plan reference |
+| `HttpCreateDeckProfile::new()` | `context/plans/partner-background-spell-phase3-field-visibility.md` (line 198) — update plan reference |
+
+---
+
 ## Partner Rules Reference
 
 Partner has 4 distinct variants that are **NOT cross-compatible**:

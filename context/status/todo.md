@@ -85,26 +85,43 @@ A dedicated swiping flow for commander selection. Future work — only build if 
 
 ---
 
-## Maybeboard
+## Maybeboard — Complete
 
-Add a maybeboard flag to `deck_cards` so cards can be staged without being part of the active deck.
+All 5 phases shipped. See `context/plans/maybeboard-phase*.md` for original plans.
+
+- [x] Add `maybeboard: bool` column to `deck_cards`, exclude from metrics/validation/card_count (`75502526`)
+- [x] Up-swipe adds to maybeboard on add and remove screens, undo support (`c41dae16`)
+- [x] Deck card view: maybeboard toggle, "to deck"/"to maybeboard" move buttons (`cb6db5c3`)
+- [x] Remove screen: tri-state maybeboard filter (no/yes/any) (`e6016305`)
+- [x] Export toggle "include maybeboard", import `// Maybeboard` header, buy links exclude by default (`15c38980`)
+
+---
+
+## Sideboard
+
+Add sideboard support alongside maybeboard. A card lives in exactly one state: **deck** (active), **maybeboard** (considering), or **sideboard** (game-ready swaps between matches). Mirrors maybeboard implementation but with format-specific rules.
 
 **Data model:**
-- [ ] Add `maybeboard: bool` column to `deck_cards` (migration required)
-- [ ] Deck metrics, validate_deck, and card limits treat maybeboard cards as excluded from the active deck
+- [ ] Migrate from `maybeboard: bool` to a `board` enum column (`deck`, `maybeboard`, `sideboard`) — or add `sideboard: bool` alongside `maybeboard` with a constraint that both can't be true
+- [ ] Sideboard cards excluded from deck metrics, validation, and card_count (same as maybeboard)
+- [ ] Format-specific sideboard validation: 15-card limit for 60-card formats (Standard, Modern, Legacy, Vintage), no sideboard for Commander/Brawl/Oathbreaker
 
-**Swipe screens (add):**
-- [ ] Up-swipe adds card to maybeboard — toast "Added to maybeboard"
-- [ ] Undo handles maybeboard adds correctly
+**Swipe screens:**
+- [ ] All four swipe directions are taken (left=skip, right=add/remove, up=maybeboard, down=undo) — need a different UX for sideboard assignment (long-press menu? button in expanded card info? post-add dialog?)
+- [ ] Remove screen: sideboard cards accessible via tri-state filter (deck/maybeboard/sideboard/all)
 
 **Deck view screen:**
-- [ ] "Show maybeboard" toggle below tokens section (display priority: tokens → maybeboard → lands)
-- [ ] Maybeboard cards show a "To deck" button — toast "Added to deck"
-- [ ] Active deck cards show a "To maybeboard" button — toast "Added to maybeboard"
-- [ ] Consolidate grouping/show controls bar to accommodate the new toggle without crowding
+- [ ] "sideboard" toggle chip alongside "maybeboard" chip
+- [ ] Sideboard section rendered between maybeboard and commander
+- [ ] "to sideboard" / "to deck" move buttons in CardRow expanded view
 
 **Remove screen:**
-- [ ] Decide: does the remove swipe screen show maybeboard cards, offer a filter, or exclude them entirely?
+- [ ] Extend MaybeboardFilter to include Sideboard variant
+- [ ] Swipe behavior: swipe right removes from sideboard (same delete endpoint)
+
+**Export/Import:**
+- [ ] Export: `// Sideboard` header (standard format recognized by Moxfield, Archidekt, MTGO)
+- [ ] Import: detect `// Sideboard` header, tag cards accordingly
 
 ---
 
@@ -184,7 +201,15 @@ Add a `context/architecture/structure.md` walking through the full directory tre
 
 ## Low Priority
 
-- [ ] **Token cards missing from database** — Some token cards referenced in `all_parts` don't exist in `scryfall_data` (e.g. Whirler Virtuoso's Thopter token). Needs a full Scryfall sync that includes token cards. Causes empty results on the "tokens" toggle in deck card view.
+- [ ] **Token cards missing from database** — Some token cards referenced in `all_parts` don't exist in `scryfall_data` (e.g. Whirler Virtuoso's Thopter token). Fix: switch Scryfall sync from `oracle_cards` to `default_cards` to include tokens and all printings. Search already deduplicates via `ROW_NUMBER() OVER (PARTITION BY oracle_id ORDER BY released_at DESC)`.
+
+- [ ] **Multi-printing support + oracle_id deck constraint** — Importing `default_cards` introduces multiple printings per card. Deck constraint must change:
+  - `deck_cards` unique constraint switches from `(deck_id, scryfall_data_id)` to `(deck_id, oracle_id)` — one logical card per deck regardless of printing
+  - `deck_cards` keeps `scryfall_data_id` as FK (points to the selected printing)
+  - Add `oracle_id` column to `deck_cards` (denormalized from scryfall_data for constraint enforcement)
+  - Default printing: latest by `released_at DESC` — same logic as search dedup
+  - Future: printing selector UI so users can pick preferred art/set
+  - Requires updating create_deck_card, import, and bulk upsert to resolve oracle_id before insert
 
 ---
 
@@ -195,6 +220,14 @@ Add a `context/architecture/structure.md` walking through the full directory tre
 ---
 
 ## Recently Completed
+
+### Maybeboard (2026-04-04)
+
+- [x] Add `maybeboard: bool` to deck card pipeline — migration, model, metrics/validation exclusion, card_count filter (`75502526`)
+- [x] Swipe-up to maybeboard on add and remove screens with undo support, card-exit-up animation (`c41dae16`)
+- [x] Deck card view: maybeboard toggle, section rendering, "to deck"/"to maybeboard" move buttons via update_deck_card (`cb6db5c3`)
+- [x] Remove screen: tri-state maybeboard filter (no/yes/any) in config section (`e6016305`)
+- [x] Export toggle "include maybeboard" with `// Maybeboard` header, import detects header, buy links exclude maybeboard with toggle (`15c38980`)
 
 ### Rename zweb → zite (2026-04-04)
 
@@ -235,7 +268,7 @@ Add a `context/architecture/structure.md` walking through the full directory tre
 - [x] Separate requests/ from models/ in zerver auth and card (`d71ef8e8`)
 - [x] Extract Session, AccessToken, RefreshToken, Jwt (`38617714`)
 - [x] Extract logo module to zwipe-core (`32fc23ba`)
-- [x] Extract HTTP contract types, paths, ApiError, Optdate (`fab717c1`)
+- [x] Extract HTTP contract types, paths, ApiError, Opdate (`fab717c1`)
 
 ### Component Extraction & Deck Enhancements (2026-04-02)
 

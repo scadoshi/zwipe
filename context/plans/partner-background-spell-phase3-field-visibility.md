@@ -205,7 +205,7 @@ Pass to `HttpCreateDeckProfile::new(...)` with the new fields.
 
 Add signals + original state tracking for the 3 new fields. Same pattern as commander:
 - Load original card from API when deck loads
-- Track changes via `Optdate`
+- Track changes via `Opdate`
 - Only send changed fields in update request
 
 The edit screen needs to fetch the partner/background/signature_spell cards by ID on load, similar to how it fetches the commander card.
