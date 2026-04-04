@@ -36,7 +36,7 @@ Both zerver and zwiper need the same domain types (User, Deck, Card, request/res
 
 ```
 zwiper ──→ zwipe-core ←── zerver
-zweb   ──→ zwipe-core
+zite   ──→ zwipe-core
 ```
 
 **Rules for zwipe-core:**

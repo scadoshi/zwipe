@@ -1,11 +1,11 @@
-name: Deploy zweb
+name: Deploy zite
 
 on:
   push:
     branches: [main]
     paths:
-      - 'zweb/**'
-      - '.github/workflows/deploy-zweb.yml'
+      - 'zite/**'
+      - '.github/workflows/deploy-zite.yml'
   workflow_dispatch:
 
 permissions:
@@ -36,7 +36,7 @@ jobs:
             ~/.cargo/git
             ~/.cargo/bin
             target
-          key: ${{ runner.os }}-cargo-zweb-${{ hashFiles('zweb/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-zite-${{ hashFiles('zite/Cargo.lock') }}
 
       - name: Install system dependencies
         run: sudo apt-get update && sudo apt-get install -y build-essential
@@ -47,21 +47,21 @@ jobs:
         run: cargo install dioxus-cli --version "^0.7" --locked --force
 
       - name: Build
-        working-directory: zweb
+        working-directory: zite
         env:
           CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: gcc
         run: dx build --release --platform web
 
       - name: Add CNAME
-        run: echo "zwipe.net" > target/dx/zweb/release/web/public/CNAME
+        run: echo "zwipe.net" > target/dx/zite/release/web/public/CNAME
 
       - name: Add 404.html for SPA routing
-        run: cp target/dx/zweb/release/web/public/index.html target/dx/zweb/release/web/public/404.html
+        run: cp target/dx/zite/release/web/public/index.html target/dx/zite/release/web/public/404.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: target/dx/zweb/release/web/public
+          path: target/dx/zite/release/web/public
 
   deploy:
     needs: build

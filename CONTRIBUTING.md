@@ -31,7 +31,7 @@ Copy `.env.example` if present, or refer to `context/ops/server.md`.
 
 ## Project Structure
 
-The workspace has three packages: `zerver` (backend), `zwiper` (mobile/iOS/Android), and `zweb` (web client).
+The workspace has three packages: `zerver` (backend), `zwiper` (mobile/iOS/Android), and `zite` (web client).
 
 ### zerver
 
@@ -75,7 +75,7 @@ zwiper/src/
         └── client/     — HTTP client modules for each domain (auth, card, deck, deck_card, user)
 ```
 
-### zweb
+### zite
 
 Static Dioxus web client hosted on Cloudflare Pages (`zwipe.net`). Handles email verification, password reset, privacy policy, and App Store redirects.
 

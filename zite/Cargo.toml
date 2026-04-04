@@ -1,5 +1,5 @@
 [package]
-name = "zweb"
+name = "zite"
 version.workspace = true
 authors = ["scottyrayfermo"]
 edition = "2024"
@@ -8,7 +8,7 @@ edition = "2024"
 workspace = true
 
 [[bin]]
-name = "zweb"
+name = "zite"
 path = "src/main.rs"
 
 [dependencies]

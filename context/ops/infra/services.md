@@ -22,8 +22,8 @@ addresses and spam filters penalise them.
 
 ## GitHub
 
-- **GitHub Actions**: CI/CD for zerver/zervice (self-hosted runner) and zweb (GitHub Pages)
-- **GitHub Pages**: hosts zwipe.net (zweb static build)
+- **GitHub Actions**: CI/CD for zerver/zervice (self-hosted runner) and zite (GitHub Pages)
+- **GitHub Pages**: hosts zwipe.net (zite static build)
 - **GitHub Sponsors**: contribution link on zwipe.net/contribute — application pending approval
 
 ## Tailscale

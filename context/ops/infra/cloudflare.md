@@ -10,7 +10,7 @@ forwarding). This guide consolidates all Cloudflare and domain configuration.
 - **Registrar**: Namecheap (all domains)
 - **DNS management**: Cloudflare (nameservers pointed at Cloudflare for all domains)
 - **Domains**:
-  - `zwipe.net` — main app domain; GitHub Pages (zweb) + Cloudflare Tunnel (api.zwipe.net)
+  - `zwipe.net` — main app domain; GitHub Pages (zite) + Cloudflare Tunnel (api.zwipe.net)
   - `scottyfermo.com` — portfolio (GitHub Pages)
   - `scadoshi.com` — 301 redirect → scottyfermo.com (Cloudflare redirect rule)
   - `scottyrayfermo.com` — 301 redirect → scottyfermo.com (Cloudflare redirect rule)
