@@ -40,23 +40,15 @@ Closed API — must request access at edhrec.com/api. Full scope pending what th
 
 Commander eligibility is computed via query filters, not persisted. Three phases, each building on the last.
 
-### Phase 1: Commander Search Filter + Validation
+### Phase 1: Commander Search Filter + Validation — Complete
 
-Add `commander_for_format: Option<Format>` to `CardFilter`. When set, filters results to cards that are valid commanders for that format. The commander search dropdown on create/edit screens auto-sets this from the deck's format. Users are not forced to use it — they can select any card as commander, and warnings surface mismatches.
-
-**Commander eligibility rules per format:**
-- [ ] **Commander / Duel / PreDH** — legendary creature, legendary vehicle/spacecraft with P/T, or "can be your commander" oracle text
-- [ ] **Brawl / Standard Brawl / Historic Brawl** — legendary creature OR legendary planeswalker
-- [ ] **Pauper Commander** — uncommon creature
-- [ ] **Oathbreaker** — planeswalker
-
-**Implementation:**
-- [ ] Add `commander_for_format: Option<Format>` to `CardFilter` / `CardFilterBuilder` (zwipe-core)
-- [ ] Implement eligibility logic — pure function that checks type_line, oracle_text, rarity against format rules (zwipe-core)
-- [ ] Backend: apply filter in SQL query (type_line ILIKE '%Legendary%Creature%' etc.) or in-memory post-filter
-- [ ] Frontend: commander search on create/edit screens auto-sets `commander_for_format` from deck's selected format
-- [ ] Default behavior: filter is ON when deck has a format, OFF when no format selected
-- [ ] `validate_deck()`: add warning if selected commander is not valid for the deck's format ("sol ring is not a valid commander for commander format")
+- [x] Add `is_commander_in_format: Option<Format>` to `CardFilter` / `CardFilterBuilder` (zwipe-core) (`3e74f8a0`)
+- [x] Implement eligibility logic — pure function per format rules (zwipe-core) (`3e74f8a0`)
+- [x] Backend: apply filter in SQL query (`3e74f8a0`)
+- [x] Frontend: commander eligibility chips in format filter section (`be93812b`)
+- [x] Frontend: commander filter toggle on create/edit screens, format-first layout (`3e3fadce`)
+- [x] Multi-select on format legality filter chips (`f751cbd4`)
+- [x] `validate_deck()`: warning if selected commander is not valid for format (`3e74f8a0`)
 
 ### Phase 2: Partner, Background, and Oathbreaker Support
 
@@ -148,7 +140,8 @@ Multi-tag strategic role system for cards (Ramp, Draw, Removal, etc.). Cards can
 
 Small UX improvements to the deck view screen and related flows.
 
-- [ ] Update "average price per card" label on the stats table — current wording unclear
+- [x] Update "average price per card" label → "avg card price" (`e16bd01d`)
+- [ ] Clear filter button on filter groups — allow clearing individual filter sections without opening them or clearing the entire filter
 - [ ] Toast "Card removed" when a card is removed by decrementing its quantity to 0
 - [ ] Toast "Card removed" when the invalid-card-in-deck warning's remove button is used
 - [ ] Card quantity warning should offer an action button to correct quantity to the legal maximum (4, or 1 for basic lands) — consistent with the invalid-card remove button pattern
@@ -177,7 +170,7 @@ Full audit of all 9 themes to make the app more colorful and ensure visual consi
 
 ## Domain Extraction into `zwipe-core`
 
-**Complete.** `zwipe-core` is the single source of truth for all shared types. See `architecture/decisions.md` for the full rationale and purity rules.
+**Complete.** `zwipe-core` is the single source of truth for all shared types. Proxy re-export cleanup also complete — zerver and zwiper import directly from zwipe-core. See `architecture/decisions.md` for the full rationale and purity rules.
 
 ---
 
@@ -194,6 +187,28 @@ Add a `context/architecture/structure.md` walking through the full directory tre
 ---
 
 ## Recently Completed
+
+### Rename zweb → zite (2026-04-04)
+
+- [x] Rename web client crate from zweb to zite — directory, Cargo.toml, workflow, all docs (`2b11fd3b`)
+
+### Commander Filter System (2026-04-04)
+
+- [x] Add `is_commander_in_format` filter to CardFilter with per-format eligibility rules (`3e74f8a0`)
+- [x] Commander eligibility chips in format filter section (`be93812b`)
+- [x] Commander filter toggle on create/edit screens with format-first layout (`3e3fadce`)
+- [x] Multi-select on format legality filter chips (`f751cbd4`)
+- [x] Update avg price label (`e16bd01d`)
+
+### Proxy Re-export Cleanup (2026-04-04)
+
+- [x] Remove logo and moderation proxy modules from zerver (`02e01bda`)
+- [x] Remove HTTP paths and helpers proxy files from zerver (`05ce80c1`)
+- [x] Clean up auth domain proxy re-exports in zerver (`27286090`)
+- [x] Migrate zwiper Session imports from zerver proxy to zwipe-core (`845be76f`)
+- [x] Clean up deck domain proxy re-exports in zerver and zwiper (`d5395b22`)
+- [x] Migrate zwiper card imports from zerver proxy to zwipe-core (`e3c72218`)
+- [x] Clean up user domain proxy re-exports (`b2903f2e`)
 
 ### zwipe-core Domain Extraction (2026-04-02)
 
