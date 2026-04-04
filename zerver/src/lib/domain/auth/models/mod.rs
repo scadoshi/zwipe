@@ -20,7 +20,7 @@ pub mod session;
 #[cfg(feature = "zerver")]
 use crate::domain::auth::models::password::HashedPassword;
 #[cfg(feature = "zerver")]
-use crate::domain::user::models::{username::Username, User};
+use zwipe_core::domain::user::{username::Username, User};
 #[cfg(feature = "zerver")]
 use chrono::NaiveDateTime;
 #[cfg(feature = "zerver")]
@@ -74,7 +74,7 @@ mod tests {
     #[test]
     fn test_user_from_user_with_password_hash_drops_password() {
         use crate::domain::auth::models::password::{HashedPassword, Password};
-        use crate::domain::user::models::username::Username;
+        use zwipe_core::domain::user::username::Username;
         use email_address::EmailAddress;
         use std::str::FromStr;
         use uuid::Uuid;

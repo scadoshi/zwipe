@@ -3,13 +3,11 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
-use zwipe::{
-    domain::{auth::models::session::Session, user::models::User},
-    inbound::http::{
-        handlers::auth::change_username::HttpChangeUsername, routes::change_username_route,
-        ApiError,
-    },
+use zwipe::inbound::http::{
+    handlers::auth::change_username::HttpChangeUsername, routes::change_username_route,
+    ApiError,
 };
+use zwipe_core::domain::{auth::models::session::Session, user::User};
 
 /// Trait for updating usernames.
 #[allow(missing_docs)]

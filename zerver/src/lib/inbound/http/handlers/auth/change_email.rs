@@ -12,10 +12,12 @@ use crate::{
         card::ports::CardService,
         deck::ports::DeckService,
         health::ports::HealthService,
-        user::{models::User, ports::UserService},
+        user::ports::UserService,
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
 };
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::user::User;
 
 #[cfg(feature = "zerver")]
 impl From<ChangeEmailError> for ApiError {

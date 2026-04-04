@@ -13,13 +13,15 @@ use crate::{
             ports::DeckService,
         },
         health::ports::HealthService,
-        user::{models::get_user::GetUser, ports::UserService},
+        user::ports::UserService,
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
 };
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
 pub use zwipe_core::http::contracts::deck::HttpCreateDeckProfile;
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::user::requests::get_user::GetUser;
 
 #[cfg(feature = "zerver")]
 impl From<CreateDeckProfileError> for ApiError {

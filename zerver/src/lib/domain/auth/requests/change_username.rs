@@ -26,10 +26,8 @@
 
 #[cfg(feature = "zerver")]
 use crate::domain::auth::requests::authenticate_user::AuthenticateUserError;
-use crate::domain::{
-    auth::models::password::{InvalidPassword, Password},
-    user::models::username::{InvalidUsername, Username},
-};
+use crate::domain::auth::models::password::{InvalidPassword, Password};
+use zwipe_core::domain::user::username::{InvalidUsername, Username};
 use thiserror::Error;
 use uuid::Uuid;
 

@@ -3,15 +3,13 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
-use zwipe::{
-    domain::{
-        auth::models::session::Session,
-        user::models::preferences::UserPreferences,
-    },
-    inbound::http::{
-        handlers::user::update_preferences::HttpUpdatePreferences, paths::preferences_route,
-        ApiError,
-    },
+use zwipe::inbound::http::{
+    handlers::user::update_preferences::HttpUpdatePreferences, paths::preferences_route,
+    ApiError,
+};
+use zwipe_core::domain::{
+    auth::models::session::Session,
+    user::preferences::UserPreferences,
 };
 
 /// Trait for fetching user display preferences.

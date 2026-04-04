@@ -4,13 +4,15 @@ use uuid::Uuid;
 
 use crate::domain::user::{
     models::{
-        get_user::{GetUser, GetUserError},
-        preferences::{
-            GetPreferencesError, UpdatePreferences, UpdatePreferencesError, UserPreferences,
-        },
-        User,
+        get_user::GetUserError,
+        preferences::{GetPreferencesError, UpdatePreferencesError},
     },
     ports::{UserRepository, UserService},
+};
+use zwipe_core::domain::user::{
+    preferences::{UpdatePreferences, UserPreferences},
+    requests::get_user::GetUser,
+    User,
 };
 
 /// User service implementation handling user data retrieval operations.

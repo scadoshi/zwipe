@@ -27,8 +27,8 @@ use crate::domain::{
             verify_email::{VerifyEmail, VerifyEmailError},
         },
     },
-    user::models::User,
 };
+use zwipe_core::domain::user::User;
 use chrono::NaiveDateTime;
 use std::future::Future;
 use uuid::Uuid;

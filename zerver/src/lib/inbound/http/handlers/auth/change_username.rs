@@ -8,13 +8,15 @@ use crate::{
         card::ports::CardService,
         deck::ports::DeckService,
         health::ports::HealthService,
-        user::{models::User, ports::UserService},
+        user::ports::UserService,
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
 };
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
 pub use zwipe_core::http::contracts::auth::HttpChangeUsername;
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::user::User;
 
 #[cfg(feature = "zerver")]
 impl From<ChangeUsernameError> for ApiError {

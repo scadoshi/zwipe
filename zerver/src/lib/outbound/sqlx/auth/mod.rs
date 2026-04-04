@@ -25,7 +25,7 @@ use crate::domain::auth::requests::{
     verify_email::VerifyEmailError,
 };
 use crate::domain::auth::ports::AuthRepository;
-use crate::domain::user::models::User;
+use zwipe_core::domain::user::User;
 use crate::outbound::sqlx::auth::helpers::TxHelper;
 use crate::outbound::sqlx::auth::models::{DatabaseRefreshToken, DatabaseUserWithPasswordHash};
 use crate::outbound::sqlx::postgres::Postgres;

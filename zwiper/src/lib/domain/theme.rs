@@ -1,6 +1,6 @@
 //! Theme configuration for the application UI.
 
-use zwipe::domain::user::models::preferences::{DARK_ONLY_THEMES, UserPreferences};
+use zwipe_core::domain::user::preferences::{DARK_ONLY_THEMES, UserPreferences};
 
 /// Display theme configuration used by the UI.
 #[derive(Clone, PartialEq)]

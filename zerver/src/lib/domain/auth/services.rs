@@ -26,9 +26,10 @@ use crate::domain::{
         models::SendEmail,
         ports::EmailSender,
     },
-    user::{models::User, models::preferences::UserPreferences, ports::UserRepository},
+    user::ports::UserRepository,
 };
 use anyhow::anyhow;
+use zwipe_core::domain::user::{preferences::UserPreferences, User};
 use chrono::{Duration, Utc};
 use rand::Rng;
 use sha2::Digest;

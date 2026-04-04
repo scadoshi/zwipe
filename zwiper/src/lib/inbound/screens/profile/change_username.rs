@@ -11,11 +11,12 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
 use zwipe::{
-    domain::{
-        auth::models::{password::Password, session::Session},
-        user::models::username::Username,
-    },
+    domain::auth::models::password::Password,
     inbound::http::handlers::auth::change_username::HttpChangeUsername,
+};
+use zwipe_core::domain::{
+    auth::models::session::Session,
+    user::username::Username,
 };
 
 /// Form screen for updating user's username.

@@ -8,10 +8,12 @@ use crate::{
         card::ports::CardService,
         deck::ports::DeckService,
         health::ports::HealthService,
-        user::{models::get_user::GetUser, ports::UserService},
+        user::ports::UserService,
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState},
 };
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::user::requests::get_user::GetUser;
 
 /// Re-sends the email verification link to the authenticated user.
 ///

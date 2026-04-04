@@ -1,8 +1,6 @@
 //! User profile retrieval operation.
 //!
-//! Request type re-exported from `zwipe_core`. Service-layer error type remains here.
-
-pub use zwipe_core::domain::user::requests::get_user::*;
+//! Service-layer error type for user fetching. Request type lives in zwipe-core.
 
 #[cfg(feature = "zerver")]
 use thiserror::Error;

@@ -3,12 +3,10 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
-use zwipe::{
-    domain::{auth::models::session::Session, user::models::User},
-    inbound::http::{
-        handlers::auth::change_email::HttpChangeEmail, routes::change_email_route, ApiError,
-    },
+use zwipe::inbound::http::{
+    handlers::auth::change_email::HttpChangeEmail, routes::change_email_route, ApiError,
 };
+use zwipe_core::domain::{auth::models::session::Session, user::User};
 
 /// Trait for updating user email addresses.
 #[allow(missing_docs)]
