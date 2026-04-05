@@ -59,6 +59,9 @@ Commander eligibility is computed via query filters, not persisted. Three phases
 - [x] validate_deck: partner validity, background validity, signature spell validity, mutual exclusivity, color identity union (`e08a218c`)
 - [x] Frontend: partner, background, signature spell fields on create/edit with conditional visibility (`eb1a68d9`)
 - [x] Oathbreaker label refinements (`eb1a68d9`)
+- [x] Card view: partner pinned in commander group as "commanders", background in own group (`1bf5e7a7`)
+- [x] All four command zone cards filtered alongside deck entries (`1bf5e7a7`)
+- [x] Partner and background search threshold lowered to 1 character (`1bf5e7a7`)
 
 ### Phase 3: Zwipe for Commander (UX Enhancement)
 
@@ -156,6 +159,8 @@ Small UX improvements to the deck view screen and related flows.
 - [x] Clear filter button on filter groups — per-section clear buttons on accordion headers (`0e381a53`)
 - [x] Fix: `is_commander_in_format` alone now counts as non-empty filter (`0e381a53`)
 - [x] Fix: remove screen deck load failure (`0e381a53`)
+- [x] "command zone" show toggle on deck card view (`36da3374`)
+- [x] Clear commander on format change to prevent stale selections (`128bbeea`)
 
 ---
 
@@ -184,9 +189,9 @@ Full audit of all 9 themes to make the app more colorful and ensure visual consi
 
 ---
 
-## Project Structure Doc
+## Project Structure Doc — Complete
 
-Add a `context/architecture/structure.md` walking through the full directory tree — useful for onboarding and AI context.
+`context/architecture/structure.md` — full directory tree, crate dependency graph, database schema, key patterns.
 
 ---
 
@@ -219,6 +224,8 @@ Add a `context/architecture/structure.md` walking through the full directory tre
 - [x] Eligibility functions: partner_kind, are_valid_partners, background/spell validation (`e08a218c`)
 - [x] validate_deck: partner, background, signature spell, mutual exclusivity, color identity union (`e08a218c`)
 - [x] Frontend: conditional field visibility on create/edit, oathbreaker labels (`eb1a68d9`)
+- [x] Card view: partner in commander group, background in own group, all command zone filtered (`1bf5e7a7`)
+- [x] Partner/background search threshold lowered to 1 char (`1bf5e7a7`)
 
 ### Small Bugs + Filter UX (2026-04-04)
 
@@ -226,12 +233,15 @@ Add a `context/architecture/structure.md` walking through the full directory tre
 - [x] Per-section clear buttons on filter accordion headers (`0e381a53`)
 - [x] Fix remove screen deck load failure (`0e381a53`)
 
-### Deck View Polish + Opdate Rename (2026-04-04)
+### Deck View Polish + UX Fixes (2026-04-04)
 
 - [x] WarningAction enum: FixQuantity, ClearCommander, Remove — per-warning action buttons (`bd860bce`)
 - [x] "fix to N" on copy limit, "clear" on invalid commander, "card removed" toasts (`bd860bce`)
 - [x] Card count includes commander/partner/background/spell in stats (`bd860bce`)
 - [x] Rename Optdate → Opdate across codebase (`cfd19ab7`)
+- [x] Command zone show toggle on deck card view (`36da3374`)
+- [x] Clear commander on format change to prevent stale selections (`128bbeea`)
+- [x] Architecture structure doc: `context/architecture/structure.md`
 
 ### Maybeboard (2026-04-04)
 
