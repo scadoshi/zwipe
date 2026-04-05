@@ -2013,6 +2013,28 @@ body {
     white-space: nowrap;
 }
 
+.chip-bubble {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.6rem;
+    font-size: 0.75rem;
+    margin-bottom: 0.35rem;
+}
+
+.chip-bubble-error {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--border-error);
+    border-radius: 0.6rem;
+    font-size: 0.75rem;
+    margin-bottom: 0.35rem;
+}
+
 .card-group {
     margin-bottom: 1.5rem;
     overflow: hidden;
