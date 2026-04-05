@@ -42,25 +42,25 @@ pub fn validate_deck(
         return vec![];
     };
 
-    // Only validate active deck cards, not maybeboard
+    // Only validate active deck cards, not maybeboard or sideboard
     let active_entries: Vec<DeckEntry> = entries
         .iter()
-        .filter(|e| !e.deck_card.maybeboard)
+        .filter(|e| e.deck_card.board.is_active())
         .cloned()
         .collect();
-    let entries = &active_entries;
 
     let mut warnings = Vec::new();
 
     check_card_count(format, deck_profile, &mut warnings);
     check_commander_required(format, deck_profile, &mut warnings);
-    check_legality(format, entries, &mut warnings);
-    check_copy_limits(format, entries, &mut warnings);
-    check_color_identity(format, entries, command_zone, &mut warnings);
+    check_legality(format, &active_entries, &mut warnings);
+    check_copy_limits(format, &active_entries, &mut warnings);
+    check_color_identity(format, &active_entries, command_zone, &mut warnings);
     check_commander_eligibility(format, deck_profile, command_zone, &mut warnings);
     check_partner_validity(format, deck_profile, command_zone, &mut warnings);
     check_background_validity(format, deck_profile, command_zone, &mut warnings);
     check_signature_spell_validity(format, deck_profile, command_zone, &mut warnings);
+    check_sideboard_limits(format, entries, &mut warnings);
 
     warnings
 }
@@ -389,6 +389,41 @@ fn check_background_validity(
         warnings.push(DeckWarning::new(
             "a commander cannot have both a partner and a background".to_string(),
         ));
+    }
+}
+
+fn check_sideboard_limits(
+    format: &Format,
+    entries: &[DeckEntry],
+    warnings: &mut Vec<DeckWarning>,
+) {
+    let sideboard_count: u32 = entries
+        .iter()
+        .filter(|e| e.deck_card.board.is_sideboard())
+        .map(|e| *e.deck_card.quantity as u32)
+        .sum();
+
+    if sideboard_count == 0 {
+        return;
+    }
+
+    if !format.has_sideboard() {
+        warnings.push(DeckWarning::new(format!(
+            "{} does not use sideboards",
+            format.display_name().to_lowercase()
+        )));
+        return;
+    }
+
+    if let Some(max) = format.sideboard_max()
+        && sideboard_count > max
+    {
+        warnings.push(DeckWarning::new(format!(
+            "sideboard has {} cards, {} allows at most {}",
+            sideboard_count,
+            format.display_name().to_lowercase(),
+            max
+        )));
     }
 }
 

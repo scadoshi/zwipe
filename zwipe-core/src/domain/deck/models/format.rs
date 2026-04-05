@@ -213,6 +213,18 @@ impl Format {
     pub fn has_signature_spell(&self) -> bool {
         matches!(self, Self::Oathbreaker)
     }
+
+    /// Whether this format supports sideboards.
+    ///
+    /// Commander-based formats (Commander, Brawl, Oathbreaker, etc.) do not use sideboards.
+    pub fn has_sideboard(&self) -> bool {
+        !self.has_commander()
+    }
+
+    /// Maximum sideboard size, if any.
+    pub fn sideboard_max(&self) -> Option<u32> {
+        if self.has_sideboard() { Some(15) } else { None }
+    }
 }
 
 impl TryFrom<&str> for Format {
