@@ -41,7 +41,25 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
 
             match client().import_deck_cards(deck_id, &text(), &session).await {
                 Ok(r) => {
-                    result.set(Some(r));
+                    result.set(Some(r.clone()));
+                    let imported = r.imported.len();
+                    let unresolved = r.unresolved.len();
+                    let opts = ToastOptions::default().duration(Duration::from_millis(1500));
+                    match (imported, unresolved) {
+                        (0, 0) => toast.info("no cards found".to_string(), opts),
+                        (0, _) => toast.error(
+                            format!("{unresolved} card{} unresolved", if unresolved == 1 { "" } else { "s" }),
+                            ToastOptions::default().duration(Duration::from_millis(3000)),
+                        ),
+                        (_, 0) => toast.success(
+                            format!("imported {imported} card{}", if imported == 1 { "" } else { "s" }),
+                            opts,
+                        ),
+                        _ => toast.info(
+                            format!("imported {imported}, {unresolved} unresolved"),
+                            opts,
+                        ),
+                    }
                     loading.set(false);
                 }
                 Err(e) => {
@@ -75,18 +93,18 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                             if !r.imported.is_empty() {
                                 label { class: "label mt-2", "imported" }
                                 for card in r.imported.iter() {
-                                    div { class: "flex items-center flex-between mb-1",
-                                        span { class: "text-sm font-light", "{card.name.to_lowercase()}" }
-                                        span { class: "text-sm font-light opacity-50", "x{card.quantity}" }
+                                    div { class: "chip-bubble",
+                                        span { class: "font-light", "{card.name.to_lowercase()}" }
+                                        span { class: "font-light opacity-50", "x{card.quantity}" }
                                     }
                                 }
                             }
                             if !r.unresolved.is_empty() {
                                 label { class: "label mt-2", "unresolved" }
                                 for card in r.unresolved.iter() {
-                                    div { class: "flex items-center flex-between mb-1",
-                                        span { class: "text-sm font-light", "{card.name.to_lowercase()}" }
-                                        span { class: "text-sm font-light opacity-50", "{card.reason.to_lowercase()}" }
+                                    div { class: "chip-bubble-error",
+                                        span { class: "font-light", "{card.name.to_lowercase()}" }
+                                        span { class: "font-light opacity-50", "{card.reason.to_lowercase()}" }
                                     }
                                 }
                             }
