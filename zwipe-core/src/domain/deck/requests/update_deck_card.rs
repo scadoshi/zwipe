@@ -1,6 +1,6 @@
-//! Update deck card operation (quantity delta and/or maybeboard toggle).
+//! Update deck card operation (quantity delta and/or board change).
 
-use crate::domain::deck::{InvalidUpdateQuanity, UpdateQuantity};
+use crate::domain::deck::{Board, InvalidUpdateQuanity, UpdateQuantity};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -20,7 +20,7 @@ pub enum InvalidUpdateDeckCard {
     #[error(transparent)]
     UpdateQuantity(InvalidUpdateQuanity),
     /// No fields provided to update.
-    #[error("at least one of update_quantity, maybeboard, or scryfall_data_id must be provided")]
+    #[error("at least one of update_quantity, board, or scryfall_data_id must be provided")]
     NothingToUpdate,
 }
 
@@ -32,7 +32,7 @@ impl From<InvalidUpdateQuanity> for InvalidUpdateDeckCard {
 
 /// Request to update a card in a deck.
 ///
-/// Supports updating quantity (delta), maybeboard status, or both.
+/// Supports updating quantity (delta), board, or both.
 /// At least one field must be provided.
 #[derive(Debug, Clone)]
 pub struct UpdateDeckCard {
@@ -44,8 +44,8 @@ pub struct UpdateDeckCard {
     pub scryfall_data_id: Uuid,
     /// Delta value (positive = add, negative = remove). `None` = no quantity change.
     pub update_quantity: Option<UpdateQuantity>,
-    /// Set maybeboard status. `None` = no change.
-    pub maybeboard: Option<bool>,
+    /// Move card to this board. `None` = no change.
+    pub board: Option<Board>,
     /// Change the selected printing to this Scryfall data ID. `None` = no change.
     pub new_scryfall_data_id: Option<Uuid>,
 }
@@ -53,13 +53,13 @@ pub struct UpdateDeckCard {
 impl UpdateDeckCard {
     /// Creates a new deck card update request with validation.
     ///
-    /// At least one of `update_quantity`, `maybeboard`, or `new_scryfall_data_id` must be `Some`.
+    /// At least one of `update_quantity`, `board`, or `new_scryfall_data_id` must be `Some`.
     pub fn new(
         user_id: Uuid,
         deck_id: &str,
         scryfall_data_id: &str,
         update_quantity: Option<i32>,
-        maybeboard: Option<bool>,
+        board: Option<Board>,
         new_scryfall_data_id: Option<&str>,
     ) -> Result<Self, InvalidUpdateDeckCard> {
         let deck_id = Uuid::try_parse(deck_id).map_err(InvalidUpdateDeckCard::DeckId)?;
@@ -74,7 +74,7 @@ impl UpdateDeckCard {
             .map(|s| Uuid::try_parse(s).map_err(InvalidUpdateDeckCard::NewScryfallDataId))
             .transpose()?;
 
-        if update_quantity.is_none() && maybeboard.is_none() && new_scryfall_data_id.is_none() {
+        if update_quantity.is_none() && board.is_none() && new_scryfall_data_id.is_none() {
             return Err(InvalidUpdateDeckCard::NothingToUpdate);
         }
 
@@ -83,7 +83,7 @@ impl UpdateDeckCard {
             deck_id,
             scryfall_data_id,
             update_quantity,
-            maybeboard,
+            board,
             new_scryfall_data_id,
         })
     }

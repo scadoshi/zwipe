@@ -1,6 +1,6 @@
 //! Add card to deck operation.
 
-use crate::domain::deck::{InvalidQuantity, Quantity};
+use crate::domain::deck::{Board, InvalidQuantity, Quantity};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -40,8 +40,8 @@ pub struct CreateDeckCard {
     pub oracle_id: Uuid,
     /// How many copies.
     pub quantity: Quantity,
-    /// Whether this card is on the maybeboard.
-    pub maybeboard: bool,
+    /// Which board this card belongs to (deck, maybeboard, or sideboard).
+    pub board: Board,
     /// Whether the requesting user's email is verified.
     pub email_verified: bool,
 }
@@ -54,7 +54,7 @@ impl CreateDeckCard {
         scryfall_data_id: &str,
         oracle_id: &str,
         quantity: i32,
-        maybeboard: Option<bool>,
+        board: Option<Board>,
         email_verified: bool,
     ) -> Result<Self, InvalidCreateDeckCard> {
         let deck_id = Uuid::try_parse(deck_id).map_err(InvalidCreateDeckCard::DeckId)?;
@@ -69,7 +69,7 @@ impl CreateDeckCard {
             scryfall_data_id,
             oracle_id,
             quantity,
-            maybeboard: maybeboard.unwrap_or(false),
+            board: board.unwrap_or_default(),
             user_id,
             email_verified,
         })

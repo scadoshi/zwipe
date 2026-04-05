@@ -1,5 +1,6 @@
 //! Deck-card join entity.
 
+use super::board::Board;
 use crate::domain::deck::Quantity;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -18,6 +19,6 @@ pub struct DeckCard {
     pub oracle_id: Uuid,
     /// How many copies (1-99, validated against deck copy limit).
     pub quantity: Quantity,
-    /// Whether this card is on the maybeboard (considering, not in active deck).
-    pub maybeboard: bool,
+    /// Which board this card belongs to (deck, maybeboard, or sideboard).
+    pub board: Board,
 }

@@ -2,7 +2,9 @@
 //!
 //! Parses plain-text decklists (`[qty] [card name]` per line),
 //! resolves card names against the database, and bulk-inserts matched cards.
+//! Supports `// Sideboard` and `// Maybeboard` section headers.
 
+use crate::domain::deck::Board;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -13,6 +15,8 @@ pub struct ImportLine {
     pub quantity: i32,
     /// Card name (as entered by the user).
     pub card_name: String,
+    /// Which board this card belongs to.
+    pub board: Board,
 }
 
 /// Validated import request.
@@ -35,34 +39,49 @@ impl ImportDeckCards {
     /// Quantity defaults to 1 if the first word is not a number.
     /// Empty and whitespace-only lines are skipped.
     pub fn parse(user_id: Uuid, deck_id: Uuid, text: &str, email_verified: bool) -> Self {
-        let lines = text
-            .lines()
-            .filter_map(|line| {
-                let trimmed = line.trim();
-                if trimmed.is_empty() {
-                    return None;
+        let mut current_board = Board::Deck;
+        let mut lines = Vec::new();
+
+        for line in text.lines() {
+            let trimmed = line.trim();
+            if trimmed.is_empty() {
+                continue;
+            }
+
+            // Detect section headers: "// Sideboard", "// Maybeboard", "//Sideboard", etc.
+            let header = trimmed.strip_prefix("//").map(|s| s.trim().to_lowercase());
+            if let Some(ref h) = header {
+                match h.as_str() {
+                    "sideboard" => { current_board = Board::Sideboard; continue; }
+                    "maybeboard" => { current_board = Board::Maybeboard; continue; }
+                    "deck" => { current_board = Board::Deck; continue; }
+                    // Skip other comment headers like "// Commander"
+                    _ if !h.is_empty() => continue,
+                    _ => {}
                 }
-                let (quantity, rest) = match trimmed.split_once(char::is_whitespace) {
-                    Some((first, rest)) => {
-                        // Handle "4" or "4x" quantity prefix
-                        let stripped = first.strip_suffix('x').unwrap_or(first);
-                        match stripped.parse::<i32>() {
-                            Ok(qty) => (qty, rest.trim()),
-                            Err(_) => (1, trimmed),
-                        }
+            }
+
+            let (quantity, rest) = match trimmed.split_once(char::is_whitespace) {
+                Some((first, rest)) => {
+                    // Handle "4" or "4x" quantity prefix
+                    let stripped = first.strip_suffix('x').unwrap_or(first);
+                    match stripped.parse::<i32>() {
+                        Ok(qty) => (qty, rest.trim()),
+                        Err(_) => (1, trimmed),
                     }
-                    None => (1, trimmed),
-                };
-                let card_name = strip_trailing_metadata(rest);
-                if card_name.is_empty() || quantity < 1 {
-                    return None;
                 }
-                Some(ImportLine {
-                    quantity,
-                    card_name,
-                })
-            })
-            .collect();
+                None => (1, trimmed),
+            };
+            let card_name = strip_trailing_metadata(rest);
+            if card_name.is_empty() || quantity < 1 {
+                continue;
+            }
+            lines.push(ImportLine {
+                quantity,
+                card_name,
+                board: current_board,
+            });
+        }
         Self {
             user_id,
             deck_id,
@@ -195,5 +214,46 @@ mod tests {
             strip_trailing_metadata("Dr. Madison Li (pip) 531 *F* [Draw]"),
             "Dr. Madison Li"
         );
+    }
+
+    #[test]
+    fn sideboard_header_sets_board() {
+        let lines = parse_lines("4 Lightning Bolt\n\n// Sideboard\n2 Rest in Peace");
+        assert_eq!(lines.len(), 2);
+        assert_eq!(lines[0].board, Board::Deck);
+        assert_eq!(lines[0].card_name, "Lightning Bolt");
+        assert_eq!(lines[1].board, Board::Sideboard);
+        assert_eq!(lines[1].card_name, "Rest in Peace");
+    }
+
+    #[test]
+    fn maybeboard_header_sets_board() {
+        let lines = parse_lines("1 Sol Ring\n// Maybeboard\n1 Mana Crypt");
+        assert_eq!(lines.len(), 2);
+        assert_eq!(lines[0].board, Board::Deck);
+        assert_eq!(lines[1].board, Board::Maybeboard);
+    }
+
+    #[test]
+    fn multiple_sections() {
+        let text = "1 Sol Ring\n// Sideboard\n1 Rest in Peace\n// Maybeboard\n1 Mana Crypt";
+        let lines = parse_lines(text);
+        assert_eq!(lines.len(), 3);
+        assert_eq!(lines[0].board, Board::Deck);
+        assert_eq!(lines[1].board, Board::Sideboard);
+        assert_eq!(lines[2].board, Board::Maybeboard);
+    }
+
+    #[test]
+    fn header_without_space() {
+        let lines = parse_lines("//Sideboard\n1 Rest in Peace");
+        assert_eq!(lines.len(), 1);
+        assert_eq!(lines[0].board, Board::Sideboard);
+    }
+
+    #[test]
+    fn default_board_is_deck() {
+        let lines = parse_lines("4 Lightning Bolt");
+        assert_eq!(lines[0].board, Board::Deck);
     }
 }

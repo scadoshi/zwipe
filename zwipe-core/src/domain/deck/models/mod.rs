@@ -1,4 +1,5 @@
 // Value objects
+pub mod board;
 pub mod deck_name;
 pub mod format;
 pub mod quantity;
@@ -14,6 +15,7 @@ pub mod deck_warning;
 // Domain logic
 pub mod validate_deck;
 
+pub use board::{Board, InvalidBoard};
 pub use deck::{Deck, DeckEntry};
 pub use deck_card::DeckCard;
 pub use deck_metrics::DeckMetrics;

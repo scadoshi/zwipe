@@ -78,11 +78,11 @@ impl DeckMetrics {
 
     /// Computes metrics from deck entries, counting each card by its quantity.
     ///
-    /// Maybeboard cards are excluded — metrics reflect the active deck only.
+    /// Maybeboard and sideboard cards are excluded — metrics reflect the active deck only.
     pub fn from_entries(entries: &[DeckEntry]) -> Self {
         let active_entries: Vec<DeckEntry> = entries
             .iter()
-            .filter(|e| !e.deck_card.maybeboard)
+            .filter(|e| e.deck_card.board.is_active())
             .cloned()
             .collect();
         let entries = &active_entries;

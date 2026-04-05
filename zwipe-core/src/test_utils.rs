@@ -12,7 +12,7 @@ use crate::domain::{
         },
         Card,
     },
-    deck::{deck::DeckEntry, quantity::Quantity, DeckCard},
+    deck::{deck::DeckEntry, quantity::Quantity, Board, DeckCard},
 };
 use chrono::NaiveDate;
 use uuid::Uuid;
@@ -30,7 +30,7 @@ pub fn make_entry(name: &str, qty: i32) -> DeckEntry {
             scryfall_data_id,
             oracle_id,
             quantity: Quantity::new(qty).unwrap(),
-            maybeboard: false,
+            board: Board::default(),
         },
     }
 }
