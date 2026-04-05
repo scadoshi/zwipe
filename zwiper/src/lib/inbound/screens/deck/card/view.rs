@@ -135,52 +135,38 @@ pub fn View(deck_id: Uuid) -> Element {
             if let Ok(profile) = client().get_deck_profile(deck_id, &session).await {
                 is_oathbreaker.set(profile.format.as_ref().is_some_and(|f| f.has_signature_spell()));
 
+                // Resolve command zone cards by oracle_id (not printing-specific scryfall_data_id).
+                // Fetch the card first to get its oracle_id, then remove from entries by oracle_id.
                 if let Some(commander_id) = profile.commander_id {
-                    let cmd = if let Some(idx) = entries
-                        .iter()
-                        .position(|e| e.card.scryfall_data.id == commander_id)
-                    {
-                        Some(entries.remove(idx).card)
-                    } else {
-                        client().get_card(commander_id, &session).await.ok()
-                    };
-                    commander_card.set(cmd);
+                    let fetched = client().get_card(commander_id, &session).await.ok();
+                    if let Some(ref card) = fetched && let Some(oid) = card.scryfall_data.oracle_id {
+                        entries.retain(|e| e.card.scryfall_data.oracle_id != Some(oid));
+                    }
+                    commander_card.set(fetched);
                 }
 
                 if let Some(spell_id) = profile.signature_spell_id {
-                    let spell = if let Some(idx) = entries
-                        .iter()
-                        .position(|e| e.card.scryfall_data.id == spell_id)
-                    {
-                        Some(entries.remove(idx).card)
-                    } else {
-                        client().get_card(spell_id, &session).await.ok()
-                    };
-                    signature_spell_card.set(spell);
+                    let fetched = client().get_card(spell_id, &session).await.ok();
+                    if let Some(ref card) = fetched && let Some(oid) = card.scryfall_data.oracle_id {
+                        entries.retain(|e| e.card.scryfall_data.oracle_id != Some(oid));
+                    }
+                    signature_spell_card.set(fetched);
                 }
 
                 if let Some(partner_id) = profile.partner_commander_id {
-                    let p = if let Some(idx) = entries
-                        .iter()
-                        .position(|e| e.card.scryfall_data.id == partner_id)
-                    {
-                        Some(entries.remove(idx).card)
-                    } else {
-                        client().get_card(partner_id, &session).await.ok()
-                    };
-                    partner_card.set(p);
+                    let fetched = client().get_card(partner_id, &session).await.ok();
+                    if let Some(ref card) = fetched && let Some(oid) = card.scryfall_data.oracle_id {
+                        entries.retain(|e| e.card.scryfall_data.oracle_id != Some(oid));
+                    }
+                    partner_card.set(fetched);
                 }
 
                 if let Some(bg_id) = profile.background_id {
-                    let bg = if let Some(idx) = entries
-                        .iter()
-                        .position(|e| e.card.scryfall_data.id == bg_id)
-                    {
-                        Some(entries.remove(idx).card)
-                    } else {
-                        client().get_card(bg_id, &session).await.ok()
-                    };
-                    background_card.set(bg);
+                    let fetched = client().get_card(bg_id, &session).await.ok();
+                    if let Some(ref card) = fetched && let Some(oid) = card.scryfall_data.oracle_id {
+                        entries.retain(|e| e.card.scryfall_data.oracle_id != Some(oid));
+                    }
+                    background_card.set(fetched);
                 }
             }
 

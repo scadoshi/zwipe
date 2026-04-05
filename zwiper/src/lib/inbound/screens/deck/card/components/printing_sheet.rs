@@ -1,11 +1,14 @@
 //! Bottom sheet for browsing and selecting card printings.
 
+use crate::inbound::components::auth::session_upkeep::Upkeep;
+use crate::inbound::components::interactions::carousel::dots::CarouselDots;
+use crate::inbound::components::interactions::carousel::state::CarouselState;
+use crate::inbound::components::interactions::carousel::Carousel;
 use crate::outbound::client::{
     ZwipeClient,
     card::get_printings::ClientGetPrintings,
     deck_card::update_deck_card::ClientUpdateDeckCard,
 };
-use crate::inbound::components::auth::session_upkeep::Upkeep;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
@@ -29,7 +32,8 @@ pub(crate) fn PrintingSheet(
     let mut printings: Signal<Vec<Card>> = use_signal(Vec::new);
     let mut is_loading = use_signal(|| false);
     let mut cached_oracle_id: Signal<Option<Uuid>> = use_signal(|| None);
-    let mut selected_index: Signal<usize> = use_signal(|| 0);
+    let mut carousel_state: Signal<CarouselState> = use_signal(CarouselState::empty);
+    let mut initial_index: Signal<usize> = use_signal(|| 0);
 
     let current_scryfall_id = card.scryfall_data.id;
     let oracle_id = card.scryfall_data.oracle_id;
@@ -41,12 +45,16 @@ pub(crate) fn PrintingSheet(
 
         // Skip fetch if already cached for this oracle_id
         if cached_oracle_id() == Some(oid) {
-            // Just update selected index for current card
             let idx = printings()
                 .iter()
                 .position(|p| p.scryfall_data.id == current_scryfall_id)
                 .unwrap_or(0);
-            selected_index.set(idx);
+            initial_index.set(idx);
+            carousel_state.with_mut(|s| {
+                s.current_index = idx;
+                s.drag_offset_px = 0.0;
+                s.snap_transition_ms = 0;
+            });
             return;
         }
 
@@ -67,9 +75,15 @@ pub(crate) fn PrintingSheet(
                         .iter()
                         .position(|p| p.scryfall_data.id == current_scryfall_id)
                         .unwrap_or(0);
+                    let count = cards.len();
                     printings.set(cards);
-                    selected_index.set(idx);
+                    initial_index.set(idx);
                     cached_oracle_id.set(Some(oid));
+
+                    // Measure viewport width (modal-content uses no-pad-x so carousel is full-width)
+                    let mut eval = document::eval("dioxus.send(window.innerWidth)");
+                    let page_width: f64 = eval.recv::<f64>().await.unwrap_or(375.0);
+                    carousel_state.set(CarouselState::new(count, idx, page_width));
                 }
                 Err(e) => {
                     toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
@@ -79,15 +93,23 @@ pub(crate) fn PrintingSheet(
         });
     });
 
-    let selected_card = printings()
-        .get(selected_index())
-        .cloned();
+    let current_idx = carousel_state().current_index;
+    let has_changed = !printings().is_empty() && current_idx != initial_index();
+    let visible_card = printings().get(current_idx).cloned();
 
     rsx! {
         // Modal backdrop
         div {
             class: if open() { "modal-backdrop show" } else { "modal-backdrop" },
-            onclick: move |_| open.set(false),
+            onclick: move |_| {
+                if has_changed {
+                    toast.info(
+                        "printing selection dismissed".to_string(),
+                        ToastOptions::default().duration(Duration::from_millis(1500)),
+                    );
+                }
+                open.set(false);
+            },
         }
 
         // Bottom sheet
@@ -95,81 +117,29 @@ pub(crate) fn PrintingSheet(
             class: if open() { "bottom-sheet show" } else { "bottom-sheet" },
 
             div { class: "modal-header",
-                button {
-                    class: "btn btn-sm",
-                    onclick: move |_| open.set(false),
-                    "close"
-                }
+                span { class: "text-muted", style: "font-size: 1rem;", "printings" }
             }
 
-            div { class: "modal-content",
+            div { class: "modal-content no-pad-x",
                 if is_loading() {
                     div { class: "spinner" }
-                } else if let Some(card) = &selected_card {
-                    // Large image of selected printing
-                    if let Some(ref image_url) = card.scryfall_data.image_uris.as_ref().and_then(|iu| iu.large.clone()) {
-                        div { style: "display: flex; justify-content: center; margin-bottom: 0.75rem;",
-                            img {
-                                src: "{image_url}",
-                                alt: "{card.scryfall_data.name}",
-                                class: "card-image",
-                            }
-                        }
-                    }
-
-                    // Set name, collector number, year
-                    div { style: "text-align: center; margin-bottom: 0.5rem;",
-                        span { class: "text-muted",
-                            "{card.scryfall_data.set_name.to_lowercase()} · #{card.scryfall_data.collector_number} · {card.scryfall_data.released_at.format(\"%Y\")}"
-                        }
-                    }
-
-                    // Price row
-                    div { style: "text-align: center; margin-bottom: 0.75rem;",
-                        span { class: "text-muted",
+                } else if printings().len() > 1 {
+                    // Multi-printing: carousel
+                    Carousel { state: carousel_state,
+                        for printing in printings().iter() {
                             {
-                                let usd = card.scryfall_data.prices.usd.as_deref().map(|p| format!("${p}")).unwrap_or_default();
-                                let eur = card.scryfall_data.prices.eur.as_deref().map(|p| format!("€{p}")).unwrap_or_default();
-                                let parts: Vec<&str> = [usd.as_str(), eur.as_str()].into_iter().filter(|s| !s.is_empty()).collect();
-                                parts.join(" · ")
-                            }
-                        }
-                    }
-
-                    // Horizontal printing selector
-                    if printings().len() > 1 {
-                        div { style: "overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 0.5rem 0;",
-                            div { style: "display: flex; gap: 0.5rem; min-width: min-content;",
-                                for (i, printing) in printings().iter().enumerate() {
-                                    {
-                                        let printing_id = printing.scryfall_data.id;
-                                        let is_selected = i == selected_index();
-                                        let thumb_url = printing.scryfall_data.image_uris.as_ref()
-                                            .and_then(|iu| iu.small.clone())
-                                            .unwrap_or_default();
-                                        let set = printing.scryfall_data.set_name.to_lowercase();
-                                        rsx! {
-                                            div {
-                                                key: "{printing_id}",
-                                                style: if is_selected {
-                                                    "flex-shrink: 0; text-align: center; cursor: pointer; opacity: 1; border-bottom: 2px solid var(--color-text);"
-                                                } else {
-                                                    "flex-shrink: 0; text-align: center; cursor: pointer; opacity: 0.5;"
-                                                },
-                                                onclick: move |_| {
-                                                    selected_index.set(i);
-                                                },
-                                                if !thumb_url.is_empty() {
-                                                    img {
-                                                        src: "{thumb_url}",
-                                                        alt: "{set}",
-                                                        style: "width: 4rem; border-radius: 0.25rem;",
-                                                    }
-                                                }
-                                                div { style: "font-size: 0.7rem; margin-top: 0.2rem;",
-                                                    class: "text-muted",
-                                                    "{set}"
-                                                }
+                                let image_url = printing.scryfall_data.image_uris.as_ref()
+                                    .and_then(|iu| iu.large.clone().or_else(|| iu.normal.clone()).or_else(|| iu.small.clone()))
+                                    .unwrap_or_default();
+                                let name = printing.scryfall_data.name.clone();
+                                let id = printing.scryfall_data.id;
+                                rsx! {
+                                    div { class: "carousel-page", key: "{id}",
+                                        if !image_url.is_empty() {
+                                            img {
+                                                src: "{image_url}",
+                                                alt: "{name}",
+                                                class: "carousel-card-image",
                                             }
                                         }
                                     }
@@ -178,47 +148,114 @@ pub(crate) fn PrintingSheet(
                         }
                     }
 
-                    // Select button (inside scrollable content, below thumbnails)
-                    if let Some(new_card) = selected_card.as_ref().filter(|c| c.scryfall_data.id != current_scryfall_id) {
+                    CarouselDots { current: current_idx, total: printings().len() }
+
+                    // Info row for currently visible printing
+                    if let Some(ref card) = visible_card {
+                        { printing_info(card) }
+                    }
+                } else if let Some(ref card) = visible_card {
+                    // Single printing: just show the image, no carousel
+                    if let Some(ref image_url) = card.scryfall_data.image_uris.as_ref().and_then(|iu| iu.large.clone()) {
+                        div { style: "display: flex; justify-content: center; margin-bottom: 0.75rem;",
+                            img {
+                                src: "{image_url}",
+                                alt: "{card.scryfall_data.name}",
+                                class: "carousel-card-image",
+                            }
+                        }
+                    }
+
+                    { printing_info(card) }
+                }
+            }
+
+            div { class: "util-bar",
+                button {
+                    class: "util-btn",
+                    onclick: move |_| {
+                        if has_changed {
+                            toast.info(
+                                "printing selection dismissed".to_string(),
+                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                            );
+                        }
+                        open.set(false);
+                    },
+                    "close"
+                }
+
+                if has_changed {
+                    if let Some(new_card) = visible_card {
                         {
-                            let new_card = new_card.clone();
                             rsx! {
-                                div { style: "display: flex; justify-content: center; padding: 0.75rem 0;",
-                                    button {
-                                        class: "btn btn-sm",
-                                        onclick: move |_| {
-                                            let new_card = new_card.clone();
-                                            let new_id = new_card.scryfall_data.id;
-                                            let request = HttpUpdateDeckCard::with_printing(&new_id.to_string());
+                                button {
+                                    class: "util-btn",
+                                    onclick: move |_| {
+                                        let new_card = new_card.clone();
+                                        let new_id = new_card.scryfall_data.id;
+                                        let request = HttpUpdateDeckCard::with_printing(&new_id.to_string());
 
-                                            session.upkeep(client);
-                                            let Some(session) = session() else { return; };
+                                        session.upkeep(client);
+                                        let Some(session) = session() else { return; };
 
-                                            let on_printing_changed = on_printing_changed;
-                                            spawn(async move {
-                                                match client().update_deck_card(deck_id, current_scryfall_id, &request, &session).await {
-                                                    Ok(_) => {
-                                                        toast.info(
-                                                            "printing updated".to_string(),
-                                                            ToastOptions::default().duration(Duration::from_millis(1500)),
-                                                        );
-                                                        on_printing_changed(new_card);
-                                                        open.set(false);
-                                                    }
-                                                    Err(e) => {
-                                                        toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
-                                                    }
+                                        let on_printing_changed = on_printing_changed;
+                                        spawn(async move {
+                                            match client().update_deck_card(deck_id, current_scryfall_id, &request, &session).await {
+                                                Ok(_) => {
+                                                    toast.info(
+                                                        "printing updated".to_string(),
+                                                        ToastOptions::default().duration(Duration::from_millis(1500)),
+                                                    );
+                                                    on_printing_changed(new_card);
+                                                    open.set(false);
                                                 }
-                                            });
-                                        },
-                                        "select printing"
-                                    }
+                                                Err(e) => {
+                                                    toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                                                }
+                                            }
+                                        });
+                                    },
+                                    "save"
                                 }
                             }
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+/// Renders card info for the currently visible printing, matching `CardInfoDisplay` style.
+fn printing_info(card: &Card) -> Element {
+    rsx! {
+        div { class: "card-info",
+            if card.scryfall_data.prices.usd.is_some()
+                || card.scryfall_data.prices.eur.is_some()
+                || card.scryfall_data.prices.tix.is_some()
+            {
+                {
+                    let mut display = String::from("prices:");
+                    let mut prices_count = 0;
+                    if let Some(ref usd) = card.scryfall_data.prices.usd {
+                        display.push_str(format!(" ${usd}").as_str());
+                        prices_count += 1;
+                    }
+                    if let Some(ref eur) = card.scryfall_data.prices.eur {
+                        if prices_count > 0 { display.push_str(" |"); }
+                        display.push_str(format!(" €{eur}").as_str());
+                        prices_count += 1;
+                    }
+                    if let Some(ref tix) = card.scryfall_data.prices.tix {
+                        if prices_count > 0 { display.push_str(" |"); }
+                        display.push_str(format!(" {tix} tix").as_str());
+                    }
+                    rsx! { span { "{display}" } }
+                }
+            }
+            span { "set: {card.scryfall_data.set_name.to_lowercase()}" }
+            span { "released: {card.scryfall_data.released_at}" }
         }
     }
 }
