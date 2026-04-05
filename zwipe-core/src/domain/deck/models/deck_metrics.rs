@@ -5,7 +5,7 @@
 //! counted once) and `Vec<DeckEntry>` (each card counted by its quantity).
 
 use crate::domain::{
-    card::{scryfall_data::colors::Color, Card},
+    card::{mechanical_category::MechanicalCategory, scryfall_data::colors::Color, Card},
     deck::deck::DeckEntry,
 };
 
@@ -41,10 +41,41 @@ pub struct DeckMetrics {
     pub total_price_tix: Option<f64>,
     /// Average card price in MTGO Event Tickets. `None` if no cards priced.
     pub avg_price_tix: Option<f64>,
+    /// Non-empty mechanical category counts, sorted by count descending.
+    pub mechanical_category_counts: Vec<(&'static str, usize)>,
 }
 
 
 impl DeckMetrics {
+    /// 5-letter abbreviation for type distribution labels.
+    pub fn abbreviate_type(label: &str) -> &str {
+        match label {
+            "lands" => "lands",
+            "creatures" => "creat",
+            "planeswalkers" => "plnsw",
+            "artifacts" => "artif",
+            "enchantments" => "enchn",
+            "instants" => "instn",
+            "sorceries" => "sorcr",
+            "other" => "other",
+            _ => label,
+        }
+    }
+
+    /// 5-letter abbreviation for color distribution labels.
+    pub fn abbreviate_color(label: &str) -> &str {
+        match label {
+            "white" => "white",
+            "blue" => "blue",
+            "black" => "black",
+            "red" => "red",
+            "green" => "green",
+            "multicolor" => "multi",
+            "colorless" => "clrls",
+            _ => label,
+        }
+    }
+
     /// Computes metrics from deck entries, counting each card by its quantity.
     ///
     /// Maybeboard cards are excluded — metrics reflect the active deck only.
@@ -63,6 +94,8 @@ impl DeckMetrics {
         let mut total_cards = 0usize;
         let mut pip_consumed = [0usize; 5];
         let mut pip_produced = [0usize; 5];
+        let all_cats = MechanicalCategory::all();
+        let mut cat_buckets = vec![0usize; all_cats.len()];
         let mut usd_sum = 0.0f64;
         let mut usd_count = 0usize;
         let mut eur_sum = 0.0f64;
@@ -95,6 +128,15 @@ impl DeckMetrics {
             let color_idx = classify_color(card);
             if let Some(slot) = color_buckets.get_mut(color_idx) {
                 *slot += qty;
+            }
+
+            // Mechanical categories
+            for cat in &card.card_profile.mechanical_categories {
+                if let Some(idx) = all_cats.iter().position(|c| c == cat)
+                    && let Some(slot) = cat_buckets.get_mut(idx)
+                {
+                    *slot += qty;
+                }
             }
 
             // Pip consumed: parse mana_cost for colored symbols
@@ -184,6 +226,14 @@ impl DeckMetrics {
             .map(|(&label, &count)| (label, count))
             .collect();
 
+        let mut mechanical_category_counts: Vec<(&'static str, usize)> = all_cats
+            .iter()
+            .zip(cat_buckets.iter())
+            .filter(|&(_, count)| *count > 0)
+            .map(|(cat, &count)| (cat.to_short_name(), count))
+            .collect();
+        mechanical_category_counts.sort_by(|a, b| b.1.cmp(&a.1));
+
         let total_price_usd = if usd_count > 0 { Some(usd_sum) } else { None };
         let avg_price_usd = if usd_count > 0 { Some(usd_sum / usd_count as f64) } else { None };
         let total_price_eur = if eur_count > 0 { Some(eur_sum) } else { None };
@@ -206,6 +256,7 @@ impl DeckMetrics {
             avg_price_eur,
             total_price_tix,
             avg_price_tix,
+            mechanical_category_counts,
         }
     }
 }

@@ -51,7 +51,7 @@ pub fn classify_by_heuristics(card: &Card) -> Vec<MechanicalCategory> {
     }
     if RAMP_ADD_MANA.is_match(&oracle) && !cats.contains(&MechanicalCategory::Ramp) {
         // "add {" patterns for mana rocks/dorks not caught above
-        if type_line.contains("artifact") || type_line.contains("land") {
+        if type_line.contains("artifact") {
             cats.push(MechanicalCategory::Ramp);
         }
     }

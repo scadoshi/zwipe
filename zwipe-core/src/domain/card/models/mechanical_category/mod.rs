@@ -73,6 +73,36 @@ impl MechanicalCategory {
         ]
     }
 
+    /// 5-letter lowercase abbreviation for compact chart labels.
+    pub fn to_short_name(&self) -> &'static str {
+        match self {
+            Self::Ramp => "ramp",
+            Self::Draw => "draw",
+            Self::Removal => "remov",
+            Self::Wipe => "wipe",
+            Self::Counterspell => "counr",
+            Self::Protection => "protc",
+            Self::Evasion => "evasn",
+            Self::Finisher => "finsh",
+            Self::Tokens => "tokns",
+            Self::Lifegain => "lifgn",
+            Self::Blink => "blink",
+            Self::Recursion => "recur",
+            Self::Mill => "mill",
+            Self::Burn => "burn",
+            Self::Drain => "drain",
+            Self::Pump => "pump",
+            Self::Anthem => "anthm",
+            Self::Counters => "cntrs",
+            Self::Copy => "copy",
+            Self::Sacrifice => "sacrf",
+            Self::Stax => "stax",
+            Self::Untap => "untap",
+            Self::Tutor => "tutor",
+            Self::GraveyardHate => "grvht",
+        }
+    }
+
     /// Human-readable display name.
     pub fn display_name(&self) -> &'static str {
         match self {

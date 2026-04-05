@@ -15,7 +15,11 @@
 //! }
 //! ```
 
-use crate::domain::card::{Card, scryfall_data::colors::Color};
+use crate::domain::card::{
+    Card,
+    mechanical_category::MechanicalCategory,
+    scryfall_data::colors::Color,
+};
 
 /// Grouping strategies for partitioning cards.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -26,12 +30,15 @@ pub enum GroupByOption {
     Cmc,
     /// Group by color identity (WUBRG, multicolor, colorless).
     Color,
+    /// Group by mechanical category (ramp, draw, removal, etc.).
+    /// Cards can appear in multiple groups.
+    Category,
 }
 
 impl GroupByOption {
     /// Returns all grouping options.
     pub fn all() -> Vec<Self> {
-        vec![Self::CardType, Self::Cmc, Self::Color]
+        vec![Self::CardType, Self::Cmc, Self::Color, Self::Category]
     }
 }
 
@@ -41,6 +48,7 @@ impl std::fmt::Display for GroupByOption {
             Self::CardType => write!(f, "type"),
             Self::Cmc => write!(f, "cmc"),
             Self::Color => write!(f, "color"),
+            Self::Category => write!(f, "category"),
         }
     }
 }
@@ -65,6 +73,11 @@ pub trait GroupCards {
 
 impl GroupCards for Vec<Card> {
     fn group_by(self, option: GroupByOption) -> Vec<CardGroup> {
+        // Category grouping is multi-bucket — a card can appear in multiple groups
+        if option == GroupByOption::Category {
+            return group_by_category(self);
+        }
+
         let labels: Vec<&str> = match option {
             GroupByOption::CardType => vec![
                 "lands",
@@ -86,6 +99,7 @@ impl GroupCards for Vec<Card> {
                 "multicolor",
                 "colorless",
             ],
+            GroupByOption::Category => unreachable!(),
         };
         let mut buckets: Vec<Vec<Card>> = vec![Vec::new(); labels.len()];
         self.into_iter().for_each(|card| {
@@ -109,12 +123,58 @@ impl GroupCards for Vec<Card> {
     }
 }
 
+/// Groups cards by mechanical category. Cards with multiple categories
+/// appear in each matching group (cloned). Cards with no categories
+/// go into "uncategorized".
+fn group_by_category(cards: Vec<Card>) -> Vec<CardGroup> {
+    let all_cats = MechanicalCategory::all();
+    let mut buckets: Vec<Vec<Card>> = vec![Vec::new(); all_cats.len() + 1]; // +1 for uncategorized
+
+    let uncategorized_idx = all_cats.len();
+    for card in cards {
+        if card.card_profile.mechanical_categories.is_empty() {
+            if let Some(bucket) = buckets.get_mut(uncategorized_idx) {
+                bucket.push(card);
+            }
+        } else {
+            let mut placed = false;
+            for cat in &card.card_profile.mechanical_categories {
+                if let Some(idx) = all_cats.iter().position(|c| c == cat)
+                    && let Some(bucket) = buckets.get_mut(idx)
+                {
+                    bucket.push(card.clone());
+                    placed = true;
+                }
+            }
+            if !placed
+                && let Some(bucket) = buckets.get_mut(uncategorized_idx)
+            {
+                bucket.push(card);
+            }
+        }
+    }
+
+    let mut labels: Vec<&str> = all_cats.iter().map(|c| c.display_name()).collect();
+    labels.push("uncategorized");
+
+    labels
+        .into_iter()
+        .zip(buckets)
+        .filter(|(_, cards)| !cards.is_empty())
+        .map(|(label, cards)| CardGroup {
+            label: label.to_lowercase(),
+            cards,
+        })
+        .collect()
+}
+
 /// Returns the bucket index for a card under the given grouping option.
 fn classify(card: &Card, option: GroupByOption) -> usize {
     match option {
         GroupByOption::CardType => classify_card_type(card),
         GroupByOption::Cmc => classify_cmc(card),
         GroupByOption::Color => classify_color(card),
+        GroupByOption::Category => unreachable!("category uses group_by_category"),
     }
 }
 

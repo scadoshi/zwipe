@@ -94,6 +94,9 @@ pub struct CardFilter {
     is_partner: Option<bool>,
     is_background: Option<bool>,
     is_signature_spell: Option<bool>,
+    // mechanical category
+    mechanical_categories_contains_any: Option<Vec<String>>,
+    mechanical_categories_contains_all: Option<Vec<String>>,
     // config
     limit: u32,
     offset: u32,

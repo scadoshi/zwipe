@@ -116,6 +116,9 @@ pub struct CardFilterBuilder {
     is_partner: Option<bool>,
     is_background: Option<bool>,
     is_signature_spell: Option<bool>,
+    // mechanical category
+    mechanical_categories_contains_any: Option<Vec<String>>,
+    mechanical_categories_contains_all: Option<Vec<String>>,
     // config
     limit: u32,
     offset: u32,
@@ -164,6 +167,8 @@ impl Default for CardFilterBuilder {
             is_partner: None,
             is_background: None,
             is_signature_spell: None,
+            mechanical_categories_contains_any: None,
+            mechanical_categories_contains_all: None,
             limit: 100,
             offset: 0,
             order_by: None,
@@ -605,6 +610,8 @@ impl CardFilterBuilder {
             is_partner: self.is_partner,
             is_background: self.is_background,
             is_signature_spell: self.is_signature_spell,
+            mechanical_categories_contains_any: self.mechanical_categories_contains_any.clone(),
+            mechanical_categories_contains_all: self.mechanical_categories_contains_all.clone(),
             limit: self.limit,
             offset: self.offset,
             order_by: self.order_by,

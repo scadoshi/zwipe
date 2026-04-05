@@ -1,4 +1,4 @@
-use super::components::deck_charts::{abbreviate_color, abbreviate_type, DeckCharts, ManaBalanceRow};
+use super::components::deck_charts::{DeckCharts, ManaBalanceRow};
 use super::components::deck_profile::DeckProfileSection;
 use super::components::deck_stats::DeckStats;
 use super::components::deck_warnings::DeckWarnings;
@@ -213,7 +213,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 } else {
                     0
                 };
-                (abbreviate_type(label), *count, pct)
+                (DeckMetrics::abbreviate_type(label), *count, pct)
             })
             .collect()
     });
@@ -228,9 +228,29 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 } else {
                     0
                 };
-                (abbreviate_color(label), *count, pct)
+                (DeckMetrics::abbreviate_color(label), *count, pct)
             })
             .collect()
+    });
+
+    let category_bars: Option<Vec<(&str, usize, u32)>> = metrics.as_ref().and_then(|m| {
+        if m.mechanical_category_counts.is_empty() {
+            return None;
+        }
+        let max_count = m.mechanical_category_counts.iter().map(|(_, c)| *c).max().unwrap_or(0);
+        Some(
+            m.mechanical_category_counts
+                .iter()
+                .map(|(label, count)| {
+                    let pct = if max_count > 0 && *count > 0 {
+                        ((count * 100) / max_count).max(4) as u32
+                    } else {
+                        0
+                    };
+                    (*label, *count, pct)
+                })
+                .collect(),
+        )
     });
 
     let mana_balance_rows = metrics.as_ref().map(|m| -> Vec<_> {
@@ -287,6 +307,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     DeckCharts {
                                         mana_curve_bars: *mana_curve_bars,
                                         type_bars: type_bars.clone(),
+                                        category_bars: category_bars.clone(),
                                         color_bars: color_bars.clone(),
                                         mana_balance_rows: mana_balance_rows,
                                     }

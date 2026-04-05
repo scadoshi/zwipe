@@ -1,5 +1,6 @@
 use super::components::card_row::CardRow;
 use super::components::image_preview::ImagePreview;
+use super::components::printing_sheet::PrintingSheet;
 use crate::{
     inbound::{
         components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
@@ -93,6 +94,9 @@ pub fn View(deck_id: Uuid) -> Element {
 
     // Card image preview — stores the image URL of the card to preview (None = closed)
     let preview_image_url: Signal<Option<String>> = use_signal(|| None);
+    // Printing sheet state
+    let mut printing_sheet_open: Signal<bool> = use_signal(|| false);
+    let mut printing_sheet_card: Signal<Option<Card>> = use_signal(|| None);
     // Controls the dismiss animation before clearing the URL
     let preview_dismissing: Signal<bool> = use_signal(|| false);
 
@@ -542,6 +546,10 @@ pub fn View(deck_id: Uuid) -> Element {
                                             on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land),
                                             on_maybeboard_toggle: move |_| move_to_deck(card_id),
                                             maybeboard_label: "to deck".to_string(),
+                                            on_printing: move |card: Card| {
+                                                printing_sheet_card.set(Some(card));
+                                                printing_sheet_open.set(true);
+                                            },
                                         }
                                     }
                                 }
@@ -638,6 +646,10 @@ pub fn View(deck_id: Uuid) -> Element {
                                             on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land),
                                             on_maybeboard_toggle: move |_| move_to_maybeboard(card_id),
                                             maybeboard_label: "to maybe".to_string(),
+                                            on_printing: move |card: Card| {
+                                                printing_sheet_card.set(Some(card));
+                                                printing_sheet_open.set(true);
+                                            },
                                         }
                                     }
                                 }
@@ -706,6 +718,32 @@ pub fn View(deck_id: Uuid) -> Element {
             }
 
             ImagePreview { url: preview_image_url, dismissing: preview_dismissing }
+
+            if let Some(card) = printing_sheet_card() {
+                PrintingSheet {
+                    card: card.clone(),
+                    deck_id: deck_id,
+                    open: printing_sheet_open,
+                    on_printing_changed: move |new_card: Card| {
+                        let old_id = card.scryfall_data.id;
+                        let new_id = new_card.scryfall_data.id;
+                        // Swap the card in deck_entries
+                        if let Some(entry) = deck_entries
+                            .write()
+                            .iter_mut()
+                            .find(|e| e.card.scryfall_data.id == old_id)
+                        {
+                            entry.card = new_card.clone();
+                            entry.deck_card.scryfall_data_id = new_id;
+                        }
+                        // Update the printing sheet card to reflect the change
+                        printing_sheet_card.set(Some(new_card));
+                        // Trigger re-filter to update the display
+                        let current = *filter_reset_counter.peek();
+                        filter_reset_counter.set(current + 1);
+                    },
+                }
+            }
             }
         }
     }

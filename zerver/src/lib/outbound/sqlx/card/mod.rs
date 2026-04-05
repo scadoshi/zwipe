@@ -539,6 +539,20 @@ impl CardRepository for MyPostgres {
             );
         }
 
+        // mechanical category filters
+        if let Some(categories) = request.mechanical_categories_contains_any() {
+            sep.push("(card_profiles.mechanical_categories ?| ");
+            sep.push_bind_unseparated(categories.to_vec());
+            sep.push_unseparated(")");
+        }
+
+        if let Some(categories) = request.mechanical_categories_contains_all() {
+            let json = serde_json::to_value(categories).unwrap_or_default();
+            sep.push("(card_profiles.mechanical_categories @> ");
+            sep.push_bind_unseparated(json);
+            sep.push_unseparated(")");
+        }
+
         // Filter out NULLs for sorted field
         if let Some(order_by) = request.order_by() {
             let null_filter = match order_by {
@@ -929,9 +943,23 @@ impl CardRepository for MyPostgres {
     }
 
     async fn clear_all_categories(&self) -> Result<(), anyhow::Error> {
-        sqlx::query!("UPDATE card_profiles SET mechanical_categories = '[]'::jsonb")
+        // Batch clear to avoid a single slow UPDATE on 100k+ rows
+        loop {
+            let result = sqlx::query!(
+                "UPDATE card_profiles SET mechanical_categories = '[]'::jsonb
+                 WHERE scryfall_data_id IN (
+                     SELECT scryfall_data_id FROM card_profiles
+                     WHERE mechanical_categories != '[]'::jsonb
+                     LIMIT 5000
+                 )"
+            )
             .execute(&self.pool)
             .await?;
+
+            if result.rows_affected() == 0 {
+                break;
+            }
+        }
         Ok(())
     }
 }
