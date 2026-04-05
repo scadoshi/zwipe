@@ -8,7 +8,7 @@ pub struct InvalidColor;
 
 /// Magic: The Gathering's five colors.
 #[allow(missing_docs)]
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Color {
     White,
     Blue,

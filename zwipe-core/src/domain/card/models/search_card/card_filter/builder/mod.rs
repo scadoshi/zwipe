@@ -196,12 +196,14 @@ impl CardFilterBuilder {
 
     /// Like `is_empty()` but ignores auto-populated deck-context filters.
     ///
-    /// Only `legalities_contains_any` is truly auto-populated from the deck's format.
+    /// `legalities_contains_any` and `color_identity_within` are auto-populated
+    /// from the deck's format and commander color identity on the add screen.
     /// Commander eligibility, partner, background, and signature spell filters are
     /// user-set via the filter UI and should count as non-empty.
     pub fn is_empty_ignoring_deck_context(&self) -> bool {
         let mut test = self.clone();
         test.unset_legalities_contains_any();
+        test.unset_color_identity_within();
         test.is_empty()
     }
 
