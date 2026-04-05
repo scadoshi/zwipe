@@ -351,6 +351,135 @@
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+.theme-monokai-dark {
+    --bg-primary: #272822;
+    --bg-overlay: rgba(0, 0, 0, 0.6);
+    --text-primary: #dfded8;
+    --text-muted: #9b9a91;
+    --text-subtle: #b5b2a8;
+    --border-primary: #605e4f;
+    --border-secondary: #3a3937;
+    --border-muted: #4b4943;
+    --color-error: #f92672;
+    --color-success: #a6e22e;
+    --color-warning: #fd971f;
+    --border-error: #d90652;
+    --border-success: #86c20e;
+    --border-warning: #dd7700;
+    --accent-primary: #66d9ef;
+    --accent-secondary: #f92672;
+    --accent-tertiary: #e6db74;
+    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+.theme-monokai-light {
+    --bg-primary: #fdf9f3;
+    --bg-overlay: rgba(0, 0, 0, 0.3);
+    --text-primary: #3b3930;
+    --text-muted: #6a6960;
+    --text-subtle: #59564b;
+    --border-primary: #ada99a;
+    --border-secondary: #dddcdb;
+    --border-muted: #c6c5bf;
+    --color-error: #c4105a;
+    --color-success: #6a9a10;
+    --color-warning: #c06a00;
+    --border-error: #a40040;
+    --border-success: #4a7a00;
+    --border-warning: #a05000;
+    --accent-primary: #2a8a9a;
+    --accent-secondary: #c4105a;
+    --accent-tertiary: #b09a20;
+    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.theme-one-dark-dark {
+    --bg-primary: #282c34;
+    --bg-overlay: rgba(0, 0, 0, 0.6);
+    --text-primary: #e3e4e8;
+    --text-muted: #9b9fa5;
+    --text-subtle: #b4b8bf;
+    --border-primary: #5a616f;
+    --border-secondary: #3c3e40;
+    --border-muted: #4b4d52;
+    --color-error: #e06c75;
+    --color-success: #98c379;
+    --color-warning: #e5c07b;
+    --border-error: #c04c55;
+    --border-success: #78a359;
+    --border-warning: #c5a05b;
+    --accent-primary: #61afef;
+    --accent-secondary: #c678dd;
+    --accent-tertiary: #e5c07b;
+    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+.theme-one-dark-light {
+    --bg-primary: #fafafa;
+    --bg-overlay: rgba(0, 0, 0, 0.3);
+    --text-primary: #353942;
+    --text-muted: #666971;
+    --text-subtle: #525760;
+    --border-primary: #a4a9b4;
+    --border-secondary: #dddddf;
+    --border-muted: #c4c5c9;
+    --color-error: #ca1243;
+    --color-success: #50a14f;
+    --color-warning: #c18401;
+    --border-error: #aa0030;
+    --border-success: #30812f;
+    --border-warning: #a16400;
+    --accent-primary: #4078f2;
+    --accent-secondary: #a626a4;
+    --accent-tertiary: #c18401;
+    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.theme-solarized-dark {
+    --bg-primary: #002b36;
+    --bg-overlay: rgba(0, 0, 0, 0.6);
+    --text-primary: #d7dedf;
+    --text-muted: #909a9d;
+    --text-subtle: #a7b3b6;
+    --border-primary: #4a6064;
+    --border-secondary: #353a3b;
+    --border-muted: #414a4c;
+    --color-error: #dc322f;
+    --color-success: #859900;
+    --color-warning: #b58900;
+    --border-error: #bc120f;
+    --border-success: #657900;
+    --border-warning: #956900;
+    --accent-primary: #268bd2;
+    --accent-secondary: #d33682;
+    --accent-tertiary: #b58900;
+    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+.theme-solarized-light {
+    --bg-primary: #fdf6e3;
+    --bg-overlay: rgba(0, 0, 0, 0.3);
+    --text-primary: #3b382c;
+    --text-muted: #6a675c;
+    --text-subtle: #595446;
+    --border-primary: #aca696;
+    --border-secondary: #dadad7;
+    --border-muted: #c4c3bd;
+    --color-error: #dc322f;
+    --color-success: #859900;
+    --color-warning: #b58900;
+    --border-error: #bc120f;
+    --border-success: #657900;
+    --border-warning: #956900;
+    --accent-primary: #268bd2;
+    --accent-secondary: #d33682;
+    --accent-tertiary: #b58900;
+    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
 /* ==================
   colorblind accessible
  ==================== */
@@ -514,7 +643,7 @@
     --border-warning: #8a7020;
 
     /* Accents */
-    --accent-primary: #e8a317;
+    --accent-primary: #c49535;
     --accent-secondary: #00d4ff;
     --accent-tertiary: #ffd400;
 
