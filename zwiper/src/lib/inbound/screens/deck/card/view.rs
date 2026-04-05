@@ -68,8 +68,14 @@ pub fn View(deck_id: Uuid) -> Element {
     let mut expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
     // Commander is always pinned — never part of groupable entries
     let mut commander_card: Signal<Option<Card>> = use_signal(|| None);
+    // Signature spell pinned alongside commander (Oathbreaker only)
+    let mut signature_spell_card: Signal<Option<Card>> = use_signal(|| None);
+    // Whether the format is Oathbreaker (for label swapping)
+    let mut is_oathbreaker: Signal<bool> = use_signal(|| false);
     // Commander filtered by the active filter (None = filtered out or no commander)
     let mut displayed_commander: Signal<Option<Card>> = use_signal(|| None);
+    // Signature spell filtered by the active filter
+    let mut displayed_signature_spell: Signal<Option<Card>> = use_signal(|| None);
     // Toggle to show/hide land cards (default: hidden)
     let mut show_lands: Signal<bool> = use_signal(|| false);
     // Toggle to show/hide tokens at the top of the list
@@ -112,20 +118,34 @@ pub fn View(deck_id: Uuid) -> Element {
                 }
             };
 
-            // Resolve commander: pull from entries if present, otherwise fetch separately.
-            // Either way remove it from the groupable list.
-            if let Ok(profile) = client().get_deck_profile(deck_id, &session).await
-                && let Some(commander_id) = profile.commander_id
-            {
-                let cmd = if let Some(idx) = entries
-                    .iter()
-                    .position(|e| e.card.scryfall_data.id == commander_id)
-                {
-                    Some(entries.remove(idx).card)
-                } else {
-                    client().get_card(commander_id, &session).await.ok()
-                };
-                commander_card.set(cmd);
+            // Resolve commander and signature spell from profile.
+            // Pull from entries if present, otherwise fetch separately.
+            if let Ok(profile) = client().get_deck_profile(deck_id, &session).await {
+                is_oathbreaker.set(profile.format.as_ref().is_some_and(|f| f.has_signature_spell()));
+
+                if let Some(commander_id) = profile.commander_id {
+                    let cmd = if let Some(idx) = entries
+                        .iter()
+                        .position(|e| e.card.scryfall_data.id == commander_id)
+                    {
+                        Some(entries.remove(idx).card)
+                    } else {
+                        client().get_card(commander_id, &session).await.ok()
+                    };
+                    commander_card.set(cmd);
+                }
+
+                if let Some(spell_id) = profile.signature_spell_id {
+                    let spell = if let Some(idx) = entries
+                        .iter()
+                        .position(|e| e.card.scryfall_data.id == spell_id)
+                    {
+                        Some(entries.remove(idx).card)
+                    } else {
+                        client().get_card(spell_id, &session).await.ok()
+                    };
+                    signature_spell_card.set(spell);
+                }
             }
 
             // Update DeckCards context for filter sheet (all cards including maybeboard)
@@ -182,9 +202,10 @@ pub fn View(deck_id: Uuid) -> Element {
         let group_option = *group_by_option.peek();
         let lands_visible = *show_lands.peek();
         let cmd = commander_card.peek().clone();
+        let spell = signature_spell_card.peek().clone();
 
-        let (mut filtered, new_displayed_commander) = if builder.is_empty() {
-            (active_cards, cmd)
+        let (mut filtered, new_displayed_commander, new_displayed_spell) = if builder.is_empty() {
+            (active_cards, cmd, spell)
         } else {
             let mut b = builder.clone();
             b.set_limit(10_000);
@@ -194,7 +215,9 @@ pub fn View(deck_id: Uuid) -> Element {
                     let filtered = active_cards.filter_by(&filter);
                     let cmd_visible =
                         cmd.filter(|c| !vec![c.clone()].filter_by(&filter).is_empty());
-                    (filtered, cmd_visible)
+                    let spell_visible =
+                        spell.filter(|c| !vec![c.clone()].filter_by(&filter).is_empty());
+                    (filtered, cmd_visible, spell_visible)
                 }
                 Err(_) => {
                     let fallback: Vec<Card> = deck_entries
@@ -203,7 +226,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         .filter(|e| !e.deck_card.maybeboard)
                         .map(|e| e.card.clone())
                         .collect();
-                    (fallback, cmd)
+                    (fallback, cmd, spell)
                 }
             }
         };
@@ -219,6 +242,7 @@ pub fn View(deck_id: Uuid) -> Element {
         let groups = filtered.group_by(group_option);
         displayed_groups.set(groups);
         displayed_commander.set(new_displayed_commander);
+        displayed_signature_spell.set(new_displayed_spell);
         expanded_card.set(None);
     });
 
@@ -477,12 +501,28 @@ pub fn View(deck_id: Uuid) -> Element {
                         }
                     }
 
-                    // Pinned commander group
+                    // Pinned commander/oathbreaker group
                     if let Some(cmd) = displayed_commander() {
                         div { class: "card-group row-enter",
-                            div { class: "card-group-header", "commander" }
+                            div { class: "card-group-header",
+                                if is_oathbreaker() { "oathbreaker" } else { "commander" }
+                            }
                             CardRow {
                                 card: cmd,
+                                qty: 1,
+                                expanded_card,
+                                preview_image_url,
+                                preview_dismissing,
+                            }
+                        }
+                    }
+
+                    // Pinned signature spell (Oathbreaker only)
+                    if let Some(spell) = displayed_signature_spell() {
+                        div { class: "card-group row-enter",
+                            div { class: "card-group-header", "signature spell" }
+                            CardRow {
+                                card: spell,
                                 qty: 1,
                                 expanded_card,
                                 preview_image_url,

@@ -29,6 +29,12 @@ pub fn CreateDeck() -> Element {
     let selected_format: Signal<Option<Format>> = use_signal(|| None);
     let commander: Signal<Option<Card>> = use_signal(|| None);
     let commander_display = use_signal(String::new);
+    let partner_commander: Signal<Option<Card>> = use_signal(|| None);
+    let partner_commander_display = use_signal(String::new);
+    let background: Signal<Option<Card>> = use_signal(|| None);
+    let background_display = use_signal(String::new);
+    let signature_spell: Signal<Option<Card>> = use_signal(|| None);
+    let signature_spell_display = use_signal(String::new);
 
     // save state
     let toast = use_toast();
@@ -49,6 +55,9 @@ pub fn CreateDeck() -> Element {
             let format_str = selected_format().map(|f| f.to_legality_key().to_string());
             let request = HttpCreateDeckProfile::builder(&deck_name())
                 .commander_id(commander_id)
+                .partner_commander_id(partner_commander().map(|c| c.scryfall_data.id))
+                .background_id(background().map(|c| c.scryfall_data.id))
+                .signature_spell_id(signature_spell().map(|c| c.scryfall_data.id))
                 .format(format_str)
                 .build();
 
@@ -82,6 +91,12 @@ pub fn CreateDeck() -> Element {
                             selected_format,
                             commander,
                             commander_display,
+                            partner_commander,
+                            partner_commander_display,
+                            background,
+                            background_display,
+                            signature_spell,
+                            signature_spell_display,
                         }
                     }
                 }

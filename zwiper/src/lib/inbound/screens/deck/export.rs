@@ -43,6 +43,24 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
         let deck = deck_resource()?.ok()?;
         let mut lines: Vec<String> = Vec::new();
 
+        // Command zone cards (stored on profile, not in entries)
+        let cmd_names: Vec<&str> = [
+            deck.deck_profile.commander_name.as_deref(),
+            deck.deck_profile.partner_commander_name.as_deref(),
+            deck.deck_profile.background_name.as_deref(),
+            deck.deck_profile.signature_spell_name.as_deref(),
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+        if !cmd_names.is_empty() {
+            lines.push("// Commander".to_string());
+            for name in cmd_names {
+                lines.push(format!("1 {name}"));
+            }
+            lines.push(String::new());
+        }
+
         // Active deck cards
         for entry in deck.entries.iter().filter(|e| !e.deck_card.maybeboard) {
             lines.push(format!("{} {}", *entry.deck_card.quantity, entry.card.scryfall_data.name));

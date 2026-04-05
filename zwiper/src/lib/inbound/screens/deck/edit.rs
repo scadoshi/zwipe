@@ -33,19 +33,31 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
 
-    // original defaults and update intake
+    // current values
     let mut deck_name: Signal<String> = use_signal(String::new);
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
     let mut commander_display = use_signal(String::new);
     let mut selected_format: Signal<Option<Format>> = use_signal(|| None);
+    let mut partner_commander: Signal<Option<Card>> = use_signal(|| None);
+    let mut partner_commander_display = use_signal(String::new);
+    let mut background: Signal<Option<Card>> = use_signal(|| None);
+    let mut background_display = use_signal(String::new);
+    let mut signature_spell: Signal<Option<Card>> = use_signal(|| None);
+    let mut signature_spell_display = use_signal(String::new);
 
-    // original
+    // original values (for change detection)
     let mut original_deck_name: Signal<String> = use_signal(String::new);
     let mut original_commander: Signal<Option<Card>> = use_signal(|| None);
     let mut original_format: Signal<Option<Format>> = use_signal(|| None);
+    let mut original_partner: Signal<Option<Card>> = use_signal(|| None);
+    let mut original_background: Signal<Option<Card>> = use_signal(|| None);
+    let mut original_signature_spell: Signal<Option<Card>> = use_signal(|| None);
 
     let toast = use_toast();
 
+    // ========================================
+    // Fetch deck profile
+    // ========================================
     let original_deck_resource: Resource<Result<Deck, ApiError>> =
         use_resource(move || async move {
             session.upkeep(client);
@@ -66,6 +78,10 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         }
         None => (),
     });
+
+    // ========================================
+    // Fetch commander card
+    // ========================================
     let original_commander_resource: Resource<Result<Option<Card>, ApiError>> =
         use_resource(move || async move {
             let Some(Ok(Deck {
@@ -100,6 +116,111 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         }
     });
 
+    // ========================================
+    // Fetch partner commander card
+    // ========================================
+    let original_partner_resource: Resource<Result<Option<Card>, ApiError>> =
+        use_resource(move || async move {
+            let Some(Ok(Deck {
+                deck_profile:
+                    DeckProfile {
+                        partner_commander_id: Some(id),
+                        ..
+                    },
+                ..
+            })) = original_deck_resource()
+            else {
+                return Ok(None);
+            };
+            session.upkeep(client);
+            let Some(session) = session() else {
+                return Err(ApiError::Unauthorized("session expired".to_string()));
+            };
+            client().get_card(id, &session).await.map(Some)
+        });
+    use_effect(move || match original_partner_resource() {
+        Some(Ok(Some(original))) => {
+            original_partner.set(Some(original.clone()));
+            partner_commander.set(Some(original.clone()));
+            partner_commander_display.set(original.scryfall_data.name.to_lowercase());
+        }
+        Some(Ok(None)) | None => (),
+        Some(Err(e)) => {
+            toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+        }
+    });
+
+    // ========================================
+    // Fetch background card
+    // ========================================
+    let original_background_resource: Resource<Result<Option<Card>, ApiError>> =
+        use_resource(move || async move {
+            let Some(Ok(Deck {
+                deck_profile:
+                    DeckProfile {
+                        background_id: Some(id),
+                        ..
+                    },
+                ..
+            })) = original_deck_resource()
+            else {
+                return Ok(None);
+            };
+            session.upkeep(client);
+            let Some(session) = session() else {
+                return Err(ApiError::Unauthorized("session expired".to_string()));
+            };
+            client().get_card(id, &session).await.map(Some)
+        });
+    use_effect(move || match original_background_resource() {
+        Some(Ok(Some(original))) => {
+            original_background.set(Some(original.clone()));
+            background.set(Some(original.clone()));
+            background_display.set(original.scryfall_data.name.to_lowercase());
+        }
+        Some(Ok(None)) | None => (),
+        Some(Err(e)) => {
+            toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+        }
+    });
+
+    // ========================================
+    // Fetch signature spell card
+    // ========================================
+    let original_spell_resource: Resource<Result<Option<Card>, ApiError>> =
+        use_resource(move || async move {
+            let Some(Ok(Deck {
+                deck_profile:
+                    DeckProfile {
+                        signature_spell_id: Some(id),
+                        ..
+                    },
+                ..
+            })) = original_deck_resource()
+            else {
+                return Ok(None);
+            };
+            session.upkeep(client);
+            let Some(session) = session() else {
+                return Err(ApiError::Unauthorized("session expired".to_string()));
+            };
+            client().get_card(id, &session).await.map(Some)
+        });
+    use_effect(move || match original_spell_resource() {
+        Some(Ok(Some(original))) => {
+            original_signature_spell.set(Some(original.clone()));
+            signature_spell.set(Some(original.clone()));
+            signature_spell_display.set(original.scryfall_data.name.to_lowercase());
+        }
+        Some(Ok(None)) | None => (),
+        Some(Err(e)) => {
+            toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+        }
+    });
+
+    // ========================================
+    // Change tracking
+    // ========================================
     let deck_name_update = use_memo(move || {
         if deck_name() != original_deck_name() {
             Some(deck_name())
@@ -114,6 +235,27 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             Opdate::Unchanged
         }
     });
+    let partner_id_update = use_memo(move || {
+        if partner_commander() != original_partner() {
+            Opdate::Set(partner_commander().map(|c| c.scryfall_data.id))
+        } else {
+            Opdate::Unchanged
+        }
+    });
+    let background_id_update = use_memo(move || {
+        if background() != original_background() {
+            Opdate::Set(background().map(|c| c.scryfall_data.id))
+        } else {
+            Opdate::Unchanged
+        }
+    });
+    let signature_spell_id_update = use_memo(move || {
+        if signature_spell() != original_signature_spell() {
+            Opdate::Set(signature_spell().map(|c| c.scryfall_data.id))
+        } else {
+            Opdate::Unchanged
+        }
+    });
     let format_update = use_memo(move || {
         if selected_format() != original_format() {
             Opdate::Set(selected_format().map(|f| f.to_legality_key().to_string()))
@@ -124,6 +266,9 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let has_made_changes = use_memo(move || {
         deck_name_update().is_some()
             || commander_id_update().is_changed()
+            || partner_id_update().is_changed()
+            || background_id_update().is_changed()
+            || signature_spell_id_update().is_changed()
             || format_update().is_changed()
     });
 
@@ -150,6 +295,9 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             let request = HttpUpdateDeckProfile::builder()
                 .name(deck_name_update().as_deref())
                 .commander_id(commander_id_update())
+                .partner_commander_id(partner_id_update())
+                .background_id(background_id_update())
+                .signature_spell_id(signature_spell_id_update())
                 .format(format_update())
                 .build();
 
@@ -190,6 +338,12 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                     selected_format,
                                     commander,
                                     commander_display,
+                                    partner_commander,
+                                    partner_commander_display,
+                                    background,
+                                    background_display,
+                                    signature_spell,
+                                    signature_spell_display,
                                 }
 
                             }

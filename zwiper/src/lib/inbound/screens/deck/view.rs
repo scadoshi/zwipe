@@ -156,13 +156,30 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             m
         });
 
+    let command_zone_names: Vec<String> = deck_profile_resource()
+        .and_then(|r| r.ok())
+        .map(|p| {
+            [
+                p.commander_name.as_deref(),
+                p.partner_commander_name.as_deref(),
+                p.background_name.as_deref(),
+                p.signature_spell_name.as_deref(),
+            ]
+            .into_iter()
+            .flatten()
+            .map(|s| s.to_string())
+            .collect()
+        })
+        .unwrap_or_default();
+    let cz_refs: Vec<&str> = command_zone_names.iter().map(|s| s.as_str()).collect();
+
     let tcg_url = deck_data.as_ref().map(|(entries, _)| {
         let active: Vec<_> = entries
             .iter()
             .filter(|e| !e.deck_card.maybeboard)
             .cloned()
             .collect();
-        buy_links::tcgplayer_url(&active)
+        buy_links::tcgplayer_url(&active, &cz_refs)
     });
     let ck_url = deck_data.as_ref().map(|(entries, _)| {
         let active: Vec<_> = entries
@@ -170,7 +187,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             .filter(|e| !e.deck_card.maybeboard)
             .cloned()
             .collect();
-        buy_links::cardkingdom_url(&active)
+        buy_links::cardkingdom_url(&active, &cz_refs)
     });
 
     let mana_curve_bars: Option<[(usize, u32); 7]> = metrics.as_ref().map(|m| {
@@ -324,8 +341,13 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                             spawn(async move {
                                                 match client().update_deck_profile(deck_id, &request, &session).await {
                                                     Ok(_) => {
+                                                        let label = if deck_profile_resource().is_some_and(|r| r.as_ref().ok().is_some_and(|p| p.format.as_ref().is_some_and(|f| f.has_signature_spell()))) {
+                                                            "oathbreaker"
+                                                        } else {
+                                                            "commander"
+                                                        };
                                                         toast.info(
-                                                            "commander cleared".to_string(),
+                                                            format!("{label} cleared"),
                                                             ToastOptions::default().duration(Duration::from_millis(1500)),
                                                         );
                                                         commander.set(None);
