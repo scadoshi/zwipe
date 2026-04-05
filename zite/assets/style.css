@@ -324,6 +324,7 @@ code {
 
 .store-btn {
     display: inline-block;
+    color: var(--accent-primary);
     border: 1px solid var(--accent-primary);
     padding: 0.625rem 1.75rem;
     border-radius: 0.375rem;
@@ -331,12 +332,12 @@ code {
     font-size: 0.9rem;
     letter-spacing: 0.06em;
     transition:
-        background-color 0.15s,
+        border-color 0.15s,
         color 0.15s;
 }
 
 .store-btn:hover {
-    color: var(--accent-primary);
+    color: var(--text-primary);
     border-color: var(--text-primary);
 }
 
