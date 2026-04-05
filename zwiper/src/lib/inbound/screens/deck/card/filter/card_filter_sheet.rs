@@ -108,19 +108,7 @@ pub(crate) fn CardFilterSheet(
             class: if open() { "bottom-sheet show" } else { "bottom-sheet" },
 
             div { class: "modal-header",
-                button {
-                    class: "btn btn-sm",
-                    onclick: move |_| {
-                        if validate_before_apply && filter_builder.read().is_empty_ignoring_deck_context() {
-                            toast.warning("filter is empty".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
-                        } else {
-                            filter_reset_counter.set(filter_reset_counter() + 1);
-                        }
-                        accordion_key.set(accordion_key() + 1);
-                        open.set(false);
-                    },
-                    "apply"
-                }
+                span { class: "text-muted", style: "font-size: 1rem;", "filter" }
             }
 
             div { class: "modal-content",
@@ -447,9 +435,22 @@ pub(crate) fn CardFilterSheet(
                 }
             }
 
-            div { class: "modal-footer",
+            div { class: "util-bar",
                 button {
-                    class: "btn btn-sm",
+                    class: "util-btn",
+                    onclick: move |_| {
+                        if validate_before_apply && filter_builder.read().is_empty_ignoring_deck_context() {
+                            toast.warning("filter is empty".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                        } else {
+                            filter_reset_counter.set(filter_reset_counter() + 1);
+                        }
+                        accordion_key.set(accordion_key() + 1);
+                        open.set(false);
+                    },
+                    "apply"
+                }
+                button {
+                    class: "util-btn",
                     onclick: move |_| {
                         if let Some(handler) = &on_clear {
                             handler.call(());

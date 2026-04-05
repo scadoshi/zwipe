@@ -13,7 +13,7 @@ pub fn BottomSheet(open: Signal<bool>, title: String, children: Element) -> Elem
         div {
             class: if open() { "bottom-sheet show" } else { "bottom-sheet" },
             div { class: "modal-header",
-                span { style: "font-size: 1rem;", "{title}" }
+                span { class: "text-muted", style: "font-size: 1rem;", "{title}" }
             }
             div { class: "modal-content",
                 div { class: "flex-col",
@@ -21,9 +21,9 @@ pub fn BottomSheet(open: Signal<bool>, title: String, children: Element) -> Elem
                     {children}
                 }
             }
-            div { class: "modal-footer",
+            div { class: "util-bar",
                 button {
-                    class: "btn btn-sm",
+                    class: "util-btn",
                     onclick: move |_| open.set(false),
                     "close"
                 }

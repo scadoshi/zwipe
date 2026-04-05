@@ -1122,6 +1122,61 @@ body {
     justify-content: center;
 }
 
+/* ==============================
+  specific - carousel
+ ================================ */
+
+.carousel-viewport {
+    overflow: hidden;
+    width: 100%;
+    touch-action: pan-y pinch-zoom;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.carousel-strip {
+    display: flex;
+    will-change: transform;
+}
+
+.carousel-page {
+    flex: 0 0 100%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.carousel-card-image {
+    display: block;
+    max-width: calc(100% - 2rem);
+    max-height: 45vh;
+    width: auto;
+    height: auto;
+    border-radius: 1rem;
+    margin: 0.75rem auto;
+}
+
+.carousel-dots {
+    display: flex;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0;
+}
+
+.carousel-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--color-text);
+    opacity: 0.3;
+    transition: opacity 0.2s ease;
+}
+
+.carousel-dot.active {
+    opacity: 1;
+}
+
+
 /* ===============
   specific - logo
  ================= */
@@ -1616,12 +1671,17 @@ body {
     transform: translateY(0);
 }
 
+.bottom-sheet .util-bar {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+}
+
 .modal-header {
     padding: 1.5rem;
     border-bottom: 1px solid var(--border-secondary);
     display: flex;
     justify-content: center;
     align-items: center;
+    gap: 0.75rem;
     flex-shrink: 0;
 }
 
@@ -1632,6 +1692,11 @@ body {
     display: flex;
     flex-direction: column;
     align-items: stretch;
+}
+
+.modal-content.no-pad-x {
+    padding-left: 0;
+    padding-right: 0;
 }
 
 .modal-content .btn {
