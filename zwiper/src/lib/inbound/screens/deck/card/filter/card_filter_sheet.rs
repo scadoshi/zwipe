@@ -76,7 +76,11 @@ pub(crate) fn CardFilterSheet(
                 || fb.oversized() != def.oversized()
                 || fb.promo() != def.promo()
                 || fb.content_warning() != def.content_warning(),
-            fb.legalities_contains_any().is_some() || fb.is_commander_in_format().is_some(),
+            fb.legalities_contains_any().is_some()
+                || fb.is_commander_in_format().is_some()
+                || fb.is_partner().is_some()
+                || fb.is_background().is_some()
+                || fb.is_signature_spell().is_some(),
         )
     } else {
         (false, false, false, false, false, false, false, false, false, false, false, false)
@@ -129,7 +133,17 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             "name"
-                            if name_active { span { class: "filter-dot" } }
+                            if name_active {
+                                button {
+                                    class: "clear-btn",
+                                    onclick: move |evt| {
+                                        evt.stop_propagation();
+                                        filter_builder.write().unset_name_contains();
+                                        filter_reset_counter.set(filter_reset_counter() + 1);
+                                    },
+                                    "\u{00d7}"
+                                }
+                            }
                         }
                         AccordionContent { Name {} }
                     }
@@ -140,7 +154,22 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             "oracle text"
-                            if oracle_active { span { class: "filter-dot" } }
+                            if oracle_active {
+                                button {
+                                    class: "clear-btn",
+                                    onclick: move |evt| {
+                                        evt.stop_propagation();
+                                        let fb = &mut *filter_builder.write();
+                                        fb.unset_oracle_text_contains();
+                                        fb.unset_oracle_text_contains_any();
+                                        fb.unset_oracle_text_contains_all();
+                                        fb.unset_keywords_contains_any();
+                                        fb.unset_keywords_contains_all();
+                                        filter_reset_counter.set(filter_reset_counter() + 1);
+                                    },
+                                    "\u{00d7}"
+                                }
+                            }
                         }
                         AccordionContent { OracleText {} }
                     }
@@ -151,7 +180,22 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             "types"
-                            if types_active { span { class: "filter-dot" } }
+                            if types_active {
+                                button {
+                                    class: "clear-btn",
+                                    onclick: move |evt| {
+                                        evt.stop_propagation();
+                                        let fb = &mut *filter_builder.write();
+                                        fb.unset_type_line_contains();
+                                        fb.unset_type_line_contains_any();
+                                        fb.unset_type_line_contains_all();
+                                        fb.unset_card_type_contains_any();
+                                        fb.unset_card_type_contains_all();
+                                        filter_reset_counter.set(filter_reset_counter() + 1);
+                                    },
+                                    "\u{00d7}"
+                                }
+                            }
                         }
                         AccordionContent { Types {} }
                     }
@@ -162,7 +206,23 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             "mana"
-                            if mana_active { span { class: "filter-dot" } }
+                            if mana_active {
+                                button {
+                                    class: "clear-btn",
+                                    onclick: move |evt| {
+                                        evt.stop_propagation();
+                                        let fb = &mut *filter_builder.write();
+                                        fb.unset_cmc_equals();
+                                        fb.unset_cmc_range();
+                                        fb.unset_color_identity_equals();
+                                        fb.unset_color_identity_within();
+                                        fb.unset_produced_mana_contains_any();
+                                        fb.unset_produced_mana_contains_all();
+                                        filter_reset_counter.set(filter_reset_counter() + 1);
+                                    },
+                                    "\u{00d7}"
+                                }
+                            }
                         }
                         AccordionContent { Mana {} }
                     }
@@ -173,7 +233,21 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             "combat"
-                            if combat_active { span { class: "filter-dot" } }
+                            if combat_active {
+                                button {
+                                    class: "clear-btn",
+                                    onclick: move |evt| {
+                                        evt.stop_propagation();
+                                        let fb = &mut *filter_builder.write();
+                                        fb.unset_power_equals();
+                                        fb.unset_power_range();
+                                        fb.unset_toughness_equals();
+                                        fb.unset_toughness_range();
+                                        filter_reset_counter.set(filter_reset_counter() + 1);
+                                    },
+                                    "\u{00d7}"
+                                }
+                            }
                         }
                         AccordionContent { Combat {} }
                     }
@@ -184,7 +258,19 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             "flavor text"
-                            if flavor_active { span { class: "filter-dot" } }
+                            if flavor_active {
+                                button {
+                                    class: "clear-btn",
+                                    onclick: move |evt| {
+                                        evt.stop_propagation();
+                                        let fb = &mut *filter_builder.write();
+                                        fb.unset_flavor_text_contains();
+                                        fb.unset_has_flavor_text();
+                                        filter_reset_counter.set(filter_reset_counter() + 1);
+                                    },
+                                    "\u{00d7}"
+                                }
+                            }
                         }
                         AccordionContent { FlavorText {} }
                     }
@@ -195,7 +281,17 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             "artist"
-                            if artist_active { span { class: "filter-dot" } }
+                            if artist_active {
+                                button {
+                                    class: "clear-btn",
+                                    onclick: move |evt| {
+                                        evt.stop_propagation();
+                                        filter_builder.write().unset_artist_equals_any();
+                                        filter_reset_counter.set(filter_reset_counter() + 1);
+                                    },
+                                    "\u{00d7}"
+                                }
+                            }
                         }
                         AccordionContent { Artist {} }
                     }
@@ -206,7 +302,17 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             "rarity"
-                            if rarity_active { span { class: "filter-dot" } }
+                            if rarity_active {
+                                button {
+                                    class: "clear-btn",
+                                    onclick: move |evt| {
+                                        evt.stop_propagation();
+                                        filter_builder.write().unset_rarity_equals_any();
+                                        filter_reset_counter.set(filter_reset_counter() + 1);
+                                    },
+                                    "\u{00d7}"
+                                }
+                            }
                         }
                         AccordionContent { Rarity {} }
                     }
@@ -217,7 +323,17 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             "set"
-                            if set_active { span { class: "filter-dot" } }
+                            if set_active {
+                                button {
+                                    class: "clear-btn",
+                                    onclick: move |evt| {
+                                        evt.stop_propagation();
+                                        filter_builder.write().unset_set_equals_any();
+                                        filter_reset_counter.set(filter_reset_counter() + 1);
+                                    },
+                                    "\u{00d7}"
+                                }
+                            }
                         }
                         AccordionContent { Set {} }
                     }
@@ -229,7 +345,22 @@ pub(crate) fn CardFilterSheet(
                             },
                             AccordionTrigger {
                                 "format"
-                                if format_active { span { class: "filter-dot" } }
+                                if format_active {
+                                    button {
+                                        class: "clear-btn",
+                                        onclick: move |evt| {
+                                            evt.stop_propagation();
+                                            let fb = &mut *filter_builder.write();
+                                            fb.unset_legalities_contains_any();
+                                            fb.unset_is_commander_in_format();
+                                            fb.unset_is_partner();
+                                            fb.unset_is_background();
+                                            fb.unset_is_signature_spell();
+                                            filter_reset_counter.set(filter_reset_counter() + 1);
+                                        },
+                                        "\u{00d7}"
+                                    }
+                                }
                             }
                             AccordionContent { FormatFilter {} }
                         }
@@ -244,7 +375,17 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             "sort"
-                            if sort_active { span { class: "filter-dot" } }
+                            if sort_active {
+                                button {
+                                    class: "clear-btn",
+                                    onclick: move |evt| {
+                                        evt.stop_propagation();
+                                        filter_builder.write().unset_order_by();
+                                        filter_reset_counter.set(filter_reset_counter() + 1);
+                                    },
+                                    "\u{00d7}"
+                                }
+                            }
                         }
                         AccordionContent { Sort {} }
                     }
@@ -258,7 +399,22 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             "config"
-                            if config_active { span { class: "filter-dot" } }
+                            if config_active {
+                                button {
+                                    class: "clear-btn",
+                                    onclick: move |evt| {
+                                        evt.stop_propagation();
+                                        let fb = &mut *filter_builder.write();
+                                        fb.set_is_playable(true);
+                                        fb.set_digital(false);
+                                        fb.set_oversized(false);
+                                        fb.set_promo(false);
+                                        fb.set_content_warning(false);
+                                        filter_reset_counter.set(filter_reset_counter() + 1);
+                                    },
+                                    "\u{00d7}"
+                                }
+                            }
                         }
                         AccordionContent { Config {} }
                     }
