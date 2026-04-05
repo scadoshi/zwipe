@@ -128,7 +128,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         .into_iter()
                         .filter(|card| {
                             !existing_ids.contains(&card.card_profile.scryfall_data_id)
-                                && !deck_ids.contains(&card.scryfall_data.id)
+                                && !card.scryfall_data.oracle_id.is_some_and(|oid| deck_ids.contains(&oid))
                                 && card
                                     .scryfall_data
                                     .image_uris
@@ -212,13 +212,14 @@ pub fn Add(deck_id: Uuid) -> Element {
         };
 
         // For now, always add quantity 1 (will add quantity picker later)
-        let request = HttpCreateDeckCard::new(&card.scryfall_data.id.to_string(), 1, None);
-        let card_id = card.scryfall_data.id;
+        let oracle_id_str = card.scryfall_data.oracle_id.map(|id| id.to_string()).unwrap_or_default();
+        let request = HttpCreateDeckCard::new(&card.scryfall_data.id.to_string(), &oracle_id_str, 1, None);
+        let oracle_id = card.scryfall_data.oracle_id;
 
         spawn(async move {
             match client().create_deck_card(deck_id, &request, &session).await {
                 Ok(_) => {
-                    deck_cards_ids.write().insert(card_id);
+                    if let Some(oid) = oracle_id { deck_cards_ids.write().insert(oid); }
                 }
                 Err(e) => {
                     tracing::warn!("add card to deck failed: {e}");
@@ -239,13 +240,14 @@ pub fn Add(deck_id: Uuid) -> Element {
             return;
         };
 
-        let request = HttpCreateDeckCard::new(&card.scryfall_data.id.to_string(), 1, Some(true));
-        let card_id = card.scryfall_data.id;
+        let oracle_id_str = card.scryfall_data.oracle_id.map(|id| id.to_string()).unwrap_or_default();
+        let request = HttpCreateDeckCard::new(&card.scryfall_data.id.to_string(), &oracle_id_str, 1, Some(true));
+        let oracle_id = card.scryfall_data.oracle_id;
 
         spawn(async move {
             match client().create_deck_card(deck_id, &request, &session).await {
                 Ok(_) => {
-                    deck_cards_ids.write().insert(card_id);
+                    if let Some(oid) = oracle_id { deck_cards_ids.write().insert(oid); }
                 }
                 Err(e) => {
                     tracing::warn!("add card to maybeboard failed: {e}");
@@ -291,12 +293,13 @@ pub fn Add(deck_id: Uuid) -> Element {
                 };
 
                 let card_id = card.scryfall_data.id;
+                let oracle_id = card.scryfall_data.oracle_id;
 
                 spawn(async move {
                     match client().delete_deck_card(deck_id, card_id, &session).await {
                         Ok(_) => {
                             // Remove from exclusion HashSet
-                            deck_cards_ids.write().remove(&card_id);
+                            if let Some(oid) = oracle_id { deck_cards_ids.write().remove(&oid); }
                             toast.success(
                                 "undid add".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
@@ -320,11 +323,12 @@ pub fn Add(deck_id: Uuid) -> Element {
                 };
 
                 let card_id = card.scryfall_data.id;
+                let oracle_id = card.scryfall_data.oracle_id;
 
                 spawn(async move {
                     match client().delete_deck_card(deck_id, card_id, &session).await {
                         Ok(_) => {
-                            deck_cards_ids.write().remove(&card_id);
+                            if let Some(oid) = oracle_id { deck_cards_ids.write().remove(&oid); }
                             toast.success(
                                 "undid maybeboard".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
@@ -371,7 +375,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     let mut ids: HashSet<_> = deck
                         .entries
                         .iter()
-                        .map(|entry| entry.card.scryfall_data.id)
+                        .filter_map(|entry| entry.card.scryfall_data.oracle_id)
                         .collect();
                     if let Some(commander_id) = deck.deck_profile.commander_id {
                         ids.insert(commander_id);
@@ -486,7 +490,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                     .as_ref()
                                     .and_then(|x| x.large.as_ref())
                                     .is_some()
-                                    && !deck_ids.contains(&card.scryfall_data.id)
+                                    && !card.scryfall_data.oracle_id.is_some_and(|oid| deck_ids.contains(&oid))
                             })
                             .collect(),
                     );
@@ -637,7 +641,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                                     .as_ref()
                                                     .and_then(|x| x.large.as_ref())
                                                     .is_some()
-                                                    && !deck_ids.contains(&card.scryfall_data.id)
+                                                    && !card.scryfall_data.oracle_id.is_some_and(|oid| deck_ids.contains(&oid))
                                             })
                                             .collect(),
                                     );

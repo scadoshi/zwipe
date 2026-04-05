@@ -22,6 +22,7 @@ use zwipe_core::domain::logo;
 async fn main() -> anyhow::Result<()> {
     logo::Zervice::print();
     let config = Config::from_env()?;
+    let args: Vec<String> = std::env::args().collect();
 
     let level_filter = LevelFilter::from(config.rust_log);
 
@@ -60,7 +61,18 @@ async fn main() -> anyhow::Result<()> {
     let auth_service = AuthService_::new(db.clone(), db.clone(), resend, config.jwt_secret);
 
     tracing::info!("syncing cards from scryfall");
-    card_service.scryfall_sync(BulkEndpoint::OracleCards).await?;
+    card_service.scryfall_sync(BulkEndpoint::DefaultCards).await?;
+
+    // --recategorize / -rc: clear all categories and re-run heuristic classification
+    let recategorize = args.iter().any(|a| a == "--recategorize" || a == "-rc");
+    if recategorize {
+        tracing::info!("recategorizing all cards (--recategorize)");
+        card_service.clear_all_categories().await?;
+    }
+
+    tracing::info!("classifying untagged cards");
+    let classified = card_service.classify_untagged_cards().await?;
+    tracing::info!("classified {} cards", classified);
 
     tracing::info!("cleaning up expired sessions");
     auth_service.delete_expired_sessions().await?;

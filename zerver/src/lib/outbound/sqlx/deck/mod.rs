@@ -100,9 +100,10 @@ impl DeckRepository for Postgres {
         let mut tx = self.pool.begin().await?;
         let database_deck_card = query_as!(
             DatabaseDeckCard,
-            "INSERT INTO deck_cards (deck_id, scryfall_data_id, quantity, maybeboard) VALUES ($1, $2, $3, $4) RETURNING deck_id, scryfall_data_id, quantity, maybeboard",
+            "INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, maybeboard) VALUES ($1, $2, $3, $4, $5) RETURNING deck_id, scryfall_data_id, oracle_id, quantity, maybeboard",
             request.deck_id,
             request.scryfall_data_id,
+            request.oracle_id,
             *request.quantity,
             request.maybeboard
         )
@@ -211,7 +212,7 @@ impl DeckRepository for Postgres {
         }
         let database_deck_cards = query_as!(
             DatabaseDeckCard,
-            "SELECT deck_id, scryfall_data_id, quantity, maybeboard FROM deck_cards WHERE deck_id = $1",
+            "SELECT deck_id, scryfall_data_id, oracle_id, quantity, maybeboard FROM deck_cards WHERE deck_id = $1",
             request.deck_id
         )
         .fetch_all(&self.pool)
@@ -319,7 +320,7 @@ impl DeckRepository for Postgres {
             .push_bind(request.deck_id)
             .push(" AND scryfall_data_id = ")
             .push_bind(request.scryfall_data_id)
-            .push(" RETURNING deck_id::TEXT, scryfall_data_id::TEXT, quantity, maybeboard");
+            .push(" RETURNING deck_id::TEXT, scryfall_data_id::TEXT, oracle_id::TEXT, quantity, maybeboard");
         let database_deck_card: DatabaseDeckCard =
             qb.build_query_as().fetch_one(&mut *tx).await?;
         let deck_card: DeckCard = database_deck_card.try_into()?;
@@ -375,7 +376,7 @@ impl DeckRepository for Postgres {
     async fn bulk_create_deck_cards(
         &self,
         request: &ImportDeckCards,
-        cards: &[(uuid::Uuid, i32)],
+        cards: &[(uuid::Uuid, uuid::Uuid, i32)],
     ) -> Result<Vec<DeckCard>, ImportDeckCardsError> {
         if !request
             .user_id
@@ -394,15 +395,16 @@ impl DeckRepository for Postgres {
             .await
             .map_err(|e| ImportDeckCardsError::Database(e.into()))?;
         let mut qb: QueryBuilder<'_, sqlx::Postgres> =
-            QueryBuilder::new("INSERT INTO deck_cards (deck_id, scryfall_data_id, quantity, maybeboard) ");
-        qb.push_values(cards, |mut b, (scryfall_data_id, quantity)| {
+            QueryBuilder::new("INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, maybeboard) ");
+        qb.push_values(cards, |mut b, (scryfall_data_id, oracle_id, quantity)| {
             b.push_bind(request.deck_id)
                 .push_bind(scryfall_data_id)
+                .push_bind(oracle_id)
                 .push_bind(quantity)
                 .push_bind(false); // imports always go to mainboard
         });
         qb.push(
-            " ON CONFLICT (deck_id, scryfall_data_id) DO UPDATE SET quantity = EXCLUDED.quantity, maybeboard = EXCLUDED.maybeboard RETURNING deck_id::TEXT, scryfall_data_id::TEXT, quantity, maybeboard",
+            " ON CONFLICT (deck_id, oracle_id) DO UPDATE SET scryfall_data_id = EXCLUDED.scryfall_data_id, quantity = EXCLUDED.quantity, maybeboard = EXCLUDED.maybeboard RETURNING deck_id::TEXT, scryfall_data_id::TEXT, oracle_id::TEXT, quantity, maybeboard",
         );
         let rows: Vec<DatabaseDeckCard> = qb
             .build_query_as()

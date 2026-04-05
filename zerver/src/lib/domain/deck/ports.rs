@@ -131,7 +131,7 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
     fn bulk_create_deck_cards(
         &self,
         request: &ImportDeckCards,
-        cards: &[(uuid::Uuid, i32)],
+        cards: &[(uuid::Uuid, uuid::Uuid, i32)],
     ) -> impl Future<Output = Result<Vec<DeckCard>, ImportDeckCardsError>> + Send;
 }
 

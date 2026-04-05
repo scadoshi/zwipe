@@ -99,6 +99,8 @@ pub enum IntoDeckCardError {
     #[error(transparent)]
     InvalidCardId(uuid::Error),
     #[error(transparent)]
+    InvalidOracleId(uuid::Error),
+    #[error(transparent)]
     InvalidQuantity(#[from] InvalidQuantity),
 }
 

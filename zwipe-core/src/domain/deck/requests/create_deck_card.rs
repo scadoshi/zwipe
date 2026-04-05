@@ -13,6 +13,9 @@ pub enum InvalidCreateDeckCard {
     /// Invalid card ID format.
     #[error(transparent)]
     ScryfallDataId(uuid::Error),
+    /// Invalid oracle ID format.
+    #[error(transparent)]
+    OracleId(uuid::Error),
     /// Quantity is invalid.
     #[error(transparent)]
     Quantity(InvalidQuantity),
@@ -31,8 +34,10 @@ pub struct CreateDeckCard {
     pub user_id: Uuid,
     /// Deck to add card to.
     pub deck_id: Uuid,
-    /// Card to add (Scryfall data ID).
+    /// Card to add (selected printing Scryfall data ID).
     pub scryfall_data_id: Uuid,
+    /// Logical card identity (shared across all printings).
+    pub oracle_id: Uuid,
     /// How many copies.
     pub quantity: Quantity,
     /// Whether this card is on the maybeboard.
@@ -47,6 +52,7 @@ impl CreateDeckCard {
         user_id: Uuid,
         deck_id: &str,
         scryfall_data_id: &str,
+        oracle_id: &str,
         quantity: i32,
         maybeboard: Option<bool>,
         email_verified: bool,
@@ -54,11 +60,14 @@ impl CreateDeckCard {
         let deck_id = Uuid::try_parse(deck_id).map_err(InvalidCreateDeckCard::DeckId)?;
         let scryfall_data_id =
             Uuid::try_parse(scryfall_data_id).map_err(InvalidCreateDeckCard::ScryfallDataId)?;
+        let oracle_id =
+            Uuid::try_parse(oracle_id).map_err(InvalidCreateDeckCard::OracleId)?;
         let quantity = Quantity::new(quantity)?;
 
         Ok(Self {
             deck_id,
             scryfall_data_id,
+            oracle_id,
             quantity,
             maybeboard: maybeboard.unwrap_or(false),
             user_id,

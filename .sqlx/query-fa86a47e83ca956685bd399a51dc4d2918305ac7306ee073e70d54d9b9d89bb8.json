@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT deck_id, scryfall_data_id, quantity, maybeboard FROM deck_cards WHERE deck_id = $1",
+  "query": "SELECT deck_id, scryfall_data_id, oracle_id, quantity, maybeboard FROM deck_cards WHERE deck_id = $1",
   "describe": {
     "columns": [
       {
@@ -15,11 +15,16 @@
       },
       {
         "ordinal": 2,
+        "name": "oracle_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
         "name": "quantity",
         "type_info": "Int4"
       },
       {
-        "ordinal": 3,
+        "ordinal": 4,
         "name": "maybeboard",
         "type_info": "Bool"
       }
@@ -33,8 +38,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "37b7aebdfc750d137f74149e1e7f5149ee0e3f1fb814b119bd64e8e60fe2ac88"
+  "hash": "fa86a47e83ca956685bd399a51dc4d2918305ac7306ee073e70d54d9b9d89bb8"
 }
