@@ -156,7 +156,9 @@ Small UX improvements to the deck view screen and related flows.
 - [x] Fix: remove screen deck load failure (`0e381a53`)
 - [x] "command zone" show toggle on deck card view (`36da3374`)
 - [x] Clear commander on format change to prevent stale selections (`128bbeea`)
-- [ ] Toast on import completion — show success/failure toast when card import finishes on the import screen
+- [x] Toast on import completion with chip-bubble result styling (`1725d970`)
+- [x] Replace format chip grid with typeahead input on create/edit deck screens (`c1184ca3`)
+- [x] Fix import card limit check double-counting upserted cards, split verified/unverified error messages (`a4bbb2fc`)
 
 ---
 
@@ -203,6 +205,9 @@ All phases shipped. Carousel UI with swipe-to-browse, page dots, save/close head
 - [x] Refactored PrintingSheet to generic `on_save` callback (`4e1fd567`)
 - [x] Command zone printing selection — commander, partner, background, signature spell (`4e1fd567`)
 - [x] Oracle ID audit — all card identity comparisons use oracle_id (`70029ebc`)
+- [x] Fix carousel dots invisible (wrong CSS variable), add centered scrolling dots with edge fade (`f19256a8`)
+- [x] Add artist to printing sheet info, reuse CardInfoDisplay component (`ccf86349`, `f19256a8`)
+- [x] Printing saved/discarded toasts, fix printing info height jumping (`b164e7a4`)
 
 ---
 
@@ -242,6 +247,19 @@ Pre-populate the color identity filter to the commander's colors when the deck's
 ---
 
 ## Recently Completed
+
+### Deck View Polish + Printing Sheet + Carousel Dots (2026-04-05)
+
+- [x] Replace format chip grid with typeahead input on create/edit deck screens (`c1184ca3`)
+- [x] Import completion toasts with chip-bubble result styling (`1725d970`)
+- [x] Fix import card limit check double-counting upserted cards, split verified/unverified error messages (`a4bbb2fc`)
+- [x] Add artist to printing sheet info, reuse CardInfoDisplay (deduplicate `printing_info`) (`ccf86349`, `f19256a8`)
+- [x] Fix carousel dots invisible — `--color-text` CSS variable didn't exist, replaced with `--text-primary` (`f19256a8`)
+- [x] Carousel dots: centered scrolling track with edge fade mask, `flex-shrink: 0` to prevent squishing (`f19256a8`)
+- [x] Printing saved/discarded toasts, fix printing info height jumping between printings (`b164e7a4`)
+- [x] Fix card info height jumping on add/remove swipe screens when prices or artist absent (`5276a690`)
+- [x] Fix qty change collapsing expanded card, fix board filter showing deck when only sideboard/maybeboard selected (`a060d1d2`)
+- [x] Bottom-sheet carousel image max-height reduced to 38vh to fit with 4-line card info (`f19256a8`)
 
 ### Search Query Performance (2026-04-05)
 

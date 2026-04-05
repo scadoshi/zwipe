@@ -1,6 +1,9 @@
-//! Theme configuration for the application UI.
+//! Theme configuration for UI display.
+//!
+//! Maps a theme name + dark mode flag to the CSS class that should be applied
+//! to the root element. Shared across zwiper and zite.
 
-use zwipe_core::domain::user::preferences::{DARK_ONLY_THEMES, UserPreferences};
+use super::preferences::{DARK_ONLY_THEMES, UserPreferences};
 
 /// Display theme configuration used by the UI.
 #[derive(Clone, PartialEq)]

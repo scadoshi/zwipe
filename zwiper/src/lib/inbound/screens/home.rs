@@ -1,6 +1,6 @@
 //! Home/landing page screen.
 
-use crate::domain::theme::ThemeConfig;
+use zwipe_core::domain::user::models::theme::ThemeConfig;
 use crate::inbound::components::alert_dialog::{
     AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
     AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,

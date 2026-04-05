@@ -1,13 +1,13 @@
 //! User login screen.
 
 use crate::{
-    domain::theme::ThemeConfig,
     inbound::{components::fields::text_input::TextInput, router::Router},
     outbound::{
         client::{auth::login::ClientLogin, ZwipeClient},
         session::Persist,
     },
 };
+use zwipe_core::domain::user::models::theme::ThemeConfig;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use email_address::EmailAddress;

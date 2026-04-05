@@ -1,5 +1,7 @@
 use dioxus::document::eval;
 use dioxus::prelude::*;
+use zwipe_core::domain::user::models::theme::ThemeConfig;
+use zwipe_core::domain::user::preferences::ALLOWED_THEMES;
 
 mod pages;
 use pages::{About, Android, Contribute, Discord, Home, Ios, Privacy, Reset, Verify};
@@ -43,6 +45,20 @@ fn main() {
 
 #[component]
 fn App() -> Element {
+    let theme = use_signal(ThemeConfig::default);
+    use_context_provider(|| theme);
+
+    // Apply theme class to <body> so all CSS variable lookups — including
+    // body { background-color: var(--bg-primary) } — resolve from the theme.
+    use_effect(move || {
+        let class = theme.read().css_class();
+        spawn(async move {
+            let _ = eval(&format!(
+                "document.body.className = '{class}';"
+            )).await;
+        });
+    });
+
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "icon", r#type: "image/png", sizes: "16x16", href: FAVICON_16 }
@@ -100,9 +116,33 @@ pub fn Nav() -> Element {
 }
 
 #[component]
+pub fn ThemePicker() -> Element {
+    let mut theme: Signal<ThemeConfig> = use_context();
+    let current = theme.read().name.clone();
+
+    rsx! {
+        div { class: "theme-picker",
+            for name in ALLOWED_THEMES {
+                button {
+                    class: if current == *name { "theme-btn selected" } else { "theme-btn" },
+                    onclick: move |_| {
+                        theme.set(ThemeConfig {
+                            name: name.to_string(),
+                            is_dark: true,
+                        });
+                    },
+                    "{name}"
+                }
+            }
+        }
+    }
+}
+
+#[component]
 pub fn Footer() -> Element {
     rsx! {
         footer {
+            ThemePicker {}
             p { "© 2026 scadoshi · "
                 Link { to: Route::Privacy {}, "privacy policy" }
             }
