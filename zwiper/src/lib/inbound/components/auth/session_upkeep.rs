@@ -3,13 +3,11 @@
 //! Provides background session management that periodically checks token
 //! expiration and refreshes the access token before it expires.
 
-use crate::{
-    domain::theme::ThemeConfig,
-    outbound::{
-        client::{auth::refresh::ClientRefresh, ZwipeClient},
-        session::Persist,
-    },
+use crate::outbound::{
+    client::{auth::refresh::ClientRefresh, ZwipeClient},
+    session::Persist,
 };
+use zwipe_core::domain::user::models::theme::ThemeConfig;
 use dioxus::prelude::*;
 use std::time::Duration;
 use tokio::time::interval;

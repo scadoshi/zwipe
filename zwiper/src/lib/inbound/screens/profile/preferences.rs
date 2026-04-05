@@ -1,10 +1,10 @@
 //! User preferences screen for theme and dark mode selection.
 
 use crate::{
-    domain::theme::ThemeConfig,
     inbound::components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
     outbound::client::{user::preferences::ClientUpdatePreferences, ZwipeClient},
 };
+use zwipe_core::domain::user::models::theme::ThemeConfig;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;

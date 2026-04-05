@@ -1,9 +1,9 @@
 use dioxus::prelude::*;
 use dioxus_primitives::toast::ToastProvider;
 use zwipe_core::domain::logo;
+use zwipe_core::domain::user::models::theme::ThemeConfig;
 use zwiper::{
     config::Config,
-    domain::theme::ThemeConfig,
     inbound::{components::auth::session_upkeep::spawn_upkeeper, router::Router},
 };
 

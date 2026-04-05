@@ -1,4 +1,5 @@
 pub mod preferences;
+pub mod theme;
 pub mod username;
 
 pub use preferences::{
