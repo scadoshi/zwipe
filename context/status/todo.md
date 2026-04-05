@@ -117,31 +117,43 @@ Add sideboard support alongside maybeboard. A card lives in exactly one state: *
 
 ---
 
-## Mechanical Category
+## Mechanical Category — Phase 1-2 Complete, Heuristics Need Refinement
 
-Multi-tag strategic role system for cards (Ramp, Draw, Removal, etc.). Cards can have multiple categories. Taxonomy: 24 categories defined. See `context/plans/mechanical-category.md` for full plan.
+Multi-tag strategic role system for cards (Ramp, Draw, Removal, etc.). Cards can have multiple categories. 24 categories defined. ~73% classification rate from heuristics (79k / 108k cards).
 
-**Taxonomy (finalized):** Ramp, Draw, Removal, Wipe, Counterspell, Protection, Evasion, Finisher, Tokens, Lifegain, Blink, Recursion, Mill, Burn, Drain, Pump, Anthem, Counters, Copy, Sacrifice, Stax, Untap, Tutor, Graveyard Hate
+**Schema + Domain — Complete:**
+- [x] `MechanicalCategory` enum (24 variants) with `to_short_name()`, `display_name()`, serde, TryFrom (`91640771`)
+- [x] `mechanical_categories: JSONB` on `card_profiles` table with GIN index (`91640771`)
+- [x] `CardProfile.mechanical_categories: Vec<MechanicalCategory>` (`91640771`)
+- [x] `classify_by_heuristics()` pure function with regex patterns for all 24 categories (`91640771`)
+- [x] Batched post-sync classification in zervice (1000 cards/batch) (`91640771`)
+- [x] `--recategorize` / `-rc` flag for full reclassification (`91640771`)
+- [x] Renamed SyncMetrics → ZerviceMetrics, DB table → zervice_metrics (`91640771`)
 
-**Schema + Domain:**
-- [ ] `MechanicalCategory` enum (24 variants) in zwipe-core
-- [ ] `mechanical_categories: JSONB` on `card_profiles` table (GIN indexed) — update existing migration
-- [ ] `CardProfile.mechanical_categories: Vec<MechanicalCategory>`
+**Filtering + Grouping — Complete:**
+- [x] `CardFilter`: `mechanical_categories_contains_any/all` with `?|`/`@>` SQL operators
+- [x] Client-side filtering via `card.card_profile.mechanical_categories`
+- [x] `GroupByOption::Category` — multi-bucket grouping (card appears in every matching group)
+- [x] `DeckMetrics.mechanical_category_counts` — breakdown per category, sorted by count desc
 
-**Classification (three layers):**
-- [ ] Layer 1: Runtime oracle text heuristics — `classify_by_heuristics()` pure function, ~70-80% accuracy, runs during Scryfall sync
-- [ ] Layer 2: AI classification client — standalone binary, reads DB in batches, LLM-classifies, writes tags back. Corrects heuristic errors. ~90-95% accuracy
-- [ ] Layer 3 (future): Fine-tuned lightweight model trained on Layer 2's corrected data. ~95-99% accuracy. Embeddable in sync pipeline
+**Frontend — Complete:**
+- [x] Category filter section in CardFilterSheet (24-chip multi-select with any/all toggle)
+- [x] "category" grouping chip on deck card view
+- [x] Category distribution horizontal bar chart in deck stats
 
-**Filtering + Grouping:**
-- [ ] `CardFilter`: `mechanical_categories_contains_any/all` with `?|`/`@>` SQL operators
-- [ ] `GroupByOption::Category` — multi-bucket grouping (card appears in every matching group)
-- [ ] `DeckMetrics.category_counts` — breakdown per category
+**Heuristic accuracy — needs improvement:**
+- [ ] Add more test cases for edge cases and false positives/negatives
+- [ ] Verify each of the 24 heuristics against real card data — audit a sample of classified cards per category to find misclassifications
+- [ ] Lands should NOT be classified as ramp (fixed: removed `type_line.contains("land")` from ramp fallback)
+- [ ] Tune regex proximity windows (e.g. blink regex was too narrow, widened to 80 chars)
+- [ ] Consider additional ramp patterns (e.g. treasure token creators, rituals like Dark Ritual)
+- [ ] Consider additional removal patterns (e.g. "exile target" with qualifiers, fight mechanics)
+- [ ] Burn heuristic excludes creatures — should it include creatures with ETB damage?
+- [ ] Stax heuristic may false-positive on cards that say "can't" in reminder text
 
-**Frontend:**
-- [ ] Category filter section in CardFilterSheet (chip-based multi-select)
-- [ ] "category" grouping chip on deck card view
-- [ ] Category breakdown in deck stats
+**Future layers:**
+- [ ] Layer 2: AI classification client (zort binary) — LLM-classifies in batches, ~90-95% accuracy
+- [ ] Layer 3: Fine-tuned lightweight model trained on Layer 2 data
 
 ---
 

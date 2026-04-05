@@ -176,6 +176,15 @@ impl CardFilter {
         self.is_signature_spell
     }
 
+    // mechanical category
+    pub fn mechanical_categories_contains_any(&self) -> Option<&[String]> {
+        self.mechanical_categories_contains_any.as_deref()
+    }
+
+    pub fn mechanical_categories_contains_all(&self) -> Option<&[String]> {
+        self.mechanical_categories_contains_all.as_deref()
+    }
+
     // config
     pub fn limit(&self) -> u32 {
         self.limit

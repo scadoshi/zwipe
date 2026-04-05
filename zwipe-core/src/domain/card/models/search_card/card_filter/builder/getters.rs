@@ -247,6 +247,20 @@ impl CardFilterBuilder {
     }
 
     // =================================
+    // Mechanical Category Getters
+    // =================================
+
+    /// Returns the mechanical category ANY filter.
+    pub fn mechanical_categories_contains_any(&self) -> Option<&[String]> {
+        self.mechanical_categories_contains_any.as_deref()
+    }
+
+    /// Returns the mechanical category ALL filter.
+    pub fn mechanical_categories_contains_all(&self) -> Option<&[String]> {
+        self.mechanical_categories_contains_all.as_deref()
+    }
+
+    // =================================
     // Pagination & Config Getters
     // =================================
 

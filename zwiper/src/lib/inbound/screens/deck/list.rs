@@ -97,7 +97,16 @@ pub fn DeckList() -> Element {
                                                 { profile.name.to_string() }
                                             }
                                             span { class: "text-muted text-sm",
-                                                "{profile.card_count} cards"
+                                                {
+                                                    let mut count = profile.card_count;
+                                                    if profile.format.as_ref().is_some_and(|f| f.has_commander()) && profile.commander_id.is_some() {
+                                                        count += 1;
+                                                    }
+                                                    if profile.partner_commander_id.is_some() { count += 1; }
+                                                    if profile.background_id.is_some() { count += 1; }
+                                                    if profile.signature_spell_id.is_some() { count += 1; }
+                                                    format!("{count} cards")
+                                                }
                                                 if let Some(ref fmt) = profile.format {
                                                     " | {fmt.display_name().to_lowercase()}"
                                                 }

@@ -1,7 +1,7 @@
 use crate::inbound::{
     components::accordion::{Accordion, AccordionContent, AccordionItem, AccordionTrigger},
     screens::deck::card::filter::{
-        artist::Artist, combat::Combat, config::Config, flavor_text::FlavorText,
+        artist::Artist, category::Category, combat::Combat, config::Config, flavor_text::FlavorText,
         format::FormatFilter, mana::Mana, name::Name, oracle_text::OracleText, rarity::Rarity,
         set::Set, sort::Sort, types::Types,
     },
@@ -37,6 +37,7 @@ pub(crate) fn CardFilterSheet(
         flavor_active,
         artist_active,
         rarity_active,
+        category_active,
         set_active,
         sort_active,
         config_active,
@@ -69,6 +70,8 @@ pub(crate) fn CardFilterSheet(
             fb.flavor_text_contains().is_some() || fb.has_flavor_text().is_some(),
             fb.artist_equals_any().is_some(),
             fb.rarity_equals_any().is_some(),
+            fb.mechanical_categories_contains_any().is_some()
+                || fb.mechanical_categories_contains_all().is_some(),
             fb.set_equals_any().is_some(),
             fb.order_by().is_some(),
             fb.is_playable() != def.is_playable()
@@ -83,7 +86,7 @@ pub(crate) fn CardFilterSheet(
                 || fb.is_signature_spell().is_some(),
         )
     } else {
-        (false, false, false, false, false, false, false, false, false, false, false, false)
+        (false, false, false, false, false, false, false, false, false, false, false, false, false)
     };
 
     // Track accordion item index — shifts when format filter is included
@@ -315,6 +318,29 @@ pub(crate) fn CardFilterSheet(
                             }
                         }
                         AccordionContent { Rarity {} }
+                    }
+
+                    AccordionItem { index: next_idx(),
+                        on_change: move |is_open| {
+                            if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(9)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
+                        },
+                        AccordionTrigger {
+                            "category"
+                            if category_active {
+                                button {
+                                    class: "clear-btn",
+                                    onclick: move |evt| {
+                                        evt.stop_propagation();
+                                        let fb = &mut *filter_builder.write();
+                                        fb.unset_mechanical_categories_contains_any();
+                                        fb.unset_mechanical_categories_contains_all();
+                                        filter_reset_counter.set(filter_reset_counter() + 1);
+                                    },
+                                    "\u{00d7}"
+                                }
+                            }
+                        }
+                        AccordionContent { Category {} }
                     }
 
                     AccordionItem { index: next_idx(),

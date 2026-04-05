@@ -614,6 +614,44 @@ impl CardFilterBuilder {
     }
 
     // =================================
+    // Mechanical Category Setters
+    // =================================
+
+    /// Sets the mechanical category ANY filter (cards matching at least one).
+    pub fn set_mechanical_categories_contains_any<I, S>(&mut self, categories: I) -> &mut Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        let v: Vec<String> = categories.into_iter().map(|s| s.into()).collect();
+        self.mechanical_categories_contains_any = if v.is_empty() { None } else { Some(v) };
+        self
+    }
+
+    /// Clears the mechanical category ANY filter.
+    pub fn unset_mechanical_categories_contains_any(&mut self) -> &mut Self {
+        self.mechanical_categories_contains_any = None;
+        self
+    }
+
+    /// Sets the mechanical category ALL filter (cards matching every category).
+    pub fn set_mechanical_categories_contains_all<I, S>(&mut self, categories: I) -> &mut Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        let v: Vec<String> = categories.into_iter().map(|s| s.into()).collect();
+        self.mechanical_categories_contains_all = if v.is_empty() { None } else { Some(v) };
+        self
+    }
+
+    /// Clears the mechanical category ALL filter.
+    pub fn unset_mechanical_categories_contains_all(&mut self) -> &mut Self {
+        self.mechanical_categories_contains_all = None;
+        self
+    }
+
+    // =================================
     // Pagination & Config Setters
     // =================================
 

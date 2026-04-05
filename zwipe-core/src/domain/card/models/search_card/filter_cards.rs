@@ -116,6 +116,30 @@ impl FilterCards for Vec<Card> {
                     }
                 }
 
+                // ── mechanical categories ───────────────────────────────────
+                if let Some(values) = filter.mechanical_categories_contains_any() {
+                    let matches = card
+                        .card_profile
+                        .mechanical_categories
+                        .iter()
+                        .any(|cat| values.iter().any(|v| cat.to_string().eq_ignore_ascii_case(v)));
+                    if !matches {
+                        return false;
+                    }
+                }
+
+                if let Some(values) = filter.mechanical_categories_contains_all() {
+                    let matches = values.iter().all(|v| {
+                        card.card_profile
+                            .mechanical_categories
+                            .iter()
+                            .any(|cat| cat.to_string().eq_ignore_ascii_case(v))
+                    });
+                    if !matches {
+                        return false;
+                    }
+                }
+
                 // ── produced mana ────────────────────────────────────────────
                 if let Some(values) = filter.produced_mana_contains_any() {
                     let matches = match &sd.produced_mana {

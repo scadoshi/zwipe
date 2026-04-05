@@ -57,5 +57,6 @@ pub(crate) fn DeckStats(metrics: DeckMetrics, show_buy_sheet: Signal<bool>) -> E
                 span { class: "info-row-value", "{fmt(avg)}" }
             }
         }
+
     }
 }
