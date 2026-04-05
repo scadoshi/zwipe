@@ -2,6 +2,8 @@
 
 /// User-specific card metadata (favorites, notes - future expansion).
 pub mod card_profile;
+/// Mechanical category classification (ramp, draw, removal, etc.).
+pub mod mechanical_category;
 /// Scryfall API data models.
 pub mod scryfall_data;
 /// Card search with comprehensive filtering.

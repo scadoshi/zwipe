@@ -3,6 +3,6 @@ pub mod helpers;
 /// Card search error types.
 pub mod search_card;
 
-/// Sync metrics tracking for Scryfall bulk data operations.
+/// Zervice metrics tracking for sync and classification operations.
 #[cfg(feature = "zerver")]
-pub mod sync_metrics;
+pub mod zervice_metrics;

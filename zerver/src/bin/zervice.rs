@@ -53,30 +53,30 @@ async fn main() -> anyhow::Result<()> {
                 .with_filter(level_filter),
         )
         .init();
-    tracing::info!("zervice running v{}", env!("CARGO_PKG_VERSION"));
+    let recategorize = args.iter().any(|a| a == "--recategorize" || a == "-rc" || a == "--rc");
+    tracing::info!(
+        "zervice running v{}{}",
+        env!("CARGO_PKG_VERSION"),
+        if recategorize { " [--recategorize]" } else { "" }
+    );
 
     let db = Postgres::new(&config.database_url).await?;
     let card_service = CardService_::new(db.clone());
     let resend = Resend::new(config.resend_api_key, config.resend_from_email);
     let auth_service = AuthService_::new(db.clone(), db.clone(), resend, config.jwt_secret);
 
-    tracing::info!("syncing cards from scryfall");
     card_service.scryfall_sync(BulkEndpoint::DefaultCards).await?;
 
-    // --recategorize / -rc: clear all categories and re-run heuristic classification
-    let recategorize = args.iter().any(|a| a == "--recategorize" || a == "-rc");
     if recategorize {
-        tracing::info!("recategorizing all cards (--recategorize)");
+        tracing::info!("clearing all categories for recategorization");
         card_service.clear_all_categories().await?;
     }
 
-    tracing::info!("classifying untagged cards");
-    let classified = card_service.classify_untagged_cards().await?;
-    tracing::info!("classified {} cards", classified);
+    let (classified, total) = card_service.classify_untagged_cards(1000).await?;
+    tracing::info!("classification: {classified} / {total} cards categorized");
 
-    tracing::info!("cleaning up expired sessions");
     auth_service.delete_expired_sessions().await?;
 
-    tracing::info!("zervice completed successfully");
+    tracing::info!("zervice completed");
     Ok(())
 }

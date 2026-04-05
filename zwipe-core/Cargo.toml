@@ -16,5 +16,6 @@ serde = { workspace = true }
 sha2 = { workspace = true }
 serde_json = { workspace = true }
 rand = { workspace = true }
+regex = "1"
 thiserror = { workspace = true }
 uuid = { workspace = true }

@@ -1,4 +1,4 @@
-CREATE TABLE scryfall_data_sync_metrics (
+CREATE TABLE zervice_metrics (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     started_at TIMESTAMP NOT NULL,
     ended_at TIMESTAMP,

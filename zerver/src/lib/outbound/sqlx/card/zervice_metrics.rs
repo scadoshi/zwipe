@@ -8,8 +8,8 @@ use sqlx::{encode::IsNull, types::JsonValue, Decode, Encode, Postgres, Type};
 use sqlx_macros::FromRow;
 use uuid::Uuid;
 
-use crate::domain::card::models::sync_metrics::{
-    ErrorMetrics, SyncMetrics, SyncStatus, VecErrorMetrics,
+use crate::domain::card::models::zervice_metrics::{
+    ErrorMetrics, ZerviceMetrics, SyncStatus, VecErrorMetrics,
 };
 
 impl TryFrom<ErrorMetrics> for JsonValue {
@@ -131,7 +131,7 @@ impl Encode<'_, Postgres> for VecErrorMetrics {
 /// Raw database sync metrics record.
 #[derive(Debug, FromRow)]
 #[allow(missing_docs)]
-pub struct DatabaseSyncMetrics {
+pub struct DatabaseZerviceMetrics {
     #[sqlx(rename = "id")]
     _id: Uuid,
     status: String,
@@ -145,13 +145,13 @@ pub struct DatabaseSyncMetrics {
     errors: VecErrorMetrics,
 }
 
-impl TryFrom<DatabaseSyncMetrics> for SyncMetrics {
+impl TryFrom<DatabaseZerviceMetrics> for ZerviceMetrics {
     type Error = anyhow::Error;
-    fn try_from(value: DatabaseSyncMetrics) -> anyhow::Result<Self> {
+    fn try_from(value: DatabaseZerviceMetrics) -> anyhow::Result<Self> {
         let status = SyncStatus::try_from(value.status.as_str())?;
         let errors: Vec<ErrorMetrics> = value.errors.to_vec();
 
-        let sync_metrics = SyncMetrics::new()
+        let zervice_metrics = ZerviceMetrics::new()
             .set_started_at(value.started_at)
             .set_ended_at(value.ended_at)
             .set_duration_in_seconds(value.duration_in_seconds)
@@ -163,6 +163,6 @@ impl TryFrom<DatabaseSyncMetrics> for SyncMetrics {
             .set_errors(errors)
             .clone();
 
-        Ok(sync_metrics)
+        Ok(zervice_metrics)
     }
 }

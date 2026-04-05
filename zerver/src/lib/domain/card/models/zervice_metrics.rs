@@ -137,7 +137,7 @@ impl std::ops::Deref for VecErrorMetrics {
 /// # Example
 ///
 /// ```rust,ignore
-/// let mut metrics = SyncMetrics::new();
+/// let mut metrics = ZerviceMetrics::new();
 /// metrics.set_received_count(100_000);
 /// // ... perform sync ...
 /// metrics.add_upserted_count(99_500);
@@ -145,7 +145,7 @@ impl std::ops::Deref for VecErrorMetrics {
 /// metrics.mark_as_completed(); // Evaluates status, calculates duration
 /// ```
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct SyncMetrics {
+pub struct ZerviceMetrics {
     /// Final status (Success, PartialSuccess, Failure, InProgress).
     status: SyncStatus,
     /// When sync started (UTC).
@@ -166,7 +166,7 @@ pub struct SyncMetrics {
     errors: Vec<ErrorMetrics>,
 }
 
-impl Default for SyncMetrics {
+impl Default for ZerviceMetrics {
     fn default() -> Self {
         Self {
             status: SyncStatus::InProgress,
@@ -182,7 +182,7 @@ impl Default for SyncMetrics {
     }
 }
 
-impl SyncMetrics {
+impl ZerviceMetrics {
     /// Creates a new sync metrics tracker with default values.
     pub fn new() -> Self {
         Self::default()
@@ -342,5 +342,20 @@ impl SyncMetrics {
             self.status = SyncStatus::Success;
         }
         self
+    }
+}
+
+impl std::fmt::Display for ZerviceMetrics {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "status={} | duration={}s | received={} | upserted={} | skipped={} | errors={}",
+            self.status,
+            self.duration_in_seconds,
+            self.received_count,
+            self.upserted_count,
+            self.skipped_count,
+            self.error_count,
+        )
     }
 }

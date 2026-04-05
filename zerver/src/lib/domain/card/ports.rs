@@ -18,7 +18,7 @@ use crate::{
     domain::card::{
         models::{
             search_card::error::SearchCardsError,
-            sync_metrics::SyncMetrics,
+            zervice_metrics::ZerviceMetrics,
         },
         requests::{
             create_card::CreateCardError,
@@ -61,7 +61,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         &self,
         multiple_scryfall_data: &[ScryfallData],
         batch_size: usize,
-        sync_metrics: &mut SyncMetrics,
+        zervice_metrics: &mut ZerviceMetrics,
     ) -> impl Future<Output = Result<Vec<Card>, CreateCardError>> + Send;
 
     /// Delta upserts - only updates cards newer than database version.
@@ -69,14 +69,14 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         &self,
         multiple_scryfall_data: &[ScryfallData],
         batch_size: usize,
-        sync_metrics: &mut SyncMetrics,
+        zervice_metrics: &mut ZerviceMetrics,
     ) -> impl Future<Output = Result<Vec<Card>, CreateCardError>> + Send;
 
     /// Records sync metrics to database.
-    fn record_sync_metrics(
+    fn record_zervice_metrics(
         &self,
-        sync_metrics: &SyncMetrics,
-    ) -> impl Future<Output = Result<SyncMetrics, anyhow::Error>> + Send;
+        zervice_metrics: &ZerviceMetrics,
+    ) -> impl Future<Output = Result<ZerviceMetrics, anyhow::Error>> + Send;
 
     // =====
     //  get
@@ -110,6 +110,12 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     fn get_cards(
         &self,
         request: &ScryfallDataIds,
+    ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
+
+    /// Returns all printings of a card by oracle_id, ordered by release date.
+    fn get_printings(
+        &self,
+        oracle_id: uuid::Uuid,
     ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
 
     /// Searches for complete cards matching filter criteria.
@@ -190,6 +196,32 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         &self,
         names: &[String],
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
+
+    // ============
+    //  classify
+    // ============
+
+    /// Retrieves IDs of cards with empty mechanical_categories.
+    fn get_unclassified_card_ids(
+        &self,
+    ) -> impl Future<Output = Result<Vec<uuid::Uuid>, anyhow::Error>> + Send;
+
+    /// Fetches a batch of cards by their IDs.
+    fn get_cards_batch(
+        &self,
+        ids: &[uuid::Uuid],
+    ) -> impl Future<Output = Result<Vec<Card>, anyhow::Error>> + Send;
+
+    /// Updates mechanical_categories for a batch of cards.
+    fn update_mechanical_categories(
+        &self,
+        updates: &[(uuid::Uuid, Vec<zwipe_core::domain::card::mechanical_category::MechanicalCategory>)],
+    ) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
+
+    /// Clears all mechanical_categories (resets to empty array).
+    fn clear_all_categories(
+        &self,
+    ) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
 }
 
 /// Service port for MTG card business logic.
@@ -226,7 +258,14 @@ pub trait CardService: Clone + Send + Sync + 'static {
     fn scryfall_sync(
         &self,
         bulk_endpoint: BulkEndpoint,
-    ) -> impl Future<Output = anyhow::Result<SyncMetrics>> + Send;
+    ) -> impl Future<Output = anyhow::Result<ZerviceMetrics>> + Send;
+
+    /// Classifies cards with empty mechanical_categories using heuristics.
+    /// Returns (classified_count, total_untagged_count).
+    fn classify_untagged_cards(&self, batch_size: usize) -> impl Future<Output = anyhow::Result<(u32, u32)>> + Send;
+
+    /// Clears all mechanical_categories (for --reclassify).
+    fn clear_all_categories(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
 
     // =====
     //  get
@@ -242,6 +281,12 @@ pub trait CardService: Clone + Send + Sync + 'static {
     fn get_cards(
         &self,
         request: &ScryfallDataIds,
+    ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
+
+    /// Returns all printings of a card by oracle_id, ordered by release date.
+    fn get_printings(
+        &self,
+        oracle_id: uuid::Uuid,
     ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
 
     /// Searches for complete cards matching filter criteria.

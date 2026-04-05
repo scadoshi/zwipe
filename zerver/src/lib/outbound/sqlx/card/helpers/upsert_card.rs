@@ -10,7 +10,7 @@
 
 use zwipe_core::domain::card::{Card, card_profile::CardProfile, scryfall_data::ScryfallData};
 use crate::domain::card::models::helpers::SleeveScryfallData;
-use crate::domain::card::models::sync_metrics::{ErrorMetrics, SyncMetrics};
+use crate::domain::card::models::zervice_metrics::{ErrorMetrics, ZerviceMetrics};
 use crate::domain::card::requests::{
     create_card::CreateCardError,
     get_scryfall_data::ScryfallDataIds,
@@ -90,7 +90,7 @@ impl SingleUpsertWithTx for ScryfallData {
              VALUES ($1, $2)
              ON CONFLICT (scryfall_data_id)
              DO UPDATE SET updated_at = NOW(), is_token = EXCLUDED.is_token
-             RETURNING scryfall_data_id, is_token, created_at, updated_at",
+             RETURNING scryfall_data_id, is_token, mechanical_categories, created_at, updated_at",
             scryfall_data_id,
             is_token
         )
@@ -161,7 +161,7 @@ impl BulkUpsertWithTx for &[ScryfallData] {
         }
         card_profile_query_builder
             .push(" ON CONFLICT (scryfall_data_id) DO UPDATE SET updated_at = NOW(), is_token = EXCLUDED.is_token ");
-        card_profile_query_builder.push(" RETURNING scryfall_data_id, is_token, created_at, updated_at;");
+        card_profile_query_builder.push(" RETURNING scryfall_data_id, is_token, mechanical_categories, created_at, updated_at;");
         let card_profiles: Vec<CardProfile> = card_profile_query_builder
             .build_query_as::<DatabaseCardProfile>()
             .fetch_all(&mut **tx)
@@ -185,12 +185,12 @@ where
 {
     /// Upserts cards in batches, tracking metrics and handling failures gracefully.
     ///
-    /// Updates `sync_metrics` with counts of upserted cards and any errors encountered.
+    /// Updates `zervice_metrics` with counts of upserted cards and any errors encountered.
     fn batch_upsert_with_tx(
         self,
         tx: &mut PgTransaction<'_>,
         batch_size: usize,
-        sync_metrics: &mut SyncMetrics,
+        zervice_metrics: &mut ZerviceMetrics,
     ) -> impl Future<Output = Result<Vec<Card>, CreateCardError>> + Send;
 }
 
@@ -202,19 +202,19 @@ where
 async fn upsert_card_by_card(
     batch: &[ScryfallData],
     tx: &mut PgTransaction<'_>,
-    sync_metrics: &mut SyncMetrics,
+    zervice_metrics: &mut ZerviceMetrics,
 ) {
     for card in batch {
         match card.single_upsert_with_tx(tx).await {
             Ok(_) => {
-                sync_metrics.add_upserted_count(1);
+                zervice_metrics.add_upserted_count(1);
             }
             Err(e) => {
                 // ignore tx abort messages as they are never root cause
                 if !e.to_string().contains(POSTGRES_TX_ABORT_MESSAGE) {
                     let error = ErrorMetrics::new(card.id, &card.name, e.to_string());
                     tracing::warn!("insertion failure => {}", error);
-                    sync_metrics.add_error(error);
+                    zervice_metrics.add_error(error);
                 }
             }
         }
@@ -226,7 +226,7 @@ impl BatchUpsertWithTx for &[ScryfallData] {
         self,
         tx: &mut PgTransaction<'_>,
         batch_size: usize,
-        sync_metrics: &mut SyncMetrics,
+        zervice_metrics: &mut ZerviceMetrics,
     ) -> Result<Vec<Card>, CreateCardError> {
         let mut cards: Vec<Card> = Vec::new();
         for chunk in self.chunks(batch_size) {
@@ -234,11 +234,11 @@ impl BatchUpsertWithTx for &[ScryfallData] {
                 Ok(upserted) => {
                     let upserted_count = upserted.len();
                     cards.extend(upserted);
-                    sync_metrics.add_upserted_count(upserted_count as i32);
+                    zervice_metrics.add_upserted_count(upserted_count as i32);
                 }
                 Err(e) => {
                     tracing::warn!("batch failed with error: {:?}\nretrying card by card", e);
-                    upsert_card_by_card(chunk, tx, sync_metrics).await;
+                    upsert_card_by_card(chunk, tx, zervice_metrics).await;
                 }
             }
         }
@@ -305,12 +305,12 @@ where
 {
     /// Batch-processes cards with delta detection and automatic fallback.
     ///
-    /// Updates `sync_metrics` with upserted, skipped, and error counts.
+    /// Updates `zervice_metrics` with upserted, skipped, and error counts.
     fn batch_delta_upsert_with_tx(
         self,
         tx: &mut PgTransaction<'_>,
         batch_size: usize,
-        sync_metrics: &mut SyncMetrics,
+        zervice_metrics: &mut ZerviceMetrics,
     ) -> impl Future<Output = Result<Vec<Card>, CreateCardError>> + Send;
 }
 
@@ -319,19 +319,19 @@ impl BatchDeltaUpsertWithTx for &[ScryfallData] {
         self,
         tx: &mut PgTransaction<'_>,
         batch_size: usize,
-        sync_metrics: &mut SyncMetrics,
+        zervice_metrics: &mut ZerviceMetrics,
     ) -> Result<Vec<Card>, CreateCardError> {
         let mut cards: Vec<Card> = Vec::new();
         for chunk in self.chunks(batch_size) {
             match chunk.bulk_delta_upsert_with_tx(tx).await {
                 Ok((upserted, skipped)) => {
-                    sync_metrics.add_upserted_count(upserted.len() as i32);
-                    sync_metrics.add_skipped_count(skipped as i32);
+                    zervice_metrics.add_upserted_count(upserted.len() as i32);
+                    zervice_metrics.add_skipped_count(skipped as i32);
                     cards.extend(upserted);
                 }
                 Err(e) => {
                     tracing::warn!("batch failed with error: {:?}\nretrying card by card", e);
-                    upsert_card_by_card(chunk, tx, sync_metrics).await;
+                    upsert_card_by_card(chunk, tx, zervice_metrics).await;
                 }
             }
         }
