@@ -1,5 +1,6 @@
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
+#[cfg(feature = "zerver")]
 use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::auth::models::session::Session;

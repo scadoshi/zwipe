@@ -2,6 +2,7 @@
 use crate::inbound::http::Log500;
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
+#[cfg(feature = "zerver")]
 use zwipe_core::http::contracts::auth::HttpRegisterUser;
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::auth::models::session::Session;
