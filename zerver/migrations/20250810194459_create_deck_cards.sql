@@ -3,7 +3,7 @@ CREATE TABLE deck_cards (
     scryfall_data_id UUID NOT NULL,
     oracle_id UUID NOT NULL,
     quantity INT NOT NULL,
-    maybeboard BOOLEAN NOT NULL DEFAULT FALSE,
+    board TEXT NOT NULL DEFAULT 'deck',
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     CONSTRAINT fk_deck
@@ -15,7 +15,8 @@ CREATE TABLE deck_cards (
         REFERENCES scryfall_data (id)
         ON DELETE CASCADE,
     CONSTRAINT deck_card_oracle_unique UNIQUE (deck_id, oracle_id),
-    CONSTRAINT positive_quantity CHECK (quantity > 0)
+    CONSTRAINT positive_quantity CHECK (quantity > 0),
+    CONSTRAINT valid_board CHECK (board IN ('deck', 'maybeboard', 'sideboard'))
 );
 
 CREATE INDEX idx_deck_cards_oracle_id ON deck_cards(oracle_id);

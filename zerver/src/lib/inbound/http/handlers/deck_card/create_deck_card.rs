@@ -4,6 +4,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
+#[cfg(feature = "zerver")]
 use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::user::requests::get_user::GetUser;
@@ -88,7 +89,8 @@ where
 {
     let db_user = state.user_service.get_user(&GetUser::from(user.id)).await?;
     let email_verified = db_user.email_verified_at.is_some();
-    let request = CreateDeckCard::new(user.id, &deck_id, &body.scryfall_data_id, &body.oracle_id, body.quantity, body.maybeboard, email_verified)?;
+    let board = body.board.as_deref().map(zwipe_core::domain::deck::Board::try_from).transpose().map_err(|_| ApiError::UnprocessableEntity("invalid board value".to_string()))?;
+    let request = CreateDeckCard::new(user.id, &deck_id, &body.scryfall_data_id, &body.oracle_id, body.quantity, board, email_verified)?;
 
     state
         .deck_service
