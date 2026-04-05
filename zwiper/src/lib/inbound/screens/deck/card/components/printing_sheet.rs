@@ -1,29 +1,22 @@
 //! Bottom sheet for browsing and selecting card printings.
 
-use crate::inbound::components::auth::session_upkeep::Upkeep;
 use crate::inbound::components::interactions::carousel::dots::CarouselDots;
 use crate::inbound::components::interactions::carousel::state::CarouselState;
 use crate::inbound::components::interactions::carousel::Carousel;
-use crate::outbound::client::{
-    ZwipeClient,
-    card::get_printings::ClientGetPrintings,
-    deck_card::update_deck_card::ClientUpdateDeckCard,
-};
+use crate::outbound::client::{ZwipeClient, card::get_printings::ClientGetPrintings};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
-use zwipe_core::http::contracts::deck_card::HttpUpdateDeckCard;
 
 /// Bottom sheet for browsing all printings of a card and selecting one.
 #[component]
 pub(crate) fn PrintingSheet(
     card: Card,
-    deck_id: Uuid,
     mut open: Signal<bool>,
-    on_printing_changed: EventHandler<Card>,
+    on_save: EventHandler<Card>,
 ) -> Element {
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
@@ -192,29 +185,8 @@ pub(crate) fn PrintingSheet(
                                 button {
                                     class: "util-btn",
                                     onclick: move |_| {
-                                        let new_card = new_card.clone();
-                                        let new_id = new_card.scryfall_data.id;
-                                        let request = HttpUpdateDeckCard::with_printing(&new_id.to_string());
-
-                                        session.upkeep(client);
-                                        let Some(session) = session() else { return; };
-
-                                        let on_printing_changed = on_printing_changed;
-                                        spawn(async move {
-                                            match client().update_deck_card(deck_id, current_scryfall_id, &request, &session).await {
-                                                Ok(_) => {
-                                                    toast.info(
-                                                        "printing updated".to_string(),
-                                                        ToastOptions::default().duration(Duration::from_millis(1500)),
-                                                    );
-                                                    on_printing_changed(new_card);
-                                                    open.set(false);
-                                                }
-                                                Err(e) => {
-                                                    toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
-                                                }
-                                            }
-                                        });
+                                        on_save(new_card.clone());
+                                        open.set(false);
                                     },
                                     "save"
                                 }

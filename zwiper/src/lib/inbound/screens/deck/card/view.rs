@@ -12,6 +12,7 @@ use crate::{
         deck::{
             get_deck::ClientGetDeck, get_deck_profile::ClientGetDeckProfile,
             get_deck_tokens::ClientGetDeckTokens,
+            update_deck_profile::ClientUpdateDeckProfile,
         },
         deck_card::{
             delete_deck_card::ClientDeleteDeckCard, update_deck_card::ClientUpdateDeckCard,
@@ -23,7 +24,9 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
 use zwipe::inbound::http::ApiError;
+use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::contracts::deck_card::HttpUpdateDeckCard;
+use zwipe_core::http::helpers::Opdate;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::{
     Card,
@@ -34,6 +37,15 @@ use zwipe_core::domain::card::{
     },
 };
 use zwipe_core::domain::deck::{DeckEntry, quantity::Quantity};
+
+/// Identifies which command zone slot a card occupies for printing updates.
+#[derive(Clone, Copy)]
+enum CommandZoneSlot {
+    Commander,
+    Partner,
+    Background,
+    SignatureSpell,
+}
 
 #[component]
 pub fn View(deck_id: Uuid) -> Element {
@@ -97,6 +109,7 @@ pub fn View(deck_id: Uuid) -> Element {
     // Printing sheet state
     let mut printing_sheet_open: Signal<bool> = use_signal(|| false);
     let mut printing_sheet_card: Signal<Option<Card>> = use_signal(|| None);
+    let mut command_zone_slot: Signal<Option<CommandZoneSlot>> = use_signal(|| None);
     // Controls the dismiss animation before clearing the URL
     let preview_dismissing: Signal<bool> = use_signal(|| false);
 
@@ -533,6 +546,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                             on_maybeboard_toggle: move |_| move_to_deck(card_id),
                                             maybeboard_label: "to deck".to_string(),
                                             on_printing: move |card: Card| {
+                                                command_zone_slot.set(None);
                                                 printing_sheet_card.set(Some(card));
                                                 printing_sheet_open.set(true);
                                             },
@@ -563,6 +577,11 @@ pub fn View(deck_id: Uuid) -> Element {
                                         expanded_card,
                                         preview_image_url,
                                         preview_dismissing,
+                                        on_printing: move |card: Card| {
+                                            command_zone_slot.set(Some(CommandZoneSlot::Commander));
+                                            printing_sheet_card.set(Some(card));
+                                            printing_sheet_open.set(true);
+                                        },
                                     }
                                 }
                                 if let Some(partner) = displayed_partner() {
@@ -572,6 +591,11 @@ pub fn View(deck_id: Uuid) -> Element {
                                         expanded_card,
                                         preview_image_url,
                                         preview_dismissing,
+                                        on_printing: move |card: Card| {
+                                            command_zone_slot.set(Some(CommandZoneSlot::Partner));
+                                            printing_sheet_card.set(Some(card));
+                                            printing_sheet_open.set(true);
+                                        },
                                     }
                                 }
                             }
@@ -587,6 +611,11 @@ pub fn View(deck_id: Uuid) -> Element {
                                     expanded_card,
                                     preview_image_url,
                                     preview_dismissing,
+                                    on_printing: move |card: Card| {
+                                        command_zone_slot.set(Some(CommandZoneSlot::Background));
+                                        printing_sheet_card.set(Some(card));
+                                        printing_sheet_open.set(true);
+                                    },
                                 }
                             }
                         }
@@ -601,6 +630,11 @@ pub fn View(deck_id: Uuid) -> Element {
                                     expanded_card,
                                     preview_image_url,
                                     preview_dismissing,
+                                    on_printing: move |card: Card| {
+                                        command_zone_slot.set(Some(CommandZoneSlot::SignatureSpell));
+                                        printing_sheet_card.set(Some(card));
+                                        printing_sheet_open.set(true);
+                                    },
                                 }
                             }
                         }
@@ -633,6 +667,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                             on_maybeboard_toggle: move |_| move_to_maybeboard(card_id),
                                             maybeboard_label: "to maybe".to_string(),
                                             on_printing: move |card: Card| {
+                                                command_zone_slot.set(None);
                                                 printing_sheet_card.set(Some(card));
                                                 printing_sheet_open.set(true);
                                             },
@@ -708,25 +743,58 @@ pub fn View(deck_id: Uuid) -> Element {
             if let Some(card) = printing_sheet_card() {
                 PrintingSheet {
                     card: card.clone(),
-                    deck_id: deck_id,
                     open: printing_sheet_open,
-                    on_printing_changed: move |new_card: Card| {
+                    on_save: move |new_card: Card| {
                         let old_id = card.scryfall_data.id;
                         let new_id = new_card.scryfall_data.id;
-                        // Swap the card in deck_entries
-                        if let Some(entry) = deck_entries
-                            .write()
-                            .iter_mut()
-                            .find(|e| e.card.scryfall_data.id == old_id)
-                        {
-                            entry.card = new_card.clone();
-                            entry.deck_card.scryfall_data_id = new_id;
+
+                        session.upkeep(client);
+                        let Some(session_val) = session() else { return; };
+
+                        match command_zone_slot() {
+                            Some(slot) => {
+                                // Command zone card — update deck profile
+                                let id = Opdate::Set(Some(new_id));
+                                let request = match slot {
+                                    CommandZoneSlot::Commander => HttpUpdateDeckProfile::builder().commander_id(id).build(),
+                                    CommandZoneSlot::Partner => HttpUpdateDeckProfile::builder().partner_commander_id(id).build(),
+                                    CommandZoneSlot::Background => HttpUpdateDeckProfile::builder().background_id(id).build(),
+                                    CommandZoneSlot::SignatureSpell => HttpUpdateDeckProfile::builder().signature_spell_id(id).build(),
+                                };
+                                spawn(async move {
+                                    if client().update_deck_profile(deck_id, &request, &session_val).await.is_ok() {
+                                        match slot {
+                                            CommandZoneSlot::Commander => commander_card.set(Some(new_card.clone())),
+                                            CommandZoneSlot::Partner => partner_card.set(Some(new_card.clone())),
+                                            CommandZoneSlot::Background => background_card.set(Some(new_card.clone())),
+                                            CommandZoneSlot::SignatureSpell => signature_spell_card.set(Some(new_card.clone())),
+                                        }
+                                        printing_sheet_card.set(Some(new_card));
+                                        let next = filter_reset_counter() + 1;
+                                        filter_reset_counter.set(next);
+                                    }
+                                });
+                            }
+                            None => {
+                                // Regular deck card — update deck card
+                                let request = HttpUpdateDeckCard::with_printing(&new_id.to_string());
+                                spawn(async move {
+                                    if client().update_deck_card(deck_id, old_id, &request, &session_val).await.is_ok() {
+                                        if let Some(entry) = deck_entries
+                                            .write()
+                                            .iter_mut()
+                                            .find(|e| e.card.scryfall_data.id == old_id)
+                                        {
+                                            entry.card = new_card.clone();
+                                            entry.deck_card.scryfall_data_id = new_id;
+                                        }
+                                        printing_sheet_card.set(Some(new_card));
+                                        let next = filter_reset_counter() + 1;
+                                        filter_reset_counter.set(next);
+                                    }
+                                });
+                            }
                         }
-                        // Update the printing sheet card to reflect the change
-                        printing_sheet_card.set(Some(new_card));
-                        // Trigger re-filter to update the display
-                        let current = *filter_reset_counter.peek();
-                        filter_reset_counter.set(current + 1);
                     },
                 }
             }
