@@ -622,15 +622,15 @@
     --bg-primary: #1a1e28;
     --bg-overlay: rgba(0, 0, 0, 0.6);
 
-    /* Text (magenta off-white) */
-    --text-primary: #decdd8;
-    --text-muted: #a3899a;
-    --text-subtle: #baa0b2;
+    /* Text (off-white cream) */
+    --text-primary: #d6d1cb;
+    --text-muted: #979085;
+    --text-subtle: #afa79d;
 
-    /* Borders (cool blue-grey) */
+    /* Borders (slate blue) */
     --border-primary: #4e5664;
     --border-secondary: #303237;
-    --border-muted: #3e424b;
+    --border-muted: #3e4249;
 
     /* Status Colors */
     --color-error: #d13b3b;
@@ -642,10 +642,10 @@
     --border-success: #2d7040;
     --border-warning: #8a7020;
 
-    /* Accents */
-    --accent-primary: #7a9ab8;
-    --accent-secondary: #00d4ff;
-    --accent-tertiary: #5c7a94;
+    /* Accents (faded slate blue) */
+    --accent-primary: #5f7da9;
+    --accent-secondary: #5f7da9;
+    --accent-tertiary: #5f7da9;
 
     /* Shadows */
     --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
