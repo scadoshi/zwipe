@@ -179,12 +179,12 @@ pub(crate) fn DeckFields(
     });
 
     // ========================================
-    // Partner debounced search
+    // Partner debounced search (1 char minimum — small card pool)
     // ========================================
     use_effect(move || {
         let query = partner_search_query();
 
-        if query.len() < 3 {
+        if query.is_empty() {
             partner_show_dropdown.set(false);
             partner_is_searching.set(false);
             return;
@@ -200,11 +200,14 @@ pub(crate) fn DeckFields(
             }
 
             if let Some(session) = session() {
-                let mut builder = CardFilterBuilder::with_name_contains(&query);
+                let mut builder = CardFilterBuilder::new();
+                if !query.is_empty() {
+                    builder.set_name_contains(&query);
+                }
                 if partner_filter_on() {
                     builder.set_is_partner(true);
                 }
-                builder.set_limit(5);
+                builder.set_limit(10);
                 let Ok(card_filter) = builder.build() else {
                     return;
                 };
@@ -225,12 +228,12 @@ pub(crate) fn DeckFields(
     });
 
     // ========================================
-    // Background debounced search
+    // Background debounced search (1 char minimum — small card pool)
     // ========================================
     use_effect(move || {
         let query = bg_search_query();
 
-        if query.len() < 3 {
+        if query.is_empty() {
             bg_show_dropdown.set(false);
             bg_is_searching.set(false);
             return;
@@ -246,11 +249,14 @@ pub(crate) fn DeckFields(
             }
 
             if let Some(session) = session() {
-                let mut builder = CardFilterBuilder::with_name_contains(&query);
+                let mut builder = CardFilterBuilder::new();
+                if !query.is_empty() {
+                    builder.set_name_contains(&query);
+                }
                 if bg_filter_on() {
                     builder.set_is_background(true);
                 }
-                builder.set_limit(5);
+                builder.set_limit(10);
                 let Ok(card_filter) = builder.build() else {
                     return;
                 };

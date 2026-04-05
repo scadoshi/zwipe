@@ -76,6 +76,12 @@ pub fn View(deck_id: Uuid) -> Element {
     let mut displayed_commander: Signal<Option<Card>> = use_signal(|| None);
     // Signature spell filtered by the active filter
     let mut displayed_signature_spell: Signal<Option<Card>> = use_signal(|| None);
+    // Partner commander pinned alongside commander
+    let mut partner_card: Signal<Option<Card>> = use_signal(|| None);
+    let mut displayed_partner: Signal<Option<Card>> = use_signal(|| None);
+    // Background enchantment pinned in its own group
+    let mut background_card: Signal<Option<Card>> = use_signal(|| None);
+    let mut displayed_background: Signal<Option<Card>> = use_signal(|| None);
     // Toggle to show/hide land cards (default: hidden)
     let mut show_lands: Signal<bool> = use_signal(|| false);
     // Toggle to show/hide tokens at the top of the list
@@ -146,6 +152,30 @@ pub fn View(deck_id: Uuid) -> Element {
                     };
                     signature_spell_card.set(spell);
                 }
+
+                if let Some(partner_id) = profile.partner_commander_id {
+                    let p = if let Some(idx) = entries
+                        .iter()
+                        .position(|e| e.card.scryfall_data.id == partner_id)
+                    {
+                        Some(entries.remove(idx).card)
+                    } else {
+                        client().get_card(partner_id, &session).await.ok()
+                    };
+                    partner_card.set(p);
+                }
+
+                if let Some(bg_id) = profile.background_id {
+                    let bg = if let Some(idx) = entries
+                        .iter()
+                        .position(|e| e.card.scryfall_data.id == bg_id)
+                    {
+                        Some(entries.remove(idx).card)
+                    } else {
+                        client().get_card(bg_id, &session).await.ok()
+                    };
+                    background_card.set(bg);
+                }
             }
 
             // Update DeckCards context for filter sheet (all cards including maybeboard)
@@ -203,9 +233,16 @@ pub fn View(deck_id: Uuid) -> Element {
         let lands_visible = *show_lands.peek();
         let cmd = commander_card.peek().clone();
         let spell = signature_spell_card.peek().clone();
+        let partner = partner_card.peek().clone();
+        let bg = background_card.peek().clone();
 
-        let (mut filtered, new_displayed_commander, new_displayed_spell) = if builder.is_empty() {
-            (active_cards, cmd, spell)
+        // Apply filter to pinned cards helper
+        let filter_pinned = |card: Option<Card>, filter: &zwipe_core::domain::card::search_card::card_filter::CardFilter| -> Option<Card> {
+            card.filter(|c| !vec![c.clone()].filter_by(filter).is_empty())
+        };
+
+        let (mut filtered, new_cmd, new_spell, new_partner, new_bg) = if builder.is_empty() {
+            (active_cards, cmd, spell, partner, bg)
         } else {
             let mut b = builder.clone();
             b.set_limit(10_000);
@@ -213,11 +250,13 @@ pub fn View(deck_id: Uuid) -> Element {
             match b.build() {
                 Ok(filter) => {
                     let filtered = active_cards.filter_by(&filter);
-                    let cmd_visible =
-                        cmd.filter(|c| !vec![c.clone()].filter_by(&filter).is_empty());
-                    let spell_visible =
-                        spell.filter(|c| !vec![c.clone()].filter_by(&filter).is_empty());
-                    (filtered, cmd_visible, spell_visible)
+                    (
+                        filtered,
+                        filter_pinned(cmd, &filter),
+                        filter_pinned(spell, &filter),
+                        filter_pinned(partner, &filter),
+                        filter_pinned(bg, &filter),
+                    )
                 }
                 Err(_) => {
                     let fallback: Vec<Card> = deck_entries
@@ -226,7 +265,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         .filter(|e| !e.deck_card.maybeboard)
                         .map(|e| e.card.clone())
                         .collect();
-                    (fallback, cmd, spell)
+                    (fallback, cmd, spell, partner, bg)
                 }
             }
         };
@@ -241,8 +280,10 @@ pub fn View(deck_id: Uuid) -> Element {
 
         let groups = filtered.group_by(group_option);
         displayed_groups.set(groups);
-        displayed_commander.set(new_displayed_commander);
-        displayed_signature_spell.set(new_displayed_spell);
+        displayed_commander.set(new_cmd);
+        displayed_signature_spell.set(new_spell);
+        displayed_partner.set(new_partner);
+        displayed_background.set(new_bg);
         expanded_card.set(None);
     });
 
@@ -501,14 +542,45 @@ pub fn View(deck_id: Uuid) -> Element {
                         }
                     }
 
-                    // Pinned commander/oathbreaker group
-                    if let Some(cmd) = displayed_commander() {
+                    // Pinned commander/oathbreaker group (includes partner if present)
+                    if displayed_commander().is_some() || displayed_partner().is_some() {
                         div { class: "card-group row-enter",
                             div { class: "card-group-header",
-                                if is_oathbreaker() { "oathbreaker" } else { "commander" }
+                                if is_oathbreaker() {
+                                    "oathbreaker"
+                                } else if displayed_partner().is_some() {
+                                    "commanders"
+                                } else {
+                                    "commander"
+                                }
                             }
+                            if let Some(cmd) = displayed_commander() {
+                                CardRow {
+                                    card: cmd,
+                                    qty: 1,
+                                    expanded_card,
+                                    preview_image_url,
+                                    preview_dismissing,
+                                }
+                            }
+                            if let Some(partner) = displayed_partner() {
+                                CardRow {
+                                    card: partner,
+                                    qty: 1,
+                                    expanded_card,
+                                    preview_image_url,
+                                    preview_dismissing,
+                                }
+                            }
+                        }
+                    }
+
+                    // Pinned background group
+                    if let Some(bg) = displayed_background() {
+                        div { class: "card-group row-enter",
+                            div { class: "card-group-header", "background" }
                             CardRow {
-                                card: cmd,
+                                card: bg,
                                 qty: 1,
                                 expanded_card,
                                 preview_image_url,
