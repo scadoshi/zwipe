@@ -230,9 +230,15 @@ fn printing_info(card: &Card) -> Element {
         "\u{00a0}".to_string()
     };
 
+    let artist_text = card.scryfall_data.artist.as_deref()
+        .filter(|a| !a.is_empty())
+        .map(|a| format!("artist: {}", a.to_lowercase()))
+        .unwrap_or_else(|| "\u{00a0}".to_string());
+
     rsx! {
         div { class: "card-info",
             span { "{price_text}" }
+            span { "{artist_text}" }
             span { "set: {card.scryfall_data.set_name.to_lowercase()}" }
             span { "released: {card.scryfall_data.released_at}" }
         }
