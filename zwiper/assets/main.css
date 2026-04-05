@@ -1311,7 +1311,7 @@ body {
 }
 
 .card-exit-animation {
-    animation: var(--card-exit-direction, card-exit-left) 0.15s ease-out
+    animation: var(--card-exit-direction, card-exit-left) 0.075s ease-out
         forwards;
 }
 
@@ -2114,6 +2114,7 @@ body {
 .qty-row {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0.5rem;
     margin-top: 0.5rem;
 }

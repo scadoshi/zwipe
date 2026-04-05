@@ -36,7 +36,7 @@ use zwipe_core::domain::card::{
         group_cards::{CardGroup, GroupByOption, GroupCards},
     },
 };
-use zwipe_core::domain::deck::{DeckEntry, quantity::Quantity};
+use zwipe_core::domain::deck::{Board, DeckEntry, quantity::Quantity};
 
 /// Identifies which command zone slot a card occupies for printing updates.
 #[derive(Clone, Copy)]
@@ -101,8 +101,10 @@ pub fn View(deck_id: Uuid) -> Element {
     let mut show_tokens: Signal<bool> = use_signal(|| false);
     // Toggle to show/hide command zone pinned sections (default: shown)
     let mut show_command_zone: Signal<bool> = use_signal(|| true);
-    // Toggle to show/hide maybeboard section
-    let mut show_maybeboard: Signal<bool> = use_signal(|| false);
+    // Board filter — multi-select toggles (deck is always on)
+    let mut show_deck: Signal<bool> = use_signal(|| true);
+    let mut show_maybe: Signal<bool> = use_signal(|| false);
+    let mut show_side: Signal<bool> = use_signal(|| false);
 
     // Card image preview — stores the image URL of the card to preview (None = closed)
     let preview_image_url: Signal<Option<String>> = use_signal(|| None);
@@ -210,8 +212,7 @@ pub fn View(deck_id: Uuid) -> Element {
         client().get_deck_tokens(deck_id, &session).await
     });
 
-    // Effect 2 — filter + group (reads `filter_reset_counter`, `group_by_option`, `show_lands` reactively)
-    // Operates on active (non-maybeboard) cards only.
+    // Effect 2 — filter + group (reads `filter_reset_counter`, `group_by_option`, `show_lands`, `board_filter` reactively)
     use_effect(move || {
         let _ = filter_reset_counter();
         let _ = group_by_option();
@@ -221,17 +222,14 @@ pub fn View(deck_id: Uuid) -> Element {
             return;
         }
 
-        // Extract active (non-maybeboard) cards for filtering and grouping
+        // Only active deck cards go through the group-by pipeline.
+        // Maybeboard and sideboard are rendered as their own sections.
         let active_cards: Vec<Card> = deck_entries
             .peek()
             .iter()
-            .filter(|e| !e.deck_card.maybeboard)
+            .filter(|e| e.deck_card.board.is_active())
             .map(|e| e.card.clone())
             .collect();
-
-        // Also update the DeckCards context for the filter sheet (all cards)
-        // We can't write to a Memo, so we just use the context signal
-        // (The filter sheet reads DeckCards context for extracting selectable values)
 
         let builder = filter_builder.peek().clone();
         let group_option = *group_by_option.peek();
@@ -264,13 +262,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     )
                 }
                 Err(_) => {
-                    let fallback: Vec<Card> = deck_entries
-                        .peek()
-                        .iter()
-                        .filter(|e| !e.deck_card.maybeboard)
-                        .map(|e| e.card.clone())
-                        .collect();
-                    (fallback, cmd, spell, partner, bg)
+                    (active_cards, cmd, spell, partner, bg)
                 }
             }
         };
@@ -331,6 +323,9 @@ pub fn View(deck_id: Uuid) -> Element {
             {
                 entry.deck_card.quantity = new_qty;
             }
+            // Trigger re-render so qty display updates
+            let current = *filter_reset_counter.peek();
+            filter_reset_counter.set(current + 1);
 
             let request = HttpUpdateDeckCard::new(Some(delta), None);
             spawn(async move {
@@ -348,30 +343,40 @@ pub fn View(deck_id: Uuid) -> Element {
                     {
                         entry.deck_card.quantity = reverted;
                     }
+                    let current = *filter_reset_counter.peek();
+                    filter_reset_counter.set(current + 1);
                 }
             });
         }
     };
 
-    let mut move_to_maybeboard = move |card_id: Uuid| {
+    let mut move_to_board = move |card_id: Uuid, target: Board| {
         session.upkeep(client);
         let Some(session) = session() else {
             toast.error("session expired".to_string(), ToastOptions::default());
             return;
         };
 
-        // Optimistic: flip the flag
+        // Save old board for rollback
+        let old_board = deck_entries
+            .peek()
+            .iter()
+            .find(|e| e.card.scryfall_data.id == card_id)
+            .map(|e| e.deck_card.board)
+            .unwrap_or(Board::Deck);
+
+        // Optimistic: set the board
         if let Some(entry) = deck_entries
             .write()
             .iter_mut()
             .find(|e| e.card.scryfall_data.id == card_id)
         {
-            entry.deck_card.maybeboard = true;
+            entry.deck_card.board = target;
         }
         let current = *filter_reset_counter.peek();
         filter_reset_counter.set(current + 1);
 
-        let request = HttpUpdateDeckCard::new(None, Some(true));
+        let request = HttpUpdateDeckCard::new(None, Some(target.display_name().to_string()));
         spawn(async move {
             if let Err(e) = client()
                 .update_deck_card(deck_id, card_id, &request, &session)
@@ -384,7 +389,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     .iter_mut()
                     .find(|e| e.card.scryfall_data.id == card_id)
                 {
-                    entry.deck_card.maybeboard = false;
+                    entry.deck_card.board = old_board;
                 }
                 let current = *filter_reset_counter.peek();
                 filter_reset_counter.set(current + 1);
@@ -392,60 +397,10 @@ pub fn View(deck_id: Uuid) -> Element {
         });
 
         toast.info(
-            "moved to maybeboard".to_string(),
+            format!("moved to {}", target.display_name()),
             ToastOptions::default().duration(Duration::from_millis(1500)),
         );
     };
-
-    let mut move_to_deck = move |card_id: Uuid| {
-        session.upkeep(client);
-        let Some(session) = session() else {
-            toast.error("session expired".to_string(), ToastOptions::default());
-            return;
-        };
-
-        // Optimistic: flip the flag
-        if let Some(entry) = deck_entries
-            .write()
-            .iter_mut()
-            .find(|e| e.card.scryfall_data.id == card_id)
-        {
-            entry.deck_card.maybeboard = false;
-        }
-        let current = *filter_reset_counter.peek();
-        filter_reset_counter.set(current + 1);
-
-        let request = HttpUpdateDeckCard::new(None, Some(false));
-        spawn(async move {
-            if let Err(e) = client()
-                .update_deck_card(deck_id, card_id, &request, &session)
-                .await
-            {
-                toast.error(e.to_string(), ToastOptions::default());
-                // Rollback
-                if let Some(entry) = deck_entries
-                    .write()
-                    .iter_mut()
-                    .find(|e| e.card.scryfall_data.id == card_id)
-                {
-                    entry.deck_card.maybeboard = true;
-                }
-                let current = *filter_reset_counter.peek();
-                filter_reset_counter.set(current + 1);
-            }
-        });
-
-        toast.info(
-            "added to deck".to_string(),
-            ToastOptions::default().duration(Duration::from_millis(1500)),
-        );
-    };
-
-    let maybeboard_entries: Vec<DeckEntry> = deck_entries()
-        .into_iter()
-        .filter(|e| e.deck_card.maybeboard)
-        .collect();
-    let mb_count = maybeboard_entries.len();
 
     rsx! {
         Bouncer {
@@ -470,6 +425,51 @@ pub fn View(deck_id: Uuid) -> Element {
                         }
                     }
 
+                    // Board filter row (multi-select, at least one must be on)
+                    div { class: "chip-row",
+                        span { class: "chip-row-label", "boards:" }
+                        button {
+                            class: if show_deck() { "chip selected" } else { "chip" },
+                            onclick: move |_| {
+                                let new_val = !show_deck();
+                                show_deck.set(new_val);
+                                // If nothing is on, snap deck back on
+                                if !new_val && !show_maybe() && !show_side() {
+                                    show_deck.set(true);
+                                }
+                                let current = *filter_reset_counter.peek();
+                                filter_reset_counter.set(current + 1);
+                            },
+                            "deck"
+                        }
+                        button {
+                            class: if show_maybe() { "chip selected" } else { "chip" },
+                            onclick: move |_| {
+                                let new_val = !show_maybe();
+                                show_maybe.set(new_val);
+                                if !show_deck() && !new_val && !show_side() {
+                                    show_deck.set(true);
+                                }
+                                let current = *filter_reset_counter.peek();
+                                filter_reset_counter.set(current + 1);
+                            },
+                            "maybe"
+                        }
+                        button {
+                            class: if show_side() { "chip selected" } else { "chip" },
+                            onclick: move |_| {
+                                let new_val = !show_side();
+                                show_side.set(new_val);
+                                if !show_deck() && !show_maybe() && !new_val {
+                                    show_deck.set(true);
+                                }
+                                let current = *filter_reset_counter.peek();
+                                filter_reset_counter.set(current + 1);
+                            },
+                            "side"
+                        }
+                    }
+
                     // Show toggles row
                     div { class: "chip-row",
                         span { class: "chip-row-label", "show:" }
@@ -482,13 +482,6 @@ pub fn View(deck_id: Uuid) -> Element {
                             class: if show_tokens() { "chip selected" } else { "chip" },
                             onclick: move |_| show_tokens.set(!show_tokens()),
                             "tokens"
-                        }
-                        if mb_count > 0 {
-                            button {
-                                class: if show_maybeboard() { "chip selected" } else { "chip" },
-                                onclick: move |_| show_maybeboard.set(!show_maybeboard()),
-                                "maybeboard ({mb_count})"
-                            }
                         }
                         button {
                             class: if show_command_zone() { "chip selected" } else { "chip" },
@@ -506,7 +499,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         span { class: "card-row-colors", "colors" }
                     }
 
-                    // Token list (above everything when toggled)
+                    // Token list
                     if show_tokens() {
                         if let Some(Ok(tokens)) = tokens_resource() {
                             if !tokens.is_empty() {
@@ -526,30 +519,79 @@ pub fn View(deck_id: Uuid) -> Element {
                         }
                     }
 
-                    // Maybeboard section (between tokens and commander)
-                    if show_maybeboard() && !maybeboard_entries.is_empty() {
-                        div { class: "card-group row-enter",
-                            div { class: "card-group-header", "maybeboard ({mb_count})" }
-                            for entry in maybeboard_entries.iter() {
-                                {
-                                    let card_id = entry.card.scryfall_data.id;
-                                    let is_basic_land = entry.card.scryfall_data.is_basic_land();
-                                    let qty = *entry.deck_card.quantity;
-                                    rsx! {
-                                        CardRow {
-                                            card: entry.card.clone(),
-                                            qty,
-                                            expanded_card,
-                                            preview_image_url,
-                                            preview_dismissing,
-                                            on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land),
-                                            on_maybeboard_toggle: move |_| move_to_deck(card_id),
-                                            maybeboard_label: "to deck".to_string(),
-                                            on_printing: move |card: Card| {
-                                                command_zone_slot.set(None);
-                                                printing_sheet_card.set(Some(card));
-                                                printing_sheet_open.set(true);
-                                            },
+                    // Maybeboard section
+                    {
+                        let mb_entries: Vec<DeckEntry> = deck_entries()
+                            .into_iter()
+                            .filter(|e| e.deck_card.board.is_maybeboard())
+                            .collect();
+                        let mb_count = mb_entries.len();
+                        rsx! {
+                            if show_maybe() && !mb_entries.is_empty() {
+                                div { class: "card-group row-enter",
+                                    div { class: "card-group-header", "maybeboard ({mb_count})" }
+                                    for entry in mb_entries.iter() {
+                                        {
+                                            let card_id = entry.card.scryfall_data.id;
+                                            let is_basic_land = entry.card.scryfall_data.is_basic_land();
+                                            let qty = *entry.deck_card.quantity;
+                                            rsx! {
+                                                CardRow {
+                                                    card: entry.card.clone(),
+                                                    qty,
+                                                    expanded_card,
+                                                    preview_image_url,
+                                                    preview_dismissing,
+                                                    on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land),
+                                                    on_move_to: move |target: Board| move_to_board(card_id, target),
+                                                    current_board: Some(Board::Maybeboard),
+                                                    on_printing: move |card: Card| {
+                                                        command_zone_slot.set(None);
+                                                        printing_sheet_card.set(Some(card));
+                                                        printing_sheet_open.set(true);
+                                                    },
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Sideboard section
+                    {
+                        let sb_entries: Vec<DeckEntry> = deck_entries()
+                            .into_iter()
+                            .filter(|e| e.deck_card.board.is_sideboard())
+                            .collect();
+                        let sb_count = sb_entries.len();
+                        rsx! {
+                            if show_side() && !sb_entries.is_empty() {
+                                div { class: "card-group row-enter",
+                                    div { class: "card-group-header", "sideboard ({sb_count})" }
+                                    for entry in sb_entries.iter() {
+                                        {
+                                            let card_id = entry.card.scryfall_data.id;
+                                            let is_basic_land = entry.card.scryfall_data.is_basic_land();
+                                            let qty = *entry.deck_card.quantity;
+                                            rsx! {
+                                                CardRow {
+                                                    card: entry.card.clone(),
+                                                    qty,
+                                                    expanded_card,
+                                                    preview_image_url,
+                                                    preview_dismissing,
+                                                    on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land),
+                                                    on_move_to: move |target: Board| move_to_board(card_id, target),
+                                                    current_board: Some(Board::Sideboard),
+                                                    on_printing: move |card: Card| {
+                                                        command_zone_slot.set(None);
+                                                        printing_sheet_card.set(Some(card));
+                                                        printing_sheet_open.set(true);
+                                                    },
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -656,6 +698,9 @@ pub fn View(deck_id: Uuid) -> Element {
                                     let card_id = card.scryfall_data.id;
                                     let is_basic_land = card.scryfall_data.is_basic_land();
                                     let qty = qty_for(card_id);
+                                    let card_board = deck_entries.peek().iter()
+                                        .find(|e| e.card.scryfall_data.id == card_id)
+                                        .map(|e| e.deck_card.board);
                                     rsx! {
                                         CardRow {
                                             card: card.clone(),
@@ -664,8 +709,8 @@ pub fn View(deck_id: Uuid) -> Element {
                                             preview_image_url,
                                             preview_dismissing,
                                             on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land),
-                                            on_maybeboard_toggle: move |_| move_to_maybeboard(card_id),
-                                            maybeboard_label: "to maybe".to_string(),
+                                            on_move_to: move |target: Board| move_to_board(card_id, target),
+                                            current_board: card_board,
                                             on_printing: move |card: Card| {
                                                 command_zone_slot.set(None);
                                                 printing_sheet_card.set(Some(card));

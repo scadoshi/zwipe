@@ -176,7 +176,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let tcg_url = deck_data.as_ref().map(|(entries, _)| {
         let active: Vec<_> = entries
             .iter()
-            .filter(|e| !e.deck_card.maybeboard)
+            .filter(|e| e.deck_card.board.is_active() || e.deck_card.board.is_sideboard())
             .cloned()
             .collect();
         buy_links::tcgplayer_url(&active, &cz_refs)
@@ -184,7 +184,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let ck_url = deck_data.as_ref().map(|(entries, _)| {
         let active: Vec<_> = entries
             .iter()
-            .filter(|e| !e.deck_card.maybeboard)
+            .filter(|e| e.deck_card.board.is_active() || e.deck_card.board.is_sideboard())
             .cloned()
             .collect();
         buy_links::cardkingdom_url(&active, &cz_refs)

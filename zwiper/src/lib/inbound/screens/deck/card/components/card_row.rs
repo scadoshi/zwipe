@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::deck::Board;
 
 /// Expandable card row with compact view and optional quantity controls.
 #[component]
@@ -11,8 +12,8 @@ pub(crate) fn CardRow(
     mut preview_image_url: Signal<Option<String>>,
     mut preview_dismissing: Signal<bool>,
     on_qty_change: Option<EventHandler<i32>>,
-    on_maybeboard_toggle: Option<EventHandler<()>>,
-    maybeboard_label: Option<String>,
+    on_move_to: Option<EventHandler<Board>>,
+    current_board: Option<Board>,
     on_printing: Option<EventHandler<Card>>,
 ) -> Element {
     let card_id = card.scryfall_data.id;
@@ -80,14 +81,23 @@ pub(crate) fn CardRow(
                         span { "{rarity_name} | {set_name}" }
                     }
                     div { class: "qty-row",
-                        if let Some(handler) = on_maybeboard_toggle {
+                        if let Some(handler) = on_qty_change {
                             button {
                                 class: "qty-btn",
                                 onclick: move |evt| {
                                     evt.stop_propagation();
-                                    handler.call(());
+                                    handler.call(-1);
                                 },
-                                "{maybeboard_label.clone().unwrap_or(\"maybe\".to_string())}"
+                                "-"
+                            }
+                            span { class: "qty-label", "{qty}" }
+                            button {
+                                class: "qty-btn",
+                                onclick: move |evt| {
+                                    evt.stop_propagation();
+                                    handler.call(1);
+                                },
+                                "+"
                             }
                         }
                         if let Some(url) = image_url {
@@ -116,23 +126,52 @@ pub(crate) fn CardRow(
                                 }
                             }
                         }
-                        if let Some(handler) = on_qty_change {
-                            button {
-                                class: "qty-btn",
-                                onclick: move |evt| {
-                                    evt.stop_propagation();
-                                    handler.call(-1);
+                    }
+                    if let Some(handler) = on_move_to {
+                        div { class: "qty-row",
+                            match current_board.unwrap_or(Board::Deck) {
+                                Board::Deck => rsx! {
+                                    button {
+                                        class: "qty-btn",
+                                        style: "white-space:nowrap;",
+                                        onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Maybeboard); },
+                                        "to maybeboard"
+                                    }
+                                    button {
+                                        class: "qty-btn",
+                                        style: "white-space:nowrap;",
+                                        onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Sideboard); },
+                                        "to sideboard"
+                                    }
                                 },
-                                "-"
-                            }
-                            span { class: "qty-label", "{qty}" }
-                            button {
-                                class: "qty-btn",
-                                onclick: move |evt| {
-                                    evt.stop_propagation();
-                                    handler.call(1);
+                                Board::Maybeboard => rsx! {
+                                    button {
+                                        class: "qty-btn",
+                                        style: "white-space:nowrap;",
+                                        onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Deck); },
+                                        "to deck"
+                                    }
+                                    button {
+                                        class: "qty-btn",
+                                        style: "white-space:nowrap;",
+                                        onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Sideboard); },
+                                        "to sideboard"
+                                    }
                                 },
-                                "+"
+                                Board::Sideboard => rsx! {
+                                    button {
+                                        class: "qty-btn",
+                                        style: "white-space:nowrap;",
+                                        onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Deck); },
+                                        "to deck"
+                                    }
+                                    button {
+                                        class: "qty-btn",
+                                        style: "white-space:nowrap;",
+                                        onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Maybeboard); },
+                                        "to maybeboard"
+                                    }
+                                },
                             }
                         }
                     }

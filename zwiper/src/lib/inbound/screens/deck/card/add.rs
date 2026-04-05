@@ -239,7 +239,7 @@ pub fn Add(deck_id: Uuid) -> Element {
             return;
         };
 
-        let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, Some(true));
+        let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, Some("maybeboard".to_string()));
         let oracle_id = card.scryfall_data.oracle_id;
 
         spawn(async move {
@@ -385,10 +385,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                     .into_iter()
                     .flatten()
                     {
-                        if let Ok(card) = client().get_card(cz_id, &session).await {
-                            if let Some(oid) = card.scryfall_data.oracle_id {
-                                ids.insert(oid);
-                            }
+                        if let Ok(card) = client().get_card(cz_id, &session).await
+                            && let Some(oid) = card.scryfall_data.oracle_id
+                        {
+                            ids.insert(oid);
                         }
                     }
                     deck_cards_ids.set(ids);
