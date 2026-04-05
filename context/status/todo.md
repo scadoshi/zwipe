@@ -173,6 +173,7 @@ Small UX improvements to the deck view screen and related flows.
 - [x] Fix: remove screen deck load failure (`0e381a53`)
 - [x] "command zone" show toggle on deck card view (`36da3374`)
 - [x] Clear commander on format change to prevent stale selections (`128bbeea`)
+- [ ] Toast on import completion — show success/failure toast when card import finishes on the import screen
 
 ---
 
@@ -207,20 +208,30 @@ Full audit of all 9 themes to make the app more colorful and ensure visual consi
 
 ---
 
-## Multi-Printing — Phase 3 In Progress (Printing Selector UI)
+## Multi-Printing — Complete
 
-Phase 1 (sync switch) and Phase 2 (oracle_id constraint) shipped (`2f52adde`). Phase 3 backend + frontend code written but has a UI bug:
+All phases shipped. Carousel UI with swipe-to-browse, page dots, save/close header, and command zone printing selection.
 
 - [x] Switch Scryfall sync from `oracle_cards` to `default_cards` (~110k+ cards including tokens) (`2f52adde`)
 - [x] Add `oracle_id UUID NOT NULL` to `deck_cards`, unique constraint `(deck_id, oracle_id)` (`2f52adde`)
 - [x] All SQL queries, domain models, HTTP contracts, import flow, frontend add/remove updated (`2f52adde`)
-- [x] `GET /api/card/{oracle_id}/printings` endpoint — returns all printings ordered by release date ASC
-- [x] `HttpUpdateDeckCard.scryfall_data_id` — optional field to change selected printing
-- [x] `ClientGetPrintings` frontend client trait
-- [x] `PrintingSheet` bottom sheet component with thumbnail selector
-- [x] "printing" button on expanded CardRow
-- [x] Wired into deck card view with local state swap on printing change
-- [ ] **Bug: "select printing" button clips over content** — needs layout fix in printing_sheet.rs
+- [x] Printing carousel with snap-to-page, edge bounce, page dots, info row (`ca3733e9`)
+- [x] Save/close header — save appears only after swiping to a different printing (`ca3733e9`)
+- [x] Refactored PrintingSheet to generic `on_save` callback (`4e1fd567`)
+- [x] Command zone printing selection — commander, partner, background, signature spell (`4e1fd567`)
+- [x] Oracle ID audit — all card identity comparisons use oracle_id (`70029ebc`)
+
+---
+
+## Add Screen — Default Color Identity Filter
+
+Pre-populate the color identity filter to the commander's colors when the deck's format enforces color identity. See `context/plans/add-screen-color-identity-default.md`.
+
+- [ ] Extend `is_empty_ignoring_deck_context()` to also ignore `color_identity_within`
+- [ ] Resolve commander + partner + background color identity union on mount
+- [ ] Auto-set `color_identity_within` if not already set
+- [ ] Re-apply color identity default on filter clear (alongside legality re-apply)
+- [ ] Cache resolved colors in `deck_color_identity` signal
 
 ---
 
@@ -235,6 +246,13 @@ Phase 1 (sync switch) and Phase 2 (oracle_id constraint) shipped (`2f52adde`). P
 ---
 
 ## Recently Completed
+
+### Oracle ID Audit + Printing Carousel + Command Zone Printing (2026-04-04)
+
+- [x] Printing carousel: snap-to-page swipe, edge bounce, page dots, info row, save/close header (`ca3733e9`)
+- [x] Unified bottom sheet layout with util-bar footers and header labels (`ca3733e9`)
+- [x] Command zone printing selection: generic on_save callback, printing button on commander/partner/bg/spell (`4e1fd567`)
+- [x] Oracle ID audit: all card identity comparisons resolve to oracle_id instead of scryfall_data_id (`70029ebc`)
 
 ### Zite Content Refresh + CSS Migration (2026-04-04)
 
