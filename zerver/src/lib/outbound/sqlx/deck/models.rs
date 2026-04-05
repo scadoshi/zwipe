@@ -62,6 +62,7 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
 pub struct DatabaseDeckCard {
     pub deck_id: String,
     pub scryfall_data_id: String,
+    pub oracle_id: String,
     pub quantity: i32,
     pub maybeboard: bool,
 }
@@ -73,10 +74,13 @@ impl TryFrom<DatabaseDeckCard> for DeckCard {
         let deck_id = Uuid::try_parse(&value.deck_id).map_err(IntoDeckCardError::InvalidDeckId)?;
         let scryfall_data_id =
             Uuid::try_parse(&value.scryfall_data_id).map_err(IntoDeckCardError::InvalidCardId)?;
+        let oracle_id =
+            Uuid::try_parse(&value.oracle_id).map_err(IntoDeckCardError::InvalidOracleId)?;
         let quantity = Quantity::new(value.quantity)?;
         Ok(Self {
             deck_id,
             scryfall_data_id,
+            oracle_id,
             quantity,
             maybeboard: value.maybeboard,
         })

@@ -5,8 +5,10 @@ use serde::{Deserialize, Serialize};
 /// Add card to deck request body.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct HttpCreateDeckCard {
-    /// Scryfall data ID of the card to add.
+    /// Scryfall data ID of the card to add (selected printing).
     pub scryfall_data_id: String,
+    /// Oracle ID of the card (logical identity across printings).
+    pub oracle_id: String,
     /// Initial quantity.
     pub quantity: i32,
     /// Whether the card is on the maybeboard. Defaults to `false` if absent.
@@ -15,9 +17,10 @@ pub struct HttpCreateDeckCard {
 
 impl HttpCreateDeckCard {
     /// Creates a new add-card-to-deck request.
-    pub fn new(scryfall_data_id: &str, quantity: i32, maybeboard: Option<bool>) -> Self {
+    pub fn new(scryfall_data_id: &str, oracle_id: &str, quantity: i32, maybeboard: Option<bool>) -> Self {
         Self {
             scryfall_data_id: scryfall_data_id.to_string(),
+            oracle_id: oracle_id.to_string(),
             quantity,
             maybeboard,
         }

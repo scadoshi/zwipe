@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE card_profiles SET mechanical_categories = '[]'::jsonb",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "5bd0abfd8b6ec5edbec16d50683beb7046a82614fae85e41fb6655b067cba696"
+}

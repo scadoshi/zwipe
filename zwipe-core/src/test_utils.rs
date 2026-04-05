@@ -27,6 +27,7 @@ pub fn make_entry(name: &str, qty: i32) -> DeckEntry {
         deck_card: DeckCard {
             deck_id,
             scryfall_data_id,
+            oracle_id: Uuid::new_v4(),
             quantity: Quantity::new(qty).unwrap(),
             maybeboard: false,
         },
@@ -42,6 +43,7 @@ pub fn make_card(name: &str) -> Card {
         card_profile: CardProfile {
             scryfall_data_id: Uuid::new_v4(),
             is_token: false,
+            mechanical_categories: vec![],
             created_at: NaiveDate::from_ymd_opt(2021, 1, 1)
                 .unwrap()
                 .and_hms_opt(0, 0, 0)

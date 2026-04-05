@@ -274,8 +274,9 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     return;
                 };
 
+                let oracle_id_str = card.scryfall_data.oracle_id.map(|id| id.to_string()).unwrap_or_default();
                 let request =
-                    HttpCreateDeckCard::new(&card.scryfall_data.id.to_string(), 1, None);
+                    HttpCreateDeckCard::new(&card.scryfall_data.id.to_string(), &oracle_id_str, 1, None);
                 spawn(async move {
                     match client().create_deck_card(deck_id, &request, &session).await {
                         Ok(deck_card) => {

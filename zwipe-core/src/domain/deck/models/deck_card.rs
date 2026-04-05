@@ -12,8 +12,10 @@ use uuid::Uuid;
 pub struct DeckCard {
     /// The deck containing this card.
     pub deck_id: Uuid,
-    /// The card (Scryfall data ID).
+    /// The selected printing (Scryfall data ID).
     pub scryfall_data_id: Uuid,
+    /// The logical card identity (shared across all printings).
+    pub oracle_id: Uuid,
     /// How many copies (1-99, validated against deck copy limit).
     pub quantity: Quantity,
     /// Whether this card is on the maybeboard (considering, not in active deck).
