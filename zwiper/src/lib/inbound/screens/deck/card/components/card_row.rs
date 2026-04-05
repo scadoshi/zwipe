@@ -13,6 +13,7 @@ pub(crate) fn CardRow(
     on_qty_change: Option<EventHandler<i32>>,
     on_maybeboard_toggle: Option<EventHandler<()>>,
     maybeboard_label: Option<String>,
+    on_printing: Option<EventHandler<Card>>,
 ) -> Element {
     let card_id = card.scryfall_data.id;
     let is_expanded = expanded_card() == Some(card_id);
@@ -98,6 +99,21 @@ pub(crate) fn CardRow(
                                     preview_dismissing.set(false);
                                 },
                                 "image"
+                            }
+                        }
+                        if let Some(handler) = on_printing {
+                            {
+                                let card_clone = card.clone();
+                                rsx! {
+                                    button {
+                                        class: "qty-btn",
+                                        onclick: move |evt| {
+                                            evt.stop_propagation();
+                                            handler.call(card_clone.clone());
+                                        },
+                                        "printing"
+                                    }
+                                }
                             }
                         }
                         if let Some(handler) = on_qty_change {

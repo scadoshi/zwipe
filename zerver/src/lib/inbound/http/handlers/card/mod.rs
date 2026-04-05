@@ -4,6 +4,8 @@
 pub mod get_artists;
 /// Single card lookup handler.
 pub mod get_card;
+/// All printings of a card by oracle ID.
+pub mod get_printings;
 /// Distinct card type names handler.
 pub mod get_card_types;
 /// Distinct keyword ability names handler.

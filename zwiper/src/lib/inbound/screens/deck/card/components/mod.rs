@@ -8,3 +8,5 @@ pub(crate) mod card_info;
 pub(crate) mod card_row;
 /// Fullscreen image preview overlay.
 pub(crate) mod image_preview;
+/// Bottom sheet for selecting card printings.
+pub(crate) mod printing_sheet;

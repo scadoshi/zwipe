@@ -38,6 +38,8 @@ pub struct HttpUpdateDeckCard {
     pub update_quantity: Option<i32>,
     /// Set maybeboard status.
     pub maybeboard: Option<bool>,
+    /// Change the selected printing (new Scryfall data ID).
+    pub scryfall_data_id: Option<String>,
 }
 
 impl HttpUpdateDeckCard {
@@ -46,6 +48,16 @@ impl HttpUpdateDeckCard {
         Self {
             update_quantity,
             maybeboard,
+            scryfall_data_id: None,
+        }
+    }
+
+    /// Creates an update request that changes the selected printing.
+    pub fn with_printing(scryfall_data_id: &str) -> Self {
+        Self {
+            update_quantity: None,
+            maybeboard: None,
+            scryfall_data_id: Some(scryfall_data_id.to_string()),
         }
     }
 }
