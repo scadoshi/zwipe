@@ -50,26 +50,15 @@ Commander eligibility is computed via query filters, not persisted. Three phases
 - [x] Multi-select on format legality filter chips (`f751cbd4`)
 - [x] `validate_deck()`: warning if selected commander is not valid for format (`3e74f8a0`)
 
-### Phase 2: Partner, Background, and Oathbreaker Support
+### Phase 2: Partner, Background, and Oathbreaker Support — Complete
 
-Changes the deck data model to support multi-commander formats. Do NOT mix with Phase 1.
-
-**Partner commanders:**
-- [ ] Allow 2 commander slots on `DeckProfile` — `commander_id` becomes `commander_ids: Vec<Uuid>` or add `partner_id: Option<Uuid>`
-- [ ] Validate both commanders have "Partner" keyword or are a named partner pair
-- [ ] Color identity = union of both commanders' color identities
-- [ ] `validate_deck()`: warn if partner rules violated
-
-**Background:**
-- [ ] Second commander slot for Background enchantment (Commander Legends: Battle for Baldur's Gate)
-- [ ] First commander must have "Choose a Background" text
-- [ ] Second commander must have "Background" type
-
-**Oathbreaker:**
-- [ ] Add `signature_spell_id: Option<Uuid>` to `DeckProfile`
-- [ ] Signature spell must be an instant or sorcery within the planeswalker's color identity
-- [ ] `validate_deck()`: warn if signature spell is outside color identity or wrong card type
-- [ ] Database migration for new column
+- [x] Add `partner_commander_id`, `background_id`, `signature_spell_id` columns to decks table (`e08a218c`)
+- [x] DeckProfile, DatabaseDeckProfile, HTTP contracts, request types updated (`e08a218c`)
+- [x] Partner search filter (`is_partner`), background filter (`is_background`), signature spell filter (`is_signature_spell`) on CardFilter (`e08a218c`)
+- [x] `partner_kind()`, `are_valid_partners()`, background/signature spell eligibility functions (`e08a218c`)
+- [x] validate_deck: partner validity, background validity, signature spell validity, mutual exclusivity, color identity union (`e08a218c`)
+- [x] Frontend: partner, background, signature spell fields on create/edit with conditional visibility (`eb1a68d9`)
+- [x] Oathbreaker label refinements (`eb1a68d9`)
 
 ### Phase 3: Zwipe for Commander (UX Enhancement)
 
@@ -158,13 +147,15 @@ Multi-tag strategic role system for cards (Ramp, Draw, Removal, etc.). Cards can
 Small UX improvements to the deck view screen and related flows.
 
 - [x] Update "average price per card" label → "avg card price" (`e16bd01d`)
-- [ ] Clear filter button on filter groups — allow clearing individual filter sections without opening them or clearing the entire filter
-- [ ] Bug: "remove" button on invalid commander warning calls delete_deck_card — should send an update_deck_profile request to clear the commander instead
-- [ ] Bug: `is_commander_in_format` alone should count as a non-empty filter — currently `is_empty_ignoring_deck_context()` strips it, so the add screen won't search when only commander eligibility is set
-- [ ] Toast "Card removed" when a card is removed by decrementing its quantity to 0
-- [ ] Toast "Card removed" when the invalid-card-in-deck warning's remove button is used
-- [ ] Card quantity warning should offer an action button to correct quantity to the legal maximum (4, or 1 for basic lands) — consistent with the invalid-card remove button pattern
-- [ ] Audit other deck warnings — identify any that could offer a one-tap convenience action
+- [x] Toast "card removed" on quantity-decrement-to-zero (`bd860bce`)
+- [x] Toast "card removed" on warning remove button (`bd860bce`)
+- [x] "fix to N" button on copy limit warnings (`bd860bce`)
+- [x] "clear" button on invalid commander warning — sends update_deck_profile to clear commander (`bd860bce`)
+- [x] WarningAction enum (FixQuantity, ClearCommander, Remove) on DeckWarning (`bd860bce`)
+- [x] Card count in deck stats includes commander/partner/background/spell (`bd860bce`)
+- [x] Clear filter button on filter groups — per-section clear buttons on accordion headers (`0e381a53`)
+- [x] Fix: `is_commander_in_format` alone now counts as non-empty filter (`0e381a53`)
+- [x] Fix: remove screen deck load failure (`0e381a53`)
 
 ---
 
@@ -220,6 +211,27 @@ Add a `context/architecture/structure.md` walking through the full directory tre
 ---
 
 ## Recently Completed
+
+### Partner, Background & Signature Spell (2026-04-04)
+
+- [x] Database columns, DeckProfile, HTTP contracts, request types, repository queries (`e08a218c`)
+- [x] CardFilter: is_partner, is_background, is_signature_spell with SQL filters (`e08a218c`)
+- [x] Eligibility functions: partner_kind, are_valid_partners, background/spell validation (`e08a218c`)
+- [x] validate_deck: partner, background, signature spell, mutual exclusivity, color identity union (`e08a218c`)
+- [x] Frontend: conditional field visibility on create/edit, oathbreaker labels (`eb1a68d9`)
+
+### Small Bugs + Filter UX (2026-04-04)
+
+- [x] Fix commander filter empty check — is_commander_in_format counts as non-empty (`0e381a53`)
+- [x] Per-section clear buttons on filter accordion headers (`0e381a53`)
+- [x] Fix remove screen deck load failure (`0e381a53`)
+
+### Deck View Polish + Opdate Rename (2026-04-04)
+
+- [x] WarningAction enum: FixQuantity, ClearCommander, Remove — per-warning action buttons (`bd860bce`)
+- [x] "fix to N" on copy limit, "clear" on invalid commander, "card removed" toasts (`bd860bce`)
+- [x] Card count includes commander/partner/background/spell in stats (`bd860bce`)
+- [x] Rename Optdate → Opdate across codebase (`cfd19ab7`)
 
 ### Maybeboard (2026-04-04)
 

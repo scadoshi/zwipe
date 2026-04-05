@@ -1,6 +1,6 @@
 # Partner, Background & Signature Spell — Phase 4: Search UX Overhaul
 
-**Depends on:** Phase 3 (field visibility) must be merged first.
+**Depends on:** Phase 3 (field visibility) must be merged first. Phases 1-2 complete (`e08a218c`).
 
 Replace the dropdown search results below the text input with **chips above the search bar** showing the top 10 results. This prevents the iOS keyboard from blocking search results.
 

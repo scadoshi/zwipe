@@ -83,6 +83,13 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 | App icon (1024×1024 master, full size set) | ✅ |
 | App name ("Zwipe" on home screen) | ✅ |
 | Full screen integration pass | ✅ |
+| Commander eligibility filter + toggle | ✅ |
+| Multi-select format legality chips | ✅ |
+| Warning action buttons (fix qty, clear commander) | ✅ |
+| Per-section clear buttons on filter accordions | ✅ |
+| Maybeboard (swipe-up, toggle, move, tri-filter, export/import) | ✅ |
+| Partner / Background / Signature Spell fields | ✅ |
+| zwipe-core direct dependency (proxy cleanup complete) | ✅ |
 
 ---
 

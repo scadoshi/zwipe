@@ -1,6 +1,6 @@
 # Partner, Background & Signature Spell — Phase 3: Frontend Field Visibility
 
-**Depends on:** Phase 2 (search filters + validation) must be merged first.
+**Depends on:** Phases 1-2 complete (`e08a218c`). **In progress.**
 
 Change the create/edit deck screens to **hide** commander-related fields until they're relevant, instead of showing them greyed out. Add the new partner, background, and signature spell fields with the same show/hide behavior.
 
