@@ -10,13 +10,19 @@ use uuid::Uuid;
 /// Allowed theme identifiers. Validated on update.
 pub const ALLOWED_THEMES: &[&str] = &[
     "catppuccin",
+    "deuteranopia",
     "dracula",
     "everforest",
     "gruvbox",
+    "monokai",
     "nord",
+    "one-dark",
+    "protanopia",
     "rose-pine",
     "rustbox",
+    "solarized",
     "tokyo-night",
+    "tritanopia",
     "zwipe",
 ];
 
@@ -119,7 +125,7 @@ mod tests {
 
     #[test]
     fn rejects_unknown_theme() {
-        let result = UpdatePreferences::new(Uuid::new_v4(), Some("solarized"), Some(true));
+        let result = UpdatePreferences::new(Uuid::new_v4(), Some("not-a-theme"), Some(true));
         assert!(matches!(
             result,
             Err(InvalidUpdatePreferences::InvalidTheme)
