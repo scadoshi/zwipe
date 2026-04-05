@@ -238,9 +238,9 @@ fn printing_info(card: &Card) -> Element {
     rsx! {
         div { class: "card-info",
             span { "{price_text}" }
-            span { "{artist_text}" }
             span { "set: {card.scryfall_data.set_name.to_lowercase()}" }
             span { "released: {card.scryfall_data.released_at}" }
+            span { "{artist_text}" }
         }
     }
 }
