@@ -86,6 +86,8 @@ pub fn View(deck_id: Uuid) -> Element {
     let mut show_lands: Signal<bool> = use_signal(|| false);
     // Toggle to show/hide tokens at the top of the list
     let mut show_tokens: Signal<bool> = use_signal(|| false);
+    // Toggle to show/hide command zone pinned sections (default: shown)
+    let mut show_command_zone: Signal<bool> = use_signal(|| true);
     // Toggle to show/hide maybeboard section
     let mut show_maybeboard: Signal<bool> = use_signal(|| false);
 
@@ -485,6 +487,11 @@ pub fn View(deck_id: Uuid) -> Element {
                                 "maybeboard ({mb_count})"
                             }
                         }
+                        button {
+                            class: if show_command_zone() { "chip selected" } else { "chip" },
+                            onclick: move |_| show_command_zone.set(!show_command_zone()),
+                            "command zone"
+                        }
                     }
 
                     // Column headers
@@ -542,30 +549,46 @@ pub fn View(deck_id: Uuid) -> Element {
                         }
                     }
 
-                    // Pinned commander/oathbreaker group (includes partner if present)
-                    if displayed_commander().is_some() || displayed_partner().is_some() {
-                        div { class: "card-group row-enter",
-                            div { class: "card-group-header",
-                                if is_oathbreaker() {
-                                    "oathbreaker"
-                                } else if displayed_partner().is_some() {
-                                    "commanders"
-                                } else {
-                                    "commander"
+                    if show_command_zone() {
+                        // Pinned commander/oathbreaker group (includes partner if present)
+                        if displayed_commander().is_some() || displayed_partner().is_some() {
+                            div { class: "card-group row-enter",
+                                div { class: "card-group-header",
+                                    if is_oathbreaker() {
+                                        "oathbreaker"
+                                    } else if displayed_partner().is_some() {
+                                        "commanders"
+                                    } else {
+                                        "commander"
+                                    }
+                                }
+                                if let Some(cmd) = displayed_commander() {
+                                    CardRow {
+                                        card: cmd,
+                                        qty: 1,
+                                        expanded_card,
+                                        preview_image_url,
+                                        preview_dismissing,
+                                    }
+                                }
+                                if let Some(partner) = displayed_partner() {
+                                    CardRow {
+                                        card: partner,
+                                        qty: 1,
+                                        expanded_card,
+                                        preview_image_url,
+                                        preview_dismissing,
+                                    }
                                 }
                             }
-                            if let Some(cmd) = displayed_commander() {
+                        }
+
+                        // Pinned background group
+                        if let Some(bg) = displayed_background() {
+                            div { class: "card-group row-enter",
+                                div { class: "card-group-header", "background" }
                                 CardRow {
-                                    card: cmd,
-                                    qty: 1,
-                                    expanded_card,
-                                    preview_image_url,
-                                    preview_dismissing,
-                                }
-                            }
-                            if let Some(partner) = displayed_partner() {
-                                CardRow {
-                                    card: partner,
+                                    card: bg,
                                     qty: 1,
                                     expanded_card,
                                     preview_image_url,
@@ -573,32 +596,18 @@ pub fn View(deck_id: Uuid) -> Element {
                                 }
                             }
                         }
-                    }
 
-                    // Pinned background group
-                    if let Some(bg) = displayed_background() {
-                        div { class: "card-group row-enter",
-                            div { class: "card-group-header", "background" }
-                            CardRow {
-                                card: bg,
-                                qty: 1,
-                                expanded_card,
-                                preview_image_url,
-                                preview_dismissing,
-                            }
-                        }
-                    }
-
-                    // Pinned signature spell (Oathbreaker only)
-                    if let Some(spell) = displayed_signature_spell() {
-                        div { class: "card-group row-enter",
-                            div { class: "card-group-header", "signature spell" }
-                            CardRow {
-                                card: spell,
-                                qty: 1,
-                                expanded_card,
-                                preview_image_url,
-                                preview_dismissing,
+                        // Pinned signature spell (Oathbreaker only)
+                        if let Some(spell) = displayed_signature_spell() {
+                            div { class: "card-group row-enter",
+                                div { class: "card-group-header", "signature spell" }
+                                CardRow {
+                                    card: spell,
+                                    qty: 1,
+                                    expanded_card,
+                                    preview_image_url,
+                                    preview_dismissing,
+                                }
                             }
                         }
                     }
