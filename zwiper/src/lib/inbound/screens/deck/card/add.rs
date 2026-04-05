@@ -26,7 +26,7 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::collections::HashSet;
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe_core::domain::card::{Card, scryfall_data::image_uris::ImageUris, search_card::card_filter::builder::CardFilterBuilder};
+use zwipe_core::domain::card::{Card, scryfall_data::{colors::{Color, Colors}, image_uris::ImageUris}, search_card::card_filter::builder::CardFilterBuilder};
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
 use zwipe_core::domain::auth::models::session::Session;
@@ -45,6 +45,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     let mut deck_cards_ids = use_signal(HashSet::<Uuid>::new);
     let mut deck_format: Signal<Option<Format>> = use_signal(|| None);
+    let mut deck_color_identity: Signal<Option<Colors>> = use_signal(|| None);
 
     // Undo action history
     let mut action_history: Signal<Vec<SwipeAction>> = use_signal(Vec::new);
@@ -348,11 +349,14 @@ pub fn Add(deck_id: Uuid) -> Element {
             toast.warning("filter already cleared".to_string(), opts);
         } else {
             filter_builder.write().clear();
-            // Re-apply deck format after clear
+            // Re-apply deck context defaults after clear
             if let Some(fmt) = deck_format() {
                 filter_builder.write().set_legalities_contains_any(
                     vec![fmt.to_legality_key().to_string()]
                 );
+            }
+            if let Some(colors) = deck_color_identity() {
+                filter_builder.write().set_color_identity_within(colors);
             }
             cards.set(vec![]);
             current_index.set(0);
@@ -375,12 +379,13 @@ pub fn Add(deck_id: Uuid) -> Element {
                         .iter()
                         .filter_map(|entry| entry.card.scryfall_data.oracle_id)
                         .collect();
-                    // Resolve command zone scryfall_data_ids to oracle_ids for exclusion
+                    // Resolve command zone cards to oracle_ids for exclusion
+                    // and collect color identities from commander/partner/background
+                    let mut identity_colors: Vec<Color> = Vec::new();
                     for cz_id in [
                         deck.deck_profile.commander_id,
                         deck.deck_profile.partner_commander_id,
                         deck.deck_profile.background_id,
-                        deck.deck_profile.signature_spell_id,
                     ]
                     .into_iter()
                     .flatten()
@@ -389,7 +394,15 @@ pub fn Add(deck_id: Uuid) -> Element {
                             && let Some(oid) = card.scryfall_data.oracle_id
                         {
                             ids.insert(oid);
+                            identity_colors.extend(card.scryfall_data.color_identity.iter().cloned());
                         }
+                    }
+                    // Signature spell: oracle_id exclusion only (doesn't contribute to color identity)
+                    if let Some(spell_id) = deck.deck_profile.signature_spell_id
+                        && let Ok(card) = client().get_card(spell_id, &session).await
+                        && let Some(oid) = card.scryfall_data.oracle_id
+                    {
+                        ids.insert(oid);
                     }
                     deck_cards_ids.set(ids);
 
@@ -400,6 +413,17 @@ pub fn Add(deck_id: Uuid) -> Element {
                             filter_builder.write().set_legalities_contains_any(
                                 vec![fmt.to_legality_key().to_string()]
                             );
+                        }
+
+                        // Pre-populate color identity filter from commander
+                        if fmt.checks_color_identity() && deck.deck_profile.commander_id.is_some() {
+                            identity_colors.sort();
+                            identity_colors.dedup();
+                            let colors: Colors = identity_colors.into();
+                            deck_color_identity.set(Some(colors.clone()));
+                            if filter_builder.peek().color_identity_within().is_none() {
+                                filter_builder.write().set_color_identity_within(colors);
+                            }
                         }
                     }
                 }
@@ -597,6 +621,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                 button {
                     class: "util-btn",
                     onclick: move |_| {
+                        // Clear auto-populated defaults so view/remove screens start fresh
+                        if filter_builder.read().is_empty_ignoring_deck_context() {
+                            filter_builder.write().clear();
+                        }
                         navigator.go_back();
                     },
                     "back"
