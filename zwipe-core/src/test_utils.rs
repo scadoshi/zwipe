@@ -22,12 +22,13 @@ pub fn make_entry(name: &str, qty: i32) -> DeckEntry {
     let deck_id = Uuid::new_v4();
     let card = make_card(name);
     let scryfall_data_id = card.scryfall_data.id;
+    let oracle_id = card.scryfall_data.oracle_id.unwrap();
     DeckEntry {
         card,
         deck_card: DeckCard {
             deck_id,
             scryfall_data_id,
-            oracle_id: Uuid::new_v4(),
+            oracle_id,
             quantity: Quantity::new(qty).unwrap(),
             maybeboard: false,
         },
@@ -65,7 +66,7 @@ pub fn make_card(name: &str) -> Card {
             cardmarket_id: None,
             object: "card".to_string(),
             layout: "normal".to_string(),
-            oracle_id: None,
+            oracle_id: Some(Uuid::new_v4()),
             prints_search_uri: String::new(),
             rulings_uri: String::new(),
             scryfall_uri: String::new(),
