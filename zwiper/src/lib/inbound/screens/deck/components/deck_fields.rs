@@ -370,10 +370,10 @@ pub(crate) fn DeckFields(
                                 signature_spell_display.set(String::new());
                             } else {
                                 selected_format.set(Some(fmt));
-                                if !fmt.has_commander() {
-                                    commander.set(None);
-                                    commander_display.set(String::new());
-                                }
+                                // Always clear commander on format change — eligibility
+                                // rules differ between formats
+                                commander.set(None);
+                                commander_display.set(String::new());
                                 if !fmt.has_signature_spell() {
                                     signature_spell.set(None);
                                     signature_spell_display.set(String::new());
