@@ -138,6 +138,10 @@ impl<R: CardRepository> CardService for Service<R> {
         self.repo.clear_all_categories().await
     }
 
+    async fn refresh_latest_cards(&self) -> anyhow::Result<()> {
+        self.repo.refresh_latest_cards().await
+    }
+
     // =====
     //  get
     // =====

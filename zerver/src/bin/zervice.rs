@@ -75,6 +75,9 @@ async fn main() -> anyhow::Result<()> {
     let (classified, total) = card_service.classify_untagged_cards(1000).await?;
     tracing::info!("classification: {classified} / {total} cards categorized");
 
+    card_service.refresh_latest_cards().await?;
+    tracing::info!("latest_cards materialized view refreshed");
+
     auth_service.delete_expired_sessions().await?;
 
     tracing::info!("zervice completed");

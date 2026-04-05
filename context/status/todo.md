@@ -206,25 +206,28 @@ All phases shipped. Carousel UI with swipe-to-browse, page dots, save/close head
 
 ---
 
-## Search Query Performance
+## Search Query Performance — Complete
 
-Card search queries trigger SQLx slow query warnings after switching to `default_cards` (~110k rows). User-facing, needs fixing. See `context/plans/search-performance.md`.
+All four fixes shipped. See `context/plans/search-performance.md`.
 
-- [ ] Add `pg_trgm` extension + GIN trigram indexes on `name`, `oracle_text`, `type_line` (biggest win)
-- [ ] Replace `color_identity_within` power-set OR explosion with single `<@` operator + GIN index on `color_identity`
-- [ ] Restructure CTE to avoid double table read (select all columns inside subquery, filter `rn = 1` directly)
+- [x] `pg_trgm` extension + GIN trigram indexes on `name`, `oracle_text`, `type_line`
+- [x] Replace `color_identity_within` power-set OR explosion with single `<@` operator + GIN index
+- [x] Eliminate double table read (subsumed by materialized view)
+- [x] `latest_cards` materialized view — pre-deduplicated to latest printing per oracle_id, refreshed by zervice after sync + classification
 
 ---
 
-## Add Screen — Default Color Identity Filter
+## Add Screen — Default Color Identity Filter — Complete
 
 Pre-populate the color identity filter to the commander's colors when the deck's format enforces color identity. See `context/plans/add-screen-color-identity-default.md`.
 
-- [ ] Extend `is_empty_ignoring_deck_context()` to also ignore `color_identity_within`
-- [ ] Resolve commander + partner + background color identity union on mount
-- [ ] Auto-set `color_identity_within` if not already set
-- [ ] Re-apply color identity default on filter clear (alongside legality re-apply)
-- [ ] Cache resolved colors in `deck_color_identity` signal
+- [x] Extend `is_empty_ignoring_deck_context()` to also ignore `color_identity_within`
+- [x] Resolve commander + partner + background color identity union on mount
+- [x] Auto-set `color_identity_within` if not already set
+- [x] Re-apply color identity default on filter clear (alongside legality re-apply)
+- [x] Cache resolved colors in `deck_color_identity` signal
+- [x] Clear default filters on back navigation so view/remove screens start fresh
+- [x] Add `Eq, PartialOrd, Ord, Hash` to `Color` enum (WUBRG ordering)
 
 ---
 
@@ -239,6 +242,22 @@ Pre-populate the color identity filter to the commander's colors when the deck's
 ---
 
 ## Recently Completed
+
+### Search Query Performance (2026-04-05)
+
+- [x] `pg_trgm` extension + GIN trigram indexes on `name`, `oracle_text`, `type_line`
+- [x] Replace `color_identity_within` power-set (up to 31 OR clauses) with single `<@` operator
+- [x] `latest_cards` materialized view: `DISTINCT ON` pre-deduplication (~35k rows vs 110k), refreshed by zervice after sync + classification
+- [x] Both `search_scryfall_data` and `find_cards_by_exact_names` rewritten to query the view
+- [x] Trigram + GIN indexes on the view for ILIKE and color identity searches
+
+### Add Screen Default Color Identity Filter (2026-04-05)
+
+- [x] `is_empty_ignoring_deck_context()` also ignores `color_identity_within`
+- [x] Resolve commander + partner + background color identity union on mount, auto-set filter
+- [x] Re-apply color identity on filter clear, cache in `deck_color_identity` signal
+- [x] Clear default filters on back navigation so view/remove screens start fresh
+- [x] `Color` enum: added `Eq, PartialOrd, Ord, Hash` derives (WUBRG ordering)
 
 ### Sideboard Data Model + UI (2026-04-04)
 

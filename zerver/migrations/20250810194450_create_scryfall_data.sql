@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 CREATE TABLE scryfall_data (
     -- Core Card Fields
     -- Cards have the following core properties
