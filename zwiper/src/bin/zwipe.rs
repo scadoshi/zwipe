@@ -8,6 +8,7 @@ use zwiper::{
 };
 
 const FAVICON: Asset = asset!("/assets/favicon/favicon.ico");
+const THEMES_CSS: Asset = asset!("/assets/themes.css");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const ACCORDION_CSS: Asset = asset!("/assets/accordion.css");
 const ALERT_DIALOG_CSS: Asset = asset!("/assets/alert-dialog.css");
@@ -39,6 +40,7 @@ fn App() -> Element {
     spawn_upkeeper();
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
+        document::Link { rel: "stylesheet", href: THEMES_CSS }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: ACCORDION_CSS }
         document::Link { rel: "stylesheet", href: ALERT_DIALOG_CSS }
