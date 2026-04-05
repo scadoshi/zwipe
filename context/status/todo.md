@@ -89,31 +89,14 @@ All 5 phases shipped. See `context/plans/maybeboard-phase*.md` for original plan
 
 ---
 
-## Sideboard
+## Sideboard — Complete
 
-Add sideboard support alongside maybeboard. A card lives in exactly one state: **deck** (active), **maybeboard** (considering), or **sideboard** (game-ready swaps between matches). Mirrors maybeboard implementation but with format-specific rules.
+All phases shipped: Board enum, migration, validation, deck view UI, remove screen, export/import.
 
-**Data model:**
-- [ ] Migrate from `maybeboard: bool` to a `board` enum column (`deck`, `maybeboard`, `sideboard`) — or add `sideboard: bool` alongside `maybeboard` with a constraint that both can't be true
-- [ ] Sideboard cards excluded from deck metrics, validation, and card_count (same as maybeboard)
-- [ ] Format-specific sideboard validation: 15-card limit for 60-card formats (Standard, Modern, Legacy, Vintage), no sideboard for Commander/Brawl/Oathbreaker
-
-**Swipe screens:**
-- [ ] All four swipe directions are taken (left=skip, right=add/remove, up=maybeboard, down=undo) — need a different UX for sideboard assignment (long-press menu? button in expanded card info? post-add dialog?)
-- [ ] Remove screen: sideboard cards accessible via tri-state filter (deck/maybeboard/sideboard/all)
-
-**Deck view screen:**
-- [ ] "sideboard" toggle chip alongside "maybeboard" chip
-- [ ] Sideboard section rendered between maybeboard and commander
-- [ ] "to sideboard" / "to deck" move buttons in CardRow expanded view
-
-**Remove screen:**
-- [ ] Extend MaybeboardFilter to include Sideboard variant
-- [ ] Swipe behavior: swipe right removes from sideboard (same delete endpoint)
-
-**Export/Import:**
-- [ ] Export: `// Sideboard` header (standard format recognized by Moxfield, Archidekt, MTGO)
-- [ ] Import: detect `// Sideboard` header, tag cards accordingly
+- [x] `Board` enum (`Deck`, `Maybeboard`, `Sideboard`) replacing `maybeboard: bool` across domain (`0436857e`)
+- [x] Migration from `maybeboard` boolean to `board` text column (`fdd2d5d2`)
+- [x] Sideboard toggle chip, section rendering, move buttons, BoardFilter (`ad633163`)
+- [x] Format-specific sideboard validation, export/import with `// Sideboard` header (`ad633163`)
 
 ---
 
@@ -223,6 +206,16 @@ All phases shipped. Carousel UI with swipe-to-browse, page dots, save/close head
 
 ---
 
+## Search Query Performance
+
+Card search queries trigger SQLx slow query warnings after switching to `default_cards` (~110k rows). User-facing, needs fixing. See `context/plans/search-performance.md`.
+
+- [ ] Add `pg_trgm` extension + GIN trigram indexes on `name`, `oracle_text`, `type_line` (biggest win)
+- [ ] Replace `color_identity_within` power-set OR explosion with single `<@` operator + GIN index on `color_identity`
+- [ ] Restructure CTE to avoid double table read (select all columns inside subquery, filter `rn = 1` directly)
+
+---
+
 ## Add Screen — Default Color Identity Filter
 
 Pre-populate the color identity filter to the commander's colors when the deck's format enforces color identity. See `context/plans/add-screen-color-identity-default.md`.
@@ -246,6 +239,12 @@ Pre-populate the color identity filter to the commander's colors when the deck's
 ---
 
 ## Recently Completed
+
+### Sideboard Data Model + UI (2026-04-04)
+
+- [x] Board enum (Deck, Maybeboard, Sideboard) replacing maybeboard bool across domain (`0436857e`)
+- [x] Migration from maybeboard boolean to board text column (`fdd2d5d2`)
+- [x] Sideboard toggle chip, section rendering, move buttons, BoardFilter (`ad633163`)
 
 ### Oracle ID Audit + Printing Carousel + Command Zone Printing (2026-04-04)
 
