@@ -207,17 +207,24 @@ Full audit of all 9 themes to make the app more colorful and ensure visual consi
 
 ---
 
+## Multi-Printing — Phase 3 In Progress (Printing Selector UI)
+
+Phase 1 (sync switch) and Phase 2 (oracle_id constraint) shipped (`2f52adde`). Phase 3 backend + frontend code written but has a UI bug:
+
+- [x] Switch Scryfall sync from `oracle_cards` to `default_cards` (~110k+ cards including tokens) (`2f52adde`)
+- [x] Add `oracle_id UUID NOT NULL` to `deck_cards`, unique constraint `(deck_id, oracle_id)` (`2f52adde`)
+- [x] All SQL queries, domain models, HTTP contracts, import flow, frontend add/remove updated (`2f52adde`)
+- [x] `GET /api/card/{oracle_id}/printings` endpoint — returns all printings ordered by release date ASC
+- [x] `HttpUpdateDeckCard.scryfall_data_id` — optional field to change selected printing
+- [x] `ClientGetPrintings` frontend client trait
+- [x] `PrintingSheet` bottom sheet component with thumbnail selector
+- [x] "printing" button on expanded CardRow
+- [x] Wired into deck card view with local state swap on printing change
+- [ ] **Bug: "select printing" button clips over content** — needs layout fix in printing_sheet.rs
+
+---
+
 ## Low Priority
-
-- [ ] **Token cards missing from database** — Some token cards referenced in `all_parts` don't exist in `scryfall_data` (e.g. Whirler Virtuoso's Thopter token). Fix: switch Scryfall sync from `oracle_cards` to `default_cards` to include tokens and all printings. Search already deduplicates via `ROW_NUMBER() OVER (PARTITION BY oracle_id ORDER BY released_at DESC)`.
-
-- [ ] **Multi-printing support + oracle_id deck constraint** — Importing `default_cards` introduces multiple printings per card. Deck constraint must change:
-  - `deck_cards` unique constraint switches from `(deck_id, scryfall_data_id)` to `(deck_id, oracle_id)` — one logical card per deck regardless of printing
-  - `deck_cards` keeps `scryfall_data_id` as FK (points to the selected printing)
-  - Add `oracle_id` column to `deck_cards` (denormalized from scryfall_data for constraint enforcement)
-  - Default printing: latest by `released_at DESC` — same logic as search dedup
-  - Future: printing selector UI so users can pick preferred art/set
-  - Requires updating create_deck_card, import, and bulk upsert to resolve oracle_id before insert
 
 ---
 
@@ -228,6 +235,27 @@ Full audit of all 9 themes to make the app more colorful and ensure visual consi
 ---
 
 ## Recently Completed
+
+### Zite Content Refresh + CSS Migration (2026-04-04)
+
+- [x] Update home, about, ios, android, privacy page content to reflect shipped features (`85b426b9`)
+- [x] Convert all px measurements to rem for accessible scaling (`92f622fe`)
+
+### Mechanical Category System (2026-04-04)
+
+- [x] MechanicalCategory enum (24 variants), JSONB column with GIN index, classify_by_heuristics() (`91640771`)
+- [x] Batched post-sync classification in zervice, --recategorize flag (`91640771`)
+- [x] CardFilter: mechanical_categories_contains_any/all, GroupByOption::Category, DeckMetrics.mechanical_category_counts (`c311462e`)
+- [x] Frontend: 24-chip category filter section, category grouping chip, category bar chart in stats (`c311462e`)
+
+### Multi-Printing Phase 1+2 (2026-04-04)
+
+- [x] Switch sync from oracle_cards to default_cards (~110k+ cards, tokens included) (`2f52adde`)
+- [x] Add oracle_id to deck_cards with UNIQUE(deck_id, oracle_id) constraint (`2f52adde`)
+- [x] All SQL queries updated (create, get, update RETURNING, bulk import ON CONFLICT) (`2f52adde`)
+- [x] Domain model, HTTP contracts, CreateDeckCard request, handler — oracle_id plumbed through (`2f52adde`)
+- [x] Import flow deduplicates by oracle_id instead of scryfall_data_id (`2f52adde`)
+- [x] Frontend add screen tracks oracle_id in exclusion set, prevents adding different printings of same card (`2f52adde`)
 
 ### Partner, Background & Signature Spell (2026-04-04)
 
