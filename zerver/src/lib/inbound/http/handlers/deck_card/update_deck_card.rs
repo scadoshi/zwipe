@@ -4,6 +4,7 @@ use axum::{
     http::StatusCode,
     Json,
 };
+#[cfg(feature = "zerver")]
 use zwipe_core::http::contracts::deck_card::HttpUpdateDeckCard;
 
 #[cfg(feature = "zerver")]
@@ -69,7 +70,7 @@ impl From<InvalidUpdateDeckCard> for ApiError {
     }
 }
 
-/// Updates a card's quantity and/or maybeboard status.
+/// Updates a card's quantity, board, and/or printing.
 #[cfg(feature = "zerver")]
 pub async fn update_deck_card<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,
@@ -84,7 +85,8 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let request = UpdateDeckCard::new(user.id, &deck_id, &scryfall_data_id, body.update_quantity, body.maybeboard, body.scryfall_data_id.as_deref())?;
+    let board = body.board.as_deref().map(zwipe_core::domain::deck::Board::try_from).transpose().map_err(|_| ApiError::UnprocessableEntity("invalid board value".to_string()))?;
+    let request = UpdateDeckCard::new(user.id, &deck_id, &scryfall_data_id, body.update_quantity, board, body.scryfall_data_id.as_deref())?;
 
     state
         .deck_service

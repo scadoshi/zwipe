@@ -18,6 +18,7 @@ use crate::{
     outbound::sqlx::postgres::IsConstraintViolation,
 };
 use zwipe_core::domain::deck::{
+    board::InvalidBoard,
     deck_name::InvalidDeckname,
     format::InvalidFormat,
     quantity::InvalidQuantity,
@@ -102,6 +103,8 @@ pub enum IntoDeckCardError {
     InvalidOracleId(uuid::Error),
     #[error(transparent)]
     InvalidQuantity(#[from] InvalidQuantity),
+    #[error(transparent)]
+    InvalidBoard(#[from] InvalidBoard),
 }
 
 impl From<IntoDeckCardError> for CreateDeckCardError {

@@ -3,6 +3,7 @@ use uuid::Uuid;
 
 use crate::outbound::sqlx::deck::error::{IntoDeckCardError, IntoDeckProfileError};
 use zwipe_core::domain::deck::{
+    Board,
     DeckCard,
     deck_name::DeckName,
     deck_profile::DeckProfile,
@@ -64,7 +65,7 @@ pub struct DatabaseDeckCard {
     pub scryfall_data_id: String,
     pub oracle_id: String,
     pub quantity: i32,
-    pub maybeboard: bool,
+    pub board: String,
 }
 
 /// converts database deck card to validated domain deck card
@@ -77,12 +78,13 @@ impl TryFrom<DatabaseDeckCard> for DeckCard {
         let oracle_id =
             Uuid::try_parse(&value.oracle_id).map_err(IntoDeckCardError::InvalidOracleId)?;
         let quantity = Quantity::new(value.quantity)?;
+        let board = Board::try_from(value.board.as_str())?;
         Ok(Self {
             deck_id,
             scryfall_data_id,
             oracle_id,
             quantity,
-            maybeboard: value.maybeboard,
+            board,
         })
     }
 }

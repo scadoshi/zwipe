@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT deck_id, scryfall_data_id, oracle_id, quantity, maybeboard FROM deck_cards WHERE deck_id = $1",
+  "query": "INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board) VALUES ($1, $2, $3, $4, $5) RETURNING deck_id, scryfall_data_id, oracle_id, quantity, board",
   "describe": {
     "columns": [
       {
@@ -25,13 +25,17 @@
       },
       {
         "ordinal": 4,
-        "name": "maybeboard",
-        "type_info": "Bool"
+        "name": "board",
+        "type_info": "Text"
       }
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Int4",
+        "Text"
       ]
     },
     "nullable": [
@@ -42,5 +46,5 @@
       false
     ]
   },
-  "hash": "fa86a47e83ca956685bd399a51dc4d2918305ac7306ee073e70d54d9b9d89bb8"
+  "hash": "39f828b9455e2325f2a220576c37aab77f9750e5eb909025fc60325c92bb7d12"
 }

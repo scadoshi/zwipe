@@ -354,9 +354,9 @@ where
         };
 
         // Classify lines, deduplicating by oracle_id (summing quantities).
-        // Tuple: (scryfall_id, oracle_id, quantity, name, is_basic_land)
+        // Tuple: (scryfall_id, oracle_id, quantity, name, is_basic_land, board)
         let mut unresolved: Vec<UnresolvedCard> = Vec::new();
-        let mut insert_map: HashMap<Uuid, (Uuid, Uuid, i32, String, bool)> = HashMap::new();
+        let mut insert_map: HashMap<Uuid, (Uuid, Uuid, i32, String, bool, String)> = HashMap::new();
 
         for line in &request.lines {
             let key = line.card_name.to_lowercase();
@@ -377,11 +377,12 @@ where
                     continue;
                 }
                 let is_basic_land = card.scryfall_data.is_basic_land();
+                let board = line.board.display_name().to_string();
                 insert_map
                     .entry(oracle_id)
-                    .and_modify(|(_, _, qty, _, _)| *qty += line.quantity)
+                    .and_modify(|(_, _, qty, _, _, _)| *qty += line.quantity)
                     .or_insert_with(|| {
-                        (scryfall_id, oracle_id, line.quantity, card.scryfall_data.name.clone(), is_basic_land)
+                        (scryfall_id, oracle_id, line.quantity, card.scryfall_data.name.clone(), is_basic_land, board)
                     });
             } else {
                 unresolved.push(UnresolvedCard {
@@ -391,9 +392,9 @@ where
             }
         }
 
-        // Build batch insert data: (scryfall_data_id, oracle_id, quantity)
-        let batch: Vec<(Uuid, Uuid, i32)> =
-            insert_map.values().map(|(sid, oid, qty, _, _)| (*sid, *oid, *qty)).collect();
+        // Build batch insert data: (scryfall_data_id, oracle_id, quantity, board)
+        let batch: Vec<(Uuid, Uuid, i32, String)> =
+            insert_map.values().map(|(sid, oid, qty, _, _, board)| (*sid, *oid, *qty, board.clone())).collect();
 
         // Check card limit before inserting
         let card_count = self
@@ -401,7 +402,7 @@ where
             .count_cards_in_deck(request.deck_id)
             .await
             .map_err(ImportDeckCardsError::Database)?;
-        let import_total: i64 = batch.iter().map(|(_, _, qty)| i64::from(*qty)).sum();
+        let import_total: i64 = batch.iter().map(|(_, _, qty, _)| i64::from(*qty)).sum();
         let card_limit = if request.email_verified {
             MAX_CARDS_PER_DECK
         } else {
@@ -417,7 +418,7 @@ where
         // Build imported list from insert_map
         let imported: Vec<ImportedCard> = insert_map
             .into_values()
-            .map(|(_, _, qty, name, _)| ImportedCard { name, quantity: qty })
+            .map(|(_, _, qty, name, _, _)| ImportedCard { name, quantity: qty })
             .collect();
 
         Ok(ImportDeckCardsResult {
