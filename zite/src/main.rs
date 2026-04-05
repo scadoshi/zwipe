@@ -8,6 +8,7 @@ use pages::{About, Android, Contribute, Discord, Home, Ios, Privacy, Reset, Veri
 
 pub const API_BASE: &str = "https://api.zwipe.net";
 
+const THEMES: Asset = asset!("/assets/themes.css");
 const STYLE: Asset = asset!("/assets/style.css");
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const FAVICON_16: Asset = asset!("/assets/favicon-16x16.png");
@@ -65,6 +66,7 @@ fn App() -> Element {
         document::Link { rel: "icon", r#type: "image/png", sizes: "32x32", href: FAVICON_32 }
         document::Link { rel: "apple-touch-icon", href: APPLE_TOUCH_ICON }
         document::Link { rel: "manifest", href: MANIFEST }
+        document::Stylesheet { href: THEMES }
         document::Stylesheet { href: STYLE }
         Router::<Route> {}
     }

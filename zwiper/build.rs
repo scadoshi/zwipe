@@ -5,6 +5,11 @@ const RUST_LOG_KEY: &str = "RUST_LOG";
 const RUST_BACKTRACE_KEY: &str = "RUST_BACKTRACE";
 
 fn main() {
+    // Copy shared themes into assets so asset!() can find them
+    std::fs::copy("../shared/themes.css", "assets/themes.css")
+        .expect("failed to copy shared/themes.css into zwiper/assets/");
+    println!("cargo:rerun-if-changed=../shared/themes.css");
+
     dotenvy::dotenv().expect("failed to load .env");
 
     let backend_url = std::env::var(BACKEND_URL_KEY)
