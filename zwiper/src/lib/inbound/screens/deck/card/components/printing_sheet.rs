@@ -96,8 +96,8 @@ pub(crate) fn PrintingSheet(
             class: if open() { "modal-backdrop show" } else { "modal-backdrop" },
             onclick: move |_| {
                 if has_changed {
-                    toast.info(
-                        "printing selection dismissed".to_string(),
+                    toast.warning(
+                        "printing discarded".to_string(),
                         ToastOptions::default().duration(Duration::from_millis(1500)),
                     );
                 }
@@ -169,7 +169,7 @@ pub(crate) fn PrintingSheet(
                     onclick: move |_| {
                         if has_changed {
                             toast.info(
-                                "printing selection dismissed".to_string(),
+                                "printing discarded".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
                             );
                         }
@@ -186,6 +186,10 @@ pub(crate) fn PrintingSheet(
                                     class: "util-btn",
                                     onclick: move |_| {
                                         on_save(new_card.clone());
+                                        toast.info(
+                                            "printing saved".to_string(),
+                                            ToastOptions::default().duration(Duration::from_millis(1500)),
+                                        );
                                         open.set(false);
                                     },
                                     "save"
@@ -201,31 +205,34 @@ pub(crate) fn PrintingSheet(
 
 /// Renders card info for the currently visible printing, matching `CardInfoDisplay` style.
 fn printing_info(card: &Card) -> Element {
+    let has_prices = card.scryfall_data.prices.usd.is_some()
+        || card.scryfall_data.prices.eur.is_some()
+        || card.scryfall_data.prices.tix.is_some();
+
+    let price_text = if has_prices {
+        let mut display = String::from("prices:");
+        let mut count = 0;
+        if let Some(ref usd) = card.scryfall_data.prices.usd {
+            display.push_str(format!(" ${usd}").as_str());
+            count += 1;
+        }
+        if let Some(ref eur) = card.scryfall_data.prices.eur {
+            if count > 0 { display.push_str(" |"); }
+            display.push_str(format!(" €{eur}").as_str());
+            count += 1;
+        }
+        if let Some(ref tix) = card.scryfall_data.prices.tix {
+            if count > 0 { display.push_str(" |"); }
+            display.push_str(format!(" {tix} tix").as_str());
+        }
+        display
+    } else {
+        "\u{00a0}".to_string()
+    };
+
     rsx! {
         div { class: "card-info",
-            if card.scryfall_data.prices.usd.is_some()
-                || card.scryfall_data.prices.eur.is_some()
-                || card.scryfall_data.prices.tix.is_some()
-            {
-                {
-                    let mut display = String::from("prices:");
-                    let mut prices_count = 0;
-                    if let Some(ref usd) = card.scryfall_data.prices.usd {
-                        display.push_str(format!(" ${usd}").as_str());
-                        prices_count += 1;
-                    }
-                    if let Some(ref eur) = card.scryfall_data.prices.eur {
-                        if prices_count > 0 { display.push_str(" |"); }
-                        display.push_str(format!(" €{eur}").as_str());
-                        prices_count += 1;
-                    }
-                    if let Some(ref tix) = card.scryfall_data.prices.tix {
-                        if prices_count > 0 { display.push_str(" |"); }
-                        display.push_str(format!(" {tix} tix").as_str());
-                    }
-                    rsx! { span { "{display}" } }
-                }
-            }
+            span { "{price_text}" }
             span { "set: {card.scryfall_data.set_name.to_lowercase()}" }
             span { "released: {card.scryfall_data.released_at}" }
         }
