@@ -48,8 +48,8 @@ pub fn Home() -> Element {
                     p { "stage cards you're considering without committing them to the deck. swipe up to maybe, move to deck when ready." }
                 }
                 div { class: "feature-card",
-                    h3 { "9 themes" }
-                    p { "dark mode by default. choose from 9 color themes to match your style." }
+                    h3 { "15 themes" }
+                    p { "dark and light modes across 15 color themes — including 3 colorblind-accessible options. try the themes below." }
                 }
             }
         }

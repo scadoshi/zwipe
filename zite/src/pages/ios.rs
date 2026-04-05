@@ -11,7 +11,8 @@ pub fn Ios() -> Element {
                 p {
                     "zwipe has been submitted to the app store. while it's under review, here's
                     what's waiting for you: swipe-based deck building, commander support with
-                    partners and backgrounds, maybeboard, 9 themes, and 110k+ cards synced nightly."
+                    partners and backgrounds, sideboard, maybeboard, 15 themes with dark/light modes,
+                    multiple printings per card, and 110k+ cards synced nightly."
                 }
                 p { "once approved, this page will redirect to the official download link." }
             }
