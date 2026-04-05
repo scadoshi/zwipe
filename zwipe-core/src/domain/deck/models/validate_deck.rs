@@ -56,8 +56,8 @@ pub fn validate_deck(
     check_commander_required(format, deck_profile, &mut warnings);
     check_legality(format, entries, &mut warnings);
     check_copy_limits(format, entries, &mut warnings);
-    check_color_identity(format, deck_profile, entries, command_zone, &mut warnings);
-    check_commander_eligibility(format, deck_profile, entries, command_zone, &mut warnings);
+    check_color_identity(format, entries, command_zone, &mut warnings);
+    check_commander_eligibility(format, deck_profile, command_zone, &mut warnings);
     check_partner_validity(format, deck_profile, command_zone, &mut warnings);
     check_background_validity(format, deck_profile, command_zone, &mut warnings);
     check_signature_spell_validity(format, deck_profile, command_zone, &mut warnings);
@@ -189,7 +189,6 @@ fn check_copy_limits(format: &Format, entries: &[DeckEntry], warnings: &mut Vec<
 
 fn check_color_identity(
     format: &Format,
-    profile: &DeckProfile,
     entries: &[DeckEntry],
     command_zone: &DeckCommandZone,
     warnings: &mut Vec<DeckWarning>,
@@ -198,15 +197,15 @@ fn check_color_identity(
         return;
     }
 
-    // Find commander's color identity — check entries first, fall back to command zone
-    let Some(commander_id) = profile.commander_id else {
+    // Resolve commander oracle_id from command zone (always populated by get_deck)
+    let Some(commander_oid) = command_zone.commander.and_then(|c| c.scryfall_data.oracle_id) else {
         return;
     };
 
-    // Collect the commander's color identity
+    // Collect the commander's color identity (check entries first, fall back to command zone)
     let commander_identity = entries
         .iter()
-        .find(|e| e.card.scryfall_data.id == commander_id)
+        .find(|e| e.card.scryfall_data.oracle_id == Some(commander_oid))
         .map(|e| &e.card.scryfall_data.color_identity)
         .or_else(|| command_zone.commander.map(|c| &c.scryfall_data.color_identity));
 
@@ -233,8 +232,18 @@ fn check_color_identity(
         }
     }
 
+    // Collect command zone oracle_ids to skip in color identity checks
+    let partner_oid = command_zone.partner_commander.and_then(|c| c.scryfall_data.oracle_id);
+    let bg_oid = command_zone.background.and_then(|c| c.scryfall_data.oracle_id);
+
     for entry in entries {
-        if entry.card.scryfall_data.id == commander_id {
+        if entry.card.scryfall_data.oracle_id == Some(commander_oid) {
+            continue;
+        }
+        if partner_oid.is_some() && entry.card.scryfall_data.oracle_id == partner_oid {
+            continue;
+        }
+        if bg_oid.is_some() && entry.card.scryfall_data.oracle_id == bg_oid {
             continue;
         }
 
@@ -256,7 +265,6 @@ fn check_color_identity(
 fn check_commander_eligibility(
     format: &Format,
     profile: &DeckProfile,
-    entries: &[DeckEntry],
     command_zone: &DeckCommandZone,
     warnings: &mut Vec<DeckWarning>,
 ) {
@@ -264,18 +272,12 @@ fn check_commander_eligibility(
         return;
     }
 
-    let Some(commander_id) = profile.commander_id else {
+    if profile.commander_id.is_none() {
         return; // Already warned by check_commander_required
     };
 
-    // Find the commander card from entries or the command zone
-    let commander = entries
-        .iter()
-        .find(|e| e.card.scryfall_data.id == commander_id)
-        .map(|e| &e.card)
-        .or(command_zone.commander);
-
-    let Some(card) = commander else {
+    // Use command zone directly (always populated by get_deck)
+    let Some(card) = command_zone.commander else {
         return; // Can't validate without the card data
     };
 
@@ -619,6 +621,167 @@ mod tests {
                     .iter()
                     .any(|w| w.to_string().contains("not a valid commander")),
                 "expected commander eligibility warning for rare creature"
+            );
+        }
+
+        /// Commander stored with printing A, command_zone has same card
+        /// with a different printing (different scryfall_data.id, same oracle_id).
+        /// Eligibility check should still find the commander via oracle_id.
+        #[test]
+        fn different_printing_still_validates_commander() {
+            let mut card = make_card("Atraxa, Praetors' Voice");
+            card.scryfall_data.type_line =
+                Some("Legendary Creature — Phyrexian Angel Horror".to_string());
+            // Profile stores a different scryfall_data_id (different printing)
+            let different_printing_id = uuid::Uuid::new_v4();
+            let mut profile = test_profile(Some(Format::Commander));
+            profile.commander_id = Some(different_printing_id);
+
+            // Command zone has the card (same oracle_id, different scryfall_data.id)
+            let cz = DeckCommandZone {
+                commander: Some(&card),
+                ..empty_command_zone()
+            };
+            let warnings = validate_deck(&profile, &[], &cz);
+            assert!(
+                !warnings
+                    .iter()
+                    .any(|w| w.to_string().contains("not a valid commander")),
+                "different printing should still be recognized as valid commander"
+            );
+        }
+    }
+
+    mod color_identity {
+        use super::*;
+        use crate::domain::card::scryfall_data::colors::{Color, Colors};
+        use crate::test_utils::{make_card, make_entry};
+
+        #[test]
+        fn card_outside_commander_color_identity_warns() {
+            let mut commander = make_card("Omnath, Locus of Creation");
+            commander.scryfall_data.type_line =
+                Some("Legendary Creature — Elemental".to_string());
+            commander.scryfall_data.color_identity =
+                Colors::from([Color::Red, Color::Green, Color::White, Color::Blue]);
+
+            let mut profile = test_profile(Some(Format::Commander));
+            profile.commander_id = Some(commander.scryfall_data.id);
+
+            // Card with black — outside RGWU identity
+            let mut entry = make_entry("Doom Blade", 1);
+            entry.card.scryfall_data.color_identity = Colors::from([Color::Black]);
+
+            let cz = DeckCommandZone {
+                commander: Some(&commander),
+                ..empty_command_zone()
+            };
+            let warnings = validate_deck(&profile, &[entry], &cz);
+            assert!(
+                warnings
+                    .iter()
+                    .any(|w| w.to_string().contains("outside commander's color identity")),
+                "expected color identity warning for black card in RGWU deck"
+            );
+        }
+
+        #[test]
+        fn card_within_commander_color_identity_no_warning() {
+            let mut commander = make_card("Omnath, Locus of Creation");
+            commander.scryfall_data.type_line =
+                Some("Legendary Creature — Elemental".to_string());
+            commander.scryfall_data.color_identity =
+                Colors::from([Color::Red, Color::Green, Color::White, Color::Blue]);
+
+            let mut profile = test_profile(Some(Format::Commander));
+            profile.commander_id = Some(commander.scryfall_data.id);
+
+            let mut entry = make_entry("Lightning Bolt", 1);
+            entry.card.scryfall_data.color_identity = Colors::from([Color::Red]);
+
+            let cz = DeckCommandZone {
+                commander: Some(&commander),
+                ..empty_command_zone()
+            };
+            let warnings = validate_deck(&profile, &[entry], &cz);
+            assert!(
+                !warnings
+                    .iter()
+                    .any(|w| w.to_string().contains("outside commander's color identity")),
+                "expected no color identity warning for red card in RGWU deck"
+            );
+        }
+
+        /// Commander is in entries with a different printing than the profile stores.
+        /// Color identity check should still skip the commander entry (matched by oracle_id).
+        #[test]
+        fn commander_in_entries_different_printing_not_warned() {
+            let mut commander = make_card("Atraxa, Praetors' Voice");
+            commander.scryfall_data.type_line =
+                Some("Legendary Creature — Phyrexian Angel Horror".to_string());
+            commander.scryfall_data.color_identity =
+                Colors::from([Color::White, Color::Blue, Color::Black, Color::Green]);
+            let oracle_id = commander.scryfall_data.oracle_id;
+
+            // Profile stores a different printing
+            let different_printing_id = uuid::Uuid::new_v4();
+            let mut profile = test_profile(Some(Format::Commander));
+            profile.commander_id = Some(different_printing_id);
+
+            // Entry has the commander as a deck card (same oracle_id, different scryfall_data.id)
+            let mut entry = make_entry("Atraxa, Praetors' Voice", 1);
+            entry.card.scryfall_data.oracle_id = oracle_id;
+            entry.card.scryfall_data.color_identity =
+                Colors::from([Color::White, Color::Blue, Color::Black, Color::Green]);
+
+            let cz = DeckCommandZone {
+                commander: Some(&commander),
+                ..empty_command_zone()
+            };
+            let warnings = validate_deck(&profile, &[entry], &cz);
+            assert!(
+                !warnings
+                    .iter()
+                    .any(|w| w.to_string().contains("outside commander's color identity")),
+                "commander entry should be skipped by oracle_id, not warned about"
+            );
+        }
+
+        /// Partner commander's color identity should extend allowed colors.
+        /// Cards within the combined identity should not warn.
+        #[test]
+        fn partner_extends_color_identity() {
+            let mut commander = make_card("Tymna the Weaver");
+            commander.scryfall_data.type_line =
+                Some("Legendary Creature — Human Cleric".to_string());
+            commander.scryfall_data.color_identity =
+                Colors::from([Color::White, Color::Black]);
+
+            let mut partner = make_card("Thrasios, Triton Hero");
+            partner.scryfall_data.type_line =
+                Some("Legendary Creature — Merfolk Wizard".to_string());
+            partner.scryfall_data.color_identity =
+                Colors::from([Color::Green, Color::Blue]);
+
+            let mut profile = test_profile(Some(Format::Commander));
+            profile.commander_id = Some(commander.scryfall_data.id);
+            profile.partner_commander_id = Some(partner.scryfall_data.id);
+
+            // Blue card — within partner's identity but not commander's
+            let mut entry = make_entry("Counterspell", 1);
+            entry.card.scryfall_data.color_identity = Colors::from([Color::Blue]);
+
+            let cz = DeckCommandZone {
+                commander: Some(&commander),
+                partner_commander: Some(&partner),
+                ..empty_command_zone()
+            };
+            let warnings = validate_deck(&profile, &[entry], &cz);
+            assert!(
+                !warnings
+                    .iter()
+                    .any(|w| w.to_string().contains("outside commander's color identity")),
+                "blue card should be allowed via partner's color identity"
             );
         }
     }

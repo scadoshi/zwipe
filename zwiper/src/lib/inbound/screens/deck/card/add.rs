@@ -14,7 +14,7 @@ use crate::{
     },
     outbound::client::{
         ZwipeClient,
-        card::search_cards::ClientSearchCards,
+        card::{get_card::ClientGetCard, search_cards::ClientSearchCards},
         deck::get_deck::ClientGetDeck,
         deck_card::{
             create_deck_card::ClientCreateDeckCard, delete_deck_card::ClientDeleteDeckCard,
@@ -212,8 +212,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         };
 
         // For now, always add quantity 1 (will add quantity picker later)
-        let oracle_id_str = card.scryfall_data.oracle_id.map(|id| id.to_string()).unwrap_or_default();
-        let request = HttpCreateDeckCard::new(&card.scryfall_data.id.to_string(), &oracle_id_str, 1, None);
+        let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
         let oracle_id = card.scryfall_data.oracle_id;
 
         spawn(async move {
@@ -240,8 +239,7 @@ pub fn Add(deck_id: Uuid) -> Element {
             return;
         };
 
-        let oracle_id_str = card.scryfall_data.oracle_id.map(|id| id.to_string()).unwrap_or_default();
-        let request = HttpCreateDeckCard::new(&card.scryfall_data.id.to_string(), &oracle_id_str, 1, Some(true));
+        let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, Some(true));
         let oracle_id = card.scryfall_data.oracle_id;
 
         spawn(async move {
@@ -377,8 +375,21 @@ pub fn Add(deck_id: Uuid) -> Element {
                         .iter()
                         .filter_map(|entry| entry.card.scryfall_data.oracle_id)
                         .collect();
-                    if let Some(commander_id) = deck.deck_profile.commander_id {
-                        ids.insert(commander_id);
+                    // Resolve command zone scryfall_data_ids to oracle_ids for exclusion
+                    for cz_id in [
+                        deck.deck_profile.commander_id,
+                        deck.deck_profile.partner_commander_id,
+                        deck.deck_profile.background_id,
+                        deck.deck_profile.signature_spell_id,
+                    ]
+                    .into_iter()
+                    .flatten()
+                    {
+                        if let Ok(card) = client().get_card(cz_id, &session).await {
+                            if let Some(oid) = card.scryfall_data.oracle_id {
+                                ids.insert(oid);
+                            }
+                        }
                     }
                     deck_cards_ids.set(ids);
 

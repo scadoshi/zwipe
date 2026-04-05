@@ -407,7 +407,7 @@ impl DeckRepository for Postgres {
                 .push_bind(false); // imports always go to mainboard
         });
         qb.push(
-            " ON CONFLICT (deck_id, oracle_id) DO UPDATE SET scryfall_data_id = EXCLUDED.scryfall_data_id, quantity = EXCLUDED.quantity, maybeboard = EXCLUDED.maybeboard RETURNING deck_id::TEXT, scryfall_data_id::TEXT, oracle_id::TEXT, quantity, maybeboard",
+            " ON CONFLICT (deck_id, oracle_id) DO UPDATE SET quantity = EXCLUDED.quantity RETURNING deck_id::TEXT, scryfall_data_id::TEXT, oracle_id::TEXT, quantity, maybeboard",
         );
         let rows: Vec<DatabaseDeckCard> = qb
             .build_query_as()

@@ -119,8 +119,29 @@ where
         request: &CreateDeckCard,
     ) -> Result<DeckCard, CreateDeckCardError> {
         let deck_profile = self.get_deck_profile(&request.into()).await?;
-        if deck_profile.commander_id == Some(request.scryfall_data_id) {
-            return Err(CreateDeckCardError::IsCommander);
+
+        // Resolve command zone scryfall_data_ids to oracle_ids for comparison
+        let cz_ids: ScryfallDataIds = [
+            deck_profile.commander_id,
+            deck_profile.partner_commander_id,
+            deck_profile.background_id,
+            deck_profile.signature_spell_id,
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+        if !cz_ids.is_empty() {
+            let cz_oracle_ids: std::collections::HashSet<Uuid> = self
+                .card_repo
+                .get_multiple_scryfall_data(&cz_ids)
+                .await
+                .map_err(|e| CreateDeckCardError::Database(e.into()))?
+                .into_iter()
+                .filter_map(|sd| sd.oracle_id)
+                .collect();
+            if cz_oracle_ids.contains(&request.oracle_id) {
+                return Err(CreateDeckCardError::IsCommander);
+            }
         }
         let card_count = self
             .deck_repo
@@ -179,23 +200,40 @@ where
             })
             .collect();
 
-        // Fetch commander card for color identity checks if not in entries
-        let commander_card = if let Some(commander_id) = deck_profile.commander_id {
-            if !entries.iter().any(|e| e.card.scryfall_data.id == commander_id) {
-                let ids: ScryfallDataIds = vec![commander_id].into_iter().collect();
-                self.card_repo.get_cards(&ids).await.ok().and_then(|mut cards| cards.pop())
-            } else {
-                None
-            }
+        // Fetch all command zone cards (single batch query) so validate_deck
+        // can compare by oracle_id rather than printing-specific scryfall_data_id.
+        let cz_ids: ScryfallDataIds = [
+            deck_profile.commander_id,
+            deck_profile.partner_commander_id,
+            deck_profile.background_id,
+            deck_profile.signature_spell_id,
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+
+        let cz_cards: HashMap<Uuid, Card> = if !cz_ids.is_empty() {
+            self.card_repo
+                .get_cards(&cz_ids)
+                .await
+                .unwrap_or_default()
+                .into_iter()
+                .map(|c| (c.scryfall_data.id, c))
+                .collect()
         } else {
-            None
+            HashMap::new()
         };
+
+        let commander_card = deck_profile.commander_id.and_then(|id| cz_cards.get(&id).cloned());
+        let partner_card = deck_profile.partner_commander_id.and_then(|id| cz_cards.get(&id).cloned());
+        let background_card = deck_profile.background_id.and_then(|id| cz_cards.get(&id).cloned());
+        let spell_card = deck_profile.signature_spell_id.and_then(|id| cz_cards.get(&id).cloned());
 
         let command_zone = zwipe_core::domain::deck::validate_deck::DeckCommandZone {
             commander: commander_card.as_ref(),
-            partner_commander: None,
-            background: None,
-            signature_spell: None,
+            partner_commander: partner_card.as_ref(),
+            background: background_card.as_ref(),
+            signature_spell: spell_card.as_ref(),
         };
         let warnings = zwipe_core::domain::deck::validate_deck::validate_deck(
             &deck_profile,
@@ -292,9 +330,31 @@ where
             .map(|c| (c.scryfall_data.name.to_lowercase(), c))
             .collect();
 
+        // Resolve oracle_ids for additional cards (commander, partner, background, signature spell)
+        // so we can skip them by oracle_id rather than scryfall_data_id (which is printing-specific).
+        let additional_scryfall_ids: ScryfallDataIds = [
+            deck_profile.commander_id,
+            deck_profile.partner_commander_id,
+            deck_profile.background_id,
+            deck_profile.signature_spell_id,
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+        let additional_oracle_ids: std::collections::HashSet<Uuid> = if additional_scryfall_ids.is_empty() {
+            std::collections::HashSet::new()
+        } else {
+            self.card_repo
+                .get_multiple_scryfall_data(&additional_scryfall_ids)
+                .await
+                .map_err(|e| ImportDeckCardsError::Database(e.into()))?
+                .into_iter()
+                .filter_map(|sd| sd.oracle_id)
+                .collect()
+        };
+
         // Classify lines, deduplicating by oracle_id (summing quantities).
         // Tuple: (scryfall_id, oracle_id, quantity, name, is_basic_land)
-        let commander_id = deck_profile.commander_id;
         let mut unresolved: Vec<UnresolvedCard> = Vec::new();
         let mut insert_map: HashMap<Uuid, (Uuid, Uuid, i32, String, bool)> = HashMap::new();
 
@@ -302,10 +362,6 @@ where
             let key = line.card_name.to_lowercase();
             if let Some(card) = card_map.get(&key) {
                 let scryfall_id = card.scryfall_data.id;
-                // Skip the commander — it's deck metadata, not a regular card
-                if commander_id == Some(scryfall_id) {
-                    continue;
-                }
                 let oracle_id = match card.scryfall_data.oracle_id {
                     Some(id) => id,
                     None => {
@@ -316,6 +372,10 @@ where
                         continue;
                     }
                 };
+                // Skip additional cards (commander, partner, background, signature spell)
+                if additional_oracle_ids.contains(&oracle_id) {
+                    continue;
+                }
                 let is_basic_land = card.scryfall_data.is_basic_land();
                 insert_map
                     .entry(oracle_id)
