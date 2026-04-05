@@ -618,8 +618,8 @@
  ==================== */
 
 :root {
-    /* Background (slate blue-grey) */
-    --bg-primary: #1a1e28;
+    /* Background */
+    --bg-primary: #1a1d23;
     --bg-overlay: rgba(0, 0, 0, 0.6);
 
     /* Text (off-white cream) */
@@ -642,10 +642,10 @@
     --border-success: #2d7040;
     --border-warning: #8a7020;
 
-    /* Accents (faded slate blue) */
-    --accent-primary: #5f7da9;
-    --accent-secondary: #5f7da9;
-    --accent-tertiary: #5f7da9;
+    /* Accents (darker cream) */
+    --accent-primary: #afa79d;
+    --accent-secondary: #afa79d;
+    --accent-tertiary: #afa79d;
 
     /* Shadows */
     --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
