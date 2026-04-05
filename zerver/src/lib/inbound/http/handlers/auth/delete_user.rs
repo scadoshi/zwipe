@@ -1,5 +1,6 @@
 #[cfg(feature = "zerver")]
 use axum::{extract::State, http::StatusCode, Json};
+#[cfg(feature = "zerver")]
 use zwipe_core::http::contracts::auth::HttpDeleteUser;
 
 use crate::{domain::auth::requests::delete_user::InvalidDeleteUser, inbound::http::ApiError};
