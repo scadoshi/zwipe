@@ -1157,17 +1157,27 @@ body {
 }
 
 .carousel-dots {
-    display: flex;
-    justify-content: center;
-    gap: 0.375rem;
+    overflow: hidden;
+    width: 100%;
     padding: 0.5rem 0;
+    box-sizing: border-box;
+    -webkit-mask-image: linear-gradient(to right, transparent, black 2rem, black calc(100% - 2rem), transparent);
+    mask-image: linear-gradient(to right, transparent, black 2rem, black calc(100% - 2rem), transparent);
+}
+
+.carousel-dots-track {
+    display: flex;
+    gap: 0.375rem;
+    width: max-content;
+    transition: transform 0.2s ease-out;
 }
 
 .carousel-dot {
+    flex-shrink: 0;
     width: 0.5rem;
     height: 0.5rem;
     border-radius: 50%;
-    background: var(--color-text);
+    background: var(--text-primary);
     opacity: 0.3;
     transition: opacity 0.2s ease;
 }
@@ -1673,6 +1683,10 @@ body {
 
 .bottom-sheet .util-bar {
     padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+}
+
+.bottom-sheet .carousel-card-image {
+    max-height: 38vh;
 }
 
 .modal-header {

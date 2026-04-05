@@ -1,5 +1,6 @@
 //! Bottom sheet for browsing and selecting card printings.
 
+use super::card_info::CardInfoDisplay;
 use crate::inbound::components::interactions::carousel::dots::CarouselDots;
 use crate::inbound::components::interactions::carousel::state::CarouselState;
 use crate::inbound::components::interactions::carousel::Carousel;
@@ -144,10 +145,10 @@ pub(crate) fn PrintingSheet(
                     CarouselDots { current: current_idx, total: printings().len() }
 
                     // Info row for currently visible printing
-                    if let Some(ref card) = visible_card {
-                        { printing_info(card) }
+                    if let Some(card) = visible_card.clone() {
+                        CardInfoDisplay { card }
                     }
-                } else if let Some(ref card) = visible_card {
+                } else if let Some(card) = visible_card.clone() {
                     // Single printing: just show the image, no carousel
                     if let Some(ref image_url) = card.scryfall_data.image_uris.as_ref().and_then(|iu| iu.large.clone()) {
                         div { style: "display: flex; justify-content: center; margin-bottom: 0.75rem;",
@@ -159,7 +160,7 @@ pub(crate) fn PrintingSheet(
                         }
                     }
 
-                    { printing_info(card) }
+                    CardInfoDisplay { card }
                 }
             }
 
@@ -203,44 +204,3 @@ pub(crate) fn PrintingSheet(
     }
 }
 
-/// Renders card info for the currently visible printing, matching `CardInfoDisplay` style.
-fn printing_info(card: &Card) -> Element {
-    let has_prices = card.scryfall_data.prices.usd.is_some()
-        || card.scryfall_data.prices.eur.is_some()
-        || card.scryfall_data.prices.tix.is_some();
-
-    let price_text = if has_prices {
-        let mut display = String::from("prices:");
-        let mut count = 0;
-        if let Some(ref usd) = card.scryfall_data.prices.usd {
-            display.push_str(format!(" ${usd}").as_str());
-            count += 1;
-        }
-        if let Some(ref eur) = card.scryfall_data.prices.eur {
-            if count > 0 { display.push_str(" |"); }
-            display.push_str(format!(" €{eur}").as_str());
-            count += 1;
-        }
-        if let Some(ref tix) = card.scryfall_data.prices.tix {
-            if count > 0 { display.push_str(" |"); }
-            display.push_str(format!(" {tix} tix").as_str());
-        }
-        display
-    } else {
-        "\u{00a0}".to_string()
-    };
-
-    let artist_text = card.scryfall_data.artist.as_deref()
-        .filter(|a| !a.is_empty())
-        .map(|a| format!("artist: {}", a.to_lowercase()))
-        .unwrap_or_else(|| "\u{00a0}".to_string());
-
-    rsx! {
-        div { class: "card-info",
-            span { "{price_text}" }
-            span { "set: {card.scryfall_data.set_name.to_lowercase()}" }
-            span { "released: {card.scryfall_data.released_at}" }
-            span { "{artist_text}" }
-        }
-    }
-}
