@@ -162,16 +162,26 @@ Small UX improvements to the deck view screen and related flows.
 
 ---
 
-## Theme Audit & Color System
+## Theme Audit & Color System — In Progress
 
-Full audit of all 9 themes to make the app more colorful and ensure visual consistency.
+Full audit and expansion of the theme system. Originally 9 themes, now 15 (including 3 colorblind-accessible).
 
-**Steps:**
-1. **Define Zwipe color scheme** — select distinct, vibrant colors for the default theme
-2. **Audit CSS variable usage** — map which variables apply where across the app (backgrounds, borders, text, accents, buttons). Ensure semantic consistency: `--primary-border` should mean the same thing on every screen
-3. **Ensure contrast consistency** — every theme must meet the same contrast ratios (e.g., text on background, border against background). Document the target contrast rules
-4. **Per-theme color pass** — go through each of the 9 themes, ensure they have ample color variety within their flavor (not just 2 shades of one hue). Adjust to meet contrast rules from step 3
-5. **Full visual test** — test every theme on every screen, tweak as needed
+**Completed:**
+- [x] Define Zwipe color scheme — slate blue-grey bg, magenta off-white text, muted blue accents (`9aa93cdb`)
+- [x] Audit CSS variable usage — semantic consistency across all screens (`9aa93cdb`)
+- [x] Add 3-variable accent system (`--accent-primary/secondary/tertiary`) to every theme (`9aa93cdb`)
+- [x] Normalize contrast ratios across all themes — text-muted/text-subtle adjusted (`9aa93cdb`)
+- [x] Fix shadow syntax, remove selection color inversions, border semantic audit (`3646ecd2`)
+- [x] Add colorblind accessible themes: protanopia, deuteranopia, tritanopia (dark/light) (`fd7faaf9`)
+- [x] Add monokai, one dark, solarized themes (dark/light) (`d7e7bd16`)
+- [x] Move ThemeConfig from zwiper to zwipe-core for cross-crate sharing (`0690248d`)
+- [x] Add all 15 dark themes to zite with live theme picker in footer (`0690248d`)
+- [x] Sync zite colors with app defaults, remove color-inverting hover states (`0690248d`)
+
+- [x] Extract shared `themes.css` — `shared/themes.css` is the single source of truth, copied into `zwiper/assets/` and `zite/assets/` at build time via `build.rs`. Copies are gitignored as build artifacts. `cargo:rerun-if-changed` ensures hot reload picks up edits instantly.
+
+**Remaining:**
+- [ ] Full visual test — test every theme on every screen, tweak as needed
 
 ---
 
@@ -247,6 +257,22 @@ Pre-populate the color identity filter to the commander's colors when the deck's
 ---
 
 ## Recently Completed
+
+### Theme Audit & Zite Theme Handling (2026-04-05)
+
+- [x] Theme audit phases 1-3: fix variable bugs, normalize contrast ratios, add accent system, rework Zwipe default identity (`9aa93cdb`)
+- [x] Theme phases 4-5: fix shadow syntax, remove selection color inversions, border semantic audit (`3646ecd2`)
+- [x] Add colorblind accessible themes: protanopia, deuteranopia, tritanopia (dark/light) (`fd7faaf9`)
+- [x] Add monokai, one dark, solarized themes (dark/light), register in ALLOWED_THEMES (`d7e7bd16`)
+- [x] Mute zwipe accent-tertiary to softer gold palette (`a81b8a6b`)
+- [x] Move ThemeConfig from zwiper/domain/theme.rs to zwipe-core/domain/user/models/theme.rs (`0690248d`)
+- [x] Update 6 zwiper import sites to use shared ThemeConfig from zwipe-core (`0690248d`)
+- [x] Sync zite CSS with app's new Zwipe default identity — bg, text, border, accent variables (`0690248d`)
+- [x] Add all 15 dark theme CSS classes to zite (no light variants — dark-only website aesthetic) (`0690248d`)
+- [x] Add live theme picker in zite footer using ALLOWED_THEMES from zwipe-core (`0690248d`)
+- [x] Apply theme class to body via eval for full-page CSS variable propagation (`0690248d`)
+- [x] Remove color-inverting hover states on zite buttons — no more bg fill + dark text flip (`0690248d`)
+- [x] Extract `shared/themes.css` — single source of truth for all theme CSS variables, copied into both projects via `build.rs` at compile time, gitignored as build artifacts
 
 ### Deck View Polish + Printing Sheet + Carousel Dots (2026-04-05)
 
