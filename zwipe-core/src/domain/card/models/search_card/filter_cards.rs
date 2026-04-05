@@ -546,8 +546,8 @@ mod tests {
         Card {
             card_profile: CardProfile {
                 scryfall_data_id: Uuid::new_v4(),
-
                 is_token: false,
+                mechanical_categories: vec![],
                 created_at: NaiveDate::from_ymd_opt(2021, 1, 1)
                     .unwrap()
                     .and_hms_opt(0, 0, 0)

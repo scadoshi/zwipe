@@ -9,7 +9,7 @@ pub mod helpers;
 /// Database-to-domain Scryfall data conversion.
 pub mod models;
 /// Sync metrics JSONB codecs and database model.
-pub mod sync_metrics;
+pub mod zervice_metrics;
 
 use zwipe_core::domain::card::{
     Card,
@@ -23,7 +23,7 @@ use zwipe_core::domain::card::{
 use crate::domain::card::models::{
     helpers::SleeveCardProfile,
     search_card::error::SearchCardsError,
-    sync_metrics::SyncMetrics,
+    zervice_metrics::ZerviceMetrics,
 };
 use crate::domain::card::requests::{
     create_card::CreateCardError,
@@ -42,7 +42,7 @@ use crate::domain::card::requests::{
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
 use crate::outbound::sqlx::card::helpers::upsert_card::BatchDeltaUpsertWithTx;
 use crate::outbound::sqlx::card::models::DatabaseScryfallData;
-use crate::outbound::sqlx::card::sync_metrics::DatabaseSyncMetrics;
+use crate::outbound::sqlx::card::zervice_metrics::DatabaseZerviceMetrics;
 use crate::outbound::sqlx::postgres::Postgres as MyPostgres;
 use crate::{
     domain::card::ports::CardRepository,
@@ -82,11 +82,11 @@ impl CardRepository for MyPostgres {
         &self,
         multiple_scryfall_data: &[ScryfallData],
         batch_size: usize,
-        sync_metrics: &mut SyncMetrics,
+        zervice_metrics: &mut ZerviceMetrics,
     ) -> Result<Vec<Card>, CreateCardError> {
         let mut tx = self.pool.begin().await?;
         let cards = multiple_scryfall_data
-            .batch_upsert_with_tx(&mut tx, batch_size, sync_metrics)
+            .batch_upsert_with_tx(&mut tx, batch_size, zervice_metrics)
             .await?;
         tx.commit().await?;
         Ok(cards)
@@ -96,40 +96,40 @@ impl CardRepository for MyPostgres {
         &self,
         multiple_scryfall_data: &[ScryfallData],
         batch_size: usize,
-        sync_metrics: &mut SyncMetrics,
+        zervice_metrics: &mut ZerviceMetrics,
     ) -> Result<Vec<Card>, CreateCardError> {
         let mut tx = self.pool.begin().await?;
         let cards = multiple_scryfall_data
-            .batch_delta_upsert_with_tx(&mut tx, batch_size, sync_metrics)
+            .batch_delta_upsert_with_tx(&mut tx, batch_size, zervice_metrics)
             .await?;
         tx.commit().await?;
         Ok(cards)
     }
 
-    /// Persists a completed sync run to `scryfall_data_sync_metrics`.
-    async fn record_sync_metrics(
+    /// Persists a completed sync run to `zervice_metrics`.
+    async fn record_zervice_metrics(
         &self,
-        sync_metrics: &SyncMetrics,
-    ) -> Result<SyncMetrics, anyhow::Error> {
+        zervice_metrics: &ZerviceMetrics,
+    ) -> Result<ZerviceMetrics, anyhow::Error> {
         let mut tx = self.pool.begin().await?;
-        let query_sql = "INSERT INTO scryfall_data_sync_metrics".to_string()
+        let query_sql = "INSERT INTO zervice_metrics".to_string()
             + " (started_at, ended_at, duration_in_seconds, status, received_count, upserted_count, skipped_count, error_count, errors)"
             + " VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *";
-        let database_sync_metrics: DatabaseSyncMetrics = query_as(&query_sql)
-            .bind(sync_metrics.started_at())
-            .bind(sync_metrics.ended_at())
-            .bind(sync_metrics.duration_in_seconds())
-            .bind(sync_metrics.status().to_string())
-            .bind(sync_metrics.received_count())
-            .bind(sync_metrics.upserted_count())
-            .bind(sync_metrics.skipped_count())
-            .bind(sync_metrics.error_count())
-            .bind(sync_metrics.errors())
+        let database_zervice_metrics: DatabaseZerviceMetrics = query_as(&query_sql)
+            .bind(zervice_metrics.started_at())
+            .bind(zervice_metrics.ended_at())
+            .bind(zervice_metrics.duration_in_seconds())
+            .bind(zervice_metrics.status().to_string())
+            .bind(zervice_metrics.received_count())
+            .bind(zervice_metrics.upserted_count())
+            .bind(zervice_metrics.skipped_count())
+            .bind(zervice_metrics.error_count())
+            .bind(zervice_metrics.errors())
             .fetch_one(&mut *tx)
             .await?;
-        let sync_metrics: SyncMetrics = database_sync_metrics.try_into()?;
+        let zervice_metrics: ZerviceMetrics = database_zervice_metrics.try_into()?;
         tx.commit().await?;
-        Ok(sync_metrics)
+        Ok(zervice_metrics)
     }
 
     // =====
@@ -620,6 +620,30 @@ impl CardRepository for MyPostgres {
         Ok(cards)
     }
 
+    /// Returns all printings of a card by oracle_id, ordered by release date (newest first).
+    async fn get_printings(&self, oracle_id: uuid::Uuid) -> Result<Vec<Card>, GetCardError> {
+        let db_rows: Vec<DatabaseScryfallData> =
+            query_as("SELECT sd.* FROM scryfall_data sd JOIN card_profiles cp ON sd.id = cp.scryfall_data_id WHERE sd.oracle_id = $1 ORDER BY sd.released_at ASC")
+                .bind(oracle_id)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| GetScryfallDataError::Database(e.into()))?;
+        let scryfall_data: Vec<ScryfallData> = db_rows
+            .into_iter()
+            .map(ScryfallData::try_from)
+            .collect::<Result<_, _>>()
+            .map_err(GetScryfallDataError::Database)?;
+        if scryfall_data.is_empty() {
+            return Ok(vec![]);
+        }
+        let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
+        let card_profiles = self
+            .get_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
+            .await?;
+        let cards = card_profiles.sleeve(scryfall_data);
+        Ok(cards)
+    }
+
     /// Composes `search_scryfall_data` results with card profiles into `Card` values.
     async fn search_cards(&self, request: &CardFilter) -> Result<Vec<Card>, SearchCardsError> {
         let scryfall_data = self.search_scryfall_data(request).await?;
@@ -737,7 +761,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<CardProfile, GetCardProfileError> {
         let card_profile: CardProfile = query_as!(
             DatabaseCardProfile,
-            "SELECT scryfall_data_id, is_token, created_at, updated_at FROM card_profiles WHERE scryfall_data_id = $1",
+            "SELECT scryfall_data_id, is_token, mechanical_categories, created_at, updated_at FROM card_profiles WHERE scryfall_data_id = $1",
             **request
         )
         .fetch_one(&self.pool)
@@ -752,7 +776,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<CardProfile, GetCardProfileError> {
         let card_profile: CardProfile = query_as!(
             DatabaseCardProfile,
-            "SELECT scryfall_data_id, is_token, created_at, updated_at
+            "SELECT scryfall_data_id, is_token, mechanical_categories, created_at, updated_at
             FROM card_profiles WHERE scryfall_data_id = $1",
             **request
         )
@@ -768,7 +792,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
         let card_profiles: Vec<CardProfile> = query_as!(
             DatabaseCardProfile,
-            "SELECT scryfall_data_id, is_token, created_at, updated_at
+            "SELECT scryfall_data_id, is_token, mechanical_categories, created_at, updated_at
             FROM card_profiles WHERE scryfall_data_id = ANY($1)",
             &**request
         )
@@ -786,7 +810,7 @@ impl CardRepository for MyPostgres {
     ) -> Result<Vec<CardProfile>, GetCardProfileError> {
         let card_profiles: Vec<CardProfile> = query_as!(
             DatabaseCardProfile,
-            "SELECT scryfall_data_id, is_token, created_at, updated_at
+            "SELECT scryfall_data_id, is_token, mechanical_categories, created_at, updated_at
             FROM card_profiles WHERE scryfall_data_id = ANY($1)",
             &**request
         )
@@ -800,7 +824,7 @@ impl CardRepository for MyPostgres {
 
     async fn get_last_sync_date(&self) -> anyhow::Result<Option<NaiveDateTime>> {
         let last_sync_date: Option<NaiveDateTime> = query_scalar(
-            "SELECT started_at FROM scryfall_data_sync_metrics
+            "SELECT started_at FROM zervice_metrics
             ORDER BY started_at DESC LIMIT 1",
         )
         .fetch_optional(&self.pool)
@@ -850,5 +874,64 @@ impl CardRepository for MyPostgres {
             .await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
+    }
+
+    // ============
+    //  classify
+    // ============
+
+    async fn get_unclassified_card_ids(&self) -> Result<Vec<uuid::Uuid>, anyhow::Error> {
+        let ids = sqlx::query_scalar!(
+            "SELECT cp.scryfall_data_id FROM card_profiles cp
+             JOIN scryfall_data sd ON cp.scryfall_data_id = sd.id
+             WHERE (cp.mechanical_categories = '[]'::jsonb OR cp.mechanical_categories IS NULL)
+               AND sd.oracle_text IS NOT NULL
+               AND sd.oracle_id IS NOT NULL"
+        )
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(ids)
+    }
+
+    async fn get_cards_batch(&self, ids: &[uuid::Uuid]) -> Result<Vec<Card>, anyhow::Error> {
+        if ids.is_empty() {
+            return Ok(vec![]);
+        }
+        let scryfall_data_ids: ScryfallDataIds = ids.iter().copied().collect();
+        self.get_cards(&scryfall_data_ids).await
+            .map_err(|e| anyhow::anyhow!("failed to fetch card batch: {e}"))
+    }
+
+    async fn update_mechanical_categories(
+        &self,
+        updates: &[(uuid::Uuid, Vec<zwipe_core::domain::card::mechanical_category::MechanicalCategory>)],
+    ) -> Result<(), anyhow::Error> {
+        if updates.is_empty() {
+            return Ok(());
+        }
+
+        let mut tx = self.pool.begin().await?;
+
+        for (id, categories) in updates {
+            let cat_strings: Vec<String> = categories.iter().map(|c| c.to_string()).collect();
+            let json = serde_json::to_value(&cat_strings)?;
+            sqlx::query!(
+                "UPDATE card_profiles SET mechanical_categories = $1, updated_at = NOW() WHERE scryfall_data_id = $2",
+                json,
+                id
+            )
+            .execute(&mut *tx)
+            .await?;
+        }
+
+        tx.commit().await?;
+        Ok(())
+    }
+
+    async fn clear_all_categories(&self) -> Result<(), anyhow::Error> {
+        sqlx::query!("UPDATE card_profiles SET mechanical_categories = '[]'::jsonb")
+            .execute(&self.pool)
+            .await?;
+        Ok(())
     }
 }

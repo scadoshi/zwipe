@@ -4,6 +4,7 @@
 //! - Token status (whether this is a token vs. real card)
 //! - Timestamps (when card was added/updated in database)
 
+use super::mechanical_category::MechanicalCategory;
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -18,6 +19,8 @@ pub struct CardProfile {
     pub scryfall_data_id: Uuid,
     /// Whether this is a token (not a real card).
     pub is_token: bool,
+    /// Mechanical categories assigned by heuristics or AI classification.
+    pub mechanical_categories: Vec<MechanicalCategory>,
     /// When this profile was created in database.
     pub created_at: NaiveDateTime,
     /// When this profile was last updated.

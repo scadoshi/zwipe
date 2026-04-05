@@ -9,7 +9,7 @@ use crate::{
     domain::card::{
         models::{
             search_card::error::SearchCardsError,
-            sync_metrics::SyncMetrics,
+            zervice_metrics::ZerviceMetrics,
         },
         ports::{CardRepository, CardService},
         requests::{
@@ -84,22 +84,58 @@ impl<R: CardRepository> CardService for Service<R> {
         self.repo.upsert(&scryfall_data).await
     }
 
-    async fn scryfall_sync(&self, bulk_endpoint: BulkEndpoint) -> anyhow::Result<SyncMetrics> {
+    async fn scryfall_sync(&self, bulk_endpoint: BulkEndpoint) -> anyhow::Result<ZerviceMetrics> {
         tracing::info!(
             "performing scryfall sync with {}",
             bulk_endpoint.to_snake_case()
         );
-        let mut sync_metrics = SyncMetrics::new();
+        let mut zervice_metrics = ZerviceMetrics::new();
         let batch_size = batch_size();
         let scryfall_data: Vec<ScryfallData> = bulk_endpoint.amass().await?;
-        sync_metrics.set_received_count(scryfall_data.len() as i32);
+        zervice_metrics.set_received_count(scryfall_data.len() as i32);
         self.repo
-            .batch_delta_upsert(&scryfall_data, batch_size, &mut sync_metrics)
+            .batch_delta_upsert(&scryfall_data, batch_size, &mut zervice_metrics)
             .await?;
-        sync_metrics.mark_as_completed();
-        let sync_metrics = self.repo.record_sync_metrics(&sync_metrics).await?;
-        tracing::info!("{:?}", sync_metrics);
-        Ok(sync_metrics)
+        zervice_metrics.mark_as_completed();
+        let zervice_metrics = self.repo.record_zervice_metrics(&zervice_metrics).await?;
+        tracing::info!("sync complete: {}", zervice_metrics);
+        Ok(zervice_metrics)
+    }
+
+    async fn classify_untagged_cards(&self, batch_size: usize) -> anyhow::Result<(u32, u32)> {
+        use zwipe_core::domain::card::mechanical_category::classify_by_heuristics;
+
+        let all_ids = self.repo.get_unclassified_card_ids().await?;
+        let total = all_ids.len() as u32;
+        if total == 0 {
+            return Ok((0, 0));
+        }
+
+        let mut classified = 0u32;
+
+        for chunk in all_ids.chunks(batch_size) {
+            let cards = self.repo.get_cards_batch(chunk).await?;
+
+            let updates: Vec<_> = cards
+                .iter()
+                .map(|card| {
+                    let cats = classify_by_heuristics(card);
+                    (card.scryfall_data.id, cats)
+                })
+                .filter(|(_, cats)| !cats.is_empty())
+                .collect();
+
+            classified += updates.len() as u32;
+            if !updates.is_empty() {
+                self.repo.update_mechanical_categories(&updates).await?;
+            }
+        }
+
+        Ok((classified, total))
+    }
+
+    async fn clear_all_categories(&self) -> anyhow::Result<()> {
+        self.repo.clear_all_categories().await
     }
 
     // =====
@@ -111,6 +147,10 @@ impl<R: CardRepository> CardService for Service<R> {
 
     async fn get_cards(&self, request: &ScryfallDataIds) -> Result<Vec<Card>, GetCardError> {
         self.repo.get_cards(request).await
+    }
+
+    async fn get_printings(&self, oracle_id: uuid::Uuid) -> Result<Vec<Card>, GetCardError> {
+        self.repo.get_printings(oracle_id).await
     }
 
     async fn search_cards(&self, request: &CardFilter) -> Result<Vec<Card>, SearchCardsError> {
