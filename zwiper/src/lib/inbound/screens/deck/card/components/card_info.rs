@@ -4,40 +4,42 @@ use zwipe_core::domain::card::Card;
 /// Displays card metadata: prices, set, release date, artist.
 #[component]
 pub(crate) fn CardInfoDisplay(card: Card) -> Element {
+    let has_prices = card.scryfall_data.prices.usd.is_some()
+        || card.scryfall_data.prices.eur.is_some()
+        || card.scryfall_data.prices.tix.is_some();
+
+    let price_text = if has_prices {
+        let mut display = String::from("prices:");
+        let mut count = 0;
+        if let Some(usd) = card.scryfall_data.prices.usd {
+            display.push_str(format!(" ${usd}").as_str());
+            count += 1;
+        }
+        if let Some(eur) = card.scryfall_data.prices.eur {
+            if count > 0 { display.push_str(" |"); }
+            display.push_str(format!(" €{eur}").as_str());
+            count += 1;
+        }
+        if let Some(tix) = card.scryfall_data.prices.tix {
+            if count > 0 { display.push_str(" |"); }
+            display.push_str(format!(" {tix} tix").as_str());
+        }
+        display
+    } else {
+        "\u{00a0}".to_string()
+    };
+
+    let artist_text = card.scryfall_data.artist
+        .filter(|a| !a.is_empty())
+        .map(|a| format!("artist: {}", a.to_lowercase()))
+        .unwrap_or_else(|| "\u{00a0}".to_string());
+
     rsx! {
         div { class: "card-info",
-            if card.scryfall_data.prices.usd.is_some()
-                || card.scryfall_data.prices.eur.is_some()
-                || card.scryfall_data.prices.tix.is_some()
-            {
-                {
-                    let mut display = String::from("prices:");
-                    let mut prices_count = 0;
-                    if let Some(usd) = card.scryfall_data.prices.usd {
-                        display.push_str(format!(" ${usd}").as_str());
-                        prices_count += 1;
-                    }
-                    if let Some(eur) = card.scryfall_data.prices.eur {
-                        if prices_count > 0 {
-                            display.push_str(" |");
-                        }
-                        display.push_str(format!(" €{eur}").as_str());
-                        prices_count += 1;
-                    }
-                    if let Some(tix) = card.scryfall_data.prices.tix {
-                        if prices_count > 0 {
-                            display.push_str(" |");
-                        }
-                        display.push_str(format!(" {tix} tix").as_str());
-                    }
-                    rsx! { span { "{display}" } }
-                }
-            }
+            span { "{price_text}" }
             span { "set: {card.scryfall_data.set_name.to_lowercase()}" }
             span { "released: {card.scryfall_data.released_at}" }
-            if let Some(artist) = card.scryfall_data.artist && !artist.is_empty() {
-                span { "artist: {artist.to_lowercase()}" }
-            }
+            span { "{artist_text}" }
         }
     }
 }
