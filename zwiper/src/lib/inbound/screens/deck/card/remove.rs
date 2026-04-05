@@ -119,6 +119,8 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     deck_cards_for_filter.set(all_cards);
                     deck_entries.set(deck.entries);
                     deck_loaded.set(true);
+                    let current = *filter_reset_counter.peek();
+                    filter_reset_counter.set(current + 1);
                 }
                 Err(e) => {
                     tracing::warn!("deck load failed: {e}");
