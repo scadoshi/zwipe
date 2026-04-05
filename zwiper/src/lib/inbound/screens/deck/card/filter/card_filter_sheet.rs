@@ -24,8 +24,17 @@ pub(crate) fn CardFilterSheet(
 ) -> Element {
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
     let mut filter_reset_counter: Signal<u32> = use_context();
+    let should_collapse: Option<Signal<bool>> = try_use_context::<Signal<bool>>();
     let toast = use_toast();
     let mut accordion_key = use_signal(|| 0u32);
+
+    // Bump the filter counter and signal that the expanded card should collapse.
+    let mut bump_filter = move || {
+        if let Some(mut collapse) = should_collapse {
+            collapse.set(true);
+        }
+        filter_reset_counter.set(filter_reset_counter() + 1);
+    };
 
     // Active indicator booleans (only computed when needed)
     let (
@@ -130,7 +139,7 @@ pub(crate) fn CardFilterSheet(
                                     onclick: move |evt| {
                                         evt.stop_propagation();
                                         filter_builder.write().unset_name_contains();
-                                        filter_reset_counter.set(filter_reset_counter() + 1);
+                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -156,7 +165,7 @@ pub(crate) fn CardFilterSheet(
                                         fb.unset_oracle_text_contains_all();
                                         fb.unset_keywords_contains_any();
                                         fb.unset_keywords_contains_all();
-                                        filter_reset_counter.set(filter_reset_counter() + 1);
+                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -182,7 +191,7 @@ pub(crate) fn CardFilterSheet(
                                         fb.unset_type_line_contains_all();
                                         fb.unset_card_type_contains_any();
                                         fb.unset_card_type_contains_all();
-                                        filter_reset_counter.set(filter_reset_counter() + 1);
+                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -209,7 +218,7 @@ pub(crate) fn CardFilterSheet(
                                         fb.unset_color_identity_within();
                                         fb.unset_produced_mana_contains_any();
                                         fb.unset_produced_mana_contains_all();
-                                        filter_reset_counter.set(filter_reset_counter() + 1);
+                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -234,7 +243,7 @@ pub(crate) fn CardFilterSheet(
                                         fb.unset_power_range();
                                         fb.unset_toughness_equals();
                                         fb.unset_toughness_range();
-                                        filter_reset_counter.set(filter_reset_counter() + 1);
+                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -257,7 +266,7 @@ pub(crate) fn CardFilterSheet(
                                         let fb = &mut *filter_builder.write();
                                         fb.unset_flavor_text_contains();
                                         fb.unset_has_flavor_text();
-                                        filter_reset_counter.set(filter_reset_counter() + 1);
+                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -278,7 +287,7 @@ pub(crate) fn CardFilterSheet(
                                     onclick: move |evt| {
                                         evt.stop_propagation();
                                         filter_builder.write().unset_artist_equals_any();
-                                        filter_reset_counter.set(filter_reset_counter() + 1);
+                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -299,7 +308,7 @@ pub(crate) fn CardFilterSheet(
                                     onclick: move |evt| {
                                         evt.stop_propagation();
                                         filter_builder.write().unset_rarity_equals_any();
-                                        filter_reset_counter.set(filter_reset_counter() + 1);
+                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -322,7 +331,7 @@ pub(crate) fn CardFilterSheet(
                                         let fb = &mut *filter_builder.write();
                                         fb.unset_mechanical_categories_contains_any();
                                         fb.unset_mechanical_categories_contains_all();
-                                        filter_reset_counter.set(filter_reset_counter() + 1);
+                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -343,7 +352,7 @@ pub(crate) fn CardFilterSheet(
                                     onclick: move |evt| {
                                         evt.stop_propagation();
                                         filter_builder.write().unset_set_equals_any();
-                                        filter_reset_counter.set(filter_reset_counter() + 1);
+                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -370,7 +379,7 @@ pub(crate) fn CardFilterSheet(
                                             fb.unset_is_partner();
                                             fb.unset_is_background();
                                             fb.unset_is_signature_spell();
-                                            filter_reset_counter.set(filter_reset_counter() + 1);
+                                            bump_filter();
                                         },
                                         "\u{00d7}"
                                     }
@@ -395,7 +404,7 @@ pub(crate) fn CardFilterSheet(
                                     onclick: move |evt| {
                                         evt.stop_propagation();
                                         filter_builder.write().unset_order_by();
-                                        filter_reset_counter.set(filter_reset_counter() + 1);
+                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -424,7 +433,7 @@ pub(crate) fn CardFilterSheet(
                                         fb.set_oversized(false);
                                         fb.set_promo(false);
                                         fb.set_content_warning(false);
-                                        filter_reset_counter.set(filter_reset_counter() + 1);
+                                        bump_filter();
                                     },
                                     "\u{00d7}"
                                 }
@@ -442,7 +451,7 @@ pub(crate) fn CardFilterSheet(
                         if validate_before_apply && filter_builder.read().is_empty_ignoring_deck_context() {
                             toast.warning("filter is empty".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                         } else {
-                            filter_reset_counter.set(filter_reset_counter() + 1);
+                            bump_filter();
                         }
                         accordion_key.set(accordion_key() + 1);
                         open.set(false);
@@ -456,8 +465,7 @@ pub(crate) fn CardFilterSheet(
                             handler.call(());
                         } else {
                             filter_builder.write().clear();
-                            let current = *filter_reset_counter.peek();
-                            filter_reset_counter.set(current + 1);
+                            bump_filter();
                             toast.info(
                                 "filter cleared".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),

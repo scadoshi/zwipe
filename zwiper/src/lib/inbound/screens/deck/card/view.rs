@@ -114,6 +114,10 @@ pub fn View(deck_id: Uuid) -> Element {
     let mut command_zone_slot: Signal<Option<CommandZoneSlot>> = use_signal(|| None);
     // Controls the dismiss animation before clearing the URL
     let preview_dismissing: Signal<bool> = use_signal(|| false);
+    // Whether the next filter effect run should collapse the expanded card
+    // (true for structural changes like group-by/filter/board; false for qty bumps)
+    let mut should_collapse_expanded: Signal<bool> = use_signal(|| false);
+    use_context_provider(|| should_collapse_expanded);
 
     // Helper: look up quantity by card ID
     let qty_for = move |card_id: Uuid| -> i32 {
@@ -281,7 +285,10 @@ pub fn View(deck_id: Uuid) -> Element {
         displayed_signature_spell.set(new_spell);
         displayed_partner.set(new_partner);
         displayed_background.set(new_bg);
-        expanded_card.set(None);
+        if *should_collapse_expanded.peek() {
+            expanded_card.set(None);
+            should_collapse_expanded.set(false);
+        }
     });
 
     let mut change_quantity = move |card_id: Uuid, delta: i32, _is_basic_land: bool| {
@@ -419,7 +426,10 @@ pub fn View(deck_id: Uuid) -> Element {
                             button {
                                 key: "{option}",
                                 class: if group_by_option() == option { "chip selected" } else { "chip" },
-                                onclick: move |_| group_by_option.set(option),
+                                onclick: move |_| {
+                                    should_collapse_expanded.set(true);
+                                    group_by_option.set(option);
+                                },
                                 "{option}"
                             }
                         }
@@ -437,6 +447,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                 if !new_val && !show_maybe() && !show_side() {
                                     show_deck.set(true);
                                 }
+                                should_collapse_expanded.set(true);
                                 let current = *filter_reset_counter.peek();
                                 filter_reset_counter.set(current + 1);
                             },
@@ -450,6 +461,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                 if !show_deck() && !new_val && !show_side() {
                                     show_deck.set(true);
                                 }
+                                should_collapse_expanded.set(true);
                                 let current = *filter_reset_counter.peek();
                                 filter_reset_counter.set(current + 1);
                             },
@@ -463,6 +475,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                 if !show_deck() && !show_maybe() && !new_val {
                                     show_deck.set(true);
                                 }
+                                should_collapse_expanded.set(true);
                                 let current = *filter_reset_counter.peek();
                                 filter_reset_counter.set(current + 1);
                             },
@@ -475,7 +488,10 @@ pub fn View(deck_id: Uuid) -> Element {
                         span { class: "chip-row-label", "show:" }
                         button {
                             class: if show_lands() { "chip selected" } else { "chip" },
-                            onclick: move |_| show_lands.set(!show_lands()),
+                            onclick: move |_| {
+                                should_collapse_expanded.set(true);
+                                show_lands.set(!show_lands());
+                            },
                             "lands"
                         }
                         button {
@@ -683,7 +699,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     }
 
                     // Card groups (active deck cards only)
-                    for group in displayed_groups() {
+                    if show_deck() { for group in displayed_groups() {
                         {
                             let qty_count: i32 = group.cards.iter()
                                 .map(|c| qty_for(c.scryfall_data.id))
@@ -724,8 +740,9 @@ pub fn View(deck_id: Uuid) -> Element {
                             }
                         }
                     }
+                    }
 
-                    if displayed_groups().is_empty() && *deck_loaded.peek() {
+                    if show_deck() && displayed_groups().is_empty() && *deck_loaded.peek() {
                         p { class: "text-muted", "no cards" }
                     }
 
@@ -765,6 +782,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         class: "util-btn util-btn-clear",
                         onclick: move |_| {
                             filter_builder.write().clear();
+                            should_collapse_expanded.set(true);
                             let current = *filter_reset_counter.peek();
                             filter_reset_counter.set(current + 1);
                             toast.info(
