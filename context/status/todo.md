@@ -177,8 +177,10 @@ Full audit and expansion of the theme system. Originally 9 themes, now 15 (inclu
 - [x] Move ThemeConfig from zwiper to zwipe-core for cross-crate sharing (`0690248d`)
 - [x] Add all 15 dark themes to zite with live theme picker in footer (`0690248d`)
 - [x] Sync zite colors with app defaults, remove color-inverting hover states (`0690248d`)
-
 - [x] Extract shared `themes.css` — `shared/themes.css` is the single source of truth, copied into `zwiper/assets/` and `zite/assets/` at build time via `build.rs`. Copies are gitignored as build artifacts. `cargo:rerun-if-changed` ensures hot reload picks up edits instantly.
+- [x] Add light mode toggle to zite theme picker — dark/light button appears for themes that support it (`a39a0e8c`)
+- [x] Update zite content: home, ios, android pages reflect 15 themes with dark/light modes (`a39a0e8c`)
+- [x] Match hero store buttons to nav store link hover style (`96bef308`)
 
 **Remaining:**
 - [ ] Full visual test — test every theme on every screen, tweak as needed
@@ -273,6 +275,9 @@ Pre-populate the color identity filter to the commander's colors when the deck's
 - [x] Apply theme class to body via eval for full-page CSS variable propagation (`0690248d`)
 - [x] Remove color-inverting hover states on zite buttons — no more bg fill + dark text flip (`0690248d`)
 - [x] Extract `shared/themes.css` — single source of truth for all theme CSS variables, copied into both projects via `build.rs` at compile time, gitignored as build artifacts
+- [x] Add light mode toggle to zite theme picker (`a39a0e8c`)
+- [x] Update zite home, ios, android page content — 15 themes, sideboard, multi-printing (`a39a0e8c`)
+- [x] Match hero store buttons to nav store link hover style — accent text/border at rest, text-primary on hover (`96bef308`)
 
 ### Deck View Polish + Printing Sheet + Carousel Dots (2026-04-05)
 
