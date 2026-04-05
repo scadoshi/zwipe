@@ -113,6 +113,15 @@ pub fn DeckList() -> Element {
                                                 if let Some(ref cmd) = profile.commander_name {
                                                     " | {cmd.to_lowercase()}"
                                                 }
+                                                if let Some(ref name) = profile.partner_commander_name {
+                                                    " | {name.to_lowercase()}"
+                                                }
+                                                if let Some(ref name) = profile.background_name {
+                                                    " | {name.to_lowercase()}"
+                                                }
+                                                if let Some(ref name) = profile.signature_spell_name {
+                                                    " | {name.to_lowercase()}"
+                                                }
                                             }
                                         }
                                     }
