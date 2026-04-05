@@ -352,6 +352,139 @@
 }
 
 /* ==================
+  colorblind accessible
+ ==================== */
+
+.theme-protanopia-dark {
+    --bg-primary: #1e1e22;
+    --bg-overlay: rgba(0, 0, 0, 0.6);
+    --text-primary: #d6d1d1;
+    --text-muted: #958f8f;
+    --text-subtle: #ada7a7;
+    --border-primary: #5c5454;
+    --border-secondary: #343232;
+    --border-muted: #454141;
+    --color-error: #5b8bd4;
+    --color-success: #d4a830;
+    --color-warning: #e8973a;
+    --border-error: #3b6bb4;
+    --border-success: #b48810;
+    --border-warning: #c8771a;
+    --accent-primary: #d4a830;
+    --accent-secondary: #5b8bd4;
+    --accent-tertiary: #e8973a;
+    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+.theme-protanopia-light {
+    --bg-primary: #f2f0ed;
+    --bg-overlay: rgba(0, 0, 0, 0.3);
+    --text-primary: #383232;
+    --text-muted: #686262;
+    --text-subtle: #564f4f;
+    --border-primary: #a99f9f;
+    --border-secondary: #d6d4d4;
+    --border-muted: #c0bdbd;
+    --color-error: #2e5ea0;
+    --color-success: #8a7010;
+    --color-warning: #b06a10;
+    --border-error: #1e4e90;
+    --border-success: #6a5000;
+    --border-warning: #904a00;
+    --accent-primary: #8a7010;
+    --accent-secondary: #2e5ea0;
+    --accent-tertiary: #b06a10;
+    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.theme-deuteranopia-dark {
+    --bg-primary: #1e1f24;
+    --bg-overlay: rgba(0, 0, 0, 0.6);
+    --text-primary: #d1d4d8;
+    --text-muted: #8f9297;
+    --text-subtle: #a6aab1;
+    --border-primary: #525760;
+    --border-secondary: #323334;
+    --border-muted: #414246;
+    --color-error: #e07040;
+    --color-success: #5090d0;
+    --color-warning: #d4b840;
+    --border-error: #c05020;
+    --border-success: #3070b0;
+    --border-warning: #b49820;
+    --accent-primary: #5090d0;
+    --accent-secondary: #e07040;
+    --accent-tertiary: #d4b840;
+    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+.theme-deuteranopia-light {
+    --bg-primary: #f0f0f4;
+    --bg-overlay: rgba(0, 0, 0, 0.3);
+    --text-primary: #313339;
+    --text-muted: #616369;
+    --text-subtle: #4e5158;
+    --border-primary: #9da2ac;
+    --border-secondary: #d4d4d6;
+    --border-muted: #bcbec1;
+    --color-error: #b04820;
+    --color-success: #2860a0;
+    --color-warning: #a08810;
+    --border-error: #902800;
+    --border-success: #184080;
+    --border-warning: #806800;
+    --accent-primary: #2860a0;
+    --accent-secondary: #b04820;
+    --accent-tertiary: #a08810;
+    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.theme-tritanopia-dark {
+    --bg-primary: #22201e;
+    --bg-overlay: rgba(0, 0, 0, 0.6);
+    --text-primary: #d8d3d2;
+    --text-muted: #98918f;
+    --text-subtle: #b0a8a6;
+    --border-primary: #5f5551;
+    --border-secondary: #353333;
+    --border-muted: #474241;
+    --color-error: #d45060;
+    --color-success: #40b0a0;
+    --color-warning: #d08040;
+    --border-error: #b43040;
+    --border-success: #209080;
+    --border-warning: #b06020;
+    --accent-primary: #40b0a0;
+    --accent-secondary: #d45060;
+    --accent-tertiary: #d08040;
+    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+.theme-tritanopia-light {
+    --bg-primary: #f2efe8;
+    --bg-overlay: rgba(0, 0, 0, 0.3);
+    --text-primary: #38312f;
+    --text-muted: #686260;
+    --text-subtle: #564f4c;
+    --border-primary: #aa9f9b;
+    --border-secondary: #d5d3d2;
+    --border-muted: #bfbcba;
+    --color-error: #a02030;
+    --color-success: #207060;
+    --color-warning: #a06020;
+    --border-error: #801020;
+    --border-success: #105040;
+    --border-warning: #804010;
+    --accent-primary: #207060;
+    --accent-secondary: #a02030;
+    --accent-tertiary: #a06020;
+    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* ==================
         colors (default: zwipe)
  ==================== */
 
