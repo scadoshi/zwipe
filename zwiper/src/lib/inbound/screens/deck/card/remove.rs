@@ -35,17 +35,19 @@ use zwipe_core::domain::card::{
         filter_cards::{FilterCards, SortCards},
     },
 };
-use zwipe_core::domain::deck::DeckEntry;
+use zwipe_core::domain::deck::{Board, DeckEntry};
 
-/// Tri-state filter for maybeboard status on the remove screen.
+/// Board filter for the remove screen.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
-enum MaybeboardFilter {
+enum BoardFilter {
     /// Show only active deck cards (default).
     #[default]
     Deck,
     /// Show only maybeboard cards.
     Maybeboard,
-    /// Show all cards regardless of maybeboard status.
+    /// Show only sideboard cards.
+    Sideboard,
+    /// Show all cards regardless of board.
     All,
 }
 
@@ -83,8 +85,8 @@ pub fn Remove(deck_id: Uuid) -> Element {
     let mut displayed_cards: Signal<Vec<Card>> = use_signal(Vec::new);
     // Guards filter effect from running before the deck has loaded
     let mut deck_loaded: Signal<bool> = use_signal(|| false);
-    // Maybeboard filter state
-    let mut maybeboard_filter: Signal<MaybeboardFilter> = use_signal(MaybeboardFilter::default);
+    // Board filter state
+    let mut board_filter: Signal<BoardFilter> = use_signal(BoardFilter::default);
 
     let mut current_index = use_signal(|| 0_usize);
 
@@ -130,40 +132,41 @@ pub fn Remove(deck_id: Uuid) -> Element {
         });
     });
 
-    // Effect 2 — filter (reads `filter_reset_counter`, `maybeboard_filter` reactively; peeks entries)
+    // Effect 2 — filter (reads `filter_reset_counter`, `board_filter` reactively; peeks entries)
     use_effect(move || {
         let _ = filter_reset_counter();
-        let _ = maybeboard_filter();
+        let _ = board_filter();
 
         if !*deck_loaded.peek() {
             return;
         }
 
         let entries = deck_entries.peek().clone();
-        let mb_filter = *maybeboard_filter.peek();
+        let bf = *board_filter.peek();
         let builder = filter_builder.peek().clone();
 
-        // Step 1: filter by maybeboard status
-        let mb_filtered_cards: Vec<Card> = entries
+        // Step 1: filter by board
+        let board_filtered_cards: Vec<Card> = entries
             .iter()
-            .filter(|e| match mb_filter {
-                MaybeboardFilter::Deck => !e.deck_card.maybeboard,
-                MaybeboardFilter::Maybeboard => e.deck_card.maybeboard,
-                MaybeboardFilter::All => true,
+            .filter(|e| match bf {
+                BoardFilter::Deck => e.deck_card.board.is_active(),
+                BoardFilter::Maybeboard => e.deck_card.board.is_maybeboard(),
+                BoardFilter::Sideboard => e.deck_card.board.is_sideboard(),
+                BoardFilter::All => true,
             })
             .map(|e| e.card.clone())
             .collect();
 
         // Step 2: apply card attribute filter
         let mut filtered = if builder.is_empty() {
-            mb_filtered_cards
+            board_filtered_cards
         } else {
             let mut b = builder.clone();
             b.set_limit(10_000);
             b.set_offset(0);
             match b.build() {
-                Ok(filter) => mb_filtered_cards.filter_by(&filter),
-                Err(_) => mb_filtered_cards,
+                Ok(filter) => board_filtered_cards.filter_by(&filter),
+                Err(_) => board_filtered_cards,
             }
         };
 
@@ -211,7 +214,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
         };
 
         let scryfall_data_id = card.scryfall_data.id;
-        let request = HttpUpdateDeckCard::new(None, Some(true));
+        let request = HttpUpdateDeckCard::new(None, Some("maybeboard".to_string()));
 
         spawn(async move {
             if let Err(e) = client()
@@ -312,7 +315,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 };
 
                 let scryfall_data_id = card.scryfall_data.id;
-                let request = HttpUpdateDeckCard::new(None, Some(false));
+                let request = HttpUpdateDeckCard::new(None, Some("deck".to_string()));
 
                 spawn(async move {
                     match client()
@@ -326,7 +329,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                 .iter_mut()
                                 .find(|e| e.card.scryfall_data.id == scryfall_data_id)
                             {
-                                entry.deck_card.maybeboard = false;
+                                entry.deck_card.board = Board::Deck;
                             }
                             toast.success(
                                 "undid maybeboard".to_string(),
@@ -355,36 +358,20 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
                 div { class: "screen-content card-swipe content-enter",
 
-                // Maybeboard filter chips
+                // Board filter chips
                 div { style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
                     div { class: "chip-row",
-                        span { class: "chip-row-label", "show:" }
-                        button {
-                            class: if maybeboard_filter() == MaybeboardFilter::Deck { "chip selected" } else { "chip" },
-                            onclick: move |_| {
-                                maybeboard_filter.set(MaybeboardFilter::Deck);
-                                let current = *filter_reset_counter.peek();
-                                filter_reset_counter.set(current + 1);
-                            },
-                            "deck"
-                        }
-                        button {
-                            class: if maybeboard_filter() == MaybeboardFilter::Maybeboard { "chip selected" } else { "chip" },
-                            onclick: move |_| {
-                                maybeboard_filter.set(MaybeboardFilter::Maybeboard);
-                                let current = *filter_reset_counter.peek();
-                                filter_reset_counter.set(current + 1);
-                            },
-                            "maybeboard"
-                        }
-                        button {
-                            class: if maybeboard_filter() == MaybeboardFilter::All { "chip selected" } else { "chip" },
-                            onclick: move |_| {
-                                maybeboard_filter.set(MaybeboardFilter::All);
-                                let current = *filter_reset_counter.peek();
-                                filter_reset_counter.set(current + 1);
-                            },
-                            "all"
+                        span { class: "chip-row-label", "boards:" }
+                        for (label, variant) in [("deck", BoardFilter::Deck), ("maybe", BoardFilter::Maybeboard), ("side", BoardFilter::Sideboard), ("all", BoardFilter::All)] {
+                            button {
+                                class: if board_filter() == variant { "chip selected" } else { "chip" },
+                                onclick: move |_| {
+                                    board_filter.set(variant);
+                                    let current = *filter_reset_counter.peek();
+                                    filter_reset_counter.set(current + 1);
+                                },
+                                "{label}"
+                            }
                         }
                     }
                 }
@@ -499,7 +486,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         class: "util-btn util-btn-clear",
                         onclick: move |_| {
                             filter_builder.write().clear();
-                            maybeboard_filter.set(MaybeboardFilter::Deck);
+                            board_filter.set(BoardFilter::Deck);
                             let current = *filter_reset_counter.peek();
                             filter_reset_counter.set(current + 1);
                             toast.info(

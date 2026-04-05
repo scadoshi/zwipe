@@ -22,6 +22,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let toast = use_toast();
 
+    let mut include_sideboard: Signal<bool> = use_signal(|| false);
     let mut include_maybeboard: Signal<bool> = use_signal(|| false);
 
     let deck_resource: Resource<Result<Deck, ApiError>> = use_resource(move || async move {
@@ -62,13 +63,25 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
         }
 
         // Active deck cards
-        for entry in deck.entries.iter().filter(|e| !e.deck_card.maybeboard) {
+        for entry in deck.entries.iter().filter(|e| e.deck_card.board.is_active()) {
             lines.push(format!("{} {}", *entry.deck_card.quantity, entry.card.scryfall_data.name));
+        }
+
+        // Sideboard section (only if toggled on AND cards exist)
+        if include_sideboard() {
+            let sb: Vec<_> = deck.entries.iter().filter(|e| e.deck_card.board.is_sideboard()).collect();
+            if !sb.is_empty() {
+                lines.push(String::new());
+                lines.push("// Sideboard".to_string());
+                for entry in sb {
+                    lines.push(format!("{} {}", *entry.deck_card.quantity, entry.card.scryfall_data.name));
+                }
+            }
         }
 
         // Maybeboard section (only if toggled on AND cards exist)
         if include_maybeboard() {
-            let mb: Vec<_> = deck.entries.iter().filter(|e| e.deck_card.maybeboard).collect();
+            let mb: Vec<_> = deck.entries.iter().filter(|e| e.deck_card.board.is_maybeboard()).collect();
             if !mb.is_empty() {
                 lines.push(String::new());
                 lines.push("// Maybeboard".to_string());
@@ -81,9 +94,12 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
         Some(lines.join("\n"))
     });
 
+    let has_sideboard = deck_resource()
+        .and_then(|r| r.ok())
+        .is_some_and(|d| d.entries.iter().any(|e| e.deck_card.board.is_sideboard()));
     let has_maybeboard = deck_resource()
         .and_then(|r| r.ok())
-        .is_some_and(|d| d.entries.iter().any(|e| e.deck_card.maybeboard));
+        .is_some_and(|d| d.entries.iter().any(|e| e.deck_card.board.is_maybeboard()));
 
     rsx! {
         Bouncer {
@@ -95,13 +111,22 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                 div { class: "screen-content centered content-enter",
                     div { class: "container-sm",
 
-                        if has_maybeboard {
+                        if has_sideboard || has_maybeboard {
                             div { class: "chip-row",
                                 span { class: "chip-row-label", "include:" }
-                                button {
-                                    class: if include_maybeboard() { "chip selected" } else { "chip" },
-                                    onclick: move |_| include_maybeboard.set(!include_maybeboard()),
-                                    "maybeboard"
+                                if has_sideboard {
+                                    button {
+                                        class: if include_sideboard() { "chip selected" } else { "chip" },
+                                        onclick: move |_| include_sideboard.set(!include_sideboard()),
+                                        "sideboard"
+                                    }
+                                }
+                                if has_maybeboard {
+                                    button {
+                                        class: if include_maybeboard() { "chip selected" } else { "chip" },
+                                        onclick: move |_| include_maybeboard.set(!include_maybeboard()),
+                                        "maybeboard"
+                                    }
                                 }
                             }
                         }
