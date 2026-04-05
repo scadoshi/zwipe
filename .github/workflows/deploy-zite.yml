@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'zite/**'
+      - 'zwipe-core/**'
+      - 'shared/**'
       - '.github/workflows/deploy-zite.yml'
   workflow_dispatch:
 

@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'zerver/**'
+      - 'zwipe-core/**'
       - '.github/workflows/deploy-zerver.yml'
   workflow_dispatch:
 
