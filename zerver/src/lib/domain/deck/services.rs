@@ -396,20 +396,34 @@ where
         let batch: Vec<(Uuid, Uuid, i32, String)> =
             insert_map.values().map(|(sid, oid, qty, _, _, board)| (*sid, *oid, *qty, board.clone())).collect();
 
-        // Check card limit before inserting
+        // Check card limit before inserting.
+        // The upsert replaces quantities for existing oracle_ids, so we subtract
+        // the overlap (existing quantities of cards being reimported) to get the
+        // true post-import total.
         let card_count = self
             .deck_repo
             .count_cards_in_deck(request.deck_id)
             .await
             .map_err(ImportDeckCardsError::Database)?;
         let import_total: i64 = batch.iter().map(|(_, _, qty, _)| i64::from(*qty)).sum();
+        let import_oracle_ids: Vec<Uuid> = batch.iter().map(|(_, oid, _, _)| *oid).collect();
+        let overlap_qty = self
+            .deck_repo
+            .sum_quantities_for_oracle_ids(request.deck_id, &import_oracle_ids)
+            .await
+            .map_err(ImportDeckCardsError::Database)?;
+        let post_import_total = (card_count - overlap_qty) + import_total;
         let card_limit = if request.email_verified {
             MAX_CARDS_PER_DECK
         } else {
             UNVERIFIED_MAX_CARDS_PER_DECK
         };
-        if card_count + import_total > card_limit {
-            return Err(ImportDeckCardsError::LimitReached);
+        if post_import_total > card_limit {
+            return Err(if request.email_verified {
+                ImportDeckCardsError::LimitReached
+            } else {
+                ImportDeckCardsError::UnverifiedLimitReached
+            });
         }
 
         // Bulk insert

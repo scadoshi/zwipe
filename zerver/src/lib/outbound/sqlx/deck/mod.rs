@@ -136,6 +136,22 @@ impl DeckRepository for Postgres {
         Ok(count)
     }
 
+    async fn sum_quantities_for_oracle_ids(
+        &self,
+        deck_id: uuid::Uuid,
+        oracle_ids: &[uuid::Uuid],
+    ) -> Result<i64, anyhow::Error> {
+        let sum = sqlx::query_scalar!(
+            "SELECT COALESCE(SUM(quantity), 0) FROM deck_cards WHERE deck_id = $1 AND oracle_id = ANY($2) AND board = 'deck'",
+            deck_id,
+            oracle_ids
+        )
+        .fetch_one(&self.pool)
+        .await?
+        .unwrap_or(0);
+        Ok(sum)
+    }
+
     // =====
     //  get
     // =====

@@ -73,6 +73,13 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         deck_id: uuid::Uuid,
     ) -> impl Future<Output = Result<i64, anyhow::Error>> + Send;
 
+    /// Returns the sum of quantities for specific oracle_ids in a deck (deck board only).
+    fn sum_quantities_for_oracle_ids(
+        &self,
+        deck_id: uuid::Uuid,
+        oracle_ids: &[uuid::Uuid],
+    ) -> impl Future<Output = Result<i64, anyhow::Error>> + Send;
+
     // =====
     //  get
     // =====
