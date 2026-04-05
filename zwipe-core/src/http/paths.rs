@@ -71,6 +71,10 @@ pub fn get_card_route(scryfall_data_id: Uuid) -> String {
     format!("/api/card/{}", scryfall_data_id)
 }
 
+pub fn get_printings_route(oracle_id: Uuid) -> String {
+    format!("/api/card/{}/printings", oracle_id)
+}
+
 pub fn search_cards_route() -> String {
     "/api/card/search".to_string()
 }

@@ -13,11 +13,14 @@ pub enum InvalidUpdateDeckCard {
     /// Invalid card ID format.
     #[error(transparent)]
     ScryfallDataId(uuid::Error),
+    /// Invalid new printing ID format.
+    #[error(transparent)]
+    NewScryfallDataId(uuid::Error),
     /// Update quantity is zero (no-op not allowed).
     #[error(transparent)]
     UpdateQuantity(InvalidUpdateQuanity),
     /// No fields provided to update.
-    #[error("at least one of update_quantity or maybeboard must be provided")]
+    #[error("at least one of update_quantity, maybeboard, or scryfall_data_id must be provided")]
     NothingToUpdate,
 }
 
@@ -43,18 +46,21 @@ pub struct UpdateDeckCard {
     pub update_quantity: Option<UpdateQuantity>,
     /// Set maybeboard status. `None` = no change.
     pub maybeboard: Option<bool>,
+    /// Change the selected printing to this Scryfall data ID. `None` = no change.
+    pub new_scryfall_data_id: Option<Uuid>,
 }
 
 impl UpdateDeckCard {
     /// Creates a new deck card update request with validation.
     ///
-    /// At least one of `update_quantity` or `maybeboard` must be `Some`.
+    /// At least one of `update_quantity`, `maybeboard`, or `new_scryfall_data_id` must be `Some`.
     pub fn new(
         user_id: Uuid,
         deck_id: &str,
         scryfall_data_id: &str,
         update_quantity: Option<i32>,
         maybeboard: Option<bool>,
+        new_scryfall_data_id: Option<&str>,
     ) -> Result<Self, InvalidUpdateDeckCard> {
         let deck_id = Uuid::try_parse(deck_id).map_err(InvalidUpdateDeckCard::DeckId)?;
         let scryfall_data_id =
@@ -64,7 +70,11 @@ impl UpdateDeckCard {
             .map(UpdateQuantity::new)
             .transpose()?;
 
-        if update_quantity.is_none() && maybeboard.is_none() {
+        let new_scryfall_data_id = new_scryfall_data_id
+            .map(|s| Uuid::try_parse(s).map_err(InvalidUpdateDeckCard::NewScryfallDataId))
+            .transpose()?;
+
+        if update_quantity.is_none() && maybeboard.is_none() && new_scryfall_data_id.is_none() {
             return Err(InvalidUpdateDeckCard::NothingToUpdate);
         }
 
@@ -74,6 +84,7 @@ impl UpdateDeckCard {
             scryfall_data_id,
             update_quantity,
             maybeboard,
+            new_scryfall_data_id,
         })
     }
 }

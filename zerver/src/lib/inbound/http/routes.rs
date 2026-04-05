@@ -22,7 +22,8 @@ use crate::inbound::http::handlers::{
     card::{
         get_artists::get_artists, get_card::get_card, get_card_types::get_card_types,
         get_keywords::get_keywords, get_languages::get_languages,
-        get_oracle_words::get_oracle_words, get_sets::get_sets, search_card::search_cards,
+        get_oracle_words::get_oracle_words, get_printings::get_printings,
+        get_sets::get_sets, search_card::search_cards,
     },
     deck::{
         create_deck_profile::create_deck_profile, delete_deck::delete_deck, get_deck::get_deck,
@@ -234,6 +235,7 @@ where
                     "/card",
                     Router::new()
                         .route("/{scryfall_data_id}", get(get_card))
+                        .route("/{oracle_id}/printings", get(get_printings))
                         .route(
                             "/search",
                             post(search_cards).layer(GovernorLayer::new(card_search_config)),

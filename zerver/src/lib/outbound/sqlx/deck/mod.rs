@@ -314,6 +314,9 @@ impl DeckRepository for Postgres {
         if let Some(maybeboard) = request.maybeboard {
             sep.push("maybeboard = ").push_bind_unseparated(maybeboard);
         }
+        if let Some(new_id) = request.new_scryfall_data_id {
+            sep.push("scryfall_data_id = ").push_bind_unseparated(new_id);
+        }
         let now = chrono::Utc::now().naive_utc();
         sep.push("updated_at = ").push_bind_unseparated(now);
         qb.push(" WHERE deck_id = ")

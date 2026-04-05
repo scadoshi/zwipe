@@ -59,6 +59,9 @@ impl From<InvalidUpdateDeckCard> for ApiError {
             InvalidUpdateDeckCard::UpdateQuantity(e) => {
                 Self::UnprocessableEntity(format!("invalid update quantity: {}", e))
             }
+            InvalidUpdateDeckCard::NewScryfallDataId(e) => {
+                Self::UnprocessableEntity(format!("invalid printing id: {}", e))
+            }
             InvalidUpdateDeckCard::NothingToUpdate => {
                 Self::UnprocessableEntity(InvalidUpdateDeckCard::NothingToUpdate.to_string())
             }
@@ -81,7 +84,7 @@ where
     CS: CardService,
     DS: DeckService,
 {
-    let request = UpdateDeckCard::new(user.id, &deck_id, &scryfall_data_id, body.update_quantity, body.maybeboard)?;
+    let request = UpdateDeckCard::new(user.id, &deck_id, &scryfall_data_id, body.update_quantity, body.maybeboard, body.scryfall_data_id.as_deref())?;
 
     state
         .deck_service
