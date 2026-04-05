@@ -78,6 +78,12 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         zervice_metrics: &ZerviceMetrics,
     ) -> impl Future<Output = Result<ZerviceMetrics, anyhow::Error>> + Send;
 
+    /// Refreshes the `latest_cards` materialized view.
+    ///
+    /// Must be called after any operation that changes `scryfall_data` or `card_profiles`
+    /// membership (e.g., after Scryfall sync + classification).
+    fn refresh_latest_cards(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
+
     // =====
     //  get
     // =====
@@ -266,6 +272,9 @@ pub trait CardService: Clone + Send + Sync + 'static {
 
     /// Clears all mechanical_categories (for --reclassify).
     fn clear_all_categories(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
+
+    /// Refreshes the latest_cards materialized view after data changes.
+    fn refresh_latest_cards(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
 
     // =====
     //  get

@@ -131,7 +131,7 @@ Axum REST API with PostgreSQL. Hexagonal architecture — domain is the center, 
 
 **Binaries:**
 - `zerver` — HTTP API server (systemd service in production)
-- `zervice` — Run-once Scryfall sync job (nightly cron)
+- `zervice` — Run-once nightly job: Scryfall sync, card classification, materialized view refresh, session cleanup
 
 ```
 zerver/src/
@@ -190,16 +190,17 @@ zerver/src/
         └── resend/             — Transactional email via Resend API
 ```
 
-**Database (PostgreSQL, 10 tables):**
+**Database (PostgreSQL, 10 tables + 1 materialized view):**
 
 | Table | Purpose |
 |-------|---------|
 | `users` | Accounts (email, username, hashed password, lockout) |
 | `user_preferences` | Theme, dark mode |
-| `scryfall_data` | Card data (~35k rows, ~100 columns, oracle_id indexed) |
-| `card_profiles` | Internal card metadata (is_token, future: mechanical_categories) |
+| `scryfall_data` | All card printings (~110k rows, ~100 columns) |
+| `card_profiles` | Internal card metadata (is_token, mechanical_categories) |
+| `latest_cards` | **Materialized view** — deduplicated to latest printing per oracle_id (~35k rows). Refreshed by zervice after sync. All search queries read from this view. |
 | `decks` | Deck profiles (name, format, commander_id, partner_commander_id, background_id, signature_spell_id) |
-| `deck_cards` | Deck-card join (quantity, maybeboard) |
+| `deck_cards` | Deck-card join (quantity, board) |
 | `refresh_tokens` | Rotating refresh tokens (SHA-256 hashed, max 5/user) |
 | `email_verification_tokens` | One-time email verification |
 | `password_reset_tokens` | One-time password reset |

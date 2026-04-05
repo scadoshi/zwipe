@@ -132,6 +132,14 @@ impl CardRepository for MyPostgres {
         Ok(zervice_metrics)
     }
 
+    async fn refresh_latest_cards(&self) -> anyhow::Result<()> {
+        sqlx::query("REFRESH MATERIALIZED VIEW latest_cards")
+            .execute(&self.pool)
+            .await
+            .context("failed to refresh latest_cards materialized view")?;
+        Ok(())
+    }
+
     // =====
     //  get
     // =====
@@ -166,26 +174,17 @@ impl CardRepository for MyPostgres {
         Ok(scryfall_data)
     }
 
-    /// Searches Scryfall data with a CTE-based deduplication strategy.
-    ///
-    /// Uses `ROW_NUMBER() OVER (PARTITION BY COALESCE(oracle_id, id))` to keep only the
-    /// latest printing per unique card. Filter clauses are composed with `AND` via
-    /// `QueryBuilder::separated`. Color identity uses `@>`/`<@` for exact match and
-    /// power-set enumeration for "within" queries.
+    /// Searches the `latest_cards` materialized view (pre-deduplicated to one row per
+    /// oracle_id). Joins `card_profiles` for is_token / mechanical_categories filters.
+    /// Filter clauses are composed with `AND` via `QueryBuilder::separated`.
     async fn search_scryfall_data(
         &self,
         request: &CardFilter,
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
         let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new(
-            "WITH deduplicated_cards AS (
-               SELECT scryfall_data.id,
-                      ROW_NUMBER() OVER (
-                        PARTITION BY COALESCE(scryfall_data.oracle_id, scryfall_data.id)
-                        ORDER BY scryfall_data.released_at DESC
-                      ) as rn
-               FROM scryfall_data
-               JOIN card_profiles ON scryfall_data.id = card_profiles.scryfall_data_id
-               WHERE ",
+            "SELECT latest_cards.* FROM latest_cards
+             JOIN card_profiles ON latest_cards.id = card_profiles.scryfall_data_id
+             WHERE ",
         );
         let mut sep: Separated<Postgres, &'static str> = qb.separated(" AND ");
 
@@ -308,33 +307,8 @@ impl CardRepository for MyPostgres {
         }
 
         if let Some(colors) = request.color_identity_within() {
-            let all_combinations = (1..1 << colors.len()).fold(
-                Vec::<Vec<String>>::new(),
-                |mut all_combinations, bits| {
-                    all_combinations.push(
-                        colors
-                            .iter()
-                            .enumerate()
-                            .filter(|(i, _)| bits & (1 << i) != 0)
-                            .map(|(_, c)| c.to_short_name())
-                            .collect(),
-                    );
-                    all_combinations
-                },
-            );
-
-            sep.push("(");
-            all_combinations
-                .into_iter()
-                .enumerate()
-                .for_each(|(i, subset)| {
-                    if i > 0 {
-                        sep.push_unseparated(" OR ");
-                    }
-                    sep.push_unseparated("color_identity <@ ");
-                    sep.push_bind_unseparated(subset);
-                });
-            sep.push_unseparated(")");
+            sep.push("color_identity <@ ");
+            sep.push_bind_unseparated(colors.to_short_names());
         }
 
         if let Some(query_string) = &request.oracle_text_contains() {
@@ -431,44 +405,44 @@ impl CardRepository for MyPostgres {
             && is_playable
         {
             // Only playable layouts
-            sep.push("scryfall_data.layout = ANY(");
+            sep.push("latest_cards.layout = ANY(");
             sep.push_bind_unseparated(PLAYABLE_LAYOUTS);
             sep.push_unseparated(")");
         } else if let Some(is_playable) = request.is_playable()
             && !is_playable
         {
             // Only non-playable layouts
-            sep.push("scryfall_data.layout != ALL(");
+            sep.push("latest_cards.layout != ALL(");
             sep.push_bind_unseparated(PLAYABLE_LAYOUTS);
             sep.push_unseparated(")");
         }
 
         if let Some(is_digital) = request.digital() {
-            sep.push("scryfall_data.digital = ");
+            sep.push("latest_cards.digital = ");
             sep.push_bind_unseparated(is_digital);
         }
 
         if let Some(is_oversized) = request.oversized() {
-            sep.push("scryfall_data.oversized = ");
+            sep.push("latest_cards.oversized = ");
             sep.push_bind_unseparated(is_oversized);
         }
 
         if let Some(is_promo) = request.promo() {
-            sep.push("scryfall_data.promo = ");
+            sep.push("latest_cards.promo = ");
             sep.push_bind_unseparated(is_promo);
         }
 
         if let Some(has_warning) = request.content_warning() {
             if has_warning {
-                sep.push("scryfall_data.content_warning = true");
+                sep.push("latest_cards.content_warning = true");
             } else {
                 // Hide cards with warnings (include false OR null)
-                sep.push("(scryfall_data.content_warning = false OR scryfall_data.content_warning IS NULL)");
+                sep.push("(latest_cards.content_warning = false OR latest_cards.content_warning IS NULL)");
             }
         }
 
         if let Some(language) = request.language() {
-            sep.push("scryfall_data.lang = ");
+            sep.push("latest_cards.lang = ");
             sep.push_bind_unseparated(language);
         }
 
@@ -573,13 +547,6 @@ impl CardRepository for MyPostgres {
                 sep.push(filter);
             }
         }
-
-        // Close CTE and select scryfall_data for latest printings only
-        qb.push(
-            ") SELECT scryfall_data.* FROM scryfall_data
-                  JOIN deduplicated_cards ON scryfall_data.id = deduplicated_cards.id
-                  WHERE deduplicated_cards.rn = 1 ",
-        );
 
         // ORDER BY
         if let Some(order_by) = request.order_by() {
@@ -856,19 +823,7 @@ impl CardRepository for MyPostgres {
         }
         let lowered: Vec<String> = names.iter().map(|n| n.to_lowercase()).collect();
         let db_rows: Vec<DatabaseScryfallData> = query_as(
-            "WITH deduplicated_cards AS (
-                SELECT sd.id,
-                       ROW_NUMBER() OVER (
-                         PARTITION BY COALESCE(sd.oracle_id, sd.id)
-                         ORDER BY sd.released_at DESC
-                       ) as rn
-                FROM scryfall_data sd
-                JOIN card_profiles cp ON sd.id = cp.scryfall_data_id
-                WHERE LOWER(sd.name) = ANY($1)
-            )
-            SELECT sd.* FROM scryfall_data sd
-            JOIN deduplicated_cards dc ON sd.id = dc.id
-            WHERE dc.rn = 1",
+            "SELECT * FROM latest_cards WHERE LOWER(name) = ANY($1)",
         )
         .bind(&lowered)
         .fetch_all(&self.pool)
