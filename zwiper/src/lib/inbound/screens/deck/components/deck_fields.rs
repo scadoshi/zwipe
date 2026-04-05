@@ -38,6 +38,11 @@ pub(crate) fn DeckFields(
     let client: Signal<ZwipeClient> = use_context();
 
     // ========================================
+    // Format search state
+    // ========================================
+    let mut format_query = use_signal(String::new);
+
+    // ========================================
     // Commander search state
     // ========================================
     let mut cmd_search_query = use_signal(String::new);
@@ -106,9 +111,13 @@ pub(crate) fn DeckFields(
     // Cascading clear effects
     // ========================================
 
-    // Format change → reset all filter toggles
+    // Format change → sync display text + reset all filter toggles
     use_effect(move || {
-        let _ = selected_format();
+        let fmt = selected_format();
+        format_query.set(
+            fmt.map(|f| f.display_name().to_lowercase())
+                .unwrap_or_default(),
+        );
         cmd_filter_on.set(true);
         partner_filter_on.set(true);
         bg_filter_on.set(true);
@@ -338,9 +347,9 @@ pub(crate) fn DeckFields(
         }
 
         // ========================================
-        // Format selector (chips)
+        // Format selector (typeahead)
         // ========================================
-        div { class: "mb-4",
+        div {
             div { class: "label-row",
                 label { class: "label", "format" }
                 if selected_format().is_some() {
@@ -348,6 +357,7 @@ pub(crate) fn DeckFields(
                         class: "clear-btn",
                         onclick: move |_| {
                             selected_format.set(None);
+                            format_query.set(String::new());
                             commander.set(None);
                             commander_display.set(String::new());
                             signature_spell.set(None);
@@ -357,31 +367,68 @@ pub(crate) fn DeckFields(
                     }
                 }
             }
-            div { class: "flex flex-wrap gap-1 flex-center",
-                for fmt in Format::all().iter().copied() {
-                    div {
-                        class: if selected_format() == Some(fmt) { "chip selected" } else { "chip" },
-                        onclick: move |_| {
-                            if selected_format() == Some(fmt) {
-                                selected_format.set(None);
-                                commander.set(None);
-                                commander_display.set(String::new());
-                                signature_spell.set(None);
-                                signature_spell_display.set(String::new());
-                            } else {
-                                selected_format.set(Some(fmt));
-                                // Always clear commander on format change — eligibility
-                                // rules differ between formats
-                                commander.set(None);
-                                commander_display.set(String::new());
-                                if !fmt.has_signature_spell() {
-                                    signature_spell.set(None);
-                                    signature_spell_display.set(String::new());
+
+            // Filtered results (chips above input, only when typing with no selection)
+            if selected_format().is_none() && !format_query().is_empty() {
+                {
+                    let query = format_query().to_lowercase();
+                    let results: Vec<Format> = Format::all()
+                        .iter()
+                        .copied()
+                        .filter(|f| f.display_name().to_lowercase().contains(&query))
+                        .take(5)
+                        .collect();
+
+                    if !results.is_empty() {
+                        rsx! {
+                            div { class: "flex flex-wrap gap-1 mb-1 flex-center",
+                                for fmt in results {
+                                    div { class: "chip-unselected",
+                                        onclick: move |_| {
+                                            selected_format.set(Some(fmt));
+                                            format_query.set(fmt.display_name().to_lowercase());
+                                            commander.set(None);
+                                            commander_display.set(String::new());
+                                            if !fmt.has_signature_spell() {
+                                                signature_spell.set(None);
+                                                signature_spell_display.set(String::new());
+                                            }
+                                        },
+                                        { fmt.display_name().to_lowercase() }
+                                    }
                                 }
                             }
-                        },
-                        { fmt.display_name().to_lowercase() }
+                        }
+                    } else {
+                        rsx! {
+                            div { class: "flex flex-wrap gap-1 mb-1 flex-center",
+                                div { class: "chip-unselected", "no results" }
+                            }
+                        }
                     }
+                }
+            }
+
+            // Search input (shows selected format name when selected)
+            input { class: "input",
+                id: "format-search",
+                r#type: "text",
+                placeholder: "format",
+                value: "{format_query()}",
+                autocapitalize: "none",
+                spellcheck: "false",
+                onclick: move |_| {
+                    if selected_format().is_some() {
+                        selected_format.set(None);
+                        format_query.set(String::new());
+                        commander.set(None);
+                        commander_display.set(String::new());
+                        signature_spell.set(None);
+                        signature_spell_display.set(String::new());
+                    }
+                },
+                oninput: move |event| {
+                    format_query.set(event.value());
                 }
             }
         }
