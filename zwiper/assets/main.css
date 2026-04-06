@@ -440,6 +440,7 @@ body {
     font-weight: 300;
     letter-spacing: 0.1em;
     margin: 0;
+    color: var(--accent-primary);
 }
 
 /* =======================
@@ -595,7 +596,7 @@ body {
     outline: none;
     background-color: var(--border-muted);
     color: var(--text-primary);
-    border-color: var(--text-muted);
+    border-color: var(--accent-primary);
 }
 
 .input::placeholder {
@@ -632,7 +633,7 @@ body {
     font-size: 1rem;
     font-weight: 300;
     letter-spacing: 0.1em;
-    opacity: 0.5;
+    color: var(--accent-primary);
     margin-bottom: 0.4rem;
 }
 
@@ -640,7 +641,7 @@ body {
     font-size: 1rem;
     letter-spacing: 0.1em;
     margin-bottom: 0.25rem;
-    opacity: 0.5;
+    color: var(--accent-primary);
 }
 
 /* ============================
@@ -694,6 +695,10 @@ body {
     cursor: pointer;
     transition: all 0.2s ease;
     margin-bottom: 0.5rem;
+}
+
+.card h3 {
+    color: var(--accent-primary);
 }
 
 .form-container {
@@ -1006,7 +1011,7 @@ body {
 }
 
 .toggle-track.on {
-    background-color: var(--text-primary);
+    background-color: var(--accent-primary);
 }
 
 .toggle-track.off {
@@ -1048,8 +1053,8 @@ body {
 }
 
 .copy-max-box.selected {
-    border-color: var(--accent-primary);
-    color: var(--accent-primary);
+    border-color: var(--accent-secondary);
+    color: var(--accent-secondary);
 }
 
 .copy-max-box.unselected {
@@ -1148,8 +1153,8 @@ body {
 }
 
 .chip.selected {
-    border-color: var(--accent-primary);
-    color: var(--accent-primary);
+    border-color: var(--accent-secondary);
+    color: var(--accent-secondary);
 }
 
 .chip-xs {
@@ -1165,8 +1170,8 @@ body {
 }
 
 .chip-xs.selected {
-    border-color: var(--accent-primary);
-    color: var(--accent-primary);
+    border-color: var(--accent-secondary);
+    color: var(--accent-secondary);
 }
 
 .chip-unselected {
@@ -1224,8 +1229,8 @@ body {
 }
 
 .type-box.selected {
-    border-color: var(--accent-primary);
-    color: var(--accent-primary);
+    border-color: var(--accent-secondary);
+    color: var(--accent-secondary);
 }
 
 /* =========================
@@ -1247,8 +1252,8 @@ body {
 }
 
 .mana-box.selected {
-    border-color: var(--accent-primary);
-    color: var(--accent-primary);
+    border-color: var(--accent-secondary);
+    color: var(--accent-secondary);
 }
 
 /* ================================
@@ -1463,7 +1468,7 @@ body {
 .label-xs {
     font-size: 0.875rem;
     margin-bottom: 0.25rem;
-    opacity: 0.5;
+    color: var(--accent-primary);
     font-weight: 300;
     letter-spacing: 0.1em;
     text-align: center;
@@ -1477,8 +1482,8 @@ body {
     margin-bottom: 0.5rem;
     width: auto;
     background: none;
-    border: 1px solid var(--border-primary);
-    color: var(--text-primary);
+    border: 1px solid var(--accent-secondary);
+    color: var(--accent-secondary);
     font-family: "Cascadia Code", monospace;
     font-weight: 300;
     cursor: pointer;
@@ -1503,8 +1508,8 @@ body {
 }
 
 .type-box-compact.selected {
-    border-color: var(--accent-primary);
-    color: var(--accent-primary);
+    border-color: var(--accent-secondary);
+    color: var(--accent-secondary);
 }
 
 .mana-box-compact {
@@ -1522,8 +1527,8 @@ body {
 }
 
 .mana-box-compact.selected {
-    border-color: var(--accent-primary);
-    color: var(--accent-primary);
+    border-color: var(--accent-secondary);
+    color: var(--accent-secondary);
 }
 
 .gap-half {
@@ -1546,10 +1551,10 @@ body {
     all: unset;
     cursor: pointer;
     font-size: 0.65rem;
-    color: var(--text-muted);
+    color: var(--accent-secondary);
     padding: 0.15rem 0.35rem;
     margin-left: 0.25rem;
-    border: 1px solid var(--border-muted);
+    border: 1px solid var(--accent-secondary);
     border-radius: 0.4rem;
     transition: all 0.2s ease;
 }
@@ -1632,7 +1637,7 @@ body {
 }
 
 .flavor-source {
-    color: var(--text-muted);
+    color: var(--accent-primary);
 }
 
 /* =========================
@@ -1686,7 +1691,7 @@ body {
 
 .chip-row-label {
     font-size: 0.75rem;
-    opacity: 0.5;
+    color: var(--accent-primary);
     white-space: nowrap;
 }
 
@@ -1720,7 +1725,7 @@ body {
 .card-group-header {
     font-size: 0.85rem;
     font-weight: 600;
-    color: var(--text-muted);
+    color: var(--accent-tertiary);
     padding: 0.4rem 0;
     border-bottom: 1px solid var(--border-secondary);
     margin-bottom: 0.25rem;
@@ -1994,7 +1999,7 @@ body {
 }
 
 .pref-row.selected {
-    border-color: var(--accent-primary);
+    border-color: var(--accent-secondary);
     color: var(--text-primary);
 }
 
