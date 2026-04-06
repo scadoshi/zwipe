@@ -115,6 +115,40 @@ For **JSONB types** (Colors, Legalities, Prices, CardFaces): use `sqlx::types::J
 
 ---
 
+## Web App: Unified Domain via Zite
+
+**Decided: 2026-04-06.**
+
+Ship the full application as a webapp at `zwipe.net` alongside the existing marketing pages. Zite becomes both the marketing site and the authenticated deck builder — logged-out visitors see landing/about/contribute pages, logged-in users get the full deck building experience.
+
+### Why
+
+- iOS app is feature complete but App Store submission adds friction and delays reaching users
+- A webapp has zero distribution friction — share a link, someone's using it
+- The backend (zerver) is already live with all endpoints, auth, rate limiting, and security in place
+- Zite is already deployed to `zwipe.net` via GitHub Pages with existing routes
+
+### Key decisions
+
+**Single domain (`zwipe.net`)**: No subdomain split (`app.zwipe.net` or `web.zwipe.net`). The product lives at the root domain. Marketing pages and app routes coexist in the same Dioxus app.
+
+**Dual input for card selection**: Swipe gestures for mobile browsers, arrow buttons for desktop. Arrow buttons are the primary desktop interaction — nobody swipes with a mouse.
+
+**CORS**: Already handled — zerver has `ALLOWED_ORIGINS` in its env config. Add `zwipe.net` to the allowed list.
+
+**Security posture unchanged**: Same JWT auth, same rate limiting, same account lockout. The browser is just another client calling the same API. No new endpoints or auth flows needed.
+
+**Ship both**: Webapp ships first for immediate user access. iOS app submits to App Store in parallel — same codebase, two distribution channels.
+
+### What changes in zite
+
+- Add authenticated routes (deck list, deck view, card search/swipe, profile, preferences)
+- Add login/register screens
+- Reuse zwipe-core domain types and validation (already a dependency)
+- The `/download` page becomes less central but stays for iOS users
+
+---
+
 ## Hosting: Ubuntu Server via Cloudflare Tunnel
 
 See `architecture/hosting.md`.
