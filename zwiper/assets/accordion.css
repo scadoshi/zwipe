@@ -33,18 +33,13 @@
   font-family: "Cascadia Code", monospace;
 }
 
-/* Selected/open state */
+/* Selected/open state — subtle highlight, no color inversion */
 .accordion-item[data-open="true"] .accordion-trigger {
-  background-color: var(--text-primary);
-  color: var(--bg-primary);
-  border-color: var(--border-primary);
+  background-color: var(--border-muted);
+  color: var(--text-primary);
+  border-color: var(--accent-primary);
   font-weight: 300;
   transform: none;
-}
-
-/* Dot must invert when banner is highlighted */
-.accordion-item[data-open="true"] .accordion-trigger .filter-dot {
-  background-color: var(--bg-primary);
 }
 
 .accordion-content {
@@ -90,6 +85,11 @@
   border-bottom: none;
 }
 
+/* Active filter indicator — trigger contains a clear button */
+.accordion-trigger:has(.clear-btn) {
+  border-color: var(--accent-primary);
+}
+
 .accordion-expand-icon {
   width: 20px;
   height: 20px;
@@ -102,7 +102,7 @@
 }
 
 .accordion-item[data-open="true"] .accordion-expand-icon {
-  stroke: var(--bg-primary);
+  stroke: var(--text-primary);
   rotate: 180deg;
 }
 
