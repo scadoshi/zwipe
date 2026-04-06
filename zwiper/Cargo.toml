@@ -33,6 +33,9 @@ tokio = { workspace = true }
 rand = { workspace = true }
 dioxus-primitives = { git = "https://github.com/DioxusLabs/components", version = "0.0.1", default-features = false }
 
+# getrandom 0.4+ requires explicit wasm_js feature for wasm32-unknown-unknown
+getrandom = { version = "0.4", features = ["wasm_js"] }
+
 [build-dependencies]
 dotenvy = { workspace = true }
 
