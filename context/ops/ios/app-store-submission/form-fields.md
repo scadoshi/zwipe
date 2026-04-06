@@ -12,22 +12,25 @@ Swipe to Build MTG Decks
 
 ## Promotional Text
 
-Build your Commander decks faster. Swipe through cards, filter by color, type, and mana cost, and manage your collection — all from your phone.
+Build your Commander decks faster. Swipe through 110,000+ cards, filter by anything, manage your decks with stats and price estimates — all from your phone.
 
 ---
 
 ## Description
 
-Zwipe is a mobile-first Magic: The Gathering deck builder designed for Commander players. Browse cards with an intuitive swipe interface — swipe right to add, left to skip.
+Zwipe is a mobile-first Magic: The Gathering deck builder designed for Commander players. Browse cards with an intuitive swipe interface — swipe right to add, left to skip, up to maybeboard.
 
 Features:
-- Swipe-based card browsing with full card art
-- Advanced filters: color identity, card type, mana cost, produced mana, and more
-- Commander search with legality validation
-- Manage multiple decks with card counts and mana curve stats
-- 9 color themes with light and dark mode
-- Powered by Scryfall's complete card database (35,000+ cards)
-- Import cards by name for quick deck entry
+- Swipe-based card browsing with full card art and multiple printings
+- Deep filters: color identity, card type, mana cost, oracle text, keywords, artist, set, rarity, mechanical category, and more
+- Full Commander support — partners, backgrounds, oathbreaker with signature spell, color identity validation
+- Maybeboard for staging cards you're considering
+- Sideboard support
+- Manage multiple decks with card counts, mana curve stats, and price estimates
+- Import/export decklists from Moxfield or Archidekt
+- 15 color themes with dark and light modes, including 3 colorblind-accessible options
+- 110,000+ cards synced nightly from Scryfall
+- Account-based — your decks sync across sessions
 - Free to use, no ads
 
 Built for players who want a fast, focused mobile experience — not another cluttered desktop tool on a small screen.
