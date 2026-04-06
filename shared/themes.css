@@ -619,18 +619,18 @@
 
 :root {
     /* Background */
-    --bg-primary: #1a1d23;
+    --bg-primary: #191c23;
     --bg-overlay: rgba(0, 0, 0, 0.6);
 
-    /* Text (off-white cream) */
-    --text-primary: #d6d1cb;
-    --text-muted: #979085;
-    --text-subtle: #afa79d;
+    /* Text (warm cream) */
+    --text-primary: #d2d1b8;
+    --text-muted: #928e82;
+    --text-subtle: #aba79a;
 
-    /* Borders (slate blue) */
-    --border-primary: #4e5664;
-    --border-secondary: #303237;
-    --border-muted: #3e4249;
+    /* Borders (slate) */
+    --border-primary: #4d5760;
+    --border-secondary: #272b31;
+    --border-muted: #3a3e48;
 
     /* Status Colors */
     --color-error: #d13b3b;
@@ -642,10 +642,10 @@
     --border-success: #2d7040;
     --border-warning: #8a7020;
 
-    /* Accents (darker cream) */
-    --accent-primary: #afa79d;
-    --accent-secondary: #afa79d;
-    --accent-tertiary: #afa79d;
+    /* Accents */
+    --accent-primary: #b89a48;
+    --accent-secondary: #6b8aaa;
+    --accent-tertiary: #c49050;
 
     /* Shadows */
     --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
