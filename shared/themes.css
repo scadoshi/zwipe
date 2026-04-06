@@ -642,10 +642,10 @@
     --border-success: #2d7040;
     --border-warning: #8a7020;
 
-    /* Accents */
-    --accent-primary: #b89a48;
-    --accent-secondary: #6b8aaa;
-    --accent-tertiary: #c49050;
+    /* Accents (cream tiers: resting / hover / active) */
+    --accent-primary: #bebca8;
+    --accent-secondary: #dedcc8;
+    --accent-tertiary: #eeeddb;
 
     /* Shadows */
     --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);

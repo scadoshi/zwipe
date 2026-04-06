@@ -26,7 +26,7 @@ a {
 }
 
 a:hover {
-    color: var(--accent-primary);
+    color: var(--accent-secondary);
 }
 
 /* ==================
@@ -132,8 +132,8 @@ nav::after {
 }
 
 .nav-links .store-link:hover {
-    color: var(--text-primary);
-    border-color: var(--text-primary);
+    color: var(--accent-secondary);
+    border-color: var(--accent-secondary);
 }
 
 @media (max-width: 35rem) {
@@ -337,8 +337,8 @@ code {
 }
 
 .store-btn:hover {
-    color: var(--text-primary);
-    border-color: var(--text-primary);
+    color: var(--accent-secondary);
+    border-color: var(--accent-secondary);
 }
 
 .store-buttons {
