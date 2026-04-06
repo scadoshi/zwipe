@@ -1,6 +1,52 @@
 # Todo
 
-**Primary goal: Submit Zwipe to the App Store.**
+**Primary goal: Ship Zwipe as a webapp at zwipe.net. Continue App Store submission in parallel.**
+
+---
+
+## Web App — Ship Full App via Zite at zwipe.net
+
+Build the full deck builder into zite so `zwipe.net` serves both marketing pages (logged out) and the authenticated app experience (logged in). See `architecture/decisions.md` for rationale.
+
+### Wasm Build Blockers
+
+Zwiper doesn't compile to `wasm32-unknown-unknown` yet. Two issues discovered (2026-04-06):
+
+1. **`getrandom` needs `wasm_js` feature** — `getrandom` 0.4+ requires explicit `features = ["wasm_js"]` for wasm32 targets. Zite already has this. Zwiper needs it too, but it goes in `zwiper/Cargo.toml` (NOT the workspace root — virtual manifests can't have `[target]` sections).
+
+2. **`tokio` pulls in `mio`, which doesn't compile to wasm32** — Tokio's full runtime uses OS-level I/O via mio, which has no wasm support. Zwiper uses tokio in 4 places, all for timers:
+   - `zwiper/src/lib/inbound/screens/profile/components/delete_account_dialog.rs` — `tokio::time::sleep`
+   - `zwiper/src/lib/inbound/components/auth/session_upkeep.rs` — `tokio::time::interval`
+   - `zwiper/src/lib/inbound/screens/deck/components/deck_fields.rs` — `tokio::time::sleep`
+   - `zwiper/src/lib/inbound/screens/deck/card/components/image_preview.rs` — `tokio::time::sleep`
+
+   Options for wasm-compatible timers:
+   - `gloo_timers::future::sleep` for wasm, `tokio::time::sleep` for native (behind `#[cfg]`)
+   - `dioxus-sdk-time` (already a dependency) if it provides cross-platform timers
+   - `web_sys::setTimeout` wrapped in a future
+
+   This also means `tokio` itself should be gated behind non-web features in zwiper's `Cargo.toml`, or the timer calls need platform abstraction.
+
+### Build the App into Zite
+
+Once wasm compiles, build the authenticated experience into zite:
+
+- [ ] Resolve wasm build blockers (getrandom feature + tokio/mio platform abstraction)
+- [ ] Add login/register screens to zite
+- [ ] Add authenticated routes: deck list, deck view, card search/swipe, profile, preferences
+- [ ] Dual input for card selection: swipe gestures for mobile browsers, arrow buttons for desktop
+- [ ] Add `zwipe.net` to zerver's `ALLOWED_ORIGINS` for CORS
+- [ ] Session storage for web (localStorage or similar — no keyring on web)
+- [ ] Test full auth flow: register, verify email, login, refresh token rotation
+- [ ] Test deck CRUD, card search, card add/remove via both swipe and arrow buttons
+- [ ] Rework `/download` page — still useful for iOS users, but less central
+
+### Architecture Notes
+
+- **Single domain**: `zwipe.net` — no subdomain split. Marketing and app coexist.
+- **Security posture unchanged**: Same JWT auth, rate limiting, account lockout. Browser is just another API client.
+- **Ship both**: Webapp ships first for immediate reach. iOS submits to App Store in parallel.
+- **Reuse**: zite already depends on `zwipe-core`. Domain types, validation, and shared CSS (`shared/themes.css`) are ready.
 
 ---
 
