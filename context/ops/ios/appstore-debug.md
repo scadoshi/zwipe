@@ -227,13 +227,66 @@ Reference App ID: 6761341603.
 3. **If both fail** — reply to the support email requesting escalation to engineering
 4. **Check frameworks** — scan all binaries in .app for beta SDK metadata
 
+### Transporter upload also rejected (2026-04-05)
+- Build 11 uploaded via Transporter (TransporterApp/1.4-14025) — NOT altool
+- Upload succeeded: delivery UUID 66443fdd-fcf5-42b2-aac9-3c6e575fb0df
+- Zero errors, zero warnings during upload
+- App Store Connect → **same "beta Xcode" rejection**
+- This rules out altool as the cause — the error persists regardless of upload method
+
+**Upload methods tried and rejected:**
+1. `xcrun altool` (builds 1–10)
+2. Transporter.app (build 11)
+
+**Conclusion:** The upload method is NOT the problem. Apple Support's first suggestion
+(switch from altool to Transporter) did not resolve the issue. Need escalation to
+engineering team as offered in case 102855955579.
+
 ### Recommended reply to Apple
-If Transporter/Organizer upload also fails, reply with:
-- "Uploaded build N via Transporter — same beta Xcode error persists"
-- "No third-party frameworks — binary is compiled from source with Apple's public SDK"
-- "Info.plist DT keys verified: DTXcode 2640, DTXcodeBuild 17E192"
-- "A native Swift binary (not our app) also gets the same error — see case details"
-- "Please escalate to engineering per your offer — App ID 6761341603"
+Reply to case 102855955579 with:
+
+---
+
+Hi Liping,
+
+Thank you for your response. I followed all three steps:
+
+1. **Uploaded via Transporter** — build 11 uploaded successfully via Transporter.app
+   (not altool). Same "beta Xcode" rejection in App Store Connect.
+
+2. **No third-party frameworks** — the binary is compiled entirely from source using
+   Apple's public SDK. There are no embedded third-party SDKs or frameworks.
+
+3. **Verified Info.plist DT keys** — DTXcode: 2640, DTXcodeBuild: 17E192, matching
+   Xcode 26.4 GM installed from the Mac App Store.
+
+Additional context from our earlier investigation:
+- 11 builds uploaded across 2 bundle IDs and 2 Xcode versions (26.3 + 26.4)
+- A native Swift binary compiled with `xcrun -sdk iphoneos swiftc` also receives
+  the same rejection
+- `xcrun altool --validate-app` passes with zero errors on all builds
+- TestFlight shows all builds as "Ready to Submit"
+- Only "Add for Review" in App Store Connect rejects
+
+Since all three suggestions have been tried without success, and even a native Swift
+binary gets the same error, this appears to be an account-level or server-side issue.
+Could you please escalate to your engineering team as offered? App ID: 6761341603,
+Team ID: VV74WQ89GD.
+
+Thank you,
+Scotty
+
+---
+
+### Next steps if engineering escalation is slow
+1. **Try Xcode Organizer upload** — wrap .app in an .xcarchive and distribute via
+   Xcode's built-in pipeline (different metadata path than Transporter)
+2. **Strip custom DT plist keys** — let dx build generate plist, only patch required
+   fields (platforms, device family, icons, version), skip DT keys entirely
+3. **Build via Xcode project** — create a minimal Xcode project wrapping the binary,
+   archive and upload entirely through Xcode's tooling
+4. **New Apple Developer account** — nuclear option, fresh $99 enrollment to confirm
+   whether the issue is account-level
 
 ### Key observation
 **TestFlight accepts all builds as "Ready to Submit"** but Distribution rejects them.
