@@ -191,10 +191,49 @@ Still waiting on Apple Support. The issue is definitively account-level/server-s
 4. Try a different browser or incognito window
 5. Follow up on support ticket if no response by 2026-04-03
 
-### Recommended next steps
-1. **Wait for Apple Support response** — this is an account-level issue only they can fix
-2. **Check for pending agreements** — this is the most likely quick fix
-3. **Follow up on support ticket** — if no response by Apr 3, file again or call
+### Apple Support response (2026-04-05, case 102855955579)
+Contact: Liping. Apologized for delay due to high volume.
+
+**Key finding: `altool` is deprecated** and can cause metadata parsing errors in App Store
+Connect. This may be the root cause — altool could be injecting stale upload metadata that
+triggers the "beta Xcode" rejection even though validation passes.
+
+**Apple's recommended steps (in priority order):**
+
+1. **Use Xcode Organizer or Transporter** (most likely fix)
+   - `altool` is deprecated and known to cause metadata parsing errors
+   - Increment build number and upload via Xcode Organizer or Transporter (Mac App Store)
+   - This contradicts our earlier "Do not use Transporter" guidance — Apple is now
+     explicitly recommending it
+
+2. **Check third-party frameworks**
+   - If any embedded SDK/framework was compiled with a beta Xcode, it contaminates
+     the entire app submission
+   - For Zwipe: check if any linked Rust/Dioxus-generated dylibs carry beta metadata
+   - Run: `otool -l <binary> | grep -A 5 LC_BUILD_VERSION` on every binary in the .app
+
+3. **Verify Info.plist DT keys**
+   - CI/CD tools or cross-platform frameworks may alter DTXcode or DTXcodeBuild
+   - Since we set these manually via PlistBuddy, verify they're correct AFTER all patching
+   - Run: `plutil -p $APP/Info.plist | grep -i DT` as final check before signing
+
+**Apple offered to escalate** to engineering if the issue persists after trying these steps.
+Reference App ID: 6761341603.
+
+### Next steps (updated 2026-04-05)
+1. **Try Transporter upload** — download from Mac App Store, increment build number, upload
+   the IPA through Transporter instead of altool
+2. **If Transporter fails** — try Xcode Organizer (requires creating an .xcarchive wrapper)
+3. **If both fail** — reply to the support email requesting escalation to engineering
+4. **Check frameworks** — scan all binaries in .app for beta SDK metadata
+
+### Recommended reply to Apple
+If Transporter/Organizer upload also fails, reply with:
+- "Uploaded build N via Transporter — same beta Xcode error persists"
+- "No third-party frameworks — binary is compiled from source with Apple's public SDK"
+- "Info.plist DT keys verified: DTXcode 2640, DTXcodeBuild 17E192"
+- "A native Swift binary (not our app) also gets the same error — see case details"
+- "Please escalate to engineering per your offer — App ID 6761341603"
 
 ### Key observation
 **TestFlight accepts all builds as "Ready to Submit"** but Distribution rejects them.

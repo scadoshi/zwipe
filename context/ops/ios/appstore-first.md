@@ -139,21 +139,32 @@ If you haven't created one yet:
 3. Download the `.p8` file (one-time download!) → `~/.private_keys/AuthKey_<KEY_ID>.p8`
 4. Note the **Key ID** and **Issuer ID**
 
-### Validate and upload
+### Upload via Transporter (recommended)
+
+**Do NOT use `xcrun altool`** — it is deprecated and causes metadata parsing errors
+that can trigger false "beta Xcode" rejections in App Store Connect.
+
+**Do NOT use `xcrun iTMSTransporter`** — it expects `.itmsp` directories, not `.ipa` files.
+
+1. Download **Transporter** from the Mac App Store (free, by Apple)
+2. Open Transporter, sign in with your Apple ID
+3. Drag `~/Developer/zwipe/Zwipe.ipa` into the window
+4. Click **Deliver** — validates and uploads in one step
+5. Wait for "Upload Successful" confirmation
+
+The build will appear in App Store Connect after 5–10 minutes.
+
+### Fallback: altool (deprecated — use only if Transporter is unavailable)
 
 ```bash
-# Validate first (catches errors before uploading)
 xcrun altool --validate-app -f ~/Developer/zwipe/Zwipe.ipa -t ios \
   --apiKey C2L47TDDPV --apiIssuer 644db668-17b6-4d50-ac1a-70f8ea838d0d
 
-# Upload
 xcrun altool --upload-app -f ~/Developer/zwipe/Zwipe.ipa -t ios \
   --apiKey C2L47TDDPV --apiIssuer 644db668-17b6-4d50-ac1a-70f8ea838d0d
 ```
 
 API key file: `~/.private_keys/AuthKey_C2L47TDDPV.p8`
-
-**Do not use Transporter** — `altool` gives detailed errors and is scriptable.
 
 ---
 
