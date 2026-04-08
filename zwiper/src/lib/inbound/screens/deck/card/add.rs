@@ -3,9 +3,7 @@ use crate::{
     inbound::{
         components::{
             auth::{bouncer::Bouncer, session_upkeep::Upkeep},
-            interactions::swipe::{
-                Swipeable, config::SwipeConfig, direction::Direction, state::SwipeState,
-            },
+            interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
         },
         screens::deck::card::{
             components::action_history::{CARDS_WARNING_THRESHOLD, MAX_CARDS_IN_STACK, SwipeAction},
@@ -26,7 +24,7 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::collections::HashSet;
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe_core::domain::card::{Card, scryfall_data::{colors::{Color, Colors}, image_uris::ImageUris}, search_card::card_filter::builder::CardFilterBuilder};
+use zwipe_core::domain::card::{Card, scryfall_data::colors::{Color, Colors}, search_card::card_filter::builder::CardFilterBuilder};
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
 use zwipe_core::domain::auth::models::session::Session;
@@ -40,8 +38,9 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut last_search_filter: Signal<Option<CardFilterBuilder>> = use_context();
     let is_first_run = use_hook(|| std::cell::Cell::new(true));
 
-    let mut is_animating = use_signal(|| false);
-    let mut animation_direction = use_signal(|| Direction::Left);
+    // When Some, the SwipeStack plays a keyframe entering from this direction
+    // on the next top card, and clears it on animationend. Set by undo.
+    let mut entering_direction: Signal<Option<Direction>> = use_signal(|| None);
 
     let mut deck_cards_ids = use_signal(HashSet::<Uuid>::new);
     let mut deck_format: Signal<Option<Format>> = use_signal(|| None);
@@ -68,7 +67,9 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut current_offset = use_signal(|| 0_u32);
     let mut is_loading_more = use_signal(|| false);
     let pagination_limit = 100_u32; // Backend default
-    let load_more_threshold = 10_usize;
+    // Keep the buffer comfortably ahead of the STACK_DEPTH window so the
+    // stack never visibly shrinks while a batch is in flight.
+    let load_more_threshold = 15_usize;
     let mut pagination_exhausted = use_signal(|| false);
 
     let mut is_loading_cards = use_signal(|| false);
@@ -161,30 +162,33 @@ pub fn Add(deck_id: Uuid) -> Element {
         });
     };
 
-    let mut next_card = move || {
-        let idx = current_index();
-        let total_cards = cards().len();
+    // Swipe config — the stack owns its own SwipeState internally.
+    let swipe_config = SwipeConfig::new(
+        vec![Direction::Left, Direction::Right, Direction::Up, Direction::Down],
+        150.0, // 150px to commit swipe
+        5.0,   // 5px/ms speed threshold
+    );
 
-        if idx + 1 < total_cards {
-            current_index.set(idx + 1);
-
-            // Show warning when approaching limit
-            if (CARDS_WARNING_THRESHOLD..MAX_CARDS_IN_STACK).contains(&total_cards)
-                && total_cards.is_multiple_of(100)
+    // Advance past the just-committed card. The stack fires its on_swipe_*
+    // callbacks after the exit transition, so by now the card is off-screen.
+    let mut advance_after_commit = move || {
+        let total = cards().len();
+        if current_index() + 1 < total {
+            current_index.set(current_index() + 1);
+            if (CARDS_WARNING_THRESHOLD..MAX_CARDS_IN_STACK).contains(&total)
+                && total.is_multiple_of(100)
             {
-                // Show every 100 cards after threshold
                 toast.info(
                     "approaching card limit, consider refreshing".to_string(),
                     ToastOptions::default().duration(Duration::from_millis(2000)),
                 );
             }
-
-            // Check if we should load more cards (within threshold of end)
-            if total_cards > 0 && idx + 1 >= total_cards.saturating_sub(load_more_threshold) {
+            // Trigger a pagination prefetch when we're within the threshold.
+            if total > 0 && current_index() + 1 >= total.saturating_sub(load_more_threshold) {
                 load_more_cards();
             }
         } else {
-            // At the end - check if exhausted or try loading more
+            // At the end — try to load more, else inform the user.
             if pagination_exhausted() {
                 toast.warning("end of results".to_string(), ToastOptions::default());
             } else {
@@ -193,19 +197,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         }
     };
 
-    // Swipeable state
-    let swipe_state = use_signal(SwipeState::new);
-    let swipe_config = SwipeConfig::new(
-        vec![Direction::Left, Direction::Right, Direction::Up, Direction::Down],
-        150.0, // 150px to commit swipe
-        5.0,   // 5px/ms speed threshold
-    );
-
-    let add_card_to_deck = move || {
-        let Some(card) = current_card() else {
-            return; // No card to add
-        };
-
+    let add_card_to_deck = move |card: Card| {
         session.upkeep(client);
         let Some(session) = session() else {
             toast.error("session expired".to_string(), ToastOptions::default());
@@ -229,11 +221,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         });
     };
 
-    let add_card_to_maybeboard = move || {
-        let Some(card) = current_card() else {
-            return;
-        };
-
+    let add_card_to_maybeboard = move |card: Card| {
         session.upkeep(client);
         let Some(session) = session() else {
             toast.error("session expired".to_string(), ToastOptions::default());
@@ -270,24 +258,28 @@ pub fn Add(deck_id: Uuid) -> Element {
             return;
         }
 
-        // Go back one card
+        // Go back one card — the previously-swiped card becomes the new top.
         current_index.set(current_index() - 1);
+        // Ask the stack to play the enter animation from the direction the
+        // card originally exited.
+        entering_direction.set(Some(action.exited().clone()));
 
         match action {
-            SwipeAction::Skip(_) => {
+            SwipeAction::Skip { .. } => {
                 // Just showing previous card - done!
                 toast.info(
                     "undid skip".to_string(),
                     ToastOptions::default().duration(Duration::from_millis(1500)),
                 );
             }
-            SwipeAction::Do(ref card) => {
+            SwipeAction::Do { ref card, .. } => {
                 // Need to delete from backend (undoing the add)
                 session.upkeep(client);
                 let Some(session) = session() else {
                     toast.error("session expired".to_string(), ToastOptions::default());
                     action_history.write().push(action); // Restore history
                     current_index.set(current_index() + 1); // Restore index
+                    entering_direction.set(None);
                     return;
                 };
 
@@ -312,12 +304,13 @@ pub fn Add(deck_id: Uuid) -> Element {
                     }
                 });
             }
-            SwipeAction::Maybeboard(ref card) => {
+            SwipeAction::Maybeboard { ref card, .. } => {
                 session.upkeep(client);
                 let Some(session) = session() else {
                     toast.error("session expired".to_string(), ToastOptions::default());
                     action_history.write().push(action);
                     current_index.set(current_index() + 1);
+                    entering_direction.set(None);
                     return;
                 };
 
@@ -554,59 +547,39 @@ pub fn Add(deck_id: Uuid) -> Element {
                 div { class: "screen-content card-swipe content-enter",
 
                 div { class : "form-container",
-                    // Show current card with Swipeable
-                    if let Some(card) = current_card() {
-                        if let Some(ImageUris { large: Some(image_url), ..}) = &card.scryfall_data.image_uris {
-                            Swipeable {
-                                state: swipe_state,
-                                config: swipe_config,
-                                on_swipe_left: move |_| {
-                                    let Some(card) = current_card() else { return; };
-                                    action_history.write().push(SwipeAction::Skip(Box::new(card)));
-                                    toast.info("skipped".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
-                                    is_animating.set(true);
-                                    animation_direction.set(Direction::Left);
-                                },
-                                on_swipe_right: move |_| {
-                                    let Some(card) = current_card() else { return; };
-                                    action_history.write().push(SwipeAction::Do(Box::new(card)));
-                                    // Add card to deck then trigger exit animation
-                                    add_card_to_deck();
-                                    toast.success("added to deck".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
-                                    is_animating.set(true);
-                                    animation_direction.set(Direction::Right);
-                                },
-                                on_swipe_up: move |_| {
-                                    let Some(card) = current_card() else { return; };
-                                    action_history.write().push(SwipeAction::Maybeboard(Box::new(card)));
-                                    add_card_to_maybeboard();
-                                    toast.info("added to maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
-                                    is_animating.set(true);
-                                    animation_direction.set(Direction::Up);
-                                },
-                                on_swipe_down: move |_| {
-                                    undo_last_action();
-                                },
-
-                                img {
-                                    src: "{image_url}",
-                                    alt: "{card.scryfall_data.name}",
-                                    class: "card-image",
-                                    class: if is_animating() { "card-exit-animation" } else { "" },
-                                    style: if is_animating() {
-                                        format!("--card-exit-direction: card-exit-{}", animation_direction().to_string().to_lowercase())
-                                    } else {
-                                        String::new()
-                                    },
-                                    onanimationend: move |_| {
-                                        is_animating.set(false);
-                                        next_card();
-                                    }
-                                }
-                            }
+                    if !cards().is_empty() {
+                        SwipeStack {
+                            cards: {
+                                let all = cards();
+                                all.into_iter().skip(current_index()).take(crate::inbound::components::interactions::swipe::STACK_DEPTH).collect::<Vec<_>>()
+                            },
+                            config: swipe_config,
+                            entering: entering_direction,
+                            on_swipe_left: move |card: Card| {
+                                action_history.write().push(SwipeAction::Skip { card: Box::new(card), exited: Direction::Left });
+                                toast.info("skipped".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                advance_after_commit();
+                            },
+                            on_swipe_right: move |card: Card| {
+                                action_history.write().push(SwipeAction::Do { card: Box::new(card.clone()), exited: Direction::Right });
+                                add_card_to_deck(card);
+                                toast.success("added to deck".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                advance_after_commit();
+                            },
+                            on_swipe_up: move |card: Card| {
+                                action_history.write().push(SwipeAction::Maybeboard { card: Box::new(card.clone()), exited: Direction::Up });
+                                add_card_to_maybeboard(card);
+                                toast.info("added to maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                advance_after_commit();
+                            },
+                            on_swipe_down: move |_card: Card| {
+                                undo_last_action();
+                            },
                         }
 
-                        CardInfoDisplay { card }
+                        if let Some(card) = current_card() {
+                            CardInfoDisplay { card }
+                        }
                     } else if is_loading_cards() {
                         CardSkeleton { is_loading: true }
                     } else {
