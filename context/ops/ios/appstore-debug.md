@@ -278,6 +278,59 @@ Scotty
 
 ---
 
+### Status update (2026-04-08) — follow-up sent to both support engineers
+
+**Current state:** Two open support cases, same issue, two engineers:
+- Case `102856406657` — Pacey (Developer Support)
+- Case `102855955579` — Liping (Developer Support)
+
+Replied to both today with consolidated evidence and requested case merge.
+
+**New evidence discovered today:** Ran `xcrun altool --validate-app` against build 11 IPA.
+The call failed with HTTP 409 `ENTITY_ERROR.ATTRIBUTE.INVALID.DUPLICATE` (because build 11
+is already uploaded) — but the same API response returned the build's current server-side
+state, which is the most important finding of this entire investigation:
+
+```
+buildBetaDetails:
+  internalBuildState : "READY_FOR_BETA_TESTING"
+  externalBuildState : "READY_FOR_BETA_SUBMISSION"
+
+appStoreVersions (version 1.0):
+  appStoreState    : "PREPARE_FOR_SUBMISSION"
+  appVersionState  : "PREPARE_FOR_SUBMISSION"
+```
+
+**Apple's own App Store Connect API reports build 11 as `READY_FOR_BETA_SUBMISSION`** with
+no errors, warnings, or "beta Xcode" flags anywhere in the response. Only the App Store
+Connect *web UI* rejects the build on "Add for Review." This is the cleanest possible
+demonstration that the binary is fine by every Apple-side measurement, and the rejection
+is coming from a web UI layer check (likely an Xcode version whitelist that hasn't been
+updated to recognize 17E192, or a stale account flag).
+
+**Apple-side tracing headers for the failing request** (for internal lookup by engineering):
+- `x-apple-jingle-correlation-key: GJABHNFTU4IOQFHMJ5HQGSH5QE`
+- `x-b3-traceid: 33c95a434a770097`
+- `x-request-id: GJABHNFTU4IOQFHMJ5HQGSH5QE`
+
+Full raw log saved as `altool-build11-full.log` in this folder.
+
+**Attachments delivered to support** (both cases):
+- iCloud Drive share link to build 11 IPA (Gmail blocked direct `.ipa` and `.ipa.zip` attachments via content scanning)
+- TestFlight pane screenshot showing version 1.0 / build 11
+- "Add for Review" rejection error screenshot
+- `altool-build11-full.log`
+
+**Requests made to support** (both cases):
+1. Check for any account-level flag on Team ID VV74WQ89GD
+2. Verify Xcode 26.4 (17E192) is in the submission validation whitelist
+3. Trace correlation key `GJABHNFTU4IOQFHMJ5HQGSH5QE` to the exact web UI check that's rejecting
+4. Merge cases 102855955579 and 102856406657 if possible
+
+**Waiting on:** Response from Pacey or Liping. Escalation to engineering was previously
+offered by Liping in case 102855955579 — the new API-vs-web-UI evidence is intended to
+strongly motivate that escalation.
+
 ### Next steps if engineering escalation is slow
 1. **Try Xcode Organizer upload** — wrap .app in an .xcarchive and distribute via
    Xcode's built-in pipeline (different metadata path than Transporter)
