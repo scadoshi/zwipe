@@ -70,7 +70,7 @@ pub(crate) fn CardRow(
 
             if is_expanded {
                 div { class: "card-row-detail",
-                    p { style: "margin-bottom:0.35rem;word-break:break-word;white-space:normal;", "{name}" }
+                    p { style: "margin-bottom:0.35rem;word-break:break-word;white-space:normal;color:var(--accent-tertiary);", "{name}" }
                     if !type_line.is_empty() {
                         span { class: "opacity-50", style: "display:block;margin-bottom:0.5rem;", "{type_line}" }
                     }
@@ -78,7 +78,7 @@ pub(crate) fn CardRow(
                         p { class: "card-detail-oracle", "{oracle_text}" }
                     }
                     div { class: "card-detail-meta",
-                        span { "{rarity_name} | {set_name}" }
+                        span { class: "opacity-50", style: "color: var(--text-primary);", "{rarity_name} | {set_name}" }
                     }
                     div { class: "qty-row",
                         if let Some(handler) = on_qty_change {

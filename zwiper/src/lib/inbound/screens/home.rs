@@ -155,7 +155,7 @@ pub fn Home() -> Element {
                     }, "profile"
                 }
                 button {
-                    class: "util-btn",
+                    class: "util-btn util-btn-danger",
                     onclick: move |_| show_logout_dialog.set(true),
                     "logout"
                 }
@@ -173,6 +173,7 @@ pub fn Home() -> Element {
                             "cancel"
                         }
                         AlertDialogAction {
+                            danger: true,
                             on_click: move |_| session.logout(client),
                             "logout"
                         }

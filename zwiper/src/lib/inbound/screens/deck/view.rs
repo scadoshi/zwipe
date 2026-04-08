@@ -432,6 +432,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                             "cancel"
                         }
                         AlertDialogAction {
+                            danger: true,
                             on_click: move |_| attempt_delete(),
                             "delete"
                         }

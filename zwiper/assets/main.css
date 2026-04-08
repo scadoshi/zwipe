@@ -574,6 +574,16 @@ body {
     animation: row-enter 0.2s ease-out both;
 }
 
+.btn-danger {
+    border-color: var(--color-error);
+    color: var(--color-error);
+}
+
+.util-btn-danger {
+    border-color: var(--color-error);
+    color: var(--color-error);
+}
+
 /* ===========================
   common components - inputs
  ============================= */
@@ -1691,7 +1701,7 @@ body {
 
 .chip-row-label {
     font-size: 0.75rem;
-    color: var(--accent-primary);
+    color: var(--accent-tertiary);
     white-space: nowrap;
 }
 
@@ -1806,6 +1816,7 @@ body {
     word-wrap: break-word;
     overflow-wrap: break-word;
     line-height: 1.4;
+    color: var(--text-primary);
 }
 
 .card-detail-meta {

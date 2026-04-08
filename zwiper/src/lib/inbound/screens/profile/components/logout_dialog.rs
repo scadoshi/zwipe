@@ -26,6 +26,7 @@ pub(crate) fn LogoutDialog(mut open: Signal<bool>) -> Element {
                         "cancel"
                     }
                     AlertDialogAction {
+                        danger: true,
                         on_click: move |_| session.logout(client),
                         "logout"
                     }

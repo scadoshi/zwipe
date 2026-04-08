@@ -13,7 +13,7 @@ pub fn BottomSheet(open: Signal<bool>, title: String, children: Element) -> Elem
         div {
             class: if open() { "bottom-sheet show" } else { "bottom-sheet" },
             div { class: "modal-header",
-                span { class: "text-muted", style: "font-size: 1rem;", "{title}" }
+                span { style: "font-size: 1rem; color: var(--accent-secondary);", "{title}" }
             }
             div { class: "modal-content",
                 div { class: "flex-col",
