@@ -12,6 +12,7 @@ use crate::domain::{
     deck::{
         models::{
             deck::{
+                clone_deck::CloneDeckError,
                 create_deck_profile::CreateDeckProfileError,
                 delete_deck::DeleteDeckError,
                 get_deck::GetDeckError,
@@ -33,6 +34,7 @@ use zwipe_core::domain::deck::{
     Deck, DeckCard, DeckEntry,
     deck_profile::DeckProfile,
     requests::{
+        clone_deck::CloneDeck,
         create_deck_card::CreateDeckCard,
         create_deck_profile::CreateDeckProfile,
         delete_deck::DeleteDeck,
@@ -439,5 +441,42 @@ where
             imported,
             unresolved,
         })
+    }
+
+    // =======
+    //  clone
+    // =======
+    async fn clone_deck(&self, request: &CloneDeck) -> Result<Uuid, CloneDeckError> {
+        // 1. Verify the source exists and is owned by the caller. get_deck_profile
+        //    on the repo already enforces ownership (returns Forbidden on mismatch)
+        //    and existence (returns NotFound).
+        let get_req = GetDeckProfile::new(request.user_id, request.source_deck_id);
+        if let Err(e) = self.deck_repo.get_deck_profile(&get_req).await {
+            return Err(match e {
+                GetDeckProfileError::NotFound => CloneDeckError::SourceNotFound,
+                GetDeckProfileError::Forbidden => CloneDeckError::Forbidden,
+                other => CloneDeckError::GetSource(other),
+            });
+        }
+
+        // 2. Enforce the same deck-count limit as create_deck_profile.
+        let deck_count = self
+            .deck_repo
+            .count_decks_by_user(request.user_id)
+            .await
+            .map_err(CloneDeckError::Database)?;
+        let deck_limit = if request.email_verified {
+            MAX_DECKS_PER_USER
+        } else {
+            UNVERIFIED_MAX_DECKS_PER_USER
+        };
+        if deck_count >= deck_limit {
+            return Err(CloneDeckError::LimitReached);
+        }
+
+        // 3. Delegate to the repo for the transactional copy.
+        self.deck_repo
+            .clone_deck(request.source_deck_id, &request.new_name, request.user_id)
+            .await
     }
 }

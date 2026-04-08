@@ -2,6 +2,8 @@
 //!
 //! Domain types (Deck, DeckEntry, DeckProfile, etc.) live in zwipe-core.
 
+/// Clone deck operation.
+pub mod clone_deck;
 /// Create deck profile operation.
 pub mod create_deck_profile;
 /// Delete deck operation.

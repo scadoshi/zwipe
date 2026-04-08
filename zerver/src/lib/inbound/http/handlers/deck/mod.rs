@@ -1,5 +1,7 @@
 //! Deck management handlers.
 
+/// Deck clone handler.
+pub mod clone_deck;
 /// Deck creation handler.
 pub mod create_deck_profile;
 /// Deck deletion handler.

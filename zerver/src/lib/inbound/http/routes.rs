@@ -26,9 +26,10 @@ use crate::inbound::http::handlers::{
         get_sets::get_sets, search_card::search_cards,
     },
     deck::{
-        create_deck_profile::create_deck_profile, delete_deck::delete_deck, get_deck::get_deck,
-        get_deck_profile::get_deck_profile, get_deck_profiles::get_deck_profiles,
-        get_deck_tokens::get_deck_tokens, update_deck_profile::update_deck_profile,
+        clone_deck::clone_deck, create_deck_profile::create_deck_profile,
+        delete_deck::delete_deck, get_deck::get_deck, get_deck_profile::get_deck_profile,
+        get_deck_profiles::get_deck_profiles, get_deck_tokens::get_deck_tokens,
+        update_deck_profile::update_deck_profile,
     },
     deck_card::{
         create_deck_card::create_deck_card, delete_deck_card::delete_deck_card,
@@ -256,6 +257,7 @@ where
                             "/{deck_id}",
                             get(get_deck).put(update_deck_profile).delete(delete_deck),
                         )
+                        .route("/{deck_id}/clone", post(clone_deck))
                         .route("/{deck_id}/tokens", get(get_deck_tokens))
                         .nest(
                             "/{deck_id}/card",

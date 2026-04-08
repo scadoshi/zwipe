@@ -1,3 +1,4 @@
+pub mod clone_deck;
 pub mod create_deck_card;
 pub mod create_deck_profile;
 pub mod delete_deck;
@@ -9,6 +10,7 @@ pub mod import_deck_cards;
 pub mod update_deck_card;
 pub mod update_deck_profile;
 
+pub use clone_deck::{CloneDeck, InvalidCloneDeck};
 pub use create_deck_card::{CreateDeckCard, InvalidCreateDeckCard};
 pub use create_deck_profile::{CreateDeckProfile, InvalidCreateDeckProfile};
 pub use delete_deck::{DeleteDeck, InvalidDeleteDeck};
