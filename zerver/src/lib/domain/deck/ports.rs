@@ -8,6 +8,7 @@ use std::future::Future;
 use zwipe_core::domain::card::Card;
 use crate::domain::deck::models::{
     deck::{
+        clone_deck::CloneDeckError,
         create_deck_profile::CreateDeckProfileError,
         delete_deck::DeleteDeckError,
         get_deck::GetDeckError,
@@ -24,9 +25,10 @@ use crate::domain::deck::models::{
     },
 };
 use zwipe_core::domain::deck::{
-    Deck, DeckCard,
+    Deck, DeckCard, DeckName,
     deck_profile::DeckProfile,
     requests::{
+        clone_deck::CloneDeck,
         create_deck_card::CreateDeckCard,
         create_deck_profile::CreateDeckProfile,
         delete_deck::DeleteDeck,
@@ -140,6 +142,21 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         request: &ImportDeckCards,
         cards: &[(uuid::Uuid, uuid::Uuid, i32, String)],
     ) -> impl Future<Output = Result<Vec<DeckCard>, ImportDeckCardsError>> + Send;
+
+    // ========
+    //  clone
+    // ========
+
+    /// Transactionally copies a source deck's profile and all entries into a
+    /// new deck owned by `owner_id` with the given `new_name`. Returns the
+    /// new deck's id. The caller must have already verified `owner_id` owns
+    /// `source_deck_id` — this method performs no authorization check.
+    fn clone_deck(
+        &self,
+        source_deck_id: uuid::Uuid,
+        new_name: &DeckName,
+        owner_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<uuid::Uuid, CloneDeckError>> + Send;
 }
 
 /// Service port for deck building business logic.
@@ -225,4 +242,17 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         &self,
         request: &ImportDeckCards,
     ) -> impl Future<Output = Result<ImportDeckCardsResult, ImportDeckCardsError>> + Send;
+
+    // ========
+    //  clone
+    // ========
+
+    /// Clones an existing deck owned by the caller into a new deck with a
+    /// caller-chosen name. Performs source ownership check and deck-count
+    /// limit enforcement, then delegates the transactional copy to the
+    /// repository. Returns the new deck's id.
+    fn clone_deck(
+        &self,
+        request: &CloneDeck,
+    ) -> impl Future<Output = Result<uuid::Uuid, CloneDeckError>> + Send;
 }

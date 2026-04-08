@@ -11,6 +11,7 @@ use crate::{
     domain::deck::{
         models::{
             deck::{
+                clone_deck::CloneDeckError,
                 create_deck_profile::CreateDeckProfileError,
                 delete_deck::DeleteDeckError,
                 get_deck_profile::GetDeckProfileError,
@@ -36,7 +37,7 @@ use crate::{
     },
 };
 use zwipe_core::domain::deck::{
-    DeckCard,
+    DeckCard, DeckName,
     deck_profile::DeckProfile,
     requests::{
         create_deck_card::CreateDeckCard,
@@ -441,5 +442,63 @@ impl DeckRepository for Postgres {
             .await
             .map_err(|e| ImportDeckCardsError::Database(e.into()))?;
         Ok(deck_cards)
+    }
+
+    // =======
+    //  clone
+    // =======
+    async fn clone_deck(
+        &self,
+        source_deck_id: uuid::Uuid,
+        new_name: &DeckName,
+        owner_id: uuid::Uuid,
+    ) -> Result<uuid::Uuid, CloneDeckError> {
+        let mut tx = self.pool.begin().await?;
+
+        // 1. Insert the new deck row by SELECT-ing from the source. Name and
+        //    owner are caller-supplied; commander / partner / background /
+        //    signature_spell / format copy column-to-column, sidestepping
+        //    any Rust-side serialization. Returns only the new id.
+        //
+        //    A unique violation on unique_deck_name_per_user is converted to
+        //    CloneDeckError::Duplicate via the From<sqlx::Error> impl.
+        let new_deck_id = sqlx::query_scalar!(
+            r#"
+            INSERT INTO decks (
+                name, commander_id, partner_commander_id, background_id,
+                signature_spell_id, format, user_id
+            )
+            SELECT
+                $1, commander_id, partner_commander_id, background_id,
+                signature_spell_id, format, $2
+            FROM decks
+            WHERE id = $3
+            RETURNING id
+            "#,
+            new_name.to_string(),
+            owner_id,
+            source_deck_id,
+        )
+        .fetch_one(&mut *tx)
+        .await?;
+
+        // 2. Bulk copy every deck_cards row from source to new deck in a
+        //    single SQL statement. Preserves board / quantity /
+        //    scryfall_data_id / oracle_id verbatim. No Rust-side iteration.
+        sqlx::query!(
+            r#"
+            INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board)
+            SELECT $1, scryfall_data_id, oracle_id, quantity, board
+            FROM deck_cards
+            WHERE deck_id = $2
+            "#,
+            new_deck_id,
+            source_deck_id,
+        )
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+        Ok(new_deck_id)
     }
 }

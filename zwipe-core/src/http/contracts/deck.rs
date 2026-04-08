@@ -182,3 +182,23 @@ impl HttpUpdateDeckProfileBuilder {
         }
     }
 }
+
+/// Deck clone request body.
+///
+/// The source deck id comes from the URL path; this body supplies the
+/// new name for the clone. The caller is identified by the JWT.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct HttpCloneDeck {
+    /// Name for the new deck.
+    pub new_name: String,
+}
+
+/// Deck clone response body.
+///
+/// Returns only the new deck id; the client navigates to the deck view
+/// which loads the full aggregate via its own resources.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct HttpClonedDeck {
+    /// Id of the newly created clone.
+    pub deck_id: Uuid,
+}
