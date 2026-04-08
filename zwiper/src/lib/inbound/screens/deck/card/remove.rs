@@ -89,10 +89,12 @@ pub fn Remove(deck_id: Uuid) -> Element {
     let mut current_index = use_signal(|| 0_usize);
 
     // Swipe config — the stack owns its own SwipeState internally.
+    // Thresholds tuned for responsive rapid swiping: a short drag (60px) OR
+    // a quick flick (1.5 px/ms over the 10px minimum) commits.
     let swipe_config = SwipeConfig::new(
         vec![Direction::Left, Direction::Right, Direction::Up, Direction::Down],
-        150.0,
-        5.0,
+        60.0,
+        1.5,
     );
 
     let current_card = move || {

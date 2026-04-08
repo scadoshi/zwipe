@@ -163,10 +163,12 @@ pub fn Add(deck_id: Uuid) -> Element {
     };
 
     // Swipe config — the stack owns its own SwipeState internally.
+    // Thresholds tuned for responsive rapid swiping: a short drag (60px) OR
+    // a quick flick (1.5 px/ms over the 10px minimum) commits.
     let swipe_config = SwipeConfig::new(
         vec![Direction::Left, Direction::Right, Direction::Up, Direction::Down],
-        150.0, // 150px to commit swipe
-        5.0,   // 5px/ms speed threshold
+        60.0, // distance threshold in px
+        1.5,  // speed threshold in px/ms
     );
 
     // Advance past the just-committed card. The stack fires its on_swipe_*
