@@ -813,8 +813,11 @@ body {
     transform-origin: center;
     will-change: transform;
     pointer-events: none;
-    /* Shared transition duration for peek→top promotion, exit, and return-
-       to-origin. Kept short (200ms) so rapid swiping feels snappy. */
+    /* Shared transition duration for peek→top promotion and sub-threshold
+       return-to-origin. 200ms feels smooth for the grow animation without
+       rate-limiting rapid swipes (gestures never block on this — the new
+       top is interactive the instant parent advances, regardless of whether
+       its grow transition has finished). */
     transition: transform 0.2s ease-out;
 }
 
@@ -871,19 +874,69 @@ body {
 }
 
 .swipe-stack-card.top.card-stack-enter-left {
-    animation: card-stack-enter-left 0.4s ease-out;
+    animation: card-stack-enter-left 0.2s ease-out;
 }
 
 .swipe-stack-card.top.card-stack-enter-right {
-    animation: card-stack-enter-right 0.4s ease-out;
+    animation: card-stack-enter-right 0.2s ease-out;
 }
 
 .swipe-stack-card.top.card-stack-enter-up {
-    animation: card-stack-enter-up 0.4s ease-out;
+    animation: card-stack-enter-up 0.2s ease-out;
 }
 
 .swipe-stack-card.top.card-stack-enter-down {
-    animation: card-stack-enter-down 0.4s ease-out;
+    animation: card-stack-enter-down 0.2s ease-out;
+}
+
+/* Exit animations — overlay cards play these one-shot keyframes when a swipe
+   commits, then remove themselves on animationend. Duration is intentionally
+   slightly longer than the 0.12s peek→top transition so the exiting card is
+   still mid-flight when the new top has finished growing into place — the two
+   animations layer instead of cutting. */
+@keyframes card-stack-exit-left {
+    from {
+        transform: translate(0, 0) rotate(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(-120vw) rotate(-25deg);
+        opacity: 0;
+    }
+}
+
+@keyframes card-stack-exit-right {
+    from {
+        transform: translate(0, 0) rotate(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(120vw) rotate(25deg);
+        opacity: 0;
+    }
+}
+
+@keyframes card-stack-exit-up {
+    from {
+        transform: translate(0, 0);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(-120vh);
+        opacity: 0;
+    }
+}
+
+.swipe-stack-card.swipe-stack-exiting.card-stack-exit-left {
+    animation: card-stack-exit-left 0.18s ease-out forwards;
+}
+
+.swipe-stack-card.swipe-stack-exiting.card-stack-exit-right {
+    animation: card-stack-exit-right 0.18s ease-out forwards;
+}
+
+.swipe-stack-card.swipe-stack-exiting.card-stack-exit-up {
+    animation: card-stack-exit-up 0.18s ease-out forwards;
 }
 
 /* ==============================
@@ -1652,7 +1705,7 @@ body {
 
 .flavor-quote {
     color: var(--text-subtle);
-    animation: flavor-enter 0.4s ease-out 0.1s backwards;
+    animation: flavor-enter 0.2s ease-out 0.1s backwards;
 }
 
 @keyframes content-enter {
