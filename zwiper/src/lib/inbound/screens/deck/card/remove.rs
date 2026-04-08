@@ -3,9 +3,7 @@ use crate::{
     inbound::{
         components::{
             auth::{bouncer::Bouncer, session_upkeep::Upkeep},
-            interactions::swipe::{
-                Swipeable, config::SwipeConfig, direction::Direction, state::SwipeState,
-            },
+            interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
         },
         screens::deck::card::{
             components::action_history::SwipeAction,
@@ -29,7 +27,6 @@ use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpUpdateDeckC
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::{
     Card,
-    scryfall_data::image_uris::ImageUris,
     search_card::{
         card_filter::{builder::CardFilterBuilder, order_by_option::OrderByOption},
         filter_cards::{FilterCards, SortCards},
@@ -57,8 +54,9 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
 
-    let mut is_animating = use_signal(|| false);
-    let mut animation_direction = use_signal(|| Direction::Left);
+    // When Some, the SwipeStack plays a keyframe entering from this direction
+    // on the next top card, and clears it on animationend. Set by undo.
+    let mut entering_direction: Signal<Option<Direction>> = use_signal(|| None);
 
     // Local undo stack
     let mut action_history: Signal<Vec<SwipeAction>> = use_signal(Vec::new);
@@ -90,7 +88,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
     let mut current_index = use_signal(|| 0_usize);
 
-    let swipe_state = use_signal(SwipeState::new);
+    // Swipe config — the stack owns its own SwipeState internally.
     let swipe_config = SwipeConfig::new(
         vec![Direction::Left, Direction::Right, Direction::Up, Direction::Down],
         150.0,
@@ -250,10 +248,15 @@ pub fn Remove(deck_id: Uuid) -> Element {
             return;
         };
 
+        // Ask the stack to play the enter animation from the direction the
+        // card originally exited.
+        entering_direction.set(Some(action.exited().clone()));
+
         match action {
-            SwipeAction::Skip(_) => {
+            SwipeAction::Skip { .. } => {
                 let len = displayed_cards().len();
                 if len == 0 {
+                    entering_direction.set(None);
                     return;
                 }
                 let idx = current_index();
@@ -264,7 +267,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     ToastOptions::default().duration(Duration::from_millis(1500)),
                 );
             }
-            SwipeAction::Do(card) => {
+            SwipeAction::Do { card, .. } => {
                 // Re-insert into displayed cards so the card reappears
                 let card = *card;
                 let idx = current_index();
@@ -274,6 +277,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 session.upkeep(client);
                 let Some(session) = session() else {
                     toast.error("session expired".to_string(), ToastOptions::default());
+                    entering_direction.set(None);
                     return;
                 };
 
@@ -301,7 +305,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     }
                 });
             }
-            SwipeAction::Maybeboard(card) => {
+            SwipeAction::Maybeboard { card, .. } => {
                 // Re-insert into displayed cards so the card reappears
                 let card = *card;
                 let idx = current_index();
@@ -311,6 +315,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 session.upkeep(client);
                 let Some(session) = session() else {
                     toast.error("session expired".to_string(), ToastOptions::default());
+                    entering_direction.set(None);
                     return;
                 };
 
@@ -377,73 +382,49 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 }
 
                 div { class: "form-container",
-                    if let Some(card) = current_card() {
-                        if let Some(ImageUris { large: Some(image_url), .. }) = &card.scryfall_data.image_uris {
-                            Swipeable {
-                                state: swipe_state,
-                                config: swipe_config,
-                                on_swipe_left: move |_| {
-                                    let Some(card) = current_card() else { return; };
-                                    action_history.write().push(SwipeAction::Skip(Box::new(card)));
-                                    toast.info(
-                                        "skipped".to_string(),
-                                        ToastOptions::default().duration(Duration::from_millis(1500)),
-                                    );
-                                    is_animating.set(true);
-                                    animation_direction.set(Direction::Left);
-                                },
-                                on_swipe_right: move |_| {
-                                    let Some(card) = current_card() else { return; };
-                                    action_history.write().push(SwipeAction::Do(Box::new(card)));
-                                    delete_card_from_deck();
-                                    toast.success(
-                                        "removed from deck".to_string(),
-                                        ToastOptions::default().duration(Duration::from_millis(1500)),
-                                    );
-                                    is_animating.set(true);
-                                    animation_direction.set(Direction::Right);
-                                },
-                                on_swipe_up: move |_| {
-                                    let Some(card) = current_card() else { return; };
-                                    action_history.write().push(SwipeAction::Maybeboard(Box::new(card)));
-                                    move_card_to_maybeboard();
-                                    toast.info("moved to maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
-                                    is_animating.set(true);
-                                    animation_direction.set(Direction::Up);
-                                },
-                                on_swipe_down: move |_| {
-                                    undo_last_action();
-                                },
-
-                                img {
-                                    src: "{image_url}",
-                                    alt: "{card.scryfall_data.name}",
-                                    class: "card-image",
-                                    class: if is_animating() { "card-exit-animation" } else { "" },
-                                    style: if is_animating() {
-                                        format!(
-                                            "--card-exit-direction: card-exit-{}",
-                                            animation_direction().to_string().to_lowercase(),
-                                        )
-                                    } else {
-                                        String::new()
-                                    },
-                                    onanimationend: move |_| {
-                                        is_animating.set(false);
-                                        if matches!(animation_direction(), Direction::Right | Direction::Up) {
-                                            remove_current_card();
-                                        } else {
-                                            let len = displayed_cards().len();
-                                            if len > 0 {
-                                                current_index.set((current_index() + 1) % len);
-                                            }
-                                        }
-                                    }
+                    if !displayed_cards().is_empty() {
+                        SwipeStack {
+                            cards: {
+                                let all = displayed_cards();
+                                all.into_iter().skip(current_index()).take(crate::inbound::components::interactions::swipe::STACK_DEPTH).collect::<Vec<_>>()
+                            },
+                            config: swipe_config,
+                            entering: entering_direction,
+                            on_swipe_left: move |card: Card| {
+                                action_history.write().push(SwipeAction::Skip { card: Box::new(card), exited: Direction::Left });
+                                toast.info(
+                                    "skipped".to_string(),
+                                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                                );
+                                // Skip: advance circularly within displayed_cards
+                                let len = displayed_cards().len();
+                                if len > 0 {
+                                    current_index.set((current_index() + 1) % len);
                                 }
-                            }
+                            },
+                            on_swipe_right: move |card: Card| {
+                                action_history.write().push(SwipeAction::Do { card: Box::new(card), exited: Direction::Right });
+                                delete_card_from_deck();
+                                toast.success(
+                                    "removed from deck".to_string(),
+                                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                                );
+                                remove_current_card();
+                            },
+                            on_swipe_up: move |card: Card| {
+                                action_history.write().push(SwipeAction::Maybeboard { card: Box::new(card), exited: Direction::Up });
+                                move_card_to_maybeboard();
+                                toast.info("moved to maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                remove_current_card();
+                            },
+                            on_swipe_down: move |_card: Card| {
+                                undo_last_action();
+                            },
                         }
 
-                        CardInfoDisplay { card }
+                        if let Some(card) = current_card() {
+                            CardInfoDisplay { card }
+                        }
                     } else {
                         CardSkeleton {}
                     }

@@ -785,17 +785,105 @@ body {
 }
 
 /* ===========================
-  specific - swipeable
+  specific - swipe stack
  ============================= */
 
-.swipeable {
+/* Container holds STACK_DEPTH absolutely-positioned card wrappers and
+   provides the flex slot the surrounding screen layout expects. */
+.swipe-stack {
+    position: relative;
     width: 100%;
     flex: 1;
     min-height: 0;
+    touch-action: pan-y pinch-zoom;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Each card in the stack — absolutely positioned so peeking layers overlap.
+   The transform transition drives the subtle "new top slides up into place"
+   animation when the slice shifts, and also carries the exit transform. */
+.swipe-stack-card {
+    position: absolute;
+    inset: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    transform-origin: center;
+    will-change: transform;
+    pointer-events: none;
+    /* Shared transition duration for peek→top promotion, exit, and return-
+       to-origin. Kept short (200ms) so rapid swiping feels snappy. */
+    transition: transform 0.2s ease-out;
+}
+
+/* Only the top card receives pointer events; layers beneath just peek. */
+.swipe-stack-card.top {
+    pointer-events: auto;
+}
+
+/* Undo enter animations — the restored card slides in from the direction
+   it originally exited. `forwards` keeps the final frame in sync with the
+   element's normal (origin) inline transform after the animation ends. */
+@keyframes card-stack-enter-left {
+    from {
+        transform: translateX(-120vw) rotate(-25deg);
+        opacity: 0;
+    }
+    to {
+        transform: translate(0, 0) rotate(0);
+        opacity: 1;
+    }
+}
+
+@keyframes card-stack-enter-right {
+    from {
+        transform: translateX(120vw) rotate(25deg);
+        opacity: 0;
+    }
+    to {
+        transform: translate(0, 0) rotate(0);
+        opacity: 1;
+    }
+}
+
+@keyframes card-stack-enter-up {
+    from {
+        transform: translateY(-120vh);
+        opacity: 0;
+    }
+    to {
+        transform: translate(0, 0);
+        opacity: 1;
+    }
+}
+
+@keyframes card-stack-enter-down {
+    from {
+        transform: translateY(120vh);
+        opacity: 0;
+    }
+    to {
+        transform: translate(0, 0);
+        opacity: 1;
+    }
+}
+
+.swipe-stack-card.top.card-stack-enter-left {
+    animation: card-stack-enter-left 0.4s ease-out;
+}
+
+.swipe-stack-card.top.card-stack-enter-right {
+    animation: card-stack-enter-right 0.4s ease-out;
+}
+
+.swipe-stack-card.top.card-stack-enter-up {
+    animation: card-stack-enter-up 0.4s ease-out;
+}
+
+.swipe-stack-card.top.card-stack-enter-down {
+    animation: card-stack-enter-down 0.4s ease-out;
 }
 
 /* ==============================
@@ -955,51 +1043,6 @@ body {
     margin: 0;
     margin-bottom: 0;
     border-width: 2px;
-}
-
-/* ========================
-  specific - card animation
- ========================== */
-
-@keyframes card-exit-right {
-    from {
-        transform: translateX(0);
-        opacity: 1;
-    }
-
-    to {
-        transform: translateX(50px);
-        opacity: 0;
-    }
-}
-
-@keyframes card-exit-left {
-    from {
-        transform: translateX(0);
-        opacity: 1;
-    }
-
-    to {
-        transform: translateX(-50px);
-        opacity: 0;
-    }
-}
-
-@keyframes card-exit-up {
-    from {
-        transform: translateY(0) scale(1);
-        opacity: 1;
-    }
-
-    to {
-        transform: translateY(-50px) scale(0.95);
-        opacity: 0;
-    }
-}
-
-.card-exit-animation {
-    animation: var(--card-exit-direction, card-exit-left) 0.075s ease-out
-        forwards;
 }
 
 /* ========================
