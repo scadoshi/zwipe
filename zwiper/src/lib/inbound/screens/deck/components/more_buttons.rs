@@ -75,7 +75,7 @@ pub(crate) fn MoreButtons(
                 "export cards"
             }
             button {
-                class: "btn",
+                class: "btn btn-danger",
                 onclick: move |_| {
                     show_delete_dialog.set(true);
                 },

@@ -129,12 +129,12 @@ pub fn Profile() -> Element {
                         "preferences"
                     }
                     button {
-                        class: "util-btn",
+                        class: "util-btn util-btn-danger",
                         onclick: move |_| show_logout_dialog.set(true),
                         "logout"
                     }
                     button {
-                        class: "util-btn",
+                        class: "util-btn util-btn-danger",
                         onclick: move |_| show_delete_dialog.set(true),
                         "delete account"
                     }

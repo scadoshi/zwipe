@@ -117,7 +117,7 @@ pub(crate) fn CardFilterSheet(
             class: if open() { "bottom-sheet show" } else { "bottom-sheet" },
 
             div { class: "modal-header",
-                span { class: "text-muted", style: "font-size: 1rem;", "filter" }
+                span { style: "font-size: 1rem; color: var(--accent-tertiary);", "filter" }
             }
 
             div { class: "modal-content",

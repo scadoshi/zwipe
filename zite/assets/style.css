@@ -90,10 +90,12 @@ nav::after {
     display: block;
     letter-spacing: 0;
     transition: letter-spacing 0.15s;
+    color: var(--text-primary);
 }
 
 .nav-brand:hover .nav-logo {
     letter-spacing: 1px;
+    color: var(--accent-secondary);
 }
 
 .nav-brand img {
@@ -320,7 +322,7 @@ code {
 
 .hero .tagline {
     font-size: 0.95rem;
-    color: var(--accent-primary);
+    color: var(--text-primary);
     margin-top: 1rem;
     margin-bottom: 1rem;
     max-width: 30rem;

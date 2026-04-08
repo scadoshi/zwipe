@@ -2,9 +2,8 @@
 
 use dioxus::prelude::*;
 use dioxus_primitives::alert_dialog::{
-    self, AlertDialogActionProps, AlertDialogActionsProps, AlertDialogCancelProps,
-    AlertDialogContentProps, AlertDialogDescriptionProps, AlertDialogRootProps,
-    AlertDialogTitleProps,
+    self, AlertDialogActionsProps, AlertDialogCancelProps, AlertDialogContentProps,
+    AlertDialogDescriptionProps, AlertDialogRootProps, AlertDialogTitleProps,
 };
 
 /// Root container for alert dialogs, managing open/closed state.
@@ -87,14 +86,25 @@ pub fn AlertDialogCancel(props: AlertDialogCancelProps) -> Element {
 }
 
 /// Confirm/action button that triggers the primary action.
+///
+/// Pass `danger: true` for irreversible destructive operations — the button
+/// will render with the `alert-dialog-action-danger` style (red border + text).
 #[component]
-pub fn AlertDialogAction(props: AlertDialogActionProps) -> Element {
+pub fn AlertDialogAction(
+    on_click: EventHandler<MouseEvent>,
+    #[props(default = false)] danger: bool,
+    children: Element,
+) -> Element {
+    let class = if danger {
+        "alert-dialog-action-danger"
+    } else {
+        "alert-dialog-action"
+    };
     rsx! {
         alert_dialog::AlertDialogAction {
-            class: "alert-dialog-action",
-            on_click: props.on_click,
-            attributes: props.attributes,
-            {props.children}
+            class: class,
+            on_click: on_click,
+            {children}
         }
     }
 }
