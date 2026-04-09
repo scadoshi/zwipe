@@ -1,3 +1,4 @@
+use super::components::clone_deck_dialog::CloneDeckDialog;
 use super::components::deck_charts::{DeckCharts, ManaBalanceRow};
 use super::components::deck_profile::DeckProfileSection;
 use super::components::deck_stats::DeckStats;
@@ -106,6 +107,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let show_buy_sheet = use_signal(|| false);
     let mut show_more_sheet = use_signal(|| false);
     let mut show_delete_dialog = use_signal(|| false);
+    let show_clone_dialog = use_signal(|| false);
     let attempt_delete = move || {
         session.upkeep(client);
         let Some(session) = session() else {
@@ -445,9 +447,19 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 show_buy_sheet: show_buy_sheet,
                 show_more_sheet: show_more_sheet,
                 show_delete_dialog: show_delete_dialog,
+                show_clone_dialog: show_clone_dialog,
                 has_cards: metrics.is_some(),
                 tcg_url: tcg_url,
                 ck_url: ck_url,
+            }
+
+            CloneDeckDialog {
+                source_deck_id: deck_id,
+                default_name: deck_profile_resource()
+                    .and_then(|r| r.ok())
+                    .map(|p| format!("{} (clone)", p.name))
+                    .unwrap_or_default(),
+                open: show_clone_dialog,
             }
 
             }

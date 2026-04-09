@@ -9,6 +9,7 @@ pub(crate) fn MoreButtons(
     show_buy_sheet: Signal<bool>,
     show_more_sheet: Signal<bool>,
     show_delete_dialog: Signal<bool>,
+    show_clone_dialog: Signal<bool>,
     has_cards: bool,
     tcg_url: Option<String>,
     ck_url: Option<String>,
@@ -73,6 +74,14 @@ pub(crate) fn MoreButtons(
                     navigator.push(Router::ExportDeck { deck_id });
                 },
                 "export cards"
+            }
+            button {
+                class: "btn",
+                onclick: move |_| {
+                    show_more_sheet.set(false);
+                    show_clone_dialog.set(true);
+                },
+                "clone deck"
             }
             button {
                 class: "btn btn-danger",

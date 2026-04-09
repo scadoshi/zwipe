@@ -3,6 +3,8 @@
 //! Provides traits and implementations for deck CRUD operations:
 //! create, read, update, and delete decks.
 
+/// Clone an existing deck with a new name.
+pub mod clone_deck;
 /// Create a new deck.
 pub mod create_deck;
 /// Delete an existing deck.
