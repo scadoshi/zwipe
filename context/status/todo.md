@@ -82,7 +82,33 @@ Closed API — must request access at edhrec.com/api. Full scope pending what th
 
 ---
 
-## Commander System
+## Clone Deck
+
+Let a user duplicate one of their own decks in a single action — copies the deck profile (format, commander/partner/background/signature spell, colors) and every entry (main, sideboard, maybeboard, quantities, oracle_ids) under a new deck id owned by the same user. Useful for versioning (try a variant without touching the original) and for kicking off a new brew from a proven shell.
+
+### Backend — zerver
+
+- [ ] Add `CloneDeck` request type in `zwipe-core` (`deck/requests/`) — just `{ source_deck_id: Uuid, new_name: Option<DeckName> }`; the server looks up the source and copies server-side.
+- [ ] Add `clone_deck` method on the `DeckRepository` port, implementing it in `zerver/src/lib/outbound/sqlx/deck/` as a single transaction: `SELECT` source + entries, `INSERT` new deck row with owner=caller, `INSERT` all entries with the new deck_id (preserving board, quantity, oracle_id, scryfall_data_id). Return the freshly built `Deck` aggregate.
+- [ ] Service layer: `DeckService::clone_deck(user_id, source_id, new_name) -> Result<Deck, DeckError>` — verifies the caller owns (or is permitted to read) the source deck, generates a name like `"{source.name} (copy)"` if `new_name` is None, and delegates to the repo.
+- [ ] HTTP handler + route: `POST /decks/{source_id}/clone` accepting `HttpCloneDeck { new_name: Option<String> }` and returning the new `Deck` JSON. Wire into `zerver/src/lib/inbound/http/handlers/deck/` and the deck router.
+- [ ] Add contract type `HttpCloneDeck` in `zwipe-core/src/http/contracts/deck/` matching the handler body.
+- [ ] Rate limit: use the existing per-user governor key extractor — no special treatment needed, just make sure the route is under the authenticated router.
+- [ ] Unit tests in zwipe-core for the clone request validation (name length, etc.).
+- [ ] Integration test hitting the real DB (once the SQLx integration suite exists) — verify entries are copied, owner matches caller, new deck has a distinct id.
+
+### Frontend — zwiper
+
+- [ ] Add `ClientCloneDeck` trait in `zwiper/src/lib/outbound/client/deck/` wrapping `POST /decks/{id}/clone`.
+- [ ] Clone button on the deck view screen util-bar (next to existing deck actions — back/filter/refresh). Label: `"clone"`. Icon/text-only consistent with surrounding util-bar buttons.
+- [ ] On click: confirm dialog or inline prompt asking for the new name (default suggestion `"{source.name} (copy)"`, editable).
+- [ ] Call `client.clone_deck()`, on success toast `"cloned to {new_name}"` and navigate to the new deck's view screen. On failure toast the error.
+- [ ] Session upkeep + error handling follows existing patterns in `deck/mod.rs`.
+
+### Docs
+
+- [ ] Update `context/architecture/structure.md` deck section with the new route and repository method.
+- [ ] Mention the feature in the next zite release note pass.
 
 Commander eligibility is computed via query filters, not persisted. Three phases, each building on the last.
 
