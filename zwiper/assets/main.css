@@ -978,8 +978,20 @@ body {
     width: 100%;
     padding: 0.5rem 0;
     box-sizing: border-box;
-    -webkit-mask-image: linear-gradient(to right, transparent, black 2rem, black calc(100% - 2rem), transparent);
-    mask-image: linear-gradient(to right, transparent, black 2rem, black calc(100% - 2rem), transparent);
+    -webkit-mask-image: linear-gradient(
+        to right,
+        transparent,
+        black 2rem,
+        black calc(100% - 2rem),
+        transparent
+    );
+    mask-image: linear-gradient(
+        to right,
+        transparent,
+        black 2rem,
+        black calc(100% - 2rem),
+        transparent
+    );
 }
 
 .carousel-dots-track {
@@ -1003,7 +1015,6 @@ body {
     opacity: 1;
     background: var(--accent-primary);
 }
-
 
 /* ===============
   specific - logo
@@ -1704,7 +1715,7 @@ body {
 }
 
 .flavor-quote {
-    color: var(--text-subtle);
+    color: var(--text-primary);
     animation: flavor-enter 0.2s ease-out 0.1s backwards;
 }
 
