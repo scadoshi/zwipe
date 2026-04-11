@@ -35,9 +35,9 @@ type DeltaPoint = Point2D<f64, UnknownUnit>;
 pub const STACK_DEPTH: usize = 10;
 
 /// Vertical offset per peek layer in pixels.
-const PEEK_OFFSET_PX: f64 = 6.0;
+const PEEK_OFFSET_PX: f64 = 0.0;
 /// Scale reduction per peek layer.
-const PEEK_SCALE_STEP: f64 = 0.03;
+const PEEK_SCALE_STEP: f64 = 0.0;
 /// Degrees of rotation applied per pixel of horizontal drag (the "tilt").
 const TILT_PER_PX: f64 = 0.06;
 

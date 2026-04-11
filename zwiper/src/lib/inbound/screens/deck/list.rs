@@ -85,7 +85,11 @@ pub fn DeckList() -> Element {
                                 }
                             } else {
                                 rsx! {
-                                    for profile in deck_profiles.iter().map(|x| x.to_owned()) {
+                                    for profile in {
+                                        let mut sorted = deck_profiles.clone();
+                                        sorted.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+                                        sorted
+                                    } {
                                         div { class : "card row-enter",
                                             key : "{profile.id}",
                                             onclick : move |_| {
