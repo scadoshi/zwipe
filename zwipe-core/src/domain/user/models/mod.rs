@@ -3,7 +3,7 @@ pub mod theme;
 pub mod username;
 
 pub use preferences::{
-    ALLOWED_THEMES, DARK_ONLY_THEMES, InvalidUpdatePreferences, UpdatePreferences, UserPreferences,
+    ALLOWED_THEMES, InvalidUpdatePreferences, UpdatePreferences, UserPreferences,
 };
 pub use username::{InvalidUsername, Username};
 
