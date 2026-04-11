@@ -65,7 +65,12 @@ where
     let deck_id = uuid::Uuid::try_parse(&deck_id)?;
     let db_user = state.user_service.get_user(&GetUser::from(user.id)).await?;
     let email_verified = db_user.email_verified_at.is_some();
-    let request = ImportDeckCards::parse(user.id, deck_id, &body.text, email_verified);
+    let board_override = body.board
+        .as_deref()
+        .map(zwipe_core::domain::deck::Board::try_from)
+        .transpose()
+        .map_err(|_| ApiError::UnprocessableEntity("invalid board value".to_string()))?;
+    let request = ImportDeckCards::parse(user.id, deck_id, &body.text, email_verified, board_override);
 
     state
         .deck_service

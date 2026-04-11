@@ -22,6 +22,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let toast = use_toast();
 
+    let mut include_deck: Signal<bool> = use_signal(|| true);
     let mut include_sideboard: Signal<bool> = use_signal(|| false);
     let mut include_maybeboard: Signal<bool> = use_signal(|| false);
 
@@ -62,18 +63,12 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
             lines.push(String::new());
         }
 
-        // Active deck cards
-        for entry in deck.entries.iter().filter(|e| e.deck_card.board.is_active()) {
-            lines.push(format!("{} {}", *entry.deck_card.quantity, entry.card.scryfall_data.name));
-        }
-
-        // Sideboard section (only if toggled on AND cards exist)
-        if include_sideboard() {
-            let sb: Vec<_> = deck.entries.iter().filter(|e| e.deck_card.board.is_sideboard()).collect();
-            if !sb.is_empty() {
-                lines.push(String::new());
-                lines.push("// Sideboard".to_string());
-                for entry in sb {
+        // Deck section
+        if include_deck() {
+            let deck_cards: Vec<_> = deck.entries.iter().filter(|e| e.deck_card.board.is_active()).collect();
+            if !deck_cards.is_empty() {
+                lines.push("// Deck".to_string());
+                for entry in deck_cards {
                     lines.push(format!("{} {}", *entry.deck_card.quantity, entry.card.scryfall_data.name));
                 }
             }
@@ -91,15 +86,20 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
             }
         }
 
+        // Sideboard section (only if toggled on AND cards exist)
+        if include_sideboard() {
+            let sb: Vec<_> = deck.entries.iter().filter(|e| e.deck_card.board.is_sideboard()).collect();
+            if !sb.is_empty() {
+                lines.push(String::new());
+                lines.push("// Sideboard".to_string());
+                for entry in sb {
+                    lines.push(format!("{} {}", *entry.deck_card.quantity, entry.card.scryfall_data.name));
+                }
+            }
+        }
+
         Some(lines.join("\n"))
     });
-
-    let has_sideboard = deck_resource()
-        .and_then(|r| r.ok())
-        .is_some_and(|d| d.entries.iter().any(|e| e.deck_card.board.is_sideboard()));
-    let has_maybeboard = deck_resource()
-        .and_then(|r| r.ok())
-        .is_some_and(|d| d.entries.iter().any(|e| e.deck_card.board.is_maybeboard()));
 
     rsx! {
         Bouncer {
@@ -111,23 +111,42 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                 div { class: "screen-content centered content-enter",
                     div { class: "container-sm",
 
-                        if has_sideboard || has_maybeboard {
-                            div { class: "chip-row",
-                                span { class: "chip-row-label", "include:" }
-                                if has_sideboard {
-                                    button {
-                                        class: if include_sideboard() { "chip selected" } else { "chip" },
-                                        onclick: move |_| include_sideboard.set(!include_sideboard()),
-                                        "sideboard"
+                        div { class: "chip-row",
+                            span { class: "chip-row-label", "export:" }
+                            button {
+                                class: if include_deck() { "chip selected" } else { "chip" },
+                                onclick: move |_| {
+                                    let new_val = !include_deck();
+                                    if !new_val && !include_maybeboard() && !include_sideboard() {
+                                        return;
                                     }
-                                }
-                                if has_maybeboard {
-                                    button {
-                                        class: if include_maybeboard() { "chip selected" } else { "chip" },
-                                        onclick: move |_| include_maybeboard.set(!include_maybeboard()),
-                                        "maybeboard"
+                                    include_deck.set(new_val);
+                                },
+                                "deck"
+                            }
+                            button {
+                                class: if include_maybeboard() { "chip selected" } else { "chip" },
+                                onclick: move |_| {
+                                    let new_val = !include_maybeboard();
+                                    include_maybeboard.set(new_val);
+                                    if new_val && !include_deck() && !include_sideboard() {
+                                        // at least one is on, fine
+                                    } else if !new_val && !include_deck() && !include_sideboard() {
+                                        include_deck.set(true);
                                     }
-                                }
+                                },
+                                "maybe"
+                            }
+                            button {
+                                class: if include_sideboard() { "chip selected" } else { "chip" },
+                                onclick: move |_| {
+                                    let new_val = !include_sideboard();
+                                    include_sideboard.set(new_val);
+                                    if !new_val && !include_deck() && !include_maybeboard() {
+                                        include_deck.set(true);
+                                    }
+                                },
+                                "side"
                             }
                         }
 
