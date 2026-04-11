@@ -234,11 +234,10 @@ Small UX improvements to the deck view screen and related flows.
 
 ---
 
-## Theme Audit & Color System — In Progress
+## Theme Audit & Color System — Complete
 
 Full audit and expansion of the theme system. Originally 9 themes, now 15 (including 3 colorblind-accessible).
 
-**Completed:**
 - [x] Define Zwipe color scheme — slate blue-grey bg, magenta off-white text, muted blue accents (`9aa93cdb`)
 - [x] Audit CSS variable usage — semantic consistency across all screens (`9aa93cdb`)
 - [x] Add 3-variable accent system (`--accent-primary/secondary/tertiary`) to every theme (`9aa93cdb`)
@@ -253,9 +252,7 @@ Full audit and expansion of the theme system. Originally 9 themes, now 15 (inclu
 - [x] Add light mode toggle to zite theme picker — dark/light button appears for themes that support it (`a39a0e8c`)
 - [x] Update zite content: home, ios, android pages reflect 15 themes with dark/light modes (`a39a0e8c`)
 - [x] Match hero store buttons to nav store link hover style (`96bef308`)
-
-**Remaining:**
-- [ ] Full visual test — test every theme on every screen, tweak as needed
+- [x] Full visual test — every theme on every screen
 
 ---
 
