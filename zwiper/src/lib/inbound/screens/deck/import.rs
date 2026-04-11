@@ -25,9 +25,11 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
     let mut text = use_signal(String::new);
     let mut loading = use_signal(|| false);
     let mut result: Signal<Option<ImportDeckCardsResult>> = use_signal(|| None);
+    let mut board_selection: Signal<Option<&'static str>> = use_signal(|| None);
     let toast = use_toast();
 
-    let mut attempt_import = move || {
+    let mut do_import = move || {
+        let board = *board_selection.peek();
         result.set(None);
         loading.set(true);
 
@@ -39,7 +41,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                 return;
             };
 
-            match client().import_deck_cards(deck_id, &text(), &session).await {
+            match client().import_deck_cards(deck_id, &text(), board, &session).await {
                 Ok(r) => {
                     result.set(Some(r.clone()));
                     let imported = r.imported.len();
@@ -79,6 +81,16 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
 
                 div { class: "screen-content centered content-enter",
                     div { class: "container-sm",
+                        div { class: "chip-row",
+                            span { class: "chip-row-label", "import:" }
+                            for (label, value) in [("deck", None), ("maybe", Some("maybeboard")), ("side", Some("sideboard"))] {
+                                button {
+                                    class: if *board_selection.read() == value { "chip selected" } else { "chip" },
+                                    onclick: move |_| board_selection.set(value),
+                                    "{label}"
+                                }
+                            }
+                        }
                         label { class: "label", r#for: "import-text", "paste decklist" }
                         textarea {
                             id: "import-text",
@@ -123,7 +135,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                     button {
                         class: "util-btn",
                         disabled: loading(),
-                        onclick: move |_| attempt_import(),
+                        onclick: move |_| do_import(),
                         if loading() { "importing..." } else { "import" }
                     }
                 }

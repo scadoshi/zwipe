@@ -38,8 +38,10 @@ impl ImportDeckCards {
     /// Format: `[qty] [card name]` per line.
     /// Quantity defaults to 1 if the first word is not a number.
     /// Empty and whitespace-only lines are skipped.
-    pub fn parse(user_id: Uuid, deck_id: Uuid, text: &str, email_verified: bool) -> Self {
-        let mut current_board = Board::Deck;
+    /// When `board_override` is `Some`, every imported line is placed on that
+    /// board and section headers in the text are ignored.
+    pub fn parse(user_id: Uuid, deck_id: Uuid, text: &str, email_verified: bool, board_override: Option<Board>) -> Self {
+        let mut current_board = board_override.unwrap_or(Board::Deck);
         let mut lines = Vec::new();
 
         for line in text.lines() {
@@ -49,16 +51,22 @@ impl ImportDeckCards {
             }
 
             // Detect section headers: "// Sideboard", "// Maybeboard", "//Sideboard", etc.
-            let header = trimmed.strip_prefix("//").map(|s| s.trim().to_lowercase());
-            if let Some(ref h) = header {
-                match h.as_str() {
-                    "sideboard" => { current_board = Board::Sideboard; continue; }
-                    "maybeboard" => { current_board = Board::Maybeboard; continue; }
-                    "deck" => { current_board = Board::Deck; continue; }
-                    // Skip other comment headers like "// Commander"
-                    _ if !h.is_empty() => continue,
-                    _ => {}
+            // Skip header detection entirely when a board override is active.
+            if board_override.is_none() {
+                let header = trimmed.strip_prefix("//").map(|s| s.trim().to_lowercase());
+                if let Some(ref h) = header {
+                    match h.as_str() {
+                        "sideboard" => { current_board = Board::Sideboard; continue; }
+                        "maybeboard" => { current_board = Board::Maybeboard; continue; }
+                        "deck" => { current_board = Board::Deck; continue; }
+                        // Skip other comment headers like "// Commander"
+                        _ if !h.is_empty() => continue,
+                        _ => {}
+                    }
                 }
+            } else if trimmed.starts_with("//") {
+                // With override active, still skip comment lines
+                continue;
             }
 
             let (quantity, rest) = match trimmed.split_once(char::is_whitespace) {
@@ -141,7 +149,7 @@ mod tests {
     use super::*;
 
     fn parse_lines(text: &str) -> Vec<ImportLine> {
-        ImportDeckCards::parse(Uuid::nil(), Uuid::nil(), text, false).lines
+        ImportDeckCards::parse(Uuid::nil(), Uuid::nil(), text, false, None).lines
     }
 
     #[test]
@@ -255,5 +263,13 @@ mod tests {
     fn default_board_is_deck() {
         let lines = parse_lines("4 Lightning Bolt");
         assert_eq!(lines[0].board, Board::Deck);
+    }
+
+    #[test]
+    fn board_override_forces_all_lines() {
+        let text = "1 Sol Ring\n// Sideboard\n1 Rest in Peace\n// Deck\n1 Lightning Bolt";
+        let lines = ImportDeckCards::parse(Uuid::nil(), Uuid::nil(), text, false, Some(Board::Maybeboard)).lines;
+        assert_eq!(lines.len(), 3);
+        assert!(lines.iter().all(|l| l.board == Board::Maybeboard));
     }
 }

@@ -71,4 +71,9 @@ impl HttpUpdateDeckCard {
 pub struct HttpImportDeckCards {
     /// Plain-text decklist (one card per line).
     pub text: String,
+    /// Optional board override — when set, all imported cards are placed on
+    /// this board regardless of section headers in the text.
+    /// Values: `"deck"`, `"maybeboard"`, `"sideboard"`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub board: Option<String>,
 }

@@ -16,6 +16,7 @@ pub trait ClientImportDeckCards {
         &self,
         deck_id: Uuid,
         text: &str,
+        board: Option<&str>,
         session: &Session,
     ) -> impl Future<Output = Result<ImportDeckCardsResult, ApiError>> + Send;
 }
@@ -25,6 +26,7 @@ impl ClientImportDeckCards for ZwipeClient {
         &self,
         deck_id: Uuid,
         text: &str,
+        board: Option<&str>,
         session: &Session,
     ) -> Result<ImportDeckCardsResult, ApiError> {
         let mut url = self.app_config.backend_url.clone();
@@ -32,6 +34,7 @@ impl ClientImportDeckCards for ZwipeClient {
 
         let body = HttpImportDeckCards {
             text: text.to_string(),
+            board: board.map(|b| b.to_string()),
         };
 
         let response = self
