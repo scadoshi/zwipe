@@ -26,9 +26,6 @@ pub const ALLOWED_THEMES: &[&str] = &[
     "zwipe",
 ];
 
-/// Themes that do not support light mode.
-pub const DARK_ONLY_THEMES: &[&str] = &["zwipe"];
-
 /// User display preferences.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UserPreferences {
@@ -62,8 +59,6 @@ pub struct UpdatePreferences {
 
 impl UpdatePreferences {
     /// Validates and constructs the request.
-    ///
-    /// Forces `dark_mode = true` for dark-only themes (zwipe).
     pub fn new(
         user_id: Uuid,
         theme: Option<&str>,
@@ -74,11 +69,6 @@ impl UpdatePreferences {
         {
             return Err(InvalidUpdatePreferences::InvalidTheme);
         }
-        // Force dark mode for dark-only themes
-        let dark_mode = match theme {
-            Some(t) if DARK_ONLY_THEMES.contains(&t) => Some(true),
-            _ => dark_mode,
-        };
         Ok(Self {
             user_id,
             theme: theme.map(|t| t.to_string()),
@@ -139,23 +129,6 @@ mod tests {
             result,
             Err(InvalidUpdatePreferences::InvalidTheme)
         ));
-    }
-
-    // =========================
-    //  dark-only theme forcing
-    // =========================
-
-    #[test]
-    fn forces_dark_mode_for_zwipe() {
-        let result = UpdatePreferences::new(Uuid::new_v4(), Some("zwipe"), Some(false)).unwrap();
-        assert_eq!(result.dark_mode, Some(true));
-    }
-
-    #[test]
-    fn allows_light_mode_for_non_dark_only_themes() {
-        let result =
-            UpdatePreferences::new(Uuid::new_v4(), Some("gruvbox"), Some(false)).unwrap();
-        assert_eq!(result.dark_mode, Some(false));
     }
 
     // =======================

@@ -122,7 +122,6 @@ pub fn ThemePicker() -> Element {
     let mut theme: Signal<ThemeConfig> = use_context();
     let current = theme.read().name.clone();
     let is_dark = theme.read().is_dark;
-    let has_light = theme.read().has_light_mode();
 
     rsx! {
         div { class: "theme-picker",
@@ -140,19 +139,17 @@ pub fn ThemePicker() -> Element {
                 }
             }
         }
-        if has_light {
-            div { class: "theme-toggle",
-                button {
-                    class: "theme-btn",
-                    onclick: move |_| {
-                        let current = theme.read().clone();
-                        theme.set(ThemeConfig {
-                            name: current.name,
-                            is_dark: !current.is_dark,
-                        });
-                    },
-                    if is_dark { "light mode" } else { "dark mode" }
-                }
+        div { class: "theme-toggle",
+            button {
+                class: "theme-btn",
+                onclick: move |_| {
+                    let current = theme.read().clone();
+                    theme.set(ThemeConfig {
+                        name: current.name,
+                        is_dark: !current.is_dark,
+                    });
+                },
+                if is_dark { "light mode" } else { "dark mode" }
             }
         }
     }

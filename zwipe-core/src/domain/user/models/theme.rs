@@ -3,7 +3,7 @@
 //! Maps a theme name + dark mode flag to the CSS class that should be applied
 //! to the root element. Shared across zwiper and zite.
 
-use super::preferences::{DARK_ONLY_THEMES, UserPreferences};
+use super::preferences::UserPreferences;
 
 /// Display theme configuration used by the UI.
 #[derive(Clone, PartialEq)]
@@ -17,25 +17,12 @@ pub struct ThemeConfig {
 impl ThemeConfig {
     /// Returns the CSS class to apply to the screen root.
     ///
-    /// Dark-only themes (zwipe) get `theme-{name}`.
-    /// Others get `theme-{name}-{dark|light}`.
+    /// Returns `theme-{name}-{dark|light}`.
     /// The default zwipe theme returns an empty string since `:root` already
     /// defines the zwipe colors.
     pub fn css_class(&self) -> String {
-        if self.name == "zwipe" {
-            // Default theme — no override class needed, :root handles it
-            String::new()
-        } else if DARK_ONLY_THEMES.contains(&self.name.as_str()) {
-            format!("theme-{}", self.name)
-        } else {
-            let mode = if self.is_dark { "dark" } else { "light" };
-            format!("theme-{}-{}", self.name, mode)
-        }
-    }
-
-    /// Whether this theme supports a light mode toggle.
-    pub fn has_light_mode(&self) -> bool {
-        !DARK_ONLY_THEMES.contains(&self.name.as_str())
+        let mode = if self.is_dark { "dark" } else { "light" };
+        format!("theme-{}-{}", self.name, mode)
     }
 }
 

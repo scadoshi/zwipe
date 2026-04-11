@@ -32,23 +32,17 @@ pub fn Preferences() -> Element {
     let mut is_loading = use_signal(|| false);
     let mut saved = use_signal(|| false);
 
-    let is_dark_only = move || {
-        let t = selected_theme();
-        t == "zwipe"
-    };
-
     // Live preview: update theme_config whenever selection changes
     let mut apply_preview = move || {
-        let dark = if is_dark_only() { true } else { selected_dark() };
         theme_config.set(ThemeConfig {
             name: selected_theme(),
-            is_dark: dark,
+            is_dark: selected_dark(),
         });
     };
 
     let mut save = move || {
         is_loading.set(true);
-        let dark_mode = if is_dark_only() { true } else { selected_dark() };
+        let dark_mode = selected_dark();
         let request = HttpUpdatePreferences {
             theme: Some(selected_theme()),
             dark_mode: Some(dark_mode),
@@ -100,9 +94,6 @@ pub fn Preferences() -> Element {
                                 class: if selected_theme() == *theme { "pref-row selected" } else { "pref-row" },
                                 onclick: move |_| {
                                     selected_theme.set(theme.to_string());
-                                    if *theme == "zwipe" {
-                                        selected_dark.set(true);
-                                    }
                                     apply_preview();
                                 },
                                 "{theme}"
@@ -110,11 +101,10 @@ pub fn Preferences() -> Element {
                         }
 
                         div {
-                            class: if is_dark_only() { "pref-toggle disabled" } else { "pref-toggle" },
+                            class: "pref-toggle",
                             span { "dark mode" }
                             button {
                                 class: "pref-toggle-btn",
-                                disabled: is_dark_only(),
                                 onclick: move |_| {
                                     selected_dark.set(!selected_dark());
                                     apply_preview();
