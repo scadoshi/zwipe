@@ -63,7 +63,7 @@ pub fn Artist() -> Element {
                 div { class: "flex flex-wrap gap-1 mb-1",
                     for artist in selected_artists.iter().cloned() {
                         div { class: "chip flex items-center gap-05",
-                            "{artist}"
+                            {artist.to_lowercase()}
                             button { class: "chip-remove",
                                 onclick: move |_| {
                                     let current = filter_builder()
@@ -117,7 +117,7 @@ pub fn Artist() -> Element {
                                                 filter_builder.write().set_artist_equals_any(current);
                                                 artist_is_typing.set(false);
                                             },
-                                            "{artist}"
+                                            {artist.to_lowercase()}
                                         }
                                     }
                                 }
