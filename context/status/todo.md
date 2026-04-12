@@ -231,6 +231,13 @@ Small UX improvements to the deck view screen and related flows.
 - [x] Toast on import completion with chip-bubble result styling (`1725d970`)
 - [x] Replace format chip grid with typeahead input on create/edit deck screens (`c1184ca3`)
 - [x] Fix import card limit check double-counting upserted cards, split verified/unverified error messages (`a4bbb2fc`)
+- [x] Sort maybeboard, sideboard, and tokens on deck card view — sorting now persists across all board sections (`429ca3f4`)
+- [x] Add source selector to add screen: "search" (API) vs "maybeboard" (swipe through maybeboard to promote to deck) with smart filter defaults per mode (`8b2bd03b`)
+- [x] Lowercase filter chip display for set, artist, keywords, oracle words (`a2efee38`)
+- [x] Punctuation-insensitive text search — `strip_punctuation()` utility, trim at build() time, `regexp_replace` on server SQL for name, oracle text, type line, flavor text (`1da507b5`)
+- [x] 13 exclusion filter fields (not-contains + excludes) across full stack with include/exclude UI toggles (`0b1dc82f`)
+- [x] Switch 6 metadata queries (types, keywords, oracle words, artists, sets, languages) from `scryfall_data` (110k) to `latest_cards` (35k) — oracle words drops from ~1.5s to under 1s (`0b1dc82f`)
+- [x] Add `tracing::info!` logging to all 33 client methods in zwiper (`0b1dc82f`)
 
 ---
 
