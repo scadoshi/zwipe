@@ -102,7 +102,7 @@ pub(crate) fn OracleWords() -> Element {
             div { class: "flex flex-wrap gap-1 mb-1",
                 for word in selected_oracle_words.iter().cloned() {
                     div { class: "chip flex items-center gap-05",
-                        "{word}"
+                        {word.to_lowercase()}
                         button { class: "chip-remove",
                             onclick: move |_| {
                                 let mode = oracle_words_mode();
@@ -146,7 +146,7 @@ pub(crate) fn OracleWords() -> Element {
                                             current.push(word.clone());
                                             write_oracle_words(&mut filter_builder.write(), mode, current);
                                         },
-                                        "{word}"
+                                        {word.to_lowercase()}
                                     }
                                 }
                             }

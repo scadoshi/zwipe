@@ -66,7 +66,7 @@ pub fn Set() -> Element {
                 div { class: "flex flex-wrap gap-1 mb-1",
                     for set in selected_sets.iter().cloned() {
                         div { class: "chip flex items-center gap-05",
-                            "{set}"
+                            {set.to_lowercase()}
                             button { class: "chip-remove",
                                 onclick: move |_| {
                                     // Remove from filter_builder directly
@@ -123,7 +123,7 @@ pub fn Set() -> Element {
                                                 filter_builder.write().set_set_equals_any(current);
                                                 is_typing.set(false);
                                             },
-                                            "{set}"
+                                            {set.to_lowercase()}
                                         }
                                     }
                                 }

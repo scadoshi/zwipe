@@ -102,7 +102,7 @@ pub(crate) fn Keywords() -> Element {
             div { class: "flex flex-wrap gap-1 mb-1",
                 for keyword in selected_keywords.iter().cloned() {
                     div { class: "chip flex items-center gap-05",
-                        "{keyword}"
+                        {keyword.to_lowercase()}
                         button { class: "chip-remove",
                             onclick: move |_| {
                                 let mode = keywords_mode();
@@ -146,7 +146,7 @@ pub(crate) fn Keywords() -> Element {
                                             current.push(keyword.clone());
                                             write_keywords(&mut filter_builder.write(), mode, current);
                                         },
-                                        "{keyword}"
+                                        {keyword.to_lowercase()}
                                     }
                                 }
                             }
