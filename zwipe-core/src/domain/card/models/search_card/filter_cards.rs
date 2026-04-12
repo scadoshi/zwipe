@@ -17,7 +17,7 @@
 
 use crate::domain::card::{
     Card,
-    search_card::card_filter::{CardFilter, builder::CardFilterBuilder, order_by_option::OrderByOption},
+    search_card::card_filter::{CardFilter, builder::CardFilterBuilder, order_by_option::OrderByOption, strip_punctuation},
 };
 use crate::domain::deck::DeckEntry;
 use rand::seq::SliceRandom;
@@ -60,23 +60,24 @@ impl FilterCards for Vec<Card> {
 
                 // ── text ──────────────────────────────────────────────────────
                 if let Some(q) = filter.name_contains()
-                    && !sd.name.to_lowercase().contains(&q.to_lowercase())
+                    && !strip_punctuation(&sd.name).to_lowercase().contains(&q.to_lowercase())
                 {
                     return false;
                 }
 
                 if let Some(q) = filter.oracle_text_contains() {
                     match &sd.oracle_text {
-                        Some(text) if text.to_lowercase().contains(&q.to_lowercase()) => {}
+                        Some(text) if strip_punctuation(text).to_lowercase().contains(&q.to_lowercase()) => {}
                         _ => return false,
                     }
                 }
 
                 if let Some(values) = filter.oracle_text_contains_any() {
                     let matches = match &sd.oracle_text {
-                        Some(text) => values
-                            .iter()
-                            .any(|v| text.to_lowercase().contains(&v.to_lowercase())),
+                        Some(text) => {
+                            let stripped = strip_punctuation(text).to_lowercase();
+                            values.iter().any(|v| stripped.contains(&v.to_lowercase()))
+                        }
                         None => false,
                     };
                     if !matches {
@@ -86,9 +87,10 @@ impl FilterCards for Vec<Card> {
 
                 if let Some(values) = filter.oracle_text_contains_all() {
                     let matches = match &sd.oracle_text {
-                        Some(text) => values
-                            .iter()
-                            .all(|v| text.to_lowercase().contains(&v.to_lowercase())),
+                        Some(text) => {
+                            let stripped = strip_punctuation(text).to_lowercase();
+                            values.iter().all(|v| stripped.contains(&v.to_lowercase()))
+                        }
                         None => false,
                     };
                     if !matches {
@@ -164,7 +166,7 @@ impl FilterCards for Vec<Card> {
 
                 if let Some(q) = filter.flavor_text_contains() {
                     match &sd.flavor_text {
-                        Some(text) if text.to_lowercase().contains(&q.to_lowercase()) => {}
+                        Some(text) if strip_punctuation(text).to_lowercase().contains(&q.to_lowercase()) => {}
                         _ => return false,
                     }
                 }
@@ -183,16 +185,17 @@ impl FilterCards for Vec<Card> {
                 // ── types ─────────────────────────────────────────────────────
                 if let Some(q) = filter.type_line_contains() {
                     match &sd.type_line {
-                        Some(tl) if tl.to_lowercase().contains(&q.to_lowercase()) => {}
+                        Some(tl) if strip_punctuation(tl).to_lowercase().contains(&q.to_lowercase()) => {}
                         _ => return false,
                     }
                 }
 
                 if let Some(values) = filter.type_line_contains_any() {
                     let matches = match &sd.type_line {
-                        Some(tl) => values
-                            .iter()
-                            .any(|v| tl.to_lowercase().contains(&v.to_lowercase())),
+                        Some(tl) => {
+                            let stripped = strip_punctuation(tl).to_lowercase();
+                            values.iter().any(|v| stripped.contains(&v.to_lowercase()))
+                        }
                         None => false,
                     };
                     if !matches {
@@ -202,9 +205,10 @@ impl FilterCards for Vec<Card> {
 
                 if let Some(card_types) = filter.card_type_contains_any() {
                     let matches = match &sd.type_line {
-                        Some(tl) => card_types
-                            .iter()
-                            .any(|ct| tl.to_lowercase().contains(&ct.to_string())),
+                        Some(tl) => {
+                            let stripped = strip_punctuation(tl).to_lowercase();
+                            card_types.iter().any(|ct| stripped.contains(&ct.to_string()))
+                        }
                         None => false,
                     };
                     if !matches {
@@ -214,9 +218,10 @@ impl FilterCards for Vec<Card> {
 
                 if let Some(values) = filter.type_line_contains_all() {
                     let matches = match &sd.type_line {
-                        Some(tl) => values
-                            .iter()
-                            .all(|v| tl.to_lowercase().contains(&v.to_lowercase())),
+                        Some(tl) => {
+                            let stripped = strip_punctuation(tl).to_lowercase();
+                            values.iter().all(|v| stripped.contains(&v.to_lowercase()))
+                        }
                         None => false,
                     };
                     if !matches {
@@ -941,6 +946,41 @@ mod tests {
     }
 
     #[test]
+    fn test_name_contains_ignores_punctuation() {
+        let cards = vec![make_card("Akroma's Will"), make_card("Forest")];
+        let filter = CardFilterBuilder::with_name_contains("akromas will").build().unwrap();
+        let result = cards.filter_by(&filter);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].scryfall_data.name, "Akroma's Will");
+    }
+
+    #[test]
+    fn test_name_contains_ignores_commas() {
+        let cards = vec![make_card("Satya, Aetherflux Genius"), make_card("Forest")];
+        let filter = CardFilterBuilder::with_name_contains("satya aetherflux genius").build().unwrap();
+        let result = cards.filter_by(&filter);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].scryfall_data.name, "Satya, Aetherflux Genius");
+    }
+
+    #[test]
+    fn test_name_contains_trims_whitespace() {
+        let cards = vec![make_card("Lightning Bolt")];
+        let filter = CardFilterBuilder::with_name_contains("  lightning bolt  ").build().unwrap();
+        let result = cards.filter_by(&filter);
+        assert_eq!(result.len(), 1);
+    }
+
+    #[test]
+    fn test_oracle_text_contains_ignores_punctuation() {
+        let mut card = make_card("Test Card");
+        card.scryfall_data.oracle_text = Some("Target creature's controller loses 3 life.".to_string());
+        let filter = CardFilterBuilder::with_oracle_text_contains("creatures controller").build().unwrap();
+        let result = vec![card].filter_by(&filter);
+        assert_eq!(result.len(), 1);
+    }
+
+    #[test]
     fn test_oracle_text_contains() {
         let mut bolt = make_card("Lightning Bolt");
         bolt.scryfall_data.oracle_text = Some("deal 3 damage to any target".to_string());
@@ -1208,7 +1248,11 @@ mod tests {
         token_card.scryfall_data.layout = "token".to_string();
         let regular = make_card("Forest");
         // Default builder has is_playable=Some(true); "token" is not in PLAYABLE_LAYOUTS
-        let filter = CardFilterBuilder::with_name_contains("").build().unwrap();
+        let filter = {
+                let mut b = CardFilterBuilder::default();
+                b.set_legalities_contains_any(vec!["vintage".to_string()]);
+                b
+            }.build().unwrap();
         let result = vec![token_card, regular].filter_by(&filter);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].scryfall_data.name, "Forest");
@@ -1262,7 +1306,11 @@ mod tests {
     #[test]
     fn test_order_by_name_ascending() {
         let cards = vec![make_card("Zap"), make_card("Aardvark"), make_card("Mox")];
-        let mut b = CardFilterBuilder::with_name_contains("");
+        let mut b = {
+                let mut b = CardFilterBuilder::default();
+                b.set_legalities_contains_any(vec!["vintage".to_string()]);
+                b
+            };
         b.set_order_by(OrderByOption::Name).set_ascending(true);
         let filter = b.build().unwrap();
         let result = cards.filter_by(&filter);
@@ -1273,7 +1321,11 @@ mod tests {
     #[test]
     fn test_order_by_name_descending() {
         let cards = vec![make_card("Zap"), make_card("Aardvark"), make_card("Mox")];
-        let mut b = CardFilterBuilder::with_name_contains("");
+        let mut b = {
+                let mut b = CardFilterBuilder::default();
+                b.set_legalities_contains_any(vec!["vintage".to_string()]);
+                b
+            };
         b.set_order_by(OrderByOption::Name).set_ascending(false);
         let filter = b.build().unwrap();
         let result = cards.filter_by(&filter);
@@ -1289,7 +1341,11 @@ mod tests {
         b.scryfall_data.cmc = Some(1.0);
         let mut c = make_card("C");
         c.scryfall_data.cmc = Some(3.0);
-        let mut builder = CardFilterBuilder::with_name_contains("");
+        let mut builder = {
+                let mut b = CardFilterBuilder::default();
+                b.set_legalities_contains_any(vec!["vintage".to_string()]);
+                b
+            };
         builder.set_order_by(OrderByOption::Cmc);
         let filter = builder.build().unwrap();
         let result = vec![a, b, c].filter_by(&filter);
@@ -1302,7 +1358,11 @@ mod tests {
     #[test]
     fn test_limit_caps_results() {
         let cards = vec![make_card("A"), make_card("B"), make_card("C")];
-        let mut b = CardFilterBuilder::with_name_contains("");
+        let mut b = {
+                let mut b = CardFilterBuilder::default();
+                b.set_legalities_contains_any(vec!["vintage".to_string()]);
+                b
+            };
         b.set_limit(2);
         let filter = b.build().unwrap();
         let result = cards.filter_by(&filter);
@@ -1312,7 +1372,11 @@ mod tests {
     #[test]
     fn test_offset_skips_results() {
         let cards = vec![make_card("A"), make_card("B"), make_card("C")];
-        let mut b = CardFilterBuilder::with_name_contains("");
+        let mut b = {
+                let mut b = CardFilterBuilder::default();
+                b.set_legalities_contains_any(vec!["vintage".to_string()]);
+                b
+            };
         b.set_order_by(OrderByOption::Name).set_offset(1);
         let filter = b.build().unwrap();
         let result = cards.filter_by(&filter);

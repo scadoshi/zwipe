@@ -188,13 +188,18 @@ impl CardRepository for MyPostgres {
         );
         let mut sep: Separated<Postgres, &'static str> = qb.separated(" AND ");
 
+        // Strip punctuation from DB columns for punctuation-insensitive text search.
+        // The query values are already stripped by CardFilterBuilder setters.
+        const STRIP_NAME: &str = "regexp_replace(name, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
+        const STRIP_TYPE: &str = "regexp_replace(type_line, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
+
         if let Some(query_string) = &request.name_contains() {
-            sep.push("name ILIKE ");
+            sep.push(STRIP_NAME);
             sep.push_bind_unseparated(format!("%{}%", query_string));
         }
 
         if let Some(query_string) = &request.type_line_contains() {
-            sep.push("type_line ILIKE ");
+            sep.push(STRIP_TYPE);
             sep.push_bind_unseparated(format!("%{}%", query_string));
         }
 
@@ -207,7 +212,7 @@ impl CardRepository for MyPostgres {
                     if i > 0 {
                         sep.push_unseparated(" OR ");
                     }
-                    sep.push_unseparated("type_line ILIKE ");
+                    sep.push_unseparated(STRIP_TYPE);
                     sep.push_bind_unseparated(format!("%{}%", query_string));
                 });
             sep.push_unseparated(") ");
@@ -219,7 +224,7 @@ impl CardRepository for MyPostgres {
                 if i > 0 {
                     sep.push_unseparated(" OR ");
                 }
-                sep.push_unseparated("type_line ILIKE ");
+                sep.push_unseparated(STRIP_TYPE);
                 sep.push_bind_unseparated(format!("%{}%", query_string));
             });
             sep.push_unseparated(") ");
@@ -227,14 +232,14 @@ impl CardRepository for MyPostgres {
 
         if let Some(query_string_array) = &request.type_line_contains_all() {
             for query_string in query_string_array.iter() {
-                sep.push("type_line ILIKE ");
+                sep.push(STRIP_TYPE);
                 sep.push_bind_unseparated(format!("%{}%", query_string));
             }
         }
 
         if let Some(card_types) = &request.card_type_contains_all() {
             for card_type in card_types.iter() {
-                sep.push("type_line ILIKE ");
+                sep.push(STRIP_TYPE);
                 sep.push_bind_unseparated(format!("%{}%", card_type));
             }
         }
@@ -311,8 +316,10 @@ impl CardRepository for MyPostgres {
             sep.push_bind_unseparated(colors.to_short_names());
         }
 
+        const STRIP_ORACLE: &str = "regexp_replace(oracle_text, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
+
         if let Some(query_string) = &request.oracle_text_contains() {
-            sep.push("oracle_text ILIKE ");
+            sep.push(STRIP_ORACLE);
             sep.push_bind_unseparated(format!("%{}%", query_string));
         }
 
@@ -325,7 +332,7 @@ impl CardRepository for MyPostgres {
                     if i > 0 {
                         sep.push_unseparated(" OR ");
                     }
-                    sep.push_unseparated("oracle_text ILIKE ");
+                    sep.push_unseparated(STRIP_ORACLE);
                     sep.push_bind_unseparated(format!("%{}%", query_string));
                 });
             sep.push_unseparated(") ");
@@ -333,7 +340,7 @@ impl CardRepository for MyPostgres {
 
         if let Some(query_string_array) = &request.oracle_text_contains_all() {
             for query_string in query_string_array.iter() {
-                sep.push("oracle_text ILIKE ");
+                sep.push(STRIP_ORACLE);
                 sep.push_bind_unseparated(format!("%{}%", query_string));
             }
         }
@@ -383,7 +390,7 @@ impl CardRepository for MyPostgres {
         }
 
         if let Some(query_string) = &request.flavor_text_contains() {
-            sep.push("flavor_text ILIKE ");
+            sep.push("regexp_replace(flavor_text, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ");
             sep.push_bind_unseparated(format!("%{}%", query_string));
         }
 

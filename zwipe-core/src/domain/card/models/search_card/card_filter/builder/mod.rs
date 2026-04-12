@@ -14,7 +14,7 @@ use crate::domain::{
             rarity::Rarities,
         },
         search_card::{
-            card_filter::{error::InvalidCardFilter, CardFilter, OrderByOption},
+            card_filter::{error::InvalidCardFilter, strip_punctuation, CardFilter, OrderByOption},
             card_type::CardType,
         },
     },
@@ -215,8 +215,9 @@ impl CardFilterBuilder {
 
     /// Creates builder with name filter (case-insensitive substring match).
     pub fn with_name_contains(name_contains: impl Into<String>) -> CardFilterBuilder {
+        let s = name_contains.into();
         CardFilterBuilder {
-            name_contains: Some(name_contains.into()),
+            name_contains: if s.is_empty() { None } else { Some(s) },
             ..CardFilterBuilder::default()
         }
     }
@@ -227,10 +228,11 @@ impl CardFilterBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
+        let v: Vec<String> = oracle_text_contains_any.into_iter()
+            .map(|s| s.into())
+            .collect();
         CardFilterBuilder {
-            oracle_text_contains_any: Some(
-                oracle_text_contains_any.into_iter().map(Into::into).collect(),
-            ),
+            oracle_text_contains_any: if v.is_empty() { None } else { Some(v) },
             ..CardFilterBuilder::default()
         }
     }
@@ -241,10 +243,11 @@ impl CardFilterBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
+        let v: Vec<String> = oracle_text_contains_all.into_iter()
+            .map(|s| s.into())
+            .collect();
         CardFilterBuilder {
-            oracle_text_contains_all: Some(
-                oracle_text_contains_all.into_iter().map(Into::into).collect(),
-            ),
+            oracle_text_contains_all: if v.is_empty() { None } else { Some(v) },
             ..CardFilterBuilder::default()
         }
     }
@@ -293,16 +296,18 @@ impl CardFilterBuilder {
 
     /// Creates builder with oracle text filter (ability text substring match).
     pub fn with_oracle_text_contains(oracle_text_contains: impl Into<String>) -> CardFilterBuilder {
+        let s = oracle_text_contains.into();
         CardFilterBuilder {
-            oracle_text_contains: Some(oracle_text_contains.into()),
+            oracle_text_contains: if s.is_empty() { None } else { Some(s) },
             ..CardFilterBuilder::default()
         }
     }
 
     /// Creates builder with flavor text filter.
     pub fn with_flavor_text_contains(flavor_text_contains: impl Into<String>) -> Self {
+        let s: String = flavor_text_contains.into();
         Self {
-            flavor_text_contains: Some(flavor_text_contains.into()),
+            flavor_text_contains: if s.is_empty() { None } else { Some(s) },
             ..Self::default()
         }
     }
@@ -317,8 +322,9 @@ impl CardFilterBuilder {
 
     /// Creates builder with type line filter (e.g., "Legendary Creature — Dragon").
     pub fn with_type_line_contains(type_line_contains: impl Into<String>) -> CardFilterBuilder {
+        let s = type_line_contains.into();
         CardFilterBuilder {
-            type_line_contains: Some(type_line_contains.into()),
+            type_line_contains: if s.is_empty() { None } else { Some(s) },
             ..CardFilterBuilder::default()
         }
     }
@@ -329,10 +335,11 @@ impl CardFilterBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
+        let v: Vec<String> = type_line_contains_any.into_iter()
+            .map(|s| s.into())
+            .collect();
         CardFilterBuilder {
-            type_line_contains_any: Some(
-                type_line_contains_any.into_iter().map(Into::into).collect(),
-            ),
+            type_line_contains_any: if v.is_empty() { None } else { Some(v) },
             ..CardFilterBuilder::default()
         }
     }
@@ -573,6 +580,32 @@ impl CardFilterBuilder {
             return Err(InvalidCardFilter::Empty);
         }
 
+        // Trim whitespace and strip punctuation from text fields at build time
+        // (not on set, to allow typing spaces/punctuation in the UI).
+        // Returns None if the cleaned value is empty.
+        let clean = |s: &Option<String>| -> Option<String> {
+            s.as_ref()
+                .map(|v| strip_punctuation(v.trim()))
+                .filter(|v| !v.is_empty())
+        };
+        let clean_vec = |v: &Option<Vec<String>>| -> Option<Vec<String>> {
+            v.as_ref().map(|vec| {
+                vec.iter()
+                    .map(|s| strip_punctuation(s.trim()))
+                    .filter(|s| !s.is_empty())
+                    .collect()
+            }).filter(|v: &Vec<String>| !v.is_empty())
+        };
+        // Trim only (no punctuation stripping) for exact-match fields.
+        let trim = |s: &Option<String>| -> Option<String> {
+            s.as_ref().map(|v| v.trim().to_string()).filter(|v| !v.is_empty())
+        };
+        let trim_vec = |v: &Option<Vec<String>>| -> Option<Vec<String>> {
+            v.as_ref().map(|vec| {
+                vec.iter().map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect()
+            }).filter(|v: &Vec<String>| !v.is_empty())
+        };
+
         Ok(CardFilter {
             power_equals: self.power_equals,
             power_range: self.power_range,
@@ -585,19 +618,19 @@ impl CardFilterBuilder {
             produced_mana_contains_any: self.produced_mana_contains_any.clone(),
             produced_mana_contains_all: self.produced_mana_contains_all.clone(),
             rarity_equals_any: self.rarity_equals_any.clone(),
-            set_equals_any: self.set_equals_any.clone(),
-            artist_equals_any: self.artist_equals_any.clone(),
-            name_contains: self.name_contains.clone(),
-            oracle_text_contains: self.oracle_text_contains.clone(),
-            oracle_text_contains_any: self.oracle_text_contains_any.clone(),
-            oracle_text_contains_all: self.oracle_text_contains_all.clone(),
-            keywords_contains_any: self.keywords_contains_any.clone(),
-            keywords_contains_all: self.keywords_contains_all.clone(),
-            flavor_text_contains: self.flavor_text_contains.clone(),
+            set_equals_any: trim_vec(&self.set_equals_any),
+            artist_equals_any: trim_vec(&self.artist_equals_any),
+            name_contains: clean(&self.name_contains),
+            oracle_text_contains: clean(&self.oracle_text_contains),
+            oracle_text_contains_any: clean_vec(&self.oracle_text_contains_any),
+            oracle_text_contains_all: clean_vec(&self.oracle_text_contains_all),
+            keywords_contains_any: trim_vec(&self.keywords_contains_any),
+            keywords_contains_all: trim_vec(&self.keywords_contains_all),
+            flavor_text_contains: clean(&self.flavor_text_contains),
             has_flavor_text: self.has_flavor_text,
-            type_line_contains: self.type_line_contains.clone(),
-            type_line_contains_any: self.type_line_contains_any.clone(),
-            type_line_contains_all: self.type_line_contains_all.clone(),
+            type_line_contains: clean(&self.type_line_contains),
+            type_line_contains_any: clean_vec(&self.type_line_contains_any),
+            type_line_contains_all: clean_vec(&self.type_line_contains_all),
             card_type_contains_any: self.card_type_contains_any.clone(),
             card_type_contains_all: self.card_type_contains_all.clone(),
             is_token: self.is_token,
@@ -606,7 +639,7 @@ impl CardFilterBuilder {
             oversized: self.oversized,
             promo: self.promo,
             content_warning: self.content_warning,
-            language: self.language.clone(),
+            language: trim(&self.language),
             legalities_contains_any: self.legalities_contains_any.clone(),
             is_commander_in_format: self.is_commander_in_format,
             is_partner: self.is_partner,
