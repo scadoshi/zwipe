@@ -36,6 +36,14 @@ use crate::domain::{
 };
 use serde::{Deserialize, Serialize};
 
+/// Strips punctuation from a string, keeping only alphanumeric characters and whitespace.
+/// Used for punctuation-insensitive text search (e.g., "akromas will" matches "Akroma's Will").
+pub fn strip_punctuation(s: &str) -> String {
+    s.chars()
+        .filter(|c| c.is_alphanumeric() || c.is_whitespace())
+        .collect()
+}
+
 /// Validated card search filter with all search criteria.
 ///
 /// Created via [`CardFilterBuilder`](builder::CardFilterBuilder). Contains all
@@ -102,4 +110,45 @@ pub struct CardFilter {
     offset: u32,
     order_by: Option<OrderByOption>,
     ascending: bool,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::strip_punctuation;
+
+    #[test]
+    fn strips_apostrophes() {
+        assert_eq!(strip_punctuation("Akroma's Will"), "Akromas Will");
+    }
+
+    #[test]
+    fn strips_commas() {
+        assert_eq!(
+            strip_punctuation("Satya, Aetherflux Genius"),
+            "Satya Aetherflux Genius"
+        );
+    }
+
+    #[test]
+    fn strips_multiple_punctuation() {
+        assert_eq!(
+            strip_punctuation("Ætherize — the card!"),
+            "Ætherize  the card"
+        );
+    }
+
+    #[test]
+    fn preserves_alphanumeric_and_spaces() {
+        assert_eq!(strip_punctuation("Lightning Bolt"), "Lightning Bolt");
+    }
+
+    #[test]
+    fn empty_string() {
+        assert_eq!(strip_punctuation(""), "");
+    }
+
+    #[test]
+    fn only_punctuation() {
+        assert_eq!(strip_punctuation("!@#$%"), "");
+    }
 }

@@ -10,7 +10,6 @@
 
 use super::{CardFilterBuilder, CardType, Colors, Format, OrderByOption};
 use crate::domain::card::scryfall_data::rarity::Rarities;
-
 impl CardFilterBuilder {
     // =================================
     // Text Filter Setters
@@ -54,7 +53,9 @@ impl CardFilterBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = oracle_text_contains_any.into_iter().map(Into::into).collect();
+        let v: Vec<String> = oracle_text_contains_any.into_iter()
+            .map(|s| s.into())
+            .collect();
         self.oracle_text_contains_any = if v.is_empty() { None } else { Some(v) };
         self
     }
@@ -74,7 +75,9 @@ impl CardFilterBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = oracle_text_contains_all.into_iter().map(Into::into).collect();
+        let v: Vec<String> = oracle_text_contains_all.into_iter()
+            .map(|s| s.into())
+            .collect();
         self.oracle_text_contains_all = if v.is_empty() { None } else { Some(v) };
         self
     }
@@ -98,7 +101,10 @@ impl CardFilterBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = keywords_contains_any.into_iter().map(Into::into).collect();
+        let v: Vec<String> = keywords_contains_any.into_iter()
+            .map(|s| s.into())
+            .filter(|s| !s.is_empty())
+            .collect();
         self.keywords_contains_any = if v.is_empty() { None } else { Some(v) };
         self
     }
@@ -118,7 +124,10 @@ impl CardFilterBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = keywords_contains_all.into_iter().map(Into::into).collect();
+        let v: Vec<String> = keywords_contains_all.into_iter()
+            .map(|s| s.into())
+            .filter(|s| !s.is_empty())
+            .collect();
         self.keywords_contains_all = if v.is_empty() { None } else { Some(v) };
         self
     }
@@ -179,7 +188,9 @@ impl CardFilterBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = type_line_contains_any.into_iter().map(Into::into).collect();
+        let v: Vec<String> = type_line_contains_any.into_iter()
+            .map(|s| s.into())
+            .collect();
         self.type_line_contains_any = if v.is_empty() { None } else { Some(v) };
         self
     }
@@ -212,7 +223,9 @@ impl CardFilterBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = type_line_contains_all.into_iter().map(Into::into).collect();
+        let v: Vec<String> = type_line_contains_all.into_iter()
+            .map(|s| s.into())
+            .collect();
         self.type_line_contains_all = if v.is_empty() { None } else { Some(v) };
         self
     }
@@ -248,7 +261,10 @@ impl CardFilterBuilder {
         &mut self,
         set_equals_any: impl IntoIterator<Item = impl Into<String>>,
     ) -> &mut Self {
-        let s: Vec<String> = set_equals_any.into_iter().map(|x| x.into()).collect();
+        let s: Vec<String> = set_equals_any.into_iter()
+            .map(|x| x.into())
+            .filter(|s| !s.is_empty())
+            .collect();
         self.set_equals_any = if s.is_empty() { None } else { Some(s) };
         self
     }
@@ -264,7 +280,10 @@ impl CardFilterBuilder {
         &mut self,
         artist_equals_any: impl IntoIterator<Item = impl Into<String>>,
     ) -> &mut Self {
-        let s: Vec<String> = artist_equals_any.into_iter().map(|x| x.into()).collect();
+        let s: Vec<String> = artist_equals_any.into_iter()
+            .map(|x| x.into())
+            .filter(|s| !s.is_empty())
+            .collect();
         self.artist_equals_any = if s.is_empty() { None } else { Some(s) };
         self
     }
