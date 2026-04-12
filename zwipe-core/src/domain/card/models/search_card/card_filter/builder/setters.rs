@@ -10,6 +10,7 @@
 
 use super::{CardFilterBuilder, CardType, Colors, Format, OrderByOption};
 use crate::domain::card::scryfall_data::rarity::Rarities;
+
 impl CardFilterBuilder {
     // =================================
     // Text Filter Setters
@@ -701,6 +702,230 @@ impl CardFilterBuilder {
     /// Sets sort direction (ascending vs descending).
     pub fn set_ascending(&mut self, ascending: bool) -> &mut Self {
         self.ascending = ascending;
+        self
+    }
+
+    // =================================
+    // Exclude Filter Setters
+    // =================================
+
+    /// Sets name not-contains filter (punctuation-insensitive). Empty strings = None.
+    pub fn set_name_not_contains(&mut self, name_not_contains: impl Into<String>) -> &mut Self {
+        let s = name_not_contains.into();
+        self.name_not_contains = if s.is_empty() { None } else { Some(s) };
+        self
+    }
+
+    /// Clears the name not-contains filter.
+    pub fn unset_name_not_contains(&mut self) -> &mut Self {
+        self.name_not_contains = None;
+        self
+    }
+
+    /// Sets oracle text not-contains filter (punctuation-insensitive). Empty strings = None.
+    pub fn set_oracle_text_not_contains(&mut self, oracle_text_not_contains: impl Into<String>) -> &mut Self {
+        let s = oracle_text_not_contains.into();
+        self.oracle_text_not_contains = if s.is_empty() { None } else { Some(s) };
+        self
+    }
+
+    /// Clears the oracle text not-contains filter.
+    pub fn unset_oracle_text_not_contains(&mut self) -> &mut Self {
+        self.oracle_text_not_contains = None;
+        self
+    }
+
+    /// Sets oracle text excludes filter (punctuation-insensitive, "has none of these").
+    pub fn set_oracle_text_excludes_any<I, S>(&mut self, oracle_text_excludes_any: I) -> &mut Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        let v: Vec<String> = oracle_text_excludes_any.into_iter()
+            .map(|s| s.into())
+            .collect();
+        self.oracle_text_excludes_any = if v.is_empty() { None } else { Some(v) };
+        self
+    }
+
+    /// Clears the oracle text excludes filter.
+    pub fn unset_oracle_text_excludes_any(&mut self) -> &mut Self {
+        self.oracle_text_excludes_any = None;
+        self
+    }
+
+    /// Sets keywords excludes filter ("has none of these keywords").
+    pub fn set_keywords_excludes<I, S>(&mut self, keywords_excludes: I) -> &mut Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        let v: Vec<String> = keywords_excludes.into_iter()
+            .map(|s| s.into().trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect();
+        self.keywords_excludes = if v.is_empty() { None } else { Some(v) };
+        self
+    }
+
+    /// Clears the keywords excludes filter.
+    pub fn unset_keywords_excludes(&mut self) -> &mut Self {
+        self.keywords_excludes = None;
+        self
+    }
+
+    /// Sets flavor text not-contains filter (punctuation-insensitive). Empty strings = None.
+    pub fn set_flavor_text_not_contains(&mut self, flavor_text_not_contains: impl Into<String>) -> &mut Self {
+        let s = flavor_text_not_contains.into();
+        self.flavor_text_not_contains = if s.is_empty() { None } else { Some(s) };
+        self
+    }
+
+    /// Clears the flavor text not-contains filter.
+    pub fn unset_flavor_text_not_contains(&mut self) -> &mut Self {
+        self.flavor_text_not_contains = None;
+        self
+    }
+
+    /// Sets type line not-contains filter (punctuation-insensitive). Empty strings = None.
+    pub fn set_type_line_not_contains(&mut self, type_line_not_contains: impl Into<String>) -> &mut Self {
+        let s = type_line_not_contains.into();
+        self.type_line_not_contains = if s.is_empty() { None } else { Some(s) };
+        self
+    }
+
+    /// Clears the type line not-contains filter.
+    pub fn unset_type_line_not_contains(&mut self) -> &mut Self {
+        self.type_line_not_contains = None;
+        self
+    }
+
+    /// Sets type line excludes filter (punctuation-insensitive, "has none of these").
+    pub fn set_type_line_excludes_any<I, S>(&mut self, type_line_excludes_any: I) -> &mut Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        let v: Vec<String> = type_line_excludes_any.into_iter()
+            .map(|s| s.into())
+            .collect();
+        self.type_line_excludes_any = if v.is_empty() { None } else { Some(v) };
+        self
+    }
+
+    /// Clears the type line excludes filter.
+    pub fn unset_type_line_excludes_any(&mut self) -> &mut Self {
+        self.type_line_excludes_any = None;
+        self
+    }
+
+    /// Sets card type excludes filter ("has none of these card types").
+    pub fn set_card_type_excludes_any<I>(&mut self, card_type_excludes_any: I) -> &mut Self
+    where
+        I: IntoIterator<Item = CardType>,
+    {
+        let v: Vec<CardType> = card_type_excludes_any.into_iter().collect();
+        self.card_type_excludes_any = if v.is_empty() { None } else { Some(v) };
+        self
+    }
+
+    /// Clears the card type excludes filter.
+    pub fn unset_card_type_excludes_any(&mut self) -> &mut Self {
+        self.card_type_excludes_any = None;
+        self
+    }
+
+    /// Sets mechanical categories excludes filter ("has none of these categories").
+    pub fn set_mechanical_categories_excludes<I, S>(&mut self, mechanical_categories_excludes: I) -> &mut Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        let v: Vec<String> = mechanical_categories_excludes.into_iter()
+            .map(|s| s.into().trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect();
+        self.mechanical_categories_excludes = if v.is_empty() { None } else { Some(v) };
+        self
+    }
+
+    /// Clears the mechanical categories excludes filter.
+    pub fn unset_mechanical_categories_excludes(&mut self) -> &mut Self {
+        self.mechanical_categories_excludes = None;
+        self
+    }
+
+    /// Sets produced mana excludes filter ("does not produce any of these").
+    pub fn set_produced_mana_excludes<I, S>(&mut self, produced_mana_excludes: I) -> &mut Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        let v: Vec<String> = produced_mana_excludes.into_iter()
+            .map(|s| s.into().trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect();
+        self.produced_mana_excludes = if v.is_empty() { None } else { Some(v) };
+        self
+    }
+
+    /// Clears the produced mana excludes filter.
+    pub fn unset_produced_mana_excludes(&mut self) -> &mut Self {
+        self.produced_mana_excludes = None;
+        self
+    }
+
+    /// Sets rarity excludes filter ("not any of these rarities").
+    pub fn set_rarity_excludes_any(&mut self, rarity_excludes_any: Rarities) -> &mut Self {
+        self.rarity_excludes_any = if rarity_excludes_any.is_empty() {
+            None
+        } else {
+            Some(rarity_excludes_any)
+        };
+        self
+    }
+
+    /// Clears the rarity excludes filter.
+    pub fn unset_rarity_excludes_any(&mut self) -> &mut Self {
+        self.rarity_excludes_any = None;
+        self
+    }
+
+    /// Sets set excludes filter ("not from any of these sets").
+    pub fn set_set_excludes_any(
+        &mut self,
+        set_excludes_any: impl IntoIterator<Item = impl Into<String>>,
+    ) -> &mut Self {
+        let s: Vec<String> = set_excludes_any.into_iter()
+            .map(|x| x.into().trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect();
+        self.set_excludes_any = if s.is_empty() { None } else { Some(s) };
+        self
+    }
+
+    /// Clears the set excludes filter.
+    pub fn unset_set_excludes_any(&mut self) -> &mut Self {
+        self.set_excludes_any = None;
+        self
+    }
+
+    /// Sets artist excludes filter ("not by any of these artists").
+    pub fn set_artist_excludes_any(
+        &mut self,
+        artist_excludes_any: impl IntoIterator<Item = impl Into<String>>,
+    ) -> &mut Self {
+        let s: Vec<String> = artist_excludes_any.into_iter()
+            .map(|x| x.into().trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect();
+        self.artist_excludes_any = if s.is_empty() { None } else { Some(s) };
+        self
+    }
+
+    /// Clears the artist excludes filter.
+    pub fn unset_artist_excludes_any(&mut self) -> &mut Self {
+        self.artist_excludes_any = None;
         self
     }
 

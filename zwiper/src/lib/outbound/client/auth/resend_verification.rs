@@ -3,6 +3,7 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
+use tracing::info;
 use zwipe::inbound::http::{routes::resend_verification_route, ApiError};
 use zwipe_core::domain::auth::models::session::Session;
 
@@ -19,6 +20,7 @@ impl ClientResendEmailVerification for ZwipeClient {
     async fn resend_verification(&self, session: &Session) -> Result<(), ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&resend_verification_route());
+        info!("POST {}", url);
         let response = self
             .client
             .post(url)

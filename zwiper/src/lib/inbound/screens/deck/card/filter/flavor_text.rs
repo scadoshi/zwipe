@@ -13,6 +13,11 @@ pub fn FlavorText() -> Element {
         .unwrap_or("")
         .to_string();
 
+    let flavor_text_not_value = filter_builder()
+        .flavor_text_not_contains()
+        .unwrap_or("")
+        .to_string();
+
     rsx! {
         div { class: "flex-col gap-half",
             div { class: "label-row mt-2",
@@ -36,6 +41,29 @@ pub fn FlavorText() -> Element {
                 spellcheck: "false",
                 oninput: move |event| {
                     filter_builder.write().set_flavor_text_contains(event.value());
+                }
+            }
+            div { class: "label-row mt-2",
+                label { class: "label-xs", r#for: "flavor-text-not-contains", "flavor text doesn't contain" }
+                if filter_builder().flavor_text_not_contains().is_some() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| {
+                            filter_builder.write().unset_flavor_text_not_contains();
+                        },
+                        "×"
+                    }
+                }
+            }
+            input { class: "input input-compact",
+                id: "flavor-text-not-contains",
+                placeholder: "flavor text doesn't contain",
+                value: flavor_text_not_value,
+                r#type: "text",
+                autocapitalize: "none",
+                spellcheck: "false",
+                oninput: move |event| {
+                    filter_builder.write().set_flavor_text_not_contains(event.value());
                 }
             }
         }

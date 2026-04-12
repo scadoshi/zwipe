@@ -3,6 +3,7 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
+use tracing::info;
 use uuid::Uuid;
 use zwipe::{
     inbound::http::{routes::get_card_route, ApiError},
@@ -24,6 +25,7 @@ impl ClientGetCard for ZwipeClient {
     async fn get_card(&self, scryfall_data_id: Uuid, session: &Session) -> Result<Card, ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&get_card_route(scryfall_data_id));
+        info!("GET {}", url);
 
         let response = self
             .client

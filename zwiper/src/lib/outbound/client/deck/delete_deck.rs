@@ -3,6 +3,7 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
+use tracing::info;
 use uuid::Uuid;
 use zwipe::{
     inbound::http::{routes::delete_deck_route, ApiError},
@@ -23,6 +24,7 @@ impl ClientDeleteDeck for ZwipeClient {
     async fn delete_deck(&self, deck_id: Uuid, session: &Session) -> Result<(), ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&delete_deck_route(deck_id));
+        info!("DELETE {}", url);
 
         let response = self
             .client

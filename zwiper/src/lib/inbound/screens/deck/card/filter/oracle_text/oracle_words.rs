@@ -10,21 +10,13 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuild
 use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::auth::models::session::Session;
 
-/// Read selected oracle words from the filter builder based on current mode.
 fn read_oracle_words(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<String> {
     match mode {
-        MatchMode::Any => fb
-            .oracle_text_contains_any()
-            .map(|v| v.to_vec())
-            .unwrap_or_default(),
-        MatchMode::All => fb
-            .oracle_text_contains_all()
-            .map(|v| v.to_vec())
-            .unwrap_or_default(),
+        MatchMode::Any => fb.oracle_text_contains_any().map(|v| v.to_vec()).unwrap_or_default(),
+        MatchMode::All => fb.oracle_text_contains_all().map(|v| v.to_vec()).unwrap_or_default(),
     }
 }
 
-/// Write oracle words to the filter builder based on current mode.
 fn write_oracle_words(fb: &mut CardFilterBuilder, mode: MatchMode, values: Vec<String>) {
     fb.unset_oracle_text_contains_any();
     fb.unset_oracle_text_contains_all();
@@ -36,7 +28,19 @@ fn write_oracle_words(fb: &mut CardFilterBuilder, mode: MatchMode, values: Vec<S
     }
 }
 
-/// Oracle words chip multi-select with any/all match mode toggle.
+fn read_excluded(fb: &CardFilterBuilder) -> Vec<String> {
+    fb.oracle_text_excludes_any().map(|v| v.to_vec()).unwrap_or_default()
+}
+
+fn write_excluded(fb: &mut CardFilterBuilder, values: Vec<String>) {
+    if values.is_empty() {
+        fb.unset_oracle_text_excludes_any();
+    } else {
+        fb.set_oracle_text_excludes_any(values);
+    }
+}
+
+/// Oracle words chip multi-select with separate include and exclude sections.
 #[component]
 pub(crate) fn OracleWords() -> Element {
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
@@ -57,6 +61,7 @@ pub(crate) fn OracleWords() -> Element {
         });
 
     let mut oracle_words_search = use_signal(String::new);
+    let mut excludes_search = use_signal(String::new);
 
     let mut oracle_words_mode = use_signal(|| {
         if filter_builder().oracle_text_contains_all().is_some() {
@@ -69,13 +74,16 @@ pub(crate) fn OracleWords() -> Element {
     use_effect(move || {
         let _ = filter_reset();
         oracle_words_search.set(String::new());
+        excludes_search.set(String::new());
     });
 
     let selected_oracle_words = read_oracle_words(&filter_builder(), oracle_words_mode());
+    let excluded_oracle_words = read_excluded(&filter_builder());
 
     rsx! {
+        // ── includes ──────────────────────────────────────────────
         div { class: "label-row mt-2",
-            label { class: "label-xs", r#for: "oracle-words-search", "oracle words contains" }
+            label { class: "label-xs", r#for: "oracle-words-search", "oracle words include" }
             button {
                 class: "clear-btn",
                 onclick: move |_| {
@@ -101,7 +109,7 @@ pub(crate) fn OracleWords() -> Element {
         if !selected_oracle_words.is_empty() {
             div { class: "flex flex-wrap gap-1 mb-1",
                 for word in selected_oracle_words.iter().cloned() {
-                    div { class: "chip flex items-center gap-05",
+                    div { class: "chip selected flex items-center gap-05",
                         {word.to_lowercase()}
                         button { class: "chip-remove",
                             onclick: move |_| {
@@ -123,13 +131,12 @@ pub(crate) fn OracleWords() -> Element {
             if let Some(Ok(words)) = all_oracle_words.read().as_ref() {
                 {
                     let query = oracle_words_search().to_lowercase();
-                    let already = read_oracle_words(&filter_builder(), oracle_words_mode());
-
                     let results: Vec<String> = words
                         .iter()
                         .filter(|w| {
                             w.to_lowercase().contains(&query)
-                            && !already.contains(w)
+                            && !selected_oracle_words.contains(w)
+                            && !excluded_oracle_words.contains(w)
                         })
                         .take(8)
                         .cloned()
@@ -167,6 +174,90 @@ pub(crate) fn OracleWords() -> Element {
             spellcheck: "false",
             oninput: move |event| {
                 oracle_words_search.set(event.value());
+            }
+        }
+
+        // ── excludes ──────────────────────────────────────────────
+        div { class: "label-row mt-2",
+            label { class: "label-xs", r#for: "oracle-words-excludes-search", "oracle words exclude" }
+            if !excluded_oracle_words.is_empty() {
+                button {
+                    class: "clear-btn",
+                    onclick: move |_| {
+                        write_excluded(&mut filter_builder.write(), vec![]);
+                        excludes_search.set(String::new());
+                    },
+                    "\u{00d7}"
+                }
+            }
+        }
+
+        if !excluded_oracle_words.is_empty() {
+            div { class: "flex flex-wrap gap-1 mb-1",
+                for word in excluded_oracle_words.iter().cloned() {
+                    div { class: "chip selected flex items-center gap-05",
+                        {word.to_lowercase()}
+                        button { class: "chip-remove",
+                            onclick: move |_| {
+                                let new_excluded: Vec<String> = read_excluded(&filter_builder())
+                                    .into_iter()
+                                    .filter(|w| *w != word)
+                                    .collect();
+                                write_excluded(&mut filter_builder.write(), new_excluded);
+                            },
+                            "\u{00d7}"
+                        }
+                    }
+                }
+            }
+        }
+
+        if !excludes_search().is_empty() {
+            if let Some(Ok(words)) = all_oracle_words.read().as_ref() {
+                {
+                    let query = excludes_search().to_lowercase();
+                    let results: Vec<String> = words
+                        .iter()
+                        .filter(|w| {
+                            w.to_lowercase().contains(&query)
+                            && !selected_oracle_words.contains(w)
+                            && !excluded_oracle_words.contains(w)
+                        })
+                        .take(8)
+                        .cloned()
+                        .collect();
+
+                    if !results.is_empty() {
+                        rsx! {
+                            div { class: "flex flex-wrap gap-1 mb-1",
+                                for word in results {
+                                    div { class: "chip-unselected",
+                                        onclick: move |_| {
+                                            let mut current = read_excluded(&filter_builder());
+                                            current.push(word.clone());
+                                            write_excluded(&mut filter_builder.write(), current);
+                                        },
+                                        {word.to_lowercase()}
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        rsx! {}
+                    }
+                }
+            }
+        }
+
+        input { class: "input input-compact",
+            id: "oracle-words-excludes-search",
+            placeholder: "type to search",
+            value: "{excludes_search()}",
+            r#type: "text",
+            autocapitalize: "none",
+            spellcheck: "false",
+            oninput: move |event| {
+                excludes_search.set(event.value());
             }
         }
     }

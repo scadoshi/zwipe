@@ -3,6 +3,7 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
+use tracing::info;
 use zwipe::{
     inbound::http::{routes::search_cards_route, ApiError},
 };
@@ -27,6 +28,8 @@ impl ClientSearchCards for ZwipeClient {
     ) -> Result<Vec<Card>, ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&search_cards_route());
+
+        info!("POST {} filter: {:?}", url, card_filter);
 
         let response = self
             .client

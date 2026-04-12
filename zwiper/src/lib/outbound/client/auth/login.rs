@@ -3,6 +3,7 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
+use tracing::info;
 use zwipe::inbound::http::{routes::login_route, ApiError};
 use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
 use zwipe_core::domain::auth::models::session::Session;
@@ -20,6 +21,7 @@ impl ClientLogin for ZwipeClient {
     async fn authenticate_user(&self, request: HttpAuthenticateUser) -> Result<Session, ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&login_route());
+        info!("POST {}", url);
 
         let response = self.client.post(url).json(&request).send().await?;
 

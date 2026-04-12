@@ -3,6 +3,7 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
+use tracing::info;
 use uuid::Uuid;
 use zwipe::inbound::http::{routes::import_deck_cards_route, ApiError};
 use zwipe_core::http::contracts::deck_card::HttpImportDeckCards;
@@ -36,6 +37,7 @@ impl ClientImportDeckCards for ZwipeClient {
             text: text.to_string(),
             board: board.map(|b| b.to_string()),
         };
+        info!("POST {} body: {:?}", url, body);
 
         let response = self
             .client

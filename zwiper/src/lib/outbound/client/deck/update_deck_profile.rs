@@ -3,6 +3,7 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
+use tracing::info;
 use uuid::Uuid;
 use zwipe::inbound::http::{routes::update_deck_route, ApiError};
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
@@ -29,6 +30,7 @@ impl ClientUpdateDeckProfile for ZwipeClient {
     ) -> Result<DeckProfile, ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&update_deck_route(deck_id));
+        info!("PUT {} body: {:?}", url, body);
 
         let response = self
             .client

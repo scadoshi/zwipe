@@ -3,6 +3,7 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
+use tracing::info;
 use uuid::Uuid;
 use zwipe::{
     inbound::http::{routes::clone_deck_route, ApiError},
@@ -30,6 +31,7 @@ impl ClientCloneDeck for ZwipeClient {
     ) -> Result<HttpClonedDeck, ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&clone_deck_route(source_deck_id));
+        info!("POST {} body: {:?}", url, body);
 
         let response = self
             .client

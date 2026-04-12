@@ -78,28 +78,40 @@ pub struct CardFilterBuilder {
     // produced mana
     produced_mana_contains_any: Option<Vec<String>>,
     produced_mana_contains_all: Option<Vec<String>>,
+    produced_mana_excludes: Option<Vec<String>>,
     // rarity
     rarity_equals_any: Option<Rarities>,
+    rarity_excludes_any: Option<Rarities>,
     // set
     set_equals_any: Option<Vec<String>>,
+    set_excludes_any: Option<Vec<String>>,
     // artist
     artist_equals_any: Option<Vec<String>>,
+    artist_excludes_any: Option<Vec<String>>,
     // text
     name_contains: Option<String>,
+    name_not_contains: Option<String>,
     oracle_text_contains: Option<String>,
+    oracle_text_not_contains: Option<String>,
     oracle_text_contains_any: Option<Vec<String>>,
     oracle_text_contains_all: Option<Vec<String>>,
+    oracle_text_excludes_any: Option<Vec<String>>,
     // keywords
     keywords_contains_any: Option<Vec<String>>,
     keywords_contains_all: Option<Vec<String>>,
+    keywords_excludes: Option<Vec<String>>,
     flavor_text_contains: Option<String>,
+    flavor_text_not_contains: Option<String>,
     has_flavor_text: Option<bool>,
     // types
     type_line_contains: Option<String>,
+    type_line_not_contains: Option<String>,
     type_line_contains_any: Option<Vec<String>>,
     type_line_contains_all: Option<Vec<String>>,
+    type_line_excludes_any: Option<Vec<String>>,
     card_type_contains_any: Option<Vec<CardType>>,
     card_type_contains_all: Option<Vec<CardType>>,
+    card_type_excludes_any: Option<Vec<CardType>>,
     // flags
     is_token: Option<bool>,
     is_playable: Option<bool>,
@@ -119,6 +131,7 @@ pub struct CardFilterBuilder {
     // mechanical category
     mechanical_categories_contains_any: Option<Vec<String>>,
     mechanical_categories_contains_all: Option<Vec<String>>,
+    mechanical_categories_excludes: Option<Vec<String>>,
     // config
     limit: u32,
     offset: u32,
@@ -139,22 +152,34 @@ impl Default for CardFilterBuilder {
             color_identity_equals: None,
             produced_mana_contains_any: None,
             produced_mana_contains_all: None,
+            produced_mana_excludes: None,
             rarity_equals_any: None,
+            rarity_excludes_any: None,
             set_equals_any: None,
+            set_excludes_any: None,
             artist_equals_any: None,
+            artist_excludes_any: None,
             name_contains: None,
+            name_not_contains: None,
             oracle_text_contains: None,
+            oracle_text_not_contains: None,
             oracle_text_contains_any: None,
             oracle_text_contains_all: None,
+            oracle_text_excludes_any: None,
             keywords_contains_any: None,
             keywords_contains_all: None,
+            keywords_excludes: None,
             flavor_text_contains: None,
+            flavor_text_not_contains: None,
             has_flavor_text: None,
             type_line_contains: None,
+            type_line_not_contains: None,
             type_line_contains_any: None,
             type_line_contains_all: None,
+            type_line_excludes_any: None,
             card_type_contains_any: None,
             card_type_contains_all: None,
+            card_type_excludes_any: None,
             is_token: None,
             is_playable: Some(true),
             digital: Some(false),
@@ -169,6 +194,7 @@ impl Default for CardFilterBuilder {
             is_signature_spell: None,
             mechanical_categories_contains_any: None,
             mechanical_categories_contains_all: None,
+            mechanical_categories_excludes: None,
             limit: 100,
             offset: 0,
             order_by: None,
@@ -617,22 +643,34 @@ impl CardFilterBuilder {
             color_identity_equals: self.color_identity_equals.clone(),
             produced_mana_contains_any: self.produced_mana_contains_any.clone(),
             produced_mana_contains_all: self.produced_mana_contains_all.clone(),
+            produced_mana_excludes: self.produced_mana_excludes.clone(),
             rarity_equals_any: self.rarity_equals_any.clone(),
+            rarity_excludes_any: self.rarity_excludes_any.clone(),
             set_equals_any: trim_vec(&self.set_equals_any),
+            set_excludes_any: trim_vec(&self.set_excludes_any),
             artist_equals_any: trim_vec(&self.artist_equals_any),
+            artist_excludes_any: trim_vec(&self.artist_excludes_any),
             name_contains: clean(&self.name_contains),
+            name_not_contains: clean(&self.name_not_contains),
             oracle_text_contains: clean(&self.oracle_text_contains),
+            oracle_text_not_contains: clean(&self.oracle_text_not_contains),
             oracle_text_contains_any: clean_vec(&self.oracle_text_contains_any),
             oracle_text_contains_all: clean_vec(&self.oracle_text_contains_all),
+            oracle_text_excludes_any: clean_vec(&self.oracle_text_excludes_any),
             keywords_contains_any: trim_vec(&self.keywords_contains_any),
             keywords_contains_all: trim_vec(&self.keywords_contains_all),
+            keywords_excludes: trim_vec(&self.keywords_excludes),
             flavor_text_contains: clean(&self.flavor_text_contains),
+            flavor_text_not_contains: clean(&self.flavor_text_not_contains),
             has_flavor_text: self.has_flavor_text,
             type_line_contains: clean(&self.type_line_contains),
+            type_line_not_contains: clean(&self.type_line_not_contains),
             type_line_contains_any: clean_vec(&self.type_line_contains_any),
             type_line_contains_all: clean_vec(&self.type_line_contains_all),
+            type_line_excludes_any: clean_vec(&self.type_line_excludes_any),
             card_type_contains_any: self.card_type_contains_any.clone(),
             card_type_contains_all: self.card_type_contains_all.clone(),
+            card_type_excludes_any: self.card_type_excludes_any.clone(),
             is_token: self.is_token,
             is_playable: self.is_playable,
             digital: self.digital,
@@ -647,10 +685,33 @@ impl CardFilterBuilder {
             is_signature_spell: self.is_signature_spell,
             mechanical_categories_contains_any: self.mechanical_categories_contains_any.clone(),
             mechanical_categories_contains_all: self.mechanical_categories_contains_all.clone(),
+            mechanical_categories_excludes: self.mechanical_categories_excludes.clone(),
             limit: self.limit,
             offset: self.offset,
             order_by: self.order_by,
             ascending: self.ascending,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn exclude_only_is_not_empty() {
+        let mut builder = CardFilterBuilder::new();
+        builder.set_keywords_excludes(vec!["haste"]);
+        assert!(!builder.is_empty(), "keywords_excludes alone should not be empty");
+        assert!(builder.build().is_ok(), "keywords_excludes alone should build");
+    }
+
+    #[test]
+    fn include_and_exclude_builds() {
+        let mut builder = CardFilterBuilder::new();
+        builder.set_keywords_contains_any(vec!["flying"]);
+        builder.set_keywords_excludes(vec!["haste"]);
+        assert!(!builder.is_empty());
+        assert!(builder.build().is_ok());
     }
 }

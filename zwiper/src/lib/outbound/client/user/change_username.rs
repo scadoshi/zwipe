@@ -3,6 +3,7 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
+use tracing::info;
 use zwipe::inbound::http::{routes::change_username_route, ApiError};
 use zwipe_core::http::contracts::auth::HttpChangeUsername;
 use zwipe_core::domain::{auth::models::session::Session, user::User};
@@ -25,6 +26,7 @@ impl ClientChangeUsername for ZwipeClient {
     ) -> Result<User, ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&change_username_route());
+        info!("PUT {}", url);
         let response = self
             .client
             .put(url)

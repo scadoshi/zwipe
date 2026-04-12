@@ -5,21 +5,13 @@ use dioxus::prelude::*;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
 use zwipe_core::domain::card::search_card::card_type::{CardType, WithCardTypes};
 
-/// Read selected card types from the filter builder based on current mode.
 fn read_card_types(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<CardType> {
     match mode {
-        MatchMode::Any => fb
-            .card_type_contains_any()
-            .map(|v| v.to_vec())
-            .unwrap_or_default(),
-        MatchMode::All => fb
-            .card_type_contains_all()
-            .map(|v| v.to_vec())
-            .unwrap_or_default(),
+        MatchMode::Any => fb.card_type_contains_any().map(|v| v.to_vec()).unwrap_or_default(),
+        MatchMode::All => fb.card_type_contains_all().map(|v| v.to_vec()).unwrap_or_default(),
     }
 }
 
-/// Write card types to the filter builder based on current mode.
 fn write_card_types(fb: &mut CardFilterBuilder, mode: MatchMode, values: Vec<CardType>) {
     fb.unset_card_type_contains_any();
     fb.unset_card_type_contains_all();
@@ -31,7 +23,19 @@ fn write_card_types(fb: &mut CardFilterBuilder, mode: MatchMode, values: Vec<Car
     }
 }
 
-/// Basic card type chip grid with match mode toggle.
+fn read_excluded(fb: &CardFilterBuilder) -> Vec<CardType> {
+    fb.card_type_excludes_any().map(|v| v.to_vec()).unwrap_or_default()
+}
+
+fn write_excluded(fb: &mut CardFilterBuilder, values: Vec<CardType>) {
+    if values.is_empty() {
+        fb.unset_card_type_excludes_any();
+    } else {
+        fb.set_card_type_excludes_any(values);
+    }
+}
+
+/// Basic card type filter with separate include and exclude chip grids.
 #[component]
 pub(crate) fn BasicTypes() -> Element {
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
@@ -44,22 +48,26 @@ pub(crate) fn BasicTypes() -> Element {
         }
     });
 
-    let selected_card_types = read_card_types(&filter_builder(), card_type_mode());
+    let selected = read_card_types(&filter_builder(), card_type_mode());
+    let excluded = read_excluded(&filter_builder());
 
     rsx! {
+        // ── basic types (include) ─────────────────────────────────
         div { class: "label-row mt-2",
-            label { class: "label-xs", r#for: "card-type", "basic types" }
-            button {
-                class: "clear-btn",
-                onclick: move |_| {
-                    let new_mode = card_type_mode().toggle();
-                    let current = read_card_types(&filter_builder(), card_type_mode());
-                    write_card_types(&mut filter_builder.write(), new_mode, current);
-                    card_type_mode.set(new_mode);
-                },
-                "{card_type_mode().label()}"
+            label { class: "label-xs", r#for: "card-type", "basic types include" }
+            if !selected.is_empty() {
+                button {
+                    class: "clear-btn",
+                    onclick: move |_| {
+                        let new_mode = card_type_mode().toggle();
+                        let current = read_card_types(&filter_builder(), card_type_mode());
+                        write_card_types(&mut filter_builder.write(), new_mode, current);
+                        card_type_mode.set(new_mode);
+                    },
+                    "{card_type_mode().label()}"
+                }
             }
-            if !selected_card_types.is_empty() {
+            if !selected.is_empty() {
                 button {
                     class: "clear-btn",
                     onclick: move |_| {
@@ -71,9 +79,8 @@ pub(crate) fn BasicTypes() -> Element {
         }
         div { class: "flex flex-wrap gap-1 mb-1 flex-center",
             for card_type in Vec::with_all_card_types() {
-                div { class: if selected_card_types.contains(&card_type) {
-                        "chip selected"
-                    } else { "chip" },
+                div {
+                    class: if selected.contains(&card_type) { "chip selected" } else { "chip" },
                     onclick: move |_| {
                         let mode = card_type_mode();
                         let mut new = read_card_types(&filter_builder(), mode);
@@ -83,6 +90,37 @@ pub(crate) fn BasicTypes() -> Element {
                             new.push(card_type);
                         }
                         write_card_types(&mut filter_builder.write(), mode, new);
+                    },
+                    "{card_type}"
+                }
+            }
+        }
+
+        // ── basic types excludes ──────────────────────────────────
+        div { class: "label-row mt-2",
+            label { class: "label-xs", "basic types exclude" }
+            if !excluded.is_empty() {
+                button {
+                    class: "clear-btn",
+                    onclick: move |_| {
+                        write_excluded(&mut filter_builder.write(), vec![]);
+                    },
+                    "×"
+                }
+            }
+        }
+        div { class: "flex flex-wrap gap-1 mb-1 flex-center",
+            for card_type in Vec::with_all_card_types() {
+                div {
+                    class: if excluded.contains(&card_type) { "chip selected" } else { "chip" },
+                    onclick: move |_| {
+                        let mut exc = read_excluded(&filter_builder());
+                        if exc.contains(&card_type) {
+                            exc.retain(|x| x != &card_type);
+                        } else {
+                            exc.push(card_type);
+                        }
+                        write_excluded(&mut filter_builder.write(), exc);
                     },
                     "{card_type}"
                 }

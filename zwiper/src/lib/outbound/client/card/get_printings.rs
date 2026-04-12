@@ -3,6 +3,7 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
+use tracing::info;
 use uuid::Uuid;
 use zwipe::inbound::http::{routes::get_printings_route, ApiError};
 use zwipe_core::domain::auth::models::session::Session;
@@ -22,6 +23,7 @@ impl ClientGetPrintings for ZwipeClient {
     async fn get_printings(&self, oracle_id: Uuid, session: &Session) -> Result<Vec<Card>, ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&get_printings_route(oracle_id));
+        info!("GET {}", url);
 
         let response = self
             .client

@@ -64,28 +64,40 @@ pub struct CardFilter {
     // produced mana
     produced_mana_contains_any: Option<Vec<String>>,
     produced_mana_contains_all: Option<Vec<String>>,
+    produced_mana_excludes: Option<Vec<String>>,
     // rarity
     rarity_equals_any: Option<Rarities>,
+    rarity_excludes_any: Option<Rarities>,
     // set
     set_equals_any: Option<Vec<String>>,
+    set_excludes_any: Option<Vec<String>>,
     // artist
     artist_equals_any: Option<Vec<String>>,
+    artist_excludes_any: Option<Vec<String>>,
     // text
     name_contains: Option<String>,
+    name_not_contains: Option<String>,
     oracle_text_contains: Option<String>,
+    oracle_text_not_contains: Option<String>,
     oracle_text_contains_any: Option<Vec<String>>,
     oracle_text_contains_all: Option<Vec<String>>,
+    oracle_text_excludes_any: Option<Vec<String>>,
     // keywords
     keywords_contains_any: Option<Vec<String>>,
     keywords_contains_all: Option<Vec<String>>,
+    keywords_excludes: Option<Vec<String>>,
     flavor_text_contains: Option<String>,
+    flavor_text_not_contains: Option<String>,
     has_flavor_text: Option<bool>,
     // types
     type_line_contains: Option<String>,
+    type_line_not_contains: Option<String>,
     type_line_contains_any: Option<Vec<String>>,
     type_line_contains_all: Option<Vec<String>>,
+    type_line_excludes_any: Option<Vec<String>>,
     card_type_contains_any: Option<Vec<CardType>>,
     card_type_contains_all: Option<Vec<CardType>>,
+    card_type_excludes_any: Option<Vec<CardType>>,
     // flags
     is_token: Option<bool>,
     is_playable: Option<bool>,
@@ -105,6 +117,7 @@ pub struct CardFilter {
     // mechanical category
     mechanical_categories_contains_any: Option<Vec<String>>,
     mechanical_categories_contains_all: Option<Vec<String>>,
+    mechanical_categories_excludes: Option<Vec<String>>,
     // config
     limit: u32,
     offset: u32,

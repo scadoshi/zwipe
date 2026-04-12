@@ -55,33 +55,47 @@ pub(crate) fn CardFilterSheet(
         let fb = filter_builder();
         let def = CardFilterBuilder::default();
         (
-            fb.name_contains().is_some(),
+            fb.name_contains().is_some()
+                || fb.name_not_contains().is_some(),
             fb.oracle_text_contains().is_some()
                 || fb.oracle_text_contains_any().is_some()
                 || fb.oracle_text_contains_all().is_some()
                 || fb.keywords_contains_any().is_some()
-                || fb.keywords_contains_all().is_some(),
+                || fb.keywords_contains_all().is_some()
+                || fb.oracle_text_not_contains().is_some()
+                || fb.oracle_text_excludes_any().is_some()
+                || fb.keywords_excludes().is_some(),
             fb.type_line_contains().is_some()
                 || fb.type_line_contains_any().is_some()
                 || fb.type_line_contains_all().is_some()
                 || fb.card_type_contains_any().is_some()
-                || fb.card_type_contains_all().is_some(),
+                || fb.card_type_contains_all().is_some()
+                || fb.type_line_not_contains().is_some()
+                || fb.type_line_excludes_any().is_some()
+                || fb.card_type_excludes_any().is_some(),
             fb.cmc_equals().is_some()
                 || fb.cmc_range().is_some()
                 || fb.color_identity_equals().is_some()
                 || fb.color_identity_within().is_some()
                 || fb.produced_mana_contains_any().is_some()
-                || fb.produced_mana_contains_all().is_some(),
+                || fb.produced_mana_contains_all().is_some()
+                || fb.produced_mana_excludes().is_some(),
             fb.power_equals().is_some()
                 || fb.power_range().is_some()
                 || fb.toughness_equals().is_some()
                 || fb.toughness_range().is_some(),
-            fb.flavor_text_contains().is_some() || fb.has_flavor_text().is_some(),
-            fb.artist_equals_any().is_some(),
-            fb.rarity_equals_any().is_some(),
+            fb.flavor_text_contains().is_some()
+                || fb.has_flavor_text().is_some()
+                || fb.flavor_text_not_contains().is_some(),
+            fb.artist_equals_any().is_some()
+                || fb.artist_excludes_any().is_some(),
+            fb.rarity_equals_any().is_some()
+                || fb.rarity_excludes_any().is_some(),
             fb.mechanical_categories_contains_any().is_some()
-                || fb.mechanical_categories_contains_all().is_some(),
-            fb.set_equals_any().is_some(),
+                || fb.mechanical_categories_contains_all().is_some()
+                || fb.mechanical_categories_excludes().is_some(),
+            fb.set_equals_any().is_some()
+                || fb.set_excludes_any().is_some(),
             fb.order_by().is_some(),
             fb.is_playable() != def.is_playable()
                 || fb.digital() != def.digital()
@@ -138,7 +152,9 @@ pub(crate) fn CardFilterSheet(
                                     class: "clear-btn",
                                     onclick: move |evt| {
                                         evt.stop_propagation();
-                                        filter_builder.write().unset_name_contains();
+                                        let fb = &mut *filter_builder.write();
+                                        fb.unset_name_contains();
+                                        fb.unset_name_not_contains();
                                         bump_filter();
                                     },
                                     "\u{00d7}"
@@ -165,6 +181,9 @@ pub(crate) fn CardFilterSheet(
                                         fb.unset_oracle_text_contains_all();
                                         fb.unset_keywords_contains_any();
                                         fb.unset_keywords_contains_all();
+                                        fb.unset_oracle_text_not_contains();
+                                        fb.unset_oracle_text_excludes_any();
+                                        fb.unset_keywords_excludes();
                                         bump_filter();
                                     },
                                     "\u{00d7}"
@@ -191,6 +210,9 @@ pub(crate) fn CardFilterSheet(
                                         fb.unset_type_line_contains_all();
                                         fb.unset_card_type_contains_any();
                                         fb.unset_card_type_contains_all();
+                                        fb.unset_type_line_not_contains();
+                                        fb.unset_type_line_excludes_any();
+                                        fb.unset_card_type_excludes_any();
                                         bump_filter();
                                     },
                                     "\u{00d7}"
@@ -218,6 +240,7 @@ pub(crate) fn CardFilterSheet(
                                         fb.unset_color_identity_within();
                                         fb.unset_produced_mana_contains_any();
                                         fb.unset_produced_mana_contains_all();
+                                        fb.unset_produced_mana_excludes();
                                         bump_filter();
                                     },
                                     "\u{00d7}"
@@ -265,6 +288,7 @@ pub(crate) fn CardFilterSheet(
                                         evt.stop_propagation();
                                         let fb = &mut *filter_builder.write();
                                         fb.unset_flavor_text_contains();
+                                        fb.unset_flavor_text_not_contains();
                                         fb.unset_has_flavor_text();
                                         bump_filter();
                                     },
@@ -286,7 +310,9 @@ pub(crate) fn CardFilterSheet(
                                     class: "clear-btn",
                                     onclick: move |evt| {
                                         evt.stop_propagation();
-                                        filter_builder.write().unset_artist_equals_any();
+                                        let fb = &mut *filter_builder.write();
+                                        fb.unset_artist_equals_any();
+                                        fb.unset_artist_excludes_any();
                                         bump_filter();
                                     },
                                     "\u{00d7}"
@@ -307,7 +333,9 @@ pub(crate) fn CardFilterSheet(
                                     class: "clear-btn",
                                     onclick: move |evt| {
                                         evt.stop_propagation();
-                                        filter_builder.write().unset_rarity_equals_any();
+                                        let fb = &mut *filter_builder.write();
+                                        fb.unset_rarity_equals_any();
+                                        fb.unset_rarity_excludes_any();
                                         bump_filter();
                                     },
                                     "\u{00d7}"
@@ -331,6 +359,7 @@ pub(crate) fn CardFilterSheet(
                                         let fb = &mut *filter_builder.write();
                                         fb.unset_mechanical_categories_contains_any();
                                         fb.unset_mechanical_categories_contains_all();
+                                        fb.unset_mechanical_categories_excludes();
                                         bump_filter();
                                     },
                                     "\u{00d7}"
@@ -351,7 +380,9 @@ pub(crate) fn CardFilterSheet(
                                     class: "clear-btn",
                                     onclick: move |evt| {
                                         evt.stop_propagation();
-                                        filter_builder.write().unset_set_equals_any();
+                                        let fb = &mut *filter_builder.write();
+                                        fb.unset_set_equals_any();
+                                        fb.unset_set_excludes_any();
                                         bump_filter();
                                     },
                                     "\u{00d7}"

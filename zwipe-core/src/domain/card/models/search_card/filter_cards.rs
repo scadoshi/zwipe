@@ -65,11 +65,25 @@ impl FilterCards for Vec<Card> {
                     return false;
                 }
 
+                if let Some(q) = filter.name_not_contains()
+                    && strip_punctuation(&sd.name).to_lowercase().contains(&q.to_lowercase())
+                {
+                    return false;
+                }
+
                 if let Some(q) = filter.oracle_text_contains() {
                     match &sd.oracle_text {
                         Some(text) if strip_punctuation(text).to_lowercase().contains(&q.to_lowercase()) => {}
                         _ => return false,
                     }
+                }
+
+                if let Some(q) = filter.oracle_text_not_contains()
+                    && sd.oracle_text.as_ref().is_some_and(|text| {
+                        strip_punctuation(text).to_lowercase().contains(&q.to_lowercase())
+                    })
+                {
+                    return false;
                 }
 
                 if let Some(values) = filter.oracle_text_contains_any() {
@@ -98,6 +112,19 @@ impl FilterCards for Vec<Card> {
                     }
                 }
 
+                if let Some(values) = filter.oracle_text_excludes_any() {
+                    let excluded = match &sd.oracle_text {
+                        Some(text) => {
+                            let stripped = strip_punctuation(text).to_lowercase();
+                            values.iter().any(|v| stripped.contains(&v.to_lowercase()))
+                        }
+                        None => false,
+                    };
+                    if excluded {
+                        return false;
+                    }
+                }
+
                 // ── keywords ──────────────────────────────────────────────────
                 if let Some(values) = filter.keywords_contains_any() {
                     let matches = match &sd.keywords {
@@ -115,6 +142,16 @@ impl FilterCards for Vec<Card> {
                         None => false,
                     };
                     if !matches {
+                        return false;
+                    }
+                }
+
+                if let Some(values) = filter.keywords_excludes() {
+                    let excluded = match &sd.keywords {
+                        Some(kw) => values.iter().any(|v| kw.iter().any(|k| k.eq_ignore_ascii_case(v))),
+                        None => false,
+                    };
+                    if excluded {
                         return false;
                     }
                 }
@@ -143,6 +180,17 @@ impl FilterCards for Vec<Card> {
                     }
                 }
 
+                if let Some(values) = filter.mechanical_categories_excludes() {
+                    let excluded = card
+                        .card_profile
+                        .mechanical_categories
+                        .iter()
+                        .any(|cat| values.iter().any(|v| cat.to_string().eq_ignore_ascii_case(v)));
+                    if excluded {
+                        return false;
+                    }
+                }
+
                 // ── produced mana ────────────────────────────────────────────
                 if let Some(values) = filter.produced_mana_contains_any() {
                     let matches = match &sd.produced_mana {
@@ -164,11 +212,29 @@ impl FilterCards for Vec<Card> {
                     }
                 }
 
+                if let Some(values) = filter.produced_mana_excludes() {
+                    let excluded = match &sd.produced_mana {
+                        Some(pm) => values.iter().any(|v| pm.iter().any(|p| p.eq_ignore_ascii_case(v))),
+                        None => false,
+                    };
+                    if excluded {
+                        return false;
+                    }
+                }
+
                 if let Some(q) = filter.flavor_text_contains() {
                     match &sd.flavor_text {
                         Some(text) if strip_punctuation(text).to_lowercase().contains(&q.to_lowercase()) => {}
                         _ => return false,
                     }
+                }
+
+                if let Some(q) = filter.flavor_text_not_contains()
+                    && sd.flavor_text.as_ref().is_some_and(|text| {
+                        strip_punctuation(text).to_lowercase().contains(&q.to_lowercase())
+                    })
+                {
+                    return false;
                 }
 
                 if let Some(want_flavor) = filter.has_flavor_text() {
@@ -188,6 +254,14 @@ impl FilterCards for Vec<Card> {
                         Some(tl) if strip_punctuation(tl).to_lowercase().contains(&q.to_lowercase()) => {}
                         _ => return false,
                     }
+                }
+
+                if let Some(q) = filter.type_line_not_contains()
+                    && sd.type_line.as_ref().is_some_and(|tl| {
+                        strip_punctuation(tl).to_lowercase().contains(&q.to_lowercase())
+                    })
+                {
+                    return false;
                 }
 
                 if let Some(values) = filter.type_line_contains_any() {
@@ -237,6 +311,32 @@ impl FilterCards for Vec<Card> {
                         None => false,
                     };
                     if !matches {
+                        return false;
+                    }
+                }
+
+                if let Some(values) = filter.type_line_excludes_any() {
+                    let excluded = match &sd.type_line {
+                        Some(tl) => {
+                            let stripped = strip_punctuation(tl).to_lowercase();
+                            values.iter().any(|v| stripped.contains(&v.to_lowercase()))
+                        }
+                        None => false,
+                    };
+                    if excluded {
+                        return false;
+                    }
+                }
+
+                if let Some(card_types) = filter.card_type_excludes_any() {
+                    let excluded = match &sd.type_line {
+                        Some(tl) => {
+                            let stripped = strip_punctuation(tl).to_lowercase();
+                            card_types.iter().any(|ct| stripped.contains(&ct.to_string()))
+                        }
+                        None => false,
+                    };
+                    if excluded {
                         return false;
                     }
                 }
@@ -312,14 +412,34 @@ impl FilterCards for Vec<Card> {
                     return false;
                 }
 
+                if let Some(rarities) = filter.rarity_excludes_any()
+                    && rarities.contains(&sd.rarity)
+                {
+                    return false;
+                }
+
                 if let Some(sets) = filter.set_equals_any()
                     && !sets.iter().any(|s| s == &sd.set)
                 {
                     return false;
                 }
 
+                if let Some(sets) = filter.set_excludes_any()
+                    && sets.iter().any(|s| s == &sd.set)
+                {
+                    return false;
+                }
+
                 if let Some(artists) = filter.artist_equals_any()
                     && !artists
+                        .iter()
+                        .any(|a| Some(a.as_str()) == sd.artist.as_deref())
+                {
+                    return false;
+                }
+
+                if let Some(artists) = filter.artist_excludes_any()
+                    && artists
                         .iter()
                         .any(|a| Some(a.as_str()) == sd.artist.as_deref())
                 {
