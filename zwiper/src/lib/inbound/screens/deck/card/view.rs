@@ -517,17 +517,25 @@ pub fn View(deck_id: Uuid) -> Element {
 
                     // Token list
                     if show_tokens() {
-                        if let Some(Ok(tokens)) = tokens_resource() {
-                            if !tokens.is_empty() {
-                                div { class: "card-group row-enter",
-                                    div { class: "card-group-header", "tokens ({tokens.len()})" }
-                                    for token in tokens.iter() {
-                                        CardRow {
-                                            card: token.clone(),
-                                            qty: 1,
-                                            expanded_card,
-                                            preview_image_url,
-                                            preview_dismissing,
+                        {
+                            let sorted_tokens: Option<Vec<Card>> = tokens_resource().and_then(|r| r.ok()).map(|mut t| {
+                                t.sort_by_filter(&filter_builder.peek());
+                                t
+                            });
+                            rsx! {
+                                if let Some(tokens) = sorted_tokens {
+                                    if !tokens.is_empty() {
+                                        div { class: "card-group row-enter",
+                                            div { class: "card-group-header", "tokens ({tokens.len()})" }
+                                            for token in tokens.iter() {
+                                                CardRow {
+                                                    card: token.clone(),
+                                                    qty: 1,
+                                                    expanded_card,
+                                                    preview_image_url,
+                                                    preview_dismissing,
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -537,10 +545,11 @@ pub fn View(deck_id: Uuid) -> Element {
 
                     // Maybeboard section
                     {
-                        let mb_entries: Vec<DeckEntry> = deck_entries()
+                        let mut mb_entries: Vec<DeckEntry> = deck_entries()
                             .into_iter()
                             .filter(|e| e.deck_card.board.is_maybeboard())
                             .collect();
+                        mb_entries.sort_by_filter(&filter_builder.peek());
                         let mb_count = mb_entries.len();
                         rsx! {
                             if show_maybe() && !mb_entries.is_empty() {
@@ -577,10 +586,11 @@ pub fn View(deck_id: Uuid) -> Element {
 
                     // Sideboard section
                     {
-                        let sb_entries: Vec<DeckEntry> = deck_entries()
+                        let mut sb_entries: Vec<DeckEntry> = deck_entries()
                             .into_iter()
                             .filter(|e| e.deck_card.board.is_sideboard())
                             .collect();
+                        sb_entries.sort_by_filter(&filter_builder.peek());
                         let sb_count = sb_entries.len();
                         rsx! {
                             if show_side() && !sb_entries.is_empty() {
