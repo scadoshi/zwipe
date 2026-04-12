@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT DISTINCT subtype FROM (\n                SELECT TRIM(BOTH ':-?, ' FROM UNNEST(STRING_TO_ARRAY(type_line, ' '))) subtype\n                FROM latest_cards\n            ) subtypes\n            WHERE subtype NOT IN ('//', '-', 'the', 'of', 'and/or', 'you', 'you''ll')\n            ORDER BY subtype ASC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "subtype",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "0d66e27c13db213ac6a67792978f49ec0e897c7587c613df36217504b2fcd16f"
+}
