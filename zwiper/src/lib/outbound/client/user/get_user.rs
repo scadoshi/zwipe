@@ -3,6 +3,7 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
+use tracing::info;
 use zwipe::inbound::http::{routes::get_user_route, ApiError};
 use zwipe_core::domain::{auth::models::session::Session, user::User};
 
@@ -16,6 +17,7 @@ impl ClientGetUser for ZwipeClient {
     async fn get_user(&self, session: &Session) -> Result<User, ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&get_user_route());
+        info!("GET {}", url);
 
         let response = self
             .client

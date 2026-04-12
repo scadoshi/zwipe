@@ -3,6 +3,7 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
+use tracing::info;
 use zwipe::inbound::http::{routes::change_password_route, ApiError};
 use zwipe_core::http::contracts::auth::HttpChangePassword;
 use zwipe_core::domain::auth::models::session::Session;
@@ -25,6 +26,7 @@ impl ClientChangePassword for ZwipeClient {
     ) -> Result<(), ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&change_password_route());
+        info!("PUT {}", url);
         let response = self
             .client
             .put(url)

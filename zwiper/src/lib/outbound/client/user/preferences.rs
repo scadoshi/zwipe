@@ -3,6 +3,7 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
+use tracing::info;
 use zwipe::inbound::http::{routes::preferences_route, ApiError};
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 use zwipe_core::domain::{
@@ -33,6 +34,7 @@ impl ClientGetPreferences for ZwipeClient {
     async fn get_preferences(&self, session: &Session) -> Result<UserPreferences, ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&preferences_route());
+        info!("GET {}", url);
         let response = self
             .client
             .get(url)
@@ -63,6 +65,7 @@ impl ClientUpdatePreferences for ZwipeClient {
     ) -> Result<UserPreferences, ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&preferences_route());
+        info!("PUT {} body: {:?}", url, request);
         let response = self
             .client
             .put(url)

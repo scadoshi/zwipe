@@ -10,6 +10,8 @@ pub fn Name() -> Element {
 
     let name_value = filter_builder().name_contains().unwrap_or("").to_string();
 
+    let name_not_value = filter_builder().name_not_contains().unwrap_or("").to_string();
+
     rsx! {
         div { class: "flex-col gap-half",
             div { class: "label-row mt-2",
@@ -33,6 +35,29 @@ pub fn Name() -> Element {
                 spellcheck: "false",
                 oninput: move |event| {
                     filter_builder.write().set_name_contains(event.value());
+                }
+            }
+            div { class: "label-row mt-2",
+                label { class: "label-xs", r#for: "name-not-contains", "name doesn't contain" }
+                if filter_builder().name_not_contains().is_some() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| {
+                            filter_builder.write().unset_name_not_contains();
+                        },
+                        "×"
+                    }
+                }
+            }
+            input { class: "input input-compact",
+                id: "name-not-contains",
+                placeholder: "name doesn't contain",
+                value: name_not_value,
+                r#type: "text",
+                autocapitalize: "none",
+                spellcheck: "false",
+                oninput: move |event| {
+                    filter_builder.write().set_name_not_contains(event.value());
                 }
             }
         }

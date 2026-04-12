@@ -260,6 +260,63 @@ impl CardFilterBuilder {
         self.mechanical_categories_contains_all.as_deref()
     }
 
+    /// Returns the mechanical category excludes filter.
+    pub fn mechanical_categories_excludes(&self) -> Option<&[String]> {
+        self.mechanical_categories_excludes.as_deref()
+    }
+
+    // =================================
+    // Exclude Filter Getters
+    // =================================
+
+    pub fn name_not_contains(&self) -> Option<&str> {
+        self.name_not_contains.as_deref()
+    }
+
+    pub fn oracle_text_not_contains(&self) -> Option<&str> {
+        self.oracle_text_not_contains.as_deref()
+    }
+
+    pub fn oracle_text_excludes_any(&self) -> Option<&[String]> {
+        self.oracle_text_excludes_any.as_deref()
+    }
+
+    pub fn keywords_excludes(&self) -> Option<&[String]> {
+        self.keywords_excludes.as_deref()
+    }
+
+    pub fn flavor_text_not_contains(&self) -> Option<&str> {
+        self.flavor_text_not_contains.as_deref()
+    }
+
+    pub fn type_line_not_contains(&self) -> Option<&str> {
+        self.type_line_not_contains.as_deref()
+    }
+
+    pub fn type_line_excludes_any(&self) -> Option<&[String]> {
+        self.type_line_excludes_any.as_deref()
+    }
+
+    pub fn card_type_excludes_any(&self) -> Option<&[CardType]> {
+        self.card_type_excludes_any.as_deref()
+    }
+
+    pub fn produced_mana_excludes(&self) -> Option<&[String]> {
+        self.produced_mana_excludes.as_deref()
+    }
+
+    pub fn rarity_excludes_any(&self) -> Option<&Rarities> {
+        self.rarity_excludes_any.as_ref()
+    }
+
+    pub fn set_excludes_any(&self) -> Option<&[String]> {
+        self.set_excludes_any.as_deref()
+    }
+
+    pub fn artist_excludes_any(&self) -> Option<&[String]> {
+        self.artist_excludes_any.as_deref()
+    }
+
     // =================================
     // Pagination & Config Getters
     // =================================

@@ -3,6 +3,7 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
+use tracing::info;
 use zwipe::inbound::http::{routes::delete_user_route, ApiError};
 use zwipe_core::http::contracts::auth::HttpDeleteUser;
 use zwipe_core::domain::auth::models::session::Session;
@@ -25,6 +26,7 @@ impl ClientDeleteUser for ZwipeClient {
     ) -> Result<(), ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&delete_user_route());
+        info!("DELETE {}", url);
         let response = self
             .client
             .delete(url)

@@ -3,6 +3,7 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
+use tracing::info;
 use uuid::Uuid;
 use zwipe::inbound::http::{routes::get_deck_profile_route, ApiError};
 use zwipe_core::domain::auth::models::session::Session;
@@ -26,6 +27,7 @@ impl ClientGetDeckProfile for ZwipeClient {
     ) -> Result<DeckProfile, ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&get_deck_profile_route(deck_id));
+        info!("GET {}", url);
         let response = self
             .client
             .get(url)

@@ -198,6 +198,13 @@ impl CardRepository for MyPostgres {
             sep.push_bind_unseparated(format!("%{}%", query_string));
         }
 
+        if let Some(query_string) = &request.name_not_contains() {
+            sep.push("NOT (");
+            sep.push_unseparated(STRIP_NAME);
+            sep.push_bind_unseparated(format!("%{}%", query_string));
+            sep.push_unseparated(")");
+        }
+
         if let Some(query_string) = &request.type_line_contains() {
             sep.push(STRIP_TYPE);
             sep.push_bind_unseparated(format!("%{}%", query_string));
@@ -244,6 +251,40 @@ impl CardRepository for MyPostgres {
             }
         }
 
+        if let Some(query_string) = &request.type_line_not_contains() {
+            sep.push("(type_line IS NULL OR NOT (");
+            sep.push_unseparated(STRIP_TYPE);
+            sep.push_bind_unseparated(format!("%{}%", query_string));
+            sep.push_unseparated("))");
+        }
+
+        if let Some(query_string_array) = &request.type_line_excludes_any() {
+            sep.push("(type_line IS NULL OR NOT (");
+            query_string_array
+                .iter()
+                .enumerate()
+                .for_each(|(i, query_string)| {
+                    if i > 0 {
+                        sep.push_unseparated(" OR ");
+                    }
+                    sep.push_unseparated(STRIP_TYPE);
+                    sep.push_bind_unseparated(format!("%{}%", query_string));
+                });
+            sep.push_unseparated(")) ");
+        }
+
+        if let Some(card_types) = &request.card_type_excludes_any() {
+            sep.push("(type_line IS NULL OR NOT (");
+            card_types.iter().enumerate().for_each(|(i, query_string)| {
+                if i > 0 {
+                    sep.push_unseparated(" OR ");
+                }
+                sep.push_unseparated(STRIP_TYPE);
+                sep.push_bind_unseparated(format!("%{}%", query_string));
+            });
+            sep.push_unseparated(")) ");
+        }
+
         if let Some(sets) = request.set_equals_any() {
             sep.push("set_name = ANY(");
             sep.push_bind_unseparated(sets);
@@ -260,6 +301,24 @@ impl CardRepository for MyPostgres {
             sep.push("rarity = ANY(");
             sep.push_bind_unseparated(rarities.to_short_names());
             sep.push_unseparated(")");
+        }
+
+        if let Some(sets) = request.set_excludes_any() {
+            sep.push("NOT (set_name = ANY(");
+            sep.push_bind_unseparated(sets);
+            sep.push_unseparated("))");
+        }
+
+        if let Some(artists) = request.artist_excludes_any() {
+            sep.push("(artist IS NULL OR NOT (artist = ANY(");
+            sep.push_bind_unseparated(artists);
+            sep.push_unseparated(")))");
+        }
+
+        if let Some(rarities) = request.rarity_excludes_any() {
+            sep.push("NOT (rarity = ANY(");
+            sep.push_bind_unseparated(rarities.to_short_names());
+            sep.push_unseparated("))");
         }
 
         if let Some(query_string) = request.cmc_equals() {
@@ -345,8 +404,32 @@ impl CardRepository for MyPostgres {
             }
         }
 
+        if let Some(query_string) = &request.oracle_text_not_contains() {
+            sep.push("(oracle_text IS NULL OR NOT (");
+            sep.push_unseparated(STRIP_ORACLE);
+            sep.push_bind_unseparated(format!("%{}%", query_string));
+            sep.push_unseparated("))");
+        }
+
+        if let Some(query_string_array) = &request.oracle_text_excludes_any() {
+            sep.push("(oracle_text IS NULL OR NOT (");
+            query_string_array
+                .iter()
+                .enumerate()
+                .for_each(|(i, query_string)| {
+                    if i > 0 {
+                        sep.push_unseparated(" OR ");
+                    }
+                    sep.push_unseparated(STRIP_ORACLE);
+                    sep.push_bind_unseparated(format!("%{}%", query_string));
+                });
+            sep.push_unseparated(")) ");
+        }
+
+        // Keywords are stored capitalized (e.g. "Flying") but UI lowercases them.
+        // Use array_lowercase() via subquery to compare case-insensitively.
         if let Some(keywords) = &request.keywords_contains_any() {
-            sep.push("keywords && ARRAY[");
+            sep.push("(SELECT array_agg(lower(k)) FROM unnest(keywords) k) && ARRAY[");
             keywords.iter().enumerate().for_each(|(i, kw)| {
                 if i > 0 {
                     sep.push_unseparated(", ");
@@ -357,7 +440,7 @@ impl CardRepository for MyPostgres {
         }
 
         if let Some(keywords) = &request.keywords_contains_all() {
-            sep.push("keywords @> ARRAY[");
+            sep.push("(SELECT array_agg(lower(k)) FROM unnest(keywords) k) @> ARRAY[");
             keywords.iter().enumerate().for_each(|(i, kw)| {
                 if i > 0 {
                     sep.push_unseparated(", ");
@@ -365,6 +448,17 @@ impl CardRepository for MyPostgres {
                 sep.push_bind_unseparated(kw.to_lowercase());
             });
             sep.push_unseparated("]::text[]");
+        }
+
+        if let Some(keywords) = &request.keywords_excludes() {
+            sep.push("(keywords IS NULL OR NOT ((SELECT array_agg(lower(k)) FROM unnest(keywords) k) && ARRAY[");
+            keywords.iter().enumerate().for_each(|(i, kw)| {
+                if i > 0 {
+                    sep.push_unseparated(", ");
+                }
+                sep.push_bind_unseparated(kw.to_lowercase());
+            });
+            sep.push_unseparated("]::text[]))");
         }
 
         if let Some(colors) = &request.produced_mana_contains_any() {
@@ -389,9 +483,26 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated("]::text[]");
         }
 
+        if let Some(colors) = &request.produced_mana_excludes() {
+            sep.push("(produced_mana IS NULL OR NOT (produced_mana && ARRAY[");
+            colors.iter().enumerate().for_each(|(i, c)| {
+                if i > 0 {
+                    sep.push_unseparated(", ");
+                }
+                sep.push_bind_unseparated(c.to_uppercase());
+            });
+            sep.push_unseparated("]::text[]))");
+        }
+
         if let Some(query_string) = &request.flavor_text_contains() {
             sep.push("regexp_replace(flavor_text, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ");
             sep.push_bind_unseparated(format!("%{}%", query_string));
+        }
+
+        if let Some(query_string) = &request.flavor_text_not_contains() {
+            sep.push("(flavor_text IS NULL OR NOT (regexp_replace(flavor_text, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ");
+            sep.push_bind_unseparated(format!("%{}%", query_string));
+            sep.push_unseparated("))");
         }
 
         if let Some(has_flavor_text) = request.has_flavor_text() {
@@ -534,6 +645,12 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated(")");
         }
 
+        if let Some(categories) = request.mechanical_categories_excludes() {
+            sep.push("NOT (card_profiles.mechanical_categories ?| ");
+            sep.push_bind_unseparated(categories.to_vec());
+            sep.push_unseparated(")");
+        }
+
         // Filter out NULLs for sorted field
         if let Some(order_by) = request.order_by() {
             let null_filter = match order_by {
@@ -652,7 +769,7 @@ impl CardRepository for MyPostgres {
         let card_types: Vec<String> = query_scalar!(
             "SELECT DISTINCT subtype FROM (
                 SELECT TRIM(BOTH ':-?, ' FROM UNNEST(STRING_TO_ARRAY(type_line, ' '))) subtype
-                FROM scryfall_data
+                FROM latest_cards
             ) subtypes
             WHERE subtype NOT IN ('//', '-', 'the', 'of', 'and/or', 'you', 'you''ll')
             ORDER BY subtype ASC"
@@ -669,7 +786,7 @@ impl CardRepository for MyPostgres {
     async fn get_keywords(&self) -> Result<Vec<String>, GetKeywordsError> {
         let keywords: Vec<String> = query_scalar!(
             "SELECT DISTINCT LOWER(TRIM(keyword)) AS keyword
-             FROM scryfall_data, UNNEST(keywords) AS keyword
+             FROM latest_cards, UNNEST(keywords) AS keyword
              WHERE keywords IS NOT NULL
              ORDER BY keyword ASC"
         )
@@ -687,7 +804,7 @@ impl CardRepository for MyPostgres {
         // Stop words: see domain::card::models::search_card::stop_words::ORACLE_STOP_WORDS
         let words: Vec<String> = query_scalar!(
             "SELECT DISTINCT LOWER(REGEXP_REPLACE(word, '[^a-zA-Z]', '', 'g')) AS word
-             FROM scryfall_data, REGEXP_SPLIT_TO_TABLE(oracle_text, '\\s+') AS word
+             FROM latest_cards, REGEXP_SPLIT_TO_TABLE(oracle_text, '\\s+') AS word
              WHERE oracle_text IS NOT NULL
                AND LOWER(REGEXP_REPLACE(word, '[^a-zA-Z]', '', 'g')) NOT IN (
                  'a', 'an', 'the', 'of', 'to', 'in', 'on', 'at', 'by', 'for', 'with',
@@ -708,7 +825,7 @@ impl CardRepository for MyPostgres {
 
     async fn get_artists(&self) -> Result<Vec<String>, GetArtistsError> {
         let artists: Vec<String> = query_scalar!(
-            "SELECT DISTINCT artist FROM scryfall_data
+            "SELECT DISTINCT artist FROM latest_cards
              WHERE artist IS NOT NULL
              ORDER BY artist"
         )
@@ -722,23 +839,25 @@ impl CardRepository for MyPostgres {
 
     async fn get_sets(&self) -> Result<Vec<String>, GetSetsError> {
         let sets: Vec<String> =
-            query_scalar!("SELECT DISTINCT set_name FROM scryfall_data ORDER BY set_name")
+            query_scalar!("SELECT DISTINCT set_name FROM latest_cards ORDER BY set_name")
                 .fetch_all(&self.pool)
                 .await?
                 .into_iter()
+                .flatten()
                 .collect();
         Ok(sets)
     }
 
     async fn get_languages(&self) -> Result<Vec<String>, GetLanguagesError> {
         let languages: Vec<String> = query_scalar!(
-            "SELECT DISTINCT lang FROM scryfall_data
+            "SELECT DISTINCT lang FROM latest_cards
              WHERE lang IS NOT NULL
              ORDER BY lang"
         )
         .fetch_all(&self.pool)
         .await?
         .into_iter()
+        .flatten()
         .collect();
         Ok(languages)
     }

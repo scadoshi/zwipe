@@ -7,6 +7,47 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuild
 use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::auth::models::session::Session;
 
+/// Whether the set filter is in include or exclude mode.
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum IncludeExclude {
+    Include,
+    Exclude,
+}
+
+impl IncludeExclude {
+    fn toggle(self) -> Self {
+        match self {
+            Self::Include => Self::Exclude,
+            Self::Exclude => Self::Include,
+        }
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            Self::Include => "include",
+            Self::Exclude => "exclude",
+        }
+    }
+}
+
+fn read_sets(fb: &CardFilterBuilder, mode: IncludeExclude) -> Vec<String> {
+    match mode {
+        IncludeExclude::Include => fb.set_equals_any().map(|v| v.to_vec()).unwrap_or_default(),
+        IncludeExclude::Exclude => fb.set_excludes_any().map(|v| v.to_vec()).unwrap_or_default(),
+    }
+}
+
+fn write_sets(fb: &mut CardFilterBuilder, mode: IncludeExclude, values: Vec<String>) {
+    fb.unset_set_equals_any();
+    fb.unset_set_excludes_any();
+    if !values.is_empty() {
+        match mode {
+            IncludeExclude::Include => { fb.set_set_equals_any(values); }
+            IncludeExclude::Exclude => { fb.set_set_excludes_any(values); }
+        }
+    }
+}
+
 /// Filter component for selecting card sets.
 #[component]
 pub fn Set() -> Element {
@@ -29,31 +70,46 @@ pub fn Set() -> Element {
     let mut search_query = use_signal(String::new);
     let mut is_typing = use_signal(|| false);
 
-    // Get reset signal from parent (add.rs) to clear search on apply
     let filter_reset: Signal<u32> = use_context();
 
-    // Clear search query when filter is applied (keeps this effect - not a sync effect)
+    let mut mode = use_signal(|| {
+        if filter_builder().set_excludes_any().is_some() {
+            IncludeExclude::Exclude
+        } else {
+            IncludeExclude::Include
+        }
+    });
+
     use_effect(move || {
-        let _ = filter_reset(); // Subscribe to changes
+        let _ = filter_reset();
         search_query.set(String::new());
         is_typing.set(false);
     });
 
-    // Read selected sets directly from filter_builder
-    let selected_sets = filter_builder()
-        .set_equals_any()
-        .map(|v| v.to_vec())
-        .unwrap_or_default();
+    let selected_sets = read_sets(&filter_builder(), mode());
+    let has_selection = !selected_sets.is_empty();
 
     rsx! {
         div { class: "flex-col gap-half",
             div { class: "label-row mt-2",
-                label { class: "label-xs", r#for: "set-search", "set equals any" }
-                if !selected_sets.is_empty() {
+                label { class: "label-xs", r#for: "set-search", "set" }
+                if has_selection {
                     button {
                         class: "clear-btn",
                         onclick: move |_| {
-                            filter_builder.write().unset_set_equals_any();
+                            let new_mode = mode().toggle();
+                            let current = read_sets(&filter_builder(), mode());
+                            write_sets(&mut filter_builder.write(), new_mode, current);
+                            mode.set(new_mode);
+                        },
+                        "{mode().label()}"
+                    }
+                }
+                if has_selection {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| {
+                            write_sets(&mut filter_builder.write(), mode(), vec![]);
                             search_query.set(String::new());
                         },
                         "×"
@@ -65,24 +121,19 @@ pub fn Set() -> Element {
             if !selected_sets.is_empty() {
                 div { class: "flex flex-wrap gap-1 mb-1",
                     for set in selected_sets.iter().cloned() {
-                        div { class: "chip flex items-center gap-05",
+                        div {
+                            class: match mode() {
+                                IncludeExclude::Include => "chip selected flex items-center gap-05",
+                                IncludeExclude::Exclude => "chip selected flex items-center gap-05",
+                            },
                             {set.to_lowercase()}
                             button { class: "chip-remove",
                                 onclick: move |_| {
-                                    // Remove from filter_builder directly
-                                    let current = filter_builder()
-                                        .set_equals_any()
-                                        .map(|v| v.to_vec())
-                                        .unwrap_or_default();
-                                    let new_sets: Vec<String> = current
+                                    let new_sets: Vec<String> = read_sets(&filter_builder(), mode())
                                         .into_iter()
                                         .filter(|s| *s != set)
                                         .collect();
-                                    if new_sets.is_empty() {
-                                        filter_builder.write().unset_set_equals_any();
-                                    } else {
-                                        filter_builder.write().set_set_equals_any(new_sets);
-                                    }
+                                    write_sets(&mut filter_builder.write(), mode(), new_sets);
                                 },
                                 "×"
                             }
@@ -114,13 +165,9 @@ pub fn Set() -> Element {
                                     for set in results {
                                         div { class: "chip-unselected",
                                             onclick: move |_| {
-                                                // Add to filter_builder directly
-                                                let mut current = filter_builder()
-                                                    .set_equals_any()
-                                                    .map(|v| v.to_vec())
-                                                    .unwrap_or_default();
+                                                let mut current = read_sets(&filter_builder(), mode());
                                                 current.push(set.clone());
-                                                filter_builder.write().set_set_equals_any(current);
+                                                write_sets(&mut filter_builder.write(), mode(), current);
                                                 is_typing.set(false);
                                             },
                                             {set.to_lowercase()}

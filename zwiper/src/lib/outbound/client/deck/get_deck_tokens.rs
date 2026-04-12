@@ -3,6 +3,7 @@
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
+use tracing::info;
 use uuid::Uuid;
 use zwipe::{
     inbound::http::{routes::get_deck_tokens_route, ApiError},
@@ -28,6 +29,7 @@ impl ClientGetDeckTokens for ZwipeClient {
     ) -> Result<Vec<Card>, ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&get_deck_tokens_route(deck_id));
+        info!("GET {}", url);
 
         let response = self
             .client

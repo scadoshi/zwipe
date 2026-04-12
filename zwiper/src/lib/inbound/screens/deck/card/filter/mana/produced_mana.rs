@@ -15,42 +15,41 @@ const MANA_SYMBOLS: &[(&str, &str)] = &[
     ("C", "colorless"),
 ];
 
-/// Read selected produced mana colors from the filter builder based on current mode.
 fn read_produced_mana(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<String> {
     match mode {
-        MatchMode::Any => fb
-            .produced_mana_contains_any()
-            .map(|v| v.to_vec())
-            .unwrap_or_default(),
-        MatchMode::All => fb
-            .produced_mana_contains_all()
-            .map(|v| v.to_vec())
-            .unwrap_or_default(),
+        MatchMode::Any => fb.produced_mana_contains_any().map(|v| v.to_vec()).unwrap_or_default(),
+        MatchMode::All => fb.produced_mana_contains_all().map(|v| v.to_vec()).unwrap_or_default(),
     }
 }
 
-/// Write produced mana colors to the filter builder based on current mode.
 fn write_produced_mana(fb: &mut CardFilterBuilder, mode: MatchMode, values: Vec<String>) {
     fb.unset_produced_mana_contains_any();
     fb.unset_produced_mana_contains_all();
     if !values.is_empty() {
         match mode {
-            MatchMode::Any => {
-                fb.set_produced_mana_contains_any(values);
-            }
-            MatchMode::All => {
-                fb.set_produced_mana_contains_all(values);
-            }
+            MatchMode::Any => { fb.set_produced_mana_contains_any(values); }
+            MatchMode::All => { fb.set_produced_mana_contains_all(values); }
         }
     }
 }
 
-/// Produced mana filter sub-component.
+fn read_excluded(fb: &CardFilterBuilder) -> Vec<String> {
+    fb.produced_mana_excludes().map(|v| v.to_vec()).unwrap_or_default()
+}
+
+fn write_excluded(fb: &mut CardFilterBuilder, values: Vec<String>) {
+    if values.is_empty() {
+        fb.unset_produced_mana_excludes();
+    } else {
+        fb.set_produced_mana_excludes(values);
+    }
+}
+
+/// Produced mana filter with separate include and exclude chip grids.
 #[component]
 pub(crate) fn ProducedManaFilter() -> Element {
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
 
-    // Produced mana mode signal (any vs all)
     let mut produced_mana_mode = use_signal(|| {
         if filter_builder().produced_mana_contains_all().is_some() {
             MatchMode::All
@@ -59,11 +58,11 @@ pub(crate) fn ProducedManaFilter() -> Element {
         }
     });
 
-    // Get current selected produced mana colors
-    let selected_produced_mana = read_produced_mana(&filter_builder(), produced_mana_mode());
+    let selected = read_produced_mana(&filter_builder(), produced_mana_mode());
+    let excluded = read_excluded(&filter_builder());
 
     rsx! {
-        // Produced mana filter
+        // ── produces (include) ────────────────────────────────────
         div { class: "label-row mt-2",
             label { class: "label-xs", "produces" }
             button {
@@ -76,7 +75,7 @@ pub(crate) fn ProducedManaFilter() -> Element {
                 },
                 "{produced_mana_mode().label()}"
             }
-            if !selected_produced_mana.is_empty() {
+            if !selected.is_empty() {
                 button {
                     class: "clear-btn",
                     onclick: move |_| {
@@ -90,11 +89,7 @@ pub(crate) fn ProducedManaFilter() -> Element {
         div { class: "flex flex-wrap gap-1 mb-1 flex-center",
             for &(code, label) in MANA_SYMBOLS.iter() {
                 div {
-                    class: if selected_produced_mana.contains(&code.to_string()) {
-                        "chip selected"
-                    } else {
-                        "chip"
-                    },
+                    class: if selected.contains(&code.to_string()) { "chip selected" } else { "chip" },
                     onclick: move |_| {
                         let mode = produced_mana_mode();
                         let mut colors = read_produced_mana(&filter_builder(), mode);
@@ -105,6 +100,39 @@ pub(crate) fn ProducedManaFilter() -> Element {
                             colors.push(code_str);
                         }
                         write_produced_mana(&mut filter_builder.write(), mode, colors);
+                    },
+                    "{label}"
+                }
+            }
+        }
+
+        // ── does not produce (exclude) ────────────────────────────
+        div { class: "label-row mt-2",
+            label { class: "label-xs", "doesn't produce" }
+            if !excluded.is_empty() {
+                button {
+                    class: "clear-btn",
+                    onclick: move |_| {
+                        write_excluded(&mut filter_builder.write(), vec![]);
+                    },
+                    "\u{00d7}"
+                }
+            }
+        }
+
+        div { class: "flex flex-wrap gap-1 mb-1 flex-center",
+            for &(code, label) in MANA_SYMBOLS.iter() {
+                div {
+                    class: if excluded.contains(&code.to_string()) { "chip selected" } else { "chip" },
+                    onclick: move |_| {
+                        let mut exc = read_excluded(&filter_builder());
+                        let code_str = code.to_string();
+                        if exc.contains(&code_str) {
+                            exc.retain(|c| c != &code_str);
+                        } else {
+                            exc.push(code_str);
+                        }
+                        write_excluded(&mut filter_builder.write(), exc);
                     },
                     "{label}"
                 }
