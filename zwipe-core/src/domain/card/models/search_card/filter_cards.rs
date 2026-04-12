@@ -19,6 +19,7 @@ use crate::domain::card::{
     Card,
     search_card::card_filter::{CardFilter, builder::CardFilterBuilder, order_by_option::OrderByOption},
 };
+use crate::domain::deck::DeckEntry;
 use rand::seq::SliceRandom;
 
 /// Layouts representing cards playable in Magic formats.
@@ -540,6 +541,20 @@ impl SortCards for Vec<Card> {
                 Random => std::cmp::Ordering::Equal,
             };
             if ascending { ord } else { ord.reverse() }
+        });
+    }
+}
+
+impl SortCards for Vec<DeckEntry> {
+    fn sort_by_filter(&mut self, builder: &CardFilterBuilder) {
+        let mut cards: Vec<Card> = self.iter().map(|e| e.card.clone()).collect();
+        cards.sort_by_filter(builder);
+        let order: Vec<uuid::Uuid> = cards.iter().map(|c| c.scryfall_data.id).collect();
+        self.sort_by_key(|e| {
+            order
+                .iter()
+                .position(|id| *id == e.card.scryfall_data.id)
+                .unwrap_or(usize::MAX)
         });
     }
 }
