@@ -16,6 +16,7 @@ use crate::{
         deck::get_deck::ClientGetDeck,
         deck_card::{
             create_deck_card::ClientCreateDeckCard, delete_deck_card::ClientDeleteDeckCard,
+            update_deck_card::ClientUpdateDeckCard,
         },
     },
 };
@@ -24,10 +25,23 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::collections::HashSet;
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe_core::domain::card::{Card, scryfall_data::colors::{Color, Colors}, search_card::card_filter::builder::CardFilterBuilder};
-use zwipe_core::domain::deck::format::Format;
-use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
+use zwipe_core::domain::card::{
+    Card, scryfall_data::colors::{Color, Colors},
+    search_card::{
+        card_filter::builder::CardFilterBuilder,
+        filter_cards::{FilterCards, SortCards},
+    },
+};
+use zwipe_core::domain::deck::{Board, DeckEntry, format::Format};
+use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpUpdateDeckCard};
 use zwipe_core::domain::auth::models::session::Session;
+
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+enum AddSource {
+    #[default]
+    Search,
+    Maybeboard,
+}
 
 #[component]
 pub fn Add(deck_id: Uuid) -> Element {
@@ -46,6 +60,14 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut deck_format: Signal<Option<Format>> = use_signal(|| None);
     let mut deck_color_identity: Signal<Option<Colors>> = use_signal(|| None);
 
+    // Source selector: search (API) vs maybeboard (local)
+    let mut add_source: Signal<AddSource> = use_signal(AddSource::default);
+    let mut mb_entries: Signal<Vec<DeckEntry>> = use_signal(Vec::new);
+    let mut mb_displayed_cards: Signal<Vec<Card>> = use_signal(Vec::new);
+    let mut mb_current_index: Signal<usize> = use_signal(|| 0);
+    let mut mb_action_history: Signal<Vec<SwipeAction>> = use_signal(Vec::new);
+    let mut mb_entering_direction: Signal<Option<Direction>> = use_signal(|| None);
+
     // Undo action history
     let mut action_history: Signal<Vec<SwipeAction>> = use_signal(Vec::new);
 
@@ -53,7 +75,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut filters_overlay_open = use_signal(|| false);
 
     // Reset counter for collapsing accordions and clearing search queries
-    let filter_reset_counter: Signal<u32> = use_signal(|| 0);
+    let mut filter_reset_counter: Signal<u32> = use_signal(|| 0);
     use_context_provider(|| filter_reset_counter);
 
     let session: Signal<Option<Session>> = use_context();
@@ -340,22 +362,34 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     let mut clear_filters = move || {
         let opts = ToastOptions::default().duration(Duration::from_millis(1500));
-        if filter_builder.read().is_empty_ignoring_deck_context() {
-            toast.warning("filter already cleared".to_string(), opts);
+        if add_source() == AddSource::Maybeboard {
+            // Maybeboard mode: "cleared" means truly blank
+            if filter_builder.read().is_empty() {
+                toast.warning("filter already cleared".to_string(), opts);
+            } else {
+                filter_builder.write().clear();
+                let current = *filter_reset_counter.peek();
+                filter_reset_counter.set(current + 1);
+                toast.info("filter cleared".to_string(), opts);
+            }
         } else {
-            filter_builder.write().clear();
-            // Re-apply deck context defaults after clear
-            if let Some(fmt) = deck_format() {
-                filter_builder.write().set_legalities_contains_any(
-                    vec![fmt.to_legality_key().to_string()]
-                );
+            // Search mode: "cleared" means only deck-context defaults
+            if filter_builder.read().is_empty_ignoring_deck_context() {
+                toast.warning("filter already cleared".to_string(), opts);
+            } else {
+                filter_builder.write().clear();
+                if let Some(fmt) = deck_format() {
+                    filter_builder.write().set_legalities_contains_any(
+                        vec![fmt.to_legality_key().to_string()]
+                    );
+                }
+                if let Some(colors) = deck_color_identity() {
+                    filter_builder.write().set_color_identity_within(colors);
+                }
+                cards.set(vec![]);
+                current_index.set(0);
+                toast.info("filter cleared".to_string(), opts);
             }
-            if let Some(colors) = deck_color_identity() {
-                filter_builder.write().set_color_identity_within(colors);
-            }
-            cards.set(vec![]);
-            current_index.set(0);
-            toast.info("filter cleared".to_string(), opts);
         }
     };
 
@@ -400,6 +434,14 @@ pub fn Add(deck_id: Uuid) -> Element {
                         ids.insert(oid);
                     }
                     deck_cards_ids.set(ids);
+
+                    // Collect maybeboard entries for the maybeboard source mode
+                    let mb: Vec<DeckEntry> = deck.entries
+                        .iter()
+                        .filter(|e| e.deck_card.board.is_maybeboard())
+                        .cloned()
+                        .collect();
+                    mb_entries.set(mb);
 
                     // Pre-populate format filter from deck
                     if let Some(fmt) = deck.deck_profile.format {
@@ -539,6 +581,154 @@ pub fn Add(deck_id: Uuid) -> Element {
         });
     });
 
+    // Maybeboard filter effect — applies client-side filtering + sorting
+    use_effect(move || {
+        let _ = add_source();
+        let _ = filter_reset_counter();
+
+        if add_source() != AddSource::Maybeboard {
+            return;
+        }
+
+        let entries = mb_entries.peek().clone();
+        let builder = filter_builder.peek().clone();
+
+        let cards: Vec<Card> = entries.iter().map(|e| e.card.clone()).collect();
+        let mut filtered = if builder.is_empty() {
+            cards
+        } else {
+            let mut b = builder.clone();
+            b.set_limit(10_000);
+            b.set_offset(0);
+            match b.build() {
+                Ok(filter) => cards.filter_by(&filter),
+                Err(_) => cards,
+            }
+        };
+        filtered.sort_by_filter(&builder);
+        mb_displayed_cards.set(filtered);
+        mb_current_index.set(0);
+    });
+
+    let mb_current_card = move || {
+        let cards = mb_displayed_cards();
+        if cards.is_empty() {
+            return None;
+        }
+        let idx = mb_current_index() % cards.len();
+        cards.get(idx).cloned()
+    };
+
+    let mut mb_promote_to_deck = move |card: Card| {
+        session.upkeep(client);
+        let Some(session) = session() else {
+            toast.error("session expired".to_string(), ToastOptions::default());
+            return;
+        };
+
+        let scryfall_data_id = card.scryfall_data.id;
+        let request = HttpUpdateDeckCard::new(None, Some("deck".to_string()));
+
+        // Optimistic: remove from maybeboard lists
+        mb_entries.write().retain(|e| e.card.scryfall_data.id != scryfall_data_id);
+        let idx = mb_current_index();
+        if idx < mb_displayed_cards.read().len() {
+            mb_displayed_cards.write().remove(idx);
+        }
+        // Also add to deck exclusion set so search mode won't show it
+        if let Some(oid) = card.scryfall_data.oracle_id {
+            deck_cards_ids.write().insert(oid);
+        }
+
+        spawn(async move {
+            if let Err(e) = client()
+                .update_deck_card(deck_id, scryfall_data_id, &request, &session)
+                .await
+            {
+                tracing::warn!("promote to deck failed: {e}");
+                toast.error(e.to_string(), ToastOptions::default());
+            }
+        });
+    };
+
+    let mut mb_undo_last_action = move || {
+        let Some(action) = mb_action_history.write().pop() else {
+            toast.info("nothing to undo".to_string(), ToastOptions::default());
+            return;
+        };
+
+        mb_entering_direction.set(Some(action.exited().clone()));
+
+        match action {
+            SwipeAction::Skip { .. } => {
+                let len = mb_displayed_cards().len();
+                if len == 0 {
+                    mb_entering_direction.set(None);
+                    return;
+                }
+                let idx = mb_current_index();
+                let prev = if idx == 0 { len - 1 } else { idx - 1 };
+                mb_current_index.set(prev);
+                toast.info(
+                    "undid skip".to_string(),
+                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                );
+            }
+            SwipeAction::Do { card, .. } => {
+                let card = *card;
+                let idx = mb_current_index();
+                mb_displayed_cards.write().insert(idx, card.clone());
+
+                session.upkeep(client);
+                let Some(session) = session() else {
+                    toast.error("session expired".to_string(), ToastOptions::default());
+                    mb_entering_direction.set(None);
+                    return;
+                };
+
+                let scryfall_data_id = card.scryfall_data.id;
+                let oracle_id = card.scryfall_data.oracle_id;
+                let request = HttpUpdateDeckCard::new(None, Some("maybeboard".to_string()));
+
+                spawn(async move {
+                    match client()
+                        .update_deck_card(deck_id, scryfall_data_id, &request, &session)
+                        .await
+                    {
+                        Ok(_) => {
+                            if let Some(oid) = oracle_id {
+                                deck_cards_ids.write().remove(&oid);
+                            }
+                            // Re-add to mb_entries source of truth
+                            mb_entries.write().push(DeckEntry {
+                                card,
+                                deck_card: zwipe_core::domain::deck::DeckCard {
+                                    deck_id,
+                                    scryfall_data_id,
+                                    oracle_id: oracle_id.unwrap_or_default(),
+                                    quantity: zwipe_core::domain::deck::quantity::Quantity::new(1).expect("1 is valid"),
+                                    board: Board::Maybeboard,
+                                },
+                            });
+                            toast.success(
+                                "undid move to deck".to_string(),
+                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                            );
+                        }
+                        Err(e) => {
+                            tracing::warn!("undo promote failed: {e}");
+                            toast.error(format!("failed to undo: {}", e), ToastOptions::default());
+                        }
+                    }
+                });
+            }
+            SwipeAction::Maybeboard { .. } => {
+                // Shouldn't happen in maybeboard mode, but handle gracefully
+                toast.info("nothing to undo".to_string(), ToastOptions::default());
+            }
+        }
+    };
+
     rsx! {
         Bouncer {
             div { class: "screen",
@@ -548,44 +738,128 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                 div { class: "screen-content card-swipe content-enter",
 
-                div { class : "form-container",
-                    if !cards().is_empty() {
-                        SwipeStack {
-                            cards: {
-                                let all = cards();
-                                all.into_iter().skip(current_index()).take(crate::inbound::components::interactions::swipe::STACK_DEPTH).collect::<Vec<_>>()
-                            },
-                            config: swipe_config,
-                            entering: entering_direction,
-                            on_swipe_left: move |card: Card| {
-                                action_history.write().push(SwipeAction::Skip { card: Box::new(card), exited: Direction::Left });
-                                toast.info("skipped".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
-                                advance_after_commit();
-                            },
-                            on_swipe_right: move |card: Card| {
-                                action_history.write().push(SwipeAction::Do { card: Box::new(card.clone()), exited: Direction::Right });
-                                add_card_to_deck(card);
-                                toast.success("added to deck".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
-                                advance_after_commit();
-                            },
-                            on_swipe_up: move |card: Card| {
-                                action_history.write().push(SwipeAction::Maybeboard { card: Box::new(card.clone()), exited: Direction::Up });
-                                add_card_to_maybeboard(card);
-                                toast.info("added to maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
-                                advance_after_commit();
-                            },
-                            on_swipe_down: move |_card: Card| {
-                                undo_last_action();
-                            },
-                        }
+                // Source selector chips
+                div { style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
+                    div { class: "chip-row",
+                        span { class: "chip-row-label", "from:" }
+                        for (label, variant) in [("search", AddSource::Search), ("maybeboard", AddSource::Maybeboard)] {
+                            button {
+                                class: if add_source() == variant { "chip selected" } else { "chip" },
+                                onclick: move |_| {
+                                    if add_source() == variant { return; }
 
-                        if let Some(card) = current_card() {
-                            CardInfoDisplay { card }
+                                    match variant {
+                                        AddSource::Maybeboard => {
+                                            // If filter is just deck-context defaults, blank it
+                                            if filter_builder.read().is_empty_ignoring_deck_context() {
+                                                filter_builder.write().clear();
+                                            }
+                                        }
+                                        AddSource::Search => {
+                                            // If filter is truly blank, re-apply deck-context defaults
+                                            if filter_builder.read().is_empty() {
+                                                if let Some(fmt) = deck_format() {
+                                                    filter_builder.write().set_legalities_contains_any(
+                                                        vec![fmt.to_legality_key().to_string()]
+                                                    );
+                                                }
+                                                if let Some(colors) = deck_color_identity() {
+                                                    filter_builder.write().set_color_identity_within(colors);
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    add_source.set(variant);
+                                    mb_current_index.set(0);
+                                    mb_action_history.write().clear();
+                                    let current = *filter_reset_counter.peek();
+                                    filter_reset_counter.set(current + 1);
+                                },
+                                "{label}"
+                            }
                         }
-                    } else if is_loading_cards() {
-                        CardSkeleton { is_loading: true }
+                    }
+                }
+
+                div { class : "form-container",
+                    if add_source() == AddSource::Search {
+                        // Search mode (existing behavior)
+                        if !cards().is_empty() {
+                            SwipeStack {
+                                cards: {
+                                    let all = cards();
+                                    all.into_iter().skip(current_index()).take(crate::inbound::components::interactions::swipe::STACK_DEPTH).collect::<Vec<_>>()
+                                },
+                                config: swipe_config,
+                                entering: entering_direction,
+                                on_swipe_left: move |card: Card| {
+                                    action_history.write().push(SwipeAction::Skip { card: Box::new(card), exited: Direction::Left });
+                                    toast.info("skipped".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                    advance_after_commit();
+                                },
+                                on_swipe_right: move |card: Card| {
+                                    action_history.write().push(SwipeAction::Do { card: Box::new(card.clone()), exited: Direction::Right });
+                                    add_card_to_deck(card);
+                                    toast.success("added to deck".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                    advance_after_commit();
+                                },
+                                on_swipe_up: move |card: Card| {
+                                    action_history.write().push(SwipeAction::Maybeboard { card: Box::new(card.clone()), exited: Direction::Up });
+                                    add_card_to_maybeboard(card);
+                                    toast.info("added to maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                    advance_after_commit();
+                                },
+                                on_swipe_down: move |_card: Card| {
+                                    undo_last_action();
+                                },
+                            }
+
+                            if let Some(card) = current_card() {
+                                CardInfoDisplay { card }
+                            }
+                        } else if is_loading_cards() {
+                            CardSkeleton { is_loading: true }
+                        } else {
+                            CardSkeleton {}
+                        }
                     } else {
-                        CardSkeleton {}
+                        // Maybeboard mode
+                        if !mb_displayed_cards().is_empty() {
+                            SwipeStack {
+                                cards: {
+                                    let all = mb_displayed_cards();
+                                    all.into_iter().skip(mb_current_index()).take(crate::inbound::components::interactions::swipe::STACK_DEPTH).collect::<Vec<_>>()
+                                },
+                                config: swipe_config,
+                                entering: mb_entering_direction,
+                                on_swipe_left: move |card: Card| {
+                                    mb_action_history.write().push(SwipeAction::Skip { card: Box::new(card), exited: Direction::Left });
+                                    toast.info("skipped".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                    let len = mb_displayed_cards().len();
+                                    if len > 0 {
+                                        mb_current_index.set((mb_current_index() + 1) % len);
+                                    }
+                                },
+                                on_swipe_right: move |card: Card| {
+                                    mb_action_history.write().push(SwipeAction::Do { card: Box::new(card.clone()), exited: Direction::Right });
+                                    mb_promote_to_deck(card);
+                                    toast.success("moved to deck".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                },
+                                on_swipe_up: move |_card: Card| {
+                                    toast.info("already on maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                },
+                                on_swipe_down: move |_card: Card| {
+                                    mb_undo_last_action();
+                                },
+                            }
+
+                            if let Some(card) = mb_current_card() {
+                                CardInfoDisplay { card }
+                            }
+                        } else {
+                            CardSkeleton {}
+                        }
                     }
 
                 }
@@ -615,66 +889,94 @@ pub fn Add(deck_id: Uuid) -> Element {
                 button {
                     class: "util-btn",
                     onclick: move |_| {
-                        let mut builder = filter_builder.peek().clone();
-                        builder.set_is_token(false);
-                        builder.set_limit(pagination_limit);
-                        builder.set_offset(0);
-
-                        let Ok(filter) = builder.build() else {
-                            toast.warning(
-                                "filter is empty".to_string(),
+                        if add_source() == AddSource::Maybeboard {
+                            // Maybeboard mode: re-fetch deck to reload maybeboard entries
+                            session.upkeep(client);
+                            let Some(session) = session() else {
+                                toast.error("session expired".to_string(), ToastOptions::default());
+                                return;
+                            };
+                            spawn(async move {
+                                if let Ok(deck) = client().get_deck(deck_id, &session).await {
+                                    let mb: Vec<DeckEntry> = deck.entries
+                                        .iter()
+                                        .filter(|e| e.deck_card.board.is_maybeboard())
+                                        .cloned()
+                                        .collect();
+                                    mb_entries.set(mb);
+                                    mb_current_index.set(0);
+                                    mb_action_history.write().clear();
+                                    let current = *filter_reset_counter.peek();
+                                    filter_reset_counter.set(current + 1);
+                                }
+                            });
+                            toast.info(
+                                "maybeboard refreshed".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
                             );
-                            return;
-                        };
+                        } else {
+                            // Search mode: re-fetch from API
+                            let mut builder = filter_builder.peek().clone();
+                            builder.set_is_token(false);
+                            builder.set_limit(pagination_limit);
+                            builder.set_offset(0);
 
-                        let Some(session) = session.peek().clone() else {
-                            toast.error("session expired".to_string(), ToastOptions::default());
-                            return;
-                        };
+                            let Ok(filter) = builder.build() else {
+                                toast.warning(
+                                    "filter is empty".to_string(),
+                                    ToastOptions::default().duration(Duration::from_millis(1500)),
+                                );
+                                return;
+                            };
 
-                        cards.set(vec![]);
-                        last_search_filter.set(None);
-                        current_offset.set(0);
-                        current_index.set(0);
-                        pagination_exhausted.set(false);
-                        is_loading_cards.set(true);
+                            let Some(session) = session.peek().clone() else {
+                                toast.error("session expired".to_string(), ToastOptions::default());
+                                return;
+                            };
 
-                        let filter_snapshot = filter_builder.peek().clone();
+                            cards.set(vec![]);
+                            last_search_filter.set(None);
+                            current_offset.set(0);
+                            current_index.set(0);
+                            pagination_exhausted.set(false);
+                            is_loading_cards.set(true);
 
-                        spawn(async move {
-                            match client().search_cards(&filter, &session).await {
-                                Ok(cards_from_search) => {
-                                    let deck_ids = deck_cards_ids();
-                                    cards.set(
-                                        cards_from_search
-                                            .into_iter()
-                                            .filter(|card| {
-                                                card.scryfall_data
-                                                    .image_uris
-                                                    .as_ref()
-                                                    .and_then(|x| x.large.as_ref())
-                                                    .is_some()
-                                                    && !card.scryfall_data.oracle_id.is_some_and(|oid| deck_ids.contains(&oid))
-                                            })
-                                            .collect(),
-                                    );
-                                    last_search_filter.set(Some(filter_snapshot));
-                                    current_offset.set(pagination_limit);
-                                    is_loading_cards.set(false);
+                            let filter_snapshot = filter_builder.peek().clone();
+
+                            spawn(async move {
+                                match client().search_cards(&filter, &session).await {
+                                    Ok(cards_from_search) => {
+                                        let deck_ids = deck_cards_ids();
+                                        cards.set(
+                                            cards_from_search
+                                                .into_iter()
+                                                .filter(|card| {
+                                                    card.scryfall_data
+                                                        .image_uris
+                                                        .as_ref()
+                                                        .and_then(|x| x.large.as_ref())
+                                                        .is_some()
+                                                        && !card.scryfall_data.oracle_id.is_some_and(|oid| deck_ids.contains(&oid))
+                                                })
+                                                .collect(),
+                                        );
+                                        last_search_filter.set(Some(filter_snapshot));
+                                        current_offset.set(pagination_limit);
+                                        is_loading_cards.set(false);
+                                    }
+                                    Err(e) => {
+                                        tracing::warn!("card search failed: {e}");
+                                        toast.error(e.to_string(), ToastOptions::default());
+                                        is_loading_cards.set(false);
+                                    }
                                 }
-                                Err(e) => {
-                                    tracing::warn!("card search failed: {e}");
-                                    toast.error(e.to_string(), ToastOptions::default());
-                                    is_loading_cards.set(false);
-                                }
-                            }
-                        });
+                            });
 
-                        toast.info(
-                            "stack refreshed".to_string(),
-                            ToastOptions::default().duration(Duration::from_millis(1500)),
-                        );
+                            toast.info(
+                                "stack refreshed".to_string(),
+                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                            );
+                        }
                     },
                     "refresh"
                 }
