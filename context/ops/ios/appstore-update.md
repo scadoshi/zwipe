@@ -5,6 +5,39 @@ setup, see [appstore-first.md](appstore-first.md).
 
 ---
 
+## IMPORTANT: Always use the latest Xcode
+
+Apple's App Store submission allowlist requires the binary to be linked against the
+very latest Xcode/SDK. Older GM versions get rejected at "Add for Review" with a
+misleading "beta Xcode" UI message (actual API error:
+`BUILD_SDK_NOT_ALLOWED_FOR_APP_STORE_SUBMISSION`). See `appstore-debug.md` for
+the full investigation.
+
+**Before building, update Xcode via the Mac App Store** and verify:
+
+```bash
+xcodebuild -version
+# Make sure this matches the most recent Xcode release
+```
+
+After updating Xcode, also wipe the cargo iOS device cache so the binary actually
+re-links against the new SDK (otherwise Cargo will reuse the previously linked
+object files):
+
+```bash
+rm -rf ~/Developer/zwipe/target/aarch64-apple-ios
+rm -rf ~/Developer/zwipe/target/dx/zwipe/release/ios
+```
+
+If you don't have the matching iOS simulator runtime installed, `actool` will fail
+to produce `Assets.car`. Install it once:
+
+```bash
+xcodebuild -downloadPlatform iOS
+```
+
+---
+
 ## 1. Build
 
 ```bash
@@ -37,6 +70,28 @@ APP=~/Developer/zwipe/target/dx/zwipe/release/ios/Zwipe.app
   -c "Set :CFBundleVersion <BUILD_NUMBER>" \
   $APP/Info.plist
 # Increment BUILD_NUMBER each upload (1, 2, 3...). Version can stay 1.0 for patches.
+
+# Patch DT/SDK keys to match the active Xcode (Dioxus hard-codes these from a
+# stale template). Required by Apple's submission allowlist. Pull live values:
+XCODE_BUILD=$(xcodebuild -version | awk '/Build version/ {print $3}')
+XCODE_VERSION=$(xcodebuild -version | awk 'NR==1 {gsub(/\./,"",$2); printf "%s0", $2}')
+SDK_VERSION=$(xcrun --sdk iphoneos --show-sdk-version)
+SDK_BUILD=$(xcrun --sdk iphoneos --show-sdk-build-version)
+OS_BUILD=$(sw_vers -buildVersion)
+
+for kv in \
+  "DTXcode:string:$XCODE_VERSION" \
+  "DTXcodeBuild:string:$XCODE_BUILD" \
+  "DTSDKName:string:iphoneos$SDK_VERSION" \
+  "DTSDKBuild:string:$SDK_BUILD" \
+  "DTPlatformName:string:iphoneos" \
+  "DTPlatformVersion:string:$SDK_VERSION" \
+  "DTPlatformBuild:string:$SDK_BUILD" \
+  "BuildMachineOSBuild:string:$OS_BUILD"; do
+  KEY="${kv%%:*}"; REST="${kv#*:}"; TYPE="${REST%%:*}"; VAL="${REST#*:}"
+  /usr/libexec/PlistBuddy -c "Delete :$KEY" $APP/Info.plist 2>/dev/null
+  /usr/libexec/PlistBuddy -c "Add :$KEY $TYPE $VAL" $APP/Info.plist
+done
 ```
 
 ## 3. Compile app icons

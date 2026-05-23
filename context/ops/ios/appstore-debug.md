@@ -1,5 +1,17 @@
 # App Store Submission Debug — "Beta Xcode" Rejection
 
+## RESOLVED 2026-05-22 — now we wait!
+
+**Root cause:** Apple's App Store Connect submission allowlist requires the binary to be linked against the very latest Xcode/SDK release. Older GM versions (even by days) are silently rejected with a misleading "beta Xcode" UI message. The actual API error code is `BUILD_SDK_NOT_ALLOWED_FOR_APP_STORE_SUBMISSION` ("Build SDK build is not yet supported"), surfaced at `POST /iris/v1/reviewSubmissionItems`.
+
+**Fix:** Upgraded to Xcode 26.5 (build 17F42, SDK 23F77) — released 2026-05-11. Rebuilt clean (deleted `target/aarch64-apple-ios` to force re-link against the new SDK), patched the Info.plist DT keys to match (`DTXcode 2650`, `DTXcodeBuild 17F42`, `DTSDKName iphoneos26.5`, `DTSDKBuild 23F73`, `DTPlatformVersion 26.5`, `DTPlatformBuild 23F73`, `BuildMachineOSBuild 25E253`), and uploaded as build 13 via Transporter. "Add for Review" passed on the first attempt; the version is now in "Waiting for Review" status, awaiting Apple's content review (up to 48 hours).
+
+**Lesson for next time:** When Apple ships a new Xcode minor version, the submission allowlist updates with it and older versions fall out. Always build against the latest Xcode for App Store submissions — even if the older one is still GM. See `appstore-update.md` for the recurring submission workflow.
+
+The historical investigation log below is preserved for reference.
+
+---
+
 Tracking what we know, what we don't, and tests to run.
 
 ---
