@@ -108,5 +108,8 @@ for name, color in pairs.items():
 | `zwipe-core/src/domain/user/models/theme.rs` | `ThemeConfig` (default theme + css class) |
 | `zwipe-core/src/domain/user/models/preferences.rs` | `ALLOWED_THEMES` registry + `UserPreferences` default |
 | `zwiper/build.rs`, `zite/build.rs` | Copy `shared/themes.css` into asset directories at build time |
+| `zite/src/main.rs`, `zwiper/src/lib/inbound/screens/profile/preferences.rs` | `display_theme_name(slug)` helper — capitalizes hyphen-split words; special-cases (e.g. `rose-pine` → "Rosé Pine") go here, not in the slug |
 
 Theme CSS files in `zwiper/assets/` and `zite/assets/` are build artifacts (gitignored). Edit `shared/themes.css` only.
+
+For text/casing/font rules across the app see `context/dev/ui_text_conventions.md`.
