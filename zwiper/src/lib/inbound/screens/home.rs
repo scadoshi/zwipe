@@ -42,7 +42,7 @@ pub fn Home() -> Element {
     use_effect(move || {
         if let Some(session) = session.peek().clone() {
             toast.info(
-                format!("hello, {}!", session.user.username),
+                format!("Hello, {}!", session.user.username),
                 ToastOptions::default().duration(Duration::from_millis(1500)),
             );
         }
@@ -64,7 +64,7 @@ pub fn Home() -> Element {
                     }
                     if needs_verification {
                         toast.warning(
-                            "verify your email to enable password recovery!".to_string(),
+                            "Verify your email to enable password recovery!".to_string(),
                             ToastOptions::default().duration(Duration::from_millis(1500)),
                         );
                     }
@@ -147,17 +147,17 @@ pub fn Home() -> Element {
                 button { class : "util-btn",
                     onclick : move |_| {
                         navigator.push(Router::DeckList {} );
-                    }, "decks"
+                    }, "Decks"
                 }
                 button { class : "util-btn",
                     onclick : move |_| {
                         navigator.push(Router::Profile {} );
-                    }, "profile"
+                    }, "Profile"
                 }
                 button {
                     class: "util-btn util-btn-danger",
                     onclick: move |_| show_logout_dialog.set(true),
-                    "logout"
+                    "Log out"
                 }
             }
 
@@ -165,17 +165,17 @@ pub fn Home() -> Element {
                 open: show_logout_dialog(),
                 on_open_change: move |open| show_logout_dialog.set(open),
                 AlertDialogContent {
-                    AlertDialogTitle { "logout" }
-                    AlertDialogDescription { "are you sure you want to logout?" }
+                    AlertDialogTitle { "Log out" }
+                    AlertDialogDescription { "Are you sure you want to log out?" }
                     AlertDialogActions {
                         AlertDialogCancel {
                             on_click: move |_| show_logout_dialog.set(false),
-                            "cancel"
+                            "Cancel"
                         }
                         AlertDialogAction {
                             danger: true,
                             on_click: move |_| session.logout(client),
-                            "logout"
+                            "Log out"
                         }
                     }
                 }

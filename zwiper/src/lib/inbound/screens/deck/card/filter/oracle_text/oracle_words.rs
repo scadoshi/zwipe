@@ -55,7 +55,7 @@ pub(crate) fn OracleWords() -> Element {
                 return Ok(extract_oracle_words(&dc.0()));
             }
             let Some(session) = session() else {
-                return Err(ApiError::Unauthorized("session expired".to_string()));
+                return Err(ApiError::Unauthorized("Session expired".to_string()));
             };
             client().get_oracle_words(&session).await
         });
@@ -83,7 +83,7 @@ pub(crate) fn OracleWords() -> Element {
     rsx! {
         // ── includes ──────────────────────────────────────────────
         div { class: "label-row mt-2",
-            label { class: "label-xs", r#for: "oracle-words-search", "oracle words include" }
+            label { class: "label-xs", r#for: "oracle-words-search", "Oracle words include" }
             button {
                 class: "clear-btn",
                 onclick: move |_| {
@@ -110,7 +110,7 @@ pub(crate) fn OracleWords() -> Element {
             div { class: "flex flex-wrap gap-1 mb-1",
                 for word in selected_oracle_words.iter().cloned() {
                     div { class: "chip selected flex items-center gap-05",
-                        {word.to_lowercase()}
+                        {word.clone()}
                         button { class: "chip-remove",
                             onclick: move |_| {
                                 let mode = oracle_words_mode();
@@ -153,7 +153,7 @@ pub(crate) fn OracleWords() -> Element {
                                             current.push(word.clone());
                                             write_oracle_words(&mut filter_builder.write(), mode, current);
                                         },
-                                        {word.to_lowercase()}
+                                        {word.clone()}
                                     }
                                 }
                             }
@@ -167,7 +167,7 @@ pub(crate) fn OracleWords() -> Element {
 
         input { class: "input input-compact",
             id: "oracle-words-search",
-            placeholder: "type to search",
+            placeholder: "Type to search",
             value: "{oracle_words_search()}",
             r#type: "text",
             autocapitalize: "none",
@@ -179,7 +179,7 @@ pub(crate) fn OracleWords() -> Element {
 
         // ── excludes ──────────────────────────────────────────────
         div { class: "label-row mt-2",
-            label { class: "label-xs", r#for: "oracle-words-excludes-search", "oracle words exclude" }
+            label { class: "label-xs", r#for: "oracle-words-excludes-search", "Oracle words exclude" }
             if !excluded_oracle_words.is_empty() {
                 button {
                     class: "clear-btn",
@@ -196,7 +196,7 @@ pub(crate) fn OracleWords() -> Element {
             div { class: "flex flex-wrap gap-1 mb-1",
                 for word in excluded_oracle_words.iter().cloned() {
                     div { class: "chip selected flex items-center gap-05",
-                        {word.to_lowercase()}
+                        {word.clone()}
                         button { class: "chip-remove",
                             onclick: move |_| {
                                 let new_excluded: Vec<String> = read_excluded(&filter_builder())
@@ -237,7 +237,7 @@ pub(crate) fn OracleWords() -> Element {
                                             current.push(word.clone());
                                             write_excluded(&mut filter_builder.write(), current);
                                         },
-                                        {word.to_lowercase()}
+                                        {word.clone()}
                                     }
                                 }
                             }
@@ -251,7 +251,7 @@ pub(crate) fn OracleWords() -> Element {
 
         input { class: "input input-compact",
             id: "oracle-words-excludes-search",
-            placeholder: "type to search",
+            placeholder: "Type to search",
             value: "{excludes_search()}",
             r#type: "text",
             autocapitalize: "none",

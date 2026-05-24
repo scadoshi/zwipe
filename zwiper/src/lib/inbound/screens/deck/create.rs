@@ -46,7 +46,7 @@ pub fn CreateDeck() -> Element {
         spawn(async move {
             session.upkeep(auth_client);
             let Some(session) = session() else {
-                toast.error("session expired".to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                toast.error("Session expired".to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
                 is_saving.set(false);
                 return;
             };
@@ -68,7 +68,7 @@ pub fn CreateDeck() -> Element {
                     });
                 }
                 Err(e) => {
-                    toast.error(e.to_string().to_lowercase(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                    toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
                     is_saving.set(false);
                 }
             }
@@ -79,7 +79,7 @@ pub fn CreateDeck() -> Element {
         Bouncer {
             div { class: "screen",
                 div { class: "page-header",
-                    h2 { "create deck" }
+                    h2 { "Create Deck" }
                 }
 
                 div { class: "screen-content centered content-enter",
@@ -106,12 +106,12 @@ pub fn CreateDeck() -> Element {
                 button {
                     class: "util-btn",
                     onclick: move |_| navigator.go_back(),
-                    "back"
+                    "Back"
                 }
                 button { class : "util-btn",
                     disabled: is_saving(),
                     onclick : move |_| attempt_submit(),
-                    if is_saving() { "saving..." } else { "save" }
+                    if is_saving() { "Saving..." } else { "Save" }
                 }
             }
             }

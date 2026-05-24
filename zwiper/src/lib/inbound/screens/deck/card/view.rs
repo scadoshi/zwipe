@@ -198,7 +198,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
             if !filter_builder.peek().is_empty() {
                 toast.warning(
-                    "filter is active".to_string(),
+                    "Filter is active".to_string(),
                     ToastOptions::default().duration(Duration::from_millis(2000)),
                 );
             }
@@ -299,7 +299,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
         session.upkeep(client);
         let Some(session) = session() else {
-            toast.error("session expired".to_string(), ToastOptions::default());
+            toast.error("Session expired".to_string(), ToastOptions::default());
             return;
         };
 
@@ -311,7 +311,7 @@ pub fn View(deck_id: Uuid) -> Element {
             filter_reset_counter.set(current + 1);
 
             toast.info(
-                "card removed".to_string(),
+                "Card removed".to_string(),
                 ToastOptions::default().duration(Duration::from_millis(1500)),
             );
 
@@ -360,7 +360,7 @@ pub fn View(deck_id: Uuid) -> Element {
     let mut move_to_board = move |card_id: Uuid, target: Board| {
         session.upkeep(client);
         let Some(session) = session() else {
-            toast.error("session expired".to_string(), ToastOptions::default());
+            toast.error("Session expired".to_string(), ToastOptions::default());
             return;
         };
 
@@ -404,7 +404,7 @@ pub fn View(deck_id: Uuid) -> Element {
         });
 
         toast.info(
-            format!("moved to {}", target.display_name()),
+            format!("Moved to {}", target.display_name()),
             ToastOptions::default().duration(Duration::from_millis(1500)),
         );
     };
@@ -413,7 +413,7 @@ pub fn View(deck_id: Uuid) -> Element {
         Bouncer {
             div { class: "screen",
                 div { class: "page-header",
-                    h2 { "deck cards" }
+                    h2 { "Deck Cards" }
                 }
 
                 div { class: "screen-content",
@@ -421,7 +421,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 div { style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
                     // Group-by row
                     div { class: "chip-row",
-                        span { class: "chip-row-label", "group by:" }
+                        span { class: "chip-row-label", "Group by:" }
                         for option in GroupByOption::all() {
                             button {
                                 key: "{option}",
@@ -437,7 +437,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
                     // Board filter row (multi-select, at least one must be on)
                     div { class: "chip-row",
-                        span { class: "chip-row-label", "boards:" }
+                        span { class: "chip-row-label", "Boards:" }
                         button {
                             class: if show_deck() { "chip selected" } else { "chip" },
                             onclick: move |_| {
@@ -451,7 +451,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                 let current = *filter_reset_counter.peek();
                                 filter_reset_counter.set(current + 1);
                             },
-                            "deck"
+                            "Deck"
                         }
                         button {
                             class: if show_maybe() { "chip selected" } else { "chip" },
@@ -465,7 +465,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                 let current = *filter_reset_counter.peek();
                                 filter_reset_counter.set(current + 1);
                             },
-                            "maybe"
+                            "Maybe"
                         }
                         button {
                             class: if show_side() { "chip selected" } else { "chip" },
@@ -479,40 +479,40 @@ pub fn View(deck_id: Uuid) -> Element {
                                 let current = *filter_reset_counter.peek();
                                 filter_reset_counter.set(current + 1);
                             },
-                            "side"
+                            "Side"
                         }
                     }
 
                     // Show toggles row
                     div { class: "chip-row",
-                        span { class: "chip-row-label", "show:" }
+                        span { class: "chip-row-label", "Show:" }
                         button {
                             class: if show_lands() { "chip selected" } else { "chip" },
                             onclick: move |_| {
                                 should_collapse_expanded.set(true);
                                 show_lands.set(!show_lands());
                             },
-                            "lands"
+                            "Lands"
                         }
                         button {
                             class: if show_tokens() { "chip selected" } else { "chip" },
                             onclick: move |_| show_tokens.set(!show_tokens()),
-                            "tokens"
+                            "Tokens"
                         }
                         button {
                             class: if show_command_zone() { "chip selected" } else { "chip" },
                             onclick: move |_| show_command_zone.set(!show_command_zone()),
-                            "command zone"
+                            "Command zone"
                         }
                     }
 
                     // Column headers
                     div { class: "card-row-compact card-row-header",
-                        span { class: "card-row-qty", "qty" }
-                        span { class: "card-row-name", "name" }
-                        span { class: "card-row-cmc", "cmc" }
-                        span { class: "card-row-pt", "p/t" }
-                        span { class: "card-row-colors", "colors" }
+                        span { class: "card-row-qty", "Qty" }
+                        span { class: "card-row-name", "Name" }
+                        span { class: "card-row-cmc", "MV" }
+                        span { class: "card-row-pt", "P/T" }
+                        span { class: "card-row-colors", "Colors" }
                     }
 
                     // Token list
@@ -526,7 +526,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                 if let Some(tokens) = sorted_tokens {
                                     if !tokens.is_empty() {
                                         div { class: "card-group row-enter",
-                                            div { class: "card-group-header", "tokens ({tokens.len()})" }
+                                            div { class: "card-group-header", "Tokens ({tokens.len()})" }
                                             for token in tokens.iter() {
                                                 CardRow {
                                                     card: token.clone(),
@@ -554,7 +554,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         rsx! {
                             if show_maybe() && !mb_entries.is_empty() {
                                 div { class: "card-group row-enter",
-                                    div { class: "card-group-header", "maybeboard ({mb_count})" }
+                                    div { class: "card-group-header", "Maybeboard ({mb_count})" }
                                     for entry in mb_entries.iter() {
                                         {
                                             let card_id = entry.card.scryfall_data.id;
@@ -595,7 +595,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         rsx! {
                             if show_side() && !sb_entries.is_empty() {
                                 div { class: "card-group row-enter",
-                                    div { class: "card-group-header", "sideboard ({sb_count})" }
+                                    div { class: "card-group-header", "Sideboard ({sb_count})" }
                                     for entry in sb_entries.iter() {
                                         {
                                             let card_id = entry.card.scryfall_data.id;
@@ -631,11 +631,11 @@ pub fn View(deck_id: Uuid) -> Element {
                             div { class: "card-group row-enter",
                                 div { class: "card-group-header",
                                     if is_oathbreaker() {
-                                        "oathbreaker"
+                                        "Oathbreaker"
                                     } else if displayed_partner().is_some() {
-                                        "commanders"
+                                        "Commanders"
                                     } else {
-                                        "commander"
+                                        "Commander"
                                     }
                                 }
                                 if let Some(cmd) = displayed_commander() {
@@ -672,7 +672,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         // Pinned background group
                         if let Some(bg) = displayed_background() {
                             div { class: "card-group row-enter",
-                                div { class: "card-group-header", "background" }
+                                div { class: "card-group-header", "Background" }
                                 CardRow {
                                     card: bg,
                                     qty: 1,
@@ -691,7 +691,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         // Pinned signature spell (Oathbreaker only)
                         if let Some(spell) = displayed_signature_spell() {
                             div { class: "card-group row-enter",
-                                div { class: "card-group-header", "signature spell" }
+                                div { class: "card-group-header", "Signature spell" }
                                 CardRow {
                                     card: spell,
                                     qty: 1,
@@ -753,7 +753,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     }
 
                     if show_deck() && displayed_groups().is_empty() && *deck_loaded.peek() {
-                        p { class: "text-muted", "no cards" }
+                        p { class: "text-muted", "No cards" }
                     }
 
                 }
@@ -763,26 +763,26 @@ pub fn View(deck_id: Uuid) -> Element {
                 button {
                     class: "util-btn",
                     onclick: move |_| navigator.go_back(),
-                    "back"
+                    "Back"
                 }
                 button {
                     class: "util-btn",
                     onclick: move |_| {
                         navigator.push(crate::inbound::router::Router::AddDeckCard { deck_id });
                     },
-                    "add"
+                    "Add"
                 }
                 button {
                     class: "util-btn",
                     onclick: move |_| {
                         navigator.push(crate::inbound::router::Router::RemoveDeckCard { deck_id });
                     },
-                    "remove"
+                    "Remove"
                 }
                 button {
                     class: "util-btn",
                     onclick: move |_| filters_overlay_open.set(true),
-                    "filter"
+                    "Filter"
                     if !filter_builder.read().is_empty() {
                         span { class: "filter-dot" }
                     }
@@ -796,11 +796,11 @@ pub fn View(deck_id: Uuid) -> Element {
                             let current = *filter_reset_counter.peek();
                             filter_reset_counter.set(current + 1);
                             toast.info(
-                                "filter cleared".to_string(),
+                                "Filter cleared".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
                             );
                         },
-                        "clear filter"
+                        "Clear filter"
                     }
                 }
             }

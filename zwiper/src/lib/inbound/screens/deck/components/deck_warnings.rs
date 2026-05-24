@@ -22,13 +22,13 @@ pub(crate) fn DeckWarnings(
     let toast = use_toast();
 
     rsx! {
-        label { class: "label", "warnings" }
+        label { class: "label", "Warnings" }
         div { class: "info-list",
             style: "border-color: var(--border-warning);",
             for warning in warnings.iter() {
                 div { class: "info-row",
                     style: "justify-content: space-between; gap: 0.5rem;",
-                    span { class: "text-muted", "{warning.to_lowercase()}" }
+                    span { class: "text-muted", "{warning}" }
                     if let Some(card_id) = warning.scryfall_data_id() {
                         {
                             let on_remove = on_remove;
@@ -44,7 +44,7 @@ pub(crate) fn DeckWarnings(
                                             onclick: move |_| {
                                                 on_fix_quantity((card_id, target_qty));
                                             },
-                                            "fix to {target_qty}"
+                                            "Fix to {target_qty}"
                                         }
                                     }
                                 }
@@ -56,7 +56,7 @@ pub(crate) fn DeckWarnings(
                                             onclick: move |_| {
                                                 on_clear_commander(());
                                             },
-                                            "clear"
+                                            "Clear"
                                         }
                                     }
                                 }
@@ -70,13 +70,13 @@ pub(crate) fn DeckWarnings(
                                                 spawn(async move {
                                                     let result: Result<(), ApiError> = async {
                                                         let session = session()
-                                                            .ok_or_else(|| ApiError::Unauthorized("session expired".to_string()))?;
+                                                            .ok_or_else(|| ApiError::Unauthorized("Session expired".to_string()))?;
                                                         client().delete_deck_card(deck_id, card_id, &session).await
                                                     }.await;
                                                     match result {
                                                         Ok(()) => {
                                                             toast.info(
-                                                                "card removed".to_string(),
+                                                                "Card removed".to_string(),
                                                                 ToastOptions::default().duration(Duration::from_millis(1500)),
                                                             );
                                                             on_remove(());
@@ -87,7 +87,7 @@ pub(crate) fn DeckWarnings(
                                                     }
                                                 });
                                             },
-                                            "remove"
+                                            "Remove"
                                         }
                                     }
                                 }

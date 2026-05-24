@@ -7,12 +7,12 @@ use super::super::match_mode::MatchMode;
 
 /// Mana symbols for the produced mana filter (WUBRG + colorless).
 const MANA_SYMBOLS: &[(&str, &str)] = &[
-    ("W", "white"),
-    ("U", "blue"),
-    ("B", "black"),
-    ("R", "red"),
-    ("G", "green"),
-    ("C", "colorless"),
+    ("W", "White"),
+    ("U", "Blue"),
+    ("B", "Black"),
+    ("R", "Red"),
+    ("G", "Green"),
+    ("C", "Colorless"),
 ];
 
 fn read_produced_mana(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<String> {
@@ -64,7 +64,7 @@ pub(crate) fn ProducedManaFilter() -> Element {
     rsx! {
         // ── produces (include) ────────────────────────────────────
         div { class: "label-row mt-2",
-            label { class: "label-xs", "produces" }
+            label { class: "label-xs", "Produces" }
             button {
                 class: "clear-btn",
                 onclick: move |_| {
@@ -108,7 +108,7 @@ pub(crate) fn ProducedManaFilter() -> Element {
 
         // ── does not produce (exclude) ────────────────────────────
         div { class: "label-row mt-2",
-            label { class: "label-xs", "doesn't produce" }
+            label { class: "label-xs", "Doesn't produce" }
             if !excluded.is_empty() {
                 button {
                     class: "clear-btn",

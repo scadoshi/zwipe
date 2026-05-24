@@ -44,21 +44,21 @@ pub(crate) fn CloneDeckDialog(
                 if !v { open.set(false); }
             },
             AlertDialogContent {
-                AlertDialogTitle { "clone deck" }
+                AlertDialogTitle { "Clone deck" }
                 AlertDialogDescription {
-                    "give your new deck a name. all cards, commander, and format will be copied over."
+                    "Give your new deck a name. All cards, commander, and format will be copied over."
                 }
                 input {
                     r#type: "text",
                     class: "input",
-                    placeholder: "new deck name",
+                    placeholder: "New deck name",
                     value: "{new_name}",
                     oninput: move |evt| new_name.set(evt.value()),
                 }
                 AlertDialogActions {
                     AlertDialogCancel {
                         on_click: move |_| open.set(false),
-                        "cancel"
+                        "Cancel"
                     }
                     button {
                         class: "alert-dialog-action",
@@ -70,7 +70,7 @@ pub(crate) fn CloneDeckDialog(
                                 session.upkeep(client);
                                 let Some(s) = session() else {
                                     toast.error(
-                                        "session expired — please log in again".to_string(),
+                                        "Session expired — please log in again".to_string(),
                                         ToastOptions::default().duration(Duration::from_millis(3000)),
                                     );
                                     is_cloning.set(false);
@@ -81,7 +81,7 @@ pub(crate) fn CloneDeckDialog(
                                     Ok(cloned) => {
                                         open.set(false);
                                         toast.info(
-                                            format!("cloned as '{name}'"),
+                                            format!("Cloned as '{name}'"),
                                             ToastOptions::default().duration(Duration::from_millis(2000)),
                                         );
                                         navigator.push(Router::ViewDeck { deck_id: cloned.deck_id });
@@ -96,7 +96,7 @@ pub(crate) fn CloneDeckDialog(
                                 }
                             });
                         },
-                        if is_cloning() { "cloning..." } else { "save" }
+                        if is_cloning() { "Cloning..." } else { "Save" }
                     }
                 }
             }

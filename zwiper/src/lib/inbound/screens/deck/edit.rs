@@ -108,7 +108,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         Some(Ok(Some(original))) => {
             original_commander.set(Some(original.clone()));
             commander.set(Some(original.clone()));
-            commander_display.set(original.scryfall_data.name.to_lowercase());
+            commander_display.set(original.scryfall_data.name.clone());
         }
         Some(Ok(None)) | None => (),
         Some(Err(e)) => {
@@ -142,7 +142,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         Some(Ok(Some(original))) => {
             original_partner.set(Some(original.clone()));
             partner_commander.set(Some(original.clone()));
-            partner_commander_display.set(original.scryfall_data.name.to_lowercase());
+            partner_commander_display.set(original.scryfall_data.name.clone());
         }
         Some(Ok(None)) | None => (),
         Some(Err(e)) => {
@@ -176,7 +176,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         Some(Ok(Some(original))) => {
             original_background.set(Some(original.clone()));
             background.set(Some(original.clone()));
-            background_display.set(original.scryfall_data.name.to_lowercase());
+            background_display.set(original.scryfall_data.name.clone());
         }
         Some(Ok(None)) | None => (),
         Some(Err(e)) => {
@@ -210,7 +210,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         Some(Ok(Some(original))) => {
             original_signature_spell.set(Some(original.clone()));
             signature_spell.set(Some(original.clone()));
-            signature_spell_display.set(original.scryfall_data.name.to_lowercase());
+            signature_spell_display.set(original.scryfall_data.name.clone());
         }
         Some(Ok(None)) | None => (),
         Some(Err(e)) => {
@@ -281,7 +281,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         spawn(async move {
             session.upkeep(client);
             let Some(session) = session() else {
-                toast.error("session expired".to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                toast.error("Session expired".to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
                 is_saving.set(false);
                 return;
             };
@@ -325,7 +325,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         Bouncer {
             div { class: "screen",
                 div { class: "page-header",
-                    h2 { "edit deck" }
+                    h2 { "Edit Deck" }
                 }
 
                 div { class: "screen-content centered content-enter",
@@ -349,7 +349,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                             }
 
                         },
-                        Some(Err(_)) => rsx! { p { class: "text-muted", "could not load deck" } },
+                        Some(Err(_)) => rsx! { p { class: "text-muted", "Could not load deck" } },
                         None => rsx! { div { class : "spinner" } }
                     }
                 }
@@ -361,14 +361,14 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                     onclick: move |_| {
                         navigator.push(Router::ViewDeck { deck_id });
                     },
-                    "back"
+                    "Back"
                 }
                 if has_made_changes() {
                     button {
                         class: "util-btn",
                         disabled: is_saving(),
                         onclick : move |_| attempt_submit(),
-                            if is_saving() { "saving..." } else { "save changes" }
+                            if is_saving() { "Saving..." } else { "Save changes" }
                     }
                 }
             }

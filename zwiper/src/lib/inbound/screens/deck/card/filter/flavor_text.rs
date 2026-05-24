@@ -21,7 +21,7 @@ pub fn FlavorText() -> Element {
     rsx! {
         div { class: "flex-col gap-half",
             div { class: "label-row mt-2",
-                label { class: "label-xs", r#for: "flavor-text-contains", "flavor text contains" }
+                label { class: "label-xs", r#for: "flavor-text-contains", "Flavor text contains" }
                 if filter_builder().flavor_text_contains().is_some() {
                     button {
                         class: "clear-btn",
@@ -34,7 +34,7 @@ pub fn FlavorText() -> Element {
             }
             input { class: "input input-compact",
                 id: "flavor-text-contains",
-                placeholder: "flavor text contains",
+                placeholder: "Flavor text contains",
                 value: flavor_text_value,
                 r#type: "text",
                 autocapitalize: "none",
@@ -44,7 +44,7 @@ pub fn FlavorText() -> Element {
                 }
             }
             div { class: "label-row mt-2",
-                label { class: "label-xs", r#for: "flavor-text-not-contains", "flavor text doesn't contain" }
+                label { class: "label-xs", r#for: "flavor-text-not-contains", "Flavor text doesn't contain" }
                 if filter_builder().flavor_text_not_contains().is_some() {
                     button {
                         class: "clear-btn",
@@ -57,7 +57,7 @@ pub fn FlavorText() -> Element {
             }
             input { class: "input input-compact",
                 id: "flavor-text-not-contains",
-                placeholder: "flavor text doesn't contain",
+                placeholder: "Flavor text doesn't contain",
                 value: flavor_text_not_value,
                 r#type: "text",
                 autocapitalize: "none",

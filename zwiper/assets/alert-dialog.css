@@ -51,8 +51,8 @@
   border-radius: 1rem;
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: "Cascadia Code", monospace;
-  font-weight: 300;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 400;
   text-align: center;
   gap: 1rem;
 }
@@ -61,7 +61,7 @@
   margin: 0;
   color: var(--text-primary);
   font-size: 1.25rem;
-  font-weight: 300;
+  font-weight: 400;
   letter-spacing: 0.1em;
 }
 
@@ -69,7 +69,7 @@
   margin: 0;
   color: var(--text-primary);
   font-size: 1rem;
-  font-weight: 300;
+  font-weight: 400;
   opacity: 0.8;
 }
 
@@ -88,9 +88,9 @@
   border-radius: 0.6rem;
   background: none;
   color: var(--text-primary);
-  font-family: "Cascadia Code", monospace;
+  font-family: 'JetBrains Mono', monospace;
   font-size: 0.8rem;
-  font-weight: 300;
+  font-weight: 400;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -107,9 +107,9 @@
   border-radius: 0.6rem;
   background: none;
   color: var(--color-error);
-  font-family: "Cascadia Code", monospace;
+  font-family: 'JetBrains Mono', monospace;
   font-size: 0.8rem;
-  font-weight: 300;
+  font-weight: 400;
   cursor: pointer;
   transition: all 0.2s ease;
 }

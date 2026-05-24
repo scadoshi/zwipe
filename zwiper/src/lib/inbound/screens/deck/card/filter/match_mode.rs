@@ -21,8 +21,8 @@ impl MatchMode {
     /// Returns a display label for the current mode.
     pub fn label(self) -> &'static str {
         match self {
-            Self::Any => "any",
-            Self::All => "all",
+            Self::Any => "Any",
+            Self::All => "All",
         }
     }
 }

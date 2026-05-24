@@ -15,7 +15,7 @@ pub fn Name() -> Element {
     rsx! {
         div { class: "flex-col gap-half",
             div { class: "label-row mt-2",
-                label { class: "label-xs", r#for: "name-contains", "name contains" }
+                label { class: "label-xs", r#for: "name-contains", "Name contains" }
                 if filter_builder().name_contains().is_some() {
                     button {
                         class: "clear-btn",
@@ -28,7 +28,7 @@ pub fn Name() -> Element {
             }
             input { class: "input input-compact",
                 id: "name-contains",
-                placeholder: "name contains",
+                placeholder: "Name contains",
                 value: name_value,
                 r#type: "text",
                 autocapitalize: "none",
@@ -38,7 +38,7 @@ pub fn Name() -> Element {
                 }
             }
             div { class: "label-row mt-2",
-                label { class: "label-xs", r#for: "name-not-contains", "name doesn't contain" }
+                label { class: "label-xs", r#for: "name-not-contains", "Name doesn't contain" }
                 if filter_builder().name_not_contains().is_some() {
                     button {
                         class: "clear-btn",
@@ -51,7 +51,7 @@ pub fn Name() -> Element {
             }
             input { class: "input input-compact",
                 id: "name-not-contains",
-                placeholder: "name doesn't contain",
+                placeholder: "Name doesn't contain",
                 value: name_not_value,
                 r#type: "text",
                 autocapitalize: "none",

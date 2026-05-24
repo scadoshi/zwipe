@@ -23,7 +23,7 @@ pub(crate) fn ToughnessFilter() -> Element {
 
     rsx! {
         div { class: "label-row mt-2",
-            label { class: "label-xs", "toughness" }
+            label { class: "label-xs", "Toughness" }
             button {
                 class: "clear-btn",
                 onclick: move |_| {
@@ -39,7 +39,7 @@ pub(crate) fn ToughnessFilter() -> Element {
                         }
                     }
                 },
-                "{toughness_mode().to_string().to_lowercase()}"
+                "{toughness_mode()}"
             }
             if toughness_is_active {
                 button {

@@ -13,7 +13,7 @@ pub fn Sort() -> Element {
         div { class: "flex-col gap-half",
             // Order By selection
             div { class: "label-row mt-2",
-                label { class: "label-xs", "sort by" }
+                label { class: "label-xs", "Sort by" }
                 if filter_builder().order_by().is_some() {
                     button {
                         class: "clear-btn",
@@ -41,13 +41,13 @@ pub fn Sort() -> Element {
                                 filter_builder.write().set_order_by(option);
                             }
                         },
-                        { option.to_string().to_lowercase() }
+                        { option.to_string() }
                     }
                 }
             }
 
             div { class: "label-row mt-2",
-                label { class: "label-xs", "sort order" }
+                label { class: "label-xs", "Sort order" }
             }
 
             // Ascending/Descending toggle
@@ -58,7 +58,7 @@ pub fn Sort() -> Element {
                         let current = filter_builder().ascending();
                         filter_builder.write().set_ascending(!current);
                     },
-                    { if filter_builder().ascending() { "ascending" } else { "descending" } }
+                    { if filter_builder().ascending() { "Ascending" } else { "Descending" } }
                 }
             }
         }

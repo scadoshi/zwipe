@@ -21,8 +21,8 @@ impl IncludeExclude {
 
     fn label(self) -> &'static str {
         match self {
-            Self::Include => "include",
-            Self::Exclude => "exclude",
+            Self::Include => "Include",
+            Self::Exclude => "Exclude",
         }
     }
 }
@@ -56,7 +56,7 @@ pub fn Rarity() -> Element {
     rsx! {
         div { class: "flex-col gap-half",
             div { class: "label-row mt-2",
-                label { class: "label-xs", "rarity" }
+                label { class: "label-xs", "Rarity" }
                 if has_selection {
                     button {
                         class: "clear-btn",
@@ -152,7 +152,7 @@ pub fn Rarity() -> Element {
                                 }
                             }
                         },
-                        { rarity.to_long_name().to_lowercase() }
+                        { rarity.to_long_name().to_string() }
                     }
                 }
             }

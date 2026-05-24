@@ -104,7 +104,7 @@ pub(crate) fn DeckFields(
     });
 
     let commander_label = use_memo(move || {
-        if is_oathbreaker() { "oathbreaker" } else { "commander" }
+        if is_oathbreaker() { "Oathbreaker" } else { "Commander" }
     });
 
     // ========================================
@@ -115,7 +115,7 @@ pub(crate) fn DeckFields(
     use_effect(move || {
         let fmt = selected_format();
         format_query.set(
-            fmt.map(|f| f.display_name().to_lowercase())
+            fmt.map(|f| f.display_name().to_string())
                 .unwrap_or_default(),
         );
         cmd_filter_on.set(true);
@@ -340,10 +340,10 @@ pub(crate) fn DeckFields(
         // Deck name
         // ========================================
         TextInput {
-            label: "deck name",
+            label: "Deck name",
             value: deck_name,
             id: "deck_name",
-            placeholder: "deck name",
+            placeholder: "Deck name",
         }
 
         // ========================================
@@ -351,7 +351,7 @@ pub(crate) fn DeckFields(
         // ========================================
         div {
             div { class: "label-row",
-                label { class: "label", "format" }
+                label { class: "label", "Format" }
                 if selected_format().is_some() {
                     button {
                         class: "clear-btn",
@@ -386,7 +386,7 @@ pub(crate) fn DeckFields(
                                     div { class: "chip-unselected",
                                         onclick: move |_| {
                                             selected_format.set(Some(fmt));
-                                            format_query.set(fmt.display_name().to_lowercase());
+                                            format_query.set(fmt.display_name().to_string());
                                             commander.set(None);
                                             commander_display.set(String::new());
                                             if !fmt.has_signature_spell() {
@@ -394,7 +394,7 @@ pub(crate) fn DeckFields(
                                                 signature_spell_display.set(String::new());
                                             }
                                         },
-                                        { fmt.display_name().to_lowercase() }
+                                        { fmt.display_name().to_string() }
                                     }
                                 }
                             }
@@ -402,7 +402,7 @@ pub(crate) fn DeckFields(
                     } else {
                         rsx! {
                             div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                                div { class: "chip-unselected", "no results" }
+                                div { class: "chip-unselected", "No results" }
                             }
                         }
                     }
@@ -413,7 +413,7 @@ pub(crate) fn DeckFields(
             input { class: "input",
                 id: "format-search",
                 r#type: "text",
-                placeholder: "format",
+                placeholder: "Format",
                 value: "{format_query()}",
                 autocapitalize: "none",
                 spellcheck: "false",
@@ -445,7 +445,7 @@ pub(crate) fn DeckFields(
                         onclick: move |_| {
                             cmd_filter_on.set(!cmd_filter_on());
                         },
-                        "filter"
+                        "Filter"
                     }
                     if commander().is_some() {
                         button {
@@ -464,11 +464,11 @@ pub(crate) fn DeckFields(
                 if cmd_show_dropdown() {
                     if cmd_is_searching() {
                         div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                            div { class: "chip-unselected", "searching..." }
+                            div { class: "chip-unselected", "Searching..." }
                         }
                     } else if cmd_search_results().is_empty() {
                         div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                            div { class: "chip-unselected", "no results" }
+                            div { class: "chip-unselected", "No results" }
                         }
                     } else {
                         div { class: "flex flex-wrap gap-1 mb-1 flex-center",
@@ -476,10 +476,10 @@ pub(crate) fn DeckFields(
                                 div { class: "chip-unselected",
                                     onclick: move |_| {
                                         commander.set(Some(card.clone()));
-                                        commander_display.set(card.scryfall_data.name.to_lowercase());
+                                        commander_display.set(card.scryfall_data.name.clone());
                                         cmd_show_dropdown.set(false);
                                     },
-                                    { card.scryfall_data.name.to_lowercase() }
+                                    { card.scryfall_data.name.clone() }
                                 }
                             }
                         }
@@ -512,13 +512,13 @@ pub(crate) fn DeckFields(
         if show_partner() {
             div {
                 div { class: "label-row",
-                    label { class: "label", "partner" }
+                    label { class: "label", "Partner" }
                     div {
                         class: if partner_filter_on() { "chip-xs selected" } else { "chip-xs" },
                         onclick: move |_| {
                             partner_filter_on.set(!partner_filter_on());
                         },
-                        "filter"
+                        "Filter"
                     }
                     if partner_commander().is_some() {
                         button {
@@ -537,11 +537,11 @@ pub(crate) fn DeckFields(
                 if partner_show_dropdown() {
                     if partner_is_searching() {
                         div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                            div { class: "chip-unselected", "searching..." }
+                            div { class: "chip-unselected", "Searching..." }
                         }
                     } else if partner_search_results().is_empty() {
                         div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                            div { class: "chip-unselected", "no results" }
+                            div { class: "chip-unselected", "No results" }
                         }
                     } else {
                         div { class: "flex flex-wrap gap-1 mb-1 flex-center",
@@ -549,10 +549,10 @@ pub(crate) fn DeckFields(
                                 div { class: "chip-unselected",
                                     onclick: move |_| {
                                         partner_commander.set(Some(card.clone()));
-                                        partner_commander_display.set(card.scryfall_data.name.to_lowercase());
+                                        partner_commander_display.set(card.scryfall_data.name.clone());
                                         partner_show_dropdown.set(false);
                                     },
-                                    { card.scryfall_data.name.to_lowercase() }
+                                    { card.scryfall_data.name.clone() }
                                 }
                             }
                         }
@@ -562,7 +562,7 @@ pub(crate) fn DeckFields(
                 input { class: "input",
                     id: "partner_commander",
                     r#type: "text",
-                    placeholder: "partner commander",
+                    placeholder: "Partner commander",
                     value: "{partner_commander_display}",
                     autocapitalize: "none",
                     spellcheck: "false",
@@ -585,13 +585,13 @@ pub(crate) fn DeckFields(
         if show_background() {
             div {
                 div { class: "label-row",
-                    label { class: "label", "background" }
+                    label { class: "label", "Background" }
                     div {
                         class: if bg_filter_on() { "chip-xs selected" } else { "chip-xs" },
                         onclick: move |_| {
                             bg_filter_on.set(!bg_filter_on());
                         },
-                        "filter"
+                        "Filter"
                     }
                     if background().is_some() {
                         button {
@@ -610,11 +610,11 @@ pub(crate) fn DeckFields(
                 if bg_show_dropdown() {
                     if bg_is_searching() {
                         div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                            div { class: "chip-unselected", "searching..." }
+                            div { class: "chip-unselected", "Searching..." }
                         }
                     } else if bg_search_results().is_empty() {
                         div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                            div { class: "chip-unselected", "no results" }
+                            div { class: "chip-unselected", "No results" }
                         }
                     } else {
                         div { class: "flex flex-wrap gap-1 mb-1 flex-center",
@@ -622,10 +622,10 @@ pub(crate) fn DeckFields(
                                 div { class: "chip-unselected",
                                     onclick: move |_| {
                                         background.set(Some(card.clone()));
-                                        background_display.set(card.scryfall_data.name.to_lowercase());
+                                        background_display.set(card.scryfall_data.name.clone());
                                         bg_show_dropdown.set(false);
                                     },
-                                    { card.scryfall_data.name.to_lowercase() }
+                                    { card.scryfall_data.name.clone() }
                                 }
                             }
                         }
@@ -635,7 +635,7 @@ pub(crate) fn DeckFields(
                 input { class: "input",
                     id: "background",
                     r#type: "text",
-                    placeholder: "background",
+                    placeholder: "Background",
                     value: "{background_display}",
                     autocapitalize: "none",
                     spellcheck: "false",
@@ -658,13 +658,13 @@ pub(crate) fn DeckFields(
         if show_signature_spell() {
             div {
                 div { class: "label-row",
-                    label { class: "label", "signature spell" }
+                    label { class: "label", "Signature spell" }
                     div {
                         class: if spell_filter_on() { "chip-xs selected" } else { "chip-xs" },
                         onclick: move |_| {
                             spell_filter_on.set(!spell_filter_on());
                         },
-                        "filter"
+                        "Filter"
                     }
                     if signature_spell().is_some() {
                         button {
@@ -683,11 +683,11 @@ pub(crate) fn DeckFields(
                 if spell_show_dropdown() {
                     if spell_is_searching() {
                         div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                            div { class: "chip-unselected", "searching..." }
+                            div { class: "chip-unselected", "Searching..." }
                         }
                     } else if spell_search_results().is_empty() {
                         div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                            div { class: "chip-unselected", "no results" }
+                            div { class: "chip-unselected", "No results" }
                         }
                     } else {
                         div { class: "flex flex-wrap gap-1 mb-1 flex-center",
@@ -695,10 +695,10 @@ pub(crate) fn DeckFields(
                                 div { class: "chip-unselected",
                                     onclick: move |_| {
                                         signature_spell.set(Some(card.clone()));
-                                        signature_spell_display.set(card.scryfall_data.name.to_lowercase());
+                                        signature_spell_display.set(card.scryfall_data.name.clone());
                                         spell_show_dropdown.set(false);
                                     },
-                                    { card.scryfall_data.name.to_lowercase() }
+                                    { card.scryfall_data.name.clone() }
                                 }
                             }
                         }
@@ -708,7 +708,7 @@ pub(crate) fn DeckFields(
                 input { class: "input",
                     id: "signature_spell",
                     r#type: "text",
-                    placeholder: "signature spell",
+                    placeholder: "Signature spell",
                     value: "{signature_spell_display}",
                     autocapitalize: "none",
                     spellcheck: "false",

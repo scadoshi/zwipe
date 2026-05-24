@@ -98,7 +98,7 @@ pub(crate) fn PrintingSheet(
             onclick: move |_| {
                 if has_changed {
                     toast.warning(
-                        "printing discarded".to_string(),
+                        "Printing discarded".to_string(),
                         ToastOptions::default().duration(Duration::from_millis(1500)),
                     );
                 }
@@ -111,7 +111,7 @@ pub(crate) fn PrintingSheet(
             class: if open() { "bottom-sheet show" } else { "bottom-sheet" },
 
             div { class: "modal-header",
-                span { class: "text-muted", style: "font-size: 1rem;", "printings" }
+                span { class: "text-muted", style: "font-size: 1rem;", "Printings" }
             }
 
             div { class: "modal-content no-pad-x",
@@ -170,13 +170,13 @@ pub(crate) fn PrintingSheet(
                     onclick: move |_| {
                         if has_changed {
                             toast.info(
-                                "printing discarded".to_string(),
+                                "Printing discarded".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
                             );
                         }
                         open.set(false);
                     },
-                    "close"
+                    "Close"
                 }
 
                 if has_changed {
@@ -188,12 +188,12 @@ pub(crate) fn PrintingSheet(
                                     onclick: move |_| {
                                         on_save(new_card.clone());
                                         toast.info(
-                                            "printing saved".to_string(),
+                                            "Printing saved".to_string(),
                                             ToastOptions::default().duration(Duration::from_millis(1500)),
                                         );
                                         open.set(false);
                                     },
-                                    "save"
+                                    "Save"
                                 }
                             }
                         }

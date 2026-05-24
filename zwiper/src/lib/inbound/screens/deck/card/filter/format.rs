@@ -14,7 +14,7 @@ pub fn FormatFilter() -> Element {
 
             // ── Commander Eligibility ──────────────────────────────
             div { class: "label-row mt-2",
-                label { class: "label-xs", "is commander in" }
+                label { class: "label-xs", "Is commander in" }
                 if filter_builder().is_commander_in_format().is_some() {
                     button {
                         class: "clear-btn",
@@ -48,14 +48,14 @@ pub fn FormatFilter() -> Element {
                                 filter_builder.write().set_is_commander_in_format(fmt);
                             }
                         },
-                        { fmt.display_name().to_lowercase() }
+                        { fmt.display_name().to_string() }
                     }
                 }
             }
 
             // ── Format Legality ───────────────────────────────────
             div { class: "label-row mt-2",
-                label { class: "label-xs", "is legal in" }
+                label { class: "label-xs", "Is legal in" }
                 if filter_builder().legalities_contains_any().is_some() {
                     button {
                         class: "clear-btn",
@@ -97,7 +97,7 @@ pub fn FormatFilter() -> Element {
                                 filter_builder.write().set_legalities_contains_any(current);
                             }
                         },
-                        { fmt.display_name().to_lowercase() }
+                        { fmt.display_name().to_string() }
                     }
                 }
             }

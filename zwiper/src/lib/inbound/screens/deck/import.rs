@@ -36,7 +36,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
         spawn(async move {
             session.upkeep(client);
             let Some(session) = session() else {
-                toast.error("session expired".to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                toast.error("Session expired".to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
                 loading.set(false);
                 return;
             };
@@ -48,17 +48,17 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                     let unresolved = r.unresolved.len();
                     let opts = ToastOptions::default().duration(Duration::from_millis(1500));
                     match (imported, unresolved) {
-                        (0, 0) => toast.info("no cards found".to_string(), opts),
+                        (0, 0) => toast.info("No cards found".to_string(), opts),
                         (0, _) => toast.error(
                             format!("{unresolved} card{} unresolved", if unresolved == 1 { "" } else { "s" }),
                             ToastOptions::default().duration(Duration::from_millis(3000)),
                         ),
                         (_, 0) => toast.success(
-                            format!("imported {imported} card{}", if imported == 1 { "" } else { "s" }),
+                            format!("Imported {imported} card{}", if imported == 1 { "" } else { "s" }),
                             opts,
                         ),
                         _ => toast.info(
-                            format!("imported {imported}, {unresolved} unresolved"),
+                            format!("Imported {imported}, {unresolved} unresolved"),
                             opts,
                         ),
                     }
@@ -76,14 +76,14 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
         Bouncer {
             div { class: "screen",
                 div { class: "page-header",
-                    h2 { "import" }
+                    h2 { "Import" }
                 }
 
                 div { class: "screen-content centered content-enter",
                     div { class: "container-sm",
                         div { class: "chip-row",
-                            span { class: "chip-row-label", "import:" }
-                            for (label, value) in [("deck", None), ("maybe", Some("maybeboard")), ("side", Some("sideboard"))] {
+                            span { class: "chip-row-label", "Import:" }
+                            for (label, value) in [("Deck", None), ("Maybe", Some("maybeboard")), ("Side", Some("sideboard"))] {
                                 button {
                                     class: if *board_selection.read() == value { "chip selected" } else { "chip" },
                                     onclick: move |_| board_selection.set(value),
@@ -91,32 +91,32 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                                 }
                             }
                         }
-                        label { class: "label", r#for: "import-text", "paste decklist" }
+                        label { class: "label", r#for: "import-text", "Paste decklist" }
                         textarea {
                             id: "import-text",
                             class: "input",
                             style: "width:100%;min-height:12rem;resize:vertical;font-family:monospace;",
-                            placeholder: "5 island\n4 mountain\n1 guide of souls\n1 gonti's aether heart\n1 decoction module\n1 whirler virtuoso",
+                            placeholder: "5 Island\n4 Mountain\n1 Guide of Souls\n1 Gonti's Aether Heart\n1 Decoction Module\n1 Whirler Virtuoso",
                             value: "{text}",
                             oninput: move |e| text.set(e.value()),
                         }
 
                         if let Some(r) = result() {
                             if !r.imported.is_empty() {
-                                label { class: "label mt-2", "imported" }
+                                label { class: "label mt-2", "Imported" }
                                 for card in r.imported.iter() {
                                     div { class: "chip-bubble",
-                                        span { class: "font-light", "{card.name.to_lowercase()}" }
+                                        span { class: "font-light", "{card.name}" }
                                         span { class: "font-light opacity-50", "x{card.quantity}" }
                                     }
                                 }
                             }
                             if !r.unresolved.is_empty() {
-                                label { class: "label mt-2", "unresolved" }
+                                label { class: "label mt-2", "Unresolved" }
                                 for card in r.unresolved.iter() {
                                     div { class: "chip-bubble-error",
-                                        span { class: "font-light", "{card.name.to_lowercase()}" }
-                                        span { class: "font-light opacity-50", "{card.reason.to_lowercase()}" }
+                                        span { class: "font-light", "{card.name}" }
+                                        span { class: "font-light opacity-50", "{card.reason}" }
                                     }
                                 }
                             }
@@ -130,13 +130,13 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                         onclick: move |_| {
                             navigator.push(Router::ViewDeck { deck_id });
                         },
-                        "back"
+                        "Back"
                     }
                     button {
                         class: "util-btn",
                         disabled: loading(),
                         onclick: move |_| do_import(),
-                        if loading() { "importing..." } else { "import" }
+                        if loading() { "Importing..." } else { "Import" }
                     }
                 }
             }

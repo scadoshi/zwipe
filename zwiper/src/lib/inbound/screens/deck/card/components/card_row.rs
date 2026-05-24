@@ -20,7 +20,7 @@ pub(crate) fn CardRow(
     let is_expanded = expanded_card() == Some(card_id);
     let sd = &card.scryfall_data;
 
-    let name = sd.name.to_lowercase();
+    let name = sd.name.clone();
     let cmc_display = sd
         .cmc
         .map(|c| {
@@ -42,10 +42,10 @@ pub(crate) fn CardRow(
         .map(|c| format!("{{{}}}", c.to_short_name()))
         .collect::<Vec<_>>()
         .join("");
-    let oracle_text = sd.oracle_text.clone().unwrap_or_default().to_lowercase();
-    let type_line = sd.type_line.clone().unwrap_or_default().to_lowercase();
-    let rarity_name = sd.rarity.to_long_name().to_lowercase();
-    let set_name = sd.set_name.clone().to_lowercase();
+    let oracle_text = sd.oracle_text.clone().unwrap_or_default();
+    let type_line = sd.type_line.clone().unwrap_or_default();
+    let rarity_name = sd.rarity.to_long_name().to_string();
+    let set_name = sd.set_name.clone();
     let image_url: Option<String> = sd.image_uris.as_ref().and_then(|iu| iu.large.clone());
 
     rsx! {
@@ -108,7 +108,7 @@ pub(crate) fn CardRow(
                                     preview_image_url.set(Some(url.clone()));
                                     preview_dismissing.set(false);
                                 },
-                                "image"
+                                "Image"
                             }
                         }
                         if let Some(handler) = on_printing {
@@ -121,7 +121,7 @@ pub(crate) fn CardRow(
                                             evt.stop_propagation();
                                             handler.call(card_clone.clone());
                                         },
-                                        "printing"
+                                        "Printing"
                                     }
                                 }
                             }
@@ -135,13 +135,13 @@ pub(crate) fn CardRow(
                                         class: "qty-btn",
                                         style: "white-space:nowrap;",
                                         onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Maybeboard); },
-                                        "to maybeboard"
+                                        "To maybeboard"
                                     }
                                     button {
                                         class: "qty-btn",
                                         style: "white-space:nowrap;",
                                         onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Sideboard); },
-                                        "to sideboard"
+                                        "To sideboard"
                                     }
                                 },
                                 Board::Maybeboard => rsx! {
@@ -149,13 +149,13 @@ pub(crate) fn CardRow(
                                         class: "qty-btn",
                                         style: "white-space:nowrap;",
                                         onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Deck); },
-                                        "to deck"
+                                        "To deck"
                                     }
                                     button {
                                         class: "qty-btn",
                                         style: "white-space:nowrap;",
                                         onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Sideboard); },
-                                        "to sideboard"
+                                        "To sideboard"
                                     }
                                 },
                                 Board::Sideboard => rsx! {
@@ -163,13 +163,13 @@ pub(crate) fn CardRow(
                                         class: "qty-btn",
                                         style: "white-space:nowrap;",
                                         onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Deck); },
-                                        "to deck"
+                                        "To deck"
                                     }
                                     button {
                                         class: "qty-btn",
                                         style: "white-space:nowrap;",
                                         onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Maybeboard); },
-                                        "to maybeboard"
+                                        "To maybeboard"
                                     }
                                 },
                             }

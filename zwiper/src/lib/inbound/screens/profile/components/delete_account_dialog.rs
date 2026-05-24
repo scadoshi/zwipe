@@ -42,14 +42,14 @@ pub(crate) fn DeleteAccountDialog(mut open: Signal<bool>) -> Element {
                 if !v { open.set(false); }
             },
             AlertDialogContent {
-                AlertDialogTitle { "delete account" }
+                AlertDialogTitle { "Delete account" }
                 AlertDialogDescription {
-                    "this will permanently delete your account, all decks, and all card data. this cannot be undone."
+                    "This will permanently delete your account, all decks, and all card data. This cannot be undone."
                 }
                 input {
                     r#type: "password",
                     class: "input",
-                    placeholder: "confirm your password",
+                    placeholder: "Confirm your password",
                     value: "{delete_password}",
                     oninput: move |evt| {
                         delete_password.set(evt.value());
@@ -58,7 +58,7 @@ pub(crate) fn DeleteAccountDialog(mut open: Signal<bool>) -> Element {
                 AlertDialogActions {
                     AlertDialogCancel {
                         on_click: move |_| open.set(false),
-                        "cancel"
+                        "Cancel"
                     }
                     button {
                         class: "alert-dialog-action-danger",
@@ -69,7 +69,7 @@ pub(crate) fn DeleteAccountDialog(mut open: Signal<bool>) -> Element {
                             spawn(async move {
                                 session.upkeep(client);
                                 let Some(s) = session() else {
-                                    toast.error("session expired — please log in again".to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                                    toast.error("Session expired — please log in again".to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
                                     is_deleting.set(false);
                                     return;
                                 };
@@ -86,11 +86,11 @@ pub(crate) fn DeleteAccountDialog(mut open: Signal<bool>) -> Element {
                             });
                         },
                         if delete_countdown() > 0 {
-                            "delete ({delete_countdown()})"
+                            "Delete ({delete_countdown()})"
                         } else if is_deleting() {
-                            "deleting..."
+                            "Deleting..."
                         } else {
-                            "delete"
+                            "Delete"
                         }
                     }
                 }

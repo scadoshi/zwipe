@@ -23,7 +23,7 @@ pub(crate) fn PowerFilter() -> Element {
 
     rsx! {
         div { class: "label-row mt-2",
-            label { class: "label-xs", "power" }
+            label { class: "label-xs", "Power" }
             button {
                 class: "clear-btn",
                 onclick: move |_| {
@@ -39,7 +39,7 @@ pub(crate) fn PowerFilter() -> Element {
                         }
                     }
                 },
-                "{power_mode().to_string().to_lowercase()}"
+                "{power_mode()}"
             }
             if power_is_active {
                 button {

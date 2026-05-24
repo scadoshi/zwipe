@@ -70,7 +70,7 @@ pub fn Login() -> Element {
             });
         } else {
             toast.error(
-                "invalid credentials".to_string(),
+                "Invalid credentials".to_string(),
                 ToastOptions::default().duration(Duration::from_millis(3000)),
             );
         }
@@ -86,14 +86,14 @@ pub fn Login() -> Element {
                     TextInput {
                         value: username_or_email,
                         id: "identity",
-                        label: "username or email",
-                        placeholder: "username or email",
+                        label: "Username or email",
+                        placeholder: "Username or email",
                     }
                     TextInput {
                         value: password,
                         id: "password",
-                        label: "password",
-                        placeholder: "password",
+                        label: "Password",
+                        placeholder: "Password",
                         input_type: "password",
                     }
                     if is_loading() {
@@ -107,19 +107,19 @@ pub fn Login() -> Element {
             button {
                 class: "util-btn",
                 onclick: move |_| attempt_submit(),
-                "login"
+                "Log in"
             },
             button {
                 class : "util-btn",
                 onclick: move |_| {
                 navigator.push(Router::Register {});
                 },
-                "create profile"
+                "Create profile"
             }
             button {
                 class: "util-btn",
                 onclick: move |_| { navigator.push(Router::ForgotPassword {}); },
-                "forgot password"
+                "Forgot password"
             }
         }
     }

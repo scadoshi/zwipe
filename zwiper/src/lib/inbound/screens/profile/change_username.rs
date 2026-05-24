@@ -39,7 +39,7 @@ pub fn ChangeUsername() -> Element {
     let mut password_error: Signal<Option<String>> = use_signal(|| None);
     let mut validate_password = move || {
         if Password::new(password()).is_err() {
-            password_error.set(Some("invalid password".to_string()));
+            password_error.set(Some("Invalid password".to_string()));
         } else {
             password_error.set(None);
         }
@@ -70,7 +70,7 @@ pub fn ChangeUsername() -> Element {
                 session.upkeep(auth_client);
                 let Some(mut session_value) = session() else {
                     toast.error(
-                        "session expired — please log in again".to_string(),
+                        "Session expired — please log in again".to_string(),
                         ToastOptions::default().duration(Duration::from_millis(3000)),
                     );
                     is_loading.set(false);
@@ -83,7 +83,7 @@ pub fn ChangeUsername() -> Element {
                         session_value.user.username = updated_user.username;
                         session.set(Some(session_value));
                         toast.success(
-                            format!("username changed to {}", new_name),
+                            format!("Username changed to {}", new_name),
                             ToastOptions::default().duration(Duration::from_millis(1500)),
                         );
                         clear_inputs();
@@ -114,7 +114,7 @@ pub fn ChangeUsername() -> Element {
         Bouncer {
             div { class: "screen",
                 div { class: "page-header",
-                    h2 { "change username" }
+                    h2 { "Change Username" }
                 }
 
                 div { class: "screen-content centered content-enter",
@@ -131,8 +131,8 @@ pub fn ChangeUsername() -> Element {
                         TextInput {
                             value: new_username,
                             id: "new_username",
-                            label: "new username",
-                            placeholder: "new username",
+                            label: "New username",
+                            placeholder: "New username",
                         }
 
                         if submit_attempted() {
@@ -144,8 +144,8 @@ pub fn ChangeUsername() -> Element {
                         TextInput {
                             value: password,
                             id: "password",
-                            label: "password",
-                            placeholder: "password",
+                            label: "Password",
+                            placeholder: "Password",
                             input_type: "password",
                         }
                     }
@@ -156,13 +156,13 @@ pub fn ChangeUsername() -> Element {
                 button {
                     class: "util-btn",
                     onclick: move |_| navigator.go_back(),
-                    "back"
+                    "Back"
                 }
                 button {
                     class: "util-btn",
                     disabled: is_loading(),
                     onclick: move |_| attempt_submit(),
-                    if is_loading() { "saving..." } else { "save changes" }
+                    if is_loading() { "Saving..." } else { "Save changes" }
                 }
             }
             }

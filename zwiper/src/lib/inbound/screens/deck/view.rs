@@ -54,7 +54,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         use_resource(move || async move {
             session.upkeep(client);
             let Some(session) = session() else {
-                return Err(ApiError::Unauthorized("session expired".to_string()));
+                return Err(ApiError::Unauthorized("Session expired".to_string()));
             };
 
             client().get_deck_profile(deck_id, &session).await
@@ -70,7 +70,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             };
             session.upkeep(client);
             let Some(session) = session() else {
-                return Err(ApiError::Unauthorized("session expired".to_string()));
+                return Err(ApiError::Unauthorized("Session expired".to_string()));
             };
             client()
                 .get_card(original_commander_id, &session)
@@ -81,7 +81,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         use_resource(move || async move {
             session.upkeep(client);
             let Some(session) = session() else {
-                return Err(ApiError::Unauthorized("session expired".to_string()));
+                return Err(ApiError::Unauthorized("Session expired".to_string()));
             };
             client()
                 .get_deck(deck_id, &session)
@@ -111,7 +111,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let attempt_delete = move || {
         session.upkeep(client);
         let Some(session) = session() else {
-            toast.error("session expired".to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+            toast.error("Session expired".to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
             return;
         };
 
@@ -285,7 +285,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             div { class: "screen",
                 div {
                     class : "page-header",
-                    h2 { "deck" }
+                    h2 { "Deck" }
                 }
 
                 div { class: "screen-content",
@@ -342,7 +342,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                 match client().update_deck_card(deck_id, card_id, &request, &session).await {
                                                     Ok(_) => {
                                                         toast.info(
-                                                            format!("quantity set to {target_qty}"),
+                                                            format!("Quantity set to {target_qty}"),
                                                             ToastOptions::default().duration(Duration::from_millis(1500)),
                                                         );
                                                         deck_resource.restart();
@@ -365,9 +365,9 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                 match client().update_deck_profile(deck_id, &request, &session).await {
                                                     Ok(_) => {
                                                         let label = if deck_profile_resource().is_some_and(|r| r.as_ref().ok().is_some_and(|p| p.format.as_ref().is_some_and(|f| f.has_signature_spell()))) {
-                                                            "oathbreaker"
+                                                            "Oathbreaker"
                                                         } else {
-                                                            "commander"
+                                                            "Commander"
                                                         };
                                                         toast.info(
                                                             format!("{label} cleared"),
@@ -388,7 +388,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
                             }
                         },
-                        Some(Err(_)) => rsx! { p { class: "text-muted", "could not load deck" } },
+                        Some(Err(_)) => rsx! { p { class: "text-muted", "Could not load deck" } },
                         None => rsx! { div { class: "spinner" } }
                     }
                 }
@@ -399,26 +399,26 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     onclick: move |_| {
                         navigator.push(Router::DeckList {});
                     },
-                    "back"
+                    "Back"
                 }
                 button {
                     class: "util-btn",
                     onclick: move |_| {
                         navigator.push(Router::EditDeck { deck_id });
                     },
-                    "edit"
+                    "Edit"
                 }
                 button {
                     class: "util-btn",
                     onclick: move |_| {
                         navigator.push(Router::ViewDeckCard { deck_id });
                     },
-                    "cards"
+                    "Cards"
                 }
                 button {
                     class: "util-btn",
                     onclick: move |_| show_more_sheet.set(true),
-                    "more"
+                    "More"
                 }
             }
 
@@ -426,17 +426,17 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 open: show_delete_dialog(),
                 on_open_change: move |open| show_delete_dialog.set(open),
                 AlertDialogContent {
-                    AlertDialogTitle { "delete deck" }
-                    AlertDialogDescription { "are you sure you want to delete this deck?" }
+                    AlertDialogTitle { "Delete deck" }
+                    AlertDialogDescription { "Are you sure you want to delete this deck?" }
                     AlertDialogActions {
                         AlertDialogCancel {
                             on_click: move |_| show_delete_dialog.set(false),
-                            "cancel"
+                            "Cancel"
                         }
                         AlertDialogAction {
                             danger: true,
                             on_click: move |_| attempt_delete(),
-                            "delete"
+                            "Delete"
                         }
                     }
                 }

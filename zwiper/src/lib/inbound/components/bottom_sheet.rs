@@ -25,7 +25,7 @@ pub fn BottomSheet(open: Signal<bool>, title: String, children: Element) -> Elem
                 button {
                     class: "util-btn",
                     onclick: move |_| open.set(false),
-                    "close"
+                    "Close"
                 }
             }
         }

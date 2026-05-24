@@ -68,7 +68,7 @@ pub fn DeckList() -> Element {
         Bouncer {
             div { class: "screen",
                 div { class: "page-header",
-                    h2 { "decks" }
+                    h2 { "Decks" }
                 }
 
                 div { class: "screen-content",
@@ -80,7 +80,7 @@ pub fn DeckList() -> Element {
                             if deck_profiles.is_empty() {
                                 rsx! {
                                     div { class: "message-empty",
-                                        p { "no decks" }
+                                        p { "No decks" }
                                     }
                                 }
                             } else {
@@ -112,19 +112,19 @@ pub fn DeckList() -> Element {
                                                     format!("{count} cards")
                                                 }
                                                 if let Some(ref fmt) = profile.format {
-                                                    " | {fmt.display_name().to_lowercase()}"
+                                                    " | {fmt.display_name()}"
                                                 }
                                                 if let Some(ref cmd) = profile.commander_name {
-                                                    " | {cmd.to_lowercase()}"
+                                                    " | {cmd}"
                                                 }
                                                 if let Some(ref name) = profile.partner_commander_name {
-                                                    " | {name.to_lowercase()}"
+                                                    " | {name}"
                                                 }
                                                 if let Some(ref name) = profile.background_name {
-                                                    " | {name.to_lowercase()}"
+                                                    " | {name}"
                                                 }
                                                 if let Some(ref name) = profile.signature_spell_name {
-                                                    " | {name.to_lowercase()}"
+                                                    " | {name}"
                                                 }
                                             }
                                         }
@@ -134,7 +134,7 @@ pub fn DeckList() -> Element {
                         }
                         Some(Err(_)) => rsx!{
                             div { class : "message-empty",
-                                p { "could not load decks" }
+                                p { "Could not load decks" }
                             }
                         },
                         None => rsx! {
@@ -153,7 +153,7 @@ pub fn DeckList() -> Element {
                     onclick: move |_| {
                         navigator.push(Router::Home {});
                     },
-                    "back"
+                    "Back"
                 }
                 button {
                     class: "util-btn",
@@ -170,14 +170,14 @@ pub fn DeckList() -> Element {
                         });
                         if at_limit {
                             toast.warning(
-                                "verify your email to create more than 1 deck".to_string(),
+                                "Verify your email to create more than 1 deck".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(4000)),
                             );
                         } else {
                             navigator.push(Router::CreateDeck);
                         }
                     },
-                    "create"
+                    "Create"
                 }
             }
             }

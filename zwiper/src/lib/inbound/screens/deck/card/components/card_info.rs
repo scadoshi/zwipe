@@ -9,7 +9,7 @@ pub(crate) fn CardInfoDisplay(card: Card) -> Element {
         || card.scryfall_data.prices.tix.is_some();
 
     let price_text = if has_prices {
-        let mut display = String::from("prices:");
+        let mut display = String::from("Prices:");
         let mut count = 0;
         if let Some(usd) = card.scryfall_data.prices.usd {
             display.push_str(format!(" ${usd}").as_str());
@@ -22,7 +22,7 @@ pub(crate) fn CardInfoDisplay(card: Card) -> Element {
         }
         if let Some(tix) = card.scryfall_data.prices.tix {
             if count > 0 { display.push_str(" |"); }
-            display.push_str(format!(" {tix} tix").as_str());
+            display.push_str(format!(" {tix} TIX").as_str());
         }
         display
     } else {
@@ -31,14 +31,14 @@ pub(crate) fn CardInfoDisplay(card: Card) -> Element {
 
     let artist_text = card.scryfall_data.artist
         .filter(|a| !a.is_empty())
-        .map(|a| format!("artist: {}", a.to_lowercase()))
+        .map(|a| format!("Artist: {a}"))
         .unwrap_or_else(|| "\u{00a0}".to_string());
 
     rsx! {
         div { class: "card-info",
             span { "{price_text}" }
-            span { "set: {card.scryfall_data.set_name.to_lowercase()}" }
-            span { "released: {card.scryfall_data.released_at}" }
+            span { "Set: {card.scryfall_data.set_name}" }
+            span { "Released: {card.scryfall_data.released_at}" }
             span { "{artist_text}" }
         }
     }
@@ -53,7 +53,7 @@ pub(crate) fn CardSkeleton(#[props(default = false)] is_loading: bool) -> Elemen
                 if is_loading {
                     div { class: "spinner" }
                 } else {
-                    "no cards"
+                    "No cards"
                 }
             }
             div { class: "skeleton-info",

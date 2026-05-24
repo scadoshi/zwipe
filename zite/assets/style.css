@@ -80,7 +80,7 @@ nav {
 .nav-logo {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.35rem;
-    line-height: 1;
+    line-height: 0.9;
     white-space: pre;
     display: block;
     letter-spacing: 0;
@@ -244,7 +244,7 @@ ul li {
 }
 
 code {
-    font-family: "Cascadia Code", monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 0.85em;
     background-color: rgba(222, 205, 216, 0.08);
     padding: 0.0625rem 0.3125rem;
@@ -257,9 +257,9 @@ code {
  ==================== */
 
 .logo {
-    font-family: "Cascadia Code", monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: clamp(0.5rem, 2.5vw, 1.4rem);
-    line-height: 1;
+    line-height: 0.9;
     white-space: pre;
     text-align: left;
     display: inline-block;
@@ -699,7 +699,7 @@ code {
     background-color: transparent;
     border: 1px solid var(--border-secondary);
     color: var(--text-primary);
-    font-family: "Cascadia Code", monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-weight: 300;
     font-size: 0.9rem;
     padding: 0.625rem 0.75rem;
@@ -717,7 +717,7 @@ code {
     background-color: transparent;
     color: var(--accent-primary);
     border: 1px solid var(--accent-primary);
-    font-family: "Cascadia Code", monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-weight: 400;
     font-size: 0.9rem;
     letter-spacing: 0.05em;
