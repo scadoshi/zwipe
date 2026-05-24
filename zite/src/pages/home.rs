@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use crate::{Footer, Nav, Route};
+use crate::{Footer, Nav};
 
 const LOGO_ASCII: &str = zwipe_core::domain::logo::ZWIPE;
 
@@ -30,10 +30,6 @@ pub fn Home() -> Element {
                 "The "
                 a { href: "https://magic.wizards.com/en", target: "_blank", rel: "noopener noreferrer", "Magic: The Gathering" }
                 " deck builder built for mobile. Swipe right to add, left to skip, up to maybe, down to undo."
-            }
-            div { class: "store-buttons",
-                Link { to: Route::Ios {}, class: "store-btn", "Download on the App Store" }
-                Link { to: Route::Android {}, class: "store-btn", "Download on Google Play" }
             }
         }
         div { class: "page content-enter",
