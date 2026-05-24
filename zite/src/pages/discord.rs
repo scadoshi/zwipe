@@ -7,9 +7,9 @@ pub fn Discord() -> Element {
         Nav {}
         div { class: "page content-enter",
             div { class: "section",
-                h1 { "join the community" }
+                h1 { "Join the Community" }
                 p {
-                    "connect with other zwipe users, report bugs, request help, "
+                    "Connect with other Zwipe users, report bugs, request help, "
                     "suggest enhancements, and follow development updates."
                 }
                 p {
@@ -18,7 +18,7 @@ pub fn Discord() -> Element {
                         target: "_blank",
                         rel: "noopener noreferrer",
                         class: "store-btn",
-                        "join the discord ↗"
+                        "Join the Discord ↗"
                     }
                 }
             }

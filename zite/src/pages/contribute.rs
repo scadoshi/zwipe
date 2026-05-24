@@ -11,46 +11,51 @@ pub fn Contribute() -> Element {
         Nav {}
         div { class: "page content-enter",
             div { class: "section",
-                h1 { "contribute" }
+                h1 { "Contribute" }
                 p {
-                    "zwipe is a solo indie project — designed, built, and shipped by one person.
-                    if you're enjoying it, any support goes directly toward server costs and
+                    "Zwipe is a solo indie project — designed, built, and shipped by one person.
+                    If you're enjoying it, any support goes directly toward server costs and
                     keeping development moving."
                 }
             }
 
             div { class: "section",
-                div { class: "card",
-                    h3 { "one-time contribution" }
-                    p { "pay what you want via stripe. no account required." }
-                    a {
-                        href: STRIPE_URL,
-                        target: "_blank",
-                        rel: "noopener noreferrer",
-                        class: "appstore-btn",
-                        "contribute via stripe ↗"
+                div { class: "card-grid",
+                    div { class: "card",
+                        span { class: "card-category", "One-Time" }
+                        h3 { class: "card-title", "Stripe" }
+                        p { class: "card-summary", "Pay what you want. No account required." }
+                        a {
+                            href: STRIPE_URL,
+                            target: "_blank",
+                            rel: "noopener noreferrer",
+                            class: "card-action",
+                            "Contribute →"
+                        }
                     }
-                }
-                div { class: "card",
-                    h3 { "buy me a coffee" }
-                    p { "quick one-off support through buy me a coffee." }
-                    a {
-                        href: BMC_URL,
-                        target: "_blank",
-                        rel: "noopener noreferrer",
-                        class: "appstore-btn",
-                        "buymeacoffee.com/scadoshi ↗"
+                    div { class: "card",
+                        span { class: "card-category", "One-Time" }
+                        h3 { class: "card-title", "Buy Me a Coffee" }
+                        p { class: "card-summary", "Quick one-off support." }
+                        a {
+                            href: BMC_URL,
+                            target: "_blank",
+                            rel: "noopener noreferrer",
+                            class: "card-action",
+                            "buymeacoffee.com/scadoshi →"
+                        }
                     }
-                }
-                div { class: "card",
-                    h3 { "github sponsors" }
-                    p { "recurring monthly support via github sponsors." }
-                    a {
-                        href: GITHUB_SPONSORS_URL,
-                        target: "_blank",
-                        rel: "noopener noreferrer",
-                        class: "appstore-btn",
-                        "github.com/sponsors/scadoshi ↗"
+                    div { class: "card",
+                        span { class: "card-category", "Recurring" }
+                        h3 { class: "card-title", "GitHub Sponsors" }
+                        p { class: "card-summary", "Monthly support via GitHub." }
+                        a {
+                            href: GITHUB_SPONSORS_URL,
+                            target: "_blank",
+                            rel: "noopener noreferrer",
+                            class: "card-action",
+                            "github.com/sponsors/scadoshi →"
+                        }
                     }
                 }
             }

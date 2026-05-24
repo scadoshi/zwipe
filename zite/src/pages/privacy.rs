@@ -7,74 +7,80 @@ pub fn Privacy() -> Element {
         Nav {}
         div { class: "page content-enter",
             div { class: "section",
-                h1 { "privacy policy" }
-                p { "last updated: april 2026" }
+                h1 { "Privacy Policy" }
+                p { "Last updated: April 2026" }
             }
 
             div { class: "privacy-content section",
-                h2 { "overview" }
+                h2 { "Overview" }
                 p {
-                    "zwipe is a magic: the gathering deck builder for mobile. this policy
-                    describes what data we collect, how we use it, and your rights."
+                    "Zwipe is a "
+                    a { href: "https://magic.wizards.com/en", target: "_blank", rel: "noopener noreferrer", "Magic: The Gathering" }
+                    " deck builder for mobile. This policy describes what data we collect, how we use it, and your rights."
                 }
 
-                h2 { "data we collect" }
+                h2 { "Data We Collect" }
                 ul {
-                    li { strong { "account data" } " — email address, username, and a hashed password (never stored in plaintext)." }
-                    li { strong { "deck data" } " — the decks and card selections you create within the app." }
-                    li { strong { "session data" } " — authentication tokens stored securely on your device." }
+                    li { strong { "Account data" } " — email address, username, and a hashed password (never stored in plaintext)." }
+                    li { strong { "Deck data" } " — the decks and card selections you create within the app." }
+                    li { strong { "Session data" } " — authentication tokens stored securely on your device." }
                 }
                 p {
-                    "we do not collect location data, device identifiers, analytics, or any data
+                    "We do not collect location data, device identifiers, analytics, or any data
                     beyond what is required to operate the app."
                 }
 
-                h2 { "how we use your data" }
+                h2 { "How We Use Your Data" }
                 ul {
-                    li { "to authenticate your account and maintain sessions." }
-                    li { "to store and sync your decks across devices." }
-                    li { "to send transactional emails (email verification, password reset)." }
+                    li { "To authenticate your account and maintain sessions." }
+                    li { "To store and sync your decks across devices." }
+                    li { "To send transactional emails (email verification, password reset)." }
                 }
                 p {
-                    "we do not sell, share, or use your data for advertising or analytics."
+                    "We do not sell, share, or use your data for advertising or analytics."
                 }
 
-                h2 { "third-party services" }
+                h2 { "Third-Party Services" }
                 ul {
                     li {
-                        strong { "scryfall" }
-                        " — card data (names, images, oracle text) is sourced from the scryfall api and stored on our servers. your account data is never shared with scryfall."
+                        strong {
+                            a { href: "https://scryfall.com", target: "_blank", rel: "noopener noreferrer", "Scryfall" }
+                        }
+                        " — card data (names, images, oracle text) is sourced from the Scryfall API and stored on our servers. Your account data is never shared with Scryfall."
                     }
                     li {
-                        strong { "resend" }
-                        " — transactional email delivery (verification and password reset emails). your email address is passed to resend solely to deliver these messages."
+                        strong {
+                            a { href: "https://resend.com", target: "_blank", rel: "noopener noreferrer", "Resend" }
+                        }
+                        " — transactional email delivery (verification and password reset emails). Your email address is passed to Resend solely to deliver these messages."
                     }
                 }
 
-                h2 { "data retention" }
+                h2 { "Data Retention" }
                 p {
-                    "your data is retained as long as your account exists. you can delete your
+                    "Your data is retained as long as your account exists. You can delete your
                     account at any time from within the app, which permanently removes all
                     associated data."
                 }
 
-                h2 { "security" }
+                h2 { "Security" }
                 p {
-                    "passwords are hashed with argon2. refresh tokens are sha-256 hashed before
-                    storage. all traffic is encrypted in transit via https. we do not have access
+                    "Passwords are hashed with argon2. Refresh tokens are SHA-256 hashed before
+                    storage. All traffic is encrypted in transit via HTTPS. We do not have access
                     to your plaintext password."
                 }
 
-                h2 { "children" }
+                h2 { "Children" }
                 p {
-                    "zwipe is not directed at children under 13. we do not knowingly collect
+                    "Zwipe is not directed at children under 13. We do not knowingly collect
                     data from children under 13."
                 }
 
-                h2 { "contact" }
+                h2 { "Contact" }
                 p {
-                    "questions or requests: "
-                    a { href: "mailto:support@zwipe.net", "support@zwipe.net" }
+                    "Questions or requests? Join the "
+                    a { href: "https://discord.gg/s2UReqUUeg", target: "_blank", rel: "noopener noreferrer", "Discord" }
+                    " for support."
                 }
             }
         }
