@@ -362,13 +362,6 @@ code {
     border-color: var(--accent-primary);
 }
 
-.store-buttons {
-    display: flex;
-    gap: 0.75rem;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
 .card-grid,
 .features-grid {
     display: grid;
