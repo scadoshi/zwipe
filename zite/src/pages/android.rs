@@ -7,14 +7,14 @@ pub fn Android() -> Element {
         Nav {}
         div { class: "page content-enter",
             div { class: "section",
-                h1 { "google play — pending" }
+                h1 { "Google Play — Pending" }
                 p {
-                    "zwipe has been submitted to google play. while it's under review, here's
-                    what's waiting for you: swipe-based deck building, commander support with
-                    partners and backgrounds, sideboard, maybeboard, 15 themes with dark/light modes,
+                    "Zwipe has been submitted to Google Play. While it's under review, here's
+                    what's waiting for you: swipe-based deck building, Commander support with
+                    partners and backgrounds, sideboard, maybeboard, 14 themes with dark/light modes,
                     multiple printings per card, and 110k+ cards synced nightly."
                 }
-                p { "once approved, this page will redirect to the official download link." }
+                p { "Once approved, this page will redirect to the official download link." }
             }
         }
         Footer {}

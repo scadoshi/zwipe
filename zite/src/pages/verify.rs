@@ -13,7 +13,7 @@ pub fn Verify(token: String) -> Element {
         let token = token.clone();
         async move {
         if token.is_empty() {
-            return Err("no token found in url".to_string());
+            return Err("No token found in URL".to_string());
         }
 
         let client = reqwest::Client::new();
@@ -27,7 +27,7 @@ pub fn Verify(token: String) -> Element {
         if res.status().is_success() {
             Ok(())
         } else {
-            Err("token not found or expired".to_string())
+            Err("Token not found or expired".to_string())
         }
         }
     });
@@ -37,20 +37,20 @@ pub fn Verify(token: String) -> Element {
         div { class: "form-page content-enter",
             match &*result.read() {
                 None => rsx! {
-                    h1 { "verifying" }
-                    p { class: "subtitle", "checking your verification link." }
+                    h1 { "Verifying" }
+                    p { class: "subtitle", "Checking your verification link." }
                     div { class: "spinner-row",
                         div { class: "spinner" }
                     }
                 },
                 Some(Ok(())) => rsx! {
-                    h1 { "email verified" }
-                    p { class: "subtitle", "your email address has been confirmed. you can close this page and return to the app." }
-                    div { class: "status-message success", "verification successful" }
+                    h1 { "Email Verified" }
+                    p { class: "subtitle", "Your email address has been confirmed. You can close this page and return to the app." }
+                    div { class: "status-message success", "Verification successful" }
                 },
                 Some(Err(e)) => rsx! {
-                    h1 { "verification failed" }
-                    p { class: "subtitle", "this link may have expired or already been used. request a new one from the app." }
+                    h1 { "Verification Failed" }
+                    p { class: "subtitle", "This link may have expired or already been used. Request a new one from the app." }
                     div { class: "status-message error", "{e}" }
                 },
             }

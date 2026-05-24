@@ -97,24 +97,38 @@ pub fn Nav() -> Element {
             }
             ul { class: "nav-links",
                 li {
-                    Link { to: Route::About {}, "about" }
+                    Link { to: Route::About {}, "About" }
                 }
                 li {
-                    Link { to: Route::Contribute {}, "contribute" }
+                    Link { to: Route::Contribute {}, "Contribute" }
                 }
                 li {
-                    Link { to: Route::Discord {}, "discord" }
+                    Link { to: Route::Discord {}, "Discord" }
                 }
                 li {
-                    Link { to: Route::Ios {}, class: "store-link", "app store ↗" }
+                    Link { to: Route::Ios {}, class: "store-link", "App Store ↗" }
                 }
                 li {
-                    Link { to: Route::Android {}, class: "store-link", "play store ↗" }
+                    Link { to: Route::Android {}, class: "store-link", "Play Store ↗" }
                 }
             }
+            ThemePicker {}
         }
         } // nav-wrapper
     }
+}
+
+fn display_theme_name(slug: &str) -> String {
+    slug.split('-')
+        .map(|word| {
+            let mut chars = word.chars();
+            match chars.next() {
+                Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 #[component]
@@ -124,24 +138,29 @@ pub fn ThemePicker() -> Element {
     let is_dark = theme.read().is_dark;
 
     rsx! {
-        div { class: "theme-picker",
-            for name in ALLOWED_THEMES {
-                button {
-                    class: if current == *name { "theme-btn selected" } else { "theme-btn" },
-                    onclick: move |_| {
-                        let dark = theme.read().is_dark;
-                        theme.set(ThemeConfig {
-                            name: name.to_string(),
-                            is_dark: dark,
-                        });
-                    },
-                    "{name}"
+        div { class: "theme-switcher",
+            div { class: "theme-select",
+                span { class: "theme-select-trigger",
+                    "{display_theme_name(&current)} ▾"
+                }
+                div { class: "theme-select-content",
+                    for name in ALLOWED_THEMES {
+                        button {
+                            class: if current == *name { "theme-option active" } else { "theme-option" },
+                            onclick: move |_| {
+                                let dark = theme.read().is_dark;
+                                theme.set(ThemeConfig {
+                                    name: name.to_string(),
+                                    is_dark: dark,
+                                });
+                            },
+                            "{display_theme_name(name)}"
+                        }
+                    }
                 }
             }
-        }
-        div { class: "theme-toggle",
             button {
-                class: "theme-btn",
+                class: "mode-toggle",
                 onclick: move |_| {
                     let current = theme.read().clone();
                     theme.set(ThemeConfig {
@@ -149,7 +168,7 @@ pub fn ThemePicker() -> Element {
                         is_dark: !current.is_dark,
                     });
                 },
-                if is_dark { "light mode" } else { "dark mode" }
+                if is_dark { "[light]" } else { "[dark]" }
             }
         }
     }
@@ -159,9 +178,8 @@ pub fn ThemePicker() -> Element {
 pub fn Footer() -> Element {
     rsx! {
         footer {
-            ThemePicker {}
             p { "© 2026 scadoshi · "
-                Link { to: Route::Privacy {}, "privacy policy" }
+                Link { to: Route::Privacy {}, "Privacy Policy" }
             }
         }
     }

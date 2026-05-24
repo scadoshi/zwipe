@@ -38,13 +38,13 @@ pub fn Reset(token: String) -> Element {
             return;
         }
         if pw != cf {
-            state.set(ResetState::Error("passwords do not match".to_string()));
+            state.set(ResetState::Error("Passwords do not match".to_string()));
             return;
         }
 
         let token = token.clone();
         if token.is_empty() {
-            state.set(ResetState::Error("no token found in url".to_string()));
+            state.set(ResetState::Error("No token found in URL".to_string()));
             return;
         }
 
@@ -60,7 +60,7 @@ pub fn Reset(token: String) -> Element {
 
             match res {
                 Ok(r) if r.status().is_success() => state.set(ResetState::Success),
-                Ok(_) => state.set(ResetState::Error("token not found or expired".to_string())),
+                Ok(_) => state.set(ResetState::Error("Token not found or expired".to_string())),
                 Err(e) => state.set(ResetState::Error(e.to_string())),
             }
         });
@@ -73,39 +73,39 @@ pub fn Reset(token: String) -> Element {
         div { class: "form-page content-enter",
             match current_state {
                 ResetState::Success => rsx! {
-                    h1 { "password reset" }
-                    p { class: "subtitle", "your password has been updated and all sessions have been signed out." }
-                    div { class: "status-message success", "password updated successfully" }
+                    h1 { "Password Reset" }
+                    p { class: "subtitle", "Your password has been updated and all sessions have been signed out." }
+                    div { class: "status-message success", "Password updated successfully" }
                 },
                 _ => rsx! {
-                    h1 { "reset password" }
-                    p { class: "subtitle", "choose a new password for your account." }
+                    h1 { "Reset Password" }
+                    p { class: "subtitle", "Choose a new password for your account." }
 
                     form { onsubmit: on_submit,
                         div { class: "form-group",
-                            label { "new password" }
+                            label { "New password" }
                             input {
                                 r#type: "password",
-                                placeholder: "new password",
+                                placeholder: "New password",
                                 value: "{password}",
                                 oninput: move |e| password.set(e.value()),
                                 disabled: current_state == ResetState::Loading,
                             }
                         }
                         details { class: "password-hint-toggle",
-                            summary { "password requirements" }
+                            summary { "Password requirements" }
                             ul {
                                 li { "8–128 characters" }
-                                li { "uppercase, lowercase, number, symbol" }
-                                li { "no whitespace, 6+ unique chars" }
-                                li { "max 3 consecutive repeated characters" }
+                                li { "Uppercase, lowercase, number, symbol" }
+                                li { "No whitespace, 6+ unique chars" }
+                                li { "Max 3 consecutive repeated characters" }
                             }
                         }
                         div { class: "form-group",
-                            label { "confirm password" }
+                            label { "Confirm password" }
                             input {
                                 r#type: "password",
-                                placeholder: "confirm password",
+                                placeholder: "Confirm password",
                                 value: "{confirm}",
                                 oninput: move |e| confirm.set(e.value()),
                                 disabled: current_state == ResetState::Loading,
@@ -115,7 +115,7 @@ pub fn Reset(token: String) -> Element {
                             r#type: "submit",
                             class: "btn-primary",
                             disabled: current_state == ResetState::Loading,
-                            if current_state == ResetState::Loading { "updating..." } else { "set new password" }
+                            if current_state == ResetState::Loading { "Updating..." } else { "Set New Password" }
                         }
                     }
 
