@@ -34,7 +34,7 @@ Every theme defines exactly 18 CSS variables:
 
 ## Contrast Ratio Targets
 
-All dark themes must hit these contrast ratios against `--bg-primary`. These ratios are consistent across all 15 current themes.
+All dark themes must hit these contrast ratios against `--bg-primary`. These ratios are consistent across all 14 current themes.
 
 | Variable | Target | Acceptable Range |
 |----------|--------|-----------------|
@@ -66,7 +66,7 @@ Light themes invert the relationship (dark text on light background) but follow 
 
 4. **Add both dark and light variants** as `.theme-{name}-dark` and `.theme-{name}-light` classes in `shared/themes.css`.
 
-5. **Register in `ALLOWED_THEMES`** in `zwipe-core/src/domain/user/models/theme.rs` and add the `ThemeConfig` entry.
+5. **Register in `ALLOWED_THEMES`** in `zwipe-core/src/domain/user/models/preferences.rs`.
 
 6. **Verify contrast** by running the calculation script (see below).
 
@@ -105,7 +105,8 @@ for name, color in pairs.items():
 | File | Role |
 |------|------|
 | `shared/themes.css` | Single source of truth for all theme CSS variables |
-| `zwipe-core/src/domain/user/models/theme.rs` | `ThemeConfig`, `ALLOWED_THEMES` registry |
+| `zwipe-core/src/domain/user/models/theme.rs` | `ThemeConfig` (default theme + css class) |
+| `zwipe-core/src/domain/user/models/preferences.rs` | `ALLOWED_THEMES` registry + `UserPreferences` default |
 | `zwiper/build.rs`, `zite/build.rs` | Copy `shared/themes.css` into asset directories at build time |
 
 Theme CSS files in `zwiper/assets/` and `zite/assets/` are build artifacts (gitignored). Edit `shared/themes.css` only.
