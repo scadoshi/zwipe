@@ -90,6 +90,9 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 | Maybeboard (swipe-up, toggle, move, tri-filter, export/import) | ✅ |
 | Partner / Background / Signature Spell fields | ✅ |
 | zwipe-core direct dependency (proxy cleanup complete) | ✅ |
+| Casing revamp (Title Case headings, sentence-case buttons/labels, backend text as-is) | ✅ |
+| Font swap: Cascadia Code → JetBrains Mono @ weight 400 | ✅ |
+| Mana value rename (was CMC) in stats + filter labels | ✅ |
 
 ---
 
