@@ -30,6 +30,15 @@ body {
     user-select: none;
 }
 
+/* Form elements don't inherit font-family by default — opt them in so the
+   body's JetBrains Mono propagates everywhere. */
+input,
+textarea,
+select,
+button {
+    font-family: inherit;
+}
+
 /* ==================
   screen layout
  ==================== */

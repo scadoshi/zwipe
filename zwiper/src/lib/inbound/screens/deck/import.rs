@@ -95,7 +95,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                         textarea {
                             id: "import-text",
                             class: "input",
-                            style: "width:100%;min-height:12rem;resize:vertical;font-family:monospace;",
+                            style: "width:100%;min-height:12rem;resize:vertical;",
                             placeholder: "5 Island\n4 Mountain\n1 Guide of Souls\n1 Gonti's Aether Heart\n1 Decoction Module\n1 Whirler Virtuoso",
                             value: "{text}",
                             oninput: move |e| text.set(e.value()),
