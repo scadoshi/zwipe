@@ -34,20 +34,20 @@ Every theme defines exactly 18 CSS variables:
 
 ## Contrast Ratio Targets
 
-All dark themes must hit these contrast ratios against `--bg-primary`. These ratios are consistent across all 14 current themes.
+All dark themes must hit these contrast ratios against `--bg-primary`. Ranges are wide enough to accept each theme's canonical foreground while still satisfying WCAG AAA (7.0x) for primary text and AA (4.5x) for muted/subtle. Aspirational target shown for reference.
 
-| Variable | Target | Acceptable Range |
-|----------|--------|-----------------|
-| `--text-primary` | **11.0x** | 10.6 -- 11.6x |
-| `--text-muted` | **5.2x** | 5.0 -- 5.4x |
-| `--text-subtle` | **7.0x** | 6.8 -- 7.2x |
-| `--border-primary` | **2.3x** | 2.1 -- 2.5x |
-| `--border-secondary` | **1.2x** | 1.1 -- 1.3x |
-| `--border-muted` | **1.6x** | 1.4 -- 1.8x |
+| Variable | Aspirational | Acceptable Range | Floor |
+|----------|--------------|-----------------|-------|
+| `--text-primary` | **11.0x** | 7.0 -- 14.0x | WCAG AAA |
+| `--text-muted` | **5.2x** | 4.5 -- 5.4x | WCAG AA |
+| `--text-subtle` | **7.0x** | 6.0 -- 7.5x | between AA and AAA |
+| `--border-primary` | **2.3x** | 2.1 -- 2.5x | aesthetic |
+| `--border-secondary` | **1.2x** | 1.1 -- 1.35x | aesthetic |
+| `--border-muted` | **1.6x** | 1.4 -- 1.8x | aesthetic |
 
 Accent contrast varies by theme personality (4x -- 13x range across themes). No strict target, but accents should be legible as text.
 
-Light themes invert the relationship (dark text on light background) but follow the same ratio targets.
+Light themes invert the relationship (dark text on light background) but follow the same ratio targets. Prefer each theme's canonical foreground when it lands in band — do not brighten or darken beyond canonical just to hit the aspirational midpoint.
 
 ### Shadow conventions
 
