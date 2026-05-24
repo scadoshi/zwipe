@@ -16,6 +16,9 @@ use zwipe_core::domain::{
 
 /// Capitalize each word of a theme slug for display ("tokyo-night" → "Tokyo Night").
 fn display_theme_name(slug: &str) -> String {
+    if slug == "rose-pine" {
+        return "Rosé Pine".to_string();
+    }
     slug.split('-')
         .map(|w| {
             let mut chars = w.chars();

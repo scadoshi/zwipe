@@ -119,6 +119,9 @@ pub fn Nav() -> Element {
 }
 
 fn display_theme_name(slug: &str) -> String {
+    if slug == "rose-pine" {
+        return "Rosé Pine".to_string();
+    }
     slug.split('-')
         .map(|word| {
             let mut chars = word.chars();

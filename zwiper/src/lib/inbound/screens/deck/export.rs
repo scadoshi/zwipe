@@ -156,7 +156,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                                 textarea {
                                     id: "export-text",
                                     class: "input",
-                                    style: "width:100%;min-height:16rem;resize:vertical;font-family:monospace;",
+                                    style: "width:100%;min-height:16rem;resize:vertical;",
                                     readonly: true,
                                     value: "{text}",
                                 }
