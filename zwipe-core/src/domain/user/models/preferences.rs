@@ -23,13 +23,12 @@ pub const ALLOWED_THEMES: &[&str] = &[
     "solarized",
     "tokyo-night",
     "tritanopia",
-    "zwipe",
 ];
 
 /// User display preferences.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UserPreferences {
-    /// Theme identifier (e.g. "gruvbox", "zwipe").
+    /// Theme identifier (e.g. "gruvbox", "dracula").
     pub theme: String,
     /// Whether dark mode is active.
     pub dark_mode: bool,
@@ -38,7 +37,7 @@ pub struct UserPreferences {
 impl Default for UserPreferences {
     fn default() -> Self {
         Self {
-            theme: "zwipe".to_string(),
+            theme: "gruvbox".to_string(),
             dark_mode: true,
         }
     }
@@ -94,9 +93,9 @@ mod tests {
     // =========
 
     #[test]
-    fn default_is_zwipe_dark() {
+    fn default_is_gruvbox_dark() {
         let prefs = UserPreferences::default();
-        assert_eq!(prefs.theme, "zwipe");
+        assert_eq!(prefs.theme, "gruvbox");
         assert!(prefs.dark_mode);
     }
 

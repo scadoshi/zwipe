@@ -4,7 +4,7 @@
         themes
  ==================== */
 
-/* Default theme (zwipe) is defined in :root below.
+/* Default theme (gruvbox-dark) is defined in :root below.
    Theme classes override these variables when applied to the .screen element. */
 
 .theme-rustbox-dark {
@@ -53,9 +53,9 @@
 .theme-gruvbox-dark {
     --bg-primary: #282828;
     --bg-overlay: rgba(0, 0, 0, 0.6);
-    --text-primary: #f5de7e;
-    --text-muted: #ab9875;
-    --text-subtle: #c7b082;
+    --text-primary: #ebdbb2;
+    --text-muted: #a89984;
+    --text-subtle: #c0b196;
     --border-primary: #665c54;
     --border-secondary: #3c3836;
     --border-muted: #504945;
@@ -74,10 +74,10 @@
 .theme-gruvbox-light {
     --bg-primary: #fbf1c7;
     --bg-overlay: rgba(0, 0, 0, 0.3);
-    --text-primary: #343434;
-    --text-muted: #665c54;
-    --text-subtle: #504945;
-    --border-primary: #bdae93;
+    --text-primary: #32302f;
+    --text-muted: #6c6155;
+    --text-subtle: #594f47;
+    --border-primary: #b09e88;
     --border-secondary: #f2e5bc;
     --border-muted: #d5c4a1;
     --color-error: #9d0006;
@@ -613,82 +613,39 @@
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.theme-zwipe-dark {
-    --bg-primary: #252424;
-    --bg-overlay: rgba(0, 0, 0, 0.6);
-    --text-primary: #f5c4a0;
-    --text-muted: #a88060;
-    --text-subtle: #d0a078;
-    --border-primary: #585554;
-    --border-secondary: #302e2e;
-    --border-muted: #433f3f;
-    --color-error: #d13b3b;
-    --color-success: #399a55;
-    --color-warning: #c9a227;
-    --border-error: #8b3030;
-    --border-success: #2d7040;
-    --border-warning: #8a7020;
-    --accent-primary: #6d9e9c;
-    --accent-secondary: #ee4080;
-    --accent-tertiary: #9ab868;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
-}
-.theme-zwipe-light {
-    --bg-primary: #f0edea;
-    --bg-overlay: rgba(0, 0, 0, 0.3);
-    --text-primary: #3a2e26;
-    --text-muted: #7a6558;
-    --text-subtle: #5e4e42;
-    --border-primary: #b0a49a;
-    --border-secondary: #ddd8d4;
-    --border-muted: #c8c0ba;
-    --color-error: #b02020;
-    --color-success: #2a7a40;
-    --color-warning: #a08018;
-    --border-error: #8a1818;
-    --border-success: #1a5a2a;
-    --border-warning: #7a6010;
-    --accent-primary: #4a7a78;
-    --accent-secondary: #c02060;
-    --accent-tertiary: #7a9848;
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.1);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
 /* ==================
-        colors (default: zwipe)
+   colors (default: gruvbox-dark)
  ==================== */
 
 :root {
-    /* Background (warm dark gray) */
-    --bg-primary: #252424;
+    /* Background */
+    --bg-primary: #282828;
     --bg-overlay: rgba(0, 0, 0, 0.6);
 
-    /* Text (orange-tinted) */
-    --text-primary: #f5c4a0;
-    --text-muted: #a88060;
-    --text-subtle: #d0a078;
+    /* Text */
+    --text-primary: #ebdbb2;
+    --text-muted: #a89984;
+    --text-subtle: #c0b196;
 
-    /* Borders (warm neutral) */
-    --border-primary: #585554;
-    --border-secondary: #302e2e;
-    --border-muted: #433f3f;
+    /* Borders */
+    --border-primary: #665c54;
+    --border-secondary: #3c3836;
+    --border-muted: #504945;
 
     /* Status Colors */
-    --color-error: #d13b3b;
-    --color-success: #399a55;
-    --color-warning: #c9a227;
+    --color-error: #fb4934;
+    --color-success: #b8bb26;
+    --color-warning: #fabd2f;
 
     /* Status Borders */
-    --border-error: #8b3030;
-    --border-success: #2d7040;
-    --border-warning: #8a7020;
+    --border-error: #cc241d;
+    --border-success: #98971a;
+    --border-warning: #d79921;
 
-    /* Accents (faded cyan / punchy magenta / faded yellow-green) */
-    --accent-primary: #6d9e9c;
-    --accent-secondary: #ee4080;
-    --accent-tertiary: #9ab868;
+    /* Accents (aqua / red / yellow) */
+    --accent-primary: #689d6a;
+    --accent-secondary: #cc241d;
+    --accent-tertiary: #d79921;
 
     /* Shadows */
     --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);

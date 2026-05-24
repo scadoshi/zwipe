@@ -8,18 +8,14 @@ use super::preferences::UserPreferences;
 /// Display theme configuration used by the UI.
 #[derive(Clone, PartialEq)]
 pub struct ThemeConfig {
-    /// Theme identifier (e.g. "gruvbox", "zwipe").
+    /// Theme identifier (e.g. "gruvbox", "dracula").
     pub name: String,
     /// Whether dark mode is active.
     pub is_dark: bool,
 }
 
 impl ThemeConfig {
-    /// Returns the CSS class to apply to the screen root.
-    ///
-    /// Returns `theme-{name}-{dark|light}`.
-    /// The default zwipe theme returns an empty string since `:root` already
-    /// defines the zwipe colors.
+    /// Returns the CSS class to apply to the screen root: `theme-{name}-{dark|light}`.
     pub fn css_class(&self) -> String {
         let mode = if self.is_dark { "dark" } else { "light" };
         format!("theme-{}-{}", self.name, mode)
@@ -29,7 +25,7 @@ impl ThemeConfig {
 impl Default for ThemeConfig {
     fn default() -> Self {
         Self {
-            name: "zwipe".to_string(),
+            name: "gruvbox".to_string(),
             is_dark: true,
         }
     }
