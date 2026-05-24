@@ -38,7 +38,7 @@ pub fn ChangePassword() -> Element {
         if let Err(e) = Password::new(new_password()) {
             password_error.set(Some(e.to_string()));
         } else if new_password().as_str() != confirm_password().as_str() {
-            password_error.set(Some("passwords do not match".to_string()));
+            password_error.set(Some("Passwords do not match".to_string()));
         } else {
             password_error.set(None)
         }
@@ -70,7 +70,7 @@ pub fn ChangePassword() -> Element {
                 session.upkeep(auth_client);
                 let Some(session) = session() else {
                     toast.error(
-                        "session expired — please log in again".to_string(),
+                        "Session expired — please log in again".to_string(),
                         ToastOptions::default().duration(Duration::from_millis(3000)),
                     );
                     is_loading.set(false);
@@ -80,7 +80,7 @@ pub fn ChangePassword() -> Element {
                 match auth_client().change_password(request, &session).await {
                     Ok(()) => {
                         toast.success(
-                            "password change successful".to_string(),
+                            "Password change successful".to_string(),
                             ToastOptions::default().duration(Duration::from_millis(1500)),
                         );
                         clear_inputs();
@@ -110,7 +110,7 @@ pub fn ChangePassword() -> Element {
         Bouncer {
             div { class: "screen",
                 div { class: "page-header",
-                    h2 { "change password" }
+                    h2 { "Change Password" }
                 }
 
                 div { class: "screen-content centered content-enter",
@@ -121,8 +121,8 @@ pub fn ChangePassword() -> Element {
                         TextInput {
                             value: current_password,
                             id: "current_password",
-                            label: "current password",
-                            placeholder: "current password",
+                            label: "Current password",
+                            placeholder: "Current password",
                             input_type: "password",
                         }
 
@@ -135,16 +135,16 @@ pub fn ChangePassword() -> Element {
                         TextInput {
                             value: new_password,
                             id: "new_password",
-                            label: "new password",
-                            placeholder: "new password",
+                            label: "New password",
+                            placeholder: "New password",
                             input_type: "password",
                         }
 
                         TextInput {
                             value: confirm_password,
                             id: "confirm_password",
-                            label: "confirm password",
-                            placeholder: "confirm new",
+                            label: "Confirm password",
+                            placeholder: "Confirm new",
                             input_type: "password",
                         }
                     }
@@ -156,7 +156,7 @@ pub fn ChangePassword() -> Element {
                 button {
                     class: "util-btn",
                     onclick: move |_| navigator.go_back(),
-                    "back"
+                    "Back"
                 }
                 button {
                     class: "util-btn",
@@ -168,7 +168,7 @@ pub fn ChangePassword() -> Element {
                             show_confirm.set(true);
                         }
                     },
-                    if is_loading() { "saving..." } else { "save changes" }
+                    if is_loading() { "Saving..." } else { "Save changes" }
                 }
             }
 
@@ -176,21 +176,21 @@ pub fn ChangePassword() -> Element {
                 open: show_confirm(),
                 on_open_change: move |open| show_confirm.set(open),
                 AlertDialogContent {
-                    AlertDialogTitle { "change password" }
+                    AlertDialogTitle { "Change password" }
                     AlertDialogDescription {
-                        "changing your password will log you out on all other devices."
+                        "Changing your password will log you out on all other devices."
                     }
                     AlertDialogActions {
                         AlertDialogCancel {
                             on_click: move |_| show_confirm.set(false),
-                            "cancel"
+                            "Cancel"
                         }
                         AlertDialogAction {
                             on_click: move |_| {
                                 show_confirm.set(false);
                                 attempt_submit();
                             },
-                            "confirm"
+                            "Confirm"
                         }
                     }
                 }

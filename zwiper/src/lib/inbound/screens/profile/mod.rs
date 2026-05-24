@@ -65,7 +65,7 @@ pub fn Profile() -> Element {
         Bouncer {
             div { class: "screen",
                 div { class: "page-header",
-                    h2 { "profile" }
+                    h2 { "Profile" }
                 }
 
                 div { class: "screen-content centered content-enter",
@@ -74,20 +74,20 @@ pub fn Profile() -> Element {
 
                             div {
                                 class: "profile-row",
-                                span { class: "profile-row-label", "username" }
+                                span { class: "profile-row-label", "Username" }
                                 div { class: "profile-row-value",
                                     span { { s.user.username.to_string() } }
                                     button {
                                         class: "util-btn",
                                         onclick: move |_| { navigator.push(Router::ChangeUsername {}); },
-                                        "change"
+                                        "Change"
                                     }
                                 }
                             }
 
                             div {
                                 class: "profile-row",
-                                span { class: "profile-row-label", "email" }
+                                span { class: "profile-row-label", "Email" }
                                 div { class: "profile-row-value",
                                     EmailVerification {
                                         email: s.user.email.to_string(),
@@ -96,20 +96,20 @@ pub fn Profile() -> Element {
                                     button {
                                         class: "util-btn",
                                         onclick: move |_| { navigator.push(Router::ChangeEmail {}); },
-                                        "change"
+                                        "Change"
                                     }
                                 }
                             }
 
                             div {
                                 class: "profile-row",
-                                span { class: "profile-row-label", "password" }
+                                span { class: "profile-row-label", "Password" }
                                 div { class: "profile-row-value",
                                     span { "•••••••" }
                                     button {
                                         class: "util-btn",
                                         onclick: move |_| { navigator.push(Router::ChangePassword {}); },
-                                        "change"
+                                        "Change"
                                     }
                                 }
                             }
@@ -121,22 +121,22 @@ pub fn Profile() -> Element {
                     button {
                         class: "util-btn",
                         onclick: move |_| navigator.go_back(),
-                        "back"
+                        "Back"
                     }
                     button {
                         class: "util-btn",
                         onclick: move |_| { navigator.push(Router::Preferences {}); },
-                        "preferences"
+                        "Preferences"
                     }
                     button {
                         class: "util-btn util-btn-danger",
                         onclick: move |_| show_logout_dialog.set(true),
-                        "logout"
+                        "Log out"
                     }
                     button {
                         class: "util-btn util-btn-danger",
                         onclick: move |_| show_delete_dialog.set(true),
-                        "delete account"
+                        "Delete account"
                     }
                 }
 

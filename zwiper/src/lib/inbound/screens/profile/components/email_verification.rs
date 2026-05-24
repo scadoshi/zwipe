@@ -18,9 +18,9 @@ pub(crate) fn EmailVerification(email: String, is_verified: bool) -> Element {
     rsx! {
         span { "{email}" }
         if is_verified {
-            span { class: "badge-verified", "verified" }
+            span { class: "badge-verified", "Verified" }
         } else {
-            span { class: "badge-unverified", "unverified" }
+            span { class: "badge-unverified", "Unverified" }
             button {
                 class: "util-btn",
                 disabled: is_resending(),
@@ -31,7 +31,7 @@ pub(crate) fn EmailVerification(email: String, is_verified: bool) -> Element {
                         session.upkeep(client);
                         let Some(s) = session() else {
                             toast.error(
-                                "session expired — please log in again".to_string(),
+                                "Session expired — please log in again".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(5000)),
                             );
                             is_resending.set(false);
@@ -39,7 +39,7 @@ pub(crate) fn EmailVerification(email: String, is_verified: bool) -> Element {
                         };
                         match client().resend_verification(&s).await {
                             Ok(()) => toast.success(
-                                "verification email sent".to_string(),
+                                "Verification email sent".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(3000)),
                             ),
                             Err(e) => toast.error(
@@ -50,7 +50,7 @@ pub(crate) fn EmailVerification(email: String, is_verified: bool) -> Element {
                         is_resending.set(false);
                     });
                 },
-                if is_resending() { "sending..." } else { "resend" }
+                if is_resending() { "Sending..." } else { "Resend" }
             }
         }
     }

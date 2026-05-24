@@ -29,7 +29,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
     let deck_resource: Resource<Result<Deck, ApiError>> = use_resource(move || async move {
         session.upkeep(client);
         let Some(session) = session() else {
-            return Err(ApiError::Unauthorized("session expired".to_string()));
+            return Err(ApiError::Unauthorized("Session expired".to_string()));
         };
         client().get_deck(deck_id, &session).await
     });
@@ -105,14 +105,14 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
         Bouncer {
             div { class: "screen",
                 div { class: "page-header",
-                    h2 { "export" }
+                    h2 { "Export" }
                 }
 
                 div { class: "screen-content centered content-enter",
                     div { class: "container-sm",
 
                         div { class: "chip-row",
-                            span { class: "chip-row-label", "export:" }
+                            span { class: "chip-row-label", "Export:" }
                             button {
                                 class: if include_deck() { "chip selected" } else { "chip" },
                                 onclick: move |_| {
@@ -122,7 +122,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                                     }
                                     include_deck.set(new_val);
                                 },
-                                "deck"
+                                "Deck"
                             }
                             button {
                                 class: if include_maybeboard() { "chip selected" } else { "chip" },
@@ -135,7 +135,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                                         include_deck.set(true);
                                     }
                                 },
-                                "maybe"
+                                "Maybe"
                             }
                             button {
                                 class: if include_sideboard() { "chip selected" } else { "chip" },
@@ -146,13 +146,13 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                                         include_deck.set(true);
                                     }
                                 },
-                                "side"
+                                "Side"
                             }
                         }
 
                         match export_text() {
                             Some(text) => rsx! {
-                                label { class: "label", r#for: "export-text", "decklist" }
+                                label { class: "label", r#for: "export-text", "Decklist" }
                                 textarea {
                                     id: "export-text",
                                     class: "input",
@@ -163,7 +163,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                             },
                             None => {
                                 if deck_resource().is_some_and(|r| r.is_err()) {
-                                    rsx! { p { class: "text-muted", "could not load deck" } }
+                                    rsx! { p { class: "text-muted", "Could not load deck" } }
                                 } else {
                                     rsx! { div { class: "spinner" } }
                                 }
@@ -178,7 +178,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                         onclick: move |_| {
                             navigator.push(Router::ViewDeck { deck_id });
                         },
-                        "back"
+                        "Back"
                     }
                     button {
                         class: "util-btn",
@@ -190,12 +190,12 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                                 );
                                 document::eval(&js);
                                 toast.info(
-                                    "copied to clipboard".to_string(),
+                                    "Copied to clipboard".to_string(),
                                     ToastOptions::default().duration(Duration::from_millis(2000)),
                                 );
                             }
                         },
-                        "copy"
+                        "Copy"
                     }
                 }
             }

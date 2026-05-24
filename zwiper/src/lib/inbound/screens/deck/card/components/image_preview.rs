@@ -28,7 +28,7 @@ pub(crate) fn ImagePreview(
                 if let Some(url) = url() {
                     img {
                         src: "{url}",
-                        alt: "card preview",
+                        alt: "Card preview",
                         class: "card-image",
                     }
                 }

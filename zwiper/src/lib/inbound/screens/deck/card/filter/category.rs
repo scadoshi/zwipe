@@ -62,7 +62,7 @@ pub fn Category() -> Element {
         div { class: "flex-col gap-half",
             // ── category includes ─────────────────────────────────
             div { class: "label-row mt-2",
-                label { class: "label-xs", "category includes" }
+                label { class: "label-xs", "Category includes" }
                 if !selected.is_empty() {
                     button {
                         class: "chip-xs",
@@ -89,7 +89,7 @@ pub fn Category() -> Element {
                 for cat in MechanicalCategory::all().iter() {
                     {
                         let cat_str = cat.to_string();
-                        let display = cat.display_name().to_lowercase();
+                        let display = cat.display_name().to_string();
                         let is_selected = selected.contains(&cat_str);
                         rsx! {
                             div {
@@ -113,7 +113,7 @@ pub fn Category() -> Element {
 
             // ── category excludes ─────────────────────────────────
             div { class: "label-row mt-2",
-                label { class: "label-xs", "category excludes" }
+                label { class: "label-xs", "Category excludes" }
                 if !excluded.is_empty() {
                     button {
                         class: "clear-btn",
@@ -129,7 +129,7 @@ pub fn Category() -> Element {
                 for cat in MechanicalCategory::all().iter() {
                     {
                         let cat_str = cat.to_string();
-                        let display = cat.display_name().to_lowercase();
+                        let display = cat.display_name().to_string();
                         let is_excluded = excluded.contains(&cat_str);
                         rsx! {
                             div {

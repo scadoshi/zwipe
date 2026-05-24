@@ -54,7 +54,7 @@ pub(crate) fn OtherTypes() -> Element {
                 return Ok(extract_type_words(&dc.0()));
             }
             let Some(session) = session() else {
-                return Err(ApiError::Unauthorized("session expired".to_string()));
+                return Err(ApiError::Unauthorized("Session expired".to_string()));
             };
             client().get_card_types(&session).await
         });
@@ -88,7 +88,7 @@ pub(crate) fn OtherTypes() -> Element {
     rsx! {
         // ── type line includes ────────────────────────────────────
         div { class: "label-row mt-2",
-            label { class: "label-xs", r#for: "other-type", "type line include" }
+            label { class: "label-xs", r#for: "other-type", "Type line include" }
             button {
                 class: "clear-btn",
                 onclick: move |_| {
@@ -173,7 +173,7 @@ pub(crate) fn OtherTypes() -> Element {
 
         input { class: "input input-compact",
             id: "other-type-search",
-            placeholder: "type to search",
+            placeholder: "Type to search",
             value: "{search_query()}",
             r#type: "text",
             autocapitalize: "none",
@@ -189,7 +189,7 @@ pub(crate) fn OtherTypes() -> Element {
 
         // ── type line excludes ────────────────────────────────────
         div { class: "label-row mt-2",
-            label { class: "label-xs", r#for: "type-excludes-search", "type line exclude" }
+            label { class: "label-xs", r#for: "type-excludes-search", "Type line exclude" }
             if !excluded_other_types.is_empty() {
                 button {
                     class: "clear-btn",
@@ -262,7 +262,7 @@ pub(crate) fn OtherTypes() -> Element {
 
         input { class: "input input-compact",
             id: "type-excludes-search",
-            placeholder: "type to search",
+            placeholder: "Type to search",
             value: "{excludes_search()}",
             r#type: "text",
             autocapitalize: "none",

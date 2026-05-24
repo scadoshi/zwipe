@@ -131,7 +131,7 @@ pub(crate) fn CardFilterSheet(
             class: if open() { "bottom-sheet show" } else { "bottom-sheet" },
 
             div { class: "modal-header",
-                span { style: "font-size: 1rem; color: var(--accent-tertiary);", "filter" }
+                span { style: "font-size: 1rem; color: var(--accent-tertiary);", "Filter" }
             }
 
             div { class: "modal-content",
@@ -146,7 +146,7 @@ pub(crate) fn CardFilterSheet(
                             if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(1)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                         },
                         AccordionTrigger {
-                            "name"
+                            "Name"
                             if name_active {
                                 button {
                                     class: "clear-btn",
@@ -169,7 +169,7 @@ pub(crate) fn CardFilterSheet(
                             if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(2)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                         },
                         AccordionTrigger {
-                            "oracle text"
+                            "Oracle text"
                             if oracle_active {
                                 button {
                                     class: "clear-btn",
@@ -198,7 +198,7 @@ pub(crate) fn CardFilterSheet(
                             if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(3)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                         },
                         AccordionTrigger {
-                            "types"
+                            "Types"
                             if types_active {
                                 button {
                                     class: "clear-btn",
@@ -227,7 +227,7 @@ pub(crate) fn CardFilterSheet(
                             if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(4)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                         },
                         AccordionTrigger {
-                            "mana"
+                            "Mana"
                             if mana_active {
                                 button {
                                     class: "clear-btn",
@@ -255,7 +255,7 @@ pub(crate) fn CardFilterSheet(
                             if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(5)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                         },
                         AccordionTrigger {
-                            "combat"
+                            "Combat"
                             if combat_active {
                                 button {
                                     class: "clear-btn",
@@ -280,7 +280,7 @@ pub(crate) fn CardFilterSheet(
                             if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(6)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                         },
                         AccordionTrigger {
-                            "flavor text"
+                            "Flavor text"
                             if flavor_active {
                                 button {
                                     class: "clear-btn",
@@ -304,7 +304,7 @@ pub(crate) fn CardFilterSheet(
                             if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(7)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                         },
                         AccordionTrigger {
-                            "artist"
+                            "Artist"
                             if artist_active {
                                 button {
                                     class: "clear-btn",
@@ -327,7 +327,7 @@ pub(crate) fn CardFilterSheet(
                             if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(8)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                         },
                         AccordionTrigger {
-                            "rarity"
+                            "Rarity"
                             if rarity_active {
                                 button {
                                     class: "clear-btn",
@@ -350,7 +350,7 @@ pub(crate) fn CardFilterSheet(
                             if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(9)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                         },
                         AccordionTrigger {
-                            "category"
+                            "Category"
                             if category_active {
                                 button {
                                     class: "clear-btn",
@@ -374,7 +374,7 @@ pub(crate) fn CardFilterSheet(
                             if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(9)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                         },
                         AccordionTrigger {
-                            "set"
+                            "Set"
                             if set_active {
                                 button {
                                     class: "clear-btn",
@@ -398,7 +398,7 @@ pub(crate) fn CardFilterSheet(
                                 if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(10)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
                             },
                             AccordionTrigger {
-                                "format"
+                                "Format"
                                 if format_active {
                                     button {
                                         class: "clear-btn",
@@ -428,7 +428,7 @@ pub(crate) fn CardFilterSheet(
                             ); }
                         },
                         AccordionTrigger {
-                            "sort"
+                            "Sort"
                             if sort_active {
                                 button {
                                     class: "clear-btn",
@@ -452,7 +452,7 @@ pub(crate) fn CardFilterSheet(
                             ); }
                         },
                         AccordionTrigger {
-                            "config"
+                            "Config"
                             if config_active {
                                 button {
                                     class: "clear-btn",
@@ -480,14 +480,14 @@ pub(crate) fn CardFilterSheet(
                     class: "util-btn",
                     onclick: move |_| {
                         if validate_before_apply && filter_builder.read().is_empty_ignoring_deck_context() {
-                            toast.warning("filter is empty".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                            toast.warning("Filter is empty".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                         } else {
                             bump_filter();
                         }
                         accordion_key.set(accordion_key() + 1);
                         open.set(false);
                     },
-                    "apply"
+                    "Apply"
                 }
                 button {
                     class: "util-btn",
@@ -498,12 +498,12 @@ pub(crate) fn CardFilterSheet(
                             filter_builder.write().clear();
                             bump_filter();
                             toast.info(
-                                "filter cleared".to_string(),
+                                "Filter cleared".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
                             );
                         }
                     },
-                    "clear"
+                    "Clear"
                 }
             }
         }

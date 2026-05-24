@@ -1,3 +1,7 @@
+@import url('https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/400.css');
+@import url('https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/500.css');
+@import url('https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/700.css');
+
 /* ==================
         base
  ==================== */
@@ -16,8 +20,8 @@ html {
 body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    font-family: "Cascadia Code", monospace;
-    font-weight: 300;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 400;
     line-height: 1.6;
     min-height: 100vh;
     max-width: 100vh;
@@ -307,7 +311,7 @@ body {
 }
 
 .font-light {
-    font-weight: 300;
+    font-weight: 400;
 }
 
 .font-normal {
@@ -437,7 +441,7 @@ body {
 
 .page-header h2 {
     font-size: 1rem;
-    font-weight: 300;
+    font-weight: 400;
     letter-spacing: 0.1em;
     margin: 0;
     color: var(--accent-primary);
@@ -508,9 +512,9 @@ body {
     border: 1px solid var(--border-primary);
     border-radius: 1rem;
     color: var(--text-primary);
-    font-family: "Cascadia Code", monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 1rem;
-    font-weight: 300;
+    font-weight: 400;
     cursor: pointer;
     transition: all 0.2s ease;
     margin-bottom: 2rem;
@@ -543,8 +547,8 @@ body {
     background: none;
     border: 1px solid var(--border-primary);
     color: var(--text-primary);
-    font-family: "Cascadia Code", monospace;
-    font-weight: 300;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 400;
     cursor: pointer;
     transition: all 0.1s ease;
     white-space: nowrap;
@@ -595,9 +599,9 @@ body {
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
     color: var(--text-primary);
-    font-family: "Cascadia Code", monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 1rem;
-    font-weight: 300;
+    font-weight: 400;
     transition: all 0.2s ease;
     margin-bottom: 1rem;
 }
@@ -611,7 +615,7 @@ body {
 
 .input::placeholder {
     color: var(--text-muted);
-    font-weight: 300;
+    font-weight: 400;
 }
 
 .input-sm {
@@ -641,7 +645,7 @@ body {
 .label {
     display: block;
     font-size: 1rem;
-    font-weight: 300;
+    font-weight: 400;
     letter-spacing: 0.1em;
     color: var(--accent-primary);
     margin-bottom: 0.4rem;
@@ -660,7 +664,7 @@ body {
 
 .message-error {
     text-align: center;
-    font-weight: 300;
+    font-weight: 400;
     color: var(--color-error);
     letter-spacing: 0.1em;
     padding-bottom: 1rem;
@@ -669,7 +673,7 @@ body {
 
 .message-success {
     text-align: center;
-    font-weight: 300;
+    font-weight: 400;
     color: var(--color-success);
     letter-spacing: 0.1em;
     padding: 0.75rem 1.25rem;
@@ -1021,9 +1025,9 @@ body {
  ================= */
 
 .logo {
-    font-family: "Cascadia Code", monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: clamp(0.5rem, 2.5vw, 1.4rem);
-    line-height: 1.2;
+    line-height: 0.9;
     white-space: pre;
     text-align: left;
     padding: 1rem;
@@ -1164,7 +1168,7 @@ body {
     border-radius: 1rem;
     text-align: center;
     font-size: 1rem;
-    font-weight: 300;
+    font-weight: 400;
     cursor: pointer;
     transition: all 0.2s ease;
 }
@@ -1246,7 +1250,7 @@ body {
     transition: all 0.2s ease;
     border-bottom: 1px solid var(--border-secondary);
     font-size: 1rem;
-    font-weight: 300;
+    font-weight: 400;
 }
 
 .dropdown-item:last-child {
@@ -1515,7 +1519,7 @@ body {
     border: 1px solid var(--border-primary);
     color: var(--text-primary);
     font-size: 1rem;
-    font-weight: 300;
+    font-weight: 400;
     cursor: pointer;
     width: auto;
     margin: 0;
@@ -1529,14 +1533,14 @@ body {
     border: none;
     color: var(--text-primary);
     font-size: 1rem;
-    font-weight: 300;
+    font-weight: 400;
     cursor: pointer;
     width: 100%;
     margin: 0;
     padding: 0;
     text-align: center;
     transition: all 0.2s ease;
-    font-family: "Cascadia Code", monospace;
+    font-family: 'JetBrains Mono', monospace;
 }
 
 /* ================================
@@ -1586,7 +1590,7 @@ body {
     font-size: 0.875rem;
     margin-bottom: 0.25rem;
     color: var(--accent-primary);
-    font-weight: 300;
+    font-weight: 400;
     letter-spacing: 0.1em;
     text-align: center;
     width: 100%;
@@ -1601,8 +1605,8 @@ body {
     background: none;
     border: 1px solid var(--accent-secondary);
     color: var(--accent-secondary);
-    font-family: "Cascadia Code", monospace;
-    font-weight: 300;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 400;
     cursor: pointer;
     transition: all 0.2s ease;
 }
@@ -1640,7 +1644,7 @@ body {
     color: var(--text-primary);
     text-align: center;
     white-space: nowrap;
-    font-weight: 300;
+    font-weight: 400;
 }
 
 .mana-box-compact.selected {
@@ -1776,7 +1780,7 @@ body {
     color: var(--text-primary);
     cursor: pointer;
     font-size: 0.85rem;
-    font-family: "Cascadia Code", monospace;
+    font-family: 'JetBrains Mono', monospace;
     transition: all 0.2s ease;
 }
 
@@ -1869,7 +1873,7 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-weight: 300;
+    font-weight: 400;
 }
 
 .card-row-cmc {
@@ -2005,7 +2009,7 @@ body {
 
 .info-row-label {
     font-size: 1rem;
-    font-weight: 300;
+    font-weight: 400;
     letter-spacing: 0.1em;
     opacity: 0.5;
     flex-shrink: 0;
@@ -2013,7 +2017,7 @@ body {
 
 .info-row-value {
     font-size: 1rem;
-    font-weight: 300;
+    font-weight: 400;
     text-align: right;
     flex-shrink: 1;
     min-width: 0;
@@ -2049,7 +2053,7 @@ body {
 
 .profile-row-label {
     font-size: 1rem;
-    font-weight: 300;
+    font-weight: 400;
     letter-spacing: 0.1em;
     opacity: 0.5;
     flex-shrink: 0;
@@ -2062,7 +2066,7 @@ body {
     flex-wrap: wrap;
     gap: 0.5rem;
     font-size: 1rem;
-    font-weight: 300;
+    font-weight: 400;
     flex-shrink: 1;
     min-width: 0;
     justify-content: flex-end;
@@ -2104,8 +2108,8 @@ body {
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
     color: var(--text-muted);
-    font-family: "Cascadia Code", monospace;
-    font-weight: 300;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 400;
     font-size: 0.85rem;
     text-align: left;
     margin-bottom: 0.4rem;
@@ -2141,8 +2145,8 @@ body {
     border: 1px solid var(--border-primary);
     border-radius: 0.3rem;
     color: var(--text-primary);
-    font-family: "Cascadia Code", monospace;
-    font-weight: 300;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 400;
     font-size: 0.75rem;
     padding: 0.25rem 0.6rem;
     cursor: pointer;

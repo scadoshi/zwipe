@@ -24,8 +24,8 @@ impl IncludeExclude {
 
     fn label(self) -> &'static str {
         match self {
-            Self::Include => "include",
-            Self::Exclude => "exclude",
+            Self::Include => "Include",
+            Self::Exclude => "Exclude",
         }
     }
 }
@@ -63,7 +63,7 @@ pub fn Artist() -> Element {
             return Ok(extract_artists(&dc.0()));
         }
         let Some(session) = session() else {
-            return Err(ApiError::Unauthorized("session expired".to_string()));
+            return Err(ApiError::Unauthorized("Session expired".to_string()));
         };
         client().get_artists(&session).await
     });
@@ -91,7 +91,7 @@ pub fn Artist() -> Element {
     rsx! {
         div { class: "flex-col gap-half",
             div { class: "label-row mt-2",
-                label { class: "label-xs", r#for: "artist-search", "artist" }
+                label { class: "label-xs", r#for: "artist-search", "Artist" }
                 if has_selection {
                     button {
                         class: "clear-btn",
@@ -124,7 +124,7 @@ pub fn Artist() -> Element {
                                 IncludeExclude::Include => "chip selected flex items-center gap-05",
                                 IncludeExclude::Exclude => "chip selected flex items-center gap-05",
                             },
-                            {artist.to_lowercase()}
+                            {artist.clone()}
                             button { class: "chip-remove",
                                 onclick: move |_| {
                                     let new_artists: Vec<String> = read_artists(&filter_builder(), mode())
@@ -167,7 +167,7 @@ pub fn Artist() -> Element {
                                                 write_artists(&mut filter_builder.write(), mode(), current);
                                                 artist_is_typing.set(false);
                                             },
-                                            {artist.to_lowercase()}
+                                            {artist.clone()}
                                         }
                                     }
                                 }
@@ -181,7 +181,7 @@ pub fn Artist() -> Element {
 
             input { class: "input input-compact",
                 id: "artist-search",
-                placeholder: "type to search",
+                placeholder: "Type to search",
                 value: "{artist_search_query()}",
                 r#type: "text",
                 autocapitalize: "none",

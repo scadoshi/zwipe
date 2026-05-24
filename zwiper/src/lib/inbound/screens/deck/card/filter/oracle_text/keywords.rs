@@ -56,7 +56,7 @@ pub(crate) fn Keywords() -> Element {
                 return Ok(extract_keywords(&dc.0()));
             }
             let Some(session) = session() else {
-                return Err(ApiError::Unauthorized("session expired".to_string()));
+                return Err(ApiError::Unauthorized("Session expired".to_string()));
             };
             client().get_keywords(&session).await
         });
@@ -84,7 +84,7 @@ pub(crate) fn Keywords() -> Element {
     rsx! {
         // ── includes ──────────────────────────────────────────────
         div { class: "label-row mt-2",
-            label { class: "label-xs", r#for: "keyword-search", "keywords include" }
+            label { class: "label-xs", r#for: "keyword-search", "Keywords include" }
             button {
                 class: "clear-btn",
                 onclick: move |_| {
@@ -111,7 +111,7 @@ pub(crate) fn Keywords() -> Element {
             div { class: "flex flex-wrap gap-1 mb-1",
                 for keyword in selected_keywords.iter().cloned() {
                     div { class: "chip selected flex items-center gap-05",
-                        {keyword.to_lowercase()}
+                        {keyword.clone()}
                         button { class: "chip-remove",
                             onclick: move |_| {
                                 let mode = keywords_mode();
@@ -154,7 +154,7 @@ pub(crate) fn Keywords() -> Element {
                                             current.push(keyword.clone());
                                             write_keywords(&mut filter_builder.write(), mode, current);
                                         },
-                                        {keyword.to_lowercase()}
+                                        {keyword.clone()}
                                     }
                                 }
                             }
@@ -168,7 +168,7 @@ pub(crate) fn Keywords() -> Element {
 
         input { class: "input input-compact",
             id: "keyword-search",
-            placeholder: "type to search",
+            placeholder: "Type to search",
             value: "{keywords_search()}",
             r#type: "text",
             autocapitalize: "none",
@@ -180,7 +180,7 @@ pub(crate) fn Keywords() -> Element {
 
         // ── excludes ──────────────────────────────────────────────
         div { class: "label-row mt-2",
-            label { class: "label-xs", r#for: "keyword-excludes-search", "keywords exclude" }
+            label { class: "label-xs", r#for: "keyword-excludes-search", "Keywords exclude" }
             if !excluded_keywords.is_empty() {
                 button {
                     class: "clear-btn",
@@ -197,7 +197,7 @@ pub(crate) fn Keywords() -> Element {
             div { class: "flex flex-wrap gap-1 mb-1",
                 for keyword in excluded_keywords.iter().cloned() {
                     div { class: "chip selected flex items-center gap-05",
-                        {keyword.to_lowercase()}
+                        {keyword.clone()}
                         button { class: "chip-remove",
                             onclick: move |_| {
                                 let new_excluded: Vec<String> = read_excluded(&filter_builder())
@@ -238,7 +238,7 @@ pub(crate) fn Keywords() -> Element {
                                             current.push(keyword.clone());
                                             write_excluded(&mut filter_builder.write(), current);
                                         },
-                                        {keyword.to_lowercase()}
+                                        {keyword.clone()}
                                     }
                                 }
                             }
@@ -252,7 +252,7 @@ pub(crate) fn Keywords() -> Element {
 
         input { class: "input input-compact",
             id: "keyword-excludes-search",
-            placeholder: "type to search",
+            placeholder: "Type to search",
             value: "{excludes_search()}",
             r#type: "text",
             autocapitalize: "none",

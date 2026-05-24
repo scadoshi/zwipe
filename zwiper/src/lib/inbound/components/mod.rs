@@ -14,8 +14,6 @@ pub mod auth;
 pub mod fields;
 /// Interactive components (buttons, links, etc.).
 pub mod interactions;
-/// Success message display components.
-pub mod success_messages;
 /// Toast notification component.
 pub mod toast;
 /// Three-state toggle component (true/false/any).

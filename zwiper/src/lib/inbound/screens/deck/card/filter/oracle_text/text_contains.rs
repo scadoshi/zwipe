@@ -20,7 +20,7 @@ pub(crate) fn TextContains() -> Element {
 
     rsx! {
         div { class: "label-row mt-2",
-            label { class: "label-xs", r#for: "oracle-text-contains", "oracle text contains" }
+            label { class: "label-xs", r#for: "oracle-text-contains", "Oracle text contains" }
             if filter_builder().oracle_text_contains().is_some() {
                 button {
                     class: "clear-btn",
@@ -33,7 +33,7 @@ pub(crate) fn TextContains() -> Element {
         }
         input { class: "input input-compact",
             id: "oracle-text-contains",
-            placeholder: "oracle text contains",
+            placeholder: "Oracle text contains",
             value: oracle_text_value,
             r#type: "text",
             autocapitalize: "none",
@@ -43,7 +43,7 @@ pub(crate) fn TextContains() -> Element {
             }
         }
         div { class: "label-row mt-2",
-            label { class: "label-xs", r#for: "oracle-text-not-contains", "oracle text doesn't contain" }
+            label { class: "label-xs", r#for: "oracle-text-not-contains", "Oracle text doesn't contain" }
             if filter_builder().oracle_text_not_contains().is_some() {
                 button {
                     class: "clear-btn",
@@ -56,7 +56,7 @@ pub(crate) fn TextContains() -> Element {
         }
         input { class: "input input-compact",
             id: "oracle-text-not-contains",
-            placeholder: "oracle text doesn't contain",
+            placeholder: "Oracle text doesn't contain",
             value: oracle_text_not_value,
             r#type: "text",
             autocapitalize: "none",

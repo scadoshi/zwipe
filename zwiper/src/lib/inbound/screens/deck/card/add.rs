@@ -107,7 +107,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         let current_card_count = cards().len();
         if current_card_count >= MAX_CARDS_IN_STACK {
             toast.warning(
-                "card limit reached, please refresh to continue".to_string(),
+                "Card limit reached, please refresh to continue".to_string(),
                 ToastOptions::default().duration(Duration::from_millis(3000)),
             );
             return;
@@ -203,7 +203,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 && total.is_multiple_of(100)
             {
                 toast.info(
-                    "approaching card limit, consider refreshing".to_string(),
+                    "Approaching card limit, consider refreshing".to_string(),
                     ToastOptions::default().duration(Duration::from_millis(2000)),
                 );
             }
@@ -214,7 +214,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         } else {
             // At the end — try to load more, else inform the user.
             if pagination_exhausted() {
-                toast.warning("end of results".to_string(), ToastOptions::default());
+                toast.warning("End of results".to_string(), ToastOptions::default());
             } else {
                 load_more_cards();
             }
@@ -224,7 +224,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     let add_card_to_deck = move |card: Card| {
         session.upkeep(client);
         let Some(session) = session() else {
-            toast.error("session expired".to_string(), ToastOptions::default());
+            toast.error("Session expired".to_string(), ToastOptions::default());
             return;
         };
 
@@ -248,7 +248,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     let add_card_to_maybeboard = move |card: Card| {
         session.upkeep(client);
         let Some(session) = session() else {
-            toast.error("session expired".to_string(), ToastOptions::default());
+            toast.error("Session expired".to_string(), ToastOptions::default());
             return;
         };
 
@@ -271,13 +271,13 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut undo_last_action = move || {
         // Pop last action from history
         let Some(action) = action_history.write().pop() else {
-            toast.info("nothing to undo".to_string(), ToastOptions::default());
+            toast.info("Nothing to undo".to_string(), ToastOptions::default());
             return;
         };
 
         // Can't undo if we're at the first card
         if current_index() == 0 {
-            toast.warning("no previous card".to_string(), ToastOptions::default());
+            toast.warning("No previous card".to_string(), ToastOptions::default());
             action_history.write().push(action); // Put it back
             return;
         }
@@ -292,7 +292,7 @@ pub fn Add(deck_id: Uuid) -> Element {
             SwipeAction::Skip { .. } => {
                 // Just showing previous card - done!
                 toast.info(
-                    "undid skip".to_string(),
+                    "Undid skip".to_string(),
                     ToastOptions::default().duration(Duration::from_millis(1500)),
                 );
             }
@@ -300,7 +300,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 // Need to delete from backend (undoing the add)
                 session.upkeep(client);
                 let Some(session) = session() else {
-                    toast.error("session expired".to_string(), ToastOptions::default());
+                    toast.error("Session expired".to_string(), ToastOptions::default());
                     action_history.write().push(action); // Restore history
                     current_index.set(current_index() + 1); // Restore index
                     entering_direction.set(None);
@@ -316,13 +316,13 @@ pub fn Add(deck_id: Uuid) -> Element {
                             // Remove from exclusion HashSet
                             if let Some(oid) = oracle_id { deck_cards_ids.write().remove(&oid); }
                             toast.success(
-                                "undid add".to_string(),
+                                "Undid add".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
                             );
                         }
                         Err(e) => {
                             tracing::warn!("undo add (delete deck card) failed: {e}");
-                            toast.error(format!("failed to undo: {}", e), ToastOptions::default());
+                            toast.error(format!("Failed to undo: {}", e), ToastOptions::default());
                             // Don't restore action or index - user can try again by adding the card
                         }
                     }
@@ -331,7 +331,7 @@ pub fn Add(deck_id: Uuid) -> Element {
             SwipeAction::Maybeboard { ref card, .. } => {
                 session.upkeep(client);
                 let Some(session) = session() else {
-                    toast.error("session expired".to_string(), ToastOptions::default());
+                    toast.error("Session expired".to_string(), ToastOptions::default());
                     action_history.write().push(action);
                     current_index.set(current_index() + 1);
                     entering_direction.set(None);
@@ -346,13 +346,13 @@ pub fn Add(deck_id: Uuid) -> Element {
                         Ok(_) => {
                             if let Some(oid) = oracle_id { deck_cards_ids.write().remove(&oid); }
                             toast.success(
-                                "undid maybeboard".to_string(),
+                                "Undid maybeboard".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
                             );
                         }
                         Err(e) => {
                             tracing::warn!("undo maybeboard (delete deck card) failed: {e}");
-                            toast.error(format!("failed to undo: {}", e), ToastOptions::default());
+                            toast.error(format!("Failed to undo: {}", e), ToastOptions::default());
                         }
                     }
                 });
@@ -365,17 +365,17 @@ pub fn Add(deck_id: Uuid) -> Element {
         if add_source() == AddSource::Maybeboard {
             // Maybeboard mode: "cleared" means truly blank
             if filter_builder.read().is_empty() {
-                toast.warning("filter already cleared".to_string(), opts);
+                toast.warning("Filter already cleared".to_string(), opts);
             } else {
                 filter_builder.write().clear();
                 let current = *filter_reset_counter.peek();
                 filter_reset_counter.set(current + 1);
-                toast.info("filter cleared".to_string(), opts);
+                toast.info("Filter cleared".to_string(), opts);
             }
         } else {
             // Search mode: "cleared" means only deck-context defaults
             if filter_builder.read().is_empty_ignoring_deck_context() {
-                toast.warning("filter already cleared".to_string(), opts);
+                toast.warning("Filter already cleared".to_string(), opts);
             } else {
                 filter_builder.write().clear();
                 if let Some(fmt) = deck_format() {
@@ -388,7 +388,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 }
                 cards.set(vec![]);
                 current_index.set(0);
-                toast.info("filter cleared".to_string(), opts);
+                toast.info("Filter cleared".to_string(), opts);
             }
         }
     };
@@ -494,7 +494,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 last_search_filter.set(None);
                 current_offset.set(0);
                 current_index.set(0);
-                toast.warning("filter is empty".to_string(), ToastOptions::default().duration(Duration::from_millis(2000)));
+                toast.warning("Filter is empty".to_string(), ToastOptions::default().duration(Duration::from_millis(2000)));
                 return;
             }
             // Preserve cards if the filter hasn't changed since last search.
@@ -540,7 +540,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         // Peek session to avoid subscribing this effect to session changes.
         // The interval-based upkeep in Bouncer handles session refresh.
         let Some(session) = session.peek().clone() else {
-            toast.error("session expired".to_string(), ToastOptions::default());
+            toast.error("Session expired".to_string(), ToastOptions::default());
             return;
         };
 
@@ -622,7 +622,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut mb_promote_to_deck = move |card: Card| {
         session.upkeep(client);
         let Some(session) = session() else {
-            toast.error("session expired".to_string(), ToastOptions::default());
+            toast.error("Session expired".to_string(), ToastOptions::default());
             return;
         };
 
@@ -653,7 +653,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     let mut mb_undo_last_action = move || {
         let Some(action) = mb_action_history.write().pop() else {
-            toast.info("nothing to undo".to_string(), ToastOptions::default());
+            toast.info("Nothing to undo".to_string(), ToastOptions::default());
             return;
         };
 
@@ -670,7 +670,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 let prev = if idx == 0 { len - 1 } else { idx - 1 };
                 mb_current_index.set(prev);
                 toast.info(
-                    "undid skip".to_string(),
+                    "Undid skip".to_string(),
                     ToastOptions::default().duration(Duration::from_millis(1500)),
                 );
             }
@@ -681,7 +681,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                 session.upkeep(client);
                 let Some(session) = session() else {
-                    toast.error("session expired".to_string(), ToastOptions::default());
+                    toast.error("Session expired".to_string(), ToastOptions::default());
                     mb_entering_direction.set(None);
                     return;
                 };
@@ -711,20 +711,20 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 },
                             });
                             toast.success(
-                                "undid move to deck".to_string(),
+                                "Undid move to deck".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
                             );
                         }
                         Err(e) => {
                             tracing::warn!("undo promote failed: {e}");
-                            toast.error(format!("failed to undo: {}", e), ToastOptions::default());
+                            toast.error(format!("Failed to undo: {}", e), ToastOptions::default());
                         }
                     }
                 });
             }
             SwipeAction::Maybeboard { .. } => {
                 // Shouldn't happen in maybeboard mode, but handle gracefully
-                toast.info("nothing to undo".to_string(), ToastOptions::default());
+                toast.info("Nothing to undo".to_string(), ToastOptions::default());
             }
         }
     };
@@ -733,7 +733,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         Bouncer {
             div { class: "screen",
                 div { class: "page-header",
-                    h2 { "add deck card" }
+                    h2 { "Add Deck Cards" }
                 }
 
                 div { class: "screen-content card-swipe content-enter",
@@ -741,8 +741,8 @@ pub fn Add(deck_id: Uuid) -> Element {
                 // Source selector chips
                 div { style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
                     div { class: "chip-row",
-                        span { class: "chip-row-label", "from:" }
-                        for (label, variant) in [("search", AddSource::Search), ("maybeboard", AddSource::Maybeboard)] {
+                        span { class: "chip-row-label", "From:" }
+                        for (label, variant) in [("Search", AddSource::Search), ("Maybeboard", AddSource::Maybeboard)] {
                             button {
                                 class: if add_source() == variant { "chip selected" } else { "chip" },
                                 onclick: move |_| {
@@ -795,19 +795,19 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 entering: entering_direction,
                                 on_swipe_left: move |card: Card| {
                                     action_history.write().push(SwipeAction::Skip { card: Box::new(card), exited: Direction::Left });
-                                    toast.info("skipped".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                    toast.info("Skipped".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                     advance_after_commit();
                                 },
                                 on_swipe_right: move |card: Card| {
                                     action_history.write().push(SwipeAction::Do { card: Box::new(card.clone()), exited: Direction::Right });
                                     add_card_to_deck(card);
-                                    toast.success("added to deck".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                    toast.success("Added to deck".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                     advance_after_commit();
                                 },
                                 on_swipe_up: move |card: Card| {
                                     action_history.write().push(SwipeAction::Maybeboard { card: Box::new(card.clone()), exited: Direction::Up });
                                     add_card_to_maybeboard(card);
-                                    toast.info("added to maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                    toast.info("Added to maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                     advance_after_commit();
                                 },
                                 on_swipe_down: move |_card: Card| {
@@ -835,7 +835,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 entering: mb_entering_direction,
                                 on_swipe_left: move |card: Card| {
                                     mb_action_history.write().push(SwipeAction::Skip { card: Box::new(card), exited: Direction::Left });
-                                    toast.info("skipped".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                    toast.info("Skipped".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                     let len = mb_displayed_cards().len();
                                     if len > 0 {
                                         mb_current_index.set((mb_current_index() + 1) % len);
@@ -844,10 +844,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 on_swipe_right: move |card: Card| {
                                     mb_action_history.write().push(SwipeAction::Do { card: Box::new(card.clone()), exited: Direction::Right });
                                     mb_promote_to_deck(card);
-                                    toast.success("moved to deck".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                    toast.success("Moved to deck".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                 },
                                 on_swipe_up: move |_card: Card| {
-                                    toast.info("already on maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                    toast.info("Already on maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                 },
                                 on_swipe_down: move |_card: Card| {
                                     mb_undo_last_action();
@@ -876,12 +876,12 @@ pub fn Add(deck_id: Uuid) -> Element {
                         }
                         navigator.go_back();
                     },
-                    "back"
+                    "Back"
                 }
                 button {
                     class: "util-btn",
                     onclick: move |_| filters_overlay_open.set(true),
-                    "filter"
+                    "Filter"
                     if !filter_builder.read().is_empty_ignoring_deck_context() {
                         span { class: "filter-dot" }
                     }
@@ -893,7 +893,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             // Maybeboard mode: re-fetch deck to reload maybeboard entries
                             session.upkeep(client);
                             let Some(session) = session() else {
-                                toast.error("session expired".to_string(), ToastOptions::default());
+                                toast.error("Session expired".to_string(), ToastOptions::default());
                                 return;
                             };
                             spawn(async move {
@@ -911,7 +911,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 }
                             });
                             toast.info(
-                                "maybeboard refreshed".to_string(),
+                                "Maybeboard refreshed".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
                             );
                         } else {
@@ -930,7 +930,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             };
 
                             let Some(session) = session.peek().clone() else {
-                                toast.error("session expired".to_string(), ToastOptions::default());
+                                toast.error("Session expired".to_string(), ToastOptions::default());
                                 return;
                             };
 
@@ -973,12 +973,12 @@ pub fn Add(deck_id: Uuid) -> Element {
                             });
 
                             toast.info(
-                                "stack refreshed".to_string(),
+                                "Stack refreshed".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
                             );
                         }
                     },
-                    "refresh"
+                    "Refresh"
                 }
             }
 

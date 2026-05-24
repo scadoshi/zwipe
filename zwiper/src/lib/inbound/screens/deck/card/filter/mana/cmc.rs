@@ -53,7 +53,7 @@ pub(crate) fn CmcFilter() -> Element {
             filter_builder.write().set_cmc_equals(n);
             cmc_equals_string.set(n.to_string());
         } else {
-            toast.error("invalid cmc".to_string(), ToastOptions::default().duration(Duration::from_millis(2000)));
+            toast.error("Invalid mana value".to_string(), ToastOptions::default().duration(Duration::from_millis(2000)));
         }
     };
 
@@ -76,7 +76,7 @@ pub(crate) fn CmcFilter() -> Element {
             cmc_range_min_string.set(min.to_string());
             cmc_range_max_string.set(max.to_string());
         } else {
-            toast.error("invalid cmc range".to_string(), ToastOptions::default().duration(Duration::from_millis(2000)));
+            toast.error("Invalid mana value range".to_string(), ToastOptions::default().duration(Duration::from_millis(2000)));
         }
     };
 
@@ -87,7 +87,7 @@ pub(crate) fn CmcFilter() -> Element {
     rsx! {
         // CMC filter
         div { class: "label-row mt-2",
-            label { class: "label-xs", "cmc" }
+            label { class: "label-xs", "Mana value" }
             button {
                 class: "clear-btn",
                 onclick: move |_| {
@@ -107,7 +107,7 @@ pub(crate) fn CmcFilter() -> Element {
                         }
                     }
                 },
-                "{cmc_mode().to_string().to_lowercase()}"
+                "{cmc_mode()}"
             }
             if cmc_is_active {
                 button {
@@ -129,7 +129,7 @@ pub(crate) fn CmcFilter() -> Element {
             FilterMode::Exact => rsx! {
                 input { class: "input input-compact input-narrow",
                     id: "cmc-equals",
-                    placeholder: "cmc",
+                    placeholder: "Mana value",
                     value: cmc_equals_string(),
                     r#type: "text",
                     inputmode: "decimal",
@@ -147,7 +147,7 @@ pub(crate) fn CmcFilter() -> Element {
                 div { class: "flex-row gap-1 flex-center mb-1",
                     input { class: "input input-compact input-narrow",
                         id: "cmc-range-min",
-                        placeholder: "min",
+                        placeholder: "Min",
                         value: cmc_range_min_string(),
                         r#type: "text",
                         inputmode: "decimal",
@@ -163,7 +163,7 @@ pub(crate) fn CmcFilter() -> Element {
                     span { class: "text-muted", "to" }
                     input { class: "input input-compact input-narrow",
                         id: "cmc-range-max",
-                        placeholder: "max",
+                        placeholder: "Max",
                         value: cmc_range_max_string(),
                         r#type: "text",
                         inputmode: "decimal",

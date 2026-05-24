@@ -83,7 +83,7 @@ impl MechanicalCategory {
             Self::Counterspell => "counr",
             Self::Protection => "protc",
             Self::Evasion => "evasn",
-            Self::Finisher => "finsh",
+            Self::Finisher => "fnshr",
             Self::Tokens => "tokns",
             Self::Lifegain => "lifgn",
             Self::Blink => "blink",

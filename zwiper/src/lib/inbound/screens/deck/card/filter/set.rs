@@ -24,8 +24,8 @@ impl IncludeExclude {
 
     fn label(self) -> &'static str {
         match self {
-            Self::Include => "include",
-            Self::Exclude => "exclude",
+            Self::Include => "Include",
+            Self::Exclude => "Exclude",
         }
     }
 }
@@ -62,7 +62,7 @@ pub fn Set() -> Element {
             return Ok(extract_sets(&dc.0()));
         }
         let Some(session) = session() else {
-            return Err(ApiError::Unauthorized("session expired".to_string()));
+            return Err(ApiError::Unauthorized("Session expired".to_string()));
         };
         client().get_sets(&session).await
     });
@@ -92,7 +92,7 @@ pub fn Set() -> Element {
     rsx! {
         div { class: "flex-col gap-half",
             div { class: "label-row mt-2",
-                label { class: "label-xs", r#for: "set-search", "set" }
+                label { class: "label-xs", r#for: "set-search", "Set" }
                 if has_selection {
                     button {
                         class: "clear-btn",
@@ -126,7 +126,7 @@ pub fn Set() -> Element {
                                 IncludeExclude::Include => "chip selected flex items-center gap-05",
                                 IncludeExclude::Exclude => "chip selected flex items-center gap-05",
                             },
-                            {set.to_lowercase()}
+                            {set.clone()}
                             button { class: "chip-remove",
                                 onclick: move |_| {
                                     let new_sets: Vec<String> = read_sets(&filter_builder(), mode())
@@ -170,7 +170,7 @@ pub fn Set() -> Element {
                                                 write_sets(&mut filter_builder.write(), mode(), current);
                                                 is_typing.set(false);
                                             },
-                                            {set.to_lowercase()}
+                                            {set.clone()}
                                         }
                                     }
                                 }
@@ -185,7 +185,7 @@ pub fn Set() -> Element {
             // Search input (at the bottom)
             input { class: "input input-compact",
                 id: "set-search",
-                placeholder: "type to search",
+                placeholder: "Type to search",
                 value: "{search_query()}",
                 r#type: "text",
                 autocapitalize: "none",

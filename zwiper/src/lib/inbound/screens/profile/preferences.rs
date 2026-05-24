@@ -14,6 +14,20 @@ use zwipe_core::domain::{
     user::preferences::ALLOWED_THEMES,
 };
 
+/// Capitalize each word of a theme slug for display ("tokyo-night" → "Tokyo Night").
+fn display_theme_name(slug: &str) -> String {
+    slug.split('-')
+        .map(|w| {
+            let mut chars = w.chars();
+            match chars.next() {
+                Some(c) => c.to_uppercase().collect::<String>() + chars.as_str(),
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 /// Preferences screen for selecting theme and light/dark mode.
 #[component]
 pub fn Preferences() -> Element {
@@ -51,7 +65,7 @@ pub fn Preferences() -> Element {
             session.upkeep(client);
             let Some(session_val) = session() else {
                 toast.error(
-                    "session expired — please log in again".to_string(),
+                    "Session expired — please log in again".to_string(),
                     ToastOptions::default().duration(Duration::from_millis(3000)),
                 );
                 is_loading.set(false);
@@ -62,7 +76,7 @@ pub fn Preferences() -> Element {
                     theme_config.set(ThemeConfig::from(&prefs));
                     saved.set(true);
                     toast.success(
-                        "preferences saved".to_string(),
+                        "Preferences saved".to_string(),
                         ToastOptions::default().duration(Duration::from_millis(1500)),
                     );
                     is_loading.set(false);
@@ -83,7 +97,7 @@ pub fn Preferences() -> Element {
         Bouncer {
             div { class: "screen",
                 div { class: "page-header",
-                    h2 { "preferences" }
+                    h2 { "Preferences" }
                 }
 
                 div { class: "screen-content centered content-enter",
@@ -96,20 +110,20 @@ pub fn Preferences() -> Element {
                                     selected_theme.set(theme.to_string());
                                     apply_preview();
                                 },
-                                "{theme}"
+                                { display_theme_name(theme) }
                             }
                         }
 
                         div {
                             class: "pref-toggle",
-                            span { "dark mode" }
+                            span { "Dark mode" }
                             button {
                                 class: "pref-toggle-btn",
                                 onclick: move |_| {
                                     selected_dark.set(!selected_dark());
                                     apply_preview();
                                 },
-                                if selected_dark() { "on" } else { "off" }
+                                if selected_dark() { "On" } else { "Off" }
                             }
                         }
                     }
@@ -124,13 +138,13 @@ pub fn Preferences() -> Element {
                             }
                             navigator.go_back();
                         },
-                        "back"
+                        "Back"
                     }
                     button {
                         class: "util-btn",
                         disabled: is_loading(),
                         onclick: move |_| save(),
-                        if is_loading() { "saving..." } else { "save" }
+                        if is_loading() { "Saving..." } else { "Save" }
                     }
                 }
             }

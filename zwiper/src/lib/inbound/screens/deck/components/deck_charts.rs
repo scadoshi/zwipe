@@ -21,7 +21,7 @@ pub(crate) fn DeckCharts(
         // ── types ──────────────────────────────────────
         if let Some(type_bars) = type_bars.as_ref() {
             div { style: "display:flex;flex-direction:column;",
-            label { class: "label", "basic type distribution" }
+            label { class: "label", "Basic type distribution" }
             div { style: "width:100%;border:1px solid var(--border-secondary);border-radius:0.5rem;padding:0.75rem;",
                 div { style: "display:flex;align-items:flex-end;gap:0.25rem;height:6rem;",
                     for (_label, count, pct) in type_bars.iter() {
@@ -46,7 +46,7 @@ pub(crate) fn DeckCharts(
         if let Some(cat_bars) = category_bars.as_ref() {
             if !cat_bars.is_empty() {
                 div { style: "display:flex;flex-direction:column;",
-                label { class: "label", "category distribution" }
+                label { class: "label", "Category distribution" }
                 div { style: "width:100%;border:1px solid var(--border-secondary);border-radius:0.5rem;padding:0.75rem;display:flex;flex-direction:column;gap:0.35rem;",
                     for (label, count, pct) in cat_bars.iter() {
                         div { style: "display:flex;align-items:center;gap:0.5rem;",
@@ -73,7 +73,7 @@ pub(crate) fn DeckCharts(
         // ── colors ─────────────────────────────────────
         if let Some(color_bars) = color_bars.as_ref() {
             div { style: "display:flex;flex-direction:column;",
-            label { class: "label", "color distribution" }
+            label { class: "label", "Color distribution" }
             div { style: "width:100%;border:1px solid var(--border-secondary);border-radius:0.5rem;padding:0.75rem;",
                 div { style: "display:flex;align-items:flex-end;gap:0.25rem;height:6rem;",
                     for (_label, count, pct) in color_bars.iter() {
@@ -96,7 +96,7 @@ pub(crate) fn DeckCharts(
 
         // ── mana curve ─────────────────────────────────
         div { style: "display:flex;flex-direction:column;",
-        label { class: "label", "mana curve" }
+        label { class: "label", "Mana curve" }
         div { style: "width:100%;border:1px solid var(--border-secondary);border-radius:0.5rem;padding:0.75rem;",
             div { style: "display:flex;align-items:flex-end;gap:0.25rem;height:6rem;",
                 for (count, pct) in mana_curve_bars.iter() {
@@ -120,7 +120,7 @@ pub(crate) fn DeckCharts(
         if let Some(rows) = mana_balance_rows.as_ref() {
             if !rows.is_empty() {
                 div { style: "display:flex;flex-direction:column;",
-                label { class: "label", "mana cost fulfillment" }
+                label { class: "label", "Mana cost fulfillment" }
                 div { style: "width:100%;border:1px solid var(--border-secondary);border-radius:0.5rem;padding:0.75rem;display:flex;flex-direction:column;gap:0.4rem;",
                     for ManaBalanceRow { label: color_label, consumed, produced, fill_pct, is_surplus } in rows {
                         div { style: "display:flex;align-items:center;gap:0.5rem;",

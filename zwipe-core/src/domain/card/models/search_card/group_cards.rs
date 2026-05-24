@@ -45,10 +45,10 @@ impl GroupByOption {
 impl std::fmt::Display for GroupByOption {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::CardType => write!(f, "type"),
-            Self::Cmc => write!(f, "cmc"),
-            Self::Color => write!(f, "color"),
-            Self::Category => write!(f, "category"),
+            Self::CardType => write!(f, "Type"),
+            Self::Cmc => write!(f, "Mana value"),
+            Self::Color => write!(f, "Color"),
+            Self::Category => write!(f, "Category"),
         }
     }
 }

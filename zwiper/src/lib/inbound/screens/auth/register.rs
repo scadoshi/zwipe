@@ -46,7 +46,7 @@ pub fn Register() -> Element {
 
     let mut validate_username = move || {
         if let Err(e) = Username::new(username()) {
-            username_error.set(Some(e.to_string().to_lowercase()));
+            username_error.set(Some(e.to_string()));
         } else {
             username_error.set(None)
         }
@@ -54,7 +54,7 @@ pub fn Register() -> Element {
 
     let mut validate_email = move || {
         if let Err(e) = EmailAddress::from_str(&email()) {
-            email_error.set(Some(e.to_user_facing_string().to_lowercase()));
+            email_error.set(Some(e.to_user_facing_string()));
         } else {
             email_error.set(None);
         }
@@ -62,9 +62,9 @@ pub fn Register() -> Element {
 
     let mut validate_password = move || {
         if let Err(e) = Password::new(password()) {
-            password_error.set(Some(e.to_string().to_lowercase()))
+            password_error.set(Some(e.to_string()))
         } else if password().as_str() != confirm_password().as_str() {
-            password_error.set(Some("passwords do not match".to_string()));
+            password_error.set(Some("Passwords do not match".to_string()));
         } else {
             password_error.set(None);
         }
@@ -129,8 +129,8 @@ pub fn Register() -> Element {
                     TextInput {
                         value: username,
                         id: "username",
-                        label: "username",
-                        placeholder: "username",
+                        label: "Username",
+                        placeholder: "Username",
                     }
                     if submit_attempted() {
                         if let Some(error) = email_error() {
@@ -140,8 +140,8 @@ pub fn Register() -> Element {
                     TextInput {
                         value: email,
                         id: "email",
-                        label: "email",
-                        placeholder: "email",
+                        label: "Email",
+                        placeholder: "Email",
                     }
                     if submit_attempted() && let Some(error) = password_error() {
                         div { class : "message-error", "{error}" }
@@ -149,15 +149,15 @@ pub fn Register() -> Element {
                     TextInput {
                         value: password,
                         id: "password",
-                        label: "password",
-                        placeholder: "password",
+                        label: "Password",
+                        placeholder: "Password",
                         input_type: "password",
                     }
                     TextInput {
                         value: confirm_password,
                         id: "confirm_password",
-                        label: "confirm password",
-                        placeholder: "confirm password",
+                        label: "Confirm password",
+                        placeholder: "Confirm password",
                         input_type: "password",
                     }
                     if is_loading() {
@@ -170,12 +170,12 @@ pub fn Register() -> Element {
             button {
                 class: "util-btn",
                 onclick: move |_| navigator.go_back(),
-                "back to login"
+                "Back to login"
             }
             button {
                 class: "util-btn",
                 onclick : move |_| attempt_submit(),
-                "create profile"
+                "Create profile"
             }
         }
     }

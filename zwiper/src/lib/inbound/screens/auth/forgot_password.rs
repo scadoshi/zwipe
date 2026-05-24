@@ -28,7 +28,7 @@ pub fn ForgotPassword() -> Element {
 
     let mut validate_email = move || {
         if EmailAddress::from_str(&email()).is_err() {
-            email_error.set(Some("please enter a valid email address".to_string()));
+            email_error.set(Some("Please enter a valid email address".to_string()));
         } else {
             email_error.set(None);
         }
@@ -63,7 +63,7 @@ pub fn ForgotPassword() -> Element {
                 div { class: "container-sm text-center",
                     if submission_success() {
                         div { class: "message-success",
-                            "if that email is registered, a reset link is on its way."
+                            "If that email is registered, a reset link is on its way."
                         }
                     } else {
                         form { class: "flex-col",
@@ -75,8 +75,8 @@ pub fn ForgotPassword() -> Element {
                             TextInput {
                                 value: email,
                                 id: "email",
-                                label: "email",
-                                placeholder: "email",
+                                label: "Email",
+                                placeholder: "Email",
                             }
                             if is_loading() {
                                 div { class: "spinner" }
@@ -89,13 +89,13 @@ pub fn ForgotPassword() -> Element {
                 button {
                     class: "util-btn",
                     onclick: move |_| navigator.go_back(),
-                    "back to login"
+                    "Back to login"
                 }
                 if !submission_success() {
                     button {
                         class: "util-btn",
                         onclick: move |_| attempt_submit(),
-                        "send reset link"
+                        "Send reset link"
                     }
                 }
             }

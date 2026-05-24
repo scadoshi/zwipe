@@ -54,7 +54,7 @@ pub(crate) fn BasicTypes() -> Element {
     rsx! {
         // ── basic types (include) ─────────────────────────────────
         div { class: "label-row mt-2",
-            label { class: "label-xs", r#for: "card-type", "basic types include" }
+            label { class: "label-xs", r#for: "card-type", "Basic types include" }
             if !selected.is_empty() {
                 button {
                     class: "clear-btn",
@@ -98,7 +98,7 @@ pub(crate) fn BasicTypes() -> Element {
 
         // ── basic types excludes ──────────────────────────────────
         div { class: "label-row mt-2",
-            label { class: "label-xs", "basic types exclude" }
+            label { class: "label-xs", "Basic types exclude" }
             if !excluded.is_empty() {
                 button {
                     class: "clear-btn",

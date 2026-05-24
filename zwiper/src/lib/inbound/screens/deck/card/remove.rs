@@ -185,7 +185,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
         session.upkeep(client);
         let Some(session) = session() else {
-            toast.error("session expired".to_string(), ToastOptions::default());
+            toast.error("Session expired".to_string(), ToastOptions::default());
             return;
         };
 
@@ -209,7 +209,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
         session.upkeep(client);
         let Some(session) = session() else {
-            toast.error("session expired".to_string(), ToastOptions::default());
+            toast.error("Session expired".to_string(), ToastOptions::default());
             return;
         };
 
@@ -246,7 +246,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
     let mut undo_last_action = move || {
         let Some(action) = action_history.write().pop() else {
-            toast.info("nothing to undo".to_string(), ToastOptions::default());
+            toast.info("Nothing to undo".to_string(), ToastOptions::default());
             return;
         };
 
@@ -265,7 +265,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 let prev = if idx == 0 { len - 1 } else { idx - 1 };
                 current_index.set(prev);
                 toast.info(
-                    "undid skip".to_string(),
+                    "Undid skip".to_string(),
                     ToastOptions::default().duration(Duration::from_millis(1500)),
                 );
             }
@@ -278,7 +278,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 // Restore on the backend
                 session.upkeep(client);
                 let Some(session) = session() else {
-                    toast.error("session expired".to_string(), ToastOptions::default());
+                    toast.error("Session expired".to_string(), ToastOptions::default());
                     entering_direction.set(None);
                     return;
                 };
@@ -293,14 +293,14 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                 deck_card,
                             });
                             toast.success(
-                                "undid remove".to_string(),
+                                "Undid remove".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
                             );
                         }
                         Err(e) => {
                             tracing::warn!("undo remove (create deck card) failed: {e}");
                             toast.error(
-                                format!("failed to undo: {}", e),
+                                format!("Failed to undo: {}", e),
                                 ToastOptions::default(),
                             );
                         }
@@ -316,7 +316,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 // Move back from maybeboard to active on the backend
                 session.upkeep(client);
                 let Some(session) = session() else {
-                    toast.error("session expired".to_string(), ToastOptions::default());
+                    toast.error("Session expired".to_string(), ToastOptions::default());
                     entering_direction.set(None);
                     return;
                 };
@@ -339,14 +339,14 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                 entry.deck_card.board = Board::Deck;
                             }
                             toast.success(
-                                "undid maybeboard".to_string(),
+                                "Undid maybeboard".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
                             );
                         }
                         Err(e) => {
                             tracing::warn!("undo maybeboard (update deck card) failed: {e}");
                             toast.error(
-                                format!("failed to undo: {}", e),
+                                format!("Failed to undo: {}", e),
                                 ToastOptions::default(),
                             );
                         }
@@ -360,7 +360,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
         Bouncer {
             div { class: "screen",
                 div { class: "page-header",
-                    h2 { "remove deck card" }
+                    h2 { "Remove Deck Cards" }
                 }
 
                 div { class: "screen-content card-swipe content-enter",
@@ -368,8 +368,8 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 // Board filter chips
                 div { style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
                     div { class: "chip-row",
-                        span { class: "chip-row-label", "boards:" }
-                        for (label, variant) in [("deck", BoardFilter::Deck), ("maybe", BoardFilter::Maybeboard), ("side", BoardFilter::Sideboard), ("all", BoardFilter::All)] {
+                        span { class: "chip-row-label", "Boards:" }
+                        for (label, variant) in [("Deck", BoardFilter::Deck), ("Maybe", BoardFilter::Maybeboard), ("Side", BoardFilter::Sideboard), ("All", BoardFilter::All)] {
                             button {
                                 class: if board_filter() == variant { "chip selected" } else { "chip" },
                                 onclick: move |_| {
@@ -395,7 +395,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             on_swipe_left: move |card: Card| {
                                 action_history.write().push(SwipeAction::Skip { card: Box::new(card), exited: Direction::Left });
                                 toast.info(
-                                    "skipped".to_string(),
+                                    "Skipped".to_string(),
                                     ToastOptions::default().duration(Duration::from_millis(1500)),
                                 );
                                 // Skip: advance circularly within displayed_cards
@@ -408,7 +408,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                 action_history.write().push(SwipeAction::Do { card: Box::new(card), exited: Direction::Right });
                                 delete_card_from_deck();
                                 toast.success(
-                                    "removed from deck".to_string(),
+                                    "Removed from deck".to_string(),
                                     ToastOptions::default().duration(Duration::from_millis(1500)),
                                 );
                                 remove_current_card();
@@ -416,7 +416,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             on_swipe_up: move |card: Card| {
                                 action_history.write().push(SwipeAction::Maybeboard { card: Box::new(card), exited: Direction::Up });
                                 move_card_to_maybeboard();
-                                toast.info("moved to maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                toast.info("Moved to maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                 remove_current_card();
                             },
                             on_swipe_down: move |_card: Card| {
@@ -438,12 +438,12 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 button {
                     class: "util-btn",
                     onclick: move |_| navigator.go_back(),
-                    "back"
+                    "Back"
                 }
                 button {
                     class: "util-btn",
                     onclick: move |_| filters_overlay_open.set(true),
-                    "filter"
+                    "Filter"
                     if !filter_builder.read().is_empty() {
                         span { class: "filter-dot" }
                     }
@@ -458,11 +458,11 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             filter_reset_counter.set(current + 1);
                         }
                         toast.info(
-                            "stack refreshed".to_string(),
+                            "Stack refreshed".to_string(),
                             ToastOptions::default().duration(Duration::from_millis(1500)),
                         );
                     },
-                    "refresh"
+                    "Refresh"
                 }
                 if !filter_builder.read().is_empty() {
                     button {
@@ -473,11 +473,11 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             let current = *filter_reset_counter.peek();
                             filter_reset_counter.set(current + 1);
                             toast.info(
-                                "filter cleared".to_string(),
+                                "Filter cleared".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
                             );
                         },
-                        "clear"
+                        "Clear"
                     }
                 }
             }

@@ -18,17 +18,17 @@ pub(crate) fn LogoutDialog(mut open: Signal<bool>) -> Element {
             open: open(),
             on_open_change: move |v| open.set(v),
             AlertDialogContent {
-                AlertDialogTitle { "logout" }
-                AlertDialogDescription { "are you sure you want to logout?" }
+                AlertDialogTitle { "Log out" }
+                AlertDialogDescription { "Are you sure you want to log out?" }
                 AlertDialogActions {
                     AlertDialogCancel {
                         on_click: move |_| open.set(false),
-                        "cancel"
+                        "Cancel"
                     }
                     AlertDialogAction {
                         danger: true,
                         on_click: move |_| session.logout(client),
-                        "logout"
+                        "Log out"
                     }
                 }
             }

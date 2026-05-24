@@ -13,14 +13,14 @@ pub(crate) fn DeckStats(metrics: DeckMetrics, show_buy_sheet: Signal<bool>) -> E
 
     let fmt = |val: Option<f64>| match val {
         Some(v) => format!("{symbol}{v:.2}"),
-        None => "n/a".to_string(),
+        None => "N/A".to_string(),
     };
 
     rsx! {
         div { style: "display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.4rem;",
-            label { class: "label", style: "margin-bottom: 0;", "stats" }
+            label { class: "label", style: "margin-bottom: 0;", "Stats" }
             div { class: "chip-row", style: "margin-bottom: 0; align-items: center;",
-                for (label, key) in [("usd", "usd"), ("eur", "eur"), ("tix", "tix")] {
+                for (label, key) in [("USD", "usd"), ("EUR", "eur"), ("TIX", "tix")] {
                     div {
                         class: if selected_currency() == key { "chip selected" } else { "chip" },
                         onclick: move |_| selected_currency.set(key),
@@ -31,29 +31,29 @@ pub(crate) fn DeckStats(metrics: DeckMetrics, show_buy_sheet: Signal<bool>) -> E
                 div {
                     class: "chip",
                     onclick: move |_| show_buy_sheet.set(true),
-                    "buy"
+                    "Buy"
                 }
             }
         }
         div { class: "info-list",
             div { class: "info-row",
-                span { class: "info-row-label", "cards" }
+                span { class: "info-row-label", "Cards" }
                 span { class: "info-row-value", "{metrics.total_cards}" }
             }
             div { class: "info-row",
-                span { class: "info-row-label", "avg cmc" }
+                span { class: "info-row-label", "Average mana value" }
                 span { class: "info-row-value", "{metrics.avg_cmc:.1}" }
             }
             div { class: "info-row",
-                span { class: "info-row-label", "lands" }
+                span { class: "info-row-label", "Lands" }
                 span { class: "info-row-value", "{metrics.land_count}" }
             }
             div { class: "info-row",
-                span { class: "info-row-label", "total price" }
+                span { class: "info-row-label", "Total price" }
                 span { class: "info-row-value", "{fmt(total)}" }
             }
             div { class: "info-row",
-                span { class: "info-row-label", "avg card price" }
+                span { class: "info-row-label", "Average card price" }
                 span { class: "info-row-value", "{fmt(avg)}" }
             }
         }

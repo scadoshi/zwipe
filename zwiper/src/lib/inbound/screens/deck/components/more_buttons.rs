@@ -17,7 +17,7 @@ pub(crate) fn MoreButtons(
     let navigator = use_navigator();
 
     rsx! {
-        BottomSheet { open: show_buy_sheet, title: "buy deck",
+        BottomSheet { open: show_buy_sheet, title: "Buy deck",
             if let Some(ref url) = tcg_url {
                 a {
                     class: "btn",
@@ -25,7 +25,7 @@ pub(crate) fn MoreButtons(
                     target: "_blank",
                     style: "text-decoration: none; text-align: center;",
                     onclick: move |_| show_buy_sheet.set(false),
-                    "tcgplayer"
+                    "TCGplayer"
                 }
             }
             if let Some(ref url) = ck_url {
@@ -35,19 +35,19 @@ pub(crate) fn MoreButtons(
                     target: "_blank",
                     style: "text-decoration: none; text-align: center;",
                     onclick: move |_| show_buy_sheet.set(false),
-                    "card kingdom"
+                    "Card Kingdom"
                 }
             }
         }
 
-        BottomSheet { open: show_more_sheet, title: "more actions",
+        BottomSheet { open: show_more_sheet, title: "More actions",
             button {
                 class: "btn",
                 onclick: move |_| {
                     show_more_sheet.set(false);
                     navigator.push(Router::AddDeckCard { deck_id });
                 },
-                "add cards"
+                "Add cards"
             }
             button {
                 class: "btn",
@@ -56,7 +56,7 @@ pub(crate) fn MoreButtons(
                     show_more_sheet.set(false);
                     navigator.push(Router::RemoveDeckCard { deck_id });
                 },
-                "remove cards"
+                "Remove cards"
             }
             button {
                 class: "btn",
@@ -64,7 +64,7 @@ pub(crate) fn MoreButtons(
                     show_more_sheet.set(false);
                     navigator.push(Router::ImportDeck { deck_id });
                 },
-                "import cards"
+                "Import cards"
             }
             button {
                 class: "btn",
@@ -73,7 +73,7 @@ pub(crate) fn MoreButtons(
                     show_more_sheet.set(false);
                     navigator.push(Router::ExportDeck { deck_id });
                 },
-                "export cards"
+                "Export cards"
             }
             button {
                 class: "btn",
@@ -81,14 +81,14 @@ pub(crate) fn MoreButtons(
                     show_more_sheet.set(false);
                     show_clone_dialog.set(true);
                 },
-                "clone deck"
+                "Clone deck"
             }
             button {
                 class: "btn btn-danger",
                 onclick: move |_| {
                     show_delete_dialog.set(true);
                 },
-                "delete deck"
+                "Delete deck"
             }
         }
     }

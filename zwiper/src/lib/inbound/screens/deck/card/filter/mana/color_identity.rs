@@ -38,7 +38,7 @@ pub(crate) fn ColorIdentityFilter() -> Element {
     rsx! {
         // Color identity filter
         div { class: "label-row mt-2",
-            label { class: "label-xs", "color identity" }
+            label { class: "label-xs", "Color identity" }
             button {
                 class: "clear-btn",
                 onclick: move |_| {
@@ -68,7 +68,7 @@ pub(crate) fn ColorIdentityFilter() -> Element {
                         }
                     }
                 },
-                "{color_identity_mode().to_string().to_lowercase()}"
+                "{color_identity_mode()}"
             }
             if color_is_active {
                 button {
@@ -126,7 +126,7 @@ pub(crate) fn ColorIdentityFilter() -> Element {
                             }
                         }
                     },
-                    { color.to_string().to_lowercase() }
+                    { color.to_string() }
                 }
             }
         }

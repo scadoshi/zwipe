@@ -9,25 +9,25 @@ pub(crate) fn DeckProfileSection(deck_profile: DeckProfile, commander: Option<Ca
         .as_ref()
         .is_some_and(|f| f.has_signature_spell());
     let commander_label = if is_oathbreaker {
-        "oathbreaker"
+        "Oathbreaker"
     } else {
-        "commander"
+        "Commander"
     };
 
     rsx! {
-        label { class: "label", "profile" }
+        label { class: "label", "Profile" }
         div { class: "info-list",
             div { class: "info-row",
-                span { class: "info-row-label", "name" }
+                span { class: "info-row-label", "Name" }
                 span { class: "info-row-value", "{deck_profile.name}" }
             }
             div { class: "info-row",
-                span { class: "info-row-label", "format" }
+                span { class: "info-row-label", "Format" }
                 span { class: "info-row-value",
                     if let Some(fmt) = deck_profile.format {
-                        { fmt.display_name().to_lowercase() }
+                        { fmt.display_name().to_string() }
                     } else {
-                        "none"
+                        "None"
                     }
                 }
             }
@@ -36,31 +36,31 @@ pub(crate) fn DeckProfileSection(deck_profile: DeckProfile, commander: Option<Ca
                     span { class: "info-row-label", "{commander_label}" }
                     span { class: "info-row-value",
                         if let Some(cmd) = commander {
-                            { cmd.scryfall_data.name.to_lowercase() }
+                            { cmd.scryfall_data.name }
                         } else if let Some(name) = &deck_profile.commander_name {
-                            { name.to_lowercase() }
+                            { name.clone() }
                         } else {
-                            "none"
+                            "None"
                         }
                     }
                 }
             }
             if let Some(name) = &deck_profile.partner_commander_name {
                 div { class: "info-row",
-                    span { class: "info-row-label", "partner" }
-                    span { class: "info-row-value", { name.to_lowercase() } }
+                    span { class: "info-row-label", "Partner" }
+                    span { class: "info-row-value", { name.clone() } }
                 }
             }
             if let Some(name) = &deck_profile.background_name {
                 div { class: "info-row",
-                    span { class: "info-row-label", "background" }
-                    span { class: "info-row-value", { name.to_lowercase() } }
+                    span { class: "info-row-label", "Background" }
+                    span { class: "info-row-value", { name.clone() } }
                 }
             }
             if let Some(name) = &deck_profile.signature_spell_name {
                 div { class: "info-row",
-                    span { class: "info-row-label", "signature spell" }
-                    span { class: "info-row-value", { name.to_lowercase() } }
+                    span { class: "info-row-label", "Signature spell" }
+                    span { class: "info-row-value", { name.clone() } }
                 }
             }
         }
