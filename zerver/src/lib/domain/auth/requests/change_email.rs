@@ -23,10 +23,9 @@
 //! )?;
 //! ```
 
-use email_address::EmailAddress;
-use std::str::FromStr;
 use thiserror::Error;
 use uuid::Uuid;
+use zwipe_core::domain::{Email, InvalidEmail};
 
 #[cfg(feature = "zerver")]
 use crate::domain::auth::requests::authenticate_user::AuthenticateUserError;
@@ -41,7 +40,7 @@ pub enum InvalidChangeEmail {
     Id(#[from] uuid::Error),
     /// Invalid email format.
     #[error(transparent)]
-    Email(#[from] email_address::Error),
+    Email(#[from] InvalidEmail),
     /// Password doesn't meet security requirements.
     #[error(transparent)]
     Password(#[from] InvalidPassword),
@@ -82,7 +81,7 @@ pub struct ChangeEmail {
     /// The user whose email should be changed.
     pub user_id: Uuid,
     /// The new email address (already validated).
-    pub email: EmailAddress,
+    pub email: Email,
     /// Current password for verification (already validated).
     pub password: Password,
 }
@@ -112,7 +111,7 @@ impl ChangeEmail {
     /// )?;
     /// ```
     pub fn new(user_id: Uuid, email: &str, password: &str) -> Result<Self, InvalidChangeEmail> {
-        let email = EmailAddress::from_str(email)?;
+        let email = Email::new(email)?;
         let password = Password::new(password)?;
         Ok(Self {
             user_id,

@@ -30,7 +30,7 @@ use axum_extra::{
     TypedHeader,
     headers::{Authorization, authorization::Bearer},
 };
-use email_address::EmailAddress;
+use zwipe_core::domain::Email;
 #[cfg(feature = "zerver")]
 use std::str::FromStr;
 #[cfg(feature = "zerver")]
@@ -51,7 +51,7 @@ pub struct AuthenticatedUser {
     /// Username from JWT claims.
     pub username: Username,
     /// Email from JWT claims.
-    pub email: EmailAddress,
+    pub email: Email,
 }
 
 /// Rate-limit key extractor that keys by authenticated user ID from the JWT.

@@ -1,7 +1,7 @@
 //! Error mappings between SQLx errors and user domain errors.
 
 use crate::domain::user::models::get_user::GetUserError;
-use zwipe_core::domain::user::username::InvalidUsername;
+use zwipe_core::domain::{user::username::InvalidUsername, InvalidEmail};
 use thiserror::Error;
 
 /// Errors from converting a database user row into domain types.
@@ -11,7 +11,7 @@ pub enum IntoUserError {
     #[error(transparent)]
     Username(#[from] InvalidUsername),
     #[error(transparent)]
-    Email(#[from] email_address::Error),
+    Email(#[from] InvalidEmail),
 }
 
 impl From<sqlx::Error> for GetUserError {

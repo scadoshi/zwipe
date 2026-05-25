@@ -10,8 +10,6 @@ use crate::{
 use zwipe_core::domain::user::models::theme::ThemeConfig;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
-use email_address::EmailAddress;
-use std::str::FromStr;
 use std::time::Duration;
 use zwipe::domain::auth::models::password::Password;
 use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
@@ -19,6 +17,7 @@ use zwipe_core::domain::{
     auth::models::session::Session,
     logo,
     user::username::Username,
+    Email,
 };
 
 /// Login form screen for user authentication.
@@ -40,7 +39,7 @@ pub fn Login() -> Element {
 
     let inputs_are_valid = move || {
         (Username::new(username_or_email()).is_ok()
-            || EmailAddress::from_str(&username_or_email()).is_ok())
+            || Email::new(username_or_email()).is_ok())
             && Password::new(password()).is_ok()
     };
 

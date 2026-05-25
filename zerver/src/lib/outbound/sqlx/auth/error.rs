@@ -15,7 +15,7 @@ use crate::{
     },
     outbound::sqlx::{postgres::IsConstraintViolation, user::error::IntoUserError},
 };
-use zwipe_core::domain::user::username::InvalidUsername;
+use zwipe_core::domain::{user::username::InvalidUsername, InvalidEmail};
 use thiserror::Error;
 
 /// Errors from converting a database user-with-password-hash row into domain types.
@@ -25,7 +25,7 @@ pub enum IntoUserWithPasswordHashError {
     #[error(transparent)]
     Username(#[from] InvalidUsername),
     #[error(transparent)]
-    Email(#[from] email_address::Error),
+    Email(#[from] InvalidEmail),
     #[error(transparent)]
     PasswordHash(#[from] argon2::password_hash::Error),
 }
