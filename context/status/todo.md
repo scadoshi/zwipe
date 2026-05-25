@@ -307,6 +307,7 @@ Pre-populate the color identity filter to the commander's colors when the deck's
 ## Maintenance
 
 - **GitHub Actions Node.js 20 deprecation** — forced to Node.js 24 on June 2, 2026. All workflows already on latest major versions. No action needed — monitor for v5 releases.
+- **Investigate why `zervice` isn't running daily on zerver** — the background sync (nightly Scryfall delta, materialized view refresh, refresh-token cleanup, session enforcement) should fire every day. Check `systemd` timer/unit status, `journalctl -u zervice`, `/var/log/zwipe/zervice.*.log` (most recent entry is `zervice.2026-04-12.log`, suggesting it hasn't run in over a month). Confirm the timer is enabled + active, and confirm the binary still exits cleanly.
 
 ---
 
