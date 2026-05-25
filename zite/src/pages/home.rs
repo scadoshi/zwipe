@@ -93,7 +93,7 @@ pub fn Home() -> Element {
                     }
                 }
                 div { class: "gallery-meta",
-                    figcaption { class: "gallery-caption", "{current_caption}" }
+                    figcaption { key: "{index()}", class: "gallery-caption", "{current_caption}" }
                     if total > 1 {
                         span { class: "gallery-counter", "{index() + 1} / {total}" }
                     }
