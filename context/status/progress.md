@@ -98,4 +98,6 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ## App Store Submission — Submitted, Awaiting Review
 
-Build 14 (version 1.0) submitted on 2026-05-25 via Transporter. Awaiting Apple review.
+Build 15 (version 1.0) submitted on 2026-05-25 via Transporter. Awaiting Apple review.
+
+Build 15 ships over build 14: `Email` strict newtype across the workspace (server rejects malformed addresses at construction, matching Resend's accepted shape), fix for resend-verification reading stale email from the JWT instead of the DB profile, and email templates restyled to JetBrains Mono + sentence case.
