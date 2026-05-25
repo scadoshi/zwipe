@@ -512,6 +512,12 @@ code {
     max-height: 70vh;
     height: auto;
     object-fit: contain;
+    animation: gallery-fade-in 0.25s ease-out;
+}
+
+@keyframes gallery-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .gallery-nav {
