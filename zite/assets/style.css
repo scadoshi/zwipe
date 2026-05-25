@@ -731,7 +731,9 @@ code {
     border-radius: 50%;
     width: 2.5rem;
     height: 2.5rem;
-    font-size: 1.4rem;
+    padding: 0;
+    font-size: 2rem;
+    font-weight: 200;
     line-height: 1;
     cursor: pointer;
     display: flex;
@@ -740,7 +742,7 @@ code {
     opacity: 0.85;
     transition: opacity 0.15s, border-color 0.15s, color 0.15s;
     z-index: 10;
-    font-family: inherit;
+    font-family: monospace;
 }
 
 .gallery-nav:hover {
