@@ -717,15 +717,21 @@ code {
     max-height: 70vh;
     height: auto;
     object-fit: contain;
-    animation: gallery-fade-in 0.25s ease-out;
+    animation: gallery-fade-in 0.45s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.gallery-caption {
+    animation: gallery-fade-in 0.45s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 @keyframes gallery-fade-in {
     from {
         opacity: 0;
+        transform: translateY(0.25rem);
     }
     to {
         opacity: 1;
+        transform: translateY(0);
     }
 }
 
