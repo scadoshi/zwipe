@@ -1,6 +1,21 @@
 use dioxus::prelude::*;
 use crate::{Footer, Nav};
 
+// Source-material links — used inside the architecture diagram (Wikipedia-style refs).
+const URL_ZWIPER: &str = "https://github.com/scadoshi/zwipe/tree/main/zwiper";
+const URL_ZITE: &str = "https://github.com/scadoshi/zwipe/tree/main/zite";
+const URL_ZERVER: &str = "https://github.com/scadoshi/zwipe/tree/main/zerver";
+const URL_ZWIPE_CORE: &str = "https://github.com/scadoshi/zwipe/tree/main/zwipe-core";
+const URL_DIOXUS: &str = "https://dioxuslabs.com";
+const URL_WASM: &str = "https://webassembly.org";
+const URL_AXUM: &str = "https://github.com/tokio-rs/axum";
+const URL_TOKIO: &str = "https://tokio.rs";
+const URL_SQLX: &str = "https://github.com/launchbadge/sqlx";
+const URL_POSTGRES: &str = "https://www.postgresql.org";
+const URL_SCRYFALL: &str = "https://scryfall.com/docs/api";
+const URL_MECHANICAL_CATEGORY: &str =
+    "https://github.com/scadoshi/zwipe/tree/main/zwipe-core/src/domain/card/models/mechanical_category";
+
 #[component]
 pub fn About() -> Element {
     rsx! {
@@ -34,101 +49,242 @@ pub fn About() -> Element {
             }
 
             div { class: "section",
-                h2 { "The Stack" }
+                h2 { "System Architecture" }
+                p { class: "arch-subtitle", "Four-crate Rust workspace — every box links to its source." }
+                div { class: "arch",
+                    div { class: "arch-tier arch-tier-clients",
+                        div { class: "arch-box",
+                            div { class: "arch-box-head",
+                                span { class: "arch-box-title",
+                                    a { href: URL_ZWIPER, target: "_blank", rel: "noopener noreferrer", "zwiper" }
+                                }
+                                span { class: "arch-box-sub",
+                                    "iOS · "
+                                    a { href: URL_DIOXUS, target: "_blank", rel: "noopener noreferrer", "Dioxus" }
+                                    " + "
+                                    a { href: URL_WASM, target: "_blank", rel: "noopener noreferrer", "WASM" }
+                                }
+                            }
+                            ul { class: "arch-box-list",
+                                li { "swipe-to-build deckbuilder" }
+                                li { "card search · deck profiles" }
+                                li { "authenticated user UI" }
+                            }
+                            div { class: "arch-imports",
+                                "imports "
+                                a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
+                            }
+                        }
+                        div { class: "arch-box",
+                            div { class: "arch-box-head",
+                                span { class: "arch-box-title",
+                                    a { href: URL_ZITE, target: "_blank", rel: "noopener noreferrer", "zite" }
+                                }
+                                span { class: "arch-box-sub",
+                                    "web · "
+                                    a { href: URL_DIOXUS, target: "_blank", rel: "noopener noreferrer", "Dioxus" }
+                                    " + "
+                                    a { href: URL_WASM, target: "_blank", rel: "noopener noreferrer", "WASM" }
+                                }
+                            }
+                            ul { class: "arch-box-list",
+                                li { "marketing & landing" }
+                                li { "password reset flow" }
+                                li { "email verification flow" }
+                            }
+                            div { class: "arch-imports",
+                                "imports "
+                                a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
+                            }
+                        }
+                    }
+                    div { class: "arch-flow",
+                        span { class: "arch-flow-label", "HTTPS / JSON" }
+                        span { class: "arch-flow-arrow", "\u{2193}" }
+                    }
+                    div { class: "arch-tier arch-tier-api",
+                        div { class: "arch-box arch-box-emphasis",
+                            div { class: "arch-box-head",
+                                span { class: "arch-box-title",
+                                    a { href: URL_ZERVER, target: "_blank", rel: "noopener noreferrer", "zerver" }
+                                }
+                                span { class: "arch-box-sub",
+                                    "REST API · "
+                                    a { href: URL_AXUM, target: "_blank", rel: "noopener noreferrer", "Axum" }
+                                    " · "
+                                    a { href: URL_TOKIO, target: "_blank", rel: "noopener noreferrer", "Tokio" }
+                                    " · "
+                                    a { href: URL_SQLX, target: "_blank", rel: "noopener noreferrer", "SQLx" }
+                                }
+                            }
+                            ul { class: "arch-box-list",
+                                li { "auth · sessions · JWT" }
+                                li { "decks · cards · users" }
+                            }
+                            div { class: "arch-nested",
+                                div { class: "arch-box-head",
+                                    span { class: "arch-box-title arch-nested-title", "zervice" }
+                                    span { class: "arch-box-sub", "scheduled job (runs on the zerver)" }
+                                }
+                                ul { class: "arch-box-list",
+                                    li { "nightly Scryfall card-catalog sync" }
+                                    li { "writes into the same Postgres" }
+                                }
+                            }
+                            div { class: "arch-imports",
+                                "imports "
+                                a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
+                            }
+                        }
+                        div { class: "arch-box",
+                            div { class: "arch-box-head",
+                                span { class: "arch-box-title",
+                                    a { href: URL_SCRYFALL, target: "_blank", rel: "noopener noreferrer", "Scryfall API" }
+                                }
+                                span { class: "arch-box-sub", "external service" }
+                            }
+                            ul { class: "arch-box-list",
+                                li { "card catalog source" }
+                                li { "nightly sync \u{2192} zervice" }
+                            }
+                        }
+                    }
+                    div { class: "arch-flow",
+                        span { class: "arch-flow-label", "SQL" }
+                        span { class: "arch-flow-arrow", "\u{2193}" }
+                    }
+                    div { class: "arch-tier arch-tier-db",
+                        div { class: "arch-box arch-box-wide",
+                            div { class: "arch-box-head",
+                                span { class: "arch-box-title",
+                                    a { href: URL_POSTGRES, target: "_blank", rel: "noopener noreferrer", "PostgreSQL" }
+                                }
+                                span { class: "arch-box-sub", "primary datastore" }
+                            }
+                            ul { class: "arch-box-list arch-box-list-inline",
+                                li { "users" }
+                                li { "decks" }
+                                li { "cards" }
+                            }
+                        }
+                    }
+                    div { class: "arch-foundation",
+                        div { class: "arch-box-head",
+                            span { class: "arch-box-title",
+                                a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
+                            }
+                            span { class: "arch-box-sub", "shared domain crate" }
+                        }
+                        p { class: "arch-foundation-body",
+                            "models, filter logic, traits — no server- or client-only deps. "
+                            "Imported by "
+                            a { href: URL_ZWIPER, target: "_blank", rel: "noopener noreferrer", "zwiper" }
+                            " · "
+                            a { href: URL_ZERVER, target: "_blank", rel: "noopener noreferrer", "zerver" }
+                            " · "
+                            a { href: URL_ZITE, target: "_blank", rel: "noopener noreferrer", "zite" }
+                            "."
+                        }
+                    }
+                    div { class: "arch-legend",
+                        span { class: "arch-legend-item",
+                            span { class: "arch-legend-swatch arch-legend-solid" }
+                            "runtime data flow"
+                        }
+                        span { class: "arch-legend-item",
+                            span { class: "arch-legend-swatch arch-legend-dashed" }
+                            "build-time dependency (cargo)"
+                        }
+                    }
+                }
+            }
+
+            div { class: "section",
+                h2 { "Under the Hood" }
+                p { class: "arch-subtitle", "What the diagram doesn't show." }
                 div { class: "card-grid",
                     div { class: "card",
-                        span { class: "card-category", "API" }
-                        h3 { class: "card-title",
-                            "Backend — "
-                            a { href: "https://github.com/scadoshi/zwipe/tree/main/zerver", target: "_blank", rel: "noopener noreferrer", "zerver" }
-                        }
-                        p { class: "card-summary",
-                            "Rust + "
-                            a { href: "https://github.com/tokio-rs/axum", target: "_blank", rel: "noopener noreferrer", "axum" }
-                            " REST API on PostgreSQL with "
-                            a { href: "https://github.com/launchbadge/sqlx", target: "_blank", rel: "noopener noreferrer", "sqlx" }
-                            "."
-                        }
-                        ul { class: "card-bullets",
-                            li { "Compile-time query verification via sqlx" }
-                            li { "JWT access + rotating refresh tokens, argon2 hashing" }
-                            li { "Rate limiting, audit logs, transactional email" }
-                            li { "Commander eligibility validation per format" }
-                        }
-                    }
-
-                    div { class: "card",
-                        span { class: "card-category", "Client" }
-                        h3 { class: "card-title",
-                            "Frontend — "
-                            a { href: "https://github.com/scadoshi/zwipe/tree/main/zwiper", target: "_blank", rel: "noopener noreferrer", "zwiper" }
-                        }
-                        p { class: "card-summary",
-                            a { href: "https://dioxuslabs.com", target: "_blank", rel: "noopener noreferrer", "dioxus" }
-                            " in Rust — one codebase, three targets."
-                        }
-                        ul { class: "card-bullets",
-                            li { "iOS, Android, and web from the same source" }
-                            li { "Custom swipe gesture handling, signals-based reactivity" }
-                            li { "Modular filter system with real-time deck metrics" }
-                            li { "Command zone display + buy links and price stats" }
-                        }
-                    }
-
-                    div { class: "card",
                         span { class: "card-category", "Design" }
-                        h3 { class: "card-title", "Architecture" }
-                        p { class: "card-summary", "Hexagonal ports & adapters throughout." }
-                        ul { class: "card-bullets",
-                            li {
-                                a { href: "https://github.com/scadoshi/zwipe/tree/main/zwipe-core", target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
-                                ": shared domain crate, zero framework deps"
-                            }
-                            li {
-                                a { href: "https://github.com/scadoshi/zwipe/tree/main/zerver", target: "_blank", rel: "noopener noreferrer", "zerver" }
-                                ", "
-                                a { href: "https://github.com/scadoshi/zwipe/tree/main/zwiper", target: "_blank", rel: "noopener noreferrer", "zwiper" }
-                                ", and "
-                                a { href: "https://github.com/scadoshi/zwipe/tree/main/zite", target: "_blank", rel: "noopener noreferrer", "zite" }
-                                " all depend on "
-                                a { href: "https://github.com/scadoshi/zwipe/tree/main/zwipe-core", target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
-                            }
-                            li { "Inbound (HTTP, UI) and outbound (sqlx, API) adapters swappable" }
-                        }
-                        pre { class: "arch-diagram",
-                            "  zwiper ────→ zwipe-core ←──── zerver\n  (mobile)      (domain)         (api)\n                   ↑               │\n                   │          zervice (sync)\n                 zite\n                 (web)"
-                        }
-                    }
-
-                    div { class: "card",
-                        span { class: "card-category", "Sync" }
-                        h3 { class: "card-title", "Card Data" }
+                        h3 { class: "card-title", "Hexagonal Architecture" }
                         p { class: "card-summary",
-                            "110k+ English printings synced nightly from the "
-                            a { href: "https://scryfall.com/docs/api", target: "_blank", rel: "noopener noreferrer", "Scryfall API" }
-                            "."
+                            "Ports & adapters, in practice — not just on the whiteboard."
                         }
                         ul { class: "card-bullets",
                             li {
-                                a { href: "https://github.com/scadoshi/zwipe/tree/main/zerver", target: "_blank", rel: "noopener noreferrer", "zervice" }
-                                " background job pulls new sets each night"
+                                a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
+                                " has zero framework deps — no Axum, no Dioxus, no sqlx"
                             }
-                            li { "Oracle text, colors, type lines stored locally in Postgres" }
-                            li { "Zero Scryfall dependency at query time" }
+                            li { "Inbound adapters (HTTP, UI) and outbound adapters (sqlx, HTTP client) swap freely" }
+                            li { "Same domain code drives server-side SQL filtering and on-device in-memory filtering" }
+                            li { "One Rust codebase compiles to iOS, Android, and web from the same source" }
                         }
                     }
 
                     div { class: "card",
                         span { class: "card-category", "Quality" }
-                        h3 { class: "card-title", "Testing" }
+                        h3 { class: "card-title", "Testing & Lint Discipline" }
                         p { class: "card-summary",
                             "340+ unit tests; 220 in "
-                            a { href: "https://github.com/scadoshi/zwipe/tree/main/zwipe-core", target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
-                            "'s shared domain alone."
+                            a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
+                            " alone. Production posture enforced by the compiler."
                         }
                         ul { class: "card-bullets",
-                            li { "Commander eligibility, partner validation, deck metrics" }
-                            li { "Newtypes enforce correctness at construction" }
+                            li {
+                                code { ".unwrap" }
+                                ", "
+                                code { ".expect" }
+                                ", "
+                                code { "panic!" }
+                                ", "
+                                code { "todo!" }
+                                ", "
+                                code { "dbg!" }
+                                ", "
+                                code { "print!" }
+                                " — all denied at compile time"
+                            }
+                            li { "33 enforced Clippy rules across the workspace" }
+                            li {
+                                "Compile-time SQL verification via "
+                                a { href: URL_SQLX, target: "_blank", rel: "noopener noreferrer", "sqlx" }
+                                "'s "
+                                code { "query!" }
+                                " macro — bad queries fail "
+                                code { "cargo build" }
+                                ", not runtime"
+                            }
+                            li { "Commander eligibility, partner validation, deck metrics — all covered" }
+                            li { "Security audit complete; nightly Cloudflare R2 backups" }
+                        }
+                    }
+
+                    div { class: "card",
+                        span { class: "card-category", "Auth" }
+                        h3 { class: "card-title", "Authentication" }
+                        p { class: "card-summary",
+                            "Hand-rolled — probably more security than a deckbuilder needs. Worth it."
+                        }
+                        ul { class: "card-bullets",
+                            li { "Argon2id hashing with a NIST-compliant 170+ pattern password blocklist" }
+                            li { "Rotating refresh tokens, replay-safe via delete-on-use" }
+                            li { "JWT access tokens, short-lived; refresh tokens stored hashed" }
+                            li {
+                                code { "Password" }
+                                " newtype is "
+                                em { "consumed" }
+                                " on hash so plaintext can't leak past the boundary"
+                            }
+                            li { "Rate limiting, audit logs, transactional email" }
+                        }
+                    }
+
+                    div { class: "card",
+                        span { class: "card-category", "Types" }
+                        h3 { class: "card-title", "Type Safety" }
+                        p { class: "card-summary",
+                            "Newtypes everywhere — invalid states can't compile, let alone reach production."
+                        }
+                        ul { class: "card-bullets",
                             li {
                                 code { "UserId" }
                                 ", "
@@ -137,20 +293,73 @@ pub fn About() -> Element {
                                 code { "EmailAddress" }
                                 ", "
                                 code { "Password" }
-                                " — invalid states can't be passed around"
+                                " — distinct types, not "
+                                code { "String" }
+                                " aliases"
                             }
+                            li { "Builder types enforce required-field rules at construction" }
+                            li { "Format eligibility (commander, oathbreaker) modeled as enum + traits, not bool flags" }
+                            li { "Newtype wrappers parse-and-validate on the boundary — no defensive checks downstream" }
+                        }
+                    }
+
+                    div { class: "card",
+                        span { class: "card-category", "Sync" }
+                        h3 { class: "card-title", "Card Data Pipeline" }
+                        p { class: "card-summary",
+                            "110k+ printings synced nightly from "
+                            a { href: URL_SCRYFALL, target: "_blank", rel: "noopener noreferrer", "Scryfall" }
+                            ". The hard parts aren't the cron."
+                        }
+                        ul { class: "card-bullets",
+                            li { "Five-strategy upsert chain: batch first, fall through to per-row on conflict" }
+                            li { "88-column rows respect Postgres's 65k-parameter cap — ~327 cards per batch" }
+                            li {
+                                code { "PartialEq" }
+                                " delta detection — only changed rows are written, not the whole catalog nightly"
+                            }
+                            li { "Materialized view refresh for deduplicated search (~35k unique cards)" }
+                            li { "Zero Scryfall dependency at query time — all lookups hit Postgres" }
                         }
                     }
 
                     div { class: "card",
                         span { class: "card-category", "Ops" }
                         h3 { class: "card-title", "Infrastructure" }
-                        p { class: "card-summary", "Self-hosted on a home Ubuntu server." }
+                        p { class: "card-summary", "Self-hosted on a home Ubuntu server. No cloud bill." }
                         ul { class: "card-bullets",
-                            li { "Cloudflare Tunnel → api.zwipe.net, no public ports" }
+                            li { "Cloudflare Tunnel → api.zwipe.net, no public ports exposed" }
                             li { "Self-hosted GitHub Actions runner, deploys on push to main" }
                             li { "systemd auto-restart, automatic migrations on deploy" }
                             li { "Nightly pg_dump → Cloudflare R2, 30-day retention" }
+                        }
+                    }
+
+                    div { class: "card",
+                        span { class: "card-category", "Enrichment" }
+                        h3 { class: "card-title", "Mechanical Categories" }
+                        p { class: "card-summary",
+                            a { href: URL_SCRYFALL, target: "_blank", rel: "noopener noreferrer", "Scryfall" }
+                            " ships raw oracle text. Players think in roles — "
+                            em { "ramp, removal, anthem, counterspell" }
+                            ". So zwipe classifies every card into one or more of 24 strategic roles."
+                        }
+                        ul { class: "card-bullets",
+                            li {
+                                "24 roles (ramp, removal, anthem, tokens, blink, mill, tutor, "
+                                em { "…" }
+                                ") — see "
+                                a { href: URL_MECHANICAL_CATEGORY, target: "_blank", rel: "noopener noreferrer", "mechanical_category" }
+                            }
+                            li {
+                                "Multi-label: "
+                                em { "Lightning Bolt" }
+                                " = burn + removal; "
+                                em { "Sol Ring" }
+                                " = ramp"
+                            }
+                            li { "Deterministic heuristic classifier — oracle text + type line, no AI, runs at sync time" }
+                            li { "Stored on the card row; filtering hits one Postgres column, not a runtime classifier" }
                         }
                     }
                 }
