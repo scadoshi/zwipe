@@ -37,7 +37,7 @@ impl std::fmt::Display for OrderByOption {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Name => write!(f, "Name"),
-            Self::Cmc => write!(f, "CMC"),
+            Self::Cmc => write!(f, "Mana value"),
             Self::Power => write!(f, "Power"),
             Self::Toughness => write!(f, "Toughness"),
             Self::Rarity => write!(f, "Rarity"),
