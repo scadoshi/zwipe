@@ -68,6 +68,7 @@ pub fn Home() -> Element {
                         muted: true,
                         "loop": true,
                         playsinline: true,
+                        controls: true,
                         preload: "metadata",
                     }
                     if total > 1 {
