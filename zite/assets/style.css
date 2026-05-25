@@ -1,5 +1,5 @@
-@import url('https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/400.css');
-@import url('https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/700.css');
+@import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/400.css");
+@import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/700.css");
 
 /* ==================
         base
@@ -15,7 +15,7 @@ html,
 body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
     font-weight: 400;
     line-height: 1.6;
     min-height: 100vh;
@@ -78,7 +78,7 @@ nav {
 }
 
 .nav-logo {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
     font-size: 0.35rem;
     line-height: 0.9;
     white-space: pre;
@@ -126,7 +126,9 @@ nav {
     border-radius: 0.4rem;
     font-size: 0.8rem;
     white-space: nowrap;
-    transition: border-color 0.2s, color 0.2s;
+    transition:
+        border-color 0.2s,
+        color 0.2s;
 }
 
 .nav-links .store-link:hover {
@@ -273,7 +275,9 @@ nav {
     text-decoration: underline;
     text-decoration-color: var(--border-muted);
     text-underline-offset: 0.15em;
-    transition: text-decoration-color 0.15s, color 0.15s;
+    transition:
+        text-decoration-color 0.15s,
+        color 0.15s;
 }
 
 .arch-box-sub a:hover,
@@ -445,7 +449,7 @@ ul li {
 }
 
 code {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
     font-size: 0.85em;
     background-color: rgba(222, 205, 216, 0.08);
     padding: 0.0625rem 0.3125rem;
@@ -458,7 +462,7 @@ code {
  ==================== */
 
 .logo {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
     font-size: clamp(0.5rem, 2.5vw, 1.4rem);
     line-height: 0.9;
     white-space: pre;
@@ -651,7 +655,7 @@ code {
 }
 
 .card-bullets li::before {
-    content: '\203A';
+    content: "\203A";
     position: absolute;
     left: 0;
     color: var(--accent-primary);
@@ -717,8 +721,12 @@ code {
 }
 
 @keyframes gallery-fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 .gallery-nav {
@@ -732,15 +740,17 @@ code {
     width: 2.5rem;
     height: 2.5rem;
     padding: 0;
-    font-size: 2rem;
-    font-weight: 200;
+    font-size: 1rem;
     line-height: 1;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0.85;
-    transition: opacity 0.15s, border-color 0.15s, color 0.15s;
+    opacity: 0.75;
+    transition:
+        opacity 0.15s,
+        border-color 0.15s,
+        color 0.15s;
     z-index: 10;
     font-family: monospace;
 }
@@ -751,8 +761,12 @@ code {
     color: var(--accent-primary);
 }
 
-.gallery-prev { left: 0.75rem; }
-.gallery-next { right: 0.75rem; }
+.gallery-prev {
+    left: 0.75rem;
+}
+.gallery-next {
+    right: 0.75rem;
+}
 
 .gallery-meta {
     display: flex;
@@ -806,7 +820,9 @@ code {
     padding: 0.4rem 1rem;
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
-    transition: border-color 0.2s, color 0.2s;
+    transition:
+        border-color 0.2s,
+        color 0.2s;
 }
 
 .profile-link:hover {
@@ -829,11 +845,13 @@ code {
     font-size: 0.78rem;
     color: var(--text-subtle);
     letter-spacing: 0.02em;
-    transition: border-color 0.15s, color 0.15s;
+    transition:
+        border-color 0.15s,
+        color 0.15s;
 }
 
 .tag::before {
-    content: '#';
+    content: "#";
     color: var(--accent-primary);
     margin-right: 0.15rem;
 }
@@ -901,7 +919,7 @@ code {
     background-color: transparent;
     border: 1px solid var(--border-secondary);
     color: var(--text-primary);
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
     font-weight: 300;
     font-size: 0.9rem;
     padding: 0.625rem 0.75rem;
@@ -919,7 +937,7 @@ code {
     background-color: transparent;
     color: var(--accent-primary);
     border: 1px solid var(--accent-primary);
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
     font-weight: 400;
     font-size: 0.9rem;
     letter-spacing: 0.05em;
@@ -927,7 +945,9 @@ code {
     border-radius: 0.25rem;
     cursor: pointer;
     margin-top: 0.5rem;
-    transition: color 0.15s, border-color 0.15s;
+    transition:
+        color 0.15s,
+        border-color 0.15s;
 }
 
 .btn-primary:hover {
@@ -1021,7 +1041,7 @@ code {
 /* Invisible hover bridge so the dropdown doesn't close while the cursor
    travels from the trigger to the menu. */
 .theme-select::after {
-    content: '';
+    content: "";
     position: absolute;
     top: 100%;
     left: 0;
@@ -1061,7 +1081,9 @@ code {
     text-align: left;
     cursor: pointer;
     width: 100%;
-    transition: background-color 0.15s, color 0.15s;
+    transition:
+        background-color 0.15s,
+        color 0.15s;
 }
 
 .theme-option:hover {
@@ -1082,7 +1104,9 @@ code {
     font-size: 0.85rem;
     padding: 0.2rem 0.55rem;
     cursor: pointer;
-    transition: border-color 0.15s, color 0.15s;
+    transition:
+        border-color 0.15s,
+        color 0.15s;
 }
 
 .mode-toggle:hover {
