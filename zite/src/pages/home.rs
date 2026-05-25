@@ -78,7 +78,7 @@ pub fn Home() -> Element {
                                 let i = index();
                                 index.set(if i == 0 { total - 1 } else { i - 1 });
                             },
-                            "‹"
+                            "←"
                         }
                         button {
                             class: "gallery-nav gallery-next",
@@ -87,7 +87,7 @@ pub fn Home() -> Element {
                                 let i = index();
                                 index.set((i + 1) % total);
                             },
-                            "›"
+                            "→"
                         }
                     }
                 }
