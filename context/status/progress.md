@@ -96,9 +96,6 @@ High-level snapshot of where zwipe stands. See `todo.md` for actionable items.
 
 ---
 
-## App Store Submission — Ready to Submit
+## App Store Submission — Submitted, Awaiting Review
 
-All hard blockers resolved. Remaining steps are administrative:
-1. App Store Connect listing (description, screenshots, keywords)
-2. Distribution certificate + provisioning profile
-3. Archive, upload, submit for review
+Build 14 (version 1.0) submitted on 2026-05-25 via Transporter. Awaiting Apple review.
