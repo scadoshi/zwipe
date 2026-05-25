@@ -2,6 +2,7 @@ use crate::inbound::external::scryfall::bulk::BulkEndpoint;
 use zwipe_core::domain::card::{
     Card,
     card_profile::CardProfile,
+    mechanical_category::classify_by_heuristics,
     scryfall_data::ScryfallData,
     search_card::card_filter::CardFilter,
 };
@@ -103,8 +104,6 @@ impl<R: CardRepository> CardService for Service<R> {
     }
 
     async fn classify_untagged_cards(&self, batch_size: usize) -> anyhow::Result<(u32, u32)> {
-        use zwipe_core::domain::card::mechanical_category::classify_by_heuristics;
-
         let all_ids = self.repo.get_unclassified_card_ids().await?;
         let total = all_ids.len() as u32;
         if total == 0 {
