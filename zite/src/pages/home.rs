@@ -1,22 +1,44 @@
-use dioxus::prelude::*;
 use crate::{Footer, Nav};
+use dioxus::prelude::*;
 
 const LOGO_ASCII: &str = zwipe_core::domain::logo::ZWIPE;
 
-const DEMO_ADD_CARDS: Asset = asset!("/assets/projects/zwipe/zwipe-demo-add-cards.mp4");
-const DEMO_DECK_VIEW: Asset = asset!("/assets/projects/zwipe/zwipe-demo-deck-view.mp4");
-const DEMO_DECK_PROFILE: Asset = asset!("/assets/projects/zwipe/zwipe-demo-deck-profile.mp4");
-const DEMO_IMPORT_DECK: Asset = asset!("/assets/projects/zwipe/zwipe-demo-import-deck.mp4");
-const DEMO_PROFILE: Asset = asset!("/assets/projects/zwipe/zwipe-demo-profile.mp4");
+const DEMO_LOGIN: Asset = asset!("/assets/demo/login.mp4");
+const DEMO_ADD_DECK_CARDS: Asset = asset!("/assets/demo/add_deck_cards.mp4");
+const DEMO_IMPORT: Asset = asset!("/assets/demo/import.mp4");
+const DEMO_DECK_CARDS: Asset = asset!("/assets/demo/deck_cards.mp4");
+const DEMO_DECK_PROFILE: Asset = asset!("/assets/demo/deck_profile.mp4");
+const DEMO_USER_PROFILE: Asset = asset!("/assets/demo/user_profile.mp4");
 
 #[component]
 pub fn Home() -> Element {
     let demos: Vec<(Asset, &'static str, &'static str)> = vec![
-        (DEMO_ADD_CARDS, "Swiping cards to add to a deck", "Demo: Swipe to Build"),
-        (DEMO_DECK_VIEW, "Browsing the deck card list", "Demo: Deck Card View"),
-        (DEMO_DECK_PROFILE, "Editing the deck profile and commander", "Demo: Deck Profile"),
-        (DEMO_IMPORT_DECK, "Importing a decklist from text", "Demo: Import Deck"),
-        (DEMO_PROFILE, "Account profile screen", "Demo: Account Profile"),
+        (DEMO_LOGIN, "Signing in to a Zwipe account", "Demo: Login"),
+        (
+            DEMO_USER_PROFILE,
+            "User profile screen",
+            "Demo: Account Profile",
+        ),
+        (
+            DEMO_DECK_PROFILE,
+            "Editing the deck profile",
+            "Demo: Deck Profile",
+        ),
+        (
+            DEMO_ADD_DECK_CARDS,
+            "Swiping cards to add to a deck",
+            "Demo: Swipe to Build",
+        ),
+        (
+            DEMO_DECK_CARDS,
+            "Browsing the deck card list",
+            "Demo: Deck Card View",
+        ),
+        (
+            DEMO_IMPORT,
+            "Creating a deck and importing a decklist",
+            "Demo: Create & Import",
+        ),
     ];
     let total = demos.len();
     let mut index = use_signal(|| 0usize);
