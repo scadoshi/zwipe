@@ -200,7 +200,7 @@ impl<'de> Deserialize<'de> for InvalidJwt {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use email_address::EmailAddress;
+    use zwipe_core::domain::Email;
     use std::str::FromStr;
     use uuid::Uuid;
     use zwipe_core::domain::user::username::Username;
@@ -258,7 +258,7 @@ mod tests {
         let user = User::new(
             Uuid::new_v4(),
             Username::new("testuser").unwrap(),
-            EmailAddress::from_str("test@email.com").unwrap(),
+            Email::from_str("test@email.com").unwrap(),
         );
 
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
@@ -276,7 +276,7 @@ mod tests {
         let user = User::new(
             user_id,
             Username::new("testuser").unwrap(),
-            EmailAddress::from_str("test@email.com").unwrap(),
+            Email::from_str("test@email.com").unwrap(),
         );
 
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
@@ -296,13 +296,13 @@ mod tests {
         let user1 = User::new(
             Uuid::new_v4(),
             Username::new("testuser1").unwrap(),
-            EmailAddress::from_str("test1@email.com").unwrap(),
+            Email::from_str("test1@email.com").unwrap(),
         );
 
         let user2 = User::new(
             Uuid::new_v4(),
             Username::new("testuser2").unwrap(),
-            EmailAddress::from_str("test2@email.com").unwrap(),
+            Email::from_str("test2@email.com").unwrap(),
         );
 
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
@@ -317,7 +317,7 @@ mod tests {
         let user = User::new(
             Uuid::new_v4(),
             Username::new("testuser").unwrap(),
-            EmailAddress::from_str("test@email.com").unwrap(),
+            Email::from_str("test@email.com").unwrap(),
         );
         let secret1 = JwtSecret::new("secret-1-that-is-long-enough-for-validation").unwrap();
         let secret2 = JwtSecret::new("secret-2-that-is-long-enough-for-validation").unwrap();
@@ -332,7 +332,7 @@ mod tests {
         let user = User::new(
             Uuid::new_v4(),
             Username::new("testuser").unwrap(),
-            EmailAddress::from_str("test@email.com").unwrap(),
+            Email::from_str("test@email.com").unwrap(),
         );
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
@@ -350,7 +350,7 @@ mod tests {
         let user = User::new(
             Uuid::new_v4(),
             Username::new("testuser").unwrap(),
-            EmailAddress::from_str("test@email.com").unwrap(),
+            Email::from_str("test@email.com").unwrap(),
         );
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
@@ -367,7 +367,7 @@ mod tests {
         let user = User::new(
             Uuid::new_v4(),
             Username::new("testuser").unwrap(),
-            EmailAddress::from_str("test@email.com").unwrap(),
+            Email::from_str("test@email.com").unwrap(),
         );
 
         let correct_secret =
@@ -389,7 +389,7 @@ mod tests {
         let user = User::new(
             Uuid::new_v4(),
             Username::new("testuser").unwrap(),
-            EmailAddress::from_str("test@email.com").unwrap(),
+            Email::from_str("test@email.com").unwrap(),
         );
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
@@ -407,7 +407,7 @@ mod tests {
         let user = User::new(
             Uuid::new_v4(),
             Username::new("testuser").unwrap(),
-            EmailAddress::from_str("test@email.com").unwrap(),
+            Email::from_str("test@email.com").unwrap(),
         );
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
@@ -428,7 +428,7 @@ mod tests {
         let user_ids = vec![Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4()];
 
         let username = Username::new("testuser").unwrap();
-        let email = EmailAddress::from_str("test@email.com").unwrap();
+        let email = Email::from_str("test@email.com").unwrap();
 
         let secret = JwtSecret::new("test-secret-that-is-long-enough-for-validation").unwrap();
 
@@ -445,7 +445,7 @@ mod tests {
         let original_user = User::new(
             Uuid::new_v4(),
             Username::new("authuser").unwrap(),
-            EmailAddress::from_str("auth@example.com").unwrap(),
+            Email::from_str("auth@example.com").unwrap(),
         );
         let secret = JwtSecret::new("production-grade-secret-that-is-long-enough").unwrap();
 

@@ -61,8 +61,7 @@ use crate::domain::auth::requests::create_session::CreateSessionError;
 use crate::domain::auth::models::password::Password;
 use zwipe_core::domain::auth::password::InvalidPassword;
 use zwipe_core::domain::user::username::{InvalidUsername, Username};
-use email_address::EmailAddress;
-use std::str::FromStr;
+use zwipe_core::domain::{Email, InvalidEmail};
 use thiserror::Error;
 
 #[cfg(feature = "zerver")]
@@ -107,7 +106,7 @@ pub enum InvalidRawRegisterUser {
     Username(InvalidUsername),
     /// Email format is invalid.
     #[error(transparent)]
-    Email(email_address::Error),
+    Email(InvalidEmail),
     /// Password doesn't meet security requirements.
     #[error(transparent)]
     Password(InvalidPassword),
@@ -119,8 +118,8 @@ impl From<InvalidUsername> for InvalidRawRegisterUser {
     }
 }
 
-impl From<email_address::Error> for InvalidRawRegisterUser {
-    fn from(value: email_address::Error) -> Self {
+impl From<InvalidEmail> for InvalidRawRegisterUser {
+    fn from(value: InvalidEmail) -> Self {
         Self::Email(value)
     }
 }
@@ -139,7 +138,7 @@ pub enum InvalidRegisterUser {
     Username(InvalidUsername),
     /// Email format is invalid.
     #[error(transparent)]
-    Email(email_address::Error),
+    Email(InvalidEmail),
     /// Password doesn't meet security requirements.
     #[error(transparent)]
     Password(InvalidPassword),
@@ -154,8 +153,8 @@ impl From<InvalidUsername> for InvalidRegisterUser {
     }
 }
 
-impl From<email_address::Error> for InvalidRegisterUser {
-    fn from(value: email_address::Error) -> Self {
+impl From<InvalidEmail> for InvalidRegisterUser {
+    fn from(value: InvalidEmail) -> Self {
         Self::Email(value)
     }
 }
@@ -178,7 +177,7 @@ pub struct RawRegisterUser {
     /// Validated username (3-20 chars, no profanity).
     pub username: Username,
     /// Validated email address.
-    pub email: EmailAddress,
+    pub email: Email,
     /// Validated password (meets all security requirements).
     pub password: Password,
 }
@@ -201,7 +200,7 @@ impl RawRegisterUser {
         password: impl AsRef<str>,
     ) -> Result<Self, InvalidRawRegisterUser> {
         let username = Username::new(username)?;
-        let email = EmailAddress::from_str(email.as_ref())?;
+        let email = Email::new(email.as_ref())?;
         let password = Password::new(password)?;
         Ok(Self {
             username,
@@ -256,7 +255,7 @@ pub struct RegisterUser {
     pub username: Username,
 
     /// Validated email address for the new account.
-    pub email: EmailAddress,
+    pub email: Email,
 
     /// Argon2id hash of the user's password.
     ///
@@ -299,12 +298,8 @@ impl RegisterUser {
         email: impl AsRef<str>,
         password: impl AsRef<str>,
     ) -> Result<Self, InvalidRegisterUser> {
-        use std::str::FromStr;
-
-        use crate::domain::auth::models::password::Password;
-
         let username = Username::new(username)?;
-        let email = EmailAddress::from_str(email.as_ref())?;
+        let email = Email::new(email.as_ref())?;
         let password = Password::new(password)?;
         let password_hash = HashedPassword::generate(password)
             .map_err(|e| InvalidRegisterUser::FailedPasswordHash(e.into()))?;

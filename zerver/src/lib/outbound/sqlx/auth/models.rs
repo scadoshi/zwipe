@@ -4,9 +4,7 @@ use crate::{
 };
 use zwipe_core::domain::user::username::Username;
 use chrono::NaiveDateTime;
-use email_address::EmailAddress;
 use sqlx_macros::FromRow;
-use std::str::FromStr;
 use uuid::Uuid;
 
 /// raw database user with password hash record
@@ -29,7 +27,7 @@ impl TryFrom<DatabaseUserWithPasswordHash> for UserWithPasswordHash {
 
     fn try_from(value: DatabaseUserWithPasswordHash) -> Result<Self, Self::Error> {
         let username = Username::new(value.username)?;
-        let email = EmailAddress::from_str(&value.email)?;
+        let email = zwipe_core::domain::Email::new(&value.email)?;
         let password_hash = HashedPassword::new(&value.password_hash)?;
         Ok(Self {
             id: value.id,

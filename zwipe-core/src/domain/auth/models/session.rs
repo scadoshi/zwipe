@@ -42,7 +42,10 @@ impl Session {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::auth::models::access_token::Jwt;
+    use crate::domain::{
+        auth::models::access_token::Jwt,
+        user::models::{email::Email, username::Username},
+    };
     use chrono::Duration;
     use std::str::FromStr;
     use uuid::Uuid;
@@ -50,8 +53,8 @@ mod tests {
     fn make_session(refresh_expires_at: chrono::NaiveDateTime) -> Session {
         let user = User::new(
             Uuid::new_v4(),
-            crate::domain::user::models::username::Username::new("alice").unwrap(),
-            email_address::EmailAddress::from_str("alice@example.com").unwrap(),
+            Username::new("alice").unwrap(),
+            Email::from_str("alice@example.com").unwrap(),
         );
         let access_token = AccessToken {
             value: Jwt::from_str("header.payload.signature").unwrap(),

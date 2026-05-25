@@ -5,4 +5,4 @@ pub mod logo;
 pub mod moderation;
 pub mod user;
 
-pub use email_address::EmailAddress;
+pub use user::models::{Email, InvalidEmail};

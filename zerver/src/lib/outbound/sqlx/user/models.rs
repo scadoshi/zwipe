@@ -1,10 +1,9 @@
 use chrono::NaiveDateTime;
-use email_address::EmailAddress;
 use sqlx_macros::FromRow;
 use uuid::Uuid;
 
 use crate::outbound::sqlx::user::error::IntoUserError;
-use zwipe_core::domain::user::{username::Username, User};
+use zwipe_core::domain::{user::{username::Username, User}, Email};
 
 /// raw database user record
 /// (unvalidated data from `PostgreSQL`)
@@ -23,8 +22,7 @@ impl TryFrom<DatabaseUser> for User {
 
     fn try_from(value: DatabaseUser) -> Result<Self, Self::Error> {
         let username = Username::new(value.username)?;
-        let email =
-            EmailAddress::parse_with_options(&value.email, email_address::Options::default())?;
+        let email = Email::new(&value.email)?;
         Ok(Self {
             id: value.id,
             username,

@@ -16,11 +16,9 @@ pub mod password;
 #[cfg(feature = "zerver")]
 use crate::domain::auth::models::password::HashedPassword;
 #[cfg(feature = "zerver")]
-use zwipe_core::domain::user::{username::Username, User};
+use zwipe_core::domain::{user::{username::Username, User}, Email};
 #[cfg(feature = "zerver")]
 use chrono::NaiveDateTime;
-#[cfg(feature = "zerver")]
-use email_address::EmailAddress;
 #[cfg(feature = "zerver")]
 use uuid::Uuid;
 
@@ -41,7 +39,7 @@ pub struct UserWithPasswordHash {
     /// Validated username.
     pub username: Username,
     /// Validated email address.
-    pub email: EmailAddress,
+    pub email: Email,
     /// Argon2id hashed password (never exposed in public APIs).
     pub password_hash: HashedPassword,
     /// If set and in the future, the account is locked until this timestamp.
@@ -71,13 +69,13 @@ mod tests {
     fn test_user_from_user_with_password_hash_drops_password() {
         use crate::domain::auth::models::password::{HashedPassword, Password};
         use zwipe_core::domain::user::username::Username;
-        use email_address::EmailAddress;
+        use zwipe_core::domain::Email;
         use std::str::FromStr;
         use uuid::Uuid;
 
         let id = Uuid::new_v4();
         let username = Username::new("alice").unwrap();
-        let email = EmailAddress::from_str("alice@example.com").unwrap();
+        let email = Email::from_str("alice@example.com").unwrap();
         let password = Password::new("SecurePass123!").unwrap();
         let password_hash = HashedPassword::generate(password).unwrap();
 

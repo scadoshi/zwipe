@@ -10,8 +10,6 @@ use crate::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
-use email_address::EmailAddress;
-use std::str::FromStr;
 use std::time::Duration;
 use zwipe::domain::auth::models::password::Password;
 use zwipe_core::http::contracts::auth::HttpRegisterUser;
@@ -19,6 +17,7 @@ use zwipe_core::domain::{
     auth::models::session::Session,
     logo,
     user::username::Username,
+    Email,
 };
 
 /// Registration form screen for creating new user accounts.
@@ -53,7 +52,7 @@ pub fn Register() -> Element {
     };
 
     let mut validate_email = move || {
-        if let Err(e) = EmailAddress::from_str(&email()) {
+        if let Err(e) = Email::new(email()) {
             email_error.set(Some(e.to_user_facing_string()));
         } else {
             email_error.set(None);

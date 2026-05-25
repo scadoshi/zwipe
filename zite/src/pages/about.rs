@@ -224,7 +224,7 @@ pub fn About() -> Element {
                         span { class: "card-category", "Quality" }
                         h3 { class: "card-title", "Testing & Lint Discipline" }
                         p { class: "card-summary",
-                            "340+ unit tests; 220 in "
+                            "416 unit tests; 277 in "
                             a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
                             " alone. Production posture enforced by the compiler."
                         }
@@ -290,7 +290,7 @@ pub fn About() -> Element {
                                 ", "
                                 code { "DeckId" }
                                 ", "
-                                code { "EmailAddress" }
+                                code { "Email" }
                                 ", "
                                 code { "Password" }
                                 " — distinct types, not "

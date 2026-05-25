@@ -44,7 +44,7 @@ where
 
     state
         .auth_service
-        .send_verification_email(user.id, user.email.as_ref())
+        .send_verification_email(user.id, profile.email.as_ref())
         .await
         .map_err(ApiError::from)
         .map(|_| StatusCode::OK)

@@ -6,11 +6,9 @@ use crate::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
-use email_address::EmailAddress;
-use std::str::FromStr;
 use std::time::Duration;
 use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
-use zwipe_core::domain::logo;
+use zwipe_core::domain::{logo, Email};
 
 /// Forgot password screen for initiating a password reset.
 #[component]
@@ -27,7 +25,7 @@ pub fn ForgotPassword() -> Element {
     let toast = use_toast();
 
     let mut validate_email = move || {
-        if EmailAddress::from_str(&email()).is_err() {
+        if Email::new(email()).is_err() {
             email_error.set(Some("Please enter a valid email address".to_string()));
         } else {
             email_error.set(None);

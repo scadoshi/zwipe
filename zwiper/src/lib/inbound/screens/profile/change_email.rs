@@ -7,12 +7,10 @@ use crate::outbound::client::user::change_email::ClientChangeEmail;
 use crate::outbound::client::ZwipeClient;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
-use email_address::EmailAddress;
-use std::str::FromStr;
 use std::time::Duration;
 use zwipe::domain::auth::models::password::Password;
 use zwipe_core::http::contracts::auth::HttpChangeEmail;
-use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::{auth::models::session::Session, Email};
 
 /// Form screen for updating user's email address.
 #[component]
@@ -25,7 +23,7 @@ pub fn ChangeEmail() -> Element {
     let mut new_email = use_signal(String::new);
     let mut email_error: Signal<Option<String>> = use_signal(|| None);
     let mut validate_email = move || {
-        if let Err(e) = EmailAddress::from_str(&new_email()) {
+        if let Err(e) = Email::new(new_email()) {
             email_error.set(Some(e.to_user_facing_string()));
         } else {
             email_error.set(None)

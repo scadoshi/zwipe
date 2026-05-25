@@ -1,14 +1,15 @@
+pub mod email;
 pub mod preferences;
 pub mod theme;
 pub mod username;
 
+pub use email::{Email, InvalidEmail};
 pub use preferences::{
     ALLOWED_THEMES, InvalidUpdatePreferences, UpdatePreferences, UserPreferences,
 };
 pub use username::{InvalidUsername, Username};
 
 use chrono::NaiveDateTime;
-use email_address::EmailAddress;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -49,7 +50,7 @@ pub struct User {
     pub username: Username,
 
     /// The user's validated email address.
-    pub email: EmailAddress,
+    pub email: Email,
 
     /// When the user's email was verified. `None` means not yet verified.
     pub email_verified_at: Option<NaiveDateTime>,
@@ -69,7 +70,7 @@ impl User {
     /// ```rust,ignore
     /// let user = User::new(id, username, email);
     /// ```
-    pub fn new(id: Uuid, username: Username, email: EmailAddress) -> Self {
+    pub fn new(id: Uuid, username: Username, email: Email) -> Self {
         Self {
             id,
             username,

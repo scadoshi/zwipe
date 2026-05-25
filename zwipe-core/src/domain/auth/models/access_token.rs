@@ -9,9 +9,8 @@
 //! Server-only operations (signing, verification) are provided by zerver
 //! via extension traits.
 
-use crate::domain::user::models::username::Username;
+use crate::domain::user::models::{email::Email, username::Username};
 use chrono::{NaiveDateTime, Utc};
-use email_address::EmailAddress;
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
@@ -50,7 +49,7 @@ pub struct UserClaims {
     pub username: Username,
 
     /// Email of the authenticated user (cached from database).
-    pub email: EmailAddress,
+    pub email: Email,
 
     /// Expiry time as Unix timestamp (seconds since epoch).
     pub exp: i64,
@@ -197,7 +196,7 @@ mod tests {
     fn test_user_claims_serialization_round_trip() {
         let user_id = uuid::Uuid::new_v4();
         let username = Username::new("test").unwrap();
-        let email = EmailAddress::from_str("test@example.com").unwrap();
+        let email = Email::from_str("test@example.com").unwrap();
         let claims = UserClaims {
             user_id,
             username,
@@ -217,7 +216,7 @@ mod tests {
         let id1 = uuid::Uuid::new_v4();
         let id2 = uuid::Uuid::new_v4();
         let username = Username::new("test").unwrap();
-        let email = EmailAddress::from_str("test@example.com").unwrap();
+        let email = Email::from_str("test@example.com").unwrap();
         let claims1 = UserClaims {
             user_id: id1,
             username: username.clone(),

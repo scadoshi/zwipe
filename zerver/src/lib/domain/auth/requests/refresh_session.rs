@@ -212,7 +212,7 @@ mod tests {
     use zwipe_core::domain::auth::models::session::Session;
     use zwipe_core::domain::user::{preferences::UserPreferences, username::Username, User};
     use chrono::{Duration, Utc};
-    use email_address::EmailAddress;
+    use zwipe_core::domain::Email;
     use std::str::FromStr;
     use uuid::Uuid;
 
@@ -223,7 +223,7 @@ mod tests {
         let user = User::new(
             user_id,
             Username::new("alice").unwrap(),
-            EmailAddress::from_str("alice@example.com").unwrap(),
+            Email::from_str("alice@example.com").unwrap(),
         );
         Session {
             user,
