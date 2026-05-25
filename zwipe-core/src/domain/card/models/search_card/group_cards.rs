@@ -16,9 +16,7 @@
 //! ```
 
 use crate::domain::card::{
-    Card,
-    mechanical_category::MechanicalCategory,
-    scryfall_data::colors::Color,
+    Card, mechanical_category::MechanicalCategory, scryfall_data::colors::Color,
 };
 
 /// Grouping strategies for partitioning cards.
@@ -80,24 +78,24 @@ impl GroupCards for Vec<Card> {
 
         let labels: Vec<&str> = match option {
             GroupByOption::CardType => vec![
-                "lands",
-                "creatures",
-                "planeswalkers",
-                "artifacts",
-                "enchantments",
-                "instants",
-                "sorceries",
-                "other",
+                "Lands",
+                "Creatures",
+                "Planeswalkers",
+                "Artifacts",
+                "Enchantments",
+                "Instants",
+                "Sorceries",
+                "Other",
             ],
             GroupByOption::Cmc => vec!["0", "1", "2", "3", "4", "5", "6+"],
             GroupByOption::Color => vec![
-                "white",
-                "blue",
-                "black",
-                "red",
-                "green",
-                "multicolor",
-                "colorless",
+                "White",
+                "Blue",
+                "Black",
+                "Red",
+                "Green",
+                "Multicolor",
+                "Colorless",
             ],
             GroupByOption::Category => unreachable!(),
         };
@@ -146,9 +144,7 @@ fn group_by_category(cards: Vec<Card>) -> Vec<CardGroup> {
                     placed = true;
                 }
             }
-            if !placed
-                && let Some(bucket) = buckets.get_mut(uncategorized_idx)
-            {
+            if !placed && let Some(bucket) = buckets.get_mut(uncategorized_idx) {
                 bucket.push(card);
             }
         }
@@ -162,7 +158,7 @@ fn group_by_category(cards: Vec<Card>) -> Vec<CardGroup> {
         .zip(buckets)
         .filter(|(_, cards)| !cards.is_empty())
         .map(|(label, cards)| CardGroup {
-            label: label.to_lowercase(),
+            label: label.to_string(),
             cards,
         })
         .collect()
@@ -374,7 +370,7 @@ mod tests {
         card.scryfall_data.type_line = Some("Creature — Bear".to_string());
         let result = vec![card].group_by(GroupByOption::CardType);
         assert_eq!(result.len(), 1);
-        assert_eq!(result[0].label, "creatures");
+        assert_eq!(result[0].label, "Creatures");
     }
 
     #[test]
@@ -383,7 +379,7 @@ mod tests {
         card.scryfall_data.type_line = Some("Basic Land — Forest".to_string());
         let result = vec![card].group_by(GroupByOption::CardType);
         assert_eq!(result.len(), 1);
-        assert_eq!(result[0].label, "lands");
+        assert_eq!(result[0].label, "Lands");
     }
 
     #[test]
@@ -392,7 +388,7 @@ mod tests {
         card.scryfall_data.type_line = Some("Instant".to_string());
         let result = vec![card].group_by(GroupByOption::CardType);
         assert_eq!(result.len(), 1);
-        assert_eq!(result[0].label, "instants");
+        assert_eq!(result[0].label, "Instants");
     }
 
     #[test]
@@ -400,7 +396,7 @@ mod tests {
         let card = make_card("Mystery"); // type_line = None
         let result = vec![card].group_by(GroupByOption::CardType);
         assert_eq!(result.len(), 1);
-        assert_eq!(result[0].label, "other");
+        assert_eq!(result[0].label, "Other");
     }
 
     #[test]
@@ -410,7 +406,7 @@ mod tests {
         card.scryfall_data.type_line = Some("Artifact Creature — Juggernaut".to_string());
         let result = vec![card].group_by(GroupByOption::CardType);
         assert_eq!(result.len(), 1);
-        assert_eq!(result[0].label, "creatures");
+        assert_eq!(result[0].label, "Creatures");
     }
 
     #[test]
@@ -419,8 +415,8 @@ mod tests {
         card.scryfall_data.type_line = Some("Basic Land — Forest".to_string());
         let result = vec![card].group_by(GroupByOption::CardType);
         assert_eq!(result.len(), 1);
-        assert_eq!(result[0].label, "lands");
-        assert!(result.iter().all(|g| g.label != "creatures"));
+        assert_eq!(result[0].label, "Lands");
+        assert!(result.iter().all(|g| g.label != "Creatures"));
     }
 
     // ── GroupByOption::Cmc ─────────────────────────────────────────────────────
@@ -471,7 +467,7 @@ mod tests {
         let mut card = make_card("Plains");
         card.scryfall_data.color_identity = Colors::from([Color::White]);
         let result = vec![card].group_by(GroupByOption::Color);
-        assert_eq!(result[0].label, "white");
+        assert_eq!(result[0].label, "White");
     }
 
     #[test]
@@ -480,14 +476,14 @@ mod tests {
         card.scryfall_data.color_identity =
             Colors::from([Color::White, Color::Blue, Color::Black, Color::Green]);
         let result = vec![card].group_by(GroupByOption::Color);
-        assert_eq!(result[0].label, "multicolor");
+        assert_eq!(result[0].label, "Multicolor");
     }
 
     #[test]
     fn test_group_by_color_colorless() {
         let card = make_card("Eldrazi"); // color_identity = empty by default
         let result = vec![card].group_by(GroupByOption::Color);
-        assert_eq!(result[0].label, "colorless");
+        assert_eq!(result[0].label, "Colorless");
     }
 
     #[test]
@@ -500,8 +496,8 @@ mod tests {
         // Groups emitted in fixed order: white(0), red(3), colorless(6)
         let result = vec![colorless, red, white].group_by(GroupByOption::Color);
         assert_eq!(result.len(), 3);
-        assert_eq!(result[0].label, "white");
-        assert_eq!(result[1].label, "red");
-        assert_eq!(result[2].label, "colorless");
+        assert_eq!(result[0].label, "White");
+        assert_eq!(result[1].label, "Red");
+        assert_eq!(result[2].label, "Colorless");
     }
 }
