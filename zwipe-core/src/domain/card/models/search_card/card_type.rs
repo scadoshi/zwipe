@@ -26,13 +26,13 @@ pub enum CardType {
 impl Display for CardType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CardType::Instant => write!(f, "instant"),
-            CardType::Sorcery => write!(f, "sorcery"),
-            CardType::Enchantment => write!(f, "enchantment"),
-            CardType::Creature => write!(f, "creature"),
-            CardType::Artifact => write!(f, "artifact"),
-            CardType::Planeswalker => write!(f, "planeswalker"),
-            CardType::Land => write!(f, "land"),
+            CardType::Instant => write!(f, "Instant"),
+            CardType::Sorcery => write!(f, "Sorcery"),
+            CardType::Enchantment => write!(f, "Enchantment"),
+            CardType::Creature => write!(f, "Creature"),
+            CardType::Artifact => write!(f, "Artifact"),
+            CardType::Planeswalker => write!(f, "Planeswalker"),
+            CardType::Land => write!(f, "Land"),
         }
     }
 }
