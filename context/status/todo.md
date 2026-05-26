@@ -307,7 +307,7 @@ Pre-populate the color identity filter to the commander's colors when the deck's
 ## Maintenance
 
 - **GitHub Actions Node.js 20 deprecation** — forced to Node.js 24 on June 2, 2026. All workflows already on latest major versions. No action needed — monitor for v5 releases.
-- **Investigate why `zervice` isn't running daily on zerver** — the background sync (nightly Scryfall delta, materialized view refresh, refresh-token cleanup, session enforcement) should fire every day. Check `systemd` timer/unit status, `journalctl -u zervice`, `/var/log/zwipe/zervice.*.log` (most recent entry is `zervice.2026-04-12.log`, suggesting it hasn't run in over a month). Confirm the timer is enabled + active, and confirm the binary still exits cleanly.
+- **Verify zervice cron fix (check 2026-05-27)** — root cause: crontab used `source /home/scadoshi/zwipe/.env`, but cron defaults to `/bin/sh` (dash on Ubuntu), where `source` is not a command. Config loading failed before tracing init, so no log file and no stderr capture (no redirect on the cron line). Fix applied 2026-05-26: added `SHELL=/bin/bash` to the crontab and appended `>> /var/log/zwipe/zervice-cron.log 2>&1` to the zervice line. Verify after next 04:00 UTC run that `/var/log/zwipe/zervice.2026-05-27.log` exists and `zervice-cron.log` is clean.
 
 ---
 
