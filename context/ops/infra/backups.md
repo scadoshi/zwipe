@@ -72,11 +72,13 @@ Create `~/scripts/backup-db.sh`:
 #!/bin/bash
 set -euo pipefail
 
-set -a
-source ~/zwipe/.env
-set +a
-BACKUP_FILE="/tmp/zwipe-$(date +%Y%m%d).sql.gz"
+# Pull DATABASE_URL from zerver's .env (grep, not source — we don't want to
+# eval other secrets like JWT_SECRET in this shell, and `source` would expand
+# any $/backtick in their values).
+ENV_FILE="/home/scadoshi/zwipe/.env"
+DATABASE_URL=$(grep -E '^DATABASE_URL=' "$ENV_FILE" | cut -d= -f2-)
 
+BACKUP_FILE="/tmp/zwipe-$(date +%Y%m%d).sql.gz"
 pg_dump "$DATABASE_URL" | gzip > "$BACKUP_FILE"
 rclone copy "$BACKUP_FILE" r2:zwipe-backups/
 rm "$BACKUP_FILE"
@@ -84,9 +86,35 @@ rm "$BACKUP_FILE"
 echo "backup complete: zwipe-$(date +%Y%m%d).sql.gz"
 ```
 
+**Why `grep`, not `source`:** sourcing the whole `.env` would expand `$` and backticks
+in every value (e.g. a future `JWT_SECRET` containing shell-special characters). Pulling
+just the one line we need keeps the script ignorant of every other secret.
+
 **Note:** `pg_dump` must receive the full connection URL as a positional argument — not
 via `-U`. Using `-U` with a URL causes PostgreSQL to treat the entire URL as a username
 and fail with peer authentication errors.
+
+### Known noise: rclone 501 on attempt 1
+
+Since ~2026-05-27, every run logs:
+
+```
+ERROR : zwipe-YYYYMMDD.sql.gz: Failed to copy: NotImplemented: Not Implemented
+        status code: 501, request id: , host id:
+ERROR : Attempt 1/3 failed with 1 errors and: NotImplemented: Not Implemented
+ERROR : Attempt 2/3 succeeded
+backup complete: zwipe-YYYYMMDD.sql.gz
+```
+
+Attempt 2 always succeeds and the backup lands correctly in R2. Root cause is rclone
+sending a checksum/multipart variant R2 returns 501 on. `--s3-upload-cutoff 1G` and
+`--s3-disable-checksum` were tried separately and together — neither silenced it.
+Likely fix when revisiting: confirm `provider = Cloudflare` is set in the `[r2]` block
+of `~/.config/rclone/rclone.conf`, or pin an older rclone version (`apt-cache madison
+rclone` to list, then `apt install rclone=<version>`).
+
+**Severity: low.** Data is intact. Cost is one extra failed PUT per day and noisy logs.
+If monitoring greps for `ERROR`, exclude this script's output.
 
 Make it executable:
 
