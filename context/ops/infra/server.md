@@ -290,12 +290,31 @@ JWT_SECRET=<openssl rand -hex 32>
 DATABASE_URL=postgres://zwipe:URL_ENCODED_PASSWORD@127.0.0.1/zwipe
 BIND_ADDRESS=0.0.0.0:3000
 ALLOWED_ORIGINS=https://zwipe.net
-RUST_LOG=info
+RUST_LOG=info,sqlx=warn,zwipe=debug,zerver=debug
 RUST_BACKTRACE=1
 RESEND_API_KEY=<from Resend dashboard>
 RESEND_EMAIL_FROM=hello@zwipe.net
 # LOG_DIR omitted — defaults to /var/log/zwipe
 ```
+
+### RUST_LOG directives
+
+`RUST_LOG` is parsed by `tracing_subscriber::EnvFilter`. It accepts either a bare level
+(`info`) or comma-separated per-target directives. Production default above silences
+SQLx query spam while keeping `info` everywhere else and `debug` for our own crates.
+
+Useful tweaks:
+- Bump app-only verbosity temporarily: `RUST_LOG=info,zwipe=trace,zerver=trace`
+- Silence hyper/h2 noise: append `,hyper=warn,h2=warn`
+- One-off via systemd override (no `.env` edit needed):
+  ```bash
+  sudo systemctl edit zerver
+  # In the editor:
+  # [Service]
+  # Environment="RUST_LOG=info,sqlx=debug"
+  sudo systemctl restart zerver
+  ```
+  The override file wins over `EnvironmentFile=` from `.env`. Remove with `sudo systemctl revert zerver`.
 
 ### ALLOWED_ORIGINS
 
@@ -416,8 +435,27 @@ What each command does:
 
 ```bash
 crontab -e
-# Add: 0 4 * * * set -a && source /home/scadoshi/zwipe/.env && set +a && /home/scadoshi/zwipe/zervice
 ```
+
+Add **two lines** — `SHELL=/bin/bash` plus the scheduled invocation:
+
+```cron
+SHELL=/bin/bash
+0 4 * * * set -a && source /home/scadoshi/zwipe/.env && set +a && /home/scadoshi/zwipe/zervice >> /var/log/zwipe/zervice-cron.log 2>&1
+```
+
+**Why `SHELL=/bin/bash` is required:** cron defaults to `/bin/sh` (dash on Ubuntu), and
+`source` is not a builtin in dash — it's a bash-ism. Without `SHELL=/bin/bash` the whole
+line silently fails at `source`, config never loads, tracing never inits, and **no log
+file is produced** (the rolling appender hasn't been built yet). That's how weeks of
+zervice runs went missing in mid-2026 before the 2026-05-26 fix.
+
+**Why the stderr redirect (`>> /var/log/zwipe/zervice-cron.log 2>&1`):** captures any
+early-startup failure (bad `.env`, missing binary, dash-vs-bash issue) that happens
+before tracing's file appender takes over. Without it cron sends failure output to a
+mail spool nobody reads. Belt-and-suspenders: zervice's own logs go to
+`$LOG_DIR/zervice.YYYY-MM-DD.log` once it boots; the cron log captures everything from
+schedule-fire to that point.
 
 zervice is a run-once binary — it syncs cards from Scryfall, cleans expired sessions,
 and exits. Logs are written to `$LOG_DIR/zervice.YYYY-MM-DD.log` (default: `/var/log/zwipe/`).
