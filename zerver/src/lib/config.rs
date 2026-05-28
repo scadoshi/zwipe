@@ -7,8 +7,6 @@
 use crate::domain::auth::models::access_token::JwtSecret;
 use anyhow::Context;
 use axum::http::HeaderValue;
-use std::str::FromStr;
-use tracing::Level;
 
 /// Environment variable key for the JWT signing secret.
 const JWT_SECRET_KEY: &str = "JWT_SECRET";
@@ -53,8 +51,10 @@ pub struct Config {
     /// Address to bind the HTTP server to (e.g., "0.0.0.0:8080").
     pub bind_address: String,
 
-    /// Tracing log level filter.
-    pub rust_log: Level,
+    /// Tracing filter directive(s). Accepts a bare level (`"info"`) or
+    /// per-target directives (`"info,sqlx=warn,zwipe=debug"`) — fed to
+    /// `tracing_subscriber::EnvFilter`.
+    pub rust_log: String,
 
     /// Backtrace configuration for error reporting.
     pub rust_backtrace: String,
@@ -86,7 +86,7 @@ impl Config {
             .context("invalid jwt secret from env")?;
         let database_url = env_var_by_key(DATABASE_URL_KEY)?;
         let bind_address = env_var_by_key(BIND_ADDRESS_KEY)?;
-        let rust_log = Level::from_str(&env_var_by_key(RUST_LOG_KEY)?)?;
+        let rust_log = env_var_by_key(RUST_LOG_KEY)?;
         let rust_backtrace = env_var_by_key(RUST_BACKTRACE_KEY)?;
         let allowed_origins: Vec<HeaderValue> = env_var_by_key(ALLOWED_ORIGINS_KEY)?
             .split(',')

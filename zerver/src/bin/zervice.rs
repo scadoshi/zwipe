@@ -1,5 +1,5 @@
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
-use tracing_subscriber::filter::LevelFilter;
+use tracing_subscriber::EnvFilter;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
 use zwipe::{
     config::Config,
@@ -24,7 +24,11 @@ async fn main() -> anyhow::Result<()> {
     let config = Config::from_env()?;
     let args: Vec<String> = std::env::args().collect();
 
-    let level_filter = LevelFilter::from(config.rust_log);
+    // See zerver.rs for the rationale — RUST_LOG from the process env wins; otherwise
+    // we use the directive string from Config. Per-layer because EnvFilter isn't Clone.
+    let env_filter = || {
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(&config.rust_log))
+    };
 
     std::fs::create_dir_all(&config.log_dir)
         .map_err(|e| anyhow::anyhow!("failed to create log directory: {e}"))?;
@@ -42,15 +46,12 @@ async fn main() -> anyhow::Result<()> {
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
 
     tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::fmt::layer()
-                .with_filter(level_filter),
-        )
+        .with(tracing_subscriber::fmt::layer().with_filter(env_filter()))
         .with(
             tracing_subscriber::fmt::layer()
                 .with_writer(non_blocking)
                 .with_ansi(false)
-                .with_filter(level_filter),
+                .with_filter(env_filter()),
         )
         .init();
     let recategorize = args.iter().any(|a| a == "--recategorize" || a == "-rc" || a == "--rc");

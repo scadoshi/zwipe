@@ -31,7 +31,15 @@ use thiserror::Error;
 #[cfg(feature = "zerver")]
 use tokio::net;
 #[cfg(feature = "zerver")]
-use tower_http::cors::CorsLayer;
+use std::time::Duration;
+#[cfg(feature = "zerver")]
+use tower_http::{
+    catch_panic::CatchPanicLayer,
+    cors::CorsLayer,
+    limit::RequestBodyLimitLayer,
+    request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer},
+    timeout::TimeoutLayer,
+};
 
 // =======
 //  error
@@ -241,10 +249,22 @@ impl HttpServer {
         deck_service: impl DeckService,
         config: HttpServerConfig<'_>,
     ) -> anyhow::Result<Self> {
+        // RequestId is set by SetRequestIdLayer (below) before TraceLayer fires,
+        // so it's available as a request extension when we build the span.
         let trace_layer = tower_http::trace::TraceLayer::new_for_http().make_span_with(
             |request: &axum::extract::Request<_>| {
                 let uri = request.uri().to_string();
-                tracing::info_span!("http_request", method = ?request.method(), uri)
+                let request_id = request
+                    .extensions()
+                    .get::<tower_http::request_id::RequestId>()
+                    .and_then(|id| id.header_value().to_str().ok())
+                    .unwrap_or("");
+                tracing::info_span!(
+                    "http_request",
+                    method = ?request.method(),
+                    uri,
+                    request_id = %request_id,
+                )
             },
         );
 
@@ -257,17 +277,38 @@ impl HttpServer {
             deck_service: Arc::new(deck_service),
         };
 
+        // Layer order is innermost-first, outermost-last. Request flows
+        // outer→inner; response flows inner→outer. Effective stack:
+        //
+        //   PropagateRequestIdLayer (outermost — copies x-request-id onto the
+        //                            response so clients can echo it in bugs)
+        //   trace_layer             (every log line carries request_id)
+        //   SetRequestIdLayer       (must run before trace_layer reads the id)
+        //   CatchPanicLayer         (turn handler panics into 500s)
+        //   CorsLayer
+        //   security_headers
+        //   TimeoutLayer            (30s per request; rejects with 408)
+        //   RequestBodyLimitLayer   (innermost — 2 MiB cap on request bodies)
+        let x_request_id = header::HeaderName::from_static("x-request-id");
         let router = axum::Router::new()
             .merge(private_routes(jwt_secret))
             .merge(public_routes())
-            .layer(trace_layer)
+            .layer(RequestBodyLimitLayer::new(2 * 1024 * 1024))
+            .layer(TimeoutLayer::with_status_code(
+                StatusCode::REQUEST_TIMEOUT,
+                Duration::from_secs(30),
+            ))
+            .layer(axum::middleware::from_fn(security_headers))
             .layer(
                 CorsLayer::new()
                     .allow_origin(config.allowed_origins)
                     .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
                     .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION]),
             )
-            .layer(axum::middleware::from_fn(security_headers))
+            .layer(CatchPanicLayer::new())
+            .layer(SetRequestIdLayer::new(x_request_id.clone(), MakeRequestUuid))
+            .layer(trace_layer)
+            .layer(PropagateRequestIdLayer::new(x_request_id))
             .with_state(state);
 
         let listener = net::TcpListener::bind(&config.bind_address)
@@ -279,17 +320,39 @@ impl HttpServer {
 
     /// Starts serving HTTP requests.
     pub async fn run(self) -> anyhow::Result<()> {
-        tracing::info!(
-            "listening on {}",
-            self.listener.local_addr().map_err(|e| anyhow!(e))?
-        );
+        tracing::info!("listening on {}", self.listener.local_addr()?);
         axum::serve(
             self.listener,
             self.router
                 .into_make_service_with_connect_info::<std::net::SocketAddr>(),
         )
+        .with_graceful_shutdown(shutdown_signal())
         .await
         .context("received error from running server")?;
         Ok(())
+    }
+}
+
+/// Resolves when the process receives either SIGINT (Ctrl-C, dev) or SIGTERM
+/// (systemd `stop`, container orchestrators). `axum::serve` uses this to stop
+/// accepting connections and drain in-flight requests before exiting.
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        let _ = tokio::signal::ctrl_c().await;
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        use tokio::signal::unix::{SignalKind, signal};
+        if let Ok(mut stream) = signal(SignalKind::terminate()) {
+            stream.recv().await;
+        }
+    };
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => tracing::info!("shutdown signal received (SIGINT)"),
+        _ = terminate => tracing::info!("shutdown signal received (SIGTERM)"),
     }
 }
