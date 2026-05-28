@@ -280,10 +280,13 @@ impl HttpServer {
         // Layer order is innermost-first, outermost-last. Request flows
         // outer→inner; response flows inner→outer. Effective stack:
         //
-        //   PropagateRequestIdLayer (outermost — copies x-request-id onto the
-        //                            response so clients can echo it in bugs)
-        //   trace_layer             (every log line carries request_id)
-        //   SetRequestIdLayer       (must run before trace_layer reads the id)
+        //   SetRequestIdLayer       (outermost — generates UUID, sets header
+        //                            and extension on the request)
+        //   PropagateRequestIdLayer (captures the id from the request so it
+        //                            can copy it onto the response on the way
+        //                            out; must be inside Set, before trace)
+        //   trace_layer             (reads request_id from extensions into the
+        //                            span so every log line carries it)
         //   CatchPanicLayer         (turn handler panics into 500s)
         //   CorsLayer
         //   security_headers
@@ -306,9 +309,9 @@ impl HttpServer {
                     .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION]),
             )
             .layer(CatchPanicLayer::new())
-            .layer(SetRequestIdLayer::new(x_request_id.clone(), MakeRequestUuid))
             .layer(trace_layer)
-            .layer(PropagateRequestIdLayer::new(x_request_id))
+            .layer(PropagateRequestIdLayer::new(x_request_id.clone()))
+            .layer(SetRequestIdLayer::new(x_request_id, MakeRequestUuid))
             .with_state(state);
 
         let listener = net::TcpListener::bind(&config.bind_address)
