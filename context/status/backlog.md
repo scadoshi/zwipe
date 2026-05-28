@@ -33,7 +33,7 @@ See `context/plans/mechanical-category.md` for full implementation plan includin
 - **Caching Layer**: Redis for card data and query results
 - **Monitoring**: Structured logging (done), health monitoring dashboard
 - **Database Optimization**: Query performance, indexing strategy
-- **Per-user rate limiting**: Key by authenticated user ID instead of IP for per-user fairness
+- **Credential-stuffing defense**: Layer a second governor on `/login`, `/forgot-password`, `/verify-email`, `/reset-password` keyed by the submitted email/username (normalized lowercase) in addition to the existing IP-keyed governor. IP alone doesn't catch a distributed botnet hitting one email across many IPs; account lockout is the strict per-account version of this but kicks in late. Requires a small `KeyExtractor` that peeks at the JSON body (or runs as middleware before governor and stuffs the key into request extensions). See `inbound/http/routes.rs:71-114` for the existing IP-keyed configs to stack against. (Per-user-id keying on authenticated routes is **already done** via `UserIdKeyExtractor` in `middleware.rs`.)
 
 ## Mobile & Deployment
 - **iOS Keychain Entitlements**: Configure for persistent session storage
