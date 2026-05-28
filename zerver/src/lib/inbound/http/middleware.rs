@@ -1,9 +1,5 @@
 //! JWT authentication middleware.
 
-use zwipe_core::domain::{
-    auth::models::access_token::{Jwt, UserClaims},
-    user::username::Username,
-};
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
@@ -30,12 +26,16 @@ use axum_extra::{
     TypedHeader,
     headers::{Authorization, authorization::Bearer},
 };
-use zwipe_core::domain::Email;
 #[cfg(feature = "zerver")]
 use std::str::FromStr;
 #[cfg(feature = "zerver")]
 use tower_governor::{GovernorError, key_extractor::KeyExtractor};
 use uuid::Uuid;
+use zwipe_core::domain::Email;
+use zwipe_core::domain::{
+    auth::models::access_token::{Jwt, UserClaims},
+    user::username::Username,
+};
 
 /// Axum extractor that enforces JWT authentication.
 ///
@@ -120,10 +120,6 @@ where
         parts: &mut Parts,
         state: &AppState<AS, US, HS, CS, DS>,
     ) -> Result<Self, Self::Rejection> {
-        use std::str::FromStr;
-
-        use zwipe_core::domain::auth::models::access_token::Jwt;
-
         let TypedHeader(Authorization(bearer)) =
             TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)
                 .await

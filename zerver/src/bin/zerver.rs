@@ -1,12 +1,12 @@
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
-use tracing_subscriber::filter::LevelFilter;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
+use tracing_subscriber::EnvFilter;
+use tracing_subscriber::{Layer, layer::SubscriberExt, util::SubscriberInitExt};
 use zwipe::config::Config;
 use zwipe::domain::{auth, card, deck, health, user};
-use zwipe_core::domain::logo;
 use zwipe::inbound::http::{HttpServer, HttpServerConfig};
 use zwipe::outbound::resend::Resend;
 use zwipe::outbound::sqlx::postgres::Postgres;
+use zwipe_core::domain::logo;
 
 #[tokio::main]
 #[allow(clippy::print_stderr)]
@@ -21,7 +21,13 @@ async fn main() {
 async fn run() -> anyhow::Result<()> {
     let config: Config = Config::from_env()?;
 
-    let level_filter = LevelFilter::from(config.rust_log);
+    // EnvFilter::try_from_default_env() reads RUST_LOG directly from the process env;
+    // when unset/invalid we fall back to the directive string loaded via Config (which
+    // came from .env). Either way directives like "info,sqlx=warn,zwipe=debug" work.
+    // Filters aren't Clone, so we build one per subscriber layer via this closure.
+    let env_filter = || {
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(&config.rust_log))
+    };
 
     std::fs::create_dir_all(&config.log_dir)
         .map_err(|e| anyhow::anyhow!("failed to create log directory: {e}"))?;
@@ -39,21 +45,19 @@ async fn run() -> anyhow::Result<()> {
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
 
     tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::fmt::layer()
-                .with_filter(level_filter),
-        )
+        .with(tracing_subscriber::fmt::layer().with_filter(env_filter()))
         .with(
             tracing_subscriber::fmt::layer()
                 .with_writer(non_blocking)
                 .with_ansi(false)
-                .with_filter(level_filter),
+                .with_filter(env_filter()),
         )
         .init();
     tracing::info!("zerver running v{}", env!("CARGO_PKG_VERSION"));
     let db = Postgres::new(&config.database_url).await?;
     let resend = Resend::new(config.resend_api_key, config.resend_from_email);
-    let auth_service = auth::services::Service::new(db.clone(), db.clone(), resend, config.jwt_secret);
+    let auth_service =
+        auth::services::Service::new(db.clone(), db.clone(), resend, config.jwt_secret);
     let user_service = user::services::Service::new(db.clone());
     let health_service = health::services::Service::new(db.clone());
     let card_service = card::services::Service::new(db.clone());
