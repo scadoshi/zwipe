@@ -120,5 +120,7 @@ A dedicated swiping flow for commander selection. Future work — only build if 
 
 ## Maintenance
 
+- **sqlx 0.8 → 0.9** — major bump. 0.9 has breaking changes around type mappings and connection options. Needs a dedicated branch where the integration tests run against a real Postgres before merge.
+- **keyring 3 → 4** (zwiper) — major bump. Used for iOS Keychain on `apple-native`. Needs on-device test before merging; don't ship blind.
 - **GitHub Actions Node.js 20 deprecation** — forced to Node.js 24 on June 2, 2026. All workflows already on latest major versions. No action needed — monitor for v5 releases.
 - **Verify zervice cron fix** — root cause: crontab used `source /home/scadoshi/zwipe/.env`, but cron defaults to `/bin/sh` (dash on Ubuntu), where `source` is not a command. Config loading failed before tracing init, so no log file and no stderr capture (no redirect on the cron line). Fix applied 2026-05-26: added `SHELL=/bin/bash` to the crontab and appended `>> /var/log/zwipe/zervice-cron.log 2>&1` to the zervice line. **Today is 2026-05-27 — check `/var/log/zwipe/zervice.2026-05-27.log` exists and `zervice-cron.log` is clean from the 04:00 UTC run.**
