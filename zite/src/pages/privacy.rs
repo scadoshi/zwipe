@@ -1,9 +1,15 @@
 use dioxus::prelude::*;
+use crate::components::PageMeta;
 use crate::{Footer, Nav};
 
 #[component]
 pub fn Privacy() -> Element {
     rsx! {
+        PageMeta {
+            title: "Privacy Policy",
+            description: "Zwipe privacy policy — what data is collected, how it's used, and your rights.",
+            path: "/privacy",
+        }
         Nav {}
         div { class: "page content-enter",
             div { class: "section",

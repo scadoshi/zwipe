@@ -48,11 +48,20 @@ jobs:
           CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: gcc
         run: cargo install dioxus-cli --version "^0.7" --locked --force
 
-      - name: Build
+      - name: Build (SSG)
         working-directory: zite
         env:
           CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: gcc
-        run: dx build --release --platform web
+        # --ssg pre-renders every route returned from the app's static_routes
+        # server function into target/dx/zite/release/web/public/<route>/index.html.
+        # The wasm bundle still hydrates after load. Dynamic routes
+        # (/verify/:token, /reset/:token) are excluded automatically and fall
+        # back to SPA hydration via the 404.html step below.
+        #
+        # --force-sequential is required: it builds the client first, then runs
+        # the server + SSG step. Without it, the parallel client build finishes
+        # last and overwrites the SSG'd public/index.html with the bare shell.
+        run: dx build --release --platform web --ssg --force-sequential
 
       - name: Add CNAME
         run: echo "zwipe.net" > target/dx/zite/release/web/public/CNAME

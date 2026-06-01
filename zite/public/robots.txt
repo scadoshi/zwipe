@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /verify/
+Disallow: /reset/
+
+Sitemap: https://zwipe.net/sitemap.xml

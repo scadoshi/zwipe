@@ -1,9 +1,15 @@
 use dioxus::prelude::*;
+use crate::components::PageMeta;
 use crate::{Footer, Nav};
 
 #[component]
 pub fn Ios() -> Element {
     rsx! {
+        PageMeta {
+            title: "Download for iOS",
+            description: "Zwipe for iOS — swipe-based Magic: The Gathering deck builder. Currently in App Store review. Commander support, 110k+ cards, account-synced decks.",
+            path: "/download/ios",
+        }
         Nav {}
         div { class: "page content-enter",
             div { class: "section",

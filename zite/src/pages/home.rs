@@ -1,3 +1,4 @@
+use crate::components::PageMeta;
 use crate::{Footer, Nav};
 use dioxus::prelude::*;
 
@@ -45,6 +46,11 @@ pub fn Home() -> Element {
     let (current_src, current_caption, current_label) = demos[index()];
 
     rsx! {
+        PageMeta {
+            title: "Zwipe",
+            description: "Zwipe is a Magic: The Gathering deck builder built for mobile. Swipe right to add, left to skip, up to maybe, down to undo. 110k+ cards, Commander-ready, decks synced across sessions.",
+            path: "/",
+        }
         Nav {}
         div { class: "hero",
             div { class: "logo", "{LOGO_ASCII}" }

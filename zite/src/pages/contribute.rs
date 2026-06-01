@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use crate::components::PageMeta;
 use crate::{Footer, Nav};
 
 const STRIPE_URL: &str = "https://buy.stripe.com/5kQdRa5tUeNm9pd8BY9Zm00";
@@ -8,6 +9,11 @@ const GITHUB_SPONSORS_URL: &str = "https://github.com/sponsors/scadoshi";
 #[component]
 pub fn Contribute() -> Element {
     rsx! {
+        PageMeta {
+            title: "Contribute",
+            description: "Support Zwipe development. Donate via Stripe, Buy Me a Coffee, or GitHub Sponsors. Funds keep the app free and the servers running.",
+            path: "/contribute",
+        }
         Nav {}
         div { class: "page content-enter",
             div { class: "section",
