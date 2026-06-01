@@ -3,6 +3,7 @@ use dioxus::prelude::*;
 use zwipe_core::domain::user::models::theme::ThemeConfig;
 use zwipe_core::domain::user::preferences::ALLOWED_THEMES;
 
+mod components;
 mod pages;
 use pages::{About, Android, Contribute, Discord, Home, Ios, Privacy, Reset, Verify};
 
@@ -41,7 +42,34 @@ enum Route {
 }
 
 fn main() {
-    dioxus::launch(App);
+    dioxus::LaunchBuilder::new()
+        .with_cfg(server_only! {
+            dioxus::server::ServeConfig::builder()
+                .incremental(
+                    dioxus::server::IncrementalRendererConfig::new()
+                        .static_dir(
+                            std::env::current_exe()
+                                .unwrap()
+                                .parent()
+                                .unwrap()
+                                .join("public")
+                        )
+                        .clear_cache(false)
+                )
+                .enable_out_of_order_streaming()
+        })
+        .launch(App);
+}
+
+/// Endpoint hit by `dx build --ssg` to enumerate routes to prerender.
+/// `Route::static_routes()` returns every route with no dynamic segments,
+/// so `/verify/:token` and `/reset/:token` are excluded automatically.
+#[server(endpoint = "static_routes")]
+async fn static_routes() -> ServerFnResult<Vec<String>> {
+    Ok(Route::static_routes()
+        .iter()
+        .map(ToString::to_string)
+        .collect())
 }
 
 #[component]

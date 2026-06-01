@@ -11,14 +11,28 @@ workspace = true
 name = "zite"
 path = "src/main.rs"
 
+[features]
+default = ["web"]
+web = ["dioxus/web"]
+server = ["dioxus/server", "dep:tokio"]
+
 [dependencies]
 zwipe-core = { path = "../zwipe-core" }
-dioxus = { version = "0.7.4", features = ["router", "web"] }
+dioxus = { version = "0.7.9", features = ["router", "fullstack"] }
 serde = { workspace = true }
-web-sys = { version = "0.3", features = ["Window", "Location", "UrlSearchParams", "Document", "Element"] }
 
-# Local declaration — workspace reqwest has rustls-tls which doesn't compile to wasm32
+# Server feature pulls tokio in. Client (wasm) doesn't need it.
+tokio = { workspace = true, optional = true }
+
+# Native (server build): full TLS-backed reqwest, used both for the prerender
+# server and by the verify/reset pages if/when they're ever SSR'd.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+
+# Wasm (client build): browser provides TLS so reqwest has no TLS feature here.
+# Workspace reqwest can't be used on wasm32 — rustls-tls fails to compile.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
 reqwest = { version = "0.12", features = ["json"], default-features = false }
-
+web-sys = { version = "0.3", features = ["Window", "Location", "UrlSearchParams", "Document", "Element"] }
 # getrandom 0.4+ requires explicit wasm_js feature for wasm32-unknown-unknown
 getrandom = { version = "0.4", features = ["wasm_js"] }

@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use crate::components::PageMeta;
 use crate::{Footer, Nav};
 
 // Source-material links — used inside the architecture diagram (Wikipedia-style refs).
@@ -19,6 +20,11 @@ const URL_MECHANICAL_CATEGORY: &str =
 #[component]
 pub fn About() -> Element {
     rsx! {
+        PageMeta {
+            title: "About",
+            description: "Zwipe is built by Scotty Fermo (scadoshi). About page covers the tech stack — Rust, Dioxus, WASM, Axum, PostgreSQL — and the architecture behind the deck builder.",
+            path: "/about",
+        }
         Nav {}
         div { class: "page content-enter",
             div { class: "about-header section",
