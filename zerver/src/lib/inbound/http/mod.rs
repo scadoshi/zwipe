@@ -339,6 +339,7 @@ impl HttpServer {
 /// Resolves when the process receives either SIGINT (Ctrl-C, dev) or SIGTERM
 /// (systemd `stop`, container orchestrators). `axum::serve` uses this to stop
 /// accepting connections and drain in-flight requests before exiting.
+#[cfg(feature = "zerver")]
 async fn shutdown_signal() {
     let ctrl_c = async {
         let _ = tokio::signal::ctrl_c().await;
