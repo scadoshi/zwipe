@@ -52,13 +52,21 @@ Once wasm compiles, build the authenticated experience into zite:
 
 ---
 
-## App Store Submission — Build 15 In Review
+## App Store Submission — Build 15 Resubmitted 2026-06-04
 
-Build 15 submitted ~2026-05-24, awaiting Apple review. No action until they respond.
+Build 15 rejected 2026-06-03 under Guideline 4.1(a) Copycats — metadata referenced Magic: The Gathering without authorization from Wizards of the Coast. Apple's complaint was scoped to **metadata** (app name, description, keywords, screenshots), not in-app behavior.
 
-- Bundle ID `com.scadoshi.zwipe`, name "Zwipe"
+Resubmitted 2026-06-04 after metadata scrub:
+- App name changed from "Zwipe MTG" to **"Zwipe TCG"**
+- All "Magic: The Gathering" / "MTG" / "Commander" / "EDH" / "Planeswalker" / "Scryfall" references removed from App Store Connect listing (name, subtitle, description, keywords, promo text)
+- Reworded as generic "trading card game deck builder"
+- **Screenshots NOT scrubbed** — still show recognizable MTG card art. Known risk: Apple may reject again on this. If they do, swap screenshots for UI-chrome shots (deck list, swipe view, filters) that don't feature individual cards, or use mocked generic cards.
+
+- Bundle ID `com.scadoshi.zwipe`, name "Zwipe TCG"
 - Distribution certificate + App Store provisioning profile in place
 - Export compliance: no encryption beyond HTTPS
+
+Independent of Apple: WotC could still C&D the app for trademark/copyright at any time. Their [Fan Content Policy](https://company.wizards.com/en/legal/fancontentpolicy) explicitly excludes applications. Long-term risk; not Apple's concern.
 
 ---
 
