@@ -26,7 +26,8 @@ use std::collections::HashSet;
 use std::time::Duration;
 use uuid::Uuid;
 use zwipe_core::domain::card::{
-    Card, scryfall_data::colors::{Color, Colors},
+    Card,
+    scryfall_data::{ImageSize, colors::{Color, Colors}},
     search_card::{
         card_filter::builder::CardFilterBuilder,
         filter_cards::{FilterCards, SortCards},
@@ -153,12 +154,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         .filter(|card| {
                             !existing_ids.contains(&card.card_profile.scryfall_data_id)
                                 && !card.scryfall_data.oracle_id.is_some_and(|oid| deck_ids.contains(&oid))
-                                && card
-                                    .scryfall_data
-                                    .image_uris
-                                    .as_ref()
-                                    .and_then(|x| x.large.as_ref())
-                                    .is_some()
+                                && card.scryfall_data.primary_image_url(ImageSize::Large).is_some()
                         })
                         .collect();
 
@@ -557,11 +553,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         cards_from_search
                             .into_iter()
                             .filter(|card| {
-                                card.scryfall_data
-                                    .image_uris
-                                    .as_ref()
-                                    .and_then(|x| x.large.as_ref())
-                                    .is_some()
+                                card.scryfall_data.primary_image_url(ImageSize::Large).is_some()
                                     && !card.scryfall_data.oracle_id.is_some_and(|oid| deck_ids.contains(&oid))
                             })
                             .collect(),
@@ -951,11 +943,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                             cards_from_search
                                                 .into_iter()
                                                 .filter(|card| {
-                                                    card.scryfall_data
-                                                        .image_uris
-                                                        .as_ref()
-                                                        .and_then(|x| x.large.as_ref())
-                                                        .is_some()
+                                                    card.scryfall_data.primary_image_url(ImageSize::Large).is_some()
                                                         && !card.scryfall_data.oracle_id.is_some_and(|oid| deck_ids.contains(&oid))
                                                 })
                                                 .collect(),

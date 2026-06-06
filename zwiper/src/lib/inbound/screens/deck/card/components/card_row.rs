@@ -1,5 +1,6 @@
 use dioxus::prelude::*;
 use uuid::Uuid;
+use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::Board;
 
@@ -46,7 +47,7 @@ pub(crate) fn CardRow(
     let type_line = sd.type_line.clone().unwrap_or_default();
     let rarity_name = sd.rarity.to_long_name().to_string();
     let set_name = sd.set_name.clone();
-    let image_url: Option<String> = sd.image_uris.as_ref().and_then(|iu| iu.large.clone());
+    let image_url: Option<String> = sd.primary_image_url(ImageSize::Large).map(str::to_owned);
 
     rsx! {
         div {

@@ -1,5 +1,14 @@
 use serde::{Deserialize, Serialize};
 
+/// Which Scryfall image size variant to read. Used by [`ImageUris::at_size`] and
+/// [`crate::domain::card::scryfall_data::ScryfallData::primary_image_url`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ImageSize {
+    Small,
+    Normal,
+    Large,
+}
+
 /// Card image URLs at various resolutions and crop styles.
 ///
 /// Scryfall provides images in multiple formats optimized for different use cases:
@@ -27,4 +36,15 @@ pub struct ImageUris {
     pub border_crop: Option<String>,
     /// Cropped to artwork only (no frame/text). `None` if unavailable.
     pub art_crop: Option<String>,
+}
+
+impl ImageUris {
+    /// Returns the URL for the requested size variant if available.
+    pub fn at_size(&self, size: ImageSize) -> Option<&str> {
+        match size {
+            ImageSize::Small => self.small.as_deref(),
+            ImageSize::Normal => self.normal.as_deref(),
+            ImageSize::Large => self.large.as_deref(),
+        }
+    }
 }

@@ -10,6 +10,7 @@ use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_core::domain::card::Card;
 
 /// Bottom sheet for browsing all printings of a card and selecting one.
@@ -122,8 +123,11 @@ pub(crate) fn PrintingSheet(
                     Carousel { state: carousel_state,
                         for printing in printings().iter() {
                             {
-                                let image_url = printing.scryfall_data.image_uris.as_ref()
-                                    .and_then(|iu| iu.large.clone().or_else(|| iu.normal.clone()).or_else(|| iu.small.clone()))
+                                let image_url = printing.scryfall_data
+                                    .primary_image_url(ImageSize::Large)
+                                    .or_else(|| printing.scryfall_data.primary_image_url(ImageSize::Normal))
+                                    .or_else(|| printing.scryfall_data.primary_image_url(ImageSize::Small))
+                                    .map(str::to_owned)
                                     .unwrap_or_default();
                                 let name = printing.scryfall_data.name.clone();
                                 let id = printing.scryfall_data.id;
@@ -150,7 +154,7 @@ pub(crate) fn PrintingSheet(
                     }
                 } else if let Some(card) = visible_card.clone() {
                     // Single printing: just show the image, no carousel
-                    if let Some(ref image_url) = card.scryfall_data.image_uris.as_ref().and_then(|iu| iu.large.clone()) {
+                    if let Some(image_url) = card.scryfall_data.primary_image_url(ImageSize::Large) {
                         div { style: "display: flex; justify-content: center; margin-bottom: 0.75rem;",
                             img {
                                 src: "{image_url}",
