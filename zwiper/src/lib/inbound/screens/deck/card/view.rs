@@ -106,8 +106,9 @@ pub fn View(deck_id: Uuid) -> Element {
     let mut show_maybe: Signal<bool> = use_signal(|| false);
     let mut show_side: Signal<bool> = use_signal(|| false);
 
-    // Card image preview — stores the image URL of the card to preview (None = closed)
-    let preview_image_url: Signal<Option<String>> = use_signal(|| None);
+    // Card image preview — stores the card to preview (None = closed). Carries the
+    // full ScryfallData so the modal's FlippableCardImage can read both faces of DFCs.
+    let preview_card: Signal<Option<zwipe_core::domain::card::scryfall_data::ScryfallData>> = use_signal(|| None);
     // Printing sheet state
     let mut printing_sheet_open: Signal<bool> = use_signal(|| false);
     let mut printing_sheet_card: Signal<Option<Card>> = use_signal(|| None);
@@ -532,7 +533,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                                     card: token.clone(),
                                                     qty: 1,
                                                     expanded_card,
-                                                    preview_image_url,
+                                                    preview_card,
                                                     preview_dismissing,
                                                 }
                                             }
@@ -565,7 +566,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                                     card: entry.card.clone(),
                                                     qty,
                                                     expanded_card,
-                                                    preview_image_url,
+                                                    preview_card,
                                                     preview_dismissing,
                                                     on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land),
                                                     on_move_to: move |target: Board| move_to_board(card_id, target),
@@ -606,7 +607,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                                     card: entry.card.clone(),
                                                     qty,
                                                     expanded_card,
-                                                    preview_image_url,
+                                                    preview_card,
                                                     preview_dismissing,
                                                     on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land),
                                                     on_move_to: move |target: Board| move_to_board(card_id, target),
@@ -643,7 +644,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                         card: cmd,
                                         qty: 1,
                                         expanded_card,
-                                        preview_image_url,
+                                        preview_card,
                                         preview_dismissing,
                                         on_printing: move |card: Card| {
                                             command_zone_slot.set(Some(CommandZoneSlot::Commander));
@@ -657,7 +658,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                         card: partner,
                                         qty: 1,
                                         expanded_card,
-                                        preview_image_url,
+                                        preview_card,
                                         preview_dismissing,
                                         on_printing: move |card: Card| {
                                             command_zone_slot.set(Some(CommandZoneSlot::Partner));
@@ -677,7 +678,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                     card: bg,
                                     qty: 1,
                                     expanded_card,
-                                    preview_image_url,
+                                    preview_card,
                                     preview_dismissing,
                                     on_printing: move |card: Card| {
                                         command_zone_slot.set(Some(CommandZoneSlot::Background));
@@ -696,7 +697,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                     card: spell,
                                     qty: 1,
                                     expanded_card,
-                                    preview_image_url,
+                                    preview_card,
                                     preview_dismissing,
                                     on_printing: move |card: Card| {
                                         command_zone_slot.set(Some(CommandZoneSlot::SignatureSpell));
@@ -732,7 +733,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                             card: card.clone(),
                                             qty,
                                             expanded_card,
-                                            preview_image_url,
+                                            preview_card,
                                             preview_dismissing,
                                             on_qty_change: move |delta: i32| change_quantity(card_id, delta, is_basic_land),
                                             on_move_to: move |target: Board| move_to_board(card_id, target),
@@ -811,7 +812,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 show_active_indicators: true,
             }
 
-            ImagePreview { url: preview_image_url, dismissing: preview_dismissing }
+            ImagePreview { card: preview_card, dismissing: preview_dismissing }
 
             if let Some(card) = printing_sheet_card() {
                 PrintingSheet {

@@ -6,7 +6,9 @@ use crate::{
             interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
         },
         screens::deck::card::{
-            components::action_history::{CARDS_WARNING_THRESHOLD, MAX_CARDS_IN_STACK, SwipeAction},
+            components::action_history::{
+                CARDS_WARNING_THRESHOLD, MAX_CARDS_IN_STACK, SwipeAction,
+            },
             filter::card_filter_sheet::CardFilterSheet,
         },
     },
@@ -25,17 +27,23 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::collections::HashSet;
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe_core::domain::card::{
-    Card,
-    scryfall_data::{ImageSize, colors::{Color, Colors}},
-    search_card::{
-        card_filter::builder::CardFilterBuilder,
-        filter_cards::{FilterCards, SortCards},
-    },
-};
-use zwipe_core::domain::deck::{Board, DeckEntry, format::Format};
-use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpUpdateDeckCard};
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::deck::{Board, DeckEntry, format::Format};
+use zwipe_core::domain::{
+    card::{
+        Card,
+        scryfall_data::{
+            ImageSize,
+            colors::{Color, Colors},
+        },
+        search_card::{
+            card_filter::builder::CardFilterBuilder,
+            filter_cards::{FilterCards, SortCards},
+        },
+    },
+    deck::Quantity,
+};
+use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpUpdateDeckCard};
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 enum AddSource {
@@ -153,8 +161,14 @@ pub fn Add(deck_id: Uuid) -> Element {
                         .into_iter()
                         .filter(|card| {
                             !existing_ids.contains(&card.card_profile.scryfall_data_id)
-                                && !card.scryfall_data.oracle_id.is_some_and(|oid| deck_ids.contains(&oid))
-                                && card.scryfall_data.primary_image_url(ImageSize::Large).is_some()
+                                && !card
+                                    .scryfall_data
+                                    .oracle_id
+                                    .is_some_and(|oid| deck_ids.contains(&oid))
+                                && card
+                                    .scryfall_data
+                                    .primary_image_url(ImageSize::Large)
+                                    .is_some()
                         })
                         .collect();
 
@@ -184,7 +198,12 @@ pub fn Add(deck_id: Uuid) -> Element {
     // Thresholds tuned for responsive rapid swiping: a short drag (60px) OR
     // a quick flick (1.5 px/ms over the 10px minimum) commits.
     let swipe_config = SwipeConfig::new(
-        vec![Direction::Left, Direction::Right, Direction::Up, Direction::Down],
+        vec![
+            Direction::Left,
+            Direction::Right,
+            Direction::Up,
+            Direction::Down,
+        ],
         60.0, // distance threshold in px
         1.5,  // speed threshold in px/ms
     );
@@ -231,7 +250,9 @@ pub fn Add(deck_id: Uuid) -> Element {
         spawn(async move {
             match client().create_deck_card(deck_id, &request, &session).await {
                 Ok(_) => {
-                    if let Some(oid) = oracle_id { deck_cards_ids.write().insert(oid); }
+                    if let Some(oid) = oracle_id {
+                        deck_cards_ids.write().insert(oid);
+                    }
                 }
                 Err(e) => {
                     tracing::warn!("add card to deck failed: {e}");
@@ -248,13 +269,16 @@ pub fn Add(deck_id: Uuid) -> Element {
             return;
         };
 
-        let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, Some("maybeboard".to_string()));
+        let request =
+            HttpCreateDeckCard::new(&card.scryfall_data, 1, Some("maybeboard".to_string()));
         let oracle_id = card.scryfall_data.oracle_id;
 
         spawn(async move {
             match client().create_deck_card(deck_id, &request, &session).await {
                 Ok(_) => {
-                    if let Some(oid) = oracle_id { deck_cards_ids.write().insert(oid); }
+                    if let Some(oid) = oracle_id {
+                        deck_cards_ids.write().insert(oid);
+                    }
                 }
                 Err(e) => {
                     tracing::warn!("add card to maybeboard failed: {e}");
@@ -310,7 +334,9 @@ pub fn Add(deck_id: Uuid) -> Element {
                     match client().delete_deck_card(deck_id, card_id, &session).await {
                         Ok(_) => {
                             // Remove from exclusion HashSet
-                            if let Some(oid) = oracle_id { deck_cards_ids.write().remove(&oid); }
+                            if let Some(oid) = oracle_id {
+                                deck_cards_ids.write().remove(&oid);
+                            }
                             toast.success(
                                 "Undid add".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
@@ -340,7 +366,9 @@ pub fn Add(deck_id: Uuid) -> Element {
                 spawn(async move {
                     match client().delete_deck_card(deck_id, card_id, &session).await {
                         Ok(_) => {
-                            if let Some(oid) = oracle_id { deck_cards_ids.write().remove(&oid); }
+                            if let Some(oid) = oracle_id {
+                                deck_cards_ids.write().remove(&oid);
+                            }
                             toast.success(
                                 "Undid maybeboard".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
@@ -375,9 +403,9 @@ pub fn Add(deck_id: Uuid) -> Element {
             } else {
                 filter_builder.write().clear();
                 if let Some(fmt) = deck_format() {
-                    filter_builder.write().set_legalities_contains_any(
-                        vec![fmt.to_legality_key().to_string()]
-                    );
+                    filter_builder
+                        .write()
+                        .set_legalities_contains_any(vec![fmt.to_legality_key().to_string()]);
                 }
                 if let Some(colors) = deck_color_identity() {
                     filter_builder.write().set_color_identity_within(colors);
@@ -419,7 +447,8 @@ pub fn Add(deck_id: Uuid) -> Element {
                             && let Some(oid) = card.scryfall_data.oracle_id
                         {
                             ids.insert(oid);
-                            identity_colors.extend(card.scryfall_data.color_identity.iter().cloned());
+                            identity_colors
+                                .extend(card.scryfall_data.color_identity.iter().cloned());
                         }
                     }
                     // Signature spell: oracle_id exclusion only (doesn't contribute to color identity)
@@ -432,7 +461,8 @@ pub fn Add(deck_id: Uuid) -> Element {
                     deck_cards_ids.set(ids);
 
                     // Collect maybeboard entries for the maybeboard source mode
-                    let mb: Vec<DeckEntry> = deck.entries
+                    let mb: Vec<DeckEntry> = deck
+                        .entries
                         .iter()
                         .filter(|e| e.deck_card.board.is_maybeboard())
                         .cloned()
@@ -443,9 +473,9 @@ pub fn Add(deck_id: Uuid) -> Element {
                     if let Some(fmt) = deck.deck_profile.format {
                         deck_format.set(Some(fmt));
                         if filter_builder.peek().legalities_contains_any().is_none() {
-                            filter_builder.write().set_legalities_contains_any(
-                                vec![fmt.to_legality_key().to_string()]
-                            );
+                            filter_builder.write().set_legalities_contains_any(vec![
+                                fmt.to_legality_key().to_string(),
+                            ]);
                         }
 
                         // Pre-populate color identity filter from commander
@@ -490,7 +520,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                 last_search_filter.set(None);
                 current_offset.set(0);
                 current_index.set(0);
-                toast.warning("Filter is empty".to_string(), ToastOptions::default().duration(Duration::from_millis(2000)));
+                toast.warning(
+                    "Filter is empty".to_string(),
+                    ToastOptions::default().duration(Duration::from_millis(2000)),
+                );
                 return;
             }
             // Preserve cards if the filter hasn't changed since last search.
@@ -553,8 +586,13 @@ pub fn Add(deck_id: Uuid) -> Element {
                         cards_from_search
                             .into_iter()
                             .filter(|card| {
-                                card.scryfall_data.primary_image_url(ImageSize::Large).is_some()
-                                    && !card.scryfall_data.oracle_id.is_some_and(|oid| deck_ids.contains(&oid))
+                                card.scryfall_data
+                                    .primary_image_url(ImageSize::Large)
+                                    .is_some()
+                                    && !card
+                                        .scryfall_data
+                                        .oracle_id
+                                        .is_some_and(|oid| deck_ids.contains(&oid))
                             })
                             .collect(),
                     );
@@ -622,7 +660,9 @@ pub fn Add(deck_id: Uuid) -> Element {
         let request = HttpUpdateDeckCard::new(None, Some("deck".to_string()));
 
         // Optimistic: remove from maybeboard lists
-        mb_entries.write().retain(|e| e.card.scryfall_data.id != scryfall_data_id);
+        mb_entries
+            .write()
+            .retain(|e| e.card.scryfall_data.id != scryfall_data_id);
         let idx = mb_current_index();
         if idx < mb_displayed_cards.read().len() {
             mb_displayed_cards.write().remove(idx);
@@ -698,7 +738,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                     deck_id,
                                     scryfall_data_id,
                                     oracle_id: oracle_id.unwrap_or_default(),
-                                    quantity: zwipe_core::domain::deck::quantity::Quantity::new(1).expect("1 is valid"),
+                                    quantity: Quantity::one(),
                                     board: Board::Maybeboard,
                                 },
                             });
