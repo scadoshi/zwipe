@@ -56,7 +56,9 @@ use serde::{Deserialize, Serialize};
 /// - `is_playable`: `true` (exclude un-cards, silver-bordered)
 /// - `digital`: `false` (exclude Arena-only cards)
 /// - `oversized`: `false`
-/// - `promo`: `false`
+/// - `promo`: unset (Scryfall flags Jumpstart, Secret Lair, and UB bonus inserts as
+///   promo even though they're standard paper printings; filtering them by default
+///   hides legitimate cards)
 /// - `content_warning`: `false`
 /// - `language`: `"en"`
 /// - `limit`: 100
@@ -184,7 +186,7 @@ impl Default for CardFilterBuilder {
             is_playable: Some(true),
             digital: Some(false),
             oversized: Some(false),
-            promo: Some(false),
+            promo: None,
             content_warning: Some(false),
             language: Some("en".to_string()),
             legalities_contains_any: None,
