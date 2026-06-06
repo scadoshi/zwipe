@@ -7,23 +7,24 @@ use crate::{
         router::Router,
     },
     outbound::client::{
-        card::get_card::ClientGetCard,
-        deck::{
-            get_deck::ClientGetDeck, update_deck_profile::ClientUpdateDeckProfile,
-        },
         ZwipeClient,
+        card::get_card::ClientGetCard,
+        deck::{get_deck::ClientGetDeck, update_deck_profile::ClientUpdateDeckProfile},
     },
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{use_toast, ToastOptions};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe_core::http::helpers::Opdate;
-use zwipe_core::domain::deck::{Deck, deck_profile::DeckProfile, format::Format, requests::update_deck_profile::InvalidUpdateDeckProfile};
 use zwipe::inbound::http::ApiError;
-use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::deck::{
+    Deck, deck_profile::DeckProfile, format::Format,
+    requests::update_deck_profile::InvalidUpdateDeckProfile,
+};
+use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
+use zwipe_core::http::helpers::Opdate;
 
 /// Screen for editing a deck with name and settings.
 #[component]
@@ -74,7 +75,10 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             selected_format.set(deck.deck_profile.format);
         }
         Some(Err(e)) => {
-            toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+            toast.error(
+                e.to_string(),
+                ToastOptions::default().duration(Duration::from_millis(3000)),
+            );
         }
         None => (),
     });
@@ -108,11 +112,14 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         Some(Ok(Some(original))) => {
             original_commander.set(Some(original.clone()));
             commander.set(Some(original.clone()));
-            commander_display.set(original.scryfall_data.name.clone());
+            commander_display.set(original.scryfall_data.name);
         }
         Some(Ok(None)) | None => (),
         Some(Err(e)) => {
-            toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+            toast.error(
+                e.to_string(),
+                ToastOptions::default().duration(Duration::from_millis(3000)),
+            );
         }
     });
 
@@ -142,11 +149,14 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         Some(Ok(Some(original))) => {
             original_partner.set(Some(original.clone()));
             partner_commander.set(Some(original.clone()));
-            partner_commander_display.set(original.scryfall_data.name.clone());
+            partner_commander_display.set(original.scryfall_data.name);
         }
         Some(Ok(None)) | None => (),
         Some(Err(e)) => {
-            toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+            toast.error(
+                e.to_string(),
+                ToastOptions::default().duration(Duration::from_millis(3000)),
+            );
         }
     });
 
@@ -176,11 +186,14 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         Some(Ok(Some(original))) => {
             original_background.set(Some(original.clone()));
             background.set(Some(original.clone()));
-            background_display.set(original.scryfall_data.name.clone());
+            background_display.set(original.scryfall_data.name);
         }
         Some(Ok(None)) | None => (),
         Some(Err(e)) => {
-            toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+            toast.error(
+                e.to_string(),
+                ToastOptions::default().duration(Duration::from_millis(3000)),
+            );
         }
     });
 
@@ -210,11 +223,14 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         Some(Ok(Some(original))) => {
             original_signature_spell.set(Some(original.clone()));
             signature_spell.set(Some(original.clone()));
-            signature_spell_display.set(original.scryfall_data.name.clone());
+            signature_spell_display.set(original.scryfall_data.name);
         }
         Some(Ok(None)) | None => (),
         Some(Err(e)) => {
-            toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+            toast.error(
+                e.to_string(),
+                ToastOptions::default().duration(Duration::from_millis(3000)),
+            );
         }
     });
 
@@ -281,13 +297,19 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         spawn(async move {
             session.upkeep(client);
             let Some(session) = session() else {
-                toast.error("Session expired".to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                toast.error(
+                    "Session expired".to_string(),
+                    ToastOptions::default().duration(Duration::from_millis(3000)),
+                );
                 is_saving.set(false);
                 return;
             };
 
             if !has_made_changes() {
-                toast.error(InvalidUpdateDeckProfile::NoUpdates.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                toast.error(
+                    InvalidUpdateDeckProfile::NoUpdates.to_string(),
+                    ToastOptions::default().duration(Duration::from_millis(3000)),
+                );
                 is_saving.set(false);
                 return;
             }
@@ -310,7 +332,10 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                     navigator.push(Router::ViewDeck { deck_id });
                 }
                 Err(e) => {
-                    toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                    toast.error(
+                        e.to_string(),
+                        ToastOptions::default().duration(Duration::from_millis(3000)),
+                    );
                     is_saving.set(false);
                 }
             }
