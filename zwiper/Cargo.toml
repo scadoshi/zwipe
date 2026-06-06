@@ -31,7 +31,7 @@ tracing-subscriber = { workspace = true }
 uuid = { workspace = true }
 tokio = { workspace = true }
 rand = { workspace = true }
-dioxus-primitives = { git = "https://github.com/DioxusLabs/components", version = "0.0.1", default-features = false }
+dioxus-primitives = { git = "https://github.com/DioxusLabs/components", rev = "02801f27e4b3e30606e5c77e435c9d955c708eb3", version = "0.0.1", default-features = false }
 
 [build-dependencies]
 dotenvy = { workspace = true }
