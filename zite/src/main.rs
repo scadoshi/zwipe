@@ -5,7 +5,7 @@ use zwipe_core::domain::user::preferences::ALLOWED_THEMES;
 
 mod components;
 mod pages;
-use pages::{About, Android, Contribute, Discord, Home, Ios, Privacy, Reset, Verify};
+use pages::{About, Android, Contribute, Discord, Home, Privacy, Reset, Verify};
 
 pub const API_BASE: &str = "https://api.zwipe.net";
 
@@ -29,8 +29,6 @@ enum Route {
     Contribute {},
     #[route("/discord")]
     Discord {},
-    #[route("/download/ios")]
-    Ios {},
     #[route("/download/android")]
     Android {},
     #[route("/privacy")]
@@ -134,7 +132,13 @@ pub fn Nav() -> Element {
                     Link { to: Route::Discord {}, "Discord" }
                 }
                 li {
-                    Link { to: Route::Ios {}, class: "store-link", "App Store ↗" }
+                    a {
+                        class: "store-link",
+                        href: "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",
+                        target: "_blank",
+                        rel: "noopener",
+                        "App Store ↗"
+                    }
                 }
                 li {
                     Link { to: Route::Android {}, class: "store-link", "Play Store ↗" }
