@@ -18,22 +18,28 @@ Build your Commander decks faster. Swipe through 110,000+ cards, filter by anyth
 
 ## Description
 
-Zwipe is a mobile-first Magic: The Gathering deck builder designed for Commander players. Browse cards with an intuitive swipe interface — swipe right to add, left to skip, up to maybeboard.
+Swipe through cards. Build decks fast. Zwipe turns the slow, cluttered desktop deck-building experience into something that fits in one thumb.
 
-Features:
-- Swipe-based card browsing with full card art and multiple printings
-- Deep filters: color identity, card type, mana cost, oracle text, keywords, artist, set, rarity, mechanical category, and more
-- Full Commander support — partners, backgrounds, oathbreaker with signature spell, color identity validation
-- Maybeboard for staging cards you're considering
+Swipe right to add a card, left to skip, up to stage it for later. Open a card's image with a tap. Filter by anything that matters — color identity, mana cost, type, oracle text, keywords, artist, set, rarity, mechanical role. The card pool updates as you swipe.
+
+Built for the 100-card singleton format and the legendary creature that anchors it. Full support for alternate leader rules: partner leaders, special backgrounds, planeswalker-led signature spells, color identity validation, and a maybeboard for cards you haven't decided on yet.
+
+Other tools:
+- Multiple decks with card counts, mana curve stats, and price estimates
 - Sideboard support
-- Manage multiple decks with card counts, mana curve stats, and price estimates
-- Import/export decklists from Moxfield or Archidekt
+- Import and export decklists in standard text format
 - 15 color themes with dark and light modes, including 3 colorblind-accessible options
-- 110,000+ cards synced nightly from Scryfall
-- Account-based — your decks sync across sessions
-- Free to use, no ads
+- 110,000+ cards synced nightly
+- Free to use, no ads, no microtransactions
+- Your decks sync across sessions and devices
 
-Built for players who want a fast, focused mobile experience — not another cluttered desktop tool on a small screen.
+Built for players who want a fast, focused mobile experience — not another cluttered desktop tool squeezed onto a small screen.
+
+---
+
+## What's New in This Version (1.0.1)
+
+Fixed: some cards from special-edition products were missing from search and filtering. They now appear correctly across card search, leader selection, and deck filters.
 
 ---
 
@@ -49,7 +55,7 @@ MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading ca
 |-------|-------|
 | Support URL | https://zwipe.net |
 | Marketing URL | https://zwipe.net |
-| Version | 1.0 |
+| Version | 1.0.1 |
 | Copyright | 2026 Scotty Fermo |
 | Routing App Coverage File | (leave empty) |
 
