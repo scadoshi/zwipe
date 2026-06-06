@@ -53,6 +53,7 @@ fn App() -> Element {
         ThemeWrapper {
             ToastProvider {
                 max_toasts: 3_usize,
+                class: "toast-container",
                 Router::<Router> {}
             }
         }

@@ -1,4 +1,8 @@
-/* Toast Container */
+/* Toast Container
+ * The .toast-container class is applied to dioxus_primitives::ToastProvider via
+ * `class:` prop spread through its `#[props(extends = GlobalAttributes)]` attributes.
+ * Inner DOM is owned by the library: <div.toast-container> > <ol> > <li> > <div role="alertdialog" data-type="...">.
+ * `data-type` is part of ToastProvider's documented stable contract. */
 .toast-container {
     position: fixed;
     z-index: 9999;
@@ -7,44 +11,35 @@
     max-width: 18rem;
 }
 
-.toast-list {
+.toast-container ol {
     display: flex;
     flex-direction: column-reverse;
     padding: 0;
     margin: 0;
     gap: 0;
+    list-style: none;
 }
 
-.toast-item {
+.toast-container li {
     display: flex;
     margin-top: -2.5rem;
     transition: all 0.2s ease;
     position: relative;
 }
 
-.toast-item:last-child {
+.toast-container li:last-child {
     margin-top: 0;
 }
 
 /* Newer toasts (first in DOM with column-reverse) get higher z-index */
-.toast-item:first-child {
-    z-index: 5;
-}
-.toast-item:nth-child(2) {
-    z-index: 4;
-}
-.toast-item:nth-child(3) {
-    z-index: 3;
-}
-.toast-item:nth-child(4) {
-    z-index: 2;
-}
-.toast-item:nth-child(5) {
-    z-index: 1;
-}
+.toast-container li:first-child { z-index: 5; }
+.toast-container li:nth-child(2) { z-index: 4; }
+.toast-container li:nth-child(3) { z-index: 3; }
+.toast-container li:nth-child(4) { z-index: 2; }
+.toast-container li:nth-child(5) { z-index: 1; }
 
 /* Toast */
-.toast {
+.toast-container [role="alertdialog"] {
     display: flex;
     width: 100%;
     box-sizing: border-box;
@@ -61,9 +56,6 @@
     transition:
         opacity 0.2s ease,
         transform 0.2s ease;
-}
-
-.toast[data-top] {
     animation: toast-slide-in 0.2s ease-out;
 }
 
@@ -79,30 +71,30 @@
     }
 }
 
-/* Toast Types */
-.toast[data-type="success"] {
+/* Toast Types — data-type is documented stable contract per ToastProvider docs */
+.toast-container [data-type="success"] {
     border-color: var(--border-success);
 }
 
-.toast[data-type="error"] {
+.toast-container [data-type="error"] {
     border-color: var(--border-error);
 }
 
-.toast[data-type="warning"] {
+.toast-container [data-type="warning"] {
     border-color: var(--border-warning);
 }
 
-.toast[data-type="info"] {
+.toast-container [data-type="info"] {
     border-color: var(--border-primary);
 }
 
-/* Toast Content */
-.toast-content {
+/* Toast Content — dioxus_primitives ToastContent renders a plain div; descendant selector targets it */
+.toast-container [role="alertdialog"] > div:first-child {
     flex: 1;
     margin-right: 0.5rem;
 }
 
-.toast-title {
+.toast-container [role="alertdialog"] [id$="-label"] {
     margin-bottom: 0.25rem;
     color: var(--text-primary);
     font-size: 0.9rem;
@@ -111,15 +103,15 @@
     overflow-wrap: break-word;
 }
 
-.toast-description {
+.toast-container [role="alertdialog"] [id$="-description"] {
     color: var(--text-primary);
     font-size: 0.8rem;
     font-weight: 400;
     opacity: 0.8;
 }
 
-/* Toast Close Button */
-.toast-close {
+/* Toast Close Button — ToastCloseButton renders a <button> */
+.toast-container [role="alertdialog"] button {
     padding: 0;
     border: none;
     margin: 0;
@@ -131,4 +123,3 @@
     opacity: 0.6;
     transition: opacity 0.2s ease;
 }
-
