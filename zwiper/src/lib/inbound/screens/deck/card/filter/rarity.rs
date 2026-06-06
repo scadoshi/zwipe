@@ -152,7 +152,7 @@ pub fn Rarity() -> Element {
                                 }
                             }
                         },
-                        { rarity.to_long_name().to_string() }
+                        { rarity.to_long_name() }
                     }
                 }
             }

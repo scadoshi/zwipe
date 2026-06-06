@@ -43,6 +43,7 @@ pub fn Home() -> Element {
     ];
     let total = demos.len();
     let mut index = use_signal(|| 0usize);
+    #[allow(clippy::indexing_slicing)]
     let (current_src, current_caption, current_label) = demos[index()];
 
     rsx! {

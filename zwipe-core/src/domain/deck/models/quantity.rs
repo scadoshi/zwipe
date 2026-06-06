@@ -35,6 +35,14 @@ impl Quantity {
         }
         Ok(Self(quantity))
     }
+
+    pub fn one() -> Self {
+        Self(1)
+    }
+
+    pub fn four() -> Self {
+        Self(4)
+    }
 }
 
 impl Deref for Quantity {
