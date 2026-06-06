@@ -1,6 +1,7 @@
 //! Bottom sheet for browsing and selecting card printings.
 
 use super::card_info::CardInfoDisplay;
+use super::flippable_card_image::FlippableCardImage;
 use crate::inbound::components::interactions::carousel::dots::CarouselDots;
 use crate::inbound::components::interactions::carousel::state::CarouselState;
 use crate::inbound::components::interactions::carousel::Carousel;
@@ -123,22 +124,14 @@ pub(crate) fn PrintingSheet(
                     Carousel { state: carousel_state,
                         for printing in printings().iter() {
                             {
-                                let image_url = printing.scryfall_data
-                                    .primary_image_url(ImageSize::Large)
-                                    .or_else(|| printing.scryfall_data.primary_image_url(ImageSize::Normal))
-                                    .or_else(|| printing.scryfall_data.primary_image_url(ImageSize::Small))
-                                    .map(str::to_owned)
-                                    .unwrap_or_default();
-                                let name = printing.scryfall_data.name.clone();
                                 let id = printing.scryfall_data.id;
+                                let sd = printing.scryfall_data.clone();
                                 rsx! {
                                     div { class: "carousel-page", key: "{id}",
-                                        if !image_url.is_empty() {
-                                            img {
-                                                src: "{image_url}",
-                                                alt: "{name}",
-                                                class: "carousel-card-image",
-                                            }
+                                        FlippableCardImage {
+                                            sd,
+                                            size: ImageSize::Large,
+                                            class: "carousel-card-image".to_string(),
                                         }
                                     }
                                 }
@@ -154,12 +147,12 @@ pub(crate) fn PrintingSheet(
                     }
                 } else if let Some(card) = visible_card.clone() {
                     // Single printing: just show the image, no carousel
-                    if let Some(image_url) = card.scryfall_data.primary_image_url(ImageSize::Large) {
+                    if card.scryfall_data.primary_image_url(ImageSize::Large).is_some() {
                         div { style: "display: flex; justify-content: center; margin-bottom: 0.75rem;",
-                            img {
-                                src: "{image_url}",
-                                alt: "{card.scryfall_data.name}",
-                                class: "carousel-card-image",
+                            FlippableCardImage {
+                                sd: card.scryfall_data.clone(),
+                                size: ImageSize::Large,
+                                class: "carousel-card-image".to_string(),
                             }
                         }
                     }

@@ -1,6 +1,6 @@
-@import url('https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/400.css');
-@import url('https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/500.css');
-@import url('https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/700.css');
+@import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/400.css");
+@import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/500.css");
+@import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/700.css");
 
 /* ==================
         base
@@ -20,7 +20,7 @@ html {
 body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
     font-weight: 400;
     line-height: 1.6;
     min-height: 100vh;
@@ -521,7 +521,7 @@ button {
     border: 1px solid var(--border-primary);
     border-radius: 1rem;
     color: var(--text-primary);
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
     font-size: 1rem;
     font-weight: 400;
     cursor: pointer;
@@ -556,7 +556,7 @@ button {
     background: none;
     border: 1px solid var(--border-primary);
     color: var(--text-primary);
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
     font-weight: 400;
     cursor: pointer;
     transition: all 0.1s ease;
@@ -608,7 +608,7 @@ button {
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
     color: var(--text-primary);
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
     font-size: 1rem;
     font-weight: 400;
     transition: all 0.2s ease;
@@ -1034,7 +1034,7 @@ button {
  ================= */
 
 .logo {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
     font-size: clamp(0.5rem, 2.5vw, 1.4rem);
     line-height: 0.9;
     white-space: pre;
@@ -1213,6 +1213,75 @@ button {
     height: auto;
     border-radius: 1rem;
     margin-bottom: 2rem;
+}
+
+/* FlippableCardImage — wraps an <img> and a flip button.
+
+   The wrapper takes the layout class (`.card-image`, `.carousel-card-image`, etc.)
+   that used to live on the <img>, so it inherits all the existing sizing rules
+   (flex:1, max-width, max-height, etc.) from those classes. We force grid layout
+   on the wrapper so the <img> and the flip button can overlap in the same cell,
+   meaning the button sits at the top-right of the image bounds at every call
+   site. The `!important` is needed because the layout class (.card-image etc.)
+   sets `display: block` which would otherwise win at equal specificity. */
+.flippable-card-wrapper {
+    position: relative;
+    display: grid !important;
+    grid-template: 1fr / 1fr;
+    line-height: 0;
+}
+
+/* Only applied when the card has multiple faces (and the flip button is
+   actually visible). Forces the wrapper to MTG portrait aspect ratio so the
+   button anchors to the real card bounds — without it, the wrapper expands
+   wider than 5:7 and the button lands in the empty space next to the card.
+   DFC layouts (transform, modal_dfc, etc.) are always 5:7, so this is safe.
+   Split / adventure / normal layouts skip this rule and keep natural sizing. */
+.flippable-card-wrapper.flippable {
+    aspect-ratio: 5 / 7;
+    justify-self: center;
+}
+
+.flippable-card-wrapper > img {
+    grid-area: 1 / 1;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: inherit;
+}
+
+.card-flip-button {
+    grid-area: 1 / 1;
+    align-self: start;
+    justify-self: end;
+    margin: 0.6rem;
+    z-index: 2;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.6rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.5;
+    transition:
+        opacity 0.15s ease,
+        transform 0.15s ease;
+    box-shadow: var(--shadow-sm);
+}
+
+/* .card-flip-button:hover { */
+/*     opacity: 1; */
+/*     transform: scale(1.05); */
+/* } */
+
+.card-flip-button:active {
+    transform: scale(0.95);
 }
 
 .card-info {
@@ -1549,7 +1618,7 @@ button {
     padding: 0;
     text-align: center;
     transition: all 0.2s ease;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
 }
 
 /* ================================
@@ -1614,7 +1683,7 @@ button {
     background: none;
     border: 1px solid var(--accent-secondary);
     color: var(--accent-secondary);
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
     font-weight: 400;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -1789,7 +1858,7 @@ button {
     color: var(--text-primary);
     cursor: pointer;
     font-size: 0.85rem;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
     transition: all 0.2s ease;
 }
 
@@ -2117,7 +2186,7 @@ button {
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
     color: var(--text-muted);
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
     font-weight: 400;
     font-size: 0.85rem;
     text-align: left;
@@ -2154,7 +2223,7 @@ button {
     border: 1px solid var(--border-primary);
     border-radius: 0.3rem;
     color: var(--text-primary);
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
     font-weight: 400;
     font-size: 0.75rem;
     padding: 0.25rem 0.6rem;

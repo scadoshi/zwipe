@@ -23,6 +23,7 @@ use crate::inbound::components::interactions::swipe::{
     axis::Axis, config::SwipeConfig, direction::Direction, onmouse::OnMouse, ontouch::OnTouch,
     state::SwipeState,
 };
+use crate::inbound::screens::deck::card::components::flippable_card_image::FlippableCardImage;
 use dioxus::html::geometry::euclid::{Point2D, UnknownUnit};
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -245,13 +246,12 @@ pub fn SwipeStack(
                                 }
                             },
 
-                            if let Some(image_url) = card.scryfall_data.primary_image_url(ImageSize::Large) {
-                                img {
-                                    src: "{image_url}",
-                                    alt: "{card_name}",
-                                    class: "card-image",
-                                    draggable: false,
-                                }
+                            FlippableCardImage {
+                                sd: card.scryfall_data,
+                                size: ImageSize::Large,
+                                class: "card-image".to_string(),
+                                draggable: false,
+                                flippable: is_top,
                             }
                         }
                     }

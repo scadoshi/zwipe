@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use uuid::Uuid;
-use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 use zwipe_core::domain::deck::Board;
 
 /// Expandable card row with compact view and optional quantity controls.
@@ -10,7 +10,7 @@ pub(crate) fn CardRow(
     card: Card,
     qty: i32,
     mut expanded_card: Signal<Option<Uuid>>,
-    mut preview_image_url: Signal<Option<String>>,
+    mut preview_card: Signal<Option<ScryfallData>>,
     mut preview_dismissing: Signal<bool>,
     on_qty_change: Option<EventHandler<i32>>,
     on_move_to: Option<EventHandler<Board>>,
@@ -45,9 +45,10 @@ pub(crate) fn CardRow(
         .join("");
     let oracle_text = sd.oracle_text.clone().unwrap_or_default();
     let type_line = sd.type_line.clone().unwrap_or_default();
-    let rarity_name = sd.rarity.to_long_name().to_string();
+    let rarity_name = sd.rarity.to_long_name();
     let set_name = sd.set_name.clone();
-    let image_url: Option<String> = sd.primary_image_url(ImageSize::Large).map(str::to_owned);
+    let has_image: bool = sd.primary_image_url(ImageSize::Large).is_some();
+    let scryfall_data_for_preview = sd.clone();
 
     rsx! {
         div {
@@ -101,12 +102,12 @@ pub(crate) fn CardRow(
                                 "+"
                             }
                         }
-                        if let Some(url) = image_url {
+                        if has_image {
                             button {
                                 class: "qty-btn",
                                 onclick: move |evt| {
                                     evt.stop_propagation();
-                                    preview_image_url.set(Some(url.clone()));
+                                    preview_card.set(Some(scryfall_data_for_preview.clone()));
                                     preview_dismissing.set(false);
                                 },
                                 "Image"

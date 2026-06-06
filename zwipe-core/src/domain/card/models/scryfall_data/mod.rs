@@ -342,14 +342,41 @@ impl ScryfallData {
     /// as `None` and store per-face images in `card_faces[].image_uris` instead. Per
     /// Scryfall's API contract, `card_faces[0]` is the canonical front face.
     pub fn primary_image_url(&self, size: ImageSize) -> Option<&str> {
-        if let Some(url) = self.image_uris.as_ref().and_then(|iu| iu.at_size(size)) {
+        self.face_image_url(0, size)
+    }
+
+    /// Returns the URL for a specific face at the given size.
+    ///
+    /// `face_index == 0` returns the front face, falling back from top-level `image_uris`
+    /// to `card_faces[0].image_uris`. Higher indices read only from `card_faces[idx]`
+    /// (there is no top-level image for back faces).
+    pub fn face_image_url(&self, face_index: usize, size: ImageSize) -> Option<&str> {
+        if face_index == 0
+            && let Some(url) = self.image_uris.as_ref().and_then(|iu| iu.at_size(size))
+        {
             return Some(url);
         }
         self.card_faces
             .as_ref()
-            .and_then(|faces| faces.first())
+            .and_then(|faces| faces.get(face_index))
             .and_then(|face| face.image_uris.as_ref())
             .and_then(|iu| iu.at_size(size))
+    }
+
+    /// Returns the number of distinct faces this card has for flippable display.
+    ///
+    /// Returns `card_faces.len()` when both faces have their own image URIs (the
+    /// only case where flipping is meaningful) and `1` otherwise. Layouts like
+    /// `split` and `adventure` have a single physical image with both halves baked
+    /// in — their `card_faces` entries lack per-face `image_uris`, so we treat
+    /// them as single-faced for rendering purposes.
+    pub fn face_count(&self) -> usize {
+        match self.card_faces.as_ref() {
+            Some(faces) if faces.len() > 1 && faces.iter().all(|f| f.image_uris.is_some()) => {
+                faces.len()
+            }
+            _ => 1,
+        }
     }
 }
 
