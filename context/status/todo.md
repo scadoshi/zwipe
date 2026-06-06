@@ -70,6 +70,29 @@ Standing risk: WotC could still C&D the app for trademark/copyright at any time.
 
 ---
 
+## Post-Launch Polish (Live on App Store)
+
+Momentum work now that Zwipe TCG is live. Roughly ordered by user-visible impact.
+
+### Marketing & Discovery
+- [ ] **Refresh App Store imagery** — screenshots/preview captures are pre-launch. Recapture from the live build with current themes and copy.
+- [ ] **Marketing posts** — Reddit (r/EDH, r/magicTCG, r/CompetitiveEDH) and X. Lead with the swipe demo video, link the App Store listing.
+- [ ] **Tutorial?** — decide whether to ship a guided first-run flow or let users discover the swipe UX themselves. Lean toward letting them figure it out unless analytics later say otherwise.
+
+### Web/Zite Polish
+- [ ] **Increase `Z` logo size on zwipe.net** — current ASCII logo reads small; bump scale or font-size on the landing hero.
+- [ ] **Mobile testing pass on zwipe.net** — verify landing, about, privacy, verify/reset token pages on iOS Safari + Android Chrome. Check the sticky nav and entrance animations under narrow viewports.
+- [ ] **Everforest theme review** — possibly too green; sample real card art against it and consider desaturating the background or shifting the accent.
+
+### Card Rendering Bugs
+- [x] **Cards missing from search** (2026-06-06) — `Kibo, Uktabi Prince` and `Wear // Tear` were invisible to card/commander search and in-deck filtering. Two root causes, both fixed: (1) `latest_cards` materialized view's `DISTINCT ON ... ORDER BY released_at DESC` picked digital-only and promo-flagged printings whenever they were the most recent — the new ORDER BY prefers paper, non-promo, non-oversized, non-content-warning rows first. (2) `CardFilterBuilder::default()` hardcoded `promo: Some(false)`, which over-filtered Jumpstart, Secret Lair, and UB-bonus printings where many cards only exist in promo form — relaxed to `None`. Migration `20260606120000_latest_cards_prefer_real_printings.sql` also remaps existing `deck_cards.scryfall_data_id` and `decks.{commander,partner_commander,background,signature_spell}_id` references so existing decks switch to the preferred printing on deploy.
+- [ ] **Flip double-sided cards in image rendering** — every image surface (swipe stack, deck view, image preview modal, maybeboard) should support tapping/clicking to flip between front and back faces. Distinct from the search-visibility fix above; this is about adding a flipper affordance for DFC/MDFC/transform cards (e.g. `Delver of Secrets`, `Valki, God of Lies`). Split cards like `Wear // Tear` render side-by-side on one face and don't need the flipper.
+
+### Infrastructure (Reactive)
+- [ ] **Home server may struggle under marketing load** — current host is a single Ubuntu box behind Cloudflare Tunnel. If real users surface latency or 5xx spikes, evaluate: Redis for session/rate-limit/search cache, or migrate zerver to a cheap VPS (Hetzner/Fly). Don't pre-optimize — only act on observed pain.
+
+---
+
 ## Android — Near Submission Ready
 
 Android build compiles and runs. Remaining polish before Play Store submission:
