@@ -30,23 +30,24 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
-      - name: Cache cargo
-        uses: actions/cache@v4
+      - name: Cache Rust
+        # Caches the compiled dependency graph (native + wasm). Prunes zite's own
+        # artifacts so the cache stays lean, and uses restore-keys for partial
+        # hits when Cargo.lock changes — far better hit rate than a raw target/ cache.
+        uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            ~/.cargo/bin
-            target
-          key: ${{ runner.os }}-cargo-zite-${{ hashFiles('zite/Cargo.lock') }}
+          workspaces: zite
+          cache-all-crates: true
 
       - name: Install system dependencies
         run: sudo apt-get update && sudo apt-get install -y build-essential
 
       - name: Install dioxus-cli
-        env:
-          CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: gcc
-        run: cargo install dioxus-cli --version "^0.7" --locked --force
+        # Fetches a prebuilt dx binary instead of compiling dioxus-cli from
+        # source (which a `cargo install --force` would do on every run, ~minutes).
+        uses: taiki-e/install-action@v2
+        with:
+          tool: dioxus-cli@0.7.9
 
       - name: Build (SSG)
         working-directory: zite
