@@ -16,6 +16,7 @@ pub mod rarity;
 use all_parts::AllParts;
 use card_faces::CardFaces;
 use colors::Colors;
+pub use image_uris::ImageSize;
 use image_uris::ImageUris;
 use legalities::Legalities;
 use prices::Prices;
@@ -330,6 +331,25 @@ impl ScryfallData {
         self.type_line
             .as_deref()
             .is_some_and(|tl| tl.to_lowercase().contains("land"))
+    }
+
+    /// Returns the URL for the card's primary (front) face image at the given size,
+    /// falling back from top-level `image_uris` to `card_faces[0].image_uris`.
+    ///
+    /// Single-faced layouts (`normal`, `split`, `adventure`, `meld` pieces, etc.) populate
+    /// top-level `image_uris`. Double-faced layouts (`transform`, `modal_dfc`,
+    /// `double_faced_token`, `reversible_card`, `art_series`) leave top-level `image_uris`
+    /// as `None` and store per-face images in `card_faces[].image_uris` instead. Per
+    /// Scryfall's API contract, `card_faces[0]` is the canonical front face.
+    pub fn primary_image_url(&self, size: ImageSize) -> Option<&str> {
+        if let Some(url) = self.image_uris.as_ref().and_then(|iu| iu.at_size(size)) {
+            return Some(url);
+        }
+        self.card_faces
+            .as_ref()
+            .and_then(|faces| faces.first())
+            .and_then(|face| face.image_uris.as_ref())
+            .and_then(|iu| iu.at_size(size))
     }
 }
 

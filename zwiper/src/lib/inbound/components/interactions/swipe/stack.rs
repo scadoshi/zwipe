@@ -27,7 +27,7 @@ use dioxus::html::geometry::euclid::{Point2D, UnknownUnit};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::scryfall_data::image_uris::ImageUris;
+use zwipe_core::domain::card::scryfall_data::ImageSize;
 
 type DeltaPoint = Point2D<f64, UnknownUnit>;
 
@@ -245,7 +245,7 @@ pub fn SwipeStack(
                                 }
                             },
 
-                            if let Some(ImageUris { large: Some(image_url), .. }) = &card.scryfall_data.image_uris {
+                            if let Some(image_url) = card.scryfall_data.primary_image_url(ImageSize::Large) {
                                 img {
                                     src: "{image_url}",
                                     alt: "{card_name}",
@@ -271,7 +271,7 @@ pub fn SwipeStack(
                         Direction::Down => "",
                     };
                     let card_name = card.scryfall_data.name.clone();
-                    let image_uris = card.scryfall_data.image_uris;
+                    let image_url: Option<String> = card.scryfall_data.primary_image_url(ImageSize::Large).map(str::to_owned);
                     rsx! {
                         div {
                             key: "exit-{id}",
@@ -281,7 +281,7 @@ pub fn SwipeStack(
                                 exiting_overlay.write().retain(|(eid, _, _)| *eid != id);
                             },
 
-                            if let Some(ImageUris { large: Some(image_url), .. }) = &image_uris {
+                            if let Some(ref image_url) = image_url {
                                 img {
                                     src: "{image_url}",
                                     alt: "{card_name}",
