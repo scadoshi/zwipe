@@ -1,6 +1,6 @@
 # Todo
 
-**Primary goal: Ship Zwipe as a webapp at zwipe.net. Continue App Store submission in parallel.**
+**Primary goal: Ship Zwipe as a webapp at zwipe.net. (iOS App Store: LIVE as of 2026-06-06. Android: next.)**
 
 Completed work archived at `context/archive/complete-2026-Q1.md` (swept 2026-05-27).
 
@@ -52,21 +52,21 @@ Once wasm compiles, build the authenticated experience into zite:
 
 ---
 
-## App Store Submission — Build 15 Resubmitted 2026-06-04
+## App Store Submission — LIVE 🎉 (2026-06-06)
 
-Build 15 rejected 2026-06-03 under Guideline 4.1(a) Copycats — metadata referenced Magic: The Gathering without authorization from Wizards of the Coast. Apple's complaint was scoped to **metadata** (app name, description, keywords, screenshots), not in-app behavior.
+**Zwipe is live on the App Store as "Zwipe TCG":** https://apps.apple.com/us/app/zwipe-tcg/id6761341603
 
-Resubmitted 2026-06-04 after metadata scrub:
-- App name changed from "Zwipe MTG" to **"Zwipe TCG"**
-- All "Magic: The Gathering" / "MTG" / "Commander" / "EDH" / "Planeswalker" / "Scryfall" references removed from App Store Connect listing (name, subtitle, description, keywords, promo text)
-- Reworded as generic "trading card game deck builder"
-- **Screenshots NOT scrubbed** — still show recognizable MTG card art. Known risk: Apple may reject again on this. If they do, swap screenshots for UI-chrome shots (deck list, swipe view, filters) that don't feature individual cards, or use mocked generic cards.
+Build 15 cleared review after the metadata scrub. The path there:
+- Rejected 2026-06-03 under Guideline 4.1(a) Copycats — metadata referenced Magic: The Gathering without authorization from Wizards of the Coast. Apple's complaint was scoped to **metadata** (app name, description, keywords, screenshots), not in-app behavior.
+- Resubmitted 2026-06-04 after scrub: renamed "Zwipe MTG" → **"Zwipe TCG"**, removed all MTG/Magic/Commander/EDH/Planeswalker/Scryfall references from the listing, reworded as generic "trading card game deck builder". Screenshots still showed MTG card art but it passed anyway.
 
-- Bundle ID `com.scadoshi.zwipe`, name "Zwipe TCG"
+Details:
+- Bundle ID `com.scadoshi.zwipe`, App Store name "Zwipe TCG"
 - Distribution certificate + App Store provisioning profile in place
 - Export compliance: no encryption beyond HTTPS
+- zite: iOS "App Store" nav link now points straight to the live listing; the old pending `/download/ios` page was removed
 
-Independent of Apple: WotC could still C&D the app for trademark/copyright at any time. Their [Fan Content Policy](https://company.wizards.com/en/legal/fancontentpolicy) explicitly excludes applications. Long-term risk; not Apple's concern.
+Standing risk: WotC could still C&D the app for trademark/copyright at any time. Their [Fan Content Policy](https://company.wizards.com/en/legal/fancontentpolicy) explicitly excludes applications. Long-term risk; independent of the App Store.
 
 ---
 
