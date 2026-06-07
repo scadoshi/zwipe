@@ -61,7 +61,7 @@ use serde::{Deserialize, Serialize};
 ///   hides legitimate cards)
 /// - `content_warning`: `false`
 /// - `language`: `"en"`
-/// - `limit`: 100
+/// - `limit`: 25
 /// - `offset`: 0
 /// - `ascending`: `true`
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -197,7 +197,7 @@ impl Default for CardFilterBuilder {
             mechanical_categories_contains_any: None,
             mechanical_categories_contains_all: None,
             mechanical_categories_excludes: None,
-            limit: 100,
+            limit: 25,
             offset: 0,
             order_by: None,
             ascending: true,
@@ -208,7 +208,7 @@ impl Default for CardFilterBuilder {
 impl CardFilterBuilder {
     /// Creates a new filter builder with default values.
     ///
-    /// Defaults: playable cards only, English, non-digital, non-promo, 100 result limit.
+    /// Defaults: playable cards only, English, non-digital, non-promo, 25 result limit.
     pub fn new() -> Self {
         Self::default()
     }

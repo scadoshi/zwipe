@@ -97,10 +97,10 @@ pub fn Add(deck_id: Uuid) -> Element {
     // Pagination state
     let mut current_offset = use_signal(|| 0_u32);
     let mut is_loading_more = use_signal(|| false);
-    let pagination_limit = 100_u32; // Backend default
+    let pagination_limit = 25_u32; // Matches backend default
     // Keep the buffer comfortably ahead of the STACK_DEPTH window so the
     // stack never visibly shrinks while a batch is in flight.
-    let load_more_threshold = 15_usize;
+    let load_more_threshold = 5_usize;
     let mut pagination_exhausted = use_signal(|| false);
 
     let mut is_loading_cards = use_signal(|| false);
