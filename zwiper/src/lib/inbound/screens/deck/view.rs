@@ -3,6 +3,7 @@ use super::components::deck_charts::{DeckCharts, ManaBalanceRow};
 use super::components::deck_profile::DeckProfileSection;
 use super::components::deck_stats::DeckStats;
 use super::components::deck_warnings::DeckWarnings;
+use super::components::skeletons::DeckStatsSkeleton;
 use super::components::more_buttons::MoreButtons;
 use crate::inbound::components::alert_dialog::{
     AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
@@ -290,7 +291,13 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
                 div { class: "screen-content",
                     match deck_profile_resource() {
-                        Some(Ok(deck_profile)) => rsx! {
+                        Some(Ok(deck_profile)) => {
+                            let metrics_possible = deck_profile.card_count > 0
+                                || deck_profile.commander_id.is_some()
+                                || deck_profile.partner_commander_id.is_some()
+                                || deck_profile.background_id.is_some()
+                                || deck_profile.signature_spell_id.is_some();
+                            rsx! {
                             div { class: "content-enter",
                                   style: "width: calc(100% - 4rem); display: flex; flex-direction: column; gap: 1rem; padding: 1rem 0;",
                                 DeckProfileSection {
@@ -298,22 +305,28 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     commander: commander(),
                                 }
 
-                                if let (Some(m), Some(mana_curve_bars)) = (metrics.as_ref(), mana_curve_bars.as_ref()) {
-                                  div { class: "content-enter",
-                                        style: "display: flex; flex-direction: column; gap: 1rem;",
-                                    DeckStats {
-                                        metrics: m.clone(),
-                                        show_buy_sheet: show_buy_sheet,
-                                    }
+                                {
+                                    rsx! {
+                                        if let (Some(m), Some(mana_curve_bars)) = (metrics.as_ref(), mana_curve_bars.as_ref()) {
+                                          div { class: "content-enter",
+                                                style: "display: flex; flex-direction: column; gap: 1rem;",
+                                            DeckStats {
+                                                metrics: m.clone(),
+                                                show_buy_sheet: show_buy_sheet,
+                                            }
 
-                                    DeckCharts {
-                                        mana_curve_bars: *mana_curve_bars,
-                                        type_bars: type_bars.clone(),
-                                        category_bars: category_bars.clone(),
-                                        color_bars: color_bars.clone(),
-                                        mana_balance_rows: mana_balance_rows,
+                                            DeckCharts {
+                                                mana_curve_bars: *mana_curve_bars,
+                                                type_bars: type_bars.clone(),
+                                                category_bars: category_bars.clone(),
+                                                color_bars: color_bars.clone(),
+                                                mana_balance_rows: mana_balance_rows,
+                                            }
+                                          }
+                                        } else if metrics_possible {
+                                            DeckStatsSkeleton {}
+                                        }
                                     }
-                                  }
                                 }
 
                                 if !warnings.is_empty() {
@@ -386,6 +399,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     }
                                 }
 
+                            }
                             }
                         },
                         Some(Err(_)) => rsx! { p { class: "text-muted", "Could not load deck" } },

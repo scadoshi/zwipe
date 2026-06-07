@@ -14,3 +14,5 @@ pub(crate) mod deck_stats;
 pub(crate) mod deck_warnings;
 /// Buy sheet and more actions bottom sheets for the view screen.
 pub(crate) mod more_buttons;
+/// Skeleton placeholders shown while deck data loads.
+pub(crate) mod skeletons;

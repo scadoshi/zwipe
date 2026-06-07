@@ -4,6 +4,7 @@ use crate::{
     inbound::{
         components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
         router::Router,
+        screens::deck::components::skeletons::DeckListSkeleton,
     },
     outbound::client::{ZwipeClient, deck::get_deck_profiles::ClientGetDeckList, user::get_user::ClientGetUser},
 };
@@ -138,9 +139,7 @@ pub fn DeckList() -> Element {
                             }
                         },
                         None => rsx! {
-                            div { class: "message-empty",
-                                div { class: "spinner" }
-                            }
+                            DeckListSkeleton {}
                         },
                     }
 

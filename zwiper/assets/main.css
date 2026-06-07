@@ -825,6 +825,197 @@ button {
     }
 }
 
+/* Deck stats + chart skeleton (deck view) */
+.skeleton-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+}
+
+.skeleton-stats-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.skeleton-bar-label {
+    width: 30%;
+    height: 0.65rem;
+    margin-bottom: 0.4rem;
+}
+
+.skeleton-bar-row {
+    width: 100%;
+    height: 0.65rem;
+}
+
+.skeleton-block {
+    border-radius: 0.4rem;
+    background-color: var(--border-muted);
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeleton-block-chart {
+    width: 100%;
+    height: 6rem;
+}
+
+/* Deck card list skeleton (deck cards screen) */
+.skeleton-card-list {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 0.5rem 0;
+}
+
+.skeleton-card-group {
+    margin-bottom: 1.5rem;
+}
+
+.skeleton-card-group-header {
+    width: 30%;
+    height: 0.85rem;
+    border-radius: 0.3rem;
+    background-color: var(--border-muted);
+    margin: 0.4rem 0 0.65rem 0;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border-secondary);
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeleton-card-group-header-wide {
+    width: 45%;
+}
+
+.skeleton-card-row {
+    height: 1.8rem;
+    border-radius: 0.3rem;
+    background-color: var(--border-muted);
+    margin-bottom: 0.5rem;
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Printing sheet skeleton */
+.skeleton-printing {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    padding: 0 1rem;
+    box-sizing: border-box;
+}
+
+.skeleton-printing-image {
+    aspect-ratio: 5 / 7;
+    height: 38vh;
+    width: auto;
+    max-width: calc(100% - 2rem);
+    border-radius: 1rem;
+    background-color: var(--border-muted);
+    margin: 0.75rem auto;
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeleton-printing-dots {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+    justify-content: center;
+}
+
+.skeleton-printing-dot {
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    background-color: var(--border-muted);
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeleton-printing-info {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0.75rem 0 0 0;
+}
+
+.skeleton-printing-info-price {
+    width: 65%;
+    height: 0.65rem;
+}
+
+.skeleton-printing-info-set {
+    width: 55%;
+    height: 0.65rem;
+}
+
+.skeleton-printing-info-released {
+    width: 40%;
+    height: 0.65rem;
+}
+
+.skeleton-printing-info-artist {
+    width: 50%;
+    height: 0.65rem;
+}
+
+/* Home screen flavor text skeleton */
+.skeleton-flavor {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.skeleton-flavor-line {
+    height: 0.7rem;
+}
+
+.skeleton-flavor-line-1 {
+    width: 65%;
+}
+.skeleton-flavor-line-2 {
+    width: 75%;
+}
+.skeleton-flavor-line-3 {
+    width: 55%;
+}
+
+.skeleton-flavor-source {
+    width: 35%;
+    height: 0.65rem;
+    margin-top: 0.5rem;
+}
+
+/* Deck list skeleton (deck list screen) */
+.skeleton-deck-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.skeleton-deck-list-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.6rem;
+}
+
+.skeleton-deck-list-title {
+    width: 55%;
+    height: 0.9rem;
+}
+
+.skeleton-deck-list-meta {
+    width: 80%;
+    height: 0.65rem;
+}
+
 /* ===========================
   specific - swipe stack
  ============================= */
@@ -1807,10 +1998,11 @@ button {
 }
 
 .home-flavor {
-    min-height: 6rem;
+    min-height: 9rem;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    transition: min-height 0.3s ease;
 }
 
 @keyframes flavor-enter {

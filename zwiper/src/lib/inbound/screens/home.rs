@@ -1,6 +1,5 @@
 //! Home/landing page screen.
 
-use zwipe_core::domain::user::models::theme::ThemeConfig;
 use crate::inbound::components::alert_dialog::{
     AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
     AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
@@ -9,19 +8,20 @@ use crate::inbound::router::Router;
 use crate::{
     inbound::components::auth::{bouncer::Bouncer, signal_logout::SignalLogout},
     outbound::client::{
+        ZwipeClient,
         card::search_cards::ClientSearchCards,
         user::{get_user::ClientGetUser, preferences::ClientGetPreferences},
-        ZwipeClient,
     },
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{use_toast, ToastOptions};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::logo;
 use zwipe_core::domain::card::search_card::card_filter::{
     builder::CardFilterBuilder, order_by_option::OrderByOption,
 };
+use zwipe_core::domain::logo;
+use zwipe_core::domain::user::models::theme::ThemeConfig;
 
 /// Home screen with navigation to main app features.
 #[component]
@@ -139,7 +139,14 @@ pub fn Home() -> Element {
                             }
                         }
                         Some(None) => rsx! {},
-                        None => rsx! { div { class: "spinner" } },
+                        None => rsx! {
+                            div { class: "skeleton-flavor",
+                                div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-1" }
+                                div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-2" }
+                                div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-3" }
+                                div { class: "skeleton-bar skeleton-flavor-source" }
+                            }
+                        },
                     }
                 }
             }
