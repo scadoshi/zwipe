@@ -3,6 +3,7 @@ use crate::inbound::components::alert_dialog::{
     AlertDialogRoot, AlertDialogTitle,
 };
 use crate::inbound::components::auth::{session_upkeep::Upkeep, signal_logout::SignalLogout};
+use crate::inbound::components::fields::text_input::TextInput;
 use crate::outbound::client::{user::delete_user::ClientDeleteUser, ZwipeClient};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
@@ -46,14 +47,10 @@ pub(crate) fn DeleteAccountDialog(mut open: Signal<bool>) -> Element {
                 AlertDialogDescription {
                     "This will permanently delete your account, all decks, and all card data. This cannot be undone."
                 }
-                input {
-                    r#type: "password",
-                    class: "input",
-                    placeholder: "Confirm your password",
-                    value: "{delete_password}",
-                    oninput: move |evt| {
-                        delete_password.set(evt.value());
-                    },
+                TextInput {
+                    value: delete_password,
+                    input_type: "password".to_string(),
+                    placeholder: "Confirm your password".to_string(),
                 }
                 AlertDialogActions {
                     AlertDialogCancel {
