@@ -159,7 +159,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 // Resolve command zone cards by oracle_id (not printing-specific scryfall_data_id).
                 // Fetch the card first to get its oracle_id, then remove from entries by oracle_id.
                 if let Some(commander_id) = profile.commander_id {
-                    let fetched = client().get_card(commander_id, &session).await.ok();
+                    let fetched = client().get_card(commander_id).await.ok();
                     if let Some(ref card) = fetched && let Some(oid) = card.scryfall_data.oracle_id {
                         entries.retain(|e| e.card.scryfall_data.oracle_id != Some(oid));
                     }
@@ -167,7 +167,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 }
 
                 if let Some(spell_id) = profile.signature_spell_id {
-                    let fetched = client().get_card(spell_id, &session).await.ok();
+                    let fetched = client().get_card(spell_id).await.ok();
                     if let Some(ref card) = fetched && let Some(oid) = card.scryfall_data.oracle_id {
                         entries.retain(|e| e.card.scryfall_data.oracle_id != Some(oid));
                     }
@@ -175,7 +175,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 }
 
                 if let Some(partner_id) = profile.partner_commander_id {
-                    let fetched = client().get_card(partner_id, &session).await.ok();
+                    let fetched = client().get_card(partner_id).await.ok();
                     if let Some(ref card) = fetched && let Some(oid) = card.scryfall_data.oracle_id {
                         entries.retain(|e| e.card.scryfall_data.oracle_id != Some(oid));
                     }
@@ -183,7 +183,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 }
 
                 if let Some(bg_id) = profile.background_id {
-                    let fetched = client().get_card(bg_id, &session).await.ok();
+                    let fetched = client().get_card(bg_id).await.ok();
                     if let Some(ref card) = fetched && let Some(oid) = card.scryfall_data.oracle_id {
                         entries.retain(|e| e.card.scryfall_data.oracle_id != Some(oid));
                     }

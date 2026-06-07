@@ -4,7 +4,6 @@ use super::deck_cards::{DeckCards, extract_artists};
 use crate::outbound::client::{card::get_artists::ClientGetArtists, ZwipeClient};
 use dioxus::prelude::*;
 use zwipe::inbound::http::ApiError;
-use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
 
 /// Whether the artist filter is in include or exclude mode.
@@ -53,7 +52,6 @@ fn write_artists(fb: &mut CardFilterBuilder, mode: IncludeExclude, values: Vec<S
 pub fn Artist() -> Element {
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
 
-    let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let filter_reset: Signal<u32> = use_context();
     let deck_ctx: Option<DeckCards> = try_use_context();
@@ -62,10 +60,7 @@ pub fn Artist() -> Element {
         if let Some(dc) = deck_ctx {
             return Ok(extract_artists(&dc.0()));
         }
-        let Some(session) = session() else {
-            return Err(ApiError::Unauthorized("Session expired".to_string()));
-        };
-        client().get_artists(&session).await
+        client().get_artists().await
     });
 
     let mut artist_search_query = use_signal(String::new);

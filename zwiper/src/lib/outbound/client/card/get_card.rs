@@ -5,10 +5,7 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::{
-    inbound::http::{routes::get_card_route, ApiError},
-};
-use zwipe_core::domain::auth::models::session::Session;
+use zwipe::inbound::http::{routes::get_card_route, ApiError};
 use zwipe_core::domain::card::Card;
 
 /// Trait for fetching a single card by its Scryfall data ID.
@@ -17,22 +14,16 @@ pub trait ClientGetCard {
     fn get_card(
         &self,
         scryfall_data_id: Uuid,
-        session: &Session,
     ) -> impl Future<Output = Result<Card, ApiError>> + Send;
 }
 
 impl ClientGetCard for ZwipeClient {
-    async fn get_card(&self, scryfall_data_id: Uuid, session: &Session) -> Result<Card, ApiError> {
+    async fn get_card(&self, scryfall_data_id: Uuid) -> Result<Card, ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&get_card_route(scryfall_data_id));
         info!("GET {}", url);
 
-        let response = self
-            .client
-            .get(url)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
+        let response = self.client.get(url).send().await?;
 
         match response.status() {
             StatusCode::OK => {

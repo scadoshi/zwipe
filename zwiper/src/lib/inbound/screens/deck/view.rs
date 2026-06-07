@@ -68,12 +68,8 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             else {
                 return Ok(None);
             };
-            session.upkeep(client);
-            let Some(session) = session() else {
-                return Err(ApiError::Unauthorized("Session expired".to_string()));
-            };
             client()
-                .get_card(original_commander_id, &session)
+                .get_card(original_commander_id)
                 .await
                 .map(Some)
         });

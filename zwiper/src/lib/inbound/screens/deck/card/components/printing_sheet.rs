@@ -10,7 +10,6 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 
@@ -21,7 +20,6 @@ pub(crate) fn PrintingSheet(
     mut open: Signal<bool>,
     on_save: EventHandler<Card>,
 ) -> Element {
-    let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let toast = use_toast();
 
@@ -61,15 +59,7 @@ pub(crate) fn PrintingSheet(
         is_loading.set(true);
 
         spawn(async move {
-            let session_val = match session() {
-                Some(s) => s,
-                None => {
-                    is_loading.set(false);
-                    return;
-                }
-            };
-
-            match client().get_printings(oid, &session_val).await {
+            match client().get_printings(oid).await {
                 Ok(cards) => {
                     let idx = cards
                         .iter()

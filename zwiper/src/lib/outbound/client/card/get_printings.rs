@@ -6,7 +6,6 @@ use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
 use zwipe::inbound::http::{routes::get_printings_route, ApiError};
-use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 
 /// Trait for fetching all printings of a card by oracle ID.
@@ -15,22 +14,16 @@ pub trait ClientGetPrintings {
     fn get_printings(
         &self,
         oracle_id: Uuid,
-        session: &Session,
     ) -> impl Future<Output = Result<Vec<Card>, ApiError>> + Send;
 }
 
 impl ClientGetPrintings for ZwipeClient {
-    async fn get_printings(&self, oracle_id: Uuid, session: &Session) -> Result<Vec<Card>, ApiError> {
+    async fn get_printings(&self, oracle_id: Uuid) -> Result<Vec<Card>, ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&get_printings_route(oracle_id));
         info!("GET {}", url);
 
-        let response = self
-            .client
-            .get(url)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
+        let response = self.client.get(url).send().await?;
 
         match response.status() {
             StatusCode::OK => {

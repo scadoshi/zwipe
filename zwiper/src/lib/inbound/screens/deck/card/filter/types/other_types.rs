@@ -8,7 +8,6 @@ use crate::outbound::client::{card::get_card_types::ClientGetCardTypes, ZwipeCli
 use dioxus::prelude::*;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
 use zwipe::inbound::http::ApiError;
-use zwipe_core::domain::auth::models::session::Session;
 
 fn read_other_types(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<String> {
     match mode {
@@ -43,7 +42,6 @@ fn write_excluded(fb: &mut CardFilterBuilder, values: Vec<String>) {
 /// Type line filter with separate include and exclude sections.
 #[component]
 pub(crate) fn OtherTypes() -> Element {
-    let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
     let deck_ctx: Option<DeckCards> = try_use_context();
@@ -53,10 +51,7 @@ pub(crate) fn OtherTypes() -> Element {
             if let Some(dc) = deck_ctx {
                 return Ok(extract_type_words(&dc.0()));
             }
-            let Some(session) = session() else {
-                return Err(ApiError::Unauthorized("Session expired".to_string()));
-            };
-            client().get_card_types(&session).await
+            client().get_card_types().await
         });
 
     let mut search_query = use_signal(String::new);

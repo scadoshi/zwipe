@@ -100,12 +100,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             else {
                 return Ok(None);
             };
-            session.upkeep(client);
-            let Some(session) = session() else {
-                return Err(ApiError::Unauthorized("session expired".to_string()));
-            };
             client()
-                .get_card(original_commander_id, &session)
+                .get_card(original_commander_id)
                 .await
                 .map(Some)
         });
@@ -140,11 +136,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             else {
                 return Ok(None);
             };
-            session.upkeep(client);
-            let Some(session) = session() else {
-                return Err(ApiError::Unauthorized("session expired".to_string()));
-            };
-            client().get_card(id, &session).await.map(Some)
+            client().get_card(id).await.map(Some)
         });
     use_effect(move || match original_partner_resource() {
         Some(Ok(Some(original))) => {
@@ -177,11 +169,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             else {
                 return Ok(None);
             };
-            session.upkeep(client);
-            let Some(session) = session() else {
-                return Err(ApiError::Unauthorized("session expired".to_string()));
-            };
-            client().get_card(id, &session).await.map(Some)
+            client().get_card(id).await.map(Some)
         });
     use_effect(move || match original_background_resource() {
         Some(Ok(Some(original))) => {
@@ -214,11 +202,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             else {
                 return Ok(None);
             };
-            session.upkeep(client);
-            let Some(session) = session() else {
-                return Err(ApiError::Unauthorized("session expired".to_string()));
-            };
-            client().get_card(id, &session).await.map(Some)
+            client().get_card(id).await.map(Some)
         });
     use_effect(move || match original_spell_resource() {
         Some(Ok(Some(original))) => {
