@@ -627,6 +627,34 @@ button {
     font-weight: 400;
 }
 
+.password-input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.password-input-wrapper .input-password {
+    padding-right: 4rem;
+}
+
+.password-toggle-btn {
+    position: absolute;
+    top: 50%;
+    right: 0.6rem;
+    transform: translateY(calc(-50% - 0.5rem));
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.85rem;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    border-radius: 0.3rem;
+}
+
+.password-toggle-btn:hover {
+    color: var(--accent-primary);
+}
+
 .input-sm {
     width: 50%;
     padding: 0.5rem;
