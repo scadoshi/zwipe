@@ -1,6 +1,4 @@
 #[cfg(feature = "zerver")]
-use zwipe_core::domain::card::Card;
-#[cfg(feature = "zerver")]
 use crate::{
     domain::{
         auth::ports::AuthService,
@@ -16,14 +14,16 @@ use crate::{
         health::ports::HealthService,
         user::ports::UserService,
     },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+    inbound::http::{ApiError, AppState, Log500},
 };
 #[cfg(feature = "zerver")]
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::card::Card;
 
 #[cfg(feature = "zerver")]
 impl From<GetCardProfileError> for ApiError {
@@ -59,7 +59,6 @@ impl From<GetCardError> for ApiError {
 /// Returns a single card by Scryfall data ID.
 #[cfg(feature = "zerver")]
 pub async fn get_card<AS, US, HS, CS, DS>(
-    _: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Path(scryfall_data_id): Path<String>,
 ) -> Result<(StatusCode, Json<Card>), ApiError>

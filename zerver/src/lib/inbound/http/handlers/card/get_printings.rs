@@ -9,7 +9,7 @@ use crate::{
         health::ports::HealthService,
         user::ports::UserService,
     },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState},
+    inbound::http::{ApiError, AppState},
 };
 #[cfg(feature = "zerver")]
 use axum::{
@@ -21,7 +21,6 @@ use axum::{
 /// Returns all printings of a card by oracle ID, ordered by release date.
 #[cfg(feature = "zerver")]
 pub async fn get_printings<AS, US, HS, CS, DS>(
-    _: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Path(oracle_id): Path<String>,
 ) -> Result<(StatusCode, Json<Vec<Card>>), ApiError>

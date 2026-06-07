@@ -7,10 +7,10 @@ use crate::{
         health::ports::HealthService,
         user::ports::UserService,
     },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+    inbound::http::{ApiError, AppState, Log500},
 };
 #[cfg(feature = "zerver")]
-use axum::{extract::State, Json};
+use axum::{Json, extract::State};
 #[cfg(feature = "zerver")]
 use reqwest::StatusCode;
 
@@ -26,7 +26,6 @@ impl From<GetArtistsError> for ApiError {
 /// Returns distinct artist names.
 #[cfg(feature = "zerver")]
 pub async fn get_artists<AS, US, HS, CS, DS>(
-    _: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
 ) -> Result<(StatusCode, Json<Vec<String>>), ApiError>
 where

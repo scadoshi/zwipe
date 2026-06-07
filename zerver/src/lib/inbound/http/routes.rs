@@ -112,6 +112,16 @@ where
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
+    // 60 req / min per IP — card metadata is public and CF-cached, but a tight
+    // limit guards the origin from someone bypassing CF to scrape directly.
+    let public_card_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(1))
+            .burst_size(60)
+            .key_extractor(PeerIpKeyExtractor)
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
 
     Router::new()
         .route("/", get(root))
@@ -123,36 +133,50 @@ where
         )
         .nest(
             "/api",
-            Router::new().nest(
-                "/auth",
-                Router::new()
-                    .route(
-                        "/register",
-                        post(register_user).layer(GovernorLayer::new(register_config)),
-                    )
-                    .route(
-                        "/login",
-                        post(authenticate_user).layer(GovernorLayer::new(login_config)),
-                    )
-                    .route(
-                        "/refresh",
-                        post(refresh_session).layer(GovernorLayer::new(refresh_config)),
-                    )
-                    .route(
-                        "/verify-email",
-                        post(verify_email)
-                            .layer(GovernorLayer::new(Arc::clone(&verify_reset_config))),
-                    )
-                    .route(
-                        "/forgot-password",
-                        post(request_password_reset)
-                            .layer(GovernorLayer::new(forgot_password_config)),
-                    )
-                    .route(
-                        "/reset-password",
-                        post(reset_password).layer(GovernorLayer::new(verify_reset_config)),
-                    ),
-            ),
+            Router::new()
+                .nest(
+                    "/auth",
+                    Router::new()
+                        .route(
+                            "/register",
+                            post(register_user).layer(GovernorLayer::new(register_config)),
+                        )
+                        .route(
+                            "/login",
+                            post(authenticate_user).layer(GovernorLayer::new(login_config)),
+                        )
+                        .route(
+                            "/refresh",
+                            post(refresh_session).layer(GovernorLayer::new(refresh_config)),
+                        )
+                        .route(
+                            "/verify-email",
+                            post(verify_email)
+                                .layer(GovernorLayer::new(Arc::clone(&verify_reset_config))),
+                        )
+                        .route(
+                            "/forgot-password",
+                            post(request_password_reset)
+                                .layer(GovernorLayer::new(forgot_password_config)),
+                        )
+                        .route(
+                            "/reset-password",
+                            post(reset_password).layer(GovernorLayer::new(verify_reset_config)),
+                        ),
+                )
+                .nest(
+                    "/card",
+                    Router::new()
+                        .route("/{scryfall_data_id}", get(get_card))
+                        .route("/{oracle_id}/printings", get(get_printings))
+                        .route("/artists", get(get_artists))
+                        .route("/types", get(get_card_types))
+                        .route("/keywords", get(get_keywords))
+                        .route("/oracle-words", get(get_oracle_words))
+                        .route("/languages", get(get_languages))
+                        .route("/sets", get(get_sets))
+                        .layer(GovernorLayer::new(public_card_config)),
+                ),
         )
 }
 
@@ -234,19 +258,10 @@ where
                 )
                 .nest(
                     "/card",
-                    Router::new()
-                        .route("/{scryfall_data_id}", get(get_card))
-                        .route("/{oracle_id}/printings", get(get_printings))
-                        .route(
-                            "/search",
-                            post(search_cards).layer(GovernorLayer::new(card_search_config)),
-                        )
-                        .route("/artists", get(get_artists))
-                        .route("/types", get(get_card_types))
-                        .route("/keywords", get(get_keywords))
-                        .route("/oracle-words", get(get_oracle_words))
-                        .route("/languages", get(get_languages))
-                        .route("/sets", get(get_sets)),
+                    Router::new().route(
+                        "/search",
+                        post(search_cards).layer(GovernorLayer::new(card_search_config)),
+                    ),
                 )
                 .nest(
                     "/deck",
