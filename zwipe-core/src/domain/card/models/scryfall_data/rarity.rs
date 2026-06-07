@@ -7,8 +7,11 @@ use thiserror::Error;
 pub struct InvalidRarity;
 
 /// Card rarity classification in Magic: The Gathering.
+///
+/// Variants are declared in tier order so the derived `Ord` produces
+/// `Common < Uncommon < Rare < Mythic < Bonus < Special` — do not reorder.
 #[allow(missing_docs)]
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Rarity {
     Common,
     Uncommon,
