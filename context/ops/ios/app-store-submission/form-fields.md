@@ -14,7 +14,7 @@ Swipe to Build MTG Decks
 
 (170 character limit. Can be updated without a new submission — refresh this between releases to spotlight whatever's freshest.)
 
-Just shipped: a Flip button for double-faced cards. Swipe 110,000+ cards, filter by anything, see stats and prices per deck. Free, no ads, no microtransactions.
+Just shipped: Flip button for double-faced cards plus polish across filters, card art, and sign-ins. Swipe 110,000+ cards. Free, no ads, no microtransactions.
 
 ---
 
@@ -39,9 +39,14 @@ Built for players who want a fast, focused mobile experience — not another clu
 
 ---
 
-## What's New in This Version (1.0.1)
+## What's New in This Version (1.0.2)
 
-Double-faced cards (transform cards like Delver of Secrets) now appear in search and display their image with a Flip button to view the back face. Cards from special-edition sets like Jumpstart and Secret Lair also surface correctly across card search, leader selection, and deck filters.
+- In-deck filters now narrow correctly — type, set, format legality, leader eligibility, and rarity sort.
+- Card images render with cleanly rounded corners across every screen.
+- Login, sign-up, and edit screens show loading states so taps feel acknowledged.
+- Show/hide button on every password field.
+- Loading skeletons replace blank flashes on deck lists, profiles, stats, and home flavor.
+- Confirmation dialogs darken the background again.
 
 ---
 
@@ -57,7 +62,7 @@ MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading ca
 |-------|-------|
 | Support URL | https://zwipe.net |
 | Marketing URL | https://zwipe.net |
-| Version | 1.0.1 |
+| Version | 1.0.2 |
 | Copyright | 2026 Scotty Fermo |
 | Routing App Coverage File | (leave empty) |
 
