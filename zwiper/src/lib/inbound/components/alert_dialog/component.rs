@@ -7,15 +7,21 @@ use dioxus_primitives::alert_dialog::{
 };
 
 /// Root container for alert dialogs, managing open/closed state.
+///
+/// Renders a dim overlay backdrop as a sibling when open — the upstream
+/// `dioxus-primitives::AlertDialogRoot` deliberately does not emit a backdrop
+/// (the docs note it's the caller's responsibility), so we render one here so
+/// every consumer of this wrapper picks it up automatically.
 #[component]
 pub fn AlertDialogRoot(props: AlertDialogRootProps) -> Element {
+    let open_prop = props.open;
+    let default_open = props.default_open;
+    let is_open = use_memo(move || (open_prop)().unwrap_or(default_open));
+
     rsx! {
-        // Context: the AlertDialog element could not load its .css with this method for some
-        // reason.. After some time spent debugging, I decided to just load in
-        // zwiper/src/bin/main.rs for now and attend to later. All other elements with their own
-        // style sheets will get the same treatment to keep consistency for now..
-        //
-        //document::Link { rel: "stylesheet", href: asset!("/assets/alert-dialog.css") }
+        if is_open() {
+            div { class: "alert-dialog-overlay", "data-state": "open" }
+        }
         alert_dialog::AlertDialogRoot {
             id: props.id,
             default_open: props.default_open,
