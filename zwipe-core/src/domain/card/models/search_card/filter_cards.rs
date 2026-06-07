@@ -720,7 +720,7 @@ mod tests {
         scryfall_data::{
             ScryfallData,
             colors::{Color, Colors},
-            legalities::Legalities,
+            legalities::{Legalities, LegalityKind},
             prices::Prices,
             rarity::{Rarities, Rarity},
         },
@@ -775,7 +775,10 @@ mod tests {
                 game_changer: None,
                 hand_modifier: None,
                 keywords: None,
-                legalities: Legalities::default(),
+                legalities: Legalities {
+                    vintage: Some(LegalityKind::Legal),
+                    ..Legalities::default()
+                },
                 life_modifier: None,
                 loyalty: None,
                 mana_cost: None,
@@ -1438,9 +1441,10 @@ mod tests {
 
     #[test]
     fn test_set_equals_any() {
-        let m21_card = make_card("M21 Card"); // set = "m21" by default
+        let mut m21_card = make_card("M21 Card");
+        m21_card.scryfall_data.set_name = "m21".to_string();
         let mut mh2_card = make_card("MH2 Card");
-        mh2_card.scryfall_data.set = "mh2".to_string();
+        mh2_card.scryfall_data.set_name = "mh2".to_string();
         let filter = CardFilterBuilder::with_set_contains(["mh2"]).build().unwrap();
         let result = vec![m21_card, mh2_card].filter_by(&filter);
         assert_eq!(result.len(), 1);
