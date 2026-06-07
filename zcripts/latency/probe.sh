@@ -80,7 +80,8 @@ MODE="${1:-both}"
 
 run_against() {
     local label=$1 base=$2
-    probe "$label" "$base" GET "/api/health" ""
+    probe "$label" "$base" GET "/health/server" ""
+    probe "$label" "$base" GET "/health/database" ""
     probe "$label" "$base" POST "/api/card/search" '{"name_contains":"krenko"}'
     probe "$label" "$base" GET "/api/deck" ""
 }
