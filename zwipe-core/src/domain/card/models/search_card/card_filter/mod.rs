@@ -131,7 +131,7 @@ pub struct CardFilter {
 }
 
 fn default_limit() -> u32 {
-    100
+    25
 }
 
 fn default_ascending() -> bool {
