@@ -7,7 +7,7 @@ use crate::{
         health::ports::HealthService,
         user::ports::UserService,
     },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+    inbound::http::{ApiError, AppState, Log500},
 };
 #[cfg(feature = "zerver")]
 use axum::{extract::State, Json};
@@ -26,7 +26,6 @@ impl From<GetKeywordsError> for ApiError {
 /// Returns distinct keyword ability names.
 #[cfg(feature = "zerver")]
 pub async fn get_keywords<AS, US, HS, CS, DS>(
-    _: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
 ) -> Result<(StatusCode, Json<Vec<String>>), ApiError>
 where
