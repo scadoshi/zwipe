@@ -120,6 +120,22 @@ iOS 1.0.1 (build 17) replaces build 16 in the review queue. Apple typically clea
 
 ---
 
+## 1.0.2 Latency Pass (2026-06-07, submitted as build 23)
+
+**iOS 1.0.2 build 23 submitted for Apple review. Full latency optimization round: CF edge caching, server-side compression, HTTP/2 client multiplexing, smaller default page size with prefetch.** End-to-end measurements: `POST /api/card/search` went from `~52ms LOCAL / ~250ms PUBLIC` to `~5ms LOCAL / ~130-180ms PUBLIC` — backend is now sub-frame; PUBLIC time is essentially the CF tunnel hop floor.
+
+What's in build 23 (on top of 1.0.2):
+
+- **Cloudflare edge caching for immutable card endpoints** — 8 GET routes (`/api/card/{id}`, `/{oracle_id}/printings`, `sets`, `types`, `keywords`, `oracle-words`, `artists`, `languages`) moved from `private_routes` to `public_routes` in `zerver/src/lib/inbound/http/routes.rs` with IP-keyed rate limit (60/s burst). Handlers' `AuthenticatedUser` extractors removed. zwiper's API client drops `bearer_auth` on those calls so CF's "don't cache authenticated requests" safety rail no longer triggers. CF Cache Rule with `starts_with(http.request.uri.path, "/api/card/")` + 24h Edge TTL. Verified via `zcripts/latency/cf_cache_verify.sh` — converged to 6/6 HIT once POPs warmed. Cache-hit responses skip the tunnel entirely (~5-10ms).
+- **HTTP response compression** — `tower-http`'s `CompressionLayer` added to the Axum stack (`zerver/src/lib/inbound/http/mod.rs`). gzip + brotli via Accept-Encoding negotiation. `/api/card/search` body went 39690b → 16444b on the wire (59% smaller). `/api/deck` body went 3996b → 727b (82% smaller).
+- **HTTP/2 client multiplexing** — workspace reqwest gained the `http2` feature. Reqwest auto-negotiates h2 via ALPN with CF, so the 4 parallel `get_card` calls in `deck/card/view.rs` (commander + partner + background + signature spell) now multiplex over a single connection instead of running sequentially.
+- **Smaller search pages with prefetch** — `CardFilter::default_limit()` and `CardFilterBuilder::default()` lowered from 100 → 25 in zwipe-core. Swipe stack's `pagination_limit` matched at 25 and `load_more_threshold` tightened from 15 → 5 cards. Compounding win on search: DB query returns 4× fewer rows, serialization is 4× cheaper, then gzip on top. Drove LOCAL search from ~52ms to ~5ms.
+- **Roadmap doc** — `context/ops/latency-optimization.md` captures the measurement-driven decision process. `zcripts/latency/probe.sh` and `cf_cache_verify.sh` document how to re-measure.
+
+Build train: build 21 (1.0.2 polish, in review), build 22 (1.0.2 cache routes, replaced before delivery), build 23 (1.0.2 full latency pass, current submission).
+
+---
+
 ## 1.0.2 Polish Pass (2026-06-07, submitted)
 
 **iOS 1.0.2 build 21 submitted for Apple review. New gruvbox app icon, polish across filters/render/loading states.**
