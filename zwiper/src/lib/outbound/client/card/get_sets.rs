@@ -5,29 +5,20 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use zwipe::inbound::http::{routes::get_sets_route, ApiError};
-use zwipe_core::domain::auth::models::session::Session;
 
 /// Trait for fetching the list of all card sets.
 #[allow(missing_docs)]
 pub trait ClientGetSets {
-    fn get_sets(
-        &self,
-        session: &Session,
-    ) -> impl Future<Output = Result<Vec<String>, ApiError>> + Send;
+    fn get_sets(&self) -> impl Future<Output = Result<Vec<String>, ApiError>> + Send;
 }
 
 impl ClientGetSets for ZwipeClient {
-    async fn get_sets(&self, session: &Session) -> Result<Vec<String>, ApiError> {
+    async fn get_sets(&self) -> Result<Vec<String>, ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&get_sets_route());
         info!("GET {}", url);
 
-        let response = self
-            .client
-            .get(url)
-            .bearer_auth(&*session.access_token.value)
-            .send()
-            .await?;
+        let response = self.client.get(url).send().await?;
 
         match response.status() {
             StatusCode::OK => {

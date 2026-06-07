@@ -8,7 +8,6 @@ use crate::outbound::client::{card::get_keywords::ClientGetKeywords, ZwipeClient
 use dioxus::prelude::*;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
 use zwipe::inbound::http::ApiError;
-use zwipe_core::domain::auth::models::session::Session;
 
 fn read_keywords(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<String> {
     match mode {
@@ -45,7 +44,6 @@ fn write_excluded(fb: &mut CardFilterBuilder, values: Vec<String>) {
 #[component]
 pub(crate) fn Keywords() -> Element {
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
-    let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let filter_reset: Signal<u32> = use_context();
     let deck_ctx: Option<DeckCards> = try_use_context();
@@ -55,10 +53,7 @@ pub(crate) fn Keywords() -> Element {
             if let Some(dc) = deck_ctx {
                 return Ok(extract_keywords(&dc.0()));
             }
-            let Some(session) = session() else {
-                return Err(ApiError::Unauthorized("Session expired".to_string()));
-            };
-            client().get_keywords(&session).await
+            client().get_keywords().await
         });
 
     let mut keywords_search = use_signal(String::new);

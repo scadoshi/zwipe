@@ -5,7 +5,6 @@ use crate::outbound::client::{card::get_sets::ClientGetSets, ZwipeClient};
 use dioxus::prelude::*;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
 use zwipe::inbound::http::ApiError;
-use zwipe_core::domain::auth::models::session::Session;
 
 /// Whether the set filter is in include or exclude mode.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -51,7 +50,6 @@ fn write_sets(fb: &mut CardFilterBuilder, mode: IncludeExclude, values: Vec<Stri
 /// Filter component for selecting card sets.
 #[component]
 pub fn Set() -> Element {
-    let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
 
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
@@ -61,10 +59,7 @@ pub fn Set() -> Element {
         if let Some(dc) = deck_ctx {
             return Ok(extract_sets(&dc.0()));
         }
-        let Some(session) = session() else {
-            return Err(ApiError::Unauthorized("Session expired".to_string()));
-        };
-        client().get_sets(&session).await
+        client().get_sets().await
     });
 
     let mut search_query = use_signal(String::new);
