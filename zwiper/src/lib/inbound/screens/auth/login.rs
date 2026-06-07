@@ -45,35 +45,36 @@ pub fn Login() -> Element {
 
     let mut attempt_submit = move || {
         submit_attempted.set(true);
-        is_loading.set(true);
-        if inputs_are_valid() {
-            let request = HttpAuthenticateUser::new(&username_or_email(), &password());
-            spawn(async move {
-                match auth_client().authenticate_user(request).await {
-                    Ok(new_session) => {
-                        new_session.infallible_save();
-                        // Apply theme from preferences
-                        let mut theme: Signal<ThemeConfig> = use_context();
-                        theme.set(ThemeConfig::from(&new_session.preferences));
-                        session.set(Some(new_session));
-                        navigator.push(Router::Home {});
-                    }
-                    Err(e) => {
-                        tracing::warn!("login failed: {e}");
-                        toast.error(
-                            e.to_user_message(),
-                            ToastOptions::default().duration(Duration::from_millis(3000)),
-                        );
-                    }
-                }
-            });
-        } else {
+        if !inputs_are_valid() {
             toast.error(
                 "Invalid credentials".to_string(),
                 ToastOptions::default().duration(Duration::from_millis(3000)),
             );
+            return;
         }
-        is_loading.set(false);
+        is_loading.set(true);
+        let request = HttpAuthenticateUser::new(&username_or_email(), &password());
+        spawn(async move {
+            match auth_client().authenticate_user(request).await {
+                Ok(new_session) => {
+                    new_session.infallible_save();
+                    // Apply theme from preferences
+                    let mut theme: Signal<ThemeConfig> = use_context();
+                    theme.set(ThemeConfig::from(&new_session.preferences));
+                    session.set(Some(new_session));
+                    is_loading.set(false);
+                    navigator.push(Router::Home {});
+                }
+                Err(e) => {
+                    tracing::warn!("login failed: {e}");
+                    toast.error(
+                        e.to_user_message(),
+                        ToastOptions::default().duration(Duration::from_millis(3000)),
+                    );
+                    is_loading.set(false);
+                }
+            }
+        });
     };
 
     rsx! {
@@ -95,9 +96,6 @@ pub fn Login() -> Element {
                         placeholder: "Password",
                         input_type: "password",
                     }
-                    if is_loading() {
-                        div { class : "spinner" }
-                    }
                 }
             }
         }
@@ -105,11 +103,13 @@ pub fn Login() -> Element {
             class: "util-bar",
             button {
                 class: "util-btn",
+                disabled: is_loading(),
                 onclick: move |_| attempt_submit(),
-                "Log in"
+                if is_loading() { "Logging in..." } else { "Log in" }
             },
             button {
                 class : "util-btn",
+                disabled: is_loading(),
                 onclick: move |_| {
                 navigator.push(Router::Register {});
                 },
@@ -117,6 +117,7 @@ pub fn Login() -> Element {
             }
             button {
                 class: "util-btn",
+                disabled: is_loading(),
                 onclick: move |_| { navigator.push(Router::ForgotPassword {}); },
                 "Forgot password"
             }
