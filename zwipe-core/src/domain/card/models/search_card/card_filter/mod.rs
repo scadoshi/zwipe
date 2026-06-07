@@ -35,6 +35,7 @@ use crate::domain::{
     deck::Format,
 };
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 
 /// Strips punctuation from a string, keeping only alphanumeric characters and whitespace.
 /// Used for punctuation-insensitive text search (e.g., "akromas will" matches "Akroma's Will").
@@ -49,6 +50,7 @@ pub fn strip_punctuation(s: &str) -> String {
 /// Created via [`CardFilterBuilder`](builder::CardFilterBuilder). Contains all
 /// filter criteria (text, mana, combat, flags, pagination) for searching cards.
 /// At least one filter criterion must be set (enforced by builder).
+#[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct CardFilter {
     // combat
@@ -119,10 +121,21 @@ pub struct CardFilter {
     mechanical_categories_contains_all: Option<Vec<String>>,
     mechanical_categories_excludes: Option<Vec<String>>,
     // config
+    #[serde(default = "default_limit")]
     limit: u32,
+    #[serde(default)]
     offset: u32,
     order_by: Option<OrderByOption>,
+    #[serde(default = "default_ascending")]
     ascending: bool,
+}
+
+fn default_limit() -> u32 {
+    100
+}
+
+fn default_ascending() -> bool {
+    true
 }
 
 #[cfg(test)]
