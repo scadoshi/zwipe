@@ -35,6 +35,7 @@ use std::time::Duration;
 #[cfg(feature = "zerver")]
 use tower_http::{
     catch_panic::CatchPanicLayer,
+    compression::CompressionLayer,
     cors::CorsLayer,
     limit::RequestBodyLimitLayer,
     request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer},
@@ -288,6 +289,8 @@ impl HttpServer {
         //   trace_layer             (reads request_id from extensions into the
         //                            span so every log line carries it)
         //   CatchPanicLayer         (turn handler panics into 500s)
+        //   CompressionLayer        (gzip/br response bodies based on Accept-Encoding;
+        //                            outside CORS so headers ride along uncompressed)
         //   CorsLayer
         //   security_headers
         //   TimeoutLayer            (30s per request; rejects with 408)
@@ -308,6 +311,7 @@ impl HttpServer {
                     .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
                     .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION]),
             )
+            .layer(CompressionLayer::new())
             .layer(CatchPanicLayer::new())
             .layer(trace_layer)
             .layer(PropagateRequestIdLayer::new(x_request_id.clone()))
