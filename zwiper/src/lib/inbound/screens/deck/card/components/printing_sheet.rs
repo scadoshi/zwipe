@@ -1,18 +1,18 @@
 //! Bottom sheet for browsing and selecting card printings.
 
-use super::card_info::CardInfoDisplay;
+use super::card_info::{CardInfoDisplay, PrintingSheetSkeleton};
 use super::flippable_card_image::FlippableCardImage;
+use crate::inbound::components::interactions::carousel::Carousel;
 use crate::inbound::components::interactions::carousel::dots::CarouselDots;
 use crate::inbound::components::interactions::carousel::state::CarouselState;
-use crate::inbound::components::interactions::carousel::Carousel;
 use crate::outbound::client::{ZwipeClient, card::get_printings::ClientGetPrintings};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{use_toast, ToastOptions};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::scryfall_data::ImageSize;
 
 /// Bottom sheet for browsing all printings of a card and selecting one.
 #[component]
@@ -36,8 +36,12 @@ pub(crate) fn PrintingSheet(
 
     // Fetch printings when sheet opens (cache by oracle_id)
     use_effect(move || {
-        if !open() { return; }
-        let Some(oid) = oracle_id else { return; };
+        if !open() {
+            return;
+        }
+        let Some(oid) = oracle_id else {
+            return;
+        };
 
         // Skip fetch if already cached for this oracle_id
         if cached_oracle_id() == Some(oid) {
@@ -82,7 +86,10 @@ pub(crate) fn PrintingSheet(
                     carousel_state.set(CarouselState::new(count, idx, page_width));
                 }
                 Err(e) => {
-                    toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                    toast.error(
+                        e.to_string(),
+                        ToastOptions::default().duration(Duration::from_millis(3000)),
+                    );
                 }
             }
             is_loading.set(false);
@@ -118,7 +125,7 @@ pub(crate) fn PrintingSheet(
 
             div { class: "modal-content no-pad-x",
                 if is_loading() {
-                    div { class: "spinner" }
+                    PrintingSheetSkeleton {}
                 } else if printings().len() > 1 {
                     // Multi-printing: carousel
                     Carousel { state: carousel_state,
@@ -200,4 +207,3 @@ pub(crate) fn PrintingSheet(
         }
     }
 }
-

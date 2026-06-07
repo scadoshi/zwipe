@@ -1,4 +1,5 @@
 use super::components::card_row::CardRow;
+use crate::inbound::screens::deck::components::skeletons::DeckCardListSkeleton;
 use super::components::image_preview::ImagePreview;
 use super::components::printing_sheet::PrintingSheet;
 use crate::{
@@ -514,6 +515,10 @@ pub fn View(deck_id: Uuid) -> Element {
                         span { class: "card-row-cmc", "MV" }
                         span { class: "card-row-pt", "P/T" }
                         span { class: "card-row-colors", "Colors" }
+                    }
+
+                    if !deck_loaded() {
+                        DeckCardListSkeleton {}
                     }
 
                     // Token list
