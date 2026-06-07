@@ -1,6 +1,7 @@
 //! Edit deck screen.
 
 use super::components::deck_fields::DeckFields;
+use super::components::skeletons::EditDeckSkeleton;
 use crate::{
     inbound::{
         components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
@@ -375,7 +376,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
 
                         },
                         Some(Err(_)) => rsx! { p { class: "text-muted", "Could not load deck" } },
-                        None => rsx! { div { class : "spinner" } }
+                        None => rsx! { EditDeckSkeleton {} }
                     }
                 }
             }
