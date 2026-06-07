@@ -1,7 +1,9 @@
 # Latency Optimization Roadmap
 
-Measured plan for shrinking API latency, with measurement-derived priorities.
-Self-contained — a fresh agent can pick up from here without prior context.
+**Status: shipped 2026-06-07.** All five planned items addressed in iOS 1.0.2
+build 23 + zerver redeploy. Final measurements at the bottom. Kept around as
+a reference for the decision process and as a template for future optimization
+rounds.
 
 ---
 
@@ -161,6 +163,29 @@ This is one of the "Post-Launch Polish → Infrastructure (Reactive)" items in
 > zerver to a cheap VPS (Hetzner/Fly). Don't pre-optimize — only act on
 > observed pain.
 
-The probe data tells us "Redis is not the right move; CF caching + compression
-are." That changes the todo's framing — fold this latency-optimization plan
-in or link to it.
+The probe data told us "Redis is not the right move; CF caching + compression
+are." That played out: ~10× speedup on backend search work, ~40% on public
+search wall-clock, with no infrastructure changes beyond a CF dashboard rule
+and a router-layer middleware.
+
+---
+
+## Final measurements (after deploy, 2026-06-07)
+
+Same probe, same endpoints, after all five items landed. `probe.sh` now uses
+`--compressed` so `size_download` reflects over-the-wire bytes:
+
+| Endpoint | LOCAL before | LOCAL after | PUBLIC before | PUBLIC after |
+|---|---|---|---|---|
+| `GET /health/server` | ~1ms / 88b | ~1ms / 74b | ~125ms / 88b | ~120ms / 74b |
+| `GET /health/database` | ~1ms / 88b | ~1ms / 74b | ~135ms / 88b | ~123ms / 74b |
+| `POST /api/card/search` | **~52ms / 39690b** | **~5ms / 16444b** | **~250ms / 39690b** | **~150ms / 16444b** |
+| `GET /api/deck` (4KB) | ~2ms / 3996b | ~2ms / 727b | ~129ms / 3996b | ~129ms / 727b |
+
+Backend search work is now ~5ms — sub-frame. The remaining ~145ms on the
+public path is the Cloudflare Tunnel hop and is structural; no further
+software change can shrink it without moving the origin to an edge POP.
+
+Card metadata endpoints (sets/types/keywords/etc) verified hitting at the CF
+edge via `cf_cache_verify.sh` — POPs converge to 100% HIT within a few warmup
+requests.
