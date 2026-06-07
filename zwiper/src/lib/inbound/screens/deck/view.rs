@@ -3,7 +3,7 @@ use super::components::deck_charts::{DeckCharts, ManaBalanceRow};
 use super::components::deck_profile::DeckProfileSection;
 use super::components::deck_stats::DeckStats;
 use super::components::deck_warnings::DeckWarnings;
-use super::components::skeletons::DeckStatsSkeleton;
+use super::components::skeletons::{DeckProfileSkeleton, DeckStatsSkeleton};
 use super::components::more_buttons::MoreButtons;
 use crate::inbound::components::alert_dialog::{
     AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
@@ -57,7 +57,6 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             let Some(session) = session() else {
                 return Err(ApiError::Unauthorized("Session expired".to_string()));
             };
-
             client().get_deck_profile(deck_id, &session).await
         });
     let commander_resource: Resource<Result<Option<Card>, ApiError>> =
@@ -403,7 +402,13 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                             }
                         },
                         Some(Err(_)) => rsx! { p { class: "text-muted", "Could not load deck" } },
-                        None => rsx! { div { class: "spinner" } }
+                        None => rsx! {
+                            div { class: "content-enter",
+                                  style: "width: calc(100% - 4rem); display: flex; flex-direction: column; gap: 1rem; padding: 1rem 0;",
+                                DeckProfileSkeleton {}
+                                DeckStatsSkeleton {}
+                            }
+                        }
                     }
                 }
 
