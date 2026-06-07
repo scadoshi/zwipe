@@ -384,6 +384,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             div { class: "util-bar",
                 button {
                     class: "util-btn",
+                    disabled: is_saving(),
                     onclick: move |_| {
                         navigator.push(Router::ViewDeck { deck_id });
                     },

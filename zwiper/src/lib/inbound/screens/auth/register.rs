@@ -78,32 +78,34 @@ pub fn Register() -> Element {
 
     let mut attempt_submit = move || {
         submit_attempted.set(true);
-        is_loading.set(true);
 
         validate_username();
         validate_email();
         validate_password();
 
-        if inputs_are_valid() {
-            let request = HttpRegisterUser::new(&username(), &email(), &password());
-            spawn(async move {
-                match auth_client().register(request).await {
-                    Ok(new_session) => {
-                        new_session.infallible_save();
-                        session.set(Some(new_session));
-                        navigator.push(Router::Home {});
-                    }
-                    Err(e) => {
-                        tracing::warn!("register failed: {e}");
-                        toast.error(
-                            e.to_user_message(),
-                            ToastOptions::default().duration(Duration::from_millis(3000)),
-                        );
-                    }
-                }
-            });
+        if !inputs_are_valid() {
+            return;
         }
-        is_loading.set(false);
+        is_loading.set(true);
+        let request = HttpRegisterUser::new(&username(), &email(), &password());
+        spawn(async move {
+            match auth_client().register(request).await {
+                Ok(new_session) => {
+                    new_session.infallible_save();
+                    session.set(Some(new_session));
+                    is_loading.set(false);
+                    navigator.push(Router::Home {});
+                }
+                Err(e) => {
+                    tracing::warn!("register failed: {e}");
+                    toast.error(
+                        e.to_user_message(),
+                        ToastOptions::default().duration(Duration::from_millis(3000)),
+                    );
+                    is_loading.set(false);
+                }
+            }
+        });
     };
 
     use_effect(move || {
@@ -159,22 +161,21 @@ pub fn Register() -> Element {
                         placeholder: "Confirm password",
                         input_type: "password",
                     }
-                    if is_loading() {
-                        div { class : "spinner" }
-                    }
                 }
             }
         }
         div { class: "util-bar",
             button {
                 class: "util-btn",
+                disabled: is_loading(),
                 onclick: move |_| navigator.go_back(),
                 "Back to login"
             }
             button {
                 class: "util-btn",
+                disabled: is_loading(),
                 onclick : move |_| attempt_submit(),
-                "Create profile"
+                if is_loading() { "Creating..." } else { "Create profile" }
             }
         }
     }

@@ -2,17 +2,14 @@
 
 use crate::{
     inbound::components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
-    outbound::client::{user::preferences::ClientUpdatePreferences, ZwipeClient},
+    outbound::client::{ZwipeClient, user::preferences::ClientUpdatePreferences},
 };
-use zwipe_core::domain::user::models::theme::ThemeConfig;
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{use_toast, ToastOptions};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
+use zwipe_core::domain::user::models::theme::ThemeConfig;
+use zwipe_core::domain::{auth::models::session::Session, user::preferences::ALLOWED_THEMES};
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
-use zwipe_core::domain::{
-    auth::models::session::Session,
-    user::preferences::ALLOWED_THEMES,
-};
 
 /// Capitalize each word of a theme slug for display ("tokyo-night" → "Tokyo Night").
 fn display_theme_name(slug: &str) -> String {
@@ -135,6 +132,7 @@ pub fn Preferences() -> Element {
                 div { class: "util-bar",
                     button {
                         class: "util-btn",
+                        disabled: is_loading(),
                         onclick: move |_| {
                             if !saved() {
                                 theme_config.set(original_theme());

@@ -5,17 +5,14 @@ use crate::{
         auth::{bouncer::Bouncer, session_upkeep::Upkeep},
         fields::text_input::TextInput,
     },
-    outbound::client::{user::change_username::ClientChangeUsername, ZwipeClient},
+    outbound::client::{ZwipeClient, user::change_username::ClientChangeUsername},
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{use_toast, ToastOptions};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe::domain::auth::models::password::Password;
+use zwipe_core::domain::{auth::models::session::Session, user::username::Username};
 use zwipe_core::http::contracts::auth::HttpChangeUsername;
-use zwipe_core::domain::{
-    auth::models::session::Session,
-    user::username::Username,
-};
 
 /// Form screen for updating user's username.
 #[component]
@@ -155,6 +152,7 @@ pub fn ChangeUsername() -> Element {
             div { class: "util-bar",
                 button {
                     class: "util-btn",
+                    disabled: is_loading(),
                     onclick: move |_| navigator.go_back(),
                     "Back"
                 }

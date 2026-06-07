@@ -105,6 +105,7 @@ pub fn CreateDeck() -> Element {
             div { class: "util-bar",
                 button {
                     class: "util-btn",
+                    disabled: is_saving(),
                     onclick: move |_| navigator.go_back(),
                     "Back"
                 }
