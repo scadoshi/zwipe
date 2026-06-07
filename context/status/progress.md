@@ -122,7 +122,7 @@ iOS 1.0.1 (build 17) replaces build 16 in the review queue. Apple typically clea
 
 ## DFC Handling (2026-06-06, same day as card visibility fix)
 
-**Front face rendering + flip control. iOS 1.0.2 / build 18 packaged for submission.**
+**Front face rendering + flip control. iOS build 19 packaged as 1.0.1 to replace build 17 in the open review queue (since 1.0.1 hasn't published yet, all build numbers attach to the same train). Build 18 was uploaded as 1.0.2 by mistake and is now an orphan in App Store Connect — harmless, can be ignored.**
 
 Double-faced layouts (transform, modal_dfc) store their image URLs inside `card_faces[].image_uris` rather than the top-level `image_uris` that single-faced cards use. Zwiper had zero `card_faces` references anywhere — so `Delver of Secrets`, `Valki, God of Lies`, and every transform/MDFC card rendered as a blank image surface AND was filtered out of search results by a client-side "must have top-level image" filter.
 
