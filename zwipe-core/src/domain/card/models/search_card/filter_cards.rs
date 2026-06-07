@@ -17,9 +17,13 @@
 
 use crate::domain::card::{
     Card,
-    search_card::card_filter::{CardFilter, builder::CardFilterBuilder, order_by_option::OrderByOption, strip_punctuation},
+    scryfall_data::legalities::LegalityKind,
+    search_card::{
+        card_filter::{CardFilter, builder::CardFilterBuilder, order_by_option::OrderByOption, strip_punctuation},
+        commander_eligibility::is_valid_commander,
+    },
 };
-use crate::domain::deck::DeckEntry;
+use crate::domain::deck::{DeckEntry, Format};
 use rand::seq::SliceRandom;
 
 /// Layouts representing cards playable in Magic formats.
@@ -281,7 +285,9 @@ impl FilterCards for Vec<Card> {
                     let matches = match &sd.type_line {
                         Some(tl) => {
                             let stripped = strip_punctuation(tl).to_lowercase();
-                            card_types.iter().any(|ct| stripped.contains(&ct.to_string()))
+                            card_types
+                                .iter()
+                                .any(|ct| stripped.contains(&ct.to_string().to_lowercase()))
                         }
                         None => false,
                     };
@@ -307,7 +313,7 @@ impl FilterCards for Vec<Card> {
                     let matches = match &sd.type_line {
                         Some(tl) => card_types
                             .iter()
-                            .all(|ct| tl.to_lowercase().contains(&ct.to_string())),
+                            .all(|ct| tl.to_lowercase().contains(&ct.to_string().to_lowercase())),
                         None => false,
                     };
                     if !matches {
@@ -332,13 +338,35 @@ impl FilterCards for Vec<Card> {
                     let excluded = match &sd.type_line {
                         Some(tl) => {
                             let stripped = strip_punctuation(tl).to_lowercase();
-                            card_types.iter().any(|ct| stripped.contains(&ct.to_string()))
+                            card_types
+                                .iter()
+                                .any(|ct| stripped.contains(&ct.to_string().to_lowercase()))
                         }
                         None => false,
                     };
                     if excluded {
                         return false;
                     }
+                }
+
+                // ── legality (any-of-formats) ────────────────────────────────
+                if let Some(formats) = filter.legalities_contains_any() {
+                    let is_legal_in_any = formats.iter().any(|format_key| {
+                        Format::try_from(format_key.as_str())
+                            .ok()
+                            .and_then(|fmt| sd.legalities.get(&fmt).cloned())
+                            .is_some_and(|k| matches!(k, LegalityKind::Legal | LegalityKind::Restricted))
+                    });
+                    if !is_legal_in_any {
+                        return false;
+                    }
+                }
+
+                // ── commander eligibility ────────────────────────────────────
+                if let Some(format) = filter.is_commander_in_format()
+                    && !is_valid_commander(card, format)
+                {
+                    return false;
                 }
 
                 // ── mana ──────────────────────────────────────────────────────
@@ -419,13 +447,13 @@ impl FilterCards for Vec<Card> {
                 }
 
                 if let Some(sets) = filter.set_equals_any()
-                    && !sets.iter().any(|s| s == &sd.set)
+                    && !sets.iter().any(|s| s == &sd.set_name)
                 {
                     return false;
                 }
 
                 if let Some(sets) = filter.set_excludes_any()
-                    && sets.iter().any(|s| s == &sd.set)
+                    && sets.iter().any(|s| s == &sd.set_name)
                 {
                     return false;
                 }
@@ -540,9 +568,7 @@ impl FilterCards for Vec<Card> {
                                 .unwrap_or(i32::MAX);
                             ta.cmp(&tb)
                         }
-                        OrderByOption::Rarity => {
-                            sd_a.rarity.to_long_name().cmp(&sd_b.rarity.to_long_name())
-                        }
+                        OrderByOption::Rarity => sd_a.rarity.cmp(&sd_b.rarity),
                         OrderByOption::ReleasedAt => sd_a.released_at.cmp(&sd_b.released_at),
                         OrderByOption::PriceUsd => {
                             let pa = sd_a
@@ -646,7 +672,7 @@ impl SortCards for Vec<Card> {
                     let tb = sd_b.toughness.as_deref().and_then(|t| t.parse::<i32>().ok()).unwrap_or(i32::MAX);
                     ta.cmp(&tb)
                 }
-                Rarity => sd_a.rarity.to_long_name().cmp(&sd_b.rarity.to_long_name()),
+                Rarity => sd_a.rarity.cmp(&sd_b.rarity),
                 ReleasedAt => sd_a.released_at.cmp(&sd_b.released_at),
                 PriceUsd => {
                     let pa = sd_a.prices.usd.as_deref().and_then(|p| p.parse::<f64>().ok()).unwrap_or(f64::MAX);

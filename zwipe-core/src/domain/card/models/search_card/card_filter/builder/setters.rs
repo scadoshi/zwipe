@@ -257,7 +257,7 @@ impl CardFilterBuilder {
     // Printing/Metadata Setters
     // =================================
 
-    /// Sets filter matching any of multiple set codes (e.g., "MH2", "ONE"). Empty vec = None.
+    /// Sets filter matching any of multiple set names (e.g., "Modern Horizons 2"). Empty vec = None.
     pub fn set_set_equals_any(
         &mut self,
         set_equals_any: impl IntoIterator<Item = impl Into<String>>,
