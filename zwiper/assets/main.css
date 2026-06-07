@@ -1448,6 +1448,10 @@ button {
     display: grid !important;
     grid-template: 1fr / 1fr;
     line-height: 0;
+    flex: 0 0 auto;
+    justify-self: center;
+    align-self: center;
+    place-items: center;
 }
 
 /* Only applied when the card has multiple faces (and the flip button is
@@ -1456,18 +1460,33 @@ button {
    wider than 5:7 and the button lands in the empty space next to the card.
    DFC layouts (transform, modal_dfc, etc.) are always 5:7, so this is safe.
    Split / adventure / normal layouts skip this rule and keep natural sizing. */
+/* Reserved for DFC-specific tweaks; the wrapper itself is already 5/7 above. */
 .flippable-card-wrapper.flippable {
-    aspect-ratio: 5 / 7;
-    justify-self: center;
 }
 
+/* Img owns its own sizing and rounding. Per-context max bounds below. */
 .flippable-card-wrapper > img {
     grid-area: 1 / 1;
     display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    border-radius: inherit;
+    width: auto;
+    height: auto;
+    max-width: calc(100vw - 2rem);
+    border-radius: 1rem;
+}
+
+/* Swipe stack (Add/Remove Deck Cards) */
+.flippable-card-wrapper.card-image > img {
+    max-height: 55vh;
+}
+
+/* Printing carousel + single-printing view */
+.flippable-card-wrapper.carousel-card-image > img {
+    max-height: 45vh;
+}
+
+/* Printing sheet inside a bottom sheet — tighter cap */
+.bottom-sheet .flippable-card-wrapper.carousel-card-image > img {
+    max-height: 38vh;
 }
 
 .card-flip-button {
