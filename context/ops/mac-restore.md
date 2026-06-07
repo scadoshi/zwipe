@@ -22,7 +22,7 @@ What to back up and restore when wiping this Mac to return to stable macOS.
 | `zwiper/.env` | Just `BACKEND_URL=https://api.zwipe.net` and `RUST_LOG=info` |
 | Apple signing certs in Keychain | Re-import `~/certs/zwipe-dist-key.pem` + re-download `.cer` from developer.apple.com |
 | Provisioning profiles | Re-download from developer.apple.com → Profiles |
-| Homebrew, Rust, Xcode | Reinstall from scratch — `zcripts/denv/mac/setup.sh` covers most of it |
+| Homebrew, Rust, Xcode | Reinstall from scratch — `zcripts/dev-env/macos/setup.sh` covers most of it |
 | Tailscale | Reinstall + re-auth — server access via `ssh scadoshi@zerver` |
 
 ---
@@ -67,7 +67,7 @@ The server itself is unaffected by your Mac wipe. Nothing to worry about there.
 
 1. Install stable macOS (not beta)
 2. Install Xcode from Mac App Store (GM version)
-3. Install Homebrew, Rust, cargo tools (`zcripts/denv/mac/setup.sh`)
+3. Install Homebrew, Rust, cargo tools (`zcripts/dev-env/macos/setup.sh`)
 4. Clone repo from GitHub
 5. Copy `~/certs/` back from backup
 6. Import signing key + install certs

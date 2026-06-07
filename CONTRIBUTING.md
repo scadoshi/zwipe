@@ -11,7 +11,7 @@
 
 ```bash
 # macOS
-./zcripts/denv/mac/setup.sh
+./zcripts/dev-env/macos/setup.sh
 
 # Runs the backend
 cargo run --bin zerver

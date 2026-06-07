@@ -48,8 +48,8 @@ dx build --release --platform desktop
 
 ### Database Setup
 ```bash
-./zcripts/denv/mac/setup.sh     # macOS
-./zcripts/denv/fedora/reset.sh  # Linux
+./zcripts/dev-env/macos/setup.sh     # macOS
+./zcripts/dev-env/fedora/reset.sh  # Linux
 ```
 
 ### SQLx Offline Mode (run after any query change)
