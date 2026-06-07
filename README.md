@@ -23,8 +23,8 @@ zite   ──→ zwipe-core
 ```bash
 # prerequisites: rust (https://rustup.rs), macos: xcode-select --install
 
-./zcripts/denv/mac/setup.sh      # macos setup (postgres, dx, sqlx-cli, database)
-./zcripts/denv/fedora/setup.sh   # linux setup
+./zcripts/dev-env/macos/setup.sh      # macos setup (postgres, dx, sqlx-cli, database)
+./zcripts/dev-env/fedora/setup.sh   # linux setup
 
 cargo run --bin zerver            # backend api
 cd zwiper && dx serve             # mobile app (web preview)
