@@ -12,7 +12,9 @@ Swipe to Build MTG Decks
 
 ## Promotional Text
 
-Build your Commander decks faster. Swipe through 110,000+ cards, filter by anything, manage your decks with stats and price estimates — all from your phone.
+(170 character limit. Can be updated without a new submission — refresh this between releases to spotlight whatever's freshest.)
+
+Just shipped: a Flip button for double-faced cards. Swipe 110,000+ cards, filter by anything, see stats and prices per deck. Free, no ads, no microtransactions.
 
 ---
 
@@ -39,7 +41,7 @@ Built for players who want a fast, focused mobile experience — not another clu
 
 ## What's New in This Version (1.0.1)
 
-Fixed: some cards from special-edition products were missing from search and filtering. They now appear correctly across card search, leader selection, and deck filters.
+Double-faced cards (transform cards like Delver of Secrets) now appear in search and display their image with a Flip button to view the back face. Cards from special-edition sets like Jumpstart and Secret Lair also surface correctly across card search, leader selection, and deck filters.
 
 ---
 
