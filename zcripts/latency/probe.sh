@@ -58,12 +58,12 @@ probe() {
     echo "── $label  $method $path ──"
     for i in 1 2 3 4 5; do
         if [ "$method" = "GET" ]; then
-            curl -s -o /tmp/zwipe-probe-resp.json \
+            curl -s --compressed -o /tmp/zwipe-probe-resp.json \
                 -w "  %{http_code}  %{size_download}b  %{time_total}s\n" \
                 -H "Authorization: Bearer $TOKEN" \
                 "$base$path"
         else
-            curl -s -o /tmp/zwipe-probe-resp.json \
+            curl -s --compressed -o /tmp/zwipe-probe-resp.json \
                 -w "  %{http_code}  %{size_download}b  %{time_total}s\n" \
                 -X "$method" \
                 -H "Authorization: Bearer $TOKEN" \
@@ -82,7 +82,9 @@ run_against() {
     local label=$1 base=$2
     probe "$label" "$base" GET "/health/server" ""
     probe "$label" "$base" GET "/health/database" ""
-    probe "$label" "$base" POST "/api/card/search" '{"name_contains":"krenko"}'
+    # Broad search — "the" appears in most card names/text → many matches so
+    # the limit cap engages and the payload is big enough that compression matters.
+    probe "$label" "$base" POST "/api/card/search" '{"oracle_text_contains":"the"}'
     probe "$label" "$base" GET "/api/deck" ""
 }
 
