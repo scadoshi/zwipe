@@ -337,13 +337,13 @@ where
         Ok(())
     }
 
-    async fn reset_password(&self, request: &ResetPassword) -> Result<(), ResetPasswordError> {
+    async fn reset_password(&self, request: &ResetPassword) -> Result<uuid::Uuid, ResetPasswordError> {
         let hash = hex::encode(sha2::Sha256::digest(request.token.as_bytes()));
         let user_id = self.auth_repo.use_password_reset_token(&hash).await?;
         self.auth_repo
             .reset_password_and_revoke_sessions(user_id, request.new_password_hash.clone())
             .await?;
         tracing::info!(event = "password_reset_success", user_id = %user_id);
-        Ok(())
+        Ok(user_id)
     }
 }

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board)\n            SELECT $1, scryfall_data_id, oracle_id, quantity, board\n            FROM deck_cards\n            WHERE deck_id = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "063ad4fa7fcbf4249409a9bcc9f34887721d684607e61e554d937e2b3c6b0382"
+}

@@ -8,6 +8,8 @@ pub mod card;
 pub mod deck;
 /// Health check repository.
 pub mod health;
+/// User metrics repository.
+pub mod metrics;
 /// Shared PostgreSQL connection pool and constraint helpers.
 pub mod postgres;
 /// User profile repository.

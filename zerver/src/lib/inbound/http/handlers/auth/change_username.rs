@@ -8,6 +8,7 @@ use crate::{
         card::ports::CardService,
         deck::ports::DeckService,
         health::ports::HealthService,
+        metrics::models::kinds::AuditAction,
         user::ports::UserService,
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
@@ -66,10 +67,19 @@ where
 {
     let request = ChangeUsername::new(user.id, &body.new_username, &body.password)?;
 
-    state
+    let updated = state
         .auth_service
         .change_username(&request)
         .await
-        .map_err(ApiError::from)
-        .map(|user| (StatusCode::OK, Json(user)))
+        .map_err(ApiError::from)?;
+
+    let metrics = std::sync::Arc::clone(&state.metrics_service);
+    let uid = user.id;
+    tokio::spawn(async move {
+        if let Err(e) = metrics.record_audit(uid, AuditAction::UsernameChanged).await {
+            tracing::warn!(error = ?e, "metrics: audit username change failed");
+        }
+    });
+
+    Ok((StatusCode::OK, Json(updated)))
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT scryfall_data_id, is_token, created_at, updated_at FROM card_profiles WHERE scryfall_data_id = $1",
+  "query": "SELECT scryfall_data_id, is_token, mechanical_categories, created_at, updated_at\n            FROM card_profiles WHERE scryfall_data_id = ANY($1)",
   "describe": {
     "columns": [
       {
@@ -15,26 +15,32 @@
       },
       {
         "ordinal": 2,
+        "name": "mechanical_categories",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 3,
         "name": "created_at",
         "type_info": "Timestamp"
       },
       {
-        "ordinal": 3,
+        "ordinal": 4,
         "name": "updated_at",
         "type_info": "Timestamp"
       }
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "UuidArray"
       ]
     },
     "nullable": [
       false,
       false,
+      true,
       false,
       false
     ]
   },
-  "hash": "d7e564e8a12a603fa31dfcb50557072f8f81e7530e18757cd79668b781552f0f"
+  "hash": "19b1c96224dbda16f852021af7b65d407a7a9d3bb47de8d81ad58197146de46e"
 }

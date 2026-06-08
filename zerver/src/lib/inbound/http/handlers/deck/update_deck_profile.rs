@@ -10,7 +10,10 @@ use crate::{
         health::ports::HealthService,
         user::ports::UserService,
     },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+    inbound::http::{
+        handlers::metrics::check_completion::check_deck_completion,
+        middleware::AuthenticatedUser, ApiError, AppState, Log500,
+    },
 };
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::deck::{
@@ -93,10 +96,16 @@ where
         .format(format_option)
         .build()?;
 
-    state
+    let deck_profile = state
         .deck_service
         .update_deck_profile(&request)
         .await
-        .map_err(ApiError::from)
-        .map(|deck_profile| (StatusCode::OK, Json(deck_profile)))
+        .map_err(ApiError::from)?;
+
+    let metrics = std::sync::Arc::clone(&state.metrics_service);
+    let deck_service = std::sync::Arc::clone(&state.deck_service);
+    let uid = user.id;
+    tokio::spawn(check_deck_completion(deck_service, metrics, uid, deck_id));
+
+    Ok((StatusCode::OK, Json(deck_profile)))
 }
