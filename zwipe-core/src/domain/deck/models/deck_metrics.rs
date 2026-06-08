@@ -5,7 +5,7 @@
 //! counted once) and `Vec<DeckEntry>` (each card counted by its quantity).
 
 use crate::domain::{
-    card::{mechanical_category::MechanicalCategory, scryfall_data::colors::Color, Card},
+    card::{Card, mechanical_category::MechanicalCategory, scryfall_data::colors::Color},
     deck::deck::DeckEntry,
 };
 
@@ -44,7 +44,6 @@ pub struct DeckMetrics {
     /// Non-empty mechanical category counts, sorted by count descending.
     pub mechanical_category_counts: Vec<(&'static str, usize)>,
 }
-
 
 impl DeckMetrics {
     /// 5-letter abbreviation for type distribution labels.
@@ -232,14 +231,26 @@ impl DeckMetrics {
             .filter(|&(_, count)| *count > 0)
             .map(|(cat, &count)| (cat.to_short_name(), count))
             .collect();
-        mechanical_category_counts.sort_by(|a, b| b.1.cmp(&a.1));
+        mechanical_category_counts.sort_by_key(|a| std::cmp::Reverse(a.1));
 
         let total_price_usd = if usd_count > 0 { Some(usd_sum) } else { None };
-        let avg_price_usd = if usd_count > 0 { Some(usd_sum / usd_count as f64) } else { None };
+        let avg_price_usd = if usd_count > 0 {
+            Some(usd_sum / usd_count as f64)
+        } else {
+            None
+        };
         let total_price_eur = if eur_count > 0 { Some(eur_sum) } else { None };
-        let avg_price_eur = if eur_count > 0 { Some(eur_sum / eur_count as f64) } else { None };
+        let avg_price_eur = if eur_count > 0 {
+            Some(eur_sum / eur_count as f64)
+        } else {
+            None
+        };
         let total_price_tix = if tix_count > 0 { Some(tix_sum) } else { None };
-        let avg_price_tix = if tix_count > 0 { Some(tix_sum / tix_count as f64) } else { None };
+        let avg_price_tix = if tix_count > 0 {
+            Some(tix_sum / tix_count as f64)
+        } else {
+            None
+        };
 
         DeckMetrics {
             total_cards,
@@ -414,7 +425,12 @@ mod tests {
         assert_eq!(metrics.cmc_histogram, [0, 2, 1, 0, 0, 0, 0]); // land excluded
         assert_eq!(
             metrics.type_counts,
-            vec![("lands", 1), ("creatures", 1), ("artifacts", 1), ("instants", 1)]
+            vec![
+                ("lands", 1),
+                ("creatures", 1),
+                ("artifacts", 1),
+                ("instants", 1)
+            ]
         );
         assert_eq!(
             metrics.color_counts,
@@ -452,8 +468,7 @@ mod tests {
         let mut entry = make_entry("Atraxa", 1);
         entry.card.scryfall_data.color_identity =
             Colors::from([Color::White, Color::Blue, Color::Black, Color::Green]);
-        entry.card.scryfall_data.type_line =
-            Some("Creature — Phyrexian Angel Horror".to_string());
+        entry.card.scryfall_data.type_line = Some("Creature — Phyrexian Angel Horror".to_string());
 
         let metrics = DeckMetrics::from_entries(&[entry]);
         assert_eq!(metrics.color_counts, vec![("multicolor", 1)]);
@@ -479,14 +494,8 @@ mod tests {
         // avg_cmc = (1.0 * 4) / 4 = 1.0
         assert!((metrics.avg_cmc - 1.0).abs() < f64::EPSILON);
         assert_eq!(metrics.cmc_histogram, [0, 4, 0, 0, 0, 0, 0]); // lands excluded
-        assert_eq!(
-            metrics.type_counts,
-            vec![("lands", 10), ("instants", 4)]
-        );
-        assert_eq!(
-            metrics.color_counts,
-            vec![("red", 4), ("green", 10)]
-        );
+        assert_eq!(metrics.type_counts, vec![("lands", 10), ("instants", 4)]);
+        assert_eq!(metrics.color_counts, vec![("red", 4), ("green", 10)]);
     }
 
     #[test]
