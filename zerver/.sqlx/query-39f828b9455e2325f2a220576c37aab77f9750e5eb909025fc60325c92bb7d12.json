@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board) VALUES ($1, $2, $3, $4, $5) RETURNING deck_id, scryfall_data_id, oracle_id, quantity, board",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "deck_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "scryfall_data_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "oracle_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "quantity",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "board",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Int4",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "39f828b9455e2325f2a220576c37aab77f9750e5eb909025fc60325c92bb7d12"
+}

@@ -68,7 +68,19 @@ impl Default for PostgresPoolOptions {
                 .min_connections(2)
                 .max_connections(10)
                 .idle_timeout(Some(std::time::Duration::from_secs(300)))
-                .acquire_timeout(std::time::Duration::from_secs(5)),
+                .acquire_timeout(std::time::Duration::from_secs(5))
+                // Pin every connection's session to UTC so NOW(), CURRENT_DATE,
+                // and any other clock-derived defaults are deterministic
+                // regardless of where the process runs. TIMESTAMP columns
+                // store wall-clock values, so this is the only thing keeping
+                // them canonically UTC end-to-end.
+                .after_connect(|conn, _meta| {
+                    Box::pin(async move {
+                        use sqlx::Executor;
+                        conn.execute("SET TIME ZONE 'UTC'").await?;
+                        Ok(())
+                    })
+                }),
         )
     }
 }

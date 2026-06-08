@@ -8,6 +8,7 @@ use crate::{
             ports::DeckService,
         },
         health::ports::HealthService,
+        metrics::models::kinds::EventKind,
         user::ports::UserService,
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
@@ -78,10 +79,26 @@ where
         .format(body.format.as_deref())
         .build()?;
 
-    state
+    let deck_profile = state
         .deck_service
         .create_deck_profile(&request)
         .await
-        .map_err(ApiError::from)
-        .map(|deck_profile| (StatusCode::CREATED, Json(deck_profile)))
+        .map_err(ApiError::from)?;
+
+    let metrics = std::sync::Arc::clone(&state.metrics_service);
+    let uid = user.id;
+    let deck_id = deck_profile.id;
+    tokio::spawn(async move {
+        if let Err(e) = metrics.increment_decks_created(uid).await {
+            tracing::warn!(error = ?e, "metrics: increment decks_created failed");
+        }
+        if let Err(e) = metrics
+            .record_event(uid, EventKind::DeckCreated, Some(deck_id))
+            .await
+        {
+            tracing::warn!(error = ?e, "metrics: record deck_created event failed");
+        }
+    });
+
+    Ok((StatusCode::CREATED, Json(deck_profile)))
 }

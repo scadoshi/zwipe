@@ -1,8 +1,9 @@
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::{Layer, layer::SubscriberExt, util::SubscriberInitExt};
+use std::sync::Arc;
 use zwipe::config::Config;
-use zwipe::domain::{auth, card, deck, health, user};
+use zwipe::domain::{auth, card, deck, health, metrics, user};
 use zwipe::inbound::http::{HttpServer, HttpServerConfig};
 use zwipe::outbound::resend::Resend;
 use zwipe::outbound::sqlx::postgres::Postgres;
@@ -62,6 +63,8 @@ async fn run() -> anyhow::Result<()> {
     let health_service = health::services::Service::new(db.clone());
     let card_service = card::services::Service::new(db.clone());
     let deck_service = deck::services::Service::new(db.clone(), db.clone());
+    let metrics_service: Arc<dyn metrics::ports::ErasedMetricsService> =
+        Arc::new(metrics::services::Service::new(db.clone()));
     let server_config = HttpServerConfig {
         bind_address: &config.bind_address,
         allowed_origins: config.allowed_origins,
@@ -72,6 +75,7 @@ async fn run() -> anyhow::Result<()> {
         health_service,
         card_service,
         deck_service,
+        metrics_service,
         server_config,
     )
     .await?;

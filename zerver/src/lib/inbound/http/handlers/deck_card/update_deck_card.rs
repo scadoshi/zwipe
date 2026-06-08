@@ -19,7 +19,10 @@ use crate::{
         health::ports::HealthService,
         user::ports::UserService,
     },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+    inbound::http::{
+        handlers::metrics::check_completion::check_deck_completion,
+        middleware::AuthenticatedUser, ApiError, AppState, Log500,
+    },
 };
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::deck::{
@@ -88,10 +91,17 @@ where
     let board = body.board.as_deref().map(zwipe_core::domain::deck::Board::try_from).transpose().map_err(|_| ApiError::UnprocessableEntity("invalid board value".to_string()))?;
     let request = UpdateDeckCard::new(user.id, &deck_id, &scryfall_data_id, body.update_quantity, board, body.scryfall_data_id.as_deref())?;
 
-    state
+    let deck_card = state
         .deck_service
         .update_deck_card(&request)
         .await
-        .map_err(ApiError::from)
-        .map(|deck_card| (StatusCode::OK, Json(deck_card)))
+        .map_err(ApiError::from)?;
+
+    let metrics = std::sync::Arc::clone(&state.metrics_service);
+    let deck_service = std::sync::Arc::clone(&state.deck_service);
+    let uid = user.id;
+    let did = request.deck_id;
+    tokio::spawn(check_deck_completion(deck_service, metrics, uid, did));
+
+    Ok((StatusCode::OK, Json(deck_card)))
 }

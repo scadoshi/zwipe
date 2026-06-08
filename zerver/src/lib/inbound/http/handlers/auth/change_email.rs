@@ -13,6 +13,7 @@ use crate::{
         card::ports::CardService,
         deck::ports::DeckService,
         health::ports::HealthService,
+        metrics::models::kinds::AuditAction,
         user::ports::UserService,
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
@@ -79,6 +80,14 @@ where
     {
         tracing::error!(event = "verification_email_failed", user_id = %updated_user.id, error = %e);
     }
+
+    let metrics = std::sync::Arc::clone(&state.metrics_service);
+    let uid = updated_user.id;
+    tokio::spawn(async move {
+        if let Err(e) = metrics.record_audit(uid, AuditAction::EmailChanged).await {
+            tracing::warn!(error = ?e, "metrics: audit email change failed");
+        }
+    });
 
     Ok((StatusCode::OK, Json(updated_user)))
 }

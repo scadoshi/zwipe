@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO user_lifetime_counters (user_id)\n               VALUES ($1)\n               ON CONFLICT (user_id) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "75c5901cba92a29cd2d7a2d10a97b55e88b7f6629b7713c6b50ff253b25dee05"
+}

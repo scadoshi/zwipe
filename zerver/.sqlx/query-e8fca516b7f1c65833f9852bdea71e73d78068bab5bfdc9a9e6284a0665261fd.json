@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE decks\n               SET first_completed_at = NOW()\n               WHERE id = $1 AND first_completed_at IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e8fca516b7f1c65833f9852bdea71e73d78068bab5bfdc9a9e6284a0665261fd"
+}
