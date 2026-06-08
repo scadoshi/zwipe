@@ -1,5 +1,7 @@
 use crate::{
-    inbound::components::fields::text_input::TextInput,
+    inbound::components::{
+        fields::text_input::TextInput, telemetry::usage_buffer::UsageBuffer,
+    },
     outbound::client::{ZwipeClient, card::search_cards::ClientSearchCards},
 };
 use dioxus::prelude::*;
@@ -36,6 +38,7 @@ pub(crate) fn DeckFields(
 ) -> Element {
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
+    let usage_buffer: Signal<UsageBuffer> = use_context();
 
     // ========================================
     // Format search state
@@ -171,6 +174,7 @@ pub(crate) fn DeckFields(
                     tracing::error!("{}", InvalidCardFilter::Empty.to_string());
                     return;
                 };
+                usage_buffer().record_search();
                 match client().search_cards(&card_filter, &session).await {
                     Ok(cards) => {
                         cmd_search_results.set(cards);
@@ -220,6 +224,7 @@ pub(crate) fn DeckFields(
                 let Ok(card_filter) = builder.build() else {
                     return;
                 };
+                usage_buffer().record_search();
                 match client().search_cards(&card_filter, &session).await {
                     Ok(cards) => {
                         partner_search_results.set(cards);
@@ -269,6 +274,7 @@ pub(crate) fn DeckFields(
                 let Ok(card_filter) = builder.build() else {
                     return;
                 };
+                usage_buffer().record_search();
                 match client().search_cards(&card_filter, &session).await {
                     Ok(cards) => {
                         bg_search_results.set(cards);
@@ -319,6 +325,7 @@ pub(crate) fn DeckFields(
                 let Ok(card_filter) = builder.build() else {
                     return;
                 };
+                usage_buffer().record_search();
                 match client().search_cards(&card_filter, &session).await {
                     Ok(cards) => {
                         spell_search_results.set(cards);
