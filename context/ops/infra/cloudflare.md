@@ -142,3 +142,82 @@ The tunnel UUID and credentials already exist in Cloudflare. Just:
 
 **Note:** `nano` over Ghostty SSH fails with `Error opening terminal: xterm-ghostty`.
 See [tips.md](tips.md) for the fix.
+
+---
+
+## Cache Rules (Caching → Cache Rules)
+
+Edge caching for backend endpoints that the origin shouldn't get hit for on
+every request. Configured in the Cloudflare dashboard under
+**Caching → Cache Rules**. Free-plan account; minimum custom Edge TTL is
+**2 hours** (anything shorter falls back to CF's default behavior).
+
+Each rule's shape is the same: a path-prefix match → "Eligible for cache" +
+"Ignore origin Cache-Control" + a custom Edge TTL.
+
+### Rule 1 — `Cache card metadata`
+
+- **Condition**: `starts_with(http.request.uri.path, "/api/card/")`
+- **Action**: Eligible for cache · Ignore origin Cache-Control · Edge TTL **24 hours**
+- **Why**: card metadata is immutable between nightly Scryfall syncs. Origin
+  gets one hit per POP per day for routes like `/api/card/{id}`, `/types`,
+  `/keywords`, `/sets`, `/artists`, `/oracle-words`, `/languages`,
+  `/{oracle_id}/printings`. Cache-hit responses skip the tunnel entirely
+  (~5-10ms vs ~125ms public tunnel floor).
+- **Compat requirement**: client must NOT send `Authorization: Bearer` on
+  these requests — CF bypasses cache for authenticated requests by default.
+  zwiper drops `bearer_auth` on the affected client methods; the backend
+  serves these routes from `public_routes()`.
+- **Verification**: `zcripts/latency/cf_cache_verify.sh` warms POPs and
+  checks for `cf-cache-status: HIT`. Or one-liner:
+
+  ```bash
+  curl -sI https://api.zwipe.net/api/card/sets | grep -i cf-cache-status
+  ```
+
+### Rule 2 — `Cache marketing aggregates`
+
+- **Condition**: `starts_with(http.request.uri.path, "/api/marketing/")`
+- **Action**: Eligible for cache · Ignore origin Cache-Control · Edge TTL **2 hours** (CF free-plan minimum)
+- **Why**: `/api/marketing/stats` returns app-wide sums across every user
+  (`cards_swiped`, `searches`, `decks_created`) for the zwipe.net stats
+  strip. Vanity totals don't move meaningfully inside a 2h window. Origin
+  gets ~(POP count × 12) hits/day across the globe regardless of pageview
+  volume.
+- **Why not 1h**: free-plan minimum is 2h. Functionally indistinguishable
+  for vanity numbers. If a milestone post ever needs immediate refresh,
+  purge by URL (see below).
+- **Path-prefix covers future endpoints**: any new `/api/marketing/*` we
+  add (e.g. `/timeline`, `/leaderboard`) inherits the same rule.
+
+### Adding a new cache rule
+
+1. Dashboard → zone `zwipe.net` → **Caching → Cache Rules → Create rule**
+2. Name + condition (expression builder or `starts_with` / `eq` expression)
+3. Action: **Eligible for cache** + **Ignore origin Cache-Control** + Edge TTL
+4. Deploy
+
+Free plan supports up to 10 cache rules. No `matches` regex on free —
+stick to `starts_with`, `eq`, `contains` predicates.
+
+### Purging cache on demand
+
+**Dashboard**: Caching → Configuration → Purge Cache → **Custom Purge → URL**.
+Paste the full URL (`https://api.zwipe.net/api/marketing/stats`) and submit.
+Surgical — just that one cached response gets evicted across all POPs.
+
+**API** (for automation):
+
+```bash
+curl -X POST "https://api.cloudflare.com/client/v4/zones/<ZONE_ID>/purge_cache" \
+  -H "Authorization: Bearer <API_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"files":["https://api.zwipe.net/api/marketing/stats"]}'
+```
+
+Zone ID is on the Overview page of the zone (right column). API token
+needs `Zone → Cache Purge` permission.
+
+**Avoid Purge Everything** unless something is genuinely wrong — it evicts
+all CF-cached responses for the zone and forces every POP to re-fetch
+from origin.
