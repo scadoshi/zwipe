@@ -87,6 +87,7 @@ fn App() -> Element {
     });
 
     rsx! {
+        document::Meta { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" }
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "icon", r#type: "image/png", sizes: "16x16", href: FAVICON_16 }
         document::Link { rel: "icon", r#type: "image/png", sizes: "32x32", href: FAVICON_32 }
@@ -100,6 +101,17 @@ fn App() -> Element {
 
 #[component]
 pub fn Nav() -> Element {
+    let mut open = use_signal(|| false);
+    let panel_class = if open() {
+        "nav-panel nav-panel-open"
+    } else {
+        "nav-panel"
+    };
+    let toggle_class = if open() {
+        "nav-toggle nav-toggle-open"
+    } else {
+        "nav-toggle"
+    };
     rsx! {
         div { class: "nav-wrapper",
         nav {
@@ -107,6 +119,7 @@ pub fn Nav() -> Element {
                 to: Route::Home {},
                 class: "nav-brand",
                 onclick: move |_| {
+                    open.set(false);
                     spawn(async {
                         let _ = eval(r#"
                             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -121,30 +134,55 @@ pub fn Nav() -> Element {
                 },
                 span { class: "nav-logo", "{Z_LOGO}" }
             }
-            ul { class: "nav-links",
-                li {
-                    Link { to: Route::About {}, "About" }
+            div { class: "nav-stores-persistent",
+                a {
+                    class: "store-link",
+                    href: "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",
+                    target: "_blank",
+                    rel: "noopener",
+                    "App Store ↗"
                 }
-                li {
-                    Link { to: Route::Contribute {}, "Contribute" }
-                }
-                li {
-                    Link { to: Route::Discord {}, "Discord" }
-                }
-                li {
-                    a {
-                        class: "store-link",
-                        href: "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",
-                        target: "_blank",
-                        rel: "noopener",
-                        "App Store ↗"
+                Link { to: Route::Android {}, class: "store-link", "Play Store ↗" }
+            }
+            button {
+                class: "{toggle_class}",
+                aria_label: "Toggle navigation menu",
+                aria_expanded: "{open()}",
+                onclick: move |_| {
+                    let next = !open();
+                    open.set(next);
+                },
+                span { class: "nav-toggle-bar" }
+                span { class: "nav-toggle-bar" }
+                span { class: "nav-toggle-bar" }
+            }
+            div { class: "{panel_class}",
+                ul { class: "nav-links",
+                    li {
+                        Link { to: Route::About {}, onclick: move |_| open.set(false), "About" }
+                    }
+                    li {
+                        Link { to: Route::Contribute {}, onclick: move |_| open.set(false), "Contribute" }
+                    }
+                    li {
+                        Link { to: Route::Discord {}, onclick: move |_| open.set(false), "Discord" }
+                    }
+                    li { class: "nav-link-store",
+                        a {
+                            class: "store-link",
+                            href: "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",
+                            target: "_blank",
+                            rel: "noopener",
+                            onclick: move |_| open.set(false),
+                            "App Store ↗"
+                        }
+                    }
+                    li { class: "nav-link-store",
+                        Link { to: Route::Android {}, class: "store-link", onclick: move |_| open.set(false), "Play Store ↗" }
                     }
                 }
-                li {
-                    Link { to: Route::Android {}, class: "store-link", "Play Store ↗" }
-                }
+                ThemePicker {}
             }
-            ThemePicker {}
         }
         } // nav-wrapper
     }
@@ -169,13 +207,32 @@ fn display_theme_name(slug: &str) -> String {
 #[component]
 pub fn ThemePicker() -> Element {
     let mut theme: Signal<ThemeConfig> = use_context();
+    let mut open = use_signal(|| false);
     let current = theme.read().name.clone();
     let is_dark = theme.read().is_dark;
+    let select_class = if open() {
+        "theme-select theme-select-open"
+    } else {
+        "theme-select"
+    };
 
     rsx! {
+        if open() {
+            div {
+                class: "theme-backdrop",
+                onclick: move |_| open.set(false),
+            }
+        }
         div { class: "theme-switcher",
-            div { class: "theme-select",
-                span { class: "theme-select-trigger",
+            div { class: "{select_class}",
+                button {
+                    class: "theme-select-trigger",
+                    aria_expanded: "{open()}",
+                    onclick: move |evt| {
+                        evt.stop_propagation();
+                        let next = !open();
+                        open.set(next);
+                    },
                     "{display_theme_name(&current)} ▾"
                 }
                 div { class: "theme-select-content",
@@ -188,6 +245,7 @@ pub fn ThemePicker() -> Element {
                                     name: name.to_string(),
                                     is_dark: dark,
                                 });
+                                open.set(false);
                             },
                             "{display_theme_name(name)}"
                         }
@@ -203,7 +261,7 @@ pub fn ThemePicker() -> Element {
                         is_dark: !current.is_dark,
                     });
                 },
-                if is_dark { "[light]" } else { "[dark]" }
+                if is_dark { "light" } else { "dark" }
             }
         }
     }
