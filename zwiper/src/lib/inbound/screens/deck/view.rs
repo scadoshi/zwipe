@@ -3,8 +3,8 @@ use super::components::deck_charts::{DeckCharts, ManaBalanceRow};
 use super::components::deck_profile::DeckProfileSection;
 use super::components::deck_stats::DeckStats;
 use super::components::deck_warnings::DeckWarnings;
-use super::components::skeletons::{DeckProfileSkeleton, DeckStatsSkeleton};
 use super::components::more_buttons::MoreButtons;
+use super::components::skeletons::{DeckProfileSkeleton, DeckStatsSkeleton};
 use crate::inbound::components::alert_dialog::{
     AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
     AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
@@ -20,20 +20,21 @@ use crate::{
         card::get_card::ClientGetCard,
         deck::{
             delete_deck::ClientDeleteDeck, get_deck::ClientGetDeck,
-            get_deck_profile::ClientGetDeckProfile,
-            update_deck_profile::ClientUpdateDeckProfile,
+            get_deck_profile::ClientGetDeckProfile, update_deck_profile::ClientUpdateDeckProfile,
         },
         deck_card::update_deck_card::ClientUpdateDeckCard,
     },
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{use_toast, ToastOptions};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe_core::domain::deck::{DeckEntry, deck_profile::DeckProfile, deck_warning::DeckWarning, deck_metrics::DeckMetrics};
 use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::deck::{
+    DeckEntry, deck_metrics::DeckMetrics, deck_profile::DeckProfile, deck_warning::DeckWarning,
+};
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::contracts::deck_card::HttpUpdateDeckCard;
 use zwipe_core::http::helpers::Opdate;
@@ -68,25 +69,24 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             else {
                 return Ok(None);
             };
-            client()
-                .get_card(original_commander_id)
-                .await
-                .map(Some)
+            client().get_card(original_commander_id).await.map(Some)
         });
-    let mut deck_resource: Resource<DeckResult> =
-        use_resource(move || async move {
-            session.upkeep(client);
-            let Some(session) = session() else {
-                return Err(ApiError::Unauthorized("Session expired".to_string()));
-            };
-            client()
-                .get_deck(deck_id, &session)
-                .await
-                .map(|d| (d.entries, d.warnings))
-        });
+    let mut deck_resource: Resource<DeckResult> = use_resource(move || async move {
+        session.upkeep(client);
+        let Some(session) = session() else {
+            return Err(ApiError::Unauthorized("Session expired".to_string()));
+        };
+        client()
+            .get_deck(deck_id, &session)
+            .await
+            .map(|d| (d.entries, d.warnings))
+    });
     use_effect(move || {
         if let Some(Err(e)) = &*deck_profile_resource.read() {
-            toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+            toast.error(
+                e.to_string(),
+                ToastOptions::default().duration(Duration::from_millis(3000)),
+            );
         }
     });
 
@@ -95,7 +95,10 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             commander.set(Some(original_commander));
         }
         Some(Err(e)) => {
-            toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+            toast.error(
+                e.to_string(),
+                ToastOptions::default().duration(Duration::from_millis(3000)),
+            );
         }
         Some(Ok(None)) | None => (),
     });
@@ -107,7 +110,10 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let attempt_delete = move || {
         session.upkeep(client);
         let Some(session) = session() else {
-            toast.error("Session expired".to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+            toast.error(
+                "Session expired".to_string(),
+                ToastOptions::default().duration(Duration::from_millis(3000)),
+            );
             return;
         };
 
@@ -117,7 +123,10 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     navigator.push(Router::DeckList {});
                 }
                 Err(e) => {
-                    toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                    toast.error(
+                        e.to_string(),
+                        ToastOptions::default().duration(Duration::from_millis(3000)),
+                    );
                 }
             }
         });
@@ -125,7 +134,10 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
     // pre-compute metrics and chart data before rsx!
     let deck_data = deck_resource().and_then(|r| r.ok());
-    let warnings: Vec<DeckWarning> = deck_data.as_ref().map(|(_, w)| w.clone()).unwrap_or_default();
+    let warnings: Vec<DeckWarning> = deck_data
+        .as_ref()
+        .map(|(_, w)| w.clone())
+        .unwrap_or_default();
     let metrics = deck_data
         .as_ref()
         .filter(|(entries, _)| !entries.is_empty())
@@ -235,7 +247,12 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         if m.mechanical_category_counts.is_empty() {
             return None;
         }
-        let max_count = m.mechanical_category_counts.iter().map(|(_, c)| *c).max().unwrap_or(0);
+        let max_count = m
+            .mechanical_category_counts
+            .iter()
+            .map(|(_, c)| *c)
+            .max()
+            .unwrap_or(0);
         Some(
             m.mechanical_category_counts
                 .iter()
@@ -252,29 +269,31 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     });
 
     let mana_balance_rows = metrics.as_ref().map(|m| -> Vec<_> {
-            let labels = ["W", "U", "B", "R", "G"];
-            labels
-                .iter()
-                .zip(m.mana_balance.iter())
-                .filter(|(_, (consumed, _produced))| *consumed > 0)
-                .map(|(label, (consumed, produced))| {
-                    let bar_max = (*consumed).max(*produced);
-                    let fill_pct = if bar_max > 0 {
-                        ((produced * 100) / bar_max) as u32
-                    } else {
-                        0
-                    };
-                    let is_surplus = produced >= consumed;
-                    ManaBalanceRow {
-                        label,
-                        consumed: *consumed,
-                        produced: *produced,
-                        fill_pct,
-                        is_surplus,
-                    }
-                })
-                .collect()
-        });
+        let labels = ["W", "U", "B", "R", "G"];
+        labels
+            .iter()
+            .zip(m.mana_balance.iter())
+            .filter(|(_, (consumed, _produced))| *consumed > 0)
+            .map(|(label, (consumed, produced))| {
+                let bar_max = (*consumed).max(*produced);
+                // Floor a nonzero share at 4% so a barely-produced color still
+                // shows a visible sliver, matching the curve/type/color bars.
+                let fill_pct = if *produced > 0 {
+                    (produced * 100).checked_div(bar_max).unwrap_or(0).max(4) as u32
+                } else {
+                    0
+                };
+                let is_surplus = produced >= consumed;
+                ManaBalanceRow {
+                    label,
+                    consumed: *consumed,
+                    produced: *produced,
+                    fill_pct,
+                    is_surplus,
+                }
+            })
+            .collect()
+    });
 
     rsx! {
         Bouncer {

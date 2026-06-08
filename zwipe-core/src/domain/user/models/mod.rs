@@ -9,7 +9,7 @@ pub use preferences::{
 };
 pub use username::{InvalidUsername, Username};
 
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -53,7 +53,8 @@ pub struct User {
     pub email: Email,
 
     /// When the user's email was verified. `None` means not yet verified.
-    pub email_verified_at: Option<NaiveDateTime>,
+    #[serde(with = "crate::wire_time::utc_opt", default)]
+    pub email_verified_at: Option<DateTime<Utc>>,
 }
 
 impl User {

@@ -1,6 +1,6 @@
 //! User metrics HTTP request/response contracts.
 
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -58,5 +58,6 @@ pub struct HttpLifetimeCounters {
     /// Decks that have reached a valid state at least once.
     pub decks_completed: i32,
     /// Last write to this row — doubles as last-active timestamp.
-    pub updated_at: NaiveDateTime,
+    #[serde(with = "crate::wire_time::utc")]
+    pub updated_at: DateTime<Utc>,
 }

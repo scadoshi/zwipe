@@ -3,7 +3,7 @@
 //! `ErrorMetrics` and `VecErrorMetrics` encode to JSONB via serde, following the
 //! same pattern as the Scryfall data codecs.
 
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use sqlx::{encode::IsNull, types::JsonValue, Decode, Encode, Postgres, Type};
 use sqlx_macros::FromRow;
 use uuid::Uuid;
@@ -135,8 +135,8 @@ pub struct DatabaseZerviceMetrics {
     #[sqlx(rename = "id")]
     _id: Uuid,
     status: String,
-    started_at: NaiveDateTime,
-    ended_at: Option<NaiveDateTime>,
+    started_at: DateTime<Utc>,
+    ended_at: Option<DateTime<Utc>>,
     duration_in_seconds: i32,
     received_count: i32,
     upserted_count: i32,

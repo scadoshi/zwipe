@@ -139,7 +139,7 @@ where
 
         // Check lockout before Argon2 — avoids expensive hashing for locked accounts.
         if let Some(until) = user_with_password_hash.lockout_until
-            && until > Utc::now().naive_utc()
+            && until > Utc::now()
         {
             tracing::warn!(event = "login_failure", reason = "account_locked", identifier = %request.identifier);
             return Err(AuthenticateUserError::AccountLocked);
@@ -255,7 +255,7 @@ where
         self.auth_repo.delete_email_verification_tokens(user_id).await?;
 
         let (raw, hash) = generate_hex_token();
-        let expires_at = Utc::now().naive_utc() + Duration::hours(24);
+        let expires_at = Utc::now() + Duration::hours(24);
 
         self.auth_repo
             .store_email_verification_token(user_id, hash, expires_at)
@@ -311,7 +311,7 @@ where
         self.auth_repo.delete_password_reset_tokens(user_id).await?;
 
         let (raw, hash) = generate_hex_token();
-        let expires_at = Utc::now().naive_utc() + Duration::minutes(15);
+        let expires_at = Utc::now() + Duration::minutes(15);
 
         self.auth_repo
             .store_password_reset_token(user_id, hash, expires_at)

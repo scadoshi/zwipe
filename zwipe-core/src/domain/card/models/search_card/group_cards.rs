@@ -150,11 +150,10 @@ fn group_by_category(cards: Vec<Card>) -> Vec<CardGroup> {
         }
     }
 
-    let mut labels: Vec<&str> = all_cats.iter().map(|c| c.display_name()).collect();
-    labels.push("uncategorized");
-
-    labels
-        .into_iter()
+    all_cats
+        .iter()
+        .map(|c| c.display_name())
+        .chain(["uncategorized"])
         .zip(buckets)
         .filter(|(_, cards)| !cards.is_empty())
         .map(|(label, cards)| CardGroup {
@@ -256,11 +255,13 @@ mod tests {
                 created_at: NaiveDate::from_ymd_opt(2021, 1, 1)
                     .unwrap()
                     .and_hms_opt(0, 0, 0)
-                    .unwrap(),
+                    .unwrap()
+                    .and_utc(),
                 updated_at: NaiveDate::from_ymd_opt(2021, 1, 1)
                     .unwrap()
                     .and_hms_opt(0, 0, 0)
-                    .unwrap(),
+                    .unwrap()
+                    .and_utc(),
             },
             scryfall_data: ScryfallData {
                 arena_id: None,
