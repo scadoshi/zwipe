@@ -120,6 +120,27 @@ iOS 1.0.1 (build 17) replaces build 16 in the review queue. Apple typically clea
 
 ---
 
+## User Metrics + Public Marketing Endpoint (2026-06-07, deployed + Build 24 packaged)
+
+**Per-user telemetry, deck-completion tracking, audit log, and a public app-wide stats endpoint surfaced on zwipe.net. Build 24 (1.0.2) packaged for App Store Connect.** Numbers go live for the world the moment a user swipes / searches / creates a deck.
+
+What's in this round:
+
+- **Per-user lifetime counters** (`user_lifetime_counters`) — `swipes_right/left/up/down`, `searches`, `decks_created`, `decks_completed`. Single row per user, hot read path.
+- **Daily rollups** (`user_daily_activity`) — one row per (user, UTC day) with the same swipe + search counters. Trend / DAU data without paying event-log storage.
+- **Sparse event log** (`user_events`) — `signup`, `deck_created`, `deck_completed`, `first_swipe`. Rare events only; no per-swipe rows.
+- **Audit log** (`user_audit_log`) — credential changes (username / email / password). Logs *that* a change happened, not the old value — keeps PII surface near zero.
+- **Endpoints** — `POST /api/metrics/usage` (private, IP+user rate-limited, accepts a `HttpUsageBatch`), `GET /api/user/metrics` (private, returns lifetime counters), `GET /api/marketing/stats` (public, sum-aggregates across all users for zwipe.net). Fire-and-forget metric writes via `tokio::spawn` so user request latency is unchanged.
+- **Deck completion tracking** — after any deck-card mutation (create / update / delete / import / deck-profile update / clone) the handler reloads the deck, runs `validate_deck`, and if it just became valid stamps `decks.first_completed_at` + emits a `DeckCompleted` event. Idempotent: subsequent invalid→valid transitions don't re-fire.
+- **Client-side telemetry buffer** — `zwiper/.../components/telemetry/` keeps four atomic swipe counters + a search counter in memory, flushes every 30s via the existing session upkeeper, drops the batch on HTTP failure (vanity data isn't worth retry plumbing).
+- **Public marketing endpoint + CF cache** — `/api/marketing/stats` returns `{cards_swiped, searches, decks_created}` (single `SUM` over `user_lifetime_counters`). Cloudflare Cache Rule `starts_with(http.request.uri.path, "/api/marketing/")` with 2h Edge TTL (CF free-plan minimum). Origin gets one hit per POP per 2 hours.
+- **zite stats strip** — three-stat block in the home hero ("Cards swiped · Searches run · Decks created") fetched during SSR via `use_resource`. Hides itself on error. Stats refresh on each GH Pages rebuild (acceptable for vanity; cron rebuild can be added if staleness ever bothers anyone).
+- **UTC pool pin** — `PostgresPoolOptions::default()::after_connect` runs `SET TIME ZONE 'UTC'` on every connection. Backstop so the schema's plain `TIMESTAMP` columns are deterministically UTC regardless of cluster/process TZ. Spotted because `user_daily_activity` initial rows landed on a different `CURRENT_DATE` than the local psql session expected. Full migration to `TIMESTAMPTZ` documented in `context/plans/timestamptz-migration.md` for future scheduled work.
+
+Build train: builds 21-23 (1.0.2, in review), **build 24 (1.0.2 + telemetry, packaged for Transporter)**. Build 24's user-visible delta over Build 23 is essentially zero — all the work this round is backend / silent telemetry. The "Cards swiped" bullet added to the App Store "What's New" reflects the build-23 latency wins that weren't called out.
+
+---
+
 ## 1.0.2 Latency Pass (2026-06-07, submitted as build 23)
 
 **iOS 1.0.2 build 23 submitted for Apple review. Full latency optimization round: CF edge caching, server-side compression, HTTP/2 client multiplexing, smaller default page size with prefetch.** End-to-end measurements: `POST /api/card/search` went from `~52ms LOCAL / ~250ms PUBLIC` to `~5ms LOCAL / ~130-180ms PUBLIC` — backend is now sub-frame; PUBLIC time is essentially the CF tunnel hop floor.
