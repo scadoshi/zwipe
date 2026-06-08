@@ -41,6 +41,7 @@ Built for players who want a fast, focused mobile experience — not another clu
 
 ## What's New in This Version (1.0.2)
 
+- Faster searches across the catalog — results land in a fraction of the time on cellular.
 - In-deck filters now narrow correctly — type, set, format legality, leader eligibility, and rarity sort.
 - Card images render with cleanly rounded corners across every screen.
 - Login, sign-up, and edit screens show loading states so taps feel acknowledged.

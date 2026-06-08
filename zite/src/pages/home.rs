@@ -1,4 +1,4 @@
-use crate::components::PageMeta;
+use crate::components::{PageMeta, StatsStrip};
 use crate::{Footer, Nav};
 use dioxus::prelude::*;
 
@@ -60,6 +60,7 @@ pub fn Home() -> Element {
                 a { href: "https://magic.wizards.com/en", target: "_blank", rel: "noopener noreferrer", "Magic: The Gathering" }
                 " deck builder built for mobile. Swipe right to add, left to skip, up to maybe, down to undo."
             }
+            StatsStrip {}
         }
         div { class: "page content-enter",
             figure { class: "project-gallery",
