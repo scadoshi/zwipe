@@ -30,7 +30,7 @@ use crate::outbound::sqlx::auth::helpers::TxHelper;
 use crate::outbound::sqlx::auth::models::{DatabaseRefreshToken, DatabaseUserWithPasswordHash};
 use crate::outbound::sqlx::postgres::Postgres;
 use crate::outbound::sqlx::user::models::DatabaseUser;
-use chrono::{NaiveDateTime, Utc};
+use chrono::{DateTime, Utc};
 use sqlx::{query, query_as, query_scalar};
 use uuid::Uuid;
 
@@ -233,7 +233,7 @@ impl AuthRepository for Postgres {
             return Err(RefreshSessionError::Forbidden(request.user_id));
         }
 
-        if existing.expires_at < Utc::now().naive_local() {
+        if existing.expires_at < Utc::now() {
             return Err(RefreshSessionError::Expired(request.user_id));
         }
 
@@ -306,7 +306,7 @@ impl AuthRepository for Postgres {
         &self,
         user_id: Uuid,
         token_hash: String,
-        expires_at: NaiveDateTime,
+        expires_at: DateTime<Utc>,
     ) -> Result<(), RegisterUserError> {
         query!(
             "INSERT INTO email_verification_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3)",
@@ -398,7 +398,7 @@ impl AuthRepository for Postgres {
         &self,
         user_id: Uuid,
         token_hash: String,
-        expires_at: NaiveDateTime,
+        expires_at: DateTime<Utc>,
     ) -> Result<(), anyhow::Error> {
         query!(
             "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3)",

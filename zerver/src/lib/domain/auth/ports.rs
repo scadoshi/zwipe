@@ -30,7 +30,7 @@ use zwipe_core::domain::{
     auth::models::{refresh_token::RefreshToken, session::Session},
     user::User,
 };
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use std::future::Future;
 use uuid::Uuid;
 
@@ -170,7 +170,7 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
         &self,
         user_id: Uuid,
         token_hash: String,
-        expires_at: NaiveDateTime,
+        expires_at: DateTime<Utc>,
     ) -> impl Future<Output = Result<(), RegisterUserError>> + Send;
 
     /// Validates expiry, deletes the token, and returns the owning `user_id`.
@@ -222,7 +222,7 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
         &self,
         user_id: Uuid,
         token_hash: String,
-        expires_at: NaiveDateTime,
+        expires_at: DateTime<Utc>,
     ) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
 
     /// Validates expiry, deletes the token, and returns the owning `user_id`.

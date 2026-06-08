@@ -6,7 +6,7 @@
 
 use std::future::Future;
 
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 
 use zwipe_core::domain::card::{
     Card,
@@ -191,7 +191,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// Used to track sync freshness and schedule next sync.
     fn get_last_sync_date(
         &self,
-    ) -> impl Future<Output = anyhow::Result<Option<NaiveDateTime>>> + Send;
+    ) -> impl Future<Output = anyhow::Result<Option<DateTime<Utc>>>> + Send;
 
     /// Finds cards by exact name match (case-insensitive).
     ///
@@ -365,7 +365,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
     /// Used to track sync freshness and schedule next sync.
     fn get_last_sync_date(
         &self,
-    ) -> impl Future<Output = anyhow::Result<Option<NaiveDateTime>>> + Send;
+    ) -> impl Future<Output = anyhow::Result<Option<DateTime<Utc>>>> + Send;
 
     /// Finds cards by exact name match (case-insensitive).
     ///

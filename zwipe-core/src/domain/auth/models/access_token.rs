@@ -10,7 +10,7 @@
 //! via extension traits.
 
 use crate::domain::user::models::{email::Email, username::Username};
-use chrono::{NaiveDateTime, Utc};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, str::FromStr};
 use thiserror::Error;
@@ -125,13 +125,14 @@ pub struct AccessToken {
     pub value: Jwt,
 
     /// When the token expires (24 hours from issuance).
-    pub expires_at: NaiveDateTime,
+    #[serde(with = "crate::wire_time::utc")]
+    pub expires_at: DateTime<Utc>,
 }
 
 impl AccessToken {
     /// Checks if the access token has expired (current time >= expires_at).
     pub fn is_expired(&self) -> bool {
-        self.expires_at < Utc::now().naive_utc()
+        self.expires_at < Utc::now()
     }
 }
 
@@ -251,7 +252,7 @@ mod tests {
     fn test_access_token_is_not_expired_when_expiry_is_in_future() {
         let token = AccessToken {
             value: Jwt::from_str("header.payload.signature").unwrap(),
-            expires_at: Utc::now().naive_utc() + chrono::Duration::hours(24),
+            expires_at: Utc::now() + chrono::Duration::hours(24),
         };
         assert!(!token.is_expired());
     }
@@ -260,7 +261,7 @@ mod tests {
     fn test_access_token_is_expired_when_expiry_is_in_past() {
         let token = AccessToken {
             value: Jwt::from_str("header.payload.signature").unwrap(),
-            expires_at: Utc::now().naive_utc() - chrono::Duration::seconds(1),
+            expires_at: Utc::now() - chrono::Duration::seconds(1),
         };
         assert!(token.is_expired());
     }

@@ -46,7 +46,7 @@
       {
         "ordinal": 8,
         "name": "updated_at",
-        "type_info": "Timestamp"
+        "type_info": "Timestamptz"
       }
     ],
     "parameters": {

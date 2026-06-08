@@ -229,11 +229,11 @@ mod tests {
             user,
             access_token: AccessToken {
                 value: Jwt::from_str("header.payload.signature").unwrap(),
-                expires_at: Utc::now().naive_utc() + Duration::hours(24),
+                expires_at: Utc::now() + Duration::hours(24),
             },
             refresh_token: RefreshToken {
                 value: "token-value-from-previous-session".to_string(),
-                expires_at: Utc::now().naive_utc() + Duration::days(14),
+                expires_at: Utc::now() + Duration::days(14),
             },
             preferences: UserPreferences::default(),
         }

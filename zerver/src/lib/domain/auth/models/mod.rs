@@ -18,7 +18,7 @@ use crate::domain::auth::models::password::HashedPassword;
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::{user::{username::Username, User}, Email};
 #[cfg(feature = "zerver")]
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 #[cfg(feature = "zerver")]
 use uuid::Uuid;
 
@@ -43,9 +43,9 @@ pub struct UserWithPasswordHash {
     /// Argon2id hashed password (never exposed in public APIs).
     pub password_hash: HashedPassword,
     /// If set and in the future, the account is locked until this timestamp.
-    pub lockout_until: Option<NaiveDateTime>,
+    pub lockout_until: Option<DateTime<Utc>>,
     /// When the user's email was verified. `None` means not yet verified.
-    pub email_verified_at: Option<NaiveDateTime>,
+    pub email_verified_at: Option<DateTime<Utc>>,
 }
 
 #[cfg(feature = "zerver")]

@@ -28,7 +28,7 @@ use crate::{
     },
     outbound::sqlx::card::helpers::scryfall_data_fields::scryfall_data_field_count,
 };
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 
 /// PostgreSQL parameter limit per query (~65k parameters).
 ///
@@ -216,7 +216,7 @@ impl<R: CardRepository> CardService for Service<R> {
             .await
     }
 
-    async fn get_last_sync_date(&self) -> anyhow::Result<Option<NaiveDateTime>> {
+    async fn get_last_sync_date(&self) -> anyhow::Result<Option<DateTime<Utc>>> {
         self.repo.get_last_sync_date().await
     }
 

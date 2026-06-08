@@ -5,7 +5,7 @@
 //! - Timestamps (when card was added/updated in database)
 
 use super::mechanical_category::MechanicalCategory;
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -22,7 +22,9 @@ pub struct CardProfile {
     /// Mechanical categories assigned by heuristics or AI classification.
     pub mechanical_categories: Vec<MechanicalCategory>,
     /// When this profile was created in database.
-    pub created_at: NaiveDateTime,
+    #[serde(with = "crate::wire_time::utc")]
+    pub created_at: DateTime<Utc>,
     /// When this profile was last updated.
-    pub updated_at: NaiveDateTime,
+    #[serde(with = "crate::wire_time::utc")]
+    pub updated_at: DateTime<Utc>,
 }
