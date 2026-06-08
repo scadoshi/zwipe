@@ -3,6 +3,9 @@
 //! Provides background session management that periodically checks token
 //! expiration and refreshes the access token before it expires.
 
+use crate::inbound::components::telemetry::{
+    flush_loop::spawn_usage_flusher, usage_buffer::UsageBuffer,
+};
 use crate::outbound::{
     client::{auth::refresh::ClientRefresh, ZwipeClient},
     session::Persist,
@@ -88,6 +91,11 @@ pub fn spawn_upkeeper() {
             .unwrap_or_default()
     });
     use_context_provider(|| theme);
+
+    // Usage telemetry buffer (swipe / search counters, flushed every 30s).
+    let usage_buffer = use_signal(UsageBuffer::new);
+    use_context_provider(|| usage_buffer);
+    spawn_usage_flusher(usage_buffer.peek().clone(), client, session);
 
     spawn(async move {
         let mut interval = interval(Duration::from_secs(60));

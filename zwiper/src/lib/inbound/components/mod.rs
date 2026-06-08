@@ -14,6 +14,8 @@ pub mod auth;
 pub mod fields;
 /// Interactive components (buttons, links, etc.).
 pub mod interactions;
+/// Usage telemetry buffer + flush loop.
+pub mod telemetry;
 /// Toast notification component.
 pub mod toast;
 /// Three-state toggle component (true/false/any).

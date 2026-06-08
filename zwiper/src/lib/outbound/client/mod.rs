@@ -11,6 +11,8 @@ pub mod card;
 pub mod deck;
 /// Deck-card relationship operations (add/remove cards from decks).
 pub mod deck_card;
+/// User metrics operations.
+pub mod metrics;
 /// User profile operations.
 pub mod user;
 
