@@ -35,7 +35,7 @@ pub struct Session {
 impl Session {
     /// Checks if the refresh token has expired.
     pub fn is_expired(&self) -> bool {
-        self.refresh_token.expires_at < Utc::now().naive_local()
+        self.refresh_token.expires_at < Utc::now()
     }
 }
 
@@ -50,7 +50,7 @@ mod tests {
     use std::str::FromStr;
     use uuid::Uuid;
 
-    fn make_session(refresh_expires_at: chrono::NaiveDateTime) -> Session {
+    fn make_session(refresh_expires_at: chrono::DateTime<Utc>) -> Session {
         let user = User::new(
             Uuid::new_v4(),
             Username::new("alice").unwrap(),
@@ -58,7 +58,7 @@ mod tests {
         );
         let access_token = AccessToken {
             value: Jwt::from_str("header.payload.signature").unwrap(),
-            expires_at: Utc::now().naive_utc() + Duration::hours(24),
+            expires_at: Utc::now() + Duration::hours(24),
         };
         let refresh_token = RefreshToken {
             value: "x".repeat(64),
@@ -74,14 +74,14 @@ mod tests {
 
     #[test]
     fn test_session_is_expired_when_refresh_token_has_past_expiry() {
-        let past = Utc::now().naive_utc() - Duration::seconds(1);
+        let past = Utc::now() - Duration::seconds(1);
         let session = make_session(past);
         assert!(session.is_expired());
     }
 
     #[test]
     fn test_session_is_not_expired_when_refresh_token_is_in_future() {
-        let future = Utc::now().naive_utc() + Duration::days(14);
+        let future = Utc::now() + Duration::days(14);
         let session = make_session(future);
         assert!(!session.is_expired());
     }

@@ -147,15 +147,15 @@ impl AccessTokenExt for AccessToken {
     ) -> Result<AccessToken, InvalidJwt> {
         use chrono::{Duration, Utc};
 
-        let issued_at = Utc::now().naive_utc();
+        let issued_at = Utc::now();
         let expires_at = issued_at + Duration::hours(24);
 
         let user_claims = UserClaims {
             user_id: user.id,
             username: user.username.clone(),
             email: user.email.clone(),
-            exp: expires_at.and_utc().timestamp(),
-            iat: issued_at.and_utc().timestamp(),
+            exp: expires_at.timestamp(),
+            iat: issued_at.timestamp(),
         };
 
         let value = Jwt::from_str(

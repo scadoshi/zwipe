@@ -286,7 +286,7 @@ impl DeckRepository for Postgres {
             sep.push("format = ")
                 .push_bind_unseparated(format.map(|f| f.to_legality_key().to_string()));
         }
-        let now = chrono::Utc::now().naive_utc();
+        let now = chrono::Utc::now();
         sep.push("updated_at = ").push_bind_unseparated(now);
 
         qb.push(" WHERE id = ")
@@ -334,7 +334,7 @@ impl DeckRepository for Postgres {
         if let Some(new_id) = request.new_scryfall_data_id {
             sep.push("scryfall_data_id = ").push_bind_unseparated(new_id);
         }
-        let now = chrono::Utc::now().naive_utc();
+        let now = chrono::Utc::now();
         sep.push("updated_at = ").push_bind_unseparated(now);
         qb.push(" WHERE deck_id = ")
             .push_bind(request.deck_id)

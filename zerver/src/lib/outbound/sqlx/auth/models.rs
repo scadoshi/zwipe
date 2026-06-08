@@ -3,7 +3,7 @@ use crate::{
     outbound::sqlx::auth::error::IntoUserWithPasswordHashError,
 };
 use zwipe_core::domain::user::username::Username;
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use sqlx_macros::FromRow;
 use uuid::Uuid;
 
@@ -16,8 +16,8 @@ pub struct DatabaseUserWithPasswordHash {
     pub username: String,
     pub email: String,
     pub password_hash: String,
-    pub lockout_until: Option<NaiveDateTime>,
-    pub email_verified_at: Option<NaiveDateTime>,
+    pub lockout_until: Option<DateTime<Utc>>,
+    pub email_verified_at: Option<DateTime<Utc>>,
 }
 
 /// converts database user with password hash
@@ -46,6 +46,6 @@ impl TryFrom<DatabaseUserWithPasswordHash> for UserWithPasswordHash {
 pub struct DatabaseRefreshToken {
     pub id: i32,
     pub user_id: Uuid,
-    pub expires_at: NaiveDateTime,
+    pub expires_at: DateTime<Utc>,
     pub revoked: bool,
 }

@@ -4,7 +4,7 @@ use zwipe_core::domain::card::{
     card_profile::CardProfile,
     mechanical_category::MechanicalCategory,
 };
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use sqlx_macros::FromRow;
 use uuid::Uuid;
 
@@ -15,8 +15,8 @@ pub struct DatabaseCardProfile {
     pub scryfall_data_id: Uuid,
     pub is_token: bool,
     pub mechanical_categories: Option<serde_json::Value>,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 impl From<DatabaseCardProfile> for CardProfile {

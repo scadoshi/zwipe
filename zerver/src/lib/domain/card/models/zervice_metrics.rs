@@ -3,7 +3,7 @@
 //! Tracks progress, errors, and outcomes of Scryfall bulk data sync operations.
 
 use anyhow::anyhow;
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -149,9 +149,9 @@ pub struct ZerviceMetrics {
     /// Final status (Success, PartialSuccess, Failure, InProgress).
     status: SyncStatus,
     /// When sync started (UTC).
-    started_at: NaiveDateTime,
+    started_at: DateTime<Utc>,
     /// When sync ended (UTC, None if still in progress).
-    ended_at: Option<NaiveDateTime>,
+    ended_at: Option<DateTime<Utc>>,
     /// Total duration in seconds.
     duration_in_seconds: i32,
     /// Total cards received from Scryfall.
@@ -170,7 +170,7 @@ impl Default for ZerviceMetrics {
     fn default() -> Self {
         Self {
             status: SyncStatus::InProgress,
-            started_at: chrono::Utc::now().naive_utc(),
+            started_at: Utc::now(),
             ended_at: None,
             duration_in_seconds: 0,
             received_count: 0,
@@ -195,13 +195,13 @@ impl ZerviceMetrics {
     }
 
     /// Sets the sync start time.
-    pub fn set_started_at(&mut self, started_at: NaiveDateTime) -> &mut Self {
+    pub fn set_started_at(&mut self, started_at: DateTime<Utc>) -> &mut Self {
         self.started_at = started_at;
         self
     }
 
     /// Sets the sync end time.
-    pub fn set_ended_at(&mut self, ended_at: Option<NaiveDateTime>) -> &mut Self {
+    pub fn set_ended_at(&mut self, ended_at: Option<DateTime<Utc>>) -> &mut Self {
         self.ended_at = ended_at;
         self
     }
@@ -274,19 +274,19 @@ impl ZerviceMetrics {
     pub fn mark_as_completed(&mut self) {
         self.error_count = self.errors.len() as i32;
         self.evaluate_status();
-        self.ended_at = Some(chrono::Utc::now().naive_utc());
+        self.ended_at = Some(Utc::now());
         if let Some(ended_at) = self.ended_at {
             self.duration_in_seconds = (ended_at - self.started_at).num_seconds() as i32;
         }
     }
 
     /// Returns when the sync started.
-    pub fn started_at(&self) -> NaiveDateTime {
+    pub fn started_at(&self) -> DateTime<Utc> {
         self.started_at
     }
 
     /// Returns when the sync ended (None if still in progress).
-    pub fn ended_at(&self) -> Option<NaiveDateTime> {
+    pub fn ended_at(&self) -> Option<DateTime<Utc>> {
         self.ended_at
     }
 

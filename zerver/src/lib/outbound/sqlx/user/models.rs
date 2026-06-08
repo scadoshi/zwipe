@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use sqlx_macros::FromRow;
 use uuid::Uuid;
 
@@ -13,7 +13,7 @@ pub struct DatabaseUser {
     pub id: Uuid,
     pub username: String,
     pub email: String,
-    pub email_verified_at: Option<NaiveDateTime>,
+    pub email_verified_at: Option<DateTime<Utc>>,
 }
 
 /// converts database user to validated domain user
