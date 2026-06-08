@@ -21,6 +21,7 @@ use crate::{
         card::ports::CardService,
         deck::ports::DeckService,
         health::ports::HealthService,
+        metrics::models::kinds::EventKind,
         user::{models::get_user::GetUserError, ports::UserService},
     },
     inbound::http::{ApiError, AppState},
@@ -117,10 +118,22 @@ where
 {
     let request = RegisterUser::new(&body.username, &body.email, &body.password)?;
     tracing::info!(event = "register", username = %body.username);
-    state
+    let session = state
         .auth_service
         .register_user(&request)
         .await
-        .map_err(ApiError::from)
-        .map(|response| (StatusCode::CREATED, response.into()))
+        .map_err(ApiError::from)?;
+
+    let user_id = session.user.id;
+    let metrics = std::sync::Arc::clone(&state.metrics_service);
+    tokio::spawn(async move {
+        if let Err(e) = metrics.insert_lifetime_row(user_id).await {
+            tracing::warn!(error = ?e, "metrics: insert_lifetime_row failed");
+        }
+        if let Err(e) = metrics.record_event(user_id, EventKind::Signup, None).await {
+            tracing::warn!(error = ?e, "metrics: record signup event failed");
+        }
+    });
+
+    Ok((StatusCode::CREATED, session.into()))
 }

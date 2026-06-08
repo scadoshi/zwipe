@@ -13,6 +13,7 @@ use crate::{
         card::ports::CardService,
         deck::ports::DeckService,
         health::ports::HealthService,
+        metrics::models::kinds::AuditAction,
         user::ports::UserService,
     },
     inbound::http::{ApiError, AppState, Log500},
@@ -47,10 +48,18 @@ where
     DS: DeckService,
 {
     let request = ResetPassword::new(body.token, &body.new_password)?;
-    state
+    let user_id = state
         .auth_service
         .reset_password(&request)
         .await
-        .map_err(ApiError::from)
-        .map(|_| StatusCode::OK)
+        .map_err(ApiError::from)?;
+
+    let metrics = std::sync::Arc::clone(&state.metrics_service);
+    tokio::spawn(async move {
+        if let Err(e) = metrics.record_audit(user_id, AuditAction::PasswordChanged).await {
+            tracing::warn!(error = ?e, "metrics: audit password reset failed");
+        }
+    });
+
+    Ok(StatusCode::OK)
 }

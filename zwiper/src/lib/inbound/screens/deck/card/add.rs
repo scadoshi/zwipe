@@ -4,6 +4,7 @@ use crate::{
         components::{
             auth::{bouncer::Bouncer, session_upkeep::Upkeep},
             interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
+            telemetry::usage_buffer::UsageBuffer,
         },
         screens::deck::card::{
             components::action_history::{
@@ -89,6 +90,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
+    let usage_buffer: Signal<UsageBuffer> = use_context();
     let toast = use_toast();
 
     // Card iteration state
@@ -144,6 +146,7 @@ pub fn Add(deck_id: Uuid) -> Element {
             return;
         };
 
+        usage_buffer().record_search();
         spawn(async move {
             match client().search_cards(&filter, &session).await {
                 Ok(new_cards) => {
@@ -578,6 +581,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         // Snapshot the filter builder state before the async block owns context.
         let filter_snapshot = filter_builder.peek().clone();
 
+        usage_buffer().record_search();
         spawn(async move {
             match client().search_cards(&filter, &session).await {
                 Ok(cards_from_search) => {
@@ -826,23 +830,27 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 config: swipe_config,
                                 entering: entering_direction,
                                 on_swipe_left: move |card: Card| {
+                                    usage_buffer().record_swipe(Direction::Left);
                                     action_history.write().push(SwipeAction::Skip { card: Box::new(card), exited: Direction::Left });
                                     toast.info("Skipped".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                     advance_after_commit();
                                 },
                                 on_swipe_right: move |card: Card| {
+                                    usage_buffer().record_swipe(Direction::Right);
                                     action_history.write().push(SwipeAction::Do { card: Box::new(card.clone()), exited: Direction::Right });
                                     add_card_to_deck(card);
                                     toast.success("Added to deck".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                     advance_after_commit();
                                 },
                                 on_swipe_up: move |card: Card| {
+                                    usage_buffer().record_swipe(Direction::Up);
                                     action_history.write().push(SwipeAction::Maybeboard { card: Box::new(card.clone()), exited: Direction::Up });
                                     add_card_to_maybeboard(card);
                                     toast.info("Added to maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                     advance_after_commit();
                                 },
                                 on_swipe_down: move |_card: Card| {
+                                    usage_buffer().record_swipe(Direction::Down);
                                     undo_last_action();
                                 },
                             }
@@ -866,6 +874,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 config: swipe_config,
                                 entering: mb_entering_direction,
                                 on_swipe_left: move |card: Card| {
+                                    usage_buffer().record_swipe(Direction::Left);
                                     mb_action_history.write().push(SwipeAction::Skip { card: Box::new(card), exited: Direction::Left });
                                     toast.info("Skipped".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                     let len = mb_displayed_cards().len();
@@ -874,14 +883,17 @@ pub fn Add(deck_id: Uuid) -> Element {
                                     }
                                 },
                                 on_swipe_right: move |card: Card| {
+                                    usage_buffer().record_swipe(Direction::Right);
                                     mb_action_history.write().push(SwipeAction::Do { card: Box::new(card.clone()), exited: Direction::Right });
                                     mb_promote_to_deck(card);
                                     toast.success("Moved to deck".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                 },
                                 on_swipe_up: move |_card: Card| {
+                                    usage_buffer().record_swipe(Direction::Up);
                                     toast.info("Already on maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                 },
                                 on_swipe_down: move |_card: Card| {
+                                    usage_buffer().record_swipe(Direction::Down);
                                     mb_undo_last_action();
                                 },
                             }
@@ -975,6 +987,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                             let filter_snapshot = filter_builder.peek().clone();
 
+                            usage_buffer().record_search();
                             spawn(async move {
                                 match client().search_cards(&filter, &session).await {
                                     Ok(cards_from_search) => {

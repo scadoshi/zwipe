@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE card_profiles SET mechanical_categories = $1, updated_at = NOW() WHERE scryfall_data_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Jsonb",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "703c7f91ef7cc5a7d2c1725c006ddc6492fc59434b187b3310c6b5f4f872fdb5"
+}

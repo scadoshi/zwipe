@@ -1,0 +1,70 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT user_id, swipes_right, swipes_left, swipes_up, swipes_down,\n                      searches, decks_created, decks_completed, updated_at\n               FROM user_lifetime_counters\n               WHERE user_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "swipes_right",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "swipes_left",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "swipes_up",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "swipes_down",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 5,
+        "name": "searches",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "decks_created",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "decks_completed",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "updated_at",
+        "type_info": "Timestamp"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "3496118b31e25a020d8266f7a6377240b9f56e42ca4eb61fa52936a6ab2576c0"
+}

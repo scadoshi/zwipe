@@ -4,6 +4,7 @@ use crate::{
         components::{
             auth::{bouncer::Bouncer, session_upkeep::Upkeep},
             interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
+            telemetry::usage_buffer::UsageBuffer,
         },
         screens::deck::card::{
             components::action_history::SwipeAction,
@@ -70,6 +71,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
+    let usage_buffer: Signal<UsageBuffer> = use_context();
     let toast = use_toast();
 
     // Source of truth — all entries in the deck
@@ -393,6 +395,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             config: swipe_config,
                             entering: entering_direction,
                             on_swipe_left: move |card: Card| {
+                                usage_buffer().record_swipe(Direction::Left);
                                 action_history.write().push(SwipeAction::Skip { card: Box::new(card), exited: Direction::Left });
                                 toast.info(
                                     "Skipped".to_string(),
@@ -405,6 +408,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                 }
                             },
                             on_swipe_right: move |card: Card| {
+                                usage_buffer().record_swipe(Direction::Right);
                                 action_history.write().push(SwipeAction::Do { card: Box::new(card), exited: Direction::Right });
                                 delete_card_from_deck();
                                 toast.success(
@@ -414,12 +418,14 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                 remove_current_card();
                             },
                             on_swipe_up: move |card: Card| {
+                                usage_buffer().record_swipe(Direction::Up);
                                 action_history.write().push(SwipeAction::Maybeboard { card: Box::new(card), exited: Direction::Up });
                                 move_card_to_maybeboard();
                                 toast.info("Moved to maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                 remove_current_card();
                             },
                             on_swipe_down: move |_card: Card| {
+                                usage_buffer().record_swipe(Direction::Down);
                                 undo_last_action();
                             },
                         }

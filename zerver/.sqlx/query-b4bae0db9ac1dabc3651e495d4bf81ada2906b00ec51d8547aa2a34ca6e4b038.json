@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT scryfall_data_id, is_token, mechanical_categories, created_at, updated_at\n            FROM card_profiles WHERE scryfall_data_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "scryfall_data_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "is_token",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 2,
+        "name": "mechanical_categories",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 3,
+        "name": "created_at",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 4,
+        "name": "updated_at",
+        "type_info": "Timestamp"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "b4bae0db9ac1dabc3651e495d4bf81ada2906b00ec51d8547aa2a34ca6e4b038"
+}

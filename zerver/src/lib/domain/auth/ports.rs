@@ -393,9 +393,10 @@ pub trait AuthService: Clone + Send + Sync + 'static {
 
     /// Completes a password reset using the one-time token and updates the password.
     ///
-    /// Revokes all existing sessions after a successful reset.
+    /// Revokes all existing sessions after a successful reset. Returns the id of
+    /// the user whose password was reset so callers can emit audit entries.
     fn reset_password(
         &self,
         request: &ResetPassword,
-    ) -> impl Future<Output = Result<(), ResetPasswordError>> + Send;
+    ) -> impl Future<Output = Result<uuid::Uuid, ResetPasswordError>> + Send;
 }

@@ -11,9 +11,13 @@ use crate::{
             ports::DeckService,
         },
         health::ports::HealthService,
+        metrics::models::kinds::EventKind,
         user::ports::UserService,
     },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+    inbound::http::{
+        handlers::metrics::check_completion::check_deck_completion,
+        middleware::AuthenticatedUser, ApiError, AppState, Log500,
+    },
 };
 #[cfg(feature = "zerver")]
 use axum::{
@@ -104,6 +108,24 @@ where
         .clone_deck(&request)
         .await
         .map_err(ApiError::from)?;
+
+    let metrics = std::sync::Arc::clone(&state.metrics_service);
+    let deck_service = std::sync::Arc::clone(&state.deck_service);
+    let uid = user.id;
+    tokio::spawn(async move {
+        if let Err(e) = metrics.increment_decks_created(uid).await {
+            tracing::warn!(error = ?e, "metrics: increment decks_created failed (clone)");
+        }
+        if let Err(e) = metrics
+            .record_event(uid, EventKind::DeckCreated, Some(new_deck_id))
+            .await
+        {
+            tracing::warn!(error = ?e, "metrics: record deck_created event failed (clone)");
+        }
+        // A clone is a complete copy of an existing deck, so it may already be
+        // valid — run the completion check immediately.
+        check_deck_completion(deck_service, metrics, uid, new_deck_id).await;
+    });
 
     Ok((
         StatusCode::CREATED,

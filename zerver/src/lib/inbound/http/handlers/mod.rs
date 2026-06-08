@@ -11,5 +11,8 @@ pub mod deck_card;
 #[cfg(feature = "zerver")]
 /// Health check handlers.
 pub mod health;
+#[cfg(feature = "zerver")]
+/// User metrics handlers.
+pub mod metrics;
 /// User profile handlers.
 pub mod user;
