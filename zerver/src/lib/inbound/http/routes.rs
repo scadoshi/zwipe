@@ -36,6 +36,10 @@ use crate::inbound::http::handlers::{
         import_deck_cards::import_deck_cards, update_deck_card::update_deck_card,
     },
     health::{are_server_and_database_running, is_server_running, root},
+    metrics::{
+        get_my_metrics::get_my_metrics, get_public_metrics::get_public_metrics,
+        record_usage::record_usage,
+    },
     user::{
         get_preferences::get_preferences, get_user::get_user,
         update_preferences::update_preferences,
@@ -122,6 +126,16 @@ where
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
+    // 30 req / 2s per IP — public marketing aggregates. CF cache absorbs most
+    // traffic; this guards origin if someone bypasses CF or warms many POPs.
+    let public_marketing_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(2))
+            .burst_size(30)
+            .key_extractor(PeerIpKeyExtractor)
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
 
     Router::new()
         .route("/", get(root))
@@ -176,6 +190,12 @@ where
                         .route("/languages", get(get_languages))
                         .route("/sets", get(get_sets))
                         .layer(GovernorLayer::new(public_card_config)),
+                )
+                .nest(
+                    "/marketing",
+                    Router::new()
+                        .route("/stats", get(get_public_metrics))
+                        .layer(GovernorLayer::new(public_marketing_config)),
                 ),
         )
 }
@@ -216,6 +236,15 @@ where
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(10))
             .burst_size(20)
+            .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
+    // 12 req/min — clients flush usage every ~30s; this gives ample headroom
+    let metrics_usage_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(5))
+            .burst_size(12)
             .key_extractor(UserIdKeyExtractor::new(jwt_secret))
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
@@ -254,13 +283,21 @@ where
                             "/delete-user",
                             delete(delete_user).layer(GovernorLayer::new(sensitive_config)),
                         )
-                        .route("/preferences", get(get_preferences).put(update_preferences)),
+                        .route("/preferences", get(get_preferences).put(update_preferences))
+                        .route("/metrics", get(get_my_metrics)),
                 )
                 .nest(
                     "/card",
                     Router::new().route(
                         "/search",
                         post(search_cards).layer(GovernorLayer::new(card_search_config)),
+                    ),
+                )
+                .nest(
+                    "/metrics",
+                    Router::new().route(
+                        "/usage",
+                        post(record_usage).layer(GovernorLayer::new(metrics_usage_config)),
                     ),
                 )
                 .nest(

@@ -23,7 +23,10 @@ use crate::{
         health::ports::HealthService,
         user::ports::UserService,
     },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+    inbound::http::{
+        handlers::metrics::check_completion::check_deck_completion,
+        middleware::AuthenticatedUser, ApiError, AppState, Log500,
+    },
 };
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::deck::requests::import_deck_cards::{ImportDeckCards, ImportDeckCardsResult};
@@ -72,10 +75,16 @@ where
         .map_err(|_| ApiError::UnprocessableEntity("invalid board value".to_string()))?;
     let request = ImportDeckCards::parse(user.id, deck_id, &body.text, email_verified, board_override);
 
-    state
+    let result = state
         .deck_service
         .import_deck_cards(&request)
         .await
-        .map_err(ApiError::from)
-        .map(|result| (StatusCode::OK, Json(result)))
+        .map_err(ApiError::from)?;
+
+    let metrics = std::sync::Arc::clone(&state.metrics_service);
+    let deck_service = std::sync::Arc::clone(&state.deck_service);
+    let uid = user.id;
+    tokio::spawn(check_deck_completion(deck_service, metrics, uid, deck_id));
+
+    Ok((StatusCode::OK, Json(result)))
 }

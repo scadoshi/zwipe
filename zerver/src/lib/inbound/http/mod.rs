@@ -12,7 +12,8 @@ pub mod routes;
 use crate::{
     domain::{
         auth::ports::AuthService, card::ports::CardService, deck::ports::DeckService,
-        health::ports::HealthService, user::ports::UserService,
+        health::ports::HealthService, metrics::ports::ErasedMetricsService,
+        user::ports::UserService,
     },
     inbound::http::routes::{private_routes, public_routes},
 };
@@ -215,7 +216,7 @@ pub struct HttpServerConfig<'a> {
 ///
 /// Generic over five service traits so handlers can be tested with mock implementations.
 #[cfg(feature = "zerver")]
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 #[allow(missing_docs)]
 pub struct AppState<AS, US, HS, CS, DS>
 where
@@ -230,6 +231,7 @@ where
     pub health_service: Arc<HS>,
     pub card_service: Arc<CS>,
     pub deck_service: Arc<DS>,
+    pub metrics_service: Arc<dyn ErasedMetricsService>,
 }
 
 /// Axum HTTP server with pre-configured routes and middleware.
@@ -248,6 +250,7 @@ impl HttpServer {
         health_service: impl HealthService,
         card_service: impl CardService,
         deck_service: impl DeckService,
+        metrics_service: Arc<dyn ErasedMetricsService>,
         config: HttpServerConfig<'_>,
     ) -> anyhow::Result<Self> {
         // RequestId is set by SetRequestIdLayer (below) before TraceLayer fires,
@@ -276,6 +279,7 @@ impl HttpServer {
             health_service: Arc::new(health_service),
             card_service: Arc::new(card_service),
             deck_service: Arc::new(deck_service),
+            metrics_service,
         };
 
         // Layer order is innermost-first, outermost-last. Request flows

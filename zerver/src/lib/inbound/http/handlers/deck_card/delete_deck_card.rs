@@ -16,7 +16,10 @@ use crate::{
         health::ports::HealthService,
         user::ports::UserService,
     },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+    inbound::http::{
+        handlers::metrics::check_completion::check_deck_completion,
+        middleware::AuthenticatedUser, ApiError, AppState, Log500,
+    },
 };
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::deck::requests::delete_deck_card::{DeleteDeckCard, InvalidDeleteDeckCard};
@@ -71,6 +74,13 @@ where
         .deck_service
         .delete_deck_card(&request)
         .await
-        .map_err(ApiError::from)
-        .map(|_| StatusCode::NO_CONTENT)
+        .map_err(ApiError::from)?;
+
+    let metrics = std::sync::Arc::clone(&state.metrics_service);
+    let deck_service = std::sync::Arc::clone(&state.deck_service);
+    let uid = user.id;
+    let did = request.deck_id;
+    tokio::spawn(check_deck_completion(deck_service, metrics, uid, did));
+
+    Ok(StatusCode::NO_CONTENT)
 }

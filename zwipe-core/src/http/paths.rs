@@ -150,3 +150,15 @@ pub fn delete_deck_card_route(deck_id: Uuid, scryfall_data_id: Uuid) -> String {
 pub fn import_deck_cards_route(deck_id: Uuid) -> String {
     format!("/api/deck/{}/card/import", deck_id)
 }
+
+pub fn record_usage_route() -> String {
+    "/api/metrics/usage".to_string()
+}
+
+pub fn get_my_metrics_route() -> String {
+    "/api/user/metrics".to_string()
+}
+
+pub fn public_metrics_route() -> String {
+    "/api/marketing/stats".to_string()
+}

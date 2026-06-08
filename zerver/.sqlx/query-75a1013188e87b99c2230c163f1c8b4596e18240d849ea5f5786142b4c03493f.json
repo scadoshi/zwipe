@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT cp.scryfall_data_id FROM card_profiles cp\n             JOIN scryfall_data sd ON cp.scryfall_data_id = sd.id\n             WHERE (cp.mechanical_categories = '[]'::jsonb OR cp.mechanical_categories IS NULL)\n               AND sd.oracle_text IS NOT NULL\n               AND sd.oracle_id IS NOT NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "scryfall_data_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "75a1013188e87b99c2230c163f1c8b4596e18240d849ea5f5786142b4c03493f"
+}
