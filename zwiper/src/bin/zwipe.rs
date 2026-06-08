@@ -1,5 +1,6 @@
 use dioxus::prelude::*;
 use dioxus_primitives::toast::ToastProvider;
+use tracing_subscriber::EnvFilter;
 use zwipe_core::domain::logo;
 use zwipe_core::domain::user::models::theme::ThemeConfig;
 use zwiper::{
@@ -18,7 +19,7 @@ fn main() {
     logo::Zwiper::print();
     let config = Config::from_env();
     tracing_subscriber::fmt()
-        .with_max_level(config.rust_log)
+        .with_env_filter(EnvFilter::new(&config.rust_log))
         .init();
     tracing::info!("zwiper v{} starting", env!("CARGO_PKG_VERSION"));
     dioxus::launch(App);
