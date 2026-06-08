@@ -13,7 +13,7 @@
 
 use std::str::FromStr;
 
-use chrono::{Duration, NaiveDateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -55,7 +55,8 @@ pub struct RefreshToken {
     /// The token value (64 hex characters = 32 random bytes).
     pub value: String,
     /// When this token expires (14 days from creation).
-    pub expires_at: NaiveDateTime,
+    #[serde(with = "crate::wire_time::utc")]
+    pub expires_at: DateTime<Utc>,
 }
 
 impl RefreshToken {
@@ -64,7 +65,7 @@ impl RefreshToken {
         let mut bytes = [0u8; 32];
         rand::rng().fill_bytes(&mut bytes);
         let value = hex::encode(bytes);
-        let expires_at = Utc::now().naive_utc() + REFRESH_TOKEN_LIFESPAN;
+        let expires_at = Utc::now() + REFRESH_TOKEN_LIFESPAN;
         Self { value, expires_at }
     }
 }
@@ -143,7 +144,7 @@ mod tests {
     #[test]
     fn test_refresh_token_generate_sets_expiry_14_days_in_future() {
         let token = RefreshToken::generate();
-        let now = Utc::now().naive_utc();
+        let now = Utc::now();
         assert!(token.expires_at > now + Duration::days(13));
         assert!(token.expires_at < now + Duration::days(15));
     }

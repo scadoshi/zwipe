@@ -26,12 +26,12 @@
       {
         "ordinal": 4,
         "name": "lockout_until",
-        "type_info": "Timestamp"
+        "type_info": "Timestamptz"
       },
       {
         "ordinal": 5,
         "name": "email_verified_at",
-        "type_info": "Timestamp"
+        "type_info": "Timestamptz"
       }
     ],
     "parameters": {

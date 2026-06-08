@@ -6,14 +6,16 @@ use crate::{
         router::Router,
         screens::deck::components::skeletons::DeckListSkeleton,
     },
-    outbound::client::{ZwipeClient, deck::get_deck_profiles::ClientGetDeckList, user::get_user::ClientGetUser},
+    outbound::client::{
+        ZwipeClient, deck::get_deck_profiles::ClientGetDeckList, user::get_user::ClientGetUser,
+    },
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{use_toast, ToastOptions};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
-use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::deck::deck_profile::DeckProfile;
 
 /// Screen displaying all user's decks with navigation to view/edit.
 #[component]
@@ -61,7 +63,10 @@ pub fn DeckList() -> Element {
 
     use_effect(move || {
         if let Some(Err(e)) = &*deck_profiles_resource.read() {
-            toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+            toast.error(
+                e.to_string(),
+                ToastOptions::default().duration(Duration::from_millis(3000)),
+            );
         }
     });
 
@@ -88,7 +93,7 @@ pub fn DeckList() -> Element {
                                 rsx! {
                                     for profile in {
                                         let mut sorted = deck_profiles.clone();
-                                        sorted.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+                                        sorted.sort_by_key(|a| a.name.to_lowercase());
                                         sorted
                                     } {
                                         div { class : "card row-enter",

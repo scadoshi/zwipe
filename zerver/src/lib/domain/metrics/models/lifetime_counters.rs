@@ -1,6 +1,6 @@
 //! Per-user lifetime counter aggregate.
 
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 use zwipe_core::http::contracts::metrics::HttpLifetimeCounters;
@@ -25,7 +25,7 @@ pub struct LifetimeCounters {
     /// Decks that have reached a valid state at least once.
     pub decks_completed: i32,
     /// Last write to this row — doubles as last-active timestamp.
-    pub updated_at: NaiveDateTime,
+    pub updated_at: DateTime<Utc>,
 }
 
 impl From<LifetimeCounters> for HttpLifetimeCounters {

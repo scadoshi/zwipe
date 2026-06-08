@@ -53,7 +53,7 @@ use crate::{
 use zwipe_core::domain::deck::Format;
 
 use anyhow::Context;
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use sqlx::{Postgres, query_as, query_scalar};
 use sqlx::{QueryBuilder, query_builder::Separated};
 
@@ -929,8 +929,8 @@ impl CardRepository for MyPostgres {
         Ok(card_profiles)
     }
 
-    async fn get_last_sync_date(&self) -> anyhow::Result<Option<NaiveDateTime>> {
-        let last_sync_date: Option<NaiveDateTime> = query_scalar(
+    async fn get_last_sync_date(&self) -> anyhow::Result<Option<DateTime<Utc>>> {
+        let last_sync_date: Option<DateTime<Utc>> = query_scalar(
             "SELECT started_at FROM zervice_metrics
             ORDER BY started_at DESC LIMIT 1",
         )
