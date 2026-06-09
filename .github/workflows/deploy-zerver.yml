@@ -6,6 +6,9 @@ on:
     paths:
       - 'zerver/**'
       - 'zwipe-core/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.sqlx/**'
       - '.github/workflows/deploy-zerver.yml'
   workflow_dispatch:
 
