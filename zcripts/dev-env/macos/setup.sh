@@ -83,6 +83,11 @@ ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 # per-target directives parsed by tracing_subscriber::EnvFilter — see zerver/.env.example
 RUST_LOG=info,sqlx=warn,zwipe=debug,zerver=debug
 RUST_BACKTRACE=0
+# log directory (zerver defaults to /var/log/zwipe in prod; /tmp is the dev-safe path)
+LOG_DIR=/tmp/zwipe-logs
+# email config (placeholder — dev doesn't send mail; swap in a real Resend key to test verify/reset flows)
+RESEND_API_KEY=changeme
+RESEND_EMAIL_FROM=hello@zwipe.net
 EOF
 
 cat > zwiper/.env << EOF
