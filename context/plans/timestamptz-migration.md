@@ -1,408 +1,237 @@
-# TIMESTAMP → TIMESTAMPTZ migration
+# TIMESTAMPTZ migration + wire-format cutover
 
-## Context
+**Status: phase 1 shipped 2026-06-08. Phase 2 awaiting iOS Build 25 propagation.**
 
-Every timestamp column in the schema today is plain `TIMESTAMP` (no time
-zone). PostgreSQL treats that type as "wall-clock value with no zone
-info attached" — the value stored is literally whatever the writing
-session's `TIMEZONE` resolves to at write time.
+This is a two-phase rollout. Phase 1 (today) moved the schema to `TIMESTAMPTZ`,
+moved Rust types to `DateTime<Utc>`, and shipped a mobile build that accepts
+both legacy no-Z and new Z-suffixed wire formats. Phase 2 (whenever Build 25
+has reached most/all users) flips the server to emit the canonical Z form and
+drops the compatibility adapter entirely.
 
-Today the system is *correct by accident*: the home-server Postgres
-cluster defaults to UTC, and as of `feat/user-metrics` the SQLx pool
-runs `SET TIME ZONE 'UTC'` on every connection
-(`zerver/src/lib/outbound/sqlx/postgres.rs::after_connect`). That
-backstop guarantees writes land in UTC regardless of where the process
-runs. But the schema doesn't *encode* that intent — a future
-maintainer who refactors the pool, a one-off psql session run in local
-TZ, or a CI runner with a different cluster TZ could all silently store
-values in the wrong zone, and the type system would not catch it.
+---
 
-`TIMESTAMPTZ` (`timestamp with time zone`) fixes this by storing **an
-instant in time, canonicalized to UTC internally, presented in the
-reader's session TZ on read**. The semantic — "this is the moment X
-happened" — is what we actually want for every `created_at`,
-`updated_at`, `expires_at`, `occurred_at`, etc.
+## Why we did this
 
-The benefit over "TIMESTAMP + pool pin" is **defense in depth and
-explicitness**, not correctness:
+The pre-2026-06-08 schema used plain `TIMESTAMP` (no time zone) everywhere. PG
+treats that as a "wall-clock value with no zone info attached" — the value
+stored is literally whatever the writing session's `TIMEZONE` resolves to. The
+system was *correct by accident*: the home-server cluster defaults to UTC and
+the SQLx pool runs `SET TIME ZONE 'UTC'` on every connect. The type system
+didn't enforce it.
 
-- The type itself says "this is a UTC instant" — no convention to
-  remember.
-- Even if the pool pin is dropped, `TIMESTAMPTZ` keeps reading correctly
-  because Postgres converts on the way out using the session TZ.
-- JSON wire format gains a `Z` suffix (`"2026-06-08T04:40:20Z"`), so
-  non-Rust consumers (curl, BI tools, future web client) can parse it
-  unambiguously.
+`TIMESTAMPTZ` ("timestamp with time zone") stores **an instant in time,
+canonicalized to UTC internally**. The semantic — "this is the moment X
+happened" — is what we actually want for every `created_at`, `updated_at`,
+`expires_at`, `occurred_at`.
 
-This work is scheduled as deliberate maintenance, not a feature. It
-ships on its own branch, behind its own review, with a fresh DB backup
-in hand.
+The benefits over "TIMESTAMP + pool pin" are explicitness + defense-in-depth:
+the type itself says "this is a UTC instant" and PG converts on read using
+the session TZ regardless of any future pool refactor. The wire format also
+gains the RFC3339 `Z` suffix that's unambiguous for any non-Rust consumer.
 
-## Design decisions (defaults with override notes)
+---
 
-| Decision | Default | Notes |
-|---|---|---|
-| **Schema type** | `TIMESTAMPTZ` everywhere a timestamp lives | Drop `TIMESTAMP WITHOUT TIME ZONE` entirely from the schema. One exception below for Scryfall data. |
-| **Rust mapping** | `chrono::DateTime<chrono::Utc>` | Replaces `chrono::NaiveDateTime` in all domain + adapter types. Makes "UTC instant" a type-level invariant. |
-| **JSON serialization** | RFC3339 with `Z` suffix | `serde_json` does this for `DateTime<Utc>` out of the box. Bumps wire-format compatibility for the iOS client (parses both, but the new format is more explicit). |
-| **Migration approach** | Per-table `ALTER COLUMN ... TYPE TIMESTAMPTZ USING ... AT TIME ZONE 'UTC'` | One migration per logical table group, not one giant migration. Failure isolation matters. |
-| **Existing-row conversion** | Assume existing values are already UTC and re-tag | The pool pin has been in place since `feat/user-metrics` shipped. Older rows predate the pin but the home cluster has always defaulted to UTC, so this should be safe. Spot-check oldest rows on prod before running each step. |
-| **Scryfall `released_at`** | **Out of scope** | `scryfall_data` and related Scryfall-sync tables use `released_at` as a property of the printing, not "an instant in our system." That's a date, not an instant, and conceptually it's `DATE` (or `TIMESTAMP` if Scryfall ever gives us hour-level data). Leave it. |
-| **`user_daily_activity.day`** | Already `DATE`, not changed | The `day` column is a `DATE`. Insert already uses `(NOW() AT TIME ZONE 'UTC')::date` so it's UTC-pinned. No change needed. |
-| **Pool pin retention** | Keep it | After the migration the pool pin is no longer load-bearing for correctness, but keeping it makes `NOW()`/`CURRENT_DATE` deterministic in raw queries and ad-hoc psql sessions through the pool. Defense in depth. |
+## What shipped 2026-06-08 (phase 1)
 
-## Scope inventory
+All landed on `main` via PR #5 (`feat/timestamptz-migration` → `main`,
+merge commit `97b870cf`).
 
-### Tables to migrate
+### Schema migrations
 
-From `grep -hn "TIMESTAMP" zerver/migrations/*.sql` as of 2026-06-07:
+Four sequential migrations under `zerver/migrations/`:
 
-| Migration file | Table | Columns |
-|---|---|---|
-| `20250810194439_create_users.sql` | `users` | `created_at`, `updated_at`, `last_failed_at`, `lockout_until`, `email_verified_at` |
-| `20250810194451_create_card_profiles.sql` | `card_profiles` | `created_at`, `updated_at` |
-| `20250810194454_create_decks.sql` | `decks` | `created_at`, `updated_at` (plus `first_completed_at` from `20260607211058_user_metrics.sql`) |
-| `20250810194459_create_deck_cards.sql` | `deck_cards` | `created_at`, `updated_at` |
-| `20250824191651_create_scryfall_card_sync_metrics.sql` | `zervice_metrics` | `started_at`, `ended_at` |
-| `20251007160206_create_refresh_tokens.sql` | refresh tokens | `created_at`, `expires_at` |
-| `20260327000001_create_email_verification_tokens.sql` | email verification tokens | `created_at`, `expires_at` |
-| `20260327000002_create_password_reset_tokens.sql` | password reset tokens | `created_at`, `expires_at` |
-| `20260329000000_create_user_preferences.sql` | `user_preferences` | `created_at`, `updated_at` |
-| `20260607211058_user_metrics.sql` | `user_lifetime_counters` | `updated_at` |
-| `20260607211058_user_metrics.sql` | `user_events` | `occurred_at` |
-| `20260607211058_user_metrics.sql` | `user_audit_log` | `occurred_at` |
-| (skipped) | `user_daily_activity` | `day` stays `DATE` |
-| (skipped) | `scryfall_data` | `released_at` is a property of the printing |
+- `20260608120000_timestamptz_tokens.sql` — `refresh_tokens`,
+  `email_verification_tokens`, `password_reset_tokens` (warmup, small tables)
+- `20260608120100_timestamptz_user.sql` — `users`, `user_preferences`,
+  `user_lifetime_counters`, `user_events`, `user_audit_log`
+- `20260608120200_timestamptz_decks.sql` — `decks`, `deck_cards`
+- `20260608120300_timestamptz_cards.sql` — `card_profiles`, `zervice_metrics`
 
-24 columns across 12 tables.
+Each `ALTER COLUMN ... TYPE TIMESTAMPTZ USING <col> AT TIME ZONE 'UTC'`.
+The `AT TIME ZONE 'UTC'` clause re-tags the existing wall-clock value as
+already-UTC. Safe because the cluster and pool have always been UTC.
 
-### Rust call sites to update
+**Intentionally skipped:**
+- `scryfall_data.released_at` (a date property of the printing, not "an
+  instant our system recorded")
+- `user_daily_activity.day` (already a `DATE` — calendar day, not instant; the
+  upsert writes `(NOW() AT TIME ZONE 'UTC')::date`)
 
-From `grep -rn "NaiveDateTime" zwipe-core/src zerver/src/lib` — 81 hits
-across roughly:
+### Rust type changes
 
-| File | Usage |
-|---|---|
-| `zwipe-core/src/domain/user/models/mod.rs` | `User::email_verified_at: Option<NaiveDateTime>` |
-| `zwipe-core/src/domain/auth/models/access_token.rs` | `AccessToken::expires_at: NaiveDateTime` |
-| `zwipe-core/src/domain/auth/models/refresh_token.rs` | `RefreshToken::expires_at: NaiveDateTime` |
-| `zwipe-core/src/domain/auth/models/session.rs` | Test helper using `chrono::NaiveDateTime` |
-| `zwipe-core/src/domain/card/models/card_profile.rs` | `CardProfile::{created_at, updated_at}: NaiveDateTime` |
-| `zwipe-core/src/http/contracts/metrics.rs` | `HttpLifetimeCounters::updated_at: NaiveDateTime` |
-| `zerver/src/lib/domain/metrics/models/lifetime_counters.rs` | `LifetimeCounters::updated_at: NaiveDateTime` |
-| `zerver/src/lib/outbound/sqlx/user/models.rs` | `DatabaseUser::email_verified_at: Option<NaiveDateTime>` |
-| `zerver/src/lib/outbound/sqlx/auth/models.rs` | `DatabaseUser::{lockout_until, email_verified_at}`, refresh token `expires_at` |
-| `zerver/src/lib/outbound/sqlx/auth/mod.rs` | Token query bindings (`expires_at` params) |
-| `zerver/src/lib/outbound/sqlx/card/card_profile.rs` | `DatabaseCardProfile::{created_at, updated_at}` |
-| `zerver/src/lib/outbound/sqlx/card/zervice_metrics.rs` | sync run timestamps |
-| `zerver/src/lib/outbound/sqlx/card/mod.rs` | `get_last_sync_date: Option<NaiveDateTime>` |
+Every `NaiveDateTime` field that maps to a migrated column flipped to
+`DateTime<Utc>` across:
 
-Test fixtures and helper functions that mint timestamps with
-`Utc::now().naive_utc()` also need updates (drop the `.naive_utc()`).
-
-### Things that *don't* need touching
-
-- `chrono::Utc` import is already pervasive — `DateTime<Utc>` is one
-  fewer keystroke than `NaiveDateTime`.
-- `email_verified_at`, `lockout_until`, and other nullable timestamps
-  stay nullable — `Option<DateTime<Utc>>` works the same as
-  `Option<NaiveDateTime>`.
-- The SQLx `.sqlx/` offline cache regenerates on `cargo sqlx prepare`
-  — no manual edits.
-
-## File-by-file plan
-
-All paths are relative to the repo root.
-
-### 0. Branch + DB backup
-
-```bash
-git checkout -b feat/timestamptz-migration
-# On the prod server, take a fresh dump before running anything live:
-ssh zerver-host 'pg_dump zerver > /var/backups/zwipe/pre-timestamptz-$(date +%Y%m%d).sql'
-```
-
-The backup is non-negotiable. `ALTER COLUMN TYPE` rewrites the table on
-disk; if something goes sideways mid-migration, the only clean recovery
-is a restore.
-
-### 1. Migrations — one per logical table group
-
-Generate timestamps with `date +%Y%m%d%H%M%S` ahead of time so the
-sequence is predictable. Suggested order — touches small tables first
-so a failure on a big one doesn't leave the schema half-converted:
-
-#### 1a. Tokens (3 tables — small, safe warmup)
-
-**New file:** `zerver/migrations/<ts>_timestamptz_tokens.sql`
-
-```sql
-ALTER TABLE refresh_tokens
-    ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC',
-    ALTER COLUMN expires_at TYPE TIMESTAMPTZ USING expires_at AT TIME ZONE 'UTC';
-
-ALTER TABLE email_verification_tokens
-    ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC',
-    ALTER COLUMN expires_at TYPE TIMESTAMPTZ USING expires_at AT TIME ZONE 'UTC';
-
-ALTER TABLE password_reset_tokens
-    ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC',
-    ALTER COLUMN expires_at TYPE TIMESTAMPTZ USING expires_at AT TIME ZONE 'UTC';
-```
-
-The `USING ... AT TIME ZONE 'UTC'` clause says "treat the existing
-wall-clock value as already being UTC, then convert to a TIMESTAMPTZ
-storing that UTC instant." Safe iff older rows really were UTC. Spot
-check:
-
-```sql
-SELECT min(created_at), max(created_at) FROM refresh_tokens;
-```
-
-If `min` looks plausible (no 2025-06-08T04:40:20 that should actually
-be 04:40 local), the cluster has been UTC the whole time.
-
-#### 1b. User-adjacent (users, preferences, lifetime, events, audit, daily activity)
-
-**New file:** `zerver/migrations/<ts>_timestamptz_user.sql`
-
-```sql
-ALTER TABLE users
-    ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC',
-    ALTER COLUMN updated_at TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'UTC',
-    ALTER COLUMN last_failed_at TYPE TIMESTAMPTZ USING last_failed_at AT TIME ZONE 'UTC',
-    ALTER COLUMN lockout_until TYPE TIMESTAMPTZ USING lockout_until AT TIME ZONE 'UTC',
-    ALTER COLUMN email_verified_at TYPE TIMESTAMPTZ USING email_verified_at AT TIME ZONE 'UTC';
-
-ALTER TABLE user_preferences
-    ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC',
-    ALTER COLUMN updated_at TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'UTC';
-
-ALTER TABLE user_lifetime_counters
-    ALTER COLUMN updated_at TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'UTC';
-
-ALTER TABLE user_events
-    ALTER COLUMN occurred_at TYPE TIMESTAMPTZ USING occurred_at AT TIME ZONE 'UTC';
-
-ALTER TABLE user_audit_log
-    ALTER COLUMN occurred_at TYPE TIMESTAMPTZ USING occurred_at AT TIME ZONE 'UTC';
-```
-
-#### 1c. Decks (decks + deck_cards)
-
-**New file:** `zerver/migrations/<ts>_timestamptz_decks.sql`
-
-```sql
-ALTER TABLE decks
-    ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC',
-    ALTER COLUMN updated_at TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'UTC',
-    ALTER COLUMN first_completed_at TYPE TIMESTAMPTZ USING first_completed_at AT TIME ZONE 'UTC';
-
-ALTER TABLE deck_cards
-    ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC',
-    ALTER COLUMN updated_at TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'UTC';
-```
-
-#### 1d. Cards + sync metrics
-
-**New file:** `zerver/migrations/<ts>_timestamptz_cards.sql`
-
-```sql
-ALTER TABLE card_profiles
-    ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC',
-    ALTER COLUMN updated_at TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'UTC';
-
-ALTER TABLE zervice_metrics
-    ALTER COLUMN started_at TYPE TIMESTAMPTZ USING started_at AT TIME ZONE 'UTC',
-    ALTER COLUMN ended_at   TYPE TIMESTAMPTZ USING ended_at   AT TIME ZONE 'UTC';
-```
-
-**Skipped** in this migration: `scryfall_data.released_at` (and any
-related columns) — different semantic, separate decision.
-
-### 2. Rust type changes
-
-Pattern: every `NaiveDateTime` becomes `DateTime<Utc>`. Every
-`Utc::now().naive_utc()` becomes `Utc::now()`.
-
-#### Domain types
-
-**Edit each of:**
-
-- `zwipe-core/src/domain/user/models/mod.rs`
-- `zwipe-core/src/domain/auth/models/access_token.rs`
-- `zwipe-core/src/domain/auth/models/refresh_token.rs`
-- `zwipe-core/src/domain/auth/models/session.rs` (test helper)
+- `zwipe-core/src/domain/auth/models/{access_token,refresh_token,session}.rs`
 - `zwipe-core/src/domain/card/models/card_profile.rs`
+- `zwipe-core/src/domain/user/models/mod.rs`
 - `zwipe-core/src/http/contracts/metrics.rs`
+- `zerver/src/lib/domain/auth/{ports,models,services,requests/refresh_session}.rs`
+- `zerver/src/lib/domain/card/{ports,services,models/zervice_metrics}.rs`
 - `zerver/src/lib/domain/metrics/models/lifetime_counters.rs`
+- `zerver/src/lib/outbound/sqlx/{auth/{mod,models},user/models,card/{mod,card_profile,zervice_metrics},deck/mod,metrics/mod}.rs`
+- Test fixtures in `zwipe-core/src/test_utils.rs` and
+  `zwipe-core/src/domain/card/models/search_card/{filter_cards,group_cards}.rs`
 
-For each file:
+`.sqlx/` offline cache regenerated. All 416 workspace tests pass.
 
-```rust
-// before
-use chrono::NaiveDateTime;
-pub expires_at: NaiveDateTime,
+### Wire-format compatibility shim
 
-// after
-use chrono::{DateTime, Utc};
-pub expires_at: DateTime<Utc>,
-```
+New file: `zwipe-core/src/wire_time.rs`. Two `#[serde(with = ...)]` adapters:
+- `wire_time::utc` for `DateTime<Utc>`
+- `wire_time::utc_opt` for `Option<DateTime<Utc>>`
 
-For nullable columns: `Option<NaiveDateTime>` → `Option<DateTime<Utc>>`.
+Behavior in phase 1:
+- **Serialize**: emit the legacy no-Z form via `dt.naive_utc().serialize(s)`
+  — byte-identical to pre-migration servers. iOS Build 24 and earlier
+  (parsing as `NaiveDateTime`) keep working.
+- **Deserialize**: lenient — accept both no-Z and `Z`/RFC3339 forms. Means
+  any client compiled against this `zwipe-core` (i.e. Build 25+) will read
+  whatever format the server eventually emits.
 
-#### Database adapter wrappers
+Applied to the 6 wire-facing fields:
+- `RefreshToken.expires_at`
+- `AccessToken.expires_at`
+- `User.email_verified_at` (also `#[serde(default)]`)
+- `CardProfile.created_at`
+- `CardProfile.updated_at`
+- `HttpLifetimeCounters.updated_at`
 
-**Edit each of:**
+Validated against the live iOS simulator on 2026-06-08 — profile create,
+deck create, card add round-tripped with zero parse failures.
 
-- `zerver/src/lib/outbound/sqlx/user/models.rs`
-- `zerver/src/lib/outbound/sqlx/auth/models.rs`
-- `zerver/src/lib/outbound/sqlx/auth/mod.rs` (function params + query bindings)
-- `zerver/src/lib/outbound/sqlx/card/card_profile.rs`
-- `zerver/src/lib/outbound/sqlx/card/zervice_metrics.rs`
-- `zerver/src/lib/outbound/sqlx/card/mod.rs` (`get_last_sync_date` return type)
-- `zerver/src/lib/outbound/sqlx/metrics/mod.rs` (the `query!` that hydrates `LifetimeCounters`)
+### iOS Build 25 (1.0.3) packaged
 
-The SQLx `query!` macros pick the type from the column — they'll
-complain at compile time if the wrapper expects the old type. The
-clippy session-time check catches the rest.
+`CFBundleShortVersionString=1.0.3`, `CFBundleVersion=25`. Submitted to ASC.
+This build has the lenient `wire_time` adapter baked in — accepts both
+formats forever, regardless of what the server eventually emits.
 
-#### Test fixtures
+### Other ride-alongs
 
-**Grep for `.naive_utc()`** and drop it. Anywhere a test mints a
-`NaiveDateTime` from `Utc::now()` becomes a plain `Utc::now()` returning
-`DateTime<Utc>`.
+- **EnvFilter for zwiper logging** — `zwiper/src/lib/config.rs` flipped from
+  `Level::from_str` (single word) to `EnvFilter` directive syntax, matching
+  zerver. Was a paper cut that hid in CI builds since they used simple level
+  values.
+- **Workspace version bump** — `0.1.0` → `1.0.3` in `Cargo.toml` so
+  `env!("CARGO_PKG_VERSION")` in zerver's startup log shows the actual
+  shipped version.
+- **Deploy workflow path filter** — `.github/workflows/deploy-zerver.yml`
+  now also watches `Cargo.toml`, `Cargo.lock`, and `.sqlx/**`. Without
+  this, the version bump above wouldn't have triggered a redeploy.
+- **dev-env setup scripts** — `zcripts/dev-env/{macos,fedora,omarchy}/setup.sh`
+  now write the complete `zerver/.env` (added `LOG_DIR`, `RESEND_API_KEY`,
+  `RESEND_EMAIL_FROM` — three vars that were missing and would panic
+  startup on a fresh box).
 
-```bash
-grep -rn "naive_utc()" zwipe-core zerver
-```
+---
 
-### 3. Wire-format check
+## Where things stand right now (post-2026-06-08)
 
-`HttpLifetimeCounters` and any other contract type that surfaces a
-timestamp on the wire now serializes as `"2026-06-08T04:40:20Z"`
-instead of `"2026-06-08T04:40:20"`. The iOS client's
-`serde_json` parse of `DateTime<Utc>` accepts both, but **confirm**
-by:
+| Layer | State |
+|---|---|
+| Production DB | Schema fully on `TIMESTAMPTZ` |
+| Production server (zerver v1.0.3) | Emits no-Z (via `wire_time::utc::serialize`); accepts both on read |
+| iOS Build 24 and earlier (still in users' phones) | Parses no-Z only; would break if server emits `Z` |
+| iOS Build 25 (in ASC review) | Parses both forms; future-proof against the upcoming server flip |
+| `feat/wire-format-rfc3339` branch on origin (`419c4212`) | Phase 2 cleanup ready — deletes `wire_time` module + uses chrono defaults |
 
-1. Read the relevant client deserialization sites:
+---
 
-   ```bash
-   grep -rn "HttpLifetimeCounters\|expires_at" zwiper/src/lib
-   ```
+## Phase 2: wire-format cutover (next step)
 
-2. If anything parses these as plain strings or naive dates, fix it.
+**Goal**: server emits RFC3339 with `Z` (the standards-conformant form),
+delete the now-redundant `wire_time` adapter from the shared crate.
 
-3. Sanity smoke after backend deploys:
+**The branch is already prepared:** `feat/wire-format-rfc3339` on origin
+contains a single commit (`419c4212`) that does the full cleanup:
 
-   ```bash
-   TOKEN=$(curl -s -X POST localhost:3000/api/auth/login \
-     -H 'content-type: application/json' \
-     -d '{"identifier":"test","password":"..."}' | jq -r '.access_token.value')
-   curl -s localhost:3000/api/user/metrics -H "Authorization: Bearer $TOKEN" | jq .updated_at
-   # expect: "2026-06-08T04:40:20Z"
-   ```
+- Deletes `zwipe-core/src/wire_time.rs` entirely
+- Removes `pub mod wire_time;` from `lib.rs`
+- Strips the 6 `#[serde(with = "crate::wire_time::*")]` annotations
+- Lets chrono's default serde behavior handle everything
+  (`DateTime<Utc>` serialize → `"...Z"`, deserialize → strict RFC3339)
+- Carries the same `Cargo.toml` workspace version 1.0.3 so no merge
+  conflict with main
 
-### 4. SQLx offline cache regen + lint
+Net change: −131 lines, +5 lines.
 
-```bash
-cd zerver && DATABASE_URL=... cargo sqlx prepare
-cargo build --workspace --release
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace --lib
-```
+### Why phase 2 is safe (the core argument)
 
-The `.sqlx/` cache fully regenerates because every query touching a
-migrated column gets a new column type signature.
+The wire_time-annotated fields are all **server → client only**:
+- Token expiries — server stamps and ships in `Session`
+- `email_verified_at` — server-controlled, returned in `User` responses
+- `CardProfile.created_at`/`updated_at` — server-controlled
+- `HttpLifetimeCounters.updated_at` — server-controlled
 
-### 5. Deploy order
+**No client → server payload contains any of these fields**. So making the
+server's *deserialize* strict (Z-only via chrono default) never receives a
+no-Z input from any client, because clients never send them at all.
 
-1. **Stage**: run the migration set on the staging DB (or a fresh
-   restore of the prod backup) and run the test suite against it.
-2. **Prod**: take the fresh backup (step 0), then `git push` — the CI
-   pipeline runs the migrations as part of deploy
-   (`.github/workflows/deploy-zerver.yml` — sqlx migrate run).
-3. **Post-deploy verification**:
+The risk is purely on the client *read* path:
+- iOS Build 25+ has lenient parsing baked in → handles Z fine
+- iOS Build 24 and older has NaiveDateTime strict parsing → **breaks on Z**
 
-   ```bash
-   psql $DATABASE_URL -c "\\d+ users" | grep -E "created_at|updated_at"
-   # expect: "timestamp with time zone"
-   ```
+So the gating question for merging phase 2 is: **has Build 25 propagated to
+most/all users?**
 
-   Pick one column on each table to confirm.
+With ~12 users known, the realistic timeline:
+1. ASC approves Build 25 (24–48h from submit)
+2. App Store auto-update pushes Build 25 (~24h after approval for most installs)
+3. Ping known users to update if you want to accelerate
 
-### 6. Rollback plan
+After ~3–5 days from submit, you should be at 100% on Build 25+.
 
-If a migration fails mid-flight, the transaction it wrapped rolls back
-cleanly (`cargo sqlx migrate run` wraps each file in a transaction). If
-all migrations succeed but the new code has a runtime bug, the rollback
-path is:
-
-1. Restore the pre-migration backup (`pg_restore < pre-timestamptz-YYYYMMDD.sql`).
-2. Revert the deploy commit.
-
-That's a full restore, not an incremental rollback — `ALTER COLUMN TYPE`
-rewrites the table, so undoing one column requires another rewrite. For
-that reason, the backup must be taken minutes before the deploy, not
-days.
-
-## Risks + mitigations
-
-| Risk | Likelihood | Mitigation |
-|---|---|---|
-| **Table-rewrite lock blocks writes** | low at current scale | `users`, `decks`, `deck_cards` are all small (<100k rows). The lock is `ACCESS EXCLUSIVE` but should complete in well under a second. Run during low-traffic window anyway. |
-| **Older rows weren't actually UTC** | low | The home-server cluster has defaulted to UTC since day one. Spot-check `min(created_at)` on each table before running — anything that looks off by hours signals a TZ drift in the past. |
-| **JSON wire format breaks the iOS client** | low | `DateTime<Utc>` JSON form is RFC3339 with `Z`; chrono's `serde` impl parses both forms, so the client deserializes either. Verify before deploy via the smoke step. |
-| **Refresh tokens silently expire wrong** | low | Token comparisons are `expires_at < now()` — both sides have the same type and same canonical zone after migration. No semantic change. Sanity: refresh a session and confirm. |
-| **`scryfall_data.released_at` left out is confusing** | medium | Document the reason in a code comment on the column when next touched, and leave a follow-up todo. The Scryfall sync is unaffected either way. |
-| **Pool pin retention forgotten** | low | Leave the `after_connect` hook in place. The migration doc here explicitly says keep it as defense in depth. |
-
-## Verification
+### How to execute phase 2
 
 ```bash
-# 1. Migration applies cleanly to a fresh local DB
-cd zerver && DATABASE_URL=postgres:///zerver_test cargo sqlx migrate run
+# 1. Confirm Build 25 is approved and live in App Store Connect
+#    (TestFlight → Builds or App Store → Distribution)
 
-# 2. Spot-check column type on a couple of tables
-psql postgres:///zerver_test -c "\\d+ users"   | grep "timestamp"
-psql postgres:///zerver_test -c "\\d+ decks"   | grep "timestamp"
-psql postgres:///zerver_test -c "\\d+ user_events" | grep "timestamp"
-# expect: "timestamp with time zone" everywhere
+# 2. Confirm install base via ASC Analytics → App Versions
+#    Want to see 100% (or close) of active installs on 1.0.3 build 25+
 
-# 3. Workspace builds clean + tests pass
-cargo build --workspace --release
-cargo test --workspace --lib
+# 3. Open the PR if it doesn't already exist
+gh pr create --base main --head feat/wire-format-rfc3339 \
+  --title "wire-format: drop adapter, emit RFC3339 with Z" \
+  --body "Phase 2 cutover. Pre-Build-25 installs break if any remain."
 
-# 4. SQLx offline cache regenerated and consistent
-cd zerver && cargo sqlx prepare
-git diff --stat .sqlx/   # large diff is expected; just confirm it compiles
+# 4. Merge via GitHub UI (squash or rebase your call)
+#    CI auto-deploys zerver — workflow watches Cargo.toml + Cargo.lock now,
+#    so the version-aligned merge commit triggers a rebuild and redeploy.
 
-# 5. End-to-end smoke after deploy
-TOKEN=$(curl -s -X POST localhost:3000/api/auth/login \
-  -H 'content-type: application/json' \
-  -d '{"identifier":"test","password":"..."}' | jq -r '.access_token.value')
-
-curl -s localhost:3000/api/user/metrics -H "Authorization: Bearer $TOKEN" | jq .updated_at
-# expect: "2026-06-08T04:40:20Z" (note trailing Z)
-
-# 6. Refresh-token roundtrip — confirms expiry comparisons still work
-curl -i -X POST localhost:3000/api/auth/refresh \
-  -H 'content-type: application/json' \
-  -d "$(jq -n --arg uid "$USER_ID" --arg rt "$REFRESH_TOKEN" \
-    '{user_id: $uid, refresh_token: $rt}')"
-# expect: 200 with a new session
+# 5. Verify server emits Z after deploy
+curl -s https://api.zwipe.net/api/auth/login \
+  -X POST -H 'content-type: application/json' \
+  -d '{"identifier":"test","password":"..."}' | jq '.access_token.expires_at'
+# Expect: "2026-XX-XXTHH:MM:SS.NNNNNNNNNZ"  (trailing Z)
 ```
 
-## Out of scope (deferred)
+### Recovery if something goes sideways
 
-- **`scryfall_data` timestamp columns** — `released_at` is a date
-  semantically; revisit when the Scryfall sync gets re-examined.
-- **Custom timestamp validation / clamping** — no business rule needs
-  this today; if a future feature wants "future-only" or "past-only"
-  validation, that's a domain-layer addition, not a schema concern.
-- **Display-zone preferences** — the iOS client could let users see
-  timestamps in their local TZ rather than UTC. Worthwhile, but it's a
-  rendering concern handled in the UI layer and unaffected by this
-  migration.
-- **Audit log retention / pruning** — separate ops work; the timestamp
-  type doesn't change the retention story.
+- **Pre-Build-25 user reports broken app** → tell them to update from App
+  Store. Recovery is one tap. No data loss.
+- **More users than expected still on Build 24** → revert the merge.
+  `git revert <merge-sha>` on main, push, CI redeploys the pre-flip server.
+  Server is back to emitting no-Z; all old + new clients work again. Sit
+  on it for another week.
+- **Catastrophe** (highly unlikely) → restore from the pre-2026-06-08
+  database backup. Schema-wise this is reversible only by another set of
+  `ALTER COLUMN TYPE TIMESTAMP USING ...` migrations; restoring from
+  backup is faster.
+
+---
+
+## Phase 3 (not planned, listed for completeness)
+
+If you ever want to tighten the iOS client's parsing too (drop the lenient
+both-formats acceptance), that would require a Build 26+ that compiles
+against the post-phase-2 `zwipe-core`. The shared-crate model gives that
+to you automatically the moment phase 2 merges — no separate phase 3
+branch is needed. The cleanup is already part of phase 2's diff.
+
+Practically: as soon as you ship any iOS build after merging phase 2, that
+build will inherit chrono's strict default deserialize. By then the
+server already emits Z, so strict is fine.
+
+So phase 3 isn't really a separate step — it just happens whenever the
+next mobile build ships after phase 2 lands.
