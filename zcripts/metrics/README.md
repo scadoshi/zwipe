@@ -57,6 +57,39 @@ sudo -u postgres psql zwipe -f zcripts/metrics/overview.sql > /tmp/zwipe-usage.t
 
 Then we decide what to dig into with a follow-up query.
 
+## `decks-truth.sql` — build-independent deck read
+
+Until 1.0.3 telemetry reaches users, the swipe/search/daily-active numbers are
+blind (the live App Store build doesn't report them, so they reflect only the
+dev device). This script reads **only** the `decks` / `deck_cards` tables, which
+are written server-side on every create regardless of app build — so these
+numbers are real for *all* users right now. Decks-per-day, builder activation,
+deck sizes, formats, top commanders.
+
+```bash
+sudo -u postgres psql zwipe -f zcripts/metrics/decks-truth.sql
+```
+
+## `backfill-deck-counter.sql` — one-time counter reconcile
+
+The public "Decks created" number on zwipe.net is `SUM(decks_created)` from
+`user_lifetime_counters` — a server-side counter bumped on every create/clone,
+but only since the metrics handler deployed. Decks built **before** that deploy
+never bumped it, so their builders sit at `decks_created = 0` while clearly
+owning decks. This script raises each such counter to the user's current live
+deck count.
+
+- **Only ever raises** (`WHERE decks_created < live_count`) — never lowers, so
+  the monotonic "never drops" marketing property holds and counters already
+  above their live count (created-then-deleted) are left untouched.
+- Wrapped in a transaction; prints BEFORE total, a per-user preview, and the
+  AFTER total, then COMMITs. Change the final `COMMIT` to `ROLLBACK` to dry-run.
+- One-time fix: new decks count correctly on their own going forward.
+
+```bash
+sudo -u postgres psql zwipe -f zcripts/metrics/backfill-deck-counter.sql
+```
+
 ## Notes
 
 - All timestamps are `TIMESTAMPTZ` and the pool is pinned to UTC, so every
