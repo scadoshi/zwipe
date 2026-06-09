@@ -70,6 +70,18 @@ deck sizes, formats, top commanders.
 sudo -u postgres psql zwipe -f zcripts/metrics/decks-truth.sql
 ```
 
+## `retention.sql` — repeat deck-builders
+
+"Retention" = did a builder come back on a *later day* to build again. Derived
+purely from `decks.created_at` (distinct UTC build days per user), so it's real
+for every user regardless of app build. **Re-run weekly** and watch the
+`repeat_builders` / `repeat_pct` numbers move. Shows a per-builder timeline and
+a return-gap distribution.
+
+```bash
+sudo -u postgres psql zwipe -f zcripts/metrics/retention.sql
+```
+
 ## `backfill-deck-counter.sql` — one-time counter reconcile
 
 The public "Decks created" number on zwipe.net is `SUM(decks_created)` from
