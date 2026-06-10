@@ -4,7 +4,7 @@
 //! including server-side session invalidation and local storage cleanup.
 
 use crate::{
-    inbound::components::auth::session_upkeep::Upkeep,
+    inbound::components::auth::ensure_session::EnsureFresh,
     outbound::{
         client::{auth::logout::ClientLogout, ZwipeClient},
         session::Persist,
@@ -24,9 +24,19 @@ impl SignalLogout for Signal<Option<Session>> {
         let mut session = self;
 
         spawn(async move {
-            session.upkeep(auth_client);
-            let Some(current) = session() else {
-                return;
+            let current = match session.ensure_fresh(auth_client).await {
+                Ok(current) => current,
+                Err(e) => {
+                    // ensure_fresh already cleared signal + keyring on auth
+                    // rejection; on transient errors still honor the user's
+                    // logout locally — the server token expires naturally.
+                    tracing::warn!("logout without server invalidation: {e}");
+                    if let Some(current) = session.peek().clone() {
+                        current.infallible_delete();
+                    }
+                    session.set(None);
+                    return;
+                }
             };
 
             // Always clear the local session — the user asked to log out regardless

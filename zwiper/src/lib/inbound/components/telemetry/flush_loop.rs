@@ -5,6 +5,7 @@ use std::time::Duration;
 use dioxus::prelude::{ReadableExt, spawn};
 use tokio::time::interval;
 
+use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::outbound::client::ZwipeClient;
 use crate::outbound::client::metrics::record_usage::ClientRecordUsage;
@@ -39,8 +40,9 @@ pub async fn flush_once(
     let Some(batch) = buffer.snapshot_and_zero() else {
         return;
     };
-    let Some(current_session) = session.peek().clone() else {
-        // Not logged in — drop the batch. Metrics are user-scoped.
+    let Ok(current_session) = session.ensure_fresh(*client).await else {
+        // Not logged in / token couldn't refresh — drop the batch.
+        // Metrics are user-scoped vanity data; not worth retry plumbing.
         return;
     };
     let client = client.peek().clone();
