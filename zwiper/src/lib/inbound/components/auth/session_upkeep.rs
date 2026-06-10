@@ -1,65 +1,20 @@
-//! Session upkeep and automatic token refresh.
+//! Background session upkeep loop and app context providers.
 //!
-//! Provides background session management that periodically checks token
-//! expiration and refreshes the access token before it expires.
+//! Periodically keeps the access token fresh via the single-flight
+//! [`EnsureFresh`] helper, and initializes the app-wide Dioxus context
+//! (session, client, card search state, theme, telemetry buffer).
 
+use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::telemetry::{
     flush_loop::spawn_usage_flusher, usage_buffer::UsageBuffer,
 };
-use crate::outbound::{
-    client::{auth::refresh::ClientRefresh, ZwipeClient},
-    session::Persist,
-};
-use zwipe_core::domain::user::models::theme::ThemeConfig;
+use crate::outbound::{client::ZwipeClient, session::Persist};
 use dioxus::prelude::*;
 use std::time::Duration;
 use tokio::time::interval;
-use zwipe_core::http::contracts::auth::HttpRefreshSession;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::{search_card::card_filter::builder::CardFilterBuilder, Card};
-
-/// Trait for session signals that can perform background upkeep.
-pub trait Upkeep {
-    /// Checks the session validity and refreshes the access token if expired.
-    fn upkeep(self, client: Signal<ZwipeClient>);
-}
-
-impl Upkeep for Signal<Option<Session>> {
-    fn upkeep(self, client: Signal<ZwipeClient>) {
-        let mut session = self;
-
-        spawn(async move {
-            let Some(current) = session() else {
-                tracing::debug!("session is none");
-                return;
-            };
-
-            if current.is_expired() {
-                tracing::info!("session has expired");
-                session.set(None);
-                return;
-            }
-
-            if current.access_token.is_expired() {
-                let request = HttpRefreshSession::new(
-                    &current.user.id.to_string(),
-                    &current.refresh_token.value,
-                );
-                match client().refresh(&request).await {
-                    Ok(new) => {
-                        session.set(Some(new));
-                        tracing::info!("refreshed session");
-                    }
-                    Err(e) => {
-                        session.set(None);
-                        tracing::error!("error refreshing session {e}");
-                    }
-                }
-            }
-            tracing::info!("session still active");
-        });
-    }
-}
+use zwipe_core::domain::user::models::theme::ThemeConfig;
 
 /// Spawns a background task that periodically refreshes the user session.
 ///
@@ -98,10 +53,12 @@ pub fn spawn_upkeeper() {
     spawn_usage_flusher(usage_buffer.peek().clone(), client, session);
 
     spawn(async move {
+        // first tick fires immediately — this is the cold-start refresh
         let mut interval = interval(Duration::from_secs(60));
         loop {
             interval.tick().await;
-            session.upkeep(client);
+            // single-flight: free of races with any in-flight user action
+            let _ = session.ensure_fresh(client).await;
         }
     });
 }
