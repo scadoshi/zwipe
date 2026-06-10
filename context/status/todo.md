@@ -6,6 +6,23 @@ Completed work archived at `context/archive/complete-2026-Q1.md` (swept 2026-05-
 
 ---
 
+## Pending Gated Merges — server flips waiting on iOS propagation (~2026-06-23)
+
+Two prepared branches sit on origin, each a server-side flip that would break
+older iOS clients. **Merge only after ASC Analytics → App Versions shows the
+gating build at ~100% of active installs.** Both can land together once Build 26
+has propagated (Build 26 implies Build 25's gate too).
+
+| Branch | What it does | Gate | Plan |
+|---|---|---|---|
+| `feat/wire-format-rfc3339` | Server emits RFC3339 `Z` timestamps, deletes `wire_time` adapter from zwipe-core | Build 25+ (1.0.3) propagated | `context/plans/timestamptz-migration.md` (phase 2) |
+| `feat/refresh-token-hardening` | Strict single-use refresh rotation (`FOR UPDATE` + delete check) | Build 26+ (1.0.4, submitted 2026-06-09) propagated | `context/plans/refresh-token-hardening.md` |
+
+Per-branch verification and rollback steps live in the linked plans. Merging
+either triggers an automatic zerver deploy via CI.
+
+---
+
 ## Web App — Ship Full App via Zite at zwipe.net
 
 Build the full deck builder into zite so `zwipe.net` serves both marketing pages (logged out) and the authenticated app experience (logged in). See `architecture/decisions.md` for rationale.
