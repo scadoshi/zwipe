@@ -69,10 +69,14 @@ nav {
 
 .nav-panel {
     display: flex;
-    align-items: center;
-    gap: 1.5rem;
     flex: 1;
     justify-content: flex-end;
+}
+
+.nav-panel-inner {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
 }
 
 .nav-stores-persistent {
@@ -233,6 +237,9 @@ nav {
         flex-wrap: wrap;
         padding: 1rem 0.75rem;
         gap: 0.5rem;
+        /* the collapsed panel still occupies a (zero-height) flex line;
+           row-gap would add phantom space below the toggle row */
+        row-gap: 0;
     }
     .nav-toggle {
         display: flex;
@@ -250,17 +257,46 @@ nav {
         display: none;
     }
     .nav-panel {
-        display: none;
+        display: grid;
+        grid-template-rows: 0fr;
+        /* explicit full-width column: the implicit auto column would be
+           content-sized and pinned right by the desktop justify-content */
+        grid-template-columns: minmax(0, 1fr);
         flex-basis: 100%;
+        opacity: 0;
+        visibility: hidden;
+        margin-top: 0;
+        padding-top: 0;
+        border-top: 1px solid transparent;
+        transition:
+            grid-template-rows 0.25s ease,
+            opacity 0.2s ease,
+            margin-top 0.25s ease,
+            padding-top 0.25s ease,
+            border-top-color 0.2s ease,
+            visibility 0s linear 0.25s;
+    }
+    .nav-panel-open {
+        grid-template-rows: 1fr;
+        opacity: 1;
+        visibility: visible;
+        margin-top: 1.25rem;
+        padding-top: 1rem;
+        border-top-color: var(--border-primary);
+        transition:
+            grid-template-rows 0.25s ease,
+            opacity 0.2s ease,
+            margin-top 0.25s ease,
+            padding-top 0.25s ease,
+            border-top-color 0.2s ease,
+            visibility 0s;
+    }
+    .nav-panel .nav-panel-inner {
         flex-direction: column;
         align-items: stretch;
         gap: 1rem;
-        padding-top: 1rem;
-        margin-top: 0.75rem;
-        border-top: 1px solid var(--border-primary);
-    }
-    .nav-panel-open {
-        display: flex;
+        overflow: hidden;
+        min-height: 0;
     }
     .nav-panel .nav-links {
         flex-direction: column;
@@ -273,6 +309,7 @@ nav {
         height: auto;
     }
     .nav-panel .nav-links a {
+        width: 100%;
         height: auto;
         text-align: center;
         font-size: 0.95rem;
@@ -282,6 +319,7 @@ nav {
     .nav-panel .theme-switcher {
         flex-direction: row;
         align-items: center;
+        justify-content: center;
         gap: 0.75rem;
         padding-top: 0.75rem;
         border-top: 1px solid var(--border-primary);
@@ -294,9 +332,16 @@ nav {
         padding: 0.55rem 1rem;
     }
     .nav-panel .theme-select-content {
+        /* fixed escapes the panel's overflow:hidden collapse wrapper, so the
+           dropdown pops out over the page; auto offsets keep it anchored at
+           its natural spot below the trigger (nav is sticky, so it's stable) */
+        position: fixed;
+        top: auto;
         right: auto;
-        left: 0;
+        left: auto;
+        margin-top: 0.5rem;
         max-height: 50vh;
+        overflow-y: auto;
     }
 }
 
