@@ -40,11 +40,11 @@ SELECT
 
 -- ───────────────────────────────────────────────────────────────────
 \echo
-\echo ── 2. SIGNUPS — new users per day (last 21 days) ──
+\echo ── 2. REGISTRATIONS — new users per day (last 21 days) ──
 -- Are we growing, flat, or did a launch/marketing push move the needle?
 SELECT
     created_at::date            AS day,
-    count(*)                    AS signups,
+    count(*)                    AS registrations,
     count(*) FILTER (WHERE email_verified_at IS NOT NULL) AS verified
 FROM users
 WHERE created_at >= CURRENT_DATE - INTERVAL '21 days'
@@ -54,15 +54,15 @@ ORDER BY 1;
 
 -- ───────────────────────────────────────────────────────────────────
 \echo
-\echo ── 3. ACTIVATION FUNNEL — signed up → swiped → built → completed ──
+\echo ── 3. ACTIVATION FUNNEL — registered → swiped → built → completed ──
 -- Durable-state funnel (counters + decks), so it's correct even for users
--- who signed up before event logging existed. Each step is a subset of the
--- one above it; the conv_% is share of all signups reaching that step.
+-- who registered before event logging existed. Each step is a subset of the
+-- one above it; the conv_% is share of all registrations reaching that step.
 WITH u AS (SELECT count(*)::numeric AS total FROM users)
 SELECT step, users,
        round(100.0 * users / NULLIF((SELECT total FROM u), 0), 1) AS conv_pct
 FROM (
-    SELECT 1 AS ord, '1 signed up'        AS step, (SELECT count(*) FROM users) AS users
+    SELECT 1 AS ord, '1 registered'       AS step, (SELECT count(*) FROM users) AS users
     UNION ALL
     SELECT 2, '2 swiped ≥1',  (SELECT count(*) FROM user_lifetime_counters
                                WHERE swipes_right + swipes_left + swipes_up + swipes_down > 0)
