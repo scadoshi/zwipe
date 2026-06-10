@@ -5,8 +5,14 @@ use std::fmt;
 /// Rare, durably-logged user events.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EventKind {
-    /// User completed signup.
-    Signup,
+    /// User completed registration.
+    Register,
+    /// User logged in.
+    Login,
+    /// User refreshed their session.
+    Refresh,
+    /// User logged out (revoked their sessions).
+    Logout,
     /// User created a new deck.
     DeckCreated,
     /// A deck first reached a valid state.
@@ -19,7 +25,10 @@ impl EventKind {
     /// String form stored in the `user_events.kind` column.
     pub fn as_str(self) -> &'static str {
         match self {
-            EventKind::Signup => "signup",
+            EventKind::Register => "register",
+            EventKind::Login => "login",
+            EventKind::Refresh => "refresh",
+            EventKind::Logout => "logout",
             EventKind::DeckCreated => "deck_created",
             EventKind::DeckCompleted => "deck_completed",
             EventKind::FirstSwipe => "first_swipe",
@@ -42,6 +51,12 @@ pub enum AuditAction {
     EmailChanged,
     /// Password was changed or reset.
     PasswordChanged,
+    /// User logged in.
+    Login,
+    /// User refreshed their session.
+    Refresh,
+    /// User logged out (revoked their sessions).
+    Logout,
 }
 
 impl AuditAction {
@@ -51,6 +66,9 @@ impl AuditAction {
             AuditAction::UsernameChanged => "username_changed",
             AuditAction::EmailChanged => "email_changed",
             AuditAction::PasswordChanged => "password_changed",
+            AuditAction::Login => "login",
+            AuditAction::Refresh => "refresh",
+            AuditAction::Logout => "logout",
         }
     }
 }

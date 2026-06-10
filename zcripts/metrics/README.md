@@ -8,17 +8,17 @@ single SQL file that aggregates everything we already capture about user usage.
 
 | Table | What it holds |
 |---|---|
-| `users` | signups, email verification, lockouts |
+| `users` | registrations, email verification, lockouts, `last_active_at`, `first_swiped_at` |
 | `decks` (`first_completed_at`) | decks built + whether they reached a valid state |
 | `deck_cards` (`board`) | card contents per deck — deck / maybeboard / sideboard |
-| `user_lifetime_counters` | per-user totals: swipes (R/L/U/D), searches, decks; `updated_at` = last active |
+| `user_lifetime_counters` | per-user totals: swipes (R/L/U/D), searches, decks; `updated_at` = last counter write (use `users.last_active_at` for last-active) |
 | `user_daily_activity` | per-user, per-day swipe + search counts (drives DAU/WAU/MAU) |
-| `user_events` | sparse log: `signup`, `deck_created`, `deck_completed`, `first_swipe` |
-| `user_audit_log` | credential changes: `username_changed`, `email_changed`, `password_changed` |
+| `user_events` | sparse log: `register`, `login`, `refresh`, `logout`, `deck_created`, `deck_completed`, `first_swipe` |
+| `user_audit_log` | auth timeline: `username_changed`, `email_changed`, `password_changed`, `login`, `refresh`, `logout` |
 
 ## `overview.sql` — one-shot usage report
 
-Sixteen labeled sections in one run: snapshot, signups, activation funnel,
+Sixteen labeled sections in one run: snapshot, registrations, activation funnel,
 DAU/WAU/MAU, recency, daily volume, swipe-direction mix, engagement
 distribution, top users, deck counts/completion/size, format popularity, top
 commanders, top cards, board usage, and account activity.
@@ -75,7 +75,7 @@ sudo -u postgres psql zwipe -f zcripts/metrics/retention.sql
   "day" / "last N days" window is UTC. Today's DAU is partial (the day isn't
   over yet).
 - The activation funnel (section 3) is built from durable state (counters +
-  decks), not the event log, so it's correct even for users who signed up
+  decks), not the event log, so it's correct even for users who registered
   before event logging existed.
 - Swipe directions: **right** = primary action (add on search / remove on deck
   view), **left** = skip/pass, **up** = maybeboard, **down** = undo.

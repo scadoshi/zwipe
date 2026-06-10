@@ -130,8 +130,8 @@ where
         if let Err(e) = metrics.insert_lifetime_row(user_id).await {
             tracing::warn!(error = ?e, "metrics: insert_lifetime_row failed");
         }
-        if let Err(e) = metrics.record_event(user_id, EventKind::Signup, None).await {
-            tracing::warn!(error = ?e, "metrics: record signup event failed");
+        if let Err(e) = metrics.record_event(user_id, EventKind::Register, None).await {
+            tracing::warn!(error = ?e, "metrics: record register event failed");
         }
     });
 
