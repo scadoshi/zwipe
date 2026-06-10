@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE user_lifetime_counters\n               SET decks_created = decks_created + 1,\n                   updated_at = NOW()\n               WHERE user_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6a0a1cae30dbdd1eb94878ab313ceb02277fd119e0a8fa7d6dba68d6cd918299"
+}

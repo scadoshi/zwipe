@@ -81,4 +81,12 @@ impl<R: MetricsRepository> MetricsService for Service<R> {
     async fn public_metrics(&self) -> Result<PublicMetrics, MetricsError> {
         self.repo.public_metrics().await
     }
+
+    async fn touch_last_active(&self, user_id: Uuid) -> Result<(), MetricsError> {
+        self.repo.touch_last_active(user_id).await
+    }
+
+    async fn mark_user_first_swiped(&self, user_id: Uuid) -> Result<bool, MetricsError> {
+        self.repo.mark_user_first_swiped(user_id).await
+    }
 }

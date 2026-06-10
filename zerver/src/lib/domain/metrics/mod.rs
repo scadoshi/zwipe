@@ -2,8 +2,8 @@
 //!
 //! Vanity dashboard totals and high-volume usage signals. The client buffers
 //! swipe / search counts and flushes them periodically; rare events
-//! (signup, deck created/completed) and credential audit entries are
-//! written inline at the relevant call sites.
+//! (register, login/refresh/logout, deck created/completed, first swipe)
+//! and audit entries are written inline at the relevant call sites.
 
 /// Metric models and error types.
 pub mod models;

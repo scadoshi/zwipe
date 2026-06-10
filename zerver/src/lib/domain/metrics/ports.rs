@@ -72,6 +72,20 @@ pub trait MetricsRepository: Clone + Send + Sync + 'static {
     fn public_metrics(
         &self,
     ) -> impl Future<Output = Result<PublicMetrics, MetricsError>> + Send;
+
+    /// Stamps `users.last_active_at` to now.
+    fn touch_last_active(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<(), MetricsError>> + Send;
+
+    /// Marks a user as having swiped if `first_swiped_at` is null. Returns
+    /// `true` if this call performed the transition (caller should emit the
+    /// first-swipe event), `false` if the user was already marked.
+    fn mark_user_first_swiped(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<bool, MetricsError>> + Send;
 }
 
 /// Service port for metrics business logic.
@@ -133,6 +147,19 @@ pub trait MetricsService: Clone + Send + Sync + 'static {
     fn public_metrics(
         &self,
     ) -> impl Future<Output = Result<PublicMetrics, MetricsError>> + Send;
+
+    /// Stamps `users.last_active_at` to now.
+    fn touch_last_active(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<(), MetricsError>> + Send;
+
+    /// Stamps `users.first_swiped_at` if currently null. Returns true if
+    /// this call performed the transition (so the caller fires the event).
+    fn mark_user_first_swiped(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<bool, MetricsError>> + Send;
 }
 
 /// Object-safe wrapper used by `AppState` so the concrete service type stays
@@ -194,6 +221,18 @@ pub trait ErasedMetricsService: Send + Sync + 'static {
     fn public_metrics<'a>(
         &'a self,
     ) -> Pin<Box<dyn Future<Output = Result<PublicMetrics, MetricsError>> + Send + 'a>>;
+
+    /// See [`MetricsService::touch_last_active`].
+    fn touch_last_active<'a>(
+        &'a self,
+        user_id: Uuid,
+    ) -> Pin<Box<dyn Future<Output = Result<(), MetricsError>> + Send + 'a>>;
+
+    /// See [`MetricsService::mark_user_first_swiped`].
+    fn mark_user_first_swiped<'a>(
+        &'a self,
+        user_id: Uuid,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, MetricsError>> + Send + 'a>>;
 }
 
 impl<T> ErasedMetricsService for T
@@ -264,5 +303,19 @@ where
         &'a self,
     ) -> Pin<Box<dyn Future<Output = Result<PublicMetrics, MetricsError>> + Send + 'a>> {
         Box::pin(MetricsService::public_metrics(self))
+    }
+
+    fn touch_last_active<'a>(
+        &'a self,
+        user_id: Uuid,
+    ) -> Pin<Box<dyn Future<Output = Result<(), MetricsError>> + Send + 'a>> {
+        Box::pin(MetricsService::touch_last_active(self, user_id))
+    }
+
+    fn mark_user_first_swiped<'a>(
+        &'a self,
+        user_id: Uuid,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, MetricsError>> + Send + 'a>> {
+        Box::pin(MetricsService::mark_user_first_swiped(self, user_id))
     }
 }
