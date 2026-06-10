@@ -16,7 +16,7 @@
       {
         "ordinal": 2,
         "name": "expires_at",
-        "type_info": "Timestamp"
+        "type_info": "Timestamptz"
       },
       {
         "ordinal": 3,
@@ -28,7 +28,7 @@
       "Left": [
         "Uuid",
         "Text",
-        "Timestamp"
+        "Timestamptz"
       ]
     },
     "nullable": [
