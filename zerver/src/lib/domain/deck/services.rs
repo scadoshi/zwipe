@@ -20,6 +20,7 @@ use crate::domain::{
                 get_deck_tokens::GetDeckTokensError,
                 update_deck_profile::UpdateDeckProfileError,
             },
+            deck::import_archidekt::{ArchidektDeck, ArchidektImportResult, ImportArchidektError},
             deck_card::{
                 create_deck_card::CreateDeckCardError,
                 delete_deck_card::DeleteDeckCardError,
@@ -438,6 +439,158 @@ where
             .collect();
 
         Ok(ImportDeckCardsResult {
+            imported,
+            unresolved,
+        })
+    }
+
+    async fn import_archidekt_deck(
+        &self,
+        user_id: Uuid,
+        deck: &ArchidektDeck,
+        email_verified: bool,
+    ) -> Result<ArchidektImportResult, ImportArchidektError> {
+        use std::collections::HashSet;
+
+        // 1. Resolve every printing by Scryfall id in one batch. A row may exist
+        // but carry a null oracle_id (reversible Secret Lair printings do); those
+        // can't be deck cards (deck_cards.oracle_id is NOT NULL), so they fall
+        // through to the name fallback below.
+        let all_ids: ScryfallDataIds = deck.cards.iter().map(|c| c.scryfall_id).collect();
+        let resolved = self
+            .card_repo
+            .get_multiple_scryfall_data(&all_ids)
+            .await
+            .map_err(|e| ImportArchidektError::Database(e.into()))?;
+        let oracle_by_id: HashMap<Uuid, Uuid> = resolved
+            .iter()
+            .filter_map(|sd| sd.oracle_id.map(|oracle| (sd.id, oracle)))
+            .collect();
+
+        // 2. For anything the id lookup couldn't resolve, fall back to the card
+        // name → latest printing (recovers reversible/Secret Lair printings,
+        // swapping the fancy printing for a standard one with a valid oracle_id).
+        let fallback_names: Vec<String> = deck
+            .cards
+            .iter()
+            .filter(|c| !oracle_by_id.contains_key(&c.scryfall_id) && !c.name.is_empty())
+            .map(|c| c.name.to_lowercase())
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect();
+        let name_matches = if fallback_names.is_empty() {
+            Vec::new()
+        } else {
+            self.card_repo
+                .find_cards_by_exact_names(&fallback_names)
+                .await
+                .map_err(|e| ImportArchidektError::Database(e.into()))?
+        };
+        let by_name: HashMap<String, (Uuid, Uuid)> = name_matches
+            .iter()
+            .filter_map(|c| {
+                c.scryfall_data
+                    .oracle_id
+                    .map(|oracle| (c.scryfall_data.name.to_lowercase(), (c.scryfall_data.id, oracle)))
+            })
+            .collect();
+
+        // 3. Classify each card: command zone, deck body, or unresolved.
+        // Deck-body cards dedupe by oracle_id, summing quantities.
+        let mut unresolved: Vec<UnresolvedCard> = Vec::new();
+        let mut command_zone_ids: Vec<Uuid> = Vec::new();
+        let mut command_zone_oracles: HashSet<Uuid> = HashSet::new();
+        let mut command_zone_names: Vec<String> = Vec::new();
+        let mut insert_map: HashMap<Uuid, (Uuid, i32, String)> = HashMap::new();
+
+        for card in &deck.cards {
+            // Prefer the exact printing the deck used; fall back to name.
+            let resolved = oracle_by_id
+                .get(&card.scryfall_id)
+                .map(|&oracle| (card.scryfall_id, oracle))
+                .or_else(|| by_name.get(&card.name.to_lowercase()).copied());
+            let Some((scryfall_id, oracle_id)) = resolved else {
+                unresolved.push(UnresolvedCard {
+                    name: if card.name.is_empty() {
+                        card.scryfall_id.to_string()
+                    } else {
+                        card.name.clone()
+                    },
+                    reason: "card not found in card database".to_string(),
+                });
+                continue;
+            };
+            if card.command_zone {
+                command_zone_ids.push(scryfall_id);
+                command_zone_oracles.insert(oracle_id);
+                command_zone_names.push(card.name.clone());
+            } else {
+                let entry = insert_map
+                    .entry(oracle_id)
+                    .or_insert_with(|| (scryfall_id, 0, card.name.clone()));
+                entry.1 += card.quantity;
+            }
+        }
+
+        // A card can't be both in the command zone and the deck body.
+        for oracle in &command_zone_oracles {
+            insert_map.remove(oracle);
+        }
+
+        // 3. Enforce the per-deck card limit before creating anything, so a
+        // rejected import never leaves an orphan empty deck behind.
+        let import_total: i64 = insert_map.values().map(|(_, qty, _)| i64::from(*qty)).sum();
+        let card_limit = if email_verified {
+            MAX_CARDS_PER_DECK
+        } else {
+            UNVERIFIED_MAX_CARDS_PER_DECK
+        };
+        if import_total > card_limit {
+            return Err(ImportArchidektError::Insert(if email_verified {
+                ImportDeckCardsError::LimitReached
+            } else {
+                ImportDeckCardsError::UnverifiedLimitReached
+            }));
+        }
+
+        // 4. Create the deck profile (also enforces the deck-count limit),
+        // assigning the first one/two resolved command-zone cards as
+        // commander / partner. (Background / signature spell: future work.)
+        let commander_id = command_zone_ids.first().copied();
+        let partner_commander_id = command_zone_ids.get(1).copied();
+        let create = CreateDeckProfile::builder(deck.name.clone(), user_id, email_verified)
+            .commander_id(commander_id)
+            .partner_commander_id(partner_commander_id)
+            .format(deck.format.as_deref())
+            .build()?;
+        let profile = self.create_deck_profile(&create).await?;
+
+        // 5. Bulk insert the deck body (all non-command-zone resolved cards).
+        let batch: Vec<(Uuid, Uuid, i32, String)> = insert_map
+            .iter()
+            .map(|(oracle_id, (sid, qty, _))| (*sid, *oracle_id, *qty, "deck".to_string()))
+            .collect();
+        if !batch.is_empty() {
+            let carrier = ImportDeckCards {
+                user_id,
+                deck_id: profile.id,
+                lines: Vec::new(),
+                email_verified,
+            };
+            self.deck_repo.bulk_create_deck_cards(&carrier, &batch).await?;
+        }
+
+        // 6. Build the result.
+        let imported: Vec<ImportedCard> = insert_map
+            .into_values()
+            .map(|(_, qty, name)| ImportedCard { name, quantity: qty })
+            .collect();
+
+        Ok(ArchidektImportResult {
+            deck_id: profile.id,
+            deck_name: profile.name.to_string(),
+            format: deck.format.clone(),
+            command_zone: command_zone_names,
             imported,
             unresolved,
         })

@@ -14,6 +14,7 @@ use crate::domain::deck::models::{
         get_deck::GetDeckError,
         get_deck_profile::GetDeckProfileError,
         get_deck_tokens::GetDeckTokensError,
+        import_archidekt::{ArchidektDeck, ArchidektImportResult, ImportArchidektError},
         update_deck_profile::UpdateDeckProfileError,
     },
     deck_card::{
@@ -242,6 +243,16 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         &self,
         request: &ImportDeckCards,
     ) -> impl Future<Output = Result<ImportDeckCardsResult, ImportDeckCardsError>> + Send;
+
+    /// Creates a new deck for `user_id` from a parsed Archidekt deck, resolving
+    /// each printing by Scryfall id, assigning the command zone, and bulk
+    /// inserting the remaining cards. Enforces deck-count and card limits.
+    fn import_archidekt_deck(
+        &self,
+        user_id: uuid::Uuid,
+        deck: &ArchidektDeck,
+        email_verified: bool,
+    ) -> impl Future<Output = Result<ArchidektImportResult, ImportArchidektError>> + Send;
 
     // ========
     //  clone

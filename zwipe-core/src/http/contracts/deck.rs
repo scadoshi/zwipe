@@ -3,7 +3,37 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::domain::deck::requests::import_deck_cards::{ImportedCard, UnresolvedCard};
 use crate::http::helpers::Opdate;
+
+/// Request to import a deck from an Archidekt deck URL.
+///
+/// The server extracts the numeric deck id from the URL, fetches the deck via
+/// Archidekt's public JSON API, resolves each printing against the card
+/// database by Scryfall id, and creates a new deck owned by the caller.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct HttpImportArchidektDeck {
+    /// Archidekt deck URL (e.g. `https://archidekt.com/decks/13769484/shorikai`)
+    /// or a bare numeric deck id.
+    pub url: String,
+}
+
+/// Result of an Archidekt deck import.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct HttpArchidektImportResult {
+    /// Id of the newly created deck.
+    pub deck_id: Uuid,
+    /// Name the deck was created with (from Archidekt, validated).
+    pub deck_name: String,
+    /// Format the deck was created with, if Archidekt's format mapped to one.
+    pub format: Option<String>,
+    /// Names of the cards placed in the command zone (commander / partner).
+    pub command_zone: Vec<String>,
+    /// Cards successfully imported into the deck.
+    pub imported: Vec<ImportedCard>,
+    /// Cards that couldn't be resolved against the card database.
+    pub unresolved: Vec<UnresolvedCard>,
+}
 
 /// Deck creation request body.
 #[derive(Debug, Deserialize, Serialize)]
