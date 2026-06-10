@@ -74,7 +74,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         }
         Some(Err(e)) => {
             toast.error(
-                e.to_string(),
+                e.to_user_message(),
                 ToastOptions::default().duration(Duration::from_millis(3000)),
             );
         }
@@ -111,7 +111,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         Some(Ok(None)) | None => (),
         Some(Err(e)) => {
             toast.error(
-                e.to_string(),
+                e.to_user_message(),
                 ToastOptions::default().duration(Duration::from_millis(3000)),
             );
         }
@@ -144,7 +144,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         Some(Ok(None)) | None => (),
         Some(Err(e)) => {
             toast.error(
-                e.to_string(),
+                e.to_user_message(),
                 ToastOptions::default().duration(Duration::from_millis(3000)),
             );
         }
@@ -177,7 +177,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         Some(Ok(None)) | None => (),
         Some(Err(e)) => {
             toast.error(
-                e.to_string(),
+                e.to_user_message(),
                 ToastOptions::default().duration(Duration::from_millis(3000)),
             );
         }
@@ -210,7 +210,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         Some(Ok(None)) | None => (),
         Some(Err(e)) => {
             toast.error(
-                e.to_string(),
+                e.to_user_message(),
                 ToastOptions::default().duration(Duration::from_millis(3000)),
             );
         }
@@ -317,7 +317,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 }
                 Err(e) => {
                     toast.error(
-                        e.to_string(),
+                        e.to_user_message(),
                         ToastOptions::default().duration(Duration::from_millis(3000)),
                     );
                     is_saving.set(false);

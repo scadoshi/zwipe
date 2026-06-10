@@ -77,7 +77,7 @@ pub(crate) fn PrintingSheet(
                 }
                 Err(e) => {
                     toast.error(
-                        e.to_string(),
+                        e.to_user_message(),
                         ToastOptions::default().duration(Duration::from_millis(3000)),
                     );
                 }

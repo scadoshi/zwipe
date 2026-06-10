@@ -61,7 +61,7 @@ pub fn DeckList() -> Element {
     use_effect(move || {
         if let Some(Err(e)) = &*deck_profiles_resource.read() {
             toast.error(
-                e.to_string(),
+                e.to_user_message(),
                 ToastOptions::default().duration(Duration::from_millis(3000)),
             );
         }

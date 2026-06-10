@@ -67,7 +67,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                     loading.set(false);
                 }
                 Err(e) => {
-                    toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                    toast.error(e.to_user_message(), ToastOptions::default().duration(Duration::from_millis(3000)));
                     loading.set(false);
                 }
             }

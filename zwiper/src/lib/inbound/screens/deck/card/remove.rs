@@ -130,7 +130,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 }
                 Err(e) => {
                     tracing::warn!("deck load failed: {e}");
-                    toast.error(e.to_string(), ToastOptions::default());
+                    toast.error(e.to_user_message(), ToastOptions::default());
                 }
             }
         });
@@ -203,7 +203,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 .await
             {
                 tracing::warn!("delete deck card failed: {e}");
-                toast.error(e.to_string(), ToastOptions::default());
+                toast.error(e.to_user_message(), ToastOptions::default());
             }
         });
     };
@@ -230,7 +230,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 .await
             {
                 tracing::warn!("move card to maybeboard failed: {e}");
-                toast.error(e.to_string(), ToastOptions::default());
+                toast.error(e.to_user_message(), ToastOptions::default());
             }
         });
     };

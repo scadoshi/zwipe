@@ -78,7 +78,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     use_effect(move || {
         if let Some(Err(e)) = &*deck_profile_resource.read() {
             toast.error(
-                e.to_string(),
+                e.to_user_message(),
                 ToastOptions::default().duration(Duration::from_millis(3000)),
             );
         }
@@ -90,7 +90,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         }
         Some(Err(e)) => {
             toast.error(
-                e.to_string(),
+                e.to_user_message(),
                 ToastOptions::default().duration(Duration::from_millis(3000)),
             );
         }
@@ -120,7 +120,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 }
                 Err(e) => {
                     toast.error(
-                        e.to_string(),
+                        e.to_user_message(),
                         ToastOptions::default().duration(Duration::from_millis(3000)),
                     );
                 }
@@ -373,7 +373,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                         deck_resource.restart();
                                                     }
                                                     Err(e) => {
-                                                        toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                                                        toast.error(e.to_user_message(), ToastOptions::default().duration(Duration::from_millis(3000)));
                                                     }
                                                 }
                                             });
@@ -405,7 +405,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                         deck_resource.restart();
                                                     }
                                                     Err(e) => {
-                                                        toast.error(e.to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                                                        toast.error(e.to_user_message(), ToastOptions::default().duration(Duration::from_millis(3000)));
                                                     }
                                                 }
                                             });
