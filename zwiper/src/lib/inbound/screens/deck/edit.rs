@@ -4,7 +4,7 @@ use super::components::deck_fields::DeckFields;
 use super::components::skeletons::EditDeckSkeleton;
 use crate::{
     inbound::{
-        components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
+        components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
         router::Router,
     },
     outbound::client::{
@@ -62,10 +62,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     // ========================================
     let original_deck_resource: Resource<Result<Deck, ApiError>> =
         use_resource(move || async move {
-            session.upkeep(client);
-            let Some(session) = session() else {
-                return Err(ApiError::Unauthorized("session expired".to_string()));
-            };
+            let session = session.ensure_fresh(client).await?;
             client().get_deck(deck_id, &session).await
         });
     use_effect(move || match original_deck_resource() {
@@ -280,14 +277,16 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         is_saving.set(true);
 
         spawn(async move {
-            session.upkeep(client);
-            let Some(session) = session() else {
-                toast.error(
-                    "Session expired".to_string(),
-                    ToastOptions::default().duration(Duration::from_millis(3000)),
-                );
-                is_saving.set(false);
-                return;
+            let session = match session.ensure_fresh(client).await {
+                Ok(session) => session,
+                Err(e) => {
+                    toast.error(
+                        e.to_user_message(),
+                        ToastOptions::default().duration(Duration::from_millis(3000)),
+                    );
+                    is_saving.set(false);
+                    return;
+                }
             };
 
             if !has_made_changes() {

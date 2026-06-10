@@ -2,7 +2,7 @@
 
 use crate::{
     inbound::{
-        components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
+        components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
         router::Router,
     },
     outbound::client::{
@@ -34,11 +34,13 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
         loading.set(true);
 
         spawn(async move {
-            session.upkeep(client);
-            let Some(session) = session() else {
-                toast.error("Session expired".to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
-                loading.set(false);
-                return;
+            let session = match session.ensure_fresh(client).await {
+                Ok(session) => session,
+                Err(e) => {
+                    toast.error(e.to_user_message(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                    loading.set(false);
+                    return;
+                }
             };
 
             match client().import_deck_cards(deck_id, &text(), board, &session).await {

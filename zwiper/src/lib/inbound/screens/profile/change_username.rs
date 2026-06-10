@@ -2,7 +2,7 @@
 
 use crate::{
     inbound::components::{
-        auth::{bouncer::Bouncer, session_upkeep::Upkeep},
+        auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
         fields::text_input::TextInput,
     },
     outbound::client::{ZwipeClient, user::change_username::ClientChangeUsername},
@@ -64,14 +64,16 @@ pub fn ChangeUsername() -> Element {
             let request = HttpChangeUsername::new(&new_username(), &password());
             is_loading.set(true);
             spawn(async move {
-                session.upkeep(auth_client);
-                let Some(mut session_value) = session() else {
-                    toast.error(
-                        "Session expired — please log in again".to_string(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    );
-                    is_loading.set(false);
-                    return;
+                let mut session_value = match session.ensure_fresh(auth_client).await {
+                    Ok(session_value) => session_value,
+                    Err(e) => {
+                        toast.error(
+                            e.to_user_message(),
+                            ToastOptions::default().duration(Duration::from_millis(3000)),
+                        );
+                        is_loading.set(false);
+                        return;
+                    }
                 };
 
                 match auth_client().change_username(request, &session_value).await {

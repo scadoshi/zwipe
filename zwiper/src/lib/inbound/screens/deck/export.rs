@@ -2,7 +2,7 @@
 
 use crate::{
     inbound::{
-        components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
+        components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
         router::Router,
     },
     outbound::client::{ZwipeClient, deck::get_deck::ClientGetDeck},
@@ -27,10 +27,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
     let mut include_maybeboard: Signal<bool> = use_signal(|| false);
 
     let deck_resource: Resource<Result<Deck, ApiError>> = use_resource(move || async move {
-        session.upkeep(client);
-        let Some(session) = session() else {
-            return Err(ApiError::Unauthorized("Session expired".to_string()));
-        };
+        let session = session.ensure_fresh(client).await?;
         client().get_deck(deck_id, &session).await
     });
 

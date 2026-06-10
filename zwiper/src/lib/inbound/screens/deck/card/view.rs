@@ -4,7 +4,7 @@ use super::components::image_preview::ImagePreview;
 use super::components::printing_sheet::PrintingSheet;
 use crate::{
     inbound::{
-        components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
+        components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
         screens::deck::card::filter::{card_filter_sheet::CardFilterSheet, deck_cards::DeckCards},
     },
     outbound::client::{
@@ -134,12 +134,14 @@ pub fn View(deck_id: Uuid) -> Element {
     // Effect 1 — mount load (reads `session` reactively)
     // Fetches deck entries, separates the commander into its own pinned slot.
     use_effect(move || {
-        session.upkeep(client);
-        let Some(session) = session() else {
-            return;
-        };
-
         spawn(async move {
+            let session = match session.ensure_fresh(client).await {
+                Ok(session) => session,
+                Err(_) => {
+                    return;
+                }
+            };
+
             let mut entries = match client().get_deck(deck_id, &session).await {
                 Ok(deck) => deck.entries,
                 Err(e) => {
@@ -211,9 +213,11 @@ pub fn View(deck_id: Uuid) -> Element {
     });
 
     let tokens_resource: Resource<Result<Vec<Card>, ApiError>> = use_resource(move || async move {
-        session.upkeep(client);
-        let Some(session) = session() else {
-            return Ok(Vec::new());
+        let session = match session.ensure_fresh(client).await {
+            Ok(session) => session,
+            Err(_) => {
+                return Ok(Vec::new());
+            }
         };
         client().get_deck_tokens(deck_id, &session).await
     });
@@ -299,12 +303,6 @@ pub fn View(deck_id: Uuid) -> Element {
         // - at 1 → delete
         let should_delete = current_qty + delta < 1;
 
-        session.upkeep(client);
-        let Some(session) = session() else {
-            toast.error("Session expired".to_string(), ToastOptions::default());
-            return;
-        };
-
         if should_delete {
             // Optimistic: remove from entries
             deck_entries.write().retain(|e| e.card.scryfall_data.id != card_id);
@@ -318,6 +316,14 @@ pub fn View(deck_id: Uuid) -> Element {
             );
 
             spawn(async move {
+                let session = match session.ensure_fresh(client).await {
+                    Ok(session) => session,
+                    Err(e) => {
+                        toast.error(e.to_user_message(), ToastOptions::default());
+                        return;
+                    }
+                };
+
                 if let Err(e) = client().delete_deck_card(deck_id, card_id, &session).await {
                     toast.error(e.to_string(), ToastOptions::default());
                 }
@@ -338,6 +344,14 @@ pub fn View(deck_id: Uuid) -> Element {
 
             let request = HttpUpdateDeckCard::new(Some(delta), None);
             spawn(async move {
+                let session = match session.ensure_fresh(client).await {
+                    Ok(session) => session,
+                    Err(e) => {
+                        toast.error(e.to_user_message(), ToastOptions::default());
+                        return;
+                    }
+                };
+
                 if let Err(e) = client()
                     .update_deck_card(deck_id, card_id, &request, &session)
                     .await
@@ -360,12 +374,6 @@ pub fn View(deck_id: Uuid) -> Element {
     };
 
     let mut move_to_board = move |card_id: Uuid, target: Board| {
-        session.upkeep(client);
-        let Some(session) = session() else {
-            toast.error("Session expired".to_string(), ToastOptions::default());
-            return;
-        };
-
         // Save old board for rollback
         let old_board = deck_entries
             .peek()
@@ -387,6 +395,14 @@ pub fn View(deck_id: Uuid) -> Element {
 
         let request = HttpUpdateDeckCard::new(None, Some(target.display_name().to_string()));
         spawn(async move {
+            let session = match session.ensure_fresh(client).await {
+                Ok(session) => session,
+                Err(e) => {
+                    toast.error(e.to_user_message(), ToastOptions::default());
+                    return;
+                }
+            };
+
             if let Err(e) = client()
                 .update_deck_card(deck_id, card_id, &request, &session)
                 .await
@@ -827,9 +843,6 @@ pub fn View(deck_id: Uuid) -> Element {
                         let old_id = card.scryfall_data.id;
                         let new_id = new_card.scryfall_data.id;
 
-                        session.upkeep(client);
-                        let Some(session_val) = session() else { return; };
-
                         match command_zone_slot() {
                             Some(slot) => {
                                 // Command zone card — update deck profile
@@ -841,6 +854,11 @@ pub fn View(deck_id: Uuid) -> Element {
                                     CommandZoneSlot::SignatureSpell => HttpUpdateDeckProfile::builder().signature_spell_id(id).build(),
                                 };
                                 spawn(async move {
+                                    let session_val = match session.ensure_fresh(client).await {
+                                        Ok(session_val) => session_val,
+                                        Err(_) => return,
+                                    };
+
                                     if client().update_deck_profile(deck_id, &request, &session_val).await.is_ok() {
                                         match slot {
                                             CommandZoneSlot::Commander => commander_card.set(Some(new_card.clone())),
@@ -858,6 +876,11 @@ pub fn View(deck_id: Uuid) -> Element {
                                 // Regular deck card — update deck card
                                 let request = HttpUpdateDeckCard::with_printing(&new_id.to_string());
                                 spawn(async move {
+                                    let session_val = match session.ensure_fresh(client).await {
+                                        Ok(session_val) => session_val,
+                                        Err(_) => return,
+                                    };
+
                                     if client().update_deck_card(deck_id, old_id, &request, &session_val).await.is_ok() {
                                         if let Some(entry) = deck_entries
                                             .write()

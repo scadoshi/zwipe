@@ -3,7 +3,7 @@
 use super::components::deck_fields::DeckFields;
 use crate::{
     inbound::{
-        components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
+        components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
         router::Router,
     },
     outbound::client::{deck::create_deck::ClientCreateDeck, ZwipeClient},
@@ -44,11 +44,13 @@ pub fn CreateDeck() -> Element {
         is_saving.set(true);
 
         spawn(async move {
-            session.upkeep(auth_client);
-            let Some(session) = session() else {
-                toast.error("Session expired".to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
-                is_saving.set(false);
-                return;
+            let session = match session.ensure_fresh(auth_client).await {
+                Ok(session) => session,
+                Err(e) => {
+                    toast.error(e.to_user_message(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                    is_saving.set(false);
+                    return;
+                }
             };
 
             let commander_id = commander().map(|c| c.scryfall_data.id);
