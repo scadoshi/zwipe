@@ -21,6 +21,11 @@ has propagated (1.0.4 implies Build 25's gate too).
 Per-branch verification and rollback steps live in the linked plans. Merging
 either triggers an automatic zerver deploy via CI.
 
+**Also queued for the next iOS build (client-only, safe to merge anytime):**
+PR #9 (`fix/error-toast-copy`) — error toasts use `to_user_message()` instead
+of raw `e.to_string()` (stops leaking backend URLs in network-error toasts).
+Rides whatever build ships after 1.0.4; no gate.
+
 ---
 
 ## Web App — Ship Full App via Zite at zwipe.net
