@@ -2,7 +2,7 @@ use super::components::card_info::{CardInfoDisplay, CardSkeleton};
 use crate::{
     inbound::{
         components::{
-            auth::{bouncer::Bouncer, session_upkeep::Upkeep},
+            auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
             interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
             telemetry::usage_buffer::UsageBuffer,
         },
@@ -110,12 +110,14 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
     // Effect 1 — mount load (reads `session` reactively)
     use_effect(move || {
-        session.upkeep(client);
-        let Some(session) = session() else {
-            return;
-        };
-
         spawn(async move {
+            let session = match session.ensure_fresh(client).await {
+                Ok(session) => session,
+                Err(_) => {
+                    return;
+                }
+            };
+
             match client().get_deck(deck_id, &session).await {
                 Ok(deck) => {
                     let all_cards: Vec<Card> =
@@ -185,15 +187,17 @@ pub fn Remove(deck_id: Uuid) -> Element {
             return;
         };
 
-        session.upkeep(client);
-        let Some(session) = session() else {
-            toast.error("Session expired".to_string(), ToastOptions::default());
-            return;
-        };
-
         let scryfall_data_id = card.scryfall_data.id;
 
         spawn(async move {
+            let session = match session.ensure_fresh(client).await {
+                Ok(session) => session,
+                Err(e) => {
+                    toast.error(e.to_user_message(), ToastOptions::default());
+                    return;
+                }
+            };
+
             if let Err(e) = client()
                 .delete_deck_card(deck_id, scryfall_data_id, &session)
                 .await
@@ -209,16 +213,18 @@ pub fn Remove(deck_id: Uuid) -> Element {
             return;
         };
 
-        session.upkeep(client);
-        let Some(session) = session() else {
-            toast.error("Session expired".to_string(), ToastOptions::default());
-            return;
-        };
-
         let scryfall_data_id = card.scryfall_data.id;
         let request = HttpUpdateDeckCard::new(None, Some("maybeboard".to_string()));
 
         spawn(async move {
+            let session = match session.ensure_fresh(client).await {
+                Ok(session) => session,
+                Err(e) => {
+                    toast.error(e.to_user_message(), ToastOptions::default());
+                    return;
+                }
+            };
+
             if let Err(e) = client()
                 .update_deck_card(deck_id, scryfall_data_id, &request, &session)
                 .await
@@ -278,15 +284,17 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 displayed_cards.write().insert(idx, card.clone());
 
                 // Restore on the backend
-                session.upkeep(client);
-                let Some(session) = session() else {
-                    toast.error("Session expired".to_string(), ToastOptions::default());
-                    entering_direction.set(None);
-                    return;
-                };
-
                 let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
                 spawn(async move {
+                    let session = match session.ensure_fresh(client).await {
+                        Ok(session) => session,
+                        Err(e) => {
+                            toast.error(e.to_user_message(), ToastOptions::default());
+                            entering_direction.set(None);
+                            return;
+                        }
+                    };
+
                     match client().create_deck_card(deck_id, &request, &session).await {
                         Ok(deck_card) => {
                             // Re-add entry to source of truth
@@ -316,17 +324,19 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 displayed_cards.write().insert(idx, card.clone());
 
                 // Move back from maybeboard to active on the backend
-                session.upkeep(client);
-                let Some(session) = session() else {
-                    toast.error("Session expired".to_string(), ToastOptions::default());
-                    entering_direction.set(None);
-                    return;
-                };
-
                 let scryfall_data_id = card.scryfall_data.id;
                 let request = HttpUpdateDeckCard::new(None, Some("deck".to_string()));
 
                 spawn(async move {
+                    let session = match session.ensure_fresh(client).await {
+                        Ok(session) => session,
+                        Err(e) => {
+                            toast.error(e.to_user_message(), ToastOptions::default());
+                            entering_direction.set(None);
+                            return;
+                        }
+                    };
+
                     match client()
                         .update_deck_card(deck_id, scryfall_data_id, &request, &session)
                         .await

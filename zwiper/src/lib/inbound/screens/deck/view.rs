@@ -11,7 +11,7 @@ use crate::inbound::components::alert_dialog::{
 };
 use crate::{
     inbound::{
-        components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
+        components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
         router::Router,
     },
     outbound::buy_links,
@@ -54,10 +54,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
     let mut deck_profile_resource: Resource<Result<DeckProfile, ApiError>> =
         use_resource(move || async move {
-            session.upkeep(client);
-            let Some(session) = session() else {
-                return Err(ApiError::Unauthorized("Session expired".to_string()));
-            };
+            let session = session.ensure_fresh(client).await?;
             client().get_deck_profile(deck_id, &session).await
         });
     let commander_resource: Resource<Result<Option<Card>, ApiError>> =
@@ -72,10 +69,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             client().get_card(original_commander_id).await.map(Some)
         });
     let mut deck_resource: Resource<DeckResult> = use_resource(move || async move {
-        session.upkeep(client);
-        let Some(session) = session() else {
-            return Err(ApiError::Unauthorized("Session expired".to_string()));
-        };
+        let session = session.ensure_fresh(client).await?;
         client()
             .get_deck(deck_id, &session)
             .await
@@ -108,16 +102,18 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let mut show_delete_dialog = use_signal(|| false);
     let show_clone_dialog = use_signal(|| false);
     let attempt_delete = move || {
-        session.upkeep(client);
-        let Some(session) = session() else {
-            toast.error(
-                "Session expired".to_string(),
-                ToastOptions::default().duration(Duration::from_millis(3000)),
-            );
-            return;
-        };
-
         spawn(async move {
+            let session = match session.ensure_fresh(client).await {
+                Ok(session) => session,
+                Err(e) => {
+                    toast.error(
+                        e.to_user_message(),
+                        ToastOptions::default().duration(Duration::from_millis(3000)),
+                    );
+                    return;
+                }
+            };
+
             match client().delete_deck(deck_id, &session).await {
                 Ok(_) => {
                     navigator.push(Router::DeckList {});
@@ -351,9 +347,6 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                             deck_resource.restart();
                                         },
                                         on_fix_quantity: move |(card_id, target_qty): (Uuid, i32)| {
-                                            session.upkeep(client);
-                                            let Some(session) = session() else { return; };
-
                                             let current_qty = deck_resource()
                                                 .and_then(|r| r.ok())
                                                 .and_then(|(entries, _)| {
@@ -366,6 +359,11 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                             let request = HttpUpdateDeckCard::new(Some(delta), None);
 
                                             spawn(async move {
+                                                let session = match session.ensure_fresh(client).await {
+                                                    Ok(session) => session,
+                                                    Err(_) => return,
+                                                };
+
                                                 match client().update_deck_card(deck_id, card_id, &request, &session).await {
                                                     Ok(_) => {
                                                         toast.info(
@@ -381,14 +379,16 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                             });
                                         },
                                         on_clear_commander: move |_| {
-                                            session.upkeep(client);
-                                            let Some(session) = session() else { return; };
-
                                             let request = HttpUpdateDeckProfile::builder()
                                                 .commander_id(Opdate::Set(None))
                                                 .build();
 
                                             spawn(async move {
+                                                let session = match session.ensure_fresh(client).await {
+                                                    Ok(session) => session,
+                                                    Err(_) => return,
+                                                };
+
                                                 match client().update_deck_profile(deck_id, &request, &session).await {
                                                     Ok(_) => {
                                                         let label = if deck_profile_resource().is_some_and(|r| r.as_ref().ok().is_some_and(|p| p.format.as_ref().is_some_and(|f| f.has_signature_spell()))) {

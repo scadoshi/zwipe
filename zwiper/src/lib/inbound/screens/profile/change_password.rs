@@ -6,7 +6,7 @@ use crate::{
             AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
             AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
         },
-        auth::{bouncer::Bouncer, session_upkeep::Upkeep},
+        auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
         fields::text_input::TextInput,
     },
     outbound::client::{ZwipeClient, user::change_password::ClientChangePassword},
@@ -67,14 +67,16 @@ pub fn ChangePassword() -> Element {
             let request = HttpChangePassword::new(&current_password(), &new_password());
             is_loading.set(true);
             spawn(async move {
-                session.upkeep(auth_client);
-                let Some(session) = session() else {
-                    toast.error(
-                        "Session expired — please log in again".to_string(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    );
-                    is_loading.set(false);
-                    return;
+                let session = match session.ensure_fresh(auth_client).await {
+                    Ok(session) => session,
+                    Err(e) => {
+                        toast.error(
+                            e.to_user_message(),
+                            ToastOptions::default().duration(Duration::from_millis(3000)),
+                        );
+                        is_loading.set(false);
+                        return;
+                    }
                 };
 
                 match auth_client().change_password(request, &session).await {

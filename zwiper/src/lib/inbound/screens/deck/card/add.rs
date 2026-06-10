@@ -2,7 +2,7 @@ use super::components::card_info::{CardInfoDisplay, CardSkeleton};
 use crate::{
     inbound::{
         components::{
-            auth::{bouncer::Bouncer, session_upkeep::Upkeep},
+            auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
             interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
             telemetry::usage_buffer::UsageBuffer,
         },
@@ -140,14 +140,16 @@ pub fn Add(deck_id: Uuid) -> Element {
             return;
         };
 
-        session.upkeep(client);
-        let Some(session) = session() else {
-            is_loading_more.set(false);
-            return;
-        };
-
         usage_buffer().record_search();
         spawn(async move {
+            let session = match session.ensure_fresh(client).await {
+                Ok(session) => session,
+                Err(_) => {
+                    is_loading_more.set(false);
+                    return;
+                }
+            };
+
             match client().search_cards(&filter, &session).await {
                 Ok(new_cards) => {
                     let existing_cards = cards();
@@ -240,17 +242,19 @@ pub fn Add(deck_id: Uuid) -> Element {
     };
 
     let add_card_to_deck = move |card: Card| {
-        session.upkeep(client);
-        let Some(session) = session() else {
-            toast.error("Session expired".to_string(), ToastOptions::default());
-            return;
-        };
-
         // For now, always add quantity 1 (will add quantity picker later)
         let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
         let oracle_id = card.scryfall_data.oracle_id;
 
         spawn(async move {
+            let session = match session.ensure_fresh(client).await {
+                Ok(session) => session,
+                Err(e) => {
+                    toast.error(e.to_user_message(), ToastOptions::default());
+                    return;
+                }
+            };
+
             match client().create_deck_card(deck_id, &request, &session).await {
                 Ok(_) => {
                     if let Some(oid) = oracle_id {
@@ -266,17 +270,19 @@ pub fn Add(deck_id: Uuid) -> Element {
     };
 
     let add_card_to_maybeboard = move |card: Card| {
-        session.upkeep(client);
-        let Some(session) = session() else {
-            toast.error("Session expired".to_string(), ToastOptions::default());
-            return;
-        };
-
         let request =
             HttpCreateDeckCard::new(&card.scryfall_data, 1, Some("maybeboard".to_string()));
         let oracle_id = card.scryfall_data.oracle_id;
 
         spawn(async move {
+            let session = match session.ensure_fresh(client).await {
+                Ok(session) => session,
+                Err(e) => {
+                    toast.error(e.to_user_message(), ToastOptions::default());
+                    return;
+                }
+            };
+
             match client().create_deck_card(deck_id, &request, &session).await {
                 Ok(_) => {
                     if let Some(oid) = oracle_id {
@@ -321,19 +327,21 @@ pub fn Add(deck_id: Uuid) -> Element {
             }
             SwipeAction::Do { ref card, .. } => {
                 // Need to delete from backend (undoing the add)
-                session.upkeep(client);
-                let Some(session) = session() else {
-                    toast.error("Session expired".to_string(), ToastOptions::default());
-                    action_history.write().push(action); // Restore history
-                    current_index.set(current_index() + 1); // Restore index
-                    entering_direction.set(None);
-                    return;
-                };
-
                 let card_id = card.scryfall_data.id;
                 let oracle_id = card.scryfall_data.oracle_id;
 
                 spawn(async move {
+                    let session = match session.ensure_fresh(client).await {
+                        Ok(session) => session,
+                        Err(e) => {
+                            toast.error(e.to_user_message(), ToastOptions::default());
+                            action_history.write().push(action); // Restore history
+                            current_index.set(current_index() + 1); // Restore index
+                            entering_direction.set(None);
+                            return;
+                        }
+                    };
+
                     match client().delete_deck_card(deck_id, card_id, &session).await {
                         Ok(_) => {
                             // Remove from exclusion HashSet
@@ -354,19 +362,21 @@ pub fn Add(deck_id: Uuid) -> Element {
                 });
             }
             SwipeAction::Maybeboard { ref card, .. } => {
-                session.upkeep(client);
-                let Some(session) = session() else {
-                    toast.error("Session expired".to_string(), ToastOptions::default());
-                    action_history.write().push(action);
-                    current_index.set(current_index() + 1);
-                    entering_direction.set(None);
-                    return;
-                };
-
                 let card_id = card.scryfall_data.id;
                 let oracle_id = card.scryfall_data.oracle_id;
 
                 spawn(async move {
+                    let session = match session.ensure_fresh(client).await {
+                        Ok(session) => session,
+                        Err(e) => {
+                            toast.error(e.to_user_message(), ToastOptions::default());
+                            action_history.write().push(action);
+                            current_index.set(current_index() + 1);
+                            entering_direction.set(None);
+                            return;
+                        }
+                    };
+
                     match client().delete_deck_card(deck_id, card_id, &session).await {
                         Ok(_) => {
                             if let Some(oid) = oracle_id {
@@ -422,12 +432,14 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     // Fetch deck cards on mount for filtering
     use_effect(move || {
-        session.upkeep(client);
-        let Some(session) = session() else {
-            return;
-        };
-
         spawn(async move {
+            let session = match session.ensure_fresh(client).await {
+                Ok(session) => session,
+                Err(_) => {
+                    return;
+                }
+            };
+
             match client().get_deck(deck_id, &session).await {
                 Ok(deck) => {
                     let mut ids: HashSet<_> = deck
@@ -654,12 +666,6 @@ pub fn Add(deck_id: Uuid) -> Element {
     };
 
     let mut mb_promote_to_deck = move |card: Card| {
-        session.upkeep(client);
-        let Some(session) = session() else {
-            toast.error("Session expired".to_string(), ToastOptions::default());
-            return;
-        };
-
         let scryfall_data_id = card.scryfall_data.id;
         let request = HttpUpdateDeckCard::new(None, Some("deck".to_string()));
 
@@ -677,6 +683,14 @@ pub fn Add(deck_id: Uuid) -> Element {
         }
 
         spawn(async move {
+            let session = match session.ensure_fresh(client).await {
+                Ok(session) => session,
+                Err(e) => {
+                    toast.error(e.to_user_message(), ToastOptions::default());
+                    return;
+                }
+            };
+
             if let Err(e) = client()
                 .update_deck_card(deck_id, scryfall_data_id, &request, &session)
                 .await
@@ -715,18 +729,20 @@ pub fn Add(deck_id: Uuid) -> Element {
                 let idx = mb_current_index();
                 mb_displayed_cards.write().insert(idx, card.clone());
 
-                session.upkeep(client);
-                let Some(session) = session() else {
-                    toast.error("Session expired".to_string(), ToastOptions::default());
-                    mb_entering_direction.set(None);
-                    return;
-                };
-
                 let scryfall_data_id = card.scryfall_data.id;
                 let oracle_id = card.scryfall_data.oracle_id;
                 let request = HttpUpdateDeckCard::new(None, Some("maybeboard".to_string()));
 
                 spawn(async move {
+                    let session = match session.ensure_fresh(client).await {
+                        Ok(session) => session,
+                        Err(e) => {
+                            toast.error(e.to_user_message(), ToastOptions::default());
+                            mb_entering_direction.set(None);
+                            return;
+                        }
+                    };
+
                     match client()
                         .update_deck_card(deck_id, scryfall_data_id, &request, &session)
                         .await
@@ -935,12 +951,15 @@ pub fn Add(deck_id: Uuid) -> Element {
                     onclick: move |_| {
                         if add_source() == AddSource::Maybeboard {
                             // Maybeboard mode: re-fetch deck to reload maybeboard entries
-                            session.upkeep(client);
-                            let Some(session) = session() else {
-                                toast.error("Session expired".to_string(), ToastOptions::default());
-                                return;
-                            };
                             spawn(async move {
+                                let session = match session.ensure_fresh(client).await {
+                                    Ok(session) => session,
+                                    Err(e) => {
+                                        toast.error(e.to_user_message(), ToastOptions::default());
+                                        return;
+                                    }
+                                };
+
                                 if let Ok(deck) = client().get_deck(deck_id, &session).await {
                                     let mb: Vec<DeckEntry> = deck.entries
                                         .iter()

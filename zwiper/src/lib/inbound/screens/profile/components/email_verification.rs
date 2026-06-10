@@ -1,4 +1,4 @@
-use crate::inbound::components::auth::session_upkeep::Upkeep;
+use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::outbound::client::{
     auth::resend_verification::ClientResendEmailVerification, ZwipeClient,
 };
@@ -28,14 +28,16 @@ pub(crate) fn EmailVerification(email: String, is_verified: bool) -> Element {
                     evt.stop_propagation();
                     is_resending.set(true);
                     spawn(async move {
-                        session.upkeep(client);
-                        let Some(s) = session() else {
-                            toast.error(
-                                "Session expired — please log in again".to_string(),
-                                ToastOptions::default().duration(Duration::from_millis(5000)),
-                            );
-                            is_resending.set(false);
-                            return;
+                        let s = match session.ensure_fresh(client).await {
+                            Ok(s) => s,
+                            Err(e) => {
+                                toast.error(
+                                    e.to_user_message(),
+                                    ToastOptions::default().duration(Duration::from_millis(5000)),
+                                );
+                                is_resending.set(false);
+                                return;
+                            }
                         };
                         match client().resend_verification(&s).await {
                             Ok(()) => toast.success(
