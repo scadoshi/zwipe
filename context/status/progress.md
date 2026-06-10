@@ -128,7 +128,7 @@ What's in this round:
 
 - **Per-user lifetime counters** (`user_lifetime_counters`) — `swipes_right/left/up/down`, `searches`, `decks_created`, `decks_completed`. Single row per user, hot read path.
 - **Daily rollups** (`user_daily_activity`) — one row per (user, UTC day) with the same swipe + search counters. Trend / DAU data without paying event-log storage.
-- **Sparse event log** (`user_events`) — `signup`, `deck_created`, `deck_completed`, `first_swipe`. Rare events only; no per-swipe rows.
+- **Sparse event log** (`user_events`) — `register` (renamed from `signup` 2026-06-09), `deck_created`, `deck_completed`, `first_swipe`. Rare events only; no per-swipe rows.
 - **Audit log** (`user_audit_log`) — credential changes (username / email / password). Logs *that* a change happened, not the old value — keeps PII surface near zero.
 - **Endpoints** — `POST /api/metrics/usage` (private, IP+user rate-limited, accepts a `HttpUsageBatch`), `GET /api/user/metrics` (private, returns lifetime counters), `GET /api/marketing/stats` (public, sum-aggregates across all users for zwipe.net). Fire-and-forget metric writes via `tokio::spawn` so user request latency is unchanged.
 - **Deck completion tracking** — after any deck-card mutation (create / update / delete / import / deck-profile update / clone) the handler reloads the deck, runs `validate_deck`, and if it just became valid stamps `decks.first_completed_at` + emits a `DeckCompleted` event. Idempotent: subsequent invalid→valid transitions don't re-fire.

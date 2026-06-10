@@ -12,6 +12,7 @@ use crate::{
         card::ports::CardService,
         deck::ports::DeckService,
         health::ports::HealthService,
+        metrics::models::kinds::{AuditAction, EventKind},
         user::{models::get_user::GetUserError, ports::UserService},
     },
     inbound::http::{ApiError, AppState, Log500},
@@ -87,10 +88,30 @@ where
 {
     let request = RefreshSession::new(&body.user_id, &body.refresh_token)?;
 
-    state
+    let session = state
         .auth_service
         .refresh_session(&request)
         .await
-        .map_err(ApiError::from)
-        .map(|response| (StatusCode::OK, response.into()))
+        .map_err(ApiError::from)?;
+
+    let user_id = session.user.id;
+    let metrics = std::sync::Arc::clone(&state.metrics_service);
+    // prime the debounce cache so the first authed request after refresh
+    // doesn't immediately bump last_active_at a second time
+    state
+        .last_active_cache
+        .insert(user_id, std::time::Instant::now());
+    tokio::spawn(async move {
+        if let Err(e) = metrics.record_event(user_id, EventKind::Refresh, None).await {
+            tracing::warn!(error = ?e, "metrics: record refresh event failed");
+        }
+        if let Err(e) = metrics.record_audit(user_id, AuditAction::Refresh).await {
+            tracing::warn!(error = ?e, "metrics: record refresh audit failed");
+        }
+        if let Err(e) = metrics.touch_last_active(user_id).await {
+            tracing::warn!(error = ?e, "metrics: touch_last_active on refresh failed");
+        }
+    });
+
+    Ok((StatusCode::OK, session.into()))
 }

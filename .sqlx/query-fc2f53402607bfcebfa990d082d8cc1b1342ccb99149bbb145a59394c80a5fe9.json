@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE users\n               SET first_swiped_at = NOW()\n               WHERE id = $1 AND first_swiped_at IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "fc2f53402607bfcebfa990d082d8cc1b1342ccb99149bbb145a59394c80a5fe9"
+}

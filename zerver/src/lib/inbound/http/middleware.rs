@@ -1,4 +1,4 @@
-//! JWT authentication middleware.
+//! JWT authentication and last-active tracking middleware.
 
 #[cfg(feature = "zerver")]
 use crate::{
@@ -18,8 +18,10 @@ use crate::{
 use axum::http::header::AUTHORIZATION;
 #[cfg(feature = "zerver")]
 use axum::{
-    extract::FromRequestParts,
+    extract::{FromRequestParts, Request, State},
     http::{StatusCode, request::Parts},
+    middleware::Next,
+    response::Response,
 };
 #[cfg(feature = "zerver")]
 use axum_extra::{
@@ -28,6 +30,10 @@ use axum_extra::{
 };
 #[cfg(feature = "zerver")]
 use std::str::FromStr;
+#[cfg(feature = "zerver")]
+use std::sync::Arc;
+#[cfg(feature = "zerver")]
+use std::time::{Duration, Instant};
 #[cfg(feature = "zerver")]
 use tower_governor::{GovernorError, key_extractor::KeyExtractor};
 use uuid::Uuid;
@@ -104,6 +110,59 @@ impl From<UserClaims> for AuthenticatedUser {
             email: value.email,
         }
     }
+}
+
+/// Debounce window for `users.last_active_at` bumps — at most one DB write
+/// per user per window regardless of request volume.
+#[cfg(feature = "zerver")]
+const LAST_ACTIVE_DEBOUNCE: Duration = Duration::from_secs(60);
+
+/// Bumps `users.last_active_at` for authenticated requests, debounced per user.
+///
+/// Peeks the Bearer token without enforcing it — missing or invalid tokens
+/// pass through untouched and are rejected downstream by the
+/// `AuthenticatedUser` extractor. The write is fire-and-forget so it never
+/// adds latency to the request path. The debounce cache is in-memory and
+/// lost on restart, which is fine: the first request after a restart writes.
+#[cfg(feature = "zerver")]
+pub async fn track_last_active<AS, US, HS, CS, DS>(
+    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    request: Request,
+    next: Next,
+) -> Response
+where
+    AS: AuthService,
+    US: UserService,
+    HS: HealthService,
+    CS: CardService,
+    DS: DeckService,
+{
+    let user_id = request
+        .headers()
+        .get(AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "))
+        .and_then(|token| Jwt::from_str(token).ok())
+        .and_then(|jwt| jwt.validate(state.auth_service.jwt_secret()).ok())
+        .map(|claims| claims.user_id);
+
+    if let Some(user_id) = user_id {
+        let due = state
+            .last_active_cache
+            .get(&user_id)
+            .is_none_or(|last| last.elapsed() >= LAST_ACTIVE_DEBOUNCE);
+        if due {
+            state.last_active_cache.insert(user_id, Instant::now());
+            let metrics = Arc::clone(&state.metrics_service);
+            tokio::spawn(async move {
+                if let Err(e) = metrics.touch_last_active(user_id).await {
+                    tracing::warn!(error = ?e, "metrics: touch_last_active failed");
+                }
+            });
+        }
+    }
+
+    next.run(request).await
 }
 
 #[cfg(feature = "zerver")]

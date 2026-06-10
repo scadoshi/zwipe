@@ -3,7 +3,7 @@
 /// HTTP request handlers organized by domain.
 pub mod handlers;
 #[cfg(feature = "zerver")]
-/// JWT authentication middleware.
+/// JWT authentication and last-active tracking middleware.
 pub mod middleware;
 /// Route definitions mapping paths to handlers.
 pub mod routes;
@@ -19,6 +19,12 @@ use crate::{
 };
 #[cfg(feature = "zerver")]
 use anyhow::{Context, anyhow};
+#[cfg(feature = "zerver")]
+use dashmap::DashMap;
+#[cfg(feature = "zerver")]
+use std::time::Instant;
+#[cfg(feature = "zerver")]
+use uuid::Uuid;
 #[cfg(feature = "zerver")]
 use axum::{
     extract::Request,
@@ -232,6 +238,8 @@ where
     pub card_service: Arc<CS>,
     pub deck_service: Arc<DS>,
     pub metrics_service: Arc<dyn ErasedMetricsService>,
+    /// Per-user debounce cache for `users.last_active_at` bumps.
+    pub last_active_cache: Arc<DashMap<Uuid, Instant>>,
 }
 
 /// Axum HTTP server with pre-configured routes and middleware.
@@ -280,6 +288,7 @@ impl HttpServer {
             card_service: Arc::new(card_service),
             deck_service: Arc::new(deck_service),
             metrics_service,
+            last_active_cache: Arc::new(DashMap::new()),
         };
 
         // Layer order is innermost-first, outermost-last. Request flows
@@ -301,7 +310,14 @@ impl HttpServer {
         //   RequestBodyLimitLayer   (innermost — 2 MiB cap on request bodies)
         let x_request_id = header::HeaderName::from_static("x-request-id");
         let router = axum::Router::new()
-            .merge(private_routes(jwt_secret))
+            .merge(
+                // last-active layer wraps private routes only — it peeks the
+                // Bearer token, so it must sit where every request carries one
+                private_routes(jwt_secret).layer(axum::middleware::from_fn_with_state(
+                    state.clone(),
+                    middleware::track_last_active,
+                )),
+            )
             .merge(public_routes())
             .layer(RequestBodyLimitLayer::new(2 * 1024 * 1024))
             .layer(TimeoutLayer::with_status_code(
