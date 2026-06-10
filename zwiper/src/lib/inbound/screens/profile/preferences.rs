@@ -1,7 +1,7 @@
 //! User preferences screen for theme and dark mode selection.
 
 use crate::{
-    inbound::components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
+    inbound::components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
     outbound::client::{ZwipeClient, user::preferences::ClientUpdatePreferences},
 };
 use dioxus::prelude::*;
@@ -62,14 +62,16 @@ pub fn Preferences() -> Element {
             dark_mode: Some(dark_mode),
         };
         spawn(async move {
-            session.upkeep(client);
-            let Some(session_val) = session() else {
-                toast.error(
-                    "Session expired — please log in again".to_string(),
-                    ToastOptions::default().duration(Duration::from_millis(3000)),
-                );
-                is_loading.set(false);
-                return;
+            let session_val = match session.ensure_fresh(client).await {
+                Ok(session_val) => session_val,
+                Err(e) => {
+                    toast.error(
+                        e.to_user_message(),
+                        ToastOptions::default().duration(Duration::from_millis(3000)),
+                    );
+                    is_loading.set(false);
+                    return;
+                }
             };
             match client().update_preferences(request, &session_val).await {
                 Ok(prefs) => {

@@ -2,7 +2,7 @@ use crate::inbound::components::alert_dialog::{
     AlertDialogActions, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
     AlertDialogRoot, AlertDialogTitle,
 };
-use crate::inbound::components::auth::{session_upkeep::Upkeep, signal_logout::SignalLogout};
+use crate::inbound::components::auth::{ensure_session::EnsureFresh, signal_logout::SignalLogout};
 use crate::inbound::components::fields::text_input::TextInput;
 use crate::outbound::client::{user::delete_user::ClientDeleteUser, ZwipeClient};
 use dioxus::prelude::*;
@@ -64,11 +64,13 @@ pub(crate) fn DeleteAccountDialog(mut open: Signal<bool>) -> Element {
                             is_deleting.set(true);
                             let password = delete_password();
                             spawn(async move {
-                                session.upkeep(client);
-                                let Some(s) = session() else {
-                                    toast.error("Session expired — please log in again".to_string(), ToastOptions::default().duration(Duration::from_millis(3000)));
-                                    is_deleting.set(false);
-                                    return;
+                                let s = match session.ensure_fresh(client).await {
+                                    Ok(s) => s,
+                                    Err(e) => {
+                                        toast.error(e.to_user_message(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                                        is_deleting.set(false);
+                                        return;
+                                    }
                                 };
                                 match client().delete_user(HttpDeleteUser { password }, &s).await {
                                     Ok(()) => {

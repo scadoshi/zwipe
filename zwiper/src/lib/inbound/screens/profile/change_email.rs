@@ -1,7 +1,7 @@
 //! Change email screen.
 
 use crate::domain::error::UserFacing;
-use crate::inbound::components::auth::{bouncer::Bouncer, session_upkeep::Upkeep};
+use crate::inbound::components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh};
 use crate::inbound::components::fields::text_input::TextInput;
 use crate::outbound::client::user::change_email::ClientChangeEmail;
 use crate::outbound::client::ZwipeClient;
@@ -62,14 +62,16 @@ pub fn ChangeEmail() -> Element {
             let request = HttpChangeEmail::new(&new_email(), &password());
             is_loading.set(true);
             spawn(async move {
-                session.upkeep(auth_client);
-                let Some(mut session_value) = session() else {
-                    toast.error(
-                        "Session expired — please log in again".to_string(),
-                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                    );
-                    is_loading.set(false);
-                    return;
+                let mut session_value = match session.ensure_fresh(auth_client).await {
+                    Ok(session_value) => session_value,
+                    Err(e) => {
+                        toast.error(
+                            e.to_user_message(),
+                            ToastOptions::default().duration(Duration::from_millis(3000)),
+                        );
+                        is_loading.set(false);
+                        return;
+                    }
                 };
 
                 match auth_client().change_email(request, &session_value).await {

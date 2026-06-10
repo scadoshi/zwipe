@@ -2,7 +2,7 @@ use crate::inbound::components::alert_dialog::{
     AlertDialogActions, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
     AlertDialogRoot, AlertDialogTitle,
 };
-use crate::inbound::components::auth::session_upkeep::Upkeep;
+use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::router::Router;
 use crate::outbound::client::{deck::clone_deck::ClientCloneDeck, ZwipeClient};
 use dioxus::prelude::*;
@@ -67,14 +67,16 @@ pub(crate) fn CloneDeckDialog(
                             is_cloning.set(true);
                             let name = new_name().trim().to_string();
                             spawn(async move {
-                                session.upkeep(client);
-                                let Some(s) = session() else {
-                                    toast.error(
-                                        "Session expired — please log in again".to_string(),
-                                        ToastOptions::default().duration(Duration::from_millis(3000)),
-                                    );
-                                    is_cloning.set(false);
-                                    return;
+                                let s = match session.ensure_fresh(client).await {
+                                    Ok(s) => s,
+                                    Err(e) => {
+                                        toast.error(
+                                            e.to_user_message(),
+                                            ToastOptions::default().duration(Duration::from_millis(3000)),
+                                        );
+                                        is_cloning.set(false);
+                                        return;
+                                    }
                                 };
                                 let body = HttpCloneDeck { new_name: name.clone() };
                                 match client().clone_deck(source_deck_id, &body, &s).await {
