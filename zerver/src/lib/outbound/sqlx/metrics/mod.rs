@@ -211,6 +211,33 @@ impl MetricsRepository for Postgres {
         })
     }
 
+    async fn touch_last_active(&self, user_id: Uuid) -> Result<(), MetricsError> {
+        query!(
+            r#"UPDATE users
+               SET last_active_at = NOW()
+               WHERE id = $1"#,
+            user_id,
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(db)?;
+        Ok(())
+    }
+
+    async fn mark_user_first_swiped(&self, user_id: Uuid) -> Result<bool, MetricsError> {
+        let result = query!(
+            r#"UPDATE users
+               SET first_swiped_at = NOW()
+               WHERE id = $1 AND first_swiped_at IS NULL"#,
+            user_id,
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(db)?;
+
+        Ok(result.rows_affected() > 0)
+    }
+
     async fn mark_deck_first_completed(&self, deck_id: Uuid) -> Result<bool, MetricsError> {
         let result = query!(
             r#"UPDATE decks
