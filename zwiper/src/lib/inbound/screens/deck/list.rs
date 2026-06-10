@@ -2,7 +2,7 @@
 
 use crate::{
     inbound::{
-        components::auth::{bouncer::Bouncer, session_upkeep::Upkeep},
+        components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
         router::Router,
         screens::deck::components::skeletons::DeckListSkeleton,
     },
@@ -48,10 +48,7 @@ pub fn DeckList() -> Element {
 
     let mut deck_profiles_resource: Resource<Result<Vec<DeckProfile>, ApiError>> =
         use_resource(move || async move {
-            session.upkeep(auth_client);
-            let Some(session) = session() else {
-                return Err(ApiError::Unauthorized("session expired".to_string()));
-            };
+            let session = session.ensure_fresh(auth_client).await?;
 
             auth_client().get_deck_profiles(&session).await
         });
