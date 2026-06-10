@@ -4,17 +4,6 @@ Planned features and improvements for after App Store launch.
 
 ---
 
-## Error-Toast Copy Cleanup (zwiper)
-
-Endpoint-error toasts across screens render `e.to_string()`, which for
-`ApiError::Network` leaks the raw reqwest message including the full backend
-URL, and gets clipped by the toast width (observed during Build 26 device
-testing on the deck list screen with the server down). Sweep those call sites
-to `e.to_user_message()` — it already maps network errors to "connection error
-— check your network and try again". Small, mechanical, own branch.
-
----
-
 ## AI Card Categorization — Layer 2 & 3
 
 Layer 1 (oracle text heuristics, ~70-80%) ships with the mechanical category feature. Layers 2 and 3 are post-launch improvements.
