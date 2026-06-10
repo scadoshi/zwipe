@@ -21,7 +21,7 @@
       {
         "ordinal": 3,
         "name": "email_verified_at",
-        "type_info": "Timestamp"
+        "type_info": "Timestamptz"
       }
     ],
     "parameters": {
