@@ -2,7 +2,7 @@
 
 **Status: branch ready — `feat/refresh-token-hardening` on origin (commit `8f6d2ea0`),
 implemented + validated locally 2026-06-09 (4 concurrent refreshes → one 200 / three
-401s; replay → 401; exactly 1 live token). Gated on iOS Build 29 (1.0.4) propagation.
+401s; replay → 401; exactly 1 live token). Gated on iOS Build 30 (1.0.4) propagation.
 Do NOT merge before the gate clears (see below). Expected unlock ~2026-06-23.**
 
 ## Context
@@ -15,7 +15,7 @@ token without a row lock and never checks that its DELETE deleted anything,
 so concurrent transactions all read the pre-delete state and each mints a
 fresh token. One token in, four tokens out.
 
-The client side was fixed on `feat/single-flight-refresh` (ships as 1.0.4 build 29 — builds 26-28 were superseded pre-release):
+The client side was fixed on `feat/single-flight-refresh` (ships as 1.0.4 build 30 — builds 26-29 were superseded pre-release):
 an awaited, single-flight `ensure_fresh` guard replaced the sprinkled
 `upkeep` calls, refresh results are persisted to the keyring, and transient
 errors no longer log the user out. See `context/status/progress.md` and the
@@ -34,7 +34,7 @@ whether the user stays logged in. Old-build users would get randomly logged
 out on app open.
 
 **Clear the gate before merging:**
-1. 1.0.4 (build 29) approved and live on the App Store.
+1. 1.0.4 (build 30) approved and live on the App Store.
 2. ASC Analytics → App Versions shows active installs are ~100% on
    Build ≥26 (realistically 1–2 weeks after release at current user count;
    ping known users to accelerate).
