@@ -146,7 +146,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 Ok(deck) => deck.entries,
                 Err(e) => {
                     toast.error(
-                        e.to_string(),
+                        e.to_user_message(),
                         ToastOptions::default().duration(Duration::from_millis(3000)),
                     );
                     return;
@@ -325,7 +325,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 };
 
                 if let Err(e) = client().delete_deck_card(deck_id, card_id, &session).await {
-                    toast.error(e.to_string(), ToastOptions::default());
+                    toast.error(e.to_user_message(), ToastOptions::default());
                 }
             });
         } else {
@@ -356,7 +356,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     .update_deck_card(deck_id, card_id, &request, &session)
                     .await
                 {
-                    toast.error(e.to_string(), ToastOptions::default());
+                    toast.error(e.to_user_message(), ToastOptions::default());
                     // Rollback optimistic update
                     if let Some(entry) = deck_entries
                         .write()
@@ -407,7 +407,7 @@ pub fn View(deck_id: Uuid) -> Element {
                 .update_deck_card(deck_id, card_id, &request, &session)
                 .await
             {
-                toast.error(e.to_string(), ToastOptions::default());
+                toast.error(e.to_user_message(), ToastOptions::default());
                 // Rollback
                 if let Some(entry) = deck_entries
                     .write()

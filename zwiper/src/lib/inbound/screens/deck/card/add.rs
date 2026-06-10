@@ -263,7 +263,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 }
                 Err(e) => {
                     tracing::warn!("add card to deck failed: {e}");
-                    toast.error(e.to_string(), ToastOptions::default());
+                    toast.error(e.to_user_message(), ToastOptions::default());
                 }
             }
         });
@@ -291,7 +291,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 }
                 Err(e) => {
                     tracing::warn!("add card to maybeboard failed: {e}");
-                    toast.error(e.to_string(), ToastOptions::default());
+                    toast.error(e.to_user_message(), ToastOptions::default());
                 }
             }
         });
@@ -620,7 +620,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 }
                 Err(e) => {
                     tracing::warn!("card search failed: {e}");
-                    toast.error(e.to_string(), ToastOptions::default());
+                    toast.error(e.to_user_message(), ToastOptions::default());
                     is_loading_cards.set(false);
                 }
             }
@@ -696,7 +696,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 .await
             {
                 tracing::warn!("promote to deck failed: {e}");
-                toast.error(e.to_string(), ToastOptions::default());
+                toast.error(e.to_user_message(), ToastOptions::default());
             }
         });
     };
@@ -1026,7 +1026,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                     }
                                     Err(e) => {
                                         tracing::warn!("card search failed: {e}");
-                                        toast.error(e.to_string(), ToastOptions::default());
+                                        toast.error(e.to_user_message(), ToastOptions::default());
                                         is_loading_cards.set(false);
                                     }
                                 }
