@@ -11,6 +11,7 @@ use crate::{
         card::ports::CardService,
         deck::ports::DeckService,
         health::ports::HealthService,
+        metrics::models::kinds::{AuditAction, EventKind},
         user::ports::UserService,
     },
     inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
@@ -42,6 +43,26 @@ where
         .auth_service
         .revoke_sessions(&RevokeSessions::new(user.id))
         .await
-        .map_err(ApiError::from)
-        .map(|_| StatusCode::NO_CONTENT)
+        .map_err(ApiError::from)?;
+
+    let user_id = user.id;
+    let metrics = std::sync::Arc::clone(&state.metrics_service);
+    // prime the debounce cache; logout is a deliberate user action, so it
+    // counts as activity even though no authed request follows it
+    state
+        .last_active_cache
+        .insert(user_id, std::time::Instant::now());
+    tokio::spawn(async move {
+        if let Err(e) = metrics.record_event(user_id, EventKind::Logout, None).await {
+            tracing::warn!(error = ?e, "metrics: record logout event failed");
+        }
+        if let Err(e) = metrics.record_audit(user_id, AuditAction::Logout).await {
+            tracing::warn!(error = ?e, "metrics: record logout audit failed");
+        }
+        if let Err(e) = metrics.touch_last_active(user_id).await {
+            tracing::warn!(error = ?e, "metrics: touch_last_active on logout failed");
+        }
+    });
+
+    Ok(StatusCode::NO_CONTENT)
 }

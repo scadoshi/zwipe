@@ -3,7 +3,8 @@ use axum::{Json, extract::State, http::StatusCode};
 use crate::{
     domain::{
         auth::ports::AuthService, card::ports::CardService, deck::ports::DeckService,
-        health::ports::HealthService, metrics::models::errors::MetricsError,
+        health::ports::HealthService,
+        metrics::models::{errors::MetricsError, kinds::EventKind},
         user::ports::UserService,
     },
     inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
@@ -37,6 +38,29 @@ where
         .apply_usage(user.id, &batch)
         .await
         .map_err(ApiError::from)?;
+
+    let swiped =
+        batch.swipes_right + batch.swipes_left + batch.swipes_up + batch.swipes_down > 0;
+    if swiped {
+        let user_id = user.id;
+        let metrics = std::sync::Arc::clone(&state.metrics_service);
+        tokio::spawn(async move {
+            match metrics.mark_user_first_swiped(user_id).await {
+                Ok(true) => {
+                    if let Err(e) = metrics
+                        .record_event(user_id, EventKind::FirstSwipe, None)
+                        .await
+                    {
+                        tracing::warn!(error = ?e, "metrics: record first_swipe event failed");
+                    }
+                }
+                Ok(false) => {}
+                Err(e) => {
+                    tracing::warn!(error = ?e, "metrics: mark_user_first_swiped failed");
+                }
+            }
+        });
+    }
 
     Ok(StatusCode::NO_CONTENT)
 }

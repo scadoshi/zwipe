@@ -17,6 +17,7 @@ use crate::{
         card::ports::CardService,
         deck::ports::DeckService,
         health::ports::HealthService,
+        metrics::models::kinds::{AuditAction, EventKind},
         user::ports::UserService,
     },
     inbound::http::{ApiError, AppState, Log500},
@@ -75,10 +76,30 @@ where
 {
     let request = AuthenticateUser::new(&body.identifier, &body.password)?;
 
-    state
+    let session = state
         .auth_service
         .authenticate_user(&request)
         .await
-        .map_err(ApiError::from)
-        .map(|response| (StatusCode::OK, response.into()))
+        .map_err(ApiError::from)?;
+
+    let user_id = session.user.id;
+    let metrics = std::sync::Arc::clone(&state.metrics_service);
+    // prime the debounce cache so the first authed request after login
+    // doesn't immediately bump last_active_at a second time
+    state
+        .last_active_cache
+        .insert(user_id, std::time::Instant::now());
+    tokio::spawn(async move {
+        if let Err(e) = metrics.record_event(user_id, EventKind::Login, None).await {
+            tracing::warn!(error = ?e, "metrics: record login event failed");
+        }
+        if let Err(e) = metrics.record_audit(user_id, AuditAction::Login).await {
+            tracing::warn!(error = ?e, "metrics: record login audit failed");
+        }
+        if let Err(e) = metrics.touch_last_active(user_id).await {
+            tracing::warn!(error = ?e, "metrics: touch_last_active on login failed");
+        }
+    });
+
+    Ok((StatusCode::OK, session.into()))
 }
