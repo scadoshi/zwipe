@@ -1,6 +1,9 @@
 # Refresh-token hardening — strict single-use rotation (phase 2)
 
-**Status: parked. Gated on iOS Build 26 propagation. Do NOT merge before the gate clears (see below).**
+**Status: branch ready — `feat/refresh-token-hardening` on origin (commit `8f6d2ea0`),
+implemented + validated locally 2026-06-09 (4 concurrent refreshes → one 200 / three
+401s; replay → 401; exactly 1 live token). Gated on iOS Build 26 (1.0.4) propagation.
+Do NOT merge before the gate clears (see below). Expected unlock ~2026-06-23.**
 
 ## Context
 
