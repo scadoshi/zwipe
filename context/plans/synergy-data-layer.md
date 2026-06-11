@@ -145,9 +145,10 @@ top-synergy cards for the deck's commander immediately, no filter required.**
 The first question a deck builder has is "what goes well with my commander?" —
 that's literally what the default ordering now answers.
 
-- **Cap the initial batch** (~top 20–30 by synergy), don't paginate the whole
-  pool at them. Applying any filter or sort returns to today's behavior
-  (filters narrow, explicit sort wins, per above).
+- **No special capping needed** — the stack already serves pages of 25, so
+  auto-serve is just the existing pagination with synergy as the default
+  order. Applying any filter or sort returns to today's behavior (filters
+  narrow, explicit sort wins, per above).
 - **Fallback on cache miss** (new commander, null-oracle, non-commander
   deck): today's empty state — prompt to filter. The blank state never gets
   worse than it is now. (Later option: most-played-in-format as a generic
