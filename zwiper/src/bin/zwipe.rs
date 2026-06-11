@@ -5,7 +5,10 @@ use zwipe_core::domain::logo;
 use zwipe_core::domain::user::models::theme::ThemeConfig;
 use zwiper::{
     config::Config,
-    inbound::{components::auth::session_upkeep::spawn_upkeeper, router::Router},
+    inbound::{
+        components::{auth::session_upkeep::spawn_upkeeper, update_required::UpdateRequired},
+        router::Router,
+    },
 };
 
 const FAVICON: Asset = asset!("/assets/favicon/favicon.ico");
@@ -38,7 +41,7 @@ fn ThemeWrapper(children: Element) -> Element {
 
 #[component]
 fn App() -> Element {
-    spawn_upkeeper();
+    let upgrade_required = spawn_upkeeper();
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: THEMES_CSS }
@@ -52,10 +55,16 @@ fn App() -> Element {
         }
 
         ThemeWrapper {
-            ToastProvider {
-                max_toasts: 3_usize,
-                class: "toast-container",
-                Router::<Router> {}
+            // Min-version gate: a build below the server minimum gets the
+            // blocking update screen instead of the app. No dismiss.
+            if upgrade_required() {
+                UpdateRequired {}
+            } else {
+                ToastProvider {
+                    max_toasts: 3_usize,
+                    class: "toast-container",
+                    Router::<Router> {}
+                }
             }
         }
     }

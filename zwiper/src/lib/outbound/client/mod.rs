@@ -15,6 +15,8 @@ pub mod deck_card;
 pub mod metrics;
 /// User profile operations.
 pub mod user;
+/// Client version gate operations.
+pub mod version;
 
 use crate::config::Config;
 use reqwest::Client;
