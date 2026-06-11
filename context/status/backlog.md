@@ -50,7 +50,7 @@ See `context/plans/mechanical-category.md` for full implementation plan includin
 - **Android Build**: Test and polish Android target
 
 ## Future Features
-- **EDHREC Integration**: Synergy scores for commander decks (undocumented API, complex)
+- **Synergy scores**: per-commander synergy data for commander decks (prioritized 2026-06-10 — see `todo.md` Next Up)
 - **Collection Management**: User card ownership tracking
 - **Social Features**: Deck sharing, public deck browser
 - **Multi-Language UI**: i18n for application text (card language infra already complete)
