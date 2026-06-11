@@ -3,6 +3,10 @@
 
 use uuid::Uuid;
 
+pub fn health_route() -> String {
+    "/health".to_string()
+}
+
 pub fn server_health_route() -> String {
     "/health/server".to_string()
 }

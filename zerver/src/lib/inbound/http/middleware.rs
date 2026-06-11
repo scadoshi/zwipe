@@ -182,8 +182,8 @@ where
         let TypedHeader(Authorization(bearer)) =
             TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)
                 .await
-                .map_err(|_| StatusCode::BAD_REQUEST)?;
-        let jwt = Jwt::from_str(bearer.token()).map_err(|_| StatusCode::BAD_REQUEST)?;
+                .map_err(|_| StatusCode::UNAUTHORIZED)?;
+        let jwt = Jwt::from_str(bearer.token()).map_err(|_| StatusCode::UNAUTHORIZED)?;
         let claims = jwt
             .validate(state.auth_service.jwt_secret())
             .map_err(|_| StatusCode::UNAUTHORIZED)?;
