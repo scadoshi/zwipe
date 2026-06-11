@@ -2,7 +2,8 @@
 
 Import existing decks so users don't rebuild by hand. High-priority for adoption
 (see `status/backlog.md`). This plan covers **Archidekt first** (open API, fully
-proven) and **Moxfield second** (ToS-gated, needs authorization).
+proven) and **Moxfield second** (ToS-gated; access requested and DENIED
+2026-06-10 — effort closed, see Phasing).
 
 Status: **built on `feat/deck-import-archidekt`** (2026-06-10). Shipped shape is
 simpler than the original plan below: `POST /api/deck/{deck_id}/import/archidekt`
@@ -33,8 +34,9 @@ the local `scryfall_data` table.
 | Docs | none (open beta, shape may drift) | none (internal API) |
 
 **Decision:** ship Archidekt URL import now; for Moxfield, ship the existing
-plain-text paste path (works today, zero ToS exposure) and pursue an authorized
-User-Agent in parallel before adding a Moxfield URL flow.
+plain-text paste path (works today, zero ToS exposure). The authorized
+User-Agent request was denied (2026-06-10) — Moxfield URL import is closed
+until their planned scoped deck-export endpoint ships.
 
 ---
 
@@ -124,9 +126,13 @@ that path's *resolver primitives* and limit guards, not its entry point.
 ## Phasing
 1. **Archidekt URL import** — endpoint + iOS paste-URL UI. UID resolution,
    command zone, unresolved report. (Data says ~100% resolution.)
-2. **Moxfield** — email support@moxfield.com for an authorized User-Agent; add
-   `POST /api/deck/import/moxfield` reusing the same resolver. Until authorized,
-   point Moxfield users at the existing plain-text paste import.
+2. **Moxfield — DENIED (2026-06-10)** — requested an authorized User-Agent via
+   support@moxfield.com; reply: policy is no API access for sites/apps that
+   offer deckbuilding. They plan a scoped deck-export endpoint for such
+   services eventually (no ETA; will be announced on their help pages) and
+   invited a re-request once it's live. Until then, point Moxfield users at
+   the existing plain-text paste import. If/when access opens: add
+   `POST /api/deck/{deck_id}/import/moxfield` reusing the same resolver.
 3. **Polish** — `deckFormat` int→`Format` mapping table; partner/background/
    signature-spell/companion command-zone mapping; route excluded categories to
    the maybeboard; cache fetches by `deck_id`+`updatedAt`; contract test against a
