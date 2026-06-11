@@ -4,9 +4,21 @@ Import existing decks so users don't rebuild by hand. High-priority for adoption
 (see `status/backlog.md`). This plan covers **Archidekt first** (open API, fully
 proven) and **Moxfield second** (ToS-gated, needs authorization).
 
-Status: **prototype proven** (2026-06-10). `zcripts/deck-import/archidekt_probe.sh`
-fetches a public Archidekt deck, parses it to Zwipe's shape, and resolves every
-printing against the local `scryfall_data` table.
+Status: **built on `feat/deck-import-archidekt`** (2026-06-10). Shipped shape is
+simpler than the original plan below: `POST /api/deck/{deck_id}/import/archidekt`
+imports an Archidekt deck's cards **into an existing deck**, exactly like the
+plain-text importer — same board selection, same add/replace modes, same
+`ImportDeckCardsResult` response. It does **not** create a deck and does **not**
+set commander/format (deliberately dropped for simplicity; the format-id table
+below is kept for a future opt-in sync). Resolution is by Scryfall printing UID
+with a name fallback for null-oracle reversible printings. Both importers gained
+a `replace` flag: the imported board is made to exactly match the list (other
+boards untouched; an empty import never wipes). The iOS import screen has
+From (Text/Archidekt), Mode (Add/Replace), and Board chip rows.
+
+Earlier prototype: `zcripts/deck-import/archidekt_probe.sh` fetches a public
+Archidekt deck, parses it to Zwipe's shape, and resolves every printing against
+the local `scryfall_data` table.
 
 ---
 
@@ -124,9 +136,12 @@ that path's *resolver primitives* and limit guards, not its entry point.
 
 ## Archidekt `deckFormat` id table (verified 2026-06-10)
 
+**Not currently used by code** — the shipped importer takes only the card list.
+Kept verified here for a future opt-in commander/format sync.
+
 Archidekt's format ids do **not** follow their documented ordering (18 is Alchemy,
 not Premodern; 13 is Standard Brawl, not Brawl; 21 is Gladiator), so each was
-verified against a real deck. Mapped in `outbound/archidekt/mod.rs::map_format`.
+verified against a real deck.
 
 | id | Archidekt format | Zwipe format |
 |----|------------------|--------------|
