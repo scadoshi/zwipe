@@ -456,6 +456,22 @@ button {
     color: var(--accent-primary);
 }
 
+/* Min-version gate blocking screen — the headline pulses red. */
+.update-required-title {
+    color: var(--color-error);
+    animation: update-required-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes update-required-pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.35;
+    }
+}
+
 /* =======================
   utilities - utility bar
   ========================= */

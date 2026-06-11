@@ -14,7 +14,7 @@ pub fn UpdateRequired() -> Element {
         div { class: "screen",
             div { class: "screen-content centered content-enter",
                 div { class: "container-sm", style: "text-align: center;",
-                    h2 { class: "font-light tracking-wide", "Update required" }
+                    h2 { class: "font-light tracking-wide update-required-title", "Update required" }
                     p { class: "text-muted",
                         "This version of Zwipe is no longer supported. Update to keep building."
                     }
