@@ -221,3 +221,24 @@ needs `Zone → Cache Purge` permission.
 **Avoid Purge Everything** unless something is genuinely wrong — it evicts
 all CF-cached responses for the zone and forces every POP to re-fetch
 from origin.
+
+---
+
+## Email Routing (set up 2026-06-10)
+
+Inbound mail for zwipe.net runs through Cloudflare Email Routing (free):
+
+- CF's MX (`route1-3.mx.cloudflare.net`) + SPF + DKIM records replaced the
+  unused Namecheap `eforward*` registrar defaults.
+- Routing rules forward to Scotty's personal inbox (verified destination):
+  - `support@zwipe.net` — published address (App Store support contact,
+    User-Agent contact strings, anything operational)
+  - `scotty@zwipe.net` — human/founder address for partner outreach
+- Outbound transactional mail is unchanged: Resend sends as
+  `hello@zwipe.net` via its own subdomain records (`send.zwipe.net`,
+  `resend._domainkey`) — independent of inbound routing.
+- Only one SPF TXT record may exist per hostname; the root SPF is now
+  Cloudflare's. If a sender ever needs a root SPF include, merge it into
+  the single record rather than adding a second.
+
+Manage at: dash.cloudflare.com → zwipe.net → Email → Email Routing.
