@@ -1,10 +1,10 @@
 //! Archidekt outbound adapter.
 //!
 //! Fetches a public deck from Archidekt's open JSON API
-//! (`GET https://archidekt.com/api/decks/{id}/`) and reduces it to an
-//! [`ArchidektDeck`] the deck service can import. Archidekt embeds the Scryfall
-//! printing id on every card (`card.uid`), so resolution downstream is a direct
-//! id lookup — no fuzzy name matching, and the exact printing is preserved.
+//! (`GET https://archidekt.com/api/decks/{id}/`) and reduces it to the card
+//! list the deck service can import. Archidekt embeds the Scryfall printing id
+//! on every card (`card.uid`), so resolution downstream is a direct id lookup —
+//! no fuzzy name matching, and the exact printing is preserved.
 //!
 //! Archidekt's API is undocumented (open beta); this adapter deliberately
 //! deserializes only the handful of fields we need and tolerates the rest.
@@ -16,7 +16,7 @@ use serde::Deserialize;
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::domain::deck::models::deck::import_archidekt::{ArchidektCard, ArchidektDeck};
+use crate::domain::deck::models::deck::import_archidekt::ArchidektCard;
 
 const USER_AGENT: &str = "ZwipeTCG/1.0 (+https://zwipe.net)";
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
@@ -72,8 +72,8 @@ impl ArchidektClient {
         digits.parse::<i64>().ok()
     }
 
-    /// Fetches and parses a public Archidekt deck.
-    pub async fn fetch_deck(&self, deck_id: i64) -> Result<ArchidektDeck, ArchidektError> {
+    /// Fetches a public Archidekt deck and returns its card list.
+    pub async fn fetch_deck(&self, deck_id: i64) -> Result<Vec<ArchidektCard>, ArchidektError> {
         let url = format!("https://archidekt.com/api/decks/{deck_id}/");
         let response = self
             .client
@@ -92,58 +92,14 @@ impl ArchidektClient {
         }
 
         let raw: RawDeck = response.json().await?;
-        Ok(raw.into_archidekt_deck())
+        Ok(raw.into_cards())
     }
-}
-
-/// Maps Archidekt's numeric `deckFormat` to a Zwipe format string.
-///
-/// **Empirically confirmed ids only.** Archidekt's ids do NOT follow their
-/// documented format ordering (18 is Alchemy, not Premodern; 13 is Standard
-/// Brawl, not Brawl; 21 is Gladiator, not 20), so each entry below was verified
-/// against a real deck of that format. Ids 7 (Custom) and 8 (Frontier) are
-/// confirmed to have no Zwipe analogue. Anything not listed falls back to `None`,
-/// leaving the deck formatless for the user to set — mislabeling is worse than no
-/// label. Returned strings are parsed downstream via `Format::try_from`.
-/// See `context/plans/deck-import.md` for the full id table.
-fn map_format(deck_format: i64) -> Option<String> {
-    let name = match deck_format {
-        1 => "standard",
-        2 => "modern",
-        3 => "commander",
-        4 => "legacy",
-        5 => "vintage",
-        6 => "pauper",
-        9 => "future",
-        10 => "penny", // Penny Dreadful
-        11 => "commander", // 1v1 Commander — commander rules, closest Zwipe match
-        12 => "duel",      // Duel Commander
-        13 => "standardbrawl",
-        14 => "oathbreaker",
-        15 => "pioneer",
-        16 => "historic",
-        17 => "paupercommander", // Pauper EDH
-        18 => "alchemy",
-        20 => "brawl",
-        21 => "gladiator",
-        22 => "premodern",
-        23 => "predh",
-        24 => "timeless",
-        // 7 Custom, 8 Frontier — confirmed no Zwipe analogue (and Archidekt has
-        // no Explorer). 19, 25+ not yet seen; leave formatless.
-        _ => return None,
-    };
-    Some(name.to_string())
 }
 
 // --- raw Archidekt response shapes (only what we read) ----------------------
 
 #[derive(Debug, Deserialize)]
 struct RawDeck {
-    #[serde(default)]
-    name: String,
-    #[serde(rename = "deckFormat", default)]
-    deck_format: i64,
     #[serde(default)]
     categories: Vec<RawCategory>,
     #[serde(default)]
@@ -153,8 +109,6 @@ struct RawDeck {
 #[derive(Debug, Deserialize)]
 struct RawCategory {
     name: String,
-    #[serde(rename = "isPremier", default)]
-    is_premier: bool,
     #[serde(rename = "includedInDeck", default = "default_true")]
     included_in_deck: bool,
 }
@@ -190,16 +144,9 @@ fn default_quantity() -> i32 {
 }
 
 impl RawDeck {
-    fn into_archidekt_deck(self) -> ArchidektDeck {
-        // Premier categories are the command zone(s) (e.g. "Commander").
+    fn into_cards(self) -> Vec<ArchidektCard> {
         // Categories flagged includedInDeck=false are maybeboard/sideboard-like
         // (e.g. "Attraction") and are dropped from the import.
-        let premier: HashSet<&str> = self
-            .categories
-            .iter()
-            .filter(|c| c.is_premier)
-            .map(|c| c.name.as_str())
-            .collect();
         let excluded: HashSet<&str> = self
             .categories
             .iter()
@@ -207,8 +154,7 @@ impl RawDeck {
             .map(|c| c.name.as_str())
             .collect();
 
-        let cards = self
-            .cards
+        self.cards
             .iter()
             .filter(|c| !c.categories.iter().any(|cat| excluded.contains(cat.as_str())))
             .map(|c| ArchidektCard {
@@ -217,15 +163,8 @@ impl RawDeck {
                 scryfall_id: Uuid::parse_str(&c.card.uid).unwrap_or_else(|_| Uuid::nil()),
                 name: c.card.oracle_card.name.clone(),
                 quantity: c.quantity,
-                command_zone: c.categories.iter().any(|cat| premier.contains(cat.as_str())),
             })
-            .collect();
-
-        ArchidektDeck {
-            name: self.name,
-            format: map_format(self.deck_format),
-            cards,
-        }
+            .collect()
     }
 }
 
@@ -257,22 +196,5 @@ mod tests {
     #[test]
     fn extract_id_rejects_garbage() {
         assert_eq!(ArchidektClient::extract_deck_id("https://moxfield.com/decks/abc"), None);
-    }
-
-    #[test]
-    fn confirmed_formats_map() {
-        // Each verified against a real Archidekt deck of that format.
-        assert_eq!(map_format(1).as_deref(), Some("standard"));
-        assert_eq!(map_format(3).as_deref(), Some("commander"));
-        assert_eq!(map_format(13).as_deref(), Some("standardbrawl"));
-        assert_eq!(map_format(14).as_deref(), Some("oathbreaker"));
-        assert_eq!(map_format(18).as_deref(), Some("alchemy"));
-        assert_eq!(map_format(21).as_deref(), Some("gladiator"));
-    }
-
-    #[test]
-    fn custom_and_unknown_formats_are_none() {
-        assert_eq!(map_format(7), None); // Custom — no Zwipe analogue
-        assert_eq!(map_format(999), None);
     }
 }

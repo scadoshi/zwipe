@@ -73,7 +73,7 @@ where
         .map(zwipe_core::domain::deck::Board::try_from)
         .transpose()
         .map_err(|_| ApiError::UnprocessableEntity("invalid board value".to_string()))?;
-    let request = ImportDeckCards::parse(user.id, deck_id, &body.text, email_verified, board_override);
+    let request = ImportDeckCards::parse(user.id, deck_id, &body.text, email_verified, board_override, body.mode);
 
     let result = state
         .deck_service

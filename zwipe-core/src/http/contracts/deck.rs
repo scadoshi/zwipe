@@ -3,36 +3,30 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::domain::deck::requests::import_deck_cards::{ImportedCard, UnresolvedCard};
+use crate::domain::deck::ImportMode;
 use crate::http::helpers::Opdate;
 
-/// Request to import a deck from an Archidekt deck URL.
+/// Request to import an Archidekt deck's cards into an existing deck.
 ///
 /// The server extracts the numeric deck id from the URL, fetches the deck via
 /// Archidekt's public JSON API, resolves each printing against the card
-/// database by Scryfall id, and creates a new deck owned by the caller.
+/// database by Scryfall id, and imports the cards into the caller's deck (the
+/// target deck id comes from the URL path) exactly like the plain-text
+/// importer. Responds with an `ImportDeckCardsResult`.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct HttpImportArchidektDeck {
     /// Archidekt deck URL (e.g. `https://archidekt.com/decks/13769484/shorikai`)
     /// or a bare numeric deck id.
     pub url: String,
-}
-
-/// Result of an Archidekt deck import.
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct HttpArchidektImportResult {
-    /// Id of the newly created deck.
-    pub deck_id: Uuid,
-    /// Name the deck was created with (from Archidekt, validated).
-    pub deck_name: String,
-    /// Format the deck was created with, if Archidekt's format mapped to one.
-    pub format: Option<String>,
-    /// Names of the cards placed in the command zone (commander / partner).
-    pub command_zone: Vec<String>,
-    /// Cards successfully imported into the deck.
-    pub imported: Vec<ImportedCard>,
-    /// Cards that couldn't be resolved against the card database.
-    pub unresolved: Vec<UnresolvedCard>,
+    /// Board to place the imported cards on. Values: `"deck"`, `"maybeboard"`,
+    /// `"sideboard"`. Defaults to `"deck"` if absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub board: Option<String>,
+    /// Add on top of the target board (default), or replace it (cards on it
+    /// that aren't in the Archidekt list are removed).
+    /// Values: `"add"`, `"replace"`.
+    #[serde(default)]
+    pub mode: ImportMode,
 }
 
 /// Deck creation request body.

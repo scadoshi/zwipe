@@ -2,6 +2,7 @@
 pub mod board;
 pub mod deck_name;
 pub mod format;
+pub mod import_mode;
 pub mod quantity;
 
 // Entities
@@ -23,5 +24,6 @@ pub use deck_name::{DeckName, InvalidDeckname};
 pub use deck_profile::DeckProfile;
 pub use deck_warning::{DeckWarning, WarningAction};
 pub use format::{Format, InvalidFormat};
+pub use import_mode::ImportMode;
 pub use quantity::{InvalidQuantity, InvalidUpdateQuanity, Quantity, UpdateQuantity};
 pub use validate_deck::{validate_deck, DeckCommandZone};

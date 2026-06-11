@@ -1,6 +1,7 @@
 //! Deck card operation HTTP request contracts.
 
 use crate::domain::card::scryfall_data::ScryfallData;
+use crate::domain::deck::ImportMode;
 use serde::{Deserialize, Serialize};
 
 /// Add card to deck request body.
@@ -76,4 +77,9 @@ pub struct HttpImportDeckCards {
     /// Values: `"deck"`, `"maybeboard"`, `"sideboard"`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub board: Option<String>,
+    /// Add on top of each board (default), or replace each board present in
+    /// the import (cards on it not in the import are removed).
+    /// Values: `"add"`, `"replace"`.
+    #[serde(default)]
+    pub mode: ImportMode,
 }
