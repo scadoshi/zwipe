@@ -1,4 +1,6 @@
-//! Import cards from plain-text decklist screen.
+//! Import cards screen — plain-text decklist or an Archidekt URL, in add or
+//! replace mode. Both sources import into the selected board of this deck and
+//! share the same result shape.
 
 use crate::{
     inbound::{
@@ -6,15 +8,26 @@ use crate::{
         router::Router,
     },
     outbound::client::{
-        ZwipeClient, deck_card::import_deck_cards::ClientImportDeckCards,
+        ZwipeClient, deck::import_archidekt_deck::ClientImportArchidektDeck,
+        deck_card::import_deck_cards::ClientImportDeckCards,
     },
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{use_toast, ToastOptions};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe_core::domain::deck::requests::import_deck_cards::ImportDeckCardsResult;
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::deck::ImportMode;
+use zwipe_core::domain::deck::requests::import_deck_cards::ImportDeckCardsResult;
+
+/// Which import source is active.
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum ImportSource {
+    /// Paste a plain-text decklist.
+    Text,
+    /// Paste an Archidekt deck URL.
+    Archidekt,
+}
 
 #[component]
 pub fn ImportDeck(deck_id: Uuid) -> Element {
@@ -22,14 +35,21 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
 
+    let mut source = use_signal(|| ImportSource::Text);
+    let mut mode = use_signal(|| ImportMode::Add);
     let mut text = use_signal(String::new);
+    let mut url = use_signal(String::new);
     let mut loading = use_signal(|| false);
     let mut result: Signal<Option<ImportDeckCardsResult>> = use_signal(|| None);
     let mut board_selection: Signal<Option<&'static str>> = use_signal(|| None);
     let toast = use_toast();
 
+    let board_word = board_selection.read().unwrap_or("deck");
+
     let mut do_import = move || {
         let board = *board_selection.peek();
+        let mode = *mode.peek();
+        let source = *source.peek();
         result.set(None);
         loading.set(true);
 
@@ -37,13 +57,29 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
             let session = match session.ensure_fresh(client).await {
                 Ok(session) => session,
                 Err(e) => {
-                    toast.error(e.to_user_message(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                    toast.error(
+                        e.to_user_message(),
+                        ToastOptions::default().duration(Duration::from_millis(3000)),
+                    );
                     loading.set(false);
                     return;
                 }
             };
 
-            match client().import_deck_cards(deck_id, &text(), board, &session).await {
+            let response = match source {
+                ImportSource::Text => {
+                    client()
+                        .import_deck_cards(deck_id, &text(), board, mode, &session)
+                        .await
+                }
+                ImportSource::Archidekt => {
+                    client()
+                        .import_archidekt_deck(deck_id, &url(), board, mode, &session)
+                        .await
+                }
+            };
+
+            match response {
                 Ok(r) => {
                     result.set(Some(r.clone()));
                     let imported = r.imported.len();
@@ -52,11 +88,17 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                     match (imported, unresolved) {
                         (0, 0) => toast.info("No cards found".to_string(), opts),
                         (0, _) => toast.error(
-                            format!("{unresolved} card{} unresolved", if unresolved == 1 { "" } else { "s" }),
+                            format!(
+                                "{unresolved} card{} unresolved",
+                                if unresolved == 1 { "" } else { "s" }
+                            ),
                             ToastOptions::default().duration(Duration::from_millis(3000)),
                         ),
                         (_, 0) => toast.success(
-                            format!("Imported {imported} card{}", if imported == 1 { "" } else { "s" }),
+                            format!(
+                                "Imported {imported} card{}",
+                                if imported == 1 { "" } else { "s" }
+                            ),
                             opts,
                         ),
                         _ => toast.info(
@@ -67,7 +109,10 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                     loading.set(false);
                 }
                 Err(e) => {
-                    toast.error(e.to_user_message(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                    toast.error(
+                        e.to_user_message(),
+                        ToastOptions::default().duration(Duration::from_millis(3000)),
+                    );
                     loading.set(false);
                 }
             }
@@ -81,10 +126,30 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                     h2 { "Import" }
                 }
 
-                div { class: "screen-content centered content-enter",
+                div { class: "pinned-controls",
                     div { class: "container-sm",
                         div { class: "chip-row",
-                            span { class: "chip-row-label", "Import:" }
+                            span { class: "chip-row-label", "From:" }
+                            for (label, value) in [("Text", ImportSource::Text), ("Archidekt", ImportSource::Archidekt)] {
+                                button {
+                                    class: if *source.read() == value { "chip selected" } else { "chip" },
+                                    onclick: move |_| source.set(value),
+                                    "{label}"
+                                }
+                            }
+                        }
+                        div { class: "chip-row",
+                            span { class: "chip-row-label", "Mode:" }
+                            for (label, value) in [("Add", ImportMode::Add), ("Replace", ImportMode::Replace)] {
+                                button {
+                                    class: if *mode.read() == value { "chip selected" } else { "chip" },
+                                    onclick: move |_| mode.set(value),
+                                    "{label}"
+                                }
+                            }
+                        }
+                        div { class: "chip-row",
+                            span { class: "chip-row-label", "Board:" }
                             for (label, value) in [("Deck", None), ("Maybe", Some("maybeboard")), ("Side", Some("sideboard"))] {
                                 button {
                                     class: if *board_selection.read() == value { "chip selected" } else { "chip" },
@@ -93,14 +158,39 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                                 }
                             }
                         }
-                        label { class: "label", r#for: "import-text", "Paste decklist" }
-                        textarea {
-                            id: "import-text",
-                            class: "input",
-                            style: "width:100%;min-height:12rem;resize:vertical;",
-                            placeholder: "5 Island\n4 Mountain\n1 Guide of Souls\n1 Gonti's Aether Heart\n1 Decoction Module\n1 Whirler Virtuoso",
-                            value: "{text}",
-                            oninput: move |e| text.set(e.value()),
+                        p { class: "text-muted text-sm",
+                            if mode().is_replace() {
+                                "Removes all existing cards in the {board_word}, replacing with imported cards."
+                            } else {
+                                "Adds imported cards into the {board_word}. Existing cards stay but take new quantities if applicable."
+                            }
+                        }
+                    }
+                }
+
+                div { class: "screen-content centered content-enter",
+                    div { class: "container-sm",
+                        if source() == ImportSource::Text {
+                            label { class: "label", r#for: "import-text", "Paste decklist" }
+                            textarea {
+                                id: "import-text",
+                                class: "input",
+                                style: "width:100%;min-height:12rem;resize:vertical;",
+                                placeholder: "1 Krenko, Mob Boss\n1 Urza, Lord High Artificer\n1 Sol Ring",
+                                value: "{text}",
+                                oninput: move |e| text.set(e.value()),
+                            }
+                        } else {
+                            label { class: "label", r#for: "import-url", "Paste an Archidekt deck URL" }
+                            input {
+                                id: "import-url",
+                                class: "input",
+                                style: "width:100%;",
+                                r#type: "url",
+                                placeholder: "https://archidekt.com/decks/...",
+                                value: "{url}",
+                                oninput: move |e| url.set(e.value()),
+                            }
                         }
 
                         if let Some(r) = result() {
@@ -136,9 +226,18 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                     }
                     button {
                         class: "util-btn",
-                        disabled: loading(),
+                        disabled: loading() || match source() {
+                            ImportSource::Text => text().trim().is_empty(),
+                            ImportSource::Archidekt => url().trim().is_empty(),
+                        },
                         onclick: move |_| do_import(),
-                        if loading() { "Importing..." } else { "Import" }
+                        if loading() {
+                            "Importing..."
+                        } else if mode().is_replace() {
+                            "Replace"
+                        } else {
+                            "Import"
+                        }
                     }
                 }
             }

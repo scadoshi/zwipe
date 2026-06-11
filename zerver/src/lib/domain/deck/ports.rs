@@ -14,6 +14,7 @@ use crate::domain::deck::models::{
         get_deck::GetDeckError,
         get_deck_profile::GetDeckProfileError,
         get_deck_tokens::GetDeckTokensError,
+        import_archidekt::ArchidektCard,
         update_deck_profile::UpdateDeckProfileError,
     },
     deck_card::{
@@ -143,6 +144,16 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         cards: &[(uuid::Uuid, uuid::Uuid, i32, String)],
     ) -> impl Future<Output = Result<Vec<DeckCard>, ImportDeckCardsError>> + Send;
 
+    /// Deletes every card on `board` whose oracle_id is not in `keep_oracle_ids`.
+    /// Used by replace-mode imports to make a board exactly match the imported
+    /// list. Callers must have verified deck ownership first.
+    fn delete_deck_cards_not_in(
+        &self,
+        deck_id: uuid::Uuid,
+        board: &str,
+        keep_oracle_ids: &[uuid::Uuid],
+    ) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
+
     // ========
     //  clone
     // ========
@@ -241,6 +252,21 @@ pub trait DeckService: Clone + Send + Sync + 'static {
     fn import_deck_cards(
         &self,
         request: &ImportDeckCards,
+    ) -> impl Future<Output = Result<ImportDeckCardsResult, ImportDeckCardsError>> + Send;
+
+    /// Imports an Archidekt card list into an existing deck owned by `user_id`,
+    /// onto the given board — exactly like `import_deck_cards`, except cards
+    /// resolve by Scryfall printing id (with a name fallback) instead of by
+    /// name. With [`zwipe_core::domain::deck::ImportMode::Replace`], the board
+    /// is made to exactly match the list.
+    fn import_archidekt_deck(
+        &self,
+        user_id: uuid::Uuid,
+        deck_id: uuid::Uuid,
+        cards: &[ArchidektCard],
+        board: zwipe_core::domain::deck::Board,
+        email_verified: bool,
+        mode: zwipe_core::domain::deck::ImportMode,
     ) -> impl Future<Output = Result<ImportDeckCardsResult, ImportDeckCardsError>> + Send;
 
     // ========

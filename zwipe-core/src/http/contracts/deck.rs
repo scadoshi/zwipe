@@ -3,7 +3,31 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::domain::deck::ImportMode;
 use crate::http::helpers::Opdate;
+
+/// Request to import an Archidekt deck's cards into an existing deck.
+///
+/// The server extracts the numeric deck id from the URL, fetches the deck via
+/// Archidekt's public JSON API, resolves each printing against the card
+/// database by Scryfall id, and imports the cards into the caller's deck (the
+/// target deck id comes from the URL path) exactly like the plain-text
+/// importer. Responds with an `ImportDeckCardsResult`.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct HttpImportArchidektDeck {
+    /// Archidekt deck URL (e.g. `https://archidekt.com/decks/13769484/shorikai`)
+    /// or a bare numeric deck id.
+    pub url: String,
+    /// Board to place the imported cards on. Values: `"deck"`, `"maybeboard"`,
+    /// `"sideboard"`. Defaults to `"deck"` if absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub board: Option<String>,
+    /// Add on top of the target board (default), or replace it (cards on it
+    /// that aren't in the Archidekt list are removed).
+    /// Values: `"add"`, `"replace"`.
+    #[serde(default)]
+    pub mode: ImportMode,
+}
 
 /// Deck creation request body.
 #[derive(Debug, Deserialize, Serialize)]
