@@ -78,7 +78,7 @@ RUST_BACKTRACE=0
 LOG_DIR=/tmp/zwipe-logs
 # email config (placeholder — dev doesn't send mail; swap in a real Resend key to test verify/reset flows)
 RESEND_API_KEY=changeme
-RESEND_EMAIL_FROM=hello@zwipe.net
+RESEND_EMAIL_FROM=support@zwipe.net
 EOF
 
 cat > zwiper/.env << EOF
