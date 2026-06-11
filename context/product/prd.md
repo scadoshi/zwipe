@@ -16,7 +16,7 @@ Swipe right to add cards, left to skip. Deep filter system for color, type, orac
 Freemium. See `context/decisions/monetization.md`.
 
 - **Free**: All core features — unlimited decks, full card database, swipe interface, filters, metrics
-- **Paid subscription**: AI card suggestions, EDHREC synergy integration (post-App Store launch)
+- **Paid subscription**: AI card suggestions, synergy scores (post-App Store launch)
 
 ## Target Audience
 

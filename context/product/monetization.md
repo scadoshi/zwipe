@@ -2,6 +2,12 @@
 
 **Decided: Freemium with subscription for AI/intelligence features (2026-03-26)**
 
+**Feature catalog: `premium/` (brainstormed 2026-06-10)** — detailed
+per-feature docs for everything under consideration for the paid tier, plus
+the free features that feed it (deck tags, collection tracking, bracket
+badge). Start at `premium/README.md`. This file remains the decision record;
+that directory is the living idea catalog.
+
 ---
 
 ## Model
@@ -14,10 +20,12 @@
 - Import/export (Moxfield, Archidekt formats)
 - Advanced card filtering
 
-**Paid tier** — intelligence layer, subscription only:
-- AI card suggestions: "given your commander and strategy, here are cards you're missing"
-- EDHREC synergy integration — synergy scores, theme/archetype suggestions
-- Possibly: price awareness, collection tracking
+**Paid tier** — intelligence layer, subscription only (full catalog in `premium/`):
+- AI deck analysis via preset prompts: cuts, upgrades, win conditions, bracket coaching
+- Smart swipe-stack ordering + taste profile from swipe history
+- Price intelligence: history, watch thresholds, shopping-list drop alerts (current prices stay free)
+- Synergy integration — synergy scores, theme/archetype suggestions
+- Note: collection tracking and the bracket badge are deliberately FREE (moat + acquisition — see `premium/`)
 
 **No ads** — ever. Ads look terrible, tank reviews, and CPMs for a niche hobby audience are lousy.
 
