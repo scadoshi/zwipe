@@ -15,8 +15,8 @@ use crate::{
     },
     outbound::client::{
         ZwipeClient,
-        card::{get_card::ClientGetCard, search_cards::ClientSearchCards},
-        deck::get_deck::ClientGetDeck,
+        card::get_card::ClientGetCard,
+        deck::{get_deck::ClientGetDeck, search_deck_cards::ClientSearchDeckCards},
         deck_card::{
             create_deck_card::ClientCreateDeckCard, delete_deck_card::ClientDeleteDeckCard,
             update_deck_card::ClientUpdateDeckCard,
@@ -150,7 +150,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 }
             };
 
-            match client().search_cards(&filter, &session).await {
+            match client().search_deck_cards(deck_id, &filter, &session).await {
                 Ok(new_cards) => {
                     let existing_cards = cards();
                     let deck_ids = deck_cards_ids();
@@ -504,6 +504,15 @@ pub fn Add(deck_id: Uuid) -> Element {
                             }
                         }
                     }
+
+                    // Auto-serve: with deck context now populated, an empty
+                    // stack can be filled immediately — the deck-aware search
+                    // serves the default filter synergy-ordered, 25 a page.
+                    // A non-empty stack is a preserved session; leave it be.
+                    if cards.peek().is_empty() {
+                        let current = *filter_reset_counter.peek();
+                        filter_reset_counter.set(current + 1);
+                    }
                 }
                 Err(e) => {
                     tracing::warn!(
@@ -525,22 +534,8 @@ pub fn Add(deck_id: Uuid) -> Element {
         builder.set_limit(pagination_limit);
         builder.set_offset(0);
 
-        let effectively_empty = builder.is_empty_ignoring_deck_context();
-
         if first {
             // ── Initial mount ─────────────────────────────────────────
-            if effectively_empty {
-                // Filter is default — clear any stale cards and don't search
-                cards.set(vec![]);
-                last_search_filter.set(None);
-                current_offset.set(0);
-                current_index.set(0);
-                toast.warning(
-                    "Filter is empty".to_string(),
-                    ToastOptions::default().duration(Duration::from_millis(2000)),
-                );
-                return;
-            }
             // Preserve cards if the filter hasn't changed since last search.
             let filter_unchanged = last_search_filter
                 .peek()
@@ -572,11 +567,11 @@ pub fn Add(deck_id: Uuid) -> Element {
         current_index.set(0);
         pagination_exhausted.set(false);
 
-        if effectively_empty {
-            // Filter is default (empty or only deck format) — don't search
-            return;
-        }
-
+        // Auto-serve: a filter holding only deck context (format legality +
+        // commander identity) is a valid search now — the deck-aware endpoint
+        // serves it synergy-ordered. Only a truly empty builder (deck has no
+        // format/commander, context not yet loaded) fails build() and keeps
+        // today's empty state; the mount effect re-triggers once context lands.
         let Ok(filter) = builder.build() else {
             return;
         };
@@ -595,7 +590,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
         usage_buffer().record_search();
         spawn(async move {
-            match client().search_cards(&filter, &session).await {
+            match client().search_deck_cards(deck_id, &filter, &session).await {
                 Ok(cards_from_search) => {
                     let deck_ids = deck_cards_ids();
                     cards.set(
@@ -1008,7 +1003,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                             usage_buffer().record_search();
                             spawn(async move {
-                                match client().search_cards(&filter, &session).await {
+                                match client().search_deck_cards(deck_id, &filter, &session).await {
                                     Ok(cards_from_search) => {
                                         let deck_ids = deck_cards_ids();
                                         cards.set(

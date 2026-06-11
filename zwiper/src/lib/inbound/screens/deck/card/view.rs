@@ -469,7 +469,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                 let current = *filter_reset_counter.peek();
                                 filter_reset_counter.set(current + 1);
                             },
-                            "Deck"
+                            "Main"
                         }
                         button {
                             class: if show_maybe() { "chip selected" } else { "chip" },
