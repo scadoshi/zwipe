@@ -123,6 +123,39 @@ WHERE d.id = $1
   payload keeps serving if a refresh fails. The read path should not care.
 - **Internal signal only.** Use it to order/boost (smart stack ordering,
   suggestions); do not print the raw numbers in the UI as an editorial stat.
+- **Explicit sort wins — synergy is the default ordering, not a layer.**
+  Synergy boost applies *only* when the user hasn't chosen a sort. If they
+  pick price, CMC, color, alphabetical, etc., that intent overrides the
+  signal completely — never synergy-boost an explicitly sorted stack (a
+  synergy-tweaked price sort is nonsense). The shape:
+
+  ```
+  if sort_param is set:  order by that column
+  else:                  order by synergy boost (default ordering if no cache)
+  ```
+
+  One line at implementation time, but documented here so it can't get
+  accidentally layered on top of an explicit sort later.
+
+## Blank-state auto-serve (decided 2026-06-11)
+
+Today "add cards" opens to an empty state that forces filtering before any
+card appears. With the cache warm, the blank state becomes useful: **serve
+top-synergy cards for the deck's commander immediately, no filter required.**
+The first question a deck builder has is "what goes well with my commander?" —
+that's literally what the default ordering now answers.
+
+- **Cap the initial batch** (~top 20–30 by synergy), don't paginate the whole
+  pool at them. Applying any filter or sort returns to today's behavior
+  (filters narrow, explicit sort wins, per above).
+- **Fallback on cache miss** (new commander, null-oracle, non-commander
+  deck): today's empty state — prompt to filter. The blank state never gets
+  worse than it is now. (Later option: most-played-in-format as a generic
+  default.)
+- This shifts "add cards" from search tool toward recommendation feed —
+  deliberate. The free tier gets basic synergy auto-serve; smarter auto-serve
+  (collection-aware, price-aware) is premium-candidate territory
+  (`context/product/premium/smart-stack.md`).
 
 ## How to test from this side
 
