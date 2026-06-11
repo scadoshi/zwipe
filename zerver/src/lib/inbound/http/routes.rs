@@ -304,7 +304,7 @@ where
                     "/deck",
                     Router::new()
                         .route("/", get(get_deck_profiles).post(create_deck_profile))
-                        .route("/import/archidekt", post(import_archidekt_deck))
+                        .route("/{deck_id}/import/archidekt", post(import_archidekt_deck))
                         .route("/profile/{deck_id}", get(get_deck_profile))
                         .route(
                             "/{deck_id}",

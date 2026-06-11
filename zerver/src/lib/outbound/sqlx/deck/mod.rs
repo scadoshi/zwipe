@@ -137,6 +137,23 @@ impl DeckRepository for Postgres {
         Ok(count)
     }
 
+    async fn delete_deck_cards_not_in(
+        &self,
+        deck_id: uuid::Uuid,
+        board: &str,
+        keep_oracle_ids: &[uuid::Uuid],
+    ) -> Result<(), anyhow::Error> {
+        sqlx::query(
+            "DELETE FROM deck_cards WHERE deck_id = $1 AND board = $2 AND NOT (oracle_id = ANY($3))",
+        )
+        .bind(deck_id)
+        .bind(board)
+        .bind(keep_oracle_ids)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
     async fn sum_quantities_for_oracle_ids(
         &self,
         deck_id: uuid::Uuid,
