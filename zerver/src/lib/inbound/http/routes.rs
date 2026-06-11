@@ -30,7 +30,8 @@ use crate::inbound::http::handlers::{
         clone_deck::clone_deck, create_deck_profile::create_deck_profile,
         delete_deck::delete_deck, get_deck::get_deck, get_deck_profile::get_deck_profile,
         get_deck_profiles::get_deck_profiles, get_deck_tokens::get_deck_tokens,
-        import_archidekt::import_archidekt_deck, update_deck_profile::update_deck_profile,
+        import_archidekt::import_archidekt_deck, search_deck_cards::search_deck_cards,
+        update_deck_profile::update_deck_profile,
     },
     deck_card::{
         create_deck_card::create_deck_card, delete_deck_card::delete_deck_card,
@@ -334,6 +335,7 @@ where
                             Router::new()
                                 .route("/", post(create_deck_card))
                                 .route("/import", post(import_deck_cards))
+                                .route("/search", post(search_deck_cards))
                                 .route(
                                     "/{scryfall_data_id}",
                                     put(update_deck_card).delete(delete_deck_card),

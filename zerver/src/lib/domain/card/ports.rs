@@ -106,6 +106,16 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         request: &CardFilter,
     ) -> impl Future<Output = Result<Vec<ScryfallData>, SearchScryfallDataError>> + Send;
 
+    /// `search_scryfall_data` plus deck-aware extras: oracle_id exclusion and
+    /// synergy-score default ordering (scores apply only when the filter has
+    /// no explicit `order_by`).
+    fn search_scryfall_data_deck_aware(
+        &self,
+        request: &CardFilter,
+        exclude_oracle_ids: &[uuid::Uuid],
+        synergy_scores: Option<&serde_json::Value>,
+    ) -> impl Future<Output = Result<Vec<ScryfallData>, SearchScryfallDataError>> + Send;
+
     /// Retrieves complete card by Scryfall ID.
     fn get_card(
         &self,
@@ -202,6 +212,26 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         &self,
         names: &[String],
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
+
+    /// `search_cards` with deck awareness: rows whose oracle_id is in
+    /// `exclude_oracle_ids` are omitted, and when `synergy_scores` is given
+    /// (lowercased card name → score) results are ordered by score descending
+    /// with unscored cards last. Caller guarantees scores are only passed
+    /// when the filter has no explicit `order_by`.
+    fn search_cards_deck_aware(
+        &self,
+        request: &CardFilter,
+        exclude_oracle_ids: &[uuid::Uuid],
+        synergy_scores: Option<&serde_json::Value>,
+    ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
+
+    /// Fetches the cached synergy payload for a commander by **printing** id
+    /// (`scryfall_data.id` — resolved to oracle internally). `None` when the
+    /// commander has no cache row yet (graceful absence).
+    fn commander_synergy_payload(
+        &self,
+        commander_printing_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<Option<serde_json::Value>, SearchCardsError>> + Send;
 
     // ============
     //  classify
@@ -376,4 +406,5 @@ pub trait CardService: Clone + Send + Sync + 'static {
         &self,
         names: &[String],
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
+
 }

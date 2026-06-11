@@ -16,5 +16,7 @@ pub mod import_archidekt;
 pub mod get_deck_tokens;
 /// Get single deck profile operation.
 pub mod get_deck_profile;
+/// Deck-aware card search (exclusion + synergy ordering).
+pub mod search_deck_cards;
 /// Update deck profile operation.
 pub mod update_deck_profile;
