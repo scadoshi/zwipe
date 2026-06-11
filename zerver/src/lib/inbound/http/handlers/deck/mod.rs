@@ -16,5 +16,7 @@ pub mod get_deck_tokens;
 pub mod get_deck_profile;
 /// All decks for user handler.
 pub mod get_deck_profiles;
+/// Deck-aware card search handler (exclusion + synergy ordering).
+pub mod search_deck_cards;
 /// Deck metadata update handler.
 pub mod update_deck_profile;
