@@ -68,6 +68,7 @@ async fn run() -> anyhow::Result<()> {
     let server_config = HttpServerConfig {
         bind_address: &config.bind_address,
         allowed_origins: config.allowed_origins,
+        min_client_version: config.min_client_version,
     };
     let http_server = HttpServer::new(
         auth_service,
