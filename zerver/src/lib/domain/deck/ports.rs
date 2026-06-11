@@ -5,7 +5,7 @@
 
 use std::future::Future;
 
-use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::{Card, search_card::card_filter::CardFilter};
 use crate::domain::deck::models::{
     deck::{
         clone_deck::CloneDeckError,
@@ -15,6 +15,7 @@ use crate::domain::deck::models::{
         get_deck_profile::GetDeckProfileError,
         get_deck_tokens::GetDeckTokensError,
         import_archidekt::ArchidektCard,
+        search_deck_cards::SearchDeckCardsError,
         update_deck_profile::UpdateDeckProfileError,
     },
     deck_card::{
@@ -209,6 +210,18 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         &self,
         request: &GetDeckProfile,
     ) -> impl Future<Output = Result<Deck, GetDeckError>> + Send;
+
+    /// Deck-aware card search with authorization check: applies `filter` but
+    /// excludes cards already in the deck (any board, plus commander/partner/
+    /// background/signature slots), and when `filter` has no explicit
+    /// `order_by` and the deck's commander has cached synergy data, orders
+    /// results by synergy descending. Explicit sort always wins; absent
+    /// signal degrades gracefully to the filter's own semantics.
+    fn search_deck_cards(
+        &self,
+        request: &GetDeckProfile,
+        filter: &CardFilter,
+    ) -> impl Future<Output = Result<Vec<Card>, SearchDeckCardsError>> + Send;
 
     /// Retrieves all token cards produced by the cards in a deck.
     fn get_deck_tokens(

@@ -3,9 +3,10 @@ use std::fmt::Debug;
 
 use uuid::Uuid;
 
-use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::{Card, search_card::card_filter::CardFilter};
 use crate::domain::{
     card::{
+        models::synergy::SynergyPayload,
         requests::get_scryfall_data::ScryfallDataIds,
         ports::CardRepository,
     },
@@ -18,6 +19,7 @@ use crate::domain::{
                 get_deck::GetDeckError,
                 get_deck_profile::GetDeckProfileError,
                 get_deck_tokens::GetDeckTokensError,
+                search_deck_cards::SearchDeckCardsError,
                 update_deck_profile::UpdateDeckProfileError,
             },
             deck::import_archidekt::ArchidektCard,
@@ -245,6 +247,79 @@ where
         );
         let deck = Deck::new(deck_profile, entries, warnings);
         Ok(deck)
+    }
+
+    async fn search_deck_cards(
+        &self,
+        request: &GetDeckProfile,
+        filter: &CardFilter,
+    ) -> Result<Vec<Card>, SearchDeckCardsError> {
+        let deck_profile = self.deck_repo.get_deck_profile(request).await?;
+        if request.user_id != deck_profile.user_id {
+            return Err(GetDeckProfileError::Forbidden.into());
+        }
+
+        // Exclude everything already in the deck: all boards by oracle_id,
+        // plus profile slots (printing ids resolved to oracle, mirroring the
+        // importers' slot exclusion).
+        let deck_cards = self
+            .deck_repo
+            .get_deck_cards(request)
+            .await
+            .map_err(|e| SearchDeckCardsError::Database(e.into()))?;
+        let mut exclude_oracle_ids: std::collections::HashSet<Uuid> =
+            deck_cards.iter().map(|dc| dc.oracle_id).collect();
+
+        let slot_scryfall_ids: ScryfallDataIds = [
+            deck_profile.commander_id,
+            deck_profile.partner_commander_id,
+            deck_profile.background_id,
+            deck_profile.signature_spell_id,
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+        if !slot_scryfall_ids.is_empty() {
+            exclude_oracle_ids.extend(
+                self.card_repo
+                    .get_multiple_scryfall_data(&slot_scryfall_ids)
+                    .await
+                    .map_err(|e| SearchDeckCardsError::Database(e.into()))?
+                    .into_iter()
+                    .filter_map(|sd| sd.oracle_id),
+            );
+        }
+        let exclude_oracle_ids: Vec<Uuid> = exclude_oracle_ids.into_iter().collect();
+
+        // Synergy is the default ordering only — an explicit sort wins, and a
+        // missing/unparseable signal degrades to the filter's own semantics.
+        let synergy_scores: Option<serde_json::Value> = match (filter.order_by(), deck_profile.commander_id) {
+            (None, Some(commander_id)) => self
+                .card_repo
+                .commander_synergy_payload(commander_id)
+                .await?
+                .and_then(|payload| match serde_json::from_value::<SynergyPayload>(payload) {
+                    Ok(parsed) => {
+                        let scores = parsed.into_scores();
+                        if scores.is_empty() {
+                            None
+                        } else {
+                            serde_json::to_value(scores).ok()
+                        }
+                    }
+                    Err(e) => {
+                        tracing::warn!(%commander_id, "synergy payload failed to parse, serving unordered: {e}");
+                        None
+                    }
+                }),
+            _ => None,
+        };
+
+        let cards = self
+            .card_repo
+            .search_cards_deck_aware(filter, &exclude_oracle_ids, synergy_scores.as_ref())
+            .await?;
+        Ok(cards)
     }
 
     async fn get_deck_tokens(
