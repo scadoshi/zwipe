@@ -8,6 +8,7 @@ use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::telemetry::{
     flush_loop::spawn_usage_flusher, usage_buffer::UsageBuffer,
 };
+use crate::outbound::client::version::get_min_client_version::ClientGetMinClientVersion;
 use crate::outbound::{client::ZwipeClient, session::Persist};
 use dioxus::prelude::*;
 use std::time::Duration;
@@ -15,11 +16,20 @@ use tokio::time::interval;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::{search_card::card_filter::builder::CardFilterBuilder, Card};
 use zwipe_core::domain::user::models::theme::ThemeConfig;
+use zwipe_core::version::version_at_least;
 
-/// Spawns a background task that periodically refreshes the user session.
+/// The running app version, baked in at compile time (matches
+/// CFBundleShortVersionString since 1.0.3).
+const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+/// Spawns a background task that periodically refreshes the user session and
+/// polls the server's minimum supported app version.
 ///
-/// Also initializes context providers for session, client, card filter, and cards.
-pub fn spawn_upkeeper() {
+/// Also initializes context providers for session, client, card filter, and
+/// cards. Returns the `upgrade_required` signal — true when this build is
+/// below the server minimum; the root component swaps the router for a
+/// blocking update screen.
+pub fn spawn_upkeeper() -> Signal<bool> {
     tracing::debug!("upkeeper spawned");
     let session = use_signal(Session::infallible_load);
     use_context_provider(|| session);
@@ -52,6 +62,11 @@ pub fn spawn_upkeeper() {
     use_context_provider(|| usage_buffer);
     spawn_usage_flusher(usage_buffer.peek().clone(), client, session);
 
+    // Min-version gate — flipped true when the server says this build is too
+    // old. Provided as context so any screen can read it if needed.
+    let mut upgrade_required = use_signal(|| false);
+    use_context_provider(|| upgrade_required);
+
     spawn(async move {
         // first tick fires immediately — this is the cold-start refresh
         let mut interval = interval(Duration::from_secs(60));
@@ -59,6 +74,24 @@ pub fn spawn_upkeeper() {
             interval.tick().await;
             // single-flight: free of races with any in-flight user action
             let _ = session.ensure_fresh(client).await;
+
+            // Min-version gate check. Fails open: only a successful response
+            // can flip the gate — a network hiccup never locks anyone out.
+            let http = client.peek().clone();
+            if let Ok(min) = http.get_min_client_version().await {
+                let required = !version_at_least(APP_VERSION, &min.min_version);
+                if required != *upgrade_required.peek() {
+                    tracing::info!(
+                        app = APP_VERSION,
+                        min = %min.min_version,
+                        required,
+                        "min-version gate changed"
+                    );
+                    upgrade_required.set(required);
+                }
+            }
         }
     });
+
+    upgrade_required
 }

@@ -216,6 +216,8 @@ pub struct HttpServerConfig<'a> {
     pub bind_address: &'a str,
     /// Origins permitted by CORS policy.
     pub allowed_origins: Vec<HeaderValue>,
+    /// Minimum app version allowed (force-update gate); `"0.0.0"` = open.
+    pub min_client_version: String,
 }
 
 /// Shared application state holding all service implementations.
@@ -240,6 +242,8 @@ where
     pub metrics_service: Arc<dyn ErasedMetricsService>,
     /// Per-user debounce cache for `users.last_active_at` bumps.
     pub last_active_cache: Arc<DashMap<Uuid, Instant>>,
+    /// Minimum app version allowed (force-update gate); `"0.0.0"` = open.
+    pub min_client_version: Arc<str>,
 }
 
 /// Axum HTTP server with pre-configured routes and middleware.
@@ -289,6 +293,7 @@ impl HttpServer {
             deck_service: Arc::new(deck_service),
             metrics_service,
             last_active_cache: Arc::new(DashMap::new()),
+            min_client_version: Arc::from(config.min_client_version.as_str()),
         };
 
         // Layer order is innermost-first, outermost-last. Request flows
