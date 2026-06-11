@@ -166,3 +166,7 @@ pub fn get_my_metrics_route() -> String {
 pub fn public_metrics_route() -> String {
     "/api/marketing/stats".to_string()
 }
+
+pub fn min_client_version_route() -> String {
+    "/api/client/min-version".to_string()
+}

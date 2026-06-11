@@ -25,6 +25,7 @@ use crate::inbound::http::handlers::{
         get_oracle_words::get_oracle_words, get_printings::get_printings,
         get_sets::get_sets, search_card::search_cards,
     },
+    client::get_min_client_version,
     deck::{
         clone_deck::clone_deck, create_deck_profile::create_deck_profile,
         delete_deck::delete_deck, get_deck::get_deck, get_deck_profile::get_deck_profile,
@@ -136,6 +137,16 @@ where
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
+    // 30 req / 2s per IP — min-version gate poll. ~30-byte payload hit once a
+    // minute per app; modest cap guards origin without risking lockout noise.
+    let public_client_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(2))
+            .burst_size(30)
+            .key_extractor(PeerIpKeyExtractor)
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
 
     Router::new()
         .route("/", get(root))
@@ -196,6 +207,12 @@ where
                     Router::new()
                         .route("/stats", get(get_public_metrics))
                         .layer(GovernorLayer::new(public_marketing_config)),
+                )
+                .nest(
+                    "/client",
+                    Router::new()
+                        .route("/min-version", get(get_min_client_version))
+                        .layer(GovernorLayer::new(public_client_config)),
                 ),
         )
 }

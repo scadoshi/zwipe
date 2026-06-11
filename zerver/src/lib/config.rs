@@ -38,6 +38,12 @@ const LOG_DIR_KEY: &str = "LOG_DIR";
 /// Default log directory on production servers.
 const LOG_DIR_DEFAULT: &str = "/var/log/zwipe";
 
+/// Environment variable key for the minimum supported client app version.
+const MIN_CLIENT_VERSION_KEY: &str = "MIN_CLIENT_VERSION";
+
+/// Default minimum client version — `0.0.0` means the gate is open.
+const MIN_CLIENT_VERSION_DEFAULT: &str = "0.0.0";
+
 /// Application configuration loaded from environment variables.
 ///
 /// All fields are required and validated at construction time.
@@ -70,6 +76,11 @@ pub struct Config {
 
     /// Directory for rolling log files. Defaults to `/var/log/zwipe` if not set.
     pub log_dir: String,
+
+    /// Minimum app version allowed to talk to this server (force-update gate).
+    /// Defaults to `0.0.0` (gate open) if not set. Flipping the gate = edit
+    /// `.env` on the server + restart zerver; no code deploy.
+    pub min_client_version: String,
 }
 
 impl Config {
@@ -95,6 +106,15 @@ impl Config {
         let resend_api_key = env_var_by_key(RESEND_API_KEY_KEY)?;
         let resend_from_email = env_var_by_key(RESEND_EMAIL_FROM_KEY)?;
         let log_dir = std::env::var(LOG_DIR_KEY).unwrap_or_else(|_| LOG_DIR_DEFAULT.to_string());
+        let min_client_version = std::env::var(MIN_CLIENT_VERSION_KEY)
+            .unwrap_or_else(|_| MIN_CLIENT_VERSION_DEFAULT.to_string());
+        if zwipe_core::version::parse_version(&min_client_version).is_none() {
+            anyhow::bail!(
+                "invalid {}: {:?} (expected x.y.z)",
+                MIN_CLIENT_VERSION_KEY,
+                min_client_version
+            );
+        }
         Ok(Self {
             jwt_secret,
             database_url,
@@ -105,6 +125,7 @@ impl Config {
             resend_api_key,
             resend_from_email,
             log_dir,
+            min_client_version,
         })
     }
 }
