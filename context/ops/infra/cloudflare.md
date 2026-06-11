@@ -235,7 +235,7 @@ Inbound mail for zwipe.net runs through Cloudflare Email Routing (free):
     User-Agent contact strings, anything operational)
   - `scotty@zwipe.net` — human/founder address for partner outreach
 - Outbound transactional mail is unchanged: Resend sends as
-  `hello@zwipe.net` via its own subdomain records (`send.zwipe.net`,
+  `support@zwipe.net` via its own subdomain records (`send.zwipe.net`,
   `resend._domainkey`) — independent of inbound routing.
 - Only one SPF TXT record may exist per hostname; the root SPF is now
   Cloudflare's. If a sender ever needs a root SPF include, merge it into

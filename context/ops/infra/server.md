@@ -293,7 +293,7 @@ ALLOWED_ORIGINS=https://zwipe.net
 RUST_LOG=info,sqlx=warn,zwipe=debug,zerver=debug
 RUST_BACKTRACE=1
 RESEND_API_KEY=<from Resend dashboard>
-RESEND_EMAIL_FROM=hello@zwipe.net
+RESEND_EMAIL_FROM=support@zwipe.net
 # LOG_DIR omitted — defaults to /var/log/zwipe
 ```
 

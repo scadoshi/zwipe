@@ -13,7 +13,7 @@ All three are linked on the `zwipe.net/contribute` page.
 ## Email (Resend)
 
 - **Provider**: Resend (resend.com)
-- **From address**: `hello@zwipe.net`
+- **From address**: `support@zwipe.net`
 - **Domain**: zwipe.net verified in Resend dashboard
 - **DNS**: DKIM + SPF + DMARC records in Cloudflare — see [cloudflare.md](cloudflare.md)
 
