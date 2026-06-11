@@ -1,6 +1,7 @@
 # Client min-version gate — force-update kill-switch
 
-**Status: planned, unstarted. Target: ride the next client build (1.0.5).**
+**Status: built on `feat/min-version-gate` (2026-06-10), as designed below.
+Ships with the next client build (1.0.5).**
 
 ## Context
 
