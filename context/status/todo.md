@@ -109,6 +109,7 @@ Momentum work now that Zwipe TCG is live. Roughly ordered by user-visible impact
 - [x] **Refresh App Store imagery** (2026-06-06) — screenshots recaptured from build 19 (1.0.1) on iPhone 11 Pro Max simulator (1242×2688px). 12 screenshots in `context/ops/ios/app-store-submission/`.
 - [x] **Update App Store icon to gruvbox** (2026-06-07) — new 1024×1024 master, gruvbox tan Z on `#282828`, alpha stripped, sized to 40/60/80/87/120/180/1024. Shipped in 1.0.2 build 21. Repack process documented in `context/ops/ios/appstore-icon-update.md`.
 - [ ] **Marketing posts** — Reddit (r/EDH, r/magicTCG, r/CompetitiveEDH) and X. Lead with the swipe demo video, link the App Store listing.
+- [ ] **Business cards for LGSs** (noted 2026-06-10) — design + print cards to leave at local game stores. Pixel-art Z branding, App Store link (QR code to https://apps.apple.com/us/app/zwipe-tcg/id6761341603 or zwipe.net), one-line hook ("Swipe right on your next deck" or similar). Ask store owners first; commander night crowds are the target audience.
 - [ ] **Tutorial?** — decide whether to ship a guided first-run flow or let users discover the swipe UX themselves. Lean toward letting them figure it out unless analytics later say otherwise.
 
 ### Web/Zite Polish
