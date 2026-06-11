@@ -44,7 +44,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
     let mut board_selection: Signal<Option<&'static str>> = use_signal(|| None);
     let toast = use_toast();
 
-    let board_word = board_selection.read().unwrap_or("deck");
+    let board_word = board_selection.read().unwrap_or("mainboard");
 
     let mut do_import = move || {
         let board = *board_selection.peek();
@@ -150,7 +150,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                         }
                         div { class: "chip-row",
                             span { class: "chip-row-label", "Board:" }
-                            for (label, value) in [("Deck", None), ("Maybe", Some("maybeboard")), ("Side", Some("sideboard"))] {
+                            for (label, value) in [("Main", None), ("Maybe", Some("maybeboard")), ("Side", Some("sideboard"))] {
                                 button {
                                     class: if *board_selection.read() == value { "chip selected" } else { "chip" },
                                     onclick: move |_| board_selection.set(value),

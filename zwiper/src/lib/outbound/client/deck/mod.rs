@@ -19,5 +19,7 @@ pub mod get_deck_tokens;
 pub mod get_deck_profile;
 /// Fetch all deck profiles for the current user.
 pub mod get_deck_profiles;
+/// Deck-aware card search (server-side exclusion + synergy default order).
+pub mod search_deck_cards;
 /// Update deck profile metadata.
 pub mod update_deck_profile;
