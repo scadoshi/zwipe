@@ -6,7 +6,7 @@ Planned features and improvements for after App Store launch.
 
 ## High Priority
 
-- **Deck Migration from Moxfield/Archidekt**: Import existing decks from Moxfield and Archidekt — practically a must for adoption; users won't rebuild decks by hand. Very doable, prioritize. (noted 2026-06-09)
+- **Deck Migration — Archidekt SHIPPED (2026-06-10), Moxfield remains**: Archidekt URL import landed in 1.0.5 (see `context/plans/deck-import.md`). Moxfield URL import is ToS-gated — needs an authorized User-Agent from support@moxfield.com; the text-paste importer covers Moxfield users meanwhile.
 - **Reach out to recommander.cards dev**: https://recommander.cards/ — card suggestion engine built by a local dev. Just open the conversation and see what he thinks about integrating. (noted 2026-06-09)
 
 ---

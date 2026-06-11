@@ -8,8 +8,10 @@ Completed work archived at `context/archive/complete-2026-Q1.md` (swept 2026-05-
 
 ## Next Up
 
-- [ ] **Min-version gate client build (1.0.5)** — implement `context/plans/min-version-gate.md`: server-driven force-update kill-switch (`MIN_CLIENT_VERSION` env, public `/api/client/min-version`, blocking "Update required" screen). Ship as the next client version so every build after it is force-updatable.
-- [ ] **Deck migration from Moxfield/Archidekt** — practically a must for adoption; very doable. See `backlog.md` High Priority.
+- [ ] **Moxfield import (phase 2)** — email support@moxfield.com requesting an authorized User-Agent; until granted, Moxfield users are served by the text-paste importer. See `context/plans/deck-import.md`.
+- [ ] **Track 1.0.5 (build 31) review + propagation** — submitted 2026-06-10; carries Archidekt import and the min-version gate. Once approved and propagated, every install ≥1.0.5 is force-updatable.
+- [x] **Min-version gate client build (1.0.5)** (2026-06-10) — built per `context/plans/min-version-gate.md` and shipped: public `/api/client/min-version` driven by `MIN_CLIENT_VERSION` env (live on prod at `0.0.0` = open), `zwipe_core::version` compare (fails open), 60s client poll, blocking "Update required" screen. In build 31.
+- [x] **Deck migration from Archidekt** (2026-06-10) — `POST /api/deck/{deck_id}/import/archidekt` imports an Archidekt URL's cards into an existing deck by Scryfall printing UID (name fallback), identical semantics to text import. Both importers gained Add/Replace `ImportMode` (board-scoped replace) and the import screen got From/Mode/Board chips. Server deployed + smoke-tested on prod; client in build 31. See `context/plans/deck-import.md`.
 - [x] **Reach out to recommander.cards dev** (2026-06-10) — sent friendly intro to Michael Celani (GamesfreakSA) via Discord + X, pitching a coffee chat about Zwipe consuming Recommander's recommendation API (good-ergonomics client + good-recs API), with traffic + credit driven back to him. Awaiting reply. See `backlog.md` High Priority for talking points.
 
 ---
@@ -19,7 +21,10 @@ Completed work archived at `context/archive/complete-2026-Q1.md` (swept 2026-05-
 Two prepared branches sit on origin, each a server-side flip that would break
 older iOS clients. **Merge only after ASC Analytics → App Versions shows the
 gating build at ~100% of active installs.** Both can land together once 1.0.4 (build 30)
-has propagated (1.0.4 implies Build 25's gate too).
+has propagated (1.0.4 implies Build 25's gate too). 1.0.5 (build 31, submitted
+2026-06-10) supersedes 30 and carries the min-version gate — once 1.0.5 is the
+floor, stragglers on these flips can be force-updated via `MIN_CLIENT_VERSION`
+instead of waited out.
 
 | Branch | What it does | Gate | Plan |
 |---|---|---|---|
