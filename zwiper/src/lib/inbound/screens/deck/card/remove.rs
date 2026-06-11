@@ -381,7 +381,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 div { style: "max-width: 40rem; width: 100%; padding: 0 1rem;",
                     div { class: "chip-row",
                         span { class: "chip-row-label", "Boards:" }
-                        for (label, variant) in [("Deck", BoardFilter::Deck), ("Maybe", BoardFilter::Maybeboard), ("Side", BoardFilter::Sideboard), ("All", BoardFilter::All)] {
+                        for (label, variant) in [("Main", BoardFilter::Deck), ("Maybe", BoardFilter::Maybeboard), ("Side", BoardFilter::Sideboard), ("All", BoardFilter::All)] {
                             button {
                                 class: if board_filter() == variant { "chip selected" } else { "chip" },
                                 onclick: move |_| {

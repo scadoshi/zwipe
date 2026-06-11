@@ -139,6 +139,10 @@ pub fn import_archidekt_deck_route(deck_id: Uuid) -> String {
     format!("/api/deck/{}/import/archidekt", deck_id)
 }
 
+pub fn search_deck_cards_route(deck_id: Uuid) -> String {
+    format!("/api/deck/{}/card/search", deck_id)
+}
+
 pub fn create_deck_card_route(deck_id: Uuid) -> String {
     format!("/api/deck/{}/card", deck_id)
 }
