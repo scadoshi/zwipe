@@ -87,6 +87,62 @@ SQL
 2026-06), your own recent decks visible by name, and `_sqlx_migrations`
 matching the count of files in `zerver/migrations/`.
 
+### 3b. Compare against the live server — exact, not eyeball
+
+Counting rows on both sides naively never matches: the dump is from 5am and
+prod has moved since. **Bound both sides at the dump's cutoff time** and the
+comparison becomes exact. Save this as `/tmp/drill-compare.sql`:
+
+```sql
+-- Set to the dump's date at 05:00 server time (the backup cron hour)
+\set cutoff '''2026-06-10 05:00:00'''
+
+select 'users' t, count(*) n,
+       md5(string_agg(id::text, ',' order by id)) ids
+  from users where created_at < :cutoff
+union all
+select 'decks', count(*),
+       md5(string_agg(id::text, ',' order by id))
+  from decks where created_at < :cutoff
+union all
+select 'deck_cards', count(*),
+       md5(string_agg(deck_id::text || oracle_id::text || quantity, ',' order by deck_id, oracle_id))
+  from deck_cards
+union all
+select 'scryfall_data', count(*), null
+  from scryfall_data
+union all
+select '_sqlx_migrations', count(*),
+       md5(string_agg(version::text, ',' order by version))
+  from _sqlx_migrations;
+```
+
+Run it on both sides and diff:
+
+```bash
+# on the home server (over ssh/Tailscale), against live prod DB
+psql "$DATABASE_URL" -f /tmp/drill-compare.sql > /tmp/compare-prod.txt
+
+# locally, against the restored scratch DB
+psql -d zwipe_drill -f /tmp/drill-compare.sql > /tmp/compare-drill.txt
+
+diff /tmp/compare-prod.txt /tmp/compare-drill.txt && echo "MATCH"
+```
+
+**Checkpoint:** `MATCH`. The md5-of-ordered-ids columns catch corruption that
+counts alone miss (same row count, mangled content).
+
+Honest caveats on the bounding:
+- `deck_cards` has no `created_at` to bound on, so rows added/changed after
+  5am show as a small diff — expected if anyone (including you) used the app
+  since the dump. Same for prod-side deletes of pre-cutoff rows. A clean way
+  to get a perfect run: do the drill in the morning before touching the app.
+- `scryfall_data` churns only when zervice syncs (4am, before the 5am dump),
+  so its plain count should match exactly unless the drill spans a sync.
+- If a diff appears, explain every line before calling it corruption —
+  "user 21 registered at 9am" is fine; differing md5s over the *bounded* set
+  is not.
+
 ### 4. (Optional, strongest form) Boot zerver against it
 
 Point a local zerver at the scratch DB and log in with your real account —
