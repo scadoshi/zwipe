@@ -11,6 +11,8 @@ pub mod create_deck;
 pub mod delete_deck;
 /// Fetch a deck with all its cards.
 pub mod get_deck;
+/// Import a deck from an Archidekt URL.
+pub mod import_archidekt_deck;
 /// Fetch tokens produced by a deck's cards.
 pub mod get_deck_tokens;
 /// Fetch a single deck profile (metadata only).

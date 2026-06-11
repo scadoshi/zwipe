@@ -10,6 +10,8 @@ pub mod create_deck_profile;
 pub mod delete_deck;
 /// Get complete deck operation (profile + cards).
 pub mod get_deck;
+/// Import a deck from Archidekt.
+pub mod import_archidekt;
 /// Get tokens produced by all cards in a deck.
 pub mod get_deck_tokens;
 /// Get single deck profile operation.

@@ -135,6 +135,10 @@ pub fn clone_deck_route(source_deck_id: Uuid) -> String {
     format!("/api/deck/{}/clone", source_deck_id)
 }
 
+pub fn import_archidekt_deck_route(deck_id: Uuid) -> String {
+    format!("/api/deck/{}/import/archidekt", deck_id)
+}
+
 pub fn create_deck_card_route(deck_id: Uuid) -> String {
     format!("/api/deck/{}/card", deck_id)
 }

@@ -4,7 +4,7 @@
 //! resolves card names against the database, and bulk-inserts matched cards.
 //! Supports `// Sideboard` and `// Maybeboard` section headers.
 
-use crate::domain::deck::Board;
+use crate::domain::deck::{Board, ImportMode};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -30,6 +30,8 @@ pub struct ImportDeckCards {
     pub lines: Vec<ImportLine>,
     /// Whether the requesting user's email is verified.
     pub email_verified: bool,
+    /// Add on top of each board, or replace each board present in the import.
+    pub mode: ImportMode,
 }
 
 impl ImportDeckCards {
@@ -40,7 +42,16 @@ impl ImportDeckCards {
     /// Empty and whitespace-only lines are skipped.
     /// When `board_override` is `Some`, every imported line is placed on that
     /// board and section headers in the text are ignored.
-    pub fn parse(user_id: Uuid, deck_id: Uuid, text: &str, email_verified: bool, board_override: Option<Board>) -> Self {
+    /// With [`ImportMode::Replace`], each board present in the import is
+    /// replaced (cards on it not in the import are removed).
+    pub fn parse(
+        user_id: Uuid,
+        deck_id: Uuid,
+        text: &str,
+        email_verified: bool,
+        board_override: Option<Board>,
+        mode: ImportMode,
+    ) -> Self {
         let mut current_board = board_override.unwrap_or(Board::Deck);
         let mut lines = Vec::new();
 
@@ -95,6 +106,7 @@ impl ImportDeckCards {
             deck_id,
             lines,
             email_verified,
+            mode,
         }
     }
 }
@@ -149,7 +161,7 @@ mod tests {
     use super::*;
 
     fn parse_lines(text: &str) -> Vec<ImportLine> {
-        ImportDeckCards::parse(Uuid::nil(), Uuid::nil(), text, false, None).lines
+        ImportDeckCards::parse(Uuid::nil(), Uuid::nil(), text, false, None, ImportMode::Add).lines
     }
 
     #[test]
@@ -268,7 +280,7 @@ mod tests {
     #[test]
     fn board_override_forces_all_lines() {
         let text = "1 Sol Ring\n// Sideboard\n1 Rest in Peace\n// Deck\n1 Lightning Bolt";
-        let lines = ImportDeckCards::parse(Uuid::nil(), Uuid::nil(), text, false, Some(Board::Maybeboard)).lines;
+        let lines = ImportDeckCards::parse(Uuid::nil(), Uuid::nil(), text, false, Some(Board::Maybeboard), ImportMode::Add).lines;
         assert_eq!(lines.len(), 3);
         assert!(lines.iter().all(|l| l.board == Board::Maybeboard));
     }

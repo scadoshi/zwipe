@@ -10,7 +10,7 @@ Completed work archived at `context/archive/complete-2026-Q1.md` (swept 2026-05-
 
 - [ ] **Min-version gate client build (1.0.5)** — implement `context/plans/min-version-gate.md`: server-driven force-update kill-switch (`MIN_CLIENT_VERSION` env, public `/api/client/min-version`, blocking "Update required" screen). Ship as the next client version so every build after it is force-updatable.
 - [ ] **Deck migration from Moxfield/Archidekt** — practically a must for adoption; very doable. See `backlog.md` High Priority.
-- [ ] **Reach out to recommander.cards dev** — https://recommander.cards/ (local dev); open the conversation about integrating his card suggestion engine. See `backlog.md` High Priority.
+- [x] **Reach out to recommander.cards dev** (2026-06-10) — sent friendly intro to Michael Celani (GamesfreakSA) via Discord + X, pitching a coffee chat about Zwipe consuming Recommander's recommendation API (good-ergonomics client + good-recs API), with traffic + credit driven back to him. Awaiting reply. See `backlog.md` High Priority for talking points.
 
 ---
 
