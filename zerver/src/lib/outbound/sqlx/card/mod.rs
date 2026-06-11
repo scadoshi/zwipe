@@ -181,6 +181,18 @@ impl CardRepository for MyPostgres {
         &self,
         request: &CardFilter,
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
+        self.search_scryfall_data_deck_aware(request, &[], None).await
+    }
+
+    /// `search_scryfall_data` plus the deck-aware extras: oracle_id exclusion
+    /// and synergy-score default ordering (used only when the filter has no
+    /// explicit `order_by`). The plain search is this with no extras.
+    async fn search_scryfall_data_deck_aware(
+        &self,
+        request: &CardFilter,
+        exclude_oracle_ids: &[uuid::Uuid],
+        synergy_scores: Option<&serde_json::Value>,
+    ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
         let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new(
             "SELECT latest_cards.* FROM latest_cards
              JOIN card_profiles ON latest_cards.id = card_profiles.scryfall_data_id
@@ -651,6 +663,15 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated(")");
         }
 
+        // Deck-aware exclusion: omit cards already in the deck. Null-oracle
+        // printings are kept — they can't match a deck's oracle_ids anyway,
+        // and a bare NOT(= ANY) would NULL them out of the results.
+        if !exclude_oracle_ids.is_empty() {
+            sep.push("(oracle_id IS NULL OR NOT (oracle_id = ANY(");
+            sep.push_bind_unseparated(exclude_oracle_ids.to_vec());
+            sep.push_unseparated(")))");
+        }
+
         // Filter out NULLs for sorted field
         if let Some(order_by) = request.order_by() {
             let null_filter = match order_by {
@@ -691,6 +712,12 @@ impl CardRepository for MyPostgres {
             if order_by != OrderByOption::Random {
                 qb.push(if request.ascending() { " ASC" } else { " DESC" });
             }
+        } else if let Some(scores) = synergy_scores {
+            // Synergy default ordering: score map is jsonb {lowercased name -> score}.
+            // Unscored cards sort last (NULLS LAST), name tiebreak keeps pagination stable.
+            qb.push(" ORDER BY (");
+            qb.push_bind(scores.clone());
+            qb.push(" ->> LOWER(name))::float8 DESC NULLS LAST, name ASC");
         }
 
         qb.push(" LIMIT ");
@@ -969,6 +996,42 @@ impl CardRepository for MyPostgres {
             .await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
+    }
+
+    async fn search_cards_deck_aware(
+        &self,
+        request: &CardFilter,
+        exclude_oracle_ids: &[uuid::Uuid],
+        synergy_scores: Option<&serde_json::Value>,
+    ) -> Result<Vec<Card>, SearchCardsError> {
+        let scryfall_data = self
+            .search_scryfall_data_deck_aware(request, exclude_oracle_ids, synergy_scores)
+            .await?;
+        if scryfall_data.is_empty() {
+            return Ok(vec![]);
+        }
+        let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
+        let card_profiles = self
+            .get_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
+            .await?;
+        let cards = card_profiles.sleeve(scryfall_data);
+        Ok(cards)
+    }
+
+    async fn commander_synergy_payload(
+        &self,
+        commander_printing_id: uuid::Uuid,
+    ) -> Result<Option<serde_json::Value>, SearchCardsError> {
+        let payload: Option<serde_json::Value> = sqlx::query_scalar(
+            "SELECT cs.payload FROM scryfall_data s
+             JOIN commander_synergy cs ON cs.oracle_id = s.oracle_id
+             WHERE s.id = $1",
+        )
+        .bind(commander_printing_id)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| SearchScryfallDataError::Database(e.into()))?;
+        Ok(payload)
     }
 
     // ============

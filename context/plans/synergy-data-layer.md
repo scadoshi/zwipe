@@ -97,19 +97,32 @@ migration so both sides move in lockstep.
   `find_cards_by_exact_names` (card/ports.rs, card/services.rs — what the
   Archidekt importer uses) already does this resolution.
 
-## Read path sketch
+## Read path — BUILT 2026-06-11 (`feat/synergy-data-layer`), live-tested
 
-`decks.commander_id` is a **printing id** (`scryfall_data.id`), not an
-oracle_id — the read path must resolve printing → oracle, exactly like the
-worker's discovery query does:
+Shipped as a **deck-aware search endpoint** (decided 2026-06-11 — endpoint
+versioning beats request-field gymnastics):
 
-```sql
-SELECT cs.payload
-FROM decks d
-JOIN scryfall_data s ON s.id = d.commander_id
-JOIN commander_synergy cs ON cs.oracle_id = s.oracle_id
-WHERE d.id = $1
-```
+- `POST /api/deck/{deck_id}/card/search` — same `CardFilter` body as the
+  plain search, ownership-checked, but the server **excludes cards already
+  in the deck** (every board, plus commander/partner/background/signature
+  slots, by oracle_id) and **defaults to synergy ordering** when the filter
+  has no explicit `order_by` (jsonb score-map `ORDER BY`, unscored cards
+  last, name tiebreak — pagination stays stable).
+- `POST /api/card/search` — untouched, deck-agnostic; existing clients keep
+  working unchanged until upgraded.
+- `decks.commander_id` is a **printing id** (`scryfall_data.id`), not an
+  oracle_id — the payload lookup resolves printing → oracle, exactly like
+  the worker's discovery query.
+
+Live test (dev, 2026-06-11): endpoint's first 8 results matched the cached
+payload's top-8 synergy names exactly; adding a card (maybeboard) removed it
+from results; `order_by` overrode synergy; commander excluded by slot; old
+endpoint unaffected.
+
+Known edge from the test: a commander's **alternate-oracle reversible
+printing** (e.g. "Name // Name" with its own oracle_id) survives oracle-based
+exclusion and can appear in the stack. Rare and cosmetic; name-based
+exclusion is the fix if it ever matters.
 
 - **Graceful absence is the design.** A miss means "no signal yet" — rank
   without the boost, never block, never error. The row appears seconds later.
@@ -136,6 +149,13 @@ WHERE d.id = $1
 
   One line at implementation time, but documented here so it can't get
   accidentally layered on top of an explicit sort later.
+
+## Client next step
+
+The add-cards screen moves to the deck-aware endpoint (existing clients stay
+on the agnostic one until upgraded — both live side by side). With exclusion
+and ordering now server-side, the client change is: call the new route, and
+auto-serve on screen open per below.
 
 ## Blank-state auto-serve (decided 2026-06-11)
 
@@ -166,8 +186,11 @@ that's literally what the default ordering now answers.
    (`DROP TABLE synergy_requests, commander_synergy;`) so the canonical
    migration creates them and `_sqlx_migrations` records it. Prod never has
    this problem — the tables won't exist there until the migration runs.
-2. Start the synergy worker pointed at the same `DATABASE_URL` (it's a
-   `cargo run` daemon; ask the worker's repo for details).
+2. Create the worker's least-privilege DB role:
+   `./zcripts/synergy-worker/setup-role.sh <db>` (see its README — grants
+   exactly the queue/cache/discovery surface, nothing else). Start the
+   synergy worker with the printed `DATABASE_URL` (it's a `cargo run`
+   daemon; ask the worker's repo for details).
 3. Create a deck with any commander through the app/API.
 4. Within one poll interval (+ a couple seconds of fetch politeness):
    `SELECT commander_name, fetched_at FROM commander_synergy` shows the row.
