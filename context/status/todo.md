@@ -8,6 +8,7 @@ Completed work archived at `context/archive/complete-2026-Q1.md` (swept 2026-05-
 
 ## Next Up
 
+- [ ] **Synergy data layer (cache-first)** — PRIORITIZED 2026-06-10: build right after the Android closed-test clock starts (fills the 14-day wait). Lazy per-commander fill on first demand via a queue table, Postgres cache, weekly background refresh, graceful degradation to cached data. Consumed as an internal ranking signal (smart stack / suggestions). See `context/product/premium/smart-stack.md`. *AI assistants: check local memory for additional context on this item before starting; if nothing is found, ask Scotty.*
 - [x] **Moxfield import (phase 2) — DENIED, shelved** (2026-06-10) — Moxfield support (Rob) replied same day: policy is no API access for sites/apps that offer deckbuilding. They plan a scoped deck-export endpoint for such services eventually (no ETA; will be announced on their help pages) and invited a re-request once it's live. Until then Moxfield users use the text-paste importer. Watch item moved to `backlog.md`; see `context/plans/deck-import.md`.
 - [ ] **Track 1.0.5 (build 31) review + propagation** — submitted 2026-06-10; carries Archidekt import and the min-version gate. Once approved and propagated, every install ≥1.0.5 is force-updatable.
 - [ ] **Security notification emails on profile changes** (noted 2026-06-10) — email the user when their username, password, or email changes, to surface account takeovers. Email changes notify the OLD address (the new one is what an attacker controls); password/username changes notify the current address. Server-side only via Resend (no client work, no app release). Consider including a "wasn't you? reset your password / revoke sessions" line.
@@ -110,7 +111,7 @@ Momentum work now that Zwipe TCG is live. Roughly ordered by user-visible impact
 - [x] **Update App Store icon to gruvbox** (2026-06-07) — new 1024×1024 master, gruvbox tan Z on `#282828`, alpha stripped, sized to 40/60/80/87/120/180/1024. Shipped in 1.0.2 build 21. Repack process documented in `context/ops/ios/appstore-icon-update.md`.
 - [ ] **Marketing posts** — Reddit (r/EDH, r/magicTCG, r/CompetitiveEDH) and X. Lead with the swipe demo video, link the App Store listing.
 - [ ] **Business cards for LGSs** (noted 2026-06-10) — design + print cards to leave at local game stores. Pixel-art Z branding, App Store link (QR code to https://apps.apple.com/us/app/zwipe-tcg/id6761341603 or zwipe.net), one-line hook ("Swipe right on your next deck" or similar). Ask store owners first; commander night crowds are the target audience.
-- [ ] **Tutorial?** — decide whether to ship a guided first-run flow or let users discover the swipe UX themselves. Lean toward letting them figure it out unless analytics later say otherwise.
+- [ ] **First-run tutorial toasts** (decided 2026-06-10 — was "Tutorial?", resolved by real user feedback: first questions are "where do I go?", "how do I add cards?", "will it suggest cards?", "how do filters work?") — lightweight, contextual hint toasts surfaced at key moments rather than a guided flow: on first swipe screen "Swipe right to add, left to skip, up for maybeboard"; on remove screen "Swipe right to remove"; first deck view points at filters; etc. Dismissible, never block input, reuse the existing toast layer. Persistence: a **`hints_shown` jsonb on the user profile** — generic and flexible by design, e.g. `{"swipe_basics": true, "remove_swipe": true}`. Client checks the map before showing a hint and reports back when one is shown; new hints are added dynamically by introducing a new key, no schema migration, no new columns, and old clients ignore keys they don't know (additive per `context/dev/api_evolution.md`). Server-side so it survives reinstalls and follows the account across devices.
 
 ### Web/Zite Polish
 - [ ] **Increase `Z` logo size on zwipe.net** — current ASCII logo reads small; bump scale or font-size on the landing hero.
@@ -171,15 +172,15 @@ Android build compiles and runs. Remaining polish before Play Store submission:
 
 ---
 
-## EDHREC Integration
+## Synergy & Popularity Data
 
-Closed API — must request access at edhrec.com/api. Full scope pending what they expose.
+Per-commander synergy/popularity layer — the cache-first item at the top of
+Next Up is the foundation; these are the consumers once it exists.
 
-- [ ] Request API access
-- [ ] Salt score import, display per card and aggregate per deck, filtering and sorting on card search
 - [ ] Synergy scores — surface cards with high synergy to the deck's commander
 - [ ] Popularity data — most-played cards for a given commander
-- [ ] Evaluate other EDHREC data (themes, combos, etc.) once API access granted
+- [ ] Salt score, display per card and aggregate per deck, filtering and sorting on card search
+- [ ] Evaluate further data (themes, combos, etc.) as the layer matures
 
 ---
 
