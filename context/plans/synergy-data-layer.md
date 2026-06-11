@@ -166,8 +166,11 @@ that's literally what the default ordering now answers.
    (`DROP TABLE synergy_requests, commander_synergy;`) so the canonical
    migration creates them and `_sqlx_migrations` records it. Prod never has
    this problem — the tables won't exist there until the migration runs.
-2. Start the synergy worker pointed at the same `DATABASE_URL` (it's a
-   `cargo run` daemon; ask the worker's repo for details).
+2. Create the worker's least-privilege DB role:
+   `./zcripts/synergy-worker/setup-role.sh <db>` (see its README — grants
+   exactly the queue/cache/discovery surface, nothing else). Start the
+   synergy worker with the printed `DATABASE_URL` (it's a `cargo run`
+   daemon; ask the worker's repo for details).
 3. Create a deck with any commander through the app/API.
 4. Within one poll interval (+ a couple seconds of fetch politeness):
    `SELECT commander_name, fetched_at FROM commander_synergy` shows the row.
