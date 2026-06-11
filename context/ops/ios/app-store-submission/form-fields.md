@@ -39,6 +39,17 @@ Built for players who want a fast, focused mobile experience — not another clu
 
 ---
 
+## What's New in This Version (1.0.6)
+
+- Smarter card suggestions: when you add cards, the picks that fit your deck's leader best now rise to the top automatically — no setup, it just orders the stack for you.
+- Open the add-cards screen and it fills instantly with leader-matched suggestions — you no longer have to search first to start swiping.
+- Suggestions are ranked by how well each card synergizes with your leader, so the most relevant cards come first and the long tail follows.
+- Cards already in your deck — main, maybeboard, or sideboard — are hidden from the suggestions, so you only ever see what you can still add.
+- Prefer a different order? Pick any sort (price, mana value, name, and more) and your choice always wins over the smart default.
+- Import a full deck straight from a deck-list URL right onto your existing deck.
+
+---
+
 ## What's New in This Version (1.0.2)
 
 - Faster searches across the catalog — results land in a fraction of the time on cellular.
@@ -63,7 +74,7 @@ MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading ca
 |-------|-------|
 | Support URL | https://zwipe.net |
 | Marketing URL | https://zwipe.net |
-| Version | 1.0.2 |
+| Version | 1.0.6 |
 | Copyright | 2026 Scotty Fermo |
 | Routing App Coverage File | (leave empty) |
 
