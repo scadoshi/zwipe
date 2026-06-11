@@ -124,7 +124,7 @@ Frontend (`zwiper/.env`): `BACKEND_URL`, `RUST_LOG`, `RUST_BACKTRACE`
 ```
 context/
 ├── CLAUDE.md               — this file
-├── product/                — what we're building (prd, monetization)
+├── product/                — what we're building (prd, monetization, premium/ feature catalog)
 ├── architecture/           — why things are built the way they are
 ├── ops/                    — how to deploy (server.md, ios/)
 ├── dev/                    — coding standards (commits, docs, newtypes, dioxus)
