@@ -57,8 +57,43 @@ use axum::routing::{delete, get, post, put};
 use std::{sync::Arc, time::Duration};
 #[cfg(feature = "zerver")]
 use tower_governor::{
-    GovernorLayer, governor::GovernorConfigBuilder, key_extractor::PeerIpKeyExtractor,
+    GovernorLayer, errors::GovernorError, governor::GovernorConfigBuilder,
+    key_extractor::PeerIpKeyExtractor,
 };
+#[cfg(feature = "zerver")]
+use axum::{
+    body::Body,
+    http::{Response, StatusCode},
+};
+
+/// Rate-limit error handler for the routes keyed by user id
+/// (`UserIdKeyExtractor`).
+///
+/// On those routes the governor layer runs *before* the `AuthenticatedUser`
+/// extractor, and it calls the key extractor to bucket the request. When the
+/// request has no valid Bearer token the extractor returns
+/// `GovernorError::UnableToExtractKey`, and tower_governor's default maps that
+/// to a **500** — so an unauthenticated call to a private route answered 500
+/// instead of 401, polluting error logs and misleading health probes.
+///
+/// This remaps that one case to **401 Unauthorized** (the honest status for
+/// "you didn't authenticate"). Every other variant — notably
+/// `TooManyRequests` (429) for genuine rate-limit hits — is delegated to the
+/// library's default response, so real rate limiting is unchanged.
+///
+/// Only attached to the user-id-keyed limiters; the public, IP-keyed limiters
+/// can always extract a key and never hit this path.
+#[cfg(feature = "zerver")]
+fn unauthorized_on_missing_key(error: GovernorError) -> Response<Body> {
+    match error {
+        GovernorError::UnableToExtractKey => {
+            let mut response = Response::new(Body::from("missing or invalid authorization"));
+            *response.status_mut() = StatusCode::UNAUTHORIZED;
+            response
+        }
+        other => other.into_response().map(Body::from),
+    }
+}
 
 pub use zwipe_core::http::paths::*;
 
@@ -154,6 +189,7 @@ where
         .nest(
             "/health",
             Router::new()
+                .route("/", get(are_server_and_database_running))
                 .route("/server", get(is_server_running))
                 .route("/database", get(are_server_and_database_running)),
         )
@@ -285,21 +321,33 @@ where
                         .route(
                             "/change-password",
                             put(change_password)
-                                .layer(GovernorLayer::new(Arc::clone(&sensitive_config))),
+                                .layer(
+                                    GovernorLayer::new(Arc::clone(&sensitive_config))
+                                        .error_handler(unauthorized_on_missing_key),
+                                ),
                         )
                         .route(
                             "/change-username",
                             put(change_username)
-                                .layer(GovernorLayer::new(Arc::clone(&sensitive_config))),
+                                .layer(
+                                    GovernorLayer::new(Arc::clone(&sensitive_config))
+                                        .error_handler(unauthorized_on_missing_key),
+                                ),
                         )
                         .route(
                             "/change-email",
                             put(change_email)
-                                .layer(GovernorLayer::new(Arc::clone(&sensitive_config))),
+                                .layer(
+                                    GovernorLayer::new(Arc::clone(&sensitive_config))
+                                        .error_handler(unauthorized_on_missing_key),
+                                ),
                         )
                         .route(
                             "/delete-user",
-                            delete(delete_user).layer(GovernorLayer::new(sensitive_config)),
+                            delete(delete_user).layer(
+                                GovernorLayer::new(sensitive_config)
+                                    .error_handler(unauthorized_on_missing_key),
+                            ),
                         )
                         .route("/preferences", get(get_preferences).put(update_preferences))
                         .route("/metrics", get(get_my_metrics)),
@@ -308,14 +356,20 @@ where
                     "/card",
                     Router::new().route(
                         "/search",
-                        post(search_cards).layer(GovernorLayer::new(card_search_config)),
+                        post(search_cards).layer(
+                            GovernorLayer::new(card_search_config)
+                                .error_handler(unauthorized_on_missing_key),
+                        ),
                     ),
                 )
                 .nest(
                     "/metrics",
                     Router::new().route(
                         "/usage",
-                        post(record_usage).layer(GovernorLayer::new(metrics_usage_config)),
+                        post(record_usage).layer(
+                            GovernorLayer::new(metrics_usage_config)
+                                .error_handler(unauthorized_on_missing_key),
+                        ),
                     ),
                 )
                 .nest(
@@ -343,5 +397,5 @@ where
                         ),
                 ),
         )
-        .layer(GovernorLayer::new(private_config))
+        .layer(GovernorLayer::new(private_config).error_handler(unauthorized_on_missing_key))
 }
