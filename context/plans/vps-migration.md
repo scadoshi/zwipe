@@ -1,8 +1,11 @@
 # VPS migration — moving prod off the home server
 
-**Status: planned (2026-06-10).** The home server is being decommissioned, so
-this is a must-do, not a maybe. Target: complete before the Android launch
-grows the user base. Todo entry: `context/status/todo.md` Next Up.
+**Status: planned, deliberately deferred (2026-06-10).** At ~20 users the
+home server is fine — free, behind the tunnel, backed up nightly to R2.
+Execute this plan when a trigger fires: meaningful user growth (Android
+launch lands, premium revenue starts), the home server's decommission date
+becomes real, or a reliability scare. Until then it's a ready-to-run runbook.
+Todo entry: `context/status/todo.md`.
 
 ## Context — what is actually moving
 
