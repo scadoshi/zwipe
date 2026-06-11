@@ -18,6 +18,8 @@ pub mod interactions;
 pub mod telemetry;
 /// Toast notification component.
 pub mod toast;
+/// Blocking "Update required" screen (min-version gate).
+pub mod update_required;
 /// Three-state toggle component (true/false/any).
 #[allow(unpredictable_function_pointer_comparisons)]
 pub mod tri_toggle;

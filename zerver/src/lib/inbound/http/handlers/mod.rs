@@ -4,6 +4,9 @@
 pub mod auth;
 /// Card data handlers.
 pub mod card;
+#[cfg(feature = "zerver")]
+/// Public client-metadata handlers (app version gating).
+pub mod client;
 /// Deck management handlers.
 pub mod deck;
 /// Deck card composition handlers.

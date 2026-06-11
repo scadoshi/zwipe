@@ -80,6 +80,8 @@ LOG_DIR=/tmp/zwipe-logs
 # email config (placeholder — dev doesn't send mail; swap in a real Resend key to test verify/reset flows)
 RESEND_API_KEY=changeme
 RESEND_EMAIL_FROM=hello@zwipe.net
+# client min-version gate (0.0.0 = open / allow everyone; flip to force updates)
+MIN_CLIENT_VERSION=0.0.0
 EOF
 
 cat > zwiper/.env << EOF

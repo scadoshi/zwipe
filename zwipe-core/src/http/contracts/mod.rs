@@ -2,6 +2,8 @@
 
 /// Authentication request contracts.
 pub mod auth;
+/// Client metadata contracts (app version gating).
+pub mod client;
 /// Deck management request contracts.
 pub mod deck;
 /// Deck card operation request contracts.
