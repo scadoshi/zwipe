@@ -1,51 +1,55 @@
-//! Import cards into a deck from plain-text decklist.
+//! Import an Archidekt deck's cards into an existing deck.
 
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::{routes::import_deck_cards_route, ApiError};
-use zwipe_core::http::contracts::deck_card::HttpImportDeckCards;
+use zwipe::inbound::http::{routes::import_archidekt_deck_route, ApiError};
+use zwipe_core::http::contracts::deck::HttpImportArchidektDeck;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::deck::ImportMode;
 use zwipe_core::domain::deck::requests::import_deck_cards::ImportDeckCardsResult;
 
-/// Trait for importing cards into a deck from plain text.
+/// Trait for importing an Archidekt deck's cards into an existing deck.
+///
+/// The server fetches and parses the deck, resolves printings by Scryfall id,
+/// and imports the cards exactly like the plain-text importer — same boards,
+/// same add/replace modes, same result shape.
 #[allow(missing_docs)]
-pub trait ClientImportDeckCards {
-    fn import_deck_cards(
+pub trait ClientImportArchidektDeck {
+    fn import_archidekt_deck(
         &self,
         deck_id: Uuid,
-        text: &str,
+        url: &str,
         board: Option<&str>,
         mode: ImportMode,
         session: &Session,
     ) -> impl Future<Output = Result<ImportDeckCardsResult, ApiError>> + Send;
 }
 
-impl ClientImportDeckCards for ZwipeClient {
-    async fn import_deck_cards(
+impl ClientImportArchidektDeck for ZwipeClient {
+    async fn import_archidekt_deck(
         &self,
         deck_id: Uuid,
-        text: &str,
+        url: &str,
         board: Option<&str>,
         mode: ImportMode,
         session: &Session,
     ) -> Result<ImportDeckCardsResult, ApiError> {
-        let mut url = self.app_config.backend_url.clone();
-        url.set_path(&import_deck_cards_route(deck_id));
+        let mut request_url = self.app_config.backend_url.clone();
+        request_url.set_path(&import_archidekt_deck_route(deck_id));
 
-        let body = HttpImportDeckCards {
-            text: text.to_string(),
+        let body = HttpImportArchidektDeck {
+            url: url.to_string(),
             board: board.map(|b| b.to_string()),
             mode,
         };
-        info!("POST {} body: {:?}", url, body);
+        info!("POST {} body: {:?}", request_url, body);
 
         let response = self
             .client
-            .post(url)
+            .post(request_url)
             .json(&body)
             .bearer_auth(&*session.access_token.value)
             .send()
