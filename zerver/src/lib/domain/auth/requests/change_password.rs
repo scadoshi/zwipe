@@ -45,6 +45,9 @@ pub enum InvalidChangePassword {
     /// New password doesn't meet security requirements.
     #[error(transparent)]
     Password(InvalidPassword),
+    /// New password is the same as the current one.
+    #[error("new password must be different from your current password")]
+    SameAsCurrent,
     /// Password hashing failed (Argon2id error).
     #[error("failed to hash password: {0}")]
     FailedPasswordHash(anyhow::Error),
@@ -140,6 +143,13 @@ impl ChangePassword {
     ) -> Result<Self, InvalidChangePassword> {
         use crate::domain::auth::models::password::Password;
 
+        // Same-password check happens on plaintext, before hashing. It only blocks a
+        // genuine no-op: if the typed current password is wrong, service-layer
+        // authentication rejects the request anyway.
+        if new_password.as_ref() == current_password.as_ref() {
+            return Err(InvalidChangePassword::SameAsCurrent);
+        }
+
         let new_password = Password::new(new_password).map_err(InvalidChangePassword::Password)?;
         // No validation of current password - allows users with weak passwords to change
         // to stronger ones without being locked out
@@ -188,6 +198,14 @@ mod tests {
         let user_id = Uuid::new_v4();
         let result = ChangePassword::new(user_id, "w", "NewSecure123!");
         assert!(result.is_ok());
+    }
+
+    #[cfg(feature = "zerver")]
+    #[test]
+    fn test_change_password_new_rejects_same_as_current() {
+        let user_id = Uuid::new_v4();
+        let result = ChangePassword::new(user_id, "NewSecure123!", "NewSecure123!");
+        assert!(matches!(result, Err(InvalidChangePassword::SameAsCurrent)));
     }
 
     #[cfg(feature = "zerver")]
