@@ -529,7 +529,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     HintBullet {
                         "Tap "
                         HintKey { "Edit" }
-                        " to change the name, format, or commander"
+                        " to change name, format or command zone"
                     }
                     HintBullet {
                         "Tap "
