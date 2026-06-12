@@ -5,7 +5,10 @@ use super::components::printing_sheet::PrintingSheet;
 use crate::{
     inbound::{
         components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
-        screens::deck::card::filter::{card_filter_sheet::CardFilterSheet, deck_cards::DeckCards},
+        screens::deck::card::filter::{
+            card_filter_sheet::{CardFilterSheet, CollapseExpanded},
+            deck_cards::DeckCards,
+        },
     },
     outbound::client::{
         ZwipeClient,
@@ -117,9 +120,11 @@ pub fn View(deck_id: Uuid) -> Element {
     // Controls the dismiss animation before clearing the URL
     let preview_dismissing: Signal<bool> = use_signal(|| false);
     // Whether the next filter effect run should collapse the expanded card
-    // (true for structural changes like group-by/filter/board; false for qty bumps)
+    // (true for structural changes like group-by/filter/board; false for qty bumps).
+    // Provided to the filter sheet via the `CollapseExpanded` newtype so the
+    // context lookup is unambiguous.
     let mut should_collapse_expanded: Signal<bool> = use_signal(|| false);
-    use_context_provider(|| should_collapse_expanded);
+    use_context_provider(|| CollapseExpanded(should_collapse_expanded));
 
     // Helper: look up quantity by card ID
     let qty_for = move |card_id: Uuid| -> i32 {

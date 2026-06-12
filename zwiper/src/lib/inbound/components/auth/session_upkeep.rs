@@ -22,14 +22,30 @@ use zwipe_core::version::version_at_least;
 /// CFBundleShortVersionString since 1.0.3).
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
+/// Min-version gate state — true when this build is below the server minimum.
+///
+/// Newtype so `try_use_context` / `use_context` lookups can't collide with
+/// other `Signal<bool>` contexts: a bare `Signal<bool>` here was once grabbed
+/// by the filter sheet's collapse lookup, which flashed the blocking
+/// "Update required" screen every time Apply was hit on add/remove cards.
+#[derive(Clone, Copy)]
+pub struct UpgradeRequired(Signal<bool>);
+
+impl UpgradeRequired {
+    /// Reactive read — subscribes the caller to gate changes.
+    pub fn required(&self) -> bool {
+        (self.0)()
+    }
+}
+
 /// Spawns a background task that periodically refreshes the user session and
 /// polls the server's minimum supported app version.
 ///
 /// Also initializes context providers for session, client, card filter, and
-/// cards. Returns the `upgrade_required` signal — true when this build is
+/// cards. Returns the [`UpgradeRequired`] gate — true when this build is
 /// below the server minimum; the root component swaps the router for a
 /// blocking update screen.
-pub fn spawn_upkeeper() -> Signal<bool> {
+pub fn spawn_upkeeper() -> UpgradeRequired {
     tracing::debug!("upkeeper spawned");
     let session = use_signal(Session::infallible_load);
     use_context_provider(|| session);
@@ -58,16 +74,20 @@ pub fn spawn_upkeeper() -> Signal<bool> {
     use_context_provider(|| theme);
 
     // Usage telemetry buffer (swipe / search counters, flushed every 30s).
+    // use_hook: spawn exactly once — a plain call here would leak a new flush
+    // loop every time the root component re-renders.
     let usage_buffer = use_signal(UsageBuffer::new);
     use_context_provider(|| usage_buffer);
-    spawn_usage_flusher(usage_buffer.peek().clone(), client, session);
+    use_hook(|| spawn_usage_flusher(usage_buffer.peek().clone(), client, session));
 
     // Min-version gate — flipped true when the server says this build is too
-    // old. Provided as context so any screen can read it if needed.
+    // old. Provided as context (newtyped) so any screen can read it if needed.
     let mut upgrade_required = use_signal(|| false);
-    use_context_provider(|| upgrade_required);
+    use_context_provider(|| UpgradeRequired(upgrade_required));
 
-    spawn(async move {
+    // use_future (not bare spawn) for the same once-only reason as above —
+    // the gate flipping re-renders the root, which re-runs this function.
+    use_future(move || async move {
         // first tick fires immediately — this is the cold-start refresh
         let mut interval = interval(Duration::from_secs(60));
         loop {
@@ -93,5 +113,5 @@ pub fn spawn_upkeeper() -> Signal<bool> {
         }
     });
 
-    upgrade_required
+    UpgradeRequired(upgrade_required)
 }
