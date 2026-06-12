@@ -129,6 +129,11 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     };
 
     // pre-compute metrics and chart data before rsx!
+    // True only while the deck fetch is in flight. The stats skeleton must
+    // key off this, not off metrics being absent: a loaded deck with a
+    // commander but no cards never produces metrics, and an absence-keyed
+    // skeleton pulses forever on exactly that deck.
+    let deck_loading = deck_resource().is_none();
     let deck_data = deck_resource().and_then(|r| r.ok());
     let warnings: Vec<DeckWarning> = deck_data
         .as_ref()
@@ -333,7 +338,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                 mana_balance_rows: mana_balance_rows,
                                             }
                                           }
-                                        } else if metrics_possible {
+                                        } else if metrics_possible && deck_loading {
                                             DeckStatsSkeleton {}
                                         }
                                     }
