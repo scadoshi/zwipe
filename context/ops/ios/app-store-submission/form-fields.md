@@ -30,7 +30,7 @@ Other tools:
 - Multiple decks with card counts, mana curve stats, and price estimates
 - Sideboard support
 - Import and export decklists in standard text format
-- 15 color themes with dark and light modes, including 3 colorblind-accessible options
+- 14 color themes with dark and light modes, including 3 colorblind-accessible options
 - 110,000+ cards synced nightly
 - Free to use, no ads, no microtransactions
 - Your decks sync across sessions and devices
@@ -47,6 +47,11 @@ Built for players who want a fast, focused mobile experience — not another clu
 - Cards already in your deck — main, maybeboard, or sideboard — are hidden from the suggestions, so you only ever see what you can still add.
 - Prefer a different order? Pick any sort (price, mana value, name, and more) and your choice always wins over the smart default.
 - Import a full deck straight from a deck-list URL right onto your existing deck.
+- New guided hints: your first visit to key screens shows a quick one-time tip (how to swipe, where to add or import cards), and a small ? button brings any tip back whenever you want.
+- Swipe tips are color-coded by direction, so add, skip, maybeboard, and undo are obvious at a glance.
+- An empty deck now offers one-tap Add cards and Import buttons right inside its warning.
+- Resend verification email shows a live cooldown after sending, plus a Check again button that updates your verified badge on the spot.
+- Security upgrade: changing your email, username, or password now sends you a notification email.
 
 ---
 
