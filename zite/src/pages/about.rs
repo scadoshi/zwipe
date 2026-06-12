@@ -22,7 +22,7 @@ pub fn About() -> Element {
     rsx! {
         PageMeta {
             title: "About",
-            description: "Zwipe is built by Scotty Fermo (scadoshi). About page covers the tech stack — Rust, Dioxus, WASM, Axum, PostgreSQL — and the architecture behind the deck builder.",
+            description: "Zwipe is built by Scotty Fermo (scadoshi). About page covers the tech stack (Rust, Dioxus, WASM, Axum, PostgreSQL) and the architecture behind the deck builder.",
             path: "/about",
         }
         Nav {}
@@ -48,7 +48,7 @@ pub fn About() -> Element {
                     span { class: "tag", "systems" }
                 }
                 p {
-                    "A solo project — designed, built, and shipped by one person.
+                    "A solo project: designed, built, and shipped by one person.
                     The goal: make deck building feel good on mobile. Built mobile-first
                     from the ground up."
                 }
@@ -56,7 +56,7 @@ pub fn About() -> Element {
 
             div { class: "section",
                 h2 { "System Architecture" }
-                p { class: "arch-subtitle", "Four-crate Rust workspace — every box links to its source." }
+                p { class: "arch-subtitle", "Four-crate Rust workspace. Every box links to its source." }
                 div { class: "arch",
                     div { class: "arch-tier arch-tier-clients",
                         div { class: "arch-box",
@@ -182,7 +182,7 @@ pub fn About() -> Element {
                             span { class: "arch-box-sub", "shared domain crate" }
                         }
                         p { class: "arch-foundation-body",
-                            "models, filter logic, traits — no server- or client-only deps. "
+                            "models, filter logic, traits. No server- or client-only deps. "
                             "Imported by "
                             a { href: URL_ZWIPER, target: "_blank", rel: "noopener noreferrer", "zwiper" }
                             " · "
@@ -213,12 +213,12 @@ pub fn About() -> Element {
                         span { class: "card-category", "Design" }
                         h3 { class: "card-title", "Hexagonal Architecture" }
                         p { class: "card-summary",
-                            "Ports & adapters, in practice — not just on the whiteboard."
+                            "Ports & adapters, in practice, not just on the whiteboard."
                         }
                         ul { class: "card-bullets",
                             li {
                                 a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
-                                " has zero framework deps — no Axum, no Dioxus, no sqlx"
+                                " has zero framework deps: no Axum, no Dioxus, no sqlx"
                             }
                             li { "Inbound adapters (HTTP, UI) and outbound adapters (sqlx, HTTP client) swap freely" }
                             li { "Same domain code drives server-side SQL filtering and on-device in-memory filtering" }
@@ -247,7 +247,7 @@ pub fn About() -> Element {
                                 code { "dbg!" }
                                 ", "
                                 code { "print!" }
-                                " — all denied at compile time"
+                                ", all denied at compile time"
                             }
                             li { "33 enforced Clippy rules across the workspace" }
                             li {
@@ -255,11 +255,11 @@ pub fn About() -> Element {
                                 a { href: URL_SQLX, target: "_blank", rel: "noopener noreferrer", "sqlx" }
                                 "'s "
                                 code { "query!" }
-                                " macro — bad queries fail "
+                                " macro: bad queries fail "
                                 code { "cargo build" }
                                 ", not runtime"
                             }
-                            li { "Commander eligibility, partner validation, deck metrics — all covered" }
+                            li { "Commander eligibility, partner validation, deck metrics, all covered" }
                             li { "Security audit complete; nightly Cloudflare R2 backups" }
                         }
                     }
@@ -268,7 +268,7 @@ pub fn About() -> Element {
                         span { class: "card-category", "Auth" }
                         h3 { class: "card-title", "Authentication" }
                         p { class: "card-summary",
-                            "Hand-rolled — probably more security than a deckbuilder needs. Worth it."
+                            "Hand-rolled. Probably more security than a deckbuilder needs. Worth it."
                         }
                         ul { class: "card-bullets",
                             li { "Argon2id hashing with a NIST-compliant 170+ pattern password blocklist" }
@@ -288,7 +288,7 @@ pub fn About() -> Element {
                         span { class: "card-category", "Types" }
                         h3 { class: "card-title", "Type Safety" }
                         p { class: "card-summary",
-                            "Newtypes everywhere — invalid states can't compile, let alone reach production."
+                            "Newtypes everywhere. Invalid states can't compile, let alone reach production."
                         }
                         ul { class: "card-bullets",
                             li {
@@ -299,13 +299,13 @@ pub fn About() -> Element {
                                 code { "Email" }
                                 ", "
                                 code { "Password" }
-                                " — distinct types, not "
+                                ": distinct types, not "
                                 code { "String" }
                                 " aliases"
                             }
                             li { "Builder types enforce required-field rules at construction" }
                             li { "Format eligibility (commander, oathbreaker) modeled as enum + traits, not bool flags" }
-                            li { "Newtype wrappers parse-and-validate on the boundary — no defensive checks downstream" }
+                            li { "Newtype wrappers parse-and-validate on the boundary, no defensive checks downstream" }
                         }
                     }
 
@@ -319,13 +319,13 @@ pub fn About() -> Element {
                         }
                         ul { class: "card-bullets",
                             li { "Five-strategy upsert chain: batch first, fall through to per-row on conflict" }
-                            li { "88-column rows respect Postgres's 65k-parameter cap — ~327 cards per batch" }
+                            li { "88-column rows respect Postgres's 65k-parameter cap: ~327 cards per batch" }
                             li {
                                 code { "PartialEq" }
-                                " delta detection — only changed rows are written, not the whole catalog nightly"
+                                " delta detection: only changed rows are written, not the whole catalog nightly"
                             }
                             li { "Materialized view refresh for deduplicated search (~35k unique cards)" }
-                            li { "Zero Scryfall dependency at query time — all lookups hit Postgres" }
+                            li { "Zero Scryfall dependency at query time: all lookups hit Postgres" }
                         }
                     }
 
@@ -346,7 +346,7 @@ pub fn About() -> Element {
                         h3 { class: "card-title", "Mechanical Categories" }
                         p { class: "card-summary",
                             a { href: URL_SCRYFALL, target: "_blank", rel: "noopener noreferrer", "Scryfall" }
-                            " ships raw oracle text. Players think in roles — "
+                            " ships raw oracle text. Players think in roles: "
                             em { "ramp, removal, anthem, counterspell" }
                             ". So zwipe classifies every card into one or more of 24 strategic roles."
                         }
@@ -354,7 +354,7 @@ pub fn About() -> Element {
                             li {
                                 "24 roles (ramp, removal, anthem, tokens, blink, mill, tutor, "
                                 em { "…" }
-                                ") — see "
+                                "). See "
                                 a { href: URL_MECHANICAL_CATEGORY, target: "_blank", rel: "noopener noreferrer", "mechanical_category" }
                             }
                             li {
@@ -364,7 +364,7 @@ pub fn About() -> Element {
                                 em { "Sol Ring" }
                                 " = ramp"
                             }
-                            li { "Deterministic heuristic classifier — oracle text + type line, no AI, runs at sync time" }
+                            li { "Deterministic heuristic classifier: oracle text + type line, no AI, runs at sync time" }
                             li { "Stored on the card row; filtering hits one Postgres column, not a runtime classifier" }
                         }
                     }
