@@ -16,9 +16,11 @@ use uuid::Uuid;
 
 use crate::domain::user::models::{
     get_user::GetUserError,
+    hints::MarkHintShownError,
     preferences::{GetPreferencesError, UpdatePreferencesError},
 };
 use zwipe_core::domain::user::{
+    models::hints::MarkHintShown,
     preferences::{UpdatePreferences, UserPreferences},
     requests::get_user::GetUser,
     User,
@@ -45,6 +47,12 @@ pub trait UserRepository: Clone + Send + Sync + 'static {
         &self,
         request: &UpdatePreferences,
     ) -> impl Future<Output = Result<UserPreferences, UpdatePreferencesError>> + Send;
+
+    /// Marks a one-time UI hint as shown; returns the updated user.
+    fn mark_hint_shown(
+        &self,
+        request: &MarkHintShown,
+    ) -> impl Future<Output = Result<User, MarkHintShownError>> + Send;
 }
 
 /// Service port for user profile business logic.
@@ -76,4 +84,14 @@ pub trait UserService: Clone + Send + Sync + 'static {
         &self,
         request: &UpdatePreferences,
     ) -> impl Future<Output = Result<UserPreferences, UpdatePreferencesError>> + Send;
+
+    // =======
+    //  hints
+    // =======
+
+    /// Marks a one-time UI hint as shown; returns the updated user.
+    fn mark_hint_shown(
+        &self,
+        request: &MarkHintShown,
+    ) -> impl Future<Output = Result<User, MarkHintShownError>> + Send;
 }

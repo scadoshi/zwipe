@@ -46,6 +46,8 @@ pub struct UserWithPasswordHash {
     pub lockout_until: Option<DateTime<Utc>>,
     /// When the user's email was verified. `None` means not yet verified.
     pub email_verified_at: Option<DateTime<Utc>>,
+    /// One-time UI hints already shown, keyed by hint id.
+    pub hints_shown: std::collections::HashMap<String, bool>,
 }
 
 #[cfg(feature = "zerver")]
@@ -56,6 +58,7 @@ impl From<UserWithPasswordHash> for User {
             username: value.username,
             email: value.email,
             email_verified_at: value.email_verified_at,
+            hints_shown: value.hints_shown,
         }
     }
 }
@@ -86,6 +89,7 @@ mod tests {
             password_hash,
             lockout_until: None,
             email_verified_at: None,
+            hints_shown: std::collections::HashMap::new(),
         };
 
         let user: User = with_hash.into();

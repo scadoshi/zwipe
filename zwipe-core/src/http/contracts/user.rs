@@ -12,3 +12,13 @@ pub struct HttpUpdatePreferences {
     /// Dark mode setting, or absent to leave unchanged.
     pub dark_mode: Option<bool>,
 }
+
+/// HTTP request body for marking a one-time UI hint as shown.
+///
+/// Responds with the updated user so the client can sync its session in
+/// place.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct HttpMarkHintShown {
+    /// Hint key (lowercase snake case, e.g. "add_swipes").
+    pub hint: String,
+}
