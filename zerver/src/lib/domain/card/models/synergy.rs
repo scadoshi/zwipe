@@ -89,7 +89,7 @@ mod tests {
     fn tolerates_unknown_fields_and_empty_payload() {
         let scores = scores_from(serde_json::json!({
             "lists": [{"tag": "x", "header": "X", "cards": [
-                {"name": "A", "synergy": 0.2, "slug": "a", "num_decks": 5}
+                {"name": "A", "synergy": 0.2, "color": "blue", "weight": 5}
             ]}],
             "future_field": true
         }));
