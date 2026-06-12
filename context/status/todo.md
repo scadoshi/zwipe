@@ -170,12 +170,14 @@ premium revenue scales with users, MTG pods are mixed-device so adoption
 spreads through playgroups, and shipping Android first means premium later
 launches on both stores in one pass (StoreKit + Play Billing designed together).
 
-- [ ] **FIRST: check Google Play account type / closed-testing requirement** —
-  personal developer accounts created after late 2023 must run a closed test
-  with 12 testers for 14 continuous days before production publishing is
-  allowed. If it applies, start the closed test IMMEDIATELY so the 14-day
-  clock runs while the polish items below are finished (LGS regulars + Reddit
-  are the easy tester pool). Started 2026-06-10 (account check in progress).
+- [ ] **FIRST: register the Google Play developer account ($25)** — RESOLVED
+  2026-06-11: no developer account exists yet, so it will be a new personal
+  account and the closed-testing requirement (12 testers, 14 continuous days
+  before production access) definitely applies. Sequence: pay the $25 →
+  complete identity verification (can take days on its own — do not let it
+  sit) → upload a build to a closed track → recruit 12 testers (LGS regulars
+  + Reddit) → 14-day clock runs while the polish items below are finished.
+  The $25 step is the actual start of the Android clock.
 
 Android build compiles and runs. Remaining polish before Play Store submission:
 
