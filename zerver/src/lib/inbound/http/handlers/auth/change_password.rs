@@ -39,6 +39,9 @@ impl From<InvalidChangePassword> for ApiError {
             InvalidChangePassword::Password(e) => {
                 Self::UnprocessableEntity(format!("invalid password {}", e))
             }
+            InvalidChangePassword::SameAsCurrent => Self::UnprocessableEntity(
+                "new password must be different from your current password".to_string(),
+            ),
             InvalidChangePassword::FailedPasswordHash(e) => e.log_500(),
         }
     }
