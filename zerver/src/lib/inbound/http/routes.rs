@@ -294,6 +294,16 @@ where
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
+    // burst 1, then 1 req/60s — resend verification: a fast multi-click sends
+    // one email, the rest get 429. Window matches the client cooldown timer.
+    let resend_verification_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(60))
+            .burst_size(1)
+            .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
     // 12 req/min — clients flush usage every ~30s; this gives ample headroom
     let metrics_usage_config = Arc::new(
         GovernorConfigBuilder::default()
@@ -312,7 +322,13 @@ where
                     "/auth",
                     Router::new()
                         .route("/logout", post(revoke_sessions))
-                        .route("/resend-verification", post(resend_verification)),
+                        .route(
+                            "/resend-verification",
+                            post(resend_verification).layer(
+                                GovernorLayer::new(resend_verification_config)
+                                    .error_handler(unauthorized_on_missing_key),
+                            ),
+                        ),
                 )
                 .nest(
                     "/user",
