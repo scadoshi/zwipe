@@ -3,7 +3,7 @@ use crate::{
     inbound::{
         components::{
             auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
-            hint_dialog::{HintDialog, use_one_time_hint},
+            hint_dialog::{HintDialog, HintLine, use_one_time_hint},
             interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
             telemetry::usage_buffer::UsageBuffer,
         },
@@ -1052,13 +1052,11 @@ pub fn Add(deck_id: Uuid) -> Element {
             HintDialog {
                 open: swipe_hint_open,
                 title: "Swipe to build",
-                lines: vec![
-                    "Swipe right to add a card to your deck.".to_string(),
-                    "Swipe left to skip it.".to_string(),
-                    "Swipe up to send it to your maybeboard.".to_string(),
-                    "Swipe down to undo your last swipe.".to_string(),
-                    "Cards are ordered by how well they fit your commander. Filter or sort anytime.".to_string(),
-                ],
+                HintLine { "Swipe right to add a card to your deck." }
+                HintLine { "Swipe left to skip it." }
+                HintLine { "Swipe up to send it to your maybeboard." }
+                HintLine { "Swipe down to undo your last swipe." }
+                HintLine { "Cards are ordered by how well they fit your commander. Filter or sort anytime." }
             }
 
             CardFilterSheet {

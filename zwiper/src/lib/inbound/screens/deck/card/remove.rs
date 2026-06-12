@@ -3,7 +3,7 @@ use crate::{
     inbound::{
         components::{
             auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
-            hint_dialog::{HintDialog, use_one_time_hint},
+            hint_dialog::{HintDialog, HintLine, use_one_time_hint},
             interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
             telemetry::usage_buffer::UsageBuffer,
         },
@@ -513,13 +513,11 @@ pub fn Remove(deck_id: Uuid) -> Element {
             HintDialog {
                 open: swipe_hint_open,
                 title: "Swipe to trim",
-                lines: vec![
-                    "Swipe right to remove a card from your deck.".to_string(),
-                    "Swipe left to keep it.".to_string(),
-                    "Swipe up to move it to your maybeboard.".to_string(),
-                    "Swipe down to undo your last swipe.".to_string(),
-                    "The board chips at the top choose which board you are trimming.".to_string(),
-                ],
+                HintLine { "Swipe right to remove a card from your deck." }
+                HintLine { "Swipe left to keep it." }
+                HintLine { "Swipe up to move it to your maybeboard." }
+                HintLine { "Swipe down to undo your last swipe." }
+                HintLine { "The board chips at the top choose which board you are trimming." }
             }
 
             CardFilterSheet {
