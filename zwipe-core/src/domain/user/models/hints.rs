@@ -20,6 +20,8 @@ pub const HINT_REMOVE_SWIPES: &str = "remove_swipes";
 pub const HINT_FIRST_DECK: &str = "first_deck";
 /// Browsing dialog on the deck cards list (fires only once cards exist).
 pub const HINT_DECK_CARDS: &str = "deck_cards";
+/// Account management dialog on the profile screen.
+pub const HINT_PROFILE: &str = "profile";
 
 /// Maximum length of a hint key.
 pub const HINT_KEY_MAX_LEN: usize = 64;
@@ -86,6 +88,7 @@ mod tests {
             HINT_REMOVE_SWIPES,
             HINT_FIRST_DECK,
             HINT_DECK_CARDS,
+            HINT_PROFILE,
         ] {
             assert!(MarkHintShown::new(Uuid::new_v4(), key).is_ok());
         }
