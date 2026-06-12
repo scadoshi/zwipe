@@ -39,6 +39,10 @@ pub fn ChangePassword() -> Element {
             password_error.set(Some(e.to_string()));
         } else if new_password().as_str() != confirm_password().as_str() {
             password_error.set(Some("Passwords do not match".to_string()));
+        } else if new_password().as_str() == current_password().as_str() {
+            password_error.set(Some(
+                "New password must be different from your current password".to_string(),
+            ));
         } else {
             password_error.set(None)
         }
