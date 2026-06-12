@@ -524,7 +524,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     HintBullet {
                         "Tap "
                         HintKey { "Cards" }
-                        " to start swiping cards"
+                        " to browse your deck's cards"
                     }
                     HintBullet {
                         "Tap "
