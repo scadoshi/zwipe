@@ -11,6 +11,12 @@ use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
 
+/// Newtype so `try_use_context` doesn't collide with other `Signal<bool>`
+/// contexts — a bare `Signal<bool>` lookup here once grabbed the root
+/// min-version gate and flashed the "Update required" screen on Apply.
+#[derive(Clone, Copy)]
+pub(crate) struct CollapseExpanded(pub(crate) Signal<bool>);
+
 /// Shared bottom-sheet filter accordion used by add, view, and remove card screens.
 ///
 /// Reads `Signal<CardFilterBuilder>` and `Signal<u32>` (filter_reset_counter) from context.
@@ -24,13 +30,13 @@ pub(crate) fn CardFilterSheet(
 ) -> Element {
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
     let mut filter_reset_counter: Signal<u32> = use_context();
-    let should_collapse: Option<Signal<bool>> = try_use_context::<Signal<bool>>();
+    let should_collapse: Option<CollapseExpanded> = try_use_context::<CollapseExpanded>();
     let toast = use_toast();
     let mut accordion_key = use_signal(|| 0u32);
 
     // Bump the filter counter and signal that the expanded card should collapse.
     let mut bump_filter = move || {
-        if let Some(mut collapse) = should_collapse {
+        if let Some(CollapseExpanded(mut collapse)) = should_collapse {
             collapse.set(true);
         }
         filter_reset_counter.set(filter_reset_counter() + 1);
