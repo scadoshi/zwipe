@@ -10,6 +10,8 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
 
+/// Welcome dialog on the home screen after first login.
+pub const HINT_FIRST_LOGIN: &str = "first_login";
 /// Swipe vocabulary dialog on the add-cards screen.
 pub const HINT_ADD_SWIPES: &str = "add_swipes";
 /// Swipe vocabulary dialog on the remove-cards screen.
@@ -79,6 +81,7 @@ mod tests {
     #[test]
     fn accepts_known_hint_keys() {
         for key in [
+            HINT_FIRST_LOGIN,
             HINT_ADD_SWIPES,
             HINT_REMOVE_SWIPES,
             HINT_FIRST_DECK,
