@@ -18,57 +18,84 @@ use zwipe_core::domain::auth::models::session::Session;
 /// Opens the returned signal once per account for the given hint key, and
 /// reports the hint as shown so it never auto-opens again (on any device).
 ///
-/// Reporting is fire-and-forget: a failed report just means the hint may
-/// auto-open once more later. The dialog itself opens optimistically.
+/// Fires at mount. For hints gated on async state (e.g. "the deck has
+/// cards"), call [`open_and_record_hint`] from an effect instead, once the
+/// gate first passes.
 pub fn use_one_time_hint(key: &'static str) -> Signal<bool> {
-    let mut session: Signal<Option<Session>> = use_context();
+    let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
-    let mut open = use_signal(|| false);
+    let open = use_signal(|| false);
 
-    use_hook(move || {
-        let seen = session
-            .peek()
-            .as_ref()
-            .is_none_or(|s| s.user.has_seen_hint(key));
-        if seen {
-            return;
-        }
-        open.set(true);
-        spawn(async move {
-            let Ok(s) = session.ensure_fresh(client).await else {
-                return;
-            };
-            let http = client.peek().clone();
-            match http.mark_hint_shown(key, &s).await {
-                Ok(fresh_user) => {
-                    let current = session.peek().clone();
-                    if let Some(mut current) = current {
-                        current.user = fresh_user;
-                        // persist so the hint stays seen across app restarts
-                        current.infallible_save();
-                        session.set(Some(current));
-                    }
-                }
-                Err(e) => tracing::warn!("failed to record hint {key}: {e}"),
-            }
-        });
-    });
+    use_hook(move || open_and_record_hint(key, session, client, open));
 
     open
 }
 
+/// Opens the dialog and records the hint as shown, unless this user has
+/// already seen it. The shared trigger behind [`use_one_time_hint`]; callers
+/// with an async gate invoke it directly (guarded so it runs once).
+///
+/// Reporting is fire-and-forget: a failed report just means the hint may
+/// auto-open once more later. The dialog itself opens optimistically.
+pub fn open_and_record_hint(
+    key: &'static str,
+    mut session: Signal<Option<Session>>,
+    client: Signal<ZwipeClient>,
+    mut open: Signal<bool>,
+) {
+    let seen = session
+        .peek()
+        .as_ref()
+        .is_none_or(|s| s.user.has_seen_hint(key));
+    if seen {
+        return;
+    }
+    open.set(true);
+    spawn(async move {
+        let Ok(s) = session.ensure_fresh(client).await else {
+            return;
+        };
+        let http = client.peek().clone();
+        match http.mark_hint_shown(key, &s).await {
+            Ok(fresh_user) => {
+                let current = session.peek().clone();
+                if let Some(mut current) = current {
+                    current.user = fresh_user;
+                    // persist so the hint stays seen across app restarts
+                    current.infallible_save();
+                    session.set(Some(current));
+                }
+            }
+            Err(e) => tracing::warn!("failed to record hint {key}: {e}"),
+        }
+    });
+}
+
 /// Hint dialog shell: title, body content, and a single "Got it" button.
 /// Compose the body from [`HintLine`]s, with [`HintKey`]s for button names.
+/// `dividers` draws a rule under the title and above the button.
 #[component]
-pub fn HintDialog(open: Signal<bool>, title: String, children: Element) -> Element {
+pub fn HintDialog(
+    open: Signal<bool>,
+    title: String,
+    #[props(default = false)] dividers: bool,
+    children: Element,
+) -> Element {
+    let rule = "border: none; border-top: 1px solid var(--border-primary); width: 100%; margin: 0.25rem 0 0.75rem 0;";
     rsx! {
         AlertDialogRoot {
             open: open(),
             on_open_change: move |v| open.set(v),
             AlertDialogContent {
                 AlertDialogTitle { "{title}" }
+                if dividers {
+                    hr { style: "{rule}" }
+                }
                 AlertDialogDescription {
                     {children}
+                }
+                if dividers {
+                    hr { style: "{rule}" }
                 }
                 AlertDialogActions {
                     AlertDialogAction {
