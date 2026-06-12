@@ -3,6 +3,7 @@ use crate::{
     inbound::{
         components::{
             auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+            hint_dialog::{HintDialog, use_one_time_hint},
             interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
             telemetry::usage_buffer::UsageBuffer,
         },
@@ -26,6 +27,7 @@ use std::time::Duration;
 use uuid::Uuid;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpUpdateDeckCard};
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::user::models::hints::HINT_REMOVE_SWIPES;
 use zwipe_core::domain::card::{
     Card,
     search_card::{
@@ -64,6 +66,10 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
     // Filter overlay state
     let mut filters_overlay_open = use_signal(|| false);
+
+    // Swipe vocabulary hint: auto-opens on this user's first visit, the
+    // grayed "?" in the util bar reopens it on demand.
+    let mut swipe_hint_open = use_one_time_hint(HINT_REMOVE_SWIPES);
 
     // Incrementing this re-runs the filter effect
     let mut filter_reset_counter: Signal<u32> = use_signal(|| 0);
@@ -496,6 +502,24 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         "Clear"
                     }
                 }
+                button {
+                    class: "util-btn",
+                    style: "opacity: 0.55;",
+                    onclick: move |_| swipe_hint_open.set(true),
+                    "?"
+                }
+            }
+
+            HintDialog {
+                open: swipe_hint_open,
+                title: "Swipe to trim",
+                lines: vec![
+                    "Swipe right to remove a card from your deck.".to_string(),
+                    "Swipe left to keep it.".to_string(),
+                    "Swipe up to move it to your maybeboard.".to_string(),
+                    "Swipe down to undo your last swipe.".to_string(),
+                    "The board chips at the top choose which board you are trimming.".to_string(),
+                ],
             }
 
             CardFilterSheet {

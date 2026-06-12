@@ -13,5 +13,7 @@ pub mod change_username;
 pub mod delete_user;
 /// Fetch user profile endpoint.
 pub mod get_user;
+/// Mark one-time UI hint shown endpoint.
+pub mod mark_hint_shown;
 /// User preferences endpoints.
 pub mod preferences;

@@ -4,9 +4,9 @@ use crate::inbound::components::alert_dialog::{
 };
 use crate::inbound::components::auth::{ensure_session::EnsureFresh, signal_logout::SignalLogout};
 use crate::inbound::components::fields::text_input::TextInput;
-use crate::outbound::client::{user::delete_user::ClientDeleteUser, ZwipeClient};
+use crate::outbound::client::{ZwipeClient, user::delete_user::ClientDeleteUser};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{use_toast, ToastOptions};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::HttpDeleteUser;
@@ -50,7 +50,7 @@ pub(crate) fn DeleteAccountDialog(mut open: Signal<bool>) -> Element {
                 TextInput {
                     value: delete_password,
                     input_type: "password".to_string(),
-                    placeholder: "Confirm your password".to_string(),
+                    placeholder: "Password".to_string(),
                 }
                 AlertDialogActions {
                     AlertDialogCancel {
