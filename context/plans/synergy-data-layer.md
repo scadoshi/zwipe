@@ -61,41 +61,29 @@ migration so both sides move in lockstep.
 
 ## Payload shape
 
-`payload` is a reduced, source-agnostic JSON document:
+`payload` is a reduced JSON document. zerver consumes only this surface
+(anything else in the document is ignored by design — the worker owns the
+full shape, and parsing here is lenient so upstream drift degrades to
+"no signal"):
 
 ```json
 {
   "lists": [
     {
-      "tag": "highsynergycards",
-      "header": "High Synergy Cards",
       "cards": [
-        {
-          "name": "Some Card Name",
-          "slug": "some-card-name",
-          "synergy": 0.21,
-          "num_decks": 2014,
-          "potential_decks": 7850
-        }
+        { "name": "Some Card Name", "synergy": 0.21 }
       ]
     }
   ]
 }
 ```
 
-- `lists[].tag` — stable machine key. Observed tags: `newcards`,
-  `highsynergycards`, `topcards`, plus one per card type (`creatures`,
-  `instants`, `sorceries`, `utilityartifacts`, `enchantments`,
-  `planeswalkers`, `utilitylands`, `manaartifacts`, `lands`).
-  Real pages carry 12–13 lists, ~240–270 cards total, ~10–12KB per row.
-- `synergy` — float roughly in −1..1; higher = more synergistic with this
-  commander than with the average deck. Can be null (e.g. `newcards` entries).
-- `num_decks` / `potential_decks` — how many decks that could run the card do.
-  `num_decks / potential_decks` is the inclusion rate.
-- **Resolve cards by exact `name`** against `scryfall_data.name` — the `slug`
-  is not a Scryfall identifier and card-level ids are deliberately absent.
-  `find_cards_by_exact_names` (card/ports.rs, card/services.rs — what the
-  Archidekt importer uses) already does this resolution.
+- `synergy` — float roughly in −1..1; higher = better fit for this
+  commander. Can be null/absent; scoreless entries still rank above cards
+  with no signal at all.
+- **Resolve cards by exact `name`** against `scryfall_data.name` —
+  card-level ids are deliberately absent. The read path lowercases names on
+  both sides; multi-list duplicates keep their highest score.
 
 ## Read path — BUILT 2026-06-11 (`feat/synergy-data-layer`), live-tested
 
@@ -192,7 +180,7 @@ that's literally what the default ordering now answers.
    synergy worker with the printed `DATABASE_URL` (it's a `cargo run`
    daemon; ask the worker's repo for details).
 3. Create a deck with any commander through the app/API.
-4. Within one poll interval (+ a couple seconds of fetch politeness):
+4. Within one poll interval (+ a couple seconds of fill time):
    `SELECT commander_name, fetched_at FROM commander_synergy` shows the row.
    Measured on dev: 4.4s end-to-end with a 10s poll; production default is a
    30s poll, so worst case ~35s.
