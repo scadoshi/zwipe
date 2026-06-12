@@ -5,6 +5,9 @@ use super::components::printing_sheet::PrintingSheet;
 use crate::{
     inbound::{
         components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+        components::hint_dialog::{
+            HintBullet, HintBullets, HintDialog, HintKey, HintLine, open_and_record_hint,
+        },
         screens::deck::card::filter::{
             card_filter_sheet::{CardFilterSheet, CollapseExpanded},
             deck_cards::DeckCards,
@@ -41,6 +44,7 @@ use zwipe_core::domain::card::{
     },
 };
 use zwipe_core::domain::deck::{Board, DeckEntry, quantity::Quantity};
+use zwipe_core::domain::user::models::hints::HINT_DECK_CARDS;
 
 /// Identifies which command zone slot a card occupies for printing updates.
 #[derive(Clone, Copy)]
@@ -125,6 +129,18 @@ pub fn View(deck_id: Uuid) -> Element {
     // context lookup is unambiguous.
     let mut should_collapse_expanded: Signal<bool> = use_signal(|| false);
     use_context_provider(|| CollapseExpanded(should_collapse_expanded));
+
+    // Deck-browsing hint: fires once entries have loaded and only if the
+    // deck actually has cards. An empty list has nothing to tap, so the
+    // hint waits for a later visit instead of burning its one showing.
+    let deck_cards_hint_open = use_signal(|| false);
+    let mut deck_cards_hint_fired = use_signal(|| false);
+    use_effect(move || {
+        if !deck_entries.read().is_empty() && !*deck_cards_hint_fired.peek() {
+            deck_cards_hint_fired.set(true);
+            open_and_record_hint(HINT_DECK_CARDS, session, client, deck_cards_hint_open);
+        }
+    });
 
     // Helper: look up quantity by card ID
     let qty_for = move |card_id: Uuid| -> i32 {
@@ -841,6 +857,24 @@ pub fn View(deck_id: Uuid) -> Element {
             ImagePreview { card: preview_card, dismissing: preview_dismissing }
 
             if let Some(card) = printing_sheet_card() {
+                HintDialog {
+                    open: deck_cards_hint_open,
+                    title: "Browsing your deck",
+                    HintLine {
+                        "Tap any card to expand it. Read its text, view its image, switch printings, or change its quantity."
+                    }
+                    HintBullets {
+                        HintBullet {
+                            HintKey { "Boards" }
+                            " chooses which boards are listed."
+                        }
+                        HintBullet {
+                            HintKey { "Show" }
+                            " reveals lands, tokens, and the command zone."
+                        }
+                    }
+                }
+
                 PrintingSheet {
                     card: card.clone(),
                     open: printing_sheet_open,

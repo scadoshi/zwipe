@@ -16,6 +16,8 @@ pub const HINT_ADD_SWIPES: &str = "add_swipes";
 pub const HINT_REMOVE_SWIPES: &str = "remove_swipes";
 /// Welcome dialog on first opening a deck profile.
 pub const HINT_FIRST_DECK: &str = "first_deck";
+/// Browsing dialog on the deck cards list (fires only once cards exist).
+pub const HINT_DECK_CARDS: &str = "deck_cards";
 
 /// Maximum length of a hint key.
 pub const HINT_KEY_MAX_LEN: usize = 64;
@@ -76,7 +78,12 @@ mod tests {
 
     #[test]
     fn accepts_known_hint_keys() {
-        for key in [HINT_ADD_SWIPES, HINT_REMOVE_SWIPES, HINT_FIRST_DECK] {
+        for key in [
+            HINT_ADD_SWIPES,
+            HINT_REMOVE_SWIPES,
+            HINT_FIRST_DECK,
+            HINT_DECK_CARDS,
+        ] {
             assert!(MarkHintShown::new(Uuid::new_v4(), key).is_ok());
         }
     }

@@ -513,6 +513,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
             HintDialog {
                 open: swipe_hint_open,
                 title: "Swipe to trim",
+                dividers: true,
                 HintBullets {
                     HintBullet {
                         "Swipe "
