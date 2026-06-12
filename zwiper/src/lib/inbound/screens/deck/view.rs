@@ -518,7 +518,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
             HintDialog {
                 open: first_deck_hint_open,
-                title: "Welcome to your first deck",
+                title: "Welcome to your deck",
                 dividers: true,
                 HintBullets {
                     HintBullet {
