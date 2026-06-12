@@ -862,25 +862,25 @@ pub fn View(deck_id: Uuid) -> Element {
 
             ImagePreview { card: preview_card, dismissing: preview_dismissing }
 
-            if let Some(card) = printing_sheet_card() {
-                HintDialog {
-                    open: deck_cards_hint_open,
-                    title: "Browsing your deck",
-                    HintLine {
-                        "Tap any card to expand it. Read its text, view its image, switch printings, or change its quantity."
+            HintDialog {
+                open: deck_cards_hint_open,
+                title: "Browsing your deck",
+                HintLine {
+                    "Tap any card to expand it. Read its text, view its image, switch printings, or change its quantity."
+                }
+                HintBullets {
+                    HintBullet {
+                        HintKey { "Boards" }
+                        " chooses which boards are listed."
                     }
-                    HintBullets {
-                        HintBullet {
-                            HintKey { "Boards" }
-                            " chooses which boards are listed."
-                        }
-                        HintBullet {
-                            HintKey { "Show" }
-                            " reveals lands, tokens, and the command zone."
-                        }
+                    HintBullet {
+                        HintKey { "Show" }
+                        " reveals lands, tokens, and the command zone."
                     }
                 }
+            }
 
+            if let Some(card) = printing_sheet_card() {
                 PrintingSheet {
                     card: card.clone(),
                     open: printing_sheet_open,
