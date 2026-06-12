@@ -12,6 +12,7 @@ use crate::inbound::components::alert_dialog::{
 use crate::{
     inbound::{
         components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+        components::hint_dialog::{HintDialog, use_one_time_hint},
         router::Router,
     },
     outbound::buy_links,
@@ -35,6 +36,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::{
     DeckEntry, deck_metrics::DeckMetrics, deck_profile::DeckProfile, deck_warning::DeckWarning,
 };
+use zwipe_core::domain::user::models::hints::HINT_FIRST_DECK;
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::contracts::deck_card::HttpUpdateDeckCard;
 use zwipe_core::http::helpers::Opdate;
@@ -96,6 +98,10 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         }
         Some(Ok(None)) | None => (),
     });
+
+    // First-deck welcome: auto-opens once per account on first opening any
+    // deck profile, then never again. No reopen affordance by design.
+    let first_deck_hint_open = use_one_time_hint(HINT_FIRST_DECK);
 
     let show_buy_sheet = use_signal(|| false);
     let mut show_more_sheet = use_signal(|| false);
@@ -499,6 +505,15 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     .map(|p| format!("{} (clone)", p.name))
                     .unwrap_or_default(),
                 open: show_clone_dialog,
+            }
+
+            HintDialog {
+                open: first_deck_hint_open,
+                title: "Your deck is ready",
+                lines: vec![
+                    "Tap Cards to start swiping cards into your deck.".to_string(),
+                    "Or import an existing deck list from More actions.".to_string(),
+                ],
             }
 
             }
