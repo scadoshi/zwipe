@@ -214,13 +214,13 @@ pub fn Remove(deck_id: Uuid) -> Element {
         });
     };
 
-    let move_card_to_maybeboard = move || {
+    let move_card_to_board = move |to: Board| {
         let Some(card) = current_card() else {
             return;
         };
 
         let scryfall_data_id = card.scryfall_data.id;
-        let request = HttpUpdateDeckCard::new(None, Some("maybeboard".to_string()));
+        let request = HttpUpdateDeckCard::new(None, Some(to.display_name().to_string()));
 
         spawn(async move {
             let session = match session.ensure_fresh(client).await {
@@ -235,7 +235,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 .update_deck_card(deck_id, scryfall_data_id, &request, &session)
                 .await
             {
-                tracing::warn!("move card to maybeboard failed: {e}");
+                tracing::warn!("move card to board failed: {e}");
                 toast.error(e.to_user_message(), ToastOptions::default());
             }
         });
@@ -251,6 +251,29 @@ pub fn Remove(deck_id: Uuid) -> Element {
             deck_entries
                 .write()
                 .retain(|e| e.card.card_profile.scryfall_data_id != id);
+            if idx < displayed_cards.read().len() {
+                displayed_cards.write().remove(idx);
+            }
+        }
+        // current_index is unchanged — the next card slides into position
+    };
+
+    // Board-move counterpart of remove_current_card: the entry survives in
+    // the source of truth with its new board (so the board chips stay
+    // truthful without a refetch); only the displayed stack drops the card.
+    let mut move_current_card_locally = move |to: Board| {
+        let idx = current_index();
+        let card_id = displayed_cards()
+            .get(idx)
+            .map(|c| c.card_profile.scryfall_data_id);
+        if let Some(id) = card_id {
+            if let Some(entry) = deck_entries
+                .write()
+                .iter_mut()
+                .find(|e| e.card.card_profile.scryfall_data_id == id)
+            {
+                entry.deck_card.board = to;
+            }
             if idx < displayed_cards.read().len() {
                 displayed_cards.write().remove(idx);
             }
@@ -371,6 +394,53 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     }
                 });
             }
+            SwipeAction::MoveBoard { card, from, .. } => {
+                // Re-insert into displayed cards so the card reappears
+                let card = *card;
+                let idx = current_index();
+                displayed_cards.write().insert(idx, card.clone());
+
+                // Move back to the board it came from, server then local
+                let scryfall_data_id = card.scryfall_data.id;
+                let request = HttpUpdateDeckCard::new(None, Some(from.display_name().to_string()));
+
+                spawn(async move {
+                    let session = match session.ensure_fresh(client).await {
+                        Ok(session) => session,
+                        Err(e) => {
+                            toast.error(e.to_user_message(), ToastOptions::default());
+                            entering_direction.set(None);
+                            return;
+                        }
+                    };
+
+                    match client()
+                        .update_deck_card(deck_id, scryfall_data_id, &request, &session)
+                        .await
+                    {
+                        Ok(_) => {
+                            if let Some(entry) = deck_entries
+                                .write()
+                                .iter_mut()
+                                .find(|e| e.card.scryfall_data.id == scryfall_data_id)
+                            {
+                                entry.deck_card.board = from;
+                            }
+                            toast.success(
+                                "Undid move".to_string(),
+                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                            );
+                        }
+                        Err(e) => {
+                            tracing::warn!("undo board move (update deck card) failed: {e}");
+                            toast.error(
+                                format!("Failed to undo: {}", e),
+                                ToastOptions::default(),
+                            );
+                        }
+                    }
+                });
+            }
         }
     };
 
@@ -441,10 +511,20 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             },
                             on_swipe_up: move |card: Card| {
                                 usage_buffer().record_swipe(Direction::Up);
-                                action_history.write().push(SwipeAction::Maybeboard { card: Box::new(card), exited: Direction::Up });
-                                move_card_to_maybeboard();
-                                toast.info("Moved to maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
-                                remove_current_card();
+                                // Stage/promote toggle: maybeboard cards graduate
+                                // to main, everything else stages to maybeboard.
+                                let from = deck_entries
+                                    .peek()
+                                    .iter()
+                                    .find(|e| e.card.scryfall_data.id == card.scryfall_data.id)
+                                    .map(|e| e.deck_card.board)
+                                    .unwrap_or_default();
+                                let to = if from.is_maybeboard() { Board::Deck } else { Board::Maybeboard };
+                                action_history.write().push(SwipeAction::MoveBoard { card: Box::new(card), exited: Direction::Up, from, to });
+                                move_card_to_board(to);
+                                let message = if to.is_maybeboard() { "Moved to maybeboard" } else { "Moved to main" };
+                                toast.info(message.to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                move_current_card_locally(to);
                             },
                             on_swipe_down: move |_card: Card| {
                                 usage_buffer().record_swipe(Direction::Down);
@@ -528,7 +608,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     HintBullet {
                         "Swipe "
                         HintColored { color: "--color-warning", "up" }
-                        " to move it to your maybeboard."
+                        " to move between maybeboard and main."
                     }
                     HintBullet {
                         "Swipe "
