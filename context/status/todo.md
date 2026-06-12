@@ -8,6 +8,11 @@ Completed work archived at `context/archive/complete-2026-Q1.md` (swept 2026-05-
 
 ## Next Up
 
+**The next big three (set 2026-06-11, in order):**
+1. **Business cards + marketing** — design/print LGS cards, Reddit/X posts (see Marketing & Discovery below)
+2. **Android** — start the Play closed-testing clock, then the polish items (see Android section below)
+3. **VPS migration** — un-defer when the first two are moving; plan is ready in `context/plans/vps-migration.md` (home server retirement is coming)
+
 - [x] **Synergy data layer (cache-first) — SHIPPED 2026-06-11** — full stack live in prod: migration applied, separate worker service deployed under a least-privilege DB role (own runner + systemd unit), drip-seed warming the top-1,000 commanders, deck-aware search endpoint live, synergy-ordered add screen in client build 32. zerver writes nothing; DB is the only interface. Plan: `context/plans/synergy-data-layer.md`. Product framing: `context/product/premium/smart-stack.md`. *AI assistants: check local memory for the data-source strategy before extending this.*
 - [x] **Moxfield import (phase 2) — DENIED, shelved** (2026-06-10) — Moxfield support (Rob) replied same day: policy is no API access for sites/apps that offer deckbuilding. They plan a scoped deck-export endpoint for such services eventually (no ETA; will be announced on their help pages) and invited a re-request once it's live. Until then Moxfield users use the text-paste importer. Watch item moved to `backlog.md`; see `context/plans/deck-import.md`.
 - [ ] **Backup restore drill** (written 2026-06-10, not yet run) — prove the nightly R2 dumps actually restore: pull latest dump, restore into a scratch DB, verify counts/freshness, optionally boot zerver against it. ~20 minutes, zero prod risk, runnable on the Mac. Full steps + checkpoints: `context/plans/backup-restore-drill.md`.
