@@ -12,7 +12,9 @@ use crate::inbound::components::alert_dialog::{
 use crate::{
     inbound::{
         components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
-        components::hint_dialog::{HintDialog, HintKey, HintLine, use_one_time_hint},
+        components::hint_dialog::{
+            HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint,
+        },
         router::Router,
     },
     outbound::buy_links,
@@ -99,9 +101,9 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         Some(Ok(None)) | None => (),
     });
 
-    // First-deck welcome: auto-opens once per account on first opening any
-    // deck profile, then never again. No reopen affordance by design.
-    let first_deck_hint_open = use_one_time_hint(HINT_FIRST_DECK);
+    // First-deck tour: auto-opens once per account on first opening any
+    // deck profile; the header "?" reopens it on demand.
+    let mut first_deck_hint_open = use_one_time_hint(HINT_FIRST_DECK);
 
     let show_buy_sheet = use_signal(|| false);
     let mut show_more_sheet = use_signal(|| false);
@@ -307,7 +309,14 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             div { class: "screen",
                 div {
                     class : "page-header",
+                    style: "position: relative;",
                     h2 { "Deck" }
+                    button {
+                        class: "util-btn",
+                        style: "position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.55; padding: 0.2rem 0.6rem;",
+                        onclick: move |_| first_deck_hint_open.set(true),
+                        "?"
+                    }
                 }
 
                 div { class: "screen-content",
@@ -510,15 +519,31 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             HintDialog {
                 open: first_deck_hint_open,
                 title: "Welcome to your first deck",
-                HintLine {
-                    "Tap "
-                    HintKey { "Cards" }
-                    " to start swiping cards."
-                }
-                HintLine {
-                    "Tap "
-                    HintKey { "More" }
-                    " to import cards."
+                dividers: true,
+                HintBullets {
+                    HintBullet {
+                        "Tap "
+                        HintKey { "Cards" }
+                        " to start swiping cards."
+                    }
+                    HintBullet {
+                        "Tap "
+                        HintKey { "Edit" }
+                        " to change the name, format, or commander."
+                    }
+                    HintBullet {
+                        "Tap "
+                        HintKey { "More" }
+                        " to import, export, clone, or remove cards."
+                    }
+                    HintBullet {
+                        "Stats appear as the deck grows. Tap "
+                        HintKey { "Buy" }
+                        " to shop the full list."
+                    }
+                    HintBullet {
+                        "Warnings call out rule problems and offer one-tap fixes."
+                    }
                 }
             }
 
