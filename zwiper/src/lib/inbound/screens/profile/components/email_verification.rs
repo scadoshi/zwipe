@@ -134,7 +134,7 @@ pub(crate) fn EmailVerification(email: String, is_verified: bool) -> Element {
                                     );
                                 } else {
                                     toast.info(
-                                        "Not verified yet — check your inbox".to_string(),
+                                        "Not verified yet. Check your inbox".to_string(),
                                         ToastOptions::default()
                                             .duration(Duration::from_millis(3000)),
                                     );

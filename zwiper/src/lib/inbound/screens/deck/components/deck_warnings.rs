@@ -1,5 +1,6 @@
 //! Deck warnings section with action buttons for card-specific warnings.
 
+use crate::inbound::router::Router;
 use crate::outbound::client::{deck_card::delete_deck_card::ClientDeleteDeckCard, ZwipeClient};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
@@ -20,6 +21,15 @@ pub(crate) fn DeckWarnings(
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let toast = use_toast();
+    let navigator = use_navigator();
+
+    // The below-minimum card count warning gets navigation remedies (add or
+    // import) instead of a card action. Matched client-side on the message:
+    // extending the WarningAction enum would break older clients deserializing
+    // the deck response (unknown serde variant fails the whole payload), so
+    // the wire stays untouched until a min-version floor allows the variant.
+    let is_below_min_cards =
+        |w: &DeckWarning| w.scryfall_data_id().is_none() && w.contains("requires at least");
 
     rsx! {
         label { class: "label", "Warnings" }
@@ -29,6 +39,27 @@ pub(crate) fn DeckWarnings(
                 div { class: "info-row",
                     style: "justify-content: space-between; gap: 0.5rem;",
                     span { class: "text-muted", "{warning}" }
+                    if is_below_min_cards(warning) {
+                        span {
+                            style: "display: flex; gap: 0.5rem;",
+                            button {
+                                class: "btn-xs",
+                                style: "color: var(--color-warning); border-color: var(--border-warning); margin-bottom: 0;",
+                                onclick: move |_| {
+                                    navigator.push(Router::AddDeckCard { deck_id });
+                                },
+                                "Add cards"
+                            }
+                            button {
+                                class: "btn-xs",
+                                style: "color: var(--color-warning); border-color: var(--border-warning); margin-bottom: 0;",
+                                onclick: move |_| {
+                                    navigator.push(Router::ImportDeck { deck_id });
+                                },
+                                "Import"
+                            }
+                        }
+                    }
                     if let Some(card_id) = warning.scryfall_data_id() {
                         {
                             let on_remove = on_remove;
