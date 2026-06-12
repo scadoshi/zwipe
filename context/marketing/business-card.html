@@ -7,8 +7,6 @@
 
 <!-- JetBrains Mono: same face zwipe.net uses -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-<!-- mana-font: renders {W}{U}{B}{R}{G} as real mana symbols -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mana-font@latest/css/mana.min.css" />
 <!-- app theme palettes (gruvbox + the rest) — drives the Theme selector -->
 <link rel="stylesheet" href="../../shared/themes.css" />
 <style>
@@ -22,9 +20,9 @@
   --qr-bg:     #ebdbb2;
   --qr-fg:     #282828;
 
-  /* MTG card is 2.5in x 3.5in. Bleed adds 1/8in per side. */
-  --card-w: 2.5in;
-  --card-h: 3.5in;
+  /* True MTG / MPC poker cut size = 63 x 88 mm = 2.48 x 3.46 in. */
+  --card-w: 2.48in;
+  --card-h: 3.46in;
 }
 
 /* Card colors derive from the active theme (shared/themes.css). Defined on
@@ -74,6 +72,12 @@ body {
   border-radius: 6px; padding: 6px 9px; font-family: inherit; font-size: 12px; min-width: 180px;
 }
 .controls .hint { font-size: 11px; color: var(--muted); margin-top: 12px; }
+.dl-btn {
+  background: var(--green); color: var(--bg-sink); border: none; cursor: pointer;
+  border-radius: 6px; padding: 8px 14px; font-family: inherit; font-size: 12px; font-weight: 700;
+}
+.dl-btn:hover { filter: brightness(1.08); }
+.dl-btn:disabled { opacity: .5; cursor: default; }
 .controls kbd { background: var(--bg-sink); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; font-size: 11px; }
 
 /* ====================================================== */
@@ -81,37 +85,48 @@ body {
 /* ====================================================== */
 .sheet { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 28px; }
 
-.card {
-  position: relative;
-  width: var(--card-w);
-  height: var(--card-h);
-  background: #0c0c0c;                /* black card border */
-  border-radius: 11px;                /* corner round like a real card */
-  padding: 9px;                       /* black border thickness */
-  box-shadow: 0 18px 40px rgba(0,0,0,.55);
-  overflow: hidden;
-}
-
-/* inner card face */
-.face {
-  position: relative;
-  height: 100%;
-  border-radius: 5px;
-  background: var(--bg);
-  border: 1px solid var(--border-2);
-  display: flex;
-  flex-direction: column;
-  padding: 8px 8px 7px;
-  gap: 6px;
-}
-
-/* subtle pixel-grid watermark over the whole face */
-.face::before {
-  content: ""; position: absolute; inset: 0; border-radius: 5px; pointer-events: none;
+/* on-screen bleed preview — purely visual; the export builds its own bleed.
+   When Bleed is on, the frame shows the theme+grid bleed margin around the
+   card, with a dashed trim line marking where MPC cuts. */
+.bleed-frame { display: inline-block; line-height: 0; }
+body.show-bleed .bleed-frame {
+  padding: 0.12in;                       /* MPC bleed margin per side */
+  background-color: var(--bg);
   background-image:
     linear-gradient(rgba(235,219,178,.022) 1px, transparent 1px),
     linear-gradient(90deg, rgba(235,219,178,.022) 1px, transparent 1px);
   background-size: 7px 7px;
+  background-position: 4.5px 4.5px;
+}
+body.show-bleed .card { box-shadow: none; }
+body.show-bleed .bleed-frame .card { outline: 1px dashed var(--muted); outline-offset: 0; }
+
+.card {
+  position: relative;
+  width: var(--card-w);
+  height: var(--card-h);
+  /* theme-colored frame + grid (no black border) so the cut card has a
+     theme-colored edge, continuous with the bleed */
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(rgba(235,219,178,.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(235,219,178,.022) 1px, transparent 1px);
+  background-size: 7px 7px;
+  border-radius: 11px;                /* corner round like a real card */
+  padding: 9px;                       /* frame thickness */
+  overflow: hidden;
+}
+
+/* inner card face — transparent so the card's single grid shows through
+   continuously (panels float on it); no border, no separate grid */
+.face {
+  position: relative;
+  height: 100%;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 8px 7px;
+  gap: 6px;
 }
 
 /* ---------- title bar ---------- */
@@ -121,15 +136,17 @@ body {
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 5px 9px;
-  box-shadow: inset 0 1px 0 rgba(235,219,178,.08);
 }
-.title { font-size: 16px; font-weight: 700; letter-spacing: .5px; color: var(--tan); }
-.title .sub { display:block; font-size: 7px; font-weight: 500; letter-spacing: 2px; color: var(--green); margin-top: -2px; white-space: nowrap; }
+.title { display: flex; flex-direction: column; line-height: 1; font-size: 16px; font-weight: 700; letter-spacing: .5px; color: var(--tan); }
+.title .sub { font-size: 7px; font-weight: 500; letter-spacing: 2px; color: var(--green); margin-top: 3px; white-space: nowrap; }
 
 /* mana cost — full WUBRG. Two renderings, toggled by body.mana-mode-coded */
 .cost { display: flex; align-items: center; flex-shrink: 0; }
-.mana-symbols { display: inline-flex; align-items: center; gap: 1.5px; font-size: 8.5px; }
-.mana-symbols .ms-cost { font-size: 8.5px; }
+/* Official Scryfall mana symbols as base64 <img> — html2canvas draws them at
+   exact dimensions (inline SVG mis-sized/clipped; icon fonts mis-baselined). */
+.mana-symbols { display: inline-block; line-height: 1; white-space: nowrap; font-size: 8.5px; }
+.mana-symbols .ms-svg { width: 8.5px; height: 8.5px; display: inline-block; vertical-align: middle; }
+.mana-symbols .ms-svg + .ms-svg { margin-left: 1.5px; }
 .mana-coded { display: none; font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 6.5px; letter-spacing: -.3px; color: var(--tan); }
 .mana-coded span { color: inherit; }
 body.mana-mode-coded .mana-symbols { display: none; }
@@ -322,6 +339,22 @@ body.mana-mode-coded .mana-coded   { display: inline-flex; }
     <label>Theme
       <select id="theme"></select>
     </label>
+    <label>Format
+      <select id="format">
+        <option value="png">PNG (best for MakePlayingCards)</option>
+        <option value="svg">SVG (XML)</option>
+      </select>
+    </label>
+    <label>Bleed
+      <select id="bleed">
+        <option value="off">No bleed (2.5×3.5)</option>
+        <option value="on">MPC bleed (2.75×3.75)</option>
+      </select>
+    </label>
+  </div>
+  <div class="row" style="margin-top: 14px;">
+    <button id="download" type="button" class="dl-btn">⤓ Download this theme (front + back)</button>
+    <button id="downloadAll" type="button" class="dl-btn">⤓ Download ALL themes</button>
   </div>
 </div>
 
@@ -333,13 +366,7 @@ body.mana-mode-coded .mana-coded   { display: inline-flex; }
       <div class="titlebar">
         <div class="title">Zwipe<span class="sub">TCG DECK BUILDER</span></div>
         <div class="cost">
-          <span class="mana-symbols">
-            <i class="ms ms-w ms-cost ms-shadow"></i>
-            <i class="ms ms-u ms-cost ms-shadow"></i>
-            <i class="ms ms-b ms-cost ms-shadow"></i>
-            <i class="ms ms-r ms-cost ms-shadow"></i>
-            <i class="ms ms-g ms-cost ms-shadow"></i>
-          </span>
+          <span class="mana-symbols"><img class="ms-svg" alt="{W}" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyB2aWV3Qm94PScwIDAgMTAwIDEwMCc+PGcgZmlsbD0nbm9uZSc+PGNpcmNsZSBmaWxsPScjRjhGNkQ4JyBjeD0nNTAnIGN5PSc1MCcgcj0nNTAnLz48cGF0aCBkPSdNOTcuNjkxIDU3LjA2NGMtNi41NjEtMy42OTktMTAuNzY4LTUuNTUxLTEyLjYxNy01LjU1MS0xLjM0NCAwLTIuMzk1IDEuMDMyLTMuMTU0IDMuMDkyLS43NTggMi4wNjMtMi4yNyAzLjA5LTQuNTQxIDMuMDktLjkyNiAwLTIuODE4LS4zMzYtNS42NzgtMS4wMDgtMS41OTggMi40NC0yLjM5OCAzLjk5Ni0yLjM5OCA0LjY2OCAwIC45MjYuNjg5IDIuMDE2IDIuMDY0IDMuMjgxIDEuMzc1IDEuMjYyIDIuNTM1IDEuODkxIDMuNDgyIDEuODkxLjYwMiAwIDEuNDE2LS4xMjUgMi40NDktLjM3OSAxLjAzMS0uMjUgMS43MjEtLjM3NyAyLjA2NC0uMzc3IDEuMDMzIDAgMS41NDcgMS44OTMgMS41NDcgNS42NzggMCAzLjYxNy0uODQgOS4xNjgtMi41MjMgMTYuNjU0LTIuMTg4LTguNTgtNC41LTEyLjg3MS02LjkzOC0xMi44NzEtLjMzOCAwLTEuMDMxLjI1Mi0yLjA4Mi43Ni0xLjA1My41MDItMS44My43NTQtMi4zMzQuNzU0LTIuNDM4IDAtNC42MjUtMi4yMjctNi41NjEtNi42ODgtMy44NjkuNTktNS44MDUgMi41NjctNS44MDUgNS45MzQgMCAxLjY4NC43NzcgMy4wMjcgMi4zMzYgNC4wMzUgMS41NTMgMS4wMDggMi4zMzQgMS43MjcgMi4zMzQgMi4xNDUgMCAyLjI3My0zLjMyNCA1Ljc2NC05Ljk2OSAxMC40NzMtMy41MzEgMi41MjMtNS45NzMgNC4yODktNy4zMTYgNS4yOTcgMS4xNzQtMS41MTIgMi4zNTItMy40ODcgMy41MzMtNS45MjggMS4zNDQtMi43NzUgMi4wMTgtNC45MiAyLjAxOC02LjQzNiAwLS44NC0uOTY3LTIuMDItMi45MDItMy41MzMtMS45MzYtMS41MTItMi45LTMuMTExLTIuOS00Ljc5MyAwLTEuNDI4LjUwMi0zLjE5MyAxLjUxMi01LjI5OS0xLjA5NC0xLjI2Mi0yLjM5NS0xLjg5NS0zLjkxLTEuODk1LTMuMzY1IDAtNS4wNDUgMS4wOTYtNS4wNDUgMy4yOHYzLjQwNmMuMDgyIDIuNzc2LTIuMDIgNC4xNjQtNi4zMTEgNC4xNjQtMy4yNzkgMC04Ljc5MS0uNzU5LTE2LjUyNy0yLjI3MSA4Ljc0OC0yLjE4OCAxMy4xMjEtNC43MTEgMTMuMTIxLTcuNTcgMCAuMzM2LS4xNjgtLjY3Mi0uNTA0LTMuMDI4LS4zMzgtMi42MDQgMS41MTQtNC45NjEgNS41NTEtNy4wNjMtLjc1OC0zLjg2Ny0yLjc3My01LjgwNi02LjA1Ny01LjgwNi0uNTA0IDAtMS40MzIuODg0LTIuNzc1IDIuNjQ3LTEuMzQ2IDEuNzcxLTIuNjA3IDIuNjUyLTMuNzgzIDIuNjUyLTIuMDIgMC00LjYyOS0yLjE4Ni03LjgyMi02LjU2My0xLjUxNi0yLjE4NC0zLjgzLTUuNDI0LTYuOTQxLTkuNzE1IDEuOTM0IDEuMDEyIDMuODY5IDIuMDIgNS44MDUgMy4wMzEgMi41MjMgMS4xNzYgNC41NDEgMS43NjYgNi4wNTcgMS43NjYgMS4xNzggMCAyLjMzNC0xLjAzMSAzLjQ2OS0zLjA5MiAxLjEzNS0yLjA2MSAyLjYyOS0zLjA5MiA0LjQ3OS0zLjA5Mi4yNTQgMCAxLjkzNi41MDQgNS4wNDcgMS41MTYgMS41OTYtMi40MzkgMi4zOTgtNC4yNDggMi4zOTgtNS40MjYgMC0xLjAxLS42MTEtMi4xNjYtMS44My0zLjQ3MS0xLjIyMS0xLjMwMy0yLjMzNC0xLjk1NS0zLjM0NC0xLjk1NS0uNDIyIDAtMS4wNzIuMTI1LTEuOTU3LjM3OS0uODgxLjI1Mi0xLjUzMy4zNzktMS45NTMuMzc5LTEuNTE2IDAtMi4yNzMtMS44OTMtMi4yNzMtNS42NzggMC0xLjAxLjk2OS02Ljc3IDIuOTA0LTE3LjI4NS0uMDg2IDEuMjYuNDYxIDMuNjE3IDEuNjM5IDcuMDY0IDEuNDMgNC4yMDcgMy4xMTEgNi4zMDkgNS4wNDkgNi4zMDkuMzM0IDAgMS4wMDgtLjI1MiAyLjAxOC0uNzU4IDEuMDA4LS41MDQgMS44MDctLjc1NCAyLjM5Ni0uNzU0IDEuOTM0IDAgMy41MzEgMS4wOTQgNC43OTUgMy4yNzdsMS44OTMgMy40MDZjMS43NjYgMCAzLjIzOC0uNjI5IDQuNDE0LTEuODkxIDEuMTc4LTEuMjYyIDEuNzY4LTIuNzc3IDEuNzY4LTQuNTQzIDAtMS44NS0uNzc3LTMuMjYtMi4zMzQtNC4yMjctMS41NTktLjk2Ny0yLjMzNi0xLjcwMy0yLjMzNi0yLjIwNyAwLTEuNzY4IDIuNzc3LTQuNzUyIDguMzI4LTguOTU4IDQuNDU3LTMuMzYzIDcuMzU5LTUuMzQgOC43MDctNS45My0zLjYxNyA0Ljg3OS01LjQyNiA4LjQ1MS01LjQyNiAxMC43MjQgMCAxLjE3OC43MTMgMi40NDEgMi4xNDUgMy43ODUgMS43NjYgMS41OTggMi43NzUgMi43MzQgMy4wMjcgMy40MDYuODQgMS45MzguNzU2IDQuNTg2LS4yNTIgNy45NDkgMi4yNzEgMS42IDMuOTk0IDIuMzk2IDUuMTc0IDIuMzk2IDIuNDM2IDAgMy42NTgtMS4yNjQgMy42NTgtMy43ODUgMC0uMjUyLS4xMDUtMS4wNTEtLjMxNC0yLjM5Ni0uMjEzLTEuMzQ0LS4yNzMtMi4xMDItLjE5MS0yLjI3MS4zMzYtMS4xNzggMi42NS0xLjc2OCA2LjkzOS0xLjc2OCAyLjY5MSAwIDguMjgzLjc1OCAxNi43ODEgMi4yNzMtMS44NTIuNTA0LTQuNjI3IDEuMjYtOC4zMjYgMi4yNy0zLjM2NSAxLjAxLTUuMDQ5IDIuMTQ1LTUuMDQ5IDMuNDA2IDAgLjU5LjIwOSAxLjU5OC42MzEgMy4wMjcuNDIgMS40MzIuNjMzIDIuNDguNjMzIDMuMTU2IDAgMS4xNzYtLjc1OCAyLjI3LTIuMjcxIDMuMjc3bC00LjI5MSAzLjAzMWMxLjAxIDEuODUyIDEuNjgyIDIuOTQ1IDIuMDIgMy4yNzkuODQgMS4wMDggMS45NzUgMS41MTQgMy40MDYgMS41MTQgMS4wMSAwIDEuOTM0LS44ODMgMi43NzUtMi42NDguODQtMS43NjggMi4xODgtMi42NSA0LjAzNy0yLjY1IDIuMjcgMCA0LjgzOCAyLjEwNCA3LjY5NyA2LjMxMSAxLjU5MyAyLjM2IDQuMDc1IDUuOTMzIDcuNDQgMTAuNzI3em0tMjguMDA3LTcuMzE2YzAtNS4zODEtMS45NzktMTAuMDUxLTUuOTMyLTE0LjAwNi0zLjk1My0zLjk1My04LjYyMS01LjkzLTE0LjAwNC01LjkzLTUuNDY5IDAtMTAuMTggMS45NTctMTQuMTMxIDUuODY5LTMuOTUzIDMuOTEtNS45NzMgOC42LTYuMDU1IDE0LjA2Ni0uMDg2IDUuMzgzIDEuOTEyIDEwLjAzIDUuOTkyIDEzLjkzOCA0LjA4IDMuOTEyIDguODExIDUuODY5IDE0LjE5MyA1Ljg2OSA1LjcxOSAwIDEwLjQ5Mi0xLjg3MyAxNC4zMTgtNS42MTUgMy44My0zLjc0IDUuNzAxLTguNDcgNS42MTktMTQuMTkxem0tMS44OTMgMGMwIDUuMTMxLTEuNzI1IDkuMzgxLTUuMTc0IDEyLjc0LTMuNDUxIDMuMzY3LTcuNzQgNS4wNDktMTIuODY5IDUuMDQ5LTQuOTYzIDAtOS4yMTEtMS43MjMtMTIuNzQyLTUuMTc0LTMuNTMxLTMuNDQ1LTUuMjk5LTcuNjUyLTUuMjk5LTEyLjYxNSAwLTQuODc3IDEuNzg1LTkuMDY0IDUuMzU5LTEyLjU1MyAzLjU3OC0zLjQ5IDcuODAzLTUuMjM4IDEyLjY4Mi01LjIzOCA0Ljg3NyAwIDkuMTA0IDEuNzY2IDEyLjY4IDUuMzAxIDMuNTc0IDMuNTMzIDUuMzYzIDcuNjk1IDUuMzYzIDEyLjQ5eicgZmlsbD0nIzBEMEYwRicvPjwvZz48L3N2Zz4K"><img class="ms-svg" alt="{U}" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyB2aWV3Qm94PScwIDAgMTAwIDEwMCc+PGcgZmlsbD0nbm9uZSc+PGNpcmNsZSBmaWxsPScjQzFEN0U5JyBjeD0nNTAnIGN5PSc1MCcgcj0nNTAnLz48cGF0aCBkPSdNNjcuNDg4IDgzLjcxOWMtNC43ODcgNC44NzEtMTAuNjg0IDcuMzA3LTE3LjY4OCA3LjMwNy03Ljg2MSAwLTE0LjA5OC0yLjY5LTE4LjcxMS04LjA3My00LjM1OS01LjEyNy02LjUzNy0xMS42NjItNi41MzctMTkuNjA2IDAtOC41NDMgMy43MTctMTguMjg2IDExLjE1LTI5LjIyNCA2LjA2NC04Ljk2OSAxMy4xOTktMTYuODMgMjEuNDAyLTIzLjU4LTEuMTk3IDUuNDY5LTEuNzkzIDkuMzU1LTEuNzkzIDExLjY2MiAwIDUuMjk5IDEuNjY0IDEwLjQ2NyA0Ljk5NiAxNS41MDggNC4xMDIgNS45OCA3LjIxOSAxMC40MjYgOS4zNTcgMTMuMzI4IDMuMzMyIDUuMDQzIDQuOTk4IDkuOTU1IDQuOTk4IDE0LjczNy4wMDIgNy4wOTMtMi4zOTEgMTMuMDc0LTcuMTc0IDE3Ljk0MXptLS4xMjktMjcuMzYyYy0xLjI4MS0yLjg2MS0yLjc3Ny00Ljc2Mi00LjQ4Ni01LjcwMy4yNTYuNTE0LjM4NSAxLjI0LjM4NSAyLjE4IDAgMS43OTUtLjUxMiA0LjM1Ny0xLjUzOSA3LjY4OWwtMS42NjQgNS4xMjdjMCAyLjk5IDEuNDkyIDQuNDg2IDQuNDg0IDQuNDg2IDMuMTYgMCA0Ljc0Mi0yLjA5NSA0Ljc0Mi02LjI4MSAwLTIuMTM0LS42NC00LjYzMi0xLjkyMi03LjQ5OHonIGZpbGw9JyMwRDBGMEYnLz48L2c+PC9zdmc+Cg=="><img class="ms-svg" alt="{B}" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCI+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj48Y2lyY2xlIGZpbGw9IiNDQUM1QzAiIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIvPjxwYXRoIGQ9Ik05MC42OTUgNDguMTRjMCA1LjQ2My0yLjAwOCA5LjE4OS02LjAyIDExLjE3NS0xLjE3Mi41OC00Ljg1IDEuMzY1LTExLjAzNyAyLjM2LTQuMDEyLjY2My02LjAxOCAyLjE5NC02LjAxOCA0LjU5MnYxMC4wNThjMCAuNDE4LjEyNSAxLjY5OC4zNzUgMy44NWwuMzc3IDMuOTc1YzAgMS4yNDItLjI5MyAzLjI3My0uODc5IDYuMDg1LTEuNTg4LjMzLTMuNDI4LjcwMi01LjUxOCAxLjEyLS42Ny0yLjQ4Ni0xLjAwNC00LjE4Mi0xLjAwNC01LjA5NSAwLS40MTEuMTA1LTEuMDM0LjMxMy0xLjg2My4yMDctLjgyNi4zMTYtMS40NDcuMzE2LTEuODY0IDAtLjU3NS0uNTItMi4xOTEtMS41NTktNC44MzloLTEuOTQ1Yy0uMjU4LjQxNC0uMzQ0Ljk1Mi0uMjYgMS42MTMuMzM0IDEuNDA4LjQ1OSAyLjYwNy4zNzcgMy42YTI4Mi42NTUgMjgyLjY1NSAwIDAgMS01Ljg5NSAzLjk3NGMtLjU4Ni0uMTY0LS43OTMtLjI0Ny0uNjI5LS4yNDd2LTguODE2Yy0uMTY0LS40MTItLjU4NC0uNTc1LTEuMjU0LS40OTdoLTEuNTA0bC0xLjUwNCAxMS42N2MtMS4xNzQuMDgzLTIuNTkyLjA4My00LjI2NCAwLS41ODgtMi43My0xLjYzMS02Ljc4NS0zLjEzNS0xMi4xNjdoLTEuMDA0Yy0uOTIyIDIuOS0xLjQyMiA0LjQ3NC0xLjUwNiA0LjcyMiAwIC4zMy4xMDQuOTcuMzE0IDEuOTIyLjIwNy45NTMuMzEzIDEuNTkzLjMxMyAxLjkyNCAwIC4yNDgtLjA4NC44NjgtLjI1IDEuODYybC0uMzc3IDIuOThhLjg2Mi44NjIgMCAwIDEtLjYyNy4yNDhjLTIuNTA4IDAtNC4xODItLjYyLTUuMDE2LTEuODYtLjgzNi0xLjI0NC0xLjE3Mi0yLjk4Mi0xLjAwNC01LjIxOWwxLjAwNC0xNC44OThjMC0uMjUuMDgyLS41OC4yNS0uOTk0LjE2NC0uNDE0LjI1LS43MDQuMjUtLjg2OCAwLS42NjQtLjcxMS0xLjk4OS0yLjEzMS0zLjk3NS0uMjQ4LS4wOC0xLjU0OS0uMzczLTMuODg3LS44Ny0xLjQyNC0uMzMtNC4yMjUtLjkwOS04LjQwMi0xLjczOS01Ljc3MS0xLjA3My04LjY1NC01LjY2OC04LjY1NC0xMy43ODIgMC0xMi4wODYgNS4wMTgtMjIuMTQzIDE1LjA1MS0zMC4xNzMuNDE0IDIuMjM2IDEuMTI3IDUuMjE0IDIuMTI5IDguOTQuNzU0LjE2OCAyLjM4NS41NCA0Ljg5MSAxLjExNy41MDQuMTY3IDMuMDUzIDEuMDc4IDcuNjUyIDIuNzMzLTIuMzQ0LTEuNDA4LTUuMzkzLTMuNjgyLTkuMTU2LTYuODMtMS40MjItMS42NTUtMi4xMzMtNC40MjYtMi4xMzMtOC4zMTYgMC0uOTExIDEuNTktMS45ODkgNC43NjgtMy4yMzIgMi44NC0xLjE1OSA0Ljk3NS0xLjgxOCA2LjM5Ni0xLjk4NiA0LjUxNC0uNTc3IDcuOTg0LS44NyAxMC40MS0uODcgMTAuNDQ5IDAgMTguODkxIDIuNjUgMjUuMzI4IDcuOTQ5LTIuMDg4IDIuNDAyLTUuNjg0IDQuOTY0LTEwLjc4MyA3LjY5NiAyLjAwOC4wODMgNC45MzQtLjcgOC43NzktMi4zNiAzLjg0NC0xLjY1MyA1LjQ3NS0yLjQ4MyA0Ljg5MS0yLjQ4My42NjggMCAyLjAwOCAxLjMyNyA0LjAxNCAzLjk3NSAxLjUwNCAxLjk4NiAyLjcxNSAzLjc2OSAzLjYzNyA1LjMzNyAyLjY3NCA0LjcyMSA0LjQ3MSA5LjgxIDUuMzkzIDE1LjI3NCAwIDEuOTA2LjA0MSAzLjI3Mi4xMjUgNC4wOTh2Ljk5NGguMDAyWm0tNDguMDMxIDIuMjM1YzAtMy41NTgtMS41NjgtNi45MzItNC43MDMtMTAuMTIyLTMuMTM3LTMuMTg3LTYuNTAyLTQuNzc4LTEwLjA5Ni00Ljc3OC0zLjE3OCAwLTUuOTc3IDEuMzM1LTguNDAyIDQtMi40MjYgMi42NjYtMy42MzcgNS42MjUtMy42MzcgOC44NzQgMCAyLjgzIDEuMzc5IDQuNjY2IDQuMTM5IDUuNDk4IDEuNzU2LjUgNC4yMTkuNzkzIDcuMzk4Ljg3NGg2Ljg5OGM1LjU5OC4wODMgOC40MDMtMS4zNjYgOC40MDMtNC4zNDZabTEzLjY2OCAxNS40di0zLjg1MWExMjAuOTUzIDEyMC45NTMgMCAwIDEtMS43NTQtMy4zNTRjLS41MDItMS42NTctMS40MjItMy45NzQtMi43Ni02Ljk1NWwtMS4zODEgMTQuNTI5YzAgMS4xNi0uMjUgMS43MzgtLjc1MiAxLjczOC0uMzM0IDAtLjU4NC0uMDgxLS43NTItLjI0NS0uNTg2LTguNzc2LS44NzktMTIuNTg0LS44NzktMTEuNDI3di00LjM0NGMtLjE2OC0uMjUxLS4zNzUtLjM3NS0uNjI1LS4zNzUtMi44NDQgMi45MDEtNC4yNjQgNy41NzYtNC4yNjQgMTQuMDMyIDAgMy41Ni4zMyA1Ljc1MyAxLjAwMiA2LjU4Mi42Ny0uMTY0IDEuNDIyLS40NTUgMi4yNTgtLjg2OC4zMzQtLjE2NyAxLjI5NS0uMjUgMi44ODctLjI1IDEuNTg0IDAgMy41MS40OTcgNS43NjYgMS40OS44MzYgMCAxLjI1NC0yLjIzNCAxLjI1NC02LjcwM1ptMjguMzQ0LTE3LjMwM2MwLTMuMzMzLTEuMjU0LTYuMzEyLTMuNzYyLTguOTM1LTIuNTEtMi42MjItNS4zOTUtMy45MzYtOC42NTItMy45MzYtMy41MTIgMC02Ljc5NSAxLjU5MS05Ljg0NiA0Ljc3OC0zLjA1MyAzLjE4Ny00LjU3OCA2LjUxOS00LjU3OCA5Ljk5NiAwIDIuOSAxLjQyIDQuMzQ2IDQuMjY0IDQuMzQ2aDE0LjQyMmM1LjQzMy0uMDgxIDguMTUyLTIuMTY1IDguMTUyLTYuMjQ5WiIgZmlsbD0iIzBEMEYwRiIvPjwvZz48L3N2Zz4K"><img class="ms-svg" alt="{R}" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyB2aWV3Qm94PScwIDAgMTAwIDEwMCc+PGcgZmlsbD0nbm9uZSc+PGNpcmNsZSBmaWxsPScjRTQ5OTc3JyBjeD0nNTAnIGN5PSc1MCcgcj0nNTAnLz48cGF0aCBkPSdNOTEuOTY1IDY2LjYxN2MtMy43MzYgOC45MTItMTEuMTYgMTMuMzY3LTIyLjI3NSAxMy4zNjctMi4wMzcgMC00LjI0Ni4yNTQtNi42MjEuNzYyLTMuNTY0Ljc2NC01LjM0NiAxLjgyOC01LjM0NiAzLjE4NiAwIC40MjQuMjk1LjkxLjg5MSAxLjQ2My41OTIuNTUzIDEuMTA0LjgyNiAxLjUyNy44MjYtMi4xMjMgMC0uNjguMDY0IDQuMzI2LjE5MSA1LjAwOC4xMjcgOC4xNDguMTkxIDkuNDIyLjE5MS03LjM4MyA0LjMyNi0xOS43MzIgNi4zMTktMzcuMDQzIDUuOTgxLTUuNjg4LS4wODQtMTAuNTY2LTIuNTg4LTE0LjYzOS03LjUxLTMuOTkyLTQuNjY5LTUuOTg0LTkuODg4LTUuOTg0LTE1LjY1OCAwLTYuMTA4IDIuMDU3LTExLjMwOCA2LjE3Ni0xNS41OTUgNC4xMTMtNC4yODIgOS4yMjktNi40MjcgMTUuMzM4LTYuNDI3IDEuMzU3IDAgMy4xNi4yOTcgNS40MS44OTEgMi4yNDguNTk0IDMuNzU2Ljg5MSA0LjUxOC44OTEgMy4xMzkgMCA3LjA0NS0xLjI5MyAxMS43MTMtMy44ODMgNC42NjYtMi41ODggNi44NzUtMy44ODMgNi42MjEtMy44ODMtLjg1IDguOTEyLTMuODIgMTQuODk2LTguOTE0IDE3Ljk0OC0zLjY0OCAyLjEyMy01LjQ3MyA0LjIwMS01LjQ3MyA2LjIzNiAwIDEuMjczLjc2NCAyLjI5MyAyLjI5MSAzLjA1NyAxLjE4OC41OTUgMi41MDIuODkyIDMuOTQ1Ljg5MiAyLjIwNyAwIDQuMzcxLTEuMzU2IDYuNDk0LTQuMDcxIDIuMTE5LTIuNzE4IDMuMDU1LTUuMTc3IDIuODAxLTcuMzg2LS4yNTQtMi41NDUtLjA4NC01LjYwMy41MS05LjE2NC4xNjgtMS4wMi43ODMtMi4yNyAxLjg0NC0zLjc1NCAxLjA2MS0xLjQ4NiAyLjAxNi0yLjM5OCAyLjg2NS0yLjczOCAwIC43NjItLjI3NSAyLjAzNy0uODI4IDMuODE4LS41NTMgMS43ODEtLjgyNiAzLjEtLjgyNiAzLjk0NyAwIDEuODY3LjUwOCAzLjMwOSAxLjUyNyA0LjMyNiAxLjUyNS0uNTkyIDIuODgzLTIuNTAyIDQuMDc0LTUuNzI5IDEuMDE2LTIuNDU5IDEuNjA5LTQuODM2IDEuNzgxLTcuMTI3LTMuNTY2LS4xNy02Ljk4Mi0xLjc4MS0xMC4yNDgtNC44MzgtMy4yNjgtMy4wNTctNC45LTYuMzY1LTQuOS05LjkyOCAwLS41OTQuMDgyLTEuMTg4LjI1Ni0xLjc4My41MDguNzY0IDEuMjcxIDEuOTUzIDIuMjg5IDMuNTY0IDEuNDQzIDIuMTIxIDIuNTQ3IDMuMTgyIDMuMzEzIDMuMTgyIDEuMDE2IDAgMS41MjUtMS4wNjEgMS41MjUtMy4xODIgMC0yLjcxNS0uNzIzLTUuMTc2LTIuMTY0LTcuMzgzLTEuNjEzLTIuNjMxLTMuNjkzLTMuOTQ3LTYuMjM4LTMuOTQ3LTEuMTg5IDAtMi45NzEuNjM3LTUuMzQ0IDEuOTEtMi4zNzkgMS4yNzEtNC41NDMgMS45MS02LjQ5MiAxLjkxLS41OTYgMC0zLjIyOS0uNzY2LTcuODk1LTIuMjkzIDguMjMtMS4zNTUgMTIuMzQ4LTIuNTg2IDEyLjM0OC0zLjY5MSAwLTIuODg1LTUuNjQ1LTQuODM4LTE2LjkzLTUuODU1LTEuMTA1LS4wODQtMy4xNDEtLjI1NC02LjExMS0uNTEuMzM4LS40MjQgMi43NTgtLjg5MSA3LjI1OC0xLjQgMy44MTgtLjQyMiA2LjQ5Mi0uNjM3IDguMDE4LS42MzcgMjAuMTk3IDAgMzMuMDEyIDkuODA1IDM4LjQ0MyAyOS40MDguOTM0LS43NzMgMS40MDItMi4wNjYgMS40MDItMy44NzEgMC0yLjMyNC0uNjgtNS4yNS0yLjAzNy04Ljc3Ny0uNTEyLTEuMzc1LTEuMzE4LTMuNDQxLTIuNDItNi4xOTMgNi45NTcgOC44NjcgMTAuNDM5IDE3LjI3IDEwLjQzOSAyNS4xOTkgMCA0LjE3OC0uOTc5IDcuOTczLTIuOTMgMTEuMzgxLTEuMjcgMi4zMDMtMy42NSA1LjI0NC03LjEyNyA4LjgyNi0zLjQ4IDMuNTgtNS44NTcgNi4zNTItNy4xMzEgOC4zMTMgNC42NjgtMS4yNzEgNy43MjUtMi4yNDggOS4xNjgtMi45MjggMy4yMjMtMS40NCA2LjE1LTMuNjA2IDguNzgzLTYuNDkyIDAgMS4xMDYtLjQ2NyAyLjc2Mi0xLjQgNC45Njd6bS01NS41MDItNTAuMDI1YzAgMS41MjUtLjg1IDIuNTAyLTIuNTQ1IDIuOTI2bC0zLjMxMS41MWMtMS4xODkuNTk0LTIuOTI4IDIuOTI4LTUuMjE5IDctLjI1Ni0xLjI3MS0uNjM3LTMuMDUzLTEuMTQ2LTUuMzQ2LS43NjQuMDg2LTIuMDM1Ljc2NC0zLjgxOCAyLjAzNy0uNzY0LjU5NC0xLjk5NiAxLjQ4NC0zLjY5MyAyLjY3Mi41MTItMy4wNTUgMi4yMDctNi4xNDggNS4wOTQtOS4yOTMgMy4wNTUtMy40NzcgNi4wMjUtNS4yMTcgOC45MS01LjIxNyAzLjgxOCAwIDUuNzI4IDEuNTcyIDUuNzI4IDQuNzExem0yMi4xNSAxMS43MDljMCAxLjQ0My0uNzg1IDIuNjU0LTIuMzU1IDMuNjI5LTEuNTcuOTc3LTMuMTE5IDEuNDY1LTQuNjQ2IDEuNDY1LTIuMDM3IDAtMy44NjMtMS4xNDYtNS40NzMtMy40MzgtMS45NTUtMi44MDEtMy45NDctNC42MjUtNS45ODQtNS40NzcuNDI0LS40MjIuOTM0LS42MzUgMS41MjktLjYzNS43NjQgMCAyLjA1NS41OTQgMy44ODEgMS43ODEgMS44MjQgMS4xODkgMi45OSAxLjc4MyAzLjUwMiAxLjc4My40MjQgMCAxLjEyMy0uNTk0IDIuMS0xLjc4My45NzUtMS4xODggMi4wNTctMS43ODEgMy4yNDYtMS43ODEgMi44LjAwMSA0LjIgMS40ODcgNC4yIDQuNDU2eicgZmlsbD0nIzBEMEYwRicvPjwvZz48L3N2Zz4K"><img class="ms-svg" alt="{G}" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyB2aWV3Qm94PScwIDAgMTAwIDEwMCc+PGcgZmlsbD0nbm9uZSc+PHBhdGggZD0nTTEwMCA0OS45OThjMCAyNy42MTUtMjIuMzg1IDUwLjAwMi01MC4wMDIgNTAuMDAyLTI3LjYxMyAwLTQ5Ljk5OC0yMi4zODctNDkuOTk4LTUwLjAwMiAwLTI3LjYxMyAyMi4zODUtNDkuOTk4IDQ5Ljk5OC00OS45OTggMjcuNjE3IDAgNTAuMDAyIDIyLjM4NSA1MC4wMDIgNDkuOTk4eicgaWQ9J1NoYXBlJyBmaWxsPScjQTNDMDk1Jy8+PHBhdGggZD0nTTkzLjc2MiA1Ni4yMjVjMCAxLjY2OC0uNjQ1IDMuMTY0LTEuOTM2IDQuNDk4LTEuMjg5IDEuMzMyLTIuNzcgMS45OTgtNC40MzYgMS45OTgtMi42NjIgMC00LjYyMy0xLjI1LTUuODY5LTMuNzQ4bC01Ljg3MS0uMjVjLTEuMjUyIDAtMy43MDkuNTQzLTcuMzcxIDEuNjI1LTMuOTE0IDEuMDgyLTYuMTY0IDEuOTU3LTYuNzQ2IDIuNjIzLS45MTYuOTk4LTEuNjY0IDMuMzMyLTIuMjQ4IDYuOTk2LS41MDIgMi45OTgtLjc0OCA1LjIwNS0uNzQ4IDYuNjIxIDAgMi4yNDYuMzUyIDMuODkzIDEuMDYxIDQuOTM0LjcwOSAxLjA0MSAyLjE2NiAxLjkxNiA0LjM3MSAyLjYyMyAyLjIwNS43MDcgMy41NjEgMS4xMDQgNC4wNjEgMS4xODcuMzMyIDAgLjg3My0uMDQxIDEuNjI1LS4xMjVoMS40OThjMS4wOCAwIDIuMjA1LjE3IDMuMzczLjUgMS42NjYuNSAyLjM3NSAxLjE2NiAyLjEyNSAyLTEuMTY4LS4xNjYtMy4yMDcuMDg0LTYuMTIxLjc1bDMuNDk2IDEuNzQ4YzAgMS0xLjQxNiAxLjQ5OC00LjI0NiAxLjQ5OC0uNzUyIDAtMS43NzEtLjE2Ni0zLjA2My0uNDk4LTEuMjkxLS4zMzYtMi4xNDUtLjUtMi41NTktLjVoLTEuNjI1Yy0uMDgyLjgzMi0uMzM0IDIuMDgtLjc1IDMuNzQ2LTEuNDE4LS4wODQtMy4wOC0uOTE4LTQuOTk2LTIuNDk4LTEuOTE4LTEuNTgtMy4xMjMtMi4zNzMtMy42MjEtMi4zNzMtLjUwMiAwLTEuMjExLjc5My0yLjEyNSAyLjM3My0uOTE4IDEuNTgtMS4zNzUgMi42NjQtMS4zNzUgMy4yNDgtMS4wODItLjU4NC0xLjk5Ni0xLjY2OC0yLjc1LTMuMjQ4LS4zMzItMS4wODQtLjcwNy0yLjE2Ni0xLjEyMS0zLjI0OC0uODMyLjA4NC0yLjM3NSAxLjgzNC00LjYyMSA1LjI0OGgtLjYyN2MtLjE2Ni0uMjUyLS43OTUtMi0xLjg3My01LjI0OC0yLjU4Mi0uODMyLTQuOTk2LTEuMjQ4LTcuMjQ2LTEuMjQ4LTEuMDgyIDAtMi43NDguMjUtNC45OTYuNzQ4bC0zLjQ5Ni0uMjQ4Yy40OTgtLjUgMS45NTUtMS40NTcgNC4zNzEtMi44NzMgMi44My0xLjY2NiA0Ljk5Ni0yLjUgNi40OTYtMi41LjI0NiAwIC41NzguMDQzIDEgLjEyNS40MTQuMDg2Ljc1LjEyNSAxIC4xMjUuNTc4IDAgMS41MTgtLjMxMiAyLjgwOS0uOTM4IDEuMjkxLS42MjMgMi4wMzktMS4xODYgMi4yNDYtMS42ODQuMjExLS41MDQuMzE2LTEuNzkzLjMxNi0zLjg3NSAwLTQuNzQ2LTEuMjUtOC4yODUtMy43NS0xMC42MTctMi4xNjgtMi4wODItNS43NDYtMy41OC0xMC43NDQtNC40OTgtMS4zMzIgNC43NDYtNS4wOCA3LjEyMy0xMS4yNCA3LjEyMy0yIDAtMy45OTgtMS4yMDctNS45OTYtMy42MjMtMS45OTYtMi40MTYtMi45OTYtNC42MjMtMi45OTYtNi42MjEgMC0zLjA4MiAxLjI4Ny01LjYyMSAzLjg2OS03LjYyMy0yLjA4LTIuMTYyLTMuMTIxLTQuMzY5LTMuMTIxLTYuNjE3IDAtMi4wODQuNjQzLTMuOTE0IDEuOTM2LTUuNSAxLjI5MS0xLjU3OCAyLjk3Ny0yLjQ5NiA1LjA1OS0yLjc0OC0uMTY2LTIuNjYyLjcwNy00LjQ5NiAyLjYyMy01LjQ5Ni0uOTE2LS45MTQtMS4zNzMtMi41MzctMS4zNzMtNC44NjkgMC0yLjc0OC45MTYtNS4wMzkgMi43NDgtNi44NzEgMS44My0xLjgzMiA0LjEyMS0yLjc1IDYuODY5LTIuNzUgMyAwIDUuNDU3IDEuMDQ1IDcuMzcxIDMuMTI1IDIuNDE2LTguMjQ0IDcuNjIxLTEyLjM2NyAxNS42MTMtMTIuMzY3IDQuMTY0IDAgNy44MjggMS42NjYgMTAuOTk0IDQuOTk4IDEuMTY2IDEuMjQ4IDEuNzQ4IDEuOTE2IDEuNzQ4IDEuOTk2LTEgMC0uNDk4LS4xODggMS41LS41NjEgMS45OTYtLjM3NSAzLjQ1My0uNTYzIDQuMzczLS41NjMgMy4yNDYgMCA2LjExOSAxLjIwNyA4LjYxOSAzLjYyMyAyLjE2NCAyLjE2NiAzLjY2NCA0LjkxMiA0LjQ5OCA4LjI0NC41OC4wODQgMS40OTguMzMyIDIuNzQ4Ljc0OCAxLjgzLjkyIDIuNzQ4IDIuNDk4IDIuNzQ4IDQuNzQ4IDAgLjQxOC0uMzM2IDEuMjA5LTEgMi4zNzMgNS4zMjggMi45OTggNy45OTQgNy4xNjIgNy45OTQgMTIuNDkyIDAgMS40OTgtLjU4MiAzLjU4NC0xLjc0OCA2LjI0NyAyLjE2NiAxLjI0NyAzLjI0NiAzLjA4MSAzLjI0NiA1LjQ5NXptLTUxLjQ2NyA1LjQ5NnYtMS42MjNjMC0xLjkxNC0uOTM2LTMuNjY0LTIuODA5LTUuMjQ2LTEuODc1LTEuNTgyLTMuNzctMi4zNzMtNS42ODQtMi4zNzMtMi4zMzQgMC00LjQ5Ni41NDEtNi40OTYgMS42MjEgNC40MTMtLjI0OCA5LjQxMSAyLjI5MyAxNC45ODkgNy42MjF6bS0yLjI0Ni0xNS40ODljLTEuMjUtMS40MTgtMi4zMzItMi44NzUtMy4yNS00LjM3My0zLjQ5OC45MTYtNS4yNDYgMS45NTctNS4yNDYgMy4xMjEgMS0uMDggMi40NTcuMTA1IDQuMzcxLjU2NCAxLjkxNC40NTkgMy4yOTEuNjg4IDQuMTI1LjY4OHptNy42MjEtMy44NzN2LTUuNDk2Yy0yLS4zMzItMy4yMTEtLjUtMy42MjMtLjV2MS44NzNsMy42MjMgNC4xMjN6bTE2LjIzOC0zLjQ5OGMtMS0uNDE2LTIuODc1LTEuMjUtNS42MjEtMi40OTh2MTAuNzQyYzMuOTEyLTIuMjUgNS43ODUtNC45OTggNS42MjEtOC4yNDR6bTYuODY3IDE0Ljc0MWwtMi43NDYtMy4zNzNjLTEuNjY0IDEuMTY3LTMuMzUyIDIuMzU0LTUuMDYxIDMuNTYxLTEuNzA5IDEuMjA3LTMuMTg2IDIuNTYzLTQuNDMyIDQuMDYgMy43NDctMi4wMDIgNy44MjktMy40MTQgMTIuMjM5LTQuMjQ4eicgZmlsbD0nIzBEMEYwRicvPjwvZz48L3N2Zz4K"></span>
           <span class="mana-coded"><span class="m-w">{W}</span><span class="m-u">{U}</span><span class="m-b">{B}</span><span class="m-r">{R}</span><span class="m-g">{G}</span></span>
         </div>
       </div>
@@ -400,6 +427,10 @@ body.mana-mode-coded .mana-coded   { display: inline-flex; }
 
 <!-- QR generator: tiny, reliable, renders crisp SVG -->
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<!-- JSZip: bundle front + back into one downloadable zip -->
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<!-- html2canvas: rasterize each card to a high-res PNG -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
 /* ---- QR rendering ----
    Build the SVG ourselves (dark modules only, transparent background) so the
@@ -452,9 +483,19 @@ function render() {
   const flavorIdx = +document.getElementById("flavor").value;
   paintCard(document.getElementById("cardFront"), data, flavorIdx);
   document.body.classList.toggle("mana-mode-coded", document.getElementById("mana").value === "coded");
+  document.body.classList.toggle("show-bleed", document.getElementById("bleed").value === "on");
 }
 
-["qrTarget", "flavor", "mana"].forEach(id =>
+/* wrap each card so the on-screen bleed preview can show around it */
+for (const id of ["cardFront", "cardBack"]) {
+  const card = document.getElementById(id);
+  const frame = document.createElement("div");
+  frame.className = "bleed-frame";
+  card.parentNode.insertBefore(frame, card);
+  frame.appendChild(card);
+}
+
+["qrTarget", "flavor", "mana", "bleed"].forEach(id =>
   document.getElementById(id).addEventListener("change", render));
 
 /* ---- theme selector: applies a .theme-* class from shared/themes.css.
@@ -498,6 +539,127 @@ function applyTheme() {
 }
 themeSel.addEventListener("change", () => { applyTheme(); render(); });
 applyTheme();
+
+/* ====================================================== */
+/*  EXPORT — PNG or SVG, optional MPC bleed, single or all themes          */
+/* ====================================================== */
+const EXPORT_SCALE = 5;               // ~480 DPI on the 2.48in card (MPC wants 300)
+/* MPC poker template: cut 2.48x3.46in (63x88mm), full bleed 2.72x3.7in. */
+const SIZE = {
+  off: { inW: "2.48in", inH: "3.46in" },   // trim / cut line
+  on:  { inW: "2.72in", inH: "3.7in"  },   // full bleed
+};
+
+/* render a card to a canvas; with bleed, center it on a full-bleed black
+   field (matches the card's black border, so it bleeds seamlessly). */
+function renderCardCanvas(cardEl) {
+  const opts = { scale: EXPORT_SCALE, useCORS: true, logging: false };
+  const bleed = document.getElementById("bleed").value === "on";
+  const wrap = document.createElement("div");
+  let css = "position:fixed;left:-99999px;top:0;display:flex;align-items:center;justify-content:center;";
+  if (bleed) {
+    // bleed field = theme color + grid, aligned to the card's 7px grid so the
+    // cut card has a theme-colored edge with no black border
+    css +=
+      "width:2.72in;height:3.7in;background-color:var(--bg);" +
+      "background-image:linear-gradient(rgba(235,219,178,.022) 1px,transparent 1px)," +
+      "linear-gradient(90deg,rgba(235,219,178,.022) 1px,transparent 1px);" +
+      "background-size:7px 7px;background-position:4.5px 4.5px;";
+  }
+  wrap.style.cssText = css;
+  // export a clone: no drop shadow, square corners (MPC rounds the physical card)
+  const clone = cardEl.cloneNode(true);
+  clone.style.boxShadow = "none";
+  clone.style.borderRadius = "0";
+  wrap.appendChild(clone);
+  document.body.appendChild(wrap);
+  return html2canvas(wrap, { ...opts, backgroundColor: null })
+    .then(c => { wrap.remove(); return c; });
+}
+
+/* -> { ext, data } in the chosen format */
+async function cardToFile(cardEl) {
+  const canvas = await renderCardCanvas(cardEl);
+  if (document.getElementById("format").value === "png") {
+    return { ext: "png", data: await new Promise(r => canvas.toBlob(r, "image/png")) };
+  }
+  const s = SIZE[document.getElementById("bleed").value === "on" ? "on" : "off"];
+  const w = canvas.width, h = canvas.height;   // real raster dims → exact aspect
+  const png = canvas.toDataURL("image/png");
+  const svg = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ` +
+    `width="${s.inW}" height="${s.inH}" viewBox="0 0 ${w} ${h}">` +
+      `<image x="0" y="0" width="${w}" height="${h}" ` +
+      `preserveAspectRatio="none" xlink:href="${png}"/>` +
+    `</svg>`;
+  return { ext: "svg", data: svg };
+}
+
+async function saveZip(filename, entries) {
+  const zip = new JSZip();
+  for (const [name, data] of entries) zip.file(name, data);
+  const blob = await zip.generateAsync({ type: "blob" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+function libsReady() {
+  if (typeof JSZip === "undefined" || typeof html2canvas === "undefined") {
+    alert("Still loading the export libraries — try again in a second.");
+    return false;
+  }
+  return true;
+}
+const nextFrame = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+/* single theme */
+document.getElementById("download").addEventListener("click", async () => {
+  if (!libsReady()) return;
+  const btn = document.getElementById("download");
+  const label = btn.textContent;
+  btn.disabled = true; btn.textContent = "Rendering…";
+  try {
+    const theme = document.getElementById("theme").value;
+    const f = await cardToFile(document.getElementById("cardFront"));
+    const b = await cardToFile(document.getElementById("cardBack"));
+    await saveZip(`zwipe-card-${theme}.zip`, [
+      [`zwipe-card-front-${theme}.${f.ext}`, f.data],
+      [`zwipe-card-back-${theme}.${b.ext}`,  b.data],
+    ]);
+  } catch (e) { alert("Export failed: " + e.message); }
+  finally { btn.disabled = false; btn.textContent = label; }
+});
+
+/* every theme — one zip, a folder per theme */
+document.getElementById("downloadAll").addEventListener("click", async () => {
+  if (!libsReady()) return;
+  const btn = document.getElementById("downloadAll");
+  const label = btn.textContent;
+  btn.disabled = true;
+  const restore = document.getElementById("theme").value;
+  try {
+    const entries = [];
+    for (let i = 0; i < THEMES.length; i++) {
+      const theme = THEMES[i][0];
+      btn.textContent = `Rendering ${i + 1}/${THEMES.length}…`;
+      themeSel.value = theme; applyTheme(); render();
+      await nextFrame();
+      const f = await cardToFile(document.getElementById("cardFront"));
+      const b = await cardToFile(document.getElementById("cardBack"));
+      entries.push([`${theme}/front.${f.ext}`, f.data]);
+      entries.push([`${theme}/back.${b.ext}`,  b.data]);
+    }
+    await saveZip("zwipe-cards-all-themes.zip", entries);
+  } catch (e) { alert("Export failed: " + e.message); }
+  finally {
+    themeSel.value = restore; applyTheme(); render();
+    btn.disabled = false; btn.textContent = label;
+  }
+});
+
 // re-fit once the webfont has loaded (metrics change), and on resize/print
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(render);
 window.addEventListener("resize", render);
