@@ -3,6 +3,7 @@ use crate::{
     inbound::{
         components::{
             auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+            hint_dialog::{HintDialog, use_one_time_hint},
             interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
             telemetry::usage_buffer::UsageBuffer,
         },
@@ -30,6 +31,7 @@ use std::time::Duration;
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::deck::{Board, DeckEntry, format::Format};
+use zwipe_core::domain::user::models::hints::HINT_ADD_SWIPES;
 use zwipe_core::domain::{
     card::{
         Card,
@@ -61,6 +63,10 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut cards: Signal<Vec<Card>> = use_context();
     let mut last_search_filter: Signal<Option<CardFilterBuilder>> = use_context();
     let is_first_run = use_hook(|| std::cell::Cell::new(true));
+
+    // Swipe vocabulary hint: auto-opens on this user's first visit, the
+    // grayed "?" in the util bar reopens it on demand.
+    let mut swipe_hint_open = use_one_time_hint(HINT_ADD_SWIPES);
 
     // When Some, the SwipeStack plays a keyframe entering from this direction
     // on the next top card, and clears it on animationend. Set by undo.
@@ -1035,6 +1041,24 @@ pub fn Add(deck_id: Uuid) -> Element {
                     },
                     "Refresh"
                 }
+                button {
+                    class: "util-btn",
+                    style: "opacity: 0.55;",
+                    onclick: move |_| swipe_hint_open.set(true),
+                    "?"
+                }
+            }
+
+            HintDialog {
+                open: swipe_hint_open,
+                title: "Swipe to build",
+                lines: vec![
+                    "Swipe right to add a card to your deck.".to_string(),
+                    "Swipe left to skip it.".to_string(),
+                    "Swipe up to send it to your maybeboard.".to_string(),
+                    "Swipe down to undo your last swipe.".to_string(),
+                    "Cards are ordered by how well they fit your commander. Filter or sort anytime.".to_string(),
+                ],
             }
 
             CardFilterSheet {

@@ -12,6 +12,8 @@ pub mod alert_dialog;
 pub mod auth;
 /// Form field components (text input, password input, etc.).
 pub mod fields;
+/// One-time hint dialogs (per-account, tracked via `hints_shown`).
+pub mod hint_dialog;
 /// Interactive components (buttons, links, etc.).
 pub mod interactions;
 /// Usage telemetry buffer + flush loop.
