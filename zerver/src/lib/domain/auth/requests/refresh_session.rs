@@ -78,19 +78,19 @@ pub enum RefreshSessionError {
     /// - Invalid/corrupted token value
     /// - Token already used (rotation)
     /// - Token manually deleted from database
-    #[error("match for given refresh token not found—user attempting: {0}")]
+    #[error("match for given refresh token not found; user attempting: {0}")]
     NotFound(Uuid),
 
     /// The refresh token has passed its 14-day expiry time.
     ///
     /// User must re-authenticate with username/password to get a new session.
-    #[error("given refresh token is expired—user attempting: {0}")]
+    #[error("given refresh token is expired; user attempting: {0}")]
     Expired(Uuid),
 
     /// The refresh token was explicitly revoked (user logged out).
     ///
     /// User must re-authenticate to get a new session.
-    #[error("given refresh token has been revoked—user attempting: {0}")]
+    #[error("given refresh token has been revoked; user attempting: {0}")]
     Revoked(Uuid),
 
     /// The refresh token belongs to a different user.
@@ -98,7 +98,7 @@ pub enum RefreshSessionError {
     /// This is a security violation - someone is attempting to use another
     /// user's refresh token. This should be logged and potentially trigger
     /// security alerts.
-    #[error("refresh token does not belong to the requesting user—user attempting: {0}")]
+    #[error("refresh token does not belong to the requesting user; user attempting: {0}")]
     Forbidden(Uuid),
 
     /// User not found or database error fetching user.

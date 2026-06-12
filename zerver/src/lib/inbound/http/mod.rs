@@ -82,10 +82,10 @@ impl ApiError {
     pub fn to_user_message(&self) -> String {
         match self {
             ApiError::Network(_) => {
-                "connection error — check your network and try again".to_string()
+                "connection error, check your network and try again".to_string()
             }
             ApiError::InternalServerError(_) => {
-                "something went wrong — please try again".to_string()
+                "something went wrong, please try again".to_string()
             }
             other => other.to_string(),
         }

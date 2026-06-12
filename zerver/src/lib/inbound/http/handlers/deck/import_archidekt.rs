@@ -44,7 +44,7 @@ impl From<ArchidektError> for ApiError {
     fn from(value: ArchidektError) -> Self {
         match value {
             ArchidektError::NotFound => Self::NotFound(
-                "deck not found on archidekt — make sure it's public and the url is correct"
+                "deck not found on archidekt, make sure it's public and the url is correct"
                     .to_string(),
             ),
             ArchidektError::Upstream(code) => {
