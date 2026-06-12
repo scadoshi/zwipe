@@ -19,6 +19,9 @@ use components::logout_dialog::LogoutDialog;
 use crate::{
     inbound::{
         components::auth::bouncer::Bouncer,
+        components::hint_dialog::{
+            HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint,
+        },
         router::Router,
     },
     outbound::client::{
@@ -28,6 +31,7 @@ use crate::{
 };
 use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::user::models::hints::HINT_PROFILE;
 
 /// User profile screen showing account details and management options.
 #[component]
@@ -37,6 +41,10 @@ pub fn Profile() -> Element {
 
     let mut show_logout_dialog = use_signal(|| false);
     let mut show_delete_dialog = use_signal(|| false);
+
+    // Account management hint: auto-opens on this user's first visit, the
+    // grayed "?" in the header reopens it on demand.
+    let mut profile_hint_open = use_one_time_hint(HINT_PROFILE);
 
     // Refresh user on every open so email_verified_at is current without re-login.
     use_effect(move || {
@@ -64,8 +72,41 @@ pub fn Profile() -> Element {
     rsx! {
         Bouncer {
             div { class: "screen",
-                div { class: "page-header",
+                div { class: "page-header", style: "position: relative;",
                     h2 { "Profile" }
+                    button {
+                        class: "util-btn",
+                        style: "position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.55; padding: 0.2rem 0.6rem;",
+                        onclick: move |_| profile_hint_open.set(true),
+                        "?"
+                    }
+                }
+
+                HintDialog {
+                    open: profile_hint_open,
+                    title: "Your profile",
+                    HintBullets {
+                        HintBullet {
+                            "Tap "
+                            HintKey { "Change" }
+                            " to update your username, email or password"
+                        }
+                        HintBullet {
+                            "Tap "
+                            HintKey { "Preferences" }
+                            " to change your theme"
+                        }
+                        HintBullet {
+                            "Tap "
+                            HintKey { "Log out" }
+                            " to sign out on this device"
+                        }
+                        HintBullet {
+                            "Tap "
+                            HintKey { "Delete account" }
+                            " to erase your account for good"
+                        }
+                    }
                 }
 
                 div { class: "screen-content centered content-enter",
