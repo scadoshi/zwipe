@@ -1,6 +1,12 @@
 # Resend-verification throttle + refresh
 
-**Status: planned 2026-06-11, not built.** Server-side throttle plus a client
+**Status: BUILT 2026-06-11** (server `3692c410`, client `ae916671`). Server
+half live-tested locally: 5 rapid calls → 1 through + 4×429, no-auth → 401
+(the lone 500 in testing was the dev .env's stale Resend key, not the route).
+Server deploys with the next zerver deploy; client rides the next App Store
+build after 33. Original design below, implemented as written.
+
+Server-side throttle plus a client
 cooldown/refresh on the email-verification UI. Goal is narrow: stop impatient
 multi-clicks from fanning out into many verification emails, and let a user
 re-check "did it verify yet?" without leaving the screen. Not an
