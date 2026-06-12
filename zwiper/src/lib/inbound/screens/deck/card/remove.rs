@@ -608,7 +608,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     HintBullet {
                         "Swipe "
                         HintColored { color: "--color-warning", "up" }
-                        " to move between maybeboard and main."
+                        " to move a card to your maybeboard, or a maybeboard card into main."
                     }
                     HintBullet {
                         "Swipe "
