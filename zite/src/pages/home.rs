@@ -133,7 +133,7 @@ pub fn Home() -> Element {
                 div { class: "feature-card",
                     span { class: "card-category", "Catalog" }
                     h3 { class: "card-title", "110k+ Cards" }
-                    p { class: "card-summary", "Every English printing from Scryfall, synced nightly. Multiple printings per card — pick your favorite art." }
+                    p { class: "card-summary", "Every English printing from Scryfall, synced nightly. Multiple printings per card. Pick your favorite art." }
                 }
                 div { class: "feature-card",
                     span { class: "card-category", "Format" }
@@ -178,7 +178,7 @@ pub fn Home() -> Element {
                 div { class: "feature-card",
                     span { class: "card-category", "Theming" }
                     h3 { class: "card-title", "14 Themes" }
-                    p { class: "card-summary", "Dark and light modes across 14 color themes — including 3 colorblind-accessible options. Try the themes above." }
+                    p { class: "card-summary", "Dark and light modes across 14 color themes, including 3 colorblind-accessible options. Try the themes above." }
                 }
             }
         }
