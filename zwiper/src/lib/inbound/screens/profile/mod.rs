@@ -98,11 +98,6 @@ pub fn Profile() -> Element {
                         }
                         HintBullet {
                             "Tap "
-                            HintKey { "Log out" }
-                            " to sign out on this device"
-                        }
-                        HintBullet {
-                            "Tap "
                             HintKey { "Delete account" }
                             " to erase your account for good"
                         }
