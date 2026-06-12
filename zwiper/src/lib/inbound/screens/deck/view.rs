@@ -12,7 +12,7 @@ use crate::inbound::components::alert_dialog::{
 use crate::{
     inbound::{
         components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
-        components::hint_dialog::{HintDialog, use_one_time_hint},
+        components::hint_dialog::{HintDialog, HintKey, HintLine, use_one_time_hint},
         router::Router,
     },
     outbound::buy_links,
@@ -509,11 +509,17 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
             HintDialog {
                 open: first_deck_hint_open,
-                title: "Your deck is ready",
-                lines: vec![
-                    "Tap Cards to start swiping cards into your deck.".to_string(),
-                    "Or import an existing deck list from More actions.".to_string(),
-                ],
+                title: "Welcome to your first deck",
+                HintLine {
+                    "Tap "
+                    HintKey { "Cards" }
+                    " to start swiping cards."
+                }
+                HintLine {
+                    "Tap "
+                    HintKey { "More" }
+                    " to import cards."
+                }
             }
 
             }
