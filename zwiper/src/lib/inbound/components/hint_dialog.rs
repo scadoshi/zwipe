@@ -57,9 +57,10 @@ pub fn use_one_time_hint(key: &'static str) -> Signal<bool> {
     open
 }
 
-/// Hint dialog shell: title, body lines, and a single "Got it" button.
+/// Hint dialog shell: title, body content, and a single "Got it" button.
+/// Compose the body from [`HintLine`]s, with [`HintKey`]s for button names.
 #[component]
-pub fn HintDialog(open: Signal<bool>, title: String, lines: Vec<String>) -> Element {
+pub fn HintDialog(open: Signal<bool>, title: String, children: Element) -> Element {
     rsx! {
         AlertDialogRoot {
             open: open(),
@@ -67,9 +68,7 @@ pub fn HintDialog(open: Signal<bool>, title: String, lines: Vec<String>) -> Elem
             AlertDialogContent {
                 AlertDialogTitle { "{title}" }
                 AlertDialogDescription {
-                    for line in lines.iter() {
-                        p { style: "margin: 0 0 0.5rem 0; text-align: left;", "{line}" }
-                    }
+                    {children}
                 }
                 AlertDialogActions {
                     AlertDialogAction {
@@ -78,6 +77,27 @@ pub fn HintDialog(open: Signal<bool>, title: String, lines: Vec<String>) -> Elem
                     }
                 }
             }
+        }
+    }
+}
+
+/// One body line of a hint dialog.
+#[component]
+pub fn HintLine(children: Element) -> Element {
+    rsx! {
+        p { style: "margin: 0 0 0.5rem 0; text-align: left;", {children} }
+    }
+}
+
+/// An inert reference to an on-screen button: styled like one (util-btn look,
+/// accent color) so users recognize what to press, deliberately not tappable
+/// since the hint is pointing at the real button, not replacing it.
+#[component]
+pub fn HintKey(children: Element) -> Element {
+    rsx! {
+        span {
+            style: "border: 1px solid var(--accent-tertiary); color: var(--accent-tertiary); border-radius: 0.5rem; padding: 0.05rem 0.45rem; font-size: 0.8rem; white-space: nowrap; pointer-events: none;",
+            {children}
         }
     }
 }
