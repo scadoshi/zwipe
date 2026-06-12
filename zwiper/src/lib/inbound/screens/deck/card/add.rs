@@ -324,6 +324,8 @@ pub fn Add(deck_id: Uuid) -> Element {
         entering_direction.set(Some(action.exited().clone()));
 
         match action {
+            // Remove-screen-only variant; never pushed on this screen.
+            SwipeAction::MoveBoard { .. } => {}
             SwipeAction::Skip { .. } => {
                 // Just showing previous card - done!
                 toast.info(
@@ -775,7 +777,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     }
                 });
             }
-            SwipeAction::Maybeboard { .. } => {
+            SwipeAction::Maybeboard { .. } | SwipeAction::MoveBoard { .. } => {
                 // Shouldn't happen in maybeboard mode, but handle gracefully
                 toast.info("Nothing to undo".to_string(), ToastOptions::default());
             }

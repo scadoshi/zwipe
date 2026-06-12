@@ -2,6 +2,7 @@
 
 use crate::inbound::components::interactions::swipe::direction::Direction;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::deck::Board;
 
 /// The type of swipe action performed on a card.
 ///
@@ -13,6 +14,9 @@ pub enum SwipeAction {
     Skip { card: Box<Card>, exited: Direction },
     Do { card: Box<Card>, exited: Direction },
     Maybeboard { card: Box<Card>, exited: Direction },
+    /// Remove screen's board move: main/side stage to maybeboard, maybeboard
+    /// promotes to main. `from` lets undo restore the original board.
+    MoveBoard { card: Box<Card>, exited: Direction, from: Board, to: Board },
 }
 
 impl SwipeAction {
@@ -21,7 +25,8 @@ impl SwipeAction {
         match self {
             Self::Skip { exited, .. }
             | Self::Do { exited, .. }
-            | Self::Maybeboard { exited, .. } => exited,
+            | Self::Maybeboard { exited, .. }
+            | Self::MoveBoard { exited, .. } => exited,
         }
     }
 }
