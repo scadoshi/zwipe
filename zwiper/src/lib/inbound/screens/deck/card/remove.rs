@@ -3,7 +3,7 @@ use crate::{
     inbound::{
         components::{
             auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
-            hint_dialog::{HintDialog, HintLine, use_one_time_hint},
+            hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, HintLine, use_one_time_hint},
             interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
             telemetry::usage_buffer::UsageBuffer,
         },
@@ -377,8 +377,14 @@ pub fn Remove(deck_id: Uuid) -> Element {
     rsx! {
         Bouncer {
             div { class: "screen",
-                div { class: "page-header",
+                div { class: "page-header", style: "position: relative;",
                     h2 { "Remove Deck Cards" }
+                button {
+                    class: "util-btn",
+                    style: "position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.55; padding: 0.2rem 0.6rem;",
+                    onclick: move |_| swipe_hint_open.set(true),
+                    "?"
+                }
                 }
 
                 div { class: "screen-content card-swipe content-enter",
@@ -502,21 +508,33 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         "Clear"
                     }
                 }
-                button {
-                    class: "util-btn",
-                    style: "opacity: 0.55;",
-                    onclick: move |_| swipe_hint_open.set(true),
-                    "?"
-                }
             }
 
             HintDialog {
                 open: swipe_hint_open,
                 title: "Swipe to trim",
-                HintLine { "Swipe right to remove a card from your deck." }
-                HintLine { "Swipe left to keep it." }
-                HintLine { "Swipe up to move it to your maybeboard." }
-                HintLine { "Swipe down to undo your last swipe." }
+                HintBullets {
+                    HintBullet {
+                        "Swipe "
+                        HintColored { color: "--color-success", "right" }
+                        " to remove a card from your deck."
+                    }
+                    HintBullet {
+                        "Swipe "
+                        HintColored { color: "--color-error", "left" }
+                        " to keep it."
+                    }
+                    HintBullet {
+                        "Swipe "
+                        HintColored { color: "--color-warning", "up" }
+                        " to move it to your maybeboard."
+                    }
+                    HintBullet {
+                        "Swipe "
+                        HintColored { color: "--accent-tertiary", "down" }
+                        " to undo your last swipe."
+                    }
+                }
                 HintLine { "The board chips at the top choose which board you are trimming." }
             }
 
