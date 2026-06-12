@@ -7,6 +7,9 @@ use crate::inbound::components::alert_dialog::{
 use crate::inbound::router::Router;
 use crate::{
     inbound::components::auth::{bouncer::Bouncer, signal_logout::SignalLogout},
+    inbound::components::hint_dialog::{
+        HintBullet, HintBullets, HintColored, HintDialog, HintKey, use_one_time_hint,
+    },
     outbound::client::{
         ZwipeClient,
         card::search_cards::ClientSearchCards,
@@ -21,6 +24,7 @@ use zwipe_core::domain::card::search_card::card_filter::{
     builder::CardFilterBuilder, order_by_option::OrderByOption,
 };
 use zwipe_core::domain::logo;
+use zwipe_core::domain::user::models::hints::HINT_FIRST_LOGIN;
 use zwipe_core::domain::user::models::theme::ThemeConfig;
 
 /// Home screen with navigation to main app features.
@@ -33,6 +37,9 @@ pub fn Home() -> Element {
 
     let mut show_logout_dialog = use_signal(|| false);
     let toast = use_toast();
+
+    // First-login welcome: auto-opens once per account.
+    let first_login_hint_open = use_one_time_hint(HINT_FIRST_LOGIN);
 
     let logo = logo::ZWIPE;
 
@@ -150,6 +157,29 @@ pub fn Home() -> Element {
                     }
                 }
             }
+            HintDialog {
+                open: first_login_hint_open,
+                title: "Welcome to Zwipe",
+                HintBullets {
+                    HintBullet {
+                        "Tap "
+                        HintKey { "Decks" }
+                        " to create and build your decks"
+                    }
+                    HintBullet {
+                        "Tap "
+                        HintKey { "Profile" }
+                        " to manage your account or change your theme"
+                    }
+                    HintBullet {
+                        HintColored { color: "--color-warning", "Verify your email" }
+                        " in "
+                        HintKey { "Profile" }
+                        " to unlock full deck and card limits"
+                    }
+                }
+            }
+
             div { class: "util-bar",
                 button { class : "util-btn",
                     onclick : move |_| {
