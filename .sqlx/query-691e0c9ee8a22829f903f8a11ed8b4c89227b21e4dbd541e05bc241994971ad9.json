@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, username, email, password_hash, lockout_until, email_verified_at FROM users WHERE (id::text = $1 OR username = $1 OR email = $1)",
+  "query": "UPDATE users\n               SET hints_shown = hints_shown || jsonb_build_object($2::text, true)\n               WHERE id = $1\n               RETURNING id, username, email, email_verified_at, hints_shown",
   "describe": {
     "columns": [
       {
@@ -20,22 +20,18 @@
       },
       {
         "ordinal": 3,
-        "name": "password_hash",
-        "type_info": "Varchar"
+        "name": "email_verified_at",
+        "type_info": "Timestamptz"
       },
       {
         "ordinal": 4,
-        "name": "lockout_until",
-        "type_info": "Timestamptz"
-      },
-      {
-        "ordinal": 5,
-        "name": "email_verified_at",
-        "type_info": "Timestamptz"
+        "name": "hints_shown",
+        "type_info": "Jsonb"
       }
     ],
     "parameters": {
       "Left": [
+        "Uuid",
         "Text"
       ]
     },
@@ -43,10 +39,9 @@
       false,
       false,
       false,
-      false,
       true,
-      true
+      false
     ]
   },
-  "hash": "2a71324cc301e4cae0d4690ff6d11801f318c7f476c91fa4c56790d1ffb4a106"
+  "hash": "691e0c9ee8a22829f903f8a11ed8b4c89227b21e4dbd541e05bc241994971ad9"
 }

@@ -1,9 +1,11 @@
 pub mod email;
+pub mod hints;
 pub mod preferences;
 pub mod theme;
 pub mod username;
 
 pub use email::{Email, InvalidEmail};
+pub use hints::{InvalidHintKey, MarkHintShown};
 pub use preferences::{
     ALLOWED_THEMES, InvalidUpdatePreferences, UpdatePreferences, UserPreferences,
 };
@@ -11,6 +13,7 @@ pub use username::{InvalidUsername, Username};
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use uuid::Uuid;
 
 /// A public user profile entity.
@@ -55,6 +58,11 @@ pub struct User {
     /// When the user's email was verified. `None` means not yet verified.
     #[serde(with = "crate::wire_time::utc_opt", default)]
     pub email_verified_at: Option<DateTime<Utc>>,
+
+    /// One-time UI hints already shown to this user, keyed by hint id
+    /// (see [`hints`]). Defaults to empty for responses from older servers.
+    #[serde(default)]
+    pub hints_shown: HashMap<String, bool>,
 }
 
 impl User {
@@ -77,6 +85,12 @@ impl User {
             username,
             email,
             email_verified_at: None,
+            hints_shown: HashMap::new(),
         }
+    }
+
+    /// Whether a one-time UI hint has already been shown to this user.
+    pub fn has_seen_hint(&self, key: &str) -> bool {
+        self.hints_shown.get(key).copied().unwrap_or(false)
     }
 }

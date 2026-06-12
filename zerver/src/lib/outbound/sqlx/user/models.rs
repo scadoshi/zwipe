@@ -14,6 +14,7 @@ pub struct DatabaseUser {
     pub username: String,
     pub email: String,
     pub email_verified_at: Option<DateTime<Utc>>,
+    pub hints_shown: serde_json::Value,
 }
 
 /// converts database user to validated domain user
@@ -28,6 +29,8 @@ impl TryFrom<DatabaseUser> for User {
             username,
             email,
             email_verified_at: value.email_verified_at,
+            // lenient: a malformed map degrades to "no hints shown"
+            hints_shown: serde_json::from_value(value.hints_shown).unwrap_or_default(),
         })
     }
 }

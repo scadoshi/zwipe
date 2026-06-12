@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, username, email, email_verified_at FROM users WHERE id = $1",
+  "query": "UPDATE users SET username = $1 WHERE id = $2 RETURNING id, username, email, email_verified_at, hints_shown",
   "describe": {
     "columns": [
       {
@@ -22,10 +22,16 @@
         "ordinal": 3,
         "name": "email_verified_at",
         "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "hints_shown",
+        "type_info": "Jsonb"
       }
     ],
     "parameters": {
       "Left": [
+        "Varchar",
         "Uuid"
       ]
     },
@@ -33,8 +39,9 @@
       false,
       false,
       false,
-      true
+      true,
+      false
     ]
   },
-  "hash": "d32fead67044e63baeb67ff0dc5dcb88419f105ec06b9145a6104cbe4e574458"
+  "hash": "724260beaa7d14cc4cbc98e8e750c10c3997f86ae439c4fc1bf59caf66e188e7"
 }

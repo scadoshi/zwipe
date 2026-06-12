@@ -51,6 +51,10 @@ pub fn preferences_route() -> String {
     "/api/user/preferences".to_string()
 }
 
+pub fn mark_hint_shown_route() -> String {
+    "/api/user/hint".to_string()
+}
+
 pub fn logout_route() -> String {
     "/api/auth/logout".to_string()
 }

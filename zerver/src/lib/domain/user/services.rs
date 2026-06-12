@@ -5,11 +5,13 @@ use uuid::Uuid;
 use crate::domain::user::{
     models::{
         get_user::GetUserError,
+        hints::MarkHintShownError,
         preferences::{GetPreferencesError, UpdatePreferencesError},
     },
     ports::{UserRepository, UserService},
 };
 use zwipe_core::domain::user::{
+    models::hints::MarkHintShown,
     preferences::{UpdatePreferences, UserPreferences},
     requests::get_user::GetUser,
     User,
@@ -60,5 +62,13 @@ impl<R: UserRepository> UserService for Service<R> {
         request: &UpdatePreferences,
     ) -> Result<UserPreferences, UpdatePreferencesError> {
         self.repo.update_preferences(request).await
+    }
+
+    // =======
+    //  hints
+    // =======
+
+    async fn mark_hint_shown(&self, request: &MarkHintShown) -> Result<User, MarkHintShownError> {
+        self.repo.mark_hint_shown(request).await
     }
 }

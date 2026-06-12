@@ -8,11 +8,13 @@ pub mod models;
 use crate::domain::user::{
     models::{
         get_user::GetUserError,
+        hints::MarkHintShownError,
         preferences::{GetPreferencesError, UpdatePreferencesError},
     },
     ports::UserRepository,
 };
 use zwipe_core::domain::user::{
+    models::hints::MarkHintShown,
     preferences::{UpdatePreferences, UserPreferences},
     User,
 };
@@ -46,13 +48,43 @@ impl UserRepository for Postgres {
     async fn get_user(&self, user_id: Uuid) -> Result<User, GetUserError> {
         let database_user = query_as!(
             DatabaseUser,
-            "SELECT id, username, email, email_verified_at FROM users WHERE id = $1",
+            "SELECT id, username, email, email_verified_at, hints_shown FROM users WHERE id = $1",
             user_id
         )
         .fetch_one(&self.pool)
         .await?;
 
         let user: User = database_user.try_into()?;
+
+        Ok(user)
+    }
+
+    // =======
+    //  hints
+    // =======
+
+    async fn mark_hint_shown(&self, request: &MarkHintShown) -> Result<User, MarkHintShownError> {
+        let database_user = query_as!(
+            DatabaseUser,
+            r#"UPDATE users
+               SET hints_shown = hints_shown || jsonb_build_object($2::text, true)
+               WHERE id = $1
+               RETURNING id, username, email, email_verified_at, hints_shown"#,
+            request.user_id,
+            request.hint
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| match e {
+            sqlx::Error::RowNotFound => MarkHintShownError::NotFound,
+            other => MarkHintShownError::Database(other.into()),
+        })?;
+
+        let user: User = database_user
+            .try_into()
+            .map_err(|e: crate::outbound::sqlx::user::error::IntoUserError| {
+                MarkHintShownError::UserFromDb(anyhow::anyhow!(e))
+            })?;
 
         Ok(user)
     }

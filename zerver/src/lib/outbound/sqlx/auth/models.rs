@@ -18,6 +18,7 @@ pub struct DatabaseUserWithPasswordHash {
     pub password_hash: String,
     pub lockout_until: Option<DateTime<Utc>>,
     pub email_verified_at: Option<DateTime<Utc>>,
+    pub hints_shown: serde_json::Value,
 }
 
 /// converts database user with password hash
@@ -36,6 +37,8 @@ impl TryFrom<DatabaseUserWithPasswordHash> for UserWithPasswordHash {
             password_hash,
             lockout_until: value.lockout_until,
             email_verified_at: value.email_verified_at,
+            // lenient: a malformed map degrades to "no hints shown"
+            hints_shown: serde_json::from_value(value.hints_shown).unwrap_or_default(),
         })
     }
 }

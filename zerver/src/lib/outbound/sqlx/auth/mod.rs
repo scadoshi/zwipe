@@ -46,7 +46,7 @@ impl AuthRepository for Postgres {
 
         let database_user = query_as!(
             DatabaseUser,
-            "INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, username, email, email_verified_at",
+            "INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id, username, email, email_verified_at, hints_shown",
             request.username.to_string(),
             request.email.to_string(),
             request.password_hash.to_string()
@@ -79,7 +79,7 @@ impl AuthRepository for Postgres {
     ) -> Result<UserWithPasswordHash, AuthenticateUserError> {
         let database_user: DatabaseUserWithPasswordHash = query_as!(
             DatabaseUserWithPasswordHash,
-            "SELECT id, username, email, password_hash, lockout_until, email_verified_at FROM users WHERE (id::text = $1 OR username = $1 OR email = $1)",
+            "SELECT id, username, email, password_hash, lockout_until, email_verified_at, hints_shown FROM users WHERE (id::text = $1 OR username = $1 OR email = $1)",
             request.identifier
         )
         .fetch_one(&self.pool)
@@ -180,7 +180,7 @@ impl AuthRepository for Postgres {
 
         let database_user = query_as!(
             DatabaseUser,
-            "UPDATE users SET username = $1 WHERE id = $2 RETURNING id, username, email, email_verified_at",
+            "UPDATE users SET username = $1 WHERE id = $2 RETURNING id, username, email, email_verified_at, hints_shown",
             request.new_username.to_string(),
             request.user_id
         ).fetch_one(&mut *tx).await?;
@@ -197,7 +197,7 @@ impl AuthRepository for Postgres {
 
         let database_user = query_as!(
             DatabaseUser,
-            "UPDATE users SET email = $1, email_verified_at = NULL WHERE id = $2 RETURNING id, username, email, email_verified_at",
+            "UPDATE users SET email = $1, email_verified_at = NULL WHERE id = $2 RETURNING id, username, email, email_verified_at, hints_shown",
             request.email.to_string(),
             request.user_id
         ).fetch_one(&mut *tx).await?;
