@@ -43,7 +43,7 @@ impl From<ImportDeckCardsError> for ApiError {
                 Self::UnprocessableEntity("card limit reached".to_string())
             }
             ImportDeckCardsError::UnverifiedLimitReached => {
-                Self::UnprocessableEntity("card limit reached — verify your email to unlock more".to_string())
+                Self::UnprocessableEntity("card limit reached, verify your email to unlock more".to_string())
             }
             ImportDeckCardsError::Database(e) => e.log_500(),
         }

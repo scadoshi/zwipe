@@ -22,7 +22,7 @@ pub enum ImportDeckCardsError {
     #[error("card limit reached")]
     LimitReached,
     /// Import would exceed the unverified card limit.
-    #[error("card limit reached — verify your email to unlock more")]
+    #[error("card limit reached, verify your email to unlock more")]
     UnverifiedLimitReached,
     /// Database operation failed.
     #[error(transparent)]
