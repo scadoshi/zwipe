@@ -3,7 +3,7 @@ use crate::{
     inbound::{
         components::{
             auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
-            hint_dialog::{HintDialog, HintLine, use_one_time_hint},
+            hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, HintLine, use_one_time_hint},
             interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
             telemetry::usage_buffer::UsageBuffer,
         },
@@ -785,8 +785,14 @@ pub fn Add(deck_id: Uuid) -> Element {
     rsx! {
         Bouncer {
             div { class: "screen",
-                div { class: "page-header",
+                div { class: "page-header", style: "position: relative;",
                     h2 { "Add Deck Cards" }
+                button {
+                    class: "util-btn",
+                    style: "position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.55; padding: 0.2rem 0.6rem;",
+                    onclick: move |_| swipe_hint_open.set(true),
+                    "?"
+                }
                 }
 
                 div { class: "screen-content card-swipe content-enter",
@@ -1041,21 +1047,33 @@ pub fn Add(deck_id: Uuid) -> Element {
                     },
                     "Refresh"
                 }
-                button {
-                    class: "util-btn",
-                    style: "opacity: 0.55;",
-                    onclick: move |_| swipe_hint_open.set(true),
-                    "?"
-                }
             }
 
             HintDialog {
                 open: swipe_hint_open,
                 title: "Swipe to build",
-                HintLine { "Swipe right to add a card to your deck." }
-                HintLine { "Swipe left to skip it." }
-                HintLine { "Swipe up to send it to your maybeboard." }
-                HintLine { "Swipe down to undo your last swipe." }
+                HintBullets {
+                    HintBullet {
+                        "Swipe "
+                        HintColored { color: "--color-success", "right" }
+                        " to add a card to your deck."
+                    }
+                    HintBullet {
+                        "Swipe "
+                        HintColored { color: "--color-error", "left" }
+                        " to skip it."
+                    }
+                    HintBullet {
+                        "Swipe "
+                        HintColored { color: "--color-warning", "up" }
+                        " to send it to your maybeboard."
+                    }
+                    HintBullet {
+                        "Swipe "
+                        HintColored { color: "--accent-tertiary", "down" }
+                        " to undo your last swipe."
+                    }
+                }
                 HintLine { "Cards are ordered by how well they fit your commander. Filter or sort anytime." }
             }
 
