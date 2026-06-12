@@ -44,7 +44,7 @@ use crate::inbound::http::handlers::{
     },
     user::{
         get_preferences::get_preferences, get_user::get_user,
-        update_preferences::update_preferences,
+        mark_hint_shown::mark_hint_shown, update_preferences::update_preferences,
     },
 };
 #[cfg(feature = "zerver")]
@@ -366,6 +366,7 @@ where
                             ),
                         )
                         .route("/preferences", get(get_preferences).put(update_preferences))
+                        .route("/hint", put(mark_hint_shown))
                         .route("/metrics", get(get_my_metrics)),
                 )
                 .nest(

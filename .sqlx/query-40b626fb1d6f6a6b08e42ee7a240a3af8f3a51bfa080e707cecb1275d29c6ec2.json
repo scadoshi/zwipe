@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE users SET email = $1, email_verified_at = NULL WHERE id = $2 RETURNING id, username, email, email_verified_at",
+  "query": "UPDATE users SET email = $1, email_verified_at = NULL WHERE id = $2 RETURNING id, username, email, email_verified_at, hints_shown",
   "describe": {
     "columns": [
       {
@@ -22,6 +22,11 @@
         "ordinal": 3,
         "name": "email_verified_at",
         "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "hints_shown",
+        "type_info": "Jsonb"
       }
     ],
     "parameters": {
@@ -34,8 +39,9 @@
       false,
       false,
       false,
-      true
+      true,
+      false
     ]
   },
-  "hash": "2df6c86f3b9dea4ed6ff1e2609020318639cb168886115aa5e623e78443ebfa4"
+  "hash": "40b626fb1d6f6a6b08e42ee7a240a3af8f3a51bfa080e707cecb1275d29c6ec2"
 }
