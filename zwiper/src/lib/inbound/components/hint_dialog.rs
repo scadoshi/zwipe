@@ -89,6 +89,33 @@ pub fn HintLine(children: Element) -> Element {
     }
 }
 
+/// Bulleted list of hint lines.
+#[component]
+pub fn HintBullets(children: Element) -> Element {
+    rsx! {
+        ul { style: "margin: 0 0 0.5rem 0; padding-left: 1.2rem; text-align: left;",
+            {children}
+        }
+    }
+}
+
+/// One bullet within [`HintBullets`].
+#[component]
+pub fn HintBullet(children: Element) -> Element {
+    rsx! {
+        li { style: "margin-bottom: 0.4rem;", {children} }
+    }
+}
+
+/// A color-coded word inside a hint (e.g. a swipe direction). `color` is a
+/// CSS variable name like `--color-success`.
+#[component]
+pub fn HintColored(color: String, children: Element) -> Element {
+    rsx! {
+        span { style: "color: var({color}); font-weight: 600;", {children} }
+    }
+}
+
 /// An inert reference to an on-screen button: styled like one (util-btn look,
 /// accent color) so users recognize what to press, deliberately not tappable
 /// since the hint is pointing at the real button, not replacing it.
