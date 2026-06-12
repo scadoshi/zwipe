@@ -524,25 +524,25 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     HintBullet {
                         "Tap "
                         HintKey { "Cards" }
-                        " to start swiping cards."
+                        " to start swiping cards"
                     }
                     HintBullet {
                         "Tap "
                         HintKey { "Edit" }
-                        " to change the name, format, or commander."
+                        " to change the name, format, or commander"
                     }
                     HintBullet {
                         "Tap "
                         HintKey { "More" }
-                        " to import, export, clone, or remove cards."
+                        " to add, remove, import, export, clone, or delete the deck"
                     }
                     HintBullet {
-                        "Stats appear as the deck grows. Tap "
+                        "Stats appear as the deck grows, tap "
                         HintKey { "Buy" }
-                        " to shop the full list."
+                        " to shop the full list"
                     }
                     HintBullet {
-                        "Warnings call out rule problems and offer one-tap fixes."
+                        "Warnings call out rule problems and offer one-tap fixes"
                     }
                 }
             }
