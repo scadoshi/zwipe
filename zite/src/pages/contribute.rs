@@ -19,7 +19,7 @@ pub fn Contribute() -> Element {
             div { class: "section",
                 h1 { "Contribute" }
                 p {
-                    "Zwipe is a solo indie project — designed, built, and shipped by one person.
+                    "Zwipe is a solo indie project: designed, built, and shipped by one person.
                     If you're enjoying it, any support goes directly toward server costs and
                     keeping development moving."
                 }

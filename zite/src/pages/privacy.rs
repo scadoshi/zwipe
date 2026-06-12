@@ -7,7 +7,7 @@ pub fn Privacy() -> Element {
     rsx! {
         PageMeta {
             title: "Privacy Policy",
-            description: "Zwipe privacy policy — what data is collected, how it's used, and your rights.",
+            description: "Zwipe privacy policy: what data is collected, how it's used, and your rights.",
             path: "/privacy",
         }
         Nav {}
@@ -27,9 +27,9 @@ pub fn Privacy() -> Element {
 
                 h2 { "Data We Collect" }
                 ul {
-                    li { strong { "Account data" } " — email address, username, and a hashed password (never stored in plaintext)." }
-                    li { strong { "Deck data" } " — the decks and card selections you create within the app." }
-                    li { strong { "Session data" } " — authentication tokens stored securely on your device." }
+                    li { strong { "Account data" } ": email address, username, and a hashed password (never stored in plaintext)." }
+                    li { strong { "Deck data" } ": the decks and card selections you create within the app." }
+                    li { strong { "Session data" } ": authentication tokens stored securely on your device." }
                 }
                 p {
                     "We do not collect location data, device identifiers, analytics, or any data
@@ -52,13 +52,13 @@ pub fn Privacy() -> Element {
                         strong {
                             a { href: "https://scryfall.com", target: "_blank", rel: "noopener noreferrer", "Scryfall" }
                         }
-                        " — card data (names, images, oracle text) is sourced from the Scryfall API and stored on our servers. Your account data is never shared with Scryfall."
+                        ": card data (names, images, oracle text) is sourced from the Scryfall API and stored on our servers. Your account data is never shared with Scryfall."
                     }
                     li {
                         strong {
                             a { href: "https://resend.com", target: "_blank", rel: "noopener noreferrer", "Resend" }
                         }
-                        " — transactional email delivery (verification and password reset emails). Your email address is passed to Resend solely to deliver these messages."
+                        ": transactional email delivery (verification and password reset emails). Your email address is passed to Resend solely to deliver these messages."
                     }
                 }
 
