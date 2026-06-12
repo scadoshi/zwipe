@@ -76,6 +76,42 @@ where
             jwt_secret,
         }
     }
+
+    /// Sends a security notification email after a profile change.
+    ///
+    /// Fire-and-forget: the change has already been committed, so a delivery
+    /// failure is logged but never surfaced to the caller.
+    async fn send_change_notification(
+        &self,
+        user_id: Uuid,
+        to_email: &str,
+        subject: &str,
+        html_body: String,
+    ) {
+        if let Err(e) = self
+            .email_sender
+            .send_email(SendEmail {
+                to: to_email.to_string(),
+                subject: subject.to_string(),
+                html_body,
+            })
+            .await
+        {
+            tracing::error!(event = "email_send_failure", user_id = %user_id, error = %e);
+        }
+    }
+}
+
+/// Minimal HTML escape for user-controlled values injected into email templates.
+///
+/// Usernames have no character whitelist (only length/whitespace/profanity rules),
+/// so `<`, `>`, and `&` are all possible.
+fn escape_html(value: &str) -> String {
+    value
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
 }
 
 /// Generates a (raw, hash) hex-token pair.
@@ -217,18 +253,57 @@ where
     //  update
     // ========
     async fn change_username(&self, request: &ChangeUsername) -> Result<User, ChangeUsernameError> {
-        self.authenticate_user(&request.into()).await?;
-        self.auth_repo.change_username(request).await
+        let session = self.authenticate_user(&request.into()).await?;
+        let old_username = session.user.username;
+        let user = self.auth_repo.change_username(request).await?;
+
+        let html = include_str!("email_templates/username_changed.html")
+            .replace("{old_username}", &escape_html(&old_username))
+            .replace("{new_username}", &escape_html(&user.username));
+        self.send_change_notification(
+            user.id,
+            user.email.as_ref(),
+            "Your Zwipe username was changed",
+            html,
+        )
+        .await;
+
+        Ok(user)
     }
 
     async fn change_email(&self, request: &ChangeEmail) -> Result<User, ChangeEmailError> {
-        self.authenticate_user(&request.into()).await?;
-        self.auth_repo.change_email(request).await
+        let session = self.authenticate_user(&request.into()).await?;
+        let old_email = session.user.email;
+        let user = self.auth_repo.change_email(request).await?;
+
+        // Notify the OLD address: the new one is what an attacker would control.
+        let html = include_str!("email_templates/email_changed.html")
+            .replace("{new_email}", &escape_html(user.email.as_ref()));
+        self.send_change_notification(
+            user.id,
+            old_email.as_ref(),
+            "Your Zwipe email was changed",
+            html,
+        )
+        .await;
+
+        Ok(user)
     }
 
     async fn change_password_and_revoke_sessions(&self, request: &ChangePassword) -> Result<(), ChangePasswordError> {
-        self.authenticate_user(&request.into()).await?;
-        self.auth_repo.change_password_and_revoke_sessions(request).await
+        let session = self.authenticate_user(&request.into()).await?;
+        self.auth_repo.change_password_and_revoke_sessions(request).await?;
+
+        let html = include_str!("email_templates/password_changed.html").to_string();
+        self.send_change_notification(
+            session.user.id,
+            session.user.email.as_ref(),
+            "Your Zwipe password was changed",
+            html,
+        )
+        .await;
+
+        Ok(())
     }
 
     // ========
