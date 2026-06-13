@@ -1,7 +1,8 @@
 //! User preferences screen for theme and dark mode selection.
 
 use crate::{
-    inbound::components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+    inbound::components::auth::ensure_session::EnsureFresh,
+    inbound::components::bottom_sheet::BottomSheet,
     outbound::client::{ZwipeClient, user::preferences::ClientUpdatePreferences},
 };
 use dioxus::prelude::*;
@@ -28,25 +29,71 @@ fn display_theme_name(slug: &str) -> String {
         .join(" ")
 }
 
-/// Preferences screen for selecting theme and light/dark mode.
-#[component]
-pub fn Preferences() -> Element {
-    let navigator = use_navigator();
+/// Themes with adjusted palettes for color-vision deficiency — grouped at the
+/// bottom of the picker.
+const COLORBLIND_THEMES: &[&str] = &["protanopia", "deuteranopia", "tritanopia"];
 
+/// One selectable theme row: name on the left, color-swatch dots on the right.
+/// The dots pull their colors from the theme's own CSS variables by applying
+/// that theme's class to the swatch strip, so colors stay defined only in
+/// themes.css.
+#[component]
+fn ThemeRow(
+    theme: String,
+    mode: String,
+    mut selected_theme: Signal<String>,
+    mut theme_config: Signal<ThemeConfig>,
+    selected_dark: Signal<bool>,
+) -> Element {
+    let is_selected = selected_theme() == theme;
+    let click_theme = theme.clone();
+    rsx! {
+        button {
+            class: if is_selected { "pref-row selected" } else { "pref-row" },
+            onclick: move |_| {
+                selected_theme.set(click_theme.clone());
+                theme_config.set(ThemeConfig { name: click_theme.clone(), is_dark: selected_dark() });
+            },
+            div { class: "pref-row-inner",
+                span { "{display_theme_name(&theme)}" }
+                div { class: "theme-swatches theme-{theme}-{mode}",
+                    span { class: "theme-dot", style: "background:var(--bg-primary)" }
+                    span { class: "theme-dot", style: "background:var(--text-primary)" }
+                    span { class: "theme-dot", style: "background:var(--accent-primary)" }
+                    span { class: "theme-dot", style: "background:var(--accent-secondary)" }
+                    span { class: "theme-dot", style: "background:var(--accent-tertiary)" }
+                    span { class: "theme-dot", style: "background:var(--color-error)" }
+                }
+            }
+        }
+    }
+}
+
+/// Bottom sheet for selecting theme and light/dark mode. Selections live-preview
+/// against the whole app; Save persists and drops the sheet, Back/backdrop
+/// restores the theme that was active when the sheet opened.
+#[component]
+pub fn PreferencesSheet(mut open: Signal<bool>) -> Element {
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let mut theme_config: Signal<ThemeConfig> = use_context();
     let toast = use_toast();
 
-    // Snapshot the original theme so we can restore on back-without-save
-    let original_theme = use_signal(|| theme_config.read().clone());
+    let mut original_theme = use_signal(|| theme_config.peek().clone());
+    let mut selected_theme = use_signal(|| theme_config.peek().name.clone());
+    let mut selected_dark = use_signal(|| theme_config.peek().is_dark);
 
-    let mut selected_theme = use_signal(|| theme_config.read().name.clone());
-    let mut selected_dark = use_signal(|| theme_config.read().is_dark);
-    let mut is_loading = use_signal(|| false);
-    let mut saved = use_signal(|| false);
+    // Snapshot the active theme each time the sheet opens and sync the selection
+    // to it, so every open starts from the live theme.
+    use_effect(move || {
+        if open() {
+            let current = theme_config.peek().clone();
+            original_theme.set(current.clone());
+            selected_theme.set(current.name.clone());
+            selected_dark.set(current.is_dark);
+        }
+    });
 
-    // Live preview: update theme_config whenever selection changes
     let mut apply_preview = move || {
         theme_config.set(ThemeConfig {
             name: selected_theme(),
@@ -55,12 +102,11 @@ pub fn Preferences() -> Element {
     };
 
     let mut save = move || {
-        is_loading.set(true);
-        let dark_mode = selected_dark();
         let request = HttpUpdatePreferences {
             theme: Some(selected_theme()),
-            dark_mode: Some(dark_mode),
+            dark_mode: Some(selected_dark()),
         };
+        open.set(false);
         spawn(async move {
             let session_val = match session.ensure_fresh(client).await {
                 Ok(session_val) => session_val,
@@ -69,19 +115,16 @@ pub fn Preferences() -> Element {
                         e.to_user_message(),
                         ToastOptions::default().duration(Duration::from_millis(3000)),
                     );
-                    is_loading.set(false);
                     return;
                 }
             };
             match client().update_preferences(request, &session_val).await {
                 Ok(prefs) => {
                     theme_config.set(ThemeConfig::from(&prefs));
-                    saved.set(true);
                     toast.success(
                         "Preferences saved".to_string(),
                         ToastOptions::default().duration(Duration::from_millis(1500)),
                     );
-                    is_loading.set(false);
                 }
                 Err(e) => {
                     tracing::warn!("update preferences failed: {e}");
@@ -89,66 +132,78 @@ pub fn Preferences() -> Element {
                         e.to_user_message(),
                         ToastOptions::default().duration(Duration::from_millis(3000)),
                     );
-                    is_loading.set(false);
                 }
             }
         });
     };
 
+    let mode = (if selected_dark() { "dark" } else { "light" }).to_string();
+    let regular_themes: Vec<&str> = ALLOWED_THEMES
+        .iter()
+        .copied()
+        .filter(|t| !COLORBLIND_THEMES.contains(t))
+        .collect();
+    let colorblind_themes: Vec<&str> = ALLOWED_THEMES
+        .iter()
+        .copied()
+        .filter(|t| COLORBLIND_THEMES.contains(t))
+        .collect();
+
     rsx! {
-        Bouncer {
-            div { class: "screen",
-                div { class: "page-header",
-                    h2 { "Preferences" }
+        BottomSheet {
+            open,
+            title: "Preferences".to_string(),
+            on_dismiss: move |_| { theme_config.set(original_theme()); },
+            footer: rsx! {
+                button {
+                    class: "util-btn",
+                    onclick: move |_| {
+                        theme_config.set(original_theme());
+                        open.set(false);
+                    },
+                    "Back"
                 }
-
-                div { class: "screen-content centered content-enter",
-                    div { class: "container-sm",
-
-                        for theme in ALLOWED_THEMES {
-                            button {
-                                class: if selected_theme() == *theme { "pref-row selected" } else { "pref-row" },
-                                onclick: move |_| {
-                                    selected_theme.set(theme.to_string());
-                                    apply_preview();
-                                },
-                                { display_theme_name(theme) }
-                            }
-                        }
-
-                        div {
-                            class: "pref-toggle",
-                            span { "Dark mode" }
-                            button {
-                                class: "pref-toggle-btn",
-                                onclick: move |_| {
-                                    selected_dark.set(!selected_dark());
-                                    apply_preview();
-                                },
-                                if selected_dark() { "On" } else { "Off" }
-                            }
-                        }
-                    }
+                button {
+                    class: "util-btn",
+                    onclick: move |_| save(),
+                    "Save"
                 }
+            },
 
-                div { class: "util-bar",
-                    button {
-                        class: "util-btn",
-                        disabled: is_loading(),
-                        onclick: move |_| {
-                            if !saved() {
-                                theme_config.set(original_theme());
-                            }
-                            navigator.go_back();
-                        },
-                        "Back"
-                    }
-                    button {
-                        class: "util-btn",
-                        disabled: is_loading(),
-                        onclick: move |_| save(),
-                        if is_loading() { "Saving..." } else { "Save" }
-                    }
+            div {
+                class: "pref-toggle",
+                span { "Dark mode" }
+                button {
+                    class: "pref-toggle-btn",
+                    onclick: move |_| {
+                        selected_dark.set(!selected_dark());
+                        apply_preview();
+                    },
+                    if selected_dark() { "On" } else { "Off" }
+                }
+            }
+
+            div { class: "pref-section-label", "Themes" }
+
+            for theme in regular_themes {
+                ThemeRow {
+                    theme: theme.to_string(),
+                    mode: mode.clone(),
+                    selected_theme,
+                    theme_config,
+                    selected_dark,
+                }
+            }
+
+            div { class: "pref-section-label", "Color blind" }
+
+            for theme in colorblind_themes {
+                ThemeRow {
+                    theme: theme.to_string(),
+                    mode: mode.clone(),
+                    selected_theme,
+                    theme_config,
+                    selected_dark,
                 }
             }
         }

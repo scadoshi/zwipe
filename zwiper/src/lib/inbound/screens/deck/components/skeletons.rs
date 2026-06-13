@@ -46,13 +46,21 @@ pub(crate) fn DeckCardListSkeleton() -> Element {
     rsx! {
         div { class: "skeleton-card-list",
             div { class: "skeleton-card-group",
-                div { class: "skeleton-card-group-header" }
-                div { class: "skeleton-card-row" }
+                div { class: "skeleton-card-group-header",
+                    div { class: "skeleton-bar skeleton-card-bar-header" }
+                }
+                div { class: "skeleton-card-row",
+                    div { class: "skeleton-bar skeleton-card-bar-row" }
+                }
             }
             div { class: "skeleton-card-group",
-                div { class: "skeleton-card-group-header skeleton-card-group-header-wide" }
+                div { class: "skeleton-card-group-header",
+                    div { class: "skeleton-bar skeleton-card-bar-header skeleton-card-bar-header-wide" }
+                }
                 for i in 0..6 {
-                    div { key: "{i}", class: "skeleton-card-row" }
+                    div { key: "{i}", class: "skeleton-card-row",
+                        div { class: "skeleton-bar skeleton-card-bar-row" }
+                    }
                 }
             }
         }

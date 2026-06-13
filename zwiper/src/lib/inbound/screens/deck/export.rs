@@ -105,9 +105,8 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                     h2 { "Export" }
                 }
 
-                div { class: "screen-content centered content-enter",
-                    div { class: "container-sm",
-
+                div { class: "screen-content content-enter",
+                    div { class: "import-controls",
                         div { class: "chip-row",
                             span { class: "chip-row-label", "Export:" }
                             button {
@@ -146,7 +145,9 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                                 "Side"
                             }
                         }
+                    }
 
+                    div { class: "container-sm",
                         match export_text() {
                             Some(text) => rsx! {
                                 label { class: "label", r#for: "export-text", "Decklist" }

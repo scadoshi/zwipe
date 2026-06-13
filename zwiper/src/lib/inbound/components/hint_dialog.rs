@@ -71,32 +71,26 @@ pub fn open_and_record_hint(
     });
 }
 
-/// Hint dialog shell: title, body content, and a single "Got it" button.
+/// Hint dialog shell: title, body content, and a single "Got it" button, with a
+/// rule under the title and above the button.
 /// Compose the body from [`HintLine`]s, with [`HintKey`]s for button names.
-/// `dividers` draws a rule under the title and above the button.
 #[component]
 pub fn HintDialog(
     open: Signal<bool>,
     title: String,
-    #[props(default = false)] dividers: bool,
     children: Element,
 ) -> Element {
-    let rule = "border: none; border-top: 1px solid var(--border-primary); width: 100%; margin: 0.25rem 0 0.75rem 0;";
     rsx! {
         AlertDialogRoot {
             open: open(),
             on_open_change: move |v| open.set(v),
             AlertDialogContent {
                 AlertDialogTitle { "{title}" }
-                if dividers {
-                    hr { style: "{rule}" }
-                }
+                hr { class: "dialog-rule" }
                 AlertDialogDescription {
                     {children}
                 }
-                if dividers {
-                    hr { style: "{rule}" }
-                }
+                hr { class: "dialog-rule" }
                 AlertDialogActions {
                     AlertDialogAction {
                         on_click: move |_| open.set(false),
