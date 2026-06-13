@@ -255,7 +255,8 @@
             .flavor {
               font-size: var(--oracle-fs, 7px); font-style: italic; color: var(--subtle);
               line-height: 1.3;
-              padding-right: 34px;                 /* clear the P/T box */
+              /* full width: the opaque P/T box (a later sibling) overhangs and covers the
+                 flavor's bottom-right corner, like a real Magic card */
             }
             /* power / toughness box — overhangs the text box's bottom-right corner like a
                real Magic card. Lives at the .face level (not inside .textbox) so the
