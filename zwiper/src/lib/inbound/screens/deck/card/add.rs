@@ -3,7 +3,10 @@ use crate::{
     inbound::{
         components::{
             auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
-            hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, HintLine, use_one_time_hint},
+            hint_dialog::{
+                HintBullet, HintBullets, HintColored, HintCredit, HintDialog, HintLine,
+                use_one_time_hint,
+            },
             interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
             telemetry::usage_buffer::UsageBuffer,
         },
@@ -1078,6 +1081,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     }
                 }
                 HintLine { "Cards are ordered by how well they fit your commander. Filter or sort anytime." }
+                HintCredit { "Recommendations powered by Recommander" }
             }
 
             CardFilterSheet {

@@ -116,6 +116,18 @@ pub fn HintLine(children: Element) -> Element {
     }
 }
 
+/// A dimmed, small credit/attribution line for the foot of a hint
+/// (e.g. "Recommendations powered by …").
+#[component]
+pub fn HintCredit(children: Element) -> Element {
+    rsx! {
+        p {
+            style: "margin: 0.25rem 0 0 0; text-align: left; font-size: 0.78rem; color: var(--text-subtle);",
+            {children}
+        }
+    }
+}
+
 /// Bulleted list of hint lines.
 #[component]
 pub fn HintBullets(children: Element) -> Element {
