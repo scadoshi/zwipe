@@ -15,15 +15,20 @@
             @import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/700.css");
 
             :root {
-              /* QR colors — recomputed per theme by JS to the theme's light/dark tones,
+                /* QR colors — recomputed per theme by JS to the theme's light/dark tones,
                  keeping high contrast. Defaults = gruvbox. */
-              --qr-bg:     #ebdbb2;
-              --qr-fg:     #282828;
-              --grid-line: rgba(235,219,178,.025);   /* faint grid; JS recolors per theme from --text-primary */
+                --qr-bg: #ebdbb2;
+                --qr-fg: #282828;
+                --grid-line: rgba(
+                    235,
+                    219,
+                    178,
+                    0.025
+                ); /* faint grid; JS recolors per theme from --text-primary */
 
-              /* True MTG / MPC poker cut size = 63 x 88 mm = 2.48 x 3.46 in. */
-              --card-w: 2.48in;
-              --card-h: 3.46in;
+                /* True MTG / MPC poker cut size = 63 x 88 mm = 2.48 x 3.46 in. */
+                --card-w: 2.48in;
+                --card-h: 3.46in;
             }
 
             /* Card colors derive from the active theme (shared/themes.css). Defined on
@@ -31,57 +36,115 @@
                the theme variable resolve together. Fallbacks = gruvbox-dark if themes.css
                fails to load. */
             body {
-              --bg:        var(--bg-primary, #282828);
-              --bg-sink:   var(--border-secondary, #3c3836);
-              --surface:   var(--border-secondary, #3c3836);   /* raised panels: title/type/pt */
-              --surface-2: var(--border-muted, #504945);
-              --tan:       var(--text-primary, #ebdbb2);
-              --muted:     var(--text-muted, #a89984);
-              --subtle:    var(--text-subtle, #c0b196);
-              --border:    var(--border-primary, #665c54);
-              --border-2:  var(--border-secondary, #3c3836);
-              --green:     var(--accent-primary, #689d6a);
-              --yellow:    var(--accent-tertiary, #d79921);
-              --red:       var(--color-error, #fb4934);
+                --bg: var(--bg-primary, #282828);
+                --bg-sink: var(--border-secondary, #3c3836);
+                --surface: var(
+                    --border-secondary,
+                    #3c3836
+                ); /* raised panels: title/type/pt */
+                --surface-2: var(--border-muted, #504945);
+                --tan: var(--text-primary, #ebdbb2);
+                --muted: var(--text-muted, #a89984);
+                --subtle: var(--text-subtle, #c0b196);
+                --border: var(--border-primary, #665c54);
+                --border-2: var(--border-secondary, #3c3836);
+                --green: var(--accent-primary, #689d6a);
+                --yellow: var(--accent-tertiary, #d79921);
+                --red: var(--color-error, #fb4934);
             }
 
-            * { margin: 0; padding: 0; box-sizing: border-box; }
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
 
             body {
-              background: #111;
-              color: var(--tan);
-              font-family: "JetBrains Mono", ui-monospace, monospace;
-              -webkit-font-smoothing: antialiased;
-              padding: 32px 16px 64px;
+                background: #111;
+                color: var(--tan);
+                font-family: "JetBrains Mono", ui-monospace, monospace;
+                -webkit-font-smoothing: antialiased;
+                padding: 32px 16px 64px;
             }
 
             /* ---------- on-screen controls (never printed) ---------- */
             .controls {
-              width: calc(100% - 48px);
-              max-width: 1200px;                   /* wide so rows spread out and the panel
+                width: calc(100% - 48px);
+                max-width: 1200px; /* wide so rows spread out and the panel
                                                       stays short, sharing the screen with the cards */
-              margin: 0 auto 24px;
-              background: var(--bg);
-              border: 1px solid var(--border-2);
-              border-radius: 10px;
-              padding: 16px 20px;
+                margin: 0 auto 24px;
+                background: var(--bg);
+                border: 1px solid var(--border-2);
+                border-radius: 10px;
+                padding: 16px 20px;
             }
-            .controls h1 { font-size: 15px; font-weight: 700; color: var(--tan); margin-bottom: 4px; letter-spacing: 1px; }
-            .controls p  { font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 14px; }
-            .controls .row { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; }
-            .controls label { font-size: 12px; color: var(--subtle); display: flex; gap: 8px; align-items: center; }
-            .controls select, .controls input[type=text] {
-              background: var(--bg-sink); color: var(--tan); border: 1px solid var(--border);
-              border-radius: 6px; padding: 6px 9px; font-family: inherit; font-size: 12px; min-width: 180px;
+            .controls h1 {
+                font-size: 15px;
+                font-weight: 700;
+                color: var(--tan);
+                margin-bottom: 4px;
+                letter-spacing: 1px;
             }
-            .controls .hint { font-size: 11px; color: var(--muted); margin-top: 12px; }
+            .controls p {
+                font-size: 12px;
+                color: var(--muted);
+                line-height: 1.6;
+                margin-bottom: 14px;
+            }
+            .controls .row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px 22px;
+                align-items: center;
+            }
+            .controls label {
+                font-size: 12px;
+                color: var(--subtle);
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+            .controls select,
+            .controls input[type="text"] {
+                background: var(--bg-sink);
+                color: var(--tan);
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                padding: 6px 9px;
+                font-family: inherit;
+                font-size: 12px;
+                min-width: 180px;
+            }
+            .controls .hint {
+                font-size: 11px;
+                color: var(--muted);
+                margin-top: 12px;
+            }
             .dl-btn {
-              background: var(--green); color: var(--bg-sink); border: none; cursor: pointer;
-              border-radius: 6px; padding: 8px 14px; font-family: inherit; font-size: 12px; font-weight: 700;
+                background: var(--green);
+                color: var(--bg-sink);
+                border: none;
+                cursor: pointer;
+                border-radius: 6px;
+                padding: 8px 14px;
+                font-family: inherit;
+                font-size: 12px;
+                font-weight: 700;
             }
-            .dl-btn:hover { filter: brightness(1.08); }
-            .dl-btn:disabled { opacity: .5; cursor: default; }
-            .controls kbd { background: var(--bg-sink); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; font-size: 11px; }
+            .dl-btn:hover {
+                filter: brightness(1.08);
+            }
+            .dl-btn:disabled {
+                opacity: 0.5;
+                cursor: default;
+            }
+            .controls kbd {
+                background: var(--bg-sink);
+                border: 1px solid var(--border);
+                border-radius: 4px;
+                padding: 1px 6px;
+                font-size: 11px;
+            }
 
             /* ====================================================== */
             /*  THE CARD  —  MTG token frame                          */
@@ -89,173 +152,285 @@
             /* zoom is display-only: the cards render at true physical size (~240px), too
                small to review on a monitor, so scale the on-screen preview up. The export
                clones each card into a wrapper outside .sheet, so prints stay 63x88mm. */
-            .sheet { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 28px; zoom: 1.5; }
+            .sheet {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                justify-content: center;
+                gap: 28px;
+                zoom: 1.5;
+            }
 
             /* on-screen bleed preview — purely visual; the export builds its own bleed.
                When Bleed is on, the frame shows the theme+grid bleed margin around the
                card, with a dashed trim line marking where MPC cuts. */
-            .bleed-frame { display: inline-block; line-height: 0; }
-            body.show-bleed .bleed-frame {
-              padding: 0.12in;                       /* MPC bleed margin per side */
-              background-color: var(--bg);
-              background-image:
-                linear-gradient(var(--grid-line) 1px, transparent 1px),
-                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-              background-size: 7px 7px;
-              background-position: 4.5px 4.5px;
+            .bleed-frame {
+                display: inline-block;
+                line-height: 0;
             }
-            body.show-bleed .card { box-shadow: none; }
-            body.show-bleed .bleed-frame .card { outline: 1px dashed var(--muted); outline-offset: 0; }
+            body.show-bleed .bleed-frame {
+                padding: 0.12in; /* MPC bleed margin per side */
+                background-color: var(--bg);
+                background-image:
+                    linear-gradient(var(--grid-line) 1px, transparent 1px),
+                    linear-gradient(
+                        90deg,
+                        var(--grid-line) 1px,
+                        transparent 1px
+                    );
+                background-size: 7px 7px;
+                background-position: 4.5px 4.5px;
+            }
+            body.show-bleed .card {
+                box-shadow: none;
+            }
+            body.show-bleed .bleed-frame .card {
+                outline: 1px dashed var(--muted);
+                outline-offset: 0;
+            }
 
             .card {
-              position: relative;
-              width: var(--card-w);
-              height: var(--card-h);
-              /* theme-colored frame + grid (no black border) so the cut card has a
+                position: relative;
+                width: var(--card-w);
+                height: var(--card-h);
+                /* theme-colored frame + grid (no black border) so the cut card has a
                  theme-colored edge, continuous with the bleed */
-              background-color: var(--bg);
-              background-image:
-                linear-gradient(var(--grid-line) 1px, transparent 1px),
-                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-              background-size: 7px 7px;
-              border-radius: 11px;                /* corner round like a real card */
-              padding: 9px;                       /* frame thickness */
-              overflow: hidden;
+                background-color: var(--bg);
+                background-image:
+                    linear-gradient(var(--grid-line) 1px, transparent 1px),
+                    linear-gradient(
+                        90deg,
+                        var(--grid-line) 1px,
+                        transparent 1px
+                    );
+                background-size: 7px 7px;
+                border-radius: 11px; /* corner round like a real card */
+                padding: 9px; /* frame thickness */
+                overflow: hidden;
             }
 
             /* inner card face — transparent so the card's single grid shows through
                continuously (panels float on it); no border, no separate grid */
             .face {
-              position: relative;
-              height: 100%;
-              background: transparent;
-              display: flex;
-              flex-direction: column;
-              padding: 8px 8px 7px;
-              gap: 6px;
+                position: relative;
+                height: 100%;
+                background: transparent;
+                display: flex;
+                flex-direction: column;
+                padding: 8px 8px 7px;
+                gap: 6px;
             }
 
             /* ---------- title bar ---------- */
             .titlebar {
-              display: flex; align-items: center; justify-content: space-between;
-              background: var(--surface);
-              border: 1px solid var(--border);
-              border-radius: 4px;
-              padding: 5px 9px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 4px;
+                padding: 5px 9px;
             }
-            .title { display: flex; flex-direction: column; line-height: 1; font-size: 16px; font-weight: 700; letter-spacing: .5px; color: var(--tan); }
-            .title .sub { font-size: 7px; font-weight: 500; letter-spacing: 2px; color: var(--green); margin-top: 3px; white-space: nowrap; }
+            .title {
+                display: flex;
+                flex-direction: column;
+                line-height: 1;
+                font-size: 16px;
+                font-weight: 700;
+                letter-spacing: 0.5px;
+                color: var(--tan);
+            }
+            .title .sub {
+                font-size: 7px;
+                font-weight: 500;
+                letter-spacing: 2px;
+                color: var(--green);
+                margin-top: 3px;
+                white-space: nowrap;
+            }
 
             /* mana cost — full WUBRG, official Scryfall mana symbols as base64 <img>
                (html2canvas draws them at exact dimensions; inline SVG mis-sizes/clips). */
-            .cost { display: flex; align-items: center; flex-shrink: 0; }
-            .mana-symbols { display: inline-block; line-height: 1; white-space: nowrap; font-size: 10px; }
-            .mana-symbols .ms-svg { width: 10px; height: 10px; display: inline-block; vertical-align: middle; }
-            .mana-symbols .ms-svg + .ms-svg { margin-left: 1.5px; }
+            .cost {
+                display: flex;
+                align-items: center;
+                flex-shrink: 0;
+            }
+            .mana-symbols {
+                display: inline-block;
+                line-height: 1;
+                white-space: nowrap;
+                font-size: 10px;
+            }
+            .mana-symbols .ms-svg {
+                width: 10px;
+                height: 10px;
+                display: inline-block;
+                vertical-align: middle;
+            }
+            .mana-symbols .ms-svg + .ms-svg {
+                margin-left: 1.5px;
+            }
 
             /* the real app logo: z.txt rendered as monospace ASCII */
             .zlogo {
-              font-family: "JetBrains Mono", ui-monospace, monospace;
-              white-space: pre;
-              line-height: 0.82;
-              color: var(--tan);
-              user-select: none;
+                font-family: "JetBrains Mono", ui-monospace, monospace;
+                white-space: pre;
+                line-height: 0.82;
+                color: var(--tan);
+                user-select: none;
             }
             /* set-symbol slot: the real pixel-Z logo at the right of the type line.
                Rendered at a normal font size then scaled DOWN, so it stays crisp in the
                zoomed preview (rendering it tiny made it garbled). Absolute, so its scaled-up
                layout footprint doesn't affect the type line. */
             .zlogo-set {
-              position: absolute; right: 9px; top: 50%;
-              font-size: 8px; line-height: 0.8;
-              color: var(--tan);
-              transform: translateY(-50%) scale(0.34);
-              transform-origin: 100% 50%;          /* shrink toward the right-center, keeping the right edge fixed */
-              filter: drop-shadow(0 1px 0 rgba(0,0,0,.5));
+                position: absolute;
+                right: 9px;
+                top: 50%;
+                font-size: 8px;
+                line-height: 0.8;
+                color: var(--tan);
+                transform: translateY(-50%) scale(0.34);
+                transform-origin: 100% 50%; /* shrink toward the right-center, keeping the right edge fixed */
+                filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.5));
             }
 
             /* ---------- art window ---------- */
             .art {
-              position: relative;
-              flex: 0 0 37%;                       /* fixed proportion, like a real card's art */
-              min-height: 0;
-              border: 1px solid var(--border);
-              border-radius: 4px;
-              background: var(--bg-sink);
-              display: flex; flex-direction: column; align-items: center; justify-content: center;
-              padding: 6px;
-              overflow: hidden;
+                position: relative;
+                flex: 0 0 37%; /* fixed proportion, like a real card's art */
+                min-height: 0;
+                border: 1px solid var(--border);
+                border-radius: 4px;
+                background: var(--bg-sink);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 6px;
+                overflow: hidden;
             }
             /* big faint logo behind the QR, like card art */
             .art .zlogo-ghost {
-              position: absolute; right: -6px; bottom: -10px;
-              font-size: 13px; opacity: .13;
+                position: absolute;
+                right: -6px;
+                bottom: -10px;
+                font-size: 13px;
+                opacity: 0.13;
             }
 
             .qr-tile {
-              background: var(--qr-bg);
-              padding: 7px;
-              border-radius: 4px;
-              border: 1px solid rgba(0,0,0,.18);
-              box-shadow: 0 3px 10px rgba(0,0,0,.45);
-              z-index: 1;
-              height: 100%;                        /* fill the (now capped) art box */
-              aspect-ratio: 1 / 1;
-              max-width: 100%;
-              display: flex;
+                background: var(--qr-bg);
+                padding: 7px;
+                border-radius: 4px;
+                border: 1px solid rgba(0, 0, 0, 0.18);
+                box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45);
+                z-index: 1;
+                height: 100%; /* fill the (now capped) art box */
+                aspect-ratio: 1 / 1;
+                max-width: 100%;
+                display: flex;
             }
             .qr-tile svg {
-              display: block;
-              width: 100%; height: 100%;
-              shape-rendering: crispEdges;
+                display: block;
+                width: 100%;
+                height: 100%;
+                shape-rendering: crispEdges;
             }
             /* gruvbox-tint the QR: dark-brown modules on the cream tile (not black/white) */
-            .qr-tile svg path, .qr-tile svg rect { fill: var(--qr-fg) !important; }
+            .qr-tile svg path,
+            .qr-tile svg rect {
+                fill: var(--qr-fg) !important;
+            }
 
             /* ---------- type line ---------- */
             .typeline {
-              position: relative;                  /* anchor for the absolute set symbol */
-              flex: 0 0 auto;                      /* never shrink: the browser was shrinking
+                position: relative; /* anchor for the absolute set symbol */
+                flex: 0 0 auto; /* never shrink: the browser was shrinking
                                                       this flex child and its overflow:hidden
                                                       then clipped the text away (html2canvas
                                                       doesn't shrink it, so it showed on export) */
-              background: var(--surface);
-              border: 1px solid var(--border);
-              border-radius: 4px;
-              padding: 4px 9px;
-              font-size: 8px; font-weight: 500; letter-spacing: .2px; color: var(--tan);
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 4px;
+                padding: 4px 9px;
+                font-size: 8px;
+                font-weight: 500;
+                letter-spacing: 0.2px;
+                color: var(--tan);
             }
-            .typeline > span:first-child { display: block; color: var(--tan); padding-right: 18px; white-space: nowrap; }
+            .typeline > span:first-child {
+                display: block;
+                color: var(--tan);
+                padding-right: 18px;
+                white-space: nowrap;
+            }
 
             /* ---------- oracle / rules text box ---------- */
             .textbox {
-              position: relative;
-              flex: 1 1 auto; min-height: 0;       /* fill remaining height, like a real text box */
-              background: var(--bg-sink);
-              border: 1px solid var(--border-2);
-              border-radius: 4px;
-              padding: 6px 8px;
-              display: flex; flex-direction: column; gap: 5px;
-              overflow: hidden;
+                position: relative;
+                flex: 1 1 auto;
+                min-height: 0; /* fill remaining height, like a real text box */
+                background: var(--bg-sink);
+                border: 1px solid var(--border-2);
+                border-radius: 4px;
+                padding: 6px 8px;
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+                overflow: hidden;
             }
             /* --oracle-fs is auto-tuned by JS so the text always fits the box */
-            .oracle { display: flex; flex-direction: column; gap: 0.45em; font-size: var(--oracle-fs, 7px); }
-            .oracle .line { font-size: 1em; line-height: 1.3; color: var(--tan); }
-            .oracle .kw { font-weight: 700; }
-            .kw-g { color: var(--green); }                       /* aqua/green accent */
-            .kw-y { color: var(--yellow); }                      /* yellow accent */
-            .kw-s { color: var(--color-success, #b8bb26); }      /* bright lime — Free */
-            .c-green { color: var(--green); font-weight: 600; }   /* swipe-right = add */
-            .c-red   { color: var(--red);   font-weight: 600; }   /* swipe-left = skip */
-            .oracle .reminder { font-style: italic; color: var(--muted); }
+            .oracle {
+                display: flex;
+                flex-direction: column;
+                gap: 0.45em;
+                font-size: var(--oracle-fs, 7px);
+            }
+            .oracle .line {
+                font-size: 1em;
+                line-height: 1.3;
+                color: var(--tan);
+            }
+            .oracle .kw {
+                font-weight: 700;
+            }
+            .kw-g {
+                color: var(--green);
+            } /* aqua/green accent */
+            .kw-y {
+                color: var(--yellow);
+            } /* yellow accent */
+            .kw-s {
+                color: var(--color-success, #b8bb26);
+            } /* bright lime — Free */
+            .c-green {
+                color: var(--green);
+                font-weight: 600;
+            } /* swipe-right = add */
+            .c-red {
+                color: var(--red);
+                font-weight: 600;
+            } /* swipe-left = skip */
+            .oracle .reminder {
+                font-style: italic;
+                color: var(--muted);
+            }
             /* divider between rules text and flavor, like a real card */
             .textbox .rule {
-              border: none; border-top: 1px solid var(--border); height: 0; margin: 0; opacity: .85;
+                border: none;
+                border-top: 1px solid var(--border);
+                height: 0;
+                margin: 0;
+                opacity: 0.85;
             }
             .flavor {
-              font-size: var(--oracle-fs, 7px); font-style: italic; color: var(--subtle);
-              line-height: 1.3;
-              /* full width: the opaque P/T box (a later sibling) overhangs and covers the
+                font-size: var(--oracle-fs, 7px);
+                font-style: italic;
+                color: var(--subtle);
+                line-height: 1.3;
+                /* full width: the opaque P/T box (a later sibling) overhangs and covers the
                  flavor's bottom-right corner, like a real Magic card */
             }
             /* power / toughness box — overhangs the text box's bottom-right corner like a
@@ -263,71 +438,126 @@
                overhang isn't clipped; solid distinct bg (--surface-2) + shadow so it reads
                as a raised tab hanging off the corner. */
             .pt {
-              position: absolute; right: 5px; bottom: 15px;
-              display: flex; align-items: center; justify-content: center;
-              min-height: 17px;                    /* real vertical room for the power/toughness */
-              background-color: var(--surface-2); /* border-muted: one step lighter than textbox/bg so the box reads as a raised tab */
-              border: 1px solid var(--border);
-              border-radius: 5px;
-              padding: 2px 10px;
-              font-size: 12px; font-weight: 700; line-height: 1; color: var(--tan);
-              box-shadow: 0 2px 5px rgba(0,0,0,.4);
+                position: absolute;
+                right: 5px;
+                bottom: 15px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 17px; /* real vertical room for the power/toughness */
+                background-color: var(
+                    --surface-2
+                ); /* border-muted: one step lighter than textbox/bg so the box reads as a raised tab */
+                border: 1px solid var(--border);
+                border-radius: 5px;
+                padding: 2px 10px;
+                font-size: 12px;
+                font-weight: 700;
+                line-height: 1;
+                color: var(--tan);
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
             }
 
             /* ---------- collector / footer line ---------- */
             .footer {
-              display: flex; align-items: center; justify-content: space-between;
-              font-size: 7.5px; line-height: 1; color: var(--muted); letter-spacing: .4px;
-              padding: 0 2px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                font-size: 7.5px;
+                line-height: 1;
+                color: var(--muted);
+                letter-spacing: 0.4px;
+                padding: 0px 2px 0;
+                transform: translateY(5px);          /* nudge footer text down without reflowing the box above */
             }
-            .footer .site { color: var(--green); font-weight: 700; letter-spacing: 1px; }
+            .footer .site {
+                color: var(--green);
+                font-weight: 700;
+                letter-spacing: 1px;
+            }
 
             /* ====================================================== */
             /*  CARD BACK — full Zwipe wordmark                       */
             /* ====================================================== */
             .back-face {
-              padding: 9px;
-              justify-content: center; align-items: stretch;
-              gap: 0;
+                padding: 9px;
+                justify-content: center;
+                align-items: stretch;
+                gap: 0;
             }
             .back-frame {
-              position: relative;
-              flex: 1;
-              display: flex; flex-direction: column; align-items: center; justify-content: center;
-              gap: 12px;
-              border: 1px solid var(--border);
-              border-radius: 6px;
-              background: var(--bg-sink);
-              overflow: hidden;
+                position: relative;
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                background: var(--bg-sink);
+                overflow: hidden;
             }
             /* faint pixel-grid texture behind the wordmark */
             .back-frame::before {
-              content: ""; position: absolute; inset: 0; pointer-events: none;
-              background-image:
-                linear-gradient(var(--grid-line) 1px, transparent 1px),
-                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-              background-size: 8px 8px;
+                content: "";
+                position: absolute;
+                inset: 0;
+                pointer-events: none;
+                background-image:
+                    linear-gradient(var(--grid-line) 1px, transparent 1px),
+                    linear-gradient(
+                        90deg,
+                        var(--grid-line) 1px,
+                        transparent 1px
+                    );
+                background-size: 8px 8px;
             }
             .zlogo-full {
-              position: relative;
-              font-size: 5px; line-height: 0.82; color: var(--tan);
-              filter: drop-shadow(0 1px 1px rgba(0,0,0,.6));
+                position: relative;
+                font-size: 5px;
+                line-height: 0.82;
+                color: var(--tan);
+                filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.6));
             }
             .back-site {
-              text-align: center;
-              font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: var(--green);
-              padding-top: 7px;
+                text-align: center;
+                font-size: 9px;
+                font-weight: 700;
+                letter-spacing: 1.5px;
+                color: var(--green);
+                padding-top: 7px;
             }
 
             /* ====================================================== */
             /*  PRINT                                                  */
             /* ====================================================== */
             @media print {
-              @page { margin: 0.3in; }
-              body { background: #fff; padding: 0; }
-              .controls { display: none !important; }
-              .card { box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-              .face, .titlebar, .typeline, .textbox, .art, .qr-tile, .back-frame { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                @page {
+                    margin: 0.3in;
+                }
+                body {
+                    background: #fff;
+                    padding: 0;
+                }
+                .controls {
+                    display: none !important;
+                }
+                .card {
+                    box-shadow: none;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }
+                .face,
+                .titlebar,
+                .typeline,
+                .textbox,
+                .art,
+                .qr-tile,
+                .back-frame {
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }
             }
         </style>
     </head>
