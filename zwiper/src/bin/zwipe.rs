@@ -33,7 +33,7 @@ fn ThemeWrapper(children: Element) -> Element {
     let theme: Signal<ThemeConfig> = use_context();
     let class = theme.read().css_class();
     rsx! {
-        div { class: "{class}",
+        div { class: "app-shell {class}",
             {children}
         }
     }

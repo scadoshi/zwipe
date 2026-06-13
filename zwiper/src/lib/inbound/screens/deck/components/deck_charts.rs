@@ -22,7 +22,7 @@ pub(crate) fn DeckCharts(
         if let Some(type_bars) = type_bars.as_ref() {
             div { style: "display:flex;flex-direction:column;",
             label { class: "label", "Basic type distribution" }
-            div { style: "width:100%;border:1px solid var(--border-secondary);border-radius:0.5rem;padding:0.75rem;",
+            div { style: "width:100%;background:var(--bg-primary);box-shadow:var(--shadow-sm);border:1px solid var(--border-secondary);border-radius:0.5rem;padding:0.75rem;",
                 div { style: "display:flex;align-items:flex-end;gap:0.25rem;height:6rem;",
                     for (_label, count, pct) in type_bars.iter() {
                         div { style: "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:0.15rem;",
@@ -47,7 +47,7 @@ pub(crate) fn DeckCharts(
             if !cat_bars.is_empty() {
                 div { style: "display:flex;flex-direction:column;",
                 label { class: "label", "Category distribution" }
-                div { style: "width:100%;border:1px solid var(--border-secondary);border-radius:0.5rem;padding:0.75rem;display:flex;flex-direction:column;gap:0.35rem;",
+                div { style: "width:100%;background:var(--bg-primary);box-shadow:var(--shadow-sm);border:1px solid var(--border-secondary);border-radius:0.5rem;padding:0.75rem;display:flex;flex-direction:column;gap:0.35rem;",
                     for (label, count, pct) in cat_bars.iter() {
                         div { style: "display:flex;align-items:center;gap:0.5rem;",
                             span { style: "width:5ch;font-size:0.7rem;opacity:0.7;text-align:right;flex-shrink:0;",
@@ -74,7 +74,7 @@ pub(crate) fn DeckCharts(
         if let Some(color_bars) = color_bars.as_ref() {
             div { style: "display:flex;flex-direction:column;",
             label { class: "label", "Color distribution" }
-            div { style: "width:100%;border:1px solid var(--border-secondary);border-radius:0.5rem;padding:0.75rem;",
+            div { style: "width:100%;background:var(--bg-primary);box-shadow:var(--shadow-sm);border:1px solid var(--border-secondary);border-radius:0.5rem;padding:0.75rem;",
                 div { style: "display:flex;align-items:flex-end;gap:0.25rem;height:6rem;",
                     for (_label, count, pct) in color_bars.iter() {
                         div { style: "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:0.15rem;",
@@ -97,7 +97,7 @@ pub(crate) fn DeckCharts(
         // ── mana curve ─────────────────────────────────
         div { style: "display:flex;flex-direction:column;",
         label { class: "label", "Mana curve" }
-        div { style: "width:100%;border:1px solid var(--border-secondary);border-radius:0.5rem;padding:0.75rem;",
+        div { style: "width:100%;background:var(--bg-primary);box-shadow:var(--shadow-sm);border:1px solid var(--border-secondary);border-radius:0.5rem;padding:0.75rem;",
             div { style: "display:flex;align-items:flex-end;gap:0.25rem;height:6rem;",
                 for (count, pct) in mana_curve_bars.iter() {
                     div { style: "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:0.15rem;",
@@ -121,7 +121,7 @@ pub(crate) fn DeckCharts(
             if !rows.is_empty() {
                 div { style: "display:flex;flex-direction:column;",
                 label { class: "label", "Mana cost fulfillment" }
-                div { style: "width:100%;border:1px solid var(--border-secondary);border-radius:0.5rem;padding:0.75rem;display:flex;flex-direction:column;gap:0.4rem;",
+                div { style: "width:100%;background:var(--bg-primary);box-shadow:var(--shadow-sm);border:1px solid var(--border-secondary);border-radius:0.5rem;padding:0.75rem;display:flex;flex-direction:column;gap:0.4rem;",
                     for ManaBalanceRow { label: color_label, consumed, produced, fill_pct, is_surplus } in rows {
                         div { style: "display:flex;align-items:center;gap:0.5rem;",
                             span { style: "width:1ch;font-size:0.75rem;opacity:0.8;",

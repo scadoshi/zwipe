@@ -20,7 +20,7 @@ use crate::inbound::screens::{
     home::Home,
     profile::{
         change_email::ChangeEmail, change_password::ChangePassword,
-        change_username::ChangeUsername, preferences::Preferences, Profile,
+        change_username::ChangeUsername, Profile,
     },
 };
 use dioxus::prelude::*;
@@ -57,9 +57,6 @@ pub enum Router {
     /// Change password form.
     #[route("/user/change-password")]
     ChangePassword {},
-    /// Theme and display preferences.
-    #[route("/user/preferences")]
-    Preferences {},
 
     /// List all user's decks with name, format, and card count.
     #[route("/deck")]

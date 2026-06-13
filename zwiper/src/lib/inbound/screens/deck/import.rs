@@ -126,8 +126,8 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                     h2 { "Import" }
                 }
 
-                div { class: "pinned-controls",
-                    div { class: "container-sm",
+                div { class: "screen-content content-enter",
+                    div { class: "import-controls",
                         div { class: "chip-row",
                             span { class: "chip-row-label", "From:" }
                             for (label, value) in [("Text", ImportSource::Text), ("Archidekt", ImportSource::Archidekt)] {
@@ -158,17 +158,19 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                                 }
                             }
                         }
-                        p { class: "text-muted text-sm",
+                        p { class: "text-muted text-sm import-hint",
                             if mode().is_replace() {
-                                "Removes all existing cards in the {board_word}, replacing with imported cards."
+                                "Removes all existing cards in the "
+                                span { class: "hl-key", "{board_word}" }
+                                ", replacing with imported cards."
                             } else {
-                                "Adds imported cards into the {board_word}. Existing cards stay but take new quantities if applicable."
+                                "Adds imported cards into the "
+                                span { class: "hl-key", "{board_word}" }
+                                ". Existing cards stay but take new quantities if applicable."
                             }
                         }
                     }
-                }
 
-                div { class: "screen-content centered content-enter",
                     div { class: "container-sm",
                         if source() == ImportSource::Text {
                             label { class: "label", r#for: "import-text", "Paste decklist" }

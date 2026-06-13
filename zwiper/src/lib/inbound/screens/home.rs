@@ -1,12 +1,9 @@
 //! Home/landing page screen.
 
-use crate::inbound::components::alert_dialog::{
-    AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
-    AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
-};
+use crate::inbound::components::logout_dialog::LogoutDialog;
 use crate::inbound::router::Router;
 use crate::{
-    inbound::components::auth::{bouncer::Bouncer, signal_logout::SignalLogout},
+    inbound::components::auth::bouncer::Bouncer,
     inbound::components::hint_dialog::{
         HintBullet, HintBullets, HintColored, HintDialog, HintKey, use_one_time_hint,
     },
@@ -16,10 +13,12 @@ use crate::{
         user::{get_user::ClientGetUser, preferences::ClientGetPreferences},
     },
 };
+use crate::inbound::screens::deck::card::components::image_preview::ImagePreview;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::{
     builder::CardFilterBuilder, order_by_option::OrderByOption,
 };
@@ -44,6 +43,10 @@ pub fn Home() -> Element {
     let logo = logo::ZWIPE;
 
     let mut theme_config: Signal<ThemeConfig> = use_context();
+
+    // Tap the card name in the flavor quote to preview that card's image.
+    let mut preview_card: Signal<Option<ScryfallData>> = use_signal(|| None);
+    let preview_dismissing: Signal<bool> = use_signal(|| false);
 
     // Greet user on mount.
     use_effect(move || {
@@ -127,6 +130,7 @@ pub fn Home() -> Element {
     rsx! {
         Bouncer {
             div { class: "screen",
+                div { class: "page-header", h2 { "Home" } }
                 div { class: "screen-content centered",
                 div { class : "logo", "{logo}" }
 
@@ -135,10 +139,15 @@ pub fn Home() -> Element {
                     match &*random_flavor_card.read() {
                         Some(Some(card)) => {
                             if let Some(flavor_text) = card.scryfall_data.flavor_text.as_ref() {
+                                let sd = card.scryfall_data.clone();
                                 rsx! {
                                     div { class: "flavor-quote",
                                         "{flavor_text} "
-                                        span { class: "flavor-source", "[{card.scryfall_data.name}]" }
+                                        span {
+                                            class: "flavor-source flavor-source-link",
+                                            onclick: move |_| preview_card.set(Some(sd.clone())),
+                                            "{card.scryfall_data.name}"
+                                        }
                                     }
                                 }
                             } else {
@@ -180,6 +189,8 @@ pub fn Home() -> Element {
                 }
             }
 
+            ImagePreview { card: preview_card, dismissing: preview_dismissing }
+
             div { class: "util-bar",
                 button { class : "util-btn",
                     onclick : move |_| {
@@ -198,25 +209,7 @@ pub fn Home() -> Element {
                 }
             }
 
-            AlertDialogRoot {
-                open: show_logout_dialog(),
-                on_open_change: move |open| show_logout_dialog.set(open),
-                AlertDialogContent {
-                    AlertDialogTitle { "Log out" }
-                    AlertDialogDescription { "Are you sure you want to log out?" }
-                    AlertDialogActions {
-                        AlertDialogCancel {
-                            on_click: move |_| show_logout_dialog.set(false),
-                            "Cancel"
-                        }
-                        AlertDialogAction {
-                            danger: true,
-                            on_click: move |_| session.logout(client),
-                            "Log out"
-                        }
-                    }
-                }
-            }
+            LogoutDialog { open: show_logout_dialog }
             }
         }
     }

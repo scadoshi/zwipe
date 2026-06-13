@@ -118,6 +118,7 @@ pub fn Register() -> Element {
 
     rsx! {
         div { class: "screen",
+            div { class: "page-header", h2 { "Create profile" } }
             div { class: "screen-content centered content-enter",
             div { class: "logo",  "{logo}" }
             div { class : "container-sm text-center",
