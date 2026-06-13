@@ -172,7 +172,7 @@ After running, note the date + outcome here:
 
 | Date | Dump tested | Result | Notes |
 |---|---|---|---|
-| _not yet run_ | | | |
+| 2026-06-13 | `zwipe-20260613.sql.gz` (fresh manual dump, ~19:53) | **PASS** | Restored onto the Hetzner VPS (`100.114.251.8`) as VPS-migration Phase 0 step 6. PG 17.10 → PG 18 restore clean. Counts: scryfall_data 115,805, users 24, decks 37, deck_cards 1,627, commander_synergy 111, _sqlx_migrations 22. Only errors were `role "synergy_worker" does not exist` (GRANTs only — the zynegry least-priv role isn't on the VPS yet; cosmetic for zerver). zerver booted against the clone, `/health` green, `scadoshi` auth row intact (verified, valid argon2 hash). **Cutover prereq surfaced:** `createuser synergy_worker` on the VPS before the zynegry worker runs. |
 
 ## Known issues to watch for
 
