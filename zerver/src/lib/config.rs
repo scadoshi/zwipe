@@ -44,6 +44,22 @@ const MIN_CLIENT_VERSION_KEY: &str = "MIN_CLIENT_VERSION";
 /// Default minimum client version — `0.0.0` means the gate is open.
 const MIN_CLIENT_VERSION_DEFAULT: &str = "0.0.0";
 
+/// Environment variable key for the Recommander API base URL.
+const RECOMMANDER_BASE_URL_KEY: &str = "RECOMMANDER_BASE_URL";
+
+/// Default Recommander base URL (the public release).
+const RECOMMANDER_BASE_URL_DEFAULT: &str = "https://api.recommander.cards/public-release";
+
+/// Environment variable key for the Recommander per-request timeout (ms).
+const RECOMMANDER_TIMEOUT_MS_KEY: &str = "RECOMMANDER_TIMEOUT_MS";
+
+/// Default Recommander per-request timeout — tight, so a slow upstream falls
+/// back to the cached signal fast rather than dragging the request path.
+const RECOMMANDER_TIMEOUT_MS_DEFAULT: u64 = 1000;
+
+/// Environment variable key for the Recommander kill switch ("false"/"0" off).
+const RECOMMANDER_ENABLED_KEY: &str = "RECOMMANDER_ENABLED";
+
 /// Application configuration loaded from environment variables.
 ///
 /// All fields are required and validated at construction time.
@@ -81,6 +97,16 @@ pub struct Config {
     /// Defaults to `0.0.0` (gate open) if not set. Flipping the gate = edit
     /// `.env` on the server + restart zerver; no code deploy.
     pub min_client_version: String,
+
+    /// Base URL for the Recommander API (live deck-aware synergy for 25+ decks).
+    pub recommander_base_url: String,
+
+    /// Per-request timeout (ms) for Recommander calls — the fall-back trigger.
+    pub recommander_timeout_ms: u64,
+
+    /// Recommander kill switch. When false, the live call is skipped and the
+    /// cached synergy signal is always used. Flip via `.env` + restart.
+    pub recommander_enabled: bool,
 }
 
 impl Config {
@@ -115,6 +141,15 @@ impl Config {
                 min_client_version
             );
         }
+        let recommander_base_url = std::env::var(RECOMMANDER_BASE_URL_KEY)
+            .unwrap_or_else(|_| RECOMMANDER_BASE_URL_DEFAULT.to_string());
+        let recommander_timeout_ms = std::env::var(RECOMMANDER_TIMEOUT_MS_KEY)
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(RECOMMANDER_TIMEOUT_MS_DEFAULT);
+        let recommander_enabled = std::env::var(RECOMMANDER_ENABLED_KEY)
+            .map(|v| !matches!(v.as_str(), "false" | "0"))
+            .unwrap_or(true);
         Ok(Self {
             jwt_secret,
             database_url,
@@ -126,6 +161,9 @@ impl Config {
             resend_from_email,
             log_dir,
             min_client_version,
+            recommander_base_url,
+            recommander_timeout_ms,
+            recommander_enabled,
         })
     }
 }

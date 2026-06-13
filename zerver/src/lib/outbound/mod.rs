@@ -4,6 +4,10 @@
 #[cfg(feature = "zerver")]
 pub mod archidekt;
 
+/// Recommander deck-aware card-recommendation adapter.
+#[cfg(feature = "zerver")]
+pub mod recommander;
+
 /// Resend email delivery adapter.
 #[cfg(feature = "zerver")]
 pub mod resend;

@@ -2,9 +2,11 @@ use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::{Layer, layer::SubscriberExt, util::SubscriberInitExt};
 use std::sync::Arc;
+use std::time::Duration;
 use zwipe::config::Config;
 use zwipe::domain::{auth, card, deck, health, metrics, user};
 use zwipe::inbound::http::{HttpServer, HttpServerConfig};
+use zwipe::outbound::recommander::Recommander;
 use zwipe::outbound::resend::Resend;
 use zwipe::outbound::sqlx::postgres::Postgres;
 use zwipe_core::domain::logo;
@@ -57,12 +59,17 @@ async fn run() -> anyhow::Result<()> {
     tracing::info!("zerver running v{}", env!("CARGO_PKG_VERSION"));
     let db = Postgres::new(&config.database_url).await?;
     let resend = Resend::new(config.resend_api_key, config.resend_from_email);
+    let recommander = Recommander::new(
+        config.recommander_base_url,
+        Duration::from_millis(config.recommander_timeout_ms),
+        config.recommander_enabled,
+    );
     let auth_service =
         auth::services::Service::new(db.clone(), db.clone(), resend, config.jwt_secret);
     let user_service = user::services::Service::new(db.clone());
     let health_service = health::services::Service::new(db.clone());
     let card_service = card::services::Service::new(db.clone());
-    let deck_service = deck::services::Service::new(db.clone(), db.clone());
+    let deck_service = deck::services::Service::new(db.clone(), db.clone(), recommander);
     let metrics_service: Arc<dyn metrics::ports::ErasedMetricsService> =
         Arc::new(metrics::services::Service::new(db.clone()));
     let server_config = HttpServerConfig {

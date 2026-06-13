@@ -96,21 +96,29 @@ Behavior notes:
 
 ---
 
-## Architecture mapping (hexagonal — mirror the Resend adapter)
+## Architecture mapping (hexagonal — mirror the Resend adapter, to the letter)
 
-The existing `outbound/resend/` adapter is the template: a `reqwest::Client`
-wrapper implementing a domain port, constructed once from config and cloned
-into services.
+Concerns go where they belong, following the existing `email` precedent exactly:
+a vendor-neutral **domain port** implemented by a vendor-specific **outbound
+adapter** (`EmailSender` ← `Resend`). Here: `SynergyRecommender` ← `Recommander`.
 
-**New domain port** (card or deck domain): a `SynergyRecommender` with a single
-`recommend(query) -> Result<Vec<CardRecommendation>, RecommendError>`. Pure
-trait; the HTTP details live in the adapter.
+**Purity / placement:** these models + port are **server-only** — the client
+never calls Recommander; the live call is server-side. So per zwipe-core's
+purity rules ("if only the server needs it, it stays in zerver") they live in
+**zerver**, not zwipe-core. New self-contained domain module
+`zerver/src/lib/domain/synergy/` (`models/` + `ports.rs`), mirroring
+`domain/email/`. The port name is the concept (`SynergyRecommender`); the
+vendor name (`Recommander`) appears only in the outbound adapter.
 
-**New domain models:** `RecommendQuery` (commander oracle_id, optional partner,
-deck oracle_ids), `CardRecommendation` (oracle_id, name, score), a result-code
-enum, and `RecommendError` (network / api(status,code) / parse). Lenient
-parsing, same as `card::models::synergy` — upstream shape drift degrades to "no
-signal," never to a hard failure.
+**New domain port** `domain/synergy/ports.rs`: a `SynergyRecommender` with a
+single `recommend(query) -> Result<Vec<CardRecommendation>, RecommendError>`.
+Pure trait; the HTTP details live in the adapter.
+
+**New domain models** `domain/synergy/models/`: `RecommendQuery` (commander
+oracle_id, optional partner, deck oracle_ids), `CardRecommendation` (oracle_id,
+name, score), a result-code enum, and `RecommendError` (network / api(status,
+code) / parse). Lenient parsing, same as `card::models::synergy` — upstream
+shape drift degrades to "no signal," never to a hard failure.
 
 **New outbound adapter:** `zerver/src/lib/outbound/recommander/` — `reqwest`
 POST to the endpoint above, **tight per-request timeout** (the perf guardrail),
@@ -131,18 +139,18 @@ if order_by.is_none() && commander present:
         cached commander payload   (today's path, unchanged)
 ```
 
-- `deck_size` is already computable — `deck_cards` is fetched just above for
-  exclusion (`get_deck_cards`). **Confirm the exact count definition during
-  build** (recommend: total cards across deck boards, commander/profile slots
-  excluded — i.e. `deck_cards.len()`).
-- Both branches must reduce to the **same score-map shape** the read path
-  already consumes so `search_cards_deck_aware` is untouched. The cached path
-  produces lowercased-name → score (`SynergyPayload::into_scores`). Recommander
-  returns `oracle_id` + `name` + `score`. **Open decision (resolve in build):**
-  reuse the name→score map (zero downstream change, but name-keyed matching has
-  edge cases) **vs.** add an oracle_id→score ordering variant for the
-  Recommander path (exact, since both sides have oracle_id — recommended for
-  correctness). Lean oracle_id-based; it's why we send `card_format=oracle_id`.
+- **Threshold = unique non-land mainboard cards ≥ 25** *(decided 2026-06-12)*.
+  This only applies to Commander, so it's effectively "the 99": count distinct
+  non-land cards in the mainboard only — lands excluded, sideboard/maybeboard
+  excluded, duplicates collapsed. The commander/profile slots are already
+  excluded. `deck_cards` is fetched just above for exclusion (`get_deck_cards`);
+  the count needs board membership + is-land, so reduce over that set.
+- **Score-map shape = oracle_id → score for the Recommander path** *(decided
+  2026-06-12)*. Both sides carry oracle_id (it's why we send
+  `card_format=oracle_id`), so match exactly and sidestep name-collision edge
+  cases (double-faced, tokens, punctuation). This means an oracle_id-keyed
+  deck-aware ordering variant alongside the existing name-keyed one. The cached
+  path stays name-keyed (`SynergyPayload::into_scores`) — unchanged.
 
 **Config (`config.rs`) — new env, mirror the Resend keys:**
 - `RECOMMANDER_BASE_URL` — default `https://api.recommander.cards/public-release`.
@@ -161,12 +169,13 @@ if order_by.is_none() && commander present:
   the better ranking transparently.
 
 ## Build checklist
-- [ ] Domain models + `RecommendError` + result-code enum (lenient parse)
-- [ ] `SynergyRecommender` port
-- [ ] `outbound/recommander/` adapter (reqwest, tight timeout, error mapping)
-- [ ] Config: `RECOMMANDER_BASE_URL` / `_TIMEOUT_MS` / `_ENABLED`; wire into app state
-- [ ] Read-path gate in `search_deck_cards` (deck-size split + fallback)
-- [ ] Decide & implement oracle_id-vs-name score-map shape
-- [ ] Tests: parse (success/empty/each error code), fallback on error, threshold gating
-- [ ] `cargo sqlx prepare` if any query changes (likely none — no schema change)
-- [ ] User-facing Recommander attribution (terms require it) — confirm placement
+- [x] Domain models + `RecommendError` (lenient parse) — `domain/recommendation/models.rs`
+- [x] `CardRecommender` port — `domain/recommendation/ports.rs`
+- [x] `outbound/recommander/` adapter (reqwest, tight timeout, error mapping, parse-once-regardless-of-status, kill switch)
+- [x] Config: `RECOMMANDER_BASE_URL` / `_TIMEOUT_MS` / `_ENABLED` (+ `.env.example`); wired into `zerver.rs` app state
+- [x] Read-path gate in `search_deck_cards` (deck-size split + fallback) — `Service::recommend_scores`
+- [x] oracle_id-keyed score map — `SynergyOrder`/`SynergyKey`, oracle_id ordering branch in the deck-aware SQL
+- [x] Tests: envelope parse (success/error/missing fields), disabled kill switch short-circuits
+- [x] No schema change → no `cargo sqlx prepare` needed (runtime QueryBuilder, no new `query!` macros)
+- [ ] User-facing Recommander attribution (terms require it) — confirm placement (app, not server)
+- [ ] Live verification against the real API once a 25+ deck exists in a dev DB

@@ -191,7 +191,7 @@ impl CardRepository for MyPostgres {
         &self,
         request: &CardFilter,
         exclude_oracle_ids: &[uuid::Uuid],
-        synergy_scores: Option<&serde_json::Value>,
+        synergy: Option<crate::domain::card::models::synergy::SynergyOrder<'_>>,
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
         let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new(
             "SELECT latest_cards.* FROM latest_cards
@@ -712,12 +712,22 @@ impl CardRepository for MyPostgres {
             if order_by != OrderByOption::Random {
                 qb.push(if request.ascending() { " ASC" } else { " DESC" });
             }
-        } else if let Some(scores) = synergy_scores {
-            // Synergy default ordering: score map is jsonb {lowercased name -> score}.
-            // Unscored cards sort last (NULLS LAST), name tiebreak keeps pagination stable.
+        } else if let Some(order) = synergy {
+            // Synergy default ordering: score map is jsonb { key -> score },
+            // keyed by lowercased name (cached signal) or oracle_id (live
+            // Recommander signal). Unscored cards sort last (NULLS LAST), name
+            // tiebreak keeps pagination stable. The key expression is static
+            // SQL — never user input — so binding only the map is safe.
+            use crate::domain::card::models::synergy::SynergyKey;
+            let key_expr = match order.key {
+                SynergyKey::Name => "LOWER(name)",
+                SynergyKey::OracleId => "oracle_id::text",
+            };
             qb.push(" ORDER BY (");
-            qb.push_bind(scores.clone());
-            qb.push(" ->> LOWER(name))::float8 DESC NULLS LAST, name ASC");
+            qb.push_bind(order.scores.clone());
+            qb.push(" ->> ");
+            qb.push(key_expr);
+            qb.push(")::float8 DESC NULLS LAST, name ASC");
         }
 
         qb.push(" LIMIT ");
@@ -1002,10 +1012,10 @@ impl CardRepository for MyPostgres {
         &self,
         request: &CardFilter,
         exclude_oracle_ids: &[uuid::Uuid],
-        synergy_scores: Option<&serde_json::Value>,
+        synergy: Option<crate::domain::card::models::synergy::SynergyOrder<'_>>,
     ) -> Result<Vec<Card>, SearchCardsError> {
         let scryfall_data = self
-            .search_scryfall_data_deck_aware(request, exclude_oracle_ids, synergy_scores)
+            .search_scryfall_data_deck_aware(request, exclude_oracle_ids, synergy)
             .await?;
         if scryfall_data.is_empty() {
             return Ok(vec![]);

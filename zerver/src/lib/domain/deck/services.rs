@@ -3,13 +3,16 @@ use std::fmt::Debug;
 
 use uuid::Uuid;
 
-use zwipe_core::domain::card::{Card, search_card::card_filter::CardFilter};
+use zwipe_core::domain::card::{
+    Card, scryfall_data::ScryfallData, search_card::card_filter::CardFilter,
+};
 use crate::domain::{
     card::{
-        models::synergy::SynergyPayload,
+        models::synergy::{SynergyKey, SynergyOrder, SynergyPayload},
         requests::get_scryfall_data::ScryfallDataIds,
         ports::CardRepository,
     },
+    recommendation::{models::RecommendQuery, ports::CardRecommender},
     deck::{
         models::{
             deck::{
@@ -55,6 +58,12 @@ use crate::domain::deck::{
     UNVERIFIED_MAX_DECKS_PER_USER,
 };
 
+/// A deck switches from the cached commander signal to the live, deck-aware
+/// recommender once it has this many **unique non-land mainboard** cards — the
+/// recommender's author advises against calling below it (the model needs real
+/// deck context). Commander-only, so it's effectively "the 99 minus lands".
+const RECOMMENDER_MIN_DECK_CARDS: usize = 25;
+
 /// Deck service implementation handling deck building and card management operations.
 ///
 /// This service coordinates:
@@ -68,33 +77,126 @@ use crate::domain::deck::{
 /// allowing modifications. `GetDeckProfileError::Forbidden` is returned if
 /// the user ID doesn't match the deck's owner.
 #[derive(Debug, Clone)]
-pub struct Service<DR, CR>
+pub struct Service<DR, CR, RC>
 where
     DR: DeckRepository,
     CR: CardRepository,
+    RC: CardRecommender,
 {
     deck_repo: DR,
     card_repo: CR,
+    recommender: RC,
 }
 
-impl<DR, CR> Service<DR, CR>
+impl<DR, CR, RC> Service<DR, CR, RC>
 where
     DR: DeckRepository,
     CR: CardRepository,
+    RC: CardRecommender,
 {
-    /// Creates a new deck service with the provided repositories.
-    pub fn new(deck_repo: DR, card_repo: CR) -> Self {
+    /// Creates a new deck service with the provided repositories and the live
+    /// card recommender (deck-aware synergy for mature decks).
+    pub fn new(deck_repo: DR, card_repo: CR, recommender: RC) -> Self {
         Self {
             deck_repo,
             card_repo,
+            recommender,
+        }
+    }
+
+    /// Live deck-aware synergy scores for a mature deck, as an
+    /// `{ oracle_id -> score }` JSON map, or `None` to fall back to the cached
+    /// commander signal.
+    ///
+    /// Returns `None` — never an error — whenever the recommender shouldn't or
+    /// can't drive ordering: deck below threshold, no commander, recommender
+    /// disabled/slow/rate-limited/down, or an empty result. The caller treats
+    /// every `None` as "use the cache."
+    ///
+    /// Threshold = unique **non-land mainboard** cards `>= RECOMMENDER_MIN_DECK_CARDS`.
+    /// The cheap unique-mainboard count gates the (more expensive) land lookup:
+    /// non-land count can only be lower, so a gross count under the bar skips
+    /// the type fetch entirely.
+    async fn recommend_scores(
+        &self,
+        deck_cards: &[DeckCard],
+        slot_data: &[ScryfallData],
+        deck_profile: &DeckProfile,
+    ) -> Option<serde_json::Value> {
+        let commander_printing_id = deck_profile.commander_id?;
+        let commander_oracle = slot_data
+            .iter()
+            .find(|sd| sd.id == commander_printing_id)
+            .and_then(|sd| sd.oracle_id)?;
+
+        // Cheap pre-gate: unique mainboard cards (non-land count is <= this).
+        let mainboard_oracle_ids: Vec<Uuid> = {
+            let mut seen = std::collections::HashSet::new();
+            deck_cards
+                .iter()
+                .filter(|dc| dc.board == Board::Deck)
+                .filter(|dc| seen.insert(dc.oracle_id))
+                .map(|dc| dc.oracle_id)
+                .collect()
+        };
+        if mainboard_oracle_ids.len() < RECOMMENDER_MIN_DECK_CARDS {
+            return None;
+        }
+
+        // Resolve the non-land count: fetch types for the mainboard printings.
+        let mainboard_printing_ids: ScryfallDataIds = deck_cards
+            .iter()
+            .filter(|dc| dc.board == Board::Deck)
+            .map(|dc| dc.scryfall_data_id)
+            .collect();
+        let mainboard_data = self
+            .card_repo
+            .get_multiple_scryfall_data(&mainboard_printing_ids)
+            .await
+            .ok()?;
+        let nonland_unique: std::collections::HashSet<Uuid> = mainboard_data
+            .iter()
+            .filter(|sd| !sd.is_land())
+            .filter_map(|sd| sd.oracle_id)
+            .collect();
+        if nonland_unique.len() < RECOMMENDER_MIN_DECK_CARDS {
+            return None;
+        }
+
+        let partner_oracle = deck_profile.partner_commander_id.and_then(|pid| {
+            slot_data
+                .iter()
+                .find(|sd| sd.id == pid)
+                .and_then(|sd| sd.oracle_id)
+        });
+
+        let query = RecommendQuery {
+            commander: commander_oracle,
+            partner: partner_oracle,
+            deck: mainboard_oracle_ids,
+        };
+        match self.recommender.recommend(query).await {
+            Ok(recs) if !recs.is_empty() => {
+                let map: HashMap<String, f64> = recs
+                    .into_iter()
+                    .map(|r| (r.oracle_id.to_string(), r.score))
+                    .collect();
+                serde_json::to_value(map).ok()
+            }
+            Ok(_) => None,
+            Err(e) => {
+                tracing::warn!(%commander_oracle, "recommender unavailable, falling back to cached synergy: {e}");
+                None
+            }
         }
     }
 }
 
-impl<DR, CR> DeckService for Service<DR, CR>
+impl<DR, CR, RC> DeckService for Service<DR, CR, RC>
 where
     DR: DeckRepository,
     CR: CardRepository,
+    RC: CardRecommender,
 {
     // ========
     //  create
@@ -279,45 +381,67 @@ where
         .into_iter()
         .flatten()
         .collect();
-        if !slot_scryfall_ids.is_empty() {
-            exclude_oracle_ids.extend(
-                self.card_repo
-                    .get_multiple_scryfall_data(&slot_scryfall_ids)
-                    .await
-                    .map_err(|e| SearchDeckCardsError::Database(e.into()))?
-                    .into_iter()
-                    .filter_map(|sd| sd.oracle_id),
-            );
-        }
+        // Kept around to resolve commander/partner printing ids → oracle ids
+        // for the recommender query below (it speaks oracle_id natively).
+        let slot_data = if !slot_scryfall_ids.is_empty() {
+            self.card_repo
+                .get_multiple_scryfall_data(&slot_scryfall_ids)
+                .await
+                .map_err(|e| SearchDeckCardsError::Database(e.into()))?
+        } else {
+            Vec::new()
+        };
+        exclude_oracle_ids.extend(slot_data.iter().filter_map(|sd| sd.oracle_id));
         let exclude_oracle_ids: Vec<Uuid> = exclude_oracle_ids.into_iter().collect();
 
         // Synergy is the default ordering only — an explicit sort wins, and a
         // missing/unparseable signal degrades to the filter's own semantics.
-        let synergy_scores: Option<serde_json::Value> = match (filter.order_by(), deck_profile.commander_id) {
-            (None, Some(commander_id)) => self
-                .card_repo
-                .commander_synergy_payload(commander_id)
-                .await?
-                .and_then(|payload| match serde_json::from_value::<SynergyPayload>(payload) {
-                    Ok(parsed) => {
-                        let scores = parsed.into_scores();
-                        if scores.is_empty() {
-                            None
-                        } else {
-                            serde_json::to_value(scores).ok()
-                        }
+        // Two-tier (plans/recommander-integration.md): the live deck-aware
+        // recommender for mature decks (>= RECOMMENDER_MIN_DECK_CARDS unique
+        // non-land mainboard cards), the cached commander signal for smaller
+        // decks and as the universal fallback. Each carries the key its score
+        // map is matched on (oracle_id for the recommender, name for the cache).
+        let synergy_order: Option<(SynergyKey, serde_json::Value)> =
+            match (filter.order_by(), deck_profile.commander_id) {
+                (None, Some(commander_printing_id)) => {
+                    let recommender_scores = self
+                        .recommend_scores(&deck_cards, &slot_data, &deck_profile)
+                        .await;
+                    match recommender_scores {
+                        Some(scores) => Some((SynergyKey::OracleId, scores)),
+                        // Fallback: the cached commander signal.
+                        None => self
+                            .card_repo
+                            .commander_synergy_payload(commander_printing_id)
+                            .await?
+                            .and_then(|payload| {
+                                match serde_json::from_value::<SynergyPayload>(payload) {
+                                    Ok(parsed) => {
+                                        let scores = parsed.into_scores();
+                                        if scores.is_empty() {
+                                            None
+                                        } else {
+                                            serde_json::to_value(scores).ok()
+                                        }
+                                    }
+                                    Err(e) => {
+                                        tracing::warn!(%commander_printing_id, "synergy payload failed to parse, serving unordered: {e}");
+                                        None
+                                    }
+                                }
+                            })
+                            .map(|scores| (SynergyKey::Name, scores)),
                     }
-                    Err(e) => {
-                        tracing::warn!(%commander_id, "synergy payload failed to parse, serving unordered: {e}");
-                        None
-                    }
-                }),
-            _ => None,
-        };
+                }
+                _ => None,
+            };
 
+        let synergy = synergy_order
+            .as_ref()
+            .map(|(key, scores)| SynergyOrder { key: *key, scores });
         let cards = self
             .card_repo
-            .search_cards_deck_aware(filter, &exclude_oracle_ids, synergy_scores.as_ref())
+            .search_cards_deck_aware(filter, &exclude_oracle_ids, synergy)
             .await?;
         Ok(cards)
     }

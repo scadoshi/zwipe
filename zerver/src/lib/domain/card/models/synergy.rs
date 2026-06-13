@@ -9,6 +9,29 @@
 use serde::Deserialize;
 use std::collections::HashMap;
 
+/// Which column a synergy score map is keyed by, for deck-aware default
+/// ordering.
+#[derive(Debug, Clone, Copy)]
+pub enum SynergyKey {
+    /// Map keyed by lowercased card name — the cached commander signal
+    /// (`SynergyPayload::into_scores`).
+    Name,
+    /// Map keyed by oracle_id string — the live Recommander signal, which
+    /// carries oracle_ids natively, so matching is exact.
+    OracleId,
+}
+
+/// A synergy score map plus how it is keyed, passed to the deck-aware search to
+/// drive default ordering. Borrowed so the JSON map isn't cloned at the call
+/// site.
+#[derive(Debug, Clone, Copy)]
+pub struct SynergyOrder<'a> {
+    /// Which card column to match the map's keys against.
+    pub key: SynergyKey,
+    /// The score map: `{ key -> score }` as JSON, bound directly into SQL.
+    pub scores: &'a serde_json::Value,
+}
+
 /// Top-level cached payload: a set of named card lists.
 #[derive(Debug, Deserialize)]
 pub struct SynergyPayload {

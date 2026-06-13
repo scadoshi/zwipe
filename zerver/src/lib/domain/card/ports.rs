@@ -107,13 +107,14 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = Result<Vec<ScryfallData>, SearchScryfallDataError>> + Send;
 
     /// `search_scryfall_data` plus deck-aware extras: oracle_id exclusion and
-    /// synergy-score default ordering (scores apply only when the filter has
-    /// no explicit `order_by`).
+    /// synergy-score default ordering (applies only when the filter has no
+    /// explicit `order_by`). The [`SynergyOrder`] carries both the score map
+    /// and which card column its keys match (name or oracle_id).
     fn search_scryfall_data_deck_aware(
         &self,
         request: &CardFilter,
         exclude_oracle_ids: &[uuid::Uuid],
-        synergy_scores: Option<&serde_json::Value>,
+        synergy: Option<crate::domain::card::models::synergy::SynergyOrder<'_>>,
     ) -> impl Future<Output = Result<Vec<ScryfallData>, SearchScryfallDataError>> + Send;
 
     /// Retrieves complete card by Scryfall ID.
@@ -214,15 +215,17 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
     /// `search_cards` with deck awareness: rows whose oracle_id is in
-    /// `exclude_oracle_ids` are omitted, and when `synergy_scores` is given
-    /// (lowercased card name → score) results are ordered by score descending
-    /// with unscored cards last. Caller guarantees scores are only passed
-    /// when the filter has no explicit `order_by`.
+    /// `exclude_oracle_ids` are omitted, and when `synergy` is given results are
+    /// ordered by score descending with unscored cards last. The
+    /// [`SynergyOrder`](crate::domain::card::models::synergy::SynergyOrder)
+    /// carries the score map and whether its keys match card name or oracle_id.
+    /// Caller guarantees it's only passed when the filter has no explicit
+    /// `order_by`.
     fn search_cards_deck_aware(
         &self,
         request: &CardFilter,
         exclude_oracle_ids: &[uuid::Uuid],
-        synergy_scores: Option<&serde_json::Value>,
+        synergy: Option<crate::domain::card::models::synergy::SynergyOrder<'_>>,
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
     /// Fetches the cached synergy payload for a commander by **printing** id
