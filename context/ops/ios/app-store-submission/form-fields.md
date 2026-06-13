@@ -39,6 +39,18 @@ Built for players who want a fast, focused mobile experience — not another clu
 
 ---
 
+## What's New in This Version (1.0.7)
+
+- A fresh look across the whole app: a subtle background grid and layered depth give every screen a cleaner, more tactile feel, with crisp readable panels floating above it.
+- Rebuilt theme picker: every theme now previews its actual colors as little swatches, so you can see a palette before you choose it. Dark mode sits right on top and the colorblind-friendly themes are grouped together.
+- Preferences now slides up as a sheet and previews live as you tap, so you can try themes without losing your place — Save to keep, back out to revert.
+- Real mana symbols: filters and your deck's card list now show proper colored mana pips instead of letters.
+- Tap a card's name on the home screen to pop open its full art.
+- Cleaner sheets and dialogs everywhere, with consistent headings and full-width dividers.
+- Lots of small polish: tidier inputs and chips, refined spacing, and clearer headers across home, sign-in, decks, import, and export.
+
+---
+
 ## What's New in This Version (1.0.6)
 
 - Smarter card suggestions: when you add cards, the picks that fit your deck's leader best now rise to the top automatically — no setup, it just orders the stack for you.
@@ -79,7 +91,7 @@ MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading ca
 |-------|-------|
 | Support URL | https://zwipe.net |
 | Marketing URL | https://zwipe.net |
-| Version | 1.0.6 |
+| Version | 1.0.7 |
 | Copyright | 2026 Scotty Fermo |
 | Routing App Coverage File | (leave empty) |
 
