@@ -15,7 +15,8 @@ mod components;
 
 use components::delete_account_dialog::DeleteAccountDialog;
 use components::email_verification::EmailVerification;
-use components::logout_dialog::LogoutDialog;
+use crate::inbound::components::logout_dialog::LogoutDialog;
+use preferences::PreferencesSheet;
 use crate::{
     inbound::{
         components::auth::bouncer::Bouncer,
@@ -41,6 +42,7 @@ pub fn Profile() -> Element {
 
     let mut show_logout_dialog = use_signal(|| false);
     let mut show_delete_dialog = use_signal(|| false);
+    let mut preferences_open = use_signal(|| false);
 
     // Account management hint: auto-opens on this user's first visit, the
     // grayed "?" in the header reopens it on demand.
@@ -161,7 +163,7 @@ pub fn Profile() -> Element {
                     }
                     button {
                         class: "util-btn",
-                        onclick: move |_| { navigator.push(Router::Preferences {}); },
+                        onclick: move |_| preferences_open.set(true),
                         "Preferences"
                     }
                     button {
@@ -178,6 +180,7 @@ pub fn Profile() -> Element {
 
                 LogoutDialog { open: show_logout_dialog }
                 DeleteAccountDialog { open: show_delete_dialog }
+                PreferencesSheet { open: preferences_open }
             }
         }
     }
