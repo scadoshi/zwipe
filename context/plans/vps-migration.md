@@ -38,6 +38,29 @@ home `cloudflared`/`zynergy`, then decommission home after a clean window.
 
 ---
 
+### Post-cutover, same day (complete)
+
+- **CI/CD runners** on the VPS: `zerver-prod` (`scadoshi/zwipe`) + `zynergy-prod`
+  (`scadoshi/zynergy`), both boot-enabled; home runners removed from GitHub.
+  Validated end-to-end: a push to `main` built + migrated + restarted zerver via
+  `zerver-prod` → `api.zwipe.net` stayed 200.
+- **Crons** moved to the VPS (zervice 4am + backup 5am); home crons disabled;
+  cron daemon active+enabled; a manual backup run confirmed dump→R2 from the box.
+- **Email** restored with a NEW Resend key (home was already off, so the old key
+  couldn't be copied — generated fresh in the Resend dashboard). Verification
+  email tested working end-to-end.
+- **Sudo least-privilege**: `scadoshi` NOPASSWD scoped to only
+  `systemctl {stop,start,restart} {zerver,zynergy}`; all other admin via
+  `ssh root@100.114.251.8` (key-only, tailnet). Mac `zerver` alias repointed.
+- **JWT_SECRET was rotated (not copied)** — fresh secret on the VPS. Existing
+  access tokens died but refresh tokens (DB-stored) survived, so clients
+  auto-refreshed; login confirmed seamless on mobile.
+
+**Still open:** verify the first unattended cron runs (next morning); after 1–2
+clean weeks, repurpose home (wipes its disk) + rotate the still-shared R2 keys.
+
+---
+
 ## Original plan (kept for reference / future moves)
 
 At ~20 users the home server was fine — free, behind the tunnel, backed up
