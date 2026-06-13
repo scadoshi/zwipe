@@ -481,26 +481,13 @@
             /* ====================================================== */
             /*  CARD BACK — full Zwipe wordmark                       */
             /* ====================================================== */
+            /* no container: the wordmark rests directly on the card's grid */
             .back-face {
                 padding: 9px;
                 justify-content: center;
-                align-items: stretch;
-                gap: 0;
-            }
-            .back-frame {
-                position: relative;
-                flex: 1;
-                display: flex;
-                flex-direction: column;
                 align-items: center;
-                justify-content: center;
                 gap: 12px;
-                border: 1px solid var(--border);
-                border-radius: 6px;
-                background: var(--bg-sink);
-                overflow: hidden;
             }
-            /* back box is a solid panel — no grid texture */
             .zlogo-full {
                 position: relative;
                 font-size: 5px;
@@ -676,8 +663,7 @@
 
             <div class="card" id="cardBack">
                 <div class="face back-face">
-                    <div class="back-frame">
-                        <pre class="zlogo zlogo-full">
+                    <pre class="zlogo zlogo-full">
 ▎▎▉▉▉▉▉▉▉            ▎▎▉▉
   ▎▎▉▉▉▉▉▉▎▎▉▉    ▎▎▉▉▎▎▉▉▎▎▉▉▉▉▉▉ ▎▎▉▉▉▉▉▉▉
       ▎▎▉▉ ▎▎▉▉    ▎▎▉▉    ▎▎▉▉▉▉▉▉▉▎▎▉▉ ▎▎▉▉
@@ -689,8 +675,7 @@
                                  ▎▎▉▉
                                   ▎▎▉▉
                                    ▎▎▉▉</pre
-                        >
-                    </div>
+                    >
                     <div class="back-site">zwipe.net</div>
                 </div>
             </div>
