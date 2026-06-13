@@ -1054,7 +1054,6 @@ pub fn Add(deck_id: Uuid) -> Element {
             HintDialog {
                 open: swipe_hint_open,
                 title: "Swipe to build",
-                dividers: true,
                 HintBullets {
                     HintBullet {
                         "Swipe "

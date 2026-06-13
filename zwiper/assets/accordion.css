@@ -20,7 +20,8 @@
   gap: 0.5rem;
   padding: 0.75rem 1rem;
   border: 1px solid var(--border-primary);
-  background-color: transparent;
+  background-color: var(--bg-primary);
+  box-shadow: var(--shadow-sm);
   color: var(--text-primary);
   outline: none;
   text-align: center;

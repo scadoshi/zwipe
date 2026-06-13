@@ -58,7 +58,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
     let mut deck_profile_resource: Resource<Result<DeckProfile, ApiError>> =
         use_resource(move || async move {
-            let session = session.ensure_fresh(client).await?;
+                let session = session.ensure_fresh(client).await?;
             client().get_deck_profile(deck_id, &session).await
         });
     let commander_resource: Resource<Result<Option<Card>, ApiError>> =
@@ -481,7 +481,9 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 on_open_change: move |open| show_delete_dialog.set(open),
                 AlertDialogContent {
                     AlertDialogTitle { "Delete deck" }
+                    hr { class: "dialog-rule" }
                     AlertDialogDescription { "Are you sure you want to delete this deck?" }
+                    hr { class: "dialog-rule" }
                     AlertDialogActions {
                         AlertDialogCancel {
                             on_click: move |_| show_delete_dialog.set(false),
@@ -519,7 +521,6 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             HintDialog {
                 open: first_deck_hint_open,
                 title: "Welcome to your deck",
-                dividers: true,
                 HintBullets {
                     HintBullet {
                         "Tap "

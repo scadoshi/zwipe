@@ -101,7 +101,8 @@ pub(crate) fn ProducedManaFilter() -> Element {
                         }
                         write_produced_mana(&mut filter_builder.write(), mode, colors);
                     },
-                    "{label}"
+                    title: "{label}",
+                    i { class: "ms ms-{code.to_lowercase()} ms-cost" }
                 }
             }
         }
@@ -134,7 +135,8 @@ pub(crate) fn ProducedManaFilter() -> Element {
                         }
                         write_excluded(&mut filter_builder.write(), exc);
                     },
-                    "{label}"
+                    title: "{label}",
+                    i { class: "ms ms-{code.to_lowercase()} ms-cost" }
                 }
             }
         }

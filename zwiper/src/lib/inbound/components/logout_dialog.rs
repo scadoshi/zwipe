@@ -1,6 +1,6 @@
 use crate::inbound::components::alert_dialog::{
     AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
-    AlertDialogRoot, AlertDialogTitle, AlertDialogDescription,
+    AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
 };
 use crate::inbound::components::auth::signal_logout::SignalLogout;
 use crate::outbound::client::ZwipeClient;
@@ -19,7 +19,9 @@ pub(crate) fn LogoutDialog(mut open: Signal<bool>) -> Element {
             on_open_change: move |v| open.set(v),
             AlertDialogContent {
                 AlertDialogTitle { "Log out" }
+                hr { class: "dialog-rule" }
                 AlertDialogDescription { "Are you sure you want to log out?" }
+                hr { class: "dialog-rule" }
                 AlertDialogActions {
                     AlertDialogCancel {
                         on_click: move |_| open.set(false),
