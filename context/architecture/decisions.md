@@ -152,3 +152,16 @@ Ship the full application as a webapp at `zwipe.net` alongside the existing mark
 ## Hosting: Ubuntu Server via Cloudflare Tunnel
 
 See `architecture/hosting.md`.
+
+## Synergy ranking: two-tier (cached floor + live Recommander for 25+ decks)
+
+The deck-card search ranks by a synergy signal. As of 2026-06 that signal is
+two-tier, split by deck size: the cached commander-level signal (the synergy
+data layer) for 0–24 cards and as the universal fallback, and a **live,
+deck-aware Recommander** call for 25+ card decks, with graceful degradation to
+the cache whenever Recommander is slow/down/rate-limited. Server-side only.
+
+Recommander is a sanctioned public API (commercial use cleared for zwipe,
+2026-06-12) and **may be named freely here** — the source-neutrality rule
+applies only to the synergy worker's upstream. Full contract, API spec, and
+build plan: `plans/recommander-integration.md`.
