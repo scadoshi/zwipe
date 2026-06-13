@@ -74,7 +74,7 @@
                                                       stays short, sharing the screen with the cards */
                 margin: 0 auto 24px;
                 background: var(--bg);
-                border: 1px solid var(--border-2);
+                border: 1px solid var(--border);
                 border-radius: 10px;
                 padding: 16px 20px;
             }
@@ -373,7 +373,7 @@
                 flex: 1 1 auto;
                 min-height: 0; /* fill remaining height, like a real text box */
                 background: var(--bg-sink);
-                border: 1px solid var(--border-2);
+                border: 1px solid var(--border);
                 border-radius: 4px;
                 padding: 6px 8px;
                 display: flex;
@@ -500,21 +500,7 @@
                 background: var(--bg-sink);
                 overflow: hidden;
             }
-            /* faint pixel-grid texture behind the wordmark */
-            .back-frame::before {
-                content: "";
-                position: absolute;
-                inset: 0;
-                pointer-events: none;
-                background-image:
-                    linear-gradient(var(--grid-line) 1px, transparent 1px),
-                    linear-gradient(
-                        90deg,
-                        var(--grid-line) 1px,
-                        transparent 1px
-                    );
-                background-size: 8px 8px;
-            }
+            /* back box is a solid panel — no grid texture */
             .zlogo-full {
                 position: relative;
                 font-size: 5px;
