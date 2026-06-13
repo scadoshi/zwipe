@@ -56,6 +56,7 @@ pub fn ForgotPassword() -> Element {
 
     rsx! {
         div { class: "screen",
+            div { class: "page-header", h2 { "Reset password" } }
             div { class: "screen-content centered content-enter",
                 div { class: "logo", "{logo}" }
                 div { class: "container-sm text-center",

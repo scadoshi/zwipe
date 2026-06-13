@@ -44,6 +44,7 @@ pub(crate) fn DeleteAccountDialog(mut open: Signal<bool>) -> Element {
             },
             AlertDialogContent {
                 AlertDialogTitle { "Delete account" }
+                hr { class: "dialog-rule" }
                 AlertDialogDescription {
                     "This will permanently delete your account, all decks, and all card data. This cannot be undone."
                 }
@@ -52,6 +53,7 @@ pub(crate) fn DeleteAccountDialog(mut open: Signal<bool>) -> Element {
                     input_type: "password".to_string(),
                     placeholder: "Password".to_string(),
                 }
+                hr { class: "dialog-rule" }
                 AlertDialogActions {
                     AlertDialogCancel {
                         on_click: move |_| open.set(false),

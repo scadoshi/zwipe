@@ -1,6 +1,7 @@
 @import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/400.css");
 @import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/500.css");
 @import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/700.css");
+@import url("https://cdn.jsdelivr.net/npm/mana-font@latest/css/mana.css");
 
 /* ==================
         base
@@ -55,6 +56,12 @@ button {
     color: var(--text-primary);
 }
 
+.app-shell {
+    --grid-line: color-mix(in srgb, var(--text-primary) 4%, transparent);
+    --grid-size: 28px;
+    --bg-sink: color-mix(in srgb, var(--bg-primary), #000 15%);
+}
+
 .screen-content {
     flex: 1;
     overflow-x: hidden;
@@ -65,6 +72,11 @@ button {
     width: 100%;
     min-height: 0;
     padding-top: 1rem;
+    background-color: var(--bg-sink);
+    background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: var(--grid-size) var(--grid-size);
 }
 
 .screen-content.centered {
@@ -458,35 +470,56 @@ button {
 
 /* Pinned controls strip below the page header (e.g. import source/mode
      selectors) — stays put while the screen content scrolls. */
-  .pinned-controls {
-      flex-shrink: 0;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      border-bottom: 1px solid var(--border-secondary);
-      background-color: var(--bg-primary);
-  }
+.pinned-controls {
+    flex-shrink: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
 
-  .pinned-controls .container-sm {
-      padding: 0.75rem 2rem;
-  }
+.import-controls {
+    width: 100%;
+    max-width: 40rem;
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
 
-  /* Min-version gate blocking screen — the headline pulses red. */
-  .update-required-title {
-      color: var(--color-error);
-      animation: update-required-pulse 1.6s ease-in-out infinite;
-  }
+.hl-key {
+    color: var(--accent-tertiary);
+    font-weight: 500;
+}
 
-  @keyframes update-required-pulse {
-      0%,
-      100% {
-          opacity: 1;
-      }
-      50% {
-          opacity: 0.35;
-      }
-  }
+.import-hint {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.6rem;
+    box-shadow: var(--shadow-sm);
+    padding: 0.6rem 0.8rem;
+    margin-top: 0.5rem;
+}
+
+.pinned-controls .container-sm {
+    padding: 0.75rem 2rem;
+}
+
+/* Min-version gate blocking screen — the headline pulses red. */
+.update-required-title {
+    color: var(--color-error);
+    animation: update-required-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes update-required-pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.35;
+    }
+}
 
 /* =======================
   utilities - utility bar
@@ -549,7 +582,8 @@ button {
 .btn {
     width: 100%;
     padding: 1rem;
-    background: none;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
     border: 1px solid var(--border-primary);
     border-radius: 1rem;
     color: var(--text-primary);
@@ -585,7 +619,7 @@ button {
     border-radius: 0.5rem;
     width: auto;
     margin: 0;
-    background: none;
+    background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
     color: var(--text-primary);
     font-family: "JetBrains Mono", monospace;
@@ -636,7 +670,7 @@ button {
 .input {
     width: 100%;
     padding: 0.75rem 1rem;
-    background: none;
+    background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
     color: var(--text-primary);
@@ -645,6 +679,7 @@ button {
     font-weight: 400;
     transition: all 0.2s ease;
     margin-bottom: 1rem;
+    box-shadow: var(--shadow-sm);
 }
 
 .input:focus {
@@ -773,8 +808,10 @@ button {
 
 .card {
     padding: 1rem;
-    border: 1px solid var(--border-primary);
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
     border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
     cursor: pointer;
     transition: all 0.2s ease;
     margin-bottom: 0.5rem;
@@ -903,29 +940,37 @@ button {
 
 .skeleton-card-group {
     margin-bottom: 1.5rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
 }
 
 .skeleton-card-group-header {
-    width: 30%;
-    height: 0.85rem;
-    border-radius: 0.3rem;
-    background-color: var(--border-muted);
-    margin: 0.4rem 0 0.65rem 0;
-    padding-bottom: 0.4rem;
+    padding: 0.6rem 1rem;
     border-bottom: 1px solid var(--border-secondary);
-    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-.skeleton-card-group-header-wide {
-    width: 45%;
 }
 
 .skeleton-card-row {
-    height: 1.8rem;
-    border-radius: 0.3rem;
-    background-color: var(--border-muted);
-    margin-bottom: 0.5rem;
-    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+.skeleton-card-row:last-child {
+    border-bottom: none;
+}
+
+.skeleton-card-bar-header {
+    width: 35%;
+}
+
+.skeleton-card-bar-header-wide {
+    width: 50%;
+}
+
+.skeleton-card-bar-row {
+    width: 60%;
 }
 
 /* Printing sheet skeleton */
@@ -1029,10 +1074,12 @@ button {
 /* Shared "info-list" skeleton — bordered box with row pulses inside.
    Matches dimensions of real .info-list / .info-row. */
 .skeleton-info-list {
+    background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
     border-radius: 1rem;
     overflow: hidden;
     width: 100%;
+    box-shadow: var(--shadow-sm);
 }
 
 .skeleton-info-row {
@@ -1080,6 +1127,7 @@ button {
     width: 3rem;
     height: 1.7rem;
     border-radius: 0.5rem;
+    background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
     animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
@@ -1130,8 +1178,10 @@ button {
     flex-direction: column;
     gap: 0.5rem;
     padding: 1rem;
+    background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
     border-radius: 0.6rem;
+    box-shadow: var(--shadow-sm);
 }
 
 .skeleton-deck-list-title {
@@ -1520,6 +1570,7 @@ button {
 .copy-max-box {
     flex: 1;
     padding: 1rem;
+    background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
     border-radius: 1rem;
     text-align: center;
@@ -1605,6 +1656,7 @@ button {
 /* Swipe stack (Add/Remove Deck Cards) */
 .flippable-card-wrapper.card-image > img {
     max-height: 55vh;
+    box-shadow: var(--shadow-md);
 }
 
 /* Printing carousel + single-printing view */
@@ -1656,7 +1708,8 @@ button {
     flex-shrink: 0;
     gap: 0.25rem;
     font-size: 0.75rem;
-    color: var(--text-muted);
+    font-weight: 500;
+    color: var(--accent-primary);
     padding: 0.5rem 1rem;
     align-self: flex-start;
 }
@@ -1715,11 +1768,18 @@ button {
     cursor: pointer;
     transition: all 0.2s ease;
     background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
 }
 
 .chip.selected {
     border-color: var(--accent-secondary);
     color: var(--accent-secondary);
+}
+
+.chip .ms,
+.chip-xs .ms {
+    font-size: 1.1rem;
+    vertical-align: middle;
 }
 
 .chip-xs {
@@ -1732,6 +1792,7 @@ button {
     cursor: pointer;
     transition: all 0.2s ease;
     background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
 }
 
 .chip-xs.selected {
@@ -1742,12 +1803,14 @@ button {
 .chip-unselected {
     display: inline-block;
     padding: 0.3rem 0.6rem;
+    background-color: var(--bg-primary);
     border: 1px solid var(--border-muted);
     border-radius: 0.6rem;
     font-size: 0.75rem;
     color: var(--text-muted);
     cursor: pointer;
     transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
 }
 
 .chip-remove {
@@ -1767,9 +1830,11 @@ button {
     align-items: center;
     gap: 0.3rem;
     padding: 0.3rem 0.6rem;
+    background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
     border-radius: 0.6rem;
     font-size: 0.75rem;
+    box-shadow: var(--shadow-sm);
 }
 
 .type-chip-remove {
@@ -1814,6 +1879,7 @@ button {
     color: var(--text-primary);
     text-align: center;
     white-space: nowrap;
+    box-shadow: var(--shadow-sm);
 }
 
 .mana-box.selected {
@@ -1930,6 +1996,14 @@ button {
     align-items: center;
     gap: 0.75rem;
     flex-shrink: 0;
+}
+
+.bottom-sheet .modal-content {
+    background-color: var(--bg-sink);
+    background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: var(--grid-size) var(--grid-size);
 }
 
 .modal-content {
@@ -2089,6 +2163,7 @@ button {
     text-align: center;
     white-space: nowrap;
     font-weight: 400;
+    box-shadow: var(--shadow-sm);
 }
 
 .mana-box-compact.selected {
@@ -2150,6 +2225,10 @@ button {
     flex-direction: column;
     justify-content: center;
     transition: min-height 0.3s ease;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-md);
 }
 
 @keyframes flavor-enter {
@@ -2206,6 +2285,24 @@ button {
     color: var(--accent-primary);
 }
 
+.flavor-source-link {
+    display: block;
+    width: fit-content;
+    margin: calc(0.8rem + 2px) auto -2px;
+    padding: 0.1rem 0.4rem;
+    font-size: 0.65rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--accent-primary);
+    border-radius: 0.4rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    animation: flavor-enter 0.3s ease-out 0.15s backwards;
+}
+
+.flavor-source-link:active {
+    transform: scale(0.97);
+}
+
 /* =========================
   stepper for integer inputs
 =========================== */
@@ -2221,7 +2318,7 @@ button {
     padding: 0.3rem 0.6rem;
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
-    background: none;
+    background-color: var(--bg-primary);
     color: var(--text-primary);
     cursor: pointer;
     font-size: 0.85rem;
@@ -2266,6 +2363,7 @@ button {
     align-items: center;
     justify-content: space-between;
     padding: 0.3rem 0.6rem;
+    background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
     border-radius: 0.6rem;
     font-size: 0.75rem;
@@ -2277,6 +2375,7 @@ button {
     align-items: center;
     justify-content: space-between;
     padding: 0.3rem 0.6rem;
+    background-color: var(--bg-primary);
     border: 1px solid var(--border-error);
     border-radius: 0.6rem;
     font-size: 0.75rem;
@@ -2286,24 +2385,31 @@ button {
 .card-group {
     margin-bottom: 1.5rem;
     overflow: hidden;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
 }
 
 .card-group-header {
     font-size: 0.85rem;
     font-weight: 600;
     color: var(--accent-tertiary);
-    padding: 0.4rem 0;
+    padding: 0.6rem 1rem;
     border-bottom: 1px solid var(--border-secondary);
-    margin-bottom: 0.25rem;
 }
 
 .card-row {
-    padding: 0.5rem 0;
+    padding: 0.5rem 1rem;
     border-bottom: 1px solid var(--border-secondary);
     cursor: pointer;
     transition: background-color 0.15s ease;
     overflow: hidden;
     min-width: 0;
+}
+
+.card-row:last-child {
+    border-bottom: none;
 }
 
 .card-row-compact {
@@ -2344,6 +2450,11 @@ button {
     font-size: 0.75rem;
     color: var(--text-muted);
     white-space: nowrap;
+}
+
+.card-row-colors .ms {
+    font-size: 0.8rem;
+    margin-left: 1px;
 }
 
 .card-row-detail {
@@ -2394,7 +2505,7 @@ button {
     font-size: 0.85rem;
     border-radius: 0.4rem;
     border: 1px solid var(--border-primary);
-    background: none;
+    background-color: var(--bg-primary);
     color: var(--text-primary);
     cursor: pointer;
     line-height: 1;
@@ -2405,7 +2516,7 @@ button {
     font-size: 0.75rem;
     border-radius: 0.4rem;
     border: 1px solid var(--border-primary);
-    background: none;
+    background-color: var(--bg-primary);
     color: var(--text-primary);
     cursor: pointer;
     line-height: 1;
@@ -2422,7 +2533,7 @@ button {
     font-size: 0.8rem;
     font-weight: 600;
     color: var(--text-muted);
-    padding-bottom: 0.25rem;
+    padding: 0 1rem 0.25rem;
     border-bottom: 1px solid var(--border-secondary);
     margin-bottom: 0.5rem;
 }
@@ -2432,10 +2543,12 @@ button {
  =========================== */
 
 .info-list {
+    background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
     border-radius: 1rem;
     overflow: hidden;
     width: 100%;
+    box-shadow: var(--shadow-sm);
 }
 
 .info-row {
@@ -2475,11 +2588,13 @@ button {
  =========================== */
 
 .profile-list {
+    background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
     border-radius: 1rem;
     overflow: hidden;
     width: 100%;
     max-width: 40rem;
+    box-shadow: var(--shadow-sm);
 }
 
 .profile-row {
@@ -2522,6 +2637,7 @@ button {
 .badge-verified {
     display: inline-block;
     padding: 0.15rem 0.4rem;
+    background-color: var(--bg-primary);
     border: 1px solid var(--border-success);
     border-radius: 0.4rem;
     font-size: 0.7rem;
@@ -2533,6 +2649,7 @@ button {
 .badge-unverified {
     display: inline-block;
     padding: 0.15rem 0.4rem;
+    background-color: var(--bg-primary);
     border: 1px solid var(--border-muted);
     border-radius: 0.4rem;
     font-size: 0.7rem;
@@ -2549,7 +2666,7 @@ button {
     display: block;
     width: 100%;
     padding: 0.6rem 1rem;
-    background: transparent;
+    background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
     color: var(--text-muted);
@@ -2569,12 +2686,43 @@ button {
     color: var(--text-primary);
 }
 
+.pref-row-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.theme-swatches {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    flex-shrink: 0;
+}
+
+.theme-dot {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 0.22rem;
+    flex-shrink: 0;
+}
+
+.pref-section-label {
+    font-size: 1rem;
+    color: var(--accent-primary);
+    letter-spacing: 0.1em;
+    text-align: center;
+    margin: 0.75rem 0 0.4rem;
+}
+
 .pref-toggle {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0.6rem 1rem;
-    margin-top: 0.8rem;
+    margin-bottom: 0.8rem;
+    background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
     font-size: 0.85rem;
@@ -2586,7 +2734,7 @@ button {
 }
 
 .pref-toggle-btn {
-    background: transparent;
+    background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
     border-radius: 0.3rem;
     color: var(--text-primary);

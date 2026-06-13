@@ -45,6 +45,7 @@ pub(crate) fn CloneDeckDialog(
             },
             AlertDialogContent {
                 AlertDialogTitle { "Clone deck" }
+                hr { class: "dialog-rule" }
                 AlertDialogDescription {
                     "Give your new deck a name. All cards, commander, and format will be copied over."
                 }
@@ -55,6 +56,7 @@ pub(crate) fn CloneDeckDialog(
                     value: "{new_name}",
                     oninput: move |evt| new_name.set(evt.value()),
                 }
+                hr { class: "dialog-rule" }
                 AlertDialogActions {
                     AlertDialogCancel {
                         on_click: move |_| open.set(false),

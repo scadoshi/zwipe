@@ -14,6 +14,8 @@ pub mod auth;
 pub mod fields;
 /// One-time hint dialogs (per-account, tracked via `hints_shown`).
 pub mod hint_dialog;
+/// Logout confirmation dialog.
+pub mod logout_dialog;
 /// Interactive components (buttons, links, etc.).
 pub mod interactions;
 /// Usage telemetry buffer + flush loop.
