@@ -177,5 +177,63 @@ if order_by.is_none() && commander present:
 - [x] oracle_id-keyed score map — `SynergyOrder`/`SynergyKey`, oracle_id ordering branch in the deck-aware SQL
 - [x] Tests: envelope parse (success/error/missing fields), disabled kill switch short-circuits
 - [x] No schema change → no `cargo sqlx prepare` needed (runtime QueryBuilder, no new `query!` macros)
-- [ ] User-facing Recommander attribution (terms require it) — confirm placement (app, not server)
+- [x] User-facing Recommander attribution — dimmed `HintCredit` line ("Recommendations powered by Recommander") in the add-card swipe hint dialog (`zwiper`), at the point of use
+- [ ] **Server-side result cache** (see "Rate limits" below) — the next build
 - [ ] Live verification against the real API once a 25+ deck exists in a dev DB
+
+## Rate limits + the per-page multiplier — why we cache
+
+`search_deck_cards` fires on **every page** of the add-card stack
+(`load_more_cards` prefetches when the user is within 5 of the end —
+`add.rs:240`), so paging through cards re-calls Recommander repeatedly **with
+the same deck** — identical input, identical scores, wasted calls. Worse: the
+public release has **no API key**, so Recommander rate-limits by **IP** — our
+one server IP — meaning *every user shares a single bucket*. Call volume today
+scales with (active 25+ builders) × (pages swiped) × (filter changes), all
+funnelled through that one bucket.
+
+Rough math (`L` = his limit req/min, shared; `r` ≈ 2–4 calls/min per active
+builder without caching): `U_max = L / r`. If `L = 60/min`, ~20 concurrent
+big-deck builders saturate it — very reachable. **Caching by deck-state turns
+paging/skips/re-searches into cache hits**, dropping `r` toward ~1/min (a call
+only when the deck actually changes), ~3× the headroom, and makes pagination
+instant instead of paying the timeout per page.
+
+**Decision: add a short-TTL, in-memory, server-side result cache**, agreed
+2026-06-12. Design:
+- A **caching decorator** implementing `CardRecommender` that wraps the
+  `Recommander` adapter — keeps the deck service unchanged (hex-arch clean,
+  same decorator shape as a middleware). Lives in `outbound`.
+- **Key** = hash of `(commander, partner, sorted deck oracle_ids)`. **Value** =
+  the `Vec<CardRecommendation>` (or reduced score map). **TTL** ~30–60s.
+- In-memory via `dashmap` (already a zerver dep). No schema, no migration.
+- **Adding a card changes deck-state → cache miss → one fresh call** — inherent
+  and accepted; it's exactly when a new recommendation is warranted. Paging,
+  skips, maybeboard swipes, and re-opening the same deck are all hits.
+- Failures/empties are **not** cached (so a transient Recommander blip doesn't
+  pin us to the fallback for the whole TTL).
+
+Still need from Michael: actual **requests/min (or /hour)** and **burst/bucket
+depth**, and whether a partnership unlocks a **key + higher limit** (and the
+fuller model). That number sizes the TTL/throttle. Also: **meter 429s + the
+fallback rate** so saturation is visible before users feel it (graceful, but
+silent — a 429 quietly serves the cached commander floor).
+
+## Future opportunity — deck-fit analysis from Recommander's stats
+
+Beyond *ordering* the add-card search, Recommander serves richer per-deck stats
+(seen on his web app's **DECK STATS**): **Commander Synergy %**, **Synergy
+Range**, a **Lift Distribution** histogram, and per-card classification —
+**Definitive / Staple / Unique / Other** with a per-card **lift %**.
+
+Idea (2026-06-12): use these to **flag cards that don't belong vs. ones that
+really do** — e.g. strongly negative-lift cards as "might not fit," and
+high-lift / Definitive cards as "core to this deck." A deck-review/analysis
+surface, distinct from the swipe-to-add ordering. Natural home: the deck view
+screen.
+
+Open question before scoping: the current integration only uses
+`/api/decks/recommend/top` (which returns `{oracle_id, name, score}`). The
+lift/classification stats may be a **different endpoint** (or only in his web
+UI). **Confirm with Michael whether these per-card stats are API-accessible**
+before designing the feature.
