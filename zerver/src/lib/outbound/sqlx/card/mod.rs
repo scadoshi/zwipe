@@ -199,6 +199,11 @@ impl CardRepository for MyPostgres {
              WHERE ",
         );
         let mut sep: Separated<Postgres, &'static str> = qb.separated(" AND ");
+        // Seed an always-true clause so the baked `WHERE` is valid even when no
+        // filter conditions are pushed (e.g. an empty filter). It also lets every
+        // real condition below rely on the `AND` separator: the first real push
+        // becomes the second element, so it is correctly prefixed with ` AND `.
+        sep.push("TRUE");
 
         // Strip punctuation from DB columns for punctuation-insensitive text search.
         // The query values are already stripped by CardFilterBuilder setters.
