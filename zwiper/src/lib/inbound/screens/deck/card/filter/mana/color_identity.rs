@@ -126,7 +126,8 @@ pub(crate) fn ColorIdentityFilter() -> Element {
                             }
                         }
                     },
-                    { color.to_string() }
+                    title: "{color.to_long_name()}",
+                    i { class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost" }
                 }
             }
         }

@@ -47,7 +47,7 @@
   max-width: 20rem;
   box-sizing: border-box;
   padding: 2rem;
-  border: 1px solid var(--border-primary);
+  border: 1px solid var(--border-secondary);
   border-radius: 1rem;
   background: var(--bg-primary);
   color: var(--text-primary);
@@ -71,6 +71,15 @@
   font-size: 1rem;
   font-weight: 400;
   opacity: 0.8;
+}
+
+/* Full-width rule (breaks out of the dialog's 2rem padding) under the title and
+   above the actions. */
+.dialog-rule {
+  border: none;
+  border-top: 1px solid var(--border-secondary);
+  align-self: stretch;
+  margin: 0.25rem -2rem 0.75rem -2rem;
 }
 
 .alert-dialog-actions {

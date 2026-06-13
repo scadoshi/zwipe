@@ -37,12 +37,11 @@ pub(crate) fn CardRow(
         (Some(p), Some(t)) => format!("{p}/{t}"),
         _ => String::new(),
     };
-    let color_display = sd
+    let color_codes = sd
         .color_identity
         .iter()
-        .map(|c| format!("{{{}}}", c.to_short_name()))
-        .collect::<Vec<_>>()
-        .join("");
+        .map(|c| c.to_short_name().to_lowercase())
+        .collect::<Vec<_>>();
     let oracle_text = sd.oracle_text.clone().unwrap_or_default();
     let type_line = sd.type_line.clone().unwrap_or_default();
     let rarity_name = sd.rarity.to_long_name();
@@ -67,7 +66,11 @@ pub(crate) fn CardRow(
                 span { class: "card-row-name", "{name}" }
                 span { class: "card-row-cmc", "{cmc_display}" }
                 span { class: "card-row-pt", "{pt_display}" }
-                span { class: "card-row-colors", "{color_display}" }
+                span { class: "card-row-colors",
+                    for code in color_codes.iter() {
+                        i { key: "{code}", class: "ms ms-{code} ms-cost" }
+                    }
+                }
             }
 
             if is_expanded {
