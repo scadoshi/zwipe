@@ -95,9 +95,20 @@ credentials-file: /home/<user>/.cloudflared/<tunnel-uuid>.json
 
 ingress:
   - hostname: api.zwipe.net
-    service: http://localhost:3000
+    service: http://127.0.0.1:3000   # NOT localhost — see warning below
   - service: http_status:404
 ```
+
+> **Use `127.0.0.1`, not `localhost`.** On an IPv6-enabled host (e.g. the
+> Hetzner VPS), `localhost` resolves to `::1`. zerver binds `0.0.0.0` (IPv4
+> only), so cloudflared intermittently dials `::1` → connection refused →
+> **~20% of requests 502**. Forcing IPv4 fixes it. (The old home box had no
+> IPv6, so it never surfaced — discovered during the 2026-06-13 VPS cutover.)
+
+**Current tunnels:** `zwipe-vps` (UUID `2b5d54b3-f05a-47ad-9785-5f7348987618`,
+on the Hetzner VPS) serves `api.zwipe.net` as of the 2026-06-13 cutover. The
+old home tunnel `zwipe` (`70ba169b-…`) is retained for rollback until home is
+decommissioned.
 
 ### Add DNS record
 
