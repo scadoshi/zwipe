@@ -178,7 +178,7 @@ if order_by.is_none() && commander present:
 - [x] Tests: envelope parse (success/error/missing fields), disabled kill switch short-circuits
 - [x] No schema change → no `cargo sqlx prepare` needed (runtime QueryBuilder, no new `query!` macros)
 - [x] User-facing Recommander attribution — dimmed `HintCredit` line ("Recommendations powered by Recommander") in the add-card swipe hint dialog (`zwiper`), at the point of use
-- [ ] **Server-side result cache** (see "Rate limits" below) — the next build
+- [x] **Server-side result cache** — `CachingRecommander<R>` decorator (deck-state key, TTL via `RECOMMANDER_CACHE_TTL_SECS`, empties/failures not cached); see "Rate limits" below
 - [ ] Live verification against the real API once a 25+ deck exists in a dev DB
 
 ## Rate limits + the per-page multiplier — why we cache

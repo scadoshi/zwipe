@@ -6,7 +6,7 @@ use std::time::Duration;
 use zwipe::config::Config;
 use zwipe::domain::{auth, card, deck, health, metrics, user};
 use zwipe::inbound::http::{HttpServer, HttpServerConfig};
-use zwipe::outbound::recommander::Recommander;
+use zwipe::outbound::recommander::{CachingRecommander, Recommander};
 use zwipe::outbound::resend::Resend;
 use zwipe::outbound::sqlx::postgres::Postgres;
 use zwipe_core::domain::logo;
@@ -63,6 +63,12 @@ async fn run() -> anyhow::Result<()> {
         config.recommander_base_url,
         Duration::from_millis(config.recommander_timeout_ms),
         config.recommander_enabled,
+    );
+    // Cache deck-aware results so paging through one deck is a single upstream
+    // call (the public API rate-limits by our shared server IP).
+    let recommander = CachingRecommander::new(
+        recommander,
+        Duration::from_secs(config.recommander_cache_ttl_secs),
     );
     let auth_service =
         auth::services::Service::new(db.clone(), db.clone(), resend, config.jwt_secret);

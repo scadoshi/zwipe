@@ -60,6 +60,13 @@ const RECOMMANDER_TIMEOUT_MS_DEFAULT: u64 = 1000;
 /// Environment variable key for the Recommander kill switch ("false"/"0" off).
 const RECOMMANDER_ENABLED_KEY: &str = "RECOMMANDER_ENABLED";
 
+/// Environment variable key for the Recommander result-cache TTL (seconds).
+const RECOMMANDER_CACHE_TTL_SECS_KEY: &str = "RECOMMANDER_CACHE_TTL_SECS";
+
+/// Default Recommander cache TTL — long enough that paging through one deck is
+/// all cache hits, short enough that recommendations track the deck as it grows.
+const RECOMMANDER_CACHE_TTL_SECS_DEFAULT: u64 = 45;
+
 /// Application configuration loaded from environment variables.
 ///
 /// All fields are required and validated at construction time.
@@ -107,6 +114,10 @@ pub struct Config {
     /// Recommander kill switch. When false, the live call is skipped and the
     /// cached synergy signal is always used. Flip via `.env` + restart.
     pub recommander_enabled: bool,
+
+    /// TTL (seconds) for the in-memory Recommander result cache, which collapses
+    /// the per-page re-calls of an unchanged deck into one upstream call.
+    pub recommander_cache_ttl_secs: u64,
 }
 
 impl Config {
@@ -150,6 +161,10 @@ impl Config {
         let recommander_enabled = std::env::var(RECOMMANDER_ENABLED_KEY)
             .map(|v| !matches!(v.as_str(), "false" | "0"))
             .unwrap_or(true);
+        let recommander_cache_ttl_secs = std::env::var(RECOMMANDER_CACHE_TTL_SECS_KEY)
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(RECOMMANDER_CACHE_TTL_SECS_DEFAULT);
         Ok(Self {
             jwt_secret,
             database_url,
@@ -164,6 +179,7 @@ impl Config {
             recommander_base_url,
             recommander_timeout_ms,
             recommander_enabled,
+            recommander_cache_ttl_secs,
         })
     }
 }

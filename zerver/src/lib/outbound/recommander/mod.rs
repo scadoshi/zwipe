@@ -7,6 +7,12 @@
 //! terms. Any failure here is non-fatal — the caller falls back to the cached
 //! synergy signal — so the tight per-request timeout doubles as the "it's too
 //! slow, fall back" guardrail. See `plans/recommander-integration.md`.
+//!
+//! The adapter is wrapped by [`CachingRecommander`] in production so the
+//! per-page re-calls of an unchanged deck collapse to one upstream call.
+
+mod cache;
+pub use cache::CachingRecommander;
 
 use std::time::Duration;
 
