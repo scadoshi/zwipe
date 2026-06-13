@@ -1,11 +1,48 @@
 # VPS migration — moving prod off the home server
 
-**Status: planned, deliberately deferred (2026-06-10).** At ~20 users the
-home server is fine — free, behind the tunnel, backed up nightly to R2.
-Execute this plan when a trigger fires: meaningful user growth (Android
-launch lands, premium revenue starts), the home server's decommission date
-becomes real, or a reliability scare. Until then it's a ready-to-run runbook.
-Todo entry: `context/status/todo.md`.
+**Status: CUTOVER EXECUTED 2026-06-13.** `api.zwipe.net` now serves from a
+Hetzner CPX31 (Hillsboro OR, Ubuntu 26.04, PG 18). The home server is stopped
+(`zerver` only) but intact as the rollback for ~1–2 weeks. See "Cutover result"
+below. Remaining: register CI runners on the VPS + remove home runners, stop
+home `cloudflared`/`zynergy`, then decommission home after a clean window.
+
+## Cutover result (2026-06-13)
+
+- **Box:** Hetzner CPX31, tailnet `100.114.251.8`, hostname `zerver-prod`.
+  Hardened: `scadoshi` key-only, ufw default-deny + `tailscale0` only (zero
+  public ports). Postgres 18, Rust 1.96, sqlx-cli.
+- **Services (systemd, boot-enabled, auto-restart):** `zerver` (→ `api.zwipe.net`),
+  `zynergy` (synergy worker, `synergy_worker` least-priv role), `cloudflared`
+  (tunnel `zwipe-vps`, UUID `2b5d54b3-f05a-47ad-9785-5f7348987618`).
+- **Data:** restored from a fresh final `pg_dump` (home zerver stopped first).
+  PG 17.10 → 18 clean, 0 errors. 24 users / 37 decks / 1,627 deck_cards /
+  115,805 cards / 22 migrations. Verified: login + decks + writes on the live
+  mobile client.
+- **Cutover mechanism:** new tunnel + proxied-CNAME flip (Phase 1 below), not a
+  shared tunnel. Downtime ≈ 2 min (stop home zerver → final dump → restore →
+  `cloudflared tunnel route dns --overwrite-dns zwipe-vps api.zwipe.net`).
+- **Rollback (still available):** flip `api.zwipe.net` CNAME back to the home
+  tunnel `70ba169b-…` + `sudo systemctl start zerver` on home.
+
+### Gotchas hit (fix-forward notes for any future move)
+
+1. **Tunnel ingress must use `http://127.0.0.1:3000`, NOT `localhost`** on an
+   IPv6-enabled host. zerver binds `0.0.0.0` (IPv4 only); `localhost` resolves
+   to `::1` on the Hetzner box, so cloudflared intermittently hit `::1` →
+   connection refused → ~20% **502s**. Home never showed this (no IPv6).
+2. **`createuser synergy_worker` on the VPS before restoring** — the dump
+   carries `GRANT`s to that role; without it psql logs `role "synergy_worker"
+   does not exist` (cosmetic for zerver, but the worker needs the role anyway).
+3. **Build JDK / unrelated:** N/A here, but note the box defaulted to Ubuntu
+   26.04 + PG 18 (newer than the 24.04/PG17 the runbook assumed) — both fine.
+
+---
+
+## Original plan (kept for reference / future moves)
+
+At ~20 users the home server was fine — free, behind the tunnel, backed up
+nightly to R2. This plan was executed when the Android push made un-deferring
+worthwhile. Todo entry: `context/status/todo.md`.
 
 ## Context — what is actually moving
 
