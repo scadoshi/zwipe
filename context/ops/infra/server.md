@@ -1,5 +1,12 @@
 # Ubuntu Server Setup
 
+> **NOTE (2026-06-13): Prod no longer runs here.** Production migrated to a
+> Hetzner VPS (`zerver-prod`, tailnet `100.114.251.8`, admin `ssh root@…`) —
+> see `context/plans/vps-migration.md`. This home box is powered off but kept
+> intact as the rollback. The checklist below remains the general
+> rebuild/setup reference (it's what the VPS was built from); only the
+> WiFi/netplan section is home-box-specific.
+
 Repurposed desktop running Ubuntu Server (headless). Intel i5, 32GB RAM, x86_64.
 Backend served via Cloudflare Tunnel — no port forwarding, TLS handled by Cloudflare.
 
