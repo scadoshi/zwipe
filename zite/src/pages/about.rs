@@ -27,7 +27,7 @@ pub fn About() -> Element {
         }
         Nav {}
         div { class: "page content-enter",
-            div { class: "about-header section",
+            div { class: "about-header section panel",
                 h1 { "Scotty Fermo" }
                 p { class: "tagline", "Software developer · scadoshi" }
                 div { class: "profile-links",
@@ -37,9 +37,6 @@ pub fn About() -> Element {
                     a { class: "profile-link", href: "https://www.linkedin.com/in/scotty-fermo-41a35b141/", target: "_blank", rel: "noopener noreferrer", "LinkedIn ↗" }
                     a { class: "profile-link", href: "https://github.com/scadoshi/zwipe", target: "_blank", rel: "noopener noreferrer", "Zwipe ↗" }
                 }
-            }
-
-            div { class: "section",
                 div { class: "tag-row",
                     span { class: "tag", "rust" }
                     span { class: "tag", "full-stack" }
@@ -326,18 +323,6 @@ pub fn About() -> Element {
                             }
                             li { "Materialized view refresh for deduplicated search (~35k unique cards)" }
                             li { "Zero Scryfall dependency at query time: all lookups hit Postgres" }
-                        }
-                    }
-
-                    div { class: "card",
-                        span { class: "card-category", "Ops" }
-                        h3 { class: "card-title", "Infrastructure" }
-                        p { class: "card-summary", "Self-hosted on a home Ubuntu server. No cloud bill." }
-                        ul { class: "card-bullets",
-                            li { "Cloudflare Tunnel → api.zwipe.net, no public ports exposed" }
-                            li { "Self-hosted GitHub Actions runner, deploys on push to main" }
-                            li { "systemd auto-restart, automatic migrations on deploy" }
-                            li { "Nightly pg_dump → Cloudflare R2, 30-day retention" }
                         }
                     }
 

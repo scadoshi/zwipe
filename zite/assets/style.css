@@ -23,6 +23,34 @@ body {
     touch-action: manipulation;
 }
 
+/* Derived tokens live on body because the theme class is applied there, so
+   color-mix() resolves against the active theme's --bg-primary / --text-primary.
+   The grid is painted on exactly one element (body) so seams never double-line;
+   nav, footer, and panels paint solid on top and mask it in their footprint. */
+body {
+    --grid-line: color-mix(in srgb, var(--text-primary) 4%, transparent);
+    --grid-size: 28px;
+    --bg-sink: color-mix(in srgb, var(--bg-primary), #000 15%);
+    background-color: var(--bg-sink);
+    background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: var(--grid-size) var(--grid-size);
+}
+
+/* Floating bubble — opaque panel lifted off the grid with a soft shadow. */
+.panel {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
+    padding: 1.5rem;
+}
+
+.panel > :first-child {
+    margin-top: 0;
+}
+
 a {
     color: var(--accent-primary);
     text-decoration: underline;
@@ -37,7 +65,15 @@ a:hover {
         layout
  ==================== */
 
+#main {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
 .page {
+    flex: 1 0 auto;
+    width: 100%;
     max-width: 60rem;
     margin: 0 auto;
     padding: 0 1.5rem 5rem;
@@ -51,9 +87,10 @@ a:hover {
     position: sticky;
     top: 0;
     z-index: 100;
-    background-color: var(--border-secondary);
+    background-color: var(--bg-primary);
     margin-bottom: 3rem;
     border-bottom: 1px solid var(--border-primary);
+    box-shadow: var(--shadow-sm);
 }
 
 nav {
@@ -331,11 +368,15 @@ nav {
         font-size: 0.95rem;
         padding: 0.55rem 1rem;
     }
+    /* Make .theme-select static so the open dropdown's containing block is the
+       relative <nav> (inside the sticky .nav-wrapper) rather than .theme-select.
+       That keeps it pinned to the sticky nav while scrolling, and escapes the
+       panel's overflow:hidden clip since nav isn't a descendant of that clip. */
+    .nav-panel .theme-select {
+        position: static;
+    }
     .nav-panel .theme-select-content {
-        /* fixed escapes the panel's overflow:hidden collapse wrapper, so the
-           dropdown pops out over the page; auto offsets keep it anchored at
-           its natural spot below the trigger (nav is sticky, so it's stable) */
-        position: fixed;
+        position: absolute;
         top: auto;
         right: auto;
         left: auto;
@@ -354,10 +395,11 @@ nav {
 }
 
 .card {
-    background: var(--border-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
     padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
     transition: border-color 0.2s;
 }
 
@@ -365,9 +407,10 @@ nav {
     border-color: var(--accent-primary);
 }
 
-.card h3 {
+.card h3,
+.card .card-title {
     font-size: 1.1rem;
-    color: var(--text-primary);
+    color: var(--accent-primary);
     margin-bottom: 0.75rem;
     font-weight: 700;
 }
@@ -388,9 +431,10 @@ nav {
     flex-direction: column;
     gap: 0.6rem;
     padding: 1.25rem;
-    border: 1px solid var(--border-primary);
-    border-radius: 0.5rem;
-    background: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-md);
 }
 
 .arch-tier {
@@ -408,7 +452,7 @@ nav {
 }
 
 .arch-box {
-    background: var(--border-secondary);
+    background: var(--bg-primary);
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
     padding: 0.9rem 1rem;
@@ -546,7 +590,7 @@ nav {
     padding: 0.9rem 1rem;
     border: 1px dashed var(--accent-primary);
     border-radius: 0.4rem;
-    background: var(--border-secondary);
+    background: var(--bg-primary);
 }
 
 .arch-foundation-body {
@@ -637,10 +681,10 @@ ul li {
 code {
     font-family: "JetBrains Mono", monospace;
     font-size: 0.85em;
-    background-color: rgba(222, 205, 216, 0.08);
+    background-color: var(--border-secondary);
     padding: 0.0625rem 0.3125rem;
     border-radius: 0.1875rem;
-    border: 1px solid var(--border-secondary);
+    border: 1px solid var(--border-muted);
 }
 
 /* ==================
@@ -720,18 +764,23 @@ code {
 
 .hero {
     text-align: center;
-    padding: 3rem 1.5rem;
+    /* No bottom padding: spacing below the tagline is driven by the gallery's
+       top margin (and the stats strip's own margin when it's connected), so the
+       gap collapses tight when the strip hides itself. */
+    padding: 3rem 1.5rem 0;
     overflow: hidden;
 }
 
 .hero .tagline {
     font-size: 0.95rem;
     color: var(--text-primary);
-    margin-top: 1rem;
-    margin-bottom: 1rem;
-    max-width: 30rem;
-    margin-left: auto;
-    margin-right: auto;
+    margin: 1.5rem auto 0;
+    max-width: 57rem;
+    padding: 1rem 1.5rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-md);
 }
 
 .stats-strip {
@@ -739,8 +788,14 @@ code {
     justify-content: center;
     gap: 2.5rem;
     flex-wrap: wrap;
-    margin-top: 1.5rem;
-    padding: 0 1rem;
+    width: fit-content;
+    max-width: 100%;
+    margin: 1.5rem auto 0;
+    padding: 1rem 2rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
     font-family: "JetBrains Mono", monospace;
 }
 
@@ -769,9 +824,11 @@ code {
 .store-btn {
     display: inline-block;
     color: var(--accent-primary);
+    background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
     padding: 0.625rem 1.75rem;
     border-radius: 0.4rem;
+    box-shadow: var(--shadow-sm);
     text-decoration: none;
     font-size: 0.9rem;
     letter-spacing: 0.06em;
@@ -821,10 +878,11 @@ code {
 }
 
 .feature-card {
-    background: var(--border-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
     padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
     transition: border-color 0.2s;
 }
 
@@ -835,7 +893,7 @@ code {
 .feature-card .card-title,
 .feature-card h3 {
     font-size: 1.1rem;
-    color: var(--text-primary);
+    color: var(--accent-primary);
     margin-bottom: 0.75rem;
     font-weight: 700;
 }
@@ -907,25 +965,46 @@ code {
 
 .project-gallery {
     max-width: 36rem;
-    margin: 2rem auto 2.5rem;
+    margin: 1.5rem auto 2.5rem;
     padding: 0;
 }
 
+/* Media window styled like the app's alert dialogs: an accent header and a
+   footer caption, each split off the media by a full-width rule, all inside
+   one bg-primary card. */
 .gallery-frame {
-    position: relative;
-    /* Stack: semi-transparent black layer over page bg = "slightly darker than bg" on every
-       theme without needing per-theme variables. Works on both light and dark palettes. */
-    background:
-        linear-gradient(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.18)),
-        var(--bg-primary);
-    border: 1px solid var(--border-muted);
-    border-radius: 0.4rem;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-md);
     overflow: hidden;
+    padding: 1rem 1.25rem;
+}
+
+.gallery-header {
+    color: var(--accent-primary);
+    text-align: center;
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+}
+
+/* Full-width rule that breaks out of the frame's horizontal padding,
+   mirroring the app's .dialog-rule. */
+.gallery-rule {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    align-self: stretch;
+    margin: 0.75rem -1.25rem;
+}
+
+.gallery-body {
+    position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
-    /* Reserve vertical space so the frame holds its size during src swap.
-       Matches the .gallery-video max-height so steady-state and loading state are identical. */
+    /* Reserve vertical space so the body holds its size during src swap. */
     min-height: 70vh;
 }
 
@@ -935,10 +1014,7 @@ code {
     max-height: 70vh;
     height: auto;
     object-fit: contain;
-    animation: gallery-fade-in 0.45s cubic-bezier(0.4, 0, 0.2, 1) both;
-}
-
-.gallery-caption {
+    border-radius: 0.5rem;
     animation: gallery-fade-in 0.45s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
@@ -957,7 +1033,7 @@ code {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    background: var(--border-secondary);
+    background-color: var(--bg-primary);
     color: var(--text-primary);
     border: 1px solid var(--border-primary);
     border-radius: 50%;
@@ -970,7 +1046,8 @@ code {
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0.75;
+    box-shadow: var(--shadow-sm);
+    opacity: 0.9;
     transition:
         opacity 0.15s,
         border-color 0.15s,
@@ -986,18 +1063,17 @@ code {
 }
 
 .gallery-prev {
-    left: 0.75rem;
+    left: 0;
 }
 .gallery-next {
-    right: 0.75rem;
+    right: 0;
 }
 
-.gallery-meta {
+.gallery-footer {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
     gap: 1rem;
-    margin-top: 0.75rem;
     color: var(--text-muted);
     font-size: 0.85rem;
 }
@@ -1005,6 +1081,7 @@ code {
 .gallery-caption {
     margin: 0;
     font-style: italic;
+    animation: gallery-fade-in 0.45s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .gallery-counter {
@@ -1039,11 +1116,13 @@ code {
 
 .profile-link {
     color: var(--accent-primary);
+    background-color: var(--bg-primary);
     text-decoration: none;
     font-size: 0.85rem;
     padding: 0.4rem 1rem;
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
+    box-shadow: var(--shadow-sm);
     transition:
         border-color 0.2s,
         color 0.2s;
@@ -1058,6 +1137,7 @@ code {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+    margin-top: 1.5rem;
     margin-bottom: 1.25rem;
 }
 
@@ -1112,7 +1192,11 @@ code {
 .form-page {
     max-width: 25rem;
     margin: 3.75rem auto 0;
-    padding: 0 1.5rem;
+    padding: 2rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-md);
 }
 
 .form-page h1 {
@@ -1140,14 +1224,15 @@ code {
 
 .form-group input {
     width: 100%;
-    background-color: transparent;
-    border: 1px solid var(--border-secondary);
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
     color: var(--text-primary);
     font-family: "JetBrains Mono", monospace;
     font-weight: 300;
     font-size: 0.9rem;
     padding: 0.625rem 0.75rem;
-    border-radius: 0.25rem;
+    border-radius: 0.4rem;
+    box-shadow: var(--shadow-sm);
     outline: none;
     transition: border-color 0.15s;
 }
@@ -1158,7 +1243,7 @@ code {
 
 .btn-primary {
     width: 100%;
-    background-color: transparent;
+    background-color: var(--bg-primary);
     color: var(--accent-primary);
     border: 1px solid var(--accent-primary);
     font-family: "JetBrains Mono", monospace;
@@ -1166,7 +1251,8 @@ code {
     font-size: 0.9rem;
     letter-spacing: 0.05em;
     padding: 0.6875rem;
-    border-radius: 0.25rem;
+    border-radius: 0.4rem;
+    box-shadow: var(--shadow-sm);
     cursor: pointer;
     margin-top: 0.5rem;
     transition:
@@ -1288,7 +1374,7 @@ code {
     top: 100%;
     right: 0;
     margin-top: 0.5rem;
-    background: var(--border-secondary);
+    background: var(--bg-primary);
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
     min-width: 11rem;
@@ -1297,7 +1383,7 @@ code {
     flex-direction: column;
     max-height: 70vh;
     overflow-y: auto;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--shadow-md);
 }
 
 .theme-select-open .theme-select-content {
@@ -1328,6 +1414,24 @@ code {
     color: var(--accent-primary);
 }
 
+/* Section subtitles ("Themes" / "Color blind") that group the picker,
+   mirroring the app's .pref-section-label grouping. */
+.theme-select-label {
+    margin-top: 0.4rem;
+    padding: 0.4rem 1rem 0.25rem;
+    border-top: 1px solid var(--border-primary);
+    color: var(--accent-primary);
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+}
+
+/* The first subtitle sits at the top of the menu — no divider above it. */
+.theme-select-content > .theme-select-label:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
 .mode-toggle {
     cursor: pointer;
 }
@@ -1341,7 +1445,18 @@ footer {
     padding: 2rem 1.5rem;
     color: var(--text-muted);
     font-size: 0.78rem;
+    background-color: var(--bg-primary);
     border-top: 1px solid var(--accent-primary);
+    box-shadow: var(--shadow-md);
     margin-top: 3.75rem;
     animation: content-enter 0.3s ease-out 0.15s both;
+}
+
+.fan-content-notice {
+    max-width: 42rem;
+    margin: 0.85rem auto 0;
+    font-size: 0.7rem;
+    line-height: 1.5;
+    color: var(--text-subtle);
+    opacity: 0.75;
 }

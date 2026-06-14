@@ -12,7 +12,7 @@ pub fn Android() -> Element {
         }
         Nav {}
         div { class: "page content-enter",
-            div { class: "section",
+            div { class: "section panel",
                 h1 { "Google Play: Pending" }
                 p {
                     "Zwipe has been submitted to Google Play. While it's under review, here's

@@ -16,7 +16,7 @@ pub fn Contribute() -> Element {
         }
         Nav {}
         div { class: "page content-enter",
-            div { class: "section",
+            div { class: "section panel",
                 h1 { "Contribute" }
                 p {
                     "Zwipe is a solo indie project: designed, built, and shipped by one person.
