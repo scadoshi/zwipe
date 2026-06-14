@@ -206,12 +206,28 @@ fn display_theme_name(slug: &str) -> String {
         .join(" ")
 }
 
+/// Themes shown in their own bottom section of the picker. Mirrors the app's
+/// preferences sheet (zwiper) so both clients group these identically.
+const COLORBLIND_THEMES: &[&str] = &["protanopia", "deuteranopia", "tritanopia"];
+
 #[component]
 pub fn ThemePicker() -> Element {
     let mut theme: Signal<ThemeConfig> = use_context();
     let mut open = use_signal(|| false);
     let current = theme.read().name.clone();
     let is_dark = theme.read().is_dark;
+    // ALLOWED_THEMES is already alphabetical; filtering preserves that order
+    // for the main group and pulls the color-blind themes into a bottom section.
+    let regular_themes: Vec<&str> = ALLOWED_THEMES
+        .iter()
+        .copied()
+        .filter(|t| !COLORBLIND_THEMES.contains(t))
+        .collect();
+    let colorblind_themes: Vec<&str> = ALLOWED_THEMES
+        .iter()
+        .copied()
+        .filter(|t| COLORBLIND_THEMES.contains(t))
+        .collect();
     let select_class = if open() {
         "theme-select theme-select-open"
     } else {
@@ -238,7 +254,23 @@ pub fn ThemePicker() -> Element {
                     "{display_theme_name(&current)} ▾"
                 }
                 div { class: "theme-select-content",
-                    for name in ALLOWED_THEMES {
+                    div { class: "theme-select-label", "Themes" }
+                    for name in regular_themes {
+                        button {
+                            class: if current == *name { "theme-option active" } else { "theme-option" },
+                            onclick: move |_| {
+                                let dark = theme.read().is_dark;
+                                theme.set(ThemeConfig {
+                                    name: name.to_string(),
+                                    is_dark: dark,
+                                });
+                                open.set(false);
+                            },
+                            "{display_theme_name(name)}"
+                        }
+                    }
+                    div { class: "theme-select-label", "Color blind" }
+                    for name in colorblind_themes {
                         button {
                             class: if current == *name { "theme-option active" } else { "theme-option" },
                             onclick: move |_| {
@@ -275,6 +307,17 @@ pub fn Footer() -> Element {
         footer {
             p { "© 2026 scadoshi · "
                 Link { to: Route::Privacy {}, "Privacy Policy" }
+            }
+            p { class: "fan-content-notice",
+                "Zwipe is unofficial Fan Content permitted under the "
+                a {
+                    href: "https://company.wizards.com/en/legal/fancontentpolicy",
+                    target: "_blank",
+                    rel: "noopener noreferrer",
+                    "Fan Content Policy"
+                }
+                ". Not approved/endorsed by Wizards. Portions of the materials used are property "
+                "of Wizards of the Coast. ©Wizards of the Coast LLC."
             }
         }
     }
