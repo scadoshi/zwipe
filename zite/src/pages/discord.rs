@@ -12,7 +12,7 @@ pub fn Discord() -> Element {
         }
         Nav {}
         div { class: "page content-enter",
-            div { class: "section",
+            div { class: "section panel",
                 h1 { "Join the Community" }
                 p {
                     "Connect with other Zwipe users, report bugs, request help, "
