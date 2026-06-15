@@ -74,7 +74,9 @@ pub(crate) fn EditDeckSkeleton(#[props(default = 3)] fields: usize) -> Element {
             for i in 0..fields {
                 div { key: "{i}", class: "skeleton-edit-deck-field",
                     div { class: "skeleton-bar skeleton-edit-deck-label" }
-                    div { class: "skeleton-block skeleton-edit-deck-input" }
+                    div { class: "skeleton-edit-deck-input",
+                        div { class: "skeleton-bar skeleton-edit-deck-value" }
+                    }
                 }
             }
         }
@@ -99,6 +101,7 @@ pub(crate) fn DeckListSkeleton(#[props(default = 5)] rows: usize) -> Element {
                 div { key: "{i}", class: "skeleton-deck-list-item",
                     div { class: "skeleton-bar skeleton-deck-list-title" }
                     div { class: "skeleton-bar skeleton-deck-list-meta" }
+                    div { class: "skeleton-bar skeleton-deck-list-meta skeleton-deck-list-meta-2" }
                 }
             }
         }
