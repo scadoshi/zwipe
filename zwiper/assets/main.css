@@ -1048,6 +1048,7 @@ button {
 .skeleton-edit-deck-field {
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 0.4rem;
     width: 100%;
 }
@@ -1057,10 +1058,23 @@ button {
     height: 0.65rem;
 }
 
+/* Input placeholder shaped like the real .input: a bordered box (not a solid
+   fill) with a pulsing value bar inside, so the form skeleton reads as a form. */
 .skeleton-edit-deck-input {
+    display: flex;
+    align-items: center;
     width: 100%;
     height: 2.75rem;
+    padding: 0 1rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.skeleton-edit-deck-value {
+    width: 45%;
+    height: 0.7rem;
 }
 
 /* Deck profile skeleton */
@@ -1179,19 +1193,25 @@ button {
     gap: 0.5rem;
     padding: 1rem;
     background-color: var(--bg-primary);
-    border: 1px solid var(--border-primary);
+    border: 1px solid var(--border-secondary);
     border-radius: 0.6rem;
     box-shadow: var(--shadow-sm);
 }
 
 .skeleton-deck-list-title {
-    width: 55%;
+    width: 50%;
     height: 0.9rem;
 }
 
+/* Two meta lines: the real deck subtitle ("100 cards | Commander | …") wraps to
+   roughly two lines, so the skeleton mirrors that with a full + a partial bar. */
 .skeleton-deck-list-meta {
-    width: 80%;
+    width: 85%;
     height: 0.65rem;
+}
+
+.skeleton-deck-list-meta-2 {
+    width: 50%;
 }
 
 /* ===========================
