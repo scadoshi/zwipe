@@ -45,12 +45,14 @@ pub fn Home() -> Element {
         Nav {}
         div { class: "hero",
             div { class: "logo", "{LOGO_ASCII}" }
-            p { class: "tagline",
-                "The "
-                a { href: "https://magic.wizards.com/en", target: "_blank", rel: "noopener noreferrer", "Magic: The Gathering" }
-                " deck builder built for mobile. Swipe right to add card to deck (or remove on remove flow), left to skip card, up to add to maybeboard, down to undo."
+            div { class: "hero-card",
+                p { class: "tagline",
+                    "The "
+                    a { href: "https://magic.wizards.com/en", target: "_blank", rel: "noopener noreferrer", "Magic: The Gathering" }
+                    " deck builder built for mobile. Swipe right to add card to deck (or remove on remove flow), left to skip card, up to add to maybeboard, down to undo."
+                }
+                StatsStrip {}
             }
-            StatsStrip {}
         }
         div { class: "page content-enter",
             figure { class: "project-gallery",
