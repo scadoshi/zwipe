@@ -80,9 +80,7 @@ fn App() -> Element {
     use_effect(move || {
         let class = theme.read().css_class();
         spawn(async move {
-            let _ = eval(&format!(
-                "document.body.className = '{class}';"
-            )).await;
+            let _ = eval(&format!("document.body.className = '{class}';")).await;
         });
     });
 
@@ -305,7 +303,7 @@ pub fn ThemePicker() -> Element {
 pub fn Footer() -> Element {
     rsx! {
         footer {
-            p { "© 2026 scadoshi · "
+            p { "© 2026 scadoshi | "
                 Link { to: Route::Privacy {}, "Privacy Policy" }
             }
             p { class: "fan-content-notice",
