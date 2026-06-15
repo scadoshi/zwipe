@@ -775,16 +775,35 @@ code {
     overflow: hidden;
 }
 
-.hero .tagline {
-    font-size: 0.95rem;
-    color: var(--text-primary);
-    margin: 1.5rem auto 0;
+/* Description + stats live in one bg-primary card, split by a full-width rule,
+   mirroring the demo gallery's frame. The rule and stats are emitted together
+   by StatsStrip, so both vanish if the metrics fetch fails. */
+.hero-card {
+    display: flex;
+    flex-direction: column;
     max-width: 57rem;
+    margin: 1.5rem auto 0;
     padding: 1rem 1.5rem;
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
     border-radius: 1rem;
     box-shadow: var(--shadow-md);
+    overflow: hidden;
+}
+
+.hero .tagline {
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+/* Full-width rule that breaks out of the card's horizontal padding,
+   mirroring .gallery-rule. */
+.hero-rule {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    align-self: stretch;
+    margin: 1rem -1.5rem;
 }
 
 .stats-strip {
@@ -792,14 +811,7 @@ code {
     justify-content: center;
     gap: 2.5rem;
     flex-wrap: wrap;
-    width: fit-content;
-    max-width: 100%;
-    margin: 1.5rem auto 0;
-    padding: 1rem 2rem;
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
-    box-shadow: var(--shadow-sm);
+    margin: 0;
     font-family: "JetBrains Mono", monospace;
 }
 
@@ -855,12 +867,18 @@ code {
 }
 
 .features-grid {
+    grid-template-columns: repeat(4, 1fr);
     margin-top: 2.5rem;
 }
 
-@media (max-width: 60rem) {
-    .card-grid,
+@media (max-width: 75rem) {
     .features-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 60rem) {
+    .card-grid {
         grid-template-columns: 1fr 1fr;
     }
 }
