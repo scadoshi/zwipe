@@ -768,10 +768,9 @@ code {
 
 .hero {
     text-align: center;
-    /* No bottom padding: spacing below the tagline is driven by the gallery's
-       top margin (and the stats strip's own margin when it's connected), so the
-       gap collapses tight when the strip hides itself. */
-    padding: 3rem 1.5rem 0;
+    /* Bottom padding gives the hero-card's drop shadow room to render inside the
+       hero's overflow:hidden box; the gallery's small top margin keeps it tight. */
+    padding: 3rem 1.5rem 1.25rem;
     overflow: hidden;
 }
 
@@ -797,6 +796,19 @@ code {
     margin: 0;
 }
 
+/* The rule + stats are inserted together once metrics resolve; ease them in
+   instead of snapping the card taller. */
+@keyframes hero-stats-in {
+    from {
+        opacity: 0;
+        transform: translateY(0.5rem);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 /* Full-width rule that breaks out of the card's horizontal padding,
    mirroring .gallery-rule. */
 .hero-rule {
@@ -804,6 +816,7 @@ code {
     border-top: 1px solid var(--border-secondary);
     align-self: stretch;
     margin: 1rem -1.5rem;
+    animation: hero-stats-in 0.4s ease-out both;
 }
 
 .stats-strip {
@@ -813,6 +826,7 @@ code {
     flex-wrap: wrap;
     margin: 0;
     font-family: "JetBrains Mono", monospace;
+    animation: hero-stats-in 0.4s ease-out both;
 }
 
 .stats-strip .stat {
@@ -987,7 +1001,7 @@ code {
 
 .project-gallery {
     max-width: 36rem;
-    margin: 1.5rem auto 2.5rem;
+    margin: 0.25rem auto 2.5rem;
     padding: 0;
 }
 
