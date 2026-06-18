@@ -1,9 +1,12 @@
 # Refresh-token hardening — strict single-use rotation (phase 2)
 
-**Status: branch ready — `feat/refresh-token-hardening` on origin (commit `8f6d2ea0`),
-implemented + validated locally 2026-06-09 (4 concurrent refreshes → one 200 / three
-401s; replay → 401; exactly 1 live token). Gated on iOS Build 30 (1.0.4) propagation.
-Do NOT merge before the gate clears (see below). Expected unlock ~2026-06-23.**
+**Status: SHIPPED 2026-06-18 (commit `d32bebaa`, PR #17).** Re-applied fresh on
+`main` rather than merged from the stale `feat/refresh-token-hardening` branch
+(commit `8f6d2ea0`, CRLF whole-file conflict) — that branch was deleted. The two
+edits + regenerated `.sqlx` are identical to the validated original. Re-verified
+live before merge (4 parallel refreshes → one 200 / three 401; replay → 401;
+exactly 1 live token), then deployed and exercised in prod. The Build 30 (1.0.4)
+gate had long cleared (build 38 in review by merge time).
 
 ## Context
 

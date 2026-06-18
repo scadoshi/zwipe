@@ -1,6 +1,15 @@
 # TIMESTAMPTZ migration + wire-format cutover
 
-**Status: phase 1 shipped 2026-06-08. Phase 2 awaiting iOS Build 25 propagation.**
+**Status: COMPLETE. Phase 1 shipped 2026-06-08; phase 2 shipped 2026-06-18.**
+
+Phase 2 was re-applied fresh on `main` (commit `24bf7309`, PR #16) rather than
+merged from the stale `feat/wire-format-rfc3339` branch — that branch carried
+CRLF normalization and a 1.0.3 version pin and was deleted. The fresh diff
+deletes `wire_time.rs`, drops `pub mod wire_time`, and strips the 6 annotations
+(but keeps `#[serde(default)]` on `User.email_verified_at` — only the adapter
+was removed, so a missing field deserializes to `None` instead of erroring).
+Deployed; prod verified emitting `Z` via normal app use. The phase-3 note below
+now applies automatically to every iOS build shipped after this.
 
 This is a two-phase rollout. Phase 1 (today) moved the schema to `TIMESTAMPTZ`,
 moved Rust types to `DateTime<Utc>`, and shipped a mobile build that accepts
