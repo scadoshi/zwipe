@@ -125,7 +125,6 @@ pub struct AccessToken {
     pub value: Jwt,
 
     /// When the token expires (24 hours from issuance).
-    #[serde(with = "crate::wire_time::utc")]
     pub expires_at: DateTime<Utc>,
 }
 

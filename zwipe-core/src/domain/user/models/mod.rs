@@ -56,7 +56,7 @@ pub struct User {
     pub email: Email,
 
     /// When the user's email was verified. `None` means not yet verified.
-    #[serde(with = "crate::wire_time::utc_opt", default)]
+    #[serde(default)]
     pub email_verified_at: Option<DateTime<Utc>>,
 
     /// One-time UI hints already shown to this user, keyed by hint id

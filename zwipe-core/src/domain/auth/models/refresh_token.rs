@@ -55,7 +55,6 @@ pub struct RefreshToken {
     /// The token value (64 hex characters = 32 random bytes).
     pub value: String,
     /// When this token expires (14 days from creation).
-    #[serde(with = "crate::wire_time::utc")]
     pub expires_at: DateTime<Utc>,
 }
 
