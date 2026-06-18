@@ -33,23 +33,27 @@ Completed work archived at `context/archive/complete-2026-Q1.md` (swept 2026-05-
 
 ---
 
-## Pending Gated Merges — server flips waiting on iOS propagation (~2026-06-23)
+## Gated Merges — SHIPPED 2026-06-18
 
-Two prepared branches sit on origin, each a server-side flip that would break
-older iOS clients. **Merge only after ASC Analytics → App Versions shows the
-gating build at ~100% of active installs.** Both can land together once 1.0.4 (build 30)
-has propagated (1.0.4 implies Build 25's gate too). 1.0.5 (build 31, submitted
-2026-06-10) supersedes 30 and carries the min-version gate — once 1.0.5 is the
-floor, stragglers on these flips can be force-updated via `MIN_CLIENT_VERSION`
-instead of waited out.
+Both server-side flips landed and deployed (deploy CI green, prod exercised:
+sign-in, deck create, card add all working). They were re-applied fresh on
+`main` rather than merged from the stale prepared branches (which carried CRLF
+normalization + a 1.0.3 version pin). Original `feat/wire-format-rfc3339`
+(`419c4212`) and `feat/refresh-token-hardening` (`8f6d2ea0`) were deleted.
 
-| Branch | What it does | Gate | Plan |
+| Change | What it does | Commit / PR | Plan |
 |---|---|---|---|
-| `feat/wire-format-rfc3339` | Server emits RFC3339 `Z` timestamps, deletes `wire_time` adapter from zwipe-core | Build 25+ (1.0.3) propagated | `context/plans/timestamptz-migration.md` (phase 2) |
-| `feat/refresh-token-hardening` | Strict single-use refresh rotation (`FOR UPDATE` + delete check) | 1.0.4 (build 30, submitted 2026-06-09: single-flight refresh + new icon + toast copy) propagated | `context/plans/refresh-token-hardening.md` |
+| wire-format RFC3339 | Server emits `Z` timestamps, `wire_time` adapter deleted from zwipe-core | `24bf7309` / PR #16 | `context/plans/timestamptz-migration.md` (phase 2) |
+| refresh-token hardening | Strict single-use refresh rotation (`FOR UPDATE` + delete check) | `d32bebaa` / PR #17 | `context/plans/refresh-token-hardening.md` |
 
-Per-branch verification and rollback steps live in the linked plans. Merging
-either triggers an automatic zerver deploy via CI.
+Live concurrency check passed before merge (4 parallel refreshes → one 200,
+three 401; replay → 401; exactly 1 live token).
+
+**Follow-up still open:** `MIN_CLIENT_VERSION` is still `0.0.0` (gate open).
+Plan is to set it to `1.0.5` (first build carrying the version guard) once
+server access is regained from another device — no functional need to set it
+higher, since every guard-capable client (1.0.5+) already contains both the
+Z-parsing (1.0.3) and single-flight refresh (1.0.4) fixes.
 
 ---
 
