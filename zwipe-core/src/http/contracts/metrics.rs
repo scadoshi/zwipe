@@ -59,6 +59,5 @@ pub struct HttpLifetimeCounters {
     pub decks_completed: i32,
     /// Last write to this counter row. Not a last-active signal —
     /// `users.last_active_at` is the canonical one.
-    #[serde(with = "crate::wire_time::utc")]
     pub updated_at: DateTime<Utc>,
 }

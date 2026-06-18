@@ -22,9 +22,7 @@ pub struct CardProfile {
     /// Mechanical categories assigned by heuristics or AI classification.
     pub mechanical_categories: Vec<MechanicalCategory>,
     /// When this profile was created in database.
-    #[serde(with = "crate::wire_time::utc")]
     pub created_at: DateTime<Utc>,
     /// When this profile was last updated.
-    #[serde(with = "crate::wire_time::utc")]
     pub updated_at: DateTime<Utc>,
 }
