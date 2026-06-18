@@ -217,9 +217,12 @@ impl AuthRepository for Postgres {
     ) -> Result<RefreshToken, RefreshSessionError> {
         let mut tx = self.pool.begin().await?;
 
+        // FOR UPDATE serializes concurrent refreshes on the row: the winner
+        // deletes it; losers block, re-read after commit, hit RowNotFound,
+        // and get 401. Makes the token strictly single-use under concurrency.
         let existing = query_as!(
             DatabaseRefreshToken,
-            "SELECT id, user_id, expires_at, revoked FROM refresh_tokens WHERE value_hash = $1",
+            "SELECT id, user_id, expires_at, revoked FROM refresh_tokens WHERE value_hash = $1 FOR UPDATE",
             request.refresh_token.sha256_hash()
         )
         .fetch_one(&mut *tx)
@@ -241,9 +244,15 @@ impl AuthRepository for Postgres {
             return Err(RefreshSessionError::Revoked(request.user_id));
         }
 
-        query!("DELETE FROM refresh_tokens WHERE id = $1", existing.id)
+        let deleted = query!("DELETE FROM refresh_tokens WHERE id = $1", existing.id)
             .execute(&mut *tx)
             .await?;
+
+        // belt-and-suspenders: zero rows deleted means another transaction
+        // already consumed this token — refuse to mint a replacement
+        if deleted.rows_affected() != 1 {
+            return Err(RefreshSessionError::Revoked(request.user_id));
+        }
 
         let new = tx.create_refresh_token(request.user_id).await?;
 
