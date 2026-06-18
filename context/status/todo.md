@@ -49,11 +49,12 @@ normalization + a 1.0.3 version pin). Original `feat/wire-format-rfc3339`
 Live concurrency check passed before merge (4 parallel refreshes → one 200,
 three 401; replay → 401; exactly 1 live token).
 
-**Follow-up still open:** `MIN_CLIENT_VERSION` is still `0.0.0` (gate open).
-Plan is to set it to `1.0.5` (first build carrying the version guard) once
-server access is regained from another device — no functional need to set it
-higher, since every guard-capable client (1.0.5+) already contains both the
-Z-parsing (1.0.3) and single-flight refresh (1.0.4) fixes.
+**`MIN_CLIENT_VERSION` set to `1.0.5` in prod 2026-06-18** (first build carrying
+the version guard) and verified end-to-end: bumping it higher triggered the
+front-end "update required" screen, setting it back to 1.0.5 cleared it. Not set
+higher by design — every guard-capable client (1.0.5+) already contains both the
+Z-parsing (1.0.3) and single-flight refresh (1.0.4) fixes, so there's nothing to
+force-update; the gate is armed at the lowest guard-capable floor for future use.
 
 ---
 
