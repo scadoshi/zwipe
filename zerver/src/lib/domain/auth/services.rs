@@ -116,6 +116,35 @@ where
             tracing::error!(event = "email_send_failure", user_id = %user_id, error = %e);
         }
     }
+
+    /// Re-verifies a user's password for a sensitive operation (change
+    /// email/username/password, delete account) **without** touching the login
+    /// lockout and **without** minting a session.
+    ///
+    /// Account lockout is a *login* control. Coupling it to these endpoints
+    /// (which are already tightly rate-limited per user) would let a stolen
+    /// access token lock the owner out of login, and let a user lock themselves
+    /// out by mistyping their current password. Brute-force protection here is
+    /// the per-route rate limit, not the lockout. Unlike `authenticate_user`,
+    /// this neither increments `failed_login_attempts` nor issues tokens.
+    async fn verify_password(
+        &self,
+        request: &AuthenticateUser,
+    ) -> Result<User, AuthenticateUserError> {
+        let user_with_password_hash = self.auth_repo.get_user_with_password_hash(request).await?;
+        let password_hash = user_with_password_hash.password_hash.clone();
+        let user: User = user_with_password_hash.into();
+
+        let verified = password_hash
+            .verify(&request.password)
+            .map_err(|e| AuthenticateUserError::FailedToVerify(e.into()))?;
+
+        if !verified {
+            return Err(AuthenticateUserError::InvalidPassword);
+        }
+
+        Ok(user)
+    }
 }
 
 /// Minimal HTML escape for user-controlled values injected into email templates.
@@ -282,8 +311,7 @@ where
     //  update
     // ========
     async fn change_username(&self, request: &ChangeUsername) -> Result<User, ChangeUsernameError> {
-        let session = self.authenticate_user(&request.into()).await?;
-        let old_username = session.user.username;
+        let old_username = self.verify_password(&request.into()).await?.username;
         let user = self.auth_repo.change_username(request).await?;
 
         let html = include_str!("email_templates/username_changed.html")
@@ -301,8 +329,7 @@ where
     }
 
     async fn change_email(&self, request: &ChangeEmail) -> Result<User, ChangeEmailError> {
-        let session = self.authenticate_user(&request.into()).await?;
-        let old_email = session.user.email;
+        let old_email = self.verify_password(&request.into()).await?.email;
         let user = self.auth_repo.change_email(request).await?;
 
         // Notify the OLD address: the new one is what an attacker would control.
@@ -320,13 +347,13 @@ where
     }
 
     async fn change_password_and_revoke_sessions(&self, request: &ChangePassword) -> Result<(), ChangePasswordError> {
-        let session = self.authenticate_user(&request.into()).await?;
+        let user = self.verify_password(&request.into()).await?;
         self.auth_repo.change_password_and_revoke_sessions(request).await?;
 
         let html = include_str!("email_templates/password_changed.html").to_string();
         self.send_change_notification(
-            session.user.id,
-            session.user.email.as_ref(),
+            user.id,
+            user.email.as_ref(),
             "Your Zwipe password was changed",
             html,
         )
@@ -339,7 +366,7 @@ where
     //  delete
     // ========
     async fn delete_user(&self, request: &DeleteUser) -> Result<(), DeleteUserError> {
-        self.authenticate_user(&request.into()).await?;
+        self.verify_password(&request.into()).await?;
         self.auth_repo.delete_user(request).await
     }
 
