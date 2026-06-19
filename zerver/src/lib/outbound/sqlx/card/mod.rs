@@ -57,6 +57,15 @@ use chrono::{DateTime, Utc};
 use sqlx::{Postgres, query_as, query_scalar};
 use sqlx::{QueryBuilder, query_builder::Separated};
 
+/// Hard ceiling on rows returned by a single card search.
+///
+/// `CardFilter::limit` arrives from untrusted request JSON; without a cap a
+/// client could ask for an arbitrarily large page and force the DB to
+/// materialize and serialize it. The frontend default is 25; 250 is generous
+/// headroom. Note `CardFilter` is also used for *client-side* in-memory
+/// filtering with much larger limits, but that path never reaches this query.
+const MAX_SEARCH_LIMIT: u32 = 250;
+
 impl CardRepository for MyPostgres {
     // ========
     //  create
@@ -726,10 +735,12 @@ impl CardRepository for MyPostgres {
         }
 
         qb.push(" LIMIT ");
-        qb.push_bind(request.limit() as i32);
+        qb.push_bind(request.limit().min(MAX_SEARCH_LIMIT) as i32);
 
+        // Guard the u32->i32 cast: a value above i32::MAX wraps negative, and
+        // Postgres rejects a negative OFFSET (errors the whole query).
         qb.push(" OFFSET ");
-        qb.push_bind(request.offset() as i32);
+        qb.push_bind(request.offset().min(i32::MAX as u32) as i32);
 
         let db_rows: Vec<DatabaseScryfallData> = qb.build_query_as().fetch_all(&self.pool).await?;
         let scryfall_data: Vec<ScryfallData> = db_rows
