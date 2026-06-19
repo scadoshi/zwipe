@@ -182,6 +182,17 @@ where
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
+    // 30 req / 2s per IP — health checks. Generous for frequent polling
+    // (manual curls, uptime monitors) while capping unauthenticated floods,
+    // notably /health/database which pings Postgres.
+    let health_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(2))
+            .burst_size(30)
+            .key_extractor(CfConnectingIpKeyExtractor)
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
 
     Router::new()
         .route("/", get(root))
@@ -190,7 +201,8 @@ where
             Router::new()
                 .route("/", get(are_server_and_database_running))
                 .route("/server", get(is_server_running))
-                .route("/database", get(are_server_and_database_running)),
+                .route("/database", get(are_server_and_database_running))
+                .layer(GovernorLayer::new(health_config)),
         )
         .nest(
             "/api",
