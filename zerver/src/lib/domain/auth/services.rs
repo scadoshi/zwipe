@@ -3,6 +3,7 @@ use crate::domain::{
         models::{
             UserWithPasswordHash,
             access_token::{AccessTokenExt, JwtSecret},
+            password::{HashedPassword, Password},
         },
         ports::{AuthRepository, AuthService},
         requests::{
@@ -35,7 +36,22 @@ use zwipe_core::domain::{
 use chrono::{Duration, Utc};
 use rand::Rng;
 use sha2::Digest;
+use std::sync::LazyLock;
 use uuid::Uuid;
+
+/// A throwaway Argon2 hash used to equalize login timing for non-existent
+/// accounts. Generated lazily with the same default Argon2 params as real
+/// hashes, so verifying against it costs the same as verifying a real one. It
+/// never matches any input — its only job is to burn equivalent CPU so a
+/// missing account isn't measurably faster to reject than a real one with a
+/// wrong password (which would leak whether the account exists — enumeration).
+#[allow(clippy::expect_used)]
+static TIMING_EQUALIZER_HASH: LazyLock<HashedPassword> = LazyLock::new(|| {
+    Password::new("Zw1pe!Dummy#Hash7")
+        .expect("timing-equalizer dummy password must satisfy the password policy")
+        .hash()
+        .expect("timing-equalizer dummy password must hash")
+});
 
 /// Authentication service implementation handling user registration, login, and session management.
 ///
@@ -171,7 +187,20 @@ where
         request: &AuthenticateUser,
     ) -> Result<Session, AuthenticateUserError> {
         let user_with_password_hash: UserWithPasswordHash =
-            self.auth_repo.get_user_with_password_hash(request).await?;
+            match self.auth_repo.get_user_with_password_hash(request).await {
+                Ok(user) => user,
+                Err(AuthenticateUserError::UserNotFound) => {
+                    // Equalize timing with the wrong-password path: run an Argon2
+                    // verify against a dummy hash so a non-existent account isn't
+                    // measurably faster to reject (prevents username/email
+                    // enumeration via response timing). Result is discarded — it
+                    // never matches.
+                    let _ = TIMING_EQUALIZER_HASH.verify(&request.password);
+                    tracing::warn!(event = "login_failure", reason = "user_not_found", identifier = %request.identifier);
+                    return Err(AuthenticateUserError::UserNotFound);
+                }
+                Err(e) => return Err(e),
+            };
 
         // Check lockout before Argon2 — avoids expensive hashing for locked accounts.
         if let Some(until) = user_with_password_hash.lockout_until
@@ -420,5 +449,20 @@ where
             .await?;
         tracing::info!(event = "password_reset_success", user_id = %user_id);
         Ok(user_id)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::TIMING_EQUALIZER_HASH;
+
+    #[test]
+    fn timing_equalizer_hash_is_valid_and_never_matches() {
+        // Forces lazy init (so a policy-violating dummy fails here, not at first
+        // login) and confirms it verifies like a real hash: Ok(false), not Err.
+        assert!(matches!(
+            TIMING_EQUALIZER_HASH.verify("definitely-not-the-dummy"),
+            Ok(false)
+        ));
     }
 }
