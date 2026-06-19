@@ -12,6 +12,15 @@ Planned features and improvements for after App Store launch.
 
 ---
 
+## Security — Account Enumeration Hardening (deferred, matters at larger scale)
+
+Both are low-risk now, fine to leave; revisit with a bigger user base. Context: login timing was equalized via a dummy-hash verify (commit pending 2026-06-19), so these are the *remaining* enumeration surfaces.
+
+- **`AccountLocked` returns 429 while bad-password returns 401** (`zerver/.../handlers/auth/authenticate_user.rs`): distinguishable status lets an attacker learn an account exists *and* is locked. Kept as-is deliberately — the 429 gives locked-out real users useful "wait and retry" UX. Option if it ever matters: fold `AccountLocked` into the generic 401. (noted 2026-06-19)
+- **Registration enumerates existing accounts**: `register` returns 422 "user with that username or email already exists." Genuinely hard to fully close (can't silently allow a duplicate), and many large apps surface "username taken" too, so likely won't change — logged for completeness. (noted 2026-06-19)
+
+---
+
 ## AI Card Categorization — Layer 2 & 3
 
 **Deferred until there's a user base and a premium tier to fund it.**
