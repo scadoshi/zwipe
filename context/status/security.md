@@ -114,6 +114,17 @@ overflow the `INTEGER` accumulation (Postgres 22003 aborts the write). Clamped t
 `/health*` had no rate limiter and `/health/database` pings Postgres. Added a
 per-IP limiter (30/2s). Commit `8767807e`.
 
+### ✓ Sensitive-op re-auth coupled to login lockout (Medium)
+`change_password` / `change_email` / `change_username` / `delete_user`
+re-verified the current password via `authenticate_user`, which (a) fed the
+login lockout — a stolen *access token* could lock the owner out of `/login`,
+and a user could self-lock by mistyping — and (b) minted a throwaway `Session`
+each call, churning refresh-token rows that count toward the max-5 cap and could
+silently evict a real device session. New `verify_password` helper verifies the
+password only: no lockout mutation, no token minting. Brute-force protection
+unchanged (these routes keep their tight per-user `sensitive_config` limit:
+burst 2, then 1/30min). Lockout stays a login control. Commit `7ed67735`.
+
 ### Deferred — low risk now, revisit at scale (logged in `context/status/backlog.md`)
 - `AccountLocked` returns 429 vs 401 — an account-state oracle. Kept for UX.
 - Registration enumerates ("username/email already exists") — hard to fully close; common in big apps.
@@ -121,6 +132,5 @@ per-IP limiter (30/2s). Commit `8767807e`.
 - `CardFilter` query/predicate split (`context/plans/card-filter-split.md`).
 
 ### Identified, pending decision (not yet actioned)
-- **Re-auth feeds login lockout (Medium)**: `change_password` / `change_email` / `change_username` / `delete_user` run through `authenticate_user`, so a stolen *access token* could drive failed-password attempts that lock the victim out of normal login. Fix would be a re-auth path that doesn't touch the login lockout counters.
 - **Replace-mode import non-atomic (Medium)**: bulk insert commits, then delete-not-in runs separately; a crash between leaves a hybrid board.
 - Low-severity: refresh `Forbidden` 403-vs-401; Argon2 default params unpinned; `chunks(0)` panic guard; card-limit TOCTOU; Archidekt bad-quantity 500s the import; `last_active_cache` unbounded growth.
