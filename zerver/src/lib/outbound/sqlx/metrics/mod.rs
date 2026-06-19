@@ -25,6 +25,13 @@ impl MetricsRepository for Postgres {
         user_id: Uuid,
         batch: &HttpUsageBatch,
     ) -> Result<(), MetricsError> {
+        // Clamp untrusted counts before they touch any counter: stops a client
+        // inflating lifetime / marketing totals, and bounds the values so the
+        // i32 casts below (daily_activity INTEGER columns) can't wrap negative
+        // or overflow the per-day accumulation. (A BIGINT migration on
+        // user_daily_activity would decouple this from the clamp entirely.)
+        let batch = batch.clamped();
+
         let r = batch.swipes_right as i64;
         let l = batch.swipes_left as i64;
         let u = batch.swipes_up as i64;
