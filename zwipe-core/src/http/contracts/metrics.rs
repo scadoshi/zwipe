@@ -23,6 +23,51 @@ pub struct HttpUsageBatch {
     pub searches: u32,
 }
 
+impl HttpUsageBatch {
+    /// Maximum accepted value per counter per flush.
+    ///
+    /// The client buffers only ~30s of activity before flushing, so legitimate
+    /// values are tiny (tens). This caps untrusted input so a client can't
+    /// inflate the lifetime / public-marketing totals, and keeps each day's
+    /// accumulation comfortably within the daily-activity `INTEGER` columns
+    /// even at the endpoint's request rate limit.
+    pub const MAX_PER_FLUSH: u32 = 10_000;
+
+    /// Returns a copy with every counter clamped to [`Self::MAX_PER_FLUSH`].
+    #[must_use]
+    pub fn clamped(&self) -> Self {
+        Self {
+            swipes_right: self.swipes_right.min(Self::MAX_PER_FLUSH),
+            swipes_left: self.swipes_left.min(Self::MAX_PER_FLUSH),
+            swipes_up: self.swipes_up.min(Self::MAX_PER_FLUSH),
+            swipes_down: self.swipes_down.min(Self::MAX_PER_FLUSH),
+            searches: self.searches.min(Self::MAX_PER_FLUSH),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::HttpUsageBatch;
+
+    #[test]
+    fn clamped_caps_each_field_and_leaves_small_ones() {
+        let clamped = HttpUsageBatch {
+            swipes_right: u32::MAX,
+            swipes_left: 5,
+            swipes_up: HttpUsageBatch::MAX_PER_FLUSH + 1,
+            swipes_down: 0,
+            searches: u32::MAX,
+        }
+        .clamped();
+        assert_eq!(clamped.swipes_right, HttpUsageBatch::MAX_PER_FLUSH);
+        assert_eq!(clamped.swipes_left, 5);
+        assert_eq!(clamped.swipes_up, HttpUsageBatch::MAX_PER_FLUSH);
+        assert_eq!(clamped.swipes_down, 0);
+        assert_eq!(clamped.searches, HttpUsageBatch::MAX_PER_FLUSH);
+    }
+}
+
 /// Public app-wide aggregates surfaced on zwipe.net.
 ///
 /// Counts span all users. Numbers are sums over `user_lifetime_counters` at
