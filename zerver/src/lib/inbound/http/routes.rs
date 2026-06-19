@@ -48,7 +48,7 @@ use crate::inbound::http::handlers::{
     },
 };
 #[cfg(feature = "zerver")]
-use crate::inbound::http::middleware::UserIdKeyExtractor;
+use crate::inbound::http::middleware::{CfConnectingIpKeyExtractor, UserIdKeyExtractor};
 #[cfg(feature = "zerver")]
 use axum::Router;
 #[cfg(feature = "zerver")]
@@ -58,7 +58,6 @@ use std::{sync::Arc, time::Duration};
 #[cfg(feature = "zerver")]
 use tower_governor::{
     GovernorLayer, errors::GovernorError, governor::GovernorConfigBuilder,
-    key_extractor::PeerIpKeyExtractor,
 };
 #[cfg(feature = "zerver")]
 use axum::{
@@ -113,7 +112,7 @@ where
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(6))
             .burst_size(5)
-            .key_extractor(PeerIpKeyExtractor)
+            .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
@@ -122,7 +121,7 @@ where
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(720))
             .burst_size(5)
-            .key_extractor(PeerIpKeyExtractor)
+            .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
@@ -131,7 +130,7 @@ where
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(3))
             .burst_size(20)
-            .key_extractor(PeerIpKeyExtractor)
+            .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
@@ -140,7 +139,7 @@ where
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(720))
             .burst_size(5)
-            .key_extractor(PeerIpKeyExtractor)
+            .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
@@ -149,7 +148,7 @@ where
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(360))
             .burst_size(10)
-            .key_extractor(PeerIpKeyExtractor)
+            .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
@@ -159,7 +158,7 @@ where
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(1))
             .burst_size(60)
-            .key_extractor(PeerIpKeyExtractor)
+            .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
@@ -169,7 +168,7 @@ where
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(2))
             .burst_size(30)
-            .key_extractor(PeerIpKeyExtractor)
+            .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
@@ -179,7 +178,7 @@ where
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(2))
             .burst_size(30)
-            .key_extractor(PeerIpKeyExtractor)
+            .key_extractor(CfConnectingIpKeyExtractor)
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
