@@ -132,5 +132,5 @@ burst 2, then 1/30min). Lockout stays a login control. Commit `7ed67735`.
 - `CardFilter` query/predicate split (`context/plans/card-filter-split.md`).
 
 ### Identified, pending decision (not yet actioned)
-- **Replace-mode import non-atomic (Medium)**: bulk insert commits, then delete-not-in runs separately; a crash between leaves a hybrid board.
+- **Replace-mode import non-atomic (Medium)** — **planned**: insert commits, then delete-not-in runs separately; a crash between leaves a hybrid board. Chosen fix is Option A (full atomicity: lock + limit-check + insert + reconcile in one tx). Deferred (frontend untestable). Plan: `context/plans/import-atomicity.md`.
 - Low-severity: refresh `Forbidden` 403-vs-401; Argon2 default params unpinned; `chunks(0)` panic guard; card-limit TOCTOU; Archidekt bad-quantity 500s the import; `last_active_cache` unbounded growth.
