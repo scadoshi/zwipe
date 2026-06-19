@@ -8,6 +8,7 @@ Planned features and improvements for after App Store launch.
 
 - **Deck Migration — Archidekt SHIPPED (2026-06-10), Moxfield DENIED**: Archidekt URL import landed in 1.0.5 (see `context/plans/deck-import.md`). Moxfield support denied API access (2026-06-10) — policy excludes deckbuilding apps. They plan a scoped deck-export endpoint for such services (no ETA, announced via their help pages when live); periodically check their help pages and re-request access then. The text-paste importer covers Moxfield users meanwhile.
 - **Reach out to recommander.cards dev**: https://recommander.cards/ — card suggestion engine built by a local dev. Just open the conversation and see what he thinks about integrating. (noted 2026-06-09)
+- **Split `CardFilter` into `CardCriteria` + `CardQuery`** (deferred, needs testable frontend): `CardFilter` is dual-use — a server query spec (limit must be capped) and a client-side in-memory predicate (limit set to 10_000 to avoid truncation). The server-path DoS is already closed by a SQL clamp (`MAX_SEARCH_LIMIT=250`, commit `fe5324ac`); this is the proper de-dup of the over-loaded type. Full design + staged-rollout in `context/plans/card-filter-split.md`. (noted 2026-06-19)
 
 ---
 
