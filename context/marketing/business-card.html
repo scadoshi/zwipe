@@ -855,6 +855,15 @@
                 const clone = cardEl.cloneNode(true);
                 clone.style.boxShadow = "none";
                 clone.style.borderRadius = "0";
+                // html2canvas draws flex-centered, tight-line-height text ~0.5px
+                // low vs. the browser (its JetBrains Mono ascent estimate runs tall,
+                // and line-height:1 leaves no leading to absorb it). The P/T "*/*" is
+                // the only place this shows. Nudge just that text up via asymmetric
+                // padding — total vertical padding stays 4px so the box itself is
+                // unmoved; only the flex-centered glyphs shift. Widen the gap to lift
+                // further (e.g. "1px 10px 3px" for ~1px).
+                const ptClone = clone.querySelector(".pt");
+                if (ptClone) ptClone.style.padding = "1.5px 10px 2.5px";
                 wrap.appendChild(clone);
                 document.body.appendChild(wrap);
                 fitOracle(clone); // re-fit to the clone's real layout so flavor never overflows
