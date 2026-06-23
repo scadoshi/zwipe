@@ -154,7 +154,7 @@ pub(crate) fn CardRow(
                                         class: "qty-btn",
                                         style: "white-space:nowrap;",
                                         onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Deck); },
-                                        "To deck"
+                                        "To mainboard"
                                     }
                                     button {
                                         class: "qty-btn",
@@ -168,7 +168,7 @@ pub(crate) fn CardRow(
                                         class: "qty-btn",
                                         style: "white-space:nowrap;",
                                         onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Deck); },
-                                        "To deck"
+                                        "To mainboard"
                                     }
                                     button {
                                         class: "qty-btn",
