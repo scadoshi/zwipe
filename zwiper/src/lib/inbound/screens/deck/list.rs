@@ -124,8 +124,10 @@ pub fn DeckList() -> Element {
                                                 });
                                             },
                                             h3 { class: "font-light text-base tracking-wide",
+                                                style: "overflow-wrap: anywhere; word-break: break-word;",
                                                 { profile.name.to_string() }
                                             }
+                                            hr { class: "card-rule" }
                                             span { class: "text-muted text-sm",
                                                 {
                                                     let mut count = profile.card_count;
