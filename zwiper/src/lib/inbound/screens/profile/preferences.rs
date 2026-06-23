@@ -13,7 +13,7 @@ use zwipe_core::domain::{auth::models::session::Session, user::preferences::ALLO
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 
 /// Capitalize each word of a theme slug for display ("tokyo-night" → "Tokyo Night").
-fn display_theme_name(slug: &str) -> String {
+pub(crate) fn display_theme_name(slug: &str) -> String {
     if slug == "rose-pine" {
         return "Rosé Pine".to_string();
     }

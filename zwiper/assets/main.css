@@ -2609,6 +2609,14 @@ button {
   specific - profile list
  =========================== */
 
+.profile-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: calc(100% - 4rem);
+    max-width: 40rem;
+}
+
 .profile-list {
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
@@ -2617,6 +2625,31 @@ button {
     width: 100%;
     max-width: 40rem;
     box-shadow: var(--shadow-sm);
+}
+
+.card-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+.card-title {
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+    color: var(--accent-tertiary);
+}
+
+/* Full-bleed divider under a subtitle inside a padded box (e.g. charts). */
+.box-rule {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    margin: 0.35rem -0.75rem 0.6rem -0.75rem;
+    align-self: stretch;
 }
 
 .profile-row {
