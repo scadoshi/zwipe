@@ -109,6 +109,20 @@ Build 15 shipped over build 14 with: `Email` strict newtype across the workspace
 
 ---
 
+## Android — first build submitted to Play (2026-06-23)
+
+The Android port is **in Google's review queue**: `1.0.9`, **versionCode 3**,
+targetSdk 35, signed with a new `zwipe-upload` key (Play App Signing, Google-managed
+app key), full rollout to the **Closed testing (Alpha)** track across 176 countries.
+Same Rust/Dioxus codebase as iOS; the self-hosted JetBrains Mono fix makes the
+Android-WebView block-glyph logo render correctly. Play account verification
+(identity / address / phone) all cleared 2026-06-23. **Next gate:** ≥12 testers
+opted in for 14 continuous days before Production access (new personal account).
+Repeatable build pipeline + the day's gotchas (hardcoded targetSdk 34, burned
+versionCode, debug-symbols warning): [`../operations/android/play-store-submission/build-and-submit.md`](../operations/android/play-store-submission/build-and-submit.md).
+
+---
+
 ## 1.0.9 — UI consistency pass + new app icon (build 42 submitted 2026-06-23; server live on prod)
 
 iOS **build 42** (version 1.0.9) submitted to review 2026-06-23 with a brand-new app icon (builds 39–41 were app-icon iteration; 42 = the 1.6× keeper). Rides: **new app icon** (the ASCII "Z" mark via the asciier tool — recipe in `operations/ios/appstore_icon_update.md`); **self-hosted JetBrains Mono** (full font bundled, CDN `@import` dropped — fixes the Android-WebView home-screen logo block glyphs, no-op on iOS); **profile rework** (per-field edits → bottom sheets, Delete account behind a `More` sheet, Account/Preferences cards); **deck-view** section subtitles moved inside their carded elements; **deck list** redone as one flowing row with accent stat chips + a warning-yellow card-count chip when a deck is an illegal size; **home flavor card** cached app-wide (1h TTL, stale-while-revalidate); **deck-size rules fixed** for Oathbreaker/Brawl/Historic Brawl/Gladiator; plus "To deck" → "To mainboard", an opaque chart skeleton, and a yellow-leaned Gruvbox text color. Workspace version bumped 1.0.6→1.0.9 (all crates) to keep `CARGO_PKG_VERSION` aligned with the store version for the min-version gate.

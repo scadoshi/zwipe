@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Zwipe — Play Store feature graphic (1024×500)</title>
+<style>
+  /* Full JetBrains Mono (includes the U+2580–U+259F block glyphs the logo uses).
+     Relative path resolves when this file is opened from inside the repo. */
+  @font-face {
+    font-family: "JetBrains Mono";
+    src: url("../../zwiper/assets/fonts/jetbrains-mono-700.woff2") format("woff2");
+    font-weight: 700;
+    font-display: block;
+  }
+
+  :root {
+    --bg: #282828;       /* gruvbox dark background */
+    --fg: #ebdba2;       /* yellow-leaned cream (matches app logo) */
+    --green: #b8bb26;    /* gruvbox bright green (matches app labels) */
+    --gray: #a89984;
+    --grid: rgba(235, 219, 162, 0.05);
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #111;            /* neutral mat around the graphic */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: "JetBrains Mono", monospace;
+  }
+
+  /* THE GRAPHIC — exactly 1024×500. Screenshot this box. */
+  .canvas {
+    width: 1024px;
+    height: 500px;
+    background-color: var(--bg);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 40px 40px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+  }
+
+  .logo {
+    color: var(--fg);
+    font-weight: 700;
+    font-size: 26px;
+    line-height: 0.9;             /* matches the in-app + icon rendering */
+    white-space: pre;
+    margin: 0;
+    letter-spacing: 0;
+  }
+
+  .tagline {
+    color: var(--green);
+    font-weight: 700;
+    font-size: 28px;
+    letter-spacing: 0.5px;
+  }
+
+  .url {
+    color: var(--gray);
+    font-weight: 700;
+    font-size: 18px;
+    position: absolute;
+    bottom: 24px;
+  }
+</style>
+</head>
+<body>
+  <div class="canvas">
+<pre class="logo">▎▎▉▉▉▉▉▉▉            ▎▎▉▉
+  ▎▎▉▉▉▉▉▉▎▎▉▉    ▎▎▉▉▎▎▉▉▎▎▉▉▉▉▉▉ ▎▎▉▉▉▉▉▉▉
+      ▎▎▉▉ ▎▎▉▉    ▎▎▉▉    ▎▎▉▉▉▉▉▉▉▎▎▉▉ ▎▎▉▉
+     ▎▎▉▉   ▎▎▉▉▎▎▉▉▎▎▉▉▎▎▉▉▎▎▉▉ ▎▎▉▉▎▎▉▉▉▉▉▉▉
+    ▎▎▉▉     ▎▎▉▉▎▎▉▉▎▎▉▉▎▎▉▉▎▎▉▉ ▎▎▉▉▎▎▉▉
+   ▎▎▉▉▉▉▉▉▉▉ ▎▎▉▉▉▉▉▉▉▉  ▎▎▉▉▎▎▉▉▉▉▉▉ ▎▎▉▉  ▎▎▉▉
+    ▎▎▉▉▉▉▉▉▉▉ ▎▎▉▉▎▎▉▉    ▎▎▉▉▎▎▉▉▉▉   ▎▎▉▉▉▉▉▉
+                                ▎▎▉▉
+                                 ▎▎▉▉
+                                  ▎▎▉▉
+                                   ▎▎▉▉</pre>
+    <div class="tagline">Swipe to build trading-card decks.</div>
+    <div class="url">zwipe.net</div>
+  </div>
+</body>
+</html>
