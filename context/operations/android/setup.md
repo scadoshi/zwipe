@@ -78,3 +78,11 @@ $ANDROID_HOME/emulator/emulator -avd <name>
 - `BACKEND_URL` is baked in at compile time via `env!()`
 - Android uses WebView for rendering (vs iOS WKWebView) — CSS rendering may differ slightly
 - Known issues tracked in `context/progress/todo.md` under Android section
+
+## Releasing to the Play Store
+
+This page is **dev/emulator** setup only. To build a signed release `.aab` and
+submit it, follow [play-store-submission/build-and-submit.md](play-store-submission/build-and-submit.md)
+— it covers the dx gotchas (hardcoded `targetSdk = 34` / `versionCode = 1`,
+unsigned release output), signing with the upload key, the R8 + edge-to-edge
+smoke test, and the Console rollout steps. Listing copy: [play-store-submission/form_fields.md](play-store-submission/form_fields.md).

@@ -29,23 +29,20 @@ premium revenue scales with users, MTG pods are mixed-device so adoption
 spreads through playgroups, and shipping Android first means premium later
 launches on both stores in one pass (StoreKit + Play Billing designed together).
 
-- [ ] **FIRST: finish Play developer account verification** — account
-  CREATED + $25 PAID 2026-06-11 (new personal account, so the closed-testing
-  requirement — 12 testers, 14 continuous days before production access —
-  definitely applies). Remaining sequence: **complete the identity
-  verification tasks (can take days on Google's side — do them promptly so
-  the wait runs unattended)** → upload a build to a closed track → recruit
-  12 testers (LGS regulars + Reddit) → 14-day clock runs while the polish
-  items below are finished.
-  - **Status 2026-06-22:** identity documents uploaded; Play Console shows
-    "Google is verifying your identity" (may take a few days). First
-    proof-of-address (a utility bill) was **rejected** — a different document
-    resubmitted and now awaiting review. Phone-number verification is gated
-    behind identity approval (both still pending). Account is personal,
-    ID 5194812603818548859.
-  - **Store listing copy** drafted in `operations/android/play-store-submission/form_fields.md`.
+- [x] **Play identity verification — DONE 2026-06-23.** Account created + $25 paid
+  2026-06-11 (personal account; ID 5194812603818548859), identity + address +
+  phone all cleared.
+- [x] **First Android build submitted to Closed testing — 2026-06-23.** `1.0.9`
+  versionCode `3`, targetSdk 35, signed with the new `zwipe-upload` key, full
+  rollout to the Alpha closed track across 176 countries (in Google's review
+  queue). Pipeline + gotchas captured in `operations/android/play-store-submission/build-and-submit.md`;
+  listing copy in `.../form_fields.md`.
+- [ ] **Recruit ≥12 closed testers + run the 14-day clock.** New personal accounts
+  need **12 testers opted in for 14 *continuous* days** before applying for
+  production access. Share the opt-in link (LGS regulars + Reddit — doubles as
+  the first marketing wave). Polish items below ride alongside while the clock runs.
 
-Android build compiles and runs — **emulator-confirmed on Pixel_9a 2026-06-22** (login → decks → swipe all working against prod). Build gotcha: must point `JAVA_HOME` at Android Studio's bundled JDK 21, not the system-default JDK 26 — see `operations/android/setup.md`. The home-screen ASCII logo (block glyphs) now renders correctly via the self-hosted font (ships in 1.0.9). Remaining polish before Play Store submission:
+Android build compiles and runs — **emulator-confirmed on Pixel_9a 2026-06-22** (login → decks → swipe all working against prod). Build gotcha: must point `JAVA_HOME` at Android Studio's bundled JDK 21, not the system-default JDK 26 — see `operations/android/setup.md`. The home-screen ASCII logo (block glyphs) now renders correctly via the self-hosted font (ships in 1.0.9). None of the below blocked the closed-testing submission — they're polish for a future build:
 
 - [ ] Card images show white corners — the white is baked into the image data from Scryfall (white-bordered card editions). iOS clips correctly via WKWebView; Android WebView does not honor `overflow: hidden` + `border-radius` on `object-fit: contain` images. Tried: `overflow: hidden` on img, wrapper div with `border-radius` + `overflow: hidden`, `-webkit-mask-image` hack. None work on Android WebView. Options: crop with `object-fit: cover` (loses card edges), mask SVG overlay, or accept as-is for black-bordered cards (majority) and revisit for white-bordered.
 - [ ] Swipe gesture doesn't tilt the card — cards should rotate slightly during drag like they do on iOS

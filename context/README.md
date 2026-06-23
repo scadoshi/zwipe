@@ -20,8 +20,9 @@ Plus [`CLAUDE.md`](CLAUDE.md) — the authoritative rules/instructions for AI as
 
 ## Current focus
 
-iOS **1.0.9** (build 42) is in Apple review; server + web are live on prod at 1.0.9.
-**Android is next** — Play Store listing in progress (see [`operations/android/`](operations/android/)).
+iOS **1.0.9** (build 42) is in Apple review; **Android 1.0.9** (versionCode 3) is in
+Google review on the Closed testing track; server + web are live on prod at 1.0.9.
+**Next:** recruit ≥12 closed testers to start Android's 14-day clock toward production.
 
 See [`progress/overview.md`](progress/overview.md) for the high-level state and
 [`progress/todo.md`](progress/todo.md) for the ordered task list.
