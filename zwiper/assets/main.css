@@ -1,7 +1,9 @@
-@import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/400.css");
-@import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/500.css");
-@import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/700.css");
 @import url("https://cdn.jsdelivr.net/npm/mana-font@latest/css/mana.css");
+
+/* JetBrains Mono is self-hosted via @font-face injected from zwipe.rs, where the
+   woff2 files are registered with asset!() so they ship in the app bundle. The
+   full font (vs fontsource's subsets) carries the U+2580–U+259F block elements
+   the ASCII logo needs at the monospace advance width. */
 
 /* ==================
         base

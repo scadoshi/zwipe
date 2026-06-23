@@ -18,6 +18,15 @@ const ACCORDION_CSS: Asset = asset!("/assets/accordion.css");
 const ALERT_DIALOG_CSS: Asset = asset!("/assets/alert-dialog.css");
 const TOAST_CSS: Asset = asset!("/assets/toast.css");
 
+// Self-hosted JetBrains Mono. Registered via asset!() (not a CSS url(), which
+// manganis does not bundle) so the woff2 files ship in the app bundle. The full
+// font includes U+2580–U+259F block elements at the monospace advance width —
+// fontsource's subsets drop them, so the ASCII logo's block glyphs otherwise
+// fall back to a misaligned symbol font on Android WebView.
+const FONT_JBM_400: Asset = asset!("/assets/fonts/jetbrains-mono-400.woff2");
+const FONT_JBM_500: Asset = asset!("/assets/fonts/jetbrains-mono-500.woff2");
+const FONT_JBM_700: Asset = asset!("/assets/fonts/jetbrains-mono-700.woff2");
+
 fn main() {
     logo::Zwiper::print();
     let config = Config::from_env();
@@ -44,6 +53,13 @@ fn App() -> Element {
     let upgrade_required = spawn_upkeeper();
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
+        document::Style {
+            {format!(
+                "@font-face{{font-family:'JetBrains Mono';font-style:normal;font-weight:400;font-display:swap;src:url({FONT_JBM_400}) format('woff2');}}\
+                 @font-face{{font-family:'JetBrains Mono';font-style:normal;font-weight:500;font-display:swap;src:url({FONT_JBM_500}) format('woff2');}}\
+                 @font-face{{font-family:'JetBrains Mono';font-style:normal;font-weight:700;font-display:swap;src:url({FONT_JBM_700}) format('woff2');}}"
+            )}
+        }
         document::Link { rel: "stylesheet", href: THEMES_CSS }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: ACCORDION_CSS }
