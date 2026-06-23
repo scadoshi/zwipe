@@ -110,7 +110,7 @@ pub(crate) fn PrintingSheet(
             class: if open() { "bottom-sheet show" } else { "bottom-sheet" },
 
             div { class: "modal-header",
-                span { class: "text-muted", style: "font-size: 1rem;", "Printings" }
+                span { style: "font-size: 1rem; color: var(--accent-tertiary);", "Printings" }
             }
 
             div { class: "modal-content no-pad-x",
