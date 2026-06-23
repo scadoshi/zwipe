@@ -819,6 +819,12 @@ button {
     margin-bottom: 0.5rem;
 }
 
+.card-rule {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    margin: 0.5rem -1rem;
+}
+
 .card h3 {
     color: var(--accent-primary);
 }
