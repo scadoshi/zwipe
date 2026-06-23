@@ -53,7 +53,7 @@
 .theme-gruvbox-dark {
     --bg-primary: #282828;
     --bg-overlay: rgba(0, 0, 0, 0.6);
-    --text-primary: #ebdbb2;
+    --text-primary: #ebdba2;
     --text-muted: #a89984;
     --text-subtle: #c0b196;
     --border-primary: #665c54;
@@ -623,7 +623,7 @@
     --bg-overlay: rgba(0, 0, 0, 0.6);
 
     /* Text */
-    --text-primary: #ebdbb2;
+    --text-primary: #ebdba2;
     --text-muted: #a89984;
     --text-subtle: #c0b196;
 
