@@ -1098,6 +1098,22 @@ button {
     box-shadow: var(--shadow-sm);
 }
 
+.skeleton-card-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+.skeleton-chart-box {
+    width: 100%;
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-sm);
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
 .skeleton-info-row {
     display: flex;
     flex-direction: row;

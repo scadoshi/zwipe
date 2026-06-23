@@ -32,9 +32,12 @@ pub(crate) fn DeckWarnings(
         |w: &DeckWarning| w.scryfall_data_id().is_none() && w.contains("requires at least");
 
     rsx! {
-        label { class: "label", "Warnings" }
         div { class: "info-list",
             style: "border-color: var(--border-warning);",
+            div { class: "card-header",
+                style: "border-bottom-color: var(--border-warning);",
+                span { class: "card-title", "Warnings" }
+            }
             for warning in warnings.iter() {
                 div { class: "info-row",
                     style: "justify-content: space-between; gap: 0.5rem;",

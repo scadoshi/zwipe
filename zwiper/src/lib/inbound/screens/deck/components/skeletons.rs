@@ -5,6 +5,9 @@ use dioxus::prelude::*;
 fn SkeletonInfoList(rows: usize) -> Element {
     rsx! {
         div { class: "skeleton-info-list",
+            div { class: "skeleton-card-header",
+                div { class: "skeleton-bar skeleton-section-label" }
+            }
             for i in 0..rows {
                 div { key: "{i}", class: "skeleton-info-row",
                     div { class: "skeleton-bar skeleton-info-row-label" }
@@ -19,22 +22,15 @@ fn SkeletonInfoList(rows: usize) -> Element {
 pub(crate) fn DeckStatsSkeleton() -> Element {
     rsx! {
         div { class: "skeleton-stats",
-            div { class: "skeleton-stats-section",
+            SkeletonInfoList { rows: 5 }
+            div { class: "skeleton-chart-box",
                 div { class: "skeleton-bar skeleton-section-label" }
-                div { class: "skeleton-chip-row",
-                    div { class: "skeleton-chip skeleton-chip-active" }
-                    div { class: "skeleton-chip" }
-                    div { class: "skeleton-chip" }
-                    div { class: "skeleton-chip" }
-                }
-                SkeletonInfoList { rows: 5 }
-            }
-            div { class: "skeleton-stats-section",
-                div { class: "skeleton-bar skeleton-section-label" }
+                hr { class: "box-rule" }
                 div { class: "skeleton-block skeleton-block-chart" }
             }
-            div { class: "skeleton-stats-section",
+            div { class: "skeleton-chart-box",
                 div { class: "skeleton-bar skeleton-section-label" }
+                hr { class: "box-rule" }
                 div { class: "skeleton-block skeleton-block-chart" }
             }
         }
@@ -87,7 +83,6 @@ pub(crate) fn EditDeckSkeleton(#[props(default = 3)] fields: usize) -> Element {
 pub(crate) fn DeckProfileSkeleton() -> Element {
     rsx! {
         div { class: "skeleton-profile",
-            div { class: "skeleton-bar skeleton-section-label" }
             SkeletonInfoList { rows: 3 }
         }
     }

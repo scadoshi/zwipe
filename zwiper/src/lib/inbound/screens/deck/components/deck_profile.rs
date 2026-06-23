@@ -15,8 +15,10 @@ pub(crate) fn DeckProfileSection(deck_profile: DeckProfile, commander: Option<Ca
     };
 
     rsx! {
-        label { class: "label", "Profile" }
         div { class: "info-list",
+            div { class: "card-header",
+                span { class: "card-title", "Profile" }
+            }
             div { class: "info-row",
                 span { class: "info-row-label", "Name" }
                 span { class: "info-row-value", "{deck_profile.name}" }
