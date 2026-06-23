@@ -1148,6 +1148,7 @@ button {
 
 .skeleton-chart-box {
     width: 100%;
+    background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
     border-radius: 0.5rem;
     box-shadow: var(--shadow-sm);
