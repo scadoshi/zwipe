@@ -73,7 +73,8 @@ fn App() -> Element {
         ThemeWrapper {
             // Min-version gate: a build below the server minimum gets the
             // blocking update screen instead of the app. No dismiss.
-            if upgrade_required.required() {
+            // TEMP (revert): `true ||` forces the update screen for visual review.
+            if true || upgrade_required.required() {
                 UpdateRequired {}
             } else {
                 ToastProvider {
