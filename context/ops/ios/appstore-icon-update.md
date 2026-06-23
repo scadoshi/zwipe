@@ -10,6 +10,22 @@ For a fresh release build (icon + Rust changes), follow [appstore-update.md](app
 
 You need a single **1024×1024 PNG master** with no rounded corners (iOS rounds at render time) and a solid background. Transparency must be stripped before submission — Apple rejects alpha on the marketing icon.
 
+### Generating the master (the ASCII Z logo)
+
+The logo is the project's ASCII "Z" colorized and exported via the **asciier**
+tool — https://github.com/scadoshi/asciier.git (open `main.html` in a browser):
+
+- Pick the matching theme preset (**Gruvbox Dark** → cream `#ebdba2` on `#282828`)
+  so the icon matches the app's default theme.
+- Use the **JetBrains Mono** font at **line height 0.9×** — matches the in-app
+  `.logo` rendering (`zwiper/assets/main.css`), so the block glyphs line up the
+  same way they do on the home screen.
+- Set the **size scale to 1.6×** — that's the sweet spot for filling the icon
+  tile. 1.5× sits a touch small, 1.7× a touch large; **build 42 at 1.6× fit best**.
+- Make sure the pasted ASCII has **no leading/trailing blank lines**, or the
+  glyph renders off-center (vertically pushed) in the square.
+- Export at 1024×1024, then run the steps below to flatten + resize.
+
 Tools used: `magick` (ImageMagick, via Homebrew) and `sips` (built-in).
 
 ```bash
