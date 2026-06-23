@@ -39,6 +39,18 @@ Built for players who want a fast, focused mobile experience — not another clu
 
 ---
 
+## What's New in This Version (1.0.9)
+
+- A brand-new app icon.
+- Your deck list got a quick-read makeover: each deck's details now show as color-coded tags, and the card count turns yellow when a deck is the wrong size for its format — so you can spot an off-size deck at a glance.
+- More accurate deck checks: Oathbreaker, Brawl, Historic Brawl, and Gladiator now use their correct legal deck sizes.
+- Profile, reorganized: your account details and your Preferences (theme and dark mode) are now separate, clearly labeled cards. Tap Change on either to edit it in a quick slide-up sheet, and account deletion tucks neatly under a More menu.
+- Cleaner deck view: the Profile, Stats, and Warnings panels — and the charts — now carry their titles inside each card.
+- The home-screen quote holds steady as you move around the app instead of flickering, and refreshes itself over time.
+- Small polish: card-mover buttons now read "To mainboard," long deck names wrap instead of clipping, loading placeholders render solid, and a warmer tweak to the Gruvbox theme text.
+
+---
+
 ## What's New in This Version (1.0.7)
 
 - A fresh look across the whole app: a subtle background grid and layered depth give every screen a cleaner, more tactile feel, with crisp readable panels floating above it.
@@ -91,7 +103,7 @@ MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading ca
 |-------|-------|
 | Support URL | https://zwipe.net |
 | Marketing URL | https://zwipe.net |
-| Version | 1.0.7 |
+| Version | 1.0.9 |
 | Copyright | 2026 Scotty Fermo |
 | Routing App Coverage File | (leave empty) |
 
