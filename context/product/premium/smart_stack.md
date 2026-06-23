@@ -9,11 +9,11 @@ they have to find.
 Instead of filter-order, rank the stack by "fits this deck":
 
 - **Tag match** — boost cards whose mechanical categories match the deck's
-  tags (`deck-tags.md`). Cheapest signal, available first.
+  tags (`deck_tags.md`). Cheapest signal, available first.
 - **Co-occurrence stats** — "decks with your commander also run X," computed
   from our own deck corpus as it grows.
 - **Recommander integration** — if the recommander.cards integration lands
-  (see `status/backlog.md`), its recommendations become a ranking signal,
+  (see `progress/backlog.md`), its recommendations become a ranking signal,
   cacheable per commander.
 - **Taste profile** (below) — deprioritize what this user always rejects.
 

@@ -79,8 +79,7 @@ staged rollout below. **Not required for the split** — documented for complete
 
 ## Staged rollout (only under Option B / any future wire-breaking change)
 
-Per `context/dev/api_evolution.md` (server deploys first) + the min-version gate
-(`context/plans/min-version-gate.md`):
+Per `context/development/api_evolution.md` (server deploys first) + the min-version gate:
 
 1. **Backend flexible** — accept BOTH old and new shapes (`#[serde(untagged)]`
    enum or custom deserializer). Deploy backend first; old clients unaffected.

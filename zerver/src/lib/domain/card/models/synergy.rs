@@ -2,7 +2,7 @@
 //! reduction to a name → score map for ordering card searches.
 //!
 //! Written by the synergy worker, read here. Shape contract:
-//! `context/plans/synergy-data-layer.md`. Parsing is deliberately lenient
+//! `context/plans/synergy_data_layer.md`. Parsing is deliberately lenient
 //! (unknown fields ignored, missing scores tolerated) — shape drift upstream
 //! must degrade to "no signal", never to a failed search.
 

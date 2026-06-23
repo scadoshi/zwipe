@@ -112,7 +112,7 @@ If the server is rebuilt and the runner is lost:
 Tailscale is used for SSHing into the server from your Mac or any network. It is **not**
 used for CI/CD deploys (self-hosted runner eliminated that need).
 
-**Current server Tailscale IP**: `100.114.251.8` (Hetzner VPS `zerver-prod`, since the 2026-06-13 migration — see `context/plans/vps-migration.md`). The old home box was `100.91.55.16` (powered off, kept as rollback). Tailscale IPs are stable and private (not publicly routable).
+**Current server Tailscale IP**: `100.114.251.8` (Hetzner VPS `zerver-prod`, since the 2026-06-13 migration — see `context/plans/vps_migration.md`). The old home box was `100.91.55.16` (powered off, kept as rollback). Tailscale IPs are stable and private (not publicly routable).
 
 **Runners (post-migration):** two self-hosted runners live on the VPS — `zerver-prod` (repo `scadoshi/zwipe`, dir `~/actions-runner-zwipe`) and `zynergy-prod` (repo `scadoshi/zynergy`, dir `~/actions-runner-zynergy`), both boot-enabled. The deploy step's `sudo systemctl {stop,start} zerver` works because `/etc/sudoers.d/scadoshi` grants NOPASSWD for exactly those service-restart commands (all other admin = `ssh root@100.114.251.8`).
 
@@ -164,7 +164,7 @@ git add .sqlx/
 git commit -m "Update sqlx offline cache"
 ```
 
-**Prerequisite**: `sqlx-cli` must be installed on the server (see `ops/server.md` setup
+**Prerequisite**: `sqlx-cli` must be installed on the server (see `server.md` setup
 checklist).
 
 ---

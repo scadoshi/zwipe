@@ -1,7 +1,7 @@
 # Upload a New App Store Version
 
 Short guide for submitting updates after the initial submission. For first-time
-setup, see [appstore-first.md](appstore-first.md).
+setup, see [appstore_first.md](appstore_first.md).
 
 ---
 
@@ -10,7 +10,7 @@ setup, see [appstore-first.md](appstore-first.md).
 Apple's App Store submission allowlist requires the binary to be linked against the
 very latest Xcode/SDK. Older GM versions get rejected at "Add for Review" with a
 misleading "beta Xcode" UI message (actual API error:
-`BUILD_SDK_NOT_ALLOWED_FOR_APP_STORE_SUBMISSION`). See `appstore-debug.md` for
+`BUILD_SDK_NOT_ALLOWED_FOR_APP_STORE_SUBMISSION`). See `appstore_debug.md` for
 the full investigation.
 
 **Before building, update Xcode via the Mac App Store** and verify:
@@ -162,7 +162,7 @@ rm -rf Payload
 ## 6. Upload via Transporter
 
 **Do NOT use `xcrun altool`** — it is deprecated and causes metadata parsing errors
-that can trigger false "beta Xcode" rejections. See `appstore-debug.md` for details.
+that can trigger false "beta Xcode" rejections. See `appstore_debug.md` for details.
 
 **Do NOT use `xcrun iTMSTransporter`** — it expects `.itmsp` directories, not `.ipa` files.
 

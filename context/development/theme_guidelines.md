@@ -112,4 +112,4 @@ for name, color in pairs.items():
 
 Theme CSS files in `zwiper/assets/` and `zite/assets/` are build artifacts (gitignored). Edit `shared/themes.css` only.
 
-For text/casing/font rules across the app see `context/dev/ui_text_conventions.md`.
+For text/casing/font rules across the app see `context/development/ui_text_conventions.md`.

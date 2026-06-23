@@ -19,7 +19,7 @@ around it paid.
 Inputs, roughly in WotC's own bracket terms:
 
 - **Game Changers list membership** — count of GC cards in the deck.
-- **Heuristics over mechanical categories** (`deck-tags.md` taxonomy):
+- **Heuristics over mechanical categories** (`deck_tags.md` taxonomy):
   mass land denial, extra turns, tutor density, two-card-combo presence
   (combo detection may eventually want Commander Spellbook data — note, not
   scoped).
@@ -32,7 +32,7 @@ engagement, not failure.
 
 "You're Bracket 3 because of these two Game Changers and your tutor density —
 here's what to swap to hit Bracket 2 for your playgroup." That's a preset in
-`ai-analysis.md` ("Help me get to Bracket N"), costs real API calls, and is
+`ai_analysis.md` ("Help me get to Bracket N"), costs real API calls, and is
 the part people pay for.
 
 ## Operational note
@@ -40,5 +40,5 @@ the part people pay for.
 The Game Changers list is WotC-maintained and changes a few times a year. It
 must live in a **server-side table updatable without an app release** — same
 patchable-without-review philosophy as the rest of the server-first decisions
-(`dev/api_evolution.md`, `status/backlog.md` patch discipline). The client
+(`development/api_evolution.md`, `progress/backlog.md` patch discipline). The client
 only ever sees the computed estimate.

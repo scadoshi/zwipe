@@ -22,7 +22,7 @@ Dioxus 0.7 does NOT generate an Xcode project — it produces a `.app` bundle di
 dx build --platform ios --device "scotland-mobile"
 ```
 
-Full iOS signing + deploy reference: `ops/ios/`.
+Full iOS signing + deploy reference: `operations/ios/`.
 
 ---
 

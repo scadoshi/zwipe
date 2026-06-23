@@ -12,8 +12,8 @@ Navigate to specific status files:
 
 - **[current.md](project/current.md)** - Active work and top 5 priorities
 - **[next.md](project/next.md)** - Immediate next steps after current work
-- **[complete-backend.md](project/complete-backend.md)** - Production-ready backend implementations
-- **[complete-frontend.md](project/complete-frontend.md)** - Production-ready frontend implementations
+- **[complete_backend.md](project/complete_backend.md)** - Production-ready backend implementations
+- **[complete_frontend.md](project/complete_frontend.md)** - Production-ready frontend implementations
 - **[backlog.md](project/backlog.md)** - Future planned features and improvements
 
 ---

@@ -6,7 +6,7 @@
 
 **Fix:** Upgraded to Xcode 26.5 (build 17F42, SDK 23F77) — released 2026-05-11. Rebuilt clean (deleted `target/aarch64-apple-ios` to force re-link against the new SDK), patched the Info.plist DT keys to match (`DTXcode 2650`, `DTXcodeBuild 17F42`, `DTSDKName iphoneos26.5`, `DTSDKBuild 23F73`, `DTPlatformVersion 26.5`, `DTPlatformBuild 23F73`, `BuildMachineOSBuild 25E253`), and uploaded as build 13 via Transporter. "Add for Review" passed on the first attempt; the version is now in "Waiting for Review" status, awaiting Apple's content review (up to 48 hours).
 
-**Lesson for next time:** When Apple ships a new Xcode minor version, the submission allowlist updates with it and older versions fall out. Always build against the latest Xcode for App Store submissions — even if the older one is still GM. See `appstore-update.md` for the recurring submission workflow.
+**Lesson for next time:** When Apple ships a new Xcode minor version, the submission allowlist updates with it and older versions fall out. Always build against the latest Xcode for App Store submissions — even if the older one is still GM. See `appstore_update.md` for the recurring submission workflow.
 
 The historical investigation log below is preserved for reference.
 
@@ -325,13 +325,13 @@ updated to recognize 17E192, or a stale account flag).
 - `x-b3-traceid: 33c95a434a770097`
 - `x-request-id: GJABHNFTU4IOQFHMJ5HQGSH5QE`
 
-Full raw log saved as `altool-build11-full.log` in this folder.
+Full raw log saved as `altool_build11_full.log` in this folder.
 
 **Attachments delivered to support** (both cases):
 - iCloud Drive share link to build 11 IPA (Gmail blocked direct `.ipa` and `.ipa.zip` attachments via content scanning)
 - TestFlight pane screenshot showing version 1.0 / build 11
 - "Add for Review" rejection error screenshot
-- `altool-build11-full.log`
+- `altool_build11_full.log`
 
 **Requests made to support** (both cases):
 1. Check for any account-level flag on Team ID VV74WQ89GD

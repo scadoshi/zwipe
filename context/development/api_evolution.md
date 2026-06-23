@@ -32,9 +32,7 @@ gets old behavior with no error — never ship the client ahead of the server.
 
 Changes that alter the meaning of existing fields or responses (wire-format
 changes, auth-flow changes) can't be expressed as additive fields. Those need
-the propagation-wait + min-version gate pattern instead — see
-`context/plans/min-version-gate.md` and Pending Gated Merges in
-`context/status/todo.md`. Reach for that only when additive genuinely can't
+the propagation-wait + min-version gate pattern instead — see Pending Gated Merges in `context/progress/todo.md`. Reach for that only when additive genuinely can't
 work; it costs weeks, additive costs nothing.
 
 ## Corollaries

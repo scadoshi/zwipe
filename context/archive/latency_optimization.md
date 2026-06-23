@@ -48,7 +48,7 @@ POP in ~5-10ms instead of ~125ms+.
 
 **Scope**: this is configured in the Cloudflare dashboard (Caching → Cache
 Rules), not in app code. Scotty handles this part. See
-`context/ops/cloudflare-edge-caching.md` (to be written during setup) for
+`context/docs/cloudflare-edge-caching.md` (to be written during setup) for
 the actual rule shape, TTL chosen, and verification commands.
 
 **Target endpoints for edge caching**:

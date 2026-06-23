@@ -12,7 +12,7 @@ empty. The feature is "basic" as a paid offering anyway; its value is what it
 unlocks:
 
 - **Shopping list** = deck minus collection → the price-alert engine's input
-  (`price-intelligence.md`). This is where collection data converts to
+  (`price_intelligence.md`). This is where collection data converts to
   premium value and affiliate revenue.
 - **"Cards I own" swipe filter** — build only from what I own. **DECIDED
   2026-06-10: free** — it's a filter, filters are free.
