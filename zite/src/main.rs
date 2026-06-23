@@ -5,7 +5,7 @@ use zwipe_core::domain::user::preferences::ALLOWED_THEMES;
 
 mod components;
 mod pages;
-use pages::{About, Android, Contribute, Discord, Home, Privacy, Reset, Verify};
+use pages::{About, Android, Contribute, Discord, Home, Ios, Privacy, Reset, Verify};
 
 pub const API_BASE: &str = "https://api.zwipe.net";
 
@@ -31,6 +31,8 @@ enum Route {
     Discord {},
     #[route("/download/android")]
     Android {},
+    #[route("/download/ios")]
+    Ios {},
     #[route("/privacy")]
     Privacy {},
     #[route("/verify/:token")]
