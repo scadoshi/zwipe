@@ -1,14 +1,14 @@
 # Backup restore drill — prove the R2 dumps actually restore
 
 **Status: written 2026-06-10, not yet run.** Nightly R2 backups have existed
-since ~2026-03 (`ops/infra/backups.md`) but a restore has never been tested.
+since ~2026-03 (`operations/infrastructure/backups.md`) but a restore has never been tested.
 "Backups exist" and "backups restore" are different facts — this drill turns
 the first into the second. ~20 minutes, zero risk to prod (everything happens
 in a scratch database), no VPS needed.
 
 Re-run it occasionally (e.g. quarterly, or after changing Postgres versions,
 the backup script, or rclone config). It is also Phase 0 step 6 of
-`vps-migration.md` — if the migration happens first, that counts as the drill.
+`vps_migration.md` — if the migration happens first, that counts as the drill.
 
 ---
 
@@ -176,7 +176,7 @@ After running, note the date + outcome here:
 
 ## Known issues to watch for
 
-- **rclone 501 on attempt 1** (`ops/infra/backups.md`) — known noise, attempt
+- **rclone 501 on attempt 1** (`operations/infrastructure/backups.md`) — known noise, attempt
   2 succeeds; not a drill failure.
 - **Plain-format dump**: the script uses plain `pg_dump | gzip`, so
   single-table restores aren't practical (also documented in backups.md). If

@@ -2,7 +2,7 @@
 
 ## RESOLVED 2026-05-22 — now we wait!
 
-Apple's submission allowlist required the very latest Xcode (26.5, released 2026-05-11). Upgrading to Xcode 26.5 build 17F42, rebuilding clean (wiping the cargo iOS device cache to force re-link against SDK 23F77), and patching the Info.plist DT keys to match cleared the "Add for Review" check. Build 13 is in "Waiting for Review" and submitted to App Review. Cases 102856406657 (Xue) and 102855955579 (Liping) both closed. See `../appstore-debug.md` for full resolution notes.
+Apple's submission allowlist required the very latest Xcode (26.5, released 2026-05-11). Upgrading to Xcode 26.5 build 17F42, rebuilding clean (wiping the cargo iOS device cache to force re-link against SDK 23F77), and patching the Info.plist DT keys to match cleared the "Add for Review" check. Build 13 is in "Waiting for Review" and submitted to App Review. Cases 102856406657 (Xue) and 102855955579 (Liping) both closed. See `../appstore_debug.md` for full resolution notes.
 
 The original support report is preserved below for reference.
 

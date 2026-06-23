@@ -14,7 +14,7 @@ hallucination risk, defensible to the decimal:
 > "Your opening hand has a 71% chance of containing at least one card tagged
 > Ramp."
 
-For each deck tag (see `deck-tags.md`): count cards in the deck whose
+For each deck tag (see `deck_tags.md`): count cards in the deck whose
 mechanical categories include that tag, then closed-form hypergeometric for
 P(≥1 in 7 draws). Extensions: P(by turn N), multivariate ("Ramp AND a draw
 engine in the opener"), aggregate score across all the deck's tags. Examples
@@ -45,6 +45,6 @@ list is on screen.
   rules, shared by server and client.
 - Can run entirely **client-side** on data the deck screen already has: no new
   endpoint, no server load, works offline.
-- Depends on: deck tags + Layer 1 card categories (`deck-tags.md`). Without
+- Depends on: deck tags + Layer 1 card categories (`deck_tags.md`). Without
   tags it degrades to generic land/curve math, which is still shippable as a
   free teaser.

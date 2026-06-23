@@ -2,7 +2,7 @@
 
 > **NOTE (2026-06-13): Prod no longer runs here.** Production migrated to a
 > Hetzner VPS (`zerver-prod`, tailnet `100.114.251.8`, admin `ssh root@…`) —
-> see `context/plans/vps-migration.md`. This home box is powered off but kept
+> see `context/plans/vps_migration.md`. This home box is powered off but kept
 > intact as the rollback. The checklist below remains the general
 > rebuild/setup reference (it's what the VPS was built from); only the
 > WiFi/netplan section is home-box-specific.
@@ -29,9 +29,9 @@ Backend served via Cloudflare Tunnel — no port forwarding, TLS handled by Clou
 - [ ] Install `cloudflared`, configure tunnel to `api.zwipe.net`
 - [ ] Start `zerver` systemd service
 - [ ] Add `zervice` nightly cron (4am daily)
-- [ ] Add backup cron (5am daily) — see `ops/backups.md`
+- [ ] Add backup cron (5am daily) — see `backups.md`
 - [ ] Run `zervice` once manually to seed Scryfall card data
-- [ ] Install self-hosted GitHub Actions runner (see `ops/cicd.md`) — this is what deploys code, runs migrations, and restarts zerver on every push to main
+- [ ] Install self-hosted GitHub Actions runner (see `cicd.md`) — this is what deploys code, runs migrations, and restarts zerver on every push to main
 - [ ] Verify iOS app hits `api.zwipe.net` successfully
 
 ---

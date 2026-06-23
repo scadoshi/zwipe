@@ -12,7 +12,7 @@ the model, ever:
 - "Make my deck better"
 - "Find my win condition"
 - "Tighten the curve"
-- "Help me get to Bracket N" (the paid layer of `bracket-estimate.md`)
+- "Help me get to Bracket N" (the paid layer of `bracket_estimate.md`)
 
 The server renders a prompt from a **server-side preset registry** (patchable
 without app release), the deck list, the deck's tags, commander, and format.
@@ -32,7 +32,7 @@ only if quality demands it.
 ## Safety / correctness design
 
 - **Zero prompt-injection surface**: users pick presets and closed-vocabulary
-  tags (`deck-tags.md`). No user-typed text reaches the model. **Never pass
+  tags (`deck_tags.md`). No user-typed text reaches the model. **Never pass
   the deck name** — it's the one free-text field adjacent to the request.
 - **Hallucination filter**: every suggested card name is validated against our
   own DB via the existing exact-name lookup (`find_cards_by_exact_names`).
@@ -44,11 +44,11 @@ only if quality demands it.
 
 - Lives in zerver (per `../monetization.md` technical path): paid users get
   the route, free users get a 402 via the entitlement flag
-  (`iap-infrastructure.md`).
+  (`iap_infrastructure.md`).
 - Preset registry server-side: add/tune prompts without an app release.
 - Hybrid with Recommander's stats layer is possible if the integration lands
-  (see `status/backlog.md`) — statistical candidates in, LLM curation on top.
+  (see `progress/backlog.md`) — statistical candidates in, LLM curation on top.
 
 ## Depends on
 
-Deck tags (`deck-tags.md`) for prompt context; IAP entitlements to gate it.
+Deck tags (`deck_tags.md`) for prompt context; IAP entitlements to gate it.

@@ -32,14 +32,14 @@ plan" is computable, per tag, with no AI.
 
 Users **pick tags from a list — they never type free text that reaches a
 model**. The closed vocabulary is what keeps the AI features
-prompt-injection-free (see `ai-analysis.md`). Preserve this: no free-text
+prompt-injection-free (see `ai_analysis.md`). Preserve this: no free-text
 custom tags, at least not any that get forwarded to an LLM.
 
 ## Implementation sketch
 
 - Schema: additive — a `tags` column (text[] or jsonb) on decks, or a
   `deck_tags` join table. New request fields `#[serde(default)]` per
-  `dev/api_evolution.md`, so old clients are unaffected.
+  `development/api_evolution.md`, so old clients are unaffected.
 - Validation: tags validated server-side against the canonical taxonomy enum
   in zwipe-core (shared so the client picker and server agree).
 - UI: chip picker on the deck edit screen, same chip idiom as the import

@@ -17,7 +17,7 @@ The following are handled by `[ios.plist]` in `Dioxus.toml` (no manual patching)
 - MinimumOSVersion
 - CFBundlePackageType
 
-See `appstore-update.md` for the full build → patch → sign → package workflow.
+See `appstore_update.md` for the full build → patch → sign → package workflow.
 
 ---
 

@@ -164,7 +164,7 @@ that's literally what the default ordering now answers.
 - This shifts "add cards" from search tool toward recommendation feed —
   deliberate. The free tier gets basic synergy auto-serve; smarter auto-serve
   (collection-aware, price-aware) is premium-candidate territory
-  (`context/product/premium/smart-stack.md`).
+  (`context/product/premium/smart_stack.md`).
 
 ## How to test from this side
 

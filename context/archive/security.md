@@ -102,7 +102,7 @@ wrapped negative (Postgres rejects negative OFFSET → 500). Clamped at the SQL 
 (`MAX_SEARCH_LIMIT=250` + guarded offset cast; covers card search and deck-aware
 search). No newtype — `CardFilter` is dual-use (also client-side in-memory
 filtering with large limits). Commit `fe5324ac`. Proper de-dup planned:
-`context/plans/card-filter-split.md`.
+`context/plans/card_filter_split.md`.
 
 ### ✓ Metrics counter inflation + overflow (Medium)
 `HttpUsageBatch` u32 fields were unbounded: a huge value inflated the lifetime +
@@ -125,12 +125,12 @@ password only: no lockout mutation, no token minting. Brute-force protection
 unchanged (these routes keep their tight per-user `sensitive_config` limit:
 burst 2, then 1/30min). Lockout stays a login control. Commit `7ed67735`.
 
-### Deferred — low risk now, revisit at scale (logged in `context/status/backlog.md`)
+### Deferred — low risk now, revisit at scale (logged in `context/progress/backlog.md`)
 - `AccountLocked` returns 429 vs 401 — an account-state oracle. Kept for UX.
 - Registration enumerates ("username/email already exists") — hard to fully close; common in big apps.
 - `user_daily_activity` columns are `INTEGER` while lifetime is `BIGINT`; safe via the per-flush clamp, BIGINT migration would decouple.
-- `CardFilter` query/predicate split (`context/plans/card-filter-split.md`).
+- `CardFilter` query/predicate split (`context/plans/card_filter_split.md`).
 
 ### Identified, pending decision (not yet actioned)
-- **Replace-mode import non-atomic (Medium)** — **planned**: insert commits, then delete-not-in runs separately; a crash between leaves a hybrid board. Chosen fix is Option A (full atomicity: lock + limit-check + insert + reconcile in one tx). Deferred (frontend untestable). Plan: `context/plans/import-atomicity.md`.
+- **Replace-mode import non-atomic (Medium)** — **planned**: insert commits, then delete-not-in runs separately; a crash between leaves a hybrid board. Chosen fix is Option A (full atomicity: lock + limit-check + insert + reconcile in one tx). Deferred (frontend untestable). Plan: `context/plans/import_atomicity.md`.
 - Low-severity: refresh `Forbidden` 403-vs-401; Argon2 default params unpinned; `chunks(0)` panic guard; card-limit TOCTOU; Archidekt bad-quantity 500s the import; `last_active_cache` unbounded growth.

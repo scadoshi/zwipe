@@ -65,18 +65,18 @@ clean weeks, repurpose home (wipes its disk) + rotate the still-shared R2 keys.
 
 At ~20 users the home server was fine — free, behind the tunnel, backed up
 nightly to R2. This plan was executed when the Android push made un-deferring
-worthwhile. Todo entry: `context/status/todo.md`.
+worthwhile. Todo entry: `context/progress/todo.md`.
 
 ## Context — what is actually moving
 
-The home box (Ubuntu Server, i5/32GB, WiFi, `ops/infra/server.md`) runs:
+The home box (Ubuntu Server, i5/32GB, WiFi, `operations/infrastructure/server.md`) runs:
 
 | Component | Notes |
 |---|---|
 | zerver | systemd unit, binds 0.0.0.0:3000, reached only via Cloudflare Tunnel |
 | zervice | nightly cron 4am (Scryfall sync + session cleanup) |
 | Postgres | local, least-privilege `zwipe` user |
-| Backup script | nightly cron 5am → R2 via rclone (`ops/infra/backups.md`) |
+| Backup script | nightly cron 5am → R2 via rclone (`operations/infrastructure/backups.md`) |
 | cloudflared | tunnel to `api.zwipe.net` — **no port forwarding exists** |
 | GitHub Actions runner | self-hosted, builds + migrates + restarts on push to main |
 | Tailscale | SSH access (`100.91.55.16`) |
@@ -102,7 +102,7 @@ Two facts make this migration gentle:
 | **Hetzner CPX (recommended)** | €8–15/mo | x86, US locations (Ashburn VA / Hillsboro OR), best price/perf, snapshots cheap |
 | DigitalOcean | $24–48/mo for same specs | Slicker dashboard, managed-PG upsell, pricier |
 | Vultr | between the two | Fine, no standout |
-| PaaS (Fly/Railway/Render) | varies | **Rejected** — would rewrite the entire ops model (systemd units, crons, self-hosted runner, all of `ops/infra/`). A plain VPS keeps every existing runbook valid; only hostnames change. |
+| PaaS (Fly/Railway/Render) | varies | **Rejected** — would rewrite the entire ops model (systemd units, crons, self-hosted runner, all of `operations/infrastructure/`). A plain VPS keeps every existing runbook valid; only hostnames change. |
 
 ### Size and architecture
 
@@ -130,7 +130,7 @@ Revisit if the DB ever outgrows the box or needs HA.
 
 US, near the user base (Hetzner Ashburn, or your majority coast). Cloudflare
 terminates TLS at the edge regardless; origin RTT still matters for API
-round-trips (`ops/latency-optimization.md`).
+round-trips (`../archive/latency_optimization.md`).
 
 ### JWT_SECRET — copy or rotate?
 
@@ -154,7 +154,7 @@ over the tailnet. Strictly better posture than the home server ever had.
 
 ### Phase 0 — build the new box (no downtime, no deadline)
 
-Follow `ops/infra/server.md` top to bottom — it was written as a rebuild
+Follow `operations/infrastructure/server.md` top to bottom — it was written as a rebuild
 checklist and ~all of it applies (skip the WiFi/netplan section; VPS has
 real networking). Deltas and order:
 
@@ -168,7 +168,7 @@ real networking). Deltas and order:
    ALLOWED_ORIGINS unchanged; MIN_CLIENT_VERSION present; JWT decision).
 5. Clone repo, build `zerver`/`zervice`, install the systemd unit,
    create `/var/log/zwipe`.
-6. **Restore the latest R2 dump** (per `ops/infra/backups.md` "fresh server"
+6. **Restore the latest R2 dump** (per `operations/infrastructure/backups.md` "fresh server"
    steps). This seeds the box AND is the backup-restore fire drill.
 7. Create a **new** Cloudflare tunnel (e.g. `zwipe-vps`) and route a temp
    hostname `api-staging.zwipe.net` → `localhost:3000`. Smoke test from the
@@ -199,13 +199,13 @@ would round-robin across two databases (split-brain writes).
 ### Phase 2 — CI/CD + follow-through (same day or next)
 
 1. GitHub → Settings → Actions → Runners: remove the old runner, register a
-   new one on the VPS (`ops/infra/cicd.md` "re-registering after a server
+   new one on the VPS (`operations/infrastructure/cicd.md` "re-registering after a server
    rebuild" — exact steps exist). Add the `visudo` NOPASSWD systemctl line.
 2. Push a trivial change to main; watch the deploy land on the VPS.
 3. Run zervice manually once; next morning confirm the 4am log and the 5am
    backup in R2.
 4. Enable provider snapshots (Hetzner: ~20% of instance cost).
-5. Update docs: `ops/infra/server.md` (VPS specifics, drop WiFi section),
+5. Update docs: `operations/infrastructure/server.md` (VPS specifics, drop WiFi section),
    `cicd.md` (new Tailscale IP), `cloudflare.md` (new tunnel), delete the
    `api-staging` hostname.
 

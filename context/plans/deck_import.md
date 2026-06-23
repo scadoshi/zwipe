@@ -1,7 +1,7 @@
 # Deck Import (Moxfield / Archidekt)
 
 Import existing decks so users don't rebuild by hand. High-priority for adoption
-(see `status/backlog.md`). This plan covers **Archidekt first** (open API, fully
+(see `progress/backlog.md`). This plan covers **Archidekt first** (open API, fully
 proven) and **Moxfield second** (ToS-gated; access requested and DENIED
 2026-06-10 — effort closed, see Phasing).
 

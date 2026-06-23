@@ -16,7 +16,7 @@ free-tier limiter is notification fatigue, handled by capping cadence.
 ## The killer combo
 
 **Deck minus collection = shopping list.** Every deck has a computable "cards
-you still need" set (see `collection-tracking.md`), and that's the thing worth
+you still need" set (see `collection_tracking.md`), and that's the thing worth
 price-tracking. The headline notification:
 
 > "Rhystic Study on your shopping list dropped 22% this week."

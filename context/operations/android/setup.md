@@ -77,4 +77,4 @@ $ANDROID_HOME/emulator/emulator -avd <name>
 - Same Rust codebase as iOS — one `zwiper/` directory, different build targets
 - `BACKEND_URL` is baked in at compile time via `env!()`
 - Android uses WebView for rendering (vs iOS WKWebView) — CSS rendering may differ slightly
-- Known issues tracked in `context/status/todo.md` under Android section
+- Known issues tracked in `context/progress/todo.md` under Android section

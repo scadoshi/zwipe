@@ -28,26 +28,26 @@ paid tier (and the free features that exist to feed it). The monetization
 
 | Feature | Ongoing cost | File |
 |---|---|---|
-| AI deck analysis (preset prompts, incl. bracket coaching) | API calls | `ai-analysis.md` |
-| Price intelligence: history charts, custom thresholds, instant alerts | storage (cheap) | `price-intelligence.md` |
-| Smart stack ordering + taste profile | storage/compute, partner API | `smart-stack.md` |
-| Synergy integration (from original 2026-03 decision) | data layer | `smart-stack.md`, `status/todo.md` |
-| Consistency per-tag breakdown (headline score stays free) | none — intelligence framing | `consistency-calculator.md` |
-| Deck snapshots / version history with diffs | storage (cheap) | `deck-snapshots.md` |
-| Budget swaps ("$4 cousin of this $40 card") | rides price data + AI | `price-intelligence.md` |
+| AI deck analysis (preset prompts, incl. bracket coaching) | API calls | `ai_analysis.md` |
+| Price intelligence: history charts, custom thresholds, instant alerts | storage (cheap) | `price_intelligence.md` |
+| Smart stack ordering + taste profile | storage/compute, partner API | `smart_stack.md` |
+| Synergy integration (from original 2026-03 decision) | data layer | `smart_stack.md`, `progress/todo.md` |
+| Consistency per-tag breakdown (headline score stays free) | none — intelligence framing | `consistency_calculator.md` |
+| Deck snapshots / version history with diffs | storage (cheap) | `deck_snapshots.md` |
+| Budget swaps ("$4 cousin of this $40 card") | rides price data + AI | `price_intelligence.md` |
 | Cosmetics (themes, icons, card backs) — sweetener, build last | none | (too small for a file) |
 
 ### DECIDED: free — acquisition, moat, or table stakes
 
 | Feature | Why free | File |
 |---|---|---|
-| Collection tracking | moat / data gravity / retention | `collection-tracking.md` |
-| Bracket badge (the number + factors) | most shareable feature; acquisition | `bracket-estimate.md` |
-| Current prices + deck totals | table stakes (Moxfield has them) | `price-intelligence.md` |
-| Capped drop alerts on shopping-list cards (refined 2026-06-10) | push is free (APNs/FCM); affiliate impressions + upsell surface | `price-intelligence.md` |
-| Consistency headline score, opening-hand simulator, mana math | zero cost; very screenshot-able — acquisition | `consistency-calculator.md` |
-| "Cards I own" swipe filter | it's a filter; filters are free | `collection-tracking.md` |
-| Deck tags (foundation infrastructure) | everything consumes it | `deck-tags.md` |
+| Collection tracking | moat / data gravity / retention | `collection_tracking.md` |
+| Bracket badge (the number + factors) | most shareable feature; acquisition | `bracket_estimate.md` |
+| Current prices + deck totals | table stakes (Moxfield has them) | `price_intelligence.md` |
+| Capped drop alerts on shopping-list cards (refined 2026-06-10) | push is free (APNs/FCM); affiliate impressions + upsell surface | `price_intelligence.md` |
+| Consistency headline score, opening-hand simulator, mana math | zero cost; very screenshot-able — acquisition | `consistency_calculator.md` |
+| "Cards I own" swipe filter | it's a filter; filters are free | `collection_tracking.md` |
+| Deck tags (foundation infrastructure) | everything consumes it | `deck_tags.md` |
 | Import/export, sharing, basic metrics | already free; never paywall migration | — |
 
 ### MAYBE pile — new ideas land here first
@@ -65,7 +65,7 @@ foundations that ship free first.
 
 ## Sequencing reality check
 
-Android ships before premium (decided 2026-06-10, see `status/todo.md`) — a
+Android ships before premium (decided 2026-06-10, see `progress/todo.md`) — a
 bigger user surface first, then monetize. The tags/consistency foundation work
 is free-tier and can proceed in parallel; the IAP build is the gate on
 actually charging anyone.
