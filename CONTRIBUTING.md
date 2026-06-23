@@ -4,8 +4,9 @@
 
 - Rust (stable)
 - PostgreSQL
-- [Dioxus CLI](https://dioxuslabs.com/learn/0.6/getting_started) (`cargo install dioxus-cli`)
+- [Dioxus CLI](https://dioxuslabs.com/learn/0.7/getting_started) (`cargo install dioxus-cli`) — project is on Dioxus 0.7
 - iOS: Xcode + `ios-deploy` (`brew install ios-deploy`)
+- Android: Android Studio (SDK + NDK) — see `context/operations/android/setup.md` (note the JDK 21 `JAVA_HOME` gotcha)
 
 ## Setup
 
@@ -23,15 +24,23 @@ cd zwiper && dx serve
 ## Environment
 
 ```
-zerver/.env   — DATABASE_URL, JWT_SECRET, BIND_ADDRESS, ALLOWED_ORIGINS, RESEND_API_KEY, RESEND_EMAIL_FROM
+zerver/.env   — DATABASE_URL, JWT_SECRET, BIND_ADDRESS, ALLOWED_ORIGINS, RESEND_API_KEY, RESEND_EMAIL_FROM, LOG_DIR
 zwiper/.env   — BACKEND_URL, RUST_LOG, RUST_BACKTRACE
 ```
 
-Copy `.env.example` if present, or refer to `context/ops/server.md`.
+Copy `.env.example` if present, or refer to `context/operations/infrastructure/server.md`.
 
 ## Project Structure
 
-The workspace has three packages: `zerver` (backend), `zwiper` (mobile/iOS/Android), and `zite` (web client).
+The workspace has four crates: `zwipe-core` (shared domain), `zerver` (backend), `zwiper` (mobile/iOS/Android), and `zite` (web client).
+
+### zwipe-core
+
+The shared domain crate — pure types, validation, and business rules used by every
+other crate. It must stay **pure**: no feature flags, no server-only dependencies
+(SQLx, Axum, tokio, argon2, …), no database derives/annotations. If only the server
+needs a type, it stays in `zerver`. Everyone else (`zerver`, `zwiper`, `zite`)
+depends on `zwipe-core` for domain types.
 
 ### zerver
 
@@ -57,7 +66,7 @@ zerver/src/
         └── resend/     — Email delivery via Resend API
 ```
 
-**Key pattern**: domain types are defined in `zerver` and shared with `zwiper` via a feature flag — `zwiper` depends on `zerver` without the `zerver` feature, which strips out server-only deps (SQLx, Axum).
+**Key pattern**: shared domain types live in `zwipe-core`, not `zerver`. `zerver` re-exports them (`pub use zwipe_core::…`) and layers server-only concerns on top (ports, services, SQLx adapters, HTTP handlers). `zwiper` and `zite` depend on `zwipe-core` directly for domain types, and on `zerver` only for HTTP-contract types (routes, `ApiError`, `Http*` structs).
 
 ### zwiper
 
@@ -77,7 +86,7 @@ zwiper/src/
 
 ### zite
 
-Static Dioxus web client hosted on Cloudflare Pages (`zwipe.net`). Handles email verification, password reset, privacy policy, and App Store redirects.
+Static Dioxus web client hosted on GitHub Pages (`zwipe.net`). Handles email verification, password reset, privacy policy, and App Store redirects.
 
 ## Making Changes
 
@@ -108,4 +117,4 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ## Deployment
 
-See `context/ops/server.md` for server setup and `context/ops/ios.md` for iOS builds.
+See `context/operations/infrastructure/server.md` for server setup and `context/operations/ios/` for iOS builds (and `context/operations/android/setup.md` for Android).
