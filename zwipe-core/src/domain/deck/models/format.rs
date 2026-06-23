@@ -104,22 +104,29 @@ impl Format {
     /// Minimum number of cards required by this format.
     pub fn min_cards(&self) -> Option<u32> {
         match self {
-            Self::Commander | Self::PauperCommander | Self::Duel | Self::Predh => Some(100),
-            Self::Brawl | Self::StandardBrawl | Self::HistoricBrawl | Self::Oathbreaker => {
-                Some(60)
-            }
-            Self::Standard | Self::Pioneer | Self::Modern | Self::Legacy | Self::Vintage
+            // 100-card singletons: the commander formats plus Gladiator
+            // (no commander; 100-card minimum).
+            Self::Commander | Self::PauperCommander | Self::Duel | Self::Predh
+            | Self::Brawl | Self::HistoricBrawl | Self::Gladiator => Some(100),
+            // 60-card formats: the 60-card singletons + open-pool constructed.
+            Self::StandardBrawl | Self::Oathbreaker
+            | Self::Standard | Self::Pioneer | Self::Modern | Self::Legacy | Self::Vintage
             | Self::Pauper | Self::OldSchool | Self::Premodern | Self::Explorer
-            | Self::Alchemy | Self::Historic | Self::Timeless | Self::Future | Self::Penny
-            | Self::Gladiator => Some(60),
+            | Self::Alchemy | Self::Historic | Self::Timeless | Self::Future
+            | Self::Penny => Some(60),
         }
     }
 
     /// Maximum number of cards allowed by this format. `None` means no maximum.
     pub fn max_cards(&self) -> Option<u32> {
         match self {
-            Self::Commander | Self::PauperCommander | Self::Duel | Self::Predh => Some(100),
-            Self::Brawl | Self::StandardBrawl | Self::HistoricBrawl => Some(60),
+            // Exactly-100 commander singleton formats. `Brawl` is Arena's
+            // 100-card Brawl (formerly Historic Brawl, renamed Dec 2023).
+            Self::Commander | Self::PauperCommander | Self::Duel | Self::Predh
+            | Self::Brawl | Self::HistoricBrawl => Some(100),
+            // Exactly-60 singleton formats.
+            Self::StandardBrawl | Self::Oathbreaker => Some(60),
+            // Gladiator (100-min, no cap) and open-pool constructed: no maximum.
             _ => None,
         }
     }
@@ -330,6 +337,38 @@ mod tests {
         assert_eq!(Format::Standard.copy_max(), 4);
         assert!(!Format::Standard.has_commander());
         assert!(!Format::Standard.checks_color_identity());
+    }
+
+    #[test]
+    fn oathbreaker_rules() {
+        // Oathbreaker is a fixed 60-card singleton format: min == max == 60.
+        assert_eq!(Format::Oathbreaker.min_cards(), Some(60));
+        assert_eq!(Format::Oathbreaker.max_cards(), Some(60));
+        assert_eq!(Format::Oathbreaker.copy_max(), 1);
+        assert!(Format::Oathbreaker.has_commander());
+        assert!(Format::Oathbreaker.has_signature_spell());
+        assert!(Format::Oathbreaker.checks_color_identity());
+    }
+
+    #[test]
+    fn brawl_sizes() {
+        // Brawl (Arena's 100-card Brawl) and Historic Brawl are exactly-100
+        // commander singletons; Standard Brawl is the exactly-60 variant.
+        assert_eq!(Format::Brawl.min_cards(), Some(100));
+        assert_eq!(Format::Brawl.max_cards(), Some(100));
+        assert_eq!(Format::HistoricBrawl.min_cards(), Some(100));
+        assert_eq!(Format::HistoricBrawl.max_cards(), Some(100));
+        assert_eq!(Format::StandardBrawl.min_cards(), Some(60));
+        assert_eq!(Format::StandardBrawl.max_cards(), Some(60));
+    }
+
+    #[test]
+    fn gladiator_rules() {
+        // 100-card singleton, no commander, minimum 100 with no maximum.
+        assert_eq!(Format::Gladiator.min_cards(), Some(100));
+        assert_eq!(Format::Gladiator.max_cards(), None);
+        assert_eq!(Format::Gladiator.copy_max(), 1);
+        assert!(!Format::Gladiator.has_commander());
     }
 
     #[test]
