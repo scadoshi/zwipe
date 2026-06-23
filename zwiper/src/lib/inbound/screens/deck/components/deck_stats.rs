@@ -17,25 +17,25 @@ pub(crate) fn DeckStats(metrics: DeckMetrics, show_buy_sheet: Signal<bool>) -> E
     };
 
     rsx! {
-        div { style: "display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.4rem;",
-            label { class: "label", style: "margin-bottom: 0;", "Stats" }
-            div { class: "chip-row", style: "margin-bottom: 0; align-items: center;",
-                for (label, key) in [("USD", "usd"), ("EUR", "eur"), ("TIX", "tix")] {
+        div { class: "info-list",
+            div { class: "card-header",
+                span { class: "card-title", "Stats" }
+                div { class: "chip-row", style: "margin-bottom: 0; align-items: center;",
+                    for (label, key) in [("USD", "usd"), ("EUR", "eur"), ("TIX", "tix")] {
+                        div {
+                            class: if selected_currency() == key { "chip selected" } else { "chip" },
+                            onclick: move |_| selected_currency.set(key),
+                            "{label}"
+                        }
+                    }
+                    span { class: "text-muted", "|" }
                     div {
-                        class: if selected_currency() == key { "chip selected" } else { "chip" },
-                        onclick: move |_| selected_currency.set(key),
-                        "{label}"
+                        class: "chip",
+                        onclick: move |_| show_buy_sheet.set(true),
+                        "Buy"
                     }
                 }
-                span { class: "text-muted", "|" }
-                div {
-                    class: "chip",
-                    onclick: move |_| show_buy_sheet.set(true),
-                    "Buy"
-                }
             }
-        }
-        div { class: "info-list",
             div { class: "info-row",
                 span { class: "info-row-label", "Cards" }
                 span { class: "info-row-value", "{metrics.total_cards}" }
