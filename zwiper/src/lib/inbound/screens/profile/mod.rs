@@ -15,11 +15,12 @@ mod components;
 
 use components::delete_account_dialog::DeleteAccountDialog;
 use components::email_verification::EmailVerification;
+use crate::inbound::components::bottom_sheet::BottomSheet;
 use crate::inbound::components::logout_dialog::LogoutDialog;
 use change_email::ChangeEmailSheet;
 use change_password::ChangePasswordSheet;
 use change_username::ChangeUsernameSheet;
-use preferences::PreferencesSheet;
+use preferences::{PreferencesSheet, display_theme_name};
 use crate::{
     inbound::{
         components::auth::bouncer::Bouncer,
@@ -35,15 +36,18 @@ use crate::{
 use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::models::hints::HINT_PROFILE;
+use zwipe_core::domain::user::models::theme::ThemeConfig;
 
 /// User profile screen showing account details and management options.
 #[component]
 pub fn Profile() -> Element {
     let mut session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
+    let theme_config: Signal<ThemeConfig> = use_context();
 
     let mut show_logout_dialog = use_signal(|| false);
     let mut show_delete_dialog = use_signal(|| false);
+    let mut show_more_sheet = use_signal(|| false);
     let mut preferences_open = use_signal(|| false);
     let mut change_username_open = use_signal(|| false);
     let mut change_email_open = use_signal(|| false);
@@ -99,60 +103,94 @@ pub fn Profile() -> Element {
                             " to update your username, email or password"
                         }
                         HintBullet {
-                            "Tap "
+                            "Find your theme and dark mode under "
                             HintKey { "Preferences" }
-                            " to change your theme"
                         }
                         HintBullet {
                             "Tap "
-                            HintKey { "Delete account" }
-                            " to erase your account for good"
+                            HintKey { "More" }
+                            " for account actions like deleting your account"
                         }
                     }
                 }
 
                 div { class: "screen-content centered content-enter",
                     if let Some(s) = session().as_ref() {
-                        div { class: "profile-list", style: "width: calc(100% - 4rem);",
+                        div { class: "profile-sections",
 
-                            div {
-                                class: "profile-row",
-                                span { class: "profile-row-label", "Username" }
-                                div { class: "profile-row-value",
-                                    span { { s.user.username.to_string() } }
-                                    button {
-                                        class: "util-btn",
-                                        onclick: move |_| change_username_open.set(true),
-                                        "Change"
+                            div { class: "profile-list",
+
+                                div { class: "card-header",
+                                    span { class: "card-title", "Account" }
+                                }
+
+                                div {
+                                    class: "profile-row",
+                                    span { class: "profile-row-label", "Username" }
+                                    div { class: "profile-row-value",
+                                        span { { s.user.username.to_string() } }
+                                        button {
+                                            class: "util-btn",
+                                            onclick: move |_| change_username_open.set(true),
+                                            "Change"
+                                        }
+                                    }
+                                }
+
+                                div {
+                                    class: "profile-row",
+                                    span { class: "profile-row-label", "Email" }
+                                    div { class: "profile-row-value",
+                                        EmailVerification {
+                                            email: s.user.email.to_string(),
+                                            is_verified: s.user.email_verified_at.is_some(),
+                                        }
+                                        button {
+                                            class: "util-btn",
+                                            onclick: move |_| change_email_open.set(true),
+                                            "Change"
+                                        }
+                                    }
+                                }
+
+                                div {
+                                    class: "profile-row",
+                                    span { class: "profile-row-label", "Password" }
+                                    div { class: "profile-row-value",
+                                        span { "•••••••" }
+                                        button {
+                                            class: "util-btn",
+                                            onclick: move |_| change_password_open.set(true),
+                                            "Change"
+                                        }
                                     }
                                 }
                             }
 
-                            div {
-                                class: "profile-row",
-                                span { class: "profile-row-label", "Email" }
-                                div { class: "profile-row-value",
-                                    EmailVerification {
-                                        email: s.user.email.to_string(),
-                                        is_verified: s.user.email_verified_at.is_some(),
-                                    }
+                            div { class: "profile-list",
+
+                                div { class: "card-header",
+                                    span { class: "card-title", "Preferences" }
                                     button {
                                         class: "util-btn",
-                                        onclick: move |_| change_email_open.set(true),
+                                        onclick: move |_| preferences_open.set(true),
                                         "Change"
                                     }
                                 }
-                            }
 
-                            div {
-                                class: "profile-row",
-                                span { class: "profile-row-label", "Password" }
-                                div { class: "profile-row-value",
-                                    span { "•••••••" }
-                                    button {
-                                        class: "util-btn",
-                                        onclick: move |_| change_password_open.set(true),
-                                        "Change"
+                                div {
+                                    class: "profile-row",
+                                    span { class: "profile-row-label", "Theme" }
+                                    div { class: "profile-row-value",
+                                        span { { display_theme_name(&theme_config().name) } }
+                                    }
+                                }
+
+                                div {
+                                    class: "profile-row",
+                                    span { class: "profile-row-label", "Dark mode" }
+                                    div { class: "profile-row-value",
+                                        span { if theme_config().is_dark { "On" } else { "Off" } }
                                     }
                                 }
                             }
@@ -167,17 +205,20 @@ pub fn Profile() -> Element {
                         "Back"
                     }
                     button {
-                        class: "util-btn",
-                        onclick: move |_| preferences_open.set(true),
-                        "Preferences"
-                    }
-                    button {
                         class: "util-btn util-btn-danger",
                         onclick: move |_| show_logout_dialog.set(true),
                         "Log out"
                     }
                     button {
-                        class: "util-btn util-btn-danger",
+                        class: "util-btn",
+                        onclick: move |_| show_more_sheet.set(true),
+                        "More"
+                    }
+                }
+
+                BottomSheet { open: show_more_sheet, title: "More".to_string(),
+                    button {
+                        class: "btn btn-danger",
                         onclick: move |_| show_delete_dialog.set(true),
                         "Delete account"
                     }
