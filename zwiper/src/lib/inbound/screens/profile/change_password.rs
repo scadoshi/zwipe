@@ -1,4 +1,4 @@
-//! Change password screen.
+//! Change password bottom sheet.
 
 use crate::{
     inbound::components::{
@@ -6,7 +6,8 @@ use crate::{
             AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
             AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
         },
-        auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+        auth::ensure_session::EnsureFresh,
+        bottom_sheet::BottomSheet,
         fields::text_input::TextInput,
     },
     outbound::client::{ZwipeClient, user::change_password::ClientChangePassword},
@@ -18,11 +19,9 @@ use zwipe::domain::auth::models::password::Password;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::HttpChangePassword;
 
-/// Form screen for updating user's password.
+/// Bottom sheet for updating the user's password.
 #[component]
-pub fn ChangePassword() -> Element {
-    let navigator = use_navigator();
-
+pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
     let session: Signal<Option<Session>> = use_context();
     let auth_client: Signal<ZwipeClient> = use_context();
 
@@ -64,6 +63,15 @@ pub fn ChangePassword() -> Element {
         confirm_password.set(String::new());
     };
 
+    // Reset the form each time the sheet opens so it never shows stale input.
+    use_effect(move || {
+        if open() {
+            clear_inputs();
+            password_error.set(None);
+            submit_attempted.set(false);
+        }
+    });
+
     let mut attempt_submit = move || {
         submit_attempted.set(true);
         if inputs_are_valid() {
@@ -92,6 +100,7 @@ pub fn ChangePassword() -> Element {
                         clear_inputs();
                         submit_attempted.set(false);
                         is_loading.set(false);
+                        open.set(false);
                     }
                     Err(e) => {
                         tracing::warn!("change password failed: {e}");
@@ -113,56 +122,14 @@ pub fn ChangePassword() -> Element {
     });
 
     rsx! {
-        Bouncer {
-            div { class: "screen",
-                div { class: "page-header",
-                    h2 { "Change Password" }
-                }
-
-                div { class: "screen-content centered content-enter",
-                div { class : "container-sm",
-
-                    form { class: "flex-col text-center",
-
-                        TextInput {
-                            value: current_password,
-                            id: "current_password",
-                            label: "Current password",
-                            placeholder: "Current password",
-                            input_type: "password",
-                        }
-
-                        if submit_attempted() {
-                            if let Some(error) = password_error() {
-                                div { class : "message-error", "{error}" }
-                            }
-                        }
-
-                        TextInput {
-                            value: new_password,
-                            id: "new_password",
-                            label: "New password",
-                            placeholder: "New password",
-                            input_type: "password",
-                        }
-
-                        TextInput {
-                            value: confirm_password,
-                            id: "confirm_password",
-                            label: "Confirm password",
-                            placeholder: "Confirm new",
-                            input_type: "password",
-                        }
-                    }
-
-                }
-            }
-
-            div { class: "util-bar",
+        BottomSheet {
+            open,
+            title: "Change password".to_string(),
+            footer: rsx! {
                 button {
                     class: "util-btn",
                     disabled: is_loading(),
-                    onclick: move |_| navigator.go_back(),
+                    onclick: move |_| open.set(false),
                     "Back"
                 }
                 button {
@@ -177,31 +144,63 @@ pub fn ChangePassword() -> Element {
                     },
                     if is_loading() { "Saving..." } else { "Save changes" }
                 }
-            }
+            },
 
-            AlertDialogRoot {
-                open: show_confirm(),
-                on_open_change: move |open| show_confirm.set(open),
-                AlertDialogContent {
-                    AlertDialogTitle { "Change password" }
-                    AlertDialogDescription {
-                        "Changing your password will log you out on all other devices."
-                    }
-                    AlertDialogActions {
-                        AlertDialogCancel {
-                            on_click: move |_| show_confirm.set(false),
-                            "Cancel"
-                        }
-                        AlertDialogAction {
-                            on_click: move |_| {
-                                show_confirm.set(false);
-                                attempt_submit();
-                            },
-                            "Confirm"
-                        }
+            div { class: "flex-col text-center",
+
+                TextInput {
+                    value: current_password,
+                    id: "current_password",
+                    label: "Current password",
+                    placeholder: "Current password",
+                    input_type: "password",
+                }
+
+                if submit_attempted() {
+                    if let Some(error) = password_error() {
+                        div { class: "message-error", "{error}" }
                     }
                 }
+
+                TextInput {
+                    value: new_password,
+                    id: "new_password",
+                    label: "New password",
+                    placeholder: "New password",
+                    input_type: "password",
+                }
+
+                TextInput {
+                    value: confirm_password,
+                    id: "confirm_password",
+                    label: "Confirm password",
+                    placeholder: "Confirm new",
+                    input_type: "password",
+                }
             }
+        }
+
+        AlertDialogRoot {
+            open: show_confirm(),
+            on_open_change: move |open| show_confirm.set(open),
+            AlertDialogContent {
+                AlertDialogTitle { "Change password" }
+                AlertDialogDescription {
+                    "Changing your password will log you out on all other devices."
+                }
+                AlertDialogActions {
+                    AlertDialogCancel {
+                        on_click: move |_| show_confirm.set(false),
+                        "Cancel"
+                    }
+                    AlertDialogAction {
+                        on_click: move |_| {
+                            show_confirm.set(false);
+                            attempt_submit();
+                        },
+                        "Confirm"
+                    }
+                }
             }
         }
     }

@@ -18,10 +18,7 @@ use crate::inbound::screens::{
         view::ViewDeck,
     },
     home::Home,
-    profile::{
-        change_email::ChangeEmail, change_password::ChangePassword,
-        change_username::ChangeUsername, Profile,
-    },
+    profile::Profile,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -45,18 +42,9 @@ pub enum Router {
     #[route("/forgot-password")]
     ForgotPassword {},
 
-    /// User profile overview — links to change username/email/password, preferences, delete account.
+    /// User profile overview — username/email/password edits, preferences, delete account.
     #[route("/user")]
     Profile {},
-    /// Change username form.
-    #[route("/user/change-username")]
-    ChangeUsername {},
-    /// Change email form (triggers re-verification).
-    #[route("/user/change-email")]
-    ChangeEmail {},
-    /// Change password form.
-    #[route("/user/change-password")]
-    ChangePassword {},
 
     /// List all user's decks with name, format, and card count.
     #[route("/deck")]

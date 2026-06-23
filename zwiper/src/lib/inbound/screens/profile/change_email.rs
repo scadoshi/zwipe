@@ -1,7 +1,8 @@
-//! Change email screen.
+//! Change email bottom sheet.
 
 use crate::domain::error::UserFacing;
-use crate::inbound::components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh};
+use crate::inbound::components::auth::ensure_session::EnsureFresh;
+use crate::inbound::components::bottom_sheet::BottomSheet;
 use crate::inbound::components::fields::text_input::TextInput;
 use crate::outbound::client::user::change_email::ClientChangeEmail;
 use crate::outbound::client::ZwipeClient;
@@ -12,11 +13,9 @@ use zwipe::domain::auth::models::password::Password;
 use zwipe_core::http::contracts::auth::HttpChangeEmail;
 use zwipe_core::domain::{auth::models::session::Session, Email};
 
-/// Form screen for updating user's email address.
+/// Bottom sheet for updating the user's email address.
 #[component]
-pub fn ChangeEmail() -> Element {
-    let navigator = use_navigator();
-
+pub fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
     let mut session: Signal<Option<Session>> = use_context();
     let auth_client: Signal<ZwipeClient> = use_context();
 
@@ -55,6 +54,16 @@ pub fn ChangeEmail() -> Element {
         password.set(String::new());
     };
 
+    // Reset the form each time the sheet opens so it never shows stale input.
+    use_effect(move || {
+        if open() {
+            clear_inputs();
+            email_error.set(None);
+            password_error.set(None);
+            submit_attempted.set(false);
+        }
+    });
+
     let mut attempt_submit = move || {
         submit_attempted.set(true);
         if inputs_are_valid() {
@@ -86,6 +95,7 @@ pub fn ChangeEmail() -> Element {
                         clear_inputs();
                         submit_attempted.set(false);
                         is_loading.set(false);
+                        open.set(false);
                     }
                     Err(e) => {
                         tracing::warn!("change email failed: {e}");
@@ -108,52 +118,14 @@ pub fn ChangeEmail() -> Element {
     });
 
     rsx! {
-        Bouncer {
-            div { class: "screen",
-                div { class: "page-header",
-                    h2 { "Change Email" }
-                }
-
-                div { class: "screen-content centered content-enter",
-                div { class : "container-sm",
-
-                    form { class: "flex-col text-center",
-
-                        if submit_attempted() {
-                            if let Some(error) = email_error() {
-                                div { class : "message-error", "{error}" }
-                            }
-                        }
-
-                        TextInput {
-                            value: new_email,
-                            id: "new_email",
-                            label: "New email",
-                            placeholder: "New email",
-                        }
-
-                        if submit_attempted() {
-                            if let Some(error) = password_error() {
-                                div { class : "message-error", "{error}" }
-                            }
-                        }
-
-                        TextInput {
-                            value: password,
-                            id: "password",
-                            label: "Password",
-                            placeholder: "Password",
-                            input_type: "password",
-                        }
-                    }
-                }
-            }
-
-            div { class: "util-bar",
+        BottomSheet {
+            open,
+            title: "Change email".to_string(),
+            footer: rsx! {
                 button {
                     class: "util-btn",
                     disabled: is_loading(),
-                    onclick: move |_| navigator.go_back(),
+                    onclick: move |_| open.set(false),
                     "Back"
                 }
                 button {
@@ -162,7 +134,36 @@ pub fn ChangeEmail() -> Element {
                     onclick: move |_| attempt_submit(),
                     if is_loading() { "Saving..." } else { "Save changes" }
                 }
-            }
+            },
+
+            div { class: "flex-col text-center",
+
+                if submit_attempted() {
+                    if let Some(error) = email_error() {
+                        div { class: "message-error", "{error}" }
+                    }
+                }
+
+                TextInput {
+                    value: new_email,
+                    id: "new_email",
+                    label: "New email",
+                    placeholder: "New email",
+                }
+
+                if submit_attempted() {
+                    if let Some(error) = password_error() {
+                        div { class: "message-error", "{error}" }
+                    }
+                }
+
+                TextInput {
+                    value: password,
+                    id: "password",
+                    label: "Password",
+                    placeholder: "Password",
+                    input_type: "password",
+                }
             }
         }
     }

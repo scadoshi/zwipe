@@ -1,8 +1,8 @@
-//! Change username screen.
+//! Change username bottom sheet.
 
 use crate::{
     inbound::components::{
-        auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+        auth::ensure_session::EnsureFresh, bottom_sheet::BottomSheet,
         fields::text_input::TextInput,
     },
     outbound::client::{ZwipeClient, user::change_username::ClientChangeUsername},
@@ -14,11 +14,9 @@ use zwipe::domain::auth::models::password::Password;
 use zwipe_core::domain::{auth::models::session::Session, user::username::Username};
 use zwipe_core::http::contracts::auth::HttpChangeUsername;
 
-/// Form screen for updating user's username.
+/// Bottom sheet for updating the user's username.
 #[component]
-pub fn ChangeUsername() -> Element {
-    let navigator = use_navigator();
-
+pub fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
     let mut session: Signal<Option<Session>> = use_context();
     let auth_client: Signal<ZwipeClient> = use_context();
 
@@ -57,6 +55,16 @@ pub fn ChangeUsername() -> Element {
         password.set(String::new());
     };
 
+    // Reset the form each time the sheet opens so it never shows stale input.
+    use_effect(move || {
+        if open() {
+            clear_inputs();
+            username_error.set(None);
+            password_error.set(None);
+            submit_attempted.set(false);
+        }
+    });
+
     let mut attempt_submit = move || {
         submit_attempted.set(true);
         if inputs_are_valid() {
@@ -88,6 +96,7 @@ pub fn ChangeUsername() -> Element {
                         clear_inputs();
                         submit_attempted.set(false);
                         is_loading.set(false);
+                        open.set(false);
                     }
                     Err(e) => {
                         tracing::warn!("change username failed: {e}");
@@ -110,52 +119,14 @@ pub fn ChangeUsername() -> Element {
     });
 
     rsx! {
-        Bouncer {
-            div { class: "screen",
-                div { class: "page-header",
-                    h2 { "Change Username" }
-                }
-
-                div { class: "screen-content centered content-enter",
-                div { class : "container-sm",
-
-                    form { class: "flex-col text-center",
-
-                        if submit_attempted() {
-                            if let Some(error) = username_error() {
-                                div { class : "message-error", "{error}" }
-                            }
-                        }
-
-                        TextInput {
-                            value: new_username,
-                            id: "new_username",
-                            label: "New username",
-                            placeholder: "New username",
-                        }
-
-                        if submit_attempted() {
-                            if let Some(error) = password_error() {
-                                div { class : "message-error", "{error}" }
-                            }
-                        }
-
-                        TextInput {
-                            value: password,
-                            id: "password",
-                            label: "Password",
-                            placeholder: "Password",
-                            input_type: "password",
-                        }
-                    }
-                }
-            }
-
-            div { class: "util-bar",
+        BottomSheet {
+            open,
+            title: "Change username".to_string(),
+            footer: rsx! {
                 button {
                     class: "util-btn",
                     disabled: is_loading(),
-                    onclick: move |_| navigator.go_back(),
+                    onclick: move |_| open.set(false),
                     "Back"
                 }
                 button {
@@ -164,7 +135,36 @@ pub fn ChangeUsername() -> Element {
                     onclick: move |_| attempt_submit(),
                     if is_loading() { "Saving..." } else { "Save changes" }
                 }
-            }
+            },
+
+            div { class: "flex-col text-center",
+
+                if submit_attempted() {
+                    if let Some(error) = username_error() {
+                        div { class: "message-error", "{error}" }
+                    }
+                }
+
+                TextInput {
+                    value: new_username,
+                    id: "new_username",
+                    label: "New username",
+                    placeholder: "New username",
+                }
+
+                if submit_attempted() {
+                    if let Some(error) = password_error() {
+                        div { class: "message-error", "{error}" }
+                    }
+                }
+
+                TextInput {
+                    value: password,
+                    id: "password",
+                    label: "Password",
+                    placeholder: "Password",
+                    input_type: "password",
+                }
             }
         }
     }

@@ -1,14 +1,14 @@
-//! User profile management screens.
+//! User profile management screen and its edit sheets.
 //!
-//! Provides screens for viewing and updating user profile information.
+//! Provides the profile overview plus bottom sheets for updating user info.
 
-/// Change email screen.
+/// Change email bottom sheet.
 pub mod change_email;
-/// Change password screen.
+/// Change password bottom sheet.
 pub mod change_password;
-/// Change username screen.
+/// Change username bottom sheet.
 pub mod change_username;
-/// User preferences screen.
+/// User preferences bottom sheet.
 pub mod preferences;
 /// Extracted components for the profile screen.
 mod components;
@@ -16,6 +16,9 @@ mod components;
 use components::delete_account_dialog::DeleteAccountDialog;
 use components::email_verification::EmailVerification;
 use crate::inbound::components::logout_dialog::LogoutDialog;
+use change_email::ChangeEmailSheet;
+use change_password::ChangePasswordSheet;
+use change_username::ChangeUsernameSheet;
 use preferences::PreferencesSheet;
 use crate::{
     inbound::{
@@ -23,7 +26,6 @@ use crate::{
         components::hint_dialog::{
             HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint,
         },
-        router::Router,
     },
     outbound::client::{
         user::get_user::ClientGetUser,
@@ -43,6 +45,9 @@ pub fn Profile() -> Element {
     let mut show_logout_dialog = use_signal(|| false);
     let mut show_delete_dialog = use_signal(|| false);
     let mut preferences_open = use_signal(|| false);
+    let mut change_username_open = use_signal(|| false);
+    let mut change_email_open = use_signal(|| false);
+    let mut change_password_open = use_signal(|| false);
 
     // Account management hint: auto-opens on this user's first visit, the
     // grayed "?" in the header reopens it on demand.
@@ -117,7 +122,7 @@ pub fn Profile() -> Element {
                                     span { { s.user.username.to_string() } }
                                     button {
                                         class: "util-btn",
-                                        onclick: move |_| { navigator.push(Router::ChangeUsername {}); },
+                                        onclick: move |_| change_username_open.set(true),
                                         "Change"
                                     }
                                 }
@@ -133,7 +138,7 @@ pub fn Profile() -> Element {
                                     }
                                     button {
                                         class: "util-btn",
-                                        onclick: move |_| { navigator.push(Router::ChangeEmail {}); },
+                                        onclick: move |_| change_email_open.set(true),
                                         "Change"
                                     }
                                 }
@@ -146,7 +151,7 @@ pub fn Profile() -> Element {
                                     span { "•••••••" }
                                     button {
                                         class: "util-btn",
-                                        onclick: move |_| { navigator.push(Router::ChangePassword {}); },
+                                        onclick: move |_| change_password_open.set(true),
                                         "Change"
                                     }
                                 }
@@ -181,6 +186,9 @@ pub fn Profile() -> Element {
                 LogoutDialog { open: show_logout_dialog }
                 DeleteAccountDialog { open: show_delete_dialog }
                 PreferencesSheet { open: preferences_open }
+                ChangeUsernameSheet { open: change_username_open }
+                ChangeEmailSheet { open: change_email_open }
+                ChangePasswordSheet { open: change_password_open }
             }
         }
     }
