@@ -137,32 +137,28 @@ pub fn DeckList() -> Element {
                                                         || f.max_cards().is_some_and(|m| count > m as i64)
                                                 });
                                                 rsx! {
-                                                    div { class: "deck-list-header",
+                                                    div { class: "deck-list-row",
                                                         h3 { class: "font-light text-base tracking-wide deck-list-name",
                                                             { profile.name.to_string() }
                                                         }
                                                         span {
                                                             class: if count_bad { "stat-chip stat-chip-bad" } else { "stat-chip" },
-                                                            style: "flex-shrink: 0;",
                                                             "{count} cards"
                                                         }
-                                                    }
-                                                    hr { class: "card-rule" }
-                                                    div { class: "deck-stats",
                                                         if let Some(ref fmt) = profile.format {
-                                                            span { class: "stat-chip", "{fmt.display_name()}" }
+                                                            span { class: "stat-chip stat-chip-format", "{fmt.display_name()}" }
                                                         }
                                                         if let Some(ref cmd) = profile.commander_name {
-                                                            span { class: "stat-chip", "{cmd}" }
+                                                            span { class: "stat-chip stat-chip-zone", "{cmd}" }
                                                         }
                                                         if let Some(ref name) = profile.partner_commander_name {
-                                                            span { class: "stat-chip", "{name}" }
+                                                            span { class: "stat-chip stat-chip-zone", "{name}" }
                                                         }
                                                         if let Some(ref name) = profile.background_name {
-                                                            span { class: "stat-chip", "{name}" }
+                                                            span { class: "stat-chip stat-chip-zone", "{name}" }
                                                         }
                                                         if let Some(ref name) = profile.signature_spell_name {
-                                                            span { class: "stat-chip", "{name}" }
+                                                            span { class: "stat-chip stat-chip-zone", "{name}" }
                                                         }
                                                     }
                                                 }
