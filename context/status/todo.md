@@ -190,6 +190,12 @@ launches on both stores in one pass (StoreKit + Play Billing designed together).
   the wait runs unattended)** → upload a build to a closed track → recruit
   12 testers (LGS regulars + Reddit) → 14-day clock runs while the polish
   items below are finished.
+  - **Status 2026-06-22:** identity documents uploaded; Play Console shows
+    "Google is verifying your identity" (may take a few days). First
+    proof-of-address (a utility bill) was **rejected** — a different document
+    resubmitted and now awaiting review. Phone-number verification is gated
+    behind identity approval (both still pending). Account is personal,
+    ID 5194812603818548859.
 
 Android build compiles and runs — **emulator-confirmed on Pixel_9a 2026-06-22** (login → decks → swipe all working against prod). Build gotcha: must point `JAVA_HOME` at Android Studio's bundled JDK 21, not the system-default JDK 26 — see `context/ops/android.md`. The home-screen ASCII logo (block glyphs) now renders correctly via the self-hosted font (ships in 1.0.9). Remaining polish before Play Store submission:
 
