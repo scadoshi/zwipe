@@ -4,6 +4,7 @@ use crate::inbound::components::logout_dialog::LogoutDialog;
 use crate::inbound::router::Router;
 use crate::{
     inbound::components::auth::bouncer::Bouncer,
+    inbound::components::auth::session_upkeep::FlavorCard,
     inbound::components::hint_dialog::{
         HintBullet, HintBullets, HintColored, HintDialog, HintKey, use_one_time_hint,
     },
@@ -103,28 +104,44 @@ pub fn Home() -> Element {
         });
     });
 
-    // Fetch a random card with flavor text
-    let random_flavor_card = use_resource(move || async move {
-        let session = session()?;
-
-        let mut builder = CardFilterBuilder::new();
-        builder
-            .unset_is_playable()
-            .set_has_flavor_text(true)
-            .set_order_by(OrderByOption::Random)
-            .set_limit(1);
-
-        let Ok(filter) = builder.build() else {
-            return None;
-        };
-
-        match client().search_cards(&filter, &session).await {
-            Ok(cards) => cards.into_iter().next(),
-            Err(e) => {
-                tracing::warn!("flavor card fetch failed: {e}");
-                None
-            }
+    // Random flavor card, cached app-wide with a TTL (FlavorCard context).
+    // Refetch only when the cache is empty or expired, and overwrite only on
+    // success — so rapid navigation reuses the cached quote and a failed /
+    // rate-limited refetch keeps the last one instead of blanking.
+    let mut flavor: Signal<Option<FlavorCard>> = use_context();
+    use_effect(move || {
+        // Subscribe to the session so expiry is also re-checked when it
+        // refreshes (~60s), not only on mount.
+        let current_session = session();
+        let needs_refresh = flavor.peek().as_ref().is_none_or(FlavorCard::is_expired);
+        if !needs_refresh {
+            return;
         }
+        let Some(session_val) = current_session else {
+            return;
+        };
+        spawn(async move {
+            let mut builder = CardFilterBuilder::new();
+            builder
+                .unset_is_playable()
+                .set_has_flavor_text(true)
+                .set_order_by(OrderByOption::Random)
+                .set_limit(1);
+            let Ok(filter) = builder.build() else {
+                return;
+            };
+            match client().search_cards(&filter, &session_val).await {
+                Ok(cards) => {
+                    if let Some(card) = cards.into_iter().next() {
+                        flavor.set(Some(FlavorCard::new(card)));
+                    }
+                }
+                Err(e) => {
+                    // Keep the existing cached card rather than blanking.
+                    tracing::warn!("flavor card fetch failed: {e}");
+                }
+            }
+        });
     });
 
     rsx! {
@@ -136,17 +153,17 @@ pub fn Home() -> Element {
 
                 // Display random flavor text
                 div { class: "container-sm text-center flex-col home-flavor content-enter-delayed",
-                    match &*random_flavor_card.read() {
-                        Some(Some(card)) => {
-                            if let Some(flavor_text) = card.scryfall_data.flavor_text.as_ref() {
-                                let sd = card.scryfall_data.clone();
+                    match &*flavor.read() {
+                        Some(entry) => {
+                            if let Some(flavor_text) = entry.card.scryfall_data.flavor_text.as_ref() {
+                                let sd = entry.card.scryfall_data.clone();
                                 rsx! {
                                     div { class: "flavor-quote",
                                         "{flavor_text} "
                                         span {
                                             class: "flavor-source flavor-source-link",
                                             onclick: move |_| preview_card.set(Some(sd.clone())),
-                                            "{card.scryfall_data.name}"
+                                            "{entry.card.scryfall_data.name}"
                                         }
                                     }
                                 }
@@ -154,7 +171,6 @@ pub fn Home() -> Element {
                                 rsx! {}
                             }
                         }
-                        Some(None) => rsx! {},
                         None => rsx! {
                             div { class: "skeleton-flavor",
                                 div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-1" }

@@ -10,6 +10,7 @@ use crate::inbound::components::telemetry::{
 };
 use crate::outbound::client::version::get_min_client_version::ClientGetMinClientVersion;
 use crate::outbound::{client::ZwipeClient, session::Persist};
+use chrono::{DateTime, Utc};
 use dioxus::prelude::*;
 use std::time::Duration;
 use tokio::time::interval;
@@ -21,6 +22,38 @@ use zwipe_core::version::version_at_least;
 /// The running app version, baked in at compile time (matches
 /// CFBundleShortVersionString since 1.0.3).
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+/// How long the Home screen's cached flavor card stays fresh.
+const FLAVOR_TTL_HOURS: i64 = 1;
+
+/// A flavor card cached for the Home screen, with the time it goes stale.
+///
+/// Stored above the router (as `Signal<Option<FlavorCard>>`) so it survives
+/// navigation: Home reads it and only refetches when empty or expired, so
+/// rapid back-and-forth no longer hammers the rate-limited search endpoint or
+/// blanks the quote.
+#[derive(Clone)]
+pub struct FlavorCard {
+    /// The card whose flavor text is shown.
+    pub card: Card,
+    /// When this entry goes stale and should be refetched.
+    pub expires_at: DateTime<Utc>,
+}
+
+impl FlavorCard {
+    /// Wrap a freshly fetched card with an expiry `FLAVOR_TTL_HOURS` from now.
+    pub fn new(card: Card) -> Self {
+        Self {
+            card,
+            expires_at: Utc::now() + chrono::Duration::hours(FLAVOR_TTL_HOURS),
+        }
+    }
+
+    /// Whether the cached card has passed its TTL and should be refetched.
+    pub fn is_expired(&self) -> bool {
+        Utc::now() >= self.expires_at
+    }
+}
 
 /// Min-version gate state — true when this build is below the server minimum.
 ///
@@ -62,6 +95,10 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
 
     let last_search_filter: Signal<Option<CardFilterBuilder>> = use_signal(|| None);
     use_context_provider(|| last_search_filter);
+
+    // Home flavor card — cached above the router with a TTL (see FlavorCard).
+    let flavor_card: Signal<Option<FlavorCard>> = use_signal(|| None);
+    use_context_provider(|| flavor_card);
 
     // Theme — initialize from session preferences if logged in
     let theme = use_signal(|| {
