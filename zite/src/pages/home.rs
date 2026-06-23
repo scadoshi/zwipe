@@ -4,11 +4,11 @@ use dioxus::prelude::*;
 
 const LOGO_ASCII: &str = zwipe_core::domain::logo::ZWIPE;
 
-const DEMO_CREATE_DECK: Asset = asset!("/assets/new-demo/1_create_deck.mp4");
-const DEMO_ADD_DECK_CARDS: Asset = asset!("/assets/new-demo/2_add_deck_cards.mp4");
-const DEMO_DECK_CARDS_VIEW: Asset = asset!("/assets/new-demo/3_deck_cards_view.mp4");
-const DEMO_REGISTER: Asset = asset!("/assets/new-demo/4_register.mp4");
-const DEMO_PROFILE: Asset = asset!("/assets/new-demo/5_profile.mp4");
+const DEMO_CREATE_DECK: Asset = asset!("/assets/demo/1_create_deck.mp4");
+const DEMO_ADD_DECK_CARDS: Asset = asset!("/assets/demo/2_add_deck_cards.mp4");
+const DEMO_DECK_CARDS_VIEW: Asset = asset!("/assets/demo/3_deck_cards.mp4");
+const DEMO_REGISTER: Asset = asset!("/assets/demo/4_register.mp4");
+const DEMO_PROFILE: Asset = asset!("/assets/demo/5_profile.mp4");
 
 #[component]
 pub fn Home() -> Element {
