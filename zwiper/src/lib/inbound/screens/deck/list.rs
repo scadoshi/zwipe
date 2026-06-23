@@ -123,36 +123,48 @@ pub fn DeckList() -> Element {
                                                     deck_id: profile.id,
                                                 });
                                             },
-                                            h3 { class: "font-light text-base tracking-wide",
-                                                style: "overflow-wrap: anywhere; word-break: break-word;",
-                                                { profile.name.to_string() }
-                                            }
-                                            hr { class: "card-rule" }
-                                            span { class: "text-muted text-sm",
-                                                {
-                                                    let mut count = profile.card_count;
-                                                    if profile.format.as_ref().is_some_and(|f| f.has_commander()) && profile.commander_id.is_some() {
-                                                        count += 1;
+                                            {
+                                                let mut count = profile.card_count;
+                                                if profile.format.as_ref().is_some_and(|f| f.has_commander()) && profile.commander_id.is_some() {
+                                                    count += 1;
+                                                }
+                                                if profile.partner_commander_id.is_some() { count += 1; }
+                                                if profile.background_id.is_some() { count += 1; }
+                                                if profile.signature_spell_id.is_some() { count += 1; }
+                                                // Out of bounds only when the format defines a size rule the count breaks.
+                                                let count_bad = profile.format.as_ref().is_some_and(|f| {
+                                                    f.min_cards().is_some_and(|m| count < m as i64)
+                                                        || f.max_cards().is_some_and(|m| count > m as i64)
+                                                });
+                                                rsx! {
+                                                    div { class: "deck-list-header",
+                                                        h3 { class: "font-light text-base tracking-wide deck-list-name",
+                                                            { profile.name.to_string() }
+                                                        }
+                                                        span {
+                                                            class: if count_bad { "stat-chip stat-chip-bad" } else { "stat-chip" },
+                                                            style: "flex-shrink: 0;",
+                                                            "{count} cards"
+                                                        }
                                                     }
-                                                    if profile.partner_commander_id.is_some() { count += 1; }
-                                                    if profile.background_id.is_some() { count += 1; }
-                                                    if profile.signature_spell_id.is_some() { count += 1; }
-                                                    format!("{count} cards")
-                                                }
-                                                if let Some(ref fmt) = profile.format {
-                                                    " | {fmt.display_name()}"
-                                                }
-                                                if let Some(ref cmd) = profile.commander_name {
-                                                    " | {cmd}"
-                                                }
-                                                if let Some(ref name) = profile.partner_commander_name {
-                                                    " | {name}"
-                                                }
-                                                if let Some(ref name) = profile.background_name {
-                                                    " | {name}"
-                                                }
-                                                if let Some(ref name) = profile.signature_spell_name {
-                                                    " | {name}"
+                                                    hr { class: "card-rule" }
+                                                    div { class: "deck-stats",
+                                                        if let Some(ref fmt) = profile.format {
+                                                            span { class: "stat-chip", "{fmt.display_name()}" }
+                                                        }
+                                                        if let Some(ref cmd) = profile.commander_name {
+                                                            span { class: "stat-chip", "{cmd}" }
+                                                        }
+                                                        if let Some(ref name) = profile.partner_commander_name {
+                                                            span { class: "stat-chip", "{name}" }
+                                                        }
+                                                        if let Some(ref name) = profile.background_name {
+                                                            span { class: "stat-chip", "{name}" }
+                                                        }
+                                                        if let Some(ref name) = profile.signature_spell_name {
+                                                            span { class: "stat-chip", "{name}" }
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
