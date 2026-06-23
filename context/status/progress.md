@@ -106,6 +106,14 @@ Build 15 shipped over build 14 with: `Email` strict newtype across the workspace
 
 ---
 
+## 1.0.9 — UI consistency pass + Android logo fix (2026-06-22, build 39 submitted)
+
+iOS build 39 (version 1.0.9) built, signed (Apple Distribution, Xcode 26.5 SDK keys), and uploaded via Transporter; in review. Rides: **self-hosted JetBrains Mono** (full font bundled via `asset!()`, CDN `@import` dropped — fixes the Android-WebView home-screen ASCII logo block glyphs, no-op on iOS, removes a startup network dependency); **profile rework** (per-field edits → bottom sheets, Delete account behind a `More` sheet, Account/Preferences cards with in-card section headers); **deck-view** section subtitles moved inside their carded elements with dividers; **deck-list** name/stats divider + long-name wrap; "To deck" → "To mainboard". Workspace version bumped 1.0.6→1.0.9 across all crates (keeps `CARGO_PKG_VERSION` aligned with the store version for the min-version gate). Per-change detail + review-tracking in `todo.md`. Android emulation (Pixel_9a) confirmed running this same code this session — JDK gotcha in `ops/android.md`.
+
+> 1.0.6–1.0.8 App Store builds shipped between 1.0.5 and this entry; their per-build detail lives in `todo.md`.
+
+---
+
 ## 1.0.5 — Archidekt Import + Min-Version Gate (2026-06-10, server deployed, build 31 submitted)
 
 **Two features built, merged, and shipped in one day. Server live on prod as v1.0.5; iOS build 31 uploaded via Transporter and submitted as 1.0.5.**

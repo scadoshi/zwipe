@@ -23,10 +23,28 @@ export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/<version>"
 
 Find the version with `ls ~/Library/Android/sdk/ndk/`.
 
+### JDK: must be 17/21, NOT the system default (gotcha)
+
+The Android Gradle Plugin's `jlink`/`core-for-system-modules` transform **fails on
+JDK 26** (Temurin 26 is the Homebrew default on this Mac). Symptom: Gradle aborts in
+~12s with `Could not resolve ... core-for-system-modules.jar` /
+`Execution failed for JdkImageTransform`. It is **not** slow — it never builds.
+
+Fix: point the build at Android Studio's bundled JBR 21:
+
+```bash
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+```
+
+Required every Android build until Temurin 26 is no longer the default `java`
+(`/usr/libexec/java_home -V` lists what's installed). Verified working with JBR
+21.0.9 against Xcode-independent Gradle 9.x on 2026-06-22.
+
 ## Build and serve
 
 ```bash
 cd ~/Developer/zwipe/zwiper
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"  # JDK 21 — see gotcha above
 
 # Serve with hot reload (requires running emulator)
 BACKEND_URL=https://api.zwipe.net dx serve --platform android
