@@ -872,6 +872,33 @@ code {
     border-color: var(--accent-primary);
 }
 
+/* Numbered tester-onboarding steps on /download/android. */
+.beta-steps {
+    padding-left: 2.5rem;
+    margin: 2rem 0;
+}
+
+.beta-steps > li {
+    margin-bottom: 2.25rem;
+}
+
+.beta-steps > li:last-child {
+    margin-bottom: 0;
+}
+
+.beta-steps > li::marker {
+    color: var(--accent-tertiary);
+    font-weight: 700;
+}
+
+.beta-steps > li > p {
+    margin: 0 0 0.85rem;
+}
+
+.beta-steps .store-btn {
+    margin-top: 0.25rem;
+}
+
 .card-grid,
 .features-grid {
     display: grid;
