@@ -180,20 +180,18 @@ the bundle → **Upload native debug symbols** (a zip containing
 
 ## History
 
-- **2026-06-23 — first Android build.** `1.0.9`, targetSdk 35 (compiled against
-  API 36.1), signed with the new `zwipe-upload` key, R8 + edge-to-edge
-  smoke-tested clean on Pixel_9a. **versionCode `1` was burned** by an initial
-  targetSdk-34 upload (rejected for the API-35 rule but still consumed the code);
-  **versionCode `1` burned**; `2` was uploaded then superseded by **versionCode
-  `3`**, which is what shipped — submitted to **Closed testing (Alpha), 176
-  countries, full rollout** with the harmless native-debug-symbols warning.
-  Next build = versionCode `4`. *Lessons: a rejected upload still burns its
-  versionCode (always bump); the debug-symbols warning is unavoidable with dx's
-  prebuilt Rust lib (see section above).*
+- **2026-06-23 — first Android build (`1.0.9`).** targetSdk 35 (compiled against
+  API 36.1), signed with the new `zwipe-upload` key, R8 + edge-to-edge smoke-tested
+  clean on Pixel_9a. **versionCode `1` burned** by an initial targetSdk-34 upload
+  (rejected for the API-35 rule but still consumed the code); `2` uploaded then
+  superseded by **`3`**, which shipped — Closed testing (Alpha), 176 countries,
+  with the harmless native-debug-symbols warning. *Lessons: a rejected/superseded
+  upload still burns its versionCode (always bump); the debug-symbols warning is
+  unavoidable with dx's prebuilt Rust lib (see section above).*
 
-- **2026-06-23 — first Android build.** `1.0.9`, targetSdk 35 (compiled against
-  API 36.1), signed with the new `zwipe-upload` key, R8 + edge-to-edge
-  smoke-tested clean on Pixel_9a. **versionCode `1` was burned** by an initial
-  targetSdk-34 upload (rejected for the API-35 rule but still consumed the code),
-  so the first valid upload is **versionCode `2`** — Closed testing. *Lesson: a
-  rejected upload still burns its versionCode; always bump.*
+- **2026-06-23 — `1.0.10`** (update-screen redesign + external-link arrows;
+  first coordinated release run alongside iOS build 44). targetSdk 35, signed with
+  `zwipe-upload`. **versionCode `4` burned** by an upload attempt, **`5` shipped**
+  to the Alpha track. *Lesson: keep every closed-test release on the **same Alpha
+  track** so the 12-tester / 14-day clock accumulates — don't create a new track
+  per version (Play won't let you delete the stray ones, only rename them).*

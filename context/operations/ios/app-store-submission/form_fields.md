@@ -39,6 +39,14 @@ Built for players who want a fast, focused mobile experience — not another clu
 
 ---
 
+## What's New in This Version (1.0.10)
+
+- Buy links (TCGplayer, Card Kingdom) now show an arrow (↗) so it's clear a tap opens an external store.
+- A cleaner, clearer "update required" screen for when a new version is needed.
+- Small under-the-hood polish.
+
+---
+
 ## What's New in This Version (1.0.9)
 
 - A brand-new app icon.
@@ -103,7 +111,7 @@ MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading ca
 |-------|-------|
 | Support URL | https://zwipe.net |
 | Marketing URL | https://zwipe.net |
-| Version | 1.0.9 |
+| Version | 1.0.10 |
 | Copyright | 2026 Scotty Fermo |
 | Routing App Coverage File | (leave empty) |
 
