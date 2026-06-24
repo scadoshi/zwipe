@@ -153,6 +153,10 @@ pub(crate) fn DeckFields(
         }
 
         cmd_is_searching.set(true);
+        // Reveal the dropdown immediately so the "Searching..." indicator shows
+        // during the debounce — otherwise the field looks empty for ~1s and a
+        // slow reveal reads as "card missing."
+        cmd_show_dropdown.set(true);
 
         spawn(async move {
             sleep(Duration::from_millis(800)).await;
@@ -204,6 +208,7 @@ pub(crate) fn DeckFields(
         }
 
         partner_is_searching.set(true);
+        partner_show_dropdown.set(true);
 
         spawn(async move {
             sleep(Duration::from_millis(800)).await;
@@ -254,6 +259,7 @@ pub(crate) fn DeckFields(
         }
 
         bg_is_searching.set(true);
+        bg_show_dropdown.set(true);
 
         spawn(async move {
             sleep(Duration::from_millis(800)).await;
@@ -304,6 +310,7 @@ pub(crate) fn DeckFields(
         }
 
         spell_is_searching.set(true);
+        spell_show_dropdown.set(true);
 
         spawn(async move {
             sleep(Duration::from_millis(800)).await;
