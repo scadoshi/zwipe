@@ -105,6 +105,14 @@ Once wasm compiles, build the authenticated experience into zite:
 
 ---
 
+## Monetization
+
+- [ ] **TCGplayer affiliate** — application submitted 2026-06-23, **In Review** on Impact (impact.com). When approved: wire the tracking ID into `tcgplayer_url()` (`zwiper/.../outbound/buy_links.rs`) — zero UI change — then add per-card **"Buy ↗"** links (currently buy is whole-deck only).
+- [ ] **Card Kingdom affiliate** — **no public self-serve program**; it's a direct-outreach partnership. Email CK when ready (cite the Archidekt `?partner=` precedent). `cardkingdom_url()` stays untracked until then.
+- Detail + saved signup copy: `context/product/affiliate/tcgplayer.md`.
+
+---
+
 ## Web/Zite Polish
 
 - [ ] **Increase `Z` logo size on zwipe.net** — current ASCII logo reads small; bump scale or font-size on the landing hero.
