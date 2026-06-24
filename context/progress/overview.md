@@ -109,6 +109,19 @@ Build 15 shipped over build 14 with: `Email` strict newtype across the workspace
 
 ---
 
+## 1.0.10 — update-screen redesign + external-link arrows (both stores, 2026-06-23)
+
+First **coordinated iOS + Android release run**, both at version 1.0.10:
+**iOS build 44** (Transporter → Apple review) and **Android versionCode 5**
+(Alpha closed-testing track → Google review). Changes: redesigned the min-version
+**"update required"** screen (single bold-red headline, accent/bold message,
+framed empty header + footer bars) and added **↗** to every external link — the
+store buttons (now routing through `zwipe.net/download/{android,ios}` so the
+destination is site-controlled) and the TCGplayer / Card Kingdom buy links.
+*versionCode churn on the Android side: 4 was burned by an upload attempt, 5 shipped.*
+
+---
+
 ## Android — first build submitted to Play (2026-06-23)
 
 The Android port is **in Google's review queue**: `1.0.9`, **versionCode 3**,
