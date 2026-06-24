@@ -41,6 +41,7 @@ Built for players who want a fast, focused mobile experience — not another clu
 
 ## What's New in This Version (1.0.10)
 
+- Commander search now shows a "Searching…" hint while it looks, so a card never seems missing while results load.
 - Buy links (TCGplayer, Card Kingdom) now show an arrow (↗) so it's clear a tap opens an external store.
 - A cleaner, clearer "update required" screen for when a new version is needed.
 - Small under-the-hood polish.

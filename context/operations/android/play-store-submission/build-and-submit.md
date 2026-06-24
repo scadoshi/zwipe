@@ -195,3 +195,8 @@ the bundle → **Upload native debug symbols** (a zip containing
   to the Alpha track. *Lesson: keep every closed-test release on the **same Alpha
   track** so the 12-tester / 14-day clock accumulates — don't create a new track
   per version (Play won't let you delete the stray ones, only rename them).*
+
+- **2026-06-23 — `1.0.10` refresh, versionCode `6`** (commander-search "Searching…"
+  indicator — the debounce-feedback fix). Same versionName `1.0.10` (no app-version
+  bump); only the versionCode increments. Artifact `zwipe-1.0.10-build6.aab`, Alpha
+  track. iOS counterpart: build 45.

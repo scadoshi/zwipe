@@ -120,6 +120,12 @@ store buttons (now routing through `zwipe.net/download/{android,ios}` so the
 destination is site-controlled) and the TCGplayer / Card Kingdom buy links.
 *versionCode churn on the Android side: 4 was burned by an upload attempt, 5 shipped.*
 
+**Same-day 1.0.10 refresh (iOS build 45 / Android versionCode 6):** adds the
+commander-search **"Searching…"** indicator — the typeahead now reveals its dropdown
+the moment a search starts, so the existing feedback shows during the 800ms debounce
+instead of a blank ~1s that read as "card missing." No app-version bump (still 1.0.10);
+only the iOS build number and Android versionCode increment.
+
 ---
 
 ## Android — first build submitted to Play (2026-06-23)
