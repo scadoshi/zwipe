@@ -25,7 +25,7 @@ pub(crate) fn MoreButtons(
                     target: "_blank",
                     style: "text-decoration: none; text-align: center;",
                     onclick: move |_| show_buy_sheet.set(false),
-                    "TCGplayer"
+                    "TCGplayer ↗"
                 }
             }
             if let Some(ref url) = ck_url {
@@ -35,7 +35,7 @@ pub(crate) fn MoreButtons(
                     target: "_blank",
                     style: "text-decoration: none; text-align: center;",
                     onclick: move |_| show_buy_sheet.set(false),
-                    "Card Kingdom"
+                    "Card Kingdom ↗"
                 }
             }
         }

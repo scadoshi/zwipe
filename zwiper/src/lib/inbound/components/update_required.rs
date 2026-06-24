@@ -23,18 +23,23 @@ const STORE_LABEL: &str = "Open App Store";
 pub fn UpdateRequired() -> Element {
     rsx! {
         div { class: "screen",
-            div { class: "page-header", h2 { "Update required" } }
+            // Empty header bar — frames the top symmetrically with the footer.
+            // The red card title below is the single "Update required" headline.
+            div { class: "page-header" }
             div { class: "screen-content centered content-enter",
                 div { class: "container-sm text-center",
                     div { class: "card", style: "cursor: default;",
                         span {
                             class: "card-title update-required-title",
-                            style: "display: block; text-transform: uppercase; color: #ff3030;",
+                            style: "display: block; color: #ff3030; font-weight: bold; text-transform: uppercase;",
                             "Update required"
                         }
                         hr { class: "box-rule", style: "margin-left: -1rem; margin-right: -1rem;" }
                         p { class: "text-muted",
-                            "This version of Zwipe is no longer supported. Update to keep building."
+                            "This version of "
+                            strong { style: "color: var(--accent-tertiary);", "Zwipe" }
+                            " is no longer supported. "
+                            strong { style: "color: var(--accent-primary);", "Update to keep building." }
                         }
                     }
                     a {
@@ -42,7 +47,7 @@ pub fn UpdateRequired() -> Element {
                         href: "{STORE_URL}",
                         target: "_blank",
                         style: "text-decoration: none; display: block; margin-top: 1rem;",
-                        "{STORE_LABEL}"
+                        "{STORE_LABEL} ↗"
                     }
                 }
             }
