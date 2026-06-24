@@ -1,9 +1,11 @@
 # Update-required screen redesign — verify on Android
 
-**Status: WIP on branch `wip/update-required-screen` (pushed to origin).** The
-redesign is done and **verified correct at the binary level**, but **not yet
-visually confirmed on the Android emulator** — local re-deploy was finicky (see
-gotcha below), so the on-device look is unconfirmed.
+**Status: DONE — merged to main 2026-06-23.** Verified live on **iOS and
+Android**. (The "finicky" Android deploy turned out to be a full emulator disk;
+the reliable dev-loop is now in
+[../operations/android/emulator.md](../operations/android/emulator.md).)
+Remaining follow-ups: **deploy `zite`** so `/download/ios` goes live, and the
+next iOS build picks up the new `zwipe.net/download/ios` URL.
 
 ## What's done
 
