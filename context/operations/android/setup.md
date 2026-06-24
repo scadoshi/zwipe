@@ -40,37 +40,16 @@ Required every Android build until Temurin 26 is no longer the default `java`
 (`/usr/libexec/java_home -V` lists what's installed). Verified working with JBR
 21.0.9 against Xcode-independent Gradle 9.x on 2026-06-22.
 
-## Build and serve
+## Create an emulator (AVD)
 
-```bash
-cd ~/Developer/zwipe/zwiper
-export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"  # JDK 21 — see gotcha above
+One-time, in Android Studio: **Tools > Device Manager > Create Virtual Device >**
+pick a phone (e.g. Pixel 9a) > download a system image > Finish.
 
-# Serve with hot reload (requires running emulator)
-BACKEND_URL=https://api.zwipe.net dx serve --platform android
+## Running, wiping & serving to it
 
-# Build only
-BACKEND_URL=https://api.zwipe.net dx build --platform android
-```
-
-## Emulator
-
-Create a virtual device in Android Studio:
-- Tools > Device Manager (or "More Actions" > "Virtual Device Manager" from welcome screen)
-- Create Virtual Device > pick a phone (e.g. Pixel 9) > download a system image > Finish
-- Hit play to launch
-
-Or via CLI:
-
-```bash
-# List available emulators
-$ANDROID_HOME/emulator/emulator -list-avds
-
-# Launch one
-$ANDROID_HOME/emulator/emulator -avd <name>
-```
-
-`dx serve` will detect the running emulator and deploy automatically.
+The day-to-day loop — launch/wipe the emulator, `dx serve` vs build-and-install,
+`adb` helpers, and troubleshooting — lives in **[emulator.md](emulator.md)**,
+kept separate so this page stays first-time-setup only.
 
 ## Notes
 
