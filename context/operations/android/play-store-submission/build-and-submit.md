@@ -198,5 +198,6 @@ the bundle → **Upload native debug symbols** (a zip containing
 
 - **2026-06-23 — `1.0.10` refresh, versionCode `6`** (commander-search "Searching…"
   indicator — the debounce-feedback fix). Same versionName `1.0.10` (no app-version
-  bump); only the versionCode increments. Artifact `zwipe-1.0.10-build6.aab`, Alpha
-  track. iOS counterpart: build 45.
+  bump); only the versionCode increments. Artifact `zwipe-1.0.10-build6.aab`,
+  **submitted to the Alpha track 2026-06-23**. iOS counterpart: build 45
+  (submitted to Apple review the same day).
