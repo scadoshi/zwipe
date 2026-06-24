@@ -39,8 +39,27 @@ launches on both stores in one pass (StoreKit + Play Billing designed together).
   listing copy in `.../form_fields.md`.
 - [ ] **Recruit ≥12 closed testers + run the 14-day clock.** New personal accounts
   need **12 testers opted in for 14 *continuous* days** before applying for
-  production access. Share the opt-in link (LGS regulars + Reddit — doubles as
-  the first marketing wave). Polish items below ride alongside while the clock runs.
+  production access. Track the live opted-in count **in Play Console** — the clock
+  starts only when 12 are opted in *simultaneously*, not when invites are sent.
+  - **Setup done 2026-06-24:** public Google Group **`zwipers`**
+    (`groups.google.com/g/zwipers`) created and attached to the Alpha closed-testing
+    track (Testers → Google Groups); self-opt-in verified ("You are a tester").
+    Tester flow is 3 steps: **join group → opt in**
+    (`play.google.com/apps/testing/com.scadoshi.zwipe`) **→ install**
+    (`play.google.com/store/apps/details?id=com.scadoshi.zwipe`). A bare opt-in/store
+    link does nothing for non-members — the group join is what makes someone eligible.
+  - **Recruiting progress 2026-06-24:** 3 personal-network testers emailed (still
+    need to confirm they actually completed opt-in). Started **reciprocal
+    comment-swapping on r/AndroidTesting** (test theirs ↔ they test yours) — note
+    our own *posts* there are **karma/age-gated** (so are the MTG subs r/EDH /
+    r/magicTCG), but *comments* aren't, so swap via comments now + build karma toward
+    posting later. Un-gated bulk channel to try next: **Discord/Telegram
+    closed-testing exchange servers** (search "Android closed testing" on disboard.org).
+  - **Open before driving strangers in:** verify `zwipers` is joinable from a
+    **logged-out/incognito** session — a non-public group silently blocks every
+    opt-in (saw this exact failure on two other devs' groups: "Content unavailable" /
+    "no permission" = their join setting wasn't "Anyone can join"). Then chase the 3
+    emailed testers and keep swapping toward 12.
 
 Android build compiles and runs — **emulator-confirmed on Pixel_9a 2026-06-22** (login → decks → swipe all working against prod). Build gotcha: must point `JAVA_HOME` at Android Studio's bundled JDK 21, not the system-default JDK 26 — see `operations/android/setup.md`. The home-screen ASCII logo (block glyphs) now renders correctly via the self-hosted font (ships in 1.0.9). None of the below blocked the closed-testing submission — they're polish for a future build:
 
