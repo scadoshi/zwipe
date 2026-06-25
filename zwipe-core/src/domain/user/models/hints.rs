@@ -28,6 +28,8 @@ pub const HINT_FIRST_DECK: &str = "first_deck";
 pub const HINT_DECK_CARDS: &str = "deck_cards";
 /// Account management dialog on the profile screen.
 pub const HINT_PROFILE: &str = "profile";
+/// Explainer for the shared card-filter bottom sheet (add/remove/view screens).
+pub const HINT_FILTER: &str = "filter";
 
 /// Maximum length of a hint key.
 pub const HINT_KEY_MAX_LEN: usize = 64;
@@ -98,6 +100,7 @@ mod tests {
             HINT_FIRST_DECK,
             HINT_DECK_CARDS,
             HINT_PROFILE,
+            HINT_FILTER,
         ] {
             assert!(MarkHintShown::new(Uuid::new_v4(), key).is_ok());
         }
