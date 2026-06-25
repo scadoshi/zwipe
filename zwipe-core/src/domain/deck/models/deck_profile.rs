@@ -1,6 +1,6 @@
 //! Deck metadata (profile without cards).
 
-use crate::domain::deck::{DeckName, format::Format};
+use crate::domain::deck::{DeckName, DeckTag, format::Format};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -21,6 +21,8 @@ pub struct DeckProfile {
     pub signature_spell_id: Option<Uuid>,
     /// Optional deck format.
     pub format: Option<Format>,
+    /// Deck archetype/strategy tags.
+    pub tags: Vec<DeckTag>,
     /// Owner of this deck (for authorization).
     pub user_id: Uuid,
     /// Total number of cards in the deck (sum of quantities).
