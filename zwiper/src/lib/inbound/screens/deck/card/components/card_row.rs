@@ -80,7 +80,7 @@ pub(crate) fn CardRow(
                 span { class: "card-row-pt", "{pt_display}" }
                 span { class: "card-row-colors",
                     for code in color_codes.iter() {
-                        i { key: "{code}", class: "ms ms-{code} ms-cost" }
+                        i { key: "{code}", class: "ms ms-{code} ms-cost ms-shadow" }
                     }
                 }
             }

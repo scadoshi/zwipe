@@ -60,7 +60,7 @@ pub(crate) fn OracleText(text: String, class: String) -> Element {
             for (i, seg) in parse(&text).into_iter().enumerate() {
                 match seg {
                     Segment::Text(t) => rsx! { span { key: "{i}", "{t}" } },
-                    Segment::Symbol(c) => rsx! { i { key: "{i}", class: "ms ms-{c} ms-cost oracle-sym" } },
+                    Segment::Symbol(c) => rsx! { i { key: "{i}", class: "ms ms-{c} ms-cost ms-shadow oracle-sym" } },
                 }
             }
         }
