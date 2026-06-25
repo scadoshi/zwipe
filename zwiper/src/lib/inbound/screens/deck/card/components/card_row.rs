@@ -1,3 +1,4 @@
+use super::oracle_text::OracleText;
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
@@ -48,6 +49,13 @@ pub(crate) fn CardRow(
     let set_name = sd.set_name.clone();
     let has_image: bool = sd.primary_image_url(ImageSize::Large).is_some();
     let scryfall_data_for_preview = sd.clone();
+    // Always mounted; the `.open` class drives the grid-rows + opacity collapse
+    // so the detail eases open and closed instead of popping.
+    let collapse_class = if is_expanded {
+        "card-row-collapse open"
+    } else {
+        "card-row-collapse"
+    };
 
     rsx! {
         div {
@@ -73,18 +81,26 @@ pub(crate) fn CardRow(
                 }
             }
 
-            if is_expanded {
+            div { class: "{collapse_class}",
+                div { class: "card-row-collapse-inner",
+                hr { class: "card-row-rule" }
                 div { class: "card-row-detail",
                     p { style: "margin-bottom:0.35rem;word-break:break-word;white-space:normal;color:var(--accent-tertiary);", "{name}" }
                     if !type_line.is_empty() {
-                        span { class: "opacity-50", style: "display:block;margin-bottom:0.5rem;", "{type_line}" }
+                        div { style: "margin-bottom:0.5rem;",
+                            span { class: "detail-chip", "{type_line}" }
+                        }
                     }
                     if !oracle_text.is_empty() {
-                        p { class: "card-detail-oracle", "{oracle_text}" }
+                        OracleText { text: oracle_text, class: "card-detail-oracle".to_string() }
                     }
                     div { class: "card-detail-meta",
-                        span { class: "opacity-50", style: "color: var(--text-primary);", "{rarity_name} | {set_name}" }
+                        span { class: "detail-chip", "{rarity_name}" }
+                        span { class: "detail-chip", "{set_name}" }
                     }
+                }
+                hr { class: "card-row-rule" }
+                div { class: "card-row-actions",
                     div { class: "qty-row",
                         if let Some(handler) = on_qty_change {
                             button {
@@ -180,6 +196,7 @@ pub(crate) fn CardRow(
                             }
                         }
                     }
+                }
                 }
             }
         }
