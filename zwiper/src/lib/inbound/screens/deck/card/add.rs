@@ -3,7 +3,9 @@ use crate::{
     inbound::{
         components::{
             auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
-            hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, HintLine, use_one_time_hint},
+            hint_dialog::{
+                HintBullet, HintBullets, HintColored, HintDialog, HintLine, use_one_time_hint,
+            },
             interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
             telemetry::usage_buffer::UsageBuffer,
         },
@@ -75,6 +77,8 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut deck_cards_ids = use_signal(HashSet::<Uuid>::new);
     let mut deck_format: Signal<Option<Format>> = use_signal(|| None);
     let mut deck_color_identity: Signal<Option<Colors>> = use_signal(|| None);
+    let mut deck_has_commander = use_signal(|| false);
+    let mut deck_loaded = use_signal(|| false);
 
     // Source selector: search (API) vs maybeboard (local)
     let mut add_source: Signal<AddSource> = use_signal(AddSource::default);
@@ -492,6 +496,9 @@ pub fn Add(deck_id: Uuid) -> Element {
                         .collect();
                     mb_entries.set(mb);
 
+                    deck_has_commander.set(deck.deck_profile.commander_id.is_some());
+                    deck_loaded.set(true);
+
                     // Pre-populate format filter from deck
                     if let Some(fmt) = deck.deck_profile.format {
                         deck_format.set(Some(fmt));
@@ -574,6 +581,29 @@ pub fn Add(deck_id: Uuid) -> Element {
         current_offset.set(0);
         current_index.set(0);
         pagination_exhausted.set(false);
+
+        // Gate (Search mode, once the deck is loaded): only auto-serve a
+        // meaningful query. A commander format *with* a commander pulls
+        // synergy suggestions from cache; everything else needs a real user
+        // filter. Otherwise leave the stack empty and nudge the user to filter
+        // — an empty screen with no prompt reads as "no cards exist".
+        if *deck_loaded.peek() && matches!(*add_source.peek(), AddSource::Search) {
+            let is_commander_format = deck_format.peek().is_some_and(|f| f.has_commander());
+            let has_commander = *deck_has_commander.peek();
+            let has_user_filter = !filter_builder.peek().is_empty_ignoring_deck_context();
+            let serve = if is_commander_format {
+                has_commander || has_user_filter
+            } else {
+                has_user_filter
+            };
+            if !serve {
+                toast.warning(
+                    "Try a filter to start swiping".to_string(),
+                    ToastOptions::default().duration(Duration::from_millis(2500)),
+                );
+                return;
+            }
+        }
 
         // Auto-serve: a filter holding only deck context (format legality +
         // commander identity) is a valid search now — the deck-aware endpoint
