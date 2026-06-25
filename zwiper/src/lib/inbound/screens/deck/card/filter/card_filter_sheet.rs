@@ -1,15 +1,19 @@
 use crate::inbound::{
     components::accordion::{Accordion, AccordionContent, AccordionItem, AccordionTrigger},
+    components::hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, open_and_record_hint},
     screens::deck::card::filter::{
         artist::Artist, category::Category, combat::Combat, config::Config, flavor_text::FlavorText,
         format::FormatFilter, mana::Mana, name::Name, oracle_text::OracleText, rarity::Rarity,
         set::Set, sort::Sort, types::Types,
     },
 };
+use crate::outbound::client::ZwipeClient;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
+use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe_core::domain::user::models::hints::HINT_FILTER;
 
 /// Newtype so `try_use_context` doesn't collide with other `Signal<bool>`
 /// contexts — a bare `Signal<bool>` lookup here once grabbed the root
@@ -31,8 +35,22 @@ pub(crate) fn CardFilterSheet(
     let mut filter_builder: Signal<CardFilterBuilder> = use_context();
     let mut filter_reset_counter: Signal<u32> = use_context();
     let should_collapse: Option<CollapseExpanded> = try_use_context::<CollapseExpanded>();
+    let session: Signal<Option<Session>> = use_context();
+    let client: Signal<ZwipeClient> = use_context();
     let toast = use_toast();
     let mut accordion_key = use_signal(|| 0u32);
+
+    // Filter explainer: the "?" reopens it; it also auto-opens once per account
+    // the first time the sheet is opened (gated, since this component stays
+    // mounted while the sheet is closed — a plain mount-time hint would misfire).
+    let mut hint_open = use_signal(|| false);
+    let mut hint_fired = use_signal(|| false);
+    use_effect(move || {
+        if open() && !*hint_fired.peek() {
+            hint_fired.set(true);
+            open_and_record_hint(HINT_FILTER, session, client, hint_open);
+        }
+    });
 
     // Bump the filter counter and signal that the expanded card should collapse.
     let mut bump_filter = move || {
@@ -136,8 +154,14 @@ pub(crate) fn CardFilterSheet(
         div {
             class: if open() { "bottom-sheet show" } else { "bottom-sheet" },
 
-            div { class: "modal-header",
+            div { class: "modal-header", style: "position: relative;",
                 span { style: "font-size: 1rem; color: var(--accent-tertiary);", "Filter" }
+                button {
+                    class: "util-btn",
+                    style: "position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.55; padding: 0.2rem 0.6rem;",
+                    onclick: move |_| hint_open.set(true),
+                    "?"
+                }
             }
 
             div { class: "modal-content",
@@ -510,6 +534,28 @@ pub(crate) fn CardFilterSheet(
                         }
                     },
                     "Clear"
+                }
+            }
+        }
+
+        HintDialog {
+            open: hint_open,
+            title: "Filters",
+            HintBullets {
+                HintBullet {
+                    "Filters decide which cards you see: the new cards served to "
+                    HintColored { color: "--accent-primary", "swipe" }
+                    ", or which of your deck's cards show."
+                }
+                HintBullet {
+                    "Open any section to set an attribute like name, mana, type, or color. Stack as many as you like."
+                }
+                HintBullet {
+                    "Tap "
+                    HintColored { color: "--accent-secondary", "Apply" }
+                    " to use it or "
+                    HintColored { color: "--accent-secondary", "Clear" }
+                    " to empty it. Your filter sticks as you move between screens."
                 }
             }
         }
