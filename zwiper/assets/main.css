@@ -2692,6 +2692,13 @@ button {
     vertical-align: baseline;
 }
 
+/* Roomier grey circle around the number, closer to a real card. */
+.card-detail-cost .ms-cost {
+    width: 1.5em;
+    height: 1.5em;
+    line-height: 1.5em;
+}
+
 .card-detail-oracle {
     margin: 0 0 0.5rem;
     white-space: pre-wrap;
@@ -2706,6 +2713,14 @@ button {
     font-size: 0.85em;
     vertical-align: -0.05em;
     margin: 0 0.04em;
+}
+
+/* Card-style drop shadow under mana glyphs. mana-font's own ms-shadow offset is
+   em-based and sub-pixel at our sizes, so use a slightly larger, visible one. */
+.oracle-sym.ms-cost,
+.card-detail-cost .ms-cost,
+.card-row-colors .ms-cost {
+    box-shadow: -0.5px 1.5px 1px rgba(0, 0, 0, 0.6);
 }
 
 .card-detail-meta {
