@@ -23,7 +23,7 @@ use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::{
-    Deck, deck_profile::DeckProfile, format::Format,
+    Deck, DeckTag, deck_profile::DeckProfile, format::Format,
     requests::update_deck_profile::InvalidUpdateDeckProfile,
 };
 use zwipe_core::domain::user::models::hints::HINT_EDIT_DECK;
@@ -45,6 +45,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut show_commander_swipe = use_signal(|| false);
     let mut edit_hint = use_one_time_hint(HINT_EDIT_DECK);
     let mut selected_format: Signal<Option<Format>> = use_signal(|| None);
+    let mut selected_tags: Signal<Vec<DeckTag>> = use_signal(Vec::new);
     let mut partner_commander: Signal<Option<Card>> = use_signal(|| None);
     let mut partner_commander_display = use_signal(String::new);
     let mut background: Signal<Option<Card>> = use_signal(|| None);
@@ -67,6 +68,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut original_deck_name: Signal<String> = use_signal(String::new);
     let mut original_commander: Signal<Option<Card>> = use_signal(|| None);
     let mut original_format: Signal<Option<Format>> = use_signal(|| None);
+    let mut original_tags: Signal<Vec<DeckTag>> = use_signal(Vec::new);
     let mut original_partner: Signal<Option<Card>> = use_signal(|| None);
     let mut original_background: Signal<Option<Card>> = use_signal(|| None);
     let mut original_signature_spell: Signal<Option<Card>> = use_signal(|| None);
@@ -87,6 +89,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             deck_name.set(deck.deck_profile.name.to_string());
             original_format.set(deck.deck_profile.format);
             selected_format.set(deck.deck_profile.format);
+            original_tags.set(deck.deck_profile.tags.clone());
+            selected_tags.set(deck.deck_profile.tags);
         }
         Some(Err(e)) => {
             toast.error(
@@ -277,6 +281,15 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             Opdate::Unchanged
         }
     });
+    let tags_update = use_memo(move || {
+        if selected_tags() != original_tags() {
+            Opdate::Set(Some(
+                selected_tags().iter().map(|t| t.to_string()).collect::<Vec<_>>(),
+            ))
+        } else {
+            Opdate::Unchanged
+        }
+    });
     let has_made_changes = use_memo(move || {
         deck_name_update().is_some()
             || commander_id_update().is_changed()
@@ -284,6 +297,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             || background_id_update().is_changed()
             || signature_spell_id_update().is_changed()
             || format_update().is_changed()
+            || tags_update().is_changed()
     });
 
     // save state
@@ -321,6 +335,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 .background_id(background_id_update())
                 .signature_spell_id(signature_spell_id_update())
                 .format(format_update())
+                .tags(tags_update())
                 .build();
 
             match client()
@@ -367,6 +382,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                 DeckFields {
                                     deck_name,
                                     selected_format,
+                                    selected_tags,
                                     commander,
                                     commander_display,
                                     partner_commander,

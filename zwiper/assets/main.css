@@ -862,6 +862,34 @@ button {
     border-color: color-mix(in srgb, var(--accent-tertiary) 35%, transparent);
 }
 
+/* Deck archetype tags — muted/neutral so they read as labels, not stats. */
+.stat-chip-tag {
+    color: var(--text-muted);
+    background-color: color-mix(in srgb, var(--text-muted) 12%, transparent);
+    border-color: color-mix(in srgb, var(--text-muted) 30%, transparent);
+}
+
+/* Small count hint beside the Tags label (e.g. "2/5"). */
+.label-hint {
+    margin-left: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Picker chips that can't be selected because the tag cap is reached. */
+.chip-disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+/* Tag chips inside a deck-detail info row wrap instead of forcing one line. */
+.info-row-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    justify-content: flex-end;
+}
+
 .card h3 {
     color: var(--accent-primary);
 }

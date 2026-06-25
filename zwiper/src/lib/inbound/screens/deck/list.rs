@@ -160,6 +160,9 @@ pub fn DeckList() -> Element {
                                                         if let Some(ref name) = profile.signature_spell_name {
                                                             span { class: "stat-chip stat-chip-zone", "{name}" }
                                                         }
+                                                        for tag in profile.tags.iter() {
+                                                            span { key: "{tag}", class: "stat-chip stat-chip-tag", "{tag.display_name()}" }
+                                                        }
                                                     }
                                                 }
                                             }

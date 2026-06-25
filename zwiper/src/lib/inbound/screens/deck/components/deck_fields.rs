@@ -17,7 +17,7 @@ use zwipe_core::domain::card::{
     },
 };
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::deck::format::Format;
+use zwipe_core::domain::deck::{DeckTag, MAX_DECK_TAGS, format::Format};
 
 /// Format chip selector and card search inputs with debounced dropdowns.
 ///
@@ -29,6 +29,7 @@ use zwipe_core::domain::deck::format::Format;
 pub(crate) fn DeckFields(
     mut deck_name: Signal<String>,
     mut selected_format: Signal<Option<Format>>,
+    mut selected_tags: Signal<Vec<DeckTag>>,
     mut commander: Signal<Option<Card>>,
     mut commander_display: Signal<String>,
     mut partner_commander: Signal<Option<Card>>,
@@ -766,6 +767,54 @@ pub(crate) fn DeckFields(
                 }
             }
         }
+
+        // ========================================
+        // Tags (multi-select, up to MAX_DECK_TAGS)
+        // ========================================
+        div {
+            div { class: "label-row",
+                label { class: "label", "Tags" }
+                span { class: "label-hint", "{selected_tags().len()}/{MAX_DECK_TAGS}" }
+                if !selected_tags().is_empty() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| selected_tags.set(Vec::new()),
+                        "\u{00d7}"
+                    }
+                }
+            }
+            div { class: "flex flex-wrap gap-1 mb-1",
+                for tag in DeckTag::all().iter().copied() {
+                    {
+                        let is_selected = selected_tags().contains(&tag);
+                        let at_cap = selected_tags().len() >= MAX_DECK_TAGS;
+                        let class = if is_selected {
+                            "chip selected"
+                        } else if at_cap {
+                            "chip chip-disabled"
+                        } else {
+                            "chip"
+                        };
+                        rsx! {
+                            div {
+                                key: "{tag}",
+                                class: "{class}",
+                                onclick: move |_| {
+                                    let mut current = selected_tags();
+                                    if let Some(pos) = current.iter().position(|t| *t == tag) {
+                                        current.remove(pos);
+                                    } else if current.len() < MAX_DECK_TAGS {
+                                        current.push(tag);
+                                    }
+                                    selected_tags.set(current);
+                                },
+                                { tag.display_name().to_string() }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -780,6 +829,11 @@ pub(crate) fn DeckFieldsHint(open: Signal<bool>) -> Element {
             title: "Building a deck",
             HintBullets {
                 HintBullet { "Name your deck and choose a format." }
+                HintBullet {
+                    "Add up to "
+                    HintColored { color: "--accent-tertiary", "5 tags" }
+                    " to label your deck's strategy."
+                }
                 HintBullet {
                     "Command-zone fields are dynamic: "
                     HintColored { color: "--accent-tertiary", "Partner" }
