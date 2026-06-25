@@ -1882,6 +1882,11 @@ button {
     color: var(--accent-secondary);
 }
 
+.chip-xs.chip-primary {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
 .chip-unselected {
     display: inline-block;
     padding: 0.3rem 0.6rem;
@@ -2265,6 +2270,7 @@ button {
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-wrap: wrap;
     gap: 0.25rem;
     width: 100%;
 }
@@ -2863,4 +2869,14 @@ button {
 .pref-toggle-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+}
+
+/* ================================
+  Swipe for Commander
+================================== */
+
+/* Full-screen commander swipe rendered as a sibling overlay above the form
+   (both are fixed .screen) — lift it above with an explicit stacking order. */
+.commander-swipe-screen {
+    z-index: 210;
 }

@@ -1,10 +1,12 @@
 //! Edit deck screen.
 
-use super::components::deck_fields::DeckFields;
+use super::components::commander_swipe::CommanderSwipe;
+use super::components::deck_fields::{DeckFields, DeckFieldsHint};
 use super::components::skeletons::EditDeckSkeleton;
 use crate::{
     inbound::{
         components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+        components::hint_dialog::use_one_time_hint,
         router::Router,
     },
     outbound::client::{
@@ -24,6 +26,7 @@ use zwipe_core::domain::deck::{
     Deck, deck_profile::DeckProfile, format::Format,
     requests::update_deck_profile::InvalidUpdateDeckProfile,
 };
+use zwipe_core::domain::user::models::hints::HINT_EDIT_DECK;
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::helpers::Opdate;
 
@@ -39,6 +42,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut deck_name: Signal<String> = use_signal(String::new);
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
     let mut commander_display = use_signal(String::new);
+    let mut show_commander_swipe = use_signal(|| false);
+    let mut edit_hint = use_one_time_hint(HINT_EDIT_DECK);
     let mut selected_format: Signal<Option<Format>> = use_signal(|| None);
     let mut partner_commander: Signal<Option<Card>> = use_signal(|| None);
     let mut partner_commander_display = use_signal(String::new);
@@ -333,8 +338,14 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     rsx! {
         Bouncer {
             div { class: "screen",
-                div { class: "page-header",
+                div { class: "page-header", style: "position: relative;",
                     h2 { "Edit Deck" }
+                    button {
+                        class: "util-btn",
+                        style: "position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.55; padding: 0.2rem 0.6rem;",
+                        onclick: move |_| edit_hint.set(true),
+                        "?"
+                    }
                 }
 
                 div { class: "screen-content centered content-enter",
@@ -353,6 +364,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                     background_display,
                                     signature_spell,
                                     signature_spell_display,
+                                    show_commander_swipe,
                                 }
 
                             }
@@ -384,6 +396,18 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             }
 
             }
+            CommanderSwipe {
+                open: show_commander_swipe,
+                format: selected_format,
+                on_select: move |card: Card| {
+                    commander_display.set(card.scryfall_data.name.clone());
+                    commander.set(Some(card));
+                    show_commander_swipe.set(false);
+                },
+                on_close: move |_| show_commander_swipe.set(false),
+            }
+
+            DeckFieldsHint { open: edit_hint }
         }
     }
 }

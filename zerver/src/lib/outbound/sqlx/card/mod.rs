@@ -720,11 +720,18 @@ impl CardRepository for MyPostgres {
                 OrderByOption::PriceUsd => "(prices->>'usd')::NUMERIC",
                 OrderByOption::PriceEur => "(prices->>'eur')::NUMERIC",
                 OrderByOption::PriceTix => "(prices->>'tix')::NUMERIC",
+                OrderByOption::EdhrecRank => "edhrec_rank",
                 OrderByOption::Random => "RANDOM()",
             };
             qb.push(col);
             if order_by != OrderByOption::Random {
                 qb.push(if request.ascending() { " ASC" } else { " DESC" });
+            }
+            // edhrec_rank is nullable (obscure/new cards lack a rank): keep them
+            // but sort last in either direction, with a name tiebreak so paging
+            // through the unranked tail stays stable.
+            if order_by == OrderByOption::EdhrecRank {
+                qb.push(" NULLS LAST, name ASC");
             }
         } else if let Some(scores) = synergy_scores {
             // Synergy default ordering: score map is jsonb {lowercased name -> score}.

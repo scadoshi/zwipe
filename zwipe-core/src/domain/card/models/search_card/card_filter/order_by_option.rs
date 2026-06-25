@@ -12,6 +12,7 @@ pub enum OrderByOption {
     PriceUsd,
     PriceEur,
     PriceTix,
+    EdhrecRank,
     Random,
 }
 
@@ -28,6 +29,7 @@ impl OrderByOption {
             Self::PriceUsd,
             Self::PriceEur,
             Self::PriceTix,
+            Self::EdhrecRank,
             Self::Random,
         ]
     }
@@ -45,6 +47,7 @@ impl std::fmt::Display for OrderByOption {
             Self::PriceUsd => write!(f, "Price (USD)"),
             Self::PriceEur => write!(f, "Price (EUR)"),
             Self::PriceTix => write!(f, "Price (TIX)"),
+            Self::EdhrecRank => write!(f, "Popularity (EDHREC)"),
             Self::Random => write!(f, "Random"),
         }
     }

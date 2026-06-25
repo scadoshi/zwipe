@@ -31,7 +31,7 @@ use std::time::Duration;
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::deck::{Board, DeckEntry, format::Format};
-use zwipe_core::domain::user::models::hints::HINT_ADD_SWIPES;
+use zwipe_core::domain::user::models::hints::HINT_ADD_DECK_CARDS;
 use zwipe_core::domain::{
     card::{
         Card,
@@ -66,7 +66,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     // Swipe vocabulary hint: auto-opens on this user's first visit, the
     // grayed "?" in the util bar reopens it on demand.
-    let mut swipe_hint_open = use_one_time_hint(HINT_ADD_SWIPES);
+    let mut swipe_hint_open = use_one_time_hint(HINT_ADD_DECK_CARDS);
 
     // When Some, the SwipeStack plays a keyframe entering from this direction
     // on the next top card, and clears it on animationend. Set by undo.
