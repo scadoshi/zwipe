@@ -10,6 +10,8 @@ pub(crate) mod card_row;
 pub(crate) mod flippable_card_image;
 /// Fullscreen image preview overlay.
 pub(crate) mod image_preview;
+/// Keyword chips with inline reminder reveal.
+pub(crate) mod keyword_chips;
 /// Oracle text rendered with Mana-font symbol glyphs.
 pub(crate) mod oracle_text;
 /// Bottom sheet for selecting card printings.

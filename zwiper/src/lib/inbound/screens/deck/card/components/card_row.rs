@@ -1,3 +1,4 @@
+use super::keyword_chips::KeywordChips;
 use super::oracle_text::OracleText;
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -43,10 +44,11 @@ pub(crate) fn CardRow(
         .iter()
         .map(|c| c.to_short_name().to_lowercase())
         .collect::<Vec<_>>();
-    let oracle_text = sd.oracle_text.clone().unwrap_or_default();
     let type_line = sd.type_line.clone().unwrap_or_default();
+    let keywords = sd.keywords.clone().unwrap_or_default();
+    let oracle_text = sd.oracle_text.clone().unwrap_or_default();
+    let mana_cost = sd.mana_cost.clone().unwrap_or_default();
     let rarity_name = sd.rarity.to_long_name();
-    let set_name = sd.set_name.clone();
     let has_image: bool = sd.primary_image_url(ImageSize::Large).is_some();
     let scryfall_data_for_preview = sd.clone();
     // Always mounted; the `.open` class drives the grid-rows + opacity collapse
@@ -61,15 +63,17 @@ pub(crate) fn CardRow(
         div {
             key: "{card_id}",
             class: if is_expanded { "card-row expanded" } else { "card-row" },
-            onclick: move |_| {
-                if expanded_card() == Some(card_id) {
-                    expanded_card.set(None);
-                } else {
-                    expanded_card.set(Some(card_id));
-                }
-            },
 
-            div { class: "card-row-compact",
+            div {
+                class: "card-row-compact",
+                onclick: move |_| {
+                    if expanded_card() == Some(card_id) {
+                        expanded_card.set(None);
+                    } else {
+                        expanded_card.set(Some(card_id));
+                    }
+                },
+                span { class: "card-row-arrow", "▸" }
                 span { class: "card-row-qty", "{qty}" }
                 span { class: "card-row-name", "{name}" }
                 span { class: "card-row-cmc", "{cmc_display}" }
@@ -85,21 +89,26 @@ pub(crate) fn CardRow(
                 div { class: "card-row-collapse-inner",
                 hr { class: "card-row-rule" }
                 div { class: "card-row-detail",
-                    p { style: "margin-bottom:0.35rem;word-break:break-word;white-space:normal;color:var(--accent-tertiary);", "{name}" }
-                    if !type_line.is_empty() {
-                        div { style: "margin-bottom:0.5rem;",
+                    div { class: "card-detail-head",
+                        p { class: "card-detail-name", "{name}" }
+                        if !mana_cost.is_empty() {
+                            OracleText { text: mana_cost, class: "card-detail-cost".to_string() }
+                        }
+                    }
+                    div { class: "card-detail-meta",
+                        if !type_line.is_empty() {
                             span { class: "detail-chip", "{type_line}" }
                         }
+                        span { class: "detail-chip", "{rarity_name}" }
+                    }
+                    if !keywords.is_empty() {
+                        KeywordChips { keywords }
                     }
                     if !oracle_text.is_empty() {
                         OracleText { text: oracle_text, class: "card-detail-oracle".to_string() }
                     }
-                    div { class: "card-detail-meta",
-                        span { class: "detail-chip", "{rarity_name}" }
-                        span { class: "detail-chip", "{set_name}" }
-                    }
                 }
-                hr { class: "card-row-rule" }
+                hr { class: "card-row-rule card-row-rule-muted" }
                 div { class: "card-row-actions",
                     div { class: "qty-row",
                         if let Some(handler) = on_qty_change {
@@ -197,6 +206,7 @@ pub(crate) fn CardRow(
                         }
                     }
                 }
+                hr { class: "card-row-rule card-row-rule-bottom" }
                 }
             }
         }
