@@ -2263,6 +2263,32 @@ button {
 }
 
 /* =========================
+  collapsible field (ease in/out)
+=========================== */
+
+/* Animates a command-zone field's height + opacity open/closed via the
+   grid-template-rows 0fr<->1fr technique, so fields ease in and out instead of
+   popping. The inner wrapper clips the content as it collapses. */
+.collapsible {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition:
+        grid-template-rows 0.25s ease,
+        opacity 0.25s ease;
+}
+
+.collapsible.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+}
+
+.collapsible-inner {
+    overflow: hidden;
+    min-height: 0;
+}
+
+/* =========================
   label row with clear button
 =========================== */
 
@@ -2273,14 +2299,18 @@ button {
     flex-wrap: wrap;
     gap: 0.25rem;
     width: 100%;
+    /* Breathing room so chips that wrap below a long label (e.g. "Signature
+       spell") don't sit flush against the input beneath them. */
+    margin-bottom: 0.4rem;
 }
 
 .clear-btn {
     all: unset;
     cursor: pointer;
-    font-size: 0.65rem;
+    font-size: 0.85rem;
+    line-height: 1;
     color: var(--accent-secondary);
-    padding: 0.15rem 0.35rem;
+    padding: 0.2rem 0.45rem;
     margin-left: 0.25rem;
     border: 1px solid var(--accent-secondary);
     border-radius: 0.4rem;
@@ -2546,12 +2576,49 @@ button {
 }
 
 .card-row-detail {
-    padding: 0.5rem 0 0.25rem;
+    padding: 0.5rem 1rem 0.25rem;
     font-size: 0.75rem;
     color: var(--text-muted);
     max-width: 100%;
+}
+
+/* Always-mounted wrapper for the expanded card detail. Eases open/closed via the
+   grid-template-rows 0fr<->1fr technique (like the deck-form fields) so the row
+   shifts smoothly instead of popping. Pulled out by the row's 1rem padding so it
+   spans full width; the inner clips the content as it collapses. */
+.card-row-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    margin: 0 -1rem;
+    pointer-events: none;
+    transition:
+        grid-template-rows 0.22s ease,
+        opacity 0.22s ease;
+}
+
+.card-row-collapse.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.card-row-collapse-inner {
     overflow: hidden;
-    animation: card-row-detail-enter 0.18s ease-out;
+    min-height: 0;
+}
+
+/* Dividers framing the expanded detail. Span the full row width — the collapse
+   wrapper already reaches the row edges, so no negative margin needed here. */
+.card-row-rule {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    margin: 0.5rem 0 0 0;
+}
+
+/* Action buttons below the second divider in an expanded card row. */
+.card-row-actions {
+    padding: 0.5rem 1rem 0.25rem;
 }
 
 @keyframes card-row-detail-enter {
@@ -2573,11 +2640,30 @@ button {
     line-height: 1.4;
 }
 
+/* Inline mana/tap/energy glyphs inside oracle text — sized to sit with the
+   surrounding text rather than dominate it. */
+.oracle-sym {
+    font-size: 0.85em;
+    vertical-align: -0.05em;
+    margin: 0 0.04em;
+}
+
 .card-detail-meta {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
     color: var(--text-muted);
+}
+
+/* Non-interactive info chip (type line, rarity, set) in an expanded card row. */
+.detail-chip {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    background-color: var(--bg-primary);
 }
 
 .qty-row {
@@ -2872,11 +2958,21 @@ button {
 }
 
 /* ================================
-  Swipe for Commander
+  Zwipe select
 ================================== */
 
-/* Full-screen commander swipe rendered as a sibling overlay above the form
-   (both are fixed .screen) — lift it above with an explicit stacking order. */
-.commander-swipe-screen {
+/* Full-screen Zwipe-select picker rendered as a sibling overlay above the form
+   (both are fixed .screen) — lift it above with an explicit stacking order. It
+   stays mounted and cross-fades on `.show` so the form eases back into view
+   rather than the overlay popping away; it's click-through while hidden. */
+.swipe-select-screen {
     z-index: 210;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.swipe-select-screen.show {
+    opacity: 1;
+    pointer-events: auto;
 }
