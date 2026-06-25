@@ -145,6 +145,11 @@ pub struct HttpUpdateDeckProfile {
     pub format: Opdate<String>,
     /// Tags with partial update semantics. `Set` replaces the full tag set
     /// (empty/`null` clears all tags); absent leaves them unchanged.
+    ///
+    /// `#[serde(default)]` so older clients that don't send this field still
+    /// parse (the field becomes `Unchanged`), keeping the endpoint backward-
+    /// compatible when the server deploys ahead of the app.
+    #[serde(default)]
     pub tags: Opdate<Vec<String>>,
 }
 
