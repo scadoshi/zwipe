@@ -1,7 +1,7 @@
 //! Edit deck screen.
 
-use super::components::commander_swipe::CommanderSwipe;
 use super::components::deck_fields::{DeckFields, DeckFieldsHint};
+use super::components::swipe_select::{SwipeMode, SwipeSelect};
 use super::components::skeletons::EditDeckSkeleton;
 use crate::{
     inbound::{
@@ -51,6 +51,17 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut background_display = use_signal(String::new);
     let mut signature_spell: Signal<Option<Card>> = use_signal(|| None);
     let mut signature_spell_display = use_signal(String::new);
+    let mut show_partner_swipe = use_signal(|| false);
+    let mut show_background_swipe = use_signal(|| false);
+    let mut show_signature_spell_swipe = use_signal(|| false);
+
+    // Reactive Zwipe-select modes — derived from the current format / commander.
+    let commander_mode = use_memo(move || selected_format().map(SwipeMode::Commander));
+    let partner_mode = use_memo(|| Some(SwipeMode::Partner));
+    let background_mode = use_memo(|| Some(SwipeMode::Background));
+    let spell_mode = use_memo(move || {
+        commander().map(|c| SwipeMode::SignatureSpell(c.scryfall_data.color_identity))
+    });
 
     // original values (for change detection)
     let mut original_deck_name: Signal<String> = use_signal(String::new);
@@ -365,6 +376,9 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                     signature_spell,
                                     signature_spell_display,
                                     show_commander_swipe,
+                                    show_partner_swipe,
+                                    show_background_swipe,
+                                    show_signature_spell_swipe,
                                 }
 
                             }
@@ -396,15 +410,45 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             }
 
             }
-            CommanderSwipe {
+            SwipeSelect {
                 open: show_commander_swipe,
-                format: selected_format,
+                mode: commander_mode,
                 on_select: move |card: Card| {
                     commander_display.set(card.scryfall_data.name.clone());
                     commander.set(Some(card));
                     show_commander_swipe.set(false);
                 },
                 on_close: move |_| show_commander_swipe.set(false),
+            }
+            SwipeSelect {
+                open: show_partner_swipe,
+                mode: partner_mode,
+                on_select: move |card: Card| {
+                    partner_commander_display.set(card.scryfall_data.name.clone());
+                    partner_commander.set(Some(card));
+                    show_partner_swipe.set(false);
+                },
+                on_close: move |_| show_partner_swipe.set(false),
+            }
+            SwipeSelect {
+                open: show_background_swipe,
+                mode: background_mode,
+                on_select: move |card: Card| {
+                    background_display.set(card.scryfall_data.name.clone());
+                    background.set(Some(card));
+                    show_background_swipe.set(false);
+                },
+                on_close: move |_| show_background_swipe.set(false),
+            }
+            SwipeSelect {
+                open: show_signature_spell_swipe,
+                mode: spell_mode,
+                on_select: move |card: Card| {
+                    signature_spell_display.set(card.scryfall_data.name.clone());
+                    signature_spell.set(Some(card));
+                    show_signature_spell_swipe.set(false);
+                },
+                on_close: move |_| show_signature_spell_swipe.set(false),
             }
 
             DeckFieldsHint { open: edit_hint }
