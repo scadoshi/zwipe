@@ -1,4 +1,5 @@
 use super::components::card_info::{CardInfoDisplay, CardSkeleton};
+use super::components::keyword_hint::{KeywordHintDialog, card_has_keywords};
 use crate::{
     inbound::{
         components::{
@@ -69,6 +70,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     // Swipe vocabulary hint: auto-opens on this user's first visit, the
     // grayed "?" in the util bar reopens it on demand.
     let mut swipe_hint_open = use_one_time_hint(HINT_ADD_DECK_CARDS);
+    let mut keyword_hint_open = use_signal(|| false);
 
     // When Some, the SwipeStack plays a keyframe entering from this direction
     // on the next top card, and clears it on animationend. Set by undo.
@@ -1078,6 +1080,35 @@ pub fn Add(deck_id: Uuid) -> Element {
                         }
                     },
                     "Refresh"
+                }
+                {
+                    let kw_card = if add_source() == AddSource::Maybeboard {
+                        mb_current_card()
+                    } else {
+                        current_card()
+                    };
+                    rsx! {
+                        if kw_card.as_ref().is_some_and(card_has_keywords) {
+                            button {
+                                class: "util-btn",
+                                onclick: move |_| keyword_hint_open.set(true),
+                                "Keywords"
+                            }
+                        }
+                    }
+                }
+            }
+
+            {
+                let kw_card = if add_source() == AddSource::Maybeboard {
+                    mb_current_card()
+                } else {
+                    current_card()
+                };
+                rsx! {
+                    if let Some(card) = kw_card {
+                        KeywordHintDialog { open: keyword_hint_open, card }
+                    }
                 }
             }
 
