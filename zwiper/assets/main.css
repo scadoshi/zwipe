@@ -2520,7 +2520,6 @@ button {
 .card-row {
     padding: 0.5rem 1rem;
     border-bottom: 1px solid var(--border-secondary);
-    cursor: pointer;
     transition: background-color 0.15s ease;
     overflow: hidden;
     min-width: 0;
@@ -2530,12 +2529,38 @@ button {
     border-bottom: none;
 }
 
+/* The accent rule below the buttons is the expanded row's bottom boundary, so
+   drop the row's own border to avoid a doubled line. */
+.card-row.expanded {
+    border-bottom: none;
+}
+
 .card-row-compact {
     display: grid;
-    grid-template-columns: 1.5rem 1fr 2rem 3rem auto;
+    grid-template-columns: 1.2rem 1.5rem 1fr 2rem 3rem auto;
     align-items: center;
     gap: 0.25rem;
     font-size: 0.8rem;
+    cursor: pointer;
+}
+
+/* Disclosure chevron at the left of each row; rotates to point down when the
+   row is expanded. */
+.card-row-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.2rem;
+    height: 1.2rem;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    line-height: 1;
+    transform-origin: center;
+    transition: transform 0.2s ease;
+}
+
+.card-row.expanded .card-row-arrow {
+    transform: rotate(90deg);
 }
 
 .card-row-name {
@@ -2612,8 +2637,14 @@ button {
    wrapper already reaches the row edges, so no negative margin needed here. */
 .card-row-rule {
     border: none;
-    border-top: 1px solid var(--border-secondary);
+    border-top: 1px solid var(--accent-secondary);
     margin: 0.5rem 0 0 0;
+}
+
+/* Plain separator between the detail and the action buttons (still inside the
+   accent-framed area). */
+.card-row-rule-muted {
+    border-top-color: var(--border-secondary);
 }
 
 /* Action buttons below the second divider in an expanded card row. */
@@ -2630,6 +2661,35 @@ button {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* Name + mana cost header inside an expanded card row. */
+.card-detail-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+}
+
+.card-detail-name {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--accent-primary);
+    word-break: break-word;
+    white-space: normal;
+}
+
+.card-detail-cost {
+    margin: 0;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* Match the mana pips on the compact card line (0.8rem). */
+.card-detail-cost .ms {
+    font-size: 0.8rem;
+    vertical-align: baseline;
 }
 
 .card-detail-oracle {
@@ -2652,6 +2712,7 @@ button {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+    margin-bottom: 0.5rem;
     color: var(--text-muted);
 }
 
@@ -2664,6 +2725,69 @@ button {
     font-size: 0.75rem;
     color: var(--text-muted);
     background-color: var(--bg-primary);
+}
+
+/* Keyword abilities (Flying, Trample, …) with a tap-to-reveal reminder. */
+.keyword-section {
+    margin-bottom: 0.5rem;
+}
+
+.keyword-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+/* Tappable keyword chip — accent-bordered to read as interactive next to the
+   plain info chips. */
+.keyword-chip {
+    padding: 0.15rem 0.5rem;
+    border: 1px solid var(--accent-primary);
+    border-radius: 0.4rem;
+    font-size: 0.75rem;
+    color: var(--accent-primary);
+    background-color: var(--bg-primary);
+    cursor: pointer;
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
+}
+
+.keyword-chip.active {
+    color: var(--bg-primary);
+    background-color: var(--accent-primary);
+}
+
+/* Inline reminder reveal below the chip row — eases open via the grid-rows
+   0fr<->1fr technique used elsewhere in the detail. */
+.keyword-reveal {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition:
+        grid-template-rows 0.2s ease,
+        opacity 0.2s ease;
+}
+
+.keyword-reveal.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+}
+
+.keyword-reveal-inner {
+    overflow: hidden;
+    min-height: 0;
+}
+
+.keyword-reveal-text {
+    margin: 0.35rem 0 0;
+    padding: 0.35rem 0.5rem;
+    border-left: 2px solid var(--accent-tertiary);
+    border-radius: 0.25rem;
+    background-color: var(--bg-primary);
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--accent-tertiary);
 }
 
 .qty-row {
@@ -2706,10 +2830,11 @@ button {
 .card-row-header {
     font-size: 0.8rem;
     font-weight: 600;
-    color: var(--text-muted);
-    padding: 0 1rem 0.25rem;
+    color: var(--accent-tertiary);
+    padding: 0 1rem 0.5rem;
     border-bottom: 1px solid var(--border-secondary);
     margin-bottom: 0.5rem;
+    cursor: default;
 }
 
 /* =========================
