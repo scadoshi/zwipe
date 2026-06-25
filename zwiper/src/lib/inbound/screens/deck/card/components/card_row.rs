@@ -48,6 +48,7 @@ pub(crate) fn CardRow(
     let keywords = sd.keywords.clone().unwrap_or_default();
     let oracle_text = sd.oracle_text.clone().unwrap_or_default();
     let mana_cost = sd.mana_cost.clone().unwrap_or_default();
+    let loyalty_display = sd.loyalty.clone().unwrap_or_default();
     let rarity_name = sd.rarity.to_long_name();
     let has_image: bool = sd.primary_image_url(ImageSize::Large).is_some();
     let scryfall_data_for_preview = sd.clone();
@@ -106,6 +107,15 @@ pub(crate) fn CardRow(
                     }
                     if !oracle_text.is_empty() {
                         OracleText { text: oracle_text, class: "card-detail-oracle".to_string() }
+                    }
+                    if !pt_display.is_empty() {
+                        div { class: "card-detail-stats",
+                            span { class: "detail-chip", "{pt_display}" }
+                        }
+                    } else if !loyalty_display.is_empty() {
+                        div { class: "card-detail-stats",
+                            span { class: "detail-chip", "Loyalty {loyalty_display}" }
+                        }
                     }
                 }
                 hr { class: "card-row-rule card-row-rule-muted" }

@@ -2731,6 +2731,14 @@ button {
     color: var(--text-muted);
 }
 
+/* Power/toughness (or planeswalker loyalty) pinned bottom-right of the detail,
+   echoing the card's own P/T corner. Uses the muted .detail-chip look. */
+.card-detail-stats {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.5rem;
+}
+
 /* Non-interactive info chip (type line, rarity, set) in an expanded card row. */
 .detail-chip {
     display: inline-block;
