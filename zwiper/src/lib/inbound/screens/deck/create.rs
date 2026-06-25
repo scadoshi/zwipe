@@ -14,7 +14,7 @@ use zwipe_core::domain::user::models::hints::HINT_CREATE_DECK;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
-use zwipe_core::domain::deck::format::Format;
+use zwipe_core::domain::deck::{DeckTag, format::Format};
 use zwipe_core::http::contracts::deck::HttpCreateDeckProfile;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
@@ -30,6 +30,7 @@ pub fn CreateDeck() -> Element {
     // form
     let deck_name = use_signal(String::new);
     let selected_format: Signal<Option<Format>> = use_signal(|| None);
+    let selected_tags: Signal<Vec<DeckTag>> = use_signal(Vec::new);
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
     let mut commander_display = use_signal(String::new);
     let mut partner_commander: Signal<Option<Card>> = use_signal(|| None);
@@ -71,12 +72,14 @@ pub fn CreateDeck() -> Element {
 
             let commander_id = commander().map(|c| c.scryfall_data.id);
             let format_str = selected_format().map(|f| f.to_legality_key().to_string());
+            let tags: Vec<String> = selected_tags().iter().map(|t| t.to_string()).collect();
             let request = HttpCreateDeckProfile::builder(&deck_name())
                 .commander_id(commander_id)
                 .partner_commander_id(partner_commander().map(|c| c.scryfall_data.id))
                 .background_id(background().map(|c| c.scryfall_data.id))
                 .signature_spell_id(signature_spell().map(|c| c.scryfall_data.id))
                 .format(format_str)
+                .tags(if tags.is_empty() { None } else { Some(tags) })
                 .build();
 
             match auth_client().create_deck_profile(&request, &session).await {
@@ -113,6 +116,7 @@ pub fn CreateDeck() -> Element {
                         DeckFields {
                             deck_name,
                             selected_format,
+                            selected_tags,
                             commander,
                             commander_display,
                             partner_commander,

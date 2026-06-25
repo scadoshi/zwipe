@@ -65,6 +65,16 @@ pub(crate) fn DeckProfileSection(deck_profile: DeckProfile, commander: Option<Ca
                     span { class: "info-row-value", { name.clone() } }
                 }
             }
+            if !deck_profile.tags.is_empty() {
+                div { class: "info-row",
+                    span { class: "info-row-label", "Tags" }
+                    span { class: "info-row-value info-row-tags",
+                        for tag in deck_profile.tags.iter() {
+                            span { key: "{tag}", class: "stat-chip stat-chip-tag", "{tag.display_name()}" }
+                        }
+                    }
+                }
+            }
         }
     }
 }
