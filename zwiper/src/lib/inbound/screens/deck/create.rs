@@ -1,13 +1,16 @@
 //! Create new deck screen.
 
-use super::components::deck_fields::DeckFields;
+use super::components::commander_swipe::CommanderSwipe;
+use super::components::deck_fields::{DeckFields, DeckFieldsHint};
 use crate::{
     inbound::{
         components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+        components::hint_dialog::use_one_time_hint,
         router::Router,
     },
     outbound::client::{deck::create_deck::ClientCreateDeck, ZwipeClient},
 };
+use zwipe_core::domain::user::models::hints::HINT_CREATE_DECK;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
@@ -27,14 +30,16 @@ pub fn CreateDeck() -> Element {
     // form
     let deck_name = use_signal(String::new);
     let selected_format: Signal<Option<Format>> = use_signal(|| None);
-    let commander: Signal<Option<Card>> = use_signal(|| None);
-    let commander_display = use_signal(String::new);
+    let mut commander: Signal<Option<Card>> = use_signal(|| None);
+    let mut commander_display = use_signal(String::new);
     let partner_commander: Signal<Option<Card>> = use_signal(|| None);
     let partner_commander_display = use_signal(String::new);
     let background: Signal<Option<Card>> = use_signal(|| None);
     let background_display = use_signal(String::new);
     let signature_spell: Signal<Option<Card>> = use_signal(|| None);
     let signature_spell_display = use_signal(String::new);
+    let mut show_commander_swipe = use_signal(|| false);
+    let mut create_hint = use_one_time_hint(HINT_CREATE_DECK);
 
     // save state
     let toast = use_toast();
@@ -80,8 +85,14 @@ pub fn CreateDeck() -> Element {
     rsx! {
         Bouncer {
             div { class: "screen",
-                div { class: "page-header",
+                div { class: "page-header", style: "position: relative;",
                     h2 { "Create Deck" }
+                    button {
+                        class: "util-btn",
+                        style: "position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.55; padding: 0.2rem 0.6rem;",
+                        onclick: move |_| create_hint.set(true),
+                        "?"
+                    }
                 }
 
                 div { class: "screen-content centered content-enter",
@@ -99,6 +110,7 @@ pub fn CreateDeck() -> Element {
                             background_display,
                             signature_spell,
                             signature_spell_display,
+                            show_commander_swipe,
                         }
                     }
                 }
@@ -118,6 +130,18 @@ pub fn CreateDeck() -> Element {
                 }
             }
             }
+            CommanderSwipe {
+                open: show_commander_swipe,
+                format: selected_format,
+                on_select: move |card: Card| {
+                    commander_display.set(card.scryfall_data.name.clone());
+                    commander.set(Some(card));
+                    show_commander_swipe.set(false);
+                },
+                on_close: move |_| show_commander_swipe.set(false),
+            }
+
+            DeckFieldsHint { open: create_hint }
         }
     }
 }

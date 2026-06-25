@@ -12,10 +12,16 @@ use uuid::Uuid;
 
 /// Welcome dialog on the home screen after first login.
 pub const HINT_FIRST_LOGIN: &str = "first_login";
-/// Swipe vocabulary dialog on the add-cards screen.
-pub const HINT_ADD_SWIPES: &str = "add_swipes";
-/// Swipe vocabulary dialog on the remove-cards screen.
-pub const HINT_REMOVE_SWIPES: &str = "remove_swipes";
+/// Swipe vocabulary dialog on the add deck cards screen.
+pub const HINT_ADD_DECK_CARDS: &str = "add_deck_cards";
+/// Swipe vocabulary dialog on the Swipe select (commander) screen.
+pub const HINT_SWIPE_SELECT: &str = "swipe_select";
+/// Swipe vocabulary dialog on the remove deck cards screen.
+pub const HINT_REMOVE_DECK_CARDS: &str = "remove_deck_cards";
+/// Explainer for the create deck form (name, format, command zone).
+pub const HINT_CREATE_DECK: &str = "create_deck";
+/// Explainer for the edit deck form (name, format, command zone).
+pub const HINT_EDIT_DECK: &str = "edit_deck";
 /// Welcome dialog on first opening a deck profile.
 pub const HINT_FIRST_DECK: &str = "first_deck";
 /// Browsing dialog on the deck cards list (fires only once cards exist).
@@ -84,8 +90,11 @@ mod tests {
     fn accepts_known_hint_keys() {
         for key in [
             HINT_FIRST_LOGIN,
-            HINT_ADD_SWIPES,
-            HINT_REMOVE_SWIPES,
+            HINT_ADD_DECK_CARDS,
+            HINT_SWIPE_SELECT,
+            HINT_REMOVE_DECK_CARDS,
+            HINT_CREATE_DECK,
+            HINT_EDIT_DECK,
             HINT_FIRST_DECK,
             HINT_DECK_CARDS,
             HINT_PROFILE,

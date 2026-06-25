@@ -615,6 +615,12 @@ impl FilterCards for Vec<Card> {
                                 .unwrap_or(f64::MAX);
                             pa.partial_cmp(&pb).unwrap_or(std::cmp::Ordering::Equal)
                         }
+                        OrderByOption::EdhrecRank => {
+                            // Lower rank = more played; unranked sorts last (ascending).
+                            let ra = sd_a.edhrec_rank.unwrap_or(i32::MAX);
+                            let rb = sd_b.edhrec_rank.unwrap_or(i32::MAX);
+                            ra.cmp(&rb)
+                        }
                         OrderByOption::Random => std::cmp::Ordering::Equal,
                     };
                     if ascending { ord } else { ord.reverse() }
@@ -688,6 +694,11 @@ impl SortCards for Vec<Card> {
                     let pa = sd_a.prices.tix.as_deref().and_then(|p| p.parse::<f64>().ok()).unwrap_or(f64::MAX);
                     let pb = sd_b.prices.tix.as_deref().and_then(|p| p.parse::<f64>().ok()).unwrap_or(f64::MAX);
                     pa.partial_cmp(&pb).unwrap_or(std::cmp::Ordering::Equal)
+                }
+                EdhrecRank => {
+                    let ra = sd_a.edhrec_rank.unwrap_or(i32::MAX);
+                    let rb = sd_b.edhrec_rank.unwrap_or(i32::MAX);
+                    ra.cmp(&rb)
                 }
                 Random => std::cmp::Ordering::Equal,
             };

@@ -1,6 +1,8 @@
 use crate::{
     inbound::components::{
-        fields::text_input::TextInput, telemetry::usage_buffer::UsageBuffer,
+        fields::text_input::TextInput,
+        hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, HintLine},
+        telemetry::usage_buffer::UsageBuffer,
     },
     outbound::client::{ZwipeClient, card::search_cards::ClientSearchCards},
 };
@@ -35,6 +37,9 @@ pub(crate) fn DeckFields(
     mut background_display: Signal<String>,
     mut signature_spell: Signal<Option<Card>>,
     mut signature_spell_display: Signal<String>,
+    /// Set true to swap the whole create/edit screen for the commander-swipe
+    /// flow (owned by the parent screen so it can replace its own content).
+    mut show_commander_swipe: Signal<bool>,
 ) -> Element {
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
@@ -473,6 +478,11 @@ pub(crate) fn DeckFields(
                             "\u{00d7}"
                         }
                     }
+                    div {
+                        class: "chip-xs chip-primary",
+                        onclick: move |_| show_commander_swipe.set(true),
+                        "Zwipe"
+                    }
                 }
 
                 if cmd_show_dropdown() {
@@ -737,6 +747,48 @@ pub(crate) fn DeckFields(
                     }
                 }
             }
+        }
+    }
+}
+
+/// Explainer dialog for the deck create/edit form. Shared by both screens so
+/// the command-zone behavior is described in one place. `open` is owned by the
+/// screen (a one-time hint plus a "?" button).
+#[component]
+pub(crate) fn DeckFieldsHint(open: Signal<bool>) -> Element {
+    rsx! {
+        HintDialog {
+            open,
+            title: "Building a deck",
+            HintBullets {
+                HintBullet { "Give your deck a name." }
+                HintBullet { "Choose a format." }
+                HintBullet {
+                    "The "
+                    HintColored { color: "--accent-tertiary", "Commander" }
+                    " field appears only after you pick a commander format. The command zone "
+                    "adapts to your commander: a "
+                    HintColored { color: "--accent-tertiary", "Partner" }
+                    " field for partner commanders, a "
+                    HintColored { color: "--accent-tertiary", "Background" }
+                    " field for \u{201c}choose a Background\u{201d} commanders, and for Oathbreaker "
+                    "both an Oathbreaker and a "
+                    HintColored { color: "--accent-tertiary", "Signature spell" }
+                    " field."
+                }
+                HintBullet {
+                    "Commander search auto-limits to commanders that are legal in your format. "
+                    "Tap "
+                    HintColored { color: "--accent-secondary", "Filter" }
+                    " on that field to turn the limit off and search any card by name instead."
+                }
+                HintBullet {
+                    "Tap "
+                    HintColored { color: "--accent-primary", "Zwipe" }
+                    " to flip through commanders and pick one by swiping."
+                }
+            }
+            HintLine { "Most-played commanders come first in Zwipe select." }
         }
     }
 }
