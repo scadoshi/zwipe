@@ -5,9 +5,9 @@ use dioxus::prelude::*;
 const LOGO_ASCII: &str = zwipe_core::domain::logo::ZWIPE;
 
 const DEMO_CREATE_DECK: Asset = asset!("/assets/demo/1_create_deck.mp4");
-const DEMO_ADD_DECK_CARDS: Asset = asset!("/assets/demo/2_add_deck_cards.mp4");
-const DEMO_DECK_CARDS_VIEW: Asset = asset!("/assets/demo/3_deck_cards.mp4");
-const DEMO_REGISTER: Asset = asset!("/assets/demo/4_register.mp4");
+const DEMO_DECK_CARDS_VIEW: Asset = asset!("/assets/demo/2_deck_cards.mp4");
+const DEMO_ADD_DECK_CARDS: Asset = asset!("/assets/demo/3_add_deck_cards.mp4");
+const DEMO_FILTER: Asset = asset!("/assets/demo/4_filter.mp4");
 const DEMO_PROFILE: Asset = asset!("/assets/demo/5_profile.mp4");
 
 #[component]
@@ -15,21 +15,29 @@ pub fn Home() -> Element {
     let demos: Vec<(Asset, &'static str, &'static str)> = vec![
         (
             DEMO_CREATE_DECK,
-            "Creating a new deck",
-            "Demo: Create a Deck",
-        ),
-        (
-            DEMO_ADD_DECK_CARDS,
-            "Swiping cards to add to a deck",
-            "Demo: Swipe to Build",
+            "Create a deck and import a decklist from a link",
+            "Demo: Create & Import",
         ),
         (
             DEMO_DECK_CARDS_VIEW,
-            "Browsing the deck card list",
+            "Browse cards: keywords, full details, art, and printings",
             "Demo: Deck Card View",
         ),
-        (DEMO_REGISTER, "Creating a Zwipe account", "Demo: Register"),
-        (DEMO_PROFILE, "User profile screen", "Demo: Account Profile"),
+        (
+            DEMO_ADD_DECK_CARDS,
+            "Swipe cards into your deck",
+            "Demo: Swipe to Build",
+        ),
+        (
+            DEMO_FILTER,
+            "Filter the card pool, then swipe to add",
+            "Demo: Filters",
+        ),
+        (
+            DEMO_PROFILE,
+            "Switch themes from your profile",
+            "Demo: Themes & Profile",
+        ),
     ];
     let total = demos.len();
     let mut index = use_signal(|| 0usize);
