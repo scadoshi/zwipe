@@ -876,12 +876,6 @@ button {
     color: var(--text-muted);
 }
 
-/* Picker chips that can't be selected because the tag cap is reached. */
-.chip-disabled {
-    opacity: 0.4;
-    cursor: default;
-}
-
 /* Tag chips inside a deck-detail info row wrap instead of forcing one line. */
 .info-row-tags {
     display: flex;

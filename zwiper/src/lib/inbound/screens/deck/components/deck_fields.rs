@@ -55,6 +55,11 @@ pub(crate) fn DeckFields(
     let mut format_query = use_signal(String::new);
 
     // ========================================
+    // Tag search state (in-memory typeahead, no debounce)
+    // ========================================
+    let mut tag_query = use_signal(String::new);
+
+    // ========================================
     // Commander search state
     // ========================================
     let mut cmd_search_query = use_signal(String::new);
@@ -769,7 +774,7 @@ pub(crate) fn DeckFields(
         }
 
         // ========================================
-        // Tags (multi-select, up to MAX_DECK_TAGS)
+        // Tags (searchable multi-select, up to MAX_DECK_TAGS)
         // ========================================
         div {
             div { class: "label-row",
@@ -778,39 +783,85 @@ pub(crate) fn DeckFields(
                 if !selected_tags().is_empty() {
                     button {
                         class: "clear-btn",
-                        onclick: move |_| selected_tags.set(Vec::new()),
+                        onclick: move |_| {
+                            selected_tags.set(Vec::new());
+                            tag_query.set(String::new());
+                        },
                         "\u{00d7}"
                     }
                 }
             }
-            div { class: "flex flex-wrap gap-1 mb-1",
-                for tag in DeckTag::all().iter().copied() {
+
+            // Selected tags — tap one to remove it.
+            if !selected_tags().is_empty() {
+                div { class: "flex flex-wrap gap-1 mb-1",
+                    for tag in selected_tags().iter().copied() {
+                        div {
+                            key: "{tag}",
+                            class: "chip selected",
+                            onclick: move |_| {
+                                let mut current = selected_tags();
+                                current.retain(|t| *t != tag);
+                                selected_tags.set(current);
+                            },
+                            "{tag.display_name()} \u{00d7}"
+                        }
+                    }
+                }
+            }
+
+            // Search + live results, only while there's room for more.
+            if selected_tags().len() < MAX_DECK_TAGS {
+                if !tag_query().is_empty() {
                     {
-                        let is_selected = selected_tags().contains(&tag);
-                        let at_cap = selected_tags().len() >= MAX_DECK_TAGS;
-                        let class = if is_selected {
-                            "chip selected"
-                        } else if at_cap {
-                            "chip chip-disabled"
+                        let query = tag_query().to_lowercase();
+                        let results: Vec<DeckTag> = DeckTag::all()
+                            .iter()
+                            .copied()
+                            .filter(|t| !selected_tags().contains(t))
+                            .filter(|t| t.display_name().to_lowercase().contains(&query))
+                            .take(8)
+                            .collect();
+
+                        if results.is_empty() {
+                            rsx! {
+                                div { class: "flex flex-wrap gap-1 mb-1",
+                                    div { class: "chip-unselected", "No results" }
+                                }
+                            }
                         } else {
-                            "chip"
-                        };
-                        rsx! {
-                            div {
-                                key: "{tag}",
-                                class: "{class}",
-                                onclick: move |_| {
-                                    let mut current = selected_tags();
-                                    if let Some(pos) = current.iter().position(|t| *t == tag) {
-                                        current.remove(pos);
-                                    } else if current.len() < MAX_DECK_TAGS {
-                                        current.push(tag);
+                            rsx! {
+                                div { class: "flex flex-wrap gap-1 mb-1",
+                                    for tag in results {
+                                        div {
+                                            key: "{tag}",
+                                            class: "chip-unselected",
+                                            onclick: move |_| {
+                                                let mut current = selected_tags();
+                                                if current.len() < MAX_DECK_TAGS && !current.contains(&tag) {
+                                                    current.push(tag);
+                                                    selected_tags.set(current);
+                                                }
+                                                tag_query.set(String::new());
+                                            },
+                                            { tag.display_name().to_string() }
+                                        }
                                     }
-                                    selected_tags.set(current);
-                                },
-                                { tag.display_name().to_string() }
+                                }
                             }
                         }
+                    }
+                }
+
+                input { class: "input",
+                    id: "tag-search",
+                    r#type: "text",
+                    placeholder: "Tags",
+                    value: "{tag_query()}",
+                    autocapitalize: "none",
+                    spellcheck: "false",
+                    oninput: move |event| {
+                        tag_query.set(event.value());
                     }
                 }
             }
