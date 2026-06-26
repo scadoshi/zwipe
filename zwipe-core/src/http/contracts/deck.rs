@@ -44,6 +44,9 @@ pub struct HttpCreateDeckProfile {
     pub signature_spell_id: Option<Uuid>,
     /// Optional deck format.
     pub format: Option<String>,
+    /// Deck archetype/strategy tags (snake_case strings). Absent or empty = none.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tags: Option<Vec<String>>,
 }
 
 impl HttpCreateDeckProfile {
@@ -56,6 +59,7 @@ impl HttpCreateDeckProfile {
             background_id: None,
             signature_spell_id: None,
             format: None,
+            tags: None,
         }
     }
 }
@@ -68,6 +72,7 @@ pub struct HttpCreateDeckProfileBuilder {
     background_id: Option<Uuid>,
     signature_spell_id: Option<Uuid>,
     format: Option<String>,
+    tags: Option<Vec<String>>,
 }
 
 impl HttpCreateDeckProfileBuilder {
@@ -101,6 +106,12 @@ impl HttpCreateDeckProfileBuilder {
         self
     }
 
+    /// Sets the deck tags.
+    pub fn tags(mut self, tags: Option<Vec<String>>) -> Self {
+        self.tags = tags;
+        self
+    }
+
     /// Builds the request.
     pub fn build(self) -> HttpCreateDeckProfile {
         HttpCreateDeckProfile {
@@ -110,6 +121,7 @@ impl HttpCreateDeckProfileBuilder {
             background_id: self.background_id,
             signature_spell_id: self.signature_spell_id,
             format: self.format,
+            tags: self.tags,
         }
     }
 }
@@ -131,6 +143,14 @@ pub struct HttpUpdateDeckProfile {
     pub signature_spell_id: Opdate<Uuid>,
     /// Format with partial update semantics.
     pub format: Opdate<String>,
+    /// Tags with partial update semantics. `Set` replaces the full tag set
+    /// (empty/`null` clears all tags); absent leaves them unchanged.
+    ///
+    /// `#[serde(default)]` so older clients that don't send this field still
+    /// parse (the field becomes `Unchanged`), keeping the endpoint backward-
+    /// compatible when the server deploys ahead of the app.
+    #[serde(default)]
+    pub tags: Opdate<Vec<String>>,
 }
 
 impl HttpUpdateDeckProfile {
@@ -143,6 +163,7 @@ impl HttpUpdateDeckProfile {
             background_id: Opdate::Unchanged,
             signature_spell_id: Opdate::Unchanged,
             format: Opdate::Unchanged,
+            tags: Opdate::Unchanged,
         }
     }
 }
@@ -155,6 +176,7 @@ pub struct HttpUpdateDeckProfileBuilder {
     background_id: Opdate<Uuid>,
     signature_spell_id: Opdate<Uuid>,
     format: Opdate<String>,
+    tags: Opdate<Vec<String>>,
 }
 
 impl HttpUpdateDeckProfileBuilder {
@@ -194,6 +216,12 @@ impl HttpUpdateDeckProfileBuilder {
         self
     }
 
+    /// Sets the tags update.
+    pub fn tags(mut self, tags: Opdate<Vec<String>>) -> Self {
+        self.tags = tags;
+        self
+    }
+
     /// Builds the request.
     pub fn build(self) -> HttpUpdateDeckProfile {
         HttpUpdateDeckProfile {
@@ -203,6 +231,7 @@ impl HttpUpdateDeckProfileBuilder {
             background_id: self.background_id,
             signature_spell_id: self.signature_spell_id,
             format: self.format,
+            tags: self.tags,
         }
     }
 }

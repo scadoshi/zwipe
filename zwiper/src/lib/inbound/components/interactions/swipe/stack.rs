@@ -112,9 +112,15 @@ pub fn SwipeStack(
                         // fire `Direction::Down` on threshold) — only the
                         // rendered transform is clamped. Undo then triggers
                         // and the previous card slides in via the existing
-                        // entering keyframe.
+                        // entering keyframe. Upward movement is likewise only
+                        // shown when `Up` is an exit direction; screens where up
+                        // does nothing (e.g. commander swipe) keep the card put.
                         let ty = if s.traversing_axis == Some(Axis::Y) {
-                            delta.y.min(0.0)
+                            if config.allowed_directions.contains(&Direction::Up) {
+                                delta.y.min(0.0)
+                            } else {
+                                0.0
+                            }
                         } else {
                             0.0
                         };

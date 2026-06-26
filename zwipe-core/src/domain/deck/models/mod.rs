@@ -1,6 +1,7 @@
 // Value objects
 pub mod board;
 pub mod deck_name;
+pub mod deck_tag;
 pub mod format;
 pub mod import_mode;
 pub mod quantity;
@@ -22,6 +23,7 @@ pub use deck_card::DeckCard;
 pub use deck_metrics::DeckMetrics;
 pub use deck_name::{DeckName, InvalidDeckname};
 pub use deck_profile::DeckProfile;
+pub use deck_tag::{DeckTag, InvalidDeckTag, MAX_DECK_TAGS};
 pub use deck_warning::{DeckWarning, WarningAction};
 pub use format::{Format, InvalidFormat};
 pub use import_mode::ImportMode;

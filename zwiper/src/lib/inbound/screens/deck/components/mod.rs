@@ -2,6 +2,8 @@
 
 /// Clone deck dialog with text input for the new deck name.
 pub(crate) mod clone_deck_dialog;
+/// Full-screen "Zwipe select" command-zone swipe picker.
+pub(crate) mod swipe_select;
 /// Deck chart visualizations for the view screen.
 pub(crate) mod deck_charts;
 /// Shared deck name, format selector, and commander search for create/edit screens.

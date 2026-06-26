@@ -1,6 +1,8 @@
 use crate::{
     inbound::components::{
-        fields::text_input::TextInput, telemetry::usage_buffer::UsageBuffer,
+        fields::text_input::TextInput,
+        hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog},
+        telemetry::usage_buffer::UsageBuffer,
     },
     outbound::client::{ZwipeClient, card::search_cards::ClientSearchCards},
 };
@@ -15,7 +17,7 @@ use zwipe_core::domain::card::{
     },
 };
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::deck::format::Format;
+use zwipe_core::domain::deck::{DeckTag, MAX_DECK_TAGS, format::Format};
 
 /// Format chip selector and card search inputs with debounced dropdowns.
 ///
@@ -27,6 +29,7 @@ use zwipe_core::domain::deck::format::Format;
 pub(crate) fn DeckFields(
     mut deck_name: Signal<String>,
     mut selected_format: Signal<Option<Format>>,
+    mut selected_tags: Signal<Vec<DeckTag>>,
     mut commander: Signal<Option<Card>>,
     mut commander_display: Signal<String>,
     mut partner_commander: Signal<Option<Card>>,
@@ -35,6 +38,12 @@ pub(crate) fn DeckFields(
     mut background_display: Signal<String>,
     mut signature_spell: Signal<Option<Card>>,
     mut signature_spell_display: Signal<String>,
+    // Each toggles its field's Zwipe-select overlay. Owned by the parent screen
+    // (it replaces its own content with the picker), set true by these chips.
+    mut show_commander_swipe: Signal<bool>,
+    mut show_partner_swipe: Signal<bool>,
+    mut show_background_swipe: Signal<bool>,
+    mut show_signature_spell_swipe: Signal<bool>,
 ) -> Element {
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
@@ -450,7 +459,7 @@ pub(crate) fn DeckFields(
         // ========================================
         // Commander selector
         // ========================================
-        if show_commander() {
+        Collapsible { show: show_commander(),
             div {
                 div { class: "label-row",
                     label { class: "label", "{commander_label}" }
@@ -472,6 +481,11 @@ pub(crate) fn DeckFields(
                             },
                             "\u{00d7}"
                         }
+                    }
+                    div {
+                        class: "chip-xs chip-primary",
+                        onclick: move |_| show_commander_swipe.set(true),
+                        "Zwipe"
                     }
                 }
 
@@ -523,7 +537,7 @@ pub(crate) fn DeckFields(
         // ========================================
         // Partner commander selector
         // ========================================
-        if show_partner() {
+        Collapsible { show: show_partner(),
             div {
                 div { class: "label-row",
                     label { class: "label", "Partner" }
@@ -545,6 +559,11 @@ pub(crate) fn DeckFields(
                             },
                             "\u{00d7}"
                         }
+                    }
+                    div {
+                        class: "chip-xs chip-primary",
+                        onclick: move |_| show_partner_swipe.set(true),
+                        "Zwipe"
                     }
                 }
 
@@ -596,7 +615,7 @@ pub(crate) fn DeckFields(
         // ========================================
         // Background selector
         // ========================================
-        if show_background() {
+        Collapsible { show: show_background(),
             div {
                 div { class: "label-row",
                     label { class: "label", "Background" }
@@ -618,6 +637,11 @@ pub(crate) fn DeckFields(
                             },
                             "\u{00d7}"
                         }
+                    }
+                    div {
+                        class: "chip-xs chip-primary",
+                        onclick: move |_| show_background_swipe.set(true),
+                        "Zwipe"
                     }
                 }
 
@@ -669,7 +693,7 @@ pub(crate) fn DeckFields(
         // ========================================
         // Signature spell selector
         // ========================================
-        if show_signature_spell() {
+        Collapsible { show: show_signature_spell(),
             div {
                 div { class: "label-row",
                     label { class: "label", "Signature spell" }
@@ -691,6 +715,11 @@ pub(crate) fn DeckFields(
                             },
                             "\u{00d7}"
                         }
+                    }
+                    div {
+                        class: "chip-xs chip-primary",
+                        onclick: move |_| show_signature_spell_swipe.set(true),
+                        "Zwipe"
                     }
                 }
 
@@ -737,6 +766,107 @@ pub(crate) fn DeckFields(
                     }
                 }
             }
+        }
+
+        // ========================================
+        // Tags (multi-select, up to MAX_DECK_TAGS)
+        // ========================================
+        div {
+            div { class: "label-row",
+                label { class: "label", "Tags" }
+                span { class: "label-hint", "{selected_tags().len()}/{MAX_DECK_TAGS}" }
+                if !selected_tags().is_empty() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| selected_tags.set(Vec::new()),
+                        "\u{00d7}"
+                    }
+                }
+            }
+            div { class: "flex flex-wrap gap-1 mb-1",
+                for tag in DeckTag::all().iter().copied() {
+                    {
+                        let is_selected = selected_tags().contains(&tag);
+                        let at_cap = selected_tags().len() >= MAX_DECK_TAGS;
+                        let class = if is_selected {
+                            "chip selected"
+                        } else if at_cap {
+                            "chip chip-disabled"
+                        } else {
+                            "chip"
+                        };
+                        rsx! {
+                            div {
+                                key: "{tag}",
+                                class: "{class}",
+                                onclick: move |_| {
+                                    let mut current = selected_tags();
+                                    if let Some(pos) = current.iter().position(|t| *t == tag) {
+                                        current.remove(pos);
+                                    } else if current.len() < MAX_DECK_TAGS {
+                                        current.push(tag);
+                                    }
+                                    selected_tags.set(current);
+                                },
+                                { tag.display_name().to_string() }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Explainer dialog for the deck create/edit form. Shared by both screens so
+/// the command-zone behavior is described in one place. `open` is owned by the
+/// screen (a one-time hint plus a "?" button).
+#[component]
+pub(crate) fn DeckFieldsHint(open: Signal<bool>) -> Element {
+    rsx! {
+        HintDialog {
+            open,
+            title: "Building a deck",
+            HintBullets {
+                HintBullet { "Name your deck and choose a format." }
+                HintBullet {
+                    "Add up to "
+                    HintColored { color: "--accent-tertiary", "5 tags" }
+                    " to label your deck's strategy."
+                }
+                HintBullet {
+                    "Command-zone fields are dynamic: "
+                    HintColored { color: "--accent-tertiary", "Partner" }
+                    ", "
+                    HintColored { color: "--accent-tertiary", "Background" }
+                    ", and "
+                    HintColored { color: "--accent-tertiary", "Signature spell" }
+                    " appear only when your commander or format needs them."
+                }
+                HintBullet {
+                    "Commander search auto-limits to legal commanders. Tap "
+                    HintColored { color: "--accent-secondary", "Filter" }
+                    " to search any card instead."
+                }
+                HintBullet {
+                    "Tap "
+                    HintColored { color: "--accent-primary", "Zwipe" }
+                    " on a field to swipe-pick."
+                }
+            }
+        }
+    }
+}
+
+/// Eases a command-zone field's height + opacity open/closed instead of popping
+/// it in and out. Always rendered (the field's search/clear effects live at the
+/// `DeckFields` top level), so this only animates appearance, never logic.
+#[component]
+fn Collapsible(show: bool, children: Element) -> Element {
+    let class = if show { "collapsible open" } else { "collapsible" };
+    rsx! {
+        div { class: "{class}",
+            div { class: "collapsible-inner", {children} }
         }
     }
 }

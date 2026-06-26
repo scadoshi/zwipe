@@ -44,6 +44,16 @@ pub enum Opdate<T> {
     Unchanged,
 }
 
+/// Defaults to [`Opdate::Unchanged`] so a field marked `#[serde(default)]` that
+/// is absent from the request body is treated as "leave unchanged". This keeps
+/// newly-added update fields backward-compatible: older clients that don't send
+/// the field don't break.
+impl<T> Default for Opdate<T> {
+    fn default() -> Self {
+        Self::Unchanged
+    }
+}
+
 impl<T> Opdate<T>
 where
     T: PartialEq,
