@@ -47,7 +47,7 @@ pub fn Home() -> Element {
     rsx! {
         PageMeta {
             title: "Zwipe",
-            description: "Zwipe is a Magic: The Gathering deck builder built for mobile. Swipe right to add, left to skip, up to maybe, down to undo. Synergy-ranked cards, Commander-ready, decks synced across sessions.",
+            description: "Zwipe is a Magic: The Gathering deck builder built for mobile. Swipe right to add, left to skip, up to maybe, down to undo. Swipe-pick your commander, tag decks by archetype, synergy-ranked cards, Commander-ready, decks synced across sessions.",
             path: "/",
         }
         Nav {}
@@ -128,17 +128,20 @@ pub fn Home() -> Element {
                     h3 { class: "card-title", "Commander Ready" }
                     ul { class: "card-bullets",
                         li { "Most synergistic cards show first based on your selected commander" }
+                        li { "Swipe-pick your commander, partner, background, or signature spell" }
                         li { "Partners, backgrounds, Oathbreaker, and other Commander-like formats" }
                         li { "Color identity validation" }
                         li { "Per-format eligibility" }
                     }
                 }
                 div { class: "feature-card",
-                    span { class: "card-category", "Search" }
-                    h3 { class: "card-title", "Deep Filters" }
+                    span { class: "card-category", "Cards" }
+                    h3 { class: "card-title", "Filter & Inspect" }
                     ul { class: "card-bullets",
                         li { "Filter on any attribute you'd want" }
                         li { "Stack and clear filters freely" }
+                        li { "Tap any card for its full rules text with real mana symbols, plus power/toughness or loyalty" }
+                        li { "Tap a keyword to see what it does" }
                     }
                 }
                 div { class: "feature-card",
@@ -146,6 +149,7 @@ pub fn Home() -> Element {
                     h3 { class: "card-title", "Your Decks, Synced" }
                     ul { class: "card-bullets",
                         li { "Import from an Archidekt URL or paste any decklist" }
+                        li { "Tag decks by archetype (Aggro, Tokens, Reanimator, and more)" }
                         li { "Real accounts, no setup friction" }
                         li { "Synced across sessions wherever you sign in" }
                     }
