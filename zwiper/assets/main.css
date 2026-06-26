@@ -2714,8 +2714,12 @@ button {
     vertical-align: baseline;
 }
 
-/* Roomier grey circle around the number, closer to a real card. */
-.card-detail-cost .ms-cost {
+/* Roomier grey circle around the number, closer to a real card. Applied to the
+   mana cost, the oracle-text symbols, and the compact-row color pips alike so
+   the glyph stays centered in the pill everywhere. */
+.card-detail-cost .ms-cost,
+.oracle-sym.ms-cost,
+.card-row-colors .ms-cost {
     width: 1.5em;
     height: 1.5em;
     line-height: 1.5em;
