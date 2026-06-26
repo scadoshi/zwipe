@@ -5,6 +5,10 @@
 //! `MechanicalCategory`: these describe a whole deck's game plan, not a single
 //! card's role. The set is curated (from EDHREC themes and Archidekt/Moxfield
 //! tags) and fixed so tags stay clean and filterable.
+//!
+//! The list is large on purpose — the picker is a searchable typeahead, so more
+//! options cost nothing on screen. Variants are only ever added, never removed
+//! or renamed, so previously-stored tags keep parsing.
 
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -19,35 +23,68 @@ pub enum DeckTag {
     Aggro,
     Aristocrats,
     Artifacts,
+    AttackTriggers,
+    Auras,
     Blink,
+    Bounce,
     Burn,
+    Cascade,
+    Clone,
     Combo,
     Control,
     Counters,
+    Counterspells,
+    Cycling,
+    Defenders,
+    Devotion,
+    Discard,
+    Draw,
     Enchantress,
     Energy,
+    Equipment,
+    Etb,
+    Flying,
+    GoWide,
     Graveyard,
     GroupHug,
+    GroupSlug,
+    Hatebears,
     Infect,
+    LandDestruction,
     Landfall,
+    Lands,
     Lifedrain,
     Lifegain,
     Midrange,
     Mill,
+    Monarch,
     Pillowfort,
+    Ping,
+    Poison,
+    Politics,
+    Prison,
+    Proliferate,
     Ramp,
     Reanimator,
+    Removal,
     Sacrifice,
+    Sagas,
+    SelfMill,
     Spellslinger,
     Stax,
     Storm,
     Superfriends,
     Tempo,
+    Theft,
     Tokens,
     Toolbox,
     Treasure,
     Tribal,
+    Untap,
+    Vehicles,
     Voltron,
+    Wheels,
+    Wipe,
 }
 
 impl DeckTag {
@@ -57,35 +94,68 @@ impl DeckTag {
             Self::Aggro,
             Self::Aristocrats,
             Self::Artifacts,
+            Self::AttackTriggers,
+            Self::Auras,
             Self::Blink,
+            Self::Bounce,
             Self::Burn,
+            Self::Cascade,
+            Self::Clone,
             Self::Combo,
             Self::Control,
             Self::Counters,
+            Self::Counterspells,
+            Self::Cycling,
+            Self::Defenders,
+            Self::Devotion,
+            Self::Discard,
+            Self::Draw,
             Self::Enchantress,
             Self::Energy,
+            Self::Equipment,
+            Self::Etb,
+            Self::Flying,
+            Self::GoWide,
             Self::Graveyard,
             Self::GroupHug,
+            Self::GroupSlug,
+            Self::Hatebears,
             Self::Infect,
+            Self::LandDestruction,
             Self::Landfall,
+            Self::Lands,
             Self::Lifedrain,
             Self::Lifegain,
             Self::Midrange,
             Self::Mill,
+            Self::Monarch,
             Self::Pillowfort,
+            Self::Ping,
+            Self::Poison,
+            Self::Politics,
+            Self::Prison,
+            Self::Proliferate,
             Self::Ramp,
             Self::Reanimator,
+            Self::Removal,
             Self::Sacrifice,
+            Self::Sagas,
+            Self::SelfMill,
             Self::Spellslinger,
             Self::Stax,
             Self::Storm,
             Self::Superfriends,
             Self::Tempo,
+            Self::Theft,
             Self::Tokens,
             Self::Toolbox,
             Self::Treasure,
             Self::Tribal,
+            Self::Untap,
+            Self::Vehicles,
             Self::Voltron,
+            Self::Wheels,
+            Self::Wipe,
         ]
     }
 
@@ -95,35 +165,68 @@ impl DeckTag {
             Self::Aggro => "Aggro",
             Self::Aristocrats => "Aristocrats",
             Self::Artifacts => "Artifacts",
+            Self::AttackTriggers => "Attack Triggers",
+            Self::Auras => "Auras",
             Self::Blink => "Blink",
+            Self::Bounce => "Bounce",
             Self::Burn => "Burn",
+            Self::Cascade => "Cascade",
+            Self::Clone => "Clone",
             Self::Combo => "Combo",
             Self::Control => "Control",
             Self::Counters => "+1/+1 Counters",
+            Self::Counterspells => "Counterspells",
+            Self::Cycling => "Cycling",
+            Self::Defenders => "Defenders",
+            Self::Devotion => "Devotion",
+            Self::Discard => "Discard",
+            Self::Draw => "Draw",
             Self::Enchantress => "Enchantress",
             Self::Energy => "Energy",
+            Self::Equipment => "Equipment",
+            Self::Etb => "ETB",
+            Self::Flying => "Flying",
+            Self::GoWide => "Go Wide",
             Self::Graveyard => "Graveyard",
             Self::GroupHug => "Group Hug",
+            Self::GroupSlug => "Group Slug",
+            Self::Hatebears => "Hatebears",
             Self::Infect => "Infect",
+            Self::LandDestruction => "Land Destruction",
             Self::Landfall => "Landfall",
+            Self::Lands => "Lands Matter",
             Self::Lifedrain => "Lifedrain",
             Self::Lifegain => "Lifegain",
             Self::Midrange => "Midrange",
             Self::Mill => "Mill",
+            Self::Monarch => "Monarch",
             Self::Pillowfort => "Pillowfort",
+            Self::Ping => "Pingers",
+            Self::Poison => "Poison",
+            Self::Politics => "Politics",
+            Self::Prison => "Prison",
+            Self::Proliferate => "Proliferate",
             Self::Ramp => "Ramp",
             Self::Reanimator => "Reanimator",
+            Self::Removal => "Removal",
             Self::Sacrifice => "Sacrifice",
+            Self::Sagas => "Sagas",
+            Self::SelfMill => "Self-Mill",
             Self::Spellslinger => "Spellslinger",
             Self::Stax => "Stax",
             Self::Storm => "Storm",
             Self::Superfriends => "Superfriends",
             Self::Tempo => "Tempo",
+            Self::Theft => "Theft",
             Self::Tokens => "Tokens",
             Self::Toolbox => "Toolbox",
             Self::Treasure => "Treasure",
             Self::Tribal => "Tribal",
+            Self::Untap => "Untap",
+            Self::Vehicles => "Vehicles",
             Self::Voltron => "Voltron",
+            Self::Wheels => "Wheels",
+            Self::Wipe => "Board Wipes",
         }
     }
 }
@@ -181,13 +284,15 @@ mod tests {
     fn display_matches_serde() {
         assert_eq!(DeckTag::GroupHug.to_string(), "group_hug");
         assert_eq!(DeckTag::Aggro.to_string(), "aggro");
-        assert_eq!(DeckTag::Superfriends.to_string(), "superfriends");
+        assert_eq!(DeckTag::AttackTriggers.to_string(), "attack_triggers");
+        assert_eq!(DeckTag::Etb.to_string(), "etb");
     }
 
     #[test]
     fn try_from_valid() {
         assert_eq!(DeckTag::try_from("group_hug").unwrap(), DeckTag::GroupHug);
-        assert_eq!(DeckTag::try_from("aggro").unwrap(), DeckTag::Aggro);
+        assert_eq!(DeckTag::try_from("clone").unwrap(), DeckTag::Clone);
+        assert_eq!(DeckTag::try_from("draw").unwrap(), DeckTag::Draw);
     }
 
     #[test]
@@ -203,7 +308,9 @@ mod tests {
     }
 
     #[test]
-    fn all_has_32_variants() {
-        assert_eq!(DeckTag::all().len(), 32);
+    fn all_variants_have_unique_display_names() {
+        let names: std::collections::HashSet<_> =
+            DeckTag::all().iter().map(|t| t.display_name()).collect();
+        assert_eq!(names.len(), DeckTag::all().len());
     }
 }
