@@ -33,6 +33,12 @@ tokio = { workspace = true }
 rand = { workspace = true }
 dioxus-primitives = { git = "https://github.com/DioxusLabs/components", rev = "02801f27e4b3e30606e5c77e435c9d955c708eb3", version = "0.0.1", default-features = false }
 
+# Android-only: keyring has no Android backend, so we persist the session to a
+# file in the app's private internal storage, reached via JNI (Context.getFilesDir()).
+[target.'cfg(target_os = "android")'.dependencies]
+ndk-context = "0.1"
+jni = "0.21"
+
 [build-dependencies]
 dotenvy = { workspace = true }
 
