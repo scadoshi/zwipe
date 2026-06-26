@@ -58,6 +58,21 @@ This compiles the Rust lib, stages `libmain.so` into the Gradle project's
 `jniLibs/`, and produces an AAB targeting SDK **34** (wrong — fixed next).
 Generated Gradle project: `target/dx/zwipe/release/android/app/`.
 
+## 1b. Regenerate launcher icons (dx ships its default droid)
+
+dx's generated project uses the **default Android droid** for the launcher icon
+(legacy `mipmap-*/ic_launcher.webp` + the adaptive `anydpi-v26` droid-on-green).
+Regenerate them from the Zwipe source icon. Like the Gradle edits, this runs
+**after `dx bundle`** (which wipes `res/`) and before the repackage:
+
+```bash
+zcripts/android/launcher-icons.sh
+```
+
+This rewrites the legacy webp at every density and the adaptive foreground (a
+full-bleed `icon-1024.png`) + background (solid `#282828`, the icon's bg). Skip
+it and the build ships the green droid — testers will notice.
+
 ## 2. Bump targetSdk (and versionCode) in the generated Gradle
 
 ```bash
