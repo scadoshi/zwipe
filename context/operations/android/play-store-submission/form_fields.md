@@ -153,9 +153,19 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.0.9 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
+| Version (client) | 1.1.0 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
+
+### Release notes (What's new — max 500 chars, store-visible)
+
+Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.). Mirrors the iOS 1.1.0 What's New, reworded for the generic listing:
+
+- Tag your decks: add up to 5 strategy tags to label a deck at a glance — shown on your deck list and deck page.
+- Swipe to set your deck's leader, partner, background, or signature spell instead of searching.
+- Tap a card in your deck to expand its full details: cost, type, rules text with real symbols, and stats.
+- Keyword helper: tap a keyword for a quick, plain-language reminder of what it does.
+- Polish across card art, symbols, and dialogs.
 
 ---
 
@@ -165,4 +175,4 @@ TODO — complete the Data safety form. Starter facts to declare:
   changed after the first publish. It deliberately matches the Apple bundle ID.
 - Public listing copy stays generic per the copycat note at the top of this file.
 - The server enforces a minimum client version (`MIN_CLIENT_VERSION`, live at
-  `0.0.0` = open); ship the Play build at 1.0.9 or later so it isn't gated.
+  `0.0.0` = open); ship the Play build at 1.1.0 or later so it isn't gated.
