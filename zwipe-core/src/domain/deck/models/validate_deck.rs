@@ -508,6 +508,7 @@ mod tests {
             background_id: None,
             signature_spell_id: None,
             format,
+            tags: Vec::new(),
             user_id: uuid::Uuid::new_v4(),
             card_count: 0,
             commander_name: None,

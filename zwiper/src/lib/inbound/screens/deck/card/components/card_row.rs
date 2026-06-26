@@ -1,3 +1,5 @@
+use super::keyword_chips::KeywordChips;
+use super::oracle_text::OracleText;
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
@@ -42,49 +44,82 @@ pub(crate) fn CardRow(
         .iter()
         .map(|c| c.to_short_name().to_lowercase())
         .collect::<Vec<_>>();
-    let oracle_text = sd.oracle_text.clone().unwrap_or_default();
     let type_line = sd.type_line.clone().unwrap_or_default();
+    let keywords = sd.keywords.clone().unwrap_or_default();
+    let oracle_text = sd.oracle_text.clone().unwrap_or_default();
+    let mana_cost = sd.mana_cost.clone().unwrap_or_default();
+    let loyalty_display = sd.loyalty.clone().unwrap_or_default();
     let rarity_name = sd.rarity.to_long_name();
-    let set_name = sd.set_name.clone();
     let has_image: bool = sd.primary_image_url(ImageSize::Large).is_some();
     let scryfall_data_for_preview = sd.clone();
+    // Always mounted; the `.open` class drives the grid-rows + opacity collapse
+    // so the detail eases open and closed instead of popping.
+    let collapse_class = if is_expanded {
+        "card-row-collapse open"
+    } else {
+        "card-row-collapse"
+    };
 
     rsx! {
         div {
             key: "{card_id}",
             class: if is_expanded { "card-row expanded" } else { "card-row" },
-            onclick: move |_| {
-                if expanded_card() == Some(card_id) {
-                    expanded_card.set(None);
-                } else {
-                    expanded_card.set(Some(card_id));
-                }
-            },
 
-            div { class: "card-row-compact",
+            div {
+                class: "card-row-compact",
+                onclick: move |_| {
+                    if expanded_card() == Some(card_id) {
+                        expanded_card.set(None);
+                    } else {
+                        expanded_card.set(Some(card_id));
+                    }
+                },
+                span { class: "card-row-arrow", "▸" }
                 span { class: "card-row-qty", "{qty}" }
                 span { class: "card-row-name", "{name}" }
                 span { class: "card-row-cmc", "{cmc_display}" }
                 span { class: "card-row-pt", "{pt_display}" }
                 span { class: "card-row-colors",
                     for code in color_codes.iter() {
-                        i { key: "{code}", class: "ms ms-{code} ms-cost" }
+                        i { key: "{code}", class: "ms ms-{code} ms-cost ms-shadow" }
                     }
                 }
             }
 
-            if is_expanded {
+            div { class: "{collapse_class}",
+                div { class: "card-row-collapse-inner",
+                hr { class: "card-row-rule" }
                 div { class: "card-row-detail",
-                    p { style: "margin-bottom:0.35rem;word-break:break-word;white-space:normal;color:var(--accent-tertiary);", "{name}" }
-                    if !type_line.is_empty() {
-                        span { class: "opacity-50", style: "display:block;margin-bottom:0.5rem;", "{type_line}" }
-                    }
-                    if !oracle_text.is_empty() {
-                        p { class: "card-detail-oracle", "{oracle_text}" }
+                    div { class: "card-detail-head",
+                        p { class: "card-detail-name", "{name}" }
+                        if !mana_cost.is_empty() {
+                            OracleText { text: mana_cost, class: "card-detail-cost".to_string() }
+                        }
                     }
                     div { class: "card-detail-meta",
-                        span { class: "opacity-50", style: "color: var(--text-primary);", "{rarity_name} | {set_name}" }
+                        if !type_line.is_empty() {
+                            span { class: "detail-chip", "{type_line}" }
+                        }
+                        span { class: "detail-chip", "{rarity_name}" }
                     }
+                    if !keywords.is_empty() {
+                        KeywordChips { keywords }
+                    }
+                    if !oracle_text.is_empty() {
+                        OracleText { text: oracle_text, class: "card-detail-oracle".to_string() }
+                    }
+                    if !pt_display.is_empty() {
+                        div { class: "card-detail-stats",
+                            span { class: "detail-chip", "{pt_display}" }
+                        }
+                    } else if !loyalty_display.is_empty() {
+                        div { class: "card-detail-stats",
+                            span { class: "detail-chip", "Loyalty {loyalty_display}" }
+                        }
+                    }
+                }
+                hr { class: "card-row-rule card-row-rule-muted" }
+                div { class: "card-row-actions",
                     div { class: "qty-row",
                         if let Some(handler) = on_qty_change {
                             button {
@@ -180,6 +215,8 @@ pub(crate) fn CardRow(
                             }
                         }
                     }
+                }
+                hr { class: "card-row-rule card-row-rule-bottom" }
                 }
             }
         }

@@ -61,6 +61,12 @@ impl From<InvalidUpdateDeckProfile> for ApiError {
             InvalidUpdateDeckProfile::Format(e) => {
                 Self::UnprocessableEntity(format!("invalid format: {}", e))
             }
+            InvalidUpdateDeckProfile::DeckTag(e) => {
+                Self::UnprocessableEntity(format!("invalid deck tag: {}", e))
+            }
+            InvalidUpdateDeckProfile::TooManyTags => {
+                Self::UnprocessableEntity("a deck may have at most 5 tags".to_string())
+            }
             InvalidUpdateDeckProfile::NoUpdates => {
                 Self::UnprocessableEntity("must update at least one field".to_string())
             }
@@ -94,6 +100,7 @@ where
         .background_id(body.background_id.into_option())
         .signature_spell_id(body.signature_spell_id.into_option())
         .format(format_option)
+        .tags(body.tags.into_option())
         .build()?;
 
     let deck_profile = state

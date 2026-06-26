@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO decks (name, commander_id, partner_commander_id, background_id, signature_spell_id, format, user_id)\n               VALUES ($1, $2, $3, $4, $5, $6, $7)\n               RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, user_id,\n                         0::bigint as \"card_count\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = commander_id) as \"commander_name?\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = partner_commander_id) as \"partner_commander_name?\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = background_id) as \"background_name?\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = signature_spell_id) as \"signature_spell_name?\"",
+  "query": "INSERT INTO decks (name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags, user_id)\n               VALUES ($1, $2, $3, $4, $5, $6, $7, $8)\n               RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags as \"tags?\", user_id,\n                         0::bigint as \"card_count\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = commander_id) as \"commander_name?\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = partner_commander_id) as \"partner_commander_name?\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = background_id) as \"background_name?\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = signature_spell_id) as \"signature_spell_name?\"",
   "describe": {
     "columns": [
       {
@@ -40,31 +40,36 @@
       },
       {
         "ordinal": 7,
+        "name": "tags?",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 8,
         "name": "user_id",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "card_count",
         "type_info": "Int8"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "commander_name?",
         "type_info": "Text"
       },
       {
-        "ordinal": 10,
+        "ordinal": 11,
         "name": "partner_commander_name?",
         "type_info": "Text"
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "background_name?",
         "type_info": "Text"
       },
       {
-        "ordinal": 12,
+        "ordinal": 13,
         "name": "signature_spell_name?",
         "type_info": "Text"
       }
@@ -77,6 +82,7 @@
         "Uuid",
         "Uuid",
         "Text",
+        "Jsonb",
         "Uuid"
       ]
     },
@@ -89,6 +95,7 @@
       true,
       true,
       false,
+      false,
       null,
       null,
       null,
@@ -96,5 +103,5 @@
       null
     ]
   },
-  "hash": "1446e42da20211c29b9a07169a3f61c4e39a95b91d088778d1f180a043cc61ae"
+  "hash": "3695405721ba477806cb6fe6658bd7946ec322f7ee6c55178f1dbae75fb6a4c5"
 }

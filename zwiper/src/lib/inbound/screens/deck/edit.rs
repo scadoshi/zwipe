@@ -1,10 +1,12 @@
 //! Edit deck screen.
 
-use super::components::deck_fields::DeckFields;
+use super::components::deck_fields::{DeckFields, DeckFieldsHint};
+use super::components::swipe_select::{SwipeMode, SwipeSelect};
 use super::components::skeletons::EditDeckSkeleton;
 use crate::{
     inbound::{
         components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+        components::hint_dialog::use_one_time_hint,
         router::Router,
     },
     outbound::client::{
@@ -21,9 +23,10 @@ use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::{
-    Deck, deck_profile::DeckProfile, format::Format,
+    Deck, DeckTag, deck_profile::DeckProfile, format::Format,
     requests::update_deck_profile::InvalidUpdateDeckProfile,
 };
+use zwipe_core::domain::user::models::hints::HINT_EDIT_DECK;
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::helpers::Opdate;
 
@@ -39,18 +42,33 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut deck_name: Signal<String> = use_signal(String::new);
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
     let mut commander_display = use_signal(String::new);
+    let mut show_commander_swipe = use_signal(|| false);
+    let mut edit_hint = use_one_time_hint(HINT_EDIT_DECK);
     let mut selected_format: Signal<Option<Format>> = use_signal(|| None);
+    let mut selected_tags: Signal<Vec<DeckTag>> = use_signal(Vec::new);
     let mut partner_commander: Signal<Option<Card>> = use_signal(|| None);
     let mut partner_commander_display = use_signal(String::new);
     let mut background: Signal<Option<Card>> = use_signal(|| None);
     let mut background_display = use_signal(String::new);
     let mut signature_spell: Signal<Option<Card>> = use_signal(|| None);
     let mut signature_spell_display = use_signal(String::new);
+    let mut show_partner_swipe = use_signal(|| false);
+    let mut show_background_swipe = use_signal(|| false);
+    let mut show_signature_spell_swipe = use_signal(|| false);
+
+    // Reactive Zwipe-select modes — derived from the current format / commander.
+    let commander_mode = use_memo(move || selected_format().map(SwipeMode::Commander));
+    let partner_mode = use_memo(|| Some(SwipeMode::Partner));
+    let background_mode = use_memo(|| Some(SwipeMode::Background));
+    let spell_mode = use_memo(move || {
+        commander().map(|c| SwipeMode::SignatureSpell(c.scryfall_data.color_identity))
+    });
 
     // original values (for change detection)
     let mut original_deck_name: Signal<String> = use_signal(String::new);
     let mut original_commander: Signal<Option<Card>> = use_signal(|| None);
     let mut original_format: Signal<Option<Format>> = use_signal(|| None);
+    let mut original_tags: Signal<Vec<DeckTag>> = use_signal(Vec::new);
     let mut original_partner: Signal<Option<Card>> = use_signal(|| None);
     let mut original_background: Signal<Option<Card>> = use_signal(|| None);
     let mut original_signature_spell: Signal<Option<Card>> = use_signal(|| None);
@@ -71,6 +89,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             deck_name.set(deck.deck_profile.name.to_string());
             original_format.set(deck.deck_profile.format);
             selected_format.set(deck.deck_profile.format);
+            original_tags.set(deck.deck_profile.tags.clone());
+            selected_tags.set(deck.deck_profile.tags);
         }
         Some(Err(e)) => {
             toast.error(
@@ -261,6 +281,15 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             Opdate::Unchanged
         }
     });
+    let tags_update = use_memo(move || {
+        if selected_tags() != original_tags() {
+            Opdate::Set(Some(
+                selected_tags().iter().map(|t| t.to_string()).collect::<Vec<_>>(),
+            ))
+        } else {
+            Opdate::Unchanged
+        }
+    });
     let has_made_changes = use_memo(move || {
         deck_name_update().is_some()
             || commander_id_update().is_changed()
@@ -268,6 +297,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             || background_id_update().is_changed()
             || signature_spell_id_update().is_changed()
             || format_update().is_changed()
+            || tags_update().is_changed()
     });
 
     // save state
@@ -305,6 +335,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 .background_id(background_id_update())
                 .signature_spell_id(signature_spell_id_update())
                 .format(format_update())
+                .tags(tags_update())
                 .build();
 
             match client()
@@ -333,8 +364,14 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     rsx! {
         Bouncer {
             div { class: "screen",
-                div { class: "page-header",
+                div { class: "page-header", style: "position: relative;",
                     h2 { "Edit Deck" }
+                    button {
+                        class: "util-btn",
+                        style: "position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.55; padding: 0.2rem 0.6rem;",
+                        onclick: move |_| edit_hint.set(true),
+                        "?"
+                    }
                 }
 
                 div { class: "screen-content centered content-enter",
@@ -345,6 +382,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                 DeckFields {
                                     deck_name,
                                     selected_format,
+                                    selected_tags,
                                     commander,
                                     commander_display,
                                     partner_commander,
@@ -353,6 +391,10 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                     background_display,
                                     signature_spell,
                                     signature_spell_display,
+                                    show_commander_swipe,
+                                    show_partner_swipe,
+                                    show_background_swipe,
+                                    show_signature_spell_swipe,
                                 }
 
                             }
@@ -384,6 +426,48 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             }
 
             }
+            SwipeSelect {
+                open: show_commander_swipe,
+                mode: commander_mode,
+                on_select: move |card: Card| {
+                    commander_display.set(card.scryfall_data.name.clone());
+                    commander.set(Some(card));
+                    show_commander_swipe.set(false);
+                },
+                on_close: move |_| show_commander_swipe.set(false),
+            }
+            SwipeSelect {
+                open: show_partner_swipe,
+                mode: partner_mode,
+                on_select: move |card: Card| {
+                    partner_commander_display.set(card.scryfall_data.name.clone());
+                    partner_commander.set(Some(card));
+                    show_partner_swipe.set(false);
+                },
+                on_close: move |_| show_partner_swipe.set(false),
+            }
+            SwipeSelect {
+                open: show_background_swipe,
+                mode: background_mode,
+                on_select: move |card: Card| {
+                    background_display.set(card.scryfall_data.name.clone());
+                    background.set(Some(card));
+                    show_background_swipe.set(false);
+                },
+                on_close: move |_| show_background_swipe.set(false),
+            }
+            SwipeSelect {
+                open: show_signature_spell_swipe,
+                mode: spell_mode,
+                on_select: move |card: Card| {
+                    signature_spell_display.set(card.scryfall_data.name.clone());
+                    signature_spell.set(Some(card));
+                    show_signature_spell_swipe.set(false);
+                },
+                on_close: move |_| show_signature_spell_swipe.set(false),
+            }
+
+            DeckFieldsHint { open: edit_hint }
         }
     }
 }

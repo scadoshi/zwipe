@@ -553,6 +553,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
                     // Column headers
                     div { class: "card-row-compact card-row-header",
+                        span { class: "card-row-arrow" }
                         span { class: "card-row-qty", "Qty" }
                         span { class: "card-row-name", "Name" }
                         span { class: "card-row-cmc", "MV" }
@@ -866,9 +867,17 @@ pub fn View(deck_id: Uuid) -> Element {
                 open: deck_cards_hint_open,
                 title: "Browsing your deck",
                 HintLine {
-                    "Tap any card to expand it. Read its text, view its image, switch printings, or change its quantity."
+                    "Tap a card's row to expand it. You'll see its mana cost, type, keywords, rules text, and rarity, plus controls to view its image, switch printings, or change its quantity."
                 }
                 HintBullets {
+                    HintBullet {
+                        HintKey { "Keywords" }
+                        " appear as chips. Tap one for a short reminder of what it does."
+                    }
+                    HintBullet {
+                        HintKey { "Printing" }
+                        " swaps the art and set for that card."
+                    }
                     HintBullet {
                         HintKey { "Boards" }
                         " chooses which boards are listed."

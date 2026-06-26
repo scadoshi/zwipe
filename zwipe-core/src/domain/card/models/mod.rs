@@ -2,6 +2,8 @@
 
 /// User-specific card metadata (favorites, notes - future expansion).
 pub mod card_profile;
+/// Reminder text for keyword abilities (Flying, Trample, …).
+pub mod keyword;
 /// Mechanical category classification (ramp, draw, removal, etc.).
 pub mod mechanical_category;
 /// Scryfall API data models.

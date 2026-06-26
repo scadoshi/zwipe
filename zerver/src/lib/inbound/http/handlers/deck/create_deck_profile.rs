@@ -51,6 +51,12 @@ impl From<InvalidCreateDeckProfile> for ApiError {
             InvalidCreateDeckProfile::Format(e) => {
                 Self::UnprocessableEntity(format!("invalid format: {}", e))
             }
+            InvalidCreateDeckProfile::DeckTag(e) => {
+                Self::UnprocessableEntity(format!("invalid deck tag: {}", e))
+            }
+            InvalidCreateDeckProfile::TooManyTags => {
+                Self::UnprocessableEntity("a deck may have at most 5 tags".to_string())
+            }
         }
     }
 }
@@ -77,6 +83,7 @@ where
         .background_id(body.background_id)
         .signature_spell_id(body.signature_spell_id)
         .format(body.format.as_deref())
+        .tags(body.tags.unwrap_or_default())
         .build()?;
 
     let deck_profile = state

@@ -1,7 +1,8 @@
 //! Update deck profile operation.
 
 use crate::domain::deck::{
-    DeckName, InvalidDeckname,
+    DeckName, DeckTag, InvalidDeckname, InvalidDeckTag, MAX_DECK_TAGS,
+    deck_tag::parse_tags,
     format::{Format, InvalidFormat},
 };
 use thiserror::Error;
@@ -16,6 +17,12 @@ pub enum InvalidUpdateDeckProfile {
     /// Format string is not a recognized format.
     #[error(transparent)]
     Format(InvalidFormat),
+    /// A tag string is not a recognized deck tag.
+    #[error(transparent)]
+    DeckTag(InvalidDeckTag),
+    /// More than [`MAX_DECK_TAGS`] tags were supplied.
+    #[error("a deck may have at most {MAX_DECK_TAGS} tags")]
+    TooManyTags,
     /// No fields specified for update.
     #[error("must update at least one field")]
     NoUpdates,
@@ -30,6 +37,12 @@ impl From<InvalidDeckname> for InvalidUpdateDeckProfile {
 impl From<InvalidFormat> for InvalidUpdateDeckProfile {
     fn from(value: InvalidFormat) -> Self {
         Self::Format(value)
+    }
+}
+
+impl From<InvalidDeckTag> for InvalidUpdateDeckProfile {
+    fn from(value: InvalidDeckTag) -> Self {
+        Self::DeckTag(value)
     }
 }
 
@@ -50,6 +63,9 @@ pub struct UpdateDeckProfile {
     pub signature_spell_id: Option<Option<Uuid>>,
     /// Optional format update.
     pub format: Option<Option<Format>>,
+    /// Optional tags update. `Some` replaces the deck's full tag set (an empty
+    /// vec clears all tags); `None` leaves tags untouched.
+    pub tags: Option<Vec<DeckTag>>,
     /// Requesting user (for authorization).
     pub user_id: Uuid,
 }
@@ -66,6 +82,7 @@ impl UpdateDeckProfile {
             background_id: None,
             signature_spell_id: None,
             format: None,
+            tags: None,
         }
     }
 }
@@ -80,6 +97,7 @@ pub struct UpdateDeckProfileBuilder {
     background_id: Option<Option<Uuid>>,
     signature_spell_id: Option<Option<Uuid>>,
     format: Option<Option<String>>,
+    tags: Option<Option<Vec<String>>>,
 }
 
 impl UpdateDeckProfileBuilder {
@@ -119,6 +137,14 @@ impl UpdateDeckProfileBuilder {
         self
     }
 
+    /// Sets the tags update. Outer `Some` means "update tags"; the inner value
+    /// is the new full set (`None`/empty clears all tags). `None` leaves tags
+    /// untouched.
+    pub fn tags(mut self, tags: Option<Option<Vec<String>>>) -> Self {
+        self.tags = tags;
+        self
+    }
+
     /// Validates and builds the request.
     pub fn build(self) -> Result<UpdateDeckProfile, InvalidUpdateDeckProfile> {
         if self.name.is_none()
@@ -127,6 +153,7 @@ impl UpdateDeckProfileBuilder {
             && self.background_id.is_none()
             && self.signature_spell_id.is_none()
             && self.format.is_none()
+            && self.tags.is_none()
         {
             return Err(InvalidUpdateDeckProfile::NoUpdates);
         }
@@ -135,6 +162,16 @@ impl UpdateDeckProfileBuilder {
             .format
             .map(|update| update.as_deref().map(Format::try_from).transpose())
             .transpose()?;
+        let tags = match self.tags {
+            None => None,
+            Some(raw) => {
+                let parsed = parse_tags(&raw.unwrap_or_default())?;
+                if parsed.len() > MAX_DECK_TAGS {
+                    return Err(InvalidUpdateDeckProfile::TooManyTags);
+                }
+                Some(parsed)
+            }
+        };
 
         Ok(UpdateDeckProfile {
             deck_id: self.deck_id,
@@ -144,6 +181,7 @@ impl UpdateDeckProfileBuilder {
             background_id: self.background_id,
             signature_spell_id: self.signature_spell_id,
             format,
+            tags,
             user_id: self.user_id,
         })
     }

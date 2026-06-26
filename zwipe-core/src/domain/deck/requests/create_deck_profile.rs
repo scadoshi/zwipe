@@ -1,7 +1,8 @@
 //! Create deck profile operation.
 
 use crate::domain::deck::{
-    DeckName, InvalidDeckname,
+    DeckName, DeckTag, InvalidDeckname, InvalidDeckTag, MAX_DECK_TAGS,
+    deck_tag::parse_tags,
     format::{Format, InvalidFormat},
 };
 use thiserror::Error;
@@ -16,6 +17,12 @@ pub enum InvalidCreateDeckProfile {
     /// Format string is not a recognized format.
     #[error(transparent)]
     Format(#[from] InvalidFormat),
+    /// A tag string is not a recognized deck tag.
+    #[error(transparent)]
+    DeckTag(#[from] InvalidDeckTag),
+    /// More than [`MAX_DECK_TAGS`] tags were supplied.
+    #[error("a deck may have at most {MAX_DECK_TAGS} tags")]
+    TooManyTags,
 }
 
 /// Request to create a new deck profile.
@@ -33,6 +40,8 @@ pub struct CreateDeckProfile {
     pub signature_spell_id: Option<Uuid>,
     /// Optional deck format.
     pub format: Option<Format>,
+    /// Deck archetype/strategy tags (validated, deduped, at most [`MAX_DECK_TAGS`]).
+    pub tags: Vec<DeckTag>,
     /// Owner of this deck.
     pub user_id: Uuid,
     /// Whether the requesting user's email is verified.
@@ -55,6 +64,7 @@ impl CreateDeckProfile {
             background_id: None,
             signature_spell_id: None,
             format: None,
+            tags: Vec::new(),
         }
     }
 }
@@ -69,6 +79,7 @@ pub struct CreateDeckProfileBuilder {
     background_id: Option<Uuid>,
     signature_spell_id: Option<Uuid>,
     format: Option<String>,
+    tags: Vec<String>,
 }
 
 impl CreateDeckProfileBuilder {
@@ -102,6 +113,12 @@ impl CreateDeckProfileBuilder {
         self
     }
 
+    /// Sets the deck tags from raw strings (validated, deduped, and capped on build).
+    pub fn tags(mut self, tags: Vec<String>) -> Self {
+        self.tags = tags;
+        self
+    }
+
     /// Validates and builds the request.
     pub fn build(self) -> Result<CreateDeckProfile, InvalidCreateDeckProfile> {
         let name = DeckName::new(self.name)?;
@@ -110,6 +127,10 @@ impl CreateDeckProfileBuilder {
             .as_deref()
             .map(Format::try_from)
             .transpose()?;
+        let tags = parse_tags(&self.tags)?;
+        if tags.len() > MAX_DECK_TAGS {
+            return Err(InvalidCreateDeckProfile::TooManyTags);
+        }
         Ok(CreateDeckProfile {
             name,
             commander_id: self.commander_id,
@@ -117,8 +138,42 @@ impl CreateDeckProfileBuilder {
             background_id: self.background_id,
             signature_spell_id: self.signature_spell_id,
             format,
+            tags,
             user_id: self.user_id,
             email_verified: self.email_verified,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn builder(tags: Vec<&str>) -> CreateDeckProfileBuilder {
+        CreateDeckProfile::builder("My Deck", Uuid::new_v4(), true)
+            .tags(tags.into_iter().map(str::to_string).collect())
+    }
+
+    #[test]
+    fn parses_and_dedupes_tags() {
+        let req = builder(vec!["aggro", "tokens", "aggro"]).build().unwrap();
+        assert_eq!(req.tags, vec![DeckTag::Aggro, DeckTag::Tokens]);
+    }
+
+    #[test]
+    fn rejects_unknown_tag() {
+        assert!(matches!(
+            builder(vec!["aggro", "not_a_tag"]).build(),
+            Err(InvalidCreateDeckProfile::DeckTag(_))
+        ));
+    }
+
+    #[test]
+    fn rejects_too_many_tags() {
+        let res = builder(vec![
+            "aggro", "control", "tokens", "burn", "mill", "stax",
+        ])
+        .build();
+        assert!(matches!(res, Err(InvalidCreateDeckProfile::TooManyTags)));
     }
 }

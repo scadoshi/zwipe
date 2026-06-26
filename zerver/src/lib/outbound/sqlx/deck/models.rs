@@ -5,6 +5,7 @@ use crate::outbound::sqlx::deck::error::{IntoDeckCardError, IntoDeckProfileError
 use zwipe_core::domain::deck::{
     Board,
     DeckCard,
+    DeckTag,
     deck_name::DeckName,
     deck_profile::DeckProfile,
     format::Format,
@@ -23,6 +24,7 @@ pub struct DatabaseDeckProfile {
     pub background_id: Option<Uuid>,
     pub signature_spell_id: Option<Uuid>,
     pub format: Option<String>,
+    pub tags: Option<serde_json::Value>,
     pub user_id: Uuid,
     pub card_count: Option<i64>,
     pub commander_name: Option<String>,
@@ -37,6 +39,18 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
     fn try_from(value: DatabaseDeckProfile) -> Result<Self, Self::Error> {
         let name = DeckName::new(value.name)?;
         let format = value.format.map(Format::try_from).transpose()?;
+        // Unrecognized tag strings are dropped (forward-compatible), like card
+        // mechanical_categories.
+        let tags = value
+            .tags
+            .and_then(|v| serde_json::from_value::<Vec<String>>(v).ok())
+            .map(|strings| {
+                strings
+                    .iter()
+                    .filter_map(|s| DeckTag::try_from(s.as_str()).ok())
+                    .collect()
+            })
+            .unwrap_or_default();
 
         Ok(Self {
             id: value.id,
@@ -46,6 +60,7 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
             background_id: value.background_id,
             signature_spell_id: value.signature_spell_id,
             format,
+            tags,
             user_id: value.user_id,
             card_count: value.card_count.unwrap_or(0),
             commander_name: value.commander_name,

@@ -1,4 +1,5 @@
 use super::components::card_info::{CardInfoDisplay, CardSkeleton};
+use super::components::keyword_hint::{KeywordHintDialog, card_has_keywords};
 use crate::{
     inbound::{
         components::{
@@ -27,7 +28,7 @@ use std::time::Duration;
 use uuid::Uuid;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpUpdateDeckCard};
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::user::models::hints::HINT_REMOVE_SWIPES;
+use zwipe_core::domain::user::models::hints::HINT_REMOVE_DECK_CARDS;
 use zwipe_core::domain::card::{
     Card,
     search_card::{
@@ -69,7 +70,8 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
     // Swipe vocabulary hint: auto-opens on this user's first visit, the
     // grayed "?" in the util bar reopens it on demand.
-    let mut swipe_hint_open = use_one_time_hint(HINT_REMOVE_SWIPES);
+    let mut swipe_hint_open = use_one_time_hint(HINT_REMOVE_DECK_CARDS);
+    let mut keyword_hint_open = use_signal(|| false);
 
     // Incrementing this re-runs the filter effect
     let mut filter_reset_counter: Signal<u32> = use_signal(|| 0);
@@ -588,6 +590,17 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         "Clear"
                     }
                 }
+                if current_card().as_ref().is_some_and(card_has_keywords) {
+                    button {
+                        class: "util-btn",
+                        onclick: move |_| keyword_hint_open.set(true),
+                        "Keywords"
+                    }
+                }
+            }
+
+            if let Some(card) = current_card() {
+                KeywordHintDialog { open: keyword_hint_open, card }
             }
 
             HintDialog {

@@ -45,6 +45,7 @@
   flex-direction: column;
   width: calc(100% - 2rem);
   max-width: 20rem;
+  max-height: 85vh;
   box-sizing: border-box;
   padding: 2rem;
   border: 1px solid var(--border-secondary);
@@ -59,14 +60,19 @@
 
 .alert-dialog-title {
   margin: 0;
-  color: var(--text-primary);
+  color: var(--accent-tertiary);
   font-size: 1.25rem;
   font-weight: 400;
   letter-spacing: 0.1em;
 }
 
+/* The body scrolls on its own when the content is tall, so the title and the
+   actions below stay pinned. */
 .alert-dialog-description {
   margin: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   color: var(--text-primary);
   font-size: 1rem;
   font-weight: 400;
