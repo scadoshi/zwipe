@@ -109,6 +109,27 @@ Build 15 shipped over build 14 with: `Email` strict newtype across the workspace
 
 ---
 
+## 1.1.0 — Zwipe-select, deck tags, keyword hinter, card detail (both stores, 2026-06-25)
+
+First **minor** bump (1.0.x → 1.1.0): a batch of user-facing features plus two Android-only fixes. **iOS build 48** (Transporter → Apple review) and **Android versionCode 8** (Alpha closed-testing track), both at version 1.1.0, submitted 2026-06-25. Backward-compatible and server-additive throughout.
+
+Features (shipped from the `feat/zwipe-select` branch, merged via PR #18):
+- **Zwipe-select** — extend the swipe mechanic to the command zone: swipe through legal commanders / partners / backgrounds / signature spells (a `SwipeMode` enum + a "Zwipe" chip on each command-zone field). Retires the old "Zwipe for Commander" backlog idea.
+- **Deck tags** — label decks with up to 5 archetype tags. New pure `DeckTag` enum (~65 curated archetypes from EDHREC/Archidekt/Moxfield), persisted as a JSONB `tags` column on `decks` (migration `add_deck_tags` + GIN index, mirrors `mechanical_categories`). Searchable typeahead picker in the deck form; chips on the deck list + detail.
+- **Keyword hinter** — tappable keyword chips in the expanded card detail with plain-language reminders, plus a "Keywords" button in the swipe util-bar opening a dialog of every keyword on the card. `keyword_reminder` covers ~290 of Scryfall's keyword catalog with a friendly catch-all.
+- **Expanded card-row detail** — tap a deck card for mana cost (mana-font glyphs), type/rarity chips, oracle text with `{symbol}` glyphs, P/T or planeswalker loyalty, accent-framed dividers, and a smooth grid-rows expand/collapse. Mana pills got the card-style drop shadow + roomier circles; color identity sorts WUBRG.
+- **`OrderByOption::EdhrecRank`** sort (server-additive, already live) + add-cards filter gating.
+
+Android-only fixes:
+- **Session persistence** — `keyring` has no Android backend (it was silently using its in-memory mock → users logged out on restart). Now cfg-gated: Apple/desktop keep the OS keychain; Android persists the session to a JSON file in internal storage (`/data/data/<pkg>/files/`), path resolved via JNI through `ndk-context` + `jni`. Verified end-to-end on Pixel_9a (login survives force-stop). iOS was never affected.
+- **Launcher icon** — dx ships its default green droid; `zcripts/android/launcher-icons.sh` now regenerates the real Zwipe icon (legacy webp + adaptive layers) from `icon-1024.png` after each `dx bundle` (runbook step 1b).
+
+Other: `Opdate` now defaults to `Unchanged` so older shipped clients (which don't send the new `tags` field) still parse deck-profile updates; SwipeSelect now records the select (right) swipe in usage metrics. Build re-cuts within 1.1.0: iOS 47→48 (mana-pill consistency fix), Android vc7→vc8 (the metrics line). Server redeployed with the deck-tags migration + 65-tag enum.
+
+Marketing: **Day 333** build-in-public posts to X / Reddit / Bluesky (video of the new features). Both sites refreshed — zite demo gallery re-shot (dropped register, added filter) + feature grid surfaces the new features; portfolio's zwipe section updated and its "App Store submission pending" copy corrected to "submitted to both stores".
+
+---
+
 ## 1.0.10 — update-screen redesign + external-link arrows (both stores, 2026-06-23)
 
 First **coordinated iOS + Android release run**, both at version 1.0.10:
