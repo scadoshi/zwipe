@@ -39,6 +39,16 @@ Built for players who want a fast, focused mobile experience — not another clu
 
 ---
 
+## What's New in This Version (1.1.0)
+
+- Tag your decks: add up to 5 strategy tags (Aggro, Tokens, Reanimator, and more) to label a deck at a glance — your tags show on your deck list and deck page.
+- Swipe to pick your command zone: a new "Zwipe" option lets you swipe through legal choices for your commander, partner, background, or signature spell instead of typing a search.
+- Tap any card in your deck to expand it — now with its mana cost, type, rules text rendered with real mana symbols, and power/toughness or starting loyalty.
+- Keyword helper: tap a keyword to get a plain-language reminder of what it does, and a Keywords button while swiping lists every keyword on the current card.
+- Polish: card-style drop shadows on mana symbols, roomier pips, smoother expanding card details, and dialogs that scroll when there's a lot to show.
+
+---
+
 ## What's New in This Version (1.0.10)
 
 - Commander search now shows a "Searching…" hint while it looks, so a card never seems missing while results load.
@@ -112,7 +122,7 @@ MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading ca
 |-------|-------|
 | Support URL | https://zwipe.net |
 | Marketing URL | https://zwipe.net |
-| Version | 1.0.10 |
+| Version | 1.1.0 |
 | Copyright | 2026 Scotty Fermo |
 | Routing App Coverage File | (leave empty) |
 
