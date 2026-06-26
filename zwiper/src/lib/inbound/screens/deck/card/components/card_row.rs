@@ -39,8 +39,11 @@ pub(crate) fn CardRow(
         (Some(p), Some(t)) => format!("{p}/{t}"),
         _ => String::new(),
     };
-    let color_codes = sd
-        .color_identity
+    // Color identity is an unordered set; sort to canonical WUBRG order
+    // (Color's Ord follows its WUBRG variant declaration).
+    let mut colors = sd.color_identity.iter().copied().collect::<Vec<_>>();
+    colors.sort();
+    let color_codes = colors
         .iter()
         .map(|c| c.to_short_name().to_lowercase())
         .collect::<Vec<_>>();
