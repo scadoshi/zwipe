@@ -15,7 +15,7 @@ at `context/archive/complete_2026_q1.md`.
 2. **Marketing — get users.** Business cards for LGSs, Reddit/X posts (see Marketing & Discovery below). The first wave doubles as the Android closed-test tester pool.
 3. **VPS — stabilize.** Cutover is done (see `overview.md`); remaining follow-ups are the two items below.
 
-- [ ] **Track 1.0.9 (build 42) App Store review + propagation** — submitted 2026-06-23; supersedes 1.0.8. Watch ASC review states. Once approved + propagated, 1.0.9 becomes the floor for `MIN_CLIENT_VERSION` gating. (Per-change detail is in `overview.md`.)
+- [ ] **Track 1.1.0 review on both stores** — iOS **build 48** + Android **versionCode 8** submitted 2026-06-25 (each supersedes the same-day 47 / vc7 that were never approved). Watch ASC review states; Android rides the Alpha closed-testing track. Once approved + propagated, 1.1.0 becomes the floor for `MIN_CLIENT_VERSION` gating. (Per-change detail is in `overview.md`.)
 - [ ] **Verify the VPS crons fired.** First unattended run was 2026-06-14 (zervice 4am + backup 5am UTC). Check: `ssh root@100.114.251.8` (or `zerver` alias), then `tail /var/log/zwipe/zervice-cron.log /var/log/zwipe/backup.log` and `rclone lsl r2:zwipe-backups/ | tail -3` — a recent dated dump should be present. If the zervice log is empty, recheck the `SHELL=/bin/bash` line (the dash-vs-bash trap from `operations/infrastructure/server.md`).
 - [ ] **Repurpose home box + rotate R2 keys — after ~1–2 clean VPS weeks.** Home is powered off but intact as the rollback (boot → flip `api.zwipe.net` CNAME to home tunnel `70ba169b-…` → `systemctl start zerver`). Once the VPS has a clean run, rebuild home as a gaming box (a different Linux distro) — that reinstall wipes the old prod secrets on its disk. Then rotate the still-shared R2 keys (JWT/DB/Resend are already fresh on the VPS, so only R2 carries over from home). Closing the rollback window = remove old home tunnel `70ba169b-…` + old Tailscale device.
 
@@ -117,7 +117,7 @@ Once wasm compiles, build the authenticated experience into zite:
 
 ## Marketing & Discovery
 
-- [ ] **Marketing posts** — Reddit (r/EDH, r/magicTCG, r/CompetitiveEDH) and X. Lead with the swipe demo video, link the App Store listing.
+- [ ] **Marketing posts — first wave launched 2026-06-25 (Day 333).** Build-in-public posts to X, Reddit, and Bluesky with a video of the 1.1.0 features. Keep cadence going; note r/EDH and r/magicTCG *posts* are karma/age-gated (comment first, build toward posting).
 - [ ] **Business cards for LGSs** (noted 2026-06-10; **design DRAFTED 2026-06-12, awaiting feedback + a printer**) — self-contained HTML/CSS mockup at `context/marketing/business_card.html` (committed `cebe5d91`). It's a real MTG-style **creature card** (not a token): 2.5×3.5in, gruvbox by default with a dark-theme picker, front + back shown together. Front = title bar with WUBRG mana cost (real mana-font symbols, toggle for coded `{W}` text), theme-tinted **QR** (defaults to zwipe.net; App Store option) as the art, type line `Artifact Creature — Mobile App` with the pixel-Z as the set symbol, oracle text with keyworded features (**ETB swipe** left-red/right-green, **Synergy**, **Import**, **Free** — "Free forever. No ads.", deliberately no "subscriptions" so premium stays open), `*/*` P/T, selectable flavor (default banger: "Every great deck begins with a single swipe."). Back = full Zwipe wordmark + `zwipe.net`, nothing else. Oracle text auto-fits its box. Flat (no gradients). **Next: gather feedback from folks, then find a printer** (see options below). Ask store owners before leaving stacks; commander-night crowds are the target.
   - **Printing notes**: standard playing-card stock is **2.5×3.5in (63×88mm)**. For a true card feel use a card printer (MakePlayingCards/MPC, PrinterStudio, Ad Magic, or a local print shop with 300–350gsm + matte/linen finish) — order a custom card or "custom card game" SKU. For cheap-and-fast, a local shop can do business-card stock but it's thinner. Export: open the HTML, print to PDF at 100% (no scaling) with "background graphics" ON; add 1/8in bleed if the printer wants it. QR scannability holds down to ~0.8in — current QR is well above that.
 
@@ -169,19 +169,6 @@ Phases 1+2 shipped (see archive). ~73% classification rate today; refinement tar
 - [ ] Consider additional removal patterns (e.g. "exile target" with qualifiers, fight mechanics)
 - [ ] Burn heuristic excludes creatures — should it include creatures with ETB damage?
 - [ ] Stax heuristic may false-positive on cards that say "can't" in reminder text
-
----
-
-## Zwipe for Commander (Phase 3, UX Enhancement)
-
-A dedicated swiping flow for commander selection. Future work — only build if users want it.
-
-- [ ] On create/edit screen, when format has a commander, show "Zwipe for Commander" button
-- [ ] Opens the swiping interface pre-filtered to valid commanders for the selected format
-- [ ] User can adjust filters (colors, mana cost, set, etc.) and swipe through candidates
-- [ ] First swipe-right sets the commander and returns to the create/edit screen
-- [ ] Format filter defaults to deck's format but user can change it
-- [ ] Works on both create and edit screens
 
 ---
 

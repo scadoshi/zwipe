@@ -216,3 +216,14 @@ the bundle → **Upload native debug symbols** (a zip containing
   bump); only the versionCode increments. Artifact `zwipe-1.0.10-build6.aab`,
   **submitted to the Alpha track 2026-06-23**. iOS counterpart: build 45
   (submitted to Apple review the same day).
+
+- **2026-06-25 — `1.1.0`, versionCode `8`** (Zwipe-select, deck tags, keyword
+  hinter, expanded card detail — first minor bump). Two Android-only fixes rode
+  here: **session persistence** (keyring has no Android backend → was using its
+  in-memory mock, so sessions died on restart; now a JSON file in internal storage
+  via JNI — see `zwiper/src/lib/outbound/session.rs`) and the **real launcher icon**
+  (step 1b — dx ships its default droid). versionCode **`7` was built + smoke-tested
+  but never uploaded**, then a one-line metrics fix (record the SwipeSelect select
+  swipe) bumped it to **`8`, submitted to the Alpha track**. Artifact
+  `zwipe-1.1.0.aab`. iOS counterpart: build 48. *Lesson: an unuploaded versionCode
+  can be reused — 7 was never sent to Play, so 8 is the next real number after 6.*
