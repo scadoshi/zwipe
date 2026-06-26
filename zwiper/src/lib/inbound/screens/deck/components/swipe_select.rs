@@ -340,6 +340,7 @@ pub(crate) fn SwipeSelect(
                                 );
                             },
                             on_swipe_right: move |card: Card| {
+                                usage_buffer().record_swipe(Direction::Right);
                                 let mut label = noun.to_string();
                                 if let Some(first) = label.get_mut(..1) {
                                     first.make_ascii_uppercase();
