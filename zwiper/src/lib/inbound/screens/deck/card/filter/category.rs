@@ -2,8 +2,7 @@
 
 use dioxus::prelude::*;
 use zwipe_core::domain::card::{
-    mechanical_category::MechanicalCategory,
-    search_card::card_filter::builder::CardFilterBuilder,
+    mechanical_category::MechanicalCategory, search_card::card_filter::builder::CardFilterBuilder,
 };
 
 use super::match_mode::MatchMode;
@@ -25,13 +24,22 @@ pub fn Category() -> Element {
     let read_selected = move || -> Vec<String> {
         let fb = filter_builder();
         match mode() {
-            MatchMode::Any => fb.mechanical_categories_contains_any().map(|v| v.to_vec()).unwrap_or_default(),
-            MatchMode::All => fb.mechanical_categories_contains_all().map(|v| v.to_vec()).unwrap_or_default(),
+            MatchMode::Any => fb
+                .mechanical_categories_contains_any()
+                .map(|v| v.to_vec())
+                .unwrap_or_default(),
+            MatchMode::All => fb
+                .mechanical_categories_contains_all()
+                .map(|v| v.to_vec())
+                .unwrap_or_default(),
         }
     };
 
     let read_excluded = move || -> Vec<String> {
-        filter_builder().mechanical_categories_excludes().map(|v| v.to_vec()).unwrap_or_default()
+        filter_builder()
+            .mechanical_categories_excludes()
+            .map(|v| v.to_vec())
+            .unwrap_or_default()
     };
 
     let mut write_categories = move |cats: Vec<String>, m: MatchMode| {
@@ -40,8 +48,12 @@ pub fn Category() -> Element {
         fb.unset_mechanical_categories_contains_all();
         if !cats.is_empty() {
             match m {
-                MatchMode::Any => { fb.set_mechanical_categories_contains_any(cats); }
-                MatchMode::All => { fb.set_mechanical_categories_contains_all(cats); }
+                MatchMode::Any => {
+                    fb.set_mechanical_categories_contains_any(cats);
+                }
+                MatchMode::All => {
+                    fb.set_mechanical_categories_contains_all(cats);
+                }
             }
         }
     };

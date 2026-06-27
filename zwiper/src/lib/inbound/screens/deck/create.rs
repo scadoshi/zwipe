@@ -2,23 +2,23 @@
 
 use super::components::deck_fields::{DeckFields, DeckFieldsHint};
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
+use crate::inbound::components::screen_header::ScreenHeader;
 use crate::{
     inbound::{
         components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
         components::hint_dialog::use_one_time_hint,
         router::Router,
     },
-    outbound::client::{deck::create_deck::ClientCreateDeck, ZwipeClient},
+    outbound::client::{ZwipeClient, deck::create_deck::ClientCreateDeck},
 };
-use zwipe_core::domain::user::models::hints::HINT_CREATE_DECK;
 use dioxus::prelude::*;
-use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
-use zwipe_core::domain::deck::{DeckTag, format::Format};
-use zwipe_core::http::contracts::deck::HttpCreateDeckProfile;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::deck::{DeckTag, format::Format};
+use zwipe_core::domain::user::models::hints::HINT_CREATE_DECK;
+use zwipe_core::http::contracts::deck::HttpCreateDeckProfile;
 
 /// Screen for creating a new deck with name and settings.
 #[component]
@@ -65,7 +65,10 @@ pub fn CreateDeck() -> Element {
             let session = match session.ensure_fresh(auth_client).await {
                 Ok(session) => session,
                 Err(e) => {
-                    toast.error(e.to_user_message(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                    toast.error(
+                        e.to_user_message(),
+                        ToastOptions::default().duration(Duration::from_millis(3000)),
+                    );
                     is_saving.set(false);
                     return;
                 }
@@ -90,7 +93,10 @@ pub fn CreateDeck() -> Element {
                     });
                 }
                 Err(e) => {
-                    toast.error(e.to_user_message(), ToastOptions::default().duration(Duration::from_millis(3000)));
+                    toast.error(
+                        e.to_user_message(),
+                        ToastOptions::default().duration(Duration::from_millis(3000)),
+                    );
                     is_saving.set(false);
                 }
             }

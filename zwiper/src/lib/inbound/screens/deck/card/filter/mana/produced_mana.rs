@@ -17,8 +17,14 @@ const MANA_SYMBOLS: &[(&str, &str)] = &[
 
 fn read_produced_mana(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<String> {
     match mode {
-        MatchMode::Any => fb.produced_mana_contains_any().map(|v| v.to_vec()).unwrap_or_default(),
-        MatchMode::All => fb.produced_mana_contains_all().map(|v| v.to_vec()).unwrap_or_default(),
+        MatchMode::Any => fb
+            .produced_mana_contains_any()
+            .map(|v| v.to_vec())
+            .unwrap_or_default(),
+        MatchMode::All => fb
+            .produced_mana_contains_all()
+            .map(|v| v.to_vec())
+            .unwrap_or_default(),
     }
 }
 
@@ -27,14 +33,20 @@ fn write_produced_mana(fb: &mut CardFilterBuilder, mode: MatchMode, values: Vec<
     fb.unset_produced_mana_contains_all();
     if !values.is_empty() {
         match mode {
-            MatchMode::Any => { fb.set_produced_mana_contains_any(values); }
-            MatchMode::All => { fb.set_produced_mana_contains_all(values); }
+            MatchMode::Any => {
+                fb.set_produced_mana_contains_any(values);
+            }
+            MatchMode::All => {
+                fb.set_produced_mana_contains_all(values);
+            }
         }
     }
 }
 
 fn read_excluded(fb: &CardFilterBuilder) -> Vec<String> {
-    fb.produced_mana_excludes().map(|v| v.to_vec()).unwrap_or_default()
+    fb.produced_mana_excludes()
+        .map(|v| v.to_vec())
+        .unwrap_or_default()
 }
 
 fn write_excluded(fb: &mut CardFilterBuilder, values: Vec<String>) {

@@ -14,12 +14,12 @@ use crate::inbound::components::hint_dialog::{
 use crate::inbound::components::interactions::swipe::{
     STACK_DEPTH, SwipeStack, config::SwipeConfig, direction::Direction,
 };
+use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::screens::deck::card::components::card_info::{CardInfoDisplay, CardSkeleton};
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
 use crate::outbound::client::{ZwipeClient, card::search_cards::ClientSearchCards};
 use dioxus::prelude::*;
-use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::collections::HashSet;
 use std::time::Duration;
@@ -121,7 +121,8 @@ pub(crate) fn SwipeSelect(
     // filter. Persists across open/close because this component stays mounted.
     let mut filter_builder = use_signal(|| {
         let mut b = CardFilterBuilder::new();
-        b.set_order_by(OrderByOption::EdhrecRank).set_ascending(true);
+        b.set_order_by(OrderByOption::EdhrecRank)
+            .set_ascending(true);
         b
     });
     use_context_provider(|| filter_builder);
@@ -184,7 +185,11 @@ pub(crate) fn SwipeSelect(
                 Ok(found) => {
                     let page: Vec<Card> = found
                         .into_iter()
-                        .filter(|c| c.scryfall_data.primary_image_url(ImageSize::Large).is_some())
+                        .filter(|c| {
+                            c.scryfall_data
+                                .primary_image_url(ImageSize::Large)
+                                .is_some()
+                        })
                         .collect();
                     if page.is_empty() {
                         exhausted.set(true);
@@ -224,7 +229,9 @@ pub(crate) fn SwipeSelect(
                     let mut page: Vec<Card> = found
                         .into_iter()
                         .filter(|c| {
-                            c.scryfall_data.primary_image_url(ImageSize::Large).is_some()
+                            c.scryfall_data
+                                .primary_image_url(ImageSize::Large)
+                                .is_some()
                                 && !seen.contains(&c.scryfall_data.id)
                         })
                         .collect();

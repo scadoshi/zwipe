@@ -1,10 +1,14 @@
 use super::components::card_info::{CardInfoDisplay, CardSkeleton};
 use super::components::keyword_hint::{KeywordHintDialog, card_has_keywords};
+use crate::inbound::components::chip::Chip;
+use crate::inbound::components::screen_header::ScreenHeader;
 use crate::{
     inbound::{
         components::{
             auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
-            hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, HintLine, use_one_time_hint},
+            hint_dialog::{
+                HintBullet, HintBullets, HintColored, HintDialog, HintLine, use_one_time_hint,
+            },
             interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
             telemetry::usage_buffer::UsageBuffer,
         },
@@ -23,14 +27,10 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
-use crate::inbound::components::chip::Chip;
-use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpUpdateDeckCard};
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::user::models::hints::HINT_REMOVE_DECK_CARDS;
 use zwipe_core::domain::card::{
     Card,
     search_card::{
@@ -39,6 +39,8 @@ use zwipe_core::domain::card::{
     },
 };
 use zwipe_core::domain::deck::{Board, DeckEntry};
+use zwipe_core::domain::user::models::hints::HINT_REMOVE_DECK_CARDS;
+use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpUpdateDeckCard};
 
 /// Board filter for the remove screen.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
@@ -104,7 +106,12 @@ pub fn Remove(deck_id: Uuid) -> Element {
     // Thresholds tuned for responsive rapid swiping: a short drag (60px) OR
     // a quick flick (1.5 px/ms over the 10px minimum) commits.
     let swipe_config = SwipeConfig::new(
-        vec![Direction::Left, Direction::Right, Direction::Up, Direction::Down],
+        vec![
+            Direction::Left,
+            Direction::Right,
+            Direction::Up,
+            Direction::Down,
+        ],
         60.0,
         1.5,
     );
@@ -331,10 +338,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     match client().create_deck_card(deck_id, &request, &session).await {
                         Ok(deck_card) => {
                             // Re-add entry to source of truth
-                            deck_entries.write().push(DeckEntry {
-                                card,
-                                deck_card,
-                            });
+                            deck_entries.write().push(DeckEntry { card, deck_card });
                             toast.success(
                                 "Undid remove".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
@@ -342,10 +346,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         }
                         Err(e) => {
                             tracing::warn!("undo remove (create deck card) failed: {e}");
-                            toast.error(
-                                format!("Failed to undo: {}", e),
-                                ToastOptions::default(),
-                            );
+                            toast.error(format!("Failed to undo: {}", e), ToastOptions::default());
                         }
                     }
                 });
@@ -390,10 +391,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         }
                         Err(e) => {
                             tracing::warn!("undo maybeboard (update deck card) failed: {e}");
-                            toast.error(
-                                format!("Failed to undo: {}", e),
-                                ToastOptions::default(),
-                            );
+                            toast.error(format!("Failed to undo: {}", e), ToastOptions::default());
                         }
                     }
                 });
@@ -437,10 +435,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         }
                         Err(e) => {
                             tracing::warn!("undo board move (update deck card) failed: {e}");
-                            toast.error(
-                                format!("Failed to undo: {}", e),
-                                ToastOptions::default(),
-                            );
+                            toast.error(format!("Failed to undo: {}", e), ToastOptions::default());
                         }
                     }
                 });

@@ -15,7 +15,7 @@ use dioxus::prelude::*;
 use std::time::Duration;
 use tokio::time::interval;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::{search_card::card_filter::builder::CardFilterBuilder, Card};
+use zwipe_core::domain::card::{Card, search_card::card_filter::builder::CardFilterBuilder};
 use zwipe_core::domain::user::models::theme::ThemeConfig;
 use zwipe_core::version::version_at_least;
 

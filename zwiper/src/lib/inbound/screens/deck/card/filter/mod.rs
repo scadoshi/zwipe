@@ -4,24 +4,26 @@
 
 /// Artist filter.
 pub mod artist;
+/// Shared bottom-sheet filter accordion.
+pub(crate) mod card_filter_sheet;
 /// Mechanical category filter.
 pub mod category;
-/// Deck-aware filter data extraction.
-pub mod deck_cards;
 /// Combat stats filter (power/toughness).
 pub mod combat;
 /// Filter configuration accordion.
 pub mod config;
+/// Deck-aware filter data extraction.
+pub mod deck_cards;
 /// Filter mode toggle (exact vs range).
 pub mod filter_mode;
-/// Format legality filter.
-pub mod format;
-/// Match mode toggle (any vs all).
-pub mod match_mode;
 /// Flavor text filter.
 pub mod flavor_text;
+/// Format legality filter.
+pub mod format;
 /// Mana cost/color filter.
 pub mod mana;
+/// Match mode toggle (any vs all).
+pub mod match_mode;
 /// Card name filter.
 pub mod name;
 /// Oracle text, oracle words, and keywords filter.
@@ -34,5 +36,3 @@ pub mod set;
 pub mod sort;
 /// Card type filter.
 pub mod types;
-/// Shared bottom-sheet filter accordion.
-pub(crate) mod card_filter_sheet;

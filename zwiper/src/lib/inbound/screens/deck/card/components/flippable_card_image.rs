@@ -20,7 +20,8 @@ pub(crate) fn FlippableCardImage(
     /// Whether to render the flip button overlay. Set `false` on non-interactive
     /// surfaces like exiting swipe-stack cards or peeking-underneath cards where
     /// the button would be confusingly visible without being tappable.
-    #[props(default = true)] flippable: bool,
+    #[props(default = true)]
+    flippable: bool,
 ) -> Element {
     let mut face_idx: Signal<usize> = use_signal(|| 0_usize);
     let total = sd.read().face_count();
@@ -30,7 +31,11 @@ pub(crate) fn FlippableCardImage(
         .face_image_url(face_idx(), size)
         .map(str::to_owned);
 
-    let flippable_class = if flippable && total > 1 { " flippable" } else { "" };
+    let flippable_class = if flippable && total > 1 {
+        " flippable"
+    } else {
+        ""
+    };
 
     rsx! {
         div { class: "flippable-card-wrapper{flippable_class} {class}",

@@ -1,7 +1,7 @@
 //! CMC (converted mana cost) filter component.
 
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{use_toast, ToastOptions};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
 
@@ -53,7 +53,10 @@ pub(crate) fn CmcFilter() -> Element {
             filter_builder.write().set_cmc_equals(n);
             cmc_equals_string.set(n.to_string());
         } else {
-            toast.error("Invalid mana value".to_string(), ToastOptions::default().duration(Duration::from_millis(2000)));
+            toast.error(
+                "Invalid mana value".to_string(),
+                ToastOptions::default().duration(Duration::from_millis(2000)),
+            );
         }
     };
 
@@ -76,7 +79,10 @@ pub(crate) fn CmcFilter() -> Element {
             cmc_range_min_string.set(min.to_string());
             cmc_range_max_string.set(max.to_string());
         } else {
-            toast.error("Invalid mana value range".to_string(), ToastOptions::default().duration(Duration::from_millis(2000)));
+            toast.error(
+                "Invalid mana value range".to_string(),
+                ToastOptions::default().duration(Duration::from_millis(2000)),
+            );
         }
     };
 

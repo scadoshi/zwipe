@@ -16,12 +16,16 @@ pub(crate) fn CardInfoDisplay(card: Card) -> Element {
             count += 1;
         }
         if let Some(eur) = card.scryfall_data.prices.eur {
-            if count > 0 { display.push_str(" |"); }
+            if count > 0 {
+                display.push_str(" |");
+            }
             display.push_str(format!(" €{eur}").as_str());
             count += 1;
         }
         if let Some(tix) = card.scryfall_data.prices.tix {
-            if count > 0 { display.push_str(" |"); }
+            if count > 0 {
+                display.push_str(" |");
+            }
             display.push_str(format!(" {tix} TIX").as_str());
         }
         display
@@ -29,7 +33,9 @@ pub(crate) fn CardInfoDisplay(card: Card) -> Element {
         "\u{00a0}".to_string()
     };
 
-    let artist_text = card.scryfall_data.artist
+    let artist_text = card
+        .scryfall_data
+        .artist
         .filter(|a| !a.is_empty())
         .map(|a| format!("Artist: {a}"))
         .unwrap_or_else(|| "\u{00a0}".to_string());

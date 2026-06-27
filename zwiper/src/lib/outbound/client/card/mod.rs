@@ -7,8 +7,6 @@
 pub mod get_artists;
 /// Fetch a single card by ID.
 pub mod get_card;
-/// Fetch all printings of a card by oracle ID.
-pub mod get_printings;
 /// Fetch all card types (creature, instant, etc.).
 pub mod get_card_types;
 /// Fetch all keyword abilities.
@@ -17,6 +15,8 @@ pub mod get_keywords;
 pub mod get_languages;
 /// Fetch all normalized oracle text words.
 pub mod get_oracle_words;
+/// Fetch all printings of a card by oracle ID.
+pub mod get_printings;
 /// Fetch all card sets.
 pub mod get_sets;
 /// Search cards with filters.

@@ -4,12 +4,9 @@ use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::{routes::preferences_route, ApiError};
+use zwipe::inbound::http::{ApiError, routes::preferences_route};
+use zwipe_core::domain::{auth::models::session::Session, user::preferences::UserPreferences};
 use zwipe_core::http::contracts::user::HttpUpdatePreferences;
-use zwipe_core::domain::{
-    auth::models::session::Session,
-    user::preferences::UserPreferences,
-};
 
 /// Trait for fetching user display preferences.
 #[allow(missing_docs)]

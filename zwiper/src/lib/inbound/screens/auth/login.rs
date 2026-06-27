@@ -1,25 +1,20 @@
 //! User login screen.
 
+use crate::inbound::components::screen_header::ScreenHeader;
 use crate::{
     inbound::{components::fields::text_input::TextInput, router::Router},
     outbound::{
-        client::{auth::login::ClientLogin, ZwipeClient},
+        client::{ZwipeClient, auth::login::ClientLogin},
         session::Persist,
     },
 };
-use zwipe_core::domain::user::models::theme::ThemeConfig;
-use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{use_toast, ToastOptions};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe::domain::auth::models::password::Password;
+use zwipe_core::domain::user::models::theme::ThemeConfig;
+use zwipe_core::domain::{Email, auth::models::session::Session, logo, user::username::Username};
 use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
-use zwipe_core::domain::{
-    auth::models::session::Session,
-    logo,
-    user::username::Username,
-    Email,
-};
 
 /// Login form screen for user authentication.
 #[component]
@@ -39,8 +34,7 @@ pub fn Login() -> Element {
     let toast = use_toast();
 
     let inputs_are_valid = move || {
-        (Username::new(username_or_email()).is_ok()
-            || Email::new(username_or_email()).is_ok())
+        (Username::new(username_or_email()).is_ok() || Email::new(username_or_email()).is_ok())
             && Password::new(password()).is_ok()
     };
 

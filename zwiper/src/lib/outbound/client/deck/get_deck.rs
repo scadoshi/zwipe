@@ -5,7 +5,7 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::{routes::get_deck_route, ApiError};
+use zwipe::inbound::http::{ApiError, routes::get_deck_route};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::deck::Deck;
 

@@ -4,9 +4,9 @@ use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::{routes::login_route, ApiError};
-use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
+use zwipe::inbound::http::{ApiError, routes::login_route};
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
 
 /// Trait for authenticating users via the login endpoint.
 #[allow(missing_docs)]

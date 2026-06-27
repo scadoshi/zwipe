@@ -82,14 +82,16 @@ mod platform {
     }
 
     pub fn save(session: &Session) -> anyhow::Result<()> {
-        let credential = default::default_credential_builder().build(None, &service(), &username())?;
+        let credential =
+            default::default_credential_builder().build(None, &service(), &username())?;
         let bytes = serde_json::to_vec(session)?;
         credential.set_secret(&bytes)?;
         Ok(())
     }
 
     pub fn load() -> anyhow::Result<Option<Session>> {
-        let credential = default::default_credential_builder().build(None, &service(), &username())?;
+        let credential =
+            default::default_credential_builder().build(None, &service(), &username())?;
         match credential.get_secret() {
             Err(keyring::Error::NoEntry) => Ok(None),
             Err(e) => Err(e.into()),
@@ -105,7 +107,8 @@ mod platform {
     }
 
     pub fn delete() -> anyhow::Result<()> {
-        let credential = default::default_credential_builder().build(None, &service(), &username())?;
+        let credential =
+            default::default_credential_builder().build(None, &service(), &username())?;
         credential.delete_credential()?;
         Ok(())
     }

@@ -1,5 +1,7 @@
 use super::components::card_info::{CardInfoDisplay, CardSkeleton};
 use super::components::keyword_hint::{KeywordHintDialog, card_has_keywords};
+use crate::inbound::components::chip::Chip;
+use crate::inbound::components::screen_header::ScreenHeader;
 use crate::{
     inbound::{
         components::{
@@ -28,8 +30,6 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
-use crate::inbound::components::chip::Chip;
-use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::collections::HashSet;
 use std::time::Duration;

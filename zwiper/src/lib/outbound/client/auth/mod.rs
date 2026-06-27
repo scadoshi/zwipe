@@ -3,6 +3,8 @@
 //! Provides traits and implementations for user authentication:
 //! login, logout, token refresh, and registration.
 
+/// Forgot password / password reset initiation endpoint.
+pub mod forgot_password;
 /// User login endpoint.
 pub mod login;
 /// User logout endpoint.
@@ -11,7 +13,5 @@ pub mod logout;
 pub mod refresh;
 /// New user registration endpoint.
 pub mod register;
-/// Forgot password / password reset initiation endpoint.
-pub mod forgot_password;
 /// Resend email verification endpoint.
 pub mod resend_verification;

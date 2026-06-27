@@ -1,14 +1,14 @@
 //! Deck warnings section with action buttons for card-specific warnings.
 
 use crate::inbound::router::Router;
-use crate::outbound::client::{deck_card::delete_deck_card::ClientDeleteDeckCard, ZwipeClient};
+use crate::outbound::client::{ZwipeClient, deck_card::delete_deck_card::ClientDeleteDeckCard};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{use_toast, ToastOptions};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe_core::domain::deck::deck_warning::{DeckWarning, WarningAction};
 use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::deck::deck_warning::{DeckWarning, WarningAction};
 
 #[component]
 pub(crate) fn DeckWarnings(

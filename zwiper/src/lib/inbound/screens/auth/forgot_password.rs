@@ -1,15 +1,15 @@
 //! Forgot password screen.
 
+use crate::inbound::components::screen_header::ScreenHeader;
 use crate::{
     inbound::components::fields::text_input::TextInput,
-    outbound::client::{auth::forgot_password::ClientForgotPassword, ZwipeClient},
+    outbound::client::{ZwipeClient, auth::forgot_password::ClientForgotPassword},
 };
-use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{use_toast, ToastOptions};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
+use zwipe_core::domain::{Email, logo};
 use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
-use zwipe_core::domain::{logo, Email};
 
 /// Forgot password screen for initiating a password reset.
 #[component]

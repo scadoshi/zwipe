@@ -1,5 +1,10 @@
 //! Export deck as plain-text decklist screen.
 
+use crate::inbound::components::chip::Chip;
+use crate::inbound::components::hint_dialog::{
+    HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint,
+};
+use crate::inbound::components::screen_header::ScreenHeader;
 use crate::{
     inbound::{
         components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
@@ -7,19 +12,14 @@ use crate::{
     },
     outbound::client::{ZwipeClient, deck::get_deck::ClientGetDeck},
 };
-use crate::inbound::components::chip::Chip;
-use crate::inbound::components::hint_dialog::{
-    HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint,
-};
-use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus::prelude::*;
-use zwipe_core::domain::user::models::hints::HINT_EXPORT;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
 use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::deck::Deck;
+use zwipe_core::domain::user::models::hints::HINT_EXPORT;
 
 #[component]
 pub fn ExportDeck(deck_id: Uuid) -> Element {
@@ -42,7 +42,10 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
 
     use_effect(move || {
         if let Some(Err(e)) = &*deck_resource.read() {
-            toast.error(e.to_user_message(), ToastOptions::default().duration(Duration::from_millis(3000)));
+            toast.error(
+                e.to_user_message(),
+                ToastOptions::default().duration(Duration::from_millis(3000)),
+            );
         }
     });
 
@@ -71,35 +74,56 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
 
         // Deck section
         if include_deck() {
-            let deck_cards: Vec<_> = deck.entries.iter().filter(|e| e.deck_card.board.is_active()).collect();
+            let deck_cards: Vec<_> = deck
+                .entries
+                .iter()
+                .filter(|e| e.deck_card.board.is_active())
+                .collect();
             if !deck_cards.is_empty() {
                 lines.push("// Deck".to_string());
                 for entry in deck_cards {
-                    lines.push(format!("{} {}", *entry.deck_card.quantity, entry.card.scryfall_data.name));
+                    lines.push(format!(
+                        "{} {}",
+                        *entry.deck_card.quantity, entry.card.scryfall_data.name
+                    ));
                 }
             }
         }
 
         // Maybeboard section (only if toggled on AND cards exist)
         if include_maybeboard() {
-            let mb: Vec<_> = deck.entries.iter().filter(|e| e.deck_card.board.is_maybeboard()).collect();
+            let mb: Vec<_> = deck
+                .entries
+                .iter()
+                .filter(|e| e.deck_card.board.is_maybeboard())
+                .collect();
             if !mb.is_empty() {
                 lines.push(String::new());
                 lines.push("// Maybeboard".to_string());
                 for entry in mb {
-                    lines.push(format!("{} {}", *entry.deck_card.quantity, entry.card.scryfall_data.name));
+                    lines.push(format!(
+                        "{} {}",
+                        *entry.deck_card.quantity, entry.card.scryfall_data.name
+                    ));
                 }
             }
         }
 
         // Sideboard section (only if toggled on AND cards exist)
         if include_sideboard() {
-            let sb: Vec<_> = deck.entries.iter().filter(|e| e.deck_card.board.is_sideboard()).collect();
+            let sb: Vec<_> = deck
+                .entries
+                .iter()
+                .filter(|e| e.deck_card.board.is_sideboard())
+                .collect();
             if !sb.is_empty() {
                 lines.push(String::new());
                 lines.push("// Sideboard".to_string());
                 for entry in sb {
-                    lines.push(format!("{} {}", *entry.deck_card.quantity, entry.card.scryfall_data.name));
+                    lines.push(format!(
+                        "{} {}",
+                        *entry.deck_card.quantity, entry.card.scryfall_data.name
+                    ));
                 }
             }
         }

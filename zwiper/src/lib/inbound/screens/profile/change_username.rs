@@ -2,8 +2,7 @@
 
 use crate::{
     inbound::components::{
-        auth::ensure_session::EnsureFresh, bottom_sheet::BottomSheet,
-        fields::text_input::TextInput,
+        auth::ensure_session::EnsureFresh, bottom_sheet::BottomSheet, fields::text_input::TextInput,
     },
     outbound::client::{ZwipeClient, user::change_username::ClientChangeUsername},
 };

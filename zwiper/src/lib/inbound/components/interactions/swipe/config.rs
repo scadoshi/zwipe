@@ -15,7 +15,11 @@ pub struct SwipeConfig {
 
 impl SwipeConfig {
     /// Creates a new swipe configuration with the specified thresholds.
-    pub fn new(allowed_directions: Vec<Direction>, distance_threshold: f64, speed_threshold: f64) -> Self {
+    pub fn new(
+        allowed_directions: Vec<Direction>,
+        distance_threshold: f64,
+        speed_threshold: f64,
+    ) -> Self {
         Self {
             allowed_directions,
             distance_threshold,
@@ -27,7 +31,12 @@ impl SwipeConfig {
 impl Default for SwipeConfig {
     fn default() -> Self {
         Self {
-            allowed_directions: vec![Direction::Left, Direction::Right, Direction::Up, Direction::Down],
+            allowed_directions: vec![
+                Direction::Left,
+                Direction::Right,
+                Direction::Up,
+                Direction::Down,
+            ],
             distance_threshold: 100.0,
             speed_threshold: 5.0,
         }

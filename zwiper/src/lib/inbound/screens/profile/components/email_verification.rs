@@ -1,10 +1,10 @@
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::outbound::client::{
-    auth::resend_verification::ClientResendEmailVerification, user::get_user::ClientGetUser,
-    ZwipeClient,
+    ZwipeClient, auth::resend_verification::ClientResendEmailVerification,
+    user::get_user::ClientGetUser,
 };
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{use_toast, ToastOptions};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use tokio::time::sleep;
 use zwipe::inbound::http::ApiError;

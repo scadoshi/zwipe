@@ -11,12 +11,26 @@ use zwipe_core::domain::deck::Board;
 #[derive(Clone, Debug, PartialEq)]
 #[allow(missing_docs)]
 pub enum SwipeAction {
-    Skip { card: Box<Card>, exited: Direction },
-    Do { card: Box<Card>, exited: Direction },
-    Maybeboard { card: Box<Card>, exited: Direction },
+    Skip {
+        card: Box<Card>,
+        exited: Direction,
+    },
+    Do {
+        card: Box<Card>,
+        exited: Direction,
+    },
+    Maybeboard {
+        card: Box<Card>,
+        exited: Direction,
+    },
     /// Remove screen's board move: main/side stage to maybeboard, maybeboard
     /// promotes to main. `from` lets undo restore the original board.
-    MoveBoard { card: Box<Card>, exited: Direction, from: Board, to: Board },
+    MoveBoard {
+        card: Box<Card>,
+        exited: Direction,
+        from: Board,
+        to: Board,
+    },
 }
 
 impl SwipeAction {

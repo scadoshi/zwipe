@@ -1,7 +1,9 @@
 //! Home/landing page screen.
 
 use crate::inbound::components::logout_dialog::LogoutDialog;
+use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::router::Router;
+use crate::inbound::screens::deck::card::components::image_preview::ImagePreview;
 use crate::{
     inbound::components::auth::bouncer::Bouncer,
     inbound::components::auth::session_upkeep::FlavorCard,
@@ -14,8 +16,6 @@ use crate::{
         user::{get_user::ClientGetUser, preferences::ClientGetPreferences},
     },
 };
-use crate::inbound::components::screen_header::ScreenHeader;
-use crate::inbound::screens::deck::card::components::image_preview::ImagePreview;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;

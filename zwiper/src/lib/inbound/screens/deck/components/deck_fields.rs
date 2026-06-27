@@ -9,6 +9,7 @@ use crate::{
 use dioxus::prelude::*;
 use std::time::Duration;
 use tokio::time::sleep;
+use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::{
     Card,
     search_card::{
@@ -16,7 +17,6 @@ use zwipe_core::domain::card::{
         commander_eligibility::{has_choose_a_background, partner_kind},
     },
 };
-use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::deck::{DeckTag, MAX_DECK_TAGS, format::Format};
 
 /// Format chip selector and card search inputs with debounced dropdowns.
@@ -98,30 +98,28 @@ pub(crate) fn DeckFields(
     // ========================================
     // Visibility memos
     // ========================================
-    let show_commander = use_memo(move || {
-        selected_format().is_some_and(|f| f.has_commander())
-    });
+    let show_commander = use_memo(move || selected_format().is_some_and(|f| f.has_commander()));
 
     let show_partner = use_memo(move || {
-        show_commander()
-            && commander().is_some_and(|c| partner_kind(&c).is_some())
+        show_commander() && commander().is_some_and(|c| partner_kind(&c).is_some())
     });
 
     let show_background = use_memo(move || {
-        show_commander()
-            && commander().is_some_and(|c| has_choose_a_background(&c))
+        show_commander() && commander().is_some_and(|c| has_choose_a_background(&c))
     });
 
-    let show_signature_spell = use_memo(move || {
-        selected_format().is_some_and(|f| f.has_signature_spell())
-    });
+    let show_signature_spell =
+        use_memo(move || selected_format().is_some_and(|f| f.has_signature_spell()));
 
-    let is_oathbreaker = use_memo(move || {
-        selected_format().is_some_and(|f| f.has_signature_spell())
-    });
+    let is_oathbreaker =
+        use_memo(move || selected_format().is_some_and(|f| f.has_signature_spell()));
 
     let commander_label = use_memo(move || {
-        if is_oathbreaker() { "Oathbreaker" } else { "Commander" }
+        if is_oathbreaker() {
+            "Oathbreaker"
+        } else {
+            "Commander"
+        }
     });
 
     // ========================================
@@ -187,8 +185,7 @@ pub(crate) fn DeckFields(
                     builder.set_is_commander_in_format(fmt);
                 }
                 builder.set_limit(5);
-                let Ok(card_filter) = builder.build()
-                else {
+                let Ok(card_filter) = builder.build() else {
                     tracing::error!("{}", InvalidCardFilter::Empty.to_string());
                     return;
                 };
@@ -914,7 +911,11 @@ pub(crate) fn DeckFieldsHint(open: Signal<bool>) -> Element {
 /// `DeckFields` top level), so this only animates appearance, never logic.
 #[component]
 fn Collapsible(show: bool, children: Element) -> Element {
-    let class = if show { "collapsible open" } else { "collapsible" };
+    let class = if show {
+        "collapsible open"
+    } else {
+        "collapsible"
+    };
     rsx! {
         div { class: "{class}",
             div { class: "collapsible-inner", {children} }
