@@ -8743,6 +8743,8 @@ dependencies = [
  "jni 0.21.1",
  "keyring",
  "ndk-context",
+ "objc2",
+ "objc2-foundation",
  "once_cell",
  "rand 0.10.1",
  "reqwest",
@@ -8752,6 +8754,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uuid",
+ "webbrowser",
  "zerver",
  "zwipe-core",
 ]

@@ -8,5 +8,7 @@
 pub mod buy_links;
 /// HTTP API client for backend communication.
 pub mod client;
+/// Open a URL with the OS default handler (browser, mail app, etc.).
+pub mod open_url;
 /// User session and authentication state management.
 pub mod session;

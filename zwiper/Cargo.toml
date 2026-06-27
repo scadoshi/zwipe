@@ -35,9 +35,21 @@ dioxus-primitives = { git = "https://github.com/DioxusLabs/components", rev = "0
 
 # Android-only: keyring has no Android backend, so we persist the session to a
 # file in the app's private internal storage, reached via JNI (Context.getFilesDir()).
+# JNI + ndk-context also back `open_url` (ACTION_VIEW intents).
 [target.'cfg(target_os = "android")'.dependencies]
 ndk-context = "0.1"
 jni = "0.21"
+
+# iOS-only: `open_url` opens mailto:/http links via UIApplication.openURL, since
+# the webview's webbrowser backend rejects non-http(s) URLs on mobile.
+[target.'cfg(target_os = "ios")'.dependencies]
+objc2 = "0.6"
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString", "NSURL", "NSDictionary"] }
+
+# Desktop (dev) only: webbrowser is pulled transitively by dioxus-desktop; depend
+# on it directly so `open_url` can hand off mailto:/http on macOS/Windows/Linux.
+[target.'cfg(not(any(target_os = "ios", target_os = "android")))'.dependencies]
+webbrowser = "1"
 
 [build-dependencies]
 dotenvy = { workspace = true }
