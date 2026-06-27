@@ -92,9 +92,8 @@ impl CarouselState {
 
         // Edge resistance: rubber-band when dragging past first or last page
         let at_start = self.current_index == 0 && raw_delta > 0.0;
-        let at_end = self.page_count > 0
-            && self.current_index >= self.page_count - 1
-            && raw_delta < 0.0;
+        let at_end =
+            self.page_count > 0 && self.current_index >= self.page_count - 1 && raw_delta < 0.0;
 
         if self.page_width_px > 0.0 && (at_start || at_end) {
             self.drag_offset_px =

@@ -4,9 +4,9 @@ use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::{routes::change_password_route, ApiError};
-use zwipe_core::http::contracts::auth::HttpChangePassword;
+use zwipe::inbound::http::{ApiError, routes::change_password_route};
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::contracts::auth::HttpChangePassword;
 
 /// Trait for updating user passwords.
 #[allow(missing_docs)]

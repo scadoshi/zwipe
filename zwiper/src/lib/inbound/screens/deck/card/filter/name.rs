@@ -10,7 +10,10 @@ pub fn Name() -> Element {
 
     let name_value = filter_builder().name_contains().unwrap_or("").to_string();
 
-    let name_not_value = filter_builder().name_not_contains().unwrap_or("").to_string();
+    let name_not_value = filter_builder()
+        .name_not_contains()
+        .unwrap_or("")
+        .to_string();
 
     rsx! {
         div { class: "flex-col gap-half",

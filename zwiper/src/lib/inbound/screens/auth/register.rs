@@ -1,25 +1,20 @@
 //! New user registration screen.
 
+use crate::inbound::components::screen_header::ScreenHeader;
 use crate::{
     domain::error::UserFacing,
     inbound::{components::fields::text_input::TextInput, router::Router},
     outbound::{
-        client::{auth::register::ClientRegister, ZwipeClient},
+        client::{ZwipeClient, auth::register::ClientRegister},
         session::Persist,
     },
 };
-use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{use_toast, ToastOptions};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe::domain::auth::models::password::Password;
+use zwipe_core::domain::{Email, auth::models::session::Session, logo, user::username::Username};
 use zwipe_core::http::contracts::auth::HttpRegisterUser;
-use zwipe_core::domain::{
-    auth::models::session::Session,
-    logo,
-    user::username::Username,
-    Email,
-};
 
 /// Registration form screen for creating new user accounts.
 #[component]

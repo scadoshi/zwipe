@@ -4,7 +4,7 @@ use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::{routes::get_user_route, ApiError};
+use zwipe::inbound::http::{ApiError, routes::get_user_route};
 use zwipe_core::domain::{auth::models::session::Session, user::User};
 
 /// Trait for fetching user profile data.

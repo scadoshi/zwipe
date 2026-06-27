@@ -7,8 +7,14 @@ use zwipe_core::domain::card::search_card::card_type::{CardType, WithCardTypes};
 
 fn read_card_types(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<CardType> {
     match mode {
-        MatchMode::Any => fb.card_type_contains_any().map(|v| v.to_vec()).unwrap_or_default(),
-        MatchMode::All => fb.card_type_contains_all().map(|v| v.to_vec()).unwrap_or_default(),
+        MatchMode::Any => fb
+            .card_type_contains_any()
+            .map(|v| v.to_vec())
+            .unwrap_or_default(),
+        MatchMode::All => fb
+            .card_type_contains_all()
+            .map(|v| v.to_vec())
+            .unwrap_or_default(),
     }
 }
 
@@ -17,14 +23,20 @@ fn write_card_types(fb: &mut CardFilterBuilder, mode: MatchMode, values: Vec<Car
     fb.unset_card_type_contains_all();
     if !values.is_empty() {
         match mode {
-            MatchMode::Any => { fb.set_card_type_contains_any(values); }
-            MatchMode::All => { fb.set_card_type_contains_all(values); }
+            MatchMode::Any => {
+                fb.set_card_type_contains_any(values);
+            }
+            MatchMode::All => {
+                fb.set_card_type_contains_all(values);
+            }
         }
     }
 }
 
 fn read_excluded(fb: &CardFilterBuilder) -> Vec<CardType> {
-    fb.card_type_excludes_any().map(|v| v.to_vec()).unwrap_or_default()
+    fb.card_type_excludes_any()
+        .map(|v| v.to_vec())
+        .unwrap_or_default()
 }
 
 fn write_excluded(fb: &mut CardFilterBuilder, values: Vec<CardType>) {

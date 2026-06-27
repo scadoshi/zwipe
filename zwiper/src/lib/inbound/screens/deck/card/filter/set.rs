@@ -1,10 +1,10 @@
 //! Card set filter component.
 
 use super::deck_cards::{DeckCards, extract_sets};
-use crate::outbound::client::{card::get_sets::ClientGetSets, ZwipeClient};
+use crate::outbound::client::{ZwipeClient, card::get_sets::ClientGetSets};
 use dioxus::prelude::*;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
 use zwipe::inbound::http::ApiError;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
 
 /// Whether the set filter is in include or exclude mode.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -32,7 +32,10 @@ impl IncludeExclude {
 fn read_sets(fb: &CardFilterBuilder, mode: IncludeExclude) -> Vec<String> {
     match mode {
         IncludeExclude::Include => fb.set_equals_any().map(|v| v.to_vec()).unwrap_or_default(),
-        IncludeExclude::Exclude => fb.set_excludes_any().map(|v| v.to_vec()).unwrap_or_default(),
+        IncludeExclude::Exclude => fb
+            .set_excludes_any()
+            .map(|v| v.to_vec())
+            .unwrap_or_default(),
     }
 }
 
@@ -41,8 +44,12 @@ fn write_sets(fb: &mut CardFilterBuilder, mode: IncludeExclude, values: Vec<Stri
     fb.unset_set_excludes_any();
     if !values.is_empty() {
         match mode {
-            IncludeExclude::Include => { fb.set_set_equals_any(values); }
-            IncludeExclude::Exclude => { fb.set_set_excludes_any(values); }
+            IncludeExclude::Include => {
+                fb.set_set_equals_any(values);
+            }
+            IncludeExclude::Exclude => {
+                fb.set_set_excludes_any(values);
+            }
         }
     }
 }

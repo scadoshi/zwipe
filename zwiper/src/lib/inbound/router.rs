@@ -3,12 +3,10 @@
 //! Defines all client-side routes and maps them to their corresponding screen components.
 
 use crate::inbound::screens::{
-    auth::{login::Login, register::Register, forgot_password::ForgotPassword},
+    auth::{forgot_password::ForgotPassword, login::Login, register::Register},
     deck::{
         card::{
-            add::Add as AddDeckCard,
-            view::View as ViewDeckCard,
-            remove::Remove as RemoveDeckCard,
+            add::Add as AddDeckCard, remove::Remove as RemoveDeckCard, view::View as ViewDeckCard,
         },
         create::CreateDeck,
         edit::EditDeck,

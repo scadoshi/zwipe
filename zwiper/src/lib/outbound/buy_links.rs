@@ -28,13 +28,14 @@ pub fn tcgplayer_url(entries: &[DeckEntry], command_zone_names: &[&str]) -> Stri
         .collect();
 
     cards.extend(entries.iter().map(|e| {
-        format!("{}+{}", *e.deck_card.quantity, encode_name(&e.card.scryfall_data.name))
+        format!(
+            "{}+{}",
+            *e.deck_card.quantity,
+            encode_name(&e.card.scryfall_data.name)
+        )
     }));
 
-    format!(
-        "https://www.tcgplayer.com/massentry?c={}",
-        cards.join("||")
-    )
+    format!("https://www.tcgplayer.com/massentry?c={}", cards.join("||"))
 }
 
 /// Builds a CardKingdom builder URL for the given deck entries.
@@ -50,7 +51,11 @@ pub fn cardkingdom_url(entries: &[DeckEntry], command_zone_names: &[&str]) -> St
         .collect();
 
     cards.extend(entries.iter().map(|e| {
-        format!("{}+{}", *e.deck_card.quantity, encode_name(&e.card.scryfall_data.name))
+        format!(
+            "{}+{}",
+            *e.deck_card.quantity,
+            encode_name(&e.card.scryfall_data.name)
+        )
     }));
 
     format!(

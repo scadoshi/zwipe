@@ -4,9 +4,9 @@ use crate::inbound::components::alert_dialog::{
 };
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::router::Router;
-use crate::outbound::client::{deck::clone_deck::ClientCloneDeck, ZwipeClient};
+use crate::outbound::client::{ZwipeClient, deck::clone_deck::ClientCloneDeck};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{use_toast, ToastOptions};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::session::Session;

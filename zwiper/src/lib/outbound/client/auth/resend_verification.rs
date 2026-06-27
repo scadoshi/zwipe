@@ -4,7 +4,7 @@ use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
-use zwipe::inbound::http::{routes::resend_verification_route, ApiError};
+use zwipe::inbound::http::{ApiError, routes::resend_verification_route};
 use zwipe_core::domain::auth::models::session::Session;
 
 /// Trait for re-sending the email verification link for the authenticated user.

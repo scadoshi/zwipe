@@ -4,15 +4,21 @@ use super::super::{
     deck_cards::{DeckCards, extract_keywords},
     match_mode::MatchMode,
 };
-use crate::outbound::client::{card::get_keywords::ClientGetKeywords, ZwipeClient};
+use crate::outbound::client::{ZwipeClient, card::get_keywords::ClientGetKeywords};
 use dioxus::prelude::*;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
 use zwipe::inbound::http::ApiError;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
 
 fn read_keywords(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<String> {
     match mode {
-        MatchMode::Any => fb.keywords_contains_any().map(|v| v.to_vec()).unwrap_or_default(),
-        MatchMode::All => fb.keywords_contains_all().map(|v| v.to_vec()).unwrap_or_default(),
+        MatchMode::Any => fb
+            .keywords_contains_any()
+            .map(|v| v.to_vec())
+            .unwrap_or_default(),
+        MatchMode::All => fb
+            .keywords_contains_all()
+            .map(|v| v.to_vec())
+            .unwrap_or_default(),
     }
 }
 
@@ -21,14 +27,20 @@ fn write_keywords(fb: &mut CardFilterBuilder, mode: MatchMode, values: Vec<Strin
     fb.unset_keywords_contains_all();
     if !values.is_empty() {
         match mode {
-            MatchMode::Any => { fb.set_keywords_contains_any(values); }
-            MatchMode::All => { fb.set_keywords_contains_all(values); }
+            MatchMode::Any => {
+                fb.set_keywords_contains_any(values);
+            }
+            MatchMode::All => {
+                fb.set_keywords_contains_all(values);
+            }
         }
     }
 }
 
 fn read_excluded(fb: &CardFilterBuilder) -> Vec<String> {
-    fb.keywords_excludes().map(|v| v.to_vec()).unwrap_or_default()
+    fb.keywords_excludes()
+        .map(|v| v.to_vec())
+        .unwrap_or_default()
 }
 
 fn write_excluded(fb: &mut CardFilterBuilder, values: Vec<String>) {
@@ -48,13 +60,12 @@ pub(crate) fn Keywords() -> Element {
     let filter_reset: Signal<u32> = use_context();
     let deck_ctx: Option<DeckCards> = try_use_context();
 
-    let all_keywords: Resource<Result<Vec<String>, ApiError>> =
-        use_resource(move || async move {
-            if let Some(dc) = deck_ctx {
-                return Ok(extract_keywords(&dc.0()));
-            }
-            client().get_keywords().await
-        });
+    let all_keywords: Resource<Result<Vec<String>, ApiError>> = use_resource(move || async move {
+        if let Some(dc) = deck_ctx {
+            return Ok(extract_keywords(&dc.0()));
+        }
+        client().get_keywords().await
+    });
 
     let mut keywords_search = use_signal(String::new);
     let mut excludes_search = use_signal(String::new);

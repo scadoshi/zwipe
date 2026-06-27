@@ -1,7 +1,9 @@
 use super::components::card_row::CardRow;
-use crate::inbound::screens::deck::components::skeletons::DeckCardListSkeleton;
 use super::components::image_preview::ImagePreview;
 use super::components::printing_sheet::PrintingSheet;
+use crate::inbound::components::chip::Chip;
+use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::screens::deck::components::skeletons::DeckCardListSkeleton;
 use crate::{
     inbound::{
         components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
@@ -18,8 +20,7 @@ use crate::{
         card::get_card::ClientGetCard,
         deck::{
             get_deck::ClientGetDeck, get_deck_profile::ClientGetDeckProfile,
-            get_deck_tokens::ClientGetDeckTokens,
-            update_deck_profile::ClientUpdateDeckProfile,
+            get_deck_tokens::ClientGetDeckTokens, update_deck_profile::ClientUpdateDeckProfile,
         },
         deck_card::{
             delete_deck_card::ClientDeleteDeckCard, update_deck_card::ClientUpdateDeckCard,
@@ -27,15 +28,10 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
-use crate::inbound::components::chip::Chip;
-use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
 use zwipe::inbound::http::ApiError;
-use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
-use zwipe_core::http::contracts::deck_card::HttpUpdateDeckCard;
-use zwipe_core::http::helpers::Opdate;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::{
     Card,
@@ -47,6 +43,9 @@ use zwipe_core::domain::card::{
 };
 use zwipe_core::domain::deck::{Board, DeckEntry, quantity::Quantity};
 use zwipe_core::domain::user::models::hints::HINT_DECK_CARDS;
+use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
+use zwipe_core::http::contracts::deck_card::HttpUpdateDeckCard;
+use zwipe_core::http::helpers::Opdate;
 
 /// Identifies which command zone slot a card occupies for printing updates.
 #[derive(Clone, Copy)]
@@ -118,7 +117,8 @@ pub fn View(deck_id: Uuid) -> Element {
 
     // Card image preview — stores the card to preview (None = closed). Carries the
     // full ScryfallData so the modal's FlippableCardImage can read both faces of DFCs.
-    let preview_card: Signal<Option<zwipe_core::domain::card::scryfall_data::ScryfallData>> = use_signal(|| None);
+    let preview_card: Signal<Option<zwipe_core::domain::card::scryfall_data::ScryfallData>> =
+        use_signal(|| None);
     // Printing sheet state
     let mut printing_sheet_open: Signal<bool> = use_signal(|| false);
     let mut printing_sheet_card: Signal<Option<Card>> = use_signal(|| None);
@@ -179,13 +179,20 @@ pub fn View(deck_id: Uuid) -> Element {
             // Resolve commander and signature spell from profile.
             // Pull from entries if present, otherwise fetch separately.
             if let Ok(profile) = client().get_deck_profile(deck_id, &session).await {
-                is_oathbreaker.set(profile.format.as_ref().is_some_and(|f| f.has_signature_spell()));
+                is_oathbreaker.set(
+                    profile
+                        .format
+                        .as_ref()
+                        .is_some_and(|f| f.has_signature_spell()),
+                );
 
                 // Resolve command zone cards by oracle_id (not printing-specific scryfall_data_id).
                 // Fetch the card first to get its oracle_id, then remove from entries by oracle_id.
                 if let Some(commander_id) = profile.commander_id {
                     let fetched = client().get_card(commander_id).await.ok();
-                    if let Some(ref card) = fetched && let Some(oid) = card.scryfall_data.oracle_id {
+                    if let Some(ref card) = fetched
+                        && let Some(oid) = card.scryfall_data.oracle_id
+                    {
                         entries.retain(|e| e.card.scryfall_data.oracle_id != Some(oid));
                     }
                     commander_card.set(fetched);
@@ -193,7 +200,9 @@ pub fn View(deck_id: Uuid) -> Element {
 
                 if let Some(spell_id) = profile.signature_spell_id {
                     let fetched = client().get_card(spell_id).await.ok();
-                    if let Some(ref card) = fetched && let Some(oid) = card.scryfall_data.oracle_id {
+                    if let Some(ref card) = fetched
+                        && let Some(oid) = card.scryfall_data.oracle_id
+                    {
                         entries.retain(|e| e.card.scryfall_data.oracle_id != Some(oid));
                     }
                     signature_spell_card.set(fetched);
@@ -201,7 +210,9 @@ pub fn View(deck_id: Uuid) -> Element {
 
                 if let Some(partner_id) = profile.partner_commander_id {
                     let fetched = client().get_card(partner_id).await.ok();
-                    if let Some(ref card) = fetched && let Some(oid) = card.scryfall_data.oracle_id {
+                    if let Some(ref card) = fetched
+                        && let Some(oid) = card.scryfall_data.oracle_id
+                    {
                         entries.retain(|e| e.card.scryfall_data.oracle_id != Some(oid));
                     }
                     partner_card.set(fetched);
@@ -209,7 +220,9 @@ pub fn View(deck_id: Uuid) -> Element {
 
                 if let Some(bg_id) = profile.background_id {
                     let fetched = client().get_card(bg_id).await.ok();
-                    if let Some(ref card) = fetched && let Some(oid) = card.scryfall_data.oracle_id {
+                    if let Some(ref card) = fetched
+                        && let Some(oid) = card.scryfall_data.oracle_id
+                    {
                         entries.retain(|e| e.card.scryfall_data.oracle_id != Some(oid));
                     }
                     background_card.set(fetched);
@@ -273,9 +286,12 @@ pub fn View(deck_id: Uuid) -> Element {
         let bg = background_card.peek().clone();
 
         // Apply filter to pinned cards helper
-        let filter_pinned = |card: Option<Card>, filter: &zwipe_core::domain::card::search_card::card_filter::CardFilter| -> Option<Card> {
-            card.filter(|c| !vec![c.clone()].filter_by(filter).is_empty())
-        };
+        let filter_pinned =
+            |card: Option<Card>,
+             filter: &zwipe_core::domain::card::search_card::card_filter::CardFilter|
+             -> Option<Card> {
+                card.filter(|c| !vec![c.clone()].filter_by(filter).is_empty())
+            };
 
         let (mut filtered, new_cmd, new_spell, new_partner, new_bg) = if builder.is_empty() {
             (active_cards, cmd, spell, partner, bg)
@@ -294,9 +310,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         filter_pinned(bg, &filter),
                     )
                 }
-                Err(_) => {
-                    (active_cards, cmd, spell, partner, bg)
-                }
+                Err(_) => (active_cards, cmd, spell, partner, bg),
             }
         };
 
@@ -328,7 +342,9 @@ pub fn View(deck_id: Uuid) -> Element {
 
         if should_delete {
             // Optimistic: remove from entries
-            deck_entries.write().retain(|e| e.card.scryfall_data.id != card_id);
+            deck_entries
+                .write()
+                .retain(|e| e.card.scryfall_data.id != card_id);
             // Trigger re-filter
             let current = *filter_reset_counter.peek();
             filter_reset_counter.set(current + 1);

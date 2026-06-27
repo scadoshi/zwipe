@@ -1,8 +1,9 @@
 //! Edit deck screen.
 
 use super::components::deck_fields::{DeckFields, DeckFieldsHint};
-use super::components::swipe_select::{SwipeMode, SwipeSelect};
 use super::components::skeletons::EditDeckSkeleton;
+use super::components::swipe_select::{SwipeMode, SwipeSelect};
+use crate::inbound::components::screen_header::ScreenHeader;
 use crate::{
     inbound::{
         components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
@@ -16,7 +17,6 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
-use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
@@ -118,10 +118,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             else {
                 return Ok(None);
             };
-            client()
-                .get_card(original_commander_id)
-                .await
-                .map(Some)
+            client().get_card(original_commander_id).await.map(Some)
         });
     use_effect(move || match original_commander_resource() {
         Some(Ok(Some(original))) => {
@@ -285,7 +282,10 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let tags_update = use_memo(move || {
         if selected_tags() != original_tags() {
             Opdate::Set(Some(
-                selected_tags().iter().map(|t| t.to_string()).collect::<Vec<_>>(),
+                selected_tags()
+                    .iter()
+                    .map(|t| t.to_string())
+                    .collect::<Vec<_>>(),
             ))
         } else {
             Opdate::Unchanged

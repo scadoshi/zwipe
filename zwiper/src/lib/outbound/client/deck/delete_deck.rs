@@ -5,9 +5,7 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::{
-    inbound::http::{routes::delete_deck_route, ApiError},
-};
+use zwipe::inbound::http::{ApiError, routes::delete_deck_route};
 use zwipe_core::domain::auth::models::session::Session;
 
 /// Trait for deleting decks by ID.

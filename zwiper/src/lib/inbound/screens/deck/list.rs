@@ -1,5 +1,6 @@
 //! Deck list screen.
 
+use crate::inbound::components::screen_header::ScreenHeader;
 use crate::{
     inbound::{
         components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
@@ -12,7 +13,6 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
-use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe::inbound::http::ApiError;

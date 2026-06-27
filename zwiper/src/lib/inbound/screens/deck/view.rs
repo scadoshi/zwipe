@@ -9,6 +9,7 @@ use crate::inbound::components::alert_dialog::{
     AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
     AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
 };
+use crate::inbound::components::screen_header::ScreenHeader;
 use crate::{
     inbound::{
         components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
@@ -28,7 +29,6 @@ use crate::{
         deck_card::update_deck_card::ClientUpdateDeckCard,
     },
 };
-use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
@@ -59,7 +59,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
     let mut deck_profile_resource: Resource<Result<DeckProfile, ApiError>> =
         use_resource(move || async move {
-                let session = session.ensure_fresh(client).await?;
+            let session = session.ensure_fresh(client).await?;
             client().get_deck_profile(deck_id, &session).await
         });
     let commander_resource: Resource<Result<Option<Card>, ApiError>> =

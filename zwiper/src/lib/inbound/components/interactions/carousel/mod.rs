@@ -21,7 +21,9 @@ pub fn Carousel(mut state: Signal<CarouselState>, children: Element) -> Element 
     let transition_ms = state().snap_transition_ms;
 
     let transition_style = if transition_ms > 0 {
-        format!("transform: translateX({translate_x}px); transition: transform {transition_ms}ms ease-out;")
+        format!(
+            "transform: translateX({translate_x}px); transition: transform {transition_ms}ms ease-out;"
+        )
     } else {
         format!("transform: translateX({translate_x}px); transition: none;")
     };

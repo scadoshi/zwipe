@@ -4,11 +4,11 @@
 
 /// Add cards to deck screen.
 pub mod add;
-/// View deck cards screen.
-pub mod view;
+/// Extracted components for card screens.
+pub(crate) mod components;
 /// Card search filter components.
 pub mod filter;
 /// Remove cards from deck screen.
 pub mod remove;
-/// Extracted components for card screens.
-pub(crate) mod components;
+/// View deck cards screen.
+pub mod view;

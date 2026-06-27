@@ -1,15 +1,17 @@
 use crate::inbound::{
     components::accordion::{Accordion, AccordionContent, AccordionItem, AccordionTrigger},
-    components::hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, open_and_record_hint},
+    components::hint_dialog::{
+        HintBullet, HintBullets, HintColored, HintDialog, open_and_record_hint,
+    },
     screens::deck::card::filter::{
-        artist::Artist, category::Category, combat::Combat, config::Config, flavor_text::FlavorText,
-        format::FormatFilter, mana::Mana, name::Name, oracle_text::OracleText, rarity::Rarity,
-        set::Set, sort::Sort, types::Types,
+        artist::Artist, category::Category, combat::Combat, config::Config,
+        flavor_text::FlavorText, format::FormatFilter, mana::Mana, name::Name,
+        oracle_text::OracleText, rarity::Rarity, set::Set, sort::Sort, types::Types,
     },
 };
 use crate::outbound::client::ZwipeClient;
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{use_toast, ToastOptions};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
@@ -79,8 +81,7 @@ pub(crate) fn CardFilterSheet(
         let fb = filter_builder();
         let def = CardFilterBuilder::default();
         (
-            fb.name_contains().is_some()
-                || fb.name_not_contains().is_some(),
+            fb.name_contains().is_some() || fb.name_not_contains().is_some(),
             fb.oracle_text_contains().is_some()
                 || fb.oracle_text_contains_any().is_some()
                 || fb.oracle_text_contains_all().is_some()
@@ -111,15 +112,12 @@ pub(crate) fn CardFilterSheet(
             fb.flavor_text_contains().is_some()
                 || fb.has_flavor_text().is_some()
                 || fb.flavor_text_not_contains().is_some(),
-            fb.artist_equals_any().is_some()
-                || fb.artist_excludes_any().is_some(),
-            fb.rarity_equals_any().is_some()
-                || fb.rarity_excludes_any().is_some(),
+            fb.artist_equals_any().is_some() || fb.artist_excludes_any().is_some(),
+            fb.rarity_equals_any().is_some() || fb.rarity_excludes_any().is_some(),
             fb.mechanical_categories_contains_any().is_some()
                 || fb.mechanical_categories_contains_all().is_some()
                 || fb.mechanical_categories_excludes().is_some(),
-            fb.set_equals_any().is_some()
-                || fb.set_excludes_any().is_some(),
+            fb.set_equals_any().is_some() || fb.set_excludes_any().is_some(),
             fb.order_by().is_some(),
             fb.is_playable() != def.is_playable()
                 || fb.digital() != def.digital()
@@ -133,7 +131,10 @@ pub(crate) fn CardFilterSheet(
                 || fb.is_signature_spell().is_some(),
         )
     } else {
-        (false, false, false, false, false, false, false, false, false, false, false, false, false)
+        (
+            false, false, false, false, false, false, false, false, false, false, false, false,
+            false,
+        )
     };
 
     // Track accordion item index — shifts when format filter is included

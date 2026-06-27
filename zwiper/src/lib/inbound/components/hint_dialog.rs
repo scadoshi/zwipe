@@ -75,11 +75,7 @@ pub fn open_and_record_hint(
 /// rule under the title and above the button.
 /// Compose the body from [`HintLine`]s, with [`HintKey`]s for button names.
 #[component]
-pub fn HintDialog(
-    open: Signal<bool>,
-    title: String,
-    children: Element,
-) -> Element {
+pub fn HintDialog(open: Signal<bool>, title: String, children: Element) -> Element {
     rsx! {
         AlertDialogRoot {
             open: open(),

@@ -4,14 +4,14 @@ use crate::domain::error::UserFacing;
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::bottom_sheet::BottomSheet;
 use crate::inbound::components::fields::text_input::TextInput;
-use crate::outbound::client::user::change_email::ClientChangeEmail;
 use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::user::change_email::ClientChangeEmail;
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{use_toast, ToastOptions};
+use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe::domain::auth::models::password::Password;
+use zwipe_core::domain::{Email, auth::models::session::Session};
 use zwipe_core::http::contracts::auth::HttpChangeEmail;
-use zwipe_core::domain::{auth::models::session::Session, Email};
 
 /// Bottom sheet for updating the user's email address.
 #[component]

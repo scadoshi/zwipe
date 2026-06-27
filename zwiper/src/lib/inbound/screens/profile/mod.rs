@@ -8,19 +8,14 @@ pub mod change_email;
 pub mod change_password;
 /// Change username bottom sheet.
 pub mod change_username;
-/// User preferences bottom sheet.
-pub mod preferences;
 /// Extracted components for the profile screen.
 mod components;
+/// User preferences bottom sheet.
+pub mod preferences;
 
-use components::delete_account_dialog::DeleteAccountDialog;
-use components::email_verification::EmailVerification;
 use crate::inbound::components::bottom_sheet::BottomSheet;
 use crate::inbound::components::logout_dialog::LogoutDialog;
-use change_email::ChangeEmailSheet;
-use change_password::ChangePasswordSheet;
-use change_username::ChangeUsernameSheet;
-use preferences::{PreferencesSheet, display_theme_name};
+use crate::inbound::components::screen_header::ScreenHeader;
 use crate::{
     inbound::{
         components::auth::bouncer::Bouncer,
@@ -28,13 +23,15 @@ use crate::{
             HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint,
         },
     },
-    outbound::client::{
-        user::get_user::ClientGetUser,
-        ZwipeClient,
-    },
+    outbound::client::{ZwipeClient, user::get_user::ClientGetUser},
 };
+use change_email::ChangeEmailSheet;
+use change_password::ChangePasswordSheet;
+use change_username::ChangeUsernameSheet;
+use components::delete_account_dialog::DeleteAccountDialog;
+use components::email_verification::EmailVerification;
 use dioxus::prelude::*;
-use crate::inbound::components::screen_header::ScreenHeader;
+use preferences::{PreferencesSheet, display_theme_name};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::models::hints::HINT_PROFILE;
 use zwipe_core::domain::user::models::theme::ThemeConfig;

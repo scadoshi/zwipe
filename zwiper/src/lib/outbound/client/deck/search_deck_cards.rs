@@ -9,9 +9,9 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
-use zwipe::inbound::http::{routes::search_deck_cards_route, ApiError};
+use zwipe::inbound::http::{ApiError, routes::search_deck_cards_route};
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::{search_card::card_filter::CardFilter, Card};
+use zwipe_core::domain::card::{Card, search_card::card_filter::CardFilter};
 
 /// Trait for deck-aware card search.
 #[allow(missing_docs)]

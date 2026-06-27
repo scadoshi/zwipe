@@ -10,11 +10,11 @@
 use std::sync::{Arc, OnceLock};
 
 use crate::outbound::{
-    client::{auth::refresh::ClientRefresh, ZwipeClient},
+    client::{ZwipeClient, auth::refresh::ClientRefresh},
     session::Persist,
 };
 use dioxus::prelude::*;
-use tokio::sync::{oneshot, Mutex};
+use tokio::sync::{Mutex, oneshot};
 use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::HttpRefreshSession;
@@ -78,10 +78,8 @@ impl EnsureFresh for Signal<Option<Session>> {
         let (tx, rx) = oneshot::channel();
         dioxus::core::spawn_forever(async move {
             let _guard = guard;
-            let request = HttpRefreshSession::new(
-                &current.user.id.to_string(),
-                &current.refresh_token.value,
-            );
+            let request =
+                HttpRefreshSession::new(&current.user.id.to_string(), &current.refresh_token.value);
             // clone the client out before awaiting — holding the signal read
             // guard across the await would block writes while pending
             let client = client.peek().clone();

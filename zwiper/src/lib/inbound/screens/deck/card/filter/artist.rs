@@ -1,7 +1,7 @@
 //! Artist filter component.
 
 use super::deck_cards::{DeckCards, extract_artists};
-use crate::outbound::client::{card::get_artists::ClientGetArtists, ZwipeClient};
+use crate::outbound::client::{ZwipeClient, card::get_artists::ClientGetArtists};
 use dioxus::prelude::*;
 use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
@@ -31,8 +31,14 @@ impl IncludeExclude {
 
 fn read_artists(fb: &CardFilterBuilder, mode: IncludeExclude) -> Vec<String> {
     match mode {
-        IncludeExclude::Include => fb.artist_equals_any().map(|v| v.to_vec()).unwrap_or_default(),
-        IncludeExclude::Exclude => fb.artist_excludes_any().map(|v| v.to_vec()).unwrap_or_default(),
+        IncludeExclude::Include => fb
+            .artist_equals_any()
+            .map(|v| v.to_vec())
+            .unwrap_or_default(),
+        IncludeExclude::Exclude => fb
+            .artist_excludes_any()
+            .map(|v| v.to_vec())
+            .unwrap_or_default(),
     }
 }
 
@@ -41,8 +47,12 @@ fn write_artists(fb: &mut CardFilterBuilder, mode: IncludeExclude, values: Vec<S
     fb.unset_artist_excludes_any();
     if !values.is_empty() {
         match mode {
-            IncludeExclude::Include => { fb.set_artist_equals_any(values); }
-            IncludeExclude::Exclude => { fb.set_artist_excludes_any(values); }
+            IncludeExclude::Include => {
+                fb.set_artist_equals_any(values);
+            }
+            IncludeExclude::Exclude => {
+                fb.set_artist_excludes_any(values);
+            }
         }
     }
 }

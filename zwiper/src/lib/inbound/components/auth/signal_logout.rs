@@ -6,7 +6,7 @@
 use crate::{
     inbound::components::auth::ensure_session::EnsureFresh,
     outbound::{
-        client::{auth::logout::ClientLogout, ZwipeClient},
+        client::{ZwipeClient, auth::logout::ClientLogout},
         session::Persist,
     },
 };
