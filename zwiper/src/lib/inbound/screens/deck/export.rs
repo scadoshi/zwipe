@@ -7,7 +7,12 @@ use crate::{
     },
     outbound::client::{ZwipeClient, deck::get_deck::ClientGetDeck},
 };
+use crate::inbound::components::hint_dialog::{
+    HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint,
+};
+use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus::prelude::*;
+use zwipe_core::domain::user::models::hints::HINT_EXPORT;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
@@ -25,6 +30,9 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
     let mut include_deck: Signal<bool> = use_signal(|| true);
     let mut include_sideboard: Signal<bool> = use_signal(|| false);
     let mut include_maybeboard: Signal<bool> = use_signal(|| false);
+
+    // Export hint: auto-opens on first visit; the header "?" reopens it.
+    let export_hint = use_one_time_hint(HINT_EXPORT);
 
     let deck_resource: Resource<Result<Deck, ApiError>> = use_resource(move || async move {
         let session = session.ensure_fresh(client).await?;
@@ -101,8 +109,23 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
     rsx! {
         Bouncer {
             div { class: "screen",
-                div { class: "page-header",
-                    h2 { "Export" }
+                ScreenHeader { title: "Export", hint: export_hint }
+
+                HintDialog {
+                    open: export_hint,
+                    title: "Exporting your deck",
+                    HintBullets {
+                        HintBullet {
+                            "Choose which boards to include under "
+                            HintKey { "Export" }
+                        }
+                        HintBullet {
+                            "Tap "
+                            HintKey { "Copy" }
+                            " to copy the decklist to your clipboard"
+                        }
+                        HintBullet { "Paste it anywhere or share your deck with friends" }
+                    }
                 }
 
                 div { class: "screen-content content-enter",

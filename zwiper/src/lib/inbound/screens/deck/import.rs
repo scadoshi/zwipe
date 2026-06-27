@@ -12,7 +12,12 @@ use crate::{
         deck_card::import_deck_cards::ClientImportDeckCards,
     },
 };
+use crate::inbound::components::hint_dialog::{
+    HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint,
+};
+use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus::prelude::*;
+use zwipe_core::domain::user::models::hints::HINT_IMPORT;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
@@ -42,6 +47,9 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
     let mut loading = use_signal(|| false);
     let mut result: Signal<Option<ImportDeckCardsResult>> = use_signal(|| None);
     let mut board_selection: Signal<Option<&'static str>> = use_signal(|| None);
+
+    // Import hint: auto-opens on first visit; the header "?" reopens it.
+    let import_hint = use_one_time_hint(HINT_IMPORT);
     let toast = use_toast();
 
     let board_word = board_selection.read().unwrap_or("mainboard");
@@ -122,8 +130,29 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
     rsx! {
         Bouncer {
             div { class: "screen",
-                div { class: "page-header",
-                    h2 { "Import" }
+                ScreenHeader { title: "Import", hint: import_hint }
+
+                HintDialog {
+                    open: import_hint,
+                    title: "Importing cards",
+                    HintBullets {
+                        HintBullet {
+                            "Paste a decklist, or switch "
+                            HintKey { "From" }
+                            " to import an Archidekt deck link"
+                        }
+                        HintBullet {
+                            HintKey { "Add" }
+                            " keeps your current cards; "
+                            HintKey { "Replace" }
+                            " swaps the board's contents"
+                        }
+                        HintBullet {
+                            "Pick which "
+                            HintKey { "Board" }
+                            " the cards import into"
+                        }
+                    }
                 }
 
                 div { class: "screen-content content-enter",

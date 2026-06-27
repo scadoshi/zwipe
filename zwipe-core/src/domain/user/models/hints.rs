@@ -30,6 +30,10 @@ pub const HINT_DECK_CARDS: &str = "deck_cards";
 pub const HINT_PROFILE: &str = "profile";
 /// Explainer for the shared card-filter bottom sheet (add/remove/view screens).
 pub const HINT_FILTER: &str = "filter";
+/// Explainer for the import cards screen (source, add/replace, board).
+pub const HINT_IMPORT: &str = "import";
+/// Explainer for the export deck screen (board selection, copy decklist).
+pub const HINT_EXPORT: &str = "export";
 
 /// Maximum length of a hint key.
 pub const HINT_KEY_MAX_LEN: usize = 64;
@@ -101,6 +105,8 @@ mod tests {
             HINT_DECK_CARDS,
             HINT_PROFILE,
             HINT_FILTER,
+            HINT_IMPORT,
+            HINT_EXPORT,
         ] {
             assert!(MarkHintShown::new(Uuid::new_v4(), key).is_ok());
         }
