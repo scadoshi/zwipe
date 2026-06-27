@@ -153,13 +153,21 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.1.0 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
+| Version (client) | 1.1.1 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
 ### Release notes (What's new — max 500 chars, store-visible)
 
-Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.). Mirrors the iOS 1.1.0 What's New, reworded for the generic listing:
+Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
+
+**1.1.1:**
+
+- Get help without leaving the app: every screen now has a Help button — tap it to report a problem (opens your email) or join our Discord community.
+- New quick tips on the import and export screens guide you through importing or sharing a decklist.
+- Bug fixes and reliability improvements.
+
+**1.1.0** (mirrors the iOS 1.1.0 What's New, reworded for the generic listing):
 
 - Tag your decks: add up to 5 strategy tags to label a deck at a glance — shown on your deck list and deck page.
 - Swipe to set your deck's leader, partner, background, or signature spell instead of searching.

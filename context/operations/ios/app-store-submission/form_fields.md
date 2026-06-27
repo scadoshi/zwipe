@@ -39,6 +39,14 @@ Built for players who want a fast, focused mobile experience — not another clu
 
 ---
 
+## What's New in This Version (1.1.1)
+
+- Get help without leaving the app: every screen now has a Help button — tap it to report a problem (it opens your email, pre-filled with your app version) or jump into our Discord community.
+- New quick tips on the Import and Export screens walk you through importing a decklist or sharing your deck.
+- Bug fixes and reliability improvements under the hood.
+
+---
+
 ## What's New in This Version (1.1.0)
 
 - Tag your decks: add up to 5 strategy tags (Aggro, Tokens, Reanimator, and more) to label a deck at a glance — your tags show on your deck list and deck page.
@@ -122,7 +130,7 @@ MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading ca
 |-------|-------|
 | Support URL | https://zwipe.net |
 | Marketing URL | https://zwipe.net |
-| Version | 1.1.0 |
+| Version | 1.1.1 |
 | Copyright | 2026 Scotty Fermo |
 | Routing App Coverage File | (leave empty) |
 
