@@ -227,3 +227,16 @@ the bundle → **Upload native debug symbols** (a zip containing
   swipe) bumped it to **`8`, submitted to the Alpha track**. Artifact
   `zwipe-1.1.0.aab`. iOS counterpart: build 48. *Lesson: an unuploaded versionCode
   can be reused — 7 was never sent to Play, so 8 is the next real number after 6.*
+
+- **2026-06-26 — `1.1.1`, versionCode `9`** (in-app help button, import/export hints,
+  the `mailto` OS-open fix). Artifact `zwipe-1.1.1.aab`, signed + R8/edge-to-edge
+  smoke-tested clean on Pixel_9a, rolled out to the Alpha track. iOS counterpart:
+  build 49. **Launcher-icon lesson:** the full-bleed Z (`icon-1024.png`) was getting
+  its edges sliced by the adaptive-icon **circular mask** — adaptive icons are a
+  108dp canvas but only the inner ~66dp is the guaranteed-visible safe zone, and a
+  wide logo like the Z has bars at the very top/bottom of its bbox that land outside
+  the circle. Fix: a separate **padded** source `icon-1024-android.png` (Z ≈ 47% of
+  the canvas, centered, generous `#282828` padding) wired into `launcher-icons.sh`;
+  iOS/web keep the full-bleed `icon-1024.png` (square icons aren't masked). Verify a
+  candidate by simulating the mask: crop the foreground to the center 66.6% and
+  circle-mask it before rebuilding. *Logo design polish still deferred (see `todo.md`).*
