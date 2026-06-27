@@ -93,7 +93,7 @@ pub fn Privacy() -> Element {
                 h2 { "Contact" }
                 p {
                     "Questions or requests? Email "
-                    a { href: "mailto:support@zwipe.com", "support@zwipe.com" }
+                    a { href: "mailto:support@zwipe.net", "support@zwipe.net" }
                     " or join the "
                     a { href: "https://discord.gg/s2UReqUUeg", target: "_blank", rel: "noopener noreferrer", "Discord" }
                     " for support."
