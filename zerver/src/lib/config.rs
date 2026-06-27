@@ -44,6 +44,18 @@ const MIN_CLIENT_VERSION_KEY: &str = "MIN_CLIENT_VERSION";
 /// Default minimum client version — `0.0.0` means the gate is open.
 const MIN_CLIENT_VERSION_DEFAULT: &str = "0.0.0";
 
+/// Environment variable key for the public web base URL (email verify/reset links).
+const WEB_BASE_URL_KEY: &str = "WEB_BASE_URL";
+
+/// Default public web base URL.
+const WEB_BASE_URL_DEFAULT: &str = "https://zwipe.net";
+
+/// Environment variable key for the user-facing support email address.
+const SUPPORT_EMAIL_ADDRESS_KEY: &str = "SUPPORT_EMAIL_ADDRESS";
+
+/// Default user-facing support email address.
+const SUPPORT_EMAIL_ADDRESS_DEFAULT: &str = "support@zwipe.net";
+
 /// Application configuration loaded from environment variables.
 ///
 /// All fields are required and validated at construction time.
@@ -81,6 +93,14 @@ pub struct Config {
     /// Defaults to `0.0.0` (gate open) if not set. Flipping the gate = edit
     /// `.env` on the server + restart zerver; no code deploy.
     pub min_client_version: String,
+
+    /// Public web base URL used to build email verify/reset links. Defaults to
+    /// `https://zwipe.net`. A domain change = edit `.env` + restart; no deploy.
+    pub web_base_url: String,
+
+    /// User-facing support email shown in transactional emails. Defaults to
+    /// `support@zwipe.net`.
+    pub support_email_address: String,
 }
 
 impl Config {
@@ -115,6 +135,12 @@ impl Config {
                 min_client_version
             );
         }
+        let web_base_url = std::env::var(WEB_BASE_URL_KEY)
+            .unwrap_or_else(|_| WEB_BASE_URL_DEFAULT.to_string())
+            .trim_end_matches('/')
+            .to_string();
+        let support_email_address = std::env::var(SUPPORT_EMAIL_ADDRESS_KEY)
+            .unwrap_or_else(|_| SUPPORT_EMAIL_ADDRESS_DEFAULT.to_string());
         Ok(Self {
             jwt_secret,
             database_url,
@@ -126,6 +152,8 @@ impl Config {
             resend_from_email,
             log_dir,
             min_client_version,
+            web_base_url,
+            support_email_address,
         })
     }
 }

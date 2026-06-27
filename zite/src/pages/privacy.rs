@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use crate::components::PageMeta;
-use crate::{Footer, Nav};
+use crate::{Footer, Nav, SUPPORT_EMAIL};
 
 #[component]
 pub fn Privacy() -> Element {
@@ -93,7 +93,7 @@ pub fn Privacy() -> Element {
                 h2 { "Contact" }
                 p {
                     "Questions or requests? Email "
-                    a { href: "mailto:support@zwipe.net", "support@zwipe.net" }
+                    a { href: "mailto:{SUPPORT_EMAIL}", "{SUPPORT_EMAIL}" }
                     " or join the "
                     a { href: "https://discord.gg/s2UReqUUeg", target: "_blank", rel: "noopener noreferrer", "Discord" }
                     " for support."

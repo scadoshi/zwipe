@@ -64,7 +64,14 @@ async fn main() -> anyhow::Result<()> {
     let db = Postgres::new(&config.database_url).await?;
     let card_service = CardService_::new(db.clone());
     let resend = Resend::new(config.resend_api_key, config.resend_from_email);
-    let auth_service = AuthService_::new(db.clone(), db.clone(), resend, config.jwt_secret);
+    let auth_service = AuthService_::new(
+        db.clone(),
+        db.clone(),
+        resend,
+        config.jwt_secret,
+        config.web_base_url,
+        config.support_email_address,
+    );
 
     card_service.scryfall_sync(BulkEndpoint::DefaultCards).await?;
 

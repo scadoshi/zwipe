@@ -9,6 +9,12 @@ use pages::{About, Android, Contribute, Discord, Home, Ios, Privacy, Reset, Veri
 
 pub const API_BASE: &str = "https://api.zwipe.net";
 
+/// Public web base URL — centralized so a domain change is a single edit.
+pub const WEB_BASE: &str = "https://zwipe.net";
+
+/// User-facing support email address.
+pub const SUPPORT_EMAIL: &str = "support@zwipe.net";
+
 const THEMES: Asset = asset!("/assets/themes.css");
 const STYLE: Asset = asset!("/assets/style.css");
 const FAVICON: Asset = asset!("/assets/favicon.ico");
