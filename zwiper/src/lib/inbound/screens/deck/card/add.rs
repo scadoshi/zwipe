@@ -28,6 +28,7 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
+use crate::inbound::components::chip::Chip;
 use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::collections::HashSet;
@@ -829,8 +830,8 @@ pub fn Add(deck_id: Uuid) -> Element {
                     div { class: "chip-row",
                         span { class: "chip-row-label", "From:" }
                         for (label, variant) in [("Search", AddSource::Search), ("Maybeboard", AddSource::Maybeboard)] {
-                            button {
-                                class: if add_source() == variant { "chip selected" } else { "chip" },
+                            Chip {
+                                selected: add_source() == variant,
                                 onclick: move |_| {
                                     if add_source() == variant { return; }
 

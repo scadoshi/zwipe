@@ -23,6 +23,7 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
+use crate::inbound::components::chip::Chip;
 use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
@@ -459,8 +460,8 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     div { class: "chip-row",
                         span { class: "chip-row-label", "Boards:" }
                         for (label, variant) in [("Main", BoardFilter::Deck), ("Maybe", BoardFilter::Maybeboard), ("Side", BoardFilter::Sideboard), ("All", BoardFilter::All)] {
-                            button {
-                                class: if board_filter() == variant { "chip selected" } else { "chip" },
+                            Chip {
+                                selected: board_filter() == variant,
                                 onclick: move |_| {
                                     board_filter.set(variant);
                                     let current = *filter_reset_counter.peek();

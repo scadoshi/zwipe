@@ -12,6 +12,7 @@ use crate::{
         deck_card::import_deck_cards::ClientImportDeckCards,
     },
 };
+use crate::inbound::components::chip::Chip;
 use crate::inbound::components::hint_dialog::{
     HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint,
 };
@@ -160,8 +161,8 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                         div { class: "chip-row",
                             span { class: "chip-row-label", "From:" }
                             for (label, value) in [("Text", ImportSource::Text), ("Archidekt", ImportSource::Archidekt)] {
-                                button {
-                                    class: if *source.read() == value { "chip selected" } else { "chip" },
+                                Chip {
+                                    selected: *source.read() == value,
                                     onclick: move |_| source.set(value),
                                     "{label}"
                                 }
@@ -170,8 +171,8 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                         div { class: "chip-row",
                             span { class: "chip-row-label", "Mode:" }
                             for (label, value) in [("Add", ImportMode::Add), ("Replace", ImportMode::Replace)] {
-                                button {
-                                    class: if *mode.read() == value { "chip selected" } else { "chip" },
+                                Chip {
+                                    selected: *mode.read() == value,
                                     onclick: move |_| mode.set(value),
                                     "{label}"
                                 }
@@ -180,8 +181,8 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                         div { class: "chip-row",
                             span { class: "chip-row-label", "Board:" }
                             for (label, value) in [("Main", None), ("Maybe", Some("maybeboard")), ("Side", Some("sideboard"))] {
-                                button {
-                                    class: if *board_selection.read() == value { "chip selected" } else { "chip" },
+                                Chip {
+                                    selected: *board_selection.read() == value,
                                     onclick: move |_| board_selection.set(value),
                                     "{label}"
                                 }

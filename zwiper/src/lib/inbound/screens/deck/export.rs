@@ -7,6 +7,7 @@ use crate::{
     },
     outbound::client::{ZwipeClient, deck::get_deck::ClientGetDeck},
 };
+use crate::inbound::components::chip::Chip;
 use crate::inbound::components::hint_dialog::{
     HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint,
 };
@@ -132,8 +133,8 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                     div { class: "import-controls",
                         div { class: "chip-row",
                             span { class: "chip-row-label", "Export:" }
-                            button {
-                                class: if include_deck() { "chip selected" } else { "chip" },
+                            Chip {
+                                selected: include_deck(),
                                 onclick: move |_| {
                                     let new_val = !include_deck();
                                     if !new_val && !include_maybeboard() && !include_sideboard() {
@@ -143,8 +144,8 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                                 },
                                 "Deck"
                             }
-                            button {
-                                class: if include_maybeboard() { "chip selected" } else { "chip" },
+                            Chip {
+                                selected: include_maybeboard(),
                                 onclick: move |_| {
                                     let new_val = !include_maybeboard();
                                     include_maybeboard.set(new_val);
@@ -156,8 +157,8 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                                 },
                                 "Maybe"
                             }
-                            button {
-                                class: if include_sideboard() { "chip selected" } else { "chip" },
+                            Chip {
+                                selected: include_sideboard(),
                                 onclick: move |_| {
                                     let new_val = !include_sideboard();
                                     include_sideboard.set(new_val);
