@@ -79,6 +79,10 @@ LOG_DIR=/tmp/zwipe-logs
 # email config (placeholder — dev doesn't send mail; swap in a real Resend key to test verify/reset flows)
 RESEND_API_KEY=changeme
 RESEND_EMAIL_FROM=support@zwipe.net
+# user-facing support email shown in transactional emails (optional; default: support@zwipe.net)
+SUPPORT_EMAIL_ADDRESS=support@zwipe.net
+# public web base url for email verify/reset links + outbound User-Agent (optional; default: https://zwipe.net)
+WEB_BASE_URL=https://zwipe.net
 EOF
 
 cat > zwiper/.env << EOF
