@@ -109,6 +109,12 @@ Build 15 shipped over build 14 with: `Email` strict newtype across the workspace
 
 ---
 
+## 1.1.1 — in-app help, import/export hints, mailto fix (both stores, 2026-06-26)
+
+Patch release, **iOS build 49** + **Android versionCode 9**, both at version 1.1.1. User-facing: a global **Help button** in every screen header (left `!`, mirroring the right `?` hint) opening a bottom sheet to **report a problem** (mailto, pre-filled with app version + platform) or **join the Discord**; **import/export screen hints**; and the fix that makes "report a problem" actually open the OS mail app on mobile (`outbound/open_url.rs` — Dioxus routes `<a href>` through `webbrowser::open`, which rejects non-`http(s)` URLs on iOS/Android, so the old `mailto:` anchor silently no-op'd; now opens via `UIApplication.openURL` / Android `ACTION_VIEW`). Server-side, the **Archidekt importer now tolerates null JSON fields** (decks that previously failed — e.g. a card with `"categories": null` — import again), and its outbound User-Agent + the email verify/reset links derive from a new `WEB_BASE_URL` config var. Also under the hood: a shared **`ScreenHeader`** component across all 15 screens, a shared **`Chip`** component, and `SUPPORT_EMAIL_ADDRESS`/`WEB_BASE_URL` env config. Android-only: the **launcher icon** was repadded to sit inside the adaptive-icon safe zone (the full-bleed Z was getting clipped by the circular mask — see `operations/android/.../build-and-submit.md`). Logo polish deferred (see `todo.md`). Rolled out to testers to get the new in-app functionality out. **Requires the server to be deployed** for the Archidekt import fix to take effect.
+
+---
+
 ## 1.1.0 — Zwipe-select, deck tags, keyword hinter, card detail (both stores, 2026-06-25)
 
 First **minor** bump (1.0.x → 1.1.0): a batch of user-facing features plus two Android-only fixes. **iOS build 48** (Transporter → Apple review) and **Android versionCode 8** (Alpha closed-testing track), both at version 1.1.0, submitted 2026-06-25. Backward-compatible and server-additive throughout.
