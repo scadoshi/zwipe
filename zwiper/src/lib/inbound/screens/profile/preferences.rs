@@ -138,16 +138,14 @@ pub fn PreferencesSheet(mut open: Signal<bool>) -> Element {
     };
 
     let mode = (if selected_dark() { "dark" } else { "light" }).to_string();
-    let regular_themes: Vec<&str> = ALLOWED_THEMES
+    let regular_themes = ALLOWED_THEMES
         .iter()
         .copied()
-        .filter(|t| !COLORBLIND_THEMES.contains(t))
-        .collect();
-    let colorblind_themes: Vec<&str> = ALLOWED_THEMES
+        .filter(|t| !COLORBLIND_THEMES.contains(t));
+    let colorblind_themes = ALLOWED_THEMES
         .iter()
         .copied()
-        .filter(|t| COLORBLIND_THEMES.contains(t))
-        .collect();
+        .filter(|t| COLORBLIND_THEMES.contains(t));
 
     rsx! {
         BottomSheet {
