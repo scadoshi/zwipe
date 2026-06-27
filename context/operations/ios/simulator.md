@@ -4,6 +4,22 @@ Managing simulator devices for screenshots, testing different screen sizes, etc.
 
 ---
 
+## Default device — iPhone 11 Pro Max, iOS 18.6 (6.5")
+
+The project default for running and screenshotting is the **6.5" iPhone 11 Pro Max
+on iOS 18.6** (the App Store's required 6.5" size, 1242×2688). `dx serve --ios`
+targets the *active* simulator, so boot this as the sole active sim and dx picks
+it up — no `--device` flag needed:
+
+```bash
+zcripts/ios/sim.sh   # shuts down others, boots the 6.5" 11 Pro Max, opens Simulator
+```
+
+Then `dx serve --ios`. There are two "iPhone 11 Pro Max" sims (one on 18.6, one on
+a newer runtime), so the script matches the 18.6 one by runtime, not by name.
+
+---
+
 ## List what's available
 
 ```bash
