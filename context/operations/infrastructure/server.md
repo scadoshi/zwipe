@@ -302,6 +302,8 @@ RUST_BACKTRACE=1
 RESEND_API_KEY=<from Resend dashboard>
 RESEND_EMAIL_FROM=support@zwipe.net
 # LOG_DIR omitted — defaults to /var/log/zwipe
+# SUPPORT_EMAIL_ADDRESS + WEB_BASE_URL omitted — default to support@zwipe.net
+# and https://zwipe.net. Set both here when switching the public domain.
 ```
 
 ### RUST_LOG directives
