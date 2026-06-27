@@ -7,6 +7,7 @@
 //! pre-filled with the app version and platform so every report self-documents.
 
 use crate::inbound::components::bottom_sheet::BottomSheet;
+use crate::outbound::open_url;
 use dioxus::prelude::*;
 
 /// User-facing support email. Same in every build, so a const (not env).
@@ -60,11 +61,15 @@ pub fn SupportButton() -> Element {
         }
 
         BottomSheet { open, title: "Help & feedback".to_string(),
-            a {
+            // A plain `<a href="mailto:">` does nothing on mobile: the webview's
+            // navigation handler hands it to `webbrowser`, which rejects
+            // non-http(s) URLs. Open it through the OS ourselves instead.
+            button {
                 class: "btn",
-                href: "{mailto}",
-                style: "text-decoration: none; text-align: center;",
-                onclick: move |_| open.set(false),
+                onclick: move |_| {
+                    open_url::open(&mailto);
+                    open.set(false);
+                },
                 "Report a problem \u{2197}"
             }
             a {
