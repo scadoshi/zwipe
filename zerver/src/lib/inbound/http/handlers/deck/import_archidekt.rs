@@ -86,7 +86,9 @@ where
     let db_user = state.user_service.get_user(&GetUser::from(user.id)).await?;
     let email_verified = db_user.email_verified_at.is_some();
 
-    let cards = ArchidektClient::new().fetch_deck(archidekt_id).await?;
+    let cards = ArchidektClient::new(&state.web_base_url)
+        .fetch_deck(archidekt_id)
+        .await?;
 
     let result = state
         .deck_service

@@ -218,6 +218,9 @@ pub struct HttpServerConfig<'a> {
     pub allowed_origins: Vec<HeaderValue>,
     /// Minimum app version allowed (force-update gate); `"0.0.0"` = open.
     pub min_client_version: String,
+    /// Public web base URL (e.g. `https://zwipe.net`); used for outbound
+    /// User-Agent contact info.
+    pub web_base_url: String,
 }
 
 /// Shared application state holding all service implementations.
@@ -244,6 +247,9 @@ where
     pub last_active_cache: Arc<DashMap<Uuid, Instant>>,
     /// Minimum app version allowed (force-update gate); `"0.0.0"` = open.
     pub min_client_version: Arc<str>,
+    /// Public web base URL (e.g. `https://zwipe.net`); used for outbound
+    /// User-Agent contact info.
+    pub web_base_url: Arc<str>,
 }
 
 /// Axum HTTP server with pre-configured routes and middleware.
@@ -294,6 +300,7 @@ impl HttpServer {
             metrics_service,
             last_active_cache: Arc::new(DashMap::new()),
             min_client_version: Arc::from(config.min_client_version.as_str()),
+            web_base_url: Arc::from(config.web_base_url.as_str()),
         };
 
         // Layer order is innermost-first, outermost-last. Request flows
