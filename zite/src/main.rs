@@ -15,6 +15,9 @@ pub const WEB_BASE: &str = "https://zwipe.net";
 /// User-facing support email address.
 pub const SUPPORT_EMAIL: &str = "support@zwipe.net";
 
+/// Discord community invite link.
+pub const DISCORD_URL: &str = "https://discord.gg/s2UReqUUeg";
+
 const THEMES: Asset = asset!("/assets/themes.css");
 const STYLE: Asset = asset!("/assets/style.css");
 const FAVICON: Asset = asset!("/assets/favicon.ico");

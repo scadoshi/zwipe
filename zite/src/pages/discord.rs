@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use crate::components::PageMeta;
-use crate::{Footer, Nav};
+use crate::{Footer, Nav, DISCORD_URL};
 
 #[component]
 pub fn Discord() -> Element {
@@ -20,7 +20,7 @@ pub fn Discord() -> Element {
                 }
                 p {
                     a {
-                        href: "https://discord.gg/s2UReqUUeg",
+                        href: "{DISCORD_URL}",
                         target: "_blank",
                         rel: "noopener noreferrer",
                         class: "store-btn",
