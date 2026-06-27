@@ -31,3 +31,5 @@ pub mod tri_toggle;
 pub mod support;
 /// Shared screen header (centered title + optional "?" hint trigger).
 pub mod screen_header;
+/// Selectable chip button (shared `.chip` styling).
+pub mod chip;

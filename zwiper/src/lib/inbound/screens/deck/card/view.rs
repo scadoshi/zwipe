@@ -27,6 +27,7 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
+use crate::inbound::components::chip::Chip;
 use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
@@ -461,9 +462,9 @@ pub fn View(deck_id: Uuid) -> Element {
                     div { class: "chip-row",
                         span { class: "chip-row-label", "Group by:" }
                         for option in GroupByOption::all() {
-                            button {
+                            Chip {
                                 key: "{option}",
-                                class: if group_by_option() == option { "chip selected" } else { "chip" },
+                                selected: group_by_option() == option,
                                 onclick: move |_| {
                                     should_collapse_expanded.set(true);
                                     group_by_option.set(option);
@@ -476,8 +477,8 @@ pub fn View(deck_id: Uuid) -> Element {
                     // Board filter row (multi-select, at least one must be on)
                     div { class: "chip-row",
                         span { class: "chip-row-label", "Boards:" }
-                        button {
-                            class: if show_deck() { "chip selected" } else { "chip" },
+                        Chip {
+                            selected: show_deck(),
                             onclick: move |_| {
                                 let new_val = !show_deck();
                                 show_deck.set(new_val);
@@ -491,8 +492,8 @@ pub fn View(deck_id: Uuid) -> Element {
                             },
                             "Main"
                         }
-                        button {
-                            class: if show_maybe() { "chip selected" } else { "chip" },
+                        Chip {
+                            selected: show_maybe(),
                             onclick: move |_| {
                                 let new_val = !show_maybe();
                                 show_maybe.set(new_val);
@@ -505,8 +506,8 @@ pub fn View(deck_id: Uuid) -> Element {
                             },
                             "Maybe"
                         }
-                        button {
-                            class: if show_side() { "chip selected" } else { "chip" },
+                        Chip {
+                            selected: show_side(),
                             onclick: move |_| {
                                 let new_val = !show_side();
                                 show_side.set(new_val);
@@ -524,21 +525,21 @@ pub fn View(deck_id: Uuid) -> Element {
                     // Show toggles row
                     div { class: "chip-row",
                         span { class: "chip-row-label", "Show:" }
-                        button {
-                            class: if show_lands() { "chip selected" } else { "chip" },
+                        Chip {
+                            selected: show_lands(),
                             onclick: move |_| {
                                 should_collapse_expanded.set(true);
                                 show_lands.set(!show_lands());
                             },
                             "Lands"
                         }
-                        button {
-                            class: if show_tokens() { "chip selected" } else { "chip" },
+                        Chip {
+                            selected: show_tokens(),
                             onclick: move |_| show_tokens.set(!show_tokens()),
                             "Tokens"
                         }
-                        button {
-                            class: if show_command_zone() { "chip selected" } else { "chip" },
+                        Chip {
+                            selected: show_command_zone(),
                             onclick: move |_| show_command_zone.set(!show_command_zone()),
                             "Command zone"
                         }
