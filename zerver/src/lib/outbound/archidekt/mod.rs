@@ -9,14 +9,12 @@
 //! Archidekt's API is undocumented (open beta); this adapter deliberately
 //! deserializes only the handful of fields we need and tolerates the rest.
 
+use crate::domain::deck::models::deck::import_archidekt::ArchidektCard;
+use serde::{Deserialize, Deserializer};
 use std::collections::HashSet;
 use std::time::Duration;
-
-use serde::Deserialize;
 use thiserror::Error;
 use uuid::Uuid;
-
-use crate::domain::deck::models::deck::import_archidekt::ArchidektCard;
 
 const USER_AGENT: &str = "ZwipeTCG/1.0 (+https://zwipe.net)";
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
@@ -100,9 +98,9 @@ impl ArchidektClient {
 
 #[derive(Debug, Deserialize)]
 struct RawDeck {
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_as_default")]
     categories: Vec<RawCategory>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_as_default")]
     cards: Vec<RawCard>,
 }
 
@@ -117,16 +115,26 @@ struct RawCategory {
 struct RawCard {
     #[serde(default = "default_quantity")]
     quantity: i32,
-    #[serde(default)]
+    // Archidekt sends `null` (not just an absent key) for a card stripped of all
+    // its category tags. `#[serde(default)]` alone only covers a missing field,
+    // so null must be mapped to an empty Vec explicitly or the whole deck fails.
+    #[serde(default, deserialize_with = "null_as_default")]
     categories: Vec<String>,
     card: RawCardInner,
 }
 
 #[derive(Debug, Deserialize)]
 struct RawCardInner {
+    // A custom card or a stripped entry can carry a null/absent uid; treat it as
+    // empty so it parses to a nil id and surfaces as unresolved (see into_cards),
+    // rather than failing the whole-deck parse.
+    #[serde(default, deserialize_with = "null_as_default")]
     uid: String,
-    #[serde(rename = "oracleCard")]
-    oracle_card: RawOracleCard,
+    // Custom cards have `oracleCard: null` (their data lives in the deck's
+    // top-level `customCards`); Option keeps the parse alive and the card falls
+    // through to unresolved via its empty name.
+    #[serde(rename = "oracleCard", default)]
+    oracle_card: Option<RawOracleCard>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -143,6 +151,19 @@ fn default_quantity() -> i32 {
     1
 }
 
+/// Deserializes a present-but-`null` field as `T::default()` instead of erroring.
+///
+/// `#[serde(default)]` only applies to absent keys; Archidekt sometimes sends an
+/// explicit `null` for list fields (e.g. a card's `categories`), which would
+/// otherwise fail the whole-deck parse.
+fn null_as_default<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+where
+    D: Deserializer<'de>,
+    T: Default + Deserialize<'de>,
+{
+    Ok(Option::deserialize(deserializer)?.unwrap_or_default())
+}
+
 impl RawDeck {
     fn into_cards(self) -> Vec<ArchidektCard> {
         // Categories flagged includedInDeck=false are maybeboard/sideboard-like
@@ -156,12 +177,21 @@ impl RawDeck {
 
         self.cards
             .iter()
-            .filter(|c| !c.categories.iter().any(|cat| excluded.contains(cat.as_str())))
+            .filter(|c| {
+                !c.categories
+                    .iter()
+                    .any(|cat| excluded.contains(cat.as_str()))
+            })
             .map(|c| ArchidektCard {
                 // Unparseable ids become nil so they surface as unresolved
                 // rather than silently vanishing.
                 scryfall_id: Uuid::parse_str(&c.card.uid).unwrap_or_else(|_| Uuid::nil()),
-                name: c.card.oracle_card.name.clone(),
+                name: c
+                    .card
+                    .oracle_card
+                    .as_ref()
+                    .map(|o| o.name.clone())
+                    .unwrap_or_default(),
                 quantity: c.quantity,
             })
             .collect()
@@ -195,6 +225,80 @@ mod tests {
 
     #[test]
     fn extract_id_rejects_garbage() {
-        assert_eq!(ArchidektClient::extract_deck_id("https://moxfield.com/decks/abc"), None);
+        assert_eq!(
+            ArchidektClient::extract_deck_id("https://moxfield.com/decks/abc"),
+            None
+        );
+    }
+
+    /// A card with an explicit `"categories": null` (Archidekt emits this for a
+    /// card stripped of all category tags) must not fail the whole-deck parse.
+    /// Regression for deck 21966480 ("Everybody gets a lightning bolt").
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn null_card_categories_parses_to_empty() {
+        let json = r#"{
+            "categories": [{"name": "Maybeboard", "includedInDeck": false}],
+            "cards": [
+                {
+                    "quantity": 1,
+                    "categories": null,
+                    "card": {"uid": "b12e5430-0e80-47dd-80ac-85728b656a24",
+                             "oracleCard": {"name": "Volcanic Island"}}
+                },
+                {
+                    "quantity": 1,
+                    "categories": ["Draw"],
+                    "card": {"uid": "bf76c6a4-d6e8-4d50-b65f-020252f7b659",
+                             "oracleCard": {"name": "Mystic Remora"}}
+                }
+            ]
+        }"#;
+
+        let raw: RawDeck =
+            serde_json::from_str(json).expect("deck with null categories must parse");
+        let names: Vec<String> = raw.into_cards().into_iter().map(|c| c.name).collect();
+        assert_eq!(names, vec!["Volcanic Island", "Mystic Remora"]);
+    }
+
+    /// A custom card has `oracleCard: null` (its data lives in the deck's
+    /// top-level `customCards`). It must not fail the whole-deck parse; it parses
+    /// with an empty name + nil id so it surfaces as unresolved downstream.
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn null_oracle_card_and_uid_parse_to_unresolved() {
+        let json = r#"{
+            "cards": [
+                {
+                    "quantity": 1,
+                    "categories": ["Commander"],
+                    "card": {"uid": null, "oracleCard": null}
+                },
+                {
+                    "quantity": 1,
+                    "categories": ["Draw"],
+                    "card": {"uid": "bf76c6a4-d6e8-4d50-b65f-020252f7b659",
+                             "oracleCard": {"name": "Mystic Remora"}}
+                }
+            ]
+        }"#;
+
+        let raw: RawDeck = serde_json::from_str(json).expect("custom card must not fail the parse");
+        let cards = raw.into_cards();
+        let custom = cards.first().expect("first card present");
+        assert_eq!(custom.scryfall_id, Uuid::nil());
+        assert!(custom.name.is_empty());
+        let names: Vec<&str> = cards.iter().map(|c| c.name.as_str()).collect();
+        assert_eq!(names, vec!["", "Mystic Remora"]);
+    }
+
+    /// Top-level `cards`/`categories` sent as `null` must also degrade to empty
+    /// rather than erroring.
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn null_top_level_lists_parse_to_empty() {
+        let raw: RawDeck =
+            serde_json::from_str(r#"{"categories": null, "cards": null}"#).expect("must parse");
+        assert!(raw.into_cards().is_empty());
     }
 }
