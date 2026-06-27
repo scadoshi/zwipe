@@ -62,7 +62,7 @@ async fn run() -> anyhow::Result<()> {
         db.clone(),
         resend,
         config.jwt_secret,
-        config.web_base_url,
+        config.web_base_url.clone(),
         config.support_email_address,
     );
     let user_service = user::services::Service::new(db.clone());
@@ -75,6 +75,7 @@ async fn run() -> anyhow::Result<()> {
         bind_address: &config.bind_address,
         allowed_origins: config.allowed_origins,
         min_client_version: config.min_client_version,
+        web_base_url: config.web_base_url,
     };
     let http_server = HttpServer::new(
         auth_service,

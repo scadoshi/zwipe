@@ -16,7 +16,9 @@ use std::time::Duration;
 use thiserror::Error;
 use uuid::Uuid;
 
-const USER_AGENT: &str = "ZwipeTCG/1.0 (+https://zwipe.net)";
+/// Product token for the User-Agent; the contact URL is appended per-client
+/// from config so it tracks the deployment's public domain.
+const USER_AGENT_PRODUCT: &str = "ZwipeTCG/1.0";
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// Errors fetching or parsing an Archidekt deck.
@@ -40,19 +42,16 @@ pub enum ArchidektError {
 #[derive(Debug, Clone)]
 pub struct ArchidektClient {
     client: reqwest::Client,
-}
-
-impl Default for ArchidektClient {
-    fn default() -> Self {
-        Self::new()
-    }
+    user_agent: String,
 }
 
 impl ArchidektClient {
-    /// Creates a new Archidekt client.
-    pub fn new() -> Self {
+    /// Creates a new Archidekt client whose User-Agent advertises `contact_url`
+    /// (the deployment's public web base URL, from config).
+    pub fn new(contact_url: &str) -> Self {
         Self {
             client: reqwest::Client::new(),
+            user_agent: format!("{USER_AGENT_PRODUCT} (+{contact_url})"),
         }
     }
 
@@ -76,7 +75,7 @@ impl ArchidektClient {
         let response = self
             .client
             .get(&url)
-            .header(reqwest::header::USER_AGENT, USER_AGENT)
+            .header(reqwest::header::USER_AGENT, &self.user_agent)
             .timeout(REQUEST_TIMEOUT)
             .send()
             .await?;
