@@ -14,6 +14,7 @@ use crate::{
         user::{get_user::ClientGetUser, preferences::ClientGetPreferences},
     },
 };
+use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::screens::deck::card::components::image_preview::ImagePreview;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -147,7 +148,7 @@ pub fn Home() -> Element {
     rsx! {
         Bouncer {
             div { class: "screen",
-                div { class: "page-header", h2 { "Home" } }
+                ScreenHeader { title: "Home" }
                 div { class: "screen-content centered",
                 div { class : "logo", "{logo}" }
 

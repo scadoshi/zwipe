@@ -27,6 +27,7 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
+use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
@@ -133,7 +134,7 @@ pub fn View(deck_id: Uuid) -> Element {
     // Deck-browsing hint: fires once entries have loaded and only if the
     // deck actually has cards. An empty list has nothing to tap, so the
     // hint waits for a later visit instead of burning its one showing.
-    let mut deck_cards_hint_open = use_signal(|| false);
+    let deck_cards_hint_open = use_signal(|| false);
     let mut deck_cards_hint_fired = use_signal(|| false);
     use_effect(move || {
         if !deck_entries.read().is_empty() && !*deck_cards_hint_fired.peek() {
@@ -451,15 +452,7 @@ pub fn View(deck_id: Uuid) -> Element {
     rsx! {
         Bouncer {
             div { class: "screen",
-                div { class: "page-header", style: "position: relative;",
-                    h2 { "Deck Cards" }
-                    button {
-                        class: "util-btn",
-                        style: "position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.55; padding: 0.2rem 0.6rem;",
-                        onclick: move |_| deck_cards_hint_open.set(true),
-                        "?"
-                    }
-                }
+                ScreenHeader { title: "Deck Cards", hint: deck_cards_hint_open }
 
                 div { class: "screen-content",
 

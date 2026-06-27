@@ -23,6 +23,7 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
+use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
@@ -70,7 +71,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
     // Swipe vocabulary hint: auto-opens on this user's first visit, the
     // grayed "?" in the util bar reopens it on demand.
-    let mut swipe_hint_open = use_one_time_hint(HINT_REMOVE_DECK_CARDS);
+    let swipe_hint_open = use_one_time_hint(HINT_REMOVE_DECK_CARDS);
     let mut keyword_hint_open = use_signal(|| false);
 
     // Incrementing this re-runs the filter effect
@@ -449,15 +450,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
     rsx! {
         Bouncer {
             div { class: "screen",
-                div { class: "page-header", style: "position: relative;",
-                    h2 { "Remove Deck Cards" }
-                button {
-                    class: "util-btn",
-                    style: "position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.55; padding: 0.2rem 0.6rem;",
-                    onclick: move |_| swipe_hint_open.set(true),
-                    "?"
-                }
-                }
+                ScreenHeader { title: "Remove Deck Cards", hint: swipe_hint_open }
 
                 div { class: "screen-content card-swipe content-enter",
 

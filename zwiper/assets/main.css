@@ -452,6 +452,7 @@ button {
   ======================== */
 
 .page-header {
+    position: relative;
     flex-shrink: 0;
     border-bottom: 1px solid var(--border-secondary);
     background-color: var(--bg-primary);
@@ -643,6 +644,26 @@ button {
 
 .util-btn .filter-dot {
     margin-left: 0.3rem;
+}
+
+/* The two header corner buttons: help "!" (left) and hint "?" (right). Both are
+   util-btn-based but smaller and faded, and identical in size. Defined together
+   AFTER .util-btn so this shared padding override wins over it. */
+.page-header-support,
+.page-header-hint {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.55;
+    padding: 0.2rem 0.6rem;
+}
+
+.page-header-support {
+    left: 1rem;
+}
+
+.page-header-hint {
+    right: 1rem;
 }
 
 .util-btn:disabled {

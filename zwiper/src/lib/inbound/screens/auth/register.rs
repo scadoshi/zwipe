@@ -8,6 +8,7 @@ use crate::{
         session::Persist,
     },
 };
+use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
@@ -118,7 +119,7 @@ pub fn Register() -> Element {
 
     rsx! {
         div { class: "screen",
-            div { class: "page-header", h2 { "Create profile" } }
+            ScreenHeader { title: "Create profile" }
             div { class: "screen-content centered content-enter",
             div { class: "logo",  "{logo}" }
             div { class : "container-sm text-center",

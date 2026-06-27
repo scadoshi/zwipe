@@ -12,6 +12,7 @@ use crate::{
 };
 use zwipe_core::domain::user::models::hints::HINT_CREATE_DECK;
 use dioxus::prelude::*;
+use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe_core::domain::deck::{DeckTag, format::Format};
@@ -43,7 +44,7 @@ pub fn CreateDeck() -> Element {
     let mut show_partner_swipe = use_signal(|| false);
     let mut show_background_swipe = use_signal(|| false);
     let mut show_signature_spell_swipe = use_signal(|| false);
-    let mut create_hint = use_one_time_hint(HINT_CREATE_DECK);
+    let create_hint = use_one_time_hint(HINT_CREATE_DECK);
 
     // Reactive Zwipe-select modes — derived from the current format / commander.
     let commander_mode = use_memo(move || selected_format().map(SwipeMode::Commander));
@@ -99,15 +100,7 @@ pub fn CreateDeck() -> Element {
     rsx! {
         Bouncer {
             div { class: "screen",
-                div { class: "page-header", style: "position: relative;",
-                    h2 { "Create Deck" }
-                    button {
-                        class: "util-btn",
-                        style: "position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.55; padding: 0.2rem 0.6rem;",
-                        onclick: move |_| create_hint.set(true),
-                        "?"
-                    }
-                }
+                ScreenHeader { title: "Create Deck", hint: create_hint }
 
                 div { class: "screen-content centered content-enter",
                 div { class : "container-sm",
