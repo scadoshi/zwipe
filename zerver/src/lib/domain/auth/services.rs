@@ -75,6 +75,10 @@ where
     user_repo: UR,
     email_sender: ES,
     jwt_secret: JwtSecret,
+    /// Public web base URL for building verify/reset links (e.g. `https://zwipe.net`).
+    web_base_url: String,
+    /// User-facing support email address shown in transactional emails.
+    support_email: String,
 }
 
 impl<AR, UR, ES> Service<AR, UR, ES>
@@ -83,13 +87,23 @@ where
     UR: UserRepository,
     ES: EmailSender,
 {
-    /// Creates a new authentication service with the provided repositories, email sender, and JWT secret.
-    pub fn new(auth_repo: AR, user_repo: UR, email_sender: ES, jwt_secret: JwtSecret) -> Self {
+    /// Creates a new authentication service with the provided repositories,
+    /// email sender, JWT secret, public web base URL, and support email.
+    pub fn new(
+        auth_repo: AR,
+        user_repo: UR,
+        email_sender: ES,
+        jwt_secret: JwtSecret,
+        web_base_url: String,
+        support_email: String,
+    ) -> Self {
         Self {
             auth_repo,
             user_repo,
             email_sender,
             jwt_secret,
+            web_base_url,
+            support_email,
         }
     }
 
@@ -334,7 +348,8 @@ where
 
         // Notify the OLD address: the new one is what an attacker would control.
         let html = include_str!("email_templates/email_changed.html")
-            .replace("{new_email}", &escape_html(user.email.as_ref()));
+            .replace("{new_email}", &escape_html(user.email.as_ref()))
+            .replace("{support_email}", &escape_html(&self.support_email));
         self.send_change_notification(
             user.id,
             old_email.as_ref(),
@@ -393,7 +408,7 @@ where
             .await
             .map_err(|e| anyhow!("{e}"))?;
 
-        let link = format!("https://zwipe.net/verify/{raw}");
+        let link = format!("{}/verify/{raw}", self.web_base_url);
         let html = include_str!("email_templates/verify_email.html")
             .replace("{link}", &link);
 
@@ -448,7 +463,7 @@ where
             .store_password_reset_token(user_id, hash, expires_at)
             .await?;
 
-        let link = format!("https://zwipe.net/reset/{raw}");
+        let link = format!("{}/reset/{raw}", self.web_base_url);
         let html = include_str!("email_templates/reset_password.html")
             .replace("{link}", &link);
 
