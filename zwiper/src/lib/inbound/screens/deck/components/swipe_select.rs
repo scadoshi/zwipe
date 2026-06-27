@@ -19,6 +19,7 @@ use crate::inbound::screens::deck::card::components::card_info::{CardInfoDisplay
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
 use crate::outbound::client::{ZwipeClient, card::search_cards::ClientSearchCards};
 use dioxus::prelude::*;
+use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::collections::HashSet;
 use std::time::Duration;
@@ -143,7 +144,7 @@ pub(crate) fn SwipeSelect(
     // Swipe-vocabulary hint: the "?" button reopens it; it also auto-opens once
     // per account the first time the screen is opened (gated, since this stays
     // mounted while closed — a plain mount-time one-time hint would misfire).
-    let mut hint_open = use_signal(|| false);
+    let hint_open = use_signal(|| false);
     let mut hint_fired = use_signal(|| false);
     use_effect(move || {
         if open() && !*hint_fired.peek() {
@@ -315,15 +316,7 @@ pub(crate) fn SwipeSelect(
     rsx! {
         div { class: "{screen_class}",
             if open() {
-                div { class: "page-header", style: "position: relative;",
-                    h2 { "Zwipe select" }
-                    button {
-                        class: "util-btn",
-                        style: "position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.55; padding: 0.2rem 0.6rem;",
-                        onclick: move |_| hint_open.set(true),
-                        "?"
-                    }
-                }
+                ScreenHeader { title: "Zwipe select", hint: hint_open }
 
                 div { class: "screen-content card-swipe content-enter",
                     if has_cards {

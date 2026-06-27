@@ -34,6 +34,7 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
+use crate::inbound::components::screen_header::ScreenHeader;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::models::hints::HINT_PROFILE;
 use zwipe_core::domain::user::models::theme::ThemeConfig;
@@ -55,7 +56,7 @@ pub fn Profile() -> Element {
 
     // Account management hint: auto-opens on this user's first visit, the
     // grayed "?" in the header reopens it on demand.
-    let mut profile_hint_open = use_one_time_hint(HINT_PROFILE);
+    let profile_hint_open = use_one_time_hint(HINT_PROFILE);
 
     // Refresh user on every open so email_verified_at is current without re-login.
     use_effect(move || {
@@ -83,15 +84,7 @@ pub fn Profile() -> Element {
     rsx! {
         Bouncer {
             div { class: "screen",
-                div { class: "page-header", style: "position: relative;",
-                    h2 { "Profile" }
-                    button {
-                        class: "util-btn",
-                        style: "position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.55; padding: 0.2rem 0.6rem;",
-                        onclick: move |_| profile_hint_open.set(true),
-                        "?"
-                    }
-                }
+                ScreenHeader { title: "Profile", hint: profile_hint_open }
 
                 HintDialog {
                     open: profile_hint_open,

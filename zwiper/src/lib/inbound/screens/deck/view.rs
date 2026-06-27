@@ -28,6 +28,7 @@ use crate::{
         deck_card::update_deck_card::ClientUpdateDeckCard,
     },
 };
+use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
@@ -103,7 +104,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
     // First-deck tour: auto-opens once per account on first opening any
     // deck profile; the header "?" reopens it on demand.
-    let mut first_deck_hint_open = use_one_time_hint(HINT_FIRST_DECK);
+    let first_deck_hint_open = use_one_time_hint(HINT_FIRST_DECK);
 
     let show_buy_sheet = use_signal(|| false);
     let mut show_more_sheet = use_signal(|| false);
@@ -307,17 +308,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     rsx! {
         Bouncer {
             div { class: "screen",
-                div {
-                    class : "page-header",
-                    style: "position: relative;",
-                    h2 { "Deck" }
-                    button {
-                        class: "util-btn",
-                        style: "position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.55; padding: 0.2rem 0.6rem;",
-                        onclick: move |_| first_deck_hint_open.set(true),
-                        "?"
-                    }
-                }
+                ScreenHeader { title: "Deck", hint: first_deck_hint_open }
 
                 div { class: "screen-content",
                     match deck_profile_resource() {

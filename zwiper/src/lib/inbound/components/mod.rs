@@ -27,3 +27,7 @@ pub mod update_required;
 /// Three-state toggle component (true/false/any).
 #[allow(unpredictable_function_pointer_comparisons)]
 pub mod tri_toggle;
+/// Global floating help/support button + bottom sheet.
+pub mod support;
+/// Shared screen header (centered title + optional "?" hint trigger).
+pub mod screen_header;

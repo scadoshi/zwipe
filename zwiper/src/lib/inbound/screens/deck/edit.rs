@@ -16,6 +16,7 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
+use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
@@ -43,7 +44,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
     let mut commander_display = use_signal(String::new);
     let mut show_commander_swipe = use_signal(|| false);
-    let mut edit_hint = use_one_time_hint(HINT_EDIT_DECK);
+    let edit_hint = use_one_time_hint(HINT_EDIT_DECK);
     let mut selected_format: Signal<Option<Format>> = use_signal(|| None);
     let mut selected_tags: Signal<Vec<DeckTag>> = use_signal(Vec::new);
     let mut partner_commander: Signal<Option<Card>> = use_signal(|| None);
@@ -364,15 +365,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     rsx! {
         Bouncer {
             div { class: "screen",
-                div { class: "page-header", style: "position: relative;",
-                    h2 { "Edit Deck" }
-                    button {
-                        class: "util-btn",
-                        style: "position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.55; padding: 0.2rem 0.6rem;",
-                        onclick: move |_| edit_hint.set(true),
-                        "?"
-                    }
-                }
+                ScreenHeader { title: "Edit Deck", hint: edit_hint }
 
                 div { class: "screen-content centered content-enter",
                 div { class : "container-sm",

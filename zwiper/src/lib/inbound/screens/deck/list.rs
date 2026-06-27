@@ -12,6 +12,7 @@ use crate::{
     },
 };
 use dioxus::prelude::*;
+use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe::inbound::http::ApiError;
@@ -25,7 +26,7 @@ pub fn DeckList() -> Element {
     let auth_client: Signal<ZwipeClient> = use_context();
     let mut session: Signal<Option<Session>> = use_context();
     let toast = use_toast();
-    let mut decks_hint_open = use_signal(|| false);
+    let decks_hint_open = use_signal(|| false);
 
     // Refresh user on mount so email_verified_at is current without re-login.
     use_effect(move || {
@@ -72,15 +73,7 @@ pub fn DeckList() -> Element {
     rsx! {
         Bouncer {
             div { class: "screen",
-                div { class: "page-header", style: "position: relative;",
-                    h2 { "Decks" }
-                    button {
-                        class: "util-btn",
-                        style: "position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.55; padding: 0.2rem 0.6rem;",
-                        onclick: move |_| decks_hint_open.set(true),
-                        "?"
-                    }
-                }
+                ScreenHeader { title: "Decks", hint: decks_hint_open }
 
                 // On-demand only: no auto-open, no hints_shown key. Here for
                 // screen congruence and as a home for future bulk operations.

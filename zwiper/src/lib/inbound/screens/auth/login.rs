@@ -8,6 +8,7 @@ use crate::{
     },
 };
 use zwipe_core::domain::user::models::theme::ThemeConfig;
+use crate::inbound::components::screen_header::ScreenHeader;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::time::Duration;
@@ -79,7 +80,7 @@ pub fn Login() -> Element {
 
     rsx! {
         div { class: "screen",
-            div { class: "page-header", h2 { "Login" } }
+            ScreenHeader { title: "Login" }
             div { class: "screen-content centered content-enter",
             div { class: "logo",  "{logo}" }
             div { class : "container-sm text-center",
