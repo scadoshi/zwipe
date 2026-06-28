@@ -114,7 +114,11 @@ where
             UNVERIFIED_MAX_DECKS_PER_USER
         };
         if deck_count >= deck_limit {
-            return Err(CreateDeckProfileError::LimitReached);
+            return Err(if request.email_verified {
+                CreateDeckProfileError::LimitReached
+            } else {
+                CreateDeckProfileError::UnverifiedLimitReached
+            });
         }
         self.deck_repo.create_deck_profile(request).await
     }
@@ -159,7 +163,11 @@ where
             UNVERIFIED_MAX_CARDS_PER_DECK
         };
         if card_count + i64::from(*request.quantity) > card_limit {
-            return Err(CreateDeckCardError::LimitReached);
+            return Err(if request.email_verified {
+                CreateDeckCardError::LimitReached
+            } else {
+                CreateDeckCardError::UnverifiedLimitReached
+            });
         }
         self.deck_repo.create_deck_card(request).await
     }
@@ -763,7 +771,11 @@ where
             UNVERIFIED_MAX_DECKS_PER_USER
         };
         if deck_count >= deck_limit {
-            return Err(CloneDeckError::LimitReached);
+            return Err(if request.email_verified {
+                CloneDeckError::LimitReached
+            } else {
+                CloneDeckError::UnverifiedLimitReached
+            });
         }
 
         // 3. Delegate to the repo for the transactional copy.
