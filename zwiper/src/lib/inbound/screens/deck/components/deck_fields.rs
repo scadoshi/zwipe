@@ -58,6 +58,7 @@ pub(crate) fn DeckFields(
     // Tag search state (in-memory typeahead, no debounce)
     // ========================================
     let mut tag_query = use_signal(String::new);
+    let mut show_tags_hint = use_signal(|| false);
 
     // ========================================
     // Commander search state
@@ -777,6 +778,11 @@ pub(crate) fn DeckFields(
             div { class: "label-row",
                 label { class: "label", "Tags" }
                 span { class: "label-hint", "{selected_tags().len()}/{MAX_DECK_TAGS}" }
+                div {
+                    class: "chip-xs",
+                    onclick: move |_| show_tags_hint.set(true),
+                    "?"
+                }
                 if !selected_tags().is_empty() {
                     button {
                         class: "clear-btn",
@@ -859,6 +865,28 @@ pub(crate) fn DeckFields(
                     spellcheck: "false",
                     oninput: move |event| {
                         tag_query.set(event.value());
+                    }
+                }
+            }
+        }
+
+        DeckTagsHint { open: show_tags_hint }
+    }
+}
+
+/// Reference dialog listing every deck tag with a one-line definition, opened
+/// from the "?" trigger on the tag picker so the strategy tags are discoverable.
+#[component]
+fn DeckTagsHint(open: Signal<bool>) -> Element {
+    rsx! {
+        HintDialog {
+            open,
+            title: "Deck tags",
+            HintBullets {
+                for tag in DeckTag::all() {
+                    HintBullet { key: "{tag}",
+                        HintColored { color: "--accent-tertiary", "{tag.display_name()}" }
+                        " — {tag.description()}"
                     }
                 }
             }
