@@ -377,12 +377,8 @@ pub(crate) fn SwipeSelect(
                         class: "util-btn",
                         onclick: move |_| filters_overlay_open.set(true),
                         "Filter"
-                    }
-                    if !filter_builder.read().is_empty() {
-                        button {
-                            class: "util-btn",
-                            onclick: move |_| clear_filter(),
-                            "Clear"
+                        if !filter_builder.read().is_empty() {
+                            span { class: "filter-dot" }
                         }
                     }
                     button {
