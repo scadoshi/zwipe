@@ -229,6 +229,78 @@ impl DeckTag {
             Self::Wipe => "Board Wipes",
         }
     }
+
+    /// One-line, plain-language definition of the strategy, for the tag picker's
+    /// hint dialog.
+    pub fn description(&self) -> &'static str {
+        match self {
+            Self::Aggro => "Apply early pressure with cheap creatures to win before opponents stabilize",
+            Self::Aristocrats => "Sacrifice your own creatures for value and incremental life drain",
+            Self::Artifacts => "Build the engine around artifacts and their synergies",
+            Self::AttackTriggers => "Reward attacking with triggers that snowball each combat",
+            Self::Auras => "Stack enchantment auras onto a creature to enlarge it",
+            Self::Blink => "Flicker creatures out and back to reuse their enter-the-battlefield effects",
+            Self::Bounce => "Return permanents to hand to reset boards and reuse effects",
+            Self::Burn => "Deal direct damage with spells to creatures or players",
+            Self::Cascade => "Chain free spells off cascade and cost-reduction effects",
+            Self::Clone => "Copy the best creatures and permanents on the battlefield",
+            Self::Combo => "Assemble two or more cards into a game-ending interaction",
+            Self::Control => "Counter and remove threats, then win with late-game inevitability",
+            Self::Counters => "Grow creatures with +1/+1 counters and counter payoffs",
+            Self::Counterspells => "Hold up counterspells to stop key spells before they resolve",
+            Self::Cycling => "Discard cards to draw and trigger cycling payoffs",
+            Self::Defenders => "Hold the line with high-toughness walls, then turn them into a win",
+            Self::Devotion => "Reward heavy colored pips with devotion-scaling effects",
+            Self::Discard => "Strip opponents' hands to deny resources and options",
+            Self::Draw => "Refill your hand with extra card draw to outresource the table",
+            Self::Enchantress => "Draw cards whenever you cast enchantments",
+            Self::Energy => "Accumulate energy counters and spend them for value",
+            Self::Equipment => "Suit up creatures with equipment for repeatable buffs",
+            Self::Etb => "Chain enter-the-battlefield effects for repeatable value",
+            Self::Flying => "Win in the air with evasive flying creatures",
+            Self::GoWide => "Flood the board with many creatures, then buff them all at once",
+            Self::Graveyard => "Use the graveyard as a resource to recur and reuse cards",
+            Self::GroupHug => "Give every player resources to steer politics and the game",
+            Self::GroupSlug => "Punish the whole table with symmetric damage and taxes",
+            Self::Hatebears => "Disrupt opponents with small creatures that tax and deny",
+            Self::Infect => "Attack with infect creatures, dealing damage as poison counters",
+            Self::LandDestruction => "Destroy opponents' lands to deny mana and tempo",
+            Self::Landfall => "Trigger payoffs each time a land enters the battlefield",
+            Self::Lands => "Treat lands as the engine, ramping and recurring them for value",
+            Self::Lifedrain => "Drain opponents' life while padding your own total",
+            Self::Lifegain => "Gain life and turn that life total into payoffs",
+            Self::Midrange => "Play efficient threats and removal to grind out value",
+            Self::Mill => "Empty opponents' libraries to deck them out",
+            Self::Monarch => "Become the monarch for an extra card each turn",
+            Self::Pillowfort => "Defend yourself with deterrents so attacks go elsewhere",
+            Self::Ping => "Repeatedly deal 1 damage to pick off creatures and players",
+            Self::Poison => "Win through poison counters from infect and toxic sources",
+            Self::Politics => "Make deals and incentives to steer the multiplayer table",
+            Self::Prison => "Lock opponents out with continuous resource-denial effects",
+            Self::Proliferate => "Multiply every kind of existing counter with proliferate",
+            Self::Ramp => "Accelerate mana to cast big spells ahead of schedule",
+            Self::Reanimator => "Cheat large creatures from the graveyard into play",
+            Self::Removal => "Lean on efficient spot removal to answer any threat",
+            Self::Sacrifice => "Use sacrifice outlets to turn permanents into value",
+            Self::Sagas => "Build around saga enchantments and their chapter effects",
+            Self::SelfMill => "Mill your own library to fuel graveyard payoffs",
+            Self::Spellslinger => "Cast many instants and sorceries with spell payoffs",
+            Self::Stax => "Slow the whole table with symmetric resource-denial pieces",
+            Self::Storm => "Cast a chain of spells to power up storm finishers",
+            Self::Superfriends => "Deploy many planeswalkers and protect their loyalty",
+            Self::Tempo => "Trade efficiently and use tempo to stay a step ahead",
+            Self::Theft => "Steal opponents' creatures, spells, and permanents",
+            Self::Tokens => "Generate creature tokens to go wide and fuel payoffs",
+            Self::Toolbox => "Tutor up the right answer from a versatile card pool",
+            Self::Treasure => "Make Treasure tokens for ramp and artifact synergies",
+            Self::Tribal => "Build around a single creature type and its lords",
+            Self::Untap => "Untap permanents to reuse abilities and generate value",
+            Self::Vehicles => "Crew vehicles for efficient, removal-resistant attackers",
+            Self::Voltron => "Pile buffs on one creature to win with commander damage",
+            Self::Wheels => "Force everyone to discard and draw fresh hands",
+            Self::Wipe => "Reset the board with mass removal, then rebuild first",
+        }
+    }
 }
 
 /// Display as snake_case (matches serde serialization).
@@ -304,6 +376,13 @@ mod tests {
     fn display_name_non_empty() {
         for tag in DeckTag::all() {
             assert!(!tag.display_name().is_empty());
+        }
+    }
+
+    #[test]
+    fn description_non_empty() {
+        for tag in DeckTag::all() {
+            assert!(!tag.description().is_empty());
         }
     }
 
