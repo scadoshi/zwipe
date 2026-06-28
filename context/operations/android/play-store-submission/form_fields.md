@@ -153,13 +153,17 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.1.1 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
+| Version (client) | 1.1.2 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
 ### Release notes (What's new — max 500 chars, store-visible)
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
+
+**1.1.2:**
+
+- A small consistency fix to the card-swipe screens so the filter controls look and behave the same everywhere.
 
 **1.1.1:**
 

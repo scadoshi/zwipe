@@ -39,6 +39,12 @@ Built for players who want a fast, focused mobile experience — not another clu
 
 ---
 
+## What's New in This Version (1.1.2)
+
+- A small consistency fix to the card-swipe screens so the filter controls look and behave the same everywhere.
+
+---
+
 ## What's New in This Version (1.1.1)
 
 - Get help without leaving the app: every screen now has a Help button — tap it to report a problem (it opens your email, pre-filled with your app version) or jump into our Discord community.
@@ -130,7 +136,7 @@ MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading ca
 |-------|-------|
 | Support URL | https://zwipe.net |
 | Marketing URL | https://zwipe.net |
-| Version | 1.1.1 |
+| Version | 1.1.2 |
 | Copyright | 2026 Scotty Fermo |
 | Routing App Coverage File | (leave empty) |
 
