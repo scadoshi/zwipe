@@ -1839,6 +1839,17 @@ button {
     align-self: flex-start;
 }
 
+.card-info-name {
+    font-weight: 700;
+    color: var(--accent-tertiary);
+    max-width: calc(100vw - 4rem);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+}
+
 /* ===================
   specific - dropdown
  ===================== */
