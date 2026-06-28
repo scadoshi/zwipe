@@ -33,6 +33,7 @@ pub fn TextInput(
                     placeholder : "{placeholder}",
                     value : "{value}",
                     autocapitalize : "none",
+                    autocorrect : "off",
                     spellcheck : "false",
                     oninput: move |event| {
                         value.set(event.value());
@@ -53,6 +54,7 @@ pub fn TextInput(
                 placeholder : "{placeholder}",
                 value : "{value}",
                 autocapitalize : "none",
+                autocorrect : "off",
                 spellcheck : "false",
                 oninput: move |event| {
                     value.set(event.value());
