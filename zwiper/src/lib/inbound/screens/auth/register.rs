@@ -48,7 +48,7 @@ pub fn Register() -> Element {
     };
 
     let mut validate_email = move || {
-        if let Err(e) = Email::new(email()) {
+        if let Err(e) = Email::new(email().trim()) {
             email_error.set(Some(e.to_user_facing_string()));
         } else {
             email_error.set(None);
@@ -83,7 +83,8 @@ pub fn Register() -> Element {
             return;
         }
         is_loading.set(true);
-        let request = HttpRegisterUser::new(&username(), &email(), &password());
+        let email = email().trim().to_string();
+        let request = HttpRegisterUser::new(&username(), &email, &password());
         spawn(async move {
             match auth_client().register(request).await {
                 Ok(new_session) => {
@@ -140,6 +141,7 @@ pub fn Register() -> Element {
                         id: "email",
                         label: "Email",
                         placeholder: "Email",
+                        input_type: "email",
                     }
                     if submit_attempted() && let Some(error) = password_error() {
                         div { class : "message-error", "{error}" }
