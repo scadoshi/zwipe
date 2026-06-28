@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<!-- Vertical (9:16, 1080x1920) end card for the swipe-demo video. Matches the
+     business-card BACK: full Zwipe wordmark on the gruvbox-dark grid + zwipe.net.
+     The block-glyph wordmark needs the app's self-hosted JetBrains Mono (the CDN
+     fontsource subset drops U+2580-U+259F), so the font is loaded from
+     ../../zwiper/assets/fonts. Render with:
+       "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless \
+         --disable-gpu --hide-scrollbars --force-device-scale-factor=1 \
+         --allow-file-access-from-files --window-size=1080,1920 \
+         --screenshot=video_end_card.png "file://$PWD/video_end_card.html" -->
+<style>
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-weight: 400;
+  font-display: block;
+  src: url('../../zwiper/assets/fonts/jetbrains-mono-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-weight: 700;
+  font-display: block;
+  src: url('../../zwiper/assets/fonts/jetbrains-mono-700.woff2') format('woff2');
+}
+
+:root {
+  --bg: #282828;          /* gruvbox-dark bg */
+  --tan: #ebdbb2;         /* text-primary */
+  --muted: #a89984;       /* text-muted */
+  --green: #689d6a;       /* accent-primary */
+  --grid-line: rgba(235, 219, 178, 0.03);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { width: 1080px; height: 1920px; }
+
+body {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 40px 40px;
+  color: var(--tan);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 90px;
+}
+
+.wordmark {
+  white-space: pre;
+  font-weight: 700;
+  font-size: 34px;
+  line-height: 0.82;
+  color: var(--tan);
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.6));
+}
+
+.tagline {
+  font-size: 40px;
+  font-weight: 400;
+  letter-spacing: 2px;
+  color: var(--muted);
+}
+
+.site {
+  font-size: 60px;
+  font-weight: 700;
+  letter-spacing: 8px;
+  color: var(--green);
+}
+</style>
+</head>
+<body>
+  <pre class="wordmark">▎▎▉▉▉▉▉▉▉            ▎▎▉▉
+  ▎▎▉▉▉▉▉▉▎▎▉▉    ▎▎▉▉▎▎▉▉▎▎▉▉▉▉▉▉ ▎▎▉▉▉▉▉▉▉
+      ▎▎▉▉ ▎▎▉▉    ▎▎▉▉    ▎▎▉▉▉▉▉▉▉▎▎▉▉ ▎▎▉▉
+     ▎▎▉▉   ▎▎▉▉▎▎▉▉▎▎▉▉▎▎▉▉▎▎▉▉ ▎▎▉▉▎▎▉▉▉▉▉▉▉
+    ▎▎▉▉     ▎▎▉▉▎▎▉▉▎▎▉▉▎▎▉▉▎▎▉▉ ▎▎▉▉▎▎▉▉
+   ▎▎▉▉▉▉▉▉▉▉ ▎▎▉▉▉▉▉▉▉▉  ▎▎▉▉▎▎▉▉▉▉▉▉ ▎▎▉▉  ▎▎▉▉
+    ▎▎▉▉▉▉▉▉▉▉ ▎▎▉▉▎▎▉▉    ▎▎▉▉▎▎▉▉▉▉   ▎▎▉▉▉▉▉▉
+                                ▎▎▉▉
+                                 ▎▎▉▉
+                                  ▎▎▉▉
+                                   ▎▎▉▉</pre>
+
+  <div class="tagline">Free on iOS &amp; Android · No ads</div>
+  <div class="site">zwipe.net</div>
+</body>
+</html>
