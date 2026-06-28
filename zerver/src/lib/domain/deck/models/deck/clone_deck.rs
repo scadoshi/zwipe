@@ -23,9 +23,12 @@ pub enum CloneDeckError {
     /// A deck owned by the caller already has this name.
     #[error("a deck with that name already exists")]
     Duplicate,
-    /// Caller has reached their deck-count limit.
+    /// Caller has reached their deck-count limit (verified user, true cap).
     #[error("deck count limit reached")]
     LimitReached,
+    /// Caller has reached their unverified deck-count limit.
+    #[error("deck count limit reached, verify your email to unlock more")]
+    UnverifiedLimitReached,
     /// Error surfaced while verifying the source deck exists and is owned.
     #[error(transparent)]
     GetSource(GetDeckProfileError),

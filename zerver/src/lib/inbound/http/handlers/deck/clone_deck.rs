@@ -46,6 +46,9 @@ impl From<CloneDeckError> for ApiError {
                 "a deck with that name already exists".to_string(),
             ),
             CloneDeckError::LimitReached => Self::UnprocessableEntity(
+                "deck limit reached".to_string(),
+            ),
+            CloneDeckError::UnverifiedLimitReached => Self::UnprocessableEntity(
                 "deck limit reached, verify your email to unlock more".to_string(),
             ),
             // GetDeckProfileError has no blanket From<_> for ApiError in scope,

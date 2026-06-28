@@ -33,6 +33,9 @@ impl From<CreateDeckProfileError> for ApiError {
                 "deck with name and user combination already exists".to_string(),
             ),
             CreateDeckProfileError::LimitReached => {
+                Self::UnprocessableEntity("deck limit reached".to_string())
+            }
+            CreateDeckProfileError::UnverifiedLimitReached => {
                 Self::UnprocessableEntity("deck limit reached, verify your email to unlock more".to_string())
             }
             CreateDeckProfileError::Database(e) => e.log_500(),
