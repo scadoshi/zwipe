@@ -153,13 +153,21 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.1.2 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
+| Version (client) | 1.1.3 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
 ### Release notes (What's new — max 500 chars, store-visible)
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
+
+**1.1.3:**
+
+- Card names now show while you swipe, so every card is identifiable at a glance — including alternate and non-English printings.
+- A smoother deck builder: tap a field to choose, empty fields read "Not set," and your deck name is checked as you type.
+- More strategy tags with quick definitions, plus power-level options.
+- Read the Privacy Policy right inside the app, from your Profile.
+- Clearer sign-in and profile forms, with errors shown under each field.
 
 **1.1.2:**
 

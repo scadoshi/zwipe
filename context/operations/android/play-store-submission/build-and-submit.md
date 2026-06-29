@@ -240,3 +240,16 @@ the bundle → **Upload native debug symbols** (a zip containing
   iOS/web keep the full-bleed `icon-1024.png` (square icons aren't masked). Verify a
   candidate by simulating the mask: crop the foreground to the center 66.6% and
   circle-mask it before rebuilding. *Logo design polish still deferred (see `todo.md`).*
+
+- **2026-06-28 — `1.1.2`, versionCode `10`** (filter-control consistency pass on the
+  card-swipe screens). iOS counterpart: build 50.
+
+- **2026-06-28 — `1.1.3`, versionCode `11`** (media-day release: card names while
+  swiping, deck-form overhaul, expanded tags + format/power pickers, in-app privacy
+  policy, under-field validation). Built per this recipe — `dx bundle` →
+  `launcher-icons.sh` → gradle patch (compileSdk 36 / targetSdk 35 / versionCode 11)
+  → `gradlew :app:bundleRelease` → jarsigner (password via a 0600 scratchpad file,
+  deleted after). Artifact `zwipe-1.1.3.aab`, signed + `jar verified`, uploaded to the
+  Alpha closed-testing track. iOS counterpart: build 51. *R8/edge-to-edge emulator
+  smoke test was skipped this round (same build path as prior releases) — first
+  suspect if a tester device misbehaves.*
