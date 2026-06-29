@@ -66,6 +66,9 @@ pub struct UpdateDeckProfile {
     /// Optional tags update. `Some` replaces the deck's full tag set (an empty
     /// vec clears all tags); `None` leaves tags untouched.
     pub tags: Option<Vec<DeckTag>>,
+    /// Optional land target update. `Some(None)` clears the override (back to
+    /// the format heuristic); `None` leaves it untouched.
+    pub land_target: Option<Option<i32>>,
     /// Requesting user (for authorization).
     pub user_id: Uuid,
 }
@@ -83,6 +86,7 @@ impl UpdateDeckProfile {
             signature_spell_id: None,
             format: None,
             tags: None,
+            land_target: None,
         }
     }
 }
@@ -98,6 +102,7 @@ pub struct UpdateDeckProfileBuilder {
     signature_spell_id: Option<Option<Uuid>>,
     format: Option<Option<String>>,
     tags: Option<Option<Vec<String>>>,
+    land_target: Option<Option<i32>>,
 }
 
 impl UpdateDeckProfileBuilder {
@@ -145,6 +150,13 @@ impl UpdateDeckProfileBuilder {
         self
     }
 
+    /// Sets the land target update. Outer `Some` means "update"; inner `None`
+    /// clears the override. `None` leaves it untouched.
+    pub fn land_target(mut self, land_target: Option<Option<i32>>) -> Self {
+        self.land_target = land_target;
+        self
+    }
+
     /// Validates and builds the request.
     pub fn build(self) -> Result<UpdateDeckProfile, InvalidUpdateDeckProfile> {
         if self.name.is_none()
@@ -154,6 +166,7 @@ impl UpdateDeckProfileBuilder {
             && self.signature_spell_id.is_none()
             && self.format.is_none()
             && self.tags.is_none()
+            && self.land_target.is_none()
         {
             return Err(InvalidUpdateDeckProfile::NoUpdates);
         }
@@ -182,6 +195,7 @@ impl UpdateDeckProfileBuilder {
             signature_spell_id: self.signature_spell_id,
             format,
             tags,
+            land_target: self.land_target,
             user_id: self.user_id,
         })
     }

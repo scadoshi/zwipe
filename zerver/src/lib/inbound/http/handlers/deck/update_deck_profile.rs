@@ -101,6 +101,7 @@ where
         .signature_spell_id(body.signature_spell_id.into_option())
         .format(format_option)
         .tags(body.tags.into_option())
+        .land_target(body.land_target.into_option())
         .build()?;
 
     let deck_profile = state

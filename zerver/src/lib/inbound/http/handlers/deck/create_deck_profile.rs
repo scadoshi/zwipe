@@ -87,6 +87,7 @@ where
         .signature_spell_id(body.signature_spell_id)
         .format(body.format.as_deref())
         .tags(body.tags.unwrap_or_default())
+        .land_target(body.land_target)
         .build()?;
 
     let deck_profile = state

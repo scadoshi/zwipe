@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,\n                      d.format, d.tags as \"tags?\", d.user_id,\n                      COALESCE(SUM(dc.quantity) FILTER (WHERE dc.board = 'deck'), 0) as \"card_count\",\n                      sd.name as \"commander_name?\",\n                      (SELECT s2.name FROM scryfall_data s2 WHERE s2.id = d.partner_commander_id) as \"partner_commander_name?\",\n                      (SELECT s3.name FROM scryfall_data s3 WHERE s3.id = d.background_id) as \"background_name?\",\n                      (SELECT s4.name FROM scryfall_data s4 WHERE s4.id = d.signature_spell_id) as \"signature_spell_name?\"\n               FROM decks d\n               LEFT JOIN deck_cards dc ON d.id = dc.deck_id\n               LEFT JOIN scryfall_data sd ON d.commander_id = sd.id\n               WHERE d.id = $1\n               GROUP BY d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,\n                        d.format, d.user_id, sd.name",
+  "query": "SELECT d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,\n                      d.format, d.tags as \"tags?\", d.land_target, d.user_id,\n                      COALESCE(SUM(dc.quantity) FILTER (WHERE dc.board = 'deck'), 0) as \"card_count\",\n                      sd.name as \"commander_name?\",\n                      (SELECT s2.name FROM scryfall_data s2 WHERE s2.id = d.partner_commander_id) as \"partner_commander_name?\",\n                      (SELECT s3.name FROM scryfall_data s3 WHERE s3.id = d.background_id) as \"background_name?\",\n                      (SELECT s4.name FROM scryfall_data s4 WHERE s4.id = d.signature_spell_id) as \"signature_spell_name?\"\n               FROM decks d\n               LEFT JOIN deck_cards dc ON d.id = dc.deck_id\n               LEFT JOIN scryfall_data sd ON d.commander_id = sd.id\n               WHERE d.user_id = $1\n               GROUP BY d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,\n                        d.format, d.land_target, d.user_id, sd.name",
   "describe": {
     "columns": [
       {
@@ -45,31 +45,36 @@
       },
       {
         "ordinal": 8,
+        "name": "land_target",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
         "name": "user_id",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "card_count",
         "type_info": "Int8"
       },
       {
-        "ordinal": 10,
+        "ordinal": 11,
         "name": "commander_name?",
         "type_info": "Text"
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "partner_commander_name?",
         "type_info": "Text"
       },
       {
-        "ordinal": 12,
+        "ordinal": 13,
         "name": "background_name?",
         "type_info": "Text"
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "signature_spell_name?",
         "type_info": "Text"
       }
@@ -88,6 +93,7 @@
       true,
       true,
       false,
+      true,
       false,
       null,
       false,
@@ -96,5 +102,5 @@
       null
     ]
   },
-  "hash": "b7087fc9f97b83be86a8b1f2947a773aed9d5bd81a1951bd32ba4809f44c3e24"
+  "hash": "fc2eaa334038ef78e42024ebafba6850f3132f25c9ff8684f053d8fe9a8e493f"
 }
