@@ -2126,7 +2126,8 @@ button {
     border-radius: 1rem 1rem 0 0;
     box-shadow: var(--shadow-md);
     transform: translateY(100%);
-    transition: transform 0.3s ease;
+    visibility: hidden;
+    transition: transform 0.3s ease, visibility 0s linear 0.3s;
     display: flex;
     flex-direction: column;
     z-index: 201;
@@ -2134,6 +2135,8 @@ button {
 
 .bottom-sheet.show {
     transform: translateY(0);
+    visibility: visible;
+    transition: transform 0.3s ease;
 }
 
 .bottom-sheet .util-bar {
