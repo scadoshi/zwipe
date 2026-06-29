@@ -38,6 +38,8 @@ use zwipe_core::domain::card::{
         filter_cards::{FilterCards, SortCards},
     },
 };
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use zwipe_core::domain::deck::deck_metrics::{budget_tier, mainboard_total_price};
 use zwipe_core::domain::deck::{Board, DeckEntry};
 use zwipe_core::domain::user::models::hints::HINT_REMOVE_DECK_CARDS;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpUpdateDeckCard};
@@ -103,6 +105,11 @@ pub fn Remove(deck_id: Uuid) -> Element {
     // Effective land target (deck override, else format heuristic) for the
     // below-target warning when lands leave the mainboard.
     let mut land_target: Signal<Option<i32>> = use_signal(|| None);
+    // Deck price budget + currency for the 50/75/100% crossing toasts. A budget
+    // crossing only fires upward, so removals are silent; moving a card back to
+    // the mainboard can raise the total enough to cross.
+    let mut price_budget: Signal<Option<f64>> = use_signal(|| None);
+    let mut price_budget_currency: Signal<PriceCurrency> = use_signal(|| PriceCurrency::Usd);
 
     let mut current_index = use_signal(|| 0_usize);
 
@@ -153,6 +160,34 @@ pub fn Remove(deck_id: Uuid) -> Element {
         }
     };
 
+    // Mainboard total in the budget currency from the source of truth.
+    let total_price = move || -> f64 {
+        mainboard_total_price(&deck_entries.peek(), price_budget_currency())
+    };
+
+    // Toast when a change raises the deck into a higher budget band (50/75/100%),
+    // reporting the exact percentage. Compares the band before/after, so it fires
+    // once per upward crossing and re-fires if the total dips and crosses again.
+    let warn_budget_crossing = move |before: f64, after: f64| {
+        let Some(budget) = price_budget() else {
+            return;
+        };
+        if budget <= 0.0 {
+            return;
+        }
+        if budget_tier(budget, after) > budget_tier(budget, before) {
+            let pct = after / budget * 100.0;
+            let amount = price_budget_currency().format_amount(budget);
+            let msg = format!("Deck at {pct:.2}% of your {amount} budget");
+            let opts = ToastOptions::default().duration(Duration::from_millis(2500));
+            if after >= budget {
+                toast.warning(msg, opts);
+            } else {
+                toast.info(msg, opts);
+            }
+        }
+    };
+
     // Effect 1 — mount load (reads `session` reactively)
     use_effect(move || {
         spawn(async move {
@@ -168,9 +203,14 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     let all_cards: Vec<Card> =
                         deck.entries.iter().map(|e| e.card.clone()).collect();
                     deck_cards_for_filter.set(all_cards);
-                    land_target.set(deck.deck_profile.land_target.or_else(|| {
-                        deck.deck_profile.format.and_then(|f| f.default_land_target())
-                    }));
+                    // Explicit target only — no land toasts unless the user set one.
+                    land_target.set(deck.deck_profile.land_target);
+                    let budget_currency = deck
+                        .deck_profile
+                        .price_target_currency
+                        .unwrap_or(PriceCurrency::Usd);
+                    price_budget.set(deck.deck_profile.price_target);
+                    price_budget_currency.set(budget_currency);
                     deck_entries.set(deck.entries);
                     deck_loaded.set(true);
                     let current = *filter_reset_counter.peek();
@@ -530,8 +570,10 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                     ToastOptions::default().duration(Duration::from_millis(1500)),
                                 );
                                 let before = main_land_count();
+                                let before_price = total_price();
                                 remove_current_card();
                                 warn_if_below_target(before, main_land_count());
+                                warn_budget_crossing(before_price, total_price());
                             },
                             on_swipe_up: move |card: Card| {
                                 usage_buffer().record_swipe(Direction::Up);
@@ -549,8 +591,10 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                 let message = if to.is_maybeboard() { "Moved to maybeboard" } else { "Moved to main" };
                                 toast.info(message.to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                 let before = main_land_count();
+                                let before_price = total_price();
                                 move_current_card_locally(to);
                                 warn_if_below_target(before, main_land_count());
+                                warn_budget_crossing(before_price, total_price());
                             },
                             on_swipe_down: move |_card: Card| {
                                 usage_buffer().record_swipe(Direction::Down);
