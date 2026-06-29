@@ -82,6 +82,10 @@ pub fn View(deck_id: Uuid) -> Element {
 
     // Guards filter effect from running before the deck has loaded
     let mut deck_loaded: Signal<bool> = use_signal(|| false);
+
+    // Effective land target (deck override, else format heuristic) for the
+    // land-count crossing toasts on quantity changes.
+    let mut land_target: Signal<Option<i32>> = use_signal(|| None);
     // What the UI renders — grouped card lists (active cards only)
     let mut displayed_groups: Signal<Vec<CardGroup>> = use_signal(Vec::new);
     // Current grouping mode
@@ -185,6 +189,9 @@ pub fn View(deck_id: Uuid) -> Element {
                         .as_ref()
                         .is_some_and(|f| f.has_signature_spell()),
                 );
+                land_target.set(profile.land_target.or_else(|| {
+                    profile.format.and_then(|f| f.default_land_target())
+                }));
 
                 // Resolve command zone cards by oracle_id (not printing-specific scryfall_data_id).
                 // Fetch the card first to get its oracle_id, then remove from entries by oracle_id.
@@ -334,11 +341,42 @@ pub fn View(deck_id: Uuid) -> Element {
         }
     });
 
+    // Mainboard land count from the source of truth — quantity-aware (10 land
+    // rows at ×4 = 40), MDFC land faces included via is_land. Recomputed each
+    // call so it never drifts.
+    let main_land_count = move || -> i32 {
+        deck_entries
+            .peek()
+            .iter()
+            .filter(|e| e.deck_card.board.is_active() && e.card.scryfall_data.is_land())
+            .map(|e| *e.deck_card.quantity)
+            .sum()
+    };
+
+    // Toast when a land change crosses the deck's land target in either
+    // direction: below → warning, back to/above → reached.
+    let warn_land_crossing = move |before: i32, after: i32| {
+        if let Some(target) = land_target() {
+            if before >= target && after < target {
+                toast.warning(
+                    format!("Below land target ({target})"),
+                    ToastOptions::default().duration(Duration::from_millis(2500)),
+                );
+            } else if before < target && after >= target {
+                toast.info(
+                    format!("Land target reached ({target})"),
+                    ToastOptions::default().duration(Duration::from_millis(2500)),
+                );
+            }
+        }
+    };
+
     let mut change_quantity = move |card_id: Uuid, delta: i32, _is_basic_land: bool| {
         let current_qty = qty_for(card_id);
 
         // - at 1 → delete
         let should_delete = current_qty + delta < 1;
+        let before_lands = main_land_count();
 
         if should_delete {
             // Optimistic: remove from entries
@@ -348,6 +386,8 @@ pub fn View(deck_id: Uuid) -> Element {
             // Trigger re-filter
             let current = *filter_reset_counter.peek();
             filter_reset_counter.set(current + 1);
+
+            warn_land_crossing(before_lands, main_land_count());
 
             toast.info(
                 "Card removed".to_string(),
@@ -380,6 +420,8 @@ pub fn View(deck_id: Uuid) -> Element {
             // Trigger re-render so qty display updates
             let current = *filter_reset_counter.peek();
             filter_reset_counter.set(current + 1);
+
+            warn_land_crossing(before_lands, main_land_count());
 
             let request = HttpUpdateDeckCard::new(Some(delta), None);
             spawn(async move {
