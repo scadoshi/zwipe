@@ -39,6 +39,16 @@ Built for players who want a fast, focused mobile experience — not another clu
 
 ---
 
+## What's New in This Version (1.1.3)
+
+- Card names now show while you swipe, so every printing is identifiable at a glance — including alternate art and non-English cards.
+- A smoother deck builder: tap a field to set your format, commander, or tags; empty fields read "Not set," and your deck name is checked as you type.
+- An expanded set of strategy tags, each with a plain-language definition, plus format and power-level pickers.
+- Read the Privacy Policy right inside the app, from your Profile.
+- Clearer sign-in, sign-up, and profile forms — validation errors now appear directly under each field.
+
+---
+
 ## What's New in This Version (1.1.2)
 
 - A small consistency fix to the card-swipe screens so the filter controls look and behave the same everywhere.
@@ -136,7 +146,7 @@ MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading ca
 |-------|-------|
 | Support URL | https://zwipe.net |
 | Marketing URL | https://zwipe.net |
-| Version | 1.1.2 |
+| Version | 1.1.3 |
 | Copyright | 2026 Scotty Fermo |
 | Routing App Coverage File | (leave empty) |
 
