@@ -6,7 +6,8 @@ use crate::inbound::{
     screens::deck::card::filter::{
         artist::Artist, category::Category, combat::Combat, config::Config,
         flavor_text::FlavorText, format::FormatFilter, mana::Mana, name::Name,
-        oracle_text::OracleText, rarity::Rarity, set::Set, sort::Sort, types::Types,
+        oracle_text::OracleText, price::PriceFilter, rarity::Rarity, set::Set, sort::Sort,
+        types::Types,
     },
 };
 use crate::outbound::client::ZwipeClient;
@@ -77,6 +78,7 @@ pub(crate) fn CardFilterSheet(
         sort_active,
         config_active,
         format_active,
+        price_active,
     ) = if show_active_indicators {
         let fb = filter_builder();
         let def = CardFilterBuilder::default();
@@ -129,11 +131,12 @@ pub(crate) fn CardFilterSheet(
                 || fb.is_partner().is_some()
                 || fb.is_background().is_some()
                 || fb.is_signature_spell().is_some(),
+            fb.price_min().is_some() || fb.price_max().is_some(),
         )
     } else {
         (
             false, false, false, false, false, false, false, false, false, false, false, false,
-            false,
+            false, false,
         )
     };
 
@@ -459,6 +462,32 @@ pub(crate) fn CardFilterSheet(
                             ); }
                         },
                         AccordionTrigger {
+                            "Price"
+                            if price_active {
+                                button {
+                                    class: "clear-btn",
+                                    onclick: move |evt| {
+                                        evt.stop_propagation();
+                                        let fb = &mut *filter_builder.write();
+                                        fb.unset_price_min();
+                                        fb.unset_price_max();
+                                        bump_filter();
+                                    },
+                                    "\u{00d7}"
+                                }
+                            }
+                        }
+                        AccordionContent { PriceFilter {} }
+                    }
+
+                    AccordionItem { index: next_idx(),
+                        on_change: move |is_open| {
+                            if is_open { let _ = document::eval(
+                                &format!("setTimeout(() => {{ const el = document.querySelector('#filter-accordion .accordion-item:nth-child({})'); if (el) el.scrollIntoView({{ behavior: 'smooth', block: 'start' }}); }}, 50)",
+                                if show_format_filter { 12 } else { 11 })
+                            ); }
+                        },
+                        AccordionTrigger {
                             "Sort"
                             if sort_active {
                                 button {
@@ -479,7 +508,7 @@ pub(crate) fn CardFilterSheet(
                         on_change: move |is_open| {
                             if is_open { let _ = document::eval(
                                 &format!("setTimeout(() => {{ const el = document.querySelector('#filter-accordion .accordion-item:nth-child({})'); if (el) el.scrollIntoView({{ behavior: 'smooth', block: 'start' }}); }}, 50)",
-                                if show_format_filter { 12 } else { 11 })
+                                if show_format_filter { 13 } else { 12 })
                             ); }
                         },
                         AccordionTrigger {
