@@ -5,7 +5,12 @@
 //! counted once) and `Vec<DeckEntry>` (each card counted by its quantity).
 
 use crate::domain::{
-    card::{Card, mechanical_category::MechanicalCategory, scryfall_data::colors::Color},
+    card::{
+        Card,
+        mechanical_category::MechanicalCategory,
+        scryfall_data::{ScryfallData, colors::Color},
+        search_card::card_filter::price_currency::PriceCurrency,
+    },
     deck::deck::DeckEntry,
 };
 
@@ -273,6 +278,37 @@ impl DeckMetrics {
 }
 
 /// Card type classification — first match wins (matches group_cards.rs logic).
+#[cfg(test)]
+mod budget_tests {
+    use super::budget_tier;
+
+    #[test]
+    fn tiers_track_total_against_budget() {
+        assert_eq!(budget_tier(100.0, 40.0), 0);
+        assert_eq!(budget_tier(100.0, 50.0), 1);
+        assert_eq!(budget_tier(100.0, 80.0), 2);
+        assert_eq!(budget_tier(100.0, 100.0), 3);
+        assert_eq!(budget_tier(100.0, 130.0), 3);
+        // No budget → tier 0 (no alerts).
+        assert_eq!(budget_tier(0.0, 50.0), 0);
+    }
+
+    #[test]
+    fn fires_when_band_increases_between_before_and_after() {
+        // Screens toast when budget_tier(after) > budget_tier(before): once per
+        // upward crossing, re-firing if the total dips and crosses again.
+        let crossed = |before, after| budget_tier(100.0, after) > budget_tier(100.0, before);
+        assert!(crossed(10.0, 89.0)); // 0 → 2, single fire across two markers
+        assert!(crossed(49.0, 52.0)); // crosses 50%
+        assert!(!crossed(24.0, 25.0)); // same band, no fire
+        assert!(!crossed(80.0, 85.0)); // same band, no fire
+        assert!(!crossed(80.0, 40.0)); // downward, no fire
+        // Teeter across 50%: down (no), back up (yes).
+        assert!(!crossed(52.0, 48.0));
+        assert!(crossed(48.0, 51.0));
+    }
+}
+
 fn classify_type(card: &Card) -> usize {
     let type_line = match &card.scryfall_data.type_line {
         Some(tl) => tl.as_str(),
@@ -333,6 +369,55 @@ fn produced_color_index(s: &str) -> Option<usize> {
 /// Parse an optional price string (e.g. "1.50") into f64.
 fn parse_price(price: &Option<String>) -> Option<f64> {
     price.as_ref().and_then(|s| s.parse::<f64>().ok())
+}
+
+/// Price of a single card in the given currency, preferring nonfoil → foil →
+/// etched (USD/EUR); TIX is nonfoil only. `None` when no price is available.
+pub fn card_price(scryfall_data: &ScryfallData, currency: PriceCurrency) -> Option<f64> {
+    let prices = &scryfall_data.prices;
+    match currency {
+        PriceCurrency::Usd => parse_price(&prices.usd)
+            .or_else(|| parse_price(&prices.usd_foil))
+            .or_else(|| parse_price(&prices.usd_etched)),
+        PriceCurrency::Eur => parse_price(&prices.eur)
+            .or_else(|| parse_price(&prices.eur_foil))
+            .or_else(|| parse_price(&prices.eur_etched)),
+        PriceCurrency::Tix => parse_price(&prices.tix),
+    }
+}
+
+/// How many budget markers (50% / 75% / 100%) a total has reached: `0` (<50%),
+/// `1` (≥50%), `2` (≥75%), `3` (≥100%). `0` when there is no budget.
+///
+/// Screens track the highest band already announced and only toast when the band
+/// increases, so each marker alerts exactly once (no re-fire on re-crossing, and
+/// nothing once already over). The toast itself reports the *exact* percentage.
+pub fn budget_tier(budget: f64, total: f64) -> u8 {
+    if budget <= 0.0 {
+        0
+    } else if total >= budget {
+        3
+    } else if total >= 0.75 * budget {
+        2
+    } else if total >= 0.5 * budget {
+        1
+    } else {
+        0
+    }
+}
+
+/// Total price of the mainboard (active board) in the given currency,
+/// quantity-aware. Cards without a price in that currency contribute 0 (matching
+/// the deck price estimate), so the budget total is a lower bound.
+pub fn mainboard_total_price(entries: &[DeckEntry], currency: PriceCurrency) -> f64 {
+    entries
+        .iter()
+        .filter(|e| e.deck_card.board.is_active())
+        .map(|e| {
+            card_price(&e.card.scryfall_data, currency).unwrap_or(0.0)
+                * (*e.deck_card.quantity as f64)
+        })
+        .sum()
 }
 
 /// Color identity classification — WUBRG order + multicolor + colorless.

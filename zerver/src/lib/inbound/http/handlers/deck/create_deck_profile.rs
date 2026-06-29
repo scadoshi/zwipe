@@ -88,6 +88,8 @@ where
         .format(body.format.as_deref())
         .tags(body.tags.unwrap_or_default())
         .land_target(body.land_target)
+        .price_target(body.price_target)
+        .price_target_currency(body.price_target_currency)
         .build()?;
 
     let deck_profile = state

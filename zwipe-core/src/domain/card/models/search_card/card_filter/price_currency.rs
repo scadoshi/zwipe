@@ -34,8 +34,27 @@ impl PriceCurrency {
         }
     }
 
+    /// Parses a currency from its [`json_key`](Self::json_key) ("usd"/"eur"/"tix").
+    pub fn from_key(key: &str) -> Option<PriceCurrency> {
+        match key {
+            "usd" => Some(Self::Usd),
+            "eur" => Some(Self::Eur),
+            "tix" => Some(Self::Tix),
+            _ => None,
+        }
+    }
+
     /// All currencies in display order.
     pub fn all() -> &'static [PriceCurrency] {
         &[Self::Usd, Self::Eur, Self::Tix]
+    }
+
+    /// Formats an amount with this currency's symbol/suffix (2 decimals).
+    pub fn format_amount(&self, amount: f64) -> String {
+        match self {
+            Self::Usd => format!("${amount:.2}"),
+            Self::Eur => format!("€{amount:.2}"),
+            Self::Tix => format!("{amount:.2} TIX"),
+        }
     }
 }

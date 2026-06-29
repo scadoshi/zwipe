@@ -1,5 +1,6 @@
 //! Deck metadata (profile without cards).
 
+use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use crate::domain::deck::{DeckName, DeckTag, format::Format};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -26,6 +27,11 @@ pub struct DeckProfile {
     /// User-set land target. `None` falls back to the format-derived heuristic
     /// ([`Format::default_land_target`]).
     pub land_target: Option<i32>,
+    /// User-set deck price target (budget), in `price_target_currency`. `None`
+    /// means no budget is set (no price alerts).
+    pub price_target: Option<f64>,
+    /// Currency for `price_target`. `None` falls back to USD.
+    pub price_target_currency: Option<PriceCurrency>,
     /// Owner of this deck (for authorization).
     pub user_id: Uuid,
     /// Total number of cards in the deck (sum of quantities).

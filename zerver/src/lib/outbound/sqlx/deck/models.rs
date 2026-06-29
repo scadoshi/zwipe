@@ -2,6 +2,7 @@ use sqlx_macros::FromRow;
 use uuid::Uuid;
 
 use crate::outbound::sqlx::deck::error::{IntoDeckCardError, IntoDeckProfileError};
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{
     Board,
     DeckCard,
@@ -26,6 +27,8 @@ pub struct DatabaseDeckProfile {
     pub format: Option<String>,
     pub tags: Option<serde_json::Value>,
     pub land_target: Option<i32>,
+    pub price_target: Option<f64>,
+    pub price_target_currency: Option<String>,
     pub user_id: Uuid,
     pub card_count: Option<i64>,
     pub commander_name: Option<String>,
@@ -63,6 +66,12 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
             format,
             tags,
             land_target: value.land_target,
+            price_target: value.price_target,
+            // Unrecognized currency strings fall back to None (USD), forward-compatible.
+            price_target_currency: value
+                .price_target_currency
+                .as_deref()
+                .and_then(PriceCurrency::from_key),
             user_id: value.user_id,
             card_count: value.card_count.unwrap_or(0),
             commander_name: value.commander_name,

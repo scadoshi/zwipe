@@ -1,5 +1,6 @@
 //! Update deck profile operation.
 
+use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use crate::domain::deck::{
     DeckName, DeckTag, InvalidDeckname, InvalidDeckTag, MAX_DECK_TAGS,
     deck_tag::parse_tags,
@@ -69,6 +70,11 @@ pub struct UpdateDeckProfile {
     /// Optional land target update. `Some(None)` clears the override (back to
     /// the format heuristic); `None` leaves it untouched.
     pub land_target: Option<Option<i32>>,
+    /// Optional price target update. `Some(None)` clears the budget; `None`
+    /// leaves it untouched.
+    pub price_target: Option<Option<f64>>,
+    /// Optional price target currency update.
+    pub price_target_currency: Option<Option<PriceCurrency>>,
     /// Requesting user (for authorization).
     pub user_id: Uuid,
 }
@@ -87,6 +93,8 @@ impl UpdateDeckProfile {
             format: None,
             tags: None,
             land_target: None,
+            price_target: None,
+            price_target_currency: None,
         }
     }
 }
@@ -103,6 +111,8 @@ pub struct UpdateDeckProfileBuilder {
     format: Option<Option<String>>,
     tags: Option<Option<Vec<String>>>,
     land_target: Option<Option<i32>>,
+    price_target: Option<Option<f64>>,
+    price_target_currency: Option<Option<PriceCurrency>>,
 }
 
 impl UpdateDeckProfileBuilder {
@@ -157,6 +167,22 @@ impl UpdateDeckProfileBuilder {
         self
     }
 
+    /// Sets the price target update. Outer `Some` means "update"; inner `None`
+    /// clears the budget. `None` leaves it untouched.
+    pub fn price_target(mut self, price_target: Option<Option<f64>>) -> Self {
+        self.price_target = price_target;
+        self
+    }
+
+    /// Sets the price target currency update.
+    pub fn price_target_currency(
+        mut self,
+        price_target_currency: Option<Option<PriceCurrency>>,
+    ) -> Self {
+        self.price_target_currency = price_target_currency;
+        self
+    }
+
     /// Validates and builds the request.
     pub fn build(self) -> Result<UpdateDeckProfile, InvalidUpdateDeckProfile> {
         if self.name.is_none()
@@ -167,6 +193,8 @@ impl UpdateDeckProfileBuilder {
             && self.format.is_none()
             && self.tags.is_none()
             && self.land_target.is_none()
+            && self.price_target.is_none()
+            && self.price_target_currency.is_none()
         {
             return Err(InvalidUpdateDeckProfile::NoUpdates);
         }
@@ -196,6 +224,8 @@ impl UpdateDeckProfileBuilder {
             format,
             tags,
             land_target: self.land_target,
+            price_target: self.price_target,
+            price_target_currency: self.price_target_currency,
             user_id: self.user_id,
         })
     }
