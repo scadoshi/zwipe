@@ -16,6 +16,7 @@ use crate::inbound::screens::{
         view::ViewDeck,
     },
     home::Home,
+    legal::privacy_policy::PrivacyPolicy,
     profile::Profile,
 };
 use dioxus::prelude::*;
@@ -43,6 +44,10 @@ pub enum Router {
     /// User profile overview — username/email/password edits, preferences, delete account.
     #[route("/user")]
     Profile {},
+
+    /// Privacy policy — shared legal copy, reached from Profile.
+    #[route("/privacy")]
+    PrivacyPolicy {},
 
     /// List all user's decks with name, format, and card count.
     #[route("/deck")]
