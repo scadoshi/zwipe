@@ -10,6 +10,8 @@ pub(crate) mod deck_fields;
 pub(crate) mod deck_profile;
 /// Deck stats summary section for the view screen.
 pub(crate) mod deck_stats;
+/// Hypergeometric draw-odds / consistency section for the view screen.
+pub(crate) mod draw_odds;
 /// Deck warnings section with remove buttons for card-specific warnings.
 pub(crate) mod deck_warnings;
 /// Buy sheet and more actions bottom sheets for the view screen.

@@ -2,6 +2,7 @@ use super::components::clone_deck_dialog::CloneDeckDialog;
 use super::components::deck_charts::{DeckCharts, ManaBalanceRow};
 use super::components::deck_profile::DeckProfileSection;
 use super::components::deck_stats::DeckStats;
+use super::components::draw_odds::DrawOdds;
 use super::components::deck_warnings::DeckWarnings;
 use super::components::more_buttons::MoreButtons;
 use super::components::skeletons::{DeckProfileSkeleton, DeckStatsSkeleton};
@@ -343,6 +344,8 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                 color_bars: color_bars.clone(),
                                                 mana_balance_rows: mana_balance_rows,
                                             }
+
+                                            DrawOdds { metrics: m.clone() }
                                           }
                                         } else if metrics_possible && deck_loading {
                                             DeckStatsSkeleton {}
