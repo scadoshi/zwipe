@@ -84,6 +84,12 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut deck_has_commander = use_signal(|| false);
     let mut deck_loaded = use_signal(|| false);
 
+    // Land-count signal: the current mainboard land count and the effective
+    // target (the deck's user-set override, else the format heuristic). When an
+    // add pushes the count up across the target we toast once.
+    let mut mainboard_land_count: Signal<i32> = use_signal(|| 0);
+    let mut land_target: Signal<Option<i32>> = use_signal(|| None);
+
     // Source selector: search (API) vs maybeboard (local)
     let mut add_source: Signal<AddSource> = use_signal(AddSource::default);
     let mut mb_entries: Signal<Vec<DeckEntry>> = use_signal(Vec::new);
@@ -345,6 +351,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 // Need to delete from backend (undoing the add)
                 let card_id = card.scryfall_data.id;
                 let oracle_id = card.scryfall_data.oracle_id;
+                let was_land = card.scryfall_data.is_land();
 
                 spawn(async move {
                     let session = match session.ensure_fresh(client).await {
@@ -363,6 +370,9 @@ pub fn Add(deck_id: Uuid) -> Element {
                             // Remove from exclusion HashSet
                             if let Some(oid) = oracle_id {
                                 deck_cards_ids.write().remove(&oid);
+                            }
+                            if was_land {
+                                mainboard_land_count.set((mainboard_land_count() - 1).max(0));
                             }
                             toast.success(
                                 "Undid add".to_string(),
@@ -502,6 +512,22 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                     deck_has_commander.set(deck.deck_profile.commander_id.is_some());
                     deck_loaded.set(true);
+
+                    // Seed the land signal: count mainboard lands (quantity-aware,
+                    // MDFC land faces included via is_land's combined type line),
+                    // and resolve the target from the deck override or the format.
+                    let land_count: i32 = deck
+                        .entries
+                        .iter()
+                        .filter(|e| e.deck_card.board.is_active() && e.card.scryfall_data.is_land())
+                        .map(|e| *e.deck_card.quantity)
+                        .sum();
+                    mainboard_land_count.set(land_count);
+                    land_target.set(
+                        deck.deck_profile.land_target.or_else(|| {
+                            deck.deck_profile.format.and_then(|f| f.default_land_target())
+                        }),
+                    );
 
                     // Pre-populate format filter from deck
                     if let Some(fmt) = deck.deck_profile.format {
@@ -889,8 +915,24 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 on_swipe_right: move |card: Card| {
                                     usage_buffer().record_swipe(Direction::Right);
                                     action_history.write().push(SwipeAction::Do { card: Box::new(card.clone()), exited: Direction::Right });
+                                    let added_land = card.scryfall_data.is_land();
                                     add_card_to_deck(card);
                                     toast.success("Added to deck".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                    if added_land {
+                                        let prev = mainboard_land_count();
+                                        let now = prev + 1;
+                                        mainboard_land_count.set(now);
+                                        // Toast only on the upward crossing — debounced so
+                                        // every further land doesn't re-fire.
+                                        if let Some(target) = land_target()
+                                            && prev < target && now >= target
+                                        {
+                                            toast.info(
+                                                format!("Land target reached ({target})"),
+                                                ToastOptions::default().duration(Duration::from_millis(2500)),
+                                            );
+                                        }
+                                    }
                                     advance_after_commit();
                                 },
                                 on_swipe_up: move |card: Card| {
