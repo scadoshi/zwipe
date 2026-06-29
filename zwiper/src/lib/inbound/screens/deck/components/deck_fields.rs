@@ -803,7 +803,7 @@ pub(crate) fn DeckFields(
 
             button {
                 r#type: "button",
-                class: "input input-button",
+                class: "btn btn-tags",
                 onclick: move |_| show_tags_select.set(true),
                 if selected_tags().is_empty() { "Choose tags" } else { "Edit tags" }
             }
