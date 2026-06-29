@@ -41,6 +41,9 @@ const PEEK_OFFSET_PX: f64 = 0.0;
 const PEEK_SCALE_STEP: f64 = 0.0;
 /// Degrees of rotation applied per pixel of horizontal drag (the "tilt").
 const TILT_PER_PX: f64 = 0.06;
+/// Drag distance (px) before the directional edge cue starts to reveal —
+/// well below the commit threshold so it never fights an accidental nudge.
+const CUE_REVEAL_PX: f64 = 12.0;
 
 /// A peeking card stack with gesture-driven commit-or-return behavior.
 #[component]
@@ -71,8 +74,48 @@ pub fn SwipeStack(
     let visible = cards.into_iter().take(STACK_DEPTH).collect::<Vec<_>>();
     let n = visible.len();
 
+    // Live drag cue (logic only — no visual treatment ships yet). Derives the
+    // active swipe direction and how far the drag has progressed from a small
+    // reveal threshold toward commit (0.0..=1.0), reading the same delta/axis
+    // the top card uses and gated by the screen's allowed directions. The
+    // result is exposed on the container as a `data-swipe-cue` attribute and a
+    // `--swipe-cue-intensity` custom property so a future visual can hook in
+    // without changing this logic. The look is intentionally undecided — see
+    // context/plans/qol_drag_indicators_handoff.md.
+    let cue: Option<(Direction, f64)> = {
+        let s = state();
+        s.is_swiping
+            .then(|| s.delta_from_start_point())
+            .flatten()
+            .and_then(|delta| {
+                let (dir, along) = match s.traversing_axis.clone() {
+                    Some(Axis::X) if delta.x < 0.0 => (Direction::Left, -delta.x),
+                    Some(Axis::X) if delta.x > 0.0 => (Direction::Right, delta.x),
+                    Some(Axis::Y) if delta.y < 0.0 => (Direction::Up, -delta.y),
+                    Some(Axis::Y) if delta.y > 0.0 => (Direction::Down, delta.y),
+                    _ => return None,
+                };
+                if !config.allowed_directions.contains(&dir) {
+                    return None;
+                }
+                let span = (config.distance_threshold - CUE_REVEAL_PX).max(1.0);
+                let intensity = ((along - CUE_REVEAL_PX) / span).clamp(0.0, 1.0);
+                (intensity > 0.0).then_some((dir, intensity))
+            })
+    };
+    let (cue_dir, cue_intensity) = match &cue {
+        Some((Direction::Left, i)) => ("left", *i),
+        Some((Direction::Right, i)) => ("right", *i),
+        Some((Direction::Up, i)) => ("up", *i),
+        Some((Direction::Down, i)) => ("down", *i),
+        None => ("none", 0.0),
+    };
+
     rsx! {
-        div { class: "swipe-stack",
+        div {
+            class: "swipe-stack",
+            "data-swipe-cue": "{cue_dir}",
+            style: "--swipe-cue-intensity: {cue_intensity};",
             // Render back-to-front so the DOM order matches z-index painting.
             for (i, card) in visible.into_iter().enumerate().rev() {
                 {
