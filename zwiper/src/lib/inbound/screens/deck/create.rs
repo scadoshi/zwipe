@@ -1,6 +1,7 @@
 //! Create new deck screen.
 
 use super::components::deck_fields::{DeckFields, DeckFieldsHint};
+use super::components::format_select::FormatSelect;
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
 use super::components::tag_select::TagSelect;
 use crate::inbound::components::screen_header::ScreenHeader;
@@ -31,7 +32,7 @@ pub fn CreateDeck() -> Element {
 
     // form
     let deck_name = use_signal(String::new);
-    let selected_format: Signal<Option<Format>> = use_signal(|| None);
+    let mut selected_format: Signal<Option<Format>> = use_signal(|| None);
     let selected_tags: Signal<Vec<DeckTag>> = use_signal(Vec::new);
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
     let mut commander_display = use_signal(String::new);
@@ -46,6 +47,7 @@ pub fn CreateDeck() -> Element {
     let mut show_background_swipe = use_signal(|| false);
     let mut show_signature_spell_swipe = use_signal(|| false);
     let mut show_tags_select = use_signal(|| false);
+    let mut show_format_select = use_signal(|| false);
     let create_hint = use_one_time_hint(HINT_CREATE_DECK);
 
     // Reactive Zwipe-select modes — derived from the current format / commander.
@@ -131,6 +133,7 @@ pub fn CreateDeck() -> Element {
                             show_background_swipe,
                             show_signature_spell_swipe,
                             show_tags_select,
+                            show_format_select,
                         }
                     }
                 }
@@ -195,6 +198,28 @@ pub fn CreateDeck() -> Element {
                 open: show_tags_select,
                 selected_tags,
                 on_close: move |_| show_tags_select.set(false),
+            }
+
+            FormatSelect {
+                open: show_format_select,
+                selected_format,
+                on_select: move |fmt: Format| {
+                    selected_format.set(Some(fmt));
+                    commander.set(None);
+                    commander_display.set(String::new());
+                    if !fmt.has_signature_spell() {
+                        signature_spell.set(None);
+                        signature_spell_display.set(String::new());
+                    }
+                },
+                on_clear: move |_| {
+                    selected_format.set(None);
+                    commander.set(None);
+                    commander_display.set(String::new());
+                    signature_spell.set(None);
+                    signature_spell_display.set(String::new());
+                },
+                on_close: move |_| show_format_select.set(false),
             }
 
             DeckFieldsHint { open: create_hint }

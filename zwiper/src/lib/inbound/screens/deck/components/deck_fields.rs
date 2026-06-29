@@ -45,15 +45,11 @@ pub(crate) fn DeckFields(
     mut show_background_swipe: Signal<bool>,
     mut show_signature_spell_swipe: Signal<bool>,
     mut show_tags_select: Signal<bool>,
+    mut show_format_select: Signal<bool>,
 ) -> Element {
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let usage_buffer: Signal<UsageBuffer> = use_context();
-
-    // ========================================
-    // Format search state
-    // ========================================
-    let mut format_query = use_signal(String::new);
 
 
     // ========================================
@@ -123,13 +119,9 @@ pub(crate) fn DeckFields(
     // Cascading clear effects
     // ========================================
 
-    // Format change → sync display text + reset all filter toggles
+    // Format change → reset all filter toggles
     use_effect(move || {
-        let fmt = selected_format();
-        format_query.set(
-            fmt.map(|f| f.display_name().to_string())
-                .unwrap_or_default(),
-        );
+        let _ = selected_format();
         cmd_filter_on.set(true);
         partner_filter_on.set(true);
         bg_filter_on.set(true);
@@ -369,7 +361,7 @@ pub(crate) fn DeckFields(
         }
 
         // ========================================
-        // Format selector (typeahead)
+        // Format (open the full-screen picker to choose)
         // ========================================
         div {
             div { class: "label-row",
@@ -379,7 +371,6 @@ pub(crate) fn DeckFields(
                         class: "clear-btn",
                         onclick: move |_| {
                             selected_format.set(None);
-                            format_query.set(String::new());
                             commander.set(None);
                             commander_display.set(String::new());
                             signature_spell.set(None);
@@ -388,69 +379,19 @@ pub(crate) fn DeckFields(
                         "\u{00d7}"
                     }
                 }
-            }
-
-            // Filtered results (chips above input, only when typing with no selection)
-            if selected_format().is_none() && !format_query().is_empty() {
-                {
-                    let query = format_query().to_lowercase();
-                    let results: Vec<Format> = Format::all()
-                        .iter()
-                        .copied()
-                        .filter(|f| f.display_name().to_lowercase().contains(&query))
-                        .take(5)
-                        .collect();
-
-                    if !results.is_empty() {
-                        rsx! {
-                            div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                                for fmt in results {
-                                    div { class: "chip-unselected",
-                                        onclick: move |_| {
-                                            selected_format.set(Some(fmt));
-                                            format_query.set(fmt.display_name().to_string());
-                                            commander.set(None);
-                                            commander_display.set(String::new());
-                                            if !fmt.has_signature_spell() {
-                                                signature_spell.set(None);
-                                                signature_spell_display.set(String::new());
-                                            }
-                                        },
-                                        { fmt.display_name().to_string() }
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        rsx! {
-                            div { class: "flex flex-wrap gap-1 mb-1 flex-center",
-                                div { class: "chip-unselected", "No results" }
-                            }
-                        }
-                    }
+                button {
+                    r#type: "button",
+                    class: "chip-xs chip-primary",
+                    onclick: move |_| show_format_select.set(true),
+                    "Edit"
                 }
             }
 
-            // Search input (shows selected format name when selected)
-            input { class: "input",
-                id: "format-search",
-                r#type: "text",
-                placeholder: "Format",
-                value: "{format_query()}",
-                autocapitalize: "none",
-                spellcheck: "false",
-                onclick: move |_| {
-                    if selected_format().is_some() {
-                        selected_format.set(None);
-                        format_query.set(String::new());
-                        commander.set(None);
-                        commander_display.set(String::new());
-                        signature_spell.set(None);
-                        signature_spell_display.set(String::new());
-                    }
-                },
-                oninput: move |event| {
-                    format_query.set(event.value());
+            div { class: "chip-box",
+                if let Some(fmt) = selected_format() {
+                    div { class: "chip selected", "{fmt.display_name()}" }
+                } else {
+                    div { class: "chip-none", "None" }
                 }
             }
         }
@@ -773,7 +714,7 @@ pub(crate) fn DeckFields(
         div {
             div { class: "label-row",
                 label { class: "label", "Tags" }
-                span { class: "label-hint", "{selected_tags().len()}/{MAX_DECK_TAGS}" }
+                span { class: "field-count", "{selected_tags().len()}/{MAX_DECK_TAGS}" }
                 if !selected_tags().is_empty() {
                     button {
                         class: "clear-btn",
@@ -781,11 +722,19 @@ pub(crate) fn DeckFields(
                         "\u{00d7}"
                     }
                 }
+                button {
+                    r#type: "button",
+                    class: "chip-xs chip-primary",
+                    onclick: move |_| show_tags_select.set(true),
+                    "Edit"
+                }
             }
 
             // Selected tags — tap one to remove it.
-            if !selected_tags().is_empty() {
-                div { class: "flex flex-wrap gap-1 mb-1",
+            div { class: "chip-box",
+                if selected_tags().is_empty() {
+                    div { class: "chip-none", "None" }
+                } else {
                     for tag in selected_tags().iter().copied() {
                         div {
                             key: "{tag}",
@@ -799,13 +748,6 @@ pub(crate) fn DeckFields(
                         }
                     }
                 }
-            }
-
-            button {
-                r#type: "button",
-                class: "btn btn-tags",
-                onclick: move |_| show_tags_select.set(true),
-                if selected_tags().is_empty() { "Choose tags" } else { "Edit tags" }
             }
         }
     }
