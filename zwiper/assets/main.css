@@ -3171,3 +3171,49 @@ button {
     opacity: 1;
     pointer-events: auto;
 }
+
+/* ==================
+  privacy policy
+ ==================== */
+
+.privacy-content {
+    width: 100%;
+    max-width: 40rem;
+    padding: 0 1.25rem 1.5rem;
+    text-align: left;
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+.privacy-content .privacy-updated {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin-bottom: 1rem;
+}
+
+.privacy-content h2 {
+    font-size: 1rem;
+    color: var(--accent-tertiary);
+    margin-top: 1.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.privacy-content p,
+.privacy-content ul {
+    font-size: 0.85rem;
+}
+
+.privacy-content ul {
+    padding-left: 1.25rem;
+}
+
+.privacy-content li {
+    margin-bottom: 0.4rem;
+}
+
+.privacy-content a,
+.privacy-content .privacy-link {
+    color: var(--accent-primary);
+    text-decoration: underline;
+    cursor: pointer;
+}
