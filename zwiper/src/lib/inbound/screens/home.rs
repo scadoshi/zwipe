@@ -50,17 +50,9 @@ pub fn Home() -> Element {
     let mut preview_card: Signal<Option<ScryfallData>> = use_signal(|| None);
     let preview_dismissing: Signal<bool> = use_signal(|| false);
 
-    // Greet user on mount.
-    use_effect(move || {
-        if let Some(session) = session.peek().clone() {
-            toast.info(
-                format!("Hello, {}!", session.user.username),
-                ToastOptions::default().duration(Duration::from_millis(1500)),
-            );
-        }
-    });
-
-    // Refresh user on mount so email_verified_at is current without re-login.
+    // Refresh user on mount so email_verified_at is current without re-login,
+    // then greet: verified users get "Hello, username!", unverified users get
+    // only the verification nudge (no greeting).
     use_effect(move || {
         let Some(s) = session.peek().clone() else {
             return;
@@ -69,6 +61,7 @@ pub fn Home() -> Element {
             match client().get_user(&s).await {
                 Ok(fresh_user) => {
                     let needs_verification = fresh_user.email_verified_at.is_none();
+                    let username = fresh_user.username.clone();
                     let current = session.peek().clone();
                     if let Some(mut current) = current {
                         current.user = fresh_user;
@@ -76,13 +69,28 @@ pub fn Home() -> Element {
                     }
                     if needs_verification {
                         toast.warning(
-                            "Verify your email to enable password recovery!".to_string(),
+                            "Verify your email!".to_string(),
+                            ToastOptions::default().duration(Duration::from_millis(1500)),
+                        );
+                    } else {
+                        toast.info(
+                            format!("Hello, {username}!"),
                             ToastOptions::default().duration(Duration::from_millis(1500)),
                         );
                     }
                 }
                 Err(e) => {
                     tracing::warn!("home user fetch failed: {e}");
+                    // Fall back to the cached session's verification status so a
+                    // failed refresh still greets verified users.
+                    if let Some(session) = session.peek().clone() {
+                        if session.user.email_verified_at.is_some() {
+                            toast.info(
+                                format!("Hello, {}!", session.user.username),
+                                ToastOptions::default().duration(Duration::from_millis(1500)),
+                            );
+                        }
+                    }
                 }
             }
         });
