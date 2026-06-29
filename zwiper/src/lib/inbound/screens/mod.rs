@@ -8,5 +8,7 @@ pub mod auth;
 pub mod deck;
 /// Home/landing page screen.
 pub mod home;
+/// Legal screens (privacy policy).
+pub mod legal;
 /// User profile management screens (change email, password, username).
 pub mod profile;
