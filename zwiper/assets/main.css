@@ -3172,11 +3172,8 @@ button {
     pointer-events: auto;
 }
 
-.input-button {
-    text-align: left;
-    cursor: pointer;
-    color: var(--text-muted);
-    appearance: none;
+.btn-tags {
+    margin-bottom: 1rem;
 }
 
 .tag-select-head {
