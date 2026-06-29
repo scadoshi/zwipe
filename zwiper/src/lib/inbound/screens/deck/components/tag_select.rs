@@ -72,6 +72,7 @@ pub(crate) fn TagSelect(
                             placeholder: "Search tags",
                             value: "{query()}",
                             autocapitalize: "none",
+                            autocorrect: "off",
                             spellcheck: "false",
                             oninput: move |event| query.set(event.value()),
                         }

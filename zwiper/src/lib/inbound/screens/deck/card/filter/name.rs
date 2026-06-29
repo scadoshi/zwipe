@@ -35,6 +35,7 @@ pub fn Name() -> Element {
                 value: name_value,
                 r#type: "text",
                 autocapitalize: "none",
+                autocorrect: "off",
                 spellcheck: "false",
                 oninput: move |event| {
                     filter_builder.write().set_name_contains(event.value());
@@ -58,6 +59,7 @@ pub fn Name() -> Element {
                 value: name_not_value,
                 r#type: "text",
                 autocapitalize: "none",
+                autocorrect: "off",
                 spellcheck: "false",
                 oninput: move |event| {
                     filter_builder.write().set_name_not_contains(event.value());

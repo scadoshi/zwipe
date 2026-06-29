@@ -190,6 +190,7 @@ pub fn Artist() -> Element {
                 value: "{artist_search_query()}",
                 r#type: "text",
                 autocapitalize: "none",
+                autocorrect: "off",
                 spellcheck: "false",
                 oninput: move |event| {
                     artist_is_typing.set(true);

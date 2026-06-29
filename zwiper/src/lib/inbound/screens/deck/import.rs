@@ -210,6 +210,9 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                                 style: "width:100%;min-height:12rem;resize:vertical;",
                                 placeholder: "1 Krenko, Mob Boss\n1 Urza, Lord High Artificer\n1 Sol Ring",
                                 value: "{text}",
+                                autocapitalize: "none",
+                                autocorrect: "off",
+                                spellcheck: "false",
                                 oninput: move |e| text.set(e.value()),
                             }
                         } else {
@@ -221,6 +224,9 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                                 r#type: "url",
                                 placeholder: "https://archidekt.com/decks/...",
                                 value: "{url}",
+                                autocapitalize: "none",
+                                autocorrect: "off",
+                                spellcheck: "false",
                                 oninput: move |e| url.set(e.value()),
                             }
                         }

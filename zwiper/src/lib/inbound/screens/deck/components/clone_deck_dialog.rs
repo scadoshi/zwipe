@@ -54,6 +54,9 @@ pub(crate) fn CloneDeckDialog(
                     class: "input",
                     placeholder: "New deck name",
                     value: "{new_name}",
+                    autocapitalize: "none",
+                    autocorrect: "off",
+                    spellcheck: "false",
                     oninput: move |evt| new_name.set(evt.value()),
                 }
                 hr { class: "dialog-rule" }

@@ -178,6 +178,7 @@ pub(crate) fn OracleWords() -> Element {
             value: "{oracle_words_search()}",
             r#type: "text",
             autocapitalize: "none",
+            autocorrect: "off",
             spellcheck: "false",
             oninput: move |event| {
                 oracle_words_search.set(event.value());
@@ -262,6 +263,7 @@ pub(crate) fn OracleWords() -> Element {
             value: "{excludes_search()}",
             r#type: "text",
             autocapitalize: "none",
+            autocorrect: "off",
             spellcheck: "false",
             oninput: move |event| {
                 excludes_search.set(event.value());

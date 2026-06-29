@@ -191,6 +191,7 @@ pub fn Set() -> Element {
                 value: "{search_query()}",
                 r#type: "text",
                 autocapitalize: "none",
+                autocorrect: "off",
                 spellcheck: "false",
                 oninput: move |event| {
                     is_typing.set(true);

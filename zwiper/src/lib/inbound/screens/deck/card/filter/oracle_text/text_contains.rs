@@ -37,6 +37,7 @@ pub(crate) fn TextContains() -> Element {
             value: oracle_text_value,
             r#type: "text",
             autocapitalize: "none",
+            autocorrect: "off",
             spellcheck: "false",
             oninput: move |event| {
                 filter_builder.write().set_oracle_text_contains(event.value());
@@ -60,6 +61,7 @@ pub(crate) fn TextContains() -> Element {
             value: oracle_text_not_value,
             r#type: "text",
             autocapitalize: "none",
+            autocorrect: "off",
             spellcheck: "false",
             oninput: move |event| {
                 filter_builder.write().set_oracle_text_not_contains(event.value());

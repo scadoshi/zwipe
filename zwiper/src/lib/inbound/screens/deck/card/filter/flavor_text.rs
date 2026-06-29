@@ -38,6 +38,7 @@ pub fn FlavorText() -> Element {
                 value: flavor_text_value,
                 r#type: "text",
                 autocapitalize: "none",
+                autocorrect: "off",
                 spellcheck: "false",
                 oninput: move |event| {
                     filter_builder.write().set_flavor_text_contains(event.value());
@@ -61,6 +62,7 @@ pub fn FlavorText() -> Element {
                 value: flavor_text_not_value,
                 r#type: "text",
                 autocapitalize: "none",
+                autocorrect: "off",
                 spellcheck: "false",
                 oninput: move |event| {
                     filter_builder.write().set_flavor_text_not_contains(event.value());

@@ -92,6 +92,7 @@ pub(crate) fn FormatSelect(
                             placeholder: "Search formats",
                             value: "{query()}",
                             autocapitalize: "none",
+                            autocorrect: "off",
                             spellcheck: "false",
                             oninput: move |event| query.set(event.value()),
                         }
