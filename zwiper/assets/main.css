@@ -2410,8 +2410,9 @@ button {
     min-height: 9rem;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     transition: min-height 0.3s ease;
+    padding: 0;
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
     border-radius: 1rem;

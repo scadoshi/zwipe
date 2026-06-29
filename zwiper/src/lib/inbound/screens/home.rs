@@ -159,7 +159,10 @@ pub fn Home() -> Element {
                             if let Some(flavor_text) = entry.card.scryfall_data.flavor_text.as_ref() {
                                 let sd = entry.card.scryfall_data.clone();
                                 rsx! {
-                                    div { class: "flavor-quote",
+                                    div { class: "card-header", style: "justify-content: center;",
+                                        span { class: "card-title", "Flavor of the hour" }
+                                    }
+                                    div { class: "flavor-quote", style: "padding: 1rem;",
                                         "{flavor_text} "
                                         span {
                                             class: "flavor-source flavor-source-link",
@@ -173,7 +176,7 @@ pub fn Home() -> Element {
                             }
                         }
                         None => rsx! {
-                            div { class: "skeleton-flavor",
+                            div { class: "skeleton-flavor", style: "padding: 1rem;",
                                 div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-1" }
                                 div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-2" }
                                 div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-3" }
