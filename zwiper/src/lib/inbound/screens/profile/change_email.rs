@@ -9,7 +9,6 @@ use crate::outbound::client::user::change_email::ClientChangeEmail;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
-use zwipe::domain::auth::models::password::Password;
 use zwipe_core::domain::{Email, auth::models::session::Session};
 use zwipe_core::http::contracts::auth::HttpChangeEmail;
 
@@ -21,6 +20,7 @@ pub fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
 
     let mut new_email = use_signal(String::new);
     let mut email_error: Signal<Option<String>> = use_signal(|| None);
+    let mut email_touched = use_signal(|| false);
     let mut validate_email = move || {
         if let Err(e) = Email::new(new_email()) {
             email_error.set(Some(e.to_user_facing_string()));
@@ -31,9 +31,10 @@ pub fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
 
     let mut password = use_signal(String::new);
     let mut password_error: Signal<Option<String>> = use_signal(|| None);
+    let mut password_touched = use_signal(|| false);
     let mut validate_password = move || {
-        if Password::new(password()).is_err() {
-            password_error.set(Some("Invalid password".to_string()));
+        if password().is_empty() {
+            password_error.set(Some("Password is required".to_string()));
         } else {
             password_error.set(None);
         }
@@ -60,6 +61,8 @@ pub fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
             clear_inputs();
             email_error.set(None);
             password_error.set(None);
+            email_touched.set(false);
+            password_touched.set(false);
             submit_attempted.set(false);
         }
     });
@@ -111,8 +114,21 @@ pub fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
     };
 
     use_effect(move || {
-        if submit_attempted() {
+        let value = new_email();
+        if !value.is_empty() && !email_touched() {
+            email_touched.set(true);
+        }
+        if email_touched() || submit_attempted() {
             validate_email();
+        }
+    });
+
+    use_effect(move || {
+        let value = password();
+        if !value.is_empty() && !password_touched() {
+            password_touched.set(true);
+        }
+        if password_touched() || submit_attempted() {
             validate_password();
         }
     });
@@ -138,23 +154,12 @@ pub fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
 
             div { class: "flex-col text-center",
 
-                if submit_attempted() {
-                    if let Some(error) = email_error() {
-                        div { class: "message-error", "{error}" }
-                    }
-                }
-
                 TextInput {
                     value: new_email,
                     id: "new_email",
                     label: "New email",
                     placeholder: "New email",
-                }
-
-                if submit_attempted() {
-                    if let Some(error) = password_error() {
-                        div { class: "message-error", "{error}" }
-                    }
+                    error: email_error(),
                 }
 
                 TextInput {
@@ -163,6 +168,7 @@ pub fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
                     label: "Password",
                     placeholder: "Password",
                     input_type: "password",
+                    error: password_error(),
                 }
             }
         }

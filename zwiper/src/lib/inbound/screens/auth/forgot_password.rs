@@ -22,6 +22,7 @@ pub fn ForgotPassword() -> Element {
     let mut submit_attempted = use_signal(|| false);
     let mut is_loading = use_signal(|| false);
     let mut email_error: Signal<Option<String>> = use_signal(|| None);
+    let mut email_touched = use_signal(|| false);
     let mut submission_success = use_signal(|| false);
     let toast = use_toast();
 
@@ -55,6 +56,16 @@ pub fn ForgotPassword() -> Element {
         }
     };
 
+    use_effect(move || {
+        let value = email();
+        if !value.is_empty() && !email_touched() {
+            email_touched.set(true);
+        }
+        if email_touched() || submit_attempted() {
+            validate_email();
+        }
+    });
+
     rsx! {
         div { class: "screen",
             ScreenHeader { title: "Reset password" }
@@ -67,16 +78,12 @@ pub fn ForgotPassword() -> Element {
                         }
                     } else {
                         form { class: "flex-col",
-                            if submit_attempted() {
-                                if let Some(error) = email_error() {
-                                    div { class: "message-error", "{error}" }
-                                }
-                            }
                             TextInput {
                                 value: email,
                                 id: "email",
                                 label: "Email",
                                 placeholder: "Email",
+                                error: email_error(),
                             }
                             if is_loading() {
                                 div { class: "spinner" }

@@ -9,7 +9,6 @@ use crate::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
-use zwipe::domain::auth::models::password::Password;
 use zwipe_core::domain::{auth::models::session::Session, user::username::Username};
 use zwipe_core::http::contracts::auth::HttpChangeUsername;
 
@@ -21,6 +20,7 @@ pub fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
 
     let mut new_username = use_signal(String::new);
     let mut username_error: Signal<Option<String>> = use_signal(|| None);
+    let mut username_touched = use_signal(|| false);
     let mut validate_username = move || {
         if let Err(e) = Username::new(new_username()) {
             username_error.set(Some(e.to_string()));
@@ -31,9 +31,10 @@ pub fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
 
     let mut password = use_signal(String::new);
     let mut password_error: Signal<Option<String>> = use_signal(|| None);
+    let mut password_touched = use_signal(|| false);
     let mut validate_password = move || {
-        if Password::new(password()).is_err() {
-            password_error.set(Some("Invalid password".to_string()));
+        if password().is_empty() {
+            password_error.set(Some("Password is required".to_string()));
         } else {
             password_error.set(None);
         }
@@ -60,6 +61,8 @@ pub fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
             clear_inputs();
             username_error.set(None);
             password_error.set(None);
+            username_touched.set(false);
+            password_touched.set(false);
             submit_attempted.set(false);
         }
     });
@@ -111,8 +114,21 @@ pub fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
     };
 
     use_effect(move || {
-        if submit_attempted() {
+        let value = new_username();
+        if !value.is_empty() && !username_touched() {
+            username_touched.set(true);
+        }
+        if username_touched() || submit_attempted() {
             validate_username();
+        }
+    });
+
+    use_effect(move || {
+        let value = password();
+        if !value.is_empty() && !password_touched() {
+            password_touched.set(true);
+        }
+        if password_touched() || submit_attempted() {
             validate_password();
         }
     });
@@ -138,23 +154,12 @@ pub fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
 
             div { class: "flex-col text-center",
 
-                if submit_attempted() {
-                    if let Some(error) = username_error() {
-                        div { class: "message-error", "{error}" }
-                    }
-                }
-
                 TextInput {
                     value: new_username,
                     id: "new_username",
                     label: "New username",
                     placeholder: "New username",
-                }
-
-                if submit_attempted() {
-                    if let Some(error) = password_error() {
-                        div { class: "message-error", "{error}" }
-                    }
+                    error: username_error(),
                 }
 
                 TextInput {
@@ -163,6 +168,7 @@ pub fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
                     label: "Password",
                     placeholder: "Password",
                     input_type: "password",
+                    error: password_error(),
                 }
             }
         }

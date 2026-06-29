@@ -717,6 +717,12 @@ button {
     font-weight: 400;
 }
 
+.input-error,
+.input-error:focus {
+    border-color: var(--color-error);
+    box-shadow: 0 0 0 1px var(--color-error);
+}
+
 .password-input-wrapper {
     position: relative;
     width: 100%;

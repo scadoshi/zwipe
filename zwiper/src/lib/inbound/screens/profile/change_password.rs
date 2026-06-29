@@ -33,6 +33,7 @@ pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
     let mut new_password = use_signal(String::new);
     let mut confirm_password = use_signal(String::new);
     let mut password_error: Signal<Option<String>> = use_signal(|| None);
+    let mut password_touched = use_signal(|| false);
     let mut validate_new_password = move || {
         if let Err(e) = Password::new(new_password()) {
             password_error.set(Some(e.to_string()));
@@ -68,6 +69,7 @@ pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
         if open() {
             clear_inputs();
             password_error.set(None);
+            password_touched.set(false);
             submit_attempted.set(false);
         }
     });
@@ -116,7 +118,13 @@ pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
     };
 
     use_effect(move || {
-        if submit_attempted() {
+        let new = new_password();
+        let confirm = confirm_password();
+        let _ = current_password();
+        if (!new.is_empty() || !confirm.is_empty()) && !password_touched() {
+            password_touched.set(true);
+        }
+        if password_touched() || submit_attempted() {
             validate_new_password();
         }
     });
@@ -156,18 +164,13 @@ pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                     input_type: "password",
                 }
 
-                if submit_attempted() {
-                    if let Some(error) = password_error() {
-                        div { class: "message-error", "{error}" }
-                    }
-                }
-
                 TextInput {
                     value: new_password,
                     id: "new_password",
                     label: "New password",
                     placeholder: "New password",
                     input_type: "password",
+                    error: password_error(),
                 }
 
                 TextInput {
