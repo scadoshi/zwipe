@@ -692,6 +692,7 @@ button {
 
 .input {
     width: 100%;
+    text-align: left;
     padding: 0.75rem 1rem;
     background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
@@ -715,6 +716,14 @@ button {
 .input::placeholder {
     color: var(--text-muted);
     font-weight: 400;
+}
+
+.input-placeholder {
+    color: var(--text-muted);
+}
+
+.input-tappable {
+    cursor: pointer;
 }
 
 .input-error,
@@ -3197,7 +3206,7 @@ button {
 .chip-box {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     gap: 0.3rem;
     width: 100%;

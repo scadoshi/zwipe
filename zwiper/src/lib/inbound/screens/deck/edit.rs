@@ -26,7 +26,7 @@ use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::{
-    Deck, DeckTag, deck_profile::DeckProfile, format::Format,
+    Deck, DeckName, DeckTag, deck_profile::DeckProfile, format::Format,
     requests::update_deck_profile::InvalidUpdateDeckProfile,
 };
 use zwipe_core::domain::user::models::hints::HINT_EDIT_DECK;
@@ -43,6 +43,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
 
     // current values
     let mut deck_name: Signal<String> = use_signal(String::new);
+    let mut deck_name_error: Signal<Option<String>> = use_signal(|| None);
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
     let mut commander_display = use_signal(String::new);
     let mut show_commander_swipe = use_signal(|| false);
@@ -309,6 +310,10 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut is_saving = use_signal(|| false);
 
     let mut do_submit = move || {
+        if let Err(e) = DeckName::new(deck_name()) {
+            deck_name_error.set(Some(e.to_string()));
+            return;
+        }
         is_saving.set(true);
 
         spawn(async move {
@@ -378,6 +383,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                             form { class: "flex-col text-center",
                                 DeckFields {
                                     deck_name,
+                                    deck_name_error,
                                     selected_format,
                                     selected_tags,
                                     commander,
