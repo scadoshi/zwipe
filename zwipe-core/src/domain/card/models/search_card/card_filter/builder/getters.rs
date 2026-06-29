@@ -6,7 +6,7 @@
 use crate::domain::{
     card::{
         scryfall_data::{colors::Colors, rarity::Rarities},
-        search_card::{card_filter::{builder::CardFilterBuilder, OrderByOption}, card_type::CardType},
+        search_card::{card_filter::{builder::CardFilterBuilder, price_currency::PriceCurrency, OrderByOption}, card_type::CardType},
     },
     deck::Format,
 };
@@ -120,6 +120,21 @@ impl CardFilterBuilder {
     /// Returns the CMC range filter value.
     pub fn cmc_range(&self) -> Option<(f64, f64)> {
         self.cmc_range
+    }
+
+    /// Returns the minimum price bound.
+    pub fn price_min(&self) -> Option<f64> {
+        self.price_min
+    }
+
+    /// Returns the maximum price bound.
+    pub fn price_max(&self) -> Option<f64> {
+        self.price_max
+    }
+
+    /// Returns the selected price currency (unset falls back to USD).
+    pub fn price_currency(&self) -> Option<PriceCurrency> {
+        self.price_currency
     }
 
     /// Returns the color_identity_equals filter value.

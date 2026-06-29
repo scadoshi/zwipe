@@ -19,7 +19,7 @@ use crate::domain::card::{
     Card,
     scryfall_data::legalities::LegalityKind,
     search_card::{
-        card_filter::{CardFilter, builder::CardFilterBuilder, order_by_option::OrderByOption, strip_punctuation},
+        card_filter::{CardFilter, builder::CardFilterBuilder, order_by_option::OrderByOption, price_currency::PriceCurrency, strip_punctuation},
         commander_eligibility::is_valid_commander,
     },
 };
@@ -382,6 +382,28 @@ impl FilterCards for Vec<Card> {
                     match sd.cmc {
                         Some(cmc) if cmc >= lo && cmc <= hi => {}
                         _ => return false,
+                    }
+                }
+
+                // ── price ─────────────────────────────────────────────────────
+                if filter.price_min().is_some() || filter.price_max().is_some() {
+                    let price = match filter.price_currency().unwrap_or_default() {
+                        PriceCurrency::Usd => sd.prices.usd.as_deref(),
+                        PriceCurrency::Eur => sd.prices.eur.as_deref(),
+                        PriceCurrency::Tix => sd.prices.tix.as_deref(),
+                    }
+                    .and_then(|p| p.parse::<f64>().ok());
+                    match price {
+                        // A missing/unparseable price can't be confirmed in budget.
+                        None => return false,
+                        Some(p) => {
+                            if filter.price_min().is_some_and(|min| p < min) {
+                                return false;
+                            }
+                            if filter.price_max().is_some_and(|max| p > max) {
+                                return false;
+                            }
+                        }
                     }
                 }
 

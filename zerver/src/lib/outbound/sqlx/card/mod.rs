@@ -361,6 +361,24 @@ impl CardRepository for MyPostgres {
             sep.push_bind_unseparated(higher);
         }
 
+        // Price range against the selected currency's JSONB price. NULLIF turns
+        // empty/missing prices into NULL (excluded — no cast error), matching the
+        // client predicate. json_key() is a fixed enum literal, not user input.
+        if request.price_min().is_some() || request.price_max().is_some() {
+            let col = format!(
+                "NULLIF(prices->>'{}', '')::FLOAT8",
+                request.price_currency().unwrap_or_default().json_key()
+            );
+            if let Some(min) = request.price_min() {
+                sep.push(format!("{col} >= "));
+                sep.push_bind_unseparated(min);
+            }
+            if let Some(max) = request.price_max() {
+                sep.push(format!("{col} <= "));
+                sep.push_bind_unseparated(max);
+            }
+        }
+
         if let Some(query_string) = request.power_equals() {
             sep.push("power ~ '^\\d+$' AND CAST(power AS INT) = ");
             sep.push_bind_unseparated(query_string);

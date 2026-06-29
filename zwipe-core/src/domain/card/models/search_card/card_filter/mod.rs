@@ -26,11 +26,16 @@ pub mod error;
 pub mod getters;
 /// Sort order options (name, CMC, rarity, etc.).
 pub mod order_by_option;
+/// Currency selector for the price-range filter.
+pub mod price_currency;
 
 use crate::domain::{
     card::{
         scryfall_data::{colors::Colors, rarity::Rarities},
-        search_card::{card_filter::order_by_option::OrderByOption, card_type::CardType},
+        search_card::{
+            card_filter::{order_by_option::OrderByOption, price_currency::PriceCurrency},
+            card_type::CardType,
+        },
     },
     deck::Format,
 };
@@ -63,6 +68,10 @@ pub struct CardFilter {
     cmc_range: Option<(f64, f64)>,
     color_identity_within: Option<Colors>,
     color_identity_equals: Option<Colors>,
+    // price (min/max against the selected currency's price)
+    price_min: Option<f64>,
+    price_max: Option<f64>,
+    price_currency: Option<PriceCurrency>,
     // produced mana
     produced_mana_contains_any: Option<Vec<String>>,
     produced_mana_contains_all: Option<Vec<String>>,

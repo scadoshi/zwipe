@@ -2,7 +2,7 @@ use crate::domain::{
     card::{
         scryfall_data::{colors::Colors, rarity::Rarities},
         search_card::{
-            card_filter::{CardFilter, OrderByOption},
+            card_filter::{price_currency::PriceCurrency, CardFilter, OrderByOption},
             card_type::CardType,
         },
     },
@@ -88,6 +88,19 @@ impl CardFilter {
 
     pub fn cmc_range(&self) -> Option<(f64, f64)> {
         self.cmc_range
+    }
+
+    // price
+    pub fn price_min(&self) -> Option<f64> {
+        self.price_min
+    }
+
+    pub fn price_max(&self) -> Option<f64> {
+        self.price_max
+    }
+
+    pub fn price_currency(&self) -> Option<PriceCurrency> {
+        self.price_currency
     }
 
     pub fn color_identity_equals(&self) -> Option<&Colors> {

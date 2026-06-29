@@ -8,7 +8,7 @@
 //! Text filters (`set_name_contains`, etc.) treat empty strings as `None`
 //! to avoid ineffective filters.
 
-use super::{CardFilterBuilder, CardType, Colors, Format, OrderByOption};
+use super::{CardFilterBuilder, CardType, Colors, Format, OrderByOption, PriceCurrency};
 use crate::domain::card::scryfall_data::rarity::Rarities;
 
 impl CardFilterBuilder {
@@ -336,6 +336,42 @@ impl CardFilterBuilder {
     /// Clears the cmc_range filter.
     pub fn unset_cmc_range(&mut self) -> &mut Self {
         self.cmc_range = None;
+        self
+    }
+
+    /// Sets the minimum price bound (in the selected currency, inclusive).
+    pub fn set_price_min(&mut self, price_min: f64) -> &mut Self {
+        self.price_min = Some(price_min);
+        self
+    }
+
+    /// Clears the minimum price bound.
+    pub fn unset_price_min(&mut self) -> &mut Self {
+        self.price_min = None;
+        self
+    }
+
+    /// Sets the maximum price bound (in the selected currency, inclusive).
+    pub fn set_price_max(&mut self, price_max: f64) -> &mut Self {
+        self.price_max = Some(price_max);
+        self
+    }
+
+    /// Clears the maximum price bound.
+    pub fn unset_price_max(&mut self) -> &mut Self {
+        self.price_max = None;
+        self
+    }
+
+    /// Sets the currency the price bounds compare against (defaults to USD).
+    pub fn set_price_currency(&mut self, price_currency: PriceCurrency) -> &mut Self {
+        self.price_currency = Some(price_currency);
+        self
+    }
+
+    /// Clears the currency selection (falls back to USD).
+    pub fn unset_price_currency(&mut self) -> &mut Self {
+        self.price_currency = None;
         self
     }
 
@@ -949,6 +985,9 @@ impl CardFilterBuilder {
             language: self.language.clone(),
             order_by: self.order_by,
             ascending: self.ascending,
+            // Currency is a sticky preference: clearing the filter keeps it, and
+            // it never makes the filter "active" on its own (only min/max do).
+            price_currency: self.price_currency,
             ..Self::default()
         };
         *self = default;
