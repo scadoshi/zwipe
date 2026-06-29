@@ -42,6 +42,8 @@ pub struct CreateDeckProfile {
     pub format: Option<Format>,
     /// Deck archetype/strategy tags (validated, deduped, at most [`MAX_DECK_TAGS`]).
     pub tags: Vec<DeckTag>,
+    /// User-set land target. `None` falls back to the format heuristic.
+    pub land_target: Option<i32>,
     /// Owner of this deck.
     pub user_id: Uuid,
     /// Whether the requesting user's email is verified.
@@ -65,6 +67,7 @@ impl CreateDeckProfile {
             signature_spell_id: None,
             format: None,
             tags: Vec::new(),
+            land_target: None,
         }
     }
 }
@@ -80,6 +83,7 @@ pub struct CreateDeckProfileBuilder {
     signature_spell_id: Option<Uuid>,
     format: Option<String>,
     tags: Vec<String>,
+    land_target: Option<i32>,
 }
 
 impl CreateDeckProfileBuilder {
@@ -119,6 +123,12 @@ impl CreateDeckProfileBuilder {
         self
     }
 
+    /// Sets the land target.
+    pub fn land_target(mut self, land_target: Option<i32>) -> Self {
+        self.land_target = land_target;
+        self
+    }
+
     /// Validates and builds the request.
     pub fn build(self) -> Result<CreateDeckProfile, InvalidCreateDeckProfile> {
         let name = DeckName::new(self.name)?;
@@ -139,6 +149,7 @@ impl CreateDeckProfileBuilder {
             signature_spell_id: self.signature_spell_id,
             format,
             tags,
+            land_target: self.land_target,
             user_id: self.user_id,
             email_verified: self.email_verified,
         })

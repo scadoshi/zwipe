@@ -180,6 +180,18 @@ impl Format {
         }
     }
 
+    /// Suggested land count when the user hasn't set an explicit target.
+    ///
+    /// Derived from the format's deck size: ~37 for 100-card formats, ~17 for
+    /// 60-card formats. `None` when the format implies no sensible default.
+    pub fn default_land_target(&self) -> Option<i32> {
+        match self.min_cards()? {
+            100 => Some(37),
+            60 => Some(17),
+            _ => None,
+        }
+    }
+
     /// Maximum copies of a single non-basic-land card.
     pub fn copy_max(&self) -> u32 {
         match self {
@@ -434,6 +446,19 @@ mod tests {
         assert_eq!(Format::Gladiator.max_cards(), None);
         assert_eq!(Format::Gladiator.copy_max(), 1);
         assert!(!Format::Gladiator.has_commander());
+    }
+
+    #[test]
+    fn default_land_target_tracks_deck_size() {
+        // 100-card formats suggest ~37 lands, 60-card formats ~17.
+        assert_eq!(Format::Commander.default_land_target(), Some(37));
+        assert_eq!(Format::Gladiator.default_land_target(), Some(37));
+        assert_eq!(Format::Standard.default_land_target(), Some(17));
+        assert_eq!(Format::Oathbreaker.default_land_target(), Some(17));
+        // Every format yields a target (all map to a 60- or 100-card minimum).
+        for format in Format::all() {
+            assert!(format.default_land_target().is_some());
+        }
     }
 
     #[test]

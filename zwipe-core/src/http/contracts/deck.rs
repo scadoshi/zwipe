@@ -47,6 +47,9 @@ pub struct HttpCreateDeckProfile {
     /// Deck archetype/strategy tags (snake_case strings). Absent or empty = none.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tags: Option<Vec<String>>,
+    /// User-set land target. Absent = use the format-derived heuristic.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub land_target: Option<i32>,
 }
 
 impl HttpCreateDeckProfile {
@@ -60,6 +63,7 @@ impl HttpCreateDeckProfile {
             signature_spell_id: None,
             format: None,
             tags: None,
+            land_target: None,
         }
     }
 }
@@ -73,6 +77,7 @@ pub struct HttpCreateDeckProfileBuilder {
     signature_spell_id: Option<Uuid>,
     format: Option<String>,
     tags: Option<Vec<String>>,
+    land_target: Option<i32>,
 }
 
 impl HttpCreateDeckProfileBuilder {
@@ -112,6 +117,12 @@ impl HttpCreateDeckProfileBuilder {
         self
     }
 
+    /// Sets the land target.
+    pub fn land_target(mut self, land_target: Option<i32>) -> Self {
+        self.land_target = land_target;
+        self
+    }
+
     /// Builds the request.
     pub fn build(self) -> HttpCreateDeckProfile {
         HttpCreateDeckProfile {
@@ -122,6 +133,7 @@ impl HttpCreateDeckProfileBuilder {
             signature_spell_id: self.signature_spell_id,
             format: self.format,
             tags: self.tags,
+            land_target: self.land_target,
         }
     }
 }
@@ -151,6 +163,11 @@ pub struct HttpUpdateDeckProfile {
     /// compatible when the server deploys ahead of the app.
     #[serde(default)]
     pub tags: Opdate<Vec<String>>,
+    /// Land target with partial update semantics. `Set(None)` clears the
+    /// override (back to the format heuristic); absent leaves it unchanged.
+    /// `#[serde(default)]` keeps older clients backward-compatible.
+    #[serde(default)]
+    pub land_target: Opdate<i32>,
 }
 
 impl HttpUpdateDeckProfile {
@@ -164,6 +181,7 @@ impl HttpUpdateDeckProfile {
             signature_spell_id: Opdate::Unchanged,
             format: Opdate::Unchanged,
             tags: Opdate::Unchanged,
+            land_target: Opdate::Unchanged,
         }
     }
 }
@@ -177,6 +195,7 @@ pub struct HttpUpdateDeckProfileBuilder {
     signature_spell_id: Opdate<Uuid>,
     format: Opdate<String>,
     tags: Opdate<Vec<String>>,
+    land_target: Opdate<i32>,
 }
 
 impl HttpUpdateDeckProfileBuilder {
@@ -222,6 +241,12 @@ impl HttpUpdateDeckProfileBuilder {
         self
     }
 
+    /// Sets the land target update.
+    pub fn land_target(mut self, land_target: Opdate<i32>) -> Self {
+        self.land_target = land_target;
+        self
+    }
+
     /// Builds the request.
     pub fn build(self) -> HttpUpdateDeckProfile {
         HttpUpdateDeckProfile {
@@ -232,6 +257,7 @@ impl HttpUpdateDeckProfileBuilder {
             signature_spell_id: self.signature_spell_id,
             format: self.format,
             tags: self.tags,
+            land_target: self.land_target,
         }
     }
 }
@@ -254,4 +280,35 @@ pub struct HttpCloneDeck {
 pub struct HttpClonedDeck {
     /// Id of the newly created clone.
     pub deck_id: Uuid,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn create_profile_defaults_land_target_to_none_when_omitted() {
+        // A client predating the field sends no land_target; it must still parse.
+        let json = r#"{"name":"My Deck"}"#;
+        let req: HttpCreateDeckProfile = serde_json::from_str(json).unwrap();
+        assert_eq!(req.land_target, None);
+    }
+
+    #[test]
+    fn update_profile_defaults_land_target_to_unchanged_when_omitted() {
+        // Wire from an older client: every pre-existing field present,
+        // land_target absent. Must deserialize to Unchanged (leave it alone)
+        // rather than erroring on a missing field.
+        let json = r#"{
+            "name": null,
+            "commander_id": "Unchanged",
+            "partner_commander_id": "Unchanged",
+            "background_id": "Unchanged",
+            "signature_spell_id": "Unchanged",
+            "format": "Unchanged",
+            "tags": "Unchanged"
+        }"#;
+        let req: HttpUpdateDeckProfile = serde_json::from_str(json).unwrap();
+        assert!(req.land_target.is_unchanged());
+    }
 }

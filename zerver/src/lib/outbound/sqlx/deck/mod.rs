@@ -74,9 +74,9 @@ impl DeckRepository for Postgres {
         let tags_json = deck_tags_to_json(&request.tags);
         let database_deck_profile = query_as!(
             DatabaseDeckProfile,
-            r#"INSERT INTO decks (name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags, user_id)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-               RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags as "tags?", user_id,
+            r#"INSERT INTO decks (name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags, land_target, user_id)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+               RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags as "tags?", land_target, user_id,
                          0::bigint as "card_count",
                          (SELECT sd.name FROM scryfall_data sd WHERE sd.id = commander_id) as "commander_name?",
                          (SELECT sd.name FROM scryfall_data sd WHERE sd.id = partner_commander_id) as "partner_commander_name?",
@@ -89,6 +89,7 @@ impl DeckRepository for Postgres {
             request.signature_spell_id,
             request.format.map(|f| f.to_legality_key().to_string()) as Option<String>,
             tags_json,
+            request.land_target,
             request.user_id
         )
         .fetch_one(&mut *tx)
@@ -191,7 +192,7 @@ impl DeckRepository for Postgres {
         let database_deck_profile = query_as!(
             DatabaseDeckProfile,
             r#"SELECT d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,
-                      d.format, d.tags as "tags?", d.user_id,
+                      d.format, d.tags as "tags?", d.land_target, d.user_id,
                       COALESCE(SUM(dc.quantity) FILTER (WHERE dc.board = 'deck'), 0) as "card_count",
                       sd.name as "commander_name?",
                       (SELECT s2.name FROM scryfall_data s2 WHERE s2.id = d.partner_commander_id) as "partner_commander_name?",
@@ -202,7 +203,7 @@ impl DeckRepository for Postgres {
                LEFT JOIN scryfall_data sd ON d.commander_id = sd.id
                WHERE d.id = $1
                GROUP BY d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,
-                        d.format, d.user_id, sd.name"#,
+                        d.format, d.land_target, d.user_id, sd.name"#,
             request.deck_id
         )
         .fetch_one(&self.pool)
@@ -221,7 +222,7 @@ impl DeckRepository for Postgres {
         let database_deck_profiles = query_as!(
             DatabaseDeckProfile,
             r#"SELECT d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,
-                      d.format, d.tags as "tags?", d.user_id,
+                      d.format, d.tags as "tags?", d.land_target, d.user_id,
                       COALESCE(SUM(dc.quantity) FILTER (WHERE dc.board = 'deck'), 0) as "card_count",
                       sd.name as "commander_name?",
                       (SELECT s2.name FROM scryfall_data s2 WHERE s2.id = d.partner_commander_id) as "partner_commander_name?",
@@ -232,7 +233,7 @@ impl DeckRepository for Postgres {
                LEFT JOIN scryfall_data sd ON d.commander_id = sd.id
                WHERE d.user_id = $1
                GROUP BY d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,
-                        d.format, d.user_id, sd.name"#,
+                        d.format, d.land_target, d.user_id, sd.name"#,
             request.user_id
         )
         .fetch_all(&self.pool)
@@ -318,12 +319,15 @@ impl DeckRepository for Postgres {
             sep.push("tags = ")
                 .push_bind_unseparated(deck_tags_to_json(tags));
         }
+        if let Some(land_target) = &request.land_target {
+            sep.push("land_target = ").push_bind_unseparated(*land_target);
+        }
         let now = chrono::Utc::now();
         sep.push("updated_at = ").push_bind_unseparated(now);
 
         qb.push(" WHERE id = ")
             .push_bind(request.deck_id)
-            .push(r#" RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags, user_id,
+            .push(r#" RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags, land_target, user_id,
                        (SELECT COALESCE(SUM(dc.quantity) FILTER (WHERE dc.board = 'deck'), 0) FROM deck_cards dc WHERE dc.deck_id = decks.id) as card_count,
                        (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.commander_id) as commander_name,
                        (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.partner_commander_id) as partner_commander_name,
@@ -498,11 +502,11 @@ impl DeckRepository for Postgres {
             r#"
             INSERT INTO decks (
                 name, commander_id, partner_commander_id, background_id,
-                signature_spell_id, format, tags, user_id
+                signature_spell_id, format, tags, land_target, user_id
             )
             SELECT
                 $1, commander_id, partner_commander_id, background_id,
-                signature_spell_id, format, tags, $2
+                signature_spell_id, format, tags, land_target, $2
             FROM decks
             WHERE id = $3
             RETURNING id

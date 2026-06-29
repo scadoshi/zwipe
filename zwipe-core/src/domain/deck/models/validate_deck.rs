@@ -52,6 +52,7 @@ pub fn validate_deck(
     let mut warnings = Vec::new();
 
     check_card_count(format, deck_profile, &mut warnings);
+    check_land_target(deck_profile, &active_entries, &mut warnings);
     check_commander_required(format, deck_profile, &mut warnings);
     check_legality(format, &active_entries, &mut warnings);
     check_copy_limits(format, &active_entries, &mut warnings);
@@ -107,6 +108,30 @@ fn check_card_count(format: &Format, profile: &DeckProfile, warnings: &mut Vec<D
             plural(count),
             format.display_name().to_lowercase(),
             max
+        )));
+    }
+}
+
+/// Warns when the mainboard has fewer lands than the user's explicit land
+/// target. The format heuristic default is intentionally not surfaced here —
+/// the warnings list reflects targets the user has actually set, not a guess.
+fn check_land_target(
+    profile: &DeckProfile,
+    active_entries: &[DeckEntry],
+    warnings: &mut Vec<DeckWarning>,
+) {
+    let Some(target) = profile.land_target else {
+        return;
+    };
+    let land_count: i32 = active_entries
+        .iter()
+        .filter(|e| e.card.scryfall_data.is_land())
+        .map(|e| *e.deck_card.quantity)
+        .sum();
+    if land_count < target {
+        let land_word = if land_count == 1 { "land" } else { "lands" };
+        warnings.push(DeckWarning::new(format!(
+            "deck has {land_count} {land_word}, below the land target of {target}"
         )));
     }
 }
@@ -509,12 +534,58 @@ mod tests {
             signature_spell_id: None,
             format,
             tags: Vec::new(),
+            land_target: None,
             user_id: uuid::Uuid::new_v4(),
             card_count: 0,
             commander_name: None,
             partner_commander_name: None,
             background_name: None,
             signature_spell_name: None,
+        }
+    }
+
+    mod land_target {
+        use super::*;
+        use crate::domain::deck::{Board, DeckCard, Quantity};
+        use crate::test_utils::make_card;
+
+        fn land_entry(name: &str, qty: i32) -> DeckEntry {
+            let mut card = make_card(name);
+            card.scryfall_data.type_line = Some("Basic Land — Forest".to_string());
+            let deck_card = DeckCard {
+                deck_id: uuid::Uuid::new_v4(),
+                scryfall_data_id: card.scryfall_data.id,
+                oracle_id: card.scryfall_data.oracle_id.unwrap_or_default(),
+                quantity: Quantity::new(qty).unwrap(),
+                board: Board::Deck,
+            };
+            DeckEntry { card, deck_card }
+        }
+
+        #[test]
+        fn warns_when_below_explicit_target() {
+            let mut profile = test_profile(Some(Format::Commander));
+            profile.land_target = Some(5);
+            let warnings =
+                validate_deck(&profile, &[land_entry("Forest", 3)], &empty_command_zone());
+            assert!(warnings.iter().any(|w| w.contains("land target")));
+        }
+
+        #[test]
+        fn no_warning_at_or_above_target() {
+            let mut profile = test_profile(Some(Format::Commander));
+            profile.land_target = Some(3);
+            let warnings =
+                validate_deck(&profile, &[land_entry("Forest", 3)], &empty_command_zone());
+            assert!(!warnings.iter().any(|w| w.contains("land target")));
+        }
+
+        #[test]
+        fn no_warning_without_explicit_target() {
+            // The heuristic default alone must not surface a list warning.
+            let profile = test_profile(Some(Format::Commander));
+            let warnings = validate_deck(&profile, &[], &empty_command_zone());
+            assert!(!warnings.iter().any(|w| w.contains("land target")));
         }
     }
 

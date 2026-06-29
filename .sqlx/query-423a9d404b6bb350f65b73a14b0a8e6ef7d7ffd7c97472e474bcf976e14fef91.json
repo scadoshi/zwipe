@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,\n                      d.format, d.tags as \"tags?\", d.user_id,\n                      COALESCE(SUM(dc.quantity) FILTER (WHERE dc.board = 'deck'), 0) as \"card_count\",\n                      sd.name as \"commander_name?\",\n                      (SELECT s2.name FROM scryfall_data s2 WHERE s2.id = d.partner_commander_id) as \"partner_commander_name?\",\n                      (SELECT s3.name FROM scryfall_data s3 WHERE s3.id = d.background_id) as \"background_name?\",\n                      (SELECT s4.name FROM scryfall_data s4 WHERE s4.id = d.signature_spell_id) as \"signature_spell_name?\"\n               FROM decks d\n               LEFT JOIN deck_cards dc ON d.id = dc.deck_id\n               LEFT JOIN scryfall_data sd ON d.commander_id = sd.id\n               WHERE d.user_id = $1\n               GROUP BY d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,\n                        d.format, d.user_id, sd.name",
+  "query": "INSERT INTO decks (name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags, land_target, user_id)\n               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)\n               RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags as \"tags?\", land_target, user_id,\n                         0::bigint as \"card_count\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = commander_id) as \"commander_name?\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = partner_commander_id) as \"partner_commander_name?\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = background_id) as \"background_name?\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = signature_spell_id) as \"signature_spell_name?\"",
   "describe": {
     "columns": [
       {
@@ -45,37 +45,50 @@
       },
       {
         "ordinal": 8,
+        "name": "land_target",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
         "name": "user_id",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "card_count",
         "type_info": "Int8"
       },
       {
-        "ordinal": 10,
+        "ordinal": 11,
         "name": "commander_name?",
         "type_info": "Text"
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "partner_commander_name?",
         "type_info": "Text"
       },
       {
-        "ordinal": 12,
+        "ordinal": 13,
         "name": "background_name?",
         "type_info": "Text"
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "signature_spell_name?",
         "type_info": "Text"
       }
     ],
     "parameters": {
       "Left": [
+        "Varchar",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Jsonb",
+        "Int4",
         "Uuid"
       ]
     },
@@ -88,13 +101,14 @@
       true,
       true,
       false,
+      true,
       false,
       null,
-      false,
+      null,
       null,
       null,
       null
     ]
   },
-  "hash": "ee9004980dd76f60d0917e25510212e33bf69195ee11e694a4335db5e17c3bdf"
+  "hash": "423a9d404b6bb350f65b73a14b0a8e6ef7d7ffd7c97472e474bcf976e14fef91"
 }
