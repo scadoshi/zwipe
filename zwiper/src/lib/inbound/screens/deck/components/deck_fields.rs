@@ -44,6 +44,7 @@ pub(crate) fn DeckFields(
     mut show_partner_swipe: Signal<bool>,
     mut show_background_swipe: Signal<bool>,
     mut show_signature_spell_swipe: Signal<bool>,
+    mut show_tags_select: Signal<bool>,
 ) -> Element {
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
@@ -54,11 +55,6 @@ pub(crate) fn DeckFields(
     // ========================================
     let mut format_query = use_signal(String::new);
 
-    // ========================================
-    // Tag search state (in-memory typeahead, no debounce)
-    // ========================================
-    let mut tag_query = use_signal(String::new);
-    let mut show_tags_hint = use_signal(|| false);
 
     // ========================================
     // Commander search state
@@ -772,24 +768,16 @@ pub(crate) fn DeckFields(
         }
 
         // ========================================
-        // Tags (searchable multi-select, up to MAX_DECK_TAGS)
+        // Tags (open the full-screen picker to choose)
         // ========================================
         div {
             div { class: "label-row",
                 label { class: "label", "Tags" }
                 span { class: "label-hint", "{selected_tags().len()}/{MAX_DECK_TAGS}" }
-                div {
-                    class: "chip-xs",
-                    onclick: move |_| show_tags_hint.set(true),
-                    "?"
-                }
                 if !selected_tags().is_empty() {
                     button {
                         class: "clear-btn",
-                        onclick: move |_| {
-                            selected_tags.set(Vec::new());
-                            tag_query.set(String::new());
-                        },
+                        onclick: move |_| selected_tags.set(Vec::new()),
                         "\u{00d7}"
                     }
                 }
@@ -813,98 +801,11 @@ pub(crate) fn DeckFields(
                 }
             }
 
-            // Search + live results, only while there's room for more.
-            if selected_tags().len() < MAX_DECK_TAGS {
-                if !tag_query().is_empty() {
-                    {
-                        let query = tag_query().to_lowercase();
-                        let results: Vec<DeckTag> = DeckTag::all()
-                            .iter()
-                            .copied()
-                            .filter(|t| !selected_tags().contains(t))
-                            .filter(|t| t.display_name().to_lowercase().contains(&query))
-                            .take(8)
-                            .collect();
-
-                        if results.is_empty() {
-                            rsx! {
-                                div { class: "flex flex-wrap gap-1 mb-1",
-                                    div { class: "chip-unselected", "No results" }
-                                }
-                            }
-                        } else {
-                            rsx! {
-                                div { class: "flex flex-wrap gap-1 mb-1",
-                                    for tag in results {
-                                        div {
-                                            key: "{tag}",
-                                            class: "chip-unselected",
-                                            onclick: move |_| {
-                                                let mut current = selected_tags();
-                                                if current.len() < MAX_DECK_TAGS && !current.contains(&tag) {
-                                                    current.push(tag);
-                                                    selected_tags.set(current);
-                                                }
-                                                tag_query.set(String::new());
-                                            },
-                                            { tag.display_name().to_string() }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                input { class: "input",
-                    id: "tag-search",
-                    r#type: "text",
-                    placeholder: "Tags",
-                    value: "{tag_query()}",
-                    autocapitalize: "none",
-                    spellcheck: "false",
-                    oninput: move |event| {
-                        tag_query.set(event.value());
-                    }
-                }
-            }
-        }
-
-        DeckTagsHint { open: show_tags_hint }
-    }
-}
-
-/// Reference dialog for the deck tags, opened from the "?" trigger on the tag
-/// picker so the strategy tags are discoverable. Every tag is a chip in
-/// alphabetical order; tapping one reveals its one-line definition in the panel
-/// pinned at the top.
-#[component]
-fn DeckTagsHint(open: Signal<bool>) -> Element {
-    let mut expanded = use_signal(|| Option::<DeckTag>::None);
-    rsx! {
-        HintDialog {
-            open,
-            title: "Deck tags",
-            div {
-                style: "position: sticky; top: 0; z-index: 1; background: var(--bg-primary); text-align: left; min-height: 3rem; padding-bottom: 0.5rem; margin-bottom: 0.5rem;",
-                if let Some(tag) = expanded() {
-                    HintColored { color: "--accent-tertiary", "{tag.display_name()}" }
-                    " — {tag.description()}"
-                } else {
-                    "Tap a tag to see what it means."
-                }
-            }
-            div { class: "flex flex-wrap gap-1 flex-center",
-                for tag in DeckTag::all() {
-                    div {
-                        key: "{tag}",
-                        class: if expanded() == Some(*tag) { "chip selected" } else { "chip-unselected" },
-                        onclick: move |_| {
-                            expanded.set((expanded() != Some(*tag)).then_some(*tag));
-                        },
-                        "{tag.display_name()}"
-                    }
-                }
+            button {
+                r#type: "button",
+                class: "input input-button",
+                onclick: move |_| show_tags_select.set(true),
+                if selected_tags().is_empty() { "Choose tags" } else { "Edit tags" }
             }
         }
     }

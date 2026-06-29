@@ -18,3 +18,5 @@ pub(crate) mod more_buttons;
 pub(crate) mod skeletons;
 /// Full-screen "Zwipe select" command-zone swipe picker.
 pub(crate) mod swipe_select;
+/// Full-screen tag picker with definitions.
+pub(crate) mod tag_select;

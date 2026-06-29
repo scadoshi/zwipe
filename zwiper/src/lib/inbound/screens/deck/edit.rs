@@ -1,6 +1,7 @@
 //! Edit deck screen.
 
 use super::components::deck_fields::{DeckFields, DeckFieldsHint};
+use super::components::tag_select::TagSelect;
 use super::components::skeletons::EditDeckSkeleton;
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::components::screen_header::ScreenHeader;
@@ -56,6 +57,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut show_partner_swipe = use_signal(|| false);
     let mut show_background_swipe = use_signal(|| false);
     let mut show_signature_spell_swipe = use_signal(|| false);
+    let mut show_tags_select = use_signal(|| false);
 
     // Reactive Zwipe-select modes — derived from the current format / commander.
     let commander_mode = use_memo(move || selected_format().map(SwipeMode::Commander));
@@ -388,6 +390,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                     show_partner_swipe,
                                     show_background_swipe,
                                     show_signature_spell_swipe,
+                                    show_tags_select,
                                 }
 
                             }
@@ -458,6 +461,12 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                     show_signature_spell_swipe.set(false);
                 },
                 on_close: move |_| show_signature_spell_swipe.set(false),
+            }
+
+            TagSelect {
+                open: show_tags_select,
+                selected_tags,
+                on_close: move |_| show_tags_select.set(false),
             }
 
             DeckFieldsHint { open: edit_hint }
