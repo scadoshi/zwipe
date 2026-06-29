@@ -41,6 +41,8 @@ use zwipe_core::domain::card::{
         group_cards::{CardGroup, GroupByOption, GroupCards},
     },
 };
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use zwipe_core::domain::deck::deck_metrics::{budget_tier, mainboard_total_price};
 use zwipe_core::domain::deck::{Board, DeckEntry, quantity::Quantity};
 use zwipe_core::domain::user::models::hints::HINT_DECK_CARDS;
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
@@ -86,6 +88,10 @@ pub fn View(deck_id: Uuid) -> Element {
     // Effective land target (deck override, else format heuristic) for the
     // land-count crossing toasts on quantity changes.
     let mut land_target: Signal<Option<i32>> = use_signal(|| None);
+    // Deck price budget (None = no budget) + its currency, for the 50/75/100%
+    // crossing toasts on quantity changes.
+    let mut price_budget: Signal<Option<f64>> = use_signal(|| None);
+    let mut price_budget_currency: Signal<PriceCurrency> = use_signal(|| PriceCurrency::Usd);
     // What the UI renders — grouped card lists (active cards only)
     let mut displayed_groups: Signal<Vec<CardGroup>> = use_signal(Vec::new);
     // Current grouping mode
@@ -189,9 +195,11 @@ pub fn View(deck_id: Uuid) -> Element {
                         .as_ref()
                         .is_some_and(|f| f.has_signature_spell()),
                 );
-                land_target.set(profile.land_target.or_else(|| {
-                    profile.format.and_then(|f| f.default_land_target())
-                }));
+                // Explicit target only — no toasts unless the user set one.
+                land_target.set(profile.land_target);
+                price_budget.set(profile.price_target);
+                price_budget_currency
+                    .set(profile.price_target_currency.unwrap_or(PriceCurrency::Usd));
 
                 // Resolve command zone cards by oracle_id (not printing-specific scryfall_data_id).
                 // Fetch the card first to get its oracle_id, then remove from entries by oracle_id.
@@ -371,12 +379,40 @@ pub fn View(deck_id: Uuid) -> Element {
         }
     };
 
+    // Mainboard total in the budget currency from the source of truth.
+    let total_price = move || -> f64 {
+        mainboard_total_price(&deck_entries.peek(), price_budget_currency())
+    };
+
+    // Toast once when a qty change raises the deck into a new budget tier
+    // (50/75/100%). Higher-tier only, so it never re-fires.
+    let warn_budget_crossing = move |before: f64, after: f64| {
+        let Some(budget) = price_budget() else {
+            return;
+        };
+        if budget <= 0.0 {
+            return;
+        }
+        if budget_tier(budget, after) > budget_tier(budget, before) {
+            let pct = after / budget * 100.0;
+            let amount = price_budget_currency().format_amount(budget);
+            let msg = format!("Deck at {pct:.2}% of your {amount} budget");
+            let opts = ToastOptions::default().duration(Duration::from_millis(2500));
+            if after >= budget {
+                toast.warning(msg, opts);
+            } else {
+                toast.info(msg, opts);
+            }
+        }
+    };
+
     let mut change_quantity = move |card_id: Uuid, delta: i32, _is_basic_land: bool| {
         let current_qty = qty_for(card_id);
 
         // - at 1 → delete
         let should_delete = current_qty + delta < 1;
         let before_lands = main_land_count();
+        let before_price = total_price();
 
         if should_delete {
             // Optimistic: remove from entries
@@ -388,6 +424,7 @@ pub fn View(deck_id: Uuid) -> Element {
             filter_reset_counter.set(current + 1);
 
             warn_land_crossing(before_lands, main_land_count());
+            warn_budget_crossing(before_price, total_price());
 
             toast.info(
                 "Card removed".to_string(),
@@ -422,6 +459,7 @@ pub fn View(deck_id: Uuid) -> Element {
             filter_reset_counter.set(current + 1);
 
             warn_land_crossing(before_lands, main_land_count());
+            warn_budget_crossing(before_price, total_price());
 
             let request = HttpUpdateDeckCard::new(Some(delta), None);
             spawn(async move {

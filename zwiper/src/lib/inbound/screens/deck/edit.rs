@@ -25,6 +25,7 @@ use uuid::Uuid;
 use zwipe::inbound::http::ApiError;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{
     Deck, DeckName, DeckTag, deck_profile::DeckProfile, format::Format,
     requests::update_deck_profile::InvalidUpdateDeckProfile,
@@ -62,6 +63,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut show_tags_select = use_signal(|| false);
     let mut show_format_select = use_signal(|| false);
     let mut land_target = use_signal(|| None::<i32>);
+    let mut price_target = use_signal(String::new);
+    let mut price_target_currency = use_signal(|| PriceCurrency::Usd);
 
     // Reactive Zwipe-select modes — derived from the current format / commander.
     let commander_mode = use_memo(move || selected_format().map(SwipeMode::Commander));
@@ -77,6 +80,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut original_format: Signal<Option<Format>> = use_signal(|| None);
     let mut original_tags: Signal<Vec<DeckTag>> = use_signal(Vec::new);
     let mut original_land_target: Signal<Option<i32>> = use_signal(|| None);
+    let mut original_price_target: Signal<String> = use_signal(String::new);
+    let mut original_price_target_currency: Signal<PriceCurrency> = use_signal(|| PriceCurrency::Usd);
     let mut original_partner: Signal<Option<Card>> = use_signal(|| None);
     let mut original_background: Signal<Option<Card>> = use_signal(|| None);
     let mut original_signature_spell: Signal<Option<Card>> = use_signal(|| None);
@@ -101,6 +106,19 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             selected_tags.set(deck.deck_profile.tags);
             original_land_target.set(deck.deck_profile.land_target);
             land_target.set(deck.deck_profile.land_target);
+            let pt = deck
+                .deck_profile
+                .price_target
+                .map(|v| format!("{v}"))
+                .unwrap_or_default();
+            original_price_target.set(pt.clone());
+            price_target.set(pt);
+            let ptc = deck
+                .deck_profile
+                .price_target_currency
+                .unwrap_or(PriceCurrency::Usd);
+            original_price_target_currency.set(ptc);
+            price_target_currency.set(ptc);
         }
         Some(Err(e)) => {
             toast.error(
@@ -308,6 +326,23 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             Opdate::Unchanged
         }
     });
+    let price_target_update = use_memo(move || {
+        let cur: Option<f64> = price_target().parse().ok().filter(|v: &f64| *v > 0.0);
+        let orig: Option<f64> = original_price_target().parse().ok().filter(|v: &f64| *v > 0.0);
+        if cur != orig {
+            // Empty/zero parses to `None` → clears the budget.
+            Opdate::Set(cur)
+        } else {
+            Opdate::Unchanged
+        }
+    });
+    let price_currency_update = use_memo(move || {
+        if price_target_currency() != original_price_target_currency() {
+            Opdate::Set(Some(price_target_currency()))
+        } else {
+            Opdate::Unchanged
+        }
+    });
     let has_made_changes = use_memo(move || {
         deck_name_update().is_some()
             || commander_id_update().is_changed()
@@ -317,6 +352,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             || format_update().is_changed()
             || tags_update().is_changed()
             || land_target_update().is_changed()
+            || price_target_update().is_changed()
+            || price_currency_update().is_changed()
     });
 
     // save state
@@ -360,6 +397,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 .format(format_update())
                 .tags(tags_update())
                 .land_target(land_target_update())
+                .price_target(price_target_update())
+                .price_target_currency(price_currency_update())
                 .build();
 
             match client()
@@ -415,6 +454,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                     show_tags_select,
                                     show_format_select,
                                     land_target,
+                                    price_target,
+                                    price_target_currency,
                                 }
 
                             }

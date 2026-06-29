@@ -17,6 +17,7 @@ use zwipe_core::domain::card::{
         commander_eligibility::{has_choose_a_background, partner_kind},
     },
 };
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{DeckName, DeckTag, MAX_DECK_TAGS, format::Format};
 
 /// Upper bound for the land-target stepper — no deck runs more lands than this.
@@ -53,6 +54,9 @@ pub(crate) fn DeckFields(
     // Land target. `None` = Not set, which falls back to the format heuristic.
     // A stepper edits it; the × in the label row returns it to None.
     mut land_target: Signal<Option<i32>>,
+    // Price target (budget) as amount text ("" = no budget) + currency chips.
+    mut price_target: Signal<String>,
+    mut price_target_currency: Signal<PriceCurrency>,
 ) -> Element {
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
@@ -806,6 +810,48 @@ pub(crate) fn DeckFields(
                         land_target.set(Some(next));
                     },
                     "+"
+                }
+            }
+        }
+
+        // ========================================
+        // Price target (budget; empty = no budget)
+        // ========================================
+        div { style: "margin-top: 1rem;",
+            div { class: "label-row",
+                label { class: "label", "Price target" }
+                if !price_target().is_empty() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| price_target.set(String::new()),
+                        "\u{00d7}"
+                    }
+                }
+            }
+
+            div { class: "chip-row", style: "margin-bottom: 0.5rem; justify-content: center;",
+                for currency in PriceCurrency::all().iter().copied() {
+                    div {
+                        class: if price_target_currency() == currency { "chip selected" } else { "chip" },
+                        onclick: move |_| price_target_currency.set(currency),
+                        "{currency.label()}"
+                    }
+                }
+            }
+
+            input { class: "input",
+                id: "price_target",
+                r#type: "text",
+                inputmode: "decimal",
+                placeholder: "Not set",
+                value: "{price_target}",
+                autocapitalize: "none",
+                autocorrect: "off",
+                spellcheck: "false",
+                oninput: move |event| {
+                    // Digits and a single decimal point only.
+                    let filtered: String = event.value().chars().filter(|c| c.is_ascii_digit() || *c == '.').collect();
+                    price_target.set(filtered);
                 }
             }
         }

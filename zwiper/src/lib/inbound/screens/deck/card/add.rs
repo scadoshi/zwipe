@@ -35,6 +35,8 @@ use std::collections::HashSet;
 use std::time::Duration;
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use zwipe_core::domain::deck::deck_metrics::{budget_tier, card_price, mainboard_total_price};
 use zwipe_core::domain::deck::{Board, DeckEntry, format::Format};
 use zwipe_core::domain::user::models::hints::HINT_ADD_DECK_CARDS;
 use zwipe_core::domain::{
@@ -89,6 +91,13 @@ pub fn Add(deck_id: Uuid) -> Element {
     // add pushes the count up across the target we toast once.
     let mut mainboard_land_count: Signal<i32> = use_signal(|| 0);
     let mut land_target: Signal<Option<i32>> = use_signal(|| None);
+
+    // Budget signal: running mainboard total in the budget currency, plus the
+    // budget + currency. Each add raises the running total; crossing 50/75/100%
+    // toasts once.
+    let mut deck_total_price: Signal<f64> = use_signal(|| 0.0);
+    let mut price_budget: Signal<Option<f64>> = use_signal(|| None);
+    let mut price_budget_currency: Signal<PriceCurrency> = use_signal(|| PriceCurrency::Usd);
 
     // Source selector: search (API) vs maybeboard (local)
     let mut add_source: Signal<AddSource> = use_signal(AddSource::default);
@@ -352,6 +361,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 let card_id = card.scryfall_data.id;
                 let oracle_id = card.scryfall_data.oracle_id;
                 let was_land = card.scryfall_data.is_land();
+                let was_price = card_price(&card.scryfall_data, price_budget_currency()).unwrap_or(0.0);
 
                 spawn(async move {
                     let session = match session.ensure_fresh(client).await {
@@ -374,6 +384,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             if was_land {
                                 mainboard_land_count.set((mainboard_land_count() - 1).max(0));
                             }
+                            deck_total_price.set((deck_total_price() - was_price).max(0.0));
                             toast.success(
                                 "Undid add".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
@@ -523,11 +534,18 @@ pub fn Add(deck_id: Uuid) -> Element {
                         .map(|e| *e.deck_card.quantity)
                         .sum();
                     mainboard_land_count.set(land_count);
-                    land_target.set(
-                        deck.deck_profile.land_target.or_else(|| {
-                            deck.deck_profile.format.and_then(|f| f.default_land_target())
-                        }),
-                    );
+                    // Explicit target only — no land toasts unless the user set one.
+                    land_target.set(deck.deck_profile.land_target);
+
+                    // Seed the budget signal: running total in the budget
+                    // currency, plus the budget + currency from the profile.
+                    let currency = deck
+                        .deck_profile
+                        .price_target_currency
+                        .unwrap_or(PriceCurrency::Usd);
+                    deck_total_price.set(mainboard_total_price(&deck.entries, currency));
+                    price_budget.set(deck.deck_profile.price_target);
+                    price_budget_currency.set(currency);
 
                     // Pre-populate format filter from deck
                     if let Some(fmt) = deck.deck_profile.format {
@@ -916,6 +934,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                     usage_buffer().record_swipe(Direction::Right);
                                     action_history.write().push(SwipeAction::Do { card: Box::new(card.clone()), exited: Direction::Right });
                                     let added_land = card.scryfall_data.is_land();
+                                    let added_price = card_price(&card.scryfall_data, price_budget_currency()).unwrap_or(0.0);
                                     add_card_to_deck(card);
                                     toast.success("Added to deck".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                     if added_land {
@@ -931,6 +950,24 @@ pub fn Add(deck_id: Uuid) -> Element {
                                                 format!("Land target reached ({target})"),
                                                 ToastOptions::default().duration(Duration::from_millis(2500)),
                                             );
+                                        }
+                                    }
+                                    // Budget band: raise the running total, toast when it
+                                    // crosses into a higher 50/75/100% band (exact percentage).
+                                    if let Some(budget) = price_budget().filter(|b| *b > 0.0) {
+                                        let before = deck_total_price();
+                                        let after = before + added_price;
+                                        deck_total_price.set(after);
+                                        if budget_tier(budget, after) > budget_tier(budget, before) {
+                                            let pct = after / budget * 100.0;
+                                            let amount = price_budget_currency().format_amount(budget);
+                                            let msg = format!("Deck at {pct:.2}% of your {amount} budget");
+                                            let opts = ToastOptions::default().duration(Duration::from_millis(2500));
+                                            if after >= budget {
+                                                toast.warning(msg, opts);
+                                            } else {
+                                                toast.info(msg, opts);
+                                            }
                                         }
                                     }
                                     advance_after_commit();

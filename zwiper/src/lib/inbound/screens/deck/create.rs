@@ -18,6 +18,7 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{DeckName, DeckTag, format::Format};
 use zwipe_core::domain::user::models::hints::HINT_CREATE_DECK;
 use zwipe_core::http::contracts::deck::HttpCreateDeckProfile;
@@ -50,6 +51,8 @@ pub fn CreateDeck() -> Element {
     let mut show_tags_select = use_signal(|| false);
     let mut show_format_select = use_signal(|| false);
     let land_target = use_signal(|| None::<i32>);
+    let price_target = use_signal(String::new);
+    let price_target_currency = use_signal(|| PriceCurrency::Usd);
     let create_hint = use_one_time_hint(HINT_CREATE_DECK);
 
     // Reactive Zwipe-select modes — derived from the current format / commander.
@@ -87,6 +90,8 @@ pub fn CreateDeck() -> Element {
             let commander_id = commander().map(|c| c.scryfall_data.id);
             let format_str = selected_format().map(|f| f.to_legality_key().to_string());
             let tags: Vec<String> = selected_tags().iter().map(|t| t.to_string()).collect();
+            let price_target_val: Option<f64> =
+                price_target().parse().ok().filter(|v: &f64| *v > 0.0);
             let request = HttpCreateDeckProfile::builder(&deck_name())
                 .commander_id(commander_id)
                 .partner_commander_id(partner_commander().map(|c| c.scryfall_data.id))
@@ -95,6 +100,8 @@ pub fn CreateDeck() -> Element {
                 .format(format_str)
                 .tags(if tags.is_empty() { None } else { Some(tags) })
                 .land_target(land_target())
+                .price_target(price_target_val)
+                .price_target_currency(price_target_val.map(|_| price_target_currency()))
                 .build();
 
             match auth_client().create_deck_profile(&request, &session).await {
@@ -143,6 +150,8 @@ pub fn CreateDeck() -> Element {
                             show_tags_select,
                             show_format_select,
                             land_target,
+                            price_target,
+                            price_target_currency,
                         }
                     }
                 }
