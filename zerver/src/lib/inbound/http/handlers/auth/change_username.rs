@@ -44,9 +44,6 @@ impl From<InvalidChangeUsername> for ApiError {
             InvalidChangeUsername::Username(e) => {
                 Self::UnprocessableEntity(format!("invalid username: {}", e))
             }
-            InvalidChangeUsername::Password(_) => {
-                Self::Unauthorized("invalid credentials".to_string())
-            }
         }
     }
 }
