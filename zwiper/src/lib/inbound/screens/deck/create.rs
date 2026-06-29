@@ -49,6 +49,7 @@ pub fn CreateDeck() -> Element {
     let mut show_signature_spell_swipe = use_signal(|| false);
     let mut show_tags_select = use_signal(|| false);
     let mut show_format_select = use_signal(|| false);
+    let land_target = use_signal(|| None::<i32>);
     let create_hint = use_one_time_hint(HINT_CREATE_DECK);
 
     // Reactive Zwipe-select modes — derived from the current format / commander.
@@ -93,6 +94,7 @@ pub fn CreateDeck() -> Element {
                 .signature_spell_id(signature_spell().map(|c| c.scryfall_data.id))
                 .format(format_str)
                 .tags(if tags.is_empty() { None } else { Some(tags) })
+                .land_target(land_target())
                 .build();
 
             match auth_client().create_deck_profile(&request, &session).await {
@@ -140,6 +142,7 @@ pub fn CreateDeck() -> Element {
                             show_signature_spell_swipe,
                             show_tags_select,
                             show_format_select,
+                            land_target,
                         }
                     }
                 }

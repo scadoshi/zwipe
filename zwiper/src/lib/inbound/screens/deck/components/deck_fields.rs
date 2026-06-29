@@ -19,6 +19,9 @@ use zwipe_core::domain::card::{
 };
 use zwipe_core::domain::deck::{DeckName, DeckTag, MAX_DECK_TAGS, format::Format};
 
+/// Upper bound for the land-target stepper — no deck runs more lands than this.
+const MAX_LAND_TARGET: i32 = 100;
+
 /// Format chip selector and card search inputs with debounced dropdowns.
 ///
 /// Shows/hides commander, partner, background, and signature spell fields
@@ -47,6 +50,9 @@ pub(crate) fn DeckFields(
     mut show_tags_select: Signal<bool>,
     mut show_format_select: Signal<bool>,
     mut deck_name_error: Signal<Option<String>>,
+    // Land target. `None` = Not set, which falls back to the format heuristic.
+    // A stepper edits it; the × in the label row returns it to None.
+    mut land_target: Signal<Option<i32>>,
 ) -> Element {
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
@@ -132,6 +138,10 @@ pub(crate) fn DeckFields(
             "Commander"
         }
     });
+
+    // Format-derived land heuristic. The stepper seeds from it on the first tick
+    // so an empty field starts at the sensible count rather than zero.
+    let land_heuristic = use_memo(move || selected_format().and_then(|f| f.default_land_target()));
 
     // ========================================
     // Cascading clear effects
@@ -750,6 +760,52 @@ pub(crate) fn DeckFields(
                             "{tag.display_name()}"
                         }
                     }
+                }
+            }
+        }
+
+        // ========================================
+        // Land target (Not set = use the format heuristic)
+        // ========================================
+        div {
+            div { class: "label-row",
+                label { class: "label", "Land target" }
+                if land_target().is_some() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| land_target.set(None),
+                        "\u{00d7}"
+                    }
+                }
+            }
+
+            div { class: "stepper",
+                button {
+                    class: "stepper-btn",
+                    r#type: "button",
+                    onclick: move |_| {
+                        let next = match land_target() {
+                            None => land_heuristic().unwrap_or(0),
+                            Some(v) => v.saturating_sub(1),
+                        };
+                        land_target.set(Some(next));
+                    },
+                    "-"
+                }
+                span { class: "stepper-value", style: "width: auto; min-width: 4rem;",
+                    if let Some(v) = land_target() { "{v}" } else { "Not set" }
+                }
+                button {
+                    class: "stepper-btn",
+                    r#type: "button",
+                    onclick: move |_| {
+                        let next = match land_target() {
+                            None => land_heuristic().unwrap_or(0),
+                            Some(v) => (v + 1).min(MAX_LAND_TARGET),
+                        };
+                        land_target.set(Some(next));
+                    },
+                    "+"
                 }
             }
         }

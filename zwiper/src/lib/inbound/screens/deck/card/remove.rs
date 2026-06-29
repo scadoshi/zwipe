@@ -100,6 +100,10 @@ pub fn Remove(deck_id: Uuid) -> Element {
     // Board filter state
     let mut board_filter: Signal<BoardFilter> = use_signal(BoardFilter::default);
 
+    // Effective land target (deck override, else format heuristic) for the
+    // below-target warning when lands leave the mainboard.
+    let mut land_target: Signal<Option<i32>> = use_signal(|| None);
+
     let mut current_index = use_signal(|| 0_usize);
 
     // Swipe config — the stack owns its own SwipeState internally.
@@ -125,6 +129,30 @@ pub fn Remove(deck_id: Uuid) -> Element {
         cards.get(idx).cloned()
     };
 
+    // Mainboard land count from the source of truth (quantity-aware, MDFC land
+    // faces included via is_land). Recomputed each call so it never drifts.
+    let main_land_count = move || -> i32 {
+        deck_entries
+            .peek()
+            .iter()
+            .filter(|e| e.deck_card.board.is_active() && e.card.scryfall_data.is_land())
+            .map(|e| *e.deck_card.quantity)
+            .sum()
+    };
+
+    // Warn once when a land action drops the mainboard below its target.
+    let warn_if_below_target = move |before: i32, after: i32| {
+        if let Some(target) = land_target()
+            && before >= target
+            && after < target
+        {
+            toast.warning(
+                format!("Below land target ({target})"),
+                ToastOptions::default().duration(Duration::from_millis(2500)),
+            );
+        }
+    };
+
     // Effect 1 — mount load (reads `session` reactively)
     use_effect(move || {
         spawn(async move {
@@ -140,6 +168,9 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     let all_cards: Vec<Card> =
                         deck.entries.iter().map(|e| e.card.clone()).collect();
                     deck_cards_for_filter.set(all_cards);
+                    land_target.set(deck.deck_profile.land_target.or_else(|| {
+                        deck.deck_profile.format.and_then(|f| f.default_land_target())
+                    }));
                     deck_entries.set(deck.entries);
                     deck_loaded.set(true);
                     let current = *filter_reset_counter.peek();
@@ -498,7 +529,9 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                     "Removed from deck".to_string(),
                                     ToastOptions::default().duration(Duration::from_millis(1500)),
                                 );
+                                let before = main_land_count();
                                 remove_current_card();
+                                warn_if_below_target(before, main_land_count());
                             },
                             on_swipe_up: move |card: Card| {
                                 usage_buffer().record_swipe(Direction::Up);
@@ -515,7 +548,9 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                 move_card_to_board(to);
                                 let message = if to.is_maybeboard() { "Moved to maybeboard" } else { "Moved to main" };
                                 toast.info(message.to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
+                                let before = main_land_count();
                                 move_current_card_locally(to);
+                                warn_if_below_target(before, main_land_count());
                             },
                             on_swipe_down: move |_card: Card| {
                                 usage_buffer().record_swipe(Direction::Down);

@@ -61,6 +61,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut show_signature_spell_swipe = use_signal(|| false);
     let mut show_tags_select = use_signal(|| false);
     let mut show_format_select = use_signal(|| false);
+    let mut land_target = use_signal(|| None::<i32>);
 
     // Reactive Zwipe-select modes — derived from the current format / commander.
     let commander_mode = use_memo(move || selected_format().map(SwipeMode::Commander));
@@ -75,6 +76,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut original_commander: Signal<Option<Card>> = use_signal(|| None);
     let mut original_format: Signal<Option<Format>> = use_signal(|| None);
     let mut original_tags: Signal<Vec<DeckTag>> = use_signal(Vec::new);
+    let mut original_land_target: Signal<Option<i32>> = use_signal(|| None);
     let mut original_partner: Signal<Option<Card>> = use_signal(|| None);
     let mut original_background: Signal<Option<Card>> = use_signal(|| None);
     let mut original_signature_spell: Signal<Option<Card>> = use_signal(|| None);
@@ -97,6 +99,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             selected_format.set(deck.deck_profile.format);
             original_tags.set(deck.deck_profile.tags.clone());
             selected_tags.set(deck.deck_profile.tags);
+            original_land_target.set(deck.deck_profile.land_target);
+            land_target.set(deck.deck_profile.land_target);
         }
         Some(Err(e)) => {
             toast.error(
@@ -296,6 +300,14 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             Opdate::Unchanged
         }
     });
+    let land_target_update = use_memo(move || {
+        if land_target() != original_land_target() {
+            // `None` here clears the override back to the heuristic.
+            Opdate::Set(land_target())
+        } else {
+            Opdate::Unchanged
+        }
+    });
     let has_made_changes = use_memo(move || {
         deck_name_update().is_some()
             || commander_id_update().is_changed()
@@ -304,6 +316,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             || signature_spell_id_update().is_changed()
             || format_update().is_changed()
             || tags_update().is_changed()
+            || land_target_update().is_changed()
     });
 
     // save state
@@ -346,6 +359,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 .signature_spell_id(signature_spell_id_update())
                 .format(format_update())
                 .tags(tags_update())
+                .land_target(land_target_update())
                 .build();
 
             match client()
@@ -400,6 +414,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                     show_signature_spell_swipe,
                                     show_tags_select,
                                     show_format_select,
+                                    land_target,
                                 }
 
                             }
