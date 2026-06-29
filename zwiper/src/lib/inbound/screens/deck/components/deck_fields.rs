@@ -874,19 +874,35 @@ pub(crate) fn DeckFields(
     }
 }
 
-/// Reference dialog listing every deck tag with a one-line definition, opened
-/// from the "?" trigger on the tag picker so the strategy tags are discoverable.
+/// Reference dialog for the deck tags, opened from the "?" trigger on the tag
+/// picker so the strategy tags are discoverable. Every tag is a chip in
+/// alphabetical order; tapping one reveals its one-line definition in the panel
+/// pinned at the top.
 #[component]
 fn DeckTagsHint(open: Signal<bool>) -> Element {
+    let mut expanded = use_signal(|| Option::<DeckTag>::None);
     rsx! {
         HintDialog {
             open,
             title: "Deck tags",
-            HintBullets {
+            div {
+                style: "position: sticky; top: 0; z-index: 1; background: var(--bg-primary); text-align: left; min-height: 3rem; padding-bottom: 0.5rem; margin-bottom: 0.5rem;",
+                if let Some(tag) = expanded() {
+                    HintColored { color: "--accent-tertiary", "{tag.display_name()}" }
+                    " — {tag.description()}"
+                } else {
+                    "Tap a tag to see what it means."
+                }
+            }
+            div { class: "flex flex-wrap gap-1 flex-center",
                 for tag in DeckTag::all() {
-                    HintBullet { key: "{tag}",
-                        HintColored { color: "--accent-tertiary", "{tag.display_name()}" }
-                        " — {tag.description()}"
+                    div {
+                        key: "{tag}",
+                        class: if expanded() == Some(*tag) { "chip selected" } else { "chip-unselected" },
+                        onclick: move |_| {
+                            expanded.set((expanded() != Some(*tag)).then_some(*tag));
+                        },
+                        "{tag.display_name()}"
                     }
                 }
             }
