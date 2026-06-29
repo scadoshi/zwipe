@@ -45,7 +45,13 @@
   flex-direction: column;
   width: calc(100% - 2rem);
   max-width: 20rem;
-  max-height: 85vh;
+  /* Leave a fixed band for the app's header (top) and footer (bottom) so a tall
+     dialog never reaches them. The dialog is centered, so this allowance is split
+     evenly above and below; env() adds extra room on devices that report safe
+     insets (this webview reports 0, so the fixed 16rem carries the work). */
+  max-height: calc(
+    100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 16rem
+  );
   box-sizing: border-box;
   padding: 2rem;
   border: 1px solid var(--border-secondary);
