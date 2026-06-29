@@ -559,17 +559,19 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     HintBullet {
                         "Tap "
                         HintKey { "Edit" }
-                        " to change name, format or command zone"
+                        " to change name, format, command zone, tags, or land target"
                     }
                     HintBullet {
                         "Tap "
                         HintKey { "More" }
-                        " to add, remove, import, export, clone, or delete the deck"
+                        " to add, remove, import, export, clone, buy, or delete the deck"
                     }
                     HintBullet {
-                        "Stats appear as the deck grows, tap "
-                        HintKey { "Buy" }
-                        " to shop the full list"
+                        "Stats appear as the deck grows, tap a section like "
+                        HintKey { "Stats" }
+                        " or "
+                        HintKey { "Mana" }
+                        " to expand it"
                     }
                     HintBullet {
                         "Warnings call out rule problems and offer one-tap fixes"
