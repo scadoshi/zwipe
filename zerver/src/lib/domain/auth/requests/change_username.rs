@@ -26,8 +26,6 @@
 
 #[cfg(feature = "zerver")]
 use crate::domain::auth::requests::authenticate_user::AuthenticateUserError;
-use crate::domain::auth::models::password::Password;
-use zwipe_core::domain::auth::password::InvalidPassword;
 use zwipe_core::domain::user::username::{InvalidUsername, Username};
 use thiserror::Error;
 use uuid::Uuid;
@@ -41,9 +39,6 @@ pub enum InvalidChangeUsername {
     /// Username doesn't meet requirements (length, profanity, format).
     #[error(transparent)]
     Username(#[from] InvalidUsername),
-    /// Password doesn't meet security requirements.
-    #[error(transparent)]
-    Password(#[from] InvalidPassword),
 }
 
 /// Errors that can occur during username change execution.
@@ -82,8 +77,8 @@ pub struct ChangeUsername {
     pub user_id: Uuid,
     /// The new username (already validated).
     pub new_username: Username,
-    /// Current password for verification (already validated).
-    pub password: Password,
+    /// Current password for verification (not validated; verified at the service layer).
+    pub password: String,
 }
 
 impl ChangeUsername {
@@ -93,13 +88,12 @@ impl ChangeUsername {
     ///
     /// - `user_id`: UUID of the user
     /// - `new_username`: New username (will be validated)
-    /// - `password`: Current password for verification (will be validated)
+    /// - `password`: Current password for verification (verified at the service layer)
     ///
     /// # Errors
     ///
     /// Returns [`InvalidChangeUsername`] if:
     /// - Username doesn't meet requirements (3-20 chars, no profanity)
-    /// - Password doesn't meet security requirements
     ///
     /// # Example
     ///
@@ -116,7 +110,7 @@ impl ChangeUsername {
         password: impl AsRef<str>,
     ) -> Result<Self, InvalidChangeUsername> {
         let new_username = Username::new(new_username)?;
-        let password = Password::new(password)?;
+        let password = password.as_ref().to_string();
         Ok(Self {
             user_id,
             new_username,
@@ -148,9 +142,12 @@ mod tests {
     }
 
     #[test]
-    fn test_change_username_new_rejects_invalid_password() {
+    fn test_change_username_new_accepts_legacy_weak_password() {
+        // The current password is verified at the service layer, not policy-gated here,
+        // so a legacy password that predates the current policy must not be rejected.
         let user_id = Uuid::new_v4();
-        let result = ChangeUsername::new(user_id, "newusername", "short");
-        assert!(matches!(result, Err(InvalidChangeUsername::Password(_))));
+        let result = ChangeUsername::new(user_id, "newusername", "weak");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().password, "weak");
     }
 }
