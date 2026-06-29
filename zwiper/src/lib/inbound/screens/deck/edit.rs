@@ -1,6 +1,7 @@
 //! Edit deck screen.
 
 use super::components::deck_fields::{DeckFields, DeckFieldsHint};
+use super::components::format_select::FormatSelect;
 use super::components::tag_select::TagSelect;
 use super::components::skeletons::EditDeckSkeleton;
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
@@ -58,6 +59,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut show_background_swipe = use_signal(|| false);
     let mut show_signature_spell_swipe = use_signal(|| false);
     let mut show_tags_select = use_signal(|| false);
+    let mut show_format_select = use_signal(|| false);
 
     // Reactive Zwipe-select modes — derived from the current format / commander.
     let commander_mode = use_memo(move || selected_format().map(SwipeMode::Commander));
@@ -391,6 +393,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                     show_background_swipe,
                                     show_signature_spell_swipe,
                                     show_tags_select,
+                                    show_format_select,
                                 }
 
                             }
@@ -467,6 +470,28 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 open: show_tags_select,
                 selected_tags,
                 on_close: move |_| show_tags_select.set(false),
+            }
+
+            FormatSelect {
+                open: show_format_select,
+                selected_format,
+                on_select: move |fmt: Format| {
+                    selected_format.set(Some(fmt));
+                    commander.set(None);
+                    commander_display.set(String::new());
+                    if !fmt.has_signature_spell() {
+                        signature_spell.set(None);
+                        signature_spell_display.set(String::new());
+                    }
+                },
+                on_clear: move |_| {
+                    selected_format.set(None);
+                    commander.set(None);
+                    commander_display.set(String::new());
+                    signature_spell.set(None);
+                    signature_spell_display.set(String::new());
+                },
+                on_close: move |_| show_format_select.set(false),
             }
 
             DeckFieldsHint { open: edit_hint }

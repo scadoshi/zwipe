@@ -49,72 +49,69 @@ pub(crate) fn TagSelect(
             if open() {
                 ScreenHeader { title: "Tags", hint: hint_open }
 
-                div { class: "screen-content content-enter",
-                    div { class: "container-sm flex-col",
-                        div { class: "tag-select-head",
-                            div { class: "label-row",
-                                label { class: "label", "Tags" }
-                                span { class: "label-hint", "{selected_tags().len()}/{MAX_DECK_TAGS}" }
-                                if !selected_tags().is_empty() {
-                                    button {
-                                        class: "clear-btn",
-                                        onclick: move |_| {
-                                            selected_tags.set(Vec::new());
-                                            focused.set(None);
-                                        },
-                                        "\u{00d7}"
-                                    }
-                                }
-                            }
-
-                            input { class: "input",
-                                id: "tag-search",
-                                r#type: "text",
-                                placeholder: "Search tags",
-                                value: "{query()}",
-                                autocapitalize: "none",
-                                spellcheck: "false",
-                                oninput: move |event| query.set(event.value()),
-                            }
-
-                            div { class: "tag-def-bar",
-                                if let Some(tag) = focused() {
-                                    div { class: "tag-def-name", "{tag.display_name()}" }
-                                    div { class: "tag-def-text", "{tag.description()}" }
-                                } else {
-                                    div { class: "tag-def-empty", "Tap a tag to see what it does." }
+                div { class: "screen-content content-enter tag-screen",
+                    div { class: "tag-controls",
+                        div { class: "tag-controls-head",
+                            label { class: "tag-search-label", "Search" }
+                            span { class: "tag-count", "{selected_tags().len()}/{MAX_DECK_TAGS}" }
+                            if !selected_tags().is_empty() {
+                                button {
+                                    class: "clear-btn",
+                                    onclick: move |_| {
+                                        selected_tags.set(Vec::new());
+                                        focused.set(None);
+                                    },
+                                    "\u{00d7}"
                                 }
                             }
                         }
 
-                        if results.is_empty() {
-                            div { class: "flex flex-wrap gap-1 flex-center",
-                                div { class: "chip-unselected", "No results" }
+                        input { class: "input",
+                            id: "tag-search",
+                            r#type: "text",
+                            placeholder: "Search tags",
+                            value: "{query()}",
+                            autocapitalize: "none",
+                            spellcheck: "false",
+                            oninput: move |event| query.set(event.value()),
+                        }
+
+                        div { class: "tag-def-bar",
+                            if let Some(tag) = focused() {
+                                div { class: "tag-def-name", "{tag.display_name()}" }
+                                div { class: "tag-def-text", "{tag.description()}" }
+                            } else {
+                                div { class: "tag-def-name", "Hint" }
+                                div { class: "tag-def-text", "Tap a tag to see its definition here." }
                             }
+                        }
+                    }
+
+                    div { class: "tag-grid",
+                        if results.is_empty() {
+                            div { class: "chip-unselected", "No results" }
                         } else {
-                            div { class: "flex flex-wrap gap-1 flex-center",
-                                for tag in results {
-                                    div {
-                                        key: "{tag}",
-                                        class: if selected_tags().contains(&tag) { "chip selected" } else { "chip" },
-                                        onclick: move |_| {
-                                            focused.set(Some(tag));
-                                            let mut current = selected_tags();
-                                            if let Some(pos) = current.iter().position(|t| *t == tag) {
-                                                current.remove(pos);
-                                                selected_tags.set(current);
-                                            } else if current.len() < MAX_DECK_TAGS {
-                                                current.push(tag);
-                                                selected_tags.set(current);
-                                            } else {
-                                                toast.info(
-                                                    format!("Up to {MAX_DECK_TAGS} tags"),
-                                                    ToastOptions::default().duration(Duration::from_millis(1500)),
-                                                );
-                                            }
-                                        },
-                                        "{tag.display_name()}"
-                                    }
+                            for tag in results {
+                                div {
+                                    key: "{tag}",
+                                    class: if selected_tags().contains(&tag) { "chip selected" } else { "chip" },
+                                    onclick: move |_| {
+                                        focused.set(Some(tag));
+                                        let mut current = selected_tags();
+                                        if let Some(pos) = current.iter().position(|t| *t == tag) {
+                                            current.remove(pos);
+                                            selected_tags.set(current);
+                                        } else if current.len() < MAX_DECK_TAGS {
+                                            current.push(tag);
+                                            selected_tags.set(current);
+                                        } else {
+                                            toast.warning(
+                                                format!("You may only choose up to {MAX_DECK_TAGS} tags"),
+                                                ToastOptions::default().duration(Duration::from_millis(2000)),
+                                            );
+                                        }
+                                    },
+                                    "{tag.display_name()}"
                                 }
                             }
                         }

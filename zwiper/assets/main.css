@@ -3172,31 +3172,97 @@ button {
     pointer-events: auto;
 }
 
-.btn-tags {
-    padding: 0.6rem;
+.field-count {
+    color: var(--accent-tertiary);
     font-size: 0.85rem;
-    border-radius: 0.6rem;
-    margin-bottom: 1rem;
 }
 
-.tag-select-head {
-    position: sticky;
-    top: 0;
-    z-index: 2;
+.chip-box {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.3rem;
     width: 100%;
-    padding-top: 0.25rem;
-    background-color: var(--bg-sink);
-    border-bottom: 1px solid var(--border-secondary);
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.chip-none {
+    display: inline-block;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--border-muted);
+    border-radius: 0.6rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    background-color: var(--bg-primary);
+}
+
+.screen-content.tag-screen {
+    overflow-y: hidden;
+    justify-content: flex-start;
+}
+
+.tag-controls {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 22rem;
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.tag-controls-head {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    width: 100%;
+    margin-bottom: 0.5rem;
+}
+
+.tag-count {
+    color: var(--accent-tertiary);
+    font-size: 0.9rem;
+    margin-left: auto;
+}
+
+.tag-search-label {
+    color: var(--accent-primary);
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+}
+
+.tag-grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 22rem;
+    padding: 1rem 1rem 0.75rem 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    justify-content: center;
+    gap: 0.4rem;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
 }
 
 .tag-def-bar {
     min-height: 3.5rem;
-    margin-bottom: 0.75rem;
+    margin-top: 0.5rem;
     padding: 0.5rem 0.75rem;
     text-align: left;
     border: 1px solid var(--border-secondary);
-    border-radius: 0.4rem;
+    border-radius: 0.6rem;
     background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
 }
 
 .tag-def-name {
@@ -3211,7 +3277,15 @@ button {
     font-size: 0.85rem;
 }
 
-.tag-def-empty {
-    color: var(--text-muted);
+.tag-def-list {
+    margin: 0.25rem 0 0 0;
+    padding-left: 1.1rem;
+    color: var(--text-primary);
+    opacity: 0.85;
     font-size: 0.85rem;
+    text-align: left;
+}
+
+.tag-def-list li {
+    margin-bottom: 0.2rem;
 }
