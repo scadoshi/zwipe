@@ -10,6 +10,8 @@ at `context/archive/complete_2026_q1.md`.
 
 ## Next Up
 
+- [ ] **Better metrics tracking — UP NEXT (set 2026-06-28).** Swipe data is rolled up to *counts* today (`user_lifetime_counters` / `user_daily_activity`); the per-card identity (which card, which direction, for which commander) is discarded at swipe time. Capture it as a **privacy-preserving aggregate** so it feeds both product analytics (media-day exposed funnel gaps — the ~20% never-swiped, the build→complete drop) and the recommender (the bootstrap→replace plan needs this accept/skip signal, which is currently thrown away daily). Plan exists: [`../plans/suggestion_signal.md`](../plans/suggestion_signal.md) — `commander_card_signal` rollup, no new PII, server-first + additive. Start collecting ASAP; un-captured signal is gone for good.
+
 **The next big three (set 2026-06-11, in order):**
 1. **Android — get the clock ticking.** Confirm the Play account's closed-testing requirement and start the 14-day clock immediately; polish items ride alongside (see Android section below).
 2. **Marketing — get users.** Business cards for LGSs, Reddit/X posts (see Marketing & Discovery below). The first wave doubles as the Android closed-test tester pool.
