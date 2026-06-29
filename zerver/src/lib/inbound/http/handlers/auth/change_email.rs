@@ -44,9 +44,6 @@ impl From<InvalidChangeEmail> for ApiError {
             InvalidChangeEmail::Email(e) => {
                 Self::UnprocessableEntity(format!("invalid email: {}", e))
             }
-            InvalidChangeEmail::Password(_) => {
-                Self::Unauthorized("invalid credentials".to_string())
-            }
         }
     }
 }
