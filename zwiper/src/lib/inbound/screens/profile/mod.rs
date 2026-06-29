@@ -16,6 +16,7 @@ pub mod preferences;
 use crate::inbound::components::bottom_sheet::BottomSheet;
 use crate::inbound::components::logout_dialog::LogoutDialog;
 use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::router::Router;
 use crate::{
     inbound::{
         components::auth::bouncer::Bouncer,
@@ -181,6 +182,27 @@ pub fn Profile() -> Element {
                                     span { class: "profile-row-label", "Dark mode" }
                                     div { class: "profile-row-value",
                                         span { if theme_config().is_dark { "On" } else { "Off" } }
+                                    }
+                                }
+                            }
+
+                            div { class: "profile-list",
+
+                                div { class: "card-header",
+                                    span { class: "card-title", "Legal" }
+                                }
+
+                                div {
+                                    class: "profile-row",
+                                    span { class: "profile-row-label", "Privacy Policy" }
+                                    div { class: "profile-row-value",
+                                        button {
+                                            class: "util-btn",
+                                            onclick: move |_| {
+                                                navigator.push(Router::PrivacyPolicy {});
+                                            },
+                                            "View"
+                                        }
                                     }
                                 }
                             }
