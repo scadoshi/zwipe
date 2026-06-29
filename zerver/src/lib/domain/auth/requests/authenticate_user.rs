@@ -42,8 +42,6 @@
 //! println!("Logged in as: {}", session.user.username);
 //! ```
 
-use crate::domain::auth::models::password::Password;
-use zwipe_core::domain::auth::password::InvalidPassword;
 #[cfg(feature = "zerver")]
 use crate::domain::auth::requests::{
     change_email::ChangeEmail, change_password::ChangePassword, change_username::ChangeUsername,
@@ -113,26 +111,20 @@ pub enum InvalidAuthenticateUser {
     #[error("identifier must be present")]
     MissingIdentifier,
 
-    /// The password doesn't meet validation requirements.
+    /// No password was provided.
     ///
-    /// Note: For login, password validation is more lenient than registration
-    /// (only checks it's not empty), since existing users may have passwords
-    /// created under older policies.
-    #[error(transparent)]
-    Password(InvalidPassword),
-}
-
-impl From<InvalidPassword> for InvalidAuthenticateUser {
-    fn from(value: InvalidPassword) -> Self {
-        Self::Password(value)
-    }
+    /// Login only checks the password is non-empty — it is NOT policy-gated,
+    /// since existing users may have passwords created under older policies. The
+    /// password is verified against the stored hash at the service layer.
+    #[error("password must be present")]
+    MissingPassword,
 }
 
 /// Request to authenticate a user and create a session.
 ///
-/// This type validates the password (ensuring it meets basic requirements) but
-/// accepts any non-empty string as an identifier. The service layer determines
-/// whether the identifier is an email or username.
+/// This type requires a non-empty identifier and a non-empty password; the
+/// password is verified against the stored hash at the service layer, which also
+/// determines whether the identifier is an email or username.
 ///
 /// # Identifier Handling
 ///
@@ -183,19 +175,20 @@ pub struct AuthenticateUser {
 impl AuthenticateUser {
     /// Creates a new authentication request.
     ///
-    /// Validates that both identifier and password are provided and that the
-    /// password meets basic requirements.
+    /// Validates that both identifier and password are non-empty. The password
+    /// is verified against the stored hash at the service layer, not policy-gated
+    /// here.
     ///
     /// # Arguments
     ///
     /// * `identifier` - Email, username, or user ID (cannot be empty)
-    /// * `password` - User's password (validated for basic requirements)
+    /// * `password` - User's password (cannot be empty; not policy-gated)
     ///
     /// # Errors
     ///
     /// Returns [`InvalidAuthenticateUser`] if:
     /// - Identifier is empty
-    /// - Password doesn't meet validation requirements
+    /// - Password is empty
     ///
     /// # Example
     ///
@@ -210,10 +203,13 @@ impl AuthenticateUser {
         if identifier.is_empty() {
             return Err(InvalidAuthenticateUser::MissingIdentifier);
         }
-        let password = Password::new(password)?;
+        let password = password.as_ref();
+        if password.is_empty() {
+            return Err(InvalidAuthenticateUser::MissingPassword);
+        }
         Ok(AuthenticateUser {
             identifier: identifier.to_string(),
-            password: password.read().to_string(),
+            password: password.to_string(),
         })
     }
 }
@@ -304,16 +300,21 @@ mod tests {
     }
 
     #[test]
-    fn test_authenticate_user_new_rejects_invalid_password() {
-        let result = AuthenticateUser::new("alice", "short");
-        assert!(matches!(result, Err(InvalidAuthenticateUser::Password(_))));
+    fn test_authenticate_user_new_accepts_legacy_weak_password() {
+        // Login is not policy-gated; a legacy password is verified at the service
+        // layer, so a weak-but-non-empty password must be accepted here.
+        let result = AuthenticateUser::new("alice", "weak");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().password, "weak");
     }
 
     #[test]
-    fn test_invalid_authenticate_user_from_invalid_password() {
-        use zwipe_core::domain::auth::password::InvalidPassword;
-        let err = InvalidAuthenticateUser::from(InvalidPassword::TooShort);
-        assert!(matches!(err, InvalidAuthenticateUser::Password(_)));
+    fn test_authenticate_user_new_rejects_empty_password() {
+        let result = AuthenticateUser::new("alice", "");
+        assert!(matches!(
+            result,
+            Err(InvalidAuthenticateUser::MissingPassword)
+        ));
     }
 
     #[cfg(feature = "zerver")]

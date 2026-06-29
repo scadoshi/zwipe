@@ -29,8 +29,6 @@ use zwipe_core::domain::{Email, InvalidEmail};
 
 #[cfg(feature = "zerver")]
 use crate::domain::auth::requests::authenticate_user::AuthenticateUserError;
-use crate::domain::auth::models::password::Password;
-use zwipe_core::domain::auth::password::InvalidPassword;
 
 /// Errors that can occur while constructing a [`ChangeEmail`] request.
 #[derive(Debug, Error)]
@@ -41,9 +39,6 @@ pub enum InvalidChangeEmail {
     /// Invalid email format.
     #[error(transparent)]
     Email(#[from] InvalidEmail),
-    /// Password doesn't meet security requirements.
-    #[error(transparent)]
-    Password(#[from] InvalidPassword),
 }
 
 /// Errors that can occur during email change execution.
@@ -82,8 +77,8 @@ pub struct ChangeEmail {
     pub user_id: Uuid,
     /// The new email address (already validated).
     pub email: Email,
-    /// Current password for verification (already validated).
-    pub password: Password,
+    /// Current password for verification (not validated; verified at the service layer).
+    pub password: String,
 }
 
 impl ChangeEmail {
@@ -93,13 +88,12 @@ impl ChangeEmail {
     ///
     /// - `user_id`: UUID of the user
     /// - `email`: New email address (will be validated)
-    /// - `password`: Current password for verification (will be validated)
+    /// - `password`: Current password for verification (verified at the service layer)
     ///
     /// # Errors
     ///
     /// Returns [`InvalidChangeEmail`] if:
     /// - Email format is invalid
-    /// - Password doesn't meet security requirements (length, complexity, etc.)
     ///
     /// # Example
     ///
@@ -112,7 +106,7 @@ impl ChangeEmail {
     /// ```
     pub fn new(user_id: Uuid, email: &str, password: &str) -> Result<Self, InvalidChangeEmail> {
         let email = Email::new(email)?;
-        let password = Password::new(password)?;
+        let password = password.to_string();
         Ok(Self {
             user_id,
             email,
@@ -144,9 +138,12 @@ mod tests {
     }
 
     #[test]
-    fn test_change_email_new_rejects_invalid_password() {
+    fn test_change_email_new_accepts_legacy_weak_password() {
+        // The current password is verified at the service layer, not policy-gated here,
+        // so a legacy password that predates the current policy must not be rejected.
         let user_id = Uuid::new_v4();
-        let result = ChangeEmail::new(user_id, "newemail@example.com", "short");
-        assert!(matches!(result, Err(InvalidChangeEmail::Password(_))));
+        let result = ChangeEmail::new(user_id, "newemail@example.com", "weak");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().password, "weak");
     }
 }
