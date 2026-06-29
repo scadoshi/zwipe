@@ -32,4 +32,11 @@ fn main() {
     );
 
     println!("cargo:rerun-if-changed=.env");
+
+    // Also re-run when these are passed as env vars (e.g. `BACKEND_URL=... dx serve`),
+    // not just when the .env file changes — otherwise Cargo caches the stale baked-in
+    // value and a full `cargo clean` is needed to pick up a new backend.
+    println!("cargo:rerun-if-env-changed={}", BACKEND_URL_KEY);
+    println!("cargo:rerun-if-env-changed={}", RUST_LOG_KEY);
+    println!("cargo:rerun-if-env-changed={}", RUST_BACKTRACE_KEY);
 }
