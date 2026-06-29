@@ -1,5 +1,6 @@
 use super::components::clone_deck_dialog::CloneDeckDialog;
-use super::components::deck_charts::{DeckCharts, ManaBalanceRow};
+use super::components::collapsible_section::CollapsibleSection;
+use super::components::deck_charts::{DeckCharts, ManaBalanceRow, ManaCurve, ManaFulfillment};
 use super::components::deck_profile::DeckProfileSection;
 use super::components::deck_stats::DeckStats;
 use super::components::draw_odds::DrawOdds;
@@ -107,7 +108,12 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     // deck profile; the header "?" reopens it on demand.
     let first_deck_hint_open = use_one_time_hint(HINT_FIRST_DECK);
 
-    let show_buy_sheet = use_signal(|| false);
+    let show_buy_dialog = use_signal(|| false);
+    // Accordion state for the deck-view sections — holds the title of the one
+    // open section. Stats is auto-expanded on load.
+    let open_section: Signal<Option<String>> = use_signal(|| Some("Stats".to_string()));
+    // Currency selected in the Stats header chips, shared with the price rows.
+    let mut selected_currency: Signal<&'static str> = use_signal(|| "usd");
     let mut show_more_sheet = use_signal(|| false);
     let mut show_delete_dialog = use_signal(|| false);
     let show_clone_dialog = use_signal(|| false);
@@ -331,21 +337,51 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     rsx! {
                                         if let (Some(m), Some(mana_curve_bars)) = (metrics.as_ref(), mana_curve_bars.as_ref()) {
                                           div { class: "content-enter",
-                                                style: "display: flex; flex-direction: column; gap: 1rem;",
-                                            DeckStats {
-                                                metrics: m.clone(),
-                                                show_buy_sheet: show_buy_sheet,
+                                                style: "display: flex; flex-direction: column; gap: 0.75rem;",
+                                            CollapsibleSection {
+                                                title: "Stats",
+                                                open_section: open_section,
+                                                header_accessory: rsx! {
+                                                    div { class: "chip-row", style: "margin-bottom:0;",
+                                                        for (label, key) in [("USD", "usd"), ("EUR", "eur"), ("TIX", "tix")] {
+                                                            div {
+                                                                class: if selected_currency() == key { "chip selected" } else { "chip" },
+                                                                onclick: move |_| selected_currency.set(key),
+                                                                "{label}"
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                DeckStats {
+                                                    metrics: m.clone(),
+                                                    selected_currency: selected_currency,
+                                                }
                                             }
 
-                                            DeckCharts {
-                                                mana_curve_bars: *mana_curve_bars,
-                                                type_bars: type_bars.clone(),
-                                                category_bars: category_bars.clone(),
-                                                color_bars: color_bars.clone(),
-                                                mana_balance_rows: mana_balance_rows,
+                                            CollapsibleSection {
+                                                title: "Distributions",
+                                                open_section: open_section,
+                                                DeckCharts {
+                                                    type_bars: type_bars.clone(),
+                                                    category_bars: category_bars.clone(),
+                                                    color_bars: color_bars.clone(),
+                                                }
                                             }
 
-                                            DrawOdds { metrics: m.clone() }
+                                            CollapsibleSection {
+                                                title: "Mana",
+                                                open_section: open_section,
+                                                ManaCurve { mana_curve_bars: *mana_curve_bars }
+                                                if let Some(rows) = mana_balance_rows {
+                                                    ManaFulfillment { rows: rows }
+                                                }
+                                            }
+
+                                            CollapsibleSection {
+                                                title: "Draw odds",
+                                                open_section: open_section,
+                                                DrawOdds { metrics: m.clone() }
+                                            }
                                           }
                                         } else if metrics_possible && deck_loading {
                                             DeckStatsSkeleton {}
@@ -354,6 +390,11 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                 }
 
                                 if !warnings.is_empty() {
+                                    CollapsibleSection {
+                                        title: "Warnings",
+                                        warn: true,
+                                        open_section: open_section,
+                                        badge: warnings.len().to_string(),
                                     DeckWarnings {
                                         warnings: warnings,
                                         deck_id: deck_id,
@@ -425,6 +466,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                             });
                                         },
                                     }
+                                    }
                                 }
 
                             }
@@ -494,7 +536,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
             MoreButtons {
                 deck_id: deck_id,
-                show_buy_sheet: show_buy_sheet,
+                show_buy_dialog: show_buy_dialog,
                 show_more_sheet: show_more_sheet,
                 show_delete_dialog: show_delete_dialog,
                 show_clone_dialog: show_clone_dialog,

@@ -2,8 +2,11 @@ use dioxus::prelude::*;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::draw_odds;
 
+/// Highest turn the stepper allows.
+const MAX_TURN: u32 = 12;
+
 /// One rendered odds bar: a bucket label, its display percentage, and the bar
-/// fill width (floored to a visible sliver when the odds are nonzero).
+/// fill width (floored to a visible sliver).
 #[derive(Clone, PartialEq)]
 struct OddsRow {
     label: String,
@@ -11,10 +14,11 @@ struct OddsRow {
     width: u32,
 }
 
-/// Builds the odds rows for one bucketing from `(label, K)` pairs.
+/// Builds the odds rows for one bucketing from `(label, K)` pairs, dropping any
+/// bucket whose probability rounds to nothing so the list stays low-noise.
 ///
 /// `n_deck` is the active mainboard size, `n_drawn` the cards seen, `threshold`
-/// the "at least t" count. Buckets with `K == 0` are dropped.
+/// the "at least t" count.
 fn odds_rows(
     buckets: &[(String, usize)],
     n_deck: u32,
@@ -23,21 +27,25 @@ fn odds_rows(
 ) -> Vec<OddsRow> {
     buckets
         .iter()
-        .filter(|(_, k)| *k > 0)
-        .map(|(label, k)| {
+        .filter_map(|(label, k)| {
+            if *k == 0 {
+                return None;
+            }
             let p = draw_odds::p_at_least(n_deck, *k as u32, n_drawn, threshold);
+            if p <= 0.0 {
+                return None;
+            }
             let pct = (p * 100.0).round() as u32;
-            let display = if p > 0.0 && pct == 0 {
+            let display = if pct == 0 {
                 "<1%".to_string()
             } else {
                 format!("{pct}%")
             };
-            let width = if p > 0.0 { pct.max(2) } else { 0 };
-            OddsRow {
+            Some(OddsRow {
                 label: label.clone(),
                 display,
-                width,
-            }
+                width: pct.max(2),
+            })
         })
         .collect()
 }
@@ -79,7 +87,7 @@ pub(crate) fn DrawOdds(metrics: DeckMetrics) -> Element {
     let type_buckets: Vec<(String, usize)> = metrics
         .type_counts
         .iter()
-        .map(|(label, count)| ((*label).to_string(), *count))
+        .map(|(label, count)| (DeckMetrics::abbreviate_type(label).to_string(), *count))
         .collect();
 
     // Mana value buckets (lands excluded — these are the nonland CMC histogram).
@@ -102,24 +110,34 @@ pub(crate) fn DrawOdds(metrics: DeckMetrics) -> Element {
     };
 
     rsx! {
-        div { style: "display:flex;flex-direction:column;",
-        div { style: "width:100%;background:var(--bg-primary);box-shadow:var(--shadow-sm);border:1px solid var(--border-secondary);border-radius:0.5rem;padding:0.75rem;display:flex;flex-direction:column;gap:0.6rem;",
-            span { class: "card-title", style: "display:block;", "Draw odds" }
-            hr { class: "box-rule" }
-
+        div { style: "display:flex;flex-direction:column;gap:0.6rem;padding:0 0.75rem;",
+            span { style: "font-size:0.65rem;opacity:0.45;line-height:1.3;",
+                "Chance of drawing each group by the chosen turn. Pure shuffle math, so it ignores mulligans, scry, tutors, and extra draws."
+            }
             // ── controls ───────────────────────────────────
             div { style: "display:flex;flex-direction:column;gap:0.5rem;",
-                div { style: "display:flex;justify-content:space-between;align-items:center;",
-                    span { style: "font-size:0.75rem;opacity:0.7;", "{window_label}" }
-                    span { style: "font-size:0.7rem;opacity:0.5;", "drawing {n_drawn}" }
-                }
-                input {
-                    r#type: "range",
-                    min: "0",
-                    max: "12",
-                    value: "{turn()}",
-                    style: "width:100%;accent-color:var(--text-primary);",
-                    oninput: move |e| turn.set(e.value().parse().unwrap_or(0)),
+                // turn stepper
+                div { class: "stepper", style: "justify-content:space-between;",
+                    button {
+                        class: "stepper-btn",
+                        onclick: move |_| {
+                            let v = turn();
+                            if v > 0 { turn.set(v - 1); }
+                        },
+                        "-"
+                    }
+                    div { style: "display:flex;flex-direction:column;align-items:center;flex:1;",
+                        span { style: "font-size:0.8rem;opacity:0.8;", "{window_label}" }
+                        span { style: "font-size:0.65rem;opacity:0.45;", "drawing {n_drawn}" }
+                    }
+                    button {
+                        class: "stepper-btn",
+                        onclick: move |_| {
+                            let v = turn();
+                            if v < MAX_TURN { turn.set(v + 1); }
+                        },
+                        "+"
+                    }
                 }
                 div { style: "display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;",
                     div { class: "chip-row", style: "margin-bottom:0;",
@@ -150,11 +168,6 @@ pub(crate) fn DrawOdds(metrics: DeckMetrics) -> Element {
             OddsGroup { heading: "By category", rows: category_rows }
             OddsGroup { heading: "By card type", rows: type_rows }
             OddsGroup { heading: "By mana value", rows: mv_rows }
-
-            span { style: "font-size:0.65rem;opacity:0.45;line-height:1.3;",
-                "Raw odds from a random draw — pre-mulligan, no scry/tutor/draw smoothing."
-            }
-        }
         }
     }
 }
@@ -166,22 +179,20 @@ fn OddsGroup(heading: &'static str, rows: Vec<OddsRow>) -> Element {
     }
     rsx! {
         div { style: "display:flex;flex-direction:column;gap:0.35rem;",
-            span { style: "font-size:0.7rem;opacity:0.5;text-transform:uppercase;letter-spacing:0.05em;",
+            span { style: "font-size:0.75rem;font-weight:600;color:var(--accent-primary);",
                 "{heading}"
             }
             for OddsRow { label, display, width } in rows.iter() {
-                div { style: "display:flex;align-items:center;gap:0.5rem;",
-                    span { style: "width:5ch;font-size:0.7rem;opacity:0.7;text-align:right;flex-shrink:0;",
+                div { key: "{label}", style: "display:flex;align-items:center;gap:0.5rem;",
+                    span { style: "width:5ch;font-size:0.7rem;color:var(--text-primary);opacity:0.85;text-align:right;flex-shrink:0;",
                         "{label}"
                     }
                     div { style: "flex:1;height:0.9rem;background:var(--border-secondary);border-radius:0.15rem;overflow:hidden;",
                         div {
-                            style: format!(
-                                "height:100%;width:{width}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem;"
-                            ),
+                            style: "height:100%;width:{width}%;background:var(--accent-primary);border-radius:0.15rem;transition:width 0.25s ease;",
                         }
                     }
-                    span { style: "font-size:0.7rem;opacity:0.5;width:4ch;text-align:right;flex-shrink:0;",
+                    span { style: "font-size:0.7rem;color:var(--text-primary);opacity:0.85;width:4ch;text-align:right;flex-shrink:0;",
                         "{display}"
                     }
                 }

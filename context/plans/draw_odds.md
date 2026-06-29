@@ -13,6 +13,41 @@ curve; almost none turn it into *draw probabilities*. Strong premium-tier
 candidate (the existing Stats/curve panels are the free baseline; this is the
 "power" analytics layer).
 
+## Status — 2026-06-28 (WIP on branch `feat/draw-odds-core`)
+
+Phases 1–3 are built; Phase 4 is decided (free for launch). Core is committed;
+the frontend is being committed as WIP to amend later.
+
+- **Phase 1 — core engine: DONE, committed.** Pure hypergeometric module at
+  `zwipe-core/src/domain/deck/draw_odds.rs` (`p_exactly`, `p_at_least_one`,
+  `p_at_least`) with 14 unit tests. Log-binomials + incremental ratios; edge
+  cases guarded. NOTE: this doc's example `p_at_least_one(99,37,7) ≈ 0.945` was
+  wrong (that is drawing 6); the correct opening-7 value is ≈ 0.967, which the
+  test asserts.
+- **Phase 2 — category odds view: DONE.** `DrawOdds` component in
+  `zwiper/.../deck/components/draw_odds.rs` derives every bucket from the
+  existing `DeckMetrics` (no new core data, no server, no endpoint): by category
+  (lands + mechanical categories), by card type (5-letter codes), by mana value
+  (nonland CMC). `N = total_cards`. Zero-probability rows are hidden.
+- **Phase 3 — interactivity: DONE.** Turn stepper (0 = opening hand), play/draw
+  toggle (defaults on-the-draw), `≥1`/`≥2` threshold.
+- **Phase 4 — gating: DECIDED FREE.** Visible to all users for launch; revisit
+  if we add more depth later.
+
+Shipped alongside on the same branch (broader deck-view polish): the deck view
+was restructured into **collapsible accordion sections** (Stats, Distributions,
+Mana, Draw odds, Warnings) — one open at a time, Stats auto-expanded, with a
+height/opacity ease and rotating arrow. The mana curve moved out of
+Distributions into the **Mana** section (with mana cost fulfillment); the
+USD/EUR/TIX chips moved onto the Stats header (fade in on open); **Buy** moved
+into More actions as a dialog.
+
+**Known issue (deferred):** the draw-odds bars still **blank every other turn**
+when stepping turns — a Dioxus list-diff / dynamic-style staleness. Tried a
+stable `key`, inline `{width}` interpolation (instead of `format!`), and a width
+transition; not fully resolved. Next: apply the same `format!`→interpolation
+swap to the distribution bars and dig further into node keying.
+
 ## The math — hypergeometric distribution
 
 Drawing without replacement from a finite deck is exactly the hypergeometric
