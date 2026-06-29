@@ -101,6 +101,55 @@ impl Format {
         }
     }
 
+    /// The card pool this format draws from, for the picker's detail bullets.
+    pub fn card_pool(&self) -> &'static str {
+        match self {
+            Self::Standard => "Recent premier sets; rotates yearly",
+            Self::Future => "Spoiled cards from unreleased sets",
+            Self::Historic => "Every card on Arena; non-rotating",
+            Self::Timeless => "Every card on Arena; highest power",
+            Self::Gladiator => "Every set on Arena",
+            Self::Pioneer => "Return to Ravnica (2012) and newer",
+            Self::Modern => "8th Edition (2003) forward, plus Modern Horizons",
+            Self::Legacy => "Nearly every card; eternal",
+            Self::Pauper => "Only cards printed at common",
+            Self::Vintage => "Nearly every card; some restricted",
+            Self::Penny => "Cheapest cards on MTGO; rotates by price",
+            Self::Commander => "Nearly every card ever printed",
+            Self::Oathbreaker => "Nearly every card; Vintage-style pool",
+            Self::StandardBrawl => "Standard-legal cards only",
+            Self::Brawl => "Every card on Arena, including digital-only",
+            Self::Alchemy => "Standard pool plus digital-only cards",
+            Self::PauperCommander => "Commons only; uncommon commander",
+            Self::Duel => "Nearly every card; eternal",
+            Self::OldSchool => "1993-1994 sets (Alpha onward)",
+            Self::Premodern => "4th Edition through Scourge (1995-2003)",
+            Self::Predh => "Sets before the first Commander product",
+            Self::Explorer => "Pioneer-legal cards on Arena",
+            Self::HistoricBrawl => "Every card on Arena; Brawl pool",
+        }
+    }
+
+    /// Starting life total for this format.
+    pub fn starting_life(&self) -> u32 {
+        match self {
+            Self::Commander | Self::Predh => 40,
+            Self::PauperCommander => 30,
+            Self::Brawl | Self::StandardBrawl | Self::HistoricBrawl => 25,
+            _ => 20,
+        }
+    }
+
+    /// Combat damage from a single commander that loses the game, if the format
+    /// uses the commander-damage rule. `None` means the format has no such rule.
+    pub fn commander_damage(&self) -> Option<u32> {
+        match self {
+            Self::Commander | Self::Duel | Self::Predh => Some(21),
+            Self::PauperCommander => Some(16),
+            _ => None,
+        }
+    }
+
     /// Minimum number of cards required by this format.
     pub fn min_cards(&self) -> Option<u32> {
         match self {
@@ -309,6 +358,22 @@ mod tests {
             let key = format.to_legality_key();
             let parsed = Format::try_from(key).unwrap();
             assert_eq!(*format, parsed);
+        }
+    }
+
+    #[test]
+    fn starting_life_is_at_least_twenty() {
+        for format in Format::all() {
+            assert!(format.starting_life() >= 20);
+        }
+    }
+
+    #[test]
+    fn commander_damage_only_in_commander_formats() {
+        for format in Format::all() {
+            if format.commander_damage().is_some() {
+                assert!(format.has_commander());
+            }
         }
     }
 
