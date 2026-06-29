@@ -1,5 +1,6 @@
 //! Create deck profile operation.
 
+use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use crate::domain::deck::{
     DeckName, DeckTag, InvalidDeckname, InvalidDeckTag, MAX_DECK_TAGS,
     deck_tag::parse_tags,
@@ -44,6 +45,10 @@ pub struct CreateDeckProfile {
     pub tags: Vec<DeckTag>,
     /// User-set land target. `None` falls back to the format heuristic.
     pub land_target: Option<i32>,
+    /// User-set price target (budget). `None` = no budget.
+    pub price_target: Option<f64>,
+    /// Currency for the price target. `None` = USD.
+    pub price_target_currency: Option<PriceCurrency>,
     /// Owner of this deck.
     pub user_id: Uuid,
     /// Whether the requesting user's email is verified.
@@ -68,6 +73,8 @@ impl CreateDeckProfile {
             format: None,
             tags: Vec::new(),
             land_target: None,
+            price_target: None,
+            price_target_currency: None,
         }
     }
 }
@@ -84,6 +91,8 @@ pub struct CreateDeckProfileBuilder {
     format: Option<String>,
     tags: Vec<String>,
     land_target: Option<i32>,
+    price_target: Option<f64>,
+    price_target_currency: Option<PriceCurrency>,
 }
 
 impl CreateDeckProfileBuilder {
@@ -129,6 +138,18 @@ impl CreateDeckProfileBuilder {
         self
     }
 
+    /// Sets the price target (budget).
+    pub fn price_target(mut self, price_target: Option<f64>) -> Self {
+        self.price_target = price_target;
+        self
+    }
+
+    /// Sets the price target currency.
+    pub fn price_target_currency(mut self, price_target_currency: Option<PriceCurrency>) -> Self {
+        self.price_target_currency = price_target_currency;
+        self
+    }
+
     /// Validates and builds the request.
     pub fn build(self) -> Result<CreateDeckProfile, InvalidCreateDeckProfile> {
         let name = DeckName::new(self.name)?;
@@ -150,6 +171,8 @@ impl CreateDeckProfileBuilder {
             format,
             tags,
             land_target: self.land_target,
+            price_target: self.price_target,
+            price_target_currency: self.price_target_currency,
             user_id: self.user_id,
             email_verified: self.email_verified,
         })

@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use crate::domain::deck::ImportMode;
 use crate::http::helpers::Opdate;
 
@@ -50,6 +51,12 @@ pub struct HttpCreateDeckProfile {
     /// User-set land target. Absent = use the format-derived heuristic.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub land_target: Option<i32>,
+    /// User-set deck price target (budget). Absent = no budget.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub price_target: Option<f64>,
+    /// Currency for the price target. Absent = USD.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub price_target_currency: Option<PriceCurrency>,
 }
 
 impl HttpCreateDeckProfile {
@@ -64,6 +71,8 @@ impl HttpCreateDeckProfile {
             format: None,
             tags: None,
             land_target: None,
+            price_target: None,
+            price_target_currency: None,
         }
     }
 }
@@ -78,6 +87,8 @@ pub struct HttpCreateDeckProfileBuilder {
     format: Option<String>,
     tags: Option<Vec<String>>,
     land_target: Option<i32>,
+    price_target: Option<f64>,
+    price_target_currency: Option<PriceCurrency>,
 }
 
 impl HttpCreateDeckProfileBuilder {
@@ -123,6 +134,18 @@ impl HttpCreateDeckProfileBuilder {
         self
     }
 
+    /// Sets the price target (budget).
+    pub fn price_target(mut self, price_target: Option<f64>) -> Self {
+        self.price_target = price_target;
+        self
+    }
+
+    /// Sets the price target currency.
+    pub fn price_target_currency(mut self, price_target_currency: Option<PriceCurrency>) -> Self {
+        self.price_target_currency = price_target_currency;
+        self
+    }
+
     /// Builds the request.
     pub fn build(self) -> HttpCreateDeckProfile {
         HttpCreateDeckProfile {
@@ -134,6 +157,8 @@ impl HttpCreateDeckProfileBuilder {
             format: self.format,
             tags: self.tags,
             land_target: self.land_target,
+            price_target: self.price_target,
+            price_target_currency: self.price_target_currency,
         }
     }
 }
@@ -168,6 +193,13 @@ pub struct HttpUpdateDeckProfile {
     /// `#[serde(default)]` keeps older clients backward-compatible.
     #[serde(default)]
     pub land_target: Opdate<i32>,
+    /// Price target with partial update semantics. `Set(None)` clears the
+    /// budget; absent leaves it unchanged. `#[serde(default)]` for back-compat.
+    #[serde(default)]
+    pub price_target: Opdate<f64>,
+    /// Price target currency with partial update semantics. `#[serde(default)]`.
+    #[serde(default)]
+    pub price_target_currency: Opdate<PriceCurrency>,
 }
 
 impl HttpUpdateDeckProfile {
@@ -182,6 +214,8 @@ impl HttpUpdateDeckProfile {
             format: Opdate::Unchanged,
             tags: Opdate::Unchanged,
             land_target: Opdate::Unchanged,
+            price_target: Opdate::Unchanged,
+            price_target_currency: Opdate::Unchanged,
         }
     }
 }
@@ -196,6 +230,8 @@ pub struct HttpUpdateDeckProfileBuilder {
     format: Opdate<String>,
     tags: Opdate<Vec<String>>,
     land_target: Opdate<i32>,
+    price_target: Opdate<f64>,
+    price_target_currency: Opdate<PriceCurrency>,
 }
 
 impl HttpUpdateDeckProfileBuilder {
@@ -247,6 +283,18 @@ impl HttpUpdateDeckProfileBuilder {
         self
     }
 
+    /// Sets the price target update.
+    pub fn price_target(mut self, price_target: Opdate<f64>) -> Self {
+        self.price_target = price_target;
+        self
+    }
+
+    /// Sets the price target currency update.
+    pub fn price_target_currency(mut self, price_target_currency: Opdate<PriceCurrency>) -> Self {
+        self.price_target_currency = price_target_currency;
+        self
+    }
+
     /// Builds the request.
     pub fn build(self) -> HttpUpdateDeckProfile {
         HttpUpdateDeckProfile {
@@ -258,6 +306,8 @@ impl HttpUpdateDeckProfileBuilder {
             format: self.format,
             tags: self.tags,
             land_target: self.land_target,
+            price_target: self.price_target,
+            price_target_currency: self.price_target_currency,
         }
     }
 }
@@ -287,11 +337,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn create_profile_defaults_land_target_to_none_when_omitted() {
-        // A client predating the field sends no land_target; it must still parse.
+    fn create_profile_defaults_land_and_price_target_to_none_when_omitted() {
+        // A client predating these fields sends none of them; it must still parse.
         let json = r#"{"name":"My Deck"}"#;
         let req: HttpCreateDeckProfile = serde_json::from_str(json).unwrap();
         assert_eq!(req.land_target, None);
+        assert_eq!(req.price_target, None);
+        assert_eq!(req.price_target_currency, None);
     }
 
     #[test]
@@ -310,5 +362,7 @@ mod tests {
         }"#;
         let req: HttpUpdateDeckProfile = serde_json::from_str(json).unwrap();
         assert!(req.land_target.is_unchanged());
+        assert!(req.price_target.is_unchanged());
+        assert!(req.price_target_currency.is_unchanged());
     }
 }

@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO decks (\n                name, commander_id, partner_commander_id, background_id,\n                signature_spell_id, format, tags, land_target, price_target,\n                price_target_currency, user_id\n            )\n            SELECT\n                $1, commander_id, partner_commander_id, background_id,\n                signature_spell_id, format, tags, land_target, price_target,\n                price_target_currency, $2\n            FROM decks\n            WHERE id = $3\n            RETURNING id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "1f313b6c7bed8f68e02752f06a379ae43109da59f4b876660bd398f913ac4ae2"
+}

@@ -13,7 +13,7 @@ use crate::domain::{
         },
         Card,
     },
-    deck::{deck::DeckEntry, DeckProfile, DeckWarning, Format, WarningAction},
+    deck::{deck::DeckEntry, deck_metrics::mainboard_total_price, DeckProfile, DeckWarning, Format, WarningAction},
 };
 
 /// Cards in the command zone (stored on the profile, not in deck_cards).
@@ -38,10 +38,6 @@ pub fn validate_deck(
     entries: &[DeckEntry],
     command_zone: &DeckCommandZone,
 ) -> Vec<DeckWarning> {
-    let Some(format) = &deck_profile.format else {
-        return vec![];
-    };
-
     // Only validate active deck cards, not maybeboard or sideboard
     let active_entries: Vec<DeckEntry> = entries
         .iter()
@@ -50,6 +46,13 @@ pub fn validate_deck(
         .collect();
 
     let mut warnings = Vec::new();
+
+    // Budget warning is format-independent — a price target applies to any deck.
+    check_price_target(deck_profile, &active_entries, &mut warnings);
+
+    let Some(format) = &deck_profile.format else {
+        return warnings;
+    };
 
     check_card_count(format, deck_profile, &mut warnings);
     check_land_target(format, deck_profile, &active_entries, &mut warnings);
@@ -133,6 +136,27 @@ fn check_land_target(
         let land_word = if land_count == 1 { "land" } else { "lands" };
         warnings.push(DeckWarning::new(format!(
             "deck has {land_count} {land_word}, below the land target of {target}"
+        )));
+    }
+}
+
+/// Warns when the mainboard total price exceeds the deck's price target
+/// (budget). Explicit-only — a budget is always user-chosen, never inferred.
+fn check_price_target(
+    profile: &DeckProfile,
+    active_entries: &[DeckEntry],
+    warnings: &mut Vec<DeckWarning>,
+) {
+    let Some(target) = profile.price_target.filter(|t| *t > 0.0) else {
+        return;
+    };
+    let currency = profile.price_target_currency.unwrap_or_default();
+    let total = mainboard_total_price(active_entries, currency);
+    if total > target {
+        warnings.push(DeckWarning::new(format!(
+            "deck totals {}, over your {} budget",
+            currency.format_amount(total),
+            currency.format_amount(target)
         )));
     }
 }
@@ -536,6 +560,8 @@ mod tests {
             format,
             tags: Vec::new(),
             land_target: None,
+            price_target: None,
+            price_target_currency: None,
             user_id: uuid::Uuid::new_v4(),
             card_count: 0,
             commander_name: None,

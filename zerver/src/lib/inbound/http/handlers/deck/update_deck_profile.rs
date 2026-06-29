@@ -102,6 +102,8 @@ where
         .format(format_option)
         .tags(body.tags.into_option())
         .land_target(body.land_target.into_option())
+        .price_target(body.price_target.into_option())
+        .price_target_currency(body.price_target_currency.into_option())
         .build()?;
 
     let deck_profile = state
