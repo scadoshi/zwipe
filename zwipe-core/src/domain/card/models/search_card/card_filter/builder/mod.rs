@@ -14,7 +14,10 @@ use crate::domain::{
             rarity::Rarities,
         },
         search_card::{
-            card_filter::{error::InvalidCardFilter, strip_punctuation, CardFilter, OrderByOption},
+            card_filter::{
+                error::InvalidCardFilter, price_currency::PriceCurrency, strip_punctuation,
+                CardFilter, OrderByOption,
+            },
             card_type::CardType,
         },
     },
@@ -77,6 +80,10 @@ pub struct CardFilterBuilder {
     cmc_range: Option<(f64, f64)>,
     color_identity_within: Option<Colors>,
     color_identity_equals: Option<Colors>,
+    // price (min/max against the selected currency's price)
+    price_min: Option<f64>,
+    price_max: Option<f64>,
+    price_currency: Option<PriceCurrency>,
     // produced mana
     produced_mana_contains_any: Option<Vec<String>>,
     produced_mana_contains_all: Option<Vec<String>>,
@@ -152,6 +159,9 @@ impl Default for CardFilterBuilder {
             cmc_range: None,
             color_identity_within: None,
             color_identity_equals: None,
+            price_min: None,
+            price_max: None,
+            price_currency: None,
             produced_mana_contains_any: None,
             produced_mana_contains_all: None,
             produced_mana_excludes: None,
@@ -643,6 +653,9 @@ impl CardFilterBuilder {
             cmc_range: self.cmc_range,
             color_identity_within: self.color_identity_within.clone(),
             color_identity_equals: self.color_identity_equals.clone(),
+            price_min: self.price_min,
+            price_max: self.price_max,
+            price_currency: self.price_currency,
             produced_mana_contains_any: self.produced_mana_contains_any.clone(),
             produced_mana_contains_all: self.produced_mana_contains_all.clone(),
             produced_mana_excludes: self.produced_mana_excludes.clone(),
