@@ -52,7 +52,7 @@ pub fn validate_deck(
     let mut warnings = Vec::new();
 
     check_card_count(format, deck_profile, &mut warnings);
-    check_land_target(deck_profile, &active_entries, &mut warnings);
+    check_land_target(format, deck_profile, &active_entries, &mut warnings);
     check_commander_required(format, deck_profile, &mut warnings);
     check_legality(format, &active_entries, &mut warnings);
     check_copy_limits(format, &active_entries, &mut warnings);
@@ -112,15 +112,16 @@ fn check_card_count(format: &Format, profile: &DeckProfile, warnings: &mut Vec<D
     }
 }
 
-/// Warns when the mainboard has fewer lands than the user's explicit land
-/// target. The format heuristic default is intentionally not surfaced here —
-/// the warnings list reflects targets the user has actually set, not a guess.
+/// Warns when the mainboard has fewer lands than the deck's land target — the
+/// user's explicit override if set, otherwise the format heuristic. Mirrors the
+/// other format-derived checks, which warn off the format's rules regardless.
 fn check_land_target(
+    format: &Format,
     profile: &DeckProfile,
     active_entries: &[DeckEntry],
     warnings: &mut Vec<DeckWarning>,
 ) {
-    let Some(target) = profile.land_target else {
+    let Some(target) = profile.land_target.or_else(|| format.default_land_target()) else {
         return;
     };
     let land_count: i32 = active_entries
@@ -581,11 +582,12 @@ mod tests {
         }
 
         #[test]
-        fn no_warning_without_explicit_target() {
-            // The heuristic default alone must not surface a list warning.
+        fn warns_against_format_heuristic_when_no_explicit_target() {
+            // No explicit target, but a Commander deck with no lands is below the
+            // format heuristic (37), so the warning fires like the other rules.
             let profile = test_profile(Some(Format::Commander));
             let warnings = validate_deck(&profile, &[], &empty_command_zone());
-            assert!(!warnings.iter().any(|w| w.contains("land target")));
+            assert!(warnings.iter().any(|w| w.contains("land target")));
         }
     }
 
