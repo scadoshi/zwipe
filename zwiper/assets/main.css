@@ -2926,11 +2926,19 @@ button {
 .card-row-header {
     font-size: 0.8rem;
     font-weight: 600;
-    color: var(--accent-tertiary);
-    padding: 0 1rem 0.5rem;
-    border-bottom: 1px solid var(--border-secondary);
-    margin-bottom: 0.5rem;
+    color: var(--accent-primary);
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
+    padding: 0.6rem 1rem;
+    margin: 1rem 0;
     cursor: default;
+}
+
+.card-row-header span {
+    color: var(--accent-primary);
+    font-weight: inherit;
 }
 
 /* =========================
