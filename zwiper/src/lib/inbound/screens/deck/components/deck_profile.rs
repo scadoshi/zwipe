@@ -13,6 +13,10 @@ pub(crate) fn DeckProfileSection(deck_profile: DeckProfile, commander: Option<Ca
     } else {
         "Commander"
     };
+    // Effective land target: the user's override, else the format heuristic.
+    let land_target = deck_profile
+        .land_target
+        .or_else(|| deck_profile.format.and_then(|f| f.default_land_target()));
 
     rsx! {
         div { class: "info-list",
@@ -73,6 +77,12 @@ pub(crate) fn DeckProfileSection(deck_profile: DeckProfile, commander: Option<Ca
                             span { key: "{tag}", class: "stat-chip stat-chip-tag", "{tag.display_name()}" }
                         }
                     }
+                }
+            }
+            if let Some(target) = land_target {
+                div { class: "info-row",
+                    span { class: "info-row-label", "Land target" }
+                    span { class: "info-row-value", "{target}" }
                 }
             }
         }
