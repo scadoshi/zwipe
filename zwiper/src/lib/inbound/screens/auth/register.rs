@@ -105,10 +105,37 @@ pub fn Register() -> Element {
         });
     };
 
+    let mut username_touched = use_signal(|| false);
+    let mut email_touched = use_signal(|| false);
+    let mut password_touched = use_signal(|| false);
+
     use_effect(move || {
-        if submit_attempted() {
+        let value = username();
+        if !value.is_empty() && !username_touched() {
+            username_touched.set(true);
+        }
+        if username_touched() || submit_attempted() {
             validate_username();
+        }
+    });
+
+    use_effect(move || {
+        let value = email();
+        if !value.is_empty() && !email_touched() {
+            email_touched.set(true);
+        }
+        if email_touched() || submit_attempted() {
             validate_email();
+        }
+    });
+
+    use_effect(move || {
+        let value = password();
+        let confirm = confirm_password();
+        if (!value.is_empty() || !confirm.is_empty()) && !password_touched() {
+            password_touched.set(true);
+        }
+        if password_touched() || submit_attempted() {
             validate_password();
         }
     });
@@ -120,21 +147,12 @@ pub fn Register() -> Element {
             div { class: "logo",  "{logo}" }
             div { class : "container-sm text-center",
                 form { class: "flex-col",
-                    if submit_attempted() {
-                        if let Some(error) = username_error() {
-                            div { class : "message-error", "{error}" }
-                        }
-                    }
                     TextInput {
                         value: username,
                         id: "username",
                         label: "Username",
                         placeholder: "Username",
-                    }
-                    if submit_attempted() {
-                        if let Some(error) = email_error() {
-                            div { class : "message-error", "{error}" }
-                        }
+                        error: username_error(),
                     }
                     TextInput {
                         value: email,
@@ -142,9 +160,7 @@ pub fn Register() -> Element {
                         label: "Email",
                         placeholder: "Email",
                         input_type: "email",
-                    }
-                    if submit_attempted() && let Some(error) = password_error() {
-                        div { class : "message-error", "{error}" }
+                        error: email_error(),
                     }
                     TextInput {
                         value: password,
@@ -152,6 +168,7 @@ pub fn Register() -> Element {
                         label: "Password",
                         placeholder: "Password",
                         input_type: "password",
+                        error: password_error(),
                     }
                     TextInput {
                         value: confirm_password,
