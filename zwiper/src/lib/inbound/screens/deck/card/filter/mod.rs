@@ -28,6 +28,8 @@ pub mod match_mode;
 pub mod name;
 /// Oracle text, oracle words, and keywords filter.
 pub mod oracle_text;
+/// Price range filter (min/max in a selected currency).
+pub mod price;
 /// Card rarity filter.
 pub mod rarity;
 /// Card set filter.
