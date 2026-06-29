@@ -2,9 +2,11 @@ use dioxus::prelude::*;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 
 #[component]
-pub(crate) fn DeckStats(metrics: DeckMetrics, show_buy_sheet: Signal<bool>) -> Element {
-    let mut selected_currency = use_signal(|| "usd");
-
+pub(crate) fn DeckStats(
+    metrics: DeckMetrics,
+    /// Currency selected via the header chips (shared with the Stats header).
+    selected_currency: Signal<&'static str>,
+) -> Element {
     let (total, avg, symbol) = match selected_currency() {
         "eur" => (metrics.total_price_eur, metrics.avg_price_eur, "€"),
         "tix" => (metrics.total_price_tix, metrics.avg_price_tix, ""),
@@ -17,25 +19,7 @@ pub(crate) fn DeckStats(metrics: DeckMetrics, show_buy_sheet: Signal<bool>) -> E
     };
 
     rsx! {
-        div { class: "info-list",
-            div { class: "card-header",
-                span { class: "card-title", "Stats" }
-                div { class: "chip-row", style: "margin-bottom: 0; align-items: center;",
-                    for (label, key) in [("USD", "usd"), ("EUR", "eur"), ("TIX", "tix")] {
-                        div {
-                            class: if selected_currency() == key { "chip selected" } else { "chip" },
-                            onclick: move |_| selected_currency.set(key),
-                            "{label}"
-                        }
-                    }
-                    span { class: "text-muted", "|" }
-                    div {
-                        class: "chip",
-                        onclick: move |_| show_buy_sheet.set(true),
-                        "Buy"
-                    }
-                }
-            }
+        div { style: "display:flex;flex-direction:column;",
             div { class: "info-row",
                 span { class: "info-row-label", "Cards" }
                 span { class: "info-row-value", "{metrics.total_cards}" }
@@ -57,6 +41,5 @@ pub(crate) fn DeckStats(metrics: DeckMetrics, show_buy_sheet: Signal<bool>) -> E
                 span { class: "info-row-value", "{fmt(avg)}" }
             }
         }
-
     }
 }
