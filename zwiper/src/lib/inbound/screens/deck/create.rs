@@ -2,6 +2,7 @@
 
 use super::components::deck_fields::{DeckFields, DeckFieldsHint};
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
+use super::components::tag_select::TagSelect;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::{
     inbound::{
@@ -44,6 +45,7 @@ pub fn CreateDeck() -> Element {
     let mut show_partner_swipe = use_signal(|| false);
     let mut show_background_swipe = use_signal(|| false);
     let mut show_signature_spell_swipe = use_signal(|| false);
+    let mut show_tags_select = use_signal(|| false);
     let create_hint = use_one_time_hint(HINT_CREATE_DECK);
 
     // Reactive Zwipe-select modes — derived from the current format / commander.
@@ -128,6 +130,7 @@ pub fn CreateDeck() -> Element {
                             show_partner_swipe,
                             show_background_swipe,
                             show_signature_spell_swipe,
+                            show_tags_select,
                         }
                     }
                 }
@@ -186,6 +189,12 @@ pub fn CreateDeck() -> Element {
                     show_signature_spell_swipe.set(false);
                 },
                 on_close: move |_| show_signature_spell_swipe.set(false),
+            }
+
+            TagSelect {
+                open: show_tags_select,
+                selected_tags,
+                on_close: move |_| show_tags_select.set(false),
             }
 
             DeckFieldsHint { open: create_hint }

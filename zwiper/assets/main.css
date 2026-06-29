@@ -3171,3 +3171,47 @@ button {
     opacity: 1;
     pointer-events: auto;
 }
+
+.input-button {
+    text-align: left;
+    cursor: pointer;
+    color: var(--text-muted);
+    appearance: none;
+}
+
+.tag-select-head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    width: 100%;
+    padding-top: 0.25rem;
+    background-color: var(--bg-sink);
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+.tag-def-bar {
+    min-height: 3.5rem;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.4rem;
+    background-color: var(--bg-primary);
+}
+
+.tag-def-name {
+    color: var(--accent-tertiary);
+    font-weight: 600;
+    margin-bottom: 0.15rem;
+}
+
+.tag-def-text {
+    color: var(--text-primary);
+    opacity: 0.85;
+    font-size: 0.85rem;
+}
+
+.tag-def-empty {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
