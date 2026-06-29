@@ -60,7 +60,7 @@ enum BoardFilter {
 pub fn Remove(deck_id: Uuid) -> Element {
     let navigator = use_navigator();
 
-    let mut filter_builder: Signal<CardFilterBuilder> = use_context();
+    let filter_builder: Signal<CardFilterBuilder> = use_context();
 
     // When Some, the SwipeStack plays a keyframe entering from this direction
     // on the next top card, and clears it on animationend. Set by undo.
@@ -562,22 +562,6 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         );
                     },
                     "Refresh"
-                }
-                if !filter_builder.read().is_empty() {
-                    button {
-                        class: "util-btn util-btn-clear",
-                        onclick: move |_| {
-                            filter_builder.write().clear();
-                            board_filter.set(BoardFilter::Deck);
-                            let current = *filter_reset_counter.peek();
-                            filter_reset_counter.set(current + 1);
-                            toast.info(
-                                "Filter cleared".to_string(),
-                                ToastOptions::default().duration(Duration::from_millis(1500)),
-                            );
-                        },
-                        "Clear"
-                    }
                 }
                 if current_card().as_ref().is_some_and(card_has_keywords) {
                     button {
