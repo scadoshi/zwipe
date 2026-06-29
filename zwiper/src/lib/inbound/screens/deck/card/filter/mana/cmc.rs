@@ -140,6 +140,7 @@ pub(crate) fn CmcFilter() -> Element {
                     r#type: "text",
                     inputmode: "decimal",
                     autocapitalize: "none",
+                    autocorrect: "off",
                     spellcheck: "false",
                     oninput: move |event| {
                         cmc_equals_string.set(event.value())
@@ -158,6 +159,7 @@ pub(crate) fn CmcFilter() -> Element {
                         r#type: "text",
                         inputmode: "decimal",
                         autocapitalize: "none",
+                        autocorrect: "off",
                         spellcheck: "false",
                         oninput: move |event| {
                             cmc_range_min_string.set(event.value())
@@ -174,6 +176,7 @@ pub(crate) fn CmcFilter() -> Element {
                         r#type: "text",
                         inputmode: "decimal",
                         autocapitalize: "none",
+                        autocorrect: "off",
                         spellcheck: "false",
                         oninput: move |event| {
                             cmc_range_max_string.set(event.value())

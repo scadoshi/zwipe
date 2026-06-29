@@ -184,6 +184,7 @@ pub(crate) fn OtherTypes() -> Element {
             value: "{search_query()}",
             r#type: "text",
             autocapitalize: "none",
+            autocorrect: "off",
             spellcheck: "false",
             oninput: move |event| {
                 is_typing.set(true);
@@ -273,6 +274,7 @@ pub(crate) fn OtherTypes() -> Element {
             value: "{excludes_search()}",
             r#type: "text",
             autocapitalize: "none",
+            autocorrect: "off",
             spellcheck: "false",
             oninput: move |event| {
                 excludes_is_typing.set(true);
