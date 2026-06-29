@@ -7,11 +7,13 @@ pub fn TextInput(
     label: Option<String>,
     placeholder: Option<String>,
     input_type: Option<String>,
+    error: Option<String>,
 ) -> Element {
     let id = id.unwrap_or_default();
     let placeholder = placeholder.unwrap_or_default();
     let input_type = input_type.unwrap_or_else(|| "text".to_string());
     let is_password = input_type == "password";
+    let is_error = error.is_some();
 
     let mut show_password = use_signal(|| false);
     let effective_type = if is_password && show_password() {
@@ -27,7 +29,7 @@ pub fn TextInput(
 
         if is_password {
             div { class: "password-input-wrapper",
-                input { class: "input input-password",
+                input { class: if is_error { "input input-password input-error" } else { "input input-password" },
                     id : "{id}",
                     r#type : "{effective_type}",
                     placeholder : "{placeholder}",
@@ -48,7 +50,7 @@ pub fn TextInput(
                 }
             }
         } else {
-            input { class: "input",
+            input { class: if is_error { "input input-error" } else { "input" },
                 id : "{id}",
                 r#type : "{effective_type}",
                 placeholder : "{placeholder}",
@@ -60,6 +62,10 @@ pub fn TextInput(
                     value.set(event.value());
                 }
             }
+        }
+
+        if let Some(error) = error {
+            div { class: "message-error", "{error}" }
         }
     }
 }

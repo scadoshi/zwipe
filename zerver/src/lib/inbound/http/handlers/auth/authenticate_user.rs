@@ -46,7 +46,8 @@ impl From<AuthenticateUserError> for ApiError {
 impl From<InvalidAuthenticateUser> for ApiError {
     fn from(value: InvalidAuthenticateUser) -> Self {
         match value {
-            InvalidAuthenticateUser::MissingIdentifier | InvalidAuthenticateUser::Password(_) => {
+            InvalidAuthenticateUser::MissingIdentifier
+            | InvalidAuthenticateUser::MissingPassword => {
                 Self::UnprocessableEntity("invalid credentials".to_string())
             }
         }

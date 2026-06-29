@@ -42,6 +42,7 @@ pub(crate) fn CardInfoDisplay(card: Card) -> Element {
 
     rsx! {
         div { class: "card-info",
+            span { class: "card-info-name", "{card.scryfall_data.name}" }
             span { "{price_text}" }
             span { "Set: {card.scryfall_data.set_name}" }
             span { "Released: {card.scryfall_data.released_at}" }
