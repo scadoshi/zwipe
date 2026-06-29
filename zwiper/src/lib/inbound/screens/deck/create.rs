@@ -18,7 +18,7 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::deck::{DeckTag, format::Format};
+use zwipe_core::domain::deck::{DeckName, DeckTag, format::Format};
 use zwipe_core::domain::user::models::hints::HINT_CREATE_DECK;
 use zwipe_core::http::contracts::deck::HttpCreateDeckProfile;
 
@@ -32,6 +32,7 @@ pub fn CreateDeck() -> Element {
 
     // form
     let deck_name = use_signal(String::new);
+    let mut deck_name_error: Signal<Option<String>> = use_signal(|| None);
     let mut selected_format: Signal<Option<Format>> = use_signal(|| None);
     let selected_tags: Signal<Vec<DeckTag>> = use_signal(Vec::new);
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
@@ -63,6 +64,10 @@ pub fn CreateDeck() -> Element {
     let mut is_saving = use_signal(|| false);
 
     let mut attempt_submit = move || {
+        if let Err(e) = DeckName::new(deck_name()) {
+            deck_name_error.set(Some(e.to_string()));
+            return;
+        }
         is_saving.set(true);
 
         spawn(async move {
@@ -118,6 +123,7 @@ pub fn CreateDeck() -> Element {
                     form { class : "flex-col text-center",
                         DeckFields {
                             deck_name,
+                            deck_name_error,
                             selected_format,
                             selected_tags,
                             commander,

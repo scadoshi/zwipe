@@ -17,7 +17,7 @@ use zwipe_core::domain::card::{
         commander_eligibility::{has_choose_a_background, partner_kind},
     },
 };
-use zwipe_core::domain::deck::{DeckTag, MAX_DECK_TAGS, format::Format};
+use zwipe_core::domain::deck::{DeckName, DeckTag, MAX_DECK_TAGS, format::Format};
 
 /// Format chip selector and card search inputs with debounced dropdowns.
 ///
@@ -46,10 +46,28 @@ pub(crate) fn DeckFields(
     mut show_signature_spell_swipe: Signal<bool>,
     mut show_tags_select: Signal<bool>,
     mut show_format_select: Signal<bool>,
+    mut deck_name_error: Signal<Option<String>>,
 ) -> Element {
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let usage_buffer: Signal<UsageBuffer> = use_context();
+
+    // Deck name inline validation — mirrors the auth/profile per-field pattern:
+    // show the error under the field as the user types (after first input), so a
+    // bad name surfaces here instead of as a toast on save.
+    let mut deck_name_touched = use_signal(|| false);
+    use_effect(move || {
+        let value = deck_name();
+        if !value.is_empty() && !deck_name_touched() {
+            deck_name_touched.set(true);
+        }
+        if deck_name_touched() {
+            match DeckName::new(value) {
+                Ok(_) => deck_name_error.set(None),
+                Err(e) => deck_name_error.set(Some(e.to_string())),
+            }
+        }
+    });
 
 
     // ========================================
@@ -357,7 +375,8 @@ pub(crate) fn DeckFields(
             label: "Deck name",
             value: deck_name,
             id: "deck_name",
-            placeholder: "Deck name",
+            placeholder: "Not set",
+            error: deck_name_error(),
         }
 
         // ========================================
@@ -379,20 +398,12 @@ pub(crate) fn DeckFields(
                         "\u{00d7}"
                     }
                 }
-                button {
-                    r#type: "button",
-                    class: "chip-xs chip-primary",
-                    onclick: move |_| show_format_select.set(true),
-                    "Edit"
-                }
             }
 
-            div { class: "chip-box",
-                if let Some(fmt) = selected_format() {
-                    div { class: "chip selected", "{fmt.display_name()}" }
-                } else {
-                    div { class: "chip-none", "None" }
-                }
+            if let Some(fmt) = selected_format() {
+                div { class: "input input-tappable", onclick: move |_| show_format_select.set(true), "{fmt.display_name()}" }
+            } else {
+                div { class: "input input-placeholder input-tappable", onclick: move |_| show_format_select.set(true), "Not set" }
             }
         }
 
@@ -457,9 +468,10 @@ pub(crate) fn DeckFields(
                 input { class: "input",
                     id: "commander",
                     r#type: "text",
-                    placeholder: "{commander_label}",
+                    placeholder: "Not set",
                     value: "{commander_display}",
                     autocapitalize: "none",
+                    autocorrect: "off",
                     spellcheck: "false",
                     onclick: move |_| {
                         cmd_search_query.set(String::new());
@@ -535,9 +547,10 @@ pub(crate) fn DeckFields(
                 input { class: "input",
                     id: "partner_commander",
                     r#type: "text",
-                    placeholder: "Partner commander",
+                    placeholder: "Not set",
                     value: "{partner_commander_display}",
                     autocapitalize: "none",
+                    autocorrect: "off",
                     spellcheck: "false",
                     onclick: move |_| {
                         partner_search_query.set(String::new());
@@ -613,9 +626,10 @@ pub(crate) fn DeckFields(
                 input { class: "input",
                     id: "background",
                     r#type: "text",
-                    placeholder: "Background",
+                    placeholder: "Not set",
                     value: "{background_display}",
                     autocapitalize: "none",
+                    autocorrect: "off",
                     spellcheck: "false",
                     onclick: move |_| {
                         bg_search_query.set(String::new());
@@ -691,9 +705,10 @@ pub(crate) fn DeckFields(
                 input { class: "input",
                     id: "signature_spell",
                     r#type: "text",
-                    placeholder: "Signature spell",
+                    placeholder: "Not set",
                     value: "{signature_spell_display}",
                     autocapitalize: "none",
+                    autocorrect: "off",
                     spellcheck: "false",
                     onclick: move |_| {
                         spell_search_query.set(String::new());
@@ -722,29 +737,17 @@ pub(crate) fn DeckFields(
                         "\u{00d7}"
                     }
                 }
-                button {
-                    r#type: "button",
-                    class: "chip-xs chip-primary",
-                    onclick: move |_| show_tags_select.set(true),
-                    "Edit"
-                }
             }
 
-            // Selected tags — tap one to remove it.
-            div { class: "chip-box",
-                if selected_tags().is_empty() {
-                    div { class: "chip-none", "None" }
-                } else {
+            if selected_tags().is_empty() {
+                div { class: "input input-placeholder input-tappable", onclick: move |_| show_tags_select.set(true), "Not set" }
+            } else {
+                div { class: "chip-box input-tappable", onclick: move |_| show_tags_select.set(true),
                     for tag in selected_tags().iter().copied() {
                         div {
                             key: "{tag}",
                             class: "chip selected",
-                            onclick: move |_| {
-                                let mut current = selected_tags();
-                                current.retain(|t| *t != tag);
-                                selected_tags.set(current);
-                            },
-                            "{tag.display_name()} \u{00d7}"
+                            "{tag.display_name()}"
                         }
                     }
                 }
