@@ -58,11 +58,14 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
     let toast = use_toast();
 
+    // `use_reactive!` ties these resources to `deck_id` so they re-fetch when the
+    // route param changes without a remount — e.g. cloning navigates ViewDeck →
+    // ViewDeck, and a plain `move ||` closure would keep serving the old deck.
     let mut deck_profile_resource: Resource<Result<DeckProfile, ApiError>> =
-        use_resource(move || async move {
+        use_resource(use_reactive!(|deck_id| async move {
             let session = session.ensure_fresh(client).await?;
             client().get_deck_profile(deck_id, &session).await
-        });
+        }));
     let commander_resource: Resource<Result<Option<Card>, ApiError>> =
         use_resource(move || async move {
             let Some(Ok(DeckProfile {
@@ -74,13 +77,14 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             };
             client().get_card(original_commander_id).await.map(Some)
         });
-    let mut deck_resource: Resource<DeckResult> = use_resource(move || async move {
-        let session = session.ensure_fresh(client).await?;
-        client()
-            .get_deck(deck_id, &session)
-            .await
-            .map(|d| (d.entries, d.warnings))
-    });
+    let mut deck_resource: Resource<DeckResult> =
+        use_resource(use_reactive!(|deck_id| async move {
+            let session = session.ensure_fresh(client).await?;
+            client()
+                .get_deck(deck_id, &session)
+                .await
+                .map(|d| (d.entries, d.warnings))
+        }));
     use_effect(move || {
         if let Some(Err(e)) = &*deck_profile_resource.read() {
             toast.error(

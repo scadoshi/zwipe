@@ -47,7 +47,7 @@ pub(crate) fn CloneDeckDialog(
                 AlertDialogTitle { "Clone deck" }
                 hr { class: "dialog-rule" }
                 AlertDialogDescription {
-                    "Give your new deck a name. All cards, commander, and format will be copied over."
+                    "Make an exact copy of your deck under a new name."
                 }
                 input {
                     r#type: "text",
