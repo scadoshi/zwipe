@@ -766,8 +766,18 @@ pub(crate) fn DeckFields(
                     for tag in selected_tags().iter().copied() {
                         div {
                             key: "{tag}",
-                            class: "chip selected",
+                            class: "chip selected flex items-center gap-05",
                             "{tag.display_name()}"
+                            // Remove just this tag; stop propagation so the
+                            // chip-box's own onclick doesn't also open the picker.
+                            button {
+                                class: "chip-remove",
+                                onclick: move |evt| {
+                                    evt.stop_propagation();
+                                    selected_tags.write().retain(|t| *t != tag);
+                                },
+                                "\u{00d7}"
+                            }
                         }
                     }
                 }
@@ -843,7 +853,7 @@ pub(crate) fn DeckFields(
         // ========================================
         // Land target (Not set = use the format heuristic)
         // ========================================
-        div {
+        div { style: "margin-top: 1rem;",
             div { class: "label-row",
                 label { class: "label", "Land target" }
                 if land_target().is_some() {

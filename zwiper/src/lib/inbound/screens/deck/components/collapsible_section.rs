@@ -34,20 +34,23 @@ pub(crate) fn CollapsibleSection(
         // Horizontal padding lives on the header/body (not the card) so the
         // divider can span edge-to-edge; the collapsible clip would otherwise
         // cut off a negative-margin full-bleed rule.
-        div { style: format!("width:100%;background:var(--bg-primary);box-shadow:var(--shadow-sm);border:1px solid {border};border-radius:0.5rem;padding:0.75rem 0;display:flex;flex-direction:column;"),
+        div {
+            style: format!("width:100%;background:var(--bg-primary);box-shadow:var(--shadow-sm);border:1px solid {border};border-radius:0.5rem;padding:0.75rem 0;display:flex;flex-direction:column;cursor:pointer;user-select:none;"),
+            // The whole card is the toggle hit area — including the padded fill
+            // above and below the header, and (when collapsed) the strip where the
+            // hidden controls sit. The body and the header accessory stop
+            // propagation so interacting with them never collapses the section.
+            onclick: move |_| {
+                if is_open {
+                    open_section.set(None);
+                } else {
+                    open_section.set(Some(id.clone()));
+                }
+            },
             div {
                 style: "display:flex;align-items:center;gap:0.5rem;padding:0 0.75rem;",
-                // Toggle hit area (arrow + title + optional badge). The accessory
-                // sits outside it so its controls don't collapse the section.
                 div {
-                    style: "display:flex;align-items:center;gap:0.5rem;cursor:pointer;user-select:none;flex:1;min-width:0;",
-                    onclick: move |_| {
-                        if is_open {
-                            open_section.set(None);
-                        } else {
-                            open_section.set(Some(id.clone()));
-                        }
-                    },
+                    style: "display:flex;align-items:center;gap:0.5rem;flex:1;min-width:0;",
                     span {
                         class: "card-row-arrow",
                         style: if is_open { "transform:rotate(90deg);" } else { "transform:rotate(0deg);" },
@@ -60,6 +63,7 @@ pub(crate) fn CollapsibleSection(
                 }
                 if let Some(accessory) = header_accessory {
                     div {
+                        onclick: move |evt| evt.stop_propagation(),
                         style: format!(
                             "transition:opacity 0.25s ease;opacity:{};pointer-events:{};",
                             if is_open { "1" } else { "0" },
@@ -73,7 +77,10 @@ pub(crate) fn CollapsibleSection(
             // (same as the edit-deck commander fields). Body stays mounted.
             // No horizontal padding here so dividers (section rule + info-row
             // borders) bleed to the card edges; each child supplies its own inset.
-            div { class: if is_open { "collapsible open" } else { "collapsible" },
+            div {
+                class: if is_open { "collapsible open" } else { "collapsible" },
+                style: "cursor:default;",
+                onclick: move |evt| evt.stop_propagation(),
                 div { class: "collapsible-inner",
                     hr { style: "border:none;border-top:1px solid var(--border-secondary);margin:0.5rem 0 0.6rem 0;" }
                     div { style: "display:flex;flex-direction:column;gap:0.75rem;", {children} }
