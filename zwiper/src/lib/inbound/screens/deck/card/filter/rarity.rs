@@ -59,7 +59,7 @@ pub fn Rarity() -> Element {
                 label { class: "label-xs", "Rarity" }
                 if has_selection {
                     button {
-                        class: "clear-btn",
+                        class: "chip-xs",
                         onclick: move |_| {
                             let new_mode = mode().toggle();
                             // Move values to the other field

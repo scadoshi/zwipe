@@ -25,7 +25,7 @@ pub(crate) fn PowerFilter() -> Element {
         div { class: "label-row mt-2",
             label { class: "label-xs", "Power" }
             button {
-                class: "clear-btn",
+                class: "chip-xs",
                 onclick: move |_| {
                     let new_mode = power_mode().toggle();
                     power_mode.set(new_mode);

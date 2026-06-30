@@ -95,7 +95,7 @@ pub(crate) fn CmcFilter() -> Element {
         div { class: "label-row mt-2",
             label { class: "label-xs", "Mana value" }
             button {
-                class: "clear-btn",
+                class: "chip-xs",
                 onclick: move |_| {
                     let new_mode = cmc_mode().toggle();
                     cmc_mode.set(new_mode);

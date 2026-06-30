@@ -97,7 +97,7 @@ pub(crate) fn OtherTypes() -> Element {
         div { class: "label-row mt-2",
             label { class: "label-xs", r#for: "other-type", "Type line include" }
             button {
-                class: "clear-btn",
+                class: "chip-xs",
                 onclick: move |_| {
                     let new_mode = other_type_mode().toggle();
                     let current = read_other_types(&filter_builder(), other_type_mode());

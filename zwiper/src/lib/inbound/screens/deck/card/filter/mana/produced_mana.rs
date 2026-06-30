@@ -78,7 +78,7 @@ pub(crate) fn ProducedManaFilter() -> Element {
         div { class: "label-row mt-2",
             label { class: "label-xs", "Produces" }
             button {
-                class: "clear-btn",
+                class: "chip-xs",
                 onclick: move |_| {
                     let new_mode = produced_mana_mode().toggle();
                     let current = read_produced_mana(&filter_builder(), produced_mana_mode());

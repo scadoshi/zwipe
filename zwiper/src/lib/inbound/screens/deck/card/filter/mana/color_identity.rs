@@ -40,7 +40,7 @@ pub(crate) fn ColorIdentityFilter() -> Element {
         div { class: "label-row mt-2",
             label { class: "label-xs", "Color identity" }
             button {
-                class: "clear-btn",
+                class: "chip-xs",
                 onclick: move |_| {
                     let new_mode = color_identity_mode().toggle();
                     color_identity_mode.set(new_mode);
