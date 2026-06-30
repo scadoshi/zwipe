@@ -905,6 +905,20 @@ button {
     border-color: color-mix(in srgb, var(--text-muted) 30%, transparent);
 }
 
+/* Power level (WotC bracket) — a rating, so a distinct accent. */
+.stat-chip-power {
+    color: var(--color-success);
+    background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
+    border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
+}
+
+/* Other tags (Budget/Jank/…) — colored so they read apart from archetype tags. */
+.stat-chip-other {
+    color: var(--accent-primary);
+    background-color: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+    border-color: color-mix(in srgb, var(--accent-primary) 35%, transparent);
+}
+
 /* Small count hint beside the Tags label (e.g. "2/5"). */
 .label-hint {
     margin-left: 0.5rem;

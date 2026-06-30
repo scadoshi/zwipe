@@ -2,7 +2,9 @@
 
 use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use crate::domain::deck::{
-    DeckName, DeckTag, InvalidDeckname, InvalidDeckTag, MAX_DECK_TAGS,
+    DeckName, DeckOtherTag, DeckTag, InvalidDeckname, InvalidDeckOtherTag, InvalidDeckTag,
+    InvalidPowerLevel, MAX_DECK_OTHER_TAGS, MAX_DECK_TAGS, PowerLevel,
+    deck_other_tag::parse_other_tags,
     deck_tag::parse_tags,
     format::{Format, InvalidFormat},
 };
@@ -24,6 +26,15 @@ pub enum InvalidCreateDeckProfile {
     /// More than [`MAX_DECK_TAGS`] tags were supplied.
     #[error("a deck may have at most {MAX_DECK_TAGS} tags")]
     TooManyTags,
+    /// Power level string is not a recognized power level.
+    #[error(transparent)]
+    PowerLevel(#[from] InvalidPowerLevel),
+    /// An other-tag string is not a recognized other-tag.
+    #[error(transparent)]
+    DeckOtherTag(#[from] InvalidDeckOtherTag),
+    /// More than [`MAX_DECK_OTHER_TAGS`] other-tags were supplied.
+    #[error("a deck may have at most {MAX_DECK_OTHER_TAGS} other-tags")]
+    TooManyOtherTags,
 }
 
 /// Request to create a new deck profile.
@@ -43,6 +54,10 @@ pub struct CreateDeckProfile {
     pub format: Option<Format>,
     /// Deck archetype/strategy tags (validated, deduped, at most [`MAX_DECK_TAGS`]).
     pub tags: Vec<DeckTag>,
+    /// Power level (WotC Commander Bracket). `None` = unset.
+    pub power_level: Option<PowerLevel>,
+    /// Secondary, non-gameplay labels (validated, deduped, at most [`MAX_DECK_OTHER_TAGS`]).
+    pub other_tags: Vec<DeckOtherTag>,
     /// User-set land target. `None` falls back to the format heuristic.
     pub land_target: Option<i32>,
     /// User-set price target (budget). `None` = no budget.
@@ -72,6 +87,8 @@ impl CreateDeckProfile {
             signature_spell_id: None,
             format: None,
             tags: Vec::new(),
+            power_level: None,
+            other_tags: Vec::new(),
             land_target: None,
             price_target: None,
             price_target_currency: None,
@@ -90,6 +107,8 @@ pub struct CreateDeckProfileBuilder {
     signature_spell_id: Option<Uuid>,
     format: Option<String>,
     tags: Vec<String>,
+    power_level: Option<String>,
+    other_tags: Vec<String>,
     land_target: Option<i32>,
     price_target: Option<f64>,
     price_target_currency: Option<PriceCurrency>,
@@ -132,6 +151,18 @@ impl CreateDeckProfileBuilder {
         self
     }
 
+    /// Sets the power level from a string.
+    pub fn power_level(mut self, power_level: Option<&str>) -> Self {
+        self.power_level = power_level.map(|s| s.to_string());
+        self
+    }
+
+    /// Sets the other-tags from raw strings (validated, deduped, and capped on build).
+    pub fn other_tags(mut self, other_tags: Vec<String>) -> Self {
+        self.other_tags = other_tags;
+        self
+    }
+
     /// Sets the land target.
     pub fn land_target(mut self, land_target: Option<i32>) -> Self {
         self.land_target = land_target;
@@ -162,6 +193,15 @@ impl CreateDeckProfileBuilder {
         if tags.len() > MAX_DECK_TAGS {
             return Err(InvalidCreateDeckProfile::TooManyTags);
         }
+        let power_level = self
+            .power_level
+            .as_deref()
+            .map(PowerLevel::try_from)
+            .transpose()?;
+        let other_tags = parse_other_tags(&self.other_tags)?;
+        if other_tags.len() > MAX_DECK_OTHER_TAGS {
+            return Err(InvalidCreateDeckProfile::TooManyOtherTags);
+        }
         Ok(CreateDeckProfile {
             name,
             commander_id: self.commander_id,
@@ -170,6 +210,8 @@ impl CreateDeckProfileBuilder {
             signature_spell_id: self.signature_spell_id,
             format,
             tags,
+            power_level,
+            other_tags,
             land_target: self.land_target,
             price_target: self.price_target,
             price_target_currency: self.price_target_currency,

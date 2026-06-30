@@ -77,6 +77,22 @@ pub(crate) fn DeckProfileSection(deck_profile: DeckProfile, commander: Option<Ca
                     }
                 }
             }
+            if let Some(pl) = deck_profile.power_level {
+                div { class: "info-row",
+                    span { class: "info-row-label", "Power level" }
+                    span { class: "info-row-value", { pl.display_name().to_string() } }
+                }
+            }
+            if !deck_profile.other_tags.is_empty() {
+                div { class: "info-row",
+                    span { class: "info-row-label", "Other tags" }
+                    span { class: "info-row-value info-row-tags",
+                        for tag in deck_profile.other_tags.iter() {
+                            span { key: "{tag}", class: "stat-chip stat-chip-tag", "{tag.display_name()}" }
+                        }
+                    }
+                }
+            }
             if let Some(target) = land_target {
                 div { class: "info-row",
                     span { class: "info-row-label", "Land target" }

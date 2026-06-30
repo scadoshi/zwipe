@@ -141,6 +141,9 @@ pub fn DeckList() -> Element {
                                                         if let Some(ref fmt) = profile.format {
                                                             span { class: "stat-chip stat-chip-format", "{fmt.display_name()}" }
                                                         }
+                                                        if let Some(pl) = profile.power_level {
+                                                            span { class: "stat-chip stat-chip-power", "Bracket {pl.bracket()}" }
+                                                        }
                                                         if let Some(ref cmd) = profile.commander_name {
                                                             span { class: "stat-chip stat-chip-zone", "{cmd}" }
                                                         }
@@ -155,6 +158,9 @@ pub fn DeckList() -> Element {
                                                         }
                                                         for tag in profile.tags.iter() {
                                                             span { key: "{tag}", class: "stat-chip stat-chip-tag", "{tag.display_name()}" }
+                                                        }
+                                                        for tag in profile.other_tags.iter() {
+                                                            span { key: "{tag}", class: "stat-chip stat-chip-other", "{tag.display_name()}" }
                                                         }
                                                     }
                                                 }

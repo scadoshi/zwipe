@@ -1,7 +1,7 @@
 //! Deck metadata (profile without cards).
 
 use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use crate::domain::deck::{DeckName, DeckTag, format::Format};
+use crate::domain::deck::{DeckName, DeckOtherTag, DeckTag, PowerLevel, format::Format};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -24,6 +24,14 @@ pub struct DeckProfile {
     pub format: Option<Format>,
     /// Deck archetype/strategy tags.
     pub tags: Vec<DeckTag>,
+    /// Power level (WotC Commander Bracket). `None` = unset. `#[serde(default)]`
+    /// so an older client reading a payload without it parses to `None`.
+    #[serde(default)]
+    pub power_level: Option<PowerLevel>,
+    /// Secondary, non-gameplay labels (Budget, Jank, …). `#[serde(default)]` so
+    /// older payloads without the field parse to an empty vec.
+    #[serde(default)]
+    pub other_tags: Vec<DeckOtherTag>,
     /// User-set land target. `None` falls back to the format-derived heuristic
     /// ([`Format::default_land_target`]).
     pub land_target: Option<i32>,

@@ -48,6 +48,12 @@ pub struct HttpCreateDeckProfile {
     /// Deck archetype/strategy tags (snake_case strings). Absent or empty = none.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tags: Option<Vec<String>>,
+    /// Power level (snake_case bracket string). Absent = unset.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub power_level: Option<String>,
+    /// Secondary, non-gameplay labels (snake_case strings). Absent or empty = none.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub other_tags: Option<Vec<String>>,
     /// User-set land target. Absent = use the format-derived heuristic.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub land_target: Option<i32>,
@@ -70,6 +76,8 @@ impl HttpCreateDeckProfile {
             signature_spell_id: None,
             format: None,
             tags: None,
+            power_level: None,
+            other_tags: None,
             land_target: None,
             price_target: None,
             price_target_currency: None,
@@ -86,6 +94,8 @@ pub struct HttpCreateDeckProfileBuilder {
     signature_spell_id: Option<Uuid>,
     format: Option<String>,
     tags: Option<Vec<String>>,
+    power_level: Option<String>,
+    other_tags: Option<Vec<String>>,
     land_target: Option<i32>,
     price_target: Option<f64>,
     price_target_currency: Option<PriceCurrency>,
@@ -128,6 +138,18 @@ impl HttpCreateDeckProfileBuilder {
         self
     }
 
+    /// Sets the power level.
+    pub fn power_level(mut self, power_level: Option<String>) -> Self {
+        self.power_level = power_level;
+        self
+    }
+
+    /// Sets the other-tags.
+    pub fn other_tags(mut self, other_tags: Option<Vec<String>>) -> Self {
+        self.other_tags = other_tags;
+        self
+    }
+
     /// Sets the land target.
     pub fn land_target(mut self, land_target: Option<i32>) -> Self {
         self.land_target = land_target;
@@ -156,6 +178,8 @@ impl HttpCreateDeckProfileBuilder {
             signature_spell_id: self.signature_spell_id,
             format: self.format,
             tags: self.tags,
+            power_level: self.power_level,
+            other_tags: self.other_tags,
             land_target: self.land_target,
             price_target: self.price_target,
             price_target_currency: self.price_target_currency,
@@ -188,6 +212,14 @@ pub struct HttpUpdateDeckProfile {
     /// compatible when the server deploys ahead of the app.
     #[serde(default)]
     pub tags: Opdate<Vec<String>>,
+    /// Power level with partial update semantics. `Set(None)` clears it; absent
+    /// leaves it unchanged. `#[serde(default)]` keeps older clients compatible.
+    #[serde(default)]
+    pub power_level: Opdate<String>,
+    /// Other-tags with partial update semantics. `Set` replaces the full set
+    /// (empty/`null` clears all); absent leaves them unchanged. `#[serde(default)]`.
+    #[serde(default)]
+    pub other_tags: Opdate<Vec<String>>,
     /// Land target with partial update semantics. `Set(None)` clears the
     /// override (back to the format heuristic); absent leaves it unchanged.
     /// `#[serde(default)]` keeps older clients backward-compatible.
@@ -213,6 +245,8 @@ impl HttpUpdateDeckProfile {
             signature_spell_id: Opdate::Unchanged,
             format: Opdate::Unchanged,
             tags: Opdate::Unchanged,
+            power_level: Opdate::Unchanged,
+            other_tags: Opdate::Unchanged,
             land_target: Opdate::Unchanged,
             price_target: Opdate::Unchanged,
             price_target_currency: Opdate::Unchanged,
@@ -229,6 +263,8 @@ pub struct HttpUpdateDeckProfileBuilder {
     signature_spell_id: Opdate<Uuid>,
     format: Opdate<String>,
     tags: Opdate<Vec<String>>,
+    power_level: Opdate<String>,
+    other_tags: Opdate<Vec<String>>,
     land_target: Opdate<i32>,
     price_target: Opdate<f64>,
     price_target_currency: Opdate<PriceCurrency>,
@@ -277,6 +313,18 @@ impl HttpUpdateDeckProfileBuilder {
         self
     }
 
+    /// Sets the power level update.
+    pub fn power_level(mut self, power_level: Opdate<String>) -> Self {
+        self.power_level = power_level;
+        self
+    }
+
+    /// Sets the other-tags update.
+    pub fn other_tags(mut self, other_tags: Opdate<Vec<String>>) -> Self {
+        self.other_tags = other_tags;
+        self
+    }
+
     /// Sets the land target update.
     pub fn land_target(mut self, land_target: Opdate<i32>) -> Self {
         self.land_target = land_target;
@@ -305,6 +353,8 @@ impl HttpUpdateDeckProfileBuilder {
             signature_spell_id: self.signature_spell_id,
             format: self.format,
             tags: self.tags,
+            power_level: self.power_level,
+            other_tags: self.other_tags,
             land_target: self.land_target,
             price_target: self.price_target,
             price_target_currency: self.price_target_currency,
