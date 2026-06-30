@@ -1,5 +1,11 @@
 # Land Count Signals
 
+**Status: SHIPPED 2026-06-29 (on `main`, not yet deployed/store-built).** Built
+the full version, not just the MVP: a per-deck **land target** (stepper —
+explicit override else format heuristic), persisted server-side, shown in the
+deck Profile, with crossing toasts on add/remove/qty and a below-target warning.
+The broader auto-land-base / hard-cap ideas below remain future work.
+
 ## Goal
 
 While building a deck (Add / Remove screens), give the user lightweight feedback

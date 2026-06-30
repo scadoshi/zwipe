@@ -1,5 +1,13 @@
 # Price Filter + Deck Price Limit
 
+**Status: SHIPPED 2026-06-29 (on `main`, not yet deployed/store-built).** Both
+parts built. Part 1 — price range filter (min/max + USD/EUR/TIX chips, default
+USD; server `WHERE` over `prices` JSONB + in-memory predicate; null prices
+excluded when bounded). Part 2 — per-deck **price target** persisted
+(`price_target` + currency), with 50/75/100%-band crossing toasts (exact %,
+re-fires on re-cross), an over-budget warning, and a Profile row. Decisions
+resolved: per-filter currency (not a shared preference); null prices excluded.
+
 ## Goal
 
 Two budget-building features requested across the launch thread (Tenellum and

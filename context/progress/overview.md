@@ -109,6 +109,33 @@ Build 15 shipped over build 14 with: `Email` strict newtype across the workspace
 
 ---
 
+## Deck-building tooling + suggestion signal (2026-06-29, on `main`, not yet deployed/shipped)
+
+A batch of deck-building tooling plus the first-party suggestion signal, all on
+local `main` but **not yet deployed or in a store build** (server slices deploy
+first, per the project rule). Highlights:
+
+- **Land target** — a per-deck land goal (stepper in the deck form: explicit
+  override, else a format heuristic — Commander 37 / 60-card 17). Persisted
+  (`land_target` column), shown in the deck Profile, with crossing toasts on
+  add/remove/qty and a below-target warning. Plan: `../plans/land_signals.md`.
+- **Price range filter** — min/max price in a chosen currency (USD/EUR/TIX
+  chips, default USD) on card search; server `WHERE` over the `prices` JSONB +
+  an in-memory predicate. Null prices excluded when a bound is set.
+- **Price target (budget)** — a per-deck budget (`price_target` + currency).
+  Toasts on crossing a higher 50/75/100% band (exact %, re-fires on re-cross);
+  over-budget warning; shown in Profile. Plans: `../plans/price_filter.md`.
+- **Suggestion signal** — `commander_card_signal` aggregate (added/skipped/
+  maybed/removed per `(commander, card)`, no PII), flushed with usage on a 30s
+  timer **and on app-background** (`visibilitychange`). Verified collecting
+  end-to-end. Plan: `../plans/suggestion_signal.md` (Phase 3 ranking remains).
+- **Deck-view collapsible sections** — Stats / Distributions / Mana / Warnings
+  grouped into accordion cards (groundwork for the draw-odds section). Plus a
+  "Flavor of the hour" header on the home flavor card and a bottom-sheet
+  startup-flash fix (iOS WebKit transition-on-insert).
+
+---
+
 ## 1.1.3 — media-day release: card names, deck-form overhaul, in-app privacy (both stores, 2026-06-28)
 
 Shipped on **media day** — a Reddit launch post (r/mtg, ~45K views) drove **38 → 772 users in ~24h** (665 registrations that day, 738 active; the core swipe loop held clean at ~20x load). **iOS build 51** (Apple review) + **Android versionCode 11** (Play closed-testing track), both version 1.1.3, submitted 2026-06-28. Backward-compatible / server-additive throughout (audited: no `http/contracts` or schema changes). Much of it straight from launch feedback: **card names now show while swiping** so alt-art / non-English printings are identifiable (`card_info.rs`); a **deck-form overhaul** — empty fields read "Not set", tapping a field opens the format/tags picker (the separate Edit buttons are gone), Format reads as a plain input instead of a chip, and the **deck name validates inline** (error under the field, mirroring the auth/profile pattern) rather than as a save-time toast; an **expanded deck-tag set with plain-language definitions** plus **format and power-level pickers**; an **in-app Privacy Policy** reached from Profile, rendered from a single shared `zwipe-core` HTML const so app + web (`zite`) never drift (`mailto` opens via `open_url`, https via the webview); and **under-field validation with red outlines** across sign-in / sign-up / profile forms. Server-side: the auth flows **stopped policy-gating the *current* password** on login + username/email changes — a relaxation so passwords created under older policies aren't wrongly rejected; the stored-hash check is unchanged. Client fix: the register email field now **trims + disables autocorrect** so a stray inserted space no longer reads as "invalid character." **Email outage during the surge:** Resend's daily quota exhausted mid-wave (~150 verification emails 429'd); upgraded to Pro and **backfilled the missed verifications** with a one-off mint+resend (registration already swallowed the send error, so accounts were never blocked). In flight but NOT in this build: draw-odds consistency stats + live swipe drag cues (`feat/draw-odds-core`, `feat/qol-drag-indicators`). What's New copy lives in both `operations/*/.../form_fields.md`; the weighted request queue is `feature_requests.md`.

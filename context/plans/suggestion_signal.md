@@ -1,5 +1,15 @@
 # First-Party Suggestion Signal
 
+**Status: Phases 1 + 2 BUILT (2026-06-29, uncommitted/undeployed) — collecting
+locally, verified end-to-end. Phase 3 (ranking) remains.** Two refinements landed
+beyond the original plan: the right-swipe column is named **`added`** (not
+`kept`) to pair with **`removed`** — a new column capturing a *deliberate
+removal* from a deck (Remove-screen right-swipe + deck-cards `[-]`-to-zero), a
+stronger delayed-negative than a skip. Also added a **flush-on-background**
+trigger (JS `visibilitychange: hidden` / `pagehide`) so a swipe-to-close no
+longer loses the last unflushed window — the whole telemetry buffer (swipes,
+searches, signals) shares it. Server-first deploy still pending.
+
 ## Goal
 
 Refine the order of the add-card swipe stack using **real in-app behavior** —
@@ -80,17 +90,20 @@ secondary input, applied **only above a confidence threshold** (a minimum
 
 ## Phasing (collect first, rank later)
 
-1. **Server — start collecting.** Migration + extend the usage endpoint to
-   accept the optional `signals` array and upsert into `commander_card_signal`.
-   No ranking change yet. Ship this first so old clients are unaffected and the
-   server is ready before any client sends signals.
-2. **Client — emit signals.** Buffer the per-`(commander, card, direction)`
-   tallies during a swipe session and flush them with the usage batch. Data
-   begins accumulating. Still no ranking change.
-3. **Ranking — apply the signal.** Once enough data has accrued, fold the
-   accept rate into the add-stack read path behind a confidence threshold.
-   Invisible re-ranking through the existing stack endpoint — no new client
-   release required for the ranking change itself.
+1. **Server — start collecting. ✅ BUILT.** Migration `commander_card_signal`
+   (`added/skipped/maybed/removed/shown`, PK `(commander, card)`, no user_id) +
+   `signals: Vec<CardSignalDelta>` on `HttpUsageBatch` (`#[serde(default)]`,
+   clamped: ≤1000 deltas, each field ≤`MAX_PER_FLUSH`) + an additive upsert in
+   the existing metrics tx. `.sqlx` regenerated.
+2. **Client — emit signals. ✅ BUILT.** `UsageBuffer` holds a
+   `(commander, card) → tally` map (`record_signal` for add/skip/maybe on the
+   add stack; `record_removal` on deliberate deck removal), drained into the
+   batch. Keyed by the **primary** commander oracle id; `shown` derived as
+   `added + skipped + maybed`. Down-swipe (undo) is excluded.
+3. **Ranking — apply the signal. ⬜ TODO.** Once enough data has accrued, fold
+   the add-rate (and remove-rate) into the add-stack read path behind a
+   confidence threshold. Invisible re-ranking through the existing stack
+   endpoint — no new client release required for the ranking change itself.
 
 ## Open questions / decisions
 

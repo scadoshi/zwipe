@@ -10,7 +10,7 @@ at `context/archive/complete_2026_q1.md`.
 
 ## Next Up
 
-- [ ] **Better metrics tracking — UP NEXT (set 2026-06-28).** Swipe data is rolled up to *counts* today (`user_lifetime_counters` / `user_daily_activity`); the per-card identity (which card, which direction, for which commander) is discarded at swipe time. Capture it as a **privacy-preserving aggregate** so it feeds both product analytics (media-day exposed funnel gaps — the ~20% never-swiped, the build→complete drop) and the recommender (the bootstrap→replace plan needs this accept/skip signal, which is currently thrown away daily). Plan exists: [`../plans/suggestion_signal.md`](../plans/suggestion_signal.md) — `commander_card_signal` rollup, no new PII, server-first + additive. Start collecting ASAP; un-captured signal is gone for good.
+- [ ] **Suggestion signal — Phases 1+2 BUILT 2026-06-29 (uncommitted/undeployed); Phase 3 (ranking) remains.** The per-`(commander, card)` accept/skip/maybe/**remove** aggregate (`commander_card_signal`, no PII) is built and verified collecting end-to-end against the local app — the previously-discarded per-card signal is now captured. Remaining: **deploy server-first** (migration + endpoint live before the client build that emits), then **Phase 3** — fold the add-rate/remove-rate into the add-stack ordering behind a confidence threshold (server-only read-path change, no client release). Plan + per-phase detail: [`../plans/suggestion_signal.md`](../plans/suggestion_signal.md).
 
 **The next big three (set 2026-06-11, in order):**
 1. **Android — get the clock ticking.** Confirm the Play account's closed-testing requirement and start the 14-day clock immediately; polish items ride alongside (see Android section below).
