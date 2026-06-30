@@ -54,11 +54,11 @@ impl PowerLevel {
     /// Human-readable display name, including the bracket number.
     pub fn display_name(&self) -> &'static str {
         match self {
-            Self::Exhibition => "1 — Exhibition",
-            Self::Core => "2 — Core",
-            Self::Upgraded => "3 — Upgraded",
-            Self::Optimized => "4 — Optimized",
-            Self::Cedh => "5 — cEDH",
+            Self::Exhibition => "Exhibition (1)",
+            Self::Core => "Core (2)",
+            Self::Upgraded => "Upgraded (3)",
+            Self::Optimized => "Optimized (4)",
+            Self::Cedh => "cEDH (5)",
         }
     }
 
