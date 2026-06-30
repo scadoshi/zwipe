@@ -184,6 +184,11 @@ pub fn Home() -> Element {
                             }
                         }
                         None => rsx! {
+                            // Mirror the loaded card: a "Flavor of the hour" title
+                            // bar + divider, then the quote lines.
+                            div { class: "skeleton-card-header", style: "display: flex; justify-content: center;",
+                                div { class: "skeleton-bar skeleton-section-label", style: "width: 45%; margin-bottom: 0;" }
+                            }
                             div { class: "skeleton-flavor", style: "padding: 1rem;",
                                 div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-1" }
                                 div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-2" }
