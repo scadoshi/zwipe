@@ -530,6 +530,13 @@ pub fn Add(deck_id: Uuid) -> Element {
                     mb_entries.set(mb);
 
                     deck_has_commander.set(deck.deck_profile.commander_id.is_some());
+                    // Default Synergy ON when the deck has a commander (the
+                    // curated pool); OFF otherwise. Set once on load — the user
+                    // flips it via the toggle, and the server falls back to the
+                    // full pool if the commander's synergy cache is still warming.
+                    filter_builder
+                        .write()
+                        .set_synergy(deck.deck_profile.commander_id.is_some());
                     deck_loaded.set(true);
 
                     // Seed the land signal: count mainboard lands (quantity-aware,
@@ -918,6 +925,21 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 "{label}"
                             }
                         }
+                        // Synergy ON/OFF — constrains the stack to the commander's
+                        // synergy pool, then sorts within it. Search source +
+                        // commander only (no commander = nothing to constrain to).
+                        if add_source() == AddSource::Search && deck_has_commander() {
+                            Chip {
+                                selected: filter_builder.read().synergy(),
+                                onclick: move |_| {
+                                    let on = !filter_builder.peek().synergy();
+                                    filter_builder.write().set_synergy(on);
+                                    let current = *filter_reset_counter.peek();
+                                    filter_reset_counter.set(current + 1);
+                                },
+                                "Synergy"
+                            }
+                        }
                     }
                 }
 
@@ -1220,8 +1242,12 @@ pub fn Add(deck_id: Uuid) -> Element {
                         HintColored { color: "--accent-tertiary", "down" }
                         " to undo your last swipe."
                     }
+                    HintBullet {
+                        HintColored { color: "--accent-primary", "Synergy" }
+                        " on keeps the stack to cards that work with your commander; turn it off to browse every legal card."
+                    }
                 }
-                HintLine { "Cards are ordered by how well they fit your commander. Filter or sort anytime." }
+                HintLine { "Sorting reorders whichever set you're viewing — it never changes which cards show. Filter or sort anytime." }
             }
 
             CardFilterSheet {
