@@ -28,6 +28,7 @@ First source: **Reddit r/mtg launch thread, 2026-06-28** (45K views, ~300 signup
 | 5 | Land count target / cap so you don't over/under-run | Med | S | P2 | Pairs naturally with #4. |
 | 6 | Mana-value-aware suggestion weighting (surface lower MV as curve fills) | High | M | P2 | Makes the recommender feel smart. Manual MV-range filter already exists as a stopgap. |
 | 7 | Embeddings-based auto-build / decklist analysis (assemble ~80% of a deck, swipe the rest) | High | L | P3 | North-star; aligns with the synergy/recommender roadmap. |
+| 20 | Companion support — recognize the 10 companions and let the deck declare one, since the companion dictates deck composition (constraints filter the swipe pool) | Med | M | P3 | User feedback (2026-06-29). Low priority but **fully programmable**: companion set is tiny and WotC has effectively stopped adding new ones, so it's a fixed, hard-codable rule set. |
 
 ## Card data & display
 
@@ -42,6 +43,7 @@ First source: **Reddit r/mtg launch thread, 2026-06-28** (45K views, ~300 signup
 | # | Feature | Impact | Effort | Priority | Notes |
 |---|---------|--------|--------|----------|-------|
 | 10 | Price threshold filter (hard budget cap, EUR/USD) | Med | M | P2 | Price *sort* + MV-range filter already exist; this is the missing budget piece. |
+| 19 | Land-target auto-stop — when the land count target is hit, the land filter should **stop serving lands automatically** rather than continuing to surface them | High | S | **P1** | User feedback (2026-06-29): "absolutely genius." Pairs directly with #5; the target already exists, this just gates the filter off once reached. |
 
 ## Persistence & in-build visibility
 
@@ -69,6 +71,7 @@ First source: **Reddit r/mtg launch thread, 2026-06-28** (45K views, ~300 signup
 | # | Feature | Impact | Effort | Priority | Notes |
 |---|---------|--------|--------|----------|-------|
 | 17 | Password rule errors placed under the password field (not floating up top) | Low | S | P2 | Trivial signup-friction fix. |
+| 21 | Clone-deck UX polish — (a) trim the hint text down to one line, e.g. "Make an exact copy of your deck"; (b) on Save, navigate straight to the newly cloned deck | Low | S | P2 | Self-noted (2026-06-29). Two small wins on the existing clone flow. |
 
 ---
 
