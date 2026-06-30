@@ -84,6 +84,9 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut deck_format: Signal<Option<Format>> = use_signal(|| None);
     let mut deck_color_identity: Signal<Option<Colors>> = use_signal(|| None);
     let mut deck_has_commander = use_signal(|| false);
+    // Primary commander's oracle id, for keying the first-party suggestion
+    // signal `(commander, card)` recorded on each add-stack swipe.
+    let mut commander_oracle_id: Signal<Option<Uuid>> = use_signal(|| None);
     let mut deck_loaded = use_signal(|| false);
 
     // Land-count signal: the current mainboard land count and the effective
@@ -498,6 +501,11 @@ pub fn Add(deck_id: Uuid) -> Element {
                         if let Ok(card) = client().get_card(cz_id).await
                             && let Some(oid) = card.scryfall_data.oracle_id
                         {
+                            // Capture the primary commander's oracle id to key the
+                            // suggestion signal (partner/background contribute under it).
+                            if Some(cz_id) == deck.deck_profile.commander_id {
+                                commander_oracle_id.set(Some(oid));
+                            }
                             ids.insert(oid);
                             identity_colors
                                 .extend(card.scryfall_data.color_identity.iter().cloned());
@@ -926,12 +934,14 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 entering: entering_direction,
                                 on_swipe_left: move |card: Card| {
                                     usage_buffer().record_swipe(Direction::Left);
+                                    usage_buffer().record_signal(commander_oracle_id(), card.scryfall_data.oracle_id, Direction::Left);
                                     action_history.write().push(SwipeAction::Skip { card: Box::new(card), exited: Direction::Left });
                                     toast.info("Skipped".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                     advance_after_commit();
                                 },
                                 on_swipe_right: move |card: Card| {
                                     usage_buffer().record_swipe(Direction::Right);
+                                    usage_buffer().record_signal(commander_oracle_id(), card.scryfall_data.oracle_id, Direction::Right);
                                     action_history.write().push(SwipeAction::Do { card: Box::new(card.clone()), exited: Direction::Right });
                                     let added_land = card.scryfall_data.is_land();
                                     let added_price = card_price(&card.scryfall_data, price_budget_currency()).unwrap_or(0.0);
@@ -974,6 +984,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 },
                                 on_swipe_up: move |card: Card| {
                                     usage_buffer().record_swipe(Direction::Up);
+                                    usage_buffer().record_signal(commander_oracle_id(), card.scryfall_data.oracle_id, Direction::Up);
                                     action_history.write().push(SwipeAction::Maybeboard { card: Box::new(card.clone()), exited: Direction::Up });
                                     add_card_to_maybeboard(card);
                                     toast.info("Added to maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));

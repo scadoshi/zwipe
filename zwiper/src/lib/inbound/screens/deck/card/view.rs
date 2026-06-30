@@ -3,6 +3,7 @@ use super::components::image_preview::ImagePreview;
 use super::components::printing_sheet::PrintingSheet;
 use crate::inbound::components::chip::Chip;
 use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::screens::deck::components::skeletons::DeckCardListSkeleton;
 use crate::{
     inbound::{
@@ -73,6 +74,7 @@ pub fn View(deck_id: Uuid) -> Element {
 
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
+    let usage_buffer: Signal<UsageBuffer> = use_context();
     let toast = use_toast();
 
     // Source of truth — all non-commander entries (active + maybeboard)
@@ -415,6 +417,16 @@ pub fn View(deck_id: Uuid) -> Element {
         let before_price = total_price();
 
         if should_delete {
+            // Suggestion signal: a deliberate removal (delayed negative), keyed
+            // by the deck's commander + the removed card's oracle id.
+            let card_oracle_id = deck_entries
+                .peek()
+                .iter()
+                .find(|e| e.card.scryfall_data.id == card_id)
+                .and_then(|e| e.card.scryfall_data.oracle_id);
+            let commander_oracle_id = commander_card.peek().as_ref().and_then(|c| c.scryfall_data.oracle_id);
+            usage_buffer().record_removal(commander_oracle_id, card_oracle_id);
+
             // Optimistic: remove from entries
             deck_entries
                 .write()

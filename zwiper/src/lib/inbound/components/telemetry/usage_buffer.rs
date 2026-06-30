@@ -1,9 +1,12 @@
 //! In-memory swipe/search counters with snapshot-and-zero semantics.
 
+use std::collections::HashMap;
 use std::sync::Arc;
+use std::sync::Mutex;
 use std::sync::atomic::{AtomicU32, Ordering};
 
-use zwipe_core::http::contracts::metrics::HttpUsageBatch;
+use uuid::Uuid;
+use zwipe_core::http::contracts::metrics::{CardSignalDelta, HttpUsageBatch};
 
 use crate::inbound::components::interactions::swipe::direction::Direction;
 
@@ -20,6 +23,18 @@ struct UsageBufferInner {
     swipes_up: AtomicU32,
     swipes_down: AtomicU32,
     searches: AtomicU32,
+    /// Per-`(commander, card)` keep/skip/maybe tallies from the add-card stack.
+    signals: Mutex<HashMap<(Uuid, Uuid), CardTally>>,
+}
+
+/// Add/skip/maybe/remove tally for one `(commander, card)` pair within a flush
+/// window.
+#[derive(Debug, Default, Clone, Copy)]
+struct CardTally {
+    added: u32,
+    skipped: u32,
+    maybed: u32,
+    removed: u32,
 }
 
 impl UsageBuffer {
@@ -44,9 +59,51 @@ impl UsageBuffer {
         self.inner.searches.fetch_add(1, Ordering::Relaxed);
     }
 
+    /// Records one add-stack swipe as a `(commander, card)` suggestion signal.
+    ///
+    /// `Down` (undo) is ignored — only added/skipped/maybed express intent. No-op
+    /// if either oracle id is missing (a deck with no commander, or a card with
+    /// no oracle id, can't be attributed).
+    pub fn record_signal(
+        &self,
+        commander_oracle_id: Option<Uuid>,
+        card_oracle_id: Option<Uuid>,
+        direction: Direction,
+    ) {
+        let (Some(commander), Some(card)) = (commander_oracle_id, card_oracle_id) else {
+            return;
+        };
+        let Ok(mut map) = self.inner.signals.lock() else {
+            return;
+        };
+        let tally = map.entry((commander, card)).or_default();
+        match direction {
+            Direction::Right => tally.added += 1,
+            Direction::Left => tally.skipped += 1,
+            Direction::Up => tally.maybed += 1,
+            Direction::Down => {}
+        }
+    }
+
+    /// Records one deliberate removal of a `(commander, card)` from a deck — a
+    /// delayed negative signal, distinct from an add-stack skip. No-op if either
+    /// oracle id is missing.
+    pub fn record_removal(
+        &self,
+        commander_oracle_id: Option<Uuid>,
+        card_oracle_id: Option<Uuid>,
+    ) {
+        let (Some(commander), Some(card)) = (commander_oracle_id, card_oracle_id) else {
+            return;
+        };
+        if let Ok(mut map) = self.inner.signals.lock() {
+            map.entry((commander, card)).or_default().removed += 1;
+        }
+    }
+
     /// Snapshots all counters into a batch and resets them to zero.
     ///
-    /// Returns `None` when every counter is zero (nothing to flush).
+    /// Returns `None` when every counter is zero and no signals are buffered.
     pub fn snapshot_and_zero(&self) -> Option<HttpUsageBatch> {
         let right = self.inner.swipes_right.swap(0, Ordering::Relaxed);
         let left = self.inner.swipes_left.swap(0, Ordering::Relaxed);
@@ -54,7 +111,27 @@ impl UsageBuffer {
         let down = self.inner.swipes_down.swap(0, Ordering::Relaxed);
         let searches = self.inner.searches.swap(0, Ordering::Relaxed);
 
-        if right == 0 && left == 0 && up == 0 && down == 0 && searches == 0 {
+        let signals: Vec<CardSignalDelta> = self
+            .inner
+            .signals
+            .lock()
+            .map(|mut map| std::mem::take(&mut *map))
+            .unwrap_or_default()
+            .into_iter()
+            .map(|((commander, card), t)| CardSignalDelta {
+                commander_oracle_id: commander,
+                card_oracle_id: card,
+                // `shown` is derived from add-stack actions for now; a removal is
+                // not an impression, so it doesn't count toward `shown`.
+                shown: t.added + t.skipped + t.maybed,
+                added: t.added,
+                skipped: t.skipped,
+                maybed: t.maybed,
+                removed: t.removed,
+            })
+            .collect();
+
+        if right == 0 && left == 0 && up == 0 && down == 0 && searches == 0 && signals.is_empty() {
             return None;
         }
 
@@ -64,6 +141,7 @@ impl UsageBuffer {
             swipes_up: up,
             swipes_down: down,
             searches,
+            signals,
         })
     }
 }

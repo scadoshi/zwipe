@@ -6,7 +6,7 @@
 
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::telemetry::{
-    flush_loop::spawn_usage_flusher, usage_buffer::UsageBuffer,
+    flush_loop::{spawn_usage_flusher, spawn_visibility_flusher}, usage_buffer::UsageBuffer,
 };
 use crate::outbound::client::version::get_min_client_version::ClientGetMinClientVersion;
 use crate::outbound::{client::ZwipeClient, session::Persist};
@@ -110,12 +110,18 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     });
     use_context_provider(|| theme);
 
-    // Usage telemetry buffer (swipe / search counters, flushed every 30s).
+    // Usage telemetry buffer (swipe / search counters + suggestion signals).
+    // Flushed by two tasks sharing this one buffer: a 30s timer, and a
+    // visibility flush that fires the instant the app backgrounds (so a
+    // swipe-to-close doesn't lose the last unflushed window).
     // use_hook: spawn exactly once — a plain call here would leak a new flush
     // loop every time the root component re-renders.
     let usage_buffer = use_signal(UsageBuffer::new);
     use_context_provider(|| usage_buffer);
-    use_hook(|| spawn_usage_flusher(usage_buffer.peek().clone(), client, session));
+    use_hook(|| {
+        spawn_usage_flusher(usage_buffer.peek().clone(), client, session);
+        spawn_visibility_flusher(usage_buffer.peek().clone(), client, session);
+    });
 
     // Min-version gate — flipped true when the server says this build is too
     // old. Provided as context (newtyped) so any screen can read it if needed.
