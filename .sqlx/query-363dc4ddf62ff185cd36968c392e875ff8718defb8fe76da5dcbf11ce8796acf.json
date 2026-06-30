@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO commander_card_signal\n                       (commander_oracle_id, card_oracle_id, shown, added, skipped, maybed, removed, updated_at)\n                   VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())\n                   ON CONFLICT (commander_oracle_id, card_oracle_id) DO UPDATE SET\n                       shown      = commander_card_signal.shown    + EXCLUDED.shown,\n                       added      = commander_card_signal.added    + EXCLUDED.added,\n                       skipped    = commander_card_signal.skipped  + EXCLUDED.skipped,\n                       maybed     = commander_card_signal.maybed   + EXCLUDED.maybed,\n                       removed    = commander_card_signal.removed  + EXCLUDED.removed,\n                       updated_at = NOW()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int8",
+        "Int8",
+        "Int8",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "363dc4ddf62ff185cd36968c392e875ff8718defb8fe76da5dcbf11ce8796acf"
+}

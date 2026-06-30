@@ -21,6 +21,34 @@ pub struct HttpUsageBatch {
     pub swipes_down: u32,
     /// Card searches issued.
     pub searches: u32,
+    /// Per-`(commander, card)` add/skip/maybe/remove tallies from deck building.
+    /// Aggregate-only, no user identity. `#[serde(default)]` so older clients
+    /// that omit the field still deserialize (backward compatible).
+    #[serde(default)]
+    pub signals: Vec<CardSignalDelta>,
+}
+
+/// One `(commander, card)` signal delta accumulated over a flush window.
+///
+/// Keyed by the deck's **primary** commander and the card (both Scryfall oracle
+/// ids). `shown` is the impression denominator — currently the client sends
+/// `added + skipped + maybed`, leaving room for true impressions later.
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+pub struct CardSignalDelta {
+    /// Primary commander oracle id (the signal's lead key).
+    pub commander_oracle_id: Uuid,
+    /// Card oracle id.
+    pub card_oracle_id: Uuid,
+    /// Times the card was shown for a decision (add-stack impressions).
+    pub shown: u32,
+    /// Right swipes on the add stack (added to deck).
+    pub added: u32,
+    /// Left swipes (skipped).
+    pub skipped: u32,
+    /// Up swipes (maybeboarded).
+    pub maybed: u32,
+    /// Deliberate removals from a deck (a delayed negative).
+    pub removed: u32,
 }
 
 impl HttpUsageBatch {
@@ -33,7 +61,14 @@ impl HttpUsageBatch {
     /// even at the endpoint's request rate limit.
     pub const MAX_PER_FLUSH: u32 = 10_000;
 
-    /// Returns a copy with every counter clamped to [`Self::MAX_PER_FLUSH`].
+    /// Maximum accepted number of distinct `(commander, card)` signal deltas per
+    /// flush. A legitimate ~30s window touches a few dozen cards at most; this
+    /// caps an untrusted client from sending a runaway upsert set.
+    pub const MAX_SIGNALS_PER_FLUSH: usize = 1_000;
+
+    /// Returns a copy with every counter clamped to [`Self::MAX_PER_FLUSH`], the
+    /// signal list truncated to [`Self::MAX_SIGNALS_PER_FLUSH`], and each
+    /// signal's tallies clamped per field.
     #[must_use]
     pub fn clamped(&self) -> Self {
         Self {
@@ -42,13 +77,36 @@ impl HttpUsageBatch {
             swipes_up: self.swipes_up.min(Self::MAX_PER_FLUSH),
             swipes_down: self.swipes_down.min(Self::MAX_PER_FLUSH),
             searches: self.searches.min(Self::MAX_PER_FLUSH),
+            signals: self
+                .signals
+                .iter()
+                .take(Self::MAX_SIGNALS_PER_FLUSH)
+                .map(CardSignalDelta::clamped)
+                .collect(),
+        }
+    }
+}
+
+impl CardSignalDelta {
+    /// Returns a copy with each tally clamped to [`HttpUsageBatch::MAX_PER_FLUSH`].
+    #[must_use]
+    pub fn clamped(&self) -> Self {
+        Self {
+            commander_oracle_id: self.commander_oracle_id,
+            card_oracle_id: self.card_oracle_id,
+            shown: self.shown.min(HttpUsageBatch::MAX_PER_FLUSH),
+            added: self.added.min(HttpUsageBatch::MAX_PER_FLUSH),
+            skipped: self.skipped.min(HttpUsageBatch::MAX_PER_FLUSH),
+            maybed: self.maybed.min(HttpUsageBatch::MAX_PER_FLUSH),
+            removed: self.removed.min(HttpUsageBatch::MAX_PER_FLUSH),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::HttpUsageBatch;
+    use super::{CardSignalDelta, HttpUsageBatch};
+    use uuid::Uuid;
 
     #[test]
     fn clamped_caps_each_field_and_leaves_small_ones() {
@@ -58,6 +116,7 @@ mod tests {
             swipes_up: HttpUsageBatch::MAX_PER_FLUSH + 1,
             swipes_down: 0,
             searches: u32::MAX,
+            signals: Vec::new(),
         }
         .clamped();
         assert_eq!(clamped.swipes_right, HttpUsageBatch::MAX_PER_FLUSH);
@@ -65,6 +124,38 @@ mod tests {
         assert_eq!(clamped.swipes_up, HttpUsageBatch::MAX_PER_FLUSH);
         assert_eq!(clamped.swipes_down, 0);
         assert_eq!(clamped.searches, HttpUsageBatch::MAX_PER_FLUSH);
+    }
+
+    #[test]
+    fn clamped_truncates_signal_list_and_caps_tallies() {
+        let delta = CardSignalDelta {
+            commander_oracle_id: Uuid::nil(),
+            card_oracle_id: Uuid::nil(),
+            shown: u32::MAX,
+            added: 3,
+            skipped: HttpUsageBatch::MAX_PER_FLUSH + 1,
+            maybed: 0,
+            removed: 0,
+        };
+        let batch = HttpUsageBatch {
+            signals: vec![delta; HttpUsageBatch::MAX_SIGNALS_PER_FLUSH + 5],
+            ..Default::default()
+        }
+        .clamped();
+        assert_eq!(batch.signals.len(), HttpUsageBatch::MAX_SIGNALS_PER_FLUSH);
+        let first = batch.signals.first().unwrap();
+        assert_eq!(first.shown, HttpUsageBatch::MAX_PER_FLUSH);
+        assert_eq!(first.added, 3);
+        assert_eq!(first.skipped, HttpUsageBatch::MAX_PER_FLUSH);
+    }
+
+    #[test]
+    fn batch_deserializes_without_signals_field() {
+        // An older client omits `signals`; must still parse (→ empty).
+        let json = r#"{"swipes_right":2,"swipes_left":1,"swipes_up":0,"swipes_down":0,"searches":3}"#;
+        let batch: HttpUsageBatch = serde_json::from_str(json).unwrap();
+        assert!(batch.signals.is_empty());
+        assert_eq!(batch.swipes_right, 2);
     }
 }
 

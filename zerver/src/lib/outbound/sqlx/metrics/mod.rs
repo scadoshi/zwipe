@@ -87,6 +87,34 @@ impl MetricsRepository for Postgres {
         .await
         .map_err(db)?;
 
+        // First-party suggestion signal: aggregate per-(commander, card) tallies.
+        // Pure aggregate — no user_id. Clamped above, so the list is bounded and
+        // each tally fits the BIGINT accumulation.
+        for sig in &batch.signals {
+            query!(
+                r#"INSERT INTO commander_card_signal
+                       (commander_oracle_id, card_oracle_id, shown, added, skipped, maybed, removed, updated_at)
+                   VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+                   ON CONFLICT (commander_oracle_id, card_oracle_id) DO UPDATE SET
+                       shown      = commander_card_signal.shown    + EXCLUDED.shown,
+                       added      = commander_card_signal.added    + EXCLUDED.added,
+                       skipped    = commander_card_signal.skipped  + EXCLUDED.skipped,
+                       maybed     = commander_card_signal.maybed   + EXCLUDED.maybed,
+                       removed    = commander_card_signal.removed  + EXCLUDED.removed,
+                       updated_at = NOW()"#,
+                sig.commander_oracle_id,
+                sig.card_oracle_id,
+                sig.shown as i64,
+                sig.added as i64,
+                sig.skipped as i64,
+                sig.maybed as i64,
+                sig.removed as i64,
+            )
+            .execute(&mut *tx)
+            .await
+            .map_err(db)?;
+        }
+
         tx.commit().await.map_err(db)?;
 
         Ok(())
