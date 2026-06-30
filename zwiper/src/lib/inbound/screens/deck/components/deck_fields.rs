@@ -18,7 +18,9 @@ use zwipe_core::domain::card::{
     },
 };
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::{DeckName, DeckTag, MAX_DECK_TAGS, format::Format};
+use zwipe_core::domain::deck::{
+    DeckName, DeckOtherTag, DeckTag, MAX_DECK_TAGS, PowerLevel, format::Format,
+};
 
 /// Upper bound for the land-target stepper — no deck runs more lands than this.
 const MAX_LAND_TARGET: i32 = 100;
@@ -57,6 +59,10 @@ pub(crate) fn DeckFields(
     // Price target (budget) as amount text ("" = no budget) + currency chips.
     mut price_target: Signal<String>,
     mut price_target_currency: Signal<PriceCurrency>,
+    // Power level (WotC bracket). `None` = Not set. Single-select chips.
+    mut power_level: Signal<Option<PowerLevel>>,
+    // Other tags (non-gameplay labels). Multi-select chips.
+    mut other_tags: Signal<Vec<DeckOtherTag>>,
 ) -> Element {
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
@@ -763,6 +769,72 @@ pub(crate) fn DeckFields(
                             class: "chip selected",
                             "{tag.display_name()}"
                         }
+                    }
+                }
+            }
+        }
+
+        // ========================================
+        // Power level (single-select WotC bracket; Not set = none)
+        // ========================================
+        div { style: "margin-top: 1rem;",
+            div { class: "label-row",
+                label { class: "label", "Power level" }
+                if power_level().is_some() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| power_level.set(None),
+                        "\u{00d7}"
+                    }
+                }
+            }
+            div { class: "chip-row", style: "flex-wrap: wrap; justify-content: center;",
+                for pl in PowerLevel::all().iter().copied() {
+                    div {
+                        key: "{pl}",
+                        class: if power_level() == Some(pl) { "chip selected" } else { "chip" },
+                        onclick: move |_| {
+                            if power_level() == Some(pl) {
+                                power_level.set(None);
+                            } else {
+                                power_level.set(Some(pl));
+                            }
+                        },
+                        "{pl.display_name()}"
+                    }
+                }
+            }
+        }
+
+        // ========================================
+        // Other tags (non-gameplay labels; multi-select)
+        // ========================================
+        div { style: "margin-top: 1rem;",
+            div { class: "label-row",
+                label { class: "label", "Other tags" }
+                if !other_tags().is_empty() {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| other_tags.set(Vec::new()),
+                        "\u{00d7}"
+                    }
+                }
+            }
+            div { class: "chip-row", style: "flex-wrap: wrap; justify-content: center;",
+                for tag in DeckOtherTag::all().iter().copied() {
+                    div {
+                        key: "{tag}",
+                        class: if other_tags().contains(&tag) { "chip selected" } else { "chip" },
+                        onclick: move |_| {
+                            let mut v = other_tags();
+                            if let Some(pos) = v.iter().position(|t| *t == tag) {
+                                v.remove(pos);
+                            } else {
+                                v.push(tag);
+                            }
+                            other_tags.set(v);
+                        },
+                        "{tag.display_name()}"
                     }
                 }
             }

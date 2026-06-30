@@ -27,7 +27,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{
-    Deck, DeckName, DeckTag, deck_profile::DeckProfile, format::Format,
+    Deck, DeckName, DeckOtherTag, DeckTag, PowerLevel, deck_profile::DeckProfile, format::Format,
     requests::update_deck_profile::InvalidUpdateDeckProfile,
 };
 use zwipe_core::domain::user::models::hints::HINT_EDIT_DECK;
@@ -65,6 +65,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut land_target = use_signal(|| None::<i32>);
     let mut price_target = use_signal(String::new);
     let mut price_target_currency = use_signal(|| PriceCurrency::Usd);
+    let mut power_level: Signal<Option<PowerLevel>> = use_signal(|| None);
+    let mut other_tags: Signal<Vec<DeckOtherTag>> = use_signal(Vec::new);
 
     // Reactive Zwipe-select modes — derived from the current format / commander.
     let commander_mode = use_memo(move || selected_format().map(SwipeMode::Commander));
@@ -82,6 +84,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut original_land_target: Signal<Option<i32>> = use_signal(|| None);
     let mut original_price_target: Signal<String> = use_signal(String::new);
     let mut original_price_target_currency: Signal<PriceCurrency> = use_signal(|| PriceCurrency::Usd);
+    let mut original_power_level: Signal<Option<PowerLevel>> = use_signal(|| None);
+    let mut original_other_tags: Signal<Vec<DeckOtherTag>> = use_signal(Vec::new);
     let mut original_partner: Signal<Option<Card>> = use_signal(|| None);
     let mut original_background: Signal<Option<Card>> = use_signal(|| None);
     let mut original_signature_spell: Signal<Option<Card>> = use_signal(|| None);
@@ -119,6 +123,10 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 .unwrap_or(PriceCurrency::Usd);
             original_price_target_currency.set(ptc);
             price_target_currency.set(ptc);
+            original_power_level.set(deck.deck_profile.power_level);
+            power_level.set(deck.deck_profile.power_level);
+            original_other_tags.set(deck.deck_profile.other_tags.clone());
+            other_tags.set(deck.deck_profile.other_tags);
         }
         Some(Err(e)) => {
             toast.error(
@@ -343,6 +351,25 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             Opdate::Unchanged
         }
     });
+    let power_level_update = use_memo(move || {
+        if power_level() != original_power_level() {
+            Opdate::Set(power_level().map(|p| p.to_string()))
+        } else {
+            Opdate::Unchanged
+        }
+    });
+    let other_tags_update = use_memo(move || {
+        if other_tags() != original_other_tags() {
+            Opdate::Set(Some(
+                other_tags()
+                    .iter()
+                    .map(|t| t.to_string())
+                    .collect::<Vec<_>>(),
+            ))
+        } else {
+            Opdate::Unchanged
+        }
+    });
     let has_made_changes = use_memo(move || {
         deck_name_update().is_some()
             || commander_id_update().is_changed()
@@ -354,6 +381,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             || land_target_update().is_changed()
             || price_target_update().is_changed()
             || price_currency_update().is_changed()
+            || power_level_update().is_changed()
+            || other_tags_update().is_changed()
     });
 
     // save state
@@ -399,6 +428,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 .land_target(land_target_update())
                 .price_target(price_target_update())
                 .price_target_currency(price_currency_update())
+                .power_level(power_level_update())
+                .other_tags(other_tags_update())
                 .build();
 
             match client()
@@ -456,6 +487,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                                     land_target,
                                     price_target,
                                     price_target_currency,
+                                    power_level,
+                                    other_tags,
                                 }
 
                             }

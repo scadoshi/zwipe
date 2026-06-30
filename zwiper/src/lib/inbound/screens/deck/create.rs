@@ -19,7 +19,7 @@ use std::time::Duration;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::{DeckName, DeckTag, format::Format};
+use zwipe_core::domain::deck::{DeckName, DeckOtherTag, DeckTag, PowerLevel, format::Format};
 use zwipe_core::domain::user::models::hints::HINT_CREATE_DECK;
 use zwipe_core::http::contracts::deck::HttpCreateDeckProfile;
 
@@ -53,6 +53,8 @@ pub fn CreateDeck() -> Element {
     let land_target = use_signal(|| None::<i32>);
     let price_target = use_signal(String::new);
     let price_target_currency = use_signal(|| PriceCurrency::Usd);
+    let power_level: Signal<Option<PowerLevel>> = use_signal(|| None);
+    let other_tags: Signal<Vec<DeckOtherTag>> = use_signal(Vec::new);
     let create_hint = use_one_time_hint(HINT_CREATE_DECK);
 
     // Reactive Zwipe-select modes — derived from the current format / commander.
@@ -90,6 +92,7 @@ pub fn CreateDeck() -> Element {
             let commander_id = commander().map(|c| c.scryfall_data.id);
             let format_str = selected_format().map(|f| f.to_legality_key().to_string());
             let tags: Vec<String> = selected_tags().iter().map(|t| t.to_string()).collect();
+            let other: Vec<String> = other_tags().iter().map(|t| t.to_string()).collect();
             let price_target_val: Option<f64> =
                 price_target().parse().ok().filter(|v: &f64| *v > 0.0);
             let request = HttpCreateDeckProfile::builder(&deck_name())
@@ -99,6 +102,8 @@ pub fn CreateDeck() -> Element {
                 .signature_spell_id(signature_spell().map(|c| c.scryfall_data.id))
                 .format(format_str)
                 .tags(if tags.is_empty() { None } else { Some(tags) })
+                .power_level(power_level().map(|p| p.to_string()))
+                .other_tags(if other.is_empty() { None } else { Some(other) })
                 .land_target(land_target())
                 .price_target(price_target_val)
                 .price_target_currency(price_target_val.map(|_| price_target_currency()))
@@ -152,6 +157,8 @@ pub fn CreateDeck() -> Element {
                             land_target,
                             price_target,
                             price_target_currency,
+                            power_level,
+                            other_tags,
                         }
                     }
                 }

@@ -2,7 +2,9 @@
 
 use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use crate::domain::deck::{
-    DeckName, DeckTag, InvalidDeckname, InvalidDeckTag, MAX_DECK_TAGS,
+    DeckName, DeckOtherTag, DeckTag, InvalidDeckname, InvalidDeckOtherTag, InvalidDeckTag,
+    InvalidPowerLevel, MAX_DECK_OTHER_TAGS, MAX_DECK_TAGS, PowerLevel,
+    deck_other_tag::parse_other_tags,
     deck_tag::parse_tags,
     format::{Format, InvalidFormat},
 };
@@ -24,6 +26,15 @@ pub enum InvalidUpdateDeckProfile {
     /// More than [`MAX_DECK_TAGS`] tags were supplied.
     #[error("a deck may have at most {MAX_DECK_TAGS} tags")]
     TooManyTags,
+    /// Power level string is not a recognized power level.
+    #[error(transparent)]
+    PowerLevel(InvalidPowerLevel),
+    /// An other-tag string is not a recognized other-tag.
+    #[error(transparent)]
+    DeckOtherTag(InvalidDeckOtherTag),
+    /// More than [`MAX_DECK_OTHER_TAGS`] other-tags were supplied.
+    #[error("a deck may have at most {MAX_DECK_OTHER_TAGS} other-tags")]
+    TooManyOtherTags,
     /// No fields specified for update.
     #[error("must update at least one field")]
     NoUpdates,
@@ -47,6 +58,18 @@ impl From<InvalidDeckTag> for InvalidUpdateDeckProfile {
     }
 }
 
+impl From<InvalidPowerLevel> for InvalidUpdateDeckProfile {
+    fn from(value: InvalidPowerLevel) -> Self {
+        Self::PowerLevel(value)
+    }
+}
+
+impl From<InvalidDeckOtherTag> for InvalidUpdateDeckProfile {
+    fn from(value: InvalidDeckOtherTag) -> Self {
+        Self::DeckOtherTag(value)
+    }
+}
+
 /// Request to update deck profile metadata.
 #[derive(Debug, Clone)]
 pub struct UpdateDeckProfile {
@@ -67,6 +90,12 @@ pub struct UpdateDeckProfile {
     /// Optional tags update. `Some` replaces the deck's full tag set (an empty
     /// vec clears all tags); `None` leaves tags untouched.
     pub tags: Option<Vec<DeckTag>>,
+    /// Optional power level update. `Some(None)` clears it; `None` leaves it
+    /// untouched.
+    pub power_level: Option<Option<PowerLevel>>,
+    /// Optional other-tags update. `Some` replaces the full set (empty clears
+    /// all); `None` leaves them untouched.
+    pub other_tags: Option<Vec<DeckOtherTag>>,
     /// Optional land target update. `Some(None)` clears the override (back to
     /// the format heuristic); `None` leaves it untouched.
     pub land_target: Option<Option<i32>>,
@@ -92,6 +121,8 @@ impl UpdateDeckProfile {
             signature_spell_id: None,
             format: None,
             tags: None,
+            power_level: None,
+            other_tags: None,
             land_target: None,
             price_target: None,
             price_target_currency: None,
@@ -110,6 +141,8 @@ pub struct UpdateDeckProfileBuilder {
     signature_spell_id: Option<Option<Uuid>>,
     format: Option<Option<String>>,
     tags: Option<Option<Vec<String>>>,
+    power_level: Option<Option<String>>,
+    other_tags: Option<Option<Vec<String>>>,
     land_target: Option<Option<i32>>,
     price_target: Option<Option<f64>>,
     price_target_currency: Option<Option<PriceCurrency>>,
@@ -160,6 +193,20 @@ impl UpdateDeckProfileBuilder {
         self
     }
 
+    /// Sets the power level update. Outer `Some` means "update"; inner `None`
+    /// clears it. `None` leaves it untouched.
+    pub fn power_level(mut self, power_level: Option<Option<&str>>) -> Self {
+        self.power_level = power_level.map(|opt| opt.map(|s| s.to_string()));
+        self
+    }
+
+    /// Sets the other-tags update. Outer `Some` means "update"; the inner value
+    /// is the new full set (`None`/empty clears all). `None` leaves them untouched.
+    pub fn other_tags(mut self, other_tags: Option<Option<Vec<String>>>) -> Self {
+        self.other_tags = other_tags;
+        self
+    }
+
     /// Sets the land target update. Outer `Some` means "update"; inner `None`
     /// clears the override. `None` leaves it untouched.
     pub fn land_target(mut self, land_target: Option<Option<i32>>) -> Self {
@@ -192,6 +239,8 @@ impl UpdateDeckProfileBuilder {
             && self.signature_spell_id.is_none()
             && self.format.is_none()
             && self.tags.is_none()
+            && self.power_level.is_none()
+            && self.other_tags.is_none()
             && self.land_target.is_none()
             && self.price_target.is_none()
             && self.price_target_currency.is_none()
@@ -213,6 +262,20 @@ impl UpdateDeckProfileBuilder {
                 Some(parsed)
             }
         };
+        let power_level = self
+            .power_level
+            .map(|update| update.as_deref().map(PowerLevel::try_from).transpose())
+            .transpose()?;
+        let other_tags = match self.other_tags {
+            None => None,
+            Some(raw) => {
+                let parsed = parse_other_tags(&raw.unwrap_or_default())?;
+                if parsed.len() > MAX_DECK_OTHER_TAGS {
+                    return Err(InvalidUpdateDeckProfile::TooManyOtherTags);
+                }
+                Some(parsed)
+            }
+        };
 
         Ok(UpdateDeckProfile {
             deck_id: self.deck_id,
@@ -223,6 +286,8 @@ impl UpdateDeckProfileBuilder {
             signature_spell_id: self.signature_spell_id,
             format,
             tags,
+            power_level,
+            other_tags,
             land_target: self.land_target,
             price_target: self.price_target,
             price_target_currency: self.price_target_currency,

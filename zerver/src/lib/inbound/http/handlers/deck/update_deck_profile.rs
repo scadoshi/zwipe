@@ -67,6 +67,15 @@ impl From<InvalidUpdateDeckProfile> for ApiError {
             InvalidUpdateDeckProfile::TooManyTags => {
                 Self::UnprocessableEntity("a deck may have at most 5 tags".to_string())
             }
+            InvalidUpdateDeckProfile::PowerLevel(e) => {
+                Self::UnprocessableEntity(format!("invalid power level: {}", e))
+            }
+            InvalidUpdateDeckProfile::DeckOtherTag(e) => {
+                Self::UnprocessableEntity(format!("invalid other-tag: {}", e))
+            }
+            InvalidUpdateDeckProfile::TooManyOtherTags => {
+                Self::UnprocessableEntity("a deck may have at most 5 other-tags".to_string())
+            }
             InvalidUpdateDeckProfile::NoUpdates => {
                 Self::UnprocessableEntity("must update at least one field".to_string())
             }
@@ -93,6 +102,10 @@ where
     let format_option: Option<Option<&str>> = format_raw
         .as_ref()
         .map(|opt| opt.as_deref());
+    let power_level_raw: Option<Option<String>> = body.power_level.into_option();
+    let power_level_option: Option<Option<&str>> = power_level_raw
+        .as_ref()
+        .map(|opt| opt.as_deref());
     let request = UpdateDeckProfile::builder(deck_id, user.id)
         .name(body.name.as_deref())
         .commander_id(body.commander_id.into_option())
@@ -101,6 +114,8 @@ where
         .signature_spell_id(body.signature_spell_id.into_option())
         .format(format_option)
         .tags(body.tags.into_option())
+        .power_level(power_level_option)
+        .other_tags(body.other_tags.into_option())
         .land_target(body.land_target.into_option())
         .price_target(body.price_target.into_option())
         .price_target_currency(body.price_target_currency.into_option())

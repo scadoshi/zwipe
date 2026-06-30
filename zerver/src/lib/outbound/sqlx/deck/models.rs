@@ -6,7 +6,9 @@ use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCur
 use zwipe_core::domain::deck::{
     Board,
     DeckCard,
+    DeckOtherTag,
     DeckTag,
+    PowerLevel,
     deck_name::DeckName,
     deck_profile::DeckProfile,
     format::Format,
@@ -26,6 +28,8 @@ pub struct DatabaseDeckProfile {
     pub signature_spell_id: Option<Uuid>,
     pub format: Option<String>,
     pub tags: Option<serde_json::Value>,
+    pub power_level: Option<String>,
+    pub other_tags: Option<serde_json::Value>,
     pub land_target: Option<i32>,
     pub price_target: Option<f64>,
     pub price_target_currency: Option<String>,
@@ -55,6 +59,22 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
                     .collect()
             })
             .unwrap_or_default();
+        // Unrecognized power level falls back to None (unset), forward-compatible.
+        let power_level = value
+            .power_level
+            .as_deref()
+            .and_then(|s| PowerLevel::try_from(s).ok());
+        // Unrecognized other-tag strings are dropped, forward-compatible (like tags).
+        let other_tags = value
+            .other_tags
+            .and_then(|v| serde_json::from_value::<Vec<String>>(v).ok())
+            .map(|strings| {
+                strings
+                    .iter()
+                    .filter_map(|s| DeckOtherTag::try_from(s.as_str()).ok())
+                    .collect()
+            })
+            .unwrap_or_default();
 
         Ok(Self {
             id: value.id,
@@ -65,6 +85,8 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
             signature_spell_id: value.signature_spell_id,
             format,
             tags,
+            power_level,
+            other_tags,
             land_target: value.land_target,
             price_target: value.price_target,
             // Unrecognized currency strings fall back to None (USD), forward-compatible.

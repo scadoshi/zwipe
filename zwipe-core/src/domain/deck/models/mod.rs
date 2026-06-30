@@ -1,9 +1,11 @@
 // Value objects
 pub mod board;
 pub mod deck_name;
+pub mod deck_other_tag;
 pub mod deck_tag;
 pub mod format;
 pub mod import_mode;
+pub mod power_level;
 pub mod quantity;
 
 // Entities
@@ -22,10 +24,12 @@ pub use deck::{Deck, DeckEntry};
 pub use deck_card::DeckCard;
 pub use deck_metrics::DeckMetrics;
 pub use deck_name::{DeckName, InvalidDeckname};
+pub use deck_other_tag::{DeckOtherTag, InvalidDeckOtherTag, MAX_DECK_OTHER_TAGS};
 pub use deck_profile::DeckProfile;
 pub use deck_tag::{DeckTag, InvalidDeckTag, MAX_DECK_TAGS};
 pub use deck_warning::{DeckWarning, WarningAction};
 pub use format::{Format, InvalidFormat};
 pub use import_mode::ImportMode;
+pub use power_level::{InvalidPowerLevel, PowerLevel};
 pub use quantity::{InvalidQuantity, InvalidUpdateQuanity, Quantity, UpdateQuantity};
 pub use validate_deck::{validate_deck, DeckCommandZone};

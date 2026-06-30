@@ -1,5 +1,17 @@
 # Deck Power Level & Other Tags
 
+**Status: BUILT 2026-06-30 (on `main`, not yet deployed/store-built).** Full
+implementation landed across all three crates: `PowerLevel` (WotC Brackets 1–5)
+and `DeckOtherTag` (Budget/Jank/Meme/Precon/UpgradedPrecon) in `zwipe-core`; an
+additive migration (`power_level TEXT`, `other_tags JSONB` + GIN) with
+forward-compatible parsing and `cargo sqlx prepare`; and the client deck form
+(single-select power chips + multi-select other-tag chips) plus profile display.
+**Deploy server-first** (per the standing rule). Resolved the power scale to the
+official Commander Brackets (below). The archetype axis (`DeckTag`) was expanded
+to 117 curated tags the same day, which is why these *secondary* axes were the
+natural next addition. Precedent followed: `land_target` / `price_target`
+(2026-06-29) — see `land_signals.md` / `price_filter.md`.
+
 ## Why / discovery
 
 While building the full-screen **tag** picker and reworking the **format**
@@ -98,10 +110,25 @@ forward-compatible "drop unknown strings" parse in
 
 ## Open decisions
 
-1. **`PowerLevel` variants** — simple single-select. Either **Casual, Mid, High,
-   cEDH** (simple 4-tier) or the official **Commander Brackets** (Exhibition,
-   Core, Upgraded, Optimized, cEDH). Plumbing is identical; default to the simple
-   4-tier.
+1. **`PowerLevel` variants — RESOLVED (2026-06-30): adopt the official WotC
+   Commander Brackets**, not an ad-hoc tier — they're now the standard players
+   expect, and the app is heavily Commander-oriented (synergy-by-commander,
+   EDHREC themes):
+   - 1 — Exhibition
+   - 2 — Core
+   - 3 — Upgraded
+   - 4 — Optimized
+   - 5 — cEDH
+
+   Notes:
+   - Brackets are Commander-coined but players apply them loosely elsewhere, so
+     **don't hard-gate by format** — offer the picker on any deck; it's
+     optional/nullable. (Format-gating to the Commander family, like the commander
+     field, is a possible later refinement, not worth it now.)
+   - Consider naming the type `PowerBracket` / column `power_bracket` to match the
+     terminology; the generic `power_level` name also works. Display as
+     "1 — Exhibition", etc., so the number and the name both read.
+   - Plumbing is identical to either choice, so this is purely a labeling call.
 2. **RESOLVED — `PowerLevel` stays separate** from `other_tags`: a rating wants
    exactly one value and is worth sorting/filtering on, which a multi-select
    bucket can't enforce.

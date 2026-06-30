@@ -559,6 +559,8 @@ mod tests {
             signature_spell_id: None,
             format,
             tags: Vec::new(),
+            power_level: None,
+            other_tags: Vec::new(),
             land_target: None,
             price_target: None,
             price_target_currency: None,

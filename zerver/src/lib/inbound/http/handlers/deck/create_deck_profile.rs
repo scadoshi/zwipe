@@ -60,6 +60,15 @@ impl From<InvalidCreateDeckProfile> for ApiError {
             InvalidCreateDeckProfile::TooManyTags => {
                 Self::UnprocessableEntity("a deck may have at most 5 tags".to_string())
             }
+            InvalidCreateDeckProfile::PowerLevel(e) => {
+                Self::UnprocessableEntity(format!("invalid power level: {}", e))
+            }
+            InvalidCreateDeckProfile::DeckOtherTag(e) => {
+                Self::UnprocessableEntity(format!("invalid other-tag: {}", e))
+            }
+            InvalidCreateDeckProfile::TooManyOtherTags => {
+                Self::UnprocessableEntity("a deck may have at most 5 other-tags".to_string())
+            }
         }
     }
 }
@@ -87,6 +96,8 @@ where
         .signature_spell_id(body.signature_spell_id)
         .format(body.format.as_deref())
         .tags(body.tags.unwrap_or_default())
+        .power_level(body.power_level.as_deref())
+        .other_tags(body.other_tags.unwrap_or_default())
         .land_target(body.land_target)
         .price_target(body.price_target)
         .price_target_currency(body.price_target_currency)
