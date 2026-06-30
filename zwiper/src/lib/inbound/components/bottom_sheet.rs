@@ -1,6 +1,8 @@
 //! Reusable bottom sheet overlay component.
 
 use dioxus::prelude::*;
+use std::time::Duration;
+use tokio::time::sleep;
 
 /// A slide-up bottom sheet with backdrop, title, content slot, and footer.
 ///
@@ -14,15 +16,24 @@ pub fn BottomSheet(
     footer: Option<Element>,
     on_dismiss: Option<EventHandler<()>>,
 ) -> Element {
-    // On the very first render the closed sheet must carry `transition: none`,
-    // then re-enable it after mount. Without this, iOS WebKit replays the
-    // transform transition on insert — animating the sheet from its default
-    // (up/visible) position down to translateY(100%) — so a screen that mounts a
-    // sheet on startup (e.g. Home with the support button) flashes it sliding
-    // away. Gating the transition on a post-mount flag stops the insert-replay
-    // while keeping the normal open/close animation.
+    // On the first render the sheet carries `transition: none` (via the
+    // `bottom-sheet-premount` class), then drops it once mounted. Without this,
+    // iOS WebKit replays the transform transition on insert — animating the
+    // sheet from its default position down to translateY(100%) — so a screen
+    // that mounts a sheet on startup (e.g. Home with the support button on an
+    // authenticated launch) flashes it sliding away. The flag must flip *after*
+    // WebKit's first post-insert paint: a synchronous `use_effect` re-enables
+    // the transition before that paint and the replay still shows, so we defer
+    // a couple frames. This is a class, not an inline style — clearing an inline
+    // `transition: none` back to empty doesn't reliably take in this WebView, so
+    // it would linger and kill every sheet's open/close animation.
     let mut mounted = use_signal(|| false);
-    use_effect(move || mounted.set(true));
+    use_effect(move || {
+        spawn(async move {
+            sleep(Duration::from_millis(50)).await;
+            mounted.set(true);
+        });
+    });
 
     rsx! {
         div {
@@ -33,16 +44,18 @@ pub fn BottomSheet(
             },
         }
         div {
-            class: if open() { "bottom-sheet show" } else { "bottom-sheet" },
-            // When open, let the CSS `.show` rules drive the slide. When closed,
-            // pin the hidden state inline; before mount also kill the transition
-            // so WebKit can't replay the slide on insert (see note above).
-            style: if open() {
-                ""
+            // Before mount, add `bottom-sheet-premount` (CSS `transition: none`)
+            // so WebKit can't replay the slide on insert (see note above); the
+            // class drops after mount so the normal open/close slide animates.
+            // This is a class, not an inline style, because clearing an inline
+            // `transition: none` back to empty doesn't reliably take in this
+            // WebView — the rule lingers and kills every sheet's animation.
+            class: if open() {
+                "bottom-sheet show"
             } else if mounted() {
-                "visibility: hidden; transform: translateY(100%);"
+                "bottom-sheet"
             } else {
-                "visibility: hidden; transform: translateY(100%); transition: none;"
+                "bottom-sheet bottom-sheet-premount"
             },
             div { class: "modal-header",
                 span { style: "font-size: 1rem; color: var(--accent-tertiary);", "{title}" }
