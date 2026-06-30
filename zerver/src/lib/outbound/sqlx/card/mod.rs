@@ -190,17 +190,20 @@ impl CardRepository for MyPostgres {
         &self,
         request: &CardFilter,
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
-        self.search_scryfall_data_deck_aware(request, &[], None).await
+        self.search_scryfall_data_deck_aware(request, &[], None, false)
+            .await
     }
 
-    /// `search_scryfall_data` plus the deck-aware extras: oracle_id exclusion
-    /// and synergy-score default ordering (used only when the filter has no
-    /// explicit `order_by`). The plain search is this with no extras.
+    /// `search_scryfall_data` plus the deck-aware extras: oracle_id exclusion,
+    /// synergy-score default ordering, and (when `synergy_only`) a membership
+    /// constraint to the commander's synergy pool. The plain search is this with
+    /// no extras.
     async fn search_scryfall_data_deck_aware(
         &self,
         request: &CardFilter,
         exclude_oracle_ids: &[uuid::Uuid],
         synergy_scores: Option<&serde_json::Value>,
+        synergy_only: bool,
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
         let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new(
             "SELECT latest_cards.* FROM latest_cards
@@ -704,6 +707,16 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated(")))");
         }
 
+        // Synergy ON: constrain to the commander's synergy pool (membership).
+        // Same per-row jsonb probe the synergy ORDER BY uses; the user's sort, if
+        // any, then applies within this set. Skipped when no score map (cold
+        // cache / no commander) so it gracefully falls back to the full pool.
+        if synergy_only && let Some(scores) = synergy_scores {
+            sep.push("(");
+            sep.push_bind_unseparated(scores.clone());
+            sep.push_unseparated(" ->> LOWER(name)) IS NOT NULL");
+        }
+
         // Filter out NULLs for sorted field
         if let Some(order_by) = request.order_by() {
             let null_filter = match order_by {
@@ -1044,9 +1057,15 @@ impl CardRepository for MyPostgres {
         request: &CardFilter,
         exclude_oracle_ids: &[uuid::Uuid],
         synergy_scores: Option<&serde_json::Value>,
+        synergy_only: bool,
     ) -> Result<Vec<Card>, SearchCardsError> {
         let scryfall_data = self
-            .search_scryfall_data_deck_aware(request, exclude_oracle_ids, synergy_scores)
+            .search_scryfall_data_deck_aware(
+                request,
+                exclude_oracle_ids,
+                synergy_scores,
+                synergy_only,
+            )
             .await?;
         if scryfall_data.is_empty() {
             return Ok(vec![]);

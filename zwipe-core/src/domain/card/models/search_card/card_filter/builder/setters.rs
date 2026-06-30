@@ -741,6 +741,14 @@ impl CardFilterBuilder {
         self
     }
 
+    /// Toggles deck-aware synergy membership mode (Synergy ON/OFF). When on, the
+    /// deck-aware search constrains results to the commander's synergy pool, then
+    /// sorts within it. A pure mode flag — never makes the filter "active".
+    pub fn set_synergy(&mut self, synergy: bool) -> &mut Self {
+        self.synergy = synergy;
+        self
+    }
+
     // =================================
     // Exclude Filter Setters
     // =================================
@@ -985,6 +993,9 @@ impl CardFilterBuilder {
             language: self.language.clone(),
             order_by: self.order_by,
             ascending: self.ascending,
+            // Synergy is a mode flag, not a search criterion: clearing the filter
+            // keeps it, and it never makes the filter "active" on its own.
+            synergy: self.synergy,
             // Currency is a sticky preference: clearing the filter keeps it, and
             // it never makes the filter "active" on its own (only min/max do).
             price_currency: self.price_currency,

@@ -146,6 +146,7 @@ pub struct CardFilterBuilder {
     offset: u32,
     order_by: Option<OrderByOption>,
     ascending: bool,
+    synergy: bool,
 }
 
 impl Default for CardFilterBuilder {
@@ -211,6 +212,7 @@ impl Default for CardFilterBuilder {
             offset: 0,
             order_by: None,
             ascending: true,
+            synergy: false,
         }
     }
 }
@@ -705,6 +707,7 @@ impl CardFilterBuilder {
             offset: self.offset,
             order_by: self.order_by,
             ascending: self.ascending,
+            synergy: self.synergy,
         })
     }
 }
@@ -728,5 +731,22 @@ mod tests {
         builder.set_keywords_excludes(vec!["haste"]);
         assert!(!builder.is_empty());
         assert!(builder.build().is_ok());
+    }
+
+    #[test]
+    fn synergy_is_a_mode_not_a_criterion() {
+        // Synergy alone must not make the filter "active" — it's a server-side
+        // membership mode, not a search criterion.
+        let mut builder = CardFilterBuilder::new();
+        builder.set_synergy(true);
+        assert!(builder.is_empty());
+        assert!(builder.build().is_err());
+    }
+
+    #[test]
+    fn synergy_round_trips_through_build() {
+        let mut builder = CardFilterBuilder::with_name_contains("bolt");
+        builder.set_synergy(true);
+        assert!(builder.build().unwrap().synergy());
     }
 }

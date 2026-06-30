@@ -355,4 +355,9 @@ impl CardFilterBuilder {
     pub fn ascending(&self) -> bool {
         self.ascending
     }
+
+    /// Returns the deck-aware synergy membership flag.
+    pub fn synergy(&self) -> bool {
+        self.synergy
+    }
 }
