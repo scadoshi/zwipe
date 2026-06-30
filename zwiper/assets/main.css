@@ -2139,6 +2139,10 @@ button {
     transition: transform 0.3s ease;
 }
 
+.bottom-sheet.bottom-sheet-premount {
+    transition: none;
+}
+
 .bottom-sheet .util-bar {
     padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
 }
