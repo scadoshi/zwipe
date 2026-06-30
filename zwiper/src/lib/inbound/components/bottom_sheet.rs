@@ -14,6 +14,16 @@ pub fn BottomSheet(
     footer: Option<Element>,
     on_dismiss: Option<EventHandler<()>>,
 ) -> Element {
+    // On the very first render the closed sheet must carry `transition: none`,
+    // then re-enable it after mount. Without this, iOS WebKit replays the
+    // transform transition on insert — animating the sheet from its default
+    // (up/visible) position down to translateY(100%) — so a screen that mounts a
+    // sheet on startup (e.g. Home with the support button) flashes it sliding
+    // away. Gating the transition on a post-mount flag stops the insert-replay
+    // while keeping the normal open/close animation.
+    let mut mounted = use_signal(|| false);
+    use_effect(move || mounted.set(true));
+
     rsx! {
         div {
             class: if open() { "modal-backdrop show" } else { "modal-backdrop" },
@@ -24,6 +34,16 @@ pub fn BottomSheet(
         }
         div {
             class: if open() { "bottom-sheet show" } else { "bottom-sheet" },
+            // When open, let the CSS `.show` rules drive the slide. When closed,
+            // pin the hidden state inline; before mount also kill the transition
+            // so WebKit can't replay the slide on insert (see note above).
+            style: if open() {
+                ""
+            } else if mounted() {
+                "visibility: hidden; transform: translateY(100%);"
+            } else {
+                "visibility: hidden; transform: translateY(100%); transition: none;"
+            },
             div { class: "modal-header",
                 span { style: "font-size: 1rem; color: var(--accent-tertiary);", "{title}" }
             }
