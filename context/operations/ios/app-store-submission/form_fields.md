@@ -14,7 +14,7 @@ Swipe to Build MTG Decks
 
 (170 character limit. Can be updated without a new submission — refresh this between releases to spotlight whatever's freshest.)
 
-Just shipped: Flip button for double-faced cards plus polish across filters, card art, and sign-ins. Swipe 110,000+ cards. Free, no ads, no microtransactions.
+Just shipped: budget tools — filter cards by price, set a deck budget, and track your land count as you build. Swipe 110,000+ cards. Free, no ads, no microtransactions.
 
 ---
 
@@ -36,6 +36,16 @@ Other tools:
 - Your decks sync across sessions and devices
 
 Built for players who want a fast, focused mobile experience — not another cluttered desktop tool squeezed onto a small screen.
+
+---
+
+## What's New in This Version (1.1.4)
+
+- Set a land target for your deck — pick your own number or use the format's default — and get a heads-up while you build if you drop below it.
+- Build on a budget: filter cards by price (USD, EUR, or Tix) to find options in your range.
+- Set a price target for a deck and get alerts as your total approaches and passes it.
+- Your deck's Stats, Distributions, Mana, and Warnings are now grouped into tidy, tap-to-expand sections.
+- Cleaner, more consistent filter controls, plus a fix for a flicker when the app first opens.
 
 ---
 
@@ -146,7 +156,7 @@ MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading ca
 |-------|-------|
 | Support URL | https://zwipe.net |
 | Marketing URL | https://zwipe.net |
-| Version | 1.1.3 |
+| Version | 1.1.4 |
 | Copyright | 2026 Scotty Fermo |
 | Routing App Coverage File | (leave empty) |
 
