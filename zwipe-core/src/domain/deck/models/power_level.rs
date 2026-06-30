@@ -40,17 +40,6 @@ impl PowerLevel {
         ]
     }
 
-    /// The bracket number (1–5).
-    pub fn bracket(&self) -> u8 {
-        match self {
-            Self::Exhibition => 1,
-            Self::Core => 2,
-            Self::Upgraded => 3,
-            Self::Optimized => 4,
-            Self::Cedh => 5,
-        }
-    }
-
     /// Human-readable display name, including the bracket number.
     pub fn display_name(&self) -> &'static str {
         match self {
@@ -121,9 +110,4 @@ mod tests {
         assert!(PowerLevel::try_from("not_a_bracket").is_err());
     }
 
-    #[test]
-    fn brackets_are_one_through_five() {
-        let nums: Vec<u8> = PowerLevel::all().iter().map(|p| p.bracket()).collect();
-        assert_eq!(nums, vec![1, 2, 3, 4, 5]);
-    }
 }
