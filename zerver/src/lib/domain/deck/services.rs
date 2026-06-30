@@ -299,10 +299,13 @@ where
         }
         let exclude_oracle_ids: Vec<Uuid> = exclude_oracle_ids.into_iter().collect();
 
-        // Synergy is the default ordering only — an explicit sort wins, and a
-        // missing/unparseable signal degrades to the filter's own semantics.
-        let synergy_scores: Option<serde_json::Value> = match (filter.order_by(), deck_profile.commander_id) {
-            (None, Some(commander_id)) => self
+        // The synergy score map is needed in two cases: as the membership set
+        // when Synergy is ON, or as the default ordering when no explicit sort is
+        // set. A missing/unparseable signal degrades to the filter's own
+        // semantics (full pool) — which is also the cold-cache fallback for ON.
+        let synergy_only = filter.synergy();
+        let synergy_scores: Option<serde_json::Value> = match deck_profile.commander_id {
+            Some(commander_id) if synergy_only || filter.order_by().is_none() => self
                 .card_repo
                 .commander_synergy_payload(commander_id)
                 .await?
@@ -325,7 +328,7 @@ where
 
         let cards = self
             .card_repo
-            .search_cards_deck_aware(filter, &exclude_oracle_ids, synergy_scores.as_ref())
+            .search_cards_deck_aware(filter, &exclude_oracle_ids, synergy_scores.as_ref(), synergy_only)
             .await?;
         Ok(cards)
     }

@@ -267,4 +267,9 @@ impl CardFilter {
     pub fn ascending(&self) -> bool {
         self.ascending
     }
+
+    /// Deck-aware synergy membership mode (see [`CardFilter`] field docs).
+    pub fn synergy(&self) -> bool {
+        self.synergy
+    }
 }

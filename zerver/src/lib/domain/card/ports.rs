@@ -106,14 +106,17 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         request: &CardFilter,
     ) -> impl Future<Output = Result<Vec<ScryfallData>, SearchScryfallDataError>> + Send;
 
-    /// `search_scryfall_data` plus deck-aware extras: oracle_id exclusion and
-    /// synergy-score default ordering (scores apply only when the filter has
-    /// no explicit `order_by`).
+    /// `search_scryfall_data` plus deck-aware extras: oracle_id exclusion,
+    /// synergy-score default ordering, and (when `synergy_only`) constraining
+    /// results to the commander's synergy pool. With `synergy_only` set and a
+    /// score map present, the result set is the synergistic cards only, sorted
+    /// by the filter's `order_by` (or by synergy score when no sort is given).
     fn search_scryfall_data_deck_aware(
         &self,
         request: &CardFilter,
         exclude_oracle_ids: &[uuid::Uuid],
         synergy_scores: Option<&serde_json::Value>,
+        synergy_only: bool,
     ) -> impl Future<Output = Result<Vec<ScryfallData>, SearchScryfallDataError>> + Send;
 
     /// Retrieves complete card by Scryfall ID.
@@ -216,13 +219,15 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// `search_cards` with deck awareness: rows whose oracle_id is in
     /// `exclude_oracle_ids` are omitted, and when `synergy_scores` is given
     /// (lowercased card name → score) results are ordered by score descending
-    /// with unscored cards last. Caller guarantees scores are only passed
-    /// when the filter has no explicit `order_by`.
+    /// with unscored cards last. With `synergy_only`, results are also
+    /// constrained to the cards present in the score map (membership), then
+    /// sorted by the filter's `order_by` within that set.
     fn search_cards_deck_aware(
         &self,
         request: &CardFilter,
         exclude_oracle_ids: &[uuid::Uuid],
         synergy_scores: Option<&serde_json::Value>,
+        synergy_only: bool,
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
     /// Fetches the cached synergy payload for a commander by **printing** id

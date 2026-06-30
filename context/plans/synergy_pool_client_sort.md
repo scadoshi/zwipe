@@ -114,25 +114,71 @@ score on the same pool. (See `suggestion_signal.md` and feature-request #7.)
   25-card page. Decide when #6 is scoped; it does **not** affect the membership +
   basic-sort model here.
 
-## Open questions
+## Decisions (settled 2026-06-30)
 
-- **Default state** of the toggle — ON or OFF on first entry? (ON sells the
-  "it just works" story; probably ON when a commander is set, OFF otherwise.)
-- **Toggle placement** — util-bar button (next to Filter/Refresh) vs a chip like
-  the existing Search/Maybeboard source selector.
-- **Membership join cost** — confirm the INNER-join variant paginates efficiently
-  (index on the synergy table's commander + card keys).
-- **Cold cache** — first request for a brand-new commander may have no synergy row
-  yet (the worker fills lazily, ~seconds). ON mode on a cold commander = empty
-  until warm; decide whether to fall back to OFF or show a "warming up" state.
+- **Default state — ON when a commander is set** (and the synergy cache is warm);
+  OFF when there's no commander or no synergy data. Sells the "it just works"
+  story; flip OFF to reach the full legal pool.
+- **Toggle placement — a chip next to the Search/Maybeboard source selector**
+  (`add.rs`), shown only for the **Search** source (synergy is meaningless in
+  Maybeboard mode).
+- **Cold cache — fall back to OFF + a subtle "synergy warming up" note.** A
+  brand-new commander's synergy row fills lazily (~seconds); rather than an empty
+  stack (which reads as broken), serve the full pool and hint that synergy is
+  warming.
+- **Membership predicate — the jsonb `(<scores> ->> LOWER(name)) IS NOT NULL`
+  probe; no new index.** `idx_latest_cards_name` is on `name`, not `LOWER(name)`,
+  so a name-list `ANY` wouldn't use it — and today's synergy `ORDER BY` *already*
+  does the identical per-row jsonb probe over the full pool, so the membership
+  `WHERE` is **perf-parity** with the existing synergy path. Future optimization
+  if ever needed: add `CREATE INDEX … (LOWER(name))` and switch to a name-list
+  `ANY`.
+- **Out of scope (deferred):** #6 MV-aware adaptive weighting and the
+  synergy-quality / embeddings work. This change is purely membership + the flag.
+
+## Build scope (server-first)
+
+1. **`zwipe-core` — the flag.** Add `synergy: bool` (`#[serde(default)]`) to
+   `CardFilter` + a builder getter/setter. Old clients omit it → `false` →
+   today's behavior. (The deck-aware search body is the shared `CardFilter`.)
+2. **`zerver` — membership.**
+   - Service (`services.rs:304`): fetch synergy scores when
+     `commander_id.is_some() && (synergy_on || order_by().is_none())`; pass a new
+     `synergy_only: bool` to the repo.
+   - SQL (`search_scryfall_data_deck_aware`, `card/mod.rs`): add a `synergy_only`
+     param; when true and scores are present, push
+     `AND (<scores> ->> LOWER(name)) IS NOT NULL` into the existing `WHERE`
+     (seeded `TRUE`, `AND`-chained ~line 215). The `ORDER BY` block (708–759) is
+     **untouched** — it already applies the user's sort when set, else the synergy
+     default.
+   - `cargo sqlx prepare --workspace`.
+3. **`zwiper` — toggle + states.**
+   - A "Synergy" ON/OFF chip beside the source selector (Search source only),
+     wired into `CardFilterBuilder.synergy`. Default ON when a commander is set.
+   - Re-query on toggle (reuse the existing search effect); works under any sort.
+   - Cold / no-commander: when ON returns nothing because the cache is cold, fall
+     back to OFF + the "warming up" hint; disable/hide the toggle when there's no
+     commander.
+
+### Risks / edge cases
+- **Name-key membership.** Keys are lowercased `name` (matching today's ordering).
+  Confirm score-map keys line up with `latest_cards.name` lowercased (watch
+  DFC/split name forms).
+- **Pagination under ON + non-synergy sort.** `LIMIT` must scan to fill 25 within
+  the membership set — fine for a few-hundred-card pool; watch a sparse one.
+- **Non-commander / no synergy signal → ON unavailable** (no set to constrain to).
+- **Plain (non-deck) search ignores the flag** — confirm it's never read there.
+
+### Testing
+- Unit: `CardFilter` serde default (old client omits `synergy` → `false`).
+- Integration (real PG): ON constrains to the scored set; ON + price sort =
+  cheapest-that-work; OFF = full pool; no-commander → OFF.
+- Manual: toggle in app, change sort within ON, cold-commander fallback.
 
 ## Status
 
-**Design direction captured — not yet scoped to build.** The Synergy ON/OFF toggle
-(server-side membership + user sort, paginated) is the agreed model. It underpins
-the price-sort expectation (`price_filter.md`) and MV-aware weighting (#6), so
-settle it before building those sorts, or they ship the "sort looks broken"
-perception. Sequence: add the membership flag to the search query + the toggle UI →
-then price filter's sort and #6 slot in. Synergy quality itself improves later via
-embeddings/learned ranking over collected data (`suggestion_signal.md`, #7) with no
-further architecture change.
+**Scoped + decided 2026-06-30 — ready to build.** Model: server-side membership +
+user sort, paginated. Sequence: server slice (1–2, small) first — it unblocks the
+price-sort expectation (`price_filter.md`) and #6; client (3) is the bulk. Synergy
+quality improves later via embeddings/learned ranking over collected data
+(`suggestion_signal.md`, #7) with no further architecture change.

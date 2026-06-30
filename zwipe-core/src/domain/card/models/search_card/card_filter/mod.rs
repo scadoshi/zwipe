@@ -137,6 +137,12 @@ pub struct CardFilter {
     order_by: Option<OrderByOption>,
     #[serde(default = "default_ascending")]
     ascending: bool,
+    /// Deck-aware search only: when true, constrain results to the commander's
+    /// synergy pool (membership), then sort by `order_by` within it. Ignored by
+    /// the plain (non-deck) search. `#[serde(default)]` so older clients that
+    /// omit it parse to `false` (today's full-pool behavior).
+    #[serde(default)]
+    synergy: bool,
 }
 
 fn default_limit() -> u32 {
@@ -149,7 +155,15 @@ fn default_ascending() -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::strip_punctuation;
+    use super::{CardFilter, strip_punctuation};
+
+    #[test]
+    fn synergy_defaults_false_when_omitted() {
+        // A client predating the synergy flag omits it; must parse to false
+        // (today's full-pool behavior), keeping the endpoint server-first safe.
+        let filter: CardFilter = serde_json::from_str(r#"{"name_contains":"bolt"}"#).unwrap();
+        assert!(!filter.synergy());
+    }
 
     #[test]
     fn strips_apostrophes() {
