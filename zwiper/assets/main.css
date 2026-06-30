@@ -1939,7 +1939,7 @@ button {
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
     font-size: 0.7rem;
-    color: var(--text-muted);
+    color: var(--text-primary);
     cursor: pointer;
     transition: all 0.2s ease;
     background-color: var(--bg-primary);
@@ -2270,7 +2270,9 @@ button {
     font-weight: 400;
     letter-spacing: 0.1em;
     text-align: center;
-    width: 100%;
+    /* No width:100% — the label shrinks to its text so any toggle/clear controls
+       sit inline beside it, and the centered .label-row keeps the group centered
+       (label just shifts left a touch). Label-only rows still center fine. */
 }
 
 .btn-xs {
@@ -2381,11 +2383,13 @@ button {
     cursor: pointer;
     font-size: 0.85rem;
     line-height: 1;
-    color: var(--accent-secondary);
+    color: var(--color-error);
     padding: 0.2rem 0.45rem;
     margin-left: 0.25rem;
-    border: 1px solid var(--accent-secondary);
+    border: 1px solid var(--color-error);
     border-radius: 0.4rem;
+    /* Opaque fill so the page grid doesn't show through the button. */
+    background-color: var(--bg-primary);
     transition: all 0.2s ease;
 }
 

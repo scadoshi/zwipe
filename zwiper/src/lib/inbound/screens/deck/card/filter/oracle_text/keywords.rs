@@ -92,7 +92,7 @@ pub(crate) fn Keywords() -> Element {
         div { class: "label-row mt-2",
             label { class: "label-xs", r#for: "keyword-search", "Keywords include" }
             button {
-                class: "clear-btn",
+                class: "chip-xs",
                 onclick: move |_| {
                     let new_mode = keywords_mode().toggle();
                     let current = read_keywords(&filter_builder(), keywords_mode());

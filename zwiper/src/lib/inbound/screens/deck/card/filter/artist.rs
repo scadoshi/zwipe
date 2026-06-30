@@ -99,7 +99,7 @@ pub fn Artist() -> Element {
                 label { class: "label-xs", r#for: "artist-search", "Artist" }
                 if has_selection {
                     button {
-                        class: "clear-btn",
+                        class: "chip-xs",
                         onclick: move |_| {
                             let new_mode = mode().toggle();
                             let current = read_artists(&filter_builder(), mode());

@@ -25,7 +25,7 @@ pub(crate) fn ToughnessFilter() -> Element {
         div { class: "label-row mt-2",
             label { class: "label-xs", "Toughness" }
             button {
-                class: "clear-btn",
+                class: "chip-xs",
                 onclick: move |_| {
                     let new_mode = toughness_mode().toggle();
                     toughness_mode.set(new_mode);

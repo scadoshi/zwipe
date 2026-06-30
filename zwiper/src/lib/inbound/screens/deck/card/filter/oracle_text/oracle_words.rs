@@ -92,7 +92,7 @@ pub(crate) fn OracleWords() -> Element {
         div { class: "label-row mt-2",
             label { class: "label-xs", r#for: "oracle-words-search", "Oracle words include" }
             button {
-                class: "clear-btn",
+                class: "chip-xs",
                 onclick: move |_| {
                     let new_mode = oracle_words_mode().toggle();
                     let current = read_oracle_words(&filter_builder(), oracle_words_mode());

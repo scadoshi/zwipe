@@ -69,7 +69,7 @@ pub(crate) fn BasicTypes() -> Element {
             label { class: "label-xs", r#for: "card-type", "Basic types include" }
             if !selected.is_empty() {
                 button {
-                    class: "clear-btn",
+                    class: "chip-xs",
                     onclick: move |_| {
                         let new_mode = card_type_mode().toggle();
                         let current = read_card_types(&filter_builder(), card_type_mode());

@@ -97,7 +97,7 @@ pub fn Set() -> Element {
                 label { class: "label-xs", r#for: "set-search", "Set" }
                 if has_selection {
                     button {
-                        class: "clear-btn",
+                        class: "chip-xs",
                         onclick: move |_| {
                             let new_mode = mode().toggle();
                             let current = read_sets(&filter_builder(), mode());
