@@ -10,7 +10,6 @@ Distinct from `feature_requests.md` (already-weighted candidates) and `todo.md`
 
 | Item | Source | Verdict |
 |------|--------|---------|
-| [goad-deck-tag](goad-deck-tag.md) | User feedback (Zwipe 1.1.2, Android) | **Decided — build** (easy) |
 | [price-target-field-size](price-target-field-size.md) | Self-noted | **Decided — build** (small) |
 | [empty-filter-warning](empty-filter-warning.md) | Self-noted | Undecided — consider |
 | [landing-screen-fouc](landing-screen-fouc.md) | Self-noted | Undecided |
