@@ -109,30 +109,52 @@ Build 15 shipped over build 14 with: `Email` strict newtype across the workspace
 
 ---
 
-## Deck-building tooling + suggestion signal (2026-06-29, on `main`, not yet deployed/shipped)
+## Deck-building tooling, budget tools + suggestion signal (2026-06-29, on `main` — next version)
 
-A batch of deck-building tooling plus the first-party suggestion signal, all on
-local `main` but **not yet deployed or in a store build** (server slices deploy
-first, per the project rule). Highlights:
+A large batch (24 commits) of deck-building tooling, budget tools, the
+first-party suggestion signal, and UI polish — all on local `main`, **staged for
+the next version build, not yet deployed or in a store build**. Server slices
+deploy first (project rule); three additive nullable migrations are involved
+(`land_target`, `price_target` + `price_target_currency`, and the new
+`commander_card_signal` table). All wire-format changes are backward-compatible
+(`#[serde(default)]` / `Opdate`), so old clients are unaffected by the server.
 
+**Deck-building / budget tools:**
 - **Land target** — a per-deck land goal (stepper in the deck form: explicit
   override, else a format heuristic — Commander 37 / 60-card 17). Persisted
-  (`land_target` column), shown in the deck Profile, with crossing toasts on
+  (`land_target`), shown in the deck Profile, with crossing toasts on
   add/remove/qty and a below-target warning. Plan: `../plans/land_signals.md`.
 - **Price range filter** — min/max price in a chosen currency (USD/EUR/TIX
   chips, default USD) on card search; server `WHERE` over the `prices` JSONB +
   an in-memory predicate. Null prices excluded when a bound is set.
 - **Price target (budget)** — a per-deck budget (`price_target` + currency).
   Toasts on crossing a higher 50/75/100% band (exact %, re-fires on re-cross);
-  over-budget warning; shown in Profile. Plans: `../plans/price_filter.md`.
-- **Suggestion signal** — `commander_card_signal` aggregate (added/skipped/
-  maybed/removed per `(commander, card)`, no PII), flushed with usage on a 30s
-  timer **and on app-background** (`visibilitychange`). Verified collecting
-  end-to-end. Plan: `../plans/suggestion_signal.md` (Phase 3 ranking remains).
+  over-budget warning; shown in Profile. Plan: `../plans/price_filter.md`.
+
+**Telemetry — suggestion signal (Phases 1+2):**
+- **`commander_card_signal`** aggregate — added/skipped/maybed/**removed** per
+  `(commander, card)`, no user_id / no PII. The previously-discarded per-card
+  accept/skip signal is now captured. Client buffers it in `UsageBuffer` and
+  flushes with the usage batch on a 30s timer **and on app-background**
+  (`visibilitychange`/`pagehide` — so a swipe-to-close no longer loses the last
+  window; covers the whole telemetry buffer). Verified collecting end-to-end
+  against the local app. Plan: `../plans/suggestion_signal.md` — **Phase 3
+  (ranking) remains** (a later server-only read-path change).
+
+**UI / polish:**
 - **Deck-view collapsible sections** — Stats / Distributions / Mana / Warnings
-  grouped into accordion cards (groundwork for the draw-odds section). Plus a
-  "Flavor of the hour" header on the home flavor card and a bottom-sheet
-  startup-flash fix (iOS WebKit transition-on-insert).
+  grouped into accordion cards (groundwork for the future draw-odds section).
+- **Filter button alignment** — mode toggles (Any/All, Include/Exclude,
+  Exact/Range) now match the standard app button (subtle border + text);
+  selected = accent-2; clear `×` = destructive color + opaque fill (no grid
+  bleed); label-row controls sit inline beside the (centered) label.
+- **Home** — a "Flavor of the hour" header on the flavor card (+ matching
+  skeleton title bar); home now greets only verified users (unverified get the
+  verify nudge).
+- **Fixes** — bottom-sheet startup-flash (iOS WebKit transition-on-insert,
+  suppressed until mounted); deck-cards column header boxed; the redundant
+  util-bar clear-filter button removed from the remove screen; deck-view hint
+  refreshed for the new sections + fields.
 
 ---
 

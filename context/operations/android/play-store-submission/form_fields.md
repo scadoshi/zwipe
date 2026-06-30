@@ -153,13 +153,20 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.1.3 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
+| Version (client) | 1.1.4 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
 ### Release notes (What's new — max 500 chars, store-visible)
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
+
+**1.1.4:**
+
+- Set a land target for your deck and get a heads-up while building if you drop below it.
+- Build on a budget: filter cards by price (USD, EUR, or Tix), and set a price target to get alerts as your total nears and passes it.
+- Your deck's Stats, Distributions, Mana, and Warnings are now grouped into tap-to-expand sections.
+- Cleaner, more consistent filter controls, plus a fix for a flicker when the app first opens.
 
 **1.1.3:**
 
