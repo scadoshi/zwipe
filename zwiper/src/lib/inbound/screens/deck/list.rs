@@ -142,7 +142,7 @@ pub fn DeckList() -> Element {
                                                             span { class: "stat-chip stat-chip-format", "{fmt.display_name()}" }
                                                         }
                                                         if let Some(pl) = profile.power_level {
-                                                            span { class: "stat-chip stat-chip-power", "Bracket {pl.bracket()}" }
+                                                            span { class: "stat-chip stat-chip-power", "{pl.display_name()}" }
                                                         }
                                                         if let Some(ref cmd) = profile.commander_name {
                                                             span { class: "stat-chip stat-chip-zone", "{cmd}" }
