@@ -116,31 +116,29 @@ pub(crate) fn DrawOdds(deck_size: u32, buckets: Vec<(&'static str, u32)>) -> Ele
     } else {
         format!("Odds of ≥1 by turn {}", turn())
     };
-    let nav_btn = "background:none;border:1px solid var(--border-primary);border-radius:0.3rem;color:var(--accent-primary);font-size:0.85rem;line-height:1;padding:0.1rem 0.45rem;cursor:pointer;";
-    // Precompute per-turn odds outside the render tree. A `{ let …; rsx! }` block
-    // inside the `for` confuses Dioxus node diffing and drops the bar-width style
-    // on alternating turns; a flat, keyed loop over precomputed rows fixes it.
-    let rows: Vec<(&'static str, u32)> = buckets
+    // Map each bucket to its odds in the loop header rather than a
+    // `{ let …; rsx! }` block inside the `for` (which confuses Dioxus node
+    // diffing and drops the bar-width style on alternating turns); the keyed
+    // loop below remounts changed rows.
+    let rows = buckets
         .iter()
-        .map(|(label, k)| (*label, (p_at_least_one(deck_size, *k, draws) * 100.0).round() as u32))
-        .collect();
+        .map(|(label, k)| (*label, (p_at_least_one(deck_size, *k, draws) * 100.0).round() as u32));
     rsx! {
         div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
             div { style: "display:flex;align-items:center;justify-content:center;gap:0.6rem;",
+                // Reuse the combat-filter stepper button: solid background gives
+                // native press feedback and suppresses WKWebView's focus ring.
+                // The onclick guards no-op at the bounds; no grey-out.
                 button {
-                    r#type: "button",
-                    style: format!("{nav_btn}opacity:{};", if turn() == 0 { "0.35" } else { "1" }),
-                    disabled: turn() == 0,
+                    class: "stepper-btn",
                     onclick: move |_| { let t = turn(); if t > 0 { turn.set(t - 1); } },
-                    "<-"
+                    "-"
                 }
                 span { style: "font-size:0.75rem;font-weight:600;color:var(--accent-primary);", "{heading}" }
                 button {
-                    r#type: "button",
-                    style: format!("{nav_btn}opacity:{};", if turn() >= MAX_TURN { "0.35" } else { "1" }),
-                    disabled: turn() >= MAX_TURN,
+                    class: "stepper-btn",
                     onclick: move |_| { let t = turn(); if t < MAX_TURN { turn.set(t + 1); } },
-                    "->"
+                    "+"
                 }
             }
             for (label, pct) in rows {
