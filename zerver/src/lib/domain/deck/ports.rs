@@ -217,11 +217,15 @@ pub trait DeckService: Clone + Send + Sync + 'static {
     /// `order_by` and the deck's commander has cached synergy data, orders
     /// results by synergy descending. Explicit sort always wins; absent
     /// signal degrades gracefully to the filter's own semantics.
+    ///
+    /// Returns `(cards, synergy_warming)` where `synergy_warming` is true when
+    /// the filter requested synergy but the commander's cache wasn't available
+    /// (cold), so the search fell back to the full pool.
     fn search_deck_cards(
         &self,
         request: &GetDeckProfile,
         filter: &CardFilter,
-    ) -> impl Future<Output = Result<Vec<Card>, SearchDeckCardsError>> + Send;
+    ) -> impl Future<Output = Result<(Vec<Card>, bool), SearchDeckCardsError>> + Send;
 
     /// Retrieves all token cards produced by the cards in a deck.
     fn get_deck_tokens(

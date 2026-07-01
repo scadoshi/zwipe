@@ -261,7 +261,7 @@ where
         &self,
         request: &GetDeckProfile,
         filter: &CardFilter,
-    ) -> Result<Vec<Card>, SearchDeckCardsError> {
+    ) -> Result<(Vec<Card>, bool), SearchDeckCardsError> {
         let deck_profile = self.deck_repo.get_deck_profile(request).await?;
         if request.user_id != deck_profile.user_id {
             return Err(GetDeckProfileError::Forbidden.into());
@@ -330,7 +330,12 @@ where
             .card_repo
             .search_cards_deck_aware(filter, &exclude_oracle_ids, synergy_scores.as_ref(), synergy_only)
             .await?;
-        Ok(cards)
+        // Synergy was requested but the commander's cache wasn't available (cold
+        // / still computing), so the search fell back to the full pool. Surfaced
+        // to the client as a header so it can show a "warming up" hint.
+        let synergy_warming =
+            synergy_only && deck_profile.commander_id.is_some() && synergy_scores.is_none();
+        Ok((cards, synergy_warming))
     }
 
     async fn get_deck_tokens(

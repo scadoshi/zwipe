@@ -8,7 +8,7 @@
     z-index: 9999;
     right: 1rem;
     bottom: 7rem;
-    max-width: 18rem;
+    max-width: 16rem;
 }
 
 .toast-container ol {
@@ -41,10 +41,12 @@
 /* Toast */
 .toast-container [role="alertdialog"] {
     display: flex;
-    width: 100%;
+    /* Hug the content (capped by the container's max-width) so short messages
+       don't sit in a fixed-width box with a big gap before the close button. */
+    width: fit-content;
     box-sizing: border-box;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     padding: 1rem;
     border: 1px solid var(--border-primary);
     border-radius: 0.6rem;
@@ -90,7 +92,7 @@
 
 /* Toast Content — dioxus_primitives ToastContent renders a plain div; descendant selector targets it */
 .toast-container [role="alertdialog"] > div:first-child {
-    flex: 1;
+    flex: 0 1 auto;
     margin-right: 0.5rem;
 }
 
@@ -101,6 +103,9 @@
     font-weight: 400;
     letter-spacing: 0.1em;
     overflow-wrap: break-word;
+    /* Center so any ragged trailing space on wrapped lines is symmetric,
+       not dumped on the right edge next to the close button. */
+    text-align: center;
 }
 
 .toast-container [role="alertdialog"] [id$="-description"] {
