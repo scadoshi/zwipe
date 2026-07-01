@@ -101,6 +101,39 @@ pub(crate) fn DeckCharts(
     }
 }
 
+/// Opening-hand draw odds — `P(>=1)` per category, as horizontal bars
+/// (bar width tracks the probability). `rows` is `(label, probability 0.0-1.0)`.
+#[component]
+pub(crate) fn DrawOdds(rows: Vec<(&'static str, f64)>) -> Element {
+    rsx! {
+        div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
+            ChartLabel { text: "Odds of ≥1 in opening hand" }
+            for (label, p) in rows.iter() {
+                {
+                    let pct = (p * 100.0).round() as u32;
+                    rsx! {
+                        div { style: "display:flex;align-items:center;gap:0.5rem;",
+                            span { style: "width:5ch;font-size:0.7rem;color:var(--text-primary);opacity:0.85;text-align:right;flex-shrink:0;",
+                                "{label}"
+                            }
+                            div { style: "flex:1;height:0.9rem;background:var(--border-secondary);border-radius:0.15rem;overflow:hidden;",
+                                div {
+                                    style: format!(
+                                        "height:100%;width:{pct}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem;"
+                                    ),
+                                }
+                            }
+                            span { style: "font-size:0.7rem;color:var(--text-primary);opacity:0.85;width:4ch;text-align:right;flex-shrink:0;",
+                                "{pct}%"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 /// Mana curve (nonland CMC histogram), rendered flat for the "Mana" section.
 #[component]
 pub(crate) fn ManaCurve(mana_curve_bars: [(usize, u32); 7]) -> Element {
