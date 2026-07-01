@@ -13,6 +13,7 @@ Distinct from `feature_requests.md` (already-weighted candidates) and `todo.md`
 | [price-target-field-size](price-target-field-size.md) | Self-noted | **Decided — build** (small) |
 | [empty-filter-warning](empty-filter-warning.md) | Self-noted | Undecided — consider |
 | [landing-screen-fouc](landing-screen-fouc.md) | Self-noted | Undecided |
+| [card-oracle-text-fallback](card-oracle-text-fallback.md) | User (2026-06-30) | **Recommend build** (small); relates to FR #8 |
 
 Logged 2026-06-29; to be built out / triaged the following day.
 
