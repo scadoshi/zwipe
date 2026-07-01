@@ -153,13 +153,21 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.1.4 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
+| Version (client) | 1.2.0 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
 ### Release notes (What's new — max 500 chars, store-visible)
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
+
+**1.2.0:**
+
+- Draw-odds: see your chance of drawing a land, ramp, or removal in your opening hand or by any turn.
+- Set a power level for your deck, and add descriptive tags like Budget, Jank, Meme, or Precon.
+- Many more strategy tags, each with a plain-language definition.
+- Toggle synergy suggestions on or off on the add-cards screen as you build.
+- Contradictory include/exclude filters are now caught before you apply them, and lands drop out of the add screen once you hit your land target.
 
 **1.1.4:**
 
