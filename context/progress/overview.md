@@ -109,15 +109,18 @@ Build 15 shipped over build 14 with: `Email` strict newtype across the workspace
 
 ---
 
-## Deck analytics, tagging, synergy toggle + PDH/perf fixes (2026-06-30, on `main`)
+## 1.2.0 — deck analytics, tagging, synergy toggle + PDH/perf fixes (shipped 2026-06-30)
 
-A large post-1.1.4 batch on local `main`. **1.1.4 itself shipped as iOS build 53
-/ Android versionCode 14** — a rebuild over 52/vc12 carrying two fixes: the
+Shipped as **1.2.0 — iOS build 54 / Android versionCode 15** (first minor bump
+since 1.1.0), both stores, 2026-06-30. Server batch deployed to prod first (the
+additive migrations), then the clients. Predecessor **1.1.4 shipped as iOS build
+53 / Android versionCode 14** — a rebuild over 52/vc12 carrying two fixes: the
 bottom-sheet startup-flash/animation regression and clone-nav landing on stale
-fields. Everything below is on `main` **after** that, mostly server-first slices
-**not yet deployed / not in a store build**. Six completed plans were removed from
-`context/plans/` (outcomes recorded here): land_signals, price_filter,
-deck_power_level, synergy_pool_client_sort, privacy_policy, pauper_commander_fix.
+fields. Everything below landed on `main` after 1.1.4. All wire changes are
+additive (`#[serde(default)]` / `Opdate` / the `x-synergy-applied` header) so old
+clients keep working. Six completed plans were removed from `context/plans/`
+(outcomes recorded here): land_signals, price_filter, deck_power_level,
+synergy_pool_client_sort, privacy_policy, pauper_commander_fix.
 
 **Tagging & profile axes (server-first):**
 - **Deck tags expanded 85 → 117** — Goad plus ~30 EDHREC themes (Chaos, Dungeons,

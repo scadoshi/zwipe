@@ -253,3 +253,18 @@ the bundle → **Upload native debug symbols** (a zip containing
   Alpha closed-testing track. iOS counterpart: build 51. *R8/edge-to-edge emulator
   smoke test was skipped this round (same build path as prior releases) — first
   suspect if a tester device misbehaves.*
+
+- **2026-06-30 — `1.1.4`, versionCode `14`** (bottom-sheet flash fix + clone-nav
+  fix, over an initial 52/vc12 rebuild). Artifact `zwipe-1.1.4-vc14.aab`. iOS
+  counterpart: build 53.
+
+- **2026-06-30 — `1.2.0`, versionCode `15`** (first minor bump since 1.1.0:
+  hypergeometric draw-odds, Synergy on/off toggle, power level + other-tags,
+  deck tags 85→117, include/exclude filter guard, PDH commander fix, `edhrec_rank`
+  index, proliferate→Counters, create/edit top-scroll fix). Built per this recipe —
+  `dx bundle` → `launcher-icons.sh` → gradle patch (compileSdk 36 / targetSdk 35 /
+  versionCode 15) → `gradlew :app:bundleRelease` → jarsigner (0600 scratchpad
+  password, deleted after). Artifact `zwipe-1.2.0.aab`, signed + `jar verified`,
+  uploaded to the Alpha closed-testing track. iOS counterpart: build 54. Server
+  batch (additive migrations) deployed to prod first. *R8/edge-to-edge emulator
+  smoke test skipped again — first suspect if a tester device misbehaves.*
