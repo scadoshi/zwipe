@@ -1,6 +1,8 @@
 use super::components::clone_deck_dialog::CloneDeckDialog;
 use super::components::collapsible_section::CollapsibleSection;
-use super::components::deck_charts::{DeckCharts, ManaBalanceRow, ManaCurve, ManaFulfillment};
+use super::components::deck_charts::{
+    DeckCharts, DrawOdds, ManaBalanceRow, ManaCurve, ManaFulfillment,
+};
 use super::components::deck_profile::DeckProfileSection;
 use super::components::deck_stats::DeckStats;
 use super::components::deck_warnings::DeckWarnings;
@@ -39,6 +41,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::{
     DeckEntry, deck_metrics::DeckMetrics, deck_profile::DeckProfile, deck_warning::DeckWarning,
+    draw_odds::p_at_least_one,
 };
 use zwipe_core::domain::user::models::hints::HINT_FIRST_DECK;
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
@@ -288,6 +291,24 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         )
     });
 
+    // Opening-hand draw odds: P(>=1) per category for a 7-card hand. Library
+    // size = the mainboard (the commander sits in the command zone, not the
+    // library). Raw pre-mulligan odds; ignores card selection.
+    let draw_odds_rows: Option<Vec<(&'static str, f64)>> = metrics.as_ref().map(|m| {
+        let deck_size = (m.land_count + m.nonland_count) as u32;
+        let opening_hand = 7u32;
+        let mut rows: Vec<(&'static str, f64)> = vec![(
+            "Lands",
+            p_at_least_one(deck_size, m.land_count as u32, opening_hand),
+        )];
+        rows.extend(
+            m.mechanical_category_counts
+                .iter()
+                .map(|(label, count)| (*label, p_at_least_one(deck_size, *count as u32, opening_hand))),
+        );
+        rows
+    });
+
     let mana_balance_rows = metrics.as_ref().map(|m| -> Vec<_> {
         let labels = ["W", "U", "B", "R", "G"];
         labels
@@ -377,6 +398,14 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                 ManaCurve { mana_curve_bars: *mana_curve_bars }
                                                 if let Some(rows) = mana_balance_rows {
                                                     ManaFulfillment { rows: rows }
+                                                }
+                                            }
+
+                                            if let Some(rows) = draw_odds_rows.clone() {
+                                                CollapsibleSection {
+                                                    title: "Draw odds",
+                                                    open_section: open_section,
+                                                    DrawOdds { rows: rows }
                                                 }
                                             }
                                           }
