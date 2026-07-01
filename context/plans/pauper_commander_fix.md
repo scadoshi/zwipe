@@ -1,5 +1,16 @@
 # Pauper EDH Commander Pool Fix
 
+**Status: FIXED 2026-06-30 (Option A, on `main`, not yet deployed).** Server-only
+query change, no migration/client. **Correction to the diagnosis below:** rarity
+is stored as the **short code `'U'`**, not the word `'uncommon'` (the sync writes
+`Rarity::to_short_name()` — `scryfall_data_fields.rs:299`), so the old
+`rarity = 'uncommon'` predicate matched **nothing**. The fix does both: use `'U'`
+**and** check "uncommon in any printing" via a correlated `EXISTS` on
+`scryfall_data`. Verified locally: PDH commander pool went 0 → **5988 uncommon
+creatures (5196 non-legendary)**; the real picker further excludes digital/un-set
+cards via the default `digital:false` / `is_playable` filters. Option B (capture
+`is:paupercommander` at ingest, below) remains the exact-correctness follow-up.
+
 ## The bug (confirmed real)
 
 A PDH player reported the commander picker "only finds legendaries by default,
