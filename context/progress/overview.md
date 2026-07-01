@@ -109,6 +109,65 @@ Build 15 shipped over build 14 with: `Email` strict newtype across the workspace
 
 ---
 
+## Deck analytics, tagging, synergy toggle + PDH/perf fixes (2026-06-30, on `main`)
+
+A large post-1.1.4 batch on local `main`. **1.1.4 itself shipped as iOS build 53
+/ Android versionCode 14** — a rebuild over 52/vc12 carrying two fixes: the
+bottom-sheet startup-flash/animation regression and clone-nav landing on stale
+fields. Everything below is on `main` **after** that, mostly server-first slices
+**not yet deployed / not in a store build**. Six completed plans were removed from
+`context/plans/` (outcomes recorded here): land_signals, price_filter,
+deck_power_level, synergy_pool_client_sort, privacy_policy, pauper_commander_fix.
+
+**Tagging & profile axes (server-first):**
+- **Deck tags expanded 85 → 117** — Goad plus ~30 EDHREC themes (Chaos, Dungeons,
+  Curses, Snow, Adventures, Colorless, Domain, Surveil, Outlaws, Party, …). Pure
+  additive `DeckTag` enum; no migration.
+- **Power level + other-tags** — `PowerLevel` (WotC Commander Brackets 1–5,
+  single-select) and `DeckOtherTag` (Budget/Jank/Meme/Precon/Upgraded Precon,
+  multi-select) as new `DeckProfile` axes. Additive migration (`power_level TEXT`,
+  `other_tags JSONB` + GIN), `Opdate`/serde-default contracts, deck-form chip
+  pickers, profile + deck-list display. Plan resolved to the official Brackets.
+
+**Search — Synergy ON/OFF (server-first):**
+- A `synergy` flag on `CardFilter` makes the deck-aware search **constrain results
+  to the commander's synergy pool** (membership), then sort within it — so sorting
+  by price = "cheapest cards that work" instead of replacing the synergy set. A
+  toggle chip on add-cards (default on with a commander); cold cache falls back to
+  the full pool, signalled via an `x-synergy-applied` header that drives a subtle
+  "warming up" toast. Fixes the "sort looks broken" perception.
+
+**Deck analytics — Draw odds (client + core, no server):**
+- A tested hypergeometric **draw-odds engine** in `zwipe-core` + a "Draw odds"
+  section on the deck view: `P(>=1)` per category (lands + mechanical categories)
+  with `<- / ->` to step from the opening hand through later turns
+  (`draws = 7 + turn`), recomputed live. High-value consistency-stats
+  differentiator; premium-tier candidate.
+
+**Card data / classifier & perf (server-only):**
+- **PDH commander pool fix** — the eligibility predicate compared `rarity =
+  'uncommon'`, but rarity is stored as the short code `'U'`, so it matched nothing;
+  fixed to `'U'` **and** "uncommon in any printing" via a correlated `EXISTS`. Pool
+  went 0 → ~5,988 uncommon creatures (5,196 non-legendary).
+- **`edhrec_rank` index** on `latest_cards(edhrec_rank, name)` — popularity-sorted
+  browsing (commander Zwipe-select) drops from a ~270ms disk-spilling sort to
+  ~3.5ms (index scan, stops at LIMIT).
+- **Proliferate → Counters** — the mechanical-category classifier now folds
+  `proliferate` into the Counters bucket (counter payoffs regardless of type).
+
+**UI polish:** per-tag `×` on deck-form tag chips; land-target section spacing;
+whole-card hit area on collapsible sections (incl. the accessory strip); uppercase
+chart labels; a clearer `CSPEL` (Counterspell) abbreviation vs. `CNTRS` (Counters);
+clear the tag-picker search on select.
+
+**Deploy note:** server slices deploy first (project rule) on push to `main`
+(migrations `power_level`/`other_tags`, the `edhrec_rank` index; the PDH/synergy
+changes are query-only). All wire changes are additive (`#[serde(default)]` /
+`Opdate` / a response header), so already-shipped clients are unaffected. No new
+store build cut yet for this batch.
+
+---
+
 ## Deck-building tooling, budget tools + suggestion signal (2026-06-29, on `main` — next version)
 
 A large batch (24 commits) of deck-building tooling, budget tools, the
