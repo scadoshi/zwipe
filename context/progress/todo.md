@@ -140,7 +140,10 @@ Once wasm compiles, build the authenticated experience into zite:
 
 ## Web/Zite Polish
 
+- [ ] **SEO guides — a guide for every page of the app (DEFERRED, plan ready).** Long-form, indexable how-to guides on `zwipe.net` (one per feature/screen) plus MTG-topic guides, to capture organic search and funnel to downloads. Prerendered via zite's SSG; no CMS. Needs a full app read-through before writing so guides are accurate. Full blueprint + page inventory + tech approach: [`../plans/seo_guides.md`](../plans/seo_guides.md).
 - [ ] **Increase `Z` logo size on zwipe.net** — current ASCII logo reads small; bump scale or font-size on the landing hero.
+
+**SEO batch shipped 2026-06-30 (zite):** OG/Twitter share image (`context/marketing/og_default.html` → `zite/assets/og-default.png`, the tag was pointing at a missing file), keyword-rich home `<title>` + a semantic `<h1>`, `MobileApplication` JSON-LD (4.8/4 rating — bump when it moves), App Store testimonials strip, a "Free on iOS & Android. No ads." line, and a `build.rs`-generated `sitemap.xml` (now includes `/download/ios`). `Dioxus.toml` fallback title cased to "Zwipe".
 - [ ] **Mobile testing pass on zwipe.net** — verify landing, about, privacy, verify/reset token pages on iOS Safari + Android Chrome. Check the sticky nav and entrance animations under narrow viewports.
 - [ ] **Everforest theme review** — possibly too green; sample real card art against it and consider desaturating the background or shifting the accent.
 

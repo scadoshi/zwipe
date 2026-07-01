@@ -20,3 +20,11 @@ behavior than a warning.
   whether empty-filter = all-cards, or keep a (lighter-touch) prompt.
 - If we serve all cards, make sure deck-context exclusion (in-deck cards) and the
   synergy default ordering still apply.
+
+## Related user feedback
+
+- App Store 4★ review ("Sick app, needs way to set land amount", Caed_, ~2026-06-28)
+  asked for a target land count with a warning as the deck fills up. **That
+  land-count feature has since shipped** — the review predates it. Kept here only
+  because it touches the same "warn the user about deck composition" surface as
+  this empty-filter question. Not featured as a site testimonial for that reason.
