@@ -49,7 +49,7 @@ pub async fn search_deck_cards<AS, US, HS, CS, DS>(
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Path(deck_id): Path<Uuid>,
     Json(filter): Json<CardFilter>,
-) -> Result<(StatusCode, Json<Vec<Card>>), ApiError>
+) -> Result<(StatusCode, [(&'static str, &'static str); 1], Json<Vec<Card>>), ApiError>
 where
     AS: AuthService,
     US: UserService,
@@ -64,5 +64,10 @@ where
         .search_deck_cards(&request, &filter)
         .await
         .map_err(ApiError::from)
-        .map(|cards| (StatusCode::OK, Json(cards)))
+        .map(|(cards, synergy_warming)| {
+            // Signal cold-synergy fallback via a header — the body stays a bare
+            // card array, so older clients (which ignore the header) keep working.
+            let applied = if synergy_warming { "false" } else { "true" };
+            (StatusCode::OK, [("x-synergy-applied", applied)], Json(cards))
+        })
 }

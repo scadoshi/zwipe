@@ -104,6 +104,9 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     // Source selector: search (API) vs maybeboard (local)
     let mut add_source: Signal<AddSource> = use_signal(AddSource::default);
+    // True when synergy was requested but the commander's cache is still warming
+    // (server fell back to the full pool); drives the inline "warming up" note.
+    let mut synergy_warming = use_signal(|| false);
     let mut mb_entries: Signal<Vec<DeckEntry>> = use_signal(Vec::new);
     let mut mb_displayed_cards: Signal<Vec<Card>> = use_signal(Vec::new);
     let mut mb_current_index: Signal<usize> = use_signal(|| 0);
@@ -124,6 +127,21 @@ pub fn Add(deck_id: Uuid) -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let usage_buffer: Signal<UsageBuffer> = use_context();
     let toast = use_toast();
+
+    // Toast once when synergy goes cold (the search fell back to the full pool).
+    // Deduped via a prev-value cell so re-searches / load-more while still warming
+    // don't re-fire it; only a fresh false->true transition toasts.
+    let synergy_was_warming = use_hook(|| std::cell::Cell::new(false));
+    use_effect(move || {
+        let warming = synergy_warming();
+        let was = synergy_was_warming.replace(warming);
+        if warming && !was {
+            toast.info(
+                "Synergy warming up; showing all cards for now".to_string(),
+                ToastOptions::default().duration(Duration::from_millis(3500)),
+            );
+        }
+    });
 
     // Card iteration state
     let mut current_index = use_signal(|| 0_usize);
@@ -183,7 +201,8 @@ pub fn Add(deck_id: Uuid) -> Element {
             };
 
             match client().search_deck_cards(deck_id, &filter, &session).await {
-                Ok(new_cards) => {
+                Ok((new_cards, warming)) => {
+                    synergy_warming.set(warming);
                     let existing_cards = cards();
                     let deck_ids = deck_cards_ids();
 
@@ -692,7 +711,8 @@ pub fn Add(deck_id: Uuid) -> Element {
         usage_buffer().record_search();
         spawn(async move {
             match client().search_deck_cards(deck_id, &filter, &session).await {
-                Ok(cards_from_search) => {
+                Ok((cards_from_search, warming)) => {
+                    synergy_warming.set(warming);
                     let deck_ids = deck_cards_ids();
                     cards.set(
                         cards_from_search
@@ -928,16 +948,20 @@ pub fn Add(deck_id: Uuid) -> Element {
                         // Synergy ON/OFF — constrains the stack to the commander's
                         // synergy pool, then sorts within it. Search source +
                         // commander only (no commander = nothing to constrain to).
+                        // Pinned right (margin-left:auto) so it reads as its own
+                        // control, not part of the "From:" source group.
                         if add_source() == AddSource::Search && deck_has_commander() {
-                            Chip {
-                                selected: filter_builder.read().synergy(),
-                                onclick: move |_| {
-                                    let on = !filter_builder.peek().synergy();
-                                    filter_builder.write().set_synergy(on);
-                                    let current = *filter_reset_counter.peek();
-                                    filter_reset_counter.set(current + 1);
-                                },
-                                "Synergy"
+                            div { style: "margin-left: auto;",
+                                Chip {
+                                    selected: filter_builder.read().synergy(),
+                                    onclick: move |_| {
+                                        let on = !filter_builder.peek().synergy();
+                                        filter_builder.write().set_synergy(on);
+                                        let current = *filter_reset_counter.peek();
+                                        filter_reset_counter.set(current + 1);
+                                    },
+                                    "Synergy"
+                                }
                             }
                         }
                     }
@@ -1156,7 +1180,8 @@ pub fn Add(deck_id: Uuid) -> Element {
                             usage_buffer().record_search();
                             spawn(async move {
                                 match client().search_deck_cards(deck_id, &filter, &session).await {
-                                    Ok(cards_from_search) => {
+                                    Ok((cards_from_search, warming)) => {
+                                        synergy_warming.set(warming);
                                         let deck_ids = deck_cards_ids();
                                         cards.set(
                                             cards_from_search
@@ -1247,7 +1272,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         " on keeps the stack to cards that work with your commander; turn it off to browse every legal card."
                     }
                 }
-                HintLine { "Sorting reorders whichever set you're viewing — it never changes which cards show. Filter or sort anytime." }
+                HintLine { "Sorting reorders whichever set you're viewing. It never changes which cards show. Filter or sort anytime." }
             }
 
             CardFilterSheet {

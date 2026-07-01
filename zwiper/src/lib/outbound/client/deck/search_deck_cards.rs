@@ -21,16 +21,19 @@ pub trait ClientSearchDeckCards {
         deck_id: Uuid,
         card_filter: &CardFilter,
         session: &Session,
-    ) -> impl Future<Output = Result<Vec<Card>, ApiError>> + Send;
+    ) -> impl Future<Output = Result<(Vec<Card>, bool), ApiError>> + Send;
 }
 
 impl ClientSearchDeckCards for ZwipeClient {
+    /// Returns `(cards, synergy_warming)` — `synergy_warming` is true when
+    /// synergy was requested but the commander's cache was still warming, so the
+    /// server served the full pool (signalled via the `x-synergy-applied` header).
     async fn search_deck_cards(
         &self,
         deck_id: Uuid,
         card_filter: &CardFilter,
         session: &Session,
-    ) -> Result<Vec<Card>, ApiError> {
+    ) -> Result<(Vec<Card>, bool), ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&search_deck_cards_route(deck_id));
 
@@ -46,8 +49,17 @@ impl ClientSearchDeckCards for ZwipeClient {
 
         match response.status() {
             StatusCode::OK => {
+                // `x-synergy-applied: false` means synergy was requested but the
+                // commander's cache is still warming, so the full pool was served.
+                // Read the header before `json()` consumes the response.
+                let synergy_warming = response
+                    .headers()
+                    .get("x-synergy-applied")
+                    .and_then(|v| v.to_str().ok())
+                    .map(|v| v == "false")
+                    .unwrap_or(false);
                 let cards: Vec<Card> = response.json().await?;
-                Ok(cards)
+                Ok((cards, synergy_warming))
             }
             status => {
                 let message = response.text().await?;
