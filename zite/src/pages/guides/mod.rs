@@ -78,12 +78,16 @@ fn render_block(b: &'static Block) -> Element {
     }
 }
 
+/// Category order for the index. Guides are grouped under these headings; any
+/// category not listed here is skipped, so keep it in sync with `content.rs`.
+const CATEGORY_ORDER: &[&str] = &["Start", "Build", "Cards", "Decks"];
+
 #[component]
 pub fn Guides() -> Element {
     rsx! {
         PageMeta {
             title: "Guides",
-            description: "How-to guides for building Magic: The Gathering decks on mobile with Zwipe — swiping to build, filtering, budgeting, land targets, deck stats, commanders, and more.",
+            description: "How-to guides for building Magic: The Gathering decks on mobile with Zwipe: swiping to build, filtering, budgeting, land targets, deck stats, commanders, and more.",
             path: "/guides",
         }
         Nav {}
@@ -91,14 +95,18 @@ pub fn Guides() -> Element {
             div { class: "section",
                 h1 { "Guides" }
                 p { class: "arch-subtitle", "How Zwipe works, one feature at a time." }
-                div { class: "card-grid",
-                    for g in GUIDES.iter() {
-                        Link {
-                            to: Route::GuidePage { slug: g.slug.to_string() },
-                            class: "card guide-card",
-                            span { class: "card-category", "{g.category}" }
-                            h3 { class: "card-title", "{g.title}" }
-                            p { class: "card-summary", "{g.summary}" }
+            }
+            for cat in CATEGORY_ORDER.iter() {
+                section { class: "section guide-cat",
+                    h2 { class: "guide-cat-heading", "{cat}" }
+                    div { class: "card-grid",
+                        for g in GUIDES.iter().filter(|g| g.category == *cat) {
+                            Link {
+                                to: Route::GuidePage { slug: g.slug.to_string() },
+                                class: "card guide-card",
+                                h3 { class: "card-title", "{g.title}" }
+                                p { class: "card-summary", "{g.summary}" }
+                            }
                         }
                     }
                 }

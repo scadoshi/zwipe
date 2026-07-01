@@ -197,6 +197,8 @@ pub static GUIDES: &[Guide] = &[
             Block::P("The Land target stepper starts at \"Not set.\" The first tap seeds a sensible default (about 37 for 100-card formats, 17 for 60-card), then you adjust."),
             Block::H2("Feedback"),
             Block::P("Cross the target while editing and Zwipe toasts \"Land target reached\" or \"Below land target,\" and a standing warning shows whenever you're under."),
+            Block::H2("Lands leave the stack"),
+            Block::P("When you open the add screen with your land count already at target (your target, or the format default), Zwipe excludes lands from the swipe stack so it stops dealing you ones you don't need. It adds `Land` to the `Basic types` exclude filter; clear the filter to bring lands back. Reaching the target mid-session takes effect the next time you enter the screen."),
             Block::Note("Even with no target set, warnings use your format's default land count as a fallback."),
         ],
     },

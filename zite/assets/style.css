@@ -1412,6 +1412,14 @@ code {
         guides
  ==================== */
 
+.guide-cat {
+    margin-bottom: 2rem;
+}
+
+.guide-cat-heading {
+    margin-bottom: 1.25rem;
+}
+
 .guide-card {
     display: block;
     text-decoration: none;
