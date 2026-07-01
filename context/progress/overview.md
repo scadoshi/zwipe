@@ -123,13 +123,13 @@ deploy first (project rule); three additive nullable migrations are involved
 - **Land target** — a per-deck land goal (stepper in the deck form: explicit
   override, else a format heuristic — Commander 37 / 60-card 17). Persisted
   (`land_target`), shown in the deck Profile, with crossing toasts on
-  add/remove/qty and a below-target warning. Plan: `../plans/land_signals.md`.
+  add/remove/qty and a below-target warning.
 - **Price range filter** — min/max price in a chosen currency (USD/EUR/TIX
   chips, default USD) on card search; server `WHERE` over the `prices` JSONB +
   an in-memory predicate. Null prices excluded when a bound is set.
 - **Price target (budget)** — a per-deck budget (`price_target` + currency).
   Toasts on crossing a higher 50/75/100% band (exact %, re-fires on re-cross);
-  over-budget warning; shown in Profile. Plan: `../plans/price_filter.md`.
+  over-budget warning; shown in Profile.
 
 **Telemetry — suggestion signal (Phases 1+2):**
 - **`commander_card_signal`** aggregate — added/skipped/maybed/**removed** per
