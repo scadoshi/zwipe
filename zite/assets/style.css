@@ -230,8 +230,8 @@ nav {
     box-sizing: border-box;
     height: 1.85rem;
     text-decoration: none;
-    color: var(--text-muted);
-    background: none;
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
     padding: 0 0.8rem;
@@ -241,6 +241,7 @@ nav {
     line-height: 1;
     white-space: nowrap;
     cursor: pointer;
+    box-shadow: var(--shadow-sm);
     transition:
         color 0.15s,
         border-color 0.15s;
@@ -262,14 +263,14 @@ nav {
 
 .store-link,
 .nav-links a.store-link {
-    color: var(--accent-primary);
+    color: var(--color-warning);
 }
 
 @media (hover: hover) {
     .store-link:hover,
     .nav-links a.store-link:hover {
-        color: var(--accent-primary);
-        border-color: var(--accent-primary);
+        color: var(--color-warning);
+        border-color: var(--color-warning);
     }
 }
 
@@ -1388,6 +1389,110 @@ code {
 .privacy-content p,
 .privacy-content ul {
     font-size: 0.85rem;
+}
+
+/* ==================
+        guides
+ ==================== */
+
+.guide-card {
+    display: block;
+    text-decoration: none;
+}
+
+.guide-card .card-summary {
+    color: var(--text-subtle);
+    font-size: 0.85rem;
+    line-height: 1.55;
+    margin-top: 0.35rem;
+}
+
+.guide-breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-bottom: 0.85rem;
+}
+
+.crumb-sep {
+    opacity: 0.5;
+}
+
+.crumb-cat {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent-tertiary);
+}
+
+.guide-title {
+    margin-top: 0.35rem;
+}
+
+.guide-content .guide-h2 {
+    font-size: 1rem;
+    color: var(--accent-tertiary);
+    margin-top: 1.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.guide-content .guide-lead {
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    line-height: 1.6;
+    margin-bottom: 0.5rem;
+}
+
+.guide-content .guide-p,
+.guide-content .guide-steps,
+.guide-content .guide-bullets,
+.guide-content .guide-swipe {
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
+
+.guide-content .guide-steps,
+.guide-content .guide-bullets,
+.guide-content .guide-swipe {
+    margin: 0.5rem 0 0.5rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.guide-content .guide-swipe {
+    list-style: none;
+    margin-left: 0;
+}
+
+.guide-kw {
+    padding: 0.03rem 0.32rem;
+    border-radius: 0.3rem;
+    background-color: color-mix(in srgb, var(--text-primary) 9%, transparent);
+    border: 1px solid color-mix(in srgb, var(--text-primary) 16%, transparent);
+    color: var(--text-primary);
+    font-size: 0.9em;
+    white-space: nowrap;
+}
+
+.guide-note {
+    font-size: 0.82rem;
+    line-height: 1.55;
+    color: var(--text-subtle);
+    border-left: 2px solid var(--accent-tertiary);
+    padding: 0.15rem 0 0.15rem 0.85rem;
+    margin: 1rem 0;
+}
+
+.guide-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-secondary);
 }
 
 /* ==================

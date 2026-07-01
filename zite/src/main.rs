@@ -5,7 +5,7 @@ use zwipe_core::domain::user::preferences::ALLOWED_THEMES;
 
 mod components;
 mod pages;
-use pages::{About, Android, Contribute, Discord, Home, Ios, Privacy, Reset, Verify};
+use pages::{About, Android, Contribute, Discord, GuidePage, Guides, Home, Ios, Privacy, Reset, Verify};
 
 pub const API_BASE: &str = "https://api.zwipe.net";
 
@@ -32,6 +32,10 @@ const Z_LOGO: &str = zwipe_core::domain::logo::Z;
 enum Route {
     #[route("/")]
     Home {},
+    #[route("/guides")]
+    Guides {},
+    #[route("/guides/:slug")]
+    GuidePage { slug: String },
     #[route("/about")]
     About {},
     #[route("/contribute")]
@@ -168,6 +172,9 @@ pub fn Nav() -> Element {
             div { class: "{panel_class}",
                 div { class: "nav-panel-inner",
                 ul { class: "nav-links",
+                    li {
+                        Link { to: Route::Guides {}, onclick: move |_| open.set(false), "Guides" }
+                    }
                     li {
                         Link { to: Route::About {}, onclick: move |_| open.set(false), "About" }
                     }

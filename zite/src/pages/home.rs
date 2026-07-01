@@ -64,7 +64,7 @@ fn Testimonials() -> Element {
                 for (quote, handle) in reviews {
                     figure { class: "testimonial",
                         blockquote { class: "testimonial-quote", "“{quote}”" }
-                        figcaption { class: "testimonial-author", "— {handle}" }
+                        figcaption { class: "testimonial-author", "{handle}" }
                     }
                 }
             }
@@ -123,7 +123,7 @@ pub fn Home() -> Element {
         div { class: "hero",
             // Semantic page heading for crawlers and screen readers — the ASCII
             // logo is the visual title, so this is visually hidden.
-            h1 { class: "sr-only", "Zwipe — the Magic: The Gathering deck builder built for mobile" }
+            h1 { class: "sr-only", "Zwipe, the Magic: The Gathering deck builder built for mobile" }
             div { class: "logo", "{LOGO_ASCII}" }
             div { class: "hero-card",
                 p { class: "tagline",
