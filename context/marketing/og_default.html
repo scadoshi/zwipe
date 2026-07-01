@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<!-- Default social-share / link-unfurl card (Open Graph + Twitter), 1200x630.
+     Referenced by every page via zite's PageMeta as {WEB_BASE}/assets/og-default.png.
+     Mirrors zite's look: the gruvbox-dark 28px grid on a darkened --bg-sink, the
+     Zwipe wordmark sitting on the grid, and everything else in a hero-style
+     bubble panel. Tokens are copied from shared/themes.css :root (gruvbox-dark);
+     chips reuse the app's .stat-chip formula. The block-glyph wordmark needs the
+     app's self-hosted JetBrains Mono (the CDN fontsource subset drops
+     U+2580-U+259F), so the font is loaded from ../../zwiper/assets/fonts.
+     Rendered into zite/public/ (served verbatim at /assets/og-default.png, the
+     literal URL PageMeta points at — NOT zite/assets/, whose files dx content-
+     hashes). Regenerate with:
+       "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless \
+         --disable-gpu --hide-scrollbars --force-device-scale-factor=1 \
+         --allow-file-access-from-files --window-size=1200,630 \
+         --screenshot=../../zite/public/assets/og-default.png "file://$PWD/og_default.html" -->
+<style>
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-weight: 400;
+  font-display: block;
+  src: url('../../zwiper/assets/fonts/jetbrains-mono-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-weight: 700;
+  font-display: block;
+  src: url('../../zwiper/assets/fonts/jetbrains-mono-700.woff2') format('woff2');
+}
+
+:root {
+  --bg-primary: #282828;
+  --text-primary: #ebdba2;
+  --text-muted: #a89984;
+  --accent-primary: #689d6a;
+  --accent-secondary: #cc241d;
+  --accent-tertiary: #d79921;
+  --color-warning: #fabd2f;
+  --border-secondary: #3c3836;
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --grid-line: rgba(235, 219, 162, 0.04);
+  --grid-size: 28px;
+  --bg-sink: #222222;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { width: 100%; height: 100%; }
+
+body {
+  min-height: 100vh;
+  background-color: var(--bg-sink);
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: var(--grid-size) var(--grid-size);
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+}
+
+.wordmark {
+  white-space: pre;
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 0.82;
+  color: var(--text-primary);
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.6));
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  width: 1000px;
+  padding: 40px 56px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 24px;
+  box-shadow: var(--shadow-md);
+}
+
+.tagline {
+  font-size: 27px;
+  font-weight: 400;
+  color: var(--text-muted);
+  text-align: center;
+  white-space: nowrap;
+}
+.hl { color: var(--accent-primary); font-weight: 700; }
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 26px;
+  font-weight: 700;
+}
+.stars { color: var(--accent-tertiary); letter-spacing: 4px; }
+.score { color: var(--text-primary); }
+
+.tags {
+  display: flex;
+  gap: 14px;
+}
+.tag {
+  padding: 8px 18px;
+  border-radius: 12px;
+  font-size: 21px;
+  border: 1px solid;
+}
+.tag-value {
+  color: var(--accent-primary);
+  background-color: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent-primary) 40%, transparent);
+}
+.tag-plat {
+  color: var(--text-muted);
+  background-color: color-mix(in srgb, var(--text-muted) 12%, transparent);
+  border-color: color-mix(in srgb, var(--text-muted) 30%, transparent);
+}
+
+.site {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  color: var(--accent-primary);
+}
+</style>
+</head>
+<body>
+  <pre class="wordmark">▎▎▉▉▉▉▉▉▉            ▎▎▉▉
+  ▎▎▉▉▉▉▉▉▎▎▉▉    ▎▎▉▉▎▎▉▉▎▎▉▉▉▉▉▉ ▎▎▉▉▉▉▉▉▉
+      ▎▎▉▉ ▎▎▉▉    ▎▎▉▉    ▎▎▉▉▉▉▉▉▉▎▎▉▉ ▎▎▉▉
+     ▎▎▉▉   ▎▎▉▉▎▎▉▉▎▎▉▉▎▎▉▉▎▎▉▉ ▎▎▉▉▎▎▉▉▉▉▉▉▉
+    ▎▎▉▉     ▎▎▉▉▎▎▉▉▎▎▉▉▎▎▉▉▎▎▉▉ ▎▎▉▉▎▎▉▉
+   ▎▎▉▉▉▉▉▉▉▉ ▎▎▉▉▉▉▉▉▉▉  ▎▎▉▉▎▎▉▉▉▉▉▉ ▎▎▉▉  ▎▎▉▉
+    ▎▎▉▉▉▉▉▉▉▉ ▎▎▉▉▎▎▉▉    ▎▎▉▉▎▎▉▉▉▉   ▎▎▉▉▉▉▉▉
+                                ▎▎▉▉
+                                 ▎▎▉▉
+                                  ▎▎▉▉
+                                   ▎▎▉▉</pre>
+
+  <div class="hero">
+    <div class="tagline">The <span class="hl">Magic: The Gathering</span> deck builder built for <span class="hl">mobile</span></div>
+    <div class="meta">
+      <span class="stars">★★★★★</span>
+      <span class="score">4.8</span>
+    </div>
+    <div class="tags">
+      <span class="tag tag-value">Free</span>
+      <span class="tag tag-value">No ads</span>
+      <span class="tag tag-plat">iOS</span>
+      <span class="tag tag-plat">Android</span>
+    </div>
+    <div class="site">zwipe.net</div>
+  </div>
+</body>
+</html>

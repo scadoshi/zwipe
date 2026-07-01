@@ -4,6 +4,74 @@ use dioxus::prelude::*;
 
 const LOGO_ASCII: &str = zwipe_core::domain::logo::ZWIPE;
 
+/// App Store listing — canonical download + review source.
+const APP_STORE_URL: &str = "https://apps.apple.com/us/app/zwipe-tcg/id6761341603";
+
+/// JSON-LD `MobileApplication` markup emitted into `<head>` on the home page.
+/// Drives rich app results in search: name, platforms, free price, and the
+/// live App Store rating (4.8 / 4 ratings as of 2026-06-30 — bump when it moves).
+const JSON_LD: &str = r#"{
+  "@context": "https://schema.org",
+  "@type": "MobileApplication",
+  "name": "Zwipe",
+  "operatingSystem": "iOS, Android",
+  "applicationCategory": "GameApplication",
+  "url": "https://zwipe.net",
+  "downloadUrl": "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",
+  "description": "A Magic: The Gathering deck builder built for mobile. Swipe to build Commander decks with synergy-ranked cards.",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.8", "ratingCount": "4" }
+}"#;
+
+#[component]
+fn HomeJsonLd() -> Element {
+    rsx! {
+        document::Script { r#type: "application/ld+json", "{JSON_LD}" }
+    }
+}
+
+/// Public App Store reviews surfaced as social proof. Five-star reviews only;
+/// the four-star "set land amount" review is intentionally omitted (its request
+/// has since shipped). Quotes are lightly cleaned of transcription typos.
+#[component]
+fn Testimonials() -> Element {
+    let reviews: Vec<(&str, &str)> = vec![
+        (
+            "Why!? Why has there not been a utility to filter cards for decks via relevant flavors/type/effects. This app does it.",
+            "Trailmix98",
+        ),
+        (
+            "Really have struggled in the past with deck building apps on mobile but this one definitely takes the cake as best. Super easy to concept out new deck ideas without a ton of research and planning! For sure my favorite deck building tool.",
+            "Arctic creature",
+        ),
+    ];
+    rsx! {
+        section { class: "testimonials",
+            div { class: "testimonials-header",
+                h2 { class: "testimonials-title", "Loved by deck builders" }
+                a {
+                    class: "testimonials-rating",
+                    href: APP_STORE_URL,
+                    target: "_blank",
+                    rel: "noopener noreferrer",
+                    "aria-label": "4.8 out of 5 stars from App Store ratings",
+                    span { class: "rating-stars", "★★★★★" }
+                    span { class: "rating-score", "4.8" }
+                    span { class: "rating-count", "App Store" }
+                }
+            }
+            div { class: "testimonials-grid",
+                for (quote, handle) in reviews {
+                    figure { class: "testimonial",
+                        blockquote { class: "testimonial-quote", "“{quote}”" }
+                        figcaption { class: "testimonial-author", "— {handle}" }
+                    }
+                }
+            }
+        }
+    }
+}
+
 const DEMO_CREATE_DECK: Asset = asset!("/assets/demo/1_create_deck.mp4");
 const DEMO_DECK_CARDS_VIEW: Asset = asset!("/assets/demo/2_deck_cards.mp4");
 const DEMO_ADD_DECK_CARDS: Asset = asset!("/assets/demo/3_add_deck_cards.mp4");
@@ -46,18 +114,36 @@ pub fn Home() -> Element {
 
     rsx! {
         PageMeta {
-            title: "Zwipe",
+            title: "Mobile Magic: The Gathering & Commander Deck Builder",
             description: "Zwipe is a Magic: The Gathering deck builder built for mobile. Swipe right to add, left to skip, up to maybe, down to undo. Swipe-pick your commander, tag decks by archetype, synergy-ranked cards, Commander-ready, decks synced across sessions.",
             path: "/",
         }
+        HomeJsonLd {}
         Nav {}
         div { class: "hero",
+            // Semantic page heading for crawlers and screen readers — the ASCII
+            // logo is the visual title, so this is visually hidden.
+            h1 { class: "sr-only", "Zwipe — the Magic: The Gathering deck builder built for mobile" }
             div { class: "logo", "{LOGO_ASCII}" }
             div { class: "hero-card",
                 p { class: "tagline",
                     "The "
                     a { href: "https://magic.wizards.com/en", target: "_blank", rel: "noopener noreferrer", "Magic: The Gathering" }
-                    " deck builder built for mobile. Swipe right to add card to deck (or remove on remove flow), left to skip card, up to add to maybeboard, down to undo."
+                    " deck builder built for mobile. Swipe "
+                    span { class: "swipe-add", "right" }
+                    " to add card to deck (or remove on remove flow), "
+                    span { class: "swipe-skip", "left" }
+                    " to skip card, "
+                    span { class: "swipe-maybe", "up" }
+                    " to add to maybeboard, "
+                    span { class: "swipe-undo", "down" }
+                    " to undo."
+                }
+                div { class: "hero-chips",
+                    span { class: "chip chip-value", "Free" }
+                    span { class: "chip chip-value", "No ads" }
+                    span { class: "chip chip-plat", "iOS" }
+                    span { class: "chip chip-plat", "Android" }
                 }
                 StatsStrip {}
             }
@@ -155,6 +241,7 @@ pub fn Home() -> Element {
                     }
                 }
             }
+            Testimonials {}
         }
         Footer {}
     }

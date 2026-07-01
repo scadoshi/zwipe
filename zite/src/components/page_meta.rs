@@ -12,11 +12,10 @@ use crate::WEB_BASE;
 pub fn PageMeta(title: String, description: String, path: String) -> Element {
     let canonical = format!("{WEB_BASE}{path}");
     let og_image = format!("{WEB_BASE}/assets/og-default.png");
-    let full_title = if title == "Zwipe" {
-        "Zwipe".to_string()
-    } else {
-        format!("{title} | Zwipe")
-    };
+    // Every page appends the " | Zwipe" brand suffix. Pages pass a descriptive,
+    // keyword-bearing title (never the bare brand) so the <title> reads e.g.
+    // "Mobile Magic: The Gathering & Commander Deck Builder | Zwipe".
+    let full_title = format!("{title} | Zwipe");
 
     rsx! {
         document::Title { "{full_title}" }
