@@ -1,5 +1,4 @@
-use super::components::card_info::{CardInfoDisplay, CardSkeleton};
-use super::components::keyword_hint::{KeywordHintDialog, card_has_keywords};
+use super::components::card_info::{CardInfoDisplay, CardRulesDialog, CardSkeleton, RulesButton};
 use crate::inbound::components::chip::Chip;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::{
@@ -110,7 +109,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     // Swipe vocabulary hint: auto-opens on this user's first visit, the
     // grayed "?" in the util bar reopens it on demand.
     let swipe_hint_open = use_one_time_hint(HINT_ADD_DECK_CARDS);
-    let mut keyword_hint_open = use_signal(|| false);
+    let show_rules = use_signal(|| false);
 
     // When Some, the SwipeStack plays a keyframe entering from this direction
     // on the next top card, and clears it on animationend. Set by undo.
@@ -1097,7 +1096,8 @@ pub fn Add(deck_id: Uuid) -> Element {
                             }
 
                             if let Some(card) = current_card() {
-                                CardInfoDisplay { card }
+                                CardInfoDisplay { card: card.clone() }
+                                CardRulesDialog { open: show_rules, card }
                             }
                         } else if is_loading_cards() {
                             CardSkeleton { is_loading: true }
@@ -1140,7 +1140,8 @@ pub fn Add(deck_id: Uuid) -> Element {
                             }
 
                             if let Some(card) = mb_current_card() {
-                                CardInfoDisplay { card }
+                                CardInfoDisplay { card: card.clone() }
+                                CardRulesDialog { open: show_rules, card }
                             }
                         } else {
                             CardSkeleton {}
@@ -1267,32 +1268,15 @@ pub fn Add(deck_id: Uuid) -> Element {
                     "Refresh"
                 }
                 {
-                    let kw_card = if add_source() == AddSource::Maybeboard {
-                        mb_current_card()
+                    let has_card = if add_source() == AddSource::Maybeboard {
+                        mb_current_card().is_some()
                     } else {
-                        current_card()
+                        current_card().is_some()
                     };
                     rsx! {
-                        if kw_card.as_ref().is_some_and(card_has_keywords) {
-                            button {
-                                class: "util-btn",
-                                onclick: move |_| keyword_hint_open.set(true),
-                                "Keywords"
-                            }
+                        if has_card {
+                            RulesButton { open: show_rules }
                         }
-                    }
-                }
-            }
-
-            {
-                let kw_card = if add_source() == AddSource::Maybeboard {
-                    mb_current_card()
-                } else {
-                    current_card()
-                };
-                rsx! {
-                    if let Some(card) = kw_card {
-                        KeywordHintDialog { open: keyword_hint_open, card }
                     }
                 }
             }
