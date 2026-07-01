@@ -153,13 +153,18 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.2.0 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
+| Version (client) | 1.2.1 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
 ### Release notes (What's new — max 500 chars, store-visible)
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
+
+**1.2.1:**
+
+- Tap the new eye button while swiping to read a card's full rules and stats: rules text with real symbols, type, rarity, keywords, and power/toughness or loyalty. Great for alternate-art or textless printings that hide the details.
+- Smoother startup: the app opens straight into its themed layout, with no flash of unstyled content.
 
 **1.2.0:**
 
