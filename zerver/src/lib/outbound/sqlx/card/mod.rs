@@ -641,9 +641,20 @@ impl CardRepository for MyPostgres {
                          (type_line ILIKE '%Creature%' OR type_line ILIKE '%Planeswalker%'))",
                     );
                 }
-                // Uncommon creature
+                // Uncommon creature — legendary or not. Two fixes here:
+                //   1. Rarity is stored as the short code ('U'), not the word
+                //      'uncommon' — the old literal matched nothing.
+                //   2. PDH eligibility is "has appeared at uncommon in ANY
+                //      printing", not "this cached printing is uncommon", so we
+                //      check all printings via scryfall_data (catches cards whose
+                //      preferred printing is common but were printed uncommon).
                 Format::PauperCommander => {
-                    sep.push("(type_line ILIKE '%Creature%' AND rarity = 'uncommon')");
+                    sep.push(
+                        "(type_line ILIKE '%Creature%' AND EXISTS (\
+                         SELECT 1 FROM scryfall_data sd2 \
+                         WHERE sd2.oracle_id = latest_cards.oracle_id \
+                         AND sd2.rarity = 'U'))",
+                    );
                 }
                 // Any planeswalker
                 Format::Oathbreaker => {
