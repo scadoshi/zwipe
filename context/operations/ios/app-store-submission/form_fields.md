@@ -39,6 +39,13 @@ Built for players who want a fast, focused mobile experience — not another clu
 
 ---
 
+## What's New in This Version (1.2.1)
+
+- Tap the new eye button while swiping to read a card's full rules text and stats: rules with real mana symbols, type line, rarity, keywords, and power/toughness or loyalty. Great for alternate-art or textless printings that hide the details.
+- Smoother startup: the app opens straight into its themed layout, with no quick flash of unstyled content.
+
+---
+
 ## What's New in This Version (1.2.0)
 
 - See your deck's odds: a new draw-odds view shows your chance of drawing a land, ramp, removal, and more — in your opening hand or by any turn.
