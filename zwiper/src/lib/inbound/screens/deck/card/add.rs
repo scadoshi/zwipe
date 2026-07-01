@@ -48,6 +48,7 @@ use zwipe_core::domain::{
         },
         search_card::{
             card_filter::builder::CardFilterBuilder,
+            card_type::CardType,
             filter_cards::{FilterCards, SortCards},
         },
     },
@@ -60,6 +61,41 @@ enum AddSource {
     #[default]
     Search,
     Maybeboard,
+}
+
+/// Applies the "lands already at target" state to the search filter: adds
+/// `CardType::Land` to the excludes and drops it from either include list, so we
+/// never end up with an include+exclude clash on Land (which serves zero cards).
+/// Merges with the user's existing card-type filters. Applied once on entry to
+/// the add screen when the deck already meets its land target.
+fn ensure_lands_excluded(mut filter_builder: Signal<CardFilterBuilder>) {
+    let mut fb = filter_builder.write();
+
+    // Read current state into owned values so the immutable borrows drop before
+    // we mutate below.
+    let contains_any = fb.card_type_contains_any().map(<[CardType]>::to_vec);
+    let contains_all = fb.card_type_contains_all().map(<[CardType]>::to_vec);
+    let mut excluded = fb
+        .card_type_excludes_any()
+        .map(<[CardType]>::to_vec)
+        .unwrap_or_default();
+
+    // Drop Land from any include list — including and excluding Land at once
+    // matches nothing. Setting an empty vec clears the filter.
+    if let Some(includes) = contains_any {
+        let kept: Vec<CardType> = includes.into_iter().filter(|t| *t != CardType::Land).collect();
+        fb.set_card_type_contains_any(kept);
+    }
+    if let Some(includes) = contains_all {
+        let kept: Vec<CardType> = includes.into_iter().filter(|t| *t != CardType::Land).collect();
+        fb.set_card_type_contains_all(kept);
+    }
+
+    // Add Land to the excludes if not already present.
+    if !excluded.contains(&CardType::Land) {
+        excluded.push(CardType::Land);
+        fb.set_card_type_excludes_any(excluded);
+    }
 }
 
 #[component]
@@ -570,6 +606,19 @@ pub fn Add(deck_id: Uuid) -> Element {
                     mainboard_land_count.set(land_count);
                     // Explicit target only — no land toasts unless the user set one.
                     land_target.set(deck.deck_profile.land_target);
+                    // If the deck already meets its land target (explicit override
+                    // or the format default), start with lands excluded from the
+                    // swipe pool. The auto-serve reset below re-fetches, so no
+                    // separate counter bump is needed here.
+                    let effective_target = deck
+                        .deck_profile
+                        .land_target
+                        .or_else(|| deck.deck_profile.format.and_then(|f| f.default_land_target()));
+                    if let Some(t) = effective_target
+                        && land_count >= t
+                    {
+                        ensure_lands_excluded(filter_builder);
+                    }
 
                     // Seed the budget signal: running total in the budget
                     // currency, plus the budget + currency from the profile.
@@ -1006,6 +1055,11 @@ pub fn Add(deck_id: Uuid) -> Element {
                                                 format!("Land target reached ({target})"),
                                                 ToastOptions::default().duration(Duration::from_millis(2500)),
                                             );
+                                            // We don't touch the filter mid-session — a
+                                            // refetch here would reset the swipe stack and
+                                            // lose the user's spot. Lands are excluded only
+                                            // on the next entry to the add screen (see the
+                                            // deck-load block).
                                         }
                                     }
                                     // Budget band: raise the running total, toast when it
