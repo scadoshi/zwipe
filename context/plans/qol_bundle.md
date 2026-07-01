@@ -69,8 +69,6 @@ distribution charts (`deck_charts.rs`) are the reusable surface to mount.
 
 ## Deferred (need core/server/data work — not this client-only bundle)
 
-- **"Typal" tag** (req #13): touches the `DeckTag` enum in `zwipe-core` + server
-  validation → needs a server deploy first. Fold into the next server batch.
 - **Prefer original/English printing** (req #9): printing-selection ranking,
   server/data work.
 - **Price threshold filter** (#10): needs query support.
