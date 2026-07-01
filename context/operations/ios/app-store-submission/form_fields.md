@@ -14,7 +14,7 @@ Swipe to Build MTG Decks
 
 (170 character limit. Can be updated without a new submission — refresh this between releases to spotlight whatever's freshest.)
 
-Just shipped: budget tools — filter cards by price, set a deck budget, and track your land count as you build. Swipe 110,000+ cards. Free, no ads, no microtransactions.
+Just shipped: draw-odds — see your chance of drawing a land, ramp, or removal in your opening hand or by any turn. Plus power levels, more tags, and a synergy toggle. Free, no ads.
 
 ---
 
@@ -36,6 +36,17 @@ Other tools:
 - Your decks sync across sessions and devices
 
 Built for players who want a fast, focused mobile experience — not another cluttered desktop tool squeezed onto a small screen.
+
+---
+
+## What's New in This Version (1.2.0)
+
+- See your deck's odds: a new draw-odds view shows your chance of drawing a land, ramp, removal, and more — in your opening hand or by any turn.
+- Set a power level for your deck, and add descriptive tags like Budget, Jank, Meme, or Precon.
+- Many more strategy tags to label your deck at a glance — dozens of popular themes, each with a plain-language definition.
+- Toggle synergy suggestions on or off right on the add-cards screen as you build.
+- Smarter building: contradictory include/exclude filters are caught before you apply them, and lands drop out of the add screen once you hit your land target.
+- The create and edit deck screens now open at the top, plus leader-eligibility fixes and other polish.
 
 ---
 
@@ -156,7 +167,7 @@ MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading ca
 |-------|-------|
 | Support URL | https://zwipe.net |
 | Marketing URL | https://zwipe.net |
-| Version | 1.1.4 |
+| Version | 1.2.0 |
 | Copyright | 2026 Scotty Fermo |
 | Routing App Coverage File | (leave empty) |
 
