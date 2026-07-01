@@ -66,67 +66,72 @@ pub(crate) fn PriceFilter() -> Element {
         filter_builder().price_min().is_some() || filter_builder().price_max().is_some();
 
     rsx! {
-        div { class: "label-row mt-2",
-            label { class: "label-xs", "Price" }
-            if price_is_active {
-                button {
-                    class: "clear-btn",
-                    onclick: move |_| {
-                        let mut fb = filter_builder.write();
-                        fb.unset_price_min();
-                        fb.unset_price_max();
-                        price_min_string.set(String::new());
-                        price_max_string.set(String::new());
-                    },
-                    "\u{00d7}"
+        // Single wrapper so the accordion's grid-row collapse animates the whole
+        // section as one unit (multiple top-level children only collapse the
+        // first grid row, leaving the rest to squeeze).
+        div { class: "flex-col gap-half",
+            div { class: "label-row mt-2",
+                label { class: "label-xs", "Price" }
+                if price_is_active {
+                    button {
+                        class: "clear-btn",
+                        onclick: move |_| {
+                            let mut fb = filter_builder.write();
+                            fb.unset_price_min();
+                            fb.unset_price_max();
+                            price_min_string.set(String::new());
+                            price_max_string.set(String::new());
+                        },
+                        "\u{00d7}"
+                    }
                 }
             }
-        }
 
-        div { class: "chip-row", style: "margin-bottom: 0.5rem; justify-content: center;",
-            for currency in PriceCurrency::all().iter().copied() {
-                div {
-                    class: if selected_currency == currency { "chip selected" } else { "chip" },
-                    onclick: move |_| {
-                        filter_builder.write().set_price_currency(currency);
-                    },
-                    "{currency.label()}"
+            div { class: "chip-row", style: "margin-bottom: 0.5rem; justify-content: center;",
+                for currency in PriceCurrency::all().iter().copied() {
+                    div {
+                        class: if selected_currency == currency { "chip selected" } else { "chip" },
+                        onclick: move |_| {
+                            filter_builder.write().set_price_currency(currency);
+                        },
+                        "{currency.label()}"
+                    }
                 }
             }
-        }
 
-        div { class: "flex-row gap-1 flex-center mb-1",
-            input { class: "input input-compact input-narrow",
-                id: "price-min",
-                placeholder: "Min",
-                value: price_min_string(),
-                r#type: "text",
-                inputmode: "decimal",
-                autocapitalize: "none",
-                autocorrect: "off",
-                spellcheck: "false",
-                oninput: move |event| {
-                    price_min_string.set(event.value())
-                },
-                onblur: move |_| {
-                    try_parse_price_min();
+            div { class: "flex-row gap-1 flex-center mb-1",
+                input { class: "input input-compact input-narrow",
+                    id: "price-min",
+                    placeholder: "Min",
+                    value: price_min_string(),
+                    r#type: "text",
+                    inputmode: "decimal",
+                    autocapitalize: "none",
+                    autocorrect: "off",
+                    spellcheck: "false",
+                    oninput: move |event| {
+                        price_min_string.set(event.value())
+                    },
+                    onblur: move |_| {
+                        try_parse_price_min();
+                    }
                 }
-            }
-            span { class: "text-muted", "to" }
-            input { class: "input input-compact input-narrow",
-                id: "price-max",
-                placeholder: "Max",
-                value: price_max_string(),
-                r#type: "text",
-                inputmode: "decimal",
-                autocapitalize: "none",
-                autocorrect: "off",
-                spellcheck: "false",
-                oninput: move |event| {
-                    price_max_string.set(event.value())
-                },
-                onblur: move |_| {
-                    try_parse_price_max();
+                span { class: "text-muted", "to" }
+                input { class: "input input-compact input-narrow",
+                    id: "price-max",
+                    placeholder: "Max",
+                    value: price_max_string(),
+                    r#type: "text",
+                    inputmode: "decimal",
+                    autocapitalize: "none",
+                    autocorrect: "off",
+                    spellcheck: "false",
+                    oninput: move |event| {
+                        price_max_string.set(event.value())
+                    },
+                    onblur: move |_| {
+                        try_parse_price_max();
+                    }
                 }
             }
         }
