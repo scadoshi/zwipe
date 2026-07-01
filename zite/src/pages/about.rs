@@ -45,9 +45,11 @@ pub fn About() -> Element {
                     span { class: "tag", "systems" }
                 }
                 p {
-                    "A solo project: designed, built, and shipped by one person.
-                    The goal: make deck building feel good on mobile. Built mobile-first
-                    from the ground up."
+                    "Zwipe is a solo project: designed, built, and shipped by one person.
+                    This page is the look under the hood, the architecture and the
+                    engineering discipline behind a one-person, full-stack Rust app.
+                    The goal was simple: make deck building feel good on mobile, and
+                    build it that way from the ground up."
                 }
             }
 
@@ -227,7 +229,7 @@ pub fn About() -> Element {
                         span { class: "card-category", "Quality" }
                         h3 { class: "card-title", "Testing & Lint Discipline" }
                         p { class: "card-summary",
-                            "416 unit tests; 277 in "
+                            "505 unit tests; 346 in "
                             a { href: URL_ZWIPE_CORE, target: "_blank", rel: "noopener noreferrer", "zwipe-core" }
                             " alone. Production posture enforced by the compiler."
                         }
@@ -246,7 +248,7 @@ pub fn About() -> Element {
                                 code { "print!" }
                                 ", all denied at compile time"
                             }
-                            li { "33 enforced Clippy rules across the workspace" }
+                            li { "22 enforced Clippy rules across the workspace" }
                             li {
                                 "Compile-time SQL verification via "
                                 a { href: URL_SQLX, target: "_blank", rel: "noopener noreferrer", "sqlx" }
