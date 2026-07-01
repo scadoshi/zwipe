@@ -27,6 +27,17 @@ const FONT_JBM_400: Asset = asset!("/assets/fonts/jetbrains-mono-400.woff2");
 const FONT_JBM_500: Asset = asset!("/assets/fonts/jetbrains-mono-500.woff2");
 const FONT_JBM_700: Asset = asset!("/assets/fonts/jetbrains-mono-700.woff2");
 
+// Anti-FOUC boot styling for the native (iOS/Android) WebView. Our stylesheets
+// are injected at render time (the document::Link tags in App), so without this
+// the WebView paints a white background, then unstyled HTML, before the CSS
+// lands. BOOT_BG is the default theme's --bg-primary (gruvbox-dark #282828); it
+// is set on the WebView itself, before any HTML paints. BOOT_HEAD is injected
+// into the static <head> before first render: it repeats the dark background as
+// a fallback and hides #main until main.css applies (main.css flips it back to
+// opacity:1), so the app never paints unstyled.
+const BOOT_BG: (u8, u8, u8, u8) = (0x28, 0x28, 0x28, 0xff);
+const BOOT_HEAD: &str = "<style>html,body{background-color:#282828;}#main{opacity:0;}</style>";
+
 fn main() {
     logo::Zwiper::print();
     let config = Config::from_env();
@@ -34,6 +45,31 @@ fn main() {
         .with_env_filter(EnvFilter::new(&config.rust_log))
         .init();
     tracing::info!("zwiper v{} starting", env!("CARGO_PKG_VERSION"));
+    launch_app();
+}
+
+// Native shells (iOS/Android/desktop) render into a WebView we can configure to
+// kill the load flash; web has no such config, so it falls back to the plain
+// launch. dioxus::mobile and dioxus::desktop are both re-exports of the same
+// dioxus-desktop crate, feature-gated by which platform this build targets.
+#[cfg(any(feature = "desktop", feature = "mobile"))]
+fn launch_app() {
+    #[cfg(feature = "desktop")]
+    use dioxus::desktop::Config as WebviewConfig;
+    #[cfg(all(feature = "mobile", not(feature = "desktop")))]
+    use dioxus::mobile::Config as WebviewConfig;
+
+    dioxus::LaunchBuilder::new()
+        .with_cfg(
+            WebviewConfig::new()
+                .with_background_color(BOOT_BG)
+                .with_custom_head(BOOT_HEAD.to_string()),
+        )
+        .launch(App);
+}
+
+#[cfg(not(any(feature = "desktop", feature = "mobile")))]
+fn launch_app() {
     dioxus::launch(App);
 }
 

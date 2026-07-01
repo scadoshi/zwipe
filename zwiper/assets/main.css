@@ -33,6 +33,15 @@ body {
     user-select: none;
 }
 
+/* Boot reveal. The native WebView hides #main (opacity:0) via critical CSS
+   injected in zwipe.rs's with_custom_head, so nothing paints before styling is
+   ready. This rule lives in the last-injected stylesheet, so it wins the cascade
+   and fades the app in the moment the real styles apply. */
+#main {
+    opacity: 1;
+    transition: opacity 0.15s ease-in;
+}
+
 /* Form elements don't inherit font-family by default — opt them in so the
    body's JetBrains Mono propagates everywhere. */
 input,
