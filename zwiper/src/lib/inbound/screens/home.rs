@@ -83,13 +83,13 @@ pub fn Home() -> Element {
                     tracing::warn!("home user fetch failed: {e}");
                     // Fall back to the cached session's verification status so a
                     // failed refresh still greets verified users.
-                    if let Some(session) = session.peek().clone() {
-                        if session.user.email_verified_at.is_some() {
-                            toast.info(
-                                format!("Hello, {}!", session.user.username),
-                                ToastOptions::default().duration(Duration::from_millis(1500)),
-                            );
-                        }
+                    if let Some(session) = session.peek().clone()
+                        && session.user.email_verified_at.is_some()
+                    {
+                        toast.info(
+                            format!("Hello, {}!", session.user.username),
+                            ToastOptions::default().duration(Duration::from_millis(1500)),
+                        );
                     }
                 }
             }
