@@ -20,22 +20,19 @@ Plus [`CLAUDE.md`](CLAUDE.md) — the authoritative rules/instructions for AI as
 
 ## Current focus
 
-**Next version — staged on `main`, building now (2026-06-29).** A 24-commit batch
-of deck-building tooling (land target, price filter, price budget), the
-first-party **suggestion signal** (`commander_card_signal` — now collecting), the
-collapsible deck-view sections, and UI polish (filter button alignment,
-bottom-sheet flash fix, home flavor header). All backward-compatible; **server
-slices deploy first** (three additive nullable migrations). See the
-[`progress/overview.md`](progress/overview.md) top entry for the full list.
+**Last shipped — 1.2.0** (both stores, 2026-06-30, first minor bump since 1.1.0):
+iOS build 54 + Android versionCode 15; server batch deployed to prod first, web
+live. The 2026-06-30 analytics/tagging batch: hypergeometric **draw-odds**, the
+**Synergy on/off** toggle, **power level + other-tags**, deck tags **85→117**,
+the PDH commander fix, an `edhrec_rank` popularity index, proliferate→Counters,
+the include/exclude filter guard, and the create/edit top-scroll fix. All wire
+changes additive (`#[serde(default)]` / `Opdate` / `x-synergy-applied` header) so
+old clients keep working. See the [`progress/overview.md`](progress/overview.md)
+top entry for the full list.
 
-**Last shipped — 1.1.3** (both stores, 2026-06-28, media-day release): iOS build
-51 + Android vc11; server + web live on prod. A Reddit launch post drove **38 →
-772 users in ~24h**. Shipped card names while swiping, the deck-form overhaul,
-expanded tags + format/power pickers, an in-app privacy policy, and under-field
-validation.
-
-**After this version:** keep the closed-testing 14-day clock running, suggestion-
-signal **Phase 3 (ranking)**, and the in-flight QOL work (draw-odds, drag cues).
+**After this version:** track 1.2.0 store review, keep the closed-testing 14-day
+clock running, suggestion-signal **Phase 3 (ranking)**, and draw-odds **Phase 4
+(premium gating)**.
 
 See [`progress/overview.md`](progress/overview.md) for the high-level state,
 [`progress/feature_requests.md`](progress/feature_requests.md) for the weighted
