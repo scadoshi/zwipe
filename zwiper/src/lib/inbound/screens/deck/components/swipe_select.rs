@@ -16,7 +16,9 @@ use crate::inbound::components::interactions::swipe::{
 };
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
-use crate::inbound::screens::deck::card::components::card_info::{CardInfoDisplay, CardSkeleton};
+use crate::inbound::screens::deck::card::components::card_info::{
+    CardInfoDisplay, CardRulesDialog, CardSkeleton, RulesButton,
+};
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
 use crate::outbound::client::{ZwipeClient, card::search_cards::ClientSearchCards};
 use dioxus::prelude::*;
@@ -146,6 +148,7 @@ pub(crate) fn SwipeSelect(
     // per account the first time the screen is opened (gated, since this stays
     // mounted while closed — a plain mount-time one-time hint would misfire).
     let hint_open = use_signal(|| false);
+    let show_rules = use_signal(|| false);
     let mut hint_fired = use_signal(|| false);
     use_effect(move || {
         if open() && !*hint_fired.peek() {
@@ -358,7 +361,8 @@ pub(crate) fn SwipeSelect(
                             },
                         }
                         if let Some(card) = current_card {
-                            CardInfoDisplay { card }
+                            CardInfoDisplay { card: card.clone() }
+                            CardRulesDialog { open: show_rules, card }
                         }
                     } else if is_loading_cards() || is_loading_more() {
                         CardSkeleton { is_loading: true }
@@ -385,6 +389,9 @@ pub(crate) fn SwipeSelect(
                         class: "util-btn",
                         onclick: move |_| refresh(),
                         "Refresh"
+                    }
+                    if has_cards {
+                        RulesButton { open: show_rules }
                     }
                 }
 

@@ -1,5 +1,4 @@
-use super::components::card_info::{CardInfoDisplay, CardSkeleton};
-use super::components::keyword_hint::{KeywordHintDialog, card_has_keywords};
+use super::components::card_info::{CardInfoDisplay, CardRulesDialog, CardSkeleton, RulesButton};
 use crate::inbound::components::chip::Chip;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::{
@@ -78,7 +77,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
     // Swipe vocabulary hint: auto-opens on this user's first visit, the
     // grayed "?" in the util bar reopens it on demand.
     let swipe_hint_open = use_one_time_hint(HINT_REMOVE_DECK_CARDS);
-    let mut keyword_hint_open = use_signal(|| false);
+    let show_rules = use_signal(|| false);
 
     // Incrementing this re-runs the filter effect
     let mut filter_reset_counter: Signal<u32> = use_signal(|| 0);
@@ -614,7 +613,8 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         }
 
                         if let Some(card) = current_card() {
-                            CardInfoDisplay { card }
+                            CardInfoDisplay { card: card.clone() }
+                            CardRulesDialog { open: show_rules, card }
                         }
                     } else {
                         CardSkeleton {}
@@ -653,17 +653,9 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     },
                     "Refresh"
                 }
-                if current_card().as_ref().is_some_and(card_has_keywords) {
-                    button {
-                        class: "util-btn",
-                        onclick: move |_| keyword_hint_open.set(true),
-                        "Keywords"
-                    }
+                if current_card().is_some() {
+                    RulesButton { open: show_rules }
                 }
-            }
-
-            if let Some(card) = current_card() {
-                KeywordHintDialog { open: keyword_hint_open, card }
             }
 
             HintDialog {

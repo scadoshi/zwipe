@@ -21,7 +21,7 @@ pub fn ScreenHeader(title: String, hint: Option<Signal<bool>>) -> Element {
             h2 { "{title}" }
             if let Some(mut hint) = hint {
                 button {
-                    class: "util-btn page-header-hint",
+                    class: "util-btn page-header-corner",
                     onclick: move |_| hint.set(true),
                     "?"
                 }
