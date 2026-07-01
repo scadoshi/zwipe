@@ -73,14 +73,14 @@ impl MechanicalCategory {
         ]
     }
 
-    /// 5-letter lowercase abbreviation for compact chart labels.
+    /// Compact (≤5 char) abbreviation for chart labels.
     pub fn to_short_name(&self) -> &'static str {
         match self {
             Self::Ramp => "ramp",
             Self::Draw => "draw",
             Self::Removal => "remov",
             Self::Wipe => "wipe",
-            Self::Counterspell => "counr",
+            Self::Counterspell => "cspel",
             Self::Protection => "protc",
             Self::Evasion => "evasn",
             Self::Finisher => "fnshr",

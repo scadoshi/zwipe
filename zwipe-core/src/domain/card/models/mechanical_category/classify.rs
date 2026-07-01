@@ -196,9 +196,14 @@ pub fn classify_by_heuristics(card: &Card) -> Vec<MechanicalCategory> {
     }
 
     // ========================================
-    // Counters (+1/+1 or -1/-1)
+    // Counters (+1/+1, -1/-1, or proliferate)
     // ========================================
-    if oracle.contains("+1/+1 counter") || oracle.contains("-1/-1 counter") {
+    // Proliferate cards are counter payoffs regardless of counter type, so they
+    // belong in the counters bucket even without explicit +1/+1 / -1/-1 text.
+    if oracle.contains("+1/+1 counter")
+        || oracle.contains("-1/-1 counter")
+        || oracle.contains("proliferate")
+    {
         cats.push(MechanicalCategory::Counters);
     }
 
@@ -393,6 +398,18 @@ mod tests {
         );
         let cats = classify_by_heuristics(&card);
         assert!(cats.contains(&Draw), "Rhystic Study should be Draw, got {:?}", cats);
+    }
+
+    #[test]
+    fn proliferate_is_counters() {
+        // Proliferate is a counter payoff even without explicit +1/+1 text.
+        let card = card_with_oracle(
+            "Karn's Bastion",
+            "{T}: Add {C}. {4}, {T}: Proliferate.",
+            "Land",
+        );
+        let cats = classify_by_heuristics(&card);
+        assert!(cats.contains(&Counters), "Karn's Bastion should be Counters, got {:?}", cats);
     }
 
     #[test]
