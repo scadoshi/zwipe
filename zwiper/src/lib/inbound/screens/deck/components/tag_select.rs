@@ -98,6 +98,8 @@ pub(crate) fn TagSelect(
                                     class: if selected_tags().contains(&tag) { "chip selected" } else { "chip" },
                                     onclick: move |_| {
                                         focused.set(Some(tag));
+                                        // Clear the search so the full grid returns after picking.
+                                        query.set(String::new());
                                         let mut current = selected_tags();
                                         if let Some(pos) = current.iter().position(|t| *t == tag) {
                                             current.remove(pos);
