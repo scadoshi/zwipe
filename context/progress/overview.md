@@ -109,6 +109,27 @@ Build 15 shipped over build 14 with: `Email` strict newtype across the workspace
 
 ---
 
+## 1.2.1 — card rules dialog + launch-flash fix (shipped 2026-07-01)
+
+Client-only (`zwiper`); no server changes. **Android versionCode 16** published to
+the Alpha closed-testing track 2026-07-01. **iOS build 55** built + uploaded to App
+Store Connect the same day, staged behind 1.2.0 (submit 1.2.1 for review once 1.2.0
+is live). CFBundleShortVersionString 1.2.1 / CFBundleVersion 55.
+
+- **Card rules dialog (FR #8).** A util-bar eye button opens a dialog with the
+  active card's oracle text and stats: rules text rendered with real mana/tap/symbol
+  glyphs (shared `OracleText`), type + rarity + keyword chips, and P/T or loyalty —
+  reusing the expanded card-row detail markup so it matches the deck list. Handles
+  multi-faced cards. Replaces the old "Keywords" util button (consolidated; the
+  `keyword_hint` module was removed).
+- **Launch-flash fix.** The native iOS/Android WebView now sets its background to
+  the default theme color and hides `#main` until the real stylesheet applies, so
+  the app no longer flashes white/unstyled HTML on cold start.
+- **Docs.** feature_requests reconciled (#5/#8/#10/#14/#15/#17/#19/#21 shipped or
+  closed, #13 "typal" dropped — sticking with tribal).
+
+---
+
 ## 1.2.0 — deck analytics, tagging, synergy toggle + PDH/perf fixes (shipped 2026-06-30)
 
 Shipped as **1.2.0 — iOS build 54 / Android versionCode 15** (first minor bump

@@ -20,19 +20,21 @@ Plus [`CLAUDE.md`](CLAUDE.md) — the authoritative rules/instructions for AI as
 
 ## Current focus
 
-**Last shipped — 1.2.0** (both stores, 2026-06-30, first minor bump since 1.1.0):
-iOS build 54 + Android versionCode 15; server batch deployed to prod first, web
-live. The 2026-06-30 analytics/tagging batch: hypergeometric **draw-odds**, the
-**Synergy on/off** toggle, **power level + other-tags**, deck tags **85→117**,
-the PDH commander fix, an `edhrec_rank` popularity index, proliferate→Counters,
-the include/exclude filter guard, and the create/edit top-scroll fix. All wire
-changes additive (`#[serde(default)]` / `Opdate` / `x-synergy-applied` header) so
-old clients keep working. See the [`progress/overview.md`](progress/overview.md)
-top entry for the full list.
+**Last shipped — 1.2.1** (client-only, 2026-07-01): a **card rules dialog** (util-bar
+eye button → oracle text + stats with real mana/symbol glyphs, type/rarity/keyword
+chips, P/T or loyalty; replaces the Keywords button, completing FR #8) and a **native
+WebView launch-flash fix** (dark background + hidden-until-styled gate). **Android
+versionCode 16** published to closed testing; **iOS build 55** uploaded to App Store
+Connect, staged behind 1.2.0 (submit once 1.2.0 is live). See the
+[`progress/overview.md`](progress/overview.md) top entry for detail.
 
-**After this version:** track 1.2.0 store review, keep the closed-testing 14-day
-clock running, suggestion-signal **Phase 3 (ranking)**, and draw-odds **Phase 4
-(premium gating)**.
+Prior — **1.2.0** (both stores, 2026-06-30): the analytics/tagging batch (draw-odds,
+Synergy on/off, power level + other-tags, deck tags 85→117, PDH fix, `edhrec_rank`,
+include/exclude guard, create/edit top-scroll).
+
+**After this version:** track 1.2.0 store review (then submit 1.2.1 on iOS), keep the
+closed-testing 14-day clock running, suggestion-signal **Phase 3 (ranking)**, and
+draw-odds **Phase 4 (premium gating)**.
 
 See [`progress/overview.md`](progress/overview.md) for the high-level state,
 [`progress/feature_requests.md`](progress/feature_requests.md) for the weighted
