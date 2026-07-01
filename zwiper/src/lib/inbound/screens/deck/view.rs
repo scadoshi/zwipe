@@ -41,7 +41,6 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::{
     DeckEntry, deck_metrics::DeckMetrics, deck_profile::DeckProfile, deck_warning::DeckWarning,
-    draw_odds::p_at_least_one,
 };
 use zwipe_core::domain::user::models::hints::HINT_FIRST_DECK;
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
@@ -291,22 +290,18 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         )
     });
 
-    // Opening-hand draw odds: P(>=1) per category for a 7-card hand. Library
-    // size = the mainboard (the commander sits in the command zone, not the
-    // library). Raw pre-mulligan odds; ignores card selection.
-    let draw_odds_rows: Option<Vec<(&'static str, f64)>> = metrics.as_ref().map(|m| {
+    // Draw-odds buckets: (deck_size, [(label, count)]). Library size = the
+    // mainboard (the commander sits in the command zone, not the library). The
+    // DrawOdds component turns these into per-turn P(>=1) live.
+    let draw_odds_data: Option<(u32, Vec<(&'static str, u32)>)> = metrics.as_ref().map(|m| {
         let deck_size = (m.land_count + m.nonland_count) as u32;
-        let opening_hand = 7u32;
-        let mut rows: Vec<(&'static str, f64)> = vec![(
-            "Lands",
-            p_at_least_one(deck_size, m.land_count as u32, opening_hand),
-        )];
-        rows.extend(
+        let mut buckets: Vec<(&'static str, u32)> = vec![("Land", m.land_count as u32)];
+        buckets.extend(
             m.mechanical_category_counts
                 .iter()
-                .map(|(label, count)| (*label, p_at_least_one(deck_size, *count as u32, opening_hand))),
+                .map(|(label, count)| (*label, *count as u32)),
         );
-        rows
+        (deck_size, buckets)
     });
 
     let mana_balance_rows = metrics.as_ref().map(|m| -> Vec<_> {
@@ -401,11 +396,11 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                 }
                                             }
 
-                                            if let Some(rows) = draw_odds_rows.clone() {
+                                            if let Some((deck_size, buckets)) = draw_odds_data.clone() {
                                                 CollapsibleSection {
                                                     title: "Draw odds",
                                                     open_section: open_section,
-                                                    DrawOdds { rows: rows }
+                                                    DrawOdds { deck_size: deck_size, buckets: buckets }
                                                 }
                                             }
                                           }
