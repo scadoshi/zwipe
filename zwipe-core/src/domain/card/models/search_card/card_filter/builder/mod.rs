@@ -24,6 +24,62 @@ use crate::domain::{
     deck::Format,
 };
 use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
+
+/// Errors if any value appears in both an include list and the exclude list for
+/// the same attribute — a contradiction that matches zero cards. `field` names
+/// the attribute for the error message; `includes` is the set of include lists
+/// (e.g. `contains_any` + `contains_all`), `excludes` the exclude list.
+fn check_include_exclude_clash<T: PartialEq + Debug>(
+    field: &'static str,
+    includes: &[Option<&[T]>],
+    excludes: Option<&[T]>,
+) -> Result<(), InvalidCardFilter> {
+    let Some(excludes) = excludes else {
+        return Ok(());
+    };
+    let mut clashing: Vec<&T> = Vec::new();
+    for value in includes.iter().copied().flatten().flatten() {
+        // Unique, order-preserving: a value may repeat across include lists.
+        if excludes.contains(value) && !clashing.contains(&value) {
+            clashing.push(value);
+        }
+    }
+    if clashing.is_empty() {
+        return Ok(());
+    }
+    let values = clashing
+        .iter()
+        .map(|v| format!("{v:?}"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    Err(InvalidCardFilter::Contradiction { field, values })
+}
+
+/// Errors if a substring `contains` filter and its `not_contains` counterpart
+/// contradict. Since "contains C" requires the value to include C (and therefore
+/// every substring of C), a `not_contains` term that is a substring of the
+/// contains term matches zero cards — e.g. name contains "test" and doesn't
+/// contain "test" (or "tes"). Compared punctuation/case-insensitively to mirror
+/// how these fields are searched.
+fn check_contains_not_contains_clash(
+    field: &'static str,
+    contains: Option<&str>,
+    not_contains: Option<&str>,
+) -> Result<(), InvalidCardFilter> {
+    let (Some(contains), Some(not_contains)) = (contains, not_contains) else {
+        return Ok(());
+    };
+    let contains = strip_punctuation(contains.trim()).to_lowercase();
+    let not_contains = strip_punctuation(not_contains.trim()).to_lowercase();
+    if !not_contains.is_empty() && contains.contains(&not_contains) {
+        return Err(InvalidCardFilter::Contradiction {
+            field,
+            values: not_contains,
+        });
+    }
+    Ok(())
+}
 
 /// Builder for constructing card search filters with fluent API.
 ///
@@ -620,6 +676,78 @@ impl CardFilterBuilder {
             return Err(InvalidCardFilter::Empty);
         }
 
+        // Reject include/exclude contradictions: a value in both an include and
+        // the exclude list for the same attribute matches zero cards. The
+        // rarity filter derefs to a slice; the rest are already `Vec`s.
+        let rarity_includes = self.rarity_equals_any.as_ref().map(|r| &r[..]);
+        let rarity_excludes = self.rarity_excludes_any.as_ref().map(|r| &r[..]);
+        check_include_exclude_clash(
+            "card types",
+            &[self.card_type_contains_any.as_deref(), self.card_type_contains_all.as_deref()],
+            self.card_type_excludes_any.as_deref(),
+        )?;
+        check_include_exclude_clash(
+            "type line",
+            &[self.type_line_contains_any.as_deref(), self.type_line_contains_all.as_deref()],
+            self.type_line_excludes_any.as_deref(),
+        )?;
+        check_include_exclude_clash(
+            "oracle text",
+            &[self.oracle_text_contains_any.as_deref(), self.oracle_text_contains_all.as_deref()],
+            self.oracle_text_excludes_any.as_deref(),
+        )?;
+        check_include_exclude_clash(
+            "keywords",
+            &[self.keywords_contains_any.as_deref(), self.keywords_contains_all.as_deref()],
+            self.keywords_excludes.as_deref(),
+        )?;
+        check_include_exclude_clash(
+            "produced mana",
+            &[self.produced_mana_contains_any.as_deref(), self.produced_mana_contains_all.as_deref()],
+            self.produced_mana_excludes.as_deref(),
+        )?;
+        check_include_exclude_clash(
+            "mechanical categories",
+            &[
+                self.mechanical_categories_contains_any.as_deref(),
+                self.mechanical_categories_contains_all.as_deref(),
+            ],
+            self.mechanical_categories_excludes.as_deref(),
+        )?;
+        check_include_exclude_clash(
+            "sets",
+            &[self.set_equals_any.as_deref()],
+            self.set_excludes_any.as_deref(),
+        )?;
+        check_include_exclude_clash(
+            "artists",
+            &[self.artist_equals_any.as_deref()],
+            self.artist_excludes_any.as_deref(),
+        )?;
+        check_include_exclude_clash("rarities", &[rarity_includes], rarity_excludes)?;
+
+        // Scalar substring pairs: "contains X" together with "doesn't contain X".
+        check_contains_not_contains_clash(
+            "name",
+            self.name_contains.as_deref(),
+            self.name_not_contains.as_deref(),
+        )?;
+        check_contains_not_contains_clash(
+            "oracle text",
+            self.oracle_text_contains.as_deref(),
+            self.oracle_text_not_contains.as_deref(),
+        )?;
+        check_contains_not_contains_clash(
+            "flavor text",
+            self.flavor_text_contains.as_deref(),
+            self.flavor_text_not_contains.as_deref(),
+        )?;
+        check_contains_not_contains_clash(
+            "type line",
+            self.type_line_contains.as_deref(),
+            self.type_line_not_contains.as_deref(),
+        )?;
+
         // Trim whitespace and strip punctuation from text fields at build time
         // (not on set, to allow typing spaces/punctuation in the UI).
         // Returns None if the cleaned value is empty.
@@ -730,6 +858,69 @@ mod tests {
         builder.set_keywords_contains_any(vec!["flying"]);
         builder.set_keywords_excludes(vec!["haste"]);
         assert!(!builder.is_empty());
+        assert!(builder.build().is_ok());
+    }
+
+    #[test]
+    fn card_type_include_exclude_clash_errors() {
+        let mut builder = CardFilterBuilder::new();
+        builder.set_card_type_contains_any(vec![CardType::Creature, CardType::Land]);
+        builder.set_card_type_excludes_any(vec![CardType::Land]);
+        assert!(
+            matches!(builder.build(), Err(InvalidCardFilter::Contradiction { field, .. }) if field == "card types"),
+            "including and excluding Land must be rejected",
+        );
+    }
+
+    #[test]
+    fn card_type_include_exclude_different_values_builds() {
+        // Include creatures, exclude lands — different values, no clash.
+        let mut builder = CardFilterBuilder::new();
+        builder.set_card_type_contains_all(vec![CardType::Creature]);
+        builder.set_card_type_excludes_any(vec![CardType::Land]);
+        assert!(builder.build().is_ok());
+    }
+
+    #[test]
+    fn keyword_include_exclude_clash_errors() {
+        let mut builder = CardFilterBuilder::new();
+        builder.set_keywords_contains_any(vec!["flying"]);
+        builder.set_keywords_excludes(vec!["flying"]);
+        assert!(matches!(
+            builder.build(),
+            Err(InvalidCardFilter::Contradiction { .. })
+        ));
+    }
+
+    #[test]
+    fn name_contains_and_not_contains_same_errors() {
+        let mut builder = CardFilterBuilder::new();
+        builder.set_name_contains("test");
+        builder.set_name_not_contains("test");
+        assert!(
+            matches!(builder.build(), Err(InvalidCardFilter::Contradiction { field, .. }) if field == "name"),
+            "name contains + doesn't-contain the same term must be rejected",
+        );
+    }
+
+    #[test]
+    fn name_not_contains_substring_of_contains_errors() {
+        // "contains test" already implies "contains tes", so excluding "tes"
+        // matches zero cards.
+        let mut builder = CardFilterBuilder::new();
+        builder.set_name_contains("Test");
+        builder.set_name_not_contains("tes");
+        assert!(matches!(
+            builder.build(),
+            Err(InvalidCardFilter::Contradiction { .. })
+        ));
+    }
+
+    #[test]
+    fn name_contains_and_not_contains_different_builds() {
+        let mut builder = CardFilterBuilder::new();
+        builder.set_name_contains("dragon");
+        builder.set_name_not_contains("goblin");
         assert!(builder.build().is_ok());
     }
 

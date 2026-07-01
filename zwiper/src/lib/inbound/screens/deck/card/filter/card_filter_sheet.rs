@@ -16,6 +16,7 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe_core::domain::card::search_card::card_filter::error::InvalidCardFilter;
 use zwipe_core::domain::user::models::hints::HINT_FILTER;
 
 /// Newtype so `try_use_context` doesn't collide with other `Signal<bool>`
@@ -539,6 +540,18 @@ pub(crate) fn CardFilterSheet(
                 button {
                     class: "util-btn",
                     onclick: move |_| {
+                        // Block contradictory filters (a value/term both included
+                        // and excluded matches zero cards). Keep the sheet open so
+                        // the user can fix the offending field.
+                        if let Err(InvalidCardFilter::Contradiction { field, .. }) =
+                            filter_builder.read().build()
+                        {
+                            toast.warning(
+                                format!("Filter can't both include and exclude {field}"),
+                                ToastOptions::default().duration(Duration::from_millis(2500)),
+                            );
+                            return;
+                        }
                         if validate_before_apply && filter_builder.read().is_empty_ignoring_deck_context() {
                             toast.warning("Filter is empty".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                         } else {
