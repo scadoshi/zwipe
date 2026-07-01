@@ -460,7 +460,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             div { class: "screen",
                 ScreenHeader { title: "Edit Deck", hint: edit_hint }
 
-                div { class: "screen-content centered content-enter",
+                div { class: "screen-content content-enter",
                 div { class : "container-sm",
                     match &*original_deck_resource.read() {
                         Some(Ok(_deck)) => rsx! {

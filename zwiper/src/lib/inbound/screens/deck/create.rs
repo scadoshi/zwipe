@@ -131,7 +131,7 @@ pub fn CreateDeck() -> Element {
             div { class: "screen",
                 ScreenHeader { title: "Create Deck", hint: create_hint }
 
-                div { class: "screen-content centered content-enter",
+                div { class: "screen-content content-enter",
                 div { class : "container-sm",
 
                     form { class : "flex-col text-center",
