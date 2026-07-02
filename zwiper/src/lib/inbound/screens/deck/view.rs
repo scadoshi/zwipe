@@ -595,6 +595,11 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                         " to add, remove, import, export, clone, buy, or delete the deck"
                     }
                     HintBullet {
+                        "Cards you skip or remove stay out of the add stack for this deck. "
+                        HintKey { "More" }
+                        " then Clear skips brings them back"
+                    }
+                    HintBullet {
                         "Stats appear as the deck grows, tap a section like "
                         HintKey { "Stats" }
                         " or "

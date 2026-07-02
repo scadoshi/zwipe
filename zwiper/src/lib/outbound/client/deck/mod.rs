@@ -3,6 +3,8 @@
 //! Provides traits and implementations for deck CRUD operations:
 //! create, read, update, and delete decks.
 
+/// Clear a deck's suppression set (skipped/removed cards).
+pub mod clear_deck_suppressions;
 /// Clone an existing deck with a new name.
 pub mod clone_deck;
 /// Create a new deck.

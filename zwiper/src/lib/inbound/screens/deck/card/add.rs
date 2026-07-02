@@ -9,7 +9,7 @@ use crate::{
                 HintBullet, HintBullets, HintColored, HintDialog, HintLine, use_one_time_hint,
             },
             interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
-            telemetry::usage_buffer::UsageBuffer,
+            telemetry::{flush_loop::flush_once, usage_buffer::UsageBuffer},
         },
         screens::deck::card::{
             components::action_history::{
@@ -406,8 +406,10 @@ pub fn Add(deck_id: Uuid) -> Element {
         match action {
             // Remove-screen-only variant; never pushed on this screen.
             SwipeAction::MoveBoard { .. } => {}
-            SwipeAction::Skip { .. } => {
-                // Just showing previous card - done!
+            SwipeAction::Skip { ref card, .. } => {
+                // Cancel the durable skip: dropped if still pending, or an
+                // unskip is queued if it already flushed.
+                usage_buffer().retract_deck_skip(deck_id, card.scryfall_data.oracle_id);
                 toast.info(
                     "Undid skip".to_string(),
                     ToastOptions::default().duration(Duration::from_millis(1500)),
@@ -746,6 +748,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
         // Peek session to avoid subscribing this effect to session changes.
         // The interval-based upkeep in Bouncer handles session refresh.
+        let session_signal = session;
         let Some(session) = session.peek().clone() else {
             toast.error("Session expired".to_string(), ToastOptions::default());
             return;
@@ -758,6 +761,9 @@ pub fn Add(deck_id: Uuid) -> Element {
 
         usage_buffer().record_search();
         spawn(async move {
+            // Push pending skips to the server before the refetch so
+            // just-skipped cards can't ride back in on the new page.
+            flush_once(&usage_buffer(), &client, &session_signal).await;
             match client().search_deck_cards(deck_id, &filter, &session).await {
                 Ok((cards_from_search, warming)) => {
                     synergy_warming.set(warming);
@@ -1029,6 +1035,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 on_swipe_left: move |card: Card| {
                                     usage_buffer().record_swipe(Direction::Left);
                                     usage_buffer().record_signal(commander_oracle_id(), card.scryfall_data.oracle_id, Direction::Left);
+                                    usage_buffer().record_deck_skip(deck_id, card.scryfall_data.oracle_id);
                                     action_history.write().push(SwipeAction::Skip { card: Box::new(card), exited: Direction::Left });
                                     toast.info("Skipped".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                     advance_after_commit();
@@ -1218,6 +1225,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 return;
                             };
 
+                            let session_signal = session;
                             let Some(session) = session.peek().clone() else {
                                 toast.error("Session expired".to_string(), ToastOptions::default());
                                 return;
@@ -1234,6 +1242,9 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                             usage_buffer().record_search();
                             spawn(async move {
+                                // Flush pending skips before the refetch so the
+                                // refreshed stack can't re-serve them.
+                                flush_once(&usage_buffer(), &client, &session_signal).await;
                                 match client().search_deck_cards(deck_id, &filter, &session).await {
                                     Ok((cards_from_search, warming)) => {
                                         synergy_warming.set(warming);
