@@ -52,7 +52,7 @@ impl DeckOtherTag {
     /// One-line, plain-language description, for the picker's hint dialog.
     pub fn description(&self) -> &'static str {
         match self {
-            Self::Budget => "Built to a tight price — cheap cards over expensive staples",
+            Self::Budget => "Built to a tight price: cheap cards over expensive staples",
             Self::Jank => "Embraces janky, suboptimal cards for the fun of it",
             Self::Meme => "A joke deck built around a bit, not around winning",
             Self::Precon => "An unmodified preconstructed deck, played as it came",

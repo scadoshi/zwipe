@@ -4,12 +4,12 @@ use dioxus::prelude::*;
 
 const LOGO_ASCII: &str = zwipe_core::domain::logo::ZWIPE;
 
-/// App Store listing — canonical download + review source.
+/// App Store listing: canonical download + review source.
 const APP_STORE_URL: &str = "https://apps.apple.com/us/app/zwipe-tcg/id6761341603";
 
 /// JSON-LD `MobileApplication` markup emitted into `<head>` on the home page.
 /// Drives rich app results in search: name, platforms, free price, and the
-/// live App Store rating (4.8 / 4 ratings as of 2026-06-30 — bump when it moves).
+/// live App Store rating (4.8 / 4 ratings as of 2026-06-30; bump when it moves).
 const JSON_LD: &str = r#"{
   "@context": "https://schema.org",
   "@type": "MobileApplication",
@@ -121,7 +121,7 @@ pub fn Home() -> Element {
         HomeJsonLd {}
         Nav {}
         div { class: "hero",
-            // Semantic page heading for crawlers and screen readers — the ASCII
+            // Semantic page heading for crawlers and screen readers; the ASCII
             // logo is the visual title, so this is visually hidden.
             h1 { class: "sr-only", "Zwipe, the Magic: The Gathering deck builder built for mobile" }
             div { class: "logo", "{LOGO_ASCII}" }

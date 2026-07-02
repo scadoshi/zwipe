@@ -55,10 +55,10 @@ impl PowerLevel {
     pub fn description(&self) -> &'static str {
         match self {
             Self::Exhibition => "Ultra-casual showcase and theme decks; winning isn't the point",
-            Self::Core => "Precon-level power — the average kitchen-table deck",
+            Self::Core => "Precon-level power: the average kitchen-table deck",
             Self::Upgraded => "Beyond precon: stronger cards and synergy, but not cutthroat",
             Self::Optimized => "High-power, no holds barred short of full competitive",
-            Self::Cedh => "Competitive EDH — the strongest tuned meta decks",
+            Self::Cedh => "Competitive EDH: the strongest tuned meta decks",
         }
     }
 }

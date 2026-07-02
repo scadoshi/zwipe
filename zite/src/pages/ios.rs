@@ -7,7 +7,7 @@ use crate::{Footer, Nav};
 /// Live App Store listing for Zwipe (iOS).
 const APP_STORE_URL: &str = "https://apps.apple.com/us/app/zwipe-tcg/id6761341603";
 
-/// `/download/ios` — immediately redirects to the App Store. The mobile app and
+/// `/download/ios`: immediately redirects to the App Store. The mobile app and
 /// any marketing can point here permanently; the destination is controlled from
 /// the site (a push), never from an app update.
 #[component]
@@ -24,7 +24,7 @@ pub fn Ios() -> Element {
     rsx! {
         PageMeta {
             title: "Download for iOS",
-            description: "Zwipe on the App Store — a swipe-based deck builder for trading-card games.",
+            description: "Zwipe on the App Store: a swipe-based deck builder for trading-card games.",
             path: "/download/ios",
         }
         document::Meta { http_equiv: "refresh", content: "0; url={APP_STORE_URL}" }

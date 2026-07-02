@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 use crate::components::PageMeta;
 use crate::{Footer, Nav};
 
-/// Public tester group — anyone can join, which makes them eligible for the
+/// Public tester group: anyone can join, which makes them eligible for the
 /// closed test. The bare opt-in/store links below do nothing until you're a
 /// member, so this is step 1.
 const GROUP_URL: &str = "https://groups.google.com/g/zwipers";
@@ -11,7 +11,7 @@ const OPT_IN_URL: &str = "https://play.google.com/apps/testing/com.scadoshi.zwip
 /// Play Store listing (installs the test build once you're opted in).
 const PLAY_URL: &str = "https://play.google.com/store/apps/details?id=com.scadoshi.zwipe";
 
-/// `/download/android` — during the closed beta this page hosts the tester
+/// `/download/android`: during the closed beta this page hosts the tester
 /// opt-in instructions. Once Zwipe reaches production on Google Play, replace
 /// the body with a redirect to `PLAY_URL` (mirror `ios.rs`); every marketing
 /// channel points here, so the swap is a one-place change.
@@ -32,14 +32,14 @@ pub fn Android() -> Element {
                 }
                 p {
                     "Zwipe is live on Google Play as a beta while we finish Google's
-                    required testing period. Anyone can join — it takes about a minute,
+                    required testing period. Anyone can join, it takes about a minute,
                     in three steps:"
                 }
                 ol { class: "beta-steps",
                     li {
                         p {
                             strong { "Join the tester group." }
-                            " This is what makes you eligible — the links below won't
+                            " This is what makes you eligible. The links below won't
                             work until you're a member. Use the same Google account
                             that's on your Android phone."
                         }
