@@ -109,6 +109,29 @@ Build 15 shipped over build 14 with: `Email` strict newtype across the workspace
 
 ---
 
+## On main, unreleased — CardFilter split + deck-list alphabetical default (2026-07-02)
+
+Rides the next release (server + client together; server auto-deploys first on
+push). Commits `1ff1e398`, `09d39a20`, `9a55a0c5`.
+
+- **CardFilter split (plan executed, doc removed).** The dual-use `CardFilter`
+  became three types in zwipe-core: **`CardCriteria`** (the ~50 predicate fields
+  + `matches(&Card)`, shared core), **`CardQuery`** (server search request:
+  flattened criteria + clamping **`Limit`** (≤250, enforced on deserialize) +
+  offset/sort/ascending/synergy), and **`Cards`** (in-memory collection:
+  `matching`/`sorted`/`any_match` — cannot express a limit, by construction).
+  `OrderByOption` → **`CardSortKey`** with the shared comparator; builder →
+  `CardQueryBuilder` with `build()`/`build_criteria()`; error →
+  `InvalidCardCriteria`. **Wire JSON unchanged** (`#[serde(flatten)]`,
+  round-trip tested both directions) — no min-version gate; old clients keep
+  working. The three client `set_limit(10_000)` sentinels are gone; zerver keeps
+  `MAX_SEARCH_LIMIT` as defense-in-depth. 510 workspace tests green.
+- **Deck cards screen sorts alphabetically by default** (name ascending) when no
+  sort is chosen — main list, tokens, maybeboard, sideboard. A chosen sort still
+  overrides; add/swipe screens keep the server's synergy/EDHREC default order.
+
+---
+
 ## 1.2.1 — card rules dialog + launch-flash fix (shipped 2026-07-01)
 
 Client-only (`zwiper`); no server changes. **Android versionCode 16** published to
