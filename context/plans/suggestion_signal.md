@@ -1,7 +1,8 @@
 # First-Party Suggestion Signal
 
-**Status: Phases 1 + 2 BUILT (2026-06-29, uncommitted/undeployed) — collecting
-locally, verified end-to-end. Phase 3 (ranking) remains.** Two refinements landed
+**Status: Phases 1 + 2 SHIPPED (deployed with the 1.2.0 server batch,
+2026-06-30) — `commander_card_signal` collecting in prod. Phase 3 (ranking)
+remains.** Two refinements landed
 beyond the original plan: the right-swipe column is named **`added`** (not
 `kept`) to pair with **`removed`** — a new column capturing a *deliberate
 removal* from a deck (Remove-screen right-swipe + deck-cards `[-]`-to-zero), a
@@ -9,6 +10,14 @@ stronger delayed-negative than a skip. Also added a **flush-on-background**
 trigger (JS `visibilitychange: hidden` / `pagehide`) so a swipe-to-close no
 longer loses the last unflushed window — the whole telemetry buffer (swipes,
 searches, signals) shares it. Server-first deploy still pending.
+
+> **Privacy posture superseded (2026-07-02).** This plan's "aggregate counts,
+> no per-user rows" stance described the app at the time. The swipe-memory
+> batch (`plans/swipe_memory.md`) deliberately added **per-user** collection —
+> `user_card_signal` (user × commander × card) plus weekly tables — and the
+> privacy policy was updated to disclose per-account activity. The
+> `commander_card_signal` aggregate described below still exists and Phase 3
+> can rank from it unchanged; per-user personalization is a later consumer.
 
 ## Goal
 
