@@ -1,46 +1,32 @@
-//! Card filtering and search query construction.
+//! Card search criteria and query construction.
 //!
-//! Provides comprehensive filtering capabilities for MTG cards with builder pattern.
-//! Filters are applied using PostgreSQL JSONB operators for efficient querying.
+//! Two types share one predicate core, [`CardCriteria`]:
 //!
-//! # Usage
+//! - [`CardQuery`] — the **database query** POSTed to the server: criteria plus
+//!   bounded pagination ([`query::Limit`]) and ordering.
+//! - [`Cards`](crate::domain::card::search_card::cards::Cards) — the
+//!   **in-memory collection**, whose operations take bare criteria and cannot
+//!   express a limit.
 //!
-//! ```rust,ignore
-//! use zwipe::domain::card::models::search_card::card_filter::CardFilter;
-//!
-//! let filter = CardFilter::builder()
-//!     .name_contains("Lightning Bolt")
-//!     .color_identity(vec!["R"])
-//!     .cmc_equals(1)
-//!     .limit(20)
-//!     .build();
-//!
-//! let cards = card_service.search_cards(&filter).await?;
-//! ```
+//! Both are built from one [`CardQueryBuilder`](builder::CardQueryBuilder):
+//! `build()` for the server path, `build_criteria()` for the in-memory path.
 
-/// Builder pattern for constructing card filters.
+/// Builder producing [`CardQuery`] / [`CardCriteria`] with validation.
 pub mod builder;
-/// Card filter validation errors.
-pub mod error;
-/// Getter methods for accessing filter values.
-pub mod getters;
-/// Sort order options (name, CMC, rarity, etc.).
+/// Sort key options (name, CMC, rarity, etc.).
 pub mod card_sort_key;
+/// The shared predicate core (~50 criteria fields) and `matches()`.
+pub mod criteria;
+/// Criteria validation errors.
+pub mod error;
 /// Currency selector for the price-range filter.
 pub mod price_currency;
+/// The server search request: criteria + `Limit` + offset + sort.
+pub mod query;
 
-use crate::domain::{
-    card::{
-        scryfall_data::{colors::Colors, rarity::Rarities},
-        search_card::{
-            card_filter::{card_sort_key::CardSortKey, price_currency::PriceCurrency},
-            card_type::CardType,
-        },
-    },
-    deck::Format,
-};
-use serde::{Deserialize, Serialize};
-use serde_with::skip_serializing_none;
+pub use card_sort_key::CardSortKey;
+pub use criteria::CardCriteria;
+pub use query::{CardQuery, Limit};
 
 /// Strips punctuation from a string, keeping only alphanumeric characters and whitespace.
 /// Used for punctuation-insensitive text search (e.g., "akromas will" matches "Akroma's Will").
@@ -50,120 +36,9 @@ pub fn strip_punctuation(s: &str) -> String {
         .collect()
 }
 
-/// Validated card search filter with all search criteria.
-///
-/// Created via [`CardFilterBuilder`](builder::CardFilterBuilder). Contains all
-/// filter criteria (text, mana, combat, flags, pagination) for searching cards.
-/// At least one filter criterion must be set (enforced by builder).
-#[skip_serializing_none]
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub struct CardFilter {
-    // combat
-    power_equals: Option<i32>,
-    power_range: Option<(i32, i32)>,
-    toughness_equals: Option<i32>,
-    toughness_range: Option<(i32, i32)>,
-    // mana
-    cmc_equals: Option<f64>,
-    cmc_range: Option<(f64, f64)>,
-    color_identity_within: Option<Colors>,
-    color_identity_equals: Option<Colors>,
-    // price (min/max against the selected currency's price)
-    price_min: Option<f64>,
-    price_max: Option<f64>,
-    price_currency: Option<PriceCurrency>,
-    // produced mana
-    produced_mana_contains_any: Option<Vec<String>>,
-    produced_mana_contains_all: Option<Vec<String>>,
-    produced_mana_excludes: Option<Vec<String>>,
-    // rarity
-    rarity_equals_any: Option<Rarities>,
-    rarity_excludes_any: Option<Rarities>,
-    // set
-    set_equals_any: Option<Vec<String>>,
-    set_excludes_any: Option<Vec<String>>,
-    // artist
-    artist_equals_any: Option<Vec<String>>,
-    artist_excludes_any: Option<Vec<String>>,
-    // text
-    name_contains: Option<String>,
-    name_not_contains: Option<String>,
-    oracle_text_contains: Option<String>,
-    oracle_text_not_contains: Option<String>,
-    oracle_text_contains_any: Option<Vec<String>>,
-    oracle_text_contains_all: Option<Vec<String>>,
-    oracle_text_excludes_any: Option<Vec<String>>,
-    // keywords
-    keywords_contains_any: Option<Vec<String>>,
-    keywords_contains_all: Option<Vec<String>>,
-    keywords_excludes: Option<Vec<String>>,
-    flavor_text_contains: Option<String>,
-    flavor_text_not_contains: Option<String>,
-    has_flavor_text: Option<bool>,
-    // types
-    type_line_contains: Option<String>,
-    type_line_not_contains: Option<String>,
-    type_line_contains_any: Option<Vec<String>>,
-    type_line_contains_all: Option<Vec<String>>,
-    type_line_excludes_any: Option<Vec<String>>,
-    card_type_contains_any: Option<Vec<CardType>>,
-    card_type_contains_all: Option<Vec<CardType>>,
-    card_type_excludes_any: Option<Vec<CardType>>,
-    // flags
-    is_token: Option<bool>,
-    is_playable: Option<bool>,
-    digital: Option<bool>,
-    oversized: Option<bool>,
-    promo: Option<bool>,
-    content_warning: Option<bool>,
-    language: Option<String>,
-    // legalities
-    legalities_contains_any: Option<Vec<String>>,
-    // commander
-    is_commander_in_format: Option<Format>,
-    // partner/background/spell
-    is_partner: Option<bool>,
-    is_background: Option<bool>,
-    is_signature_spell: Option<bool>,
-    // mechanical category
-    mechanical_categories_contains_any: Option<Vec<String>>,
-    mechanical_categories_contains_all: Option<Vec<String>>,
-    mechanical_categories_excludes: Option<Vec<String>>,
-    // config
-    #[serde(default = "default_limit")]
-    limit: u32,
-    #[serde(default)]
-    offset: u32,
-    order_by: Option<CardSortKey>,
-    #[serde(default = "default_ascending")]
-    ascending: bool,
-    /// Deck-aware search only: when true, constrain results to the commander's
-    /// synergy pool (membership), then sort by `order_by` within it. Ignored by
-    /// the plain (non-deck) search. `#[serde(default)]` so older clients that
-    /// omit it parse to `false` (today's full-pool behavior).
-    #[serde(default)]
-    synergy: bool,
-}
-
-fn default_limit() -> u32 {
-    25
-}
-
-fn default_ascending() -> bool {
-    true
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{CardFilter, strip_punctuation};
-
-    #[test]
-    fn synergy_defaults_false_when_omitted() {
-        // A client predating the synergy flag omits it; must parse to false
-        // (today's full-pool behavior), keeping the endpoint server-first safe.
-        let filter: CardFilter = serde_json::from_str(r#"{"name_contains":"bolt"}"#).unwrap();
-        assert!(!filter.synergy());
-    }
+    use super::strip_punctuation;
 
     #[test]
     fn strips_apostrophes() {

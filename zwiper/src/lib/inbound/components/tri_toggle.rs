@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
 /// A 3-state filter chip selector for `Option<bool>` values.
 ///
@@ -11,11 +11,11 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuild
 #[component]
 pub fn TriToggle(
     label: &'static str,
-    filter_builder: Signal<CardFilterBuilder>,
-    getter: fn(&CardFilterBuilder) -> Option<bool>,
-    setter_true: fn(&mut CardFilterBuilder),
-    setter_false: fn(&mut CardFilterBuilder),
-    unsetter: fn(&mut CardFilterBuilder),
+    filter_builder: Signal<CardQueryBuilder>,
+    getter: fn(&CardQueryBuilder) -> Option<bool>,
+    setter_true: fn(&mut CardQueryBuilder),
+    setter_false: fn(&mut CardQueryBuilder),
+    unsetter: fn(&mut CardQueryBuilder),
     #[props(default = "true")] true_label: &'static str,
     #[props(default = "false")] false_label: &'static str,
     #[props(default = "none")] none_label: &'static str,

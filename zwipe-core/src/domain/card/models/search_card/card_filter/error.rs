@@ -1,9 +1,9 @@
 use thiserror::Error;
 
-/// Error returned when building an invalid card filter.
+/// Error returned when building invalid card criteria.
 #[derive(Debug, Error, PartialEq, Eq)]
-pub enum InvalidCardFilter {
-    /// Card filter must have at least one search criterion set.
+pub enum InvalidCardCriteria {
+    /// Criteria must have at least one criterion set.
     #[error("must have at least one filter")]
     Empty,
     /// A value appears in both an include and an exclude list for the same

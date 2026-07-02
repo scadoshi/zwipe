@@ -1,5 +1,5 @@
 #[cfg(feature = "zerver")]
-use zwipe_core::domain::card::{Card, search_card::card_filter::CardFilter};
+use zwipe_core::domain::card::{Card, search_card::card_filter::CardQuery};
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
@@ -24,12 +24,12 @@ impl From<SearchCardsError> for ApiError {
     }
 }
 
-/// Searches cards using a `CardFilter` deserialized from the JSON body.
+/// Searches cards using a `CardQuery` deserialized from the JSON body.
 #[cfg(feature = "zerver")]
 pub async fn search_cards<AS, US, HS, CS, DS>(
     _: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
-    Json(body): Json<CardFilter>,
+    Json(body): Json<CardQuery>,
 ) -> Result<(StatusCode, Json<Vec<Card>>), ApiError>
 where
     AS: AuthService,

@@ -2,10 +2,10 @@
 
 use super::super::match_mode::MatchMode;
 use dioxus::prelude::*;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_type::{CardType, WithCardTypes};
 
-fn read_card_types(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<CardType> {
+fn read_card_types(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<CardType> {
     match mode {
         MatchMode::Any => fb
             .card_type_contains_any()
@@ -18,7 +18,7 @@ fn read_card_types(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<CardType> {
     }
 }
 
-fn write_card_types(fb: &mut CardFilterBuilder, mode: MatchMode, values: Vec<CardType>) {
+fn write_card_types(fb: &mut CardQueryBuilder, mode: MatchMode, values: Vec<CardType>) {
     fb.unset_card_type_contains_any();
     fb.unset_card_type_contains_all();
     if !values.is_empty() {
@@ -33,13 +33,13 @@ fn write_card_types(fb: &mut CardFilterBuilder, mode: MatchMode, values: Vec<Car
     }
 }
 
-fn read_excluded(fb: &CardFilterBuilder) -> Vec<CardType> {
+fn read_excluded(fb: &CardQueryBuilder) -> Vec<CardType> {
     fb.card_type_excludes_any()
         .map(|v| v.to_vec())
         .unwrap_or_default()
 }
 
-fn write_excluded(fb: &mut CardFilterBuilder, values: Vec<CardType>) {
+fn write_excluded(fb: &mut CardQueryBuilder, values: Vec<CardType>) {
     if values.is_empty() {
         fb.unset_card_type_excludes_any();
     } else {
@@ -50,7 +50,7 @@ fn write_excluded(fb: &mut CardFilterBuilder, values: Vec<CardType>) {
 /// Basic card type filter with separate include and exclude chip grids.
 #[component]
 pub(crate) fn BasicTypes() -> Element {
-    let mut filter_builder: Signal<CardFilterBuilder> = use_context();
+    let mut filter_builder: Signal<CardQueryBuilder> = use_context();
 
     let mut card_type_mode = use_signal(|| {
         if filter_builder().card_type_contains_all().is_some() {

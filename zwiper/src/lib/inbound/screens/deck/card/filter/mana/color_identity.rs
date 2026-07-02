@@ -2,14 +2,14 @@
 
 use dioxus::prelude::*;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
 use super::super::filter_mode::FilterMode;
 
 /// Color identity filter sub-component.
 #[component]
 pub(crate) fn ColorIdentityFilter() -> Element {
-    let mut filter_builder: Signal<CardFilterBuilder> = use_context();
+    let mut filter_builder: Signal<CardQueryBuilder> = use_context();
 
     // Color identity mode signal
     let mut color_identity_mode = use_signal(|| {

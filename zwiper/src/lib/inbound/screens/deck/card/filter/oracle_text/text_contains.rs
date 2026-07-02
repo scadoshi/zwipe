@@ -1,12 +1,12 @@
 //! Free-text oracle text search component.
 
 use dioxus::prelude::*;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
 /// Free-text oracle text contains input.
 #[component]
 pub(crate) fn TextContains() -> Element {
-    let mut filter_builder: Signal<CardFilterBuilder> = use_context();
+    let mut filter_builder: Signal<CardQueryBuilder> = use_context();
 
     let oracle_text_value = filter_builder()
         .oracle_text_contains()

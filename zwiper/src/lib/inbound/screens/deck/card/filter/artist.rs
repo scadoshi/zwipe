@@ -4,7 +4,7 @@ use super::deck_cards::{DeckCards, extract_artists};
 use crate::outbound::client::{ZwipeClient, card::get_artists::ClientGetArtists};
 use dioxus::prelude::*;
 use zwipe::inbound::http::ApiError;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
 /// Whether the artist filter is in include or exclude mode.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -29,7 +29,7 @@ impl IncludeExclude {
     }
 }
 
-fn read_artists(fb: &CardFilterBuilder, mode: IncludeExclude) -> Vec<String> {
+fn read_artists(fb: &CardQueryBuilder, mode: IncludeExclude) -> Vec<String> {
     match mode {
         IncludeExclude::Include => fb
             .artist_equals_any()
@@ -42,7 +42,7 @@ fn read_artists(fb: &CardFilterBuilder, mode: IncludeExclude) -> Vec<String> {
     }
 }
 
-fn write_artists(fb: &mut CardFilterBuilder, mode: IncludeExclude, values: Vec<String>) {
+fn write_artists(fb: &mut CardQueryBuilder, mode: IncludeExclude, values: Vec<String>) {
     fb.unset_artist_equals_any();
     fb.unset_artist_excludes_any();
     if !values.is_empty() {
@@ -60,7 +60,7 @@ fn write_artists(fb: &mut CardFilterBuilder, mode: IncludeExclude, values: Vec<S
 /// Filter component for card artist search.
 #[component]
 pub fn Artist() -> Element {
-    let mut filter_builder: Signal<CardFilterBuilder> = use_context();
+    let mut filter_builder: Signal<CardQueryBuilder> = use_context();
 
     let client: Signal<ZwipeClient> = use_context();
     let filter_reset: Signal<u32> = use_context();

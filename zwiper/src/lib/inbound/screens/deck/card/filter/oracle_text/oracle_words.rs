@@ -7,9 +7,9 @@ use super::super::{
 use crate::outbound::client::{ZwipeClient, card::get_oracle_words::ClientGetOracleWords};
 use dioxus::prelude::*;
 use zwipe::inbound::http::ApiError;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
-fn read_oracle_words(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<String> {
+fn read_oracle_words(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
     match mode {
         MatchMode::Any => fb
             .oracle_text_contains_any()
@@ -22,7 +22,7 @@ fn read_oracle_words(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<String> {
     }
 }
 
-fn write_oracle_words(fb: &mut CardFilterBuilder, mode: MatchMode, values: Vec<String>) {
+fn write_oracle_words(fb: &mut CardQueryBuilder, mode: MatchMode, values: Vec<String>) {
     fb.unset_oracle_text_contains_any();
     fb.unset_oracle_text_contains_all();
     if !values.is_empty() {
@@ -37,13 +37,13 @@ fn write_oracle_words(fb: &mut CardFilterBuilder, mode: MatchMode, values: Vec<S
     }
 }
 
-fn read_excluded(fb: &CardFilterBuilder) -> Vec<String> {
+fn read_excluded(fb: &CardQueryBuilder) -> Vec<String> {
     fb.oracle_text_excludes_any()
         .map(|v| v.to_vec())
         .unwrap_or_default()
 }
 
-fn write_excluded(fb: &mut CardFilterBuilder, values: Vec<String>) {
+fn write_excluded(fb: &mut CardQueryBuilder, values: Vec<String>) {
     if values.is_empty() {
         fb.unset_oracle_text_excludes_any();
     } else {
@@ -54,7 +54,7 @@ fn write_excluded(fb: &mut CardFilterBuilder, values: Vec<String>) {
 /// Oracle words chip multi-select with separate include and exclude sections.
 #[component]
 pub(crate) fn OracleWords() -> Element {
-    let mut filter_builder: Signal<CardFilterBuilder> = use_context();
+    let mut filter_builder: Signal<CardQueryBuilder> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let filter_reset: Signal<u32> = use_context();
     let deck_ctx: Option<DeckCards> = try_use_context();

@@ -7,9 +7,9 @@ use super::super::{
 use crate::outbound::client::{ZwipeClient, card::get_card_types::ClientGetCardTypes};
 use dioxus::prelude::*;
 use zwipe::inbound::http::ApiError;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
-fn read_other_types(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<String> {
+fn read_other_types(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
     match mode {
         MatchMode::Any => fb
             .type_line_contains_any()
@@ -22,7 +22,7 @@ fn read_other_types(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<String> {
     }
 }
 
-fn write_other_types(fb: &mut CardFilterBuilder, mode: MatchMode, values: Vec<String>) {
+fn write_other_types(fb: &mut CardQueryBuilder, mode: MatchMode, values: Vec<String>) {
     fb.unset_type_line_contains_any();
     fb.unset_type_line_contains_all();
     if !values.is_empty() {
@@ -37,13 +37,13 @@ fn write_other_types(fb: &mut CardFilterBuilder, mode: MatchMode, values: Vec<St
     }
 }
 
-fn read_excluded(fb: &CardFilterBuilder) -> Vec<String> {
+fn read_excluded(fb: &CardQueryBuilder) -> Vec<String> {
     fb.type_line_excludes_any()
         .map(|v| v.to_vec())
         .unwrap_or_default()
 }
 
-fn write_excluded(fb: &mut CardFilterBuilder, values: Vec<String>) {
+fn write_excluded(fb: &mut CardQueryBuilder, values: Vec<String>) {
     if values.is_empty() {
         fb.unset_type_line_excludes_any();
     } else {
@@ -55,7 +55,7 @@ fn write_excluded(fb: &mut CardFilterBuilder, values: Vec<String>) {
 #[component]
 pub(crate) fn OtherTypes() -> Element {
     let client: Signal<ZwipeClient> = use_context();
-    let mut filter_builder: Signal<CardFilterBuilder> = use_context();
+    let mut filter_builder: Signal<CardQueryBuilder> = use_context();
     let deck_ctx: Option<DeckCards> = try_use_context();
 
     let all_card_types: Resource<Result<Vec<String>, ApiError>> =

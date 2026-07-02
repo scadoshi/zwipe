@@ -34,8 +34,8 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::{
     Card,
     search_card::{
-        card_filter::{builder::CardFilterBuilder, card_sort_key::CardSortKey},
-        filter_cards::{FilterCards, SortCards},
+        card_filter::{builder::CardQueryBuilder, card_sort_key::CardSortKey},
+        cards::Cards,
     },
 };
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
@@ -62,7 +62,7 @@ enum BoardFilter {
 pub fn Remove(deck_id: Uuid) -> Element {
     let navigator = use_navigator();
 
-    let filter_builder: Signal<CardFilterBuilder> = use_context();
+    let filter_builder: Signal<CardQueryBuilder> = use_context();
 
     // When Some, the SwipeStack plays a keyframe entering from this direction
     // on the next top card, and clears it on animationend. Set by undo.
@@ -257,22 +257,19 @@ pub fn Remove(deck_id: Uuid) -> Element {
             .map(|e| e.card.clone())
             .collect();
 
-        // Step 2: apply card attribute filter
-        let mut filtered = if builder.is_empty() {
+        // Step 2: apply card attribute criteria, then the builder's sort. The
+        // in-memory path takes bare criteria — no pagination to zero out.
+        let filtered = if builder.is_empty() {
             board_filtered_cards
         } else {
-            let mut b = builder.clone();
-            b.set_limit(10_000);
-            b.set_offset(0);
-            match b.build() {
-                Ok(filter) => board_filtered_cards.filter_by(&filter),
+            match builder.build_criteria() {
+                Ok(criteria) => Cards::from(board_filtered_cards).matching(&criteria).into(),
                 Err(_) => board_filtered_cards,
             }
         };
-
-        if builder.is_empty() {
-            filtered.sort_by_filter(&builder);
-        }
+        let filtered: Vec<Card> = Cards::from(filtered)
+            .sorted(builder.sort(), builder.ascending())
+            .into();
 
         displayed_cards.set(filtered);
         current_index.set(0);
@@ -642,7 +639,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     onclick: move |_| {
                         current_index.set(0);
                         action_history.write().clear();
-                        if filter_builder.peek().order_by() == Some(CardSortKey::Random) {
+                        if filter_builder.peek().sort() == Some(CardSortKey::Random) {
                             let current = *filter_reset_counter.peek();
                             filter_reset_counter.set(current + 1);
                         }

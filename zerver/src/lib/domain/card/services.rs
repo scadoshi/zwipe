@@ -4,7 +4,7 @@ use zwipe_core::domain::card::{
     card_profile::CardProfile,
     mechanical_category::classify_by_heuristics,
     scryfall_data::ScryfallData,
-    search_card::card_filter::CardFilter,
+    search_card::card_filter::CardQuery,
 };
 use crate::{
     domain::card::{
@@ -156,7 +156,7 @@ impl<R: CardRepository> CardService for Service<R> {
         self.repo.get_printings(oracle_id).await
     }
 
-    async fn search_cards(&self, request: &CardFilter) -> Result<Vec<Card>, SearchCardsError> {
+    async fn search_cards(&self, request: &CardQuery) -> Result<Vec<Card>, SearchCardsError> {
         self.repo.search_cards(request).await
     }
 

@@ -15,9 +15,8 @@ use zwipe_core::domain::card::{
     Card,
     card_profile::CardProfile,
     scryfall_data::ScryfallData,
-    search_card::{
-        card_filter::{CardFilter, card_sort_key::CardSortKey},
-        filter_cards::PLAYABLE_LAYOUTS,
+    search_card::card_filter::{
+        CardQuery, card_sort_key::CardSortKey, criteria::PLAYABLE_LAYOUTS,
     },
 };
 use crate::domain::card::models::{
@@ -59,10 +58,10 @@ use sqlx::{QueryBuilder, query_builder::Separated};
 
 /// Hard ceiling on rows returned by a single card search.
 ///
-/// `CardFilter::limit` arrives from untrusted request JSON; without a cap a
+/// `CardQuery::limit` arrives from untrusted request JSON; without a cap a
 /// client could ask for an arbitrarily large page and force the DB to
 /// materialize and serialize it. The frontend default is 25; 250 is generous
-/// headroom. Note `CardFilter` is also used for *client-side* in-memory
+/// headroom. Note `CardQuery` is also used for *client-side* in-memory
 /// filtering with much larger limits, but that path never reaches this query.
 const MAX_SEARCH_LIMIT: u32 = 250;
 
@@ -188,7 +187,7 @@ impl CardRepository for MyPostgres {
     /// Filter clauses are composed with `AND` via `QueryBuilder::separated`.
     async fn search_scryfall_data(
         &self,
-        request: &CardFilter,
+        request: &CardQuery,
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
         self.search_scryfall_data_deck_aware(request, &[], None, false)
             .await
@@ -200,11 +199,14 @@ impl CardRepository for MyPostgres {
     /// no extras.
     async fn search_scryfall_data_deck_aware(
         &self,
-        request: &CardFilter,
+        request: &CardQuery,
         exclude_oracle_ids: &[uuid::Uuid],
         synergy_scores: Option<&serde_json::Value>,
         synergy_only: bool,
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
+        // WHERE clauses read the predicate fields; LIMIT/OFFSET/ORDER BY read
+        // the query config — the CardCriteria/CardQuery split, mirrored here.
+        let criteria = request.criteria();
         let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new(
             "SELECT latest_cards.* FROM latest_cards
              JOIN card_profiles ON latest_cards.id = card_profiles.scryfall_data_id
@@ -218,28 +220,28 @@ impl CardRepository for MyPostgres {
         sep.push("TRUE");
 
         // Strip punctuation from DB columns for punctuation-insensitive text search.
-        // The query values are already stripped by CardFilterBuilder setters.
+        // The query values are already stripped by CardQueryBuilder setters.
         const STRIP_NAME: &str = "regexp_replace(name, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
         const STRIP_TYPE: &str = "regexp_replace(type_line, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
 
-        if let Some(query_string) = &request.name_contains() {
+        if let Some(query_string) = &criteria.name_contains() {
             sep.push(STRIP_NAME);
             sep.push_bind_unseparated(format!("%{}%", query_string));
         }
 
-        if let Some(query_string) = &request.name_not_contains() {
+        if let Some(query_string) = &criteria.name_not_contains() {
             sep.push("NOT (");
             sep.push_unseparated(STRIP_NAME);
             sep.push_bind_unseparated(format!("%{}%", query_string));
             sep.push_unseparated(")");
         }
 
-        if let Some(query_string) = &request.type_line_contains() {
+        if let Some(query_string) = &criteria.type_line_contains() {
             sep.push(STRIP_TYPE);
             sep.push_bind_unseparated(format!("%{}%", query_string));
         }
 
-        if let Some(query_string_array) = &request.type_line_contains_any() {
+        if let Some(query_string_array) = &criteria.type_line_contains_any() {
             sep.push(" (");
             query_string_array
                 .iter()
@@ -254,7 +256,7 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated(") ");
         }
 
-        if let Some(card_types) = &request.card_type_contains_any() {
+        if let Some(card_types) = &criteria.card_type_contains_any() {
             sep.push(" (");
             card_types.iter().enumerate().for_each(|(i, query_string)| {
                 if i > 0 {
@@ -266,28 +268,28 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated(") ");
         }
 
-        if let Some(query_string_array) = &request.type_line_contains_all() {
+        if let Some(query_string_array) = &criteria.type_line_contains_all() {
             for query_string in query_string_array.iter() {
                 sep.push(STRIP_TYPE);
                 sep.push_bind_unseparated(format!("%{}%", query_string));
             }
         }
 
-        if let Some(card_types) = &request.card_type_contains_all() {
+        if let Some(card_types) = &criteria.card_type_contains_all() {
             for card_type in card_types.iter() {
                 sep.push(STRIP_TYPE);
                 sep.push_bind_unseparated(format!("%{}%", card_type));
             }
         }
 
-        if let Some(query_string) = &request.type_line_not_contains() {
+        if let Some(query_string) = &criteria.type_line_not_contains() {
             sep.push("(type_line IS NULL OR NOT (");
             sep.push_unseparated(STRIP_TYPE);
             sep.push_bind_unseparated(format!("%{}%", query_string));
             sep.push_unseparated("))");
         }
 
-        if let Some(query_string_array) = &request.type_line_excludes_any() {
+        if let Some(query_string_array) = &criteria.type_line_excludes_any() {
             sep.push("(type_line IS NULL OR NOT (");
             query_string_array
                 .iter()
@@ -302,7 +304,7 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated(")) ");
         }
 
-        if let Some(card_types) = &request.card_type_excludes_any() {
+        if let Some(card_types) = &criteria.card_type_excludes_any() {
             sep.push("(type_line IS NULL OR NOT (");
             card_types.iter().enumerate().for_each(|(i, query_string)| {
                 if i > 0 {
@@ -314,48 +316,48 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated(")) ");
         }
 
-        if let Some(sets) = request.set_equals_any() {
+        if let Some(sets) = criteria.set_equals_any() {
             sep.push("set_name = ANY(");
             sep.push_bind_unseparated(sets);
             sep.push_unseparated(")");
         }
 
-        if let Some(artists) = request.artist_equals_any() {
+        if let Some(artists) = criteria.artist_equals_any() {
             sep.push("artist = ANY(");
             sep.push_bind_unseparated(artists);
             sep.push_unseparated(")");
         }
 
-        if let Some(rarities) = request.rarity_equals_any() {
+        if let Some(rarities) = criteria.rarity_equals_any() {
             sep.push("rarity = ANY(");
             sep.push_bind_unseparated(rarities.to_short_names());
             sep.push_unseparated(")");
         }
 
-        if let Some(sets) = request.set_excludes_any() {
+        if let Some(sets) = criteria.set_excludes_any() {
             sep.push("NOT (set_name = ANY(");
             sep.push_bind_unseparated(sets);
             sep.push_unseparated("))");
         }
 
-        if let Some(artists) = request.artist_excludes_any() {
+        if let Some(artists) = criteria.artist_excludes_any() {
             sep.push("(artist IS NULL OR NOT (artist = ANY(");
             sep.push_bind_unseparated(artists);
             sep.push_unseparated(")))");
         }
 
-        if let Some(rarities) = request.rarity_excludes_any() {
+        if let Some(rarities) = criteria.rarity_excludes_any() {
             sep.push("NOT (rarity = ANY(");
             sep.push_bind_unseparated(rarities.to_short_names());
             sep.push_unseparated("))");
         }
 
-        if let Some(query_string) = request.cmc_equals() {
+        if let Some(query_string) = criteria.cmc_equals() {
             sep.push("cmc = ");
             sep.push_bind_unseparated(query_string);
         }
 
-        if let Some(cmc_range) = request.cmc_range() {
+        if let Some(cmc_range) = criteria.cmc_range() {
             let lower = cmc_range.0.min(cmc_range.1);
             let higher = cmc_range.0.max(cmc_range.1);
             sep.push("cmc between ");
@@ -367,27 +369,27 @@ impl CardRepository for MyPostgres {
         // Price range against the selected currency's JSONB price. NULLIF turns
         // empty/missing prices into NULL (excluded — no cast error), matching the
         // client predicate. json_key() is a fixed enum literal, not user input.
-        if request.price_min().is_some() || request.price_max().is_some() {
+        if criteria.price_min().is_some() || criteria.price_max().is_some() {
             let col = format!(
                 "NULLIF(prices->>'{}', '')::FLOAT8",
-                request.price_currency().unwrap_or_default().json_key()
+                criteria.price_currency().unwrap_or_default().json_key()
             );
-            if let Some(min) = request.price_min() {
+            if let Some(min) = criteria.price_min() {
                 sep.push(format!("{col} >= "));
                 sep.push_bind_unseparated(min);
             }
-            if let Some(max) = request.price_max() {
+            if let Some(max) = criteria.price_max() {
                 sep.push(format!("{col} <= "));
                 sep.push_bind_unseparated(max);
             }
         }
 
-        if let Some(query_string) = request.power_equals() {
+        if let Some(query_string) = criteria.power_equals() {
             sep.push("power ~ '^\\d+$' AND CAST(power AS INT) = ");
             sep.push_bind_unseparated(query_string);
         }
 
-        if let Some(power_range) = request.power_range() {
+        if let Some(power_range) = criteria.power_range() {
             let lower = power_range.0.min(power_range.1);
             let higher = power_range.0.max(power_range.1);
             sep.push("power ~ '^\\d+$' AND CAST(power AS INT) between ");
@@ -396,12 +398,12 @@ impl CardRepository for MyPostgres {
             sep.push_bind_unseparated(higher);
         }
 
-        if let Some(query_string) = request.toughness_equals() {
+        if let Some(query_string) = criteria.toughness_equals() {
             sep.push("toughness ~ '^\\d+$' AND CAST(toughness AS INT) = ");
             sep.push_bind_unseparated(query_string);
         }
 
-        if let Some(toughness_range) = request.toughness_range() {
+        if let Some(toughness_range) = criteria.toughness_range() {
             let lower = toughness_range.0.min(toughness_range.1);
             let higher = toughness_range.0.max(toughness_range.1);
             sep.push("toughness ~ '^\\d+$' AND CAST(toughness AS INT) between ");
@@ -410,26 +412,26 @@ impl CardRepository for MyPostgres {
             sep.push_bind_unseparated(higher);
         }
 
-        if let Some(colors) = request.color_identity_equals() {
+        if let Some(colors) = criteria.color_identity_equals() {
             sep.push("color_identity @> ");
             sep.push_bind_unseparated(colors.to_short_names());
             sep.push("color_identity <@ ");
             sep.push_bind_unseparated(colors.to_short_names());
         }
 
-        if let Some(colors) = request.color_identity_within() {
+        if let Some(colors) = criteria.color_identity_within() {
             sep.push("color_identity <@ ");
             sep.push_bind_unseparated(colors.to_short_names());
         }
 
         const STRIP_ORACLE: &str = "regexp_replace(oracle_text, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ";
 
-        if let Some(query_string) = &request.oracle_text_contains() {
+        if let Some(query_string) = &criteria.oracle_text_contains() {
             sep.push(STRIP_ORACLE);
             sep.push_bind_unseparated(format!("%{}%", query_string));
         }
 
-        if let Some(query_string_array) = &request.oracle_text_contains_any() {
+        if let Some(query_string_array) = &criteria.oracle_text_contains_any() {
             sep.push(" (");
             query_string_array
                 .iter()
@@ -444,21 +446,21 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated(") ");
         }
 
-        if let Some(query_string_array) = &request.oracle_text_contains_all() {
+        if let Some(query_string_array) = &criteria.oracle_text_contains_all() {
             for query_string in query_string_array.iter() {
                 sep.push(STRIP_ORACLE);
                 sep.push_bind_unseparated(format!("%{}%", query_string));
             }
         }
 
-        if let Some(query_string) = &request.oracle_text_not_contains() {
+        if let Some(query_string) = &criteria.oracle_text_not_contains() {
             sep.push("(oracle_text IS NULL OR NOT (");
             sep.push_unseparated(STRIP_ORACLE);
             sep.push_bind_unseparated(format!("%{}%", query_string));
             sep.push_unseparated("))");
         }
 
-        if let Some(query_string_array) = &request.oracle_text_excludes_any() {
+        if let Some(query_string_array) = &criteria.oracle_text_excludes_any() {
             sep.push("(oracle_text IS NULL OR NOT (");
             query_string_array
                 .iter()
@@ -475,7 +477,7 @@ impl CardRepository for MyPostgres {
 
         // Keywords are stored capitalized (e.g. "Flying") but UI lowercases them.
         // Use array_lowercase() via subquery to compare case-insensitively.
-        if let Some(keywords) = &request.keywords_contains_any() {
+        if let Some(keywords) = &criteria.keywords_contains_any() {
             sep.push("(SELECT array_agg(lower(k)) FROM unnest(keywords) k) && ARRAY[");
             keywords.iter().enumerate().for_each(|(i, kw)| {
                 if i > 0 {
@@ -486,7 +488,7 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated("]::text[]");
         }
 
-        if let Some(keywords) = &request.keywords_contains_all() {
+        if let Some(keywords) = &criteria.keywords_contains_all() {
             sep.push("(SELECT array_agg(lower(k)) FROM unnest(keywords) k) @> ARRAY[");
             keywords.iter().enumerate().for_each(|(i, kw)| {
                 if i > 0 {
@@ -497,7 +499,7 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated("]::text[]");
         }
 
-        if let Some(keywords) = &request.keywords_excludes() {
+        if let Some(keywords) = &criteria.keywords_excludes() {
             sep.push("(keywords IS NULL OR NOT ((SELECT array_agg(lower(k)) FROM unnest(keywords) k) && ARRAY[");
             keywords.iter().enumerate().for_each(|(i, kw)| {
                 if i > 0 {
@@ -508,7 +510,7 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated("]::text[]))");
         }
 
-        if let Some(colors) = &request.produced_mana_contains_any() {
+        if let Some(colors) = &criteria.produced_mana_contains_any() {
             sep.push("produced_mana && ARRAY[");
             colors.iter().enumerate().for_each(|(i, c)| {
                 if i > 0 {
@@ -519,7 +521,7 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated("]::text[]");
         }
 
-        if let Some(colors) = &request.produced_mana_contains_all() {
+        if let Some(colors) = &criteria.produced_mana_contains_all() {
             sep.push("produced_mana @> ARRAY[");
             colors.iter().enumerate().for_each(|(i, c)| {
                 if i > 0 {
@@ -530,7 +532,7 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated("]::text[]");
         }
 
-        if let Some(colors) = &request.produced_mana_excludes() {
+        if let Some(colors) = &criteria.produced_mana_excludes() {
             sep.push("(produced_mana IS NULL OR NOT (produced_mana && ARRAY[");
             colors.iter().enumerate().for_each(|(i, c)| {
                 if i > 0 {
@@ -541,18 +543,18 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated("]::text[]))");
         }
 
-        if let Some(query_string) = &request.flavor_text_contains() {
+        if let Some(query_string) = &criteria.flavor_text_contains() {
             sep.push("regexp_replace(flavor_text, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ");
             sep.push_bind_unseparated(format!("%{}%", query_string));
         }
 
-        if let Some(query_string) = &request.flavor_text_not_contains() {
+        if let Some(query_string) = &criteria.flavor_text_not_contains() {
             sep.push("(flavor_text IS NULL OR NOT (regexp_replace(flavor_text, '[^a-zA-Z0-9 ]', '', 'g') ILIKE ");
             sep.push_bind_unseparated(format!("%{}%", query_string));
             sep.push_unseparated("))");
         }
 
-        if let Some(has_flavor_text) = request.has_flavor_text() {
+        if let Some(has_flavor_text) = criteria.has_flavor_text() {
             if has_flavor_text {
                 sep.push("flavor_text IS NOT NULL AND flavor_text != ''");
             } else {
@@ -561,19 +563,19 @@ impl CardRepository for MyPostgres {
         }
 
         // flag filters
-        if let Some(is_tok) = request.is_token() {
+        if let Some(is_tok) = criteria.is_token() {
             sep.push(" card_profiles.is_token = ");
             sep.push_bind_unseparated(is_tok);
         }
 
-        if let Some(is_playable) = request.is_playable()
+        if let Some(is_playable) = criteria.is_playable()
             && is_playable
         {
             // Only playable layouts
             sep.push("latest_cards.layout = ANY(");
             sep.push_bind_unseparated(PLAYABLE_LAYOUTS);
             sep.push_unseparated(")");
-        } else if let Some(is_playable) = request.is_playable()
+        } else if let Some(is_playable) = criteria.is_playable()
             && !is_playable
         {
             // Only non-playable layouts
@@ -582,22 +584,22 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated(")");
         }
 
-        if let Some(is_digital) = request.digital() {
+        if let Some(is_digital) = criteria.digital() {
             sep.push("latest_cards.digital = ");
             sep.push_bind_unseparated(is_digital);
         }
 
-        if let Some(is_oversized) = request.oversized() {
+        if let Some(is_oversized) = criteria.oversized() {
             sep.push("latest_cards.oversized = ");
             sep.push_bind_unseparated(is_oversized);
         }
 
-        if let Some(is_promo) = request.promo() {
+        if let Some(is_promo) = criteria.promo() {
             sep.push("latest_cards.promo = ");
             sep.push_bind_unseparated(is_promo);
         }
 
-        if let Some(has_warning) = request.content_warning() {
+        if let Some(has_warning) = criteria.content_warning() {
             if has_warning {
                 sep.push("latest_cards.content_warning = true");
             } else {
@@ -606,12 +608,12 @@ impl CardRepository for MyPostgres {
             }
         }
 
-        if let Some(language) = request.language() {
+        if let Some(language) = criteria.language() {
             sep.push("latest_cards.lang = ");
             sep.push_bind_unseparated(language);
         }
 
-        if let Some(formats) = request.legalities_contains_any() {
+        if let Some(formats) = criteria.legalities_contains_any() {
             sep.push("(");
             for (i, format_key) in formats.iter().enumerate() {
                 if i > 0 {
@@ -624,7 +626,7 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated(")");
         }
 
-        if let Some(format) = request.is_commander_in_format() {
+        if let Some(format) = criteria.is_commander_in_format() {
             match format {
                 // Legendary creature, legendary vehicle with P/T, or "can be your commander"
                 Format::Commander | Format::Duel | Format::Predh => {
@@ -666,7 +668,7 @@ impl CardRepository for MyPostgres {
         }
 
         // partner/background/spell filters
-        if let Some(true) = request.is_partner() {
+        if let Some(true) = criteria.is_partner() {
             sep.push(
                 "(type_line ILIKE '%Legendary%' AND type_line ILIKE '%Creature%' AND (\
                  keywords @> ARRAY['Partner']::text[] \
@@ -676,34 +678,34 @@ impl CardRepository for MyPostgres {
             );
         }
 
-        if let Some(true) = request.is_background() {
+        if let Some(true) = criteria.is_background() {
             sep.push(
                 "(type_line ILIKE '%Legendary%' AND type_line ILIKE '%Enchantment%' \
                  AND type_line ILIKE '%Background%')",
             );
         }
 
-        if let Some(true) = request.is_signature_spell() {
+        if let Some(true) = criteria.is_signature_spell() {
             sep.push(
                 "(type_line ILIKE '%Instant%' OR type_line ILIKE '%Sorcery%')",
             );
         }
 
         // mechanical category filters
-        if let Some(categories) = request.mechanical_categories_contains_any() {
+        if let Some(categories) = criteria.mechanical_categories_contains_any() {
             sep.push("(card_profiles.mechanical_categories ?| ");
             sep.push_bind_unseparated(categories.to_vec());
             sep.push_unseparated(")");
         }
 
-        if let Some(categories) = request.mechanical_categories_contains_all() {
+        if let Some(categories) = criteria.mechanical_categories_contains_all() {
             let json = serde_json::to_value(categories).unwrap_or_default();
             sep.push("(card_profiles.mechanical_categories @> ");
             sep.push_bind_unseparated(json);
             sep.push_unseparated(")");
         }
 
-        if let Some(categories) = request.mechanical_categories_excludes() {
+        if let Some(categories) = criteria.mechanical_categories_excludes() {
             sep.push("NOT (card_profiles.mechanical_categories ?| ");
             sep.push_bind_unseparated(categories.to_vec());
             sep.push_unseparated(")");
@@ -729,7 +731,7 @@ impl CardRepository for MyPostgres {
         }
 
         // Filter out NULLs for sorted field
-        if let Some(order_by) = request.order_by() {
+        if let Some(order_by) = request.sort() {
             let null_filter = match order_by {
                 CardSortKey::Power => Some("power IS NOT NULL AND power ~ '^\\d+$'"),
                 CardSortKey::Toughness => Some("toughness IS NOT NULL AND toughness ~ '^\\d+$'"),
@@ -750,7 +752,7 @@ impl CardRepository for MyPostgres {
         }
 
         // ORDER BY
-        if let Some(order_by) = request.order_by() {
+        if let Some(order_by) = request.sort() {
             qb.push(" ORDER BY ");
             let col = match order_by {
                 CardSortKey::Name => "name",
@@ -842,7 +844,7 @@ impl CardRepository for MyPostgres {
     }
 
     /// Composes `search_scryfall_data` results with card profiles into `Card` values.
-    async fn search_cards(&self, request: &CardFilter) -> Result<Vec<Card>, SearchCardsError> {
+    async fn search_cards(&self, request: &CardQuery) -> Result<Vec<Card>, SearchCardsError> {
         let scryfall_data = self.search_scryfall_data(request).await?;
         if scryfall_data.is_empty() {
             return Ok(vec![]);
@@ -1065,7 +1067,7 @@ impl CardRepository for MyPostgres {
 
     async fn search_cards_deck_aware(
         &self,
-        request: &CardFilter,
+        request: &CardQuery,
         exclude_oracle_ids: &[uuid::Uuid],
         synergy_scores: Option<&serde_json::Value>,
         synergy_only: bool,

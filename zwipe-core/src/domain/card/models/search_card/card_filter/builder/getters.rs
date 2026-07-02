@@ -6,12 +6,12 @@
 use crate::domain::{
     card::{
         scryfall_data::{colors::Colors, rarity::Rarities},
-        search_card::{card_filter::{builder::CardFilterBuilder, price_currency::PriceCurrency, CardSortKey}, card_type::CardType},
+        search_card::{card_filter::{builder::CardQueryBuilder, price_currency::PriceCurrency, CardSortKey}, card_type::CardType},
     },
     deck::Format,
 };
 
-impl CardFilterBuilder {
+impl CardQueryBuilder {
     // =================================
     // Text Filter Getters
     // =================================
@@ -346,9 +346,9 @@ impl CardFilterBuilder {
         self.offset
     }
 
-    /// Returns the order_by value.
-    pub fn order_by(&self) -> Option<CardSortKey> {
-        self.order_by
+    /// Returns the sort value.
+    pub fn sort(&self) -> Option<CardSortKey> {
+        self.sort
     }
 
     /// Returns the ascending sort direction flag.

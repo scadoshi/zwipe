@@ -37,8 +37,8 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::{
     Card,
     search_card::{
-        card_filter::builder::CardFilterBuilder,
-        filter_cards::{FilterCards, SortCards},
+        card_filter::builder::CardQueryBuilder,
+        cards::{Cards, sort_deck_entries},
         group_cards::{CardGroup, GroupByOption, GroupCards},
     },
 };
@@ -63,7 +63,7 @@ enum CommandZoneSlot {
 pub fn View(deck_id: Uuid) -> Element {
     let navigator = use_navigator();
 
-    let mut filter_builder: Signal<CardFilterBuilder> = use_context();
+    let mut filter_builder: Signal<CardQueryBuilder> = use_context();
 
     // Filter overlay state
     let mut filters_overlay_open = use_signal(|| false);
@@ -302,38 +302,34 @@ pub fn View(deck_id: Uuid) -> Element {
         let partner = partner_card.peek().clone();
         let bg = background_card.peek().clone();
 
-        // Apply filter to pinned cards helper
+        // Pinned cards use the bare predicate — a one-card membership test.
         let filter_pinned =
             |card: Option<Card>,
-             filter: &zwipe_core::domain::card::search_card::card_filter::CardFilter|
-             -> Option<Card> {
-                card.filter(|c| !vec![c.clone()].filter_by(filter).is_empty())
-            };
+             criteria: &zwipe_core::domain::card::search_card::card_filter::CardCriteria|
+             -> Option<Card> { card.filter(|c| criteria.matches(c)) };
 
-        let (mut filtered, new_cmd, new_spell, new_partner, new_bg) = if builder.is_empty() {
+        let (filtered, new_cmd, new_spell, new_partner, new_bg) = if builder.is_empty() {
             (active_cards, cmd, spell, partner, bg)
         } else {
-            let mut b = builder.clone();
-            b.set_limit(10_000);
-            b.set_offset(0);
-            match b.build() {
-                Ok(filter) => {
-                    let filtered = active_cards.filter_by(&filter);
+            match builder.build_criteria() {
+                Ok(criteria) => {
+                    let filtered: Vec<Card> =
+                        Cards::from(active_cards).matching(&criteria).into();
                     (
                         filtered,
-                        filter_pinned(cmd, &filter),
-                        filter_pinned(spell, &filter),
-                        filter_pinned(partner, &filter),
-                        filter_pinned(bg, &filter),
+                        filter_pinned(cmd, &criteria),
+                        filter_pinned(spell, &criteria),
+                        filter_pinned(partner, &criteria),
+                        filter_pinned(bg, &criteria),
                     )
                 }
                 Err(_) => (active_cards, cmd, spell, partner, bg),
             }
         };
 
-        if builder.is_empty() {
-            filtered.sort_by_filter(&builder);
-        }
+        let mut filtered: Vec<Card> = Cards::from(filtered)
+            .sorted(builder.sort(), builder.ascending())
+            .into();
 
         if !lands_visible {
             filtered.retain(|c| !c.scryfall_data.is_land());
@@ -670,9 +666,9 @@ pub fn View(deck_id: Uuid) -> Element {
                     // Token list
                     if show_tokens() {
                         {
-                            let sorted_tokens: Option<Vec<Card>> = tokens_resource().and_then(|r| r.ok()).map(|mut t| {
-                                t.sort_by_filter(&filter_builder.peek());
-                                t
+                            let sorted_tokens: Option<Vec<Card>> = tokens_resource().and_then(|r| r.ok()).map(|t| {
+                                let b = filter_builder.peek();
+                                Cards::from(t).sorted(b.sort(), b.ascending()).into()
                             });
                             rsx! {
                                 if let Some(tokens) = sorted_tokens {
@@ -701,7 +697,10 @@ pub fn View(deck_id: Uuid) -> Element {
                             .into_iter()
                             .filter(|e| e.deck_card.board.is_maybeboard())
                             .collect();
-                        mb_entries.sort_by_filter(&filter_builder.peek());
+                        {
+                            let b = filter_builder.peek();
+                            sort_deck_entries(&mut mb_entries, b.sort(), b.ascending());
+                        }
                         let mb_count = mb_entries.len();
                         rsx! {
                             if show_maybe() && !mb_entries.is_empty() {
@@ -742,7 +741,10 @@ pub fn View(deck_id: Uuid) -> Element {
                             .into_iter()
                             .filter(|e| e.deck_card.board.is_sideboard())
                             .collect();
-                        sb_entries.sort_by_filter(&filter_builder.peek());
+                        {
+                            let b = filter_builder.peek();
+                            sort_deck_entries(&mut sb_entries, b.sort(), b.ascending());
+                        }
                         let sb_count = sb_entries.len();
                         rsx! {
                             if show_side() && !sb_entries.is_empty() {

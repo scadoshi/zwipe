@@ -1,13 +1,13 @@
 //! Card format filter component (legality + commander eligibility).
 
 use dioxus::prelude::*;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::deck::format::Format;
 
 /// Filter component for format legality and commander eligibility.
 #[component]
 pub fn FormatFilter() -> Element {
-    let mut filter_builder: Signal<CardFilterBuilder> = use_context();
+    let mut filter_builder: Signal<CardQueryBuilder> = use_context();
 
     rsx! {
         div { class: "flex-col gap-half",

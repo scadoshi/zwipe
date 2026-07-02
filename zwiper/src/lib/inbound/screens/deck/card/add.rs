@@ -46,9 +46,9 @@ use zwipe_core::domain::{
             colors::{Color, Colors},
         },
         search_card::{
-            card_filter::builder::CardFilterBuilder,
+            card_filter::builder::CardQueryBuilder,
             card_type::CardType,
-            filter_cards::{FilterCards, SortCards},
+            cards::Cards,
         },
     },
     deck::Quantity,
@@ -67,7 +67,7 @@ enum AddSource {
 /// never end up with an include+exclude clash on Land (which serves zero cards).
 /// Merges with the user's existing card-type filters. Applied once on entry to
 /// the add screen when the deck already meets its land target.
-fn ensure_lands_excluded(mut filter_builder: Signal<CardFilterBuilder>) {
+fn ensure_lands_excluded(mut filter_builder: Signal<CardQueryBuilder>) {
     let mut fb = filter_builder.write();
 
     // Read current state into owned values so the immutable borrows drop before
@@ -101,9 +101,9 @@ fn ensure_lands_excluded(mut filter_builder: Signal<CardFilterBuilder>) {
 pub fn Add(deck_id: Uuid) -> Element {
     let navigator = use_navigator();
 
-    let mut filter_builder: Signal<CardFilterBuilder> = use_context();
+    let mut filter_builder: Signal<CardQueryBuilder> = use_context();
     let mut cards: Signal<Vec<Card>> = use_context();
-    let mut last_search_filter: Signal<Option<CardFilterBuilder>> = use_context();
+    let mut last_search_filter: Signal<Option<CardQueryBuilder>> = use_context();
     let is_first_run = use_hook(|| std::cell::Cell::new(true));
 
     // Swipe vocabulary hint: auto-opens on this user's first visit, the
@@ -804,18 +804,18 @@ pub fn Add(deck_id: Uuid) -> Element {
         let builder = filter_builder.peek().clone();
 
         let cards: Vec<Card> = entries.iter().map(|e| e.card.clone()).collect();
-        let mut filtered = if builder.is_empty() {
+        // In-memory path: bare criteria (no pagination), then the builder's sort.
+        let filtered = if builder.is_empty() {
             cards
         } else {
-            let mut b = builder.clone();
-            b.set_limit(10_000);
-            b.set_offset(0);
-            match b.build() {
-                Ok(filter) => cards.filter_by(&filter),
+            match builder.build_criteria() {
+                Ok(criteria) => Cards::from(cards).matching(&criteria).into(),
                 Err(_) => cards,
             }
         };
-        filtered.sort_by_filter(&builder);
+        let filtered: Vec<Card> = Cards::from(filtered)
+            .sorted(builder.sort(), builder.ascending())
+            .into();
         mb_displayed_cards.set(filtered);
         mb_current_index.set(0);
     });

@@ -2,7 +2,7 @@
 
 use dioxus::prelude::*;
 use zwipe_core::domain::card::scryfall_data::rarity::Rarity as CardRarity;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
 /// Whether the rarity filter is in include or exclude mode.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -30,7 +30,7 @@ impl IncludeExclude {
 /// Filter component for card rarity (common, uncommon, rare, mythic).
 #[component]
 pub fn Rarity() -> Element {
-    let mut filter_builder: Signal<CardFilterBuilder> = use_context();
+    let mut filter_builder: Signal<CardQueryBuilder> = use_context();
 
     let mut mode = use_signal(|| {
         if filter_builder().rarity_excludes_any().is_some() {

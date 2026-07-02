@@ -1,7 +1,7 @@
 //! Deck-aware card search operation (exclusion + synergy ordering).
 //!
 //! Service-layer error type only — request/response shapes are the shared
-//! `CardFilter` / `Card` from zwipe_core.
+//! `CardQuery` / `Card` from zwipe_core.
 
 #[cfg(feature = "zerver")]
 use crate::domain::{
