@@ -1,10 +1,11 @@
 # Swipe memory — deck suppressions + per-user signal + weekly aggregates
 
-**Status: EXECUTED 2026-07-02 (on main, unreleased).** Both phases built and
-verified locally in one batch; the server half deploys on the next push to
-main, the client half rides the next app release. Kept as the design
-reference — see "As-built deltas" below for where execution diverged from the
-original plan. Absorbs and replaces the earlier `deck_skips.md`.
+**Status: EXECUTED 2026-07-02; server LIVE in prod, client submitted (1.2.3,
+iOS build 56 / Android vc17, in store review).** Signal tables and removal
+suppression are collecting from existing clients now; skip suppression
+activates as 1.2.3 clients roll out. Kept as the design reference — see
+"As-built deltas" below for where execution diverged from the original plan.
+Absorbs and replaces the earlier `deck_skips.md`.
 
 ## As-built deltas (owner-directed during execution)
 
