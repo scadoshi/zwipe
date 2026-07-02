@@ -75,7 +75,7 @@ Marked ✅ in the tables below; numbers kept stable (plans/commits reference the
 
 | # | Feature | Impact | Effort | Priority | Notes |
 |---|---------|--------|--------|----------|-------|
-| 11 | Persist skipped cards per deck across sessions | High | M | ✅ Built (2026-07-02, on main awaiting release) | Skips **and deliberate removals** persist server-side (`deck_card_suppressions`); the deck-aware search stops serving them, with a "Clear skips" button in the deck view's More sheet. Design + as-built notes: [`../plans/swipe_memory.md`](../plans/swipe_memory.md). Requested a second time via App Store review 2026-07-02 (see sources above). Mark shipped once the release is out. |
+| 11 | Persist skipped cards per deck across sessions | High | M | ✅ Built (server live; 1.2.3 in store review) | Skips **and deliberate removals** persist server-side (`deck_card_suppressions`); the deck-aware search stops serving them, with a "Clear skips" button in the deck view's More sheet. Design + as-built notes: [`../plans/swipe_memory.md`](../plans/swipe_memory.md). Requested a second time via App Store review 2026-07-02 (see sources above). Mark shipped once the release is out. |
 | 12 | Easy access to deck view / card count / mana curve while building | Med | S–M | P2 | Stats should be one tap away mid-swipe. |
 
 ## Tags

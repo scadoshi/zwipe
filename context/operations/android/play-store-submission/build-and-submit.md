@@ -258,6 +258,23 @@ the bundle → **Upload native debug symbols** (a zip containing
   fix, over an initial 52/vc12 rebuild). Artifact `zwipe-1.1.4-vc14.aab`. iOS
   counterpart: build 53.
 
+- **2026-07-02 — `1.2.3`, versionCode `17`** (swipe memory: per-deck skip/removal
+  suppressions with server-side filtering + Clear skips in the deck More sheet;
+  alphabetical deck lists; profile System/version row; email-verification row
+  rework; updated privacy policy. 1.2.2 skipped, versionCode 16 shipped as 1.2.1).
+  Built per this recipe — `dx bundle` → `launcher-icons.sh` → gradle patch
+  (compileSdk 36 / targetSdk 35 / versionCode 17) → `gradlew :app:bundleRelease` →
+  jarsigner (0600 scratchpad password, deleted after). Artifact `zwipe-1.2.3.aab`,
+  signed + `jar verified`, uploaded to the Alpha closed-testing track. iOS
+  counterpart: build 56. Server (swipe-memory migration) deployed to prod first.
+  *R8/edge-to-edge emulator smoke test skipped again — first suspect if a tester
+  device misbehaves.*
+
+- **2026-07-01 — `1.2.1`, versionCode `16`** (card rules dialog + launch-flash
+  fix). Built per this recipe, published to the Alpha closed-testing track.
+  iOS counterpart: build 55 (uploaded but held behind 1.2.0, ultimately
+  superseded by build 56 — 1.2.1 never went to iOS review).
+
 - **2026-06-30 — `1.2.0`, versionCode `15`** (first minor bump since 1.1.0:
   hypergeometric draw-odds, Synergy on/off toggle, power level + other-tags,
   deck tags 85→117, include/exclude filter guard, PDH commander fix, `edhrec_rank`

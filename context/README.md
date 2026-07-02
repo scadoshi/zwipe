@@ -20,26 +20,21 @@ Plus [`CLAUDE.md`](CLAUDE.md) — the authoritative rules/instructions for AI as
 
 ## Current focus
 
-**On main, unreleased (2026-07-02):** **swipe memory** (FR #11 — per-deck
-skip/removal suppressions the server stops serving, "Clear skips" escape hatch,
-plus per-user + weekly signal tables that start filling from existing clients
-on deploy; `plans/swipe_memory.md`), the **CardFilter split** — `CardCriteria`
-(shared predicate) + `CardQuery` (bounded server search, wire JSON unchanged) +
-`Cards` (in-memory collection, no limit by construction) — and the deck cards
-screen defaulting to **alphabetical order**. Unpushed (push auto-deploys the
-server); the client half rides the next release. See the
-[`progress/overview.md`](progress/overview.md) top entry.
+**Latest — 1.2.3, submitted 2026-07-02:** **swipe memory** (FR #11 — per-deck
+skip/removal suppressions the server stops serving, "Clear skips" in the deck
+More sheet, plus per-user + weekly signal tables now collecting in prod;
+`plans/swipe_memory.md`), the **CardFilter split** (`CardCriteria` + `CardQuery`
++ `Cards`, wire JSON unchanged), **alphabetical deck lists**, a profile
+System/version row, the email-verification row rework, and an updated privacy
+policy (per-account activity disclosed). Server + zite deployed 2026-07-02;
+**iOS build 56** and **Android versionCode 17** in store review. 1.2.2 was
+skipped. See the [`progress/overview.md`](progress/overview.md) top entry.
 
-**Last shipped — 1.2.1** (client-only, 2026-07-01): a **card rules dialog** (util-bar
-eye button → oracle text + stats with real mana/symbol glyphs, type/rarity/keyword
-chips, P/T or loyalty; replaces the Keywords button, completing FR #8) and a **native
-WebView launch-flash fix**. **Android versionCode 16** published to closed testing;
-**iOS build 55** uploaded to App Store Connect, staged behind 1.2.0 (submit once
-1.2.0 is live).
-
-**After this version:** track 1.2.0 store review (then submit 1.2.1 on iOS), keep the
-closed-testing 14-day clock running, suggestion-signal **Phase 3 (ranking)**, and
-draw-odds **Phase 4 (premium gating)**.
+**After this version:** track 1.2.3 review (then bump `MIN_CLIENT_VERSION`),
+keep the closed-testing 14-day clock running, privacy follow-ups (store
+data-safety labels + notification email), suggestion-signal **Phase 3
+(ranking)** — now with per-user data accruing — and draw-odds **Phase 4
+(premium gating)**.
 
 See [`progress/overview.md`](progress/overview.md) for the high-level state,
 [`progress/feature_requests.md`](progress/feature_requests.md) for the weighted

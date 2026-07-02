@@ -109,11 +109,15 @@ Build 15 shipped over build 14 with: `Email` strict newtype across the workspace
 
 ---
 
-## On main, unreleased — 1.2.3 staged: swipe memory, CardFilter split, deck-list alphabetical default (2026-07-02)
+## 1.2.3 — swipe memory, CardFilter split, deck-list alphabetical default (submitted 2026-07-02)
 
-Rides **release 1.2.3** (iOS build 56 / Android versionCode 17, both pending;
-version bumped + What's New written for both stores in `63d6a87a`/`c1f207f4` —
-1.2.2 was skipped for the better number). Server auto-deploys first on push.
+**Server + zite deployed to prod 2026-07-02** (push `8a46a1a5`; the zite Pages
+deploy needed one re-run after a transient "Deployment failed, try again later"
+from `actions/deploy-pages`). **iOS build 56** uploaded via Transporter and
+**Android versionCode 17** uploaded to the Alpha closed-testing track, both
+submitted for review 2026-07-02. 1.2.2 was skipped for the better number
+(`63d6a87a`). The swipe-memory signal tables began collecting from existing
+clients the moment the server deployed.
 Commits `1ff1e398`, `09d39a20`, `9a55a0c5` (CardFilter split + alpha sort),
 `c9906303`/`122984fa` (swipe memory server/client), `2df42ddc` (profile System
 section showing the client version), `e03ce142` (email verification actions
