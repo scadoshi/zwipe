@@ -1,5 +1,7 @@
 //! Metrics repository implementation.
 
+use std::collections::HashMap;
+
 use sqlx::query;
 use uuid::Uuid;
 
@@ -18,6 +20,10 @@ use zwipe_core::http::contracts::metrics::HttpUsageBatch;
 fn db(err: sqlx::Error) -> MetricsError {
     MetricsError::Database(err.into())
 }
+
+/// Per-deck ceiling on suppression rows, enforced at ingest by evicting the
+/// oldest `suppressed_at` beyond it.
+const MAX_SUPPRESSIONS_PER_DECK: i64 = 5_000;
 
 impl MetricsRepository for Postgres {
     async fn apply_usage(
@@ -109,6 +115,202 @@ impl MetricsRepository for Postgres {
                 sig.skipped as i64,
                 sig.maybed as i64,
                 sig.removed as i64,
+            )
+            .execute(&mut *tx)
+            .await
+            .map_err(db)?;
+        }
+
+        // Per-user mirror of the aggregate signal: same deltas, user-keyed.
+        // Feeds future personalization; nothing consumes it yet.
+        for sig in &batch.signals {
+            query!(
+                r#"INSERT INTO user_card_signal
+                       (user_id, commander_oracle_id, card_oracle_id, shown, added, skipped, maybed, removed, updated_at)
+                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+                   ON CONFLICT (user_id, commander_oracle_id, card_oracle_id) DO UPDATE SET
+                       shown      = user_card_signal.shown    + EXCLUDED.shown,
+                       added      = user_card_signal.added    + EXCLUDED.added,
+                       skipped    = user_card_signal.skipped  + EXCLUDED.skipped,
+                       maybed     = user_card_signal.maybed   + EXCLUDED.maybed,
+                       removed    = user_card_signal.removed  + EXCLUDED.removed,
+                       updated_at = NOW()"#,
+                user_id,
+                sig.commander_oracle_id,
+                sig.card_oracle_id,
+                sig.shown as i64,
+                sig.added as i64,
+                sig.skipped as i64,
+                sig.maybed as i64,
+                sig.removed as i64,
+            )
+            .execute(&mut *tx)
+            .await
+            .map_err(db)?;
+        }
+
+        // Weekly scalar counters (ISO week, Monday UTC). Clamped inputs keep
+        // the per-flush sums (≤1,000 signals × ≤10,000 each) well inside i32.
+        let added_sum: i64 = batch.signals.iter().map(|s| s.added as i64).sum();
+        let skipped_sum: i64 = batch.signals.iter().map(|s| s.skipped as i64).sum();
+        let maybed_sum: i64 = batch.signals.iter().map(|s| s.maybed as i64).sum();
+        let removed_sum: i64 = batch.signals.iter().map(|s| s.removed as i64).sum();
+        query!(
+            r#"INSERT INTO user_week_signal
+                   (user_id, week_start, swipes_right, swipes_left, swipes_up, swipes_down, searches, added, skipped, maybed, removed)
+               VALUES ($1, (date_trunc('week', now() AT TIME ZONE 'utc'))::date, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+               ON CONFLICT (user_id, week_start) DO UPDATE SET
+                   swipes_right = user_week_signal.swipes_right + EXCLUDED.swipes_right,
+                   swipes_left  = user_week_signal.swipes_left  + EXCLUDED.swipes_left,
+                   swipes_up    = user_week_signal.swipes_up    + EXCLUDED.swipes_up,
+                   swipes_down  = user_week_signal.swipes_down  + EXCLUDED.swipes_down,
+                   searches     = user_week_signal.searches     + EXCLUDED.searches,
+                   added        = user_week_signal.added        + EXCLUDED.added,
+                   skipped      = user_week_signal.skipped      + EXCLUDED.skipped,
+                   maybed       = user_week_signal.maybed       + EXCLUDED.maybed,
+                   removed      = user_week_signal.removed      + EXCLUDED.removed"#,
+            user_id,
+            r32,
+            l32,
+            u32,
+            d32,
+            s32,
+            added_sum as i32,
+            skipped_sum as i32,
+            maybed_sum as i32,
+            removed_sum as i32,
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(db)?;
+
+        // Weekly facet counters: what kinds of cards this user accepted, by
+        // mechanical category and color identity (colorless → 'C').
+        let added_oracle_ids: Vec<Uuid> = batch
+            .signals
+            .iter()
+            .filter(|s| s.added > 0)
+            .map(|s| s.card_oracle_id)
+            .collect();
+        if !added_oracle_ids.is_empty() {
+            let rows = query!(
+                r#"SELECT lc.oracle_id, lc.color_identity, cp.mechanical_categories
+                   FROM latest_cards lc
+                   JOIN card_profiles cp ON cp.scryfall_data_id = lc.id
+                   WHERE lc.oracle_id = ANY($1)"#,
+                &added_oracle_ids[..],
+            )
+            .fetch_all(&mut *tx)
+            .await
+            .map_err(db)?;
+
+            let mut card_facets: HashMap<Uuid, (Vec<String>, Vec<String>)> = HashMap::new();
+            for row in rows {
+                let Some(oracle_id) = row.oracle_id else {
+                    continue;
+                };
+                let colors = row.color_identity.unwrap_or_default();
+                let categories = row
+                    .mechanical_categories
+                    .as_ref()
+                    .and_then(|v| v.as_array())
+                    .map(|a| {
+                        a.iter()
+                            .filter_map(|c| c.as_str().map(str::to_string))
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                card_facets.insert(oracle_id, (colors, categories));
+            }
+
+            let mut tallies: HashMap<(&str, String), i64> = HashMap::new();
+            for sig in batch.signals.iter().filter(|s| s.added > 0) {
+                let Some((colors, categories)) = card_facets.get(&sig.card_oracle_id) else {
+                    continue;
+                };
+                let added = sig.added as i64;
+                for category in categories {
+                    *tallies.entry(("category", category.clone())).or_default() += added;
+                }
+                if colors.is_empty() {
+                    *tallies.entry(("color", "C".to_string())).or_default() += added;
+                } else {
+                    for color in colors {
+                        *tallies.entry(("color", color.clone())).or_default() += added;
+                    }
+                }
+            }
+
+            for ((facet, key), added) in &tallies {
+                query!(
+                    r#"INSERT INTO user_week_facet_signal (user_id, week_start, facet, key, added)
+                       VALUES ($1, (date_trunc('week', now() AT TIME ZONE 'utc'))::date, $2, $3, $4)
+                       ON CONFLICT (user_id, week_start, facet, key) DO UPDATE SET
+                           added = user_week_facet_signal.added + EXCLUDED.added"#,
+                    user_id,
+                    facet,
+                    key,
+                    *added as i32,
+                )
+                .execute(&mut *tx)
+                .await
+                .map_err(db)?;
+            }
+        }
+
+        // Deck suppression deltas (skips). Ownership is checked per delta; a
+        // delta for someone else's deck is dropped silently rather than
+        // failing the whole batch. Unskips only clear skip-sourced rows so an
+        // undo can't erase a removal suppression.
+        for delta in &batch.deck_skips {
+            let owner = query!(
+                r#"SELECT user_id FROM decks WHERE id = $1"#,
+                delta.deck_id,
+            )
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(db)?;
+            if owner.map(|row| row.user_id) != Some(user_id) {
+                continue;
+            }
+
+            if !delta.skipped.is_empty() {
+                query!(
+                    r#"INSERT INTO deck_card_suppressions (deck_id, oracle_id, source)
+                       SELECT $1, unnest($2::uuid[]), 'skip'
+                       ON CONFLICT (deck_id, oracle_id) DO UPDATE SET
+                           source = EXCLUDED.source,
+                           suppressed_at = now()"#,
+                    delta.deck_id,
+                    &delta.skipped[..],
+                )
+                .execute(&mut *tx)
+                .await
+                .map_err(db)?;
+            }
+
+            if !delta.unskipped.is_empty() {
+                query!(
+                    r#"DELETE FROM deck_card_suppressions
+                       WHERE deck_id = $1 AND oracle_id = ANY($2) AND source = 'skip'"#,
+                    delta.deck_id,
+                    &delta.unskipped[..],
+                )
+                .execute(&mut *tx)
+                .await
+                .map_err(db)?;
+            }
+
+            query!(
+                r#"DELETE FROM deck_card_suppressions
+                   WHERE deck_id = $1 AND oracle_id IN (
+                       SELECT oracle_id FROM deck_card_suppressions
+                       WHERE deck_id = $1
+                       ORDER BY suppressed_at DESC
+                       OFFSET $2
+                   )"#,
+                delta.deck_id,
+                MAX_SUPPRESSIONS_PER_DECK,
             )
             .execute(&mut *tx)
             .await

@@ -1,5 +1,7 @@
 //! Deck management handlers.
 
+/// Deck suppression-clear handler.
+pub mod clear_deck_suppressions;
 /// Deck clone handler.
 pub mod clone_deck;
 /// Deck creation handler.

@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM deck_cards WHERE deck_id = $1 AND scryfall_data_id = $2\n             RETURNING oracle_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "oracle_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "7e737d4ee1aff6c974b0c0c3df4571971ad6b50f7defb07dd40e3bf0b9b0698b"
+}

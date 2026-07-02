@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM deck_card_suppressions WHERE deck_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "275ea0996e197ea1ddb950381cbf22d5aa2c5be7e9a048c34183beb0bed75cb7"
+}

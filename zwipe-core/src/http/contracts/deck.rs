@@ -382,6 +382,13 @@ pub struct HttpClonedDeck {
     pub deck_id: Uuid,
 }
 
+/// Clear-suppressions response body.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct HttpClearedSuppressions {
+    /// Number of suppression rows removed.
+    pub cleared: u64,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
