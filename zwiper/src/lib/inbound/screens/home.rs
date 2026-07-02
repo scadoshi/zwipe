@@ -22,7 +22,7 @@ use std::time::Duration;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::{
-    builder::CardFilterBuilder, order_by_option::OrderByOption,
+    builder::CardFilterBuilder, card_sort_key::CardSortKey,
 };
 use zwipe_core::domain::logo;
 use zwipe_core::domain::user::models::hints::HINT_FIRST_LOGIN;
@@ -134,7 +134,7 @@ pub fn Home() -> Element {
             builder
                 .unset_is_playable()
                 .set_has_flavor_text(true)
-                .set_order_by(OrderByOption::Random)
+                .set_order_by(CardSortKey::Random)
                 .set_limit(1);
             let Ok(filter) = builder.build() else {
                 return;

@@ -34,7 +34,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::{
     Card,
     search_card::{
-        card_filter::{builder::CardFilterBuilder, order_by_option::OrderByOption},
+        card_filter::{builder::CardFilterBuilder, card_sort_key::CardSortKey},
         filter_cards::{FilterCards, SortCards},
     },
 };
@@ -642,7 +642,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     onclick: move |_| {
                         current_index.set(0);
                         action_history.write().clear();
-                        if filter_builder.peek().order_by() == Some(OrderByOption::Random) {
+                        if filter_builder.peek().order_by() == Some(CardSortKey::Random) {
                             let current = *filter_reset_counter.peek();
                             filter_reset_counter.set(current + 1);
                         }

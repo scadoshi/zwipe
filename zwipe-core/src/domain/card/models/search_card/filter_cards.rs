@@ -19,7 +19,7 @@ use crate::domain::card::{
     Card,
     scryfall_data::legalities::LegalityKind,
     search_card::{
-        card_filter::{CardFilter, builder::CardFilterBuilder, order_by_option::OrderByOption, price_currency::PriceCurrency, strip_punctuation},
+        card_filter::{CardFilter, builder::CardFilterBuilder, card_sort_key::CardSortKey, price_currency::PriceCurrency, strip_punctuation},
         commander_eligibility::is_valid_commander,
     },
 };
@@ -549,7 +549,7 @@ impl FilterCards for Vec<Card> {
 
         // ── sort ──────────────────────────────────────────────────────────────
         if let Some(order_by) = filter.order_by() {
-            if order_by == OrderByOption::Random {
+            if order_by == CardSortKey::Random {
                 let mut rng = rand::rng();
                 cards.shuffle(&mut rng);
             } else {
@@ -558,13 +558,13 @@ impl FilterCards for Vec<Card> {
                     let sd_a = &a.scryfall_data;
                     let sd_b = &b.scryfall_data;
                     let ord = match order_by {
-                        OrderByOption::Name => sd_a.name.cmp(&sd_b.name),
-                        OrderByOption::Cmc => {
+                        CardSortKey::Name => sd_a.name.cmp(&sd_b.name),
+                        CardSortKey::Cmc => {
                             let ca = sd_a.cmc.unwrap_or(f64::MAX);
                             let cb = sd_b.cmc.unwrap_or(f64::MAX);
                             ca.partial_cmp(&cb).unwrap_or(std::cmp::Ordering::Equal)
                         }
-                        OrderByOption::Power => {
+                        CardSortKey::Power => {
                             let pa = sd_a
                                 .power
                                 .as_deref()
@@ -577,7 +577,7 @@ impl FilterCards for Vec<Card> {
                                 .unwrap_or(i32::MAX);
                             pa.cmp(&pb)
                         }
-                        OrderByOption::Toughness => {
+                        CardSortKey::Toughness => {
                             let ta = sd_a
                                 .toughness
                                 .as_deref()
@@ -590,9 +590,9 @@ impl FilterCards for Vec<Card> {
                                 .unwrap_or(i32::MAX);
                             ta.cmp(&tb)
                         }
-                        OrderByOption::Rarity => sd_a.rarity.cmp(&sd_b.rarity),
-                        OrderByOption::ReleasedAt => sd_a.released_at.cmp(&sd_b.released_at),
-                        OrderByOption::PriceUsd => {
+                        CardSortKey::Rarity => sd_a.rarity.cmp(&sd_b.rarity),
+                        CardSortKey::ReleasedAt => sd_a.released_at.cmp(&sd_b.released_at),
+                        CardSortKey::PriceUsd => {
                             let pa = sd_a
                                 .prices
                                 .usd
@@ -607,7 +607,7 @@ impl FilterCards for Vec<Card> {
                                 .unwrap_or(f64::MAX);
                             pa.partial_cmp(&pb).unwrap_or(std::cmp::Ordering::Equal)
                         }
-                        OrderByOption::PriceEur => {
+                        CardSortKey::PriceEur => {
                             let pa = sd_a
                                 .prices
                                 .eur
@@ -622,7 +622,7 @@ impl FilterCards for Vec<Card> {
                                 .unwrap_or(f64::MAX);
                             pa.partial_cmp(&pb).unwrap_or(std::cmp::Ordering::Equal)
                         }
-                        OrderByOption::PriceTix => {
+                        CardSortKey::PriceTix => {
                             let pa = sd_a
                                 .prices
                                 .tix
@@ -637,13 +637,13 @@ impl FilterCards for Vec<Card> {
                                 .unwrap_or(f64::MAX);
                             pa.partial_cmp(&pb).unwrap_or(std::cmp::Ordering::Equal)
                         }
-                        OrderByOption::EdhrecRank => {
+                        CardSortKey::EdhrecRank => {
                             // Lower rank = more played; unranked sorts last (ascending).
                             let ra = sd_a.edhrec_rank.unwrap_or(i32::MAX);
                             let rb = sd_b.edhrec_rank.unwrap_or(i32::MAX);
                             ra.cmp(&rb)
                         }
-                        OrderByOption::Random => std::cmp::Ordering::Equal,
+                        CardSortKey::Random => std::cmp::Ordering::Equal,
                     };
                     if ascending { ord } else { ord.reverse() }
                 });
@@ -671,7 +671,7 @@ pub trait SortCards {
 
 impl SortCards for Vec<Card> {
     fn sort_by_filter(&mut self, builder: &CardFilterBuilder) {
-        use OrderByOption::*;
+        use CardSortKey::*;
         let Some(order_by) = builder.order_by() else { return };
 
         if order_by == Random {
@@ -759,7 +759,7 @@ mod tests {
         },
         search_card::card_filter::{
             builder::CardFilterBuilder,
-            order_by_option::OrderByOption,
+            card_sort_key::CardSortKey,
         },
     };
     use chrono::NaiveDate;
@@ -1496,7 +1496,7 @@ mod tests {
                 b.set_legalities_contains_any(vec!["vintage".to_string()]);
                 b
             };
-        b.set_order_by(OrderByOption::Name).set_ascending(true);
+        b.set_order_by(CardSortKey::Name).set_ascending(true);
         let filter = b.build().unwrap();
         let result = cards.filter_by(&filter);
         assert_eq!(result[0].scryfall_data.name, "Aardvark");
@@ -1511,7 +1511,7 @@ mod tests {
                 b.set_legalities_contains_any(vec!["vintage".to_string()]);
                 b
             };
-        b.set_order_by(OrderByOption::Name).set_ascending(false);
+        b.set_order_by(CardSortKey::Name).set_ascending(false);
         let filter = b.build().unwrap();
         let result = cards.filter_by(&filter);
         assert_eq!(result[0].scryfall_data.name, "Zap");
@@ -1531,7 +1531,7 @@ mod tests {
                 b.set_legalities_contains_any(vec!["vintage".to_string()]);
                 b
             };
-        builder.set_order_by(OrderByOption::Cmc);
+        builder.set_order_by(CardSortKey::Cmc);
         let filter = builder.build().unwrap();
         let result = vec![a, b, c].filter_by(&filter);
         assert_eq!(result[0].scryfall_data.name, "B");
@@ -1562,7 +1562,7 @@ mod tests {
                 b.set_legalities_contains_any(vec!["vintage".to_string()]);
                 b
             };
-        b.set_order_by(OrderByOption::Name).set_offset(1);
+        b.set_order_by(CardSortKey::Name).set_offset(1);
         let filter = b.build().unwrap();
         let result = cards.filter_by(&filter);
         assert_eq!(result.len(), 2);
