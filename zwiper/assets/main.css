@@ -692,6 +692,17 @@ button {
     stroke-width: 2;
 }
 
+.refresh-icon {
+    display: block;
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+}
+
 .util-btn-eye {
     display: inline-flex;
     align-items: center;

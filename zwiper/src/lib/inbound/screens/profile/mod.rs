@@ -30,7 +30,7 @@ use change_email::ChangeEmailSheet;
 use change_password::ChangePasswordSheet;
 use change_username::ChangeUsernameSheet;
 use components::delete_account_dialog::DeleteAccountDialog;
-use components::email_verification::EmailVerification;
+use components::email_verification::{EmailVerification, VerificationActions};
 use dioxus::prelude::*;
 use preferences::{PreferencesSheet, display_theme_name};
 use zwipe_core::domain::auth::models::session::Session;
@@ -139,11 +139,17 @@ pub fn Profile() -> Element {
                                         EmailVerification {
                                             email: s.user.email.to_string(),
                                             is_verified: s.user.email_verified_at.is_some(),
+                                            on_change: move |_| change_email_open.set(true),
                                         }
-                                        button {
-                                            class: "util-btn",
-                                            onclick: move |_| change_email_open.set(true),
-                                            "Change"
+                                    }
+                                }
+
+                                if s.user.email_verified_at.is_none() {
+                                    div {
+                                        class: "profile-row",
+                                        span { class: "profile-row-label", "Verification" }
+                                        div { class: "profile-row-value",
+                                            VerificationActions {}
                                         }
                                     }
                                 }
