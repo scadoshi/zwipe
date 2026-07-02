@@ -1,11 +1,18 @@
 use crate::inbound::components::alert_dialog::{
-    AlertDialogActions, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
-    AlertDialogRoot, AlertDialogTitle,
+    AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
+    AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
 };
+use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::bottom_sheet::BottomSheet;
+use crate::inbound::components::telemetry::{flush_loop::flush_once, usage_buffer::UsageBuffer};
 use crate::inbound::router::Router;
+use crate::outbound::client::ZwipeClient;
+use crate::outbound::client::deck::clear_deck_suppressions::ClientClearDeckSuppressions;
 use dioxus::prelude::*;
+use dioxus_primitives::toast::{ToastOptions, use_toast};
+use std::time::Duration;
 use uuid::Uuid;
+use zwipe_core::domain::auth::models::session::Session;
 
 #[component]
 pub(crate) fn MoreButtons(
@@ -19,6 +26,35 @@ pub(crate) fn MoreButtons(
     ck_url: Option<String>,
 ) -> Element {
     let navigator = use_navigator();
+    let session: Signal<Option<Session>> = use_context();
+    let client: Signal<ZwipeClient> = use_context();
+    let usage_buffer: Signal<UsageBuffer> = use_context();
+    let toast = use_toast();
+    let mut show_clear_skips_dialog = use_signal(|| false);
+
+    let clear_skips = move || {
+        spawn(async move {
+            // Flush pending skips first so this window's not-yet-sent skips
+            // are wiped too, not re-suppressed by the next flush.
+            flush_once(&usage_buffer(), &client, &session).await;
+            let Ok(fresh) = session.ensure_fresh(client).await else {
+                toast.error("Session expired".to_string(), ToastOptions::default());
+                return;
+            };
+            match client().clear_deck_suppressions(deck_id, &fresh).await {
+                Ok(_) => {
+                    toast.info(
+                        "Skips cleared".to_string(),
+                        ToastOptions::default().duration(Duration::from_millis(1500)),
+                    );
+                }
+                Err(e) => {
+                    tracing::warn!("clear suppressions failed: {e}");
+                    toast.error(e.to_user_message(), ToastOptions::default());
+                }
+            }
+        });
+    };
 
     rsx! {
         AlertDialogRoot {
@@ -55,6 +91,34 @@ pub(crate) fn MoreButtons(
                     AlertDialogCancel {
                         on_click: move |_| show_buy_dialog.set(false),
                         "Close"
+                    }
+                }
+            }
+        }
+
+        AlertDialogRoot {
+            open: show_clear_skips_dialog(),
+            on_open_change: move |open| show_clear_skips_dialog.set(open),
+            AlertDialogContent {
+                AlertDialogTitle { "Clear skips" }
+                hr { class: "dialog-rule" }
+                AlertDialogDescription {
+                    "Cards you've skipped or removed will start showing up again when adding cards. This can't be undone."
+                }
+                hr { class: "dialog-rule" }
+                AlertDialogActions {
+                    AlertDialogCancel {
+                        on_click: move |_| show_clear_skips_dialog.set(false),
+                        "Cancel"
+                    }
+                    AlertDialogAction {
+                        danger: true,
+                        on_click: move |_| {
+                            show_clear_skips_dialog.set(false);
+                            show_more_sheet.set(false);
+                            clear_skips();
+                        },
+                        "Clear"
                     }
                 }
             }
@@ -111,6 +175,13 @@ pub(crate) fn MoreButtons(
                     show_clone_dialog.set(true);
                 },
                 "Clone deck"
+            }
+            button {
+                class: "btn btn-danger",
+                onclick: move |_| {
+                    show_clear_skips_dialog.set(true);
+                },
+                "Clear skips"
             }
             button {
                 class: "btn btn-danger",
