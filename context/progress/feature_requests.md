@@ -73,7 +73,7 @@ Marked ✅ in the tables below; numbers kept stable (plans/commits reference the
 
 | # | Feature | Impact | Effort | Priority | Notes |
 |---|---------|--------|--------|----------|-------|
-| 11 | Persist skipped cards per deck across sessions | High | M | **P1 (plan ready)** | Closing the app currently resets the skip pile — real gap in the core loop. Full executable plan: [`../plans/swipe_memory.md`](../plans/swipe_memory.md) (deck skips + per-user signal + weekly aggregates). |
+| 11 | Persist skipped cards per deck across sessions | High | M | ✅ Built (2026-07-02, on main awaiting release) | Skips **and deliberate removals** persist server-side (`deck_card_suppressions`); the deck-aware search stops serving them, with a "Clear skips" button in the deck view's More sheet. Design + as-built notes: [`../plans/swipe_memory.md`](../plans/swipe_memory.md). Mark shipped once the release is out. |
 | 12 | Easy access to deck view / card count / mana curve while building | Med | S–M | P2 | Stats should be one tap away mid-swipe. |
 
 ## Tags

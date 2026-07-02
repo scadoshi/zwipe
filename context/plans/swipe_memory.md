@@ -1,9 +1,32 @@
-# Swipe memory — deck skips + per-user signal + weekly aggregates
+# Swipe memory — deck suppressions + per-user signal + weekly aggregates
 
-**Status: READY TO EXECUTE.** This plan is written to be executed by an AI
-session with no prior context. It absorbs and replaces the earlier
-`deck_skips.md`. Decisions below are **locked** (owner-confirmed 2026-07-02);
-open questions were resolved before writing.
+**Status: EXECUTED 2026-07-02 (on main, unreleased).** Both phases built and
+verified locally in one batch; the server half deploys on the next push to
+main, the client half rides the next app release. Kept as the design
+reference — see "As-built deltas" below for where execution diverged from the
+original plan. Absorbs and replaces the earlier `deck_skips.md`.
+
+## As-built deltas (owner-directed during execution)
+
+- **`deck_skips` became `deck_card_suppressions`** — a *suppression set*, not
+  an action log: `(deck_id, oracle_id)` PK with a **`source` column as
+  provenance, not identity** (`'skip' | 'removal'`, CHECK-enforced, no
+  default — every insert states its source; a new source needs a migration).
+- **Removals suppress too**: `delete_deck_card` inserts `source = 'removal'`
+  server-side (no wire/client change — works for clients already in the wild).
+  Single-card path only; bulk replace-mode import deletes do NOT suppress.
+  **Re-adding a card deletes its suppression** (covers undo-of-remove).
+- **Unskips only delete `source = 'skip'` rows** so an undo can't erase a
+  removal suppression.
+- **No name-search bypass** (owner call): suppressed cards are excluded from
+  the deck-aware search unconditionally; the Clear button is the only way back.
+- Endpoint is `DELETE /api/deck/{deck_id}/suppressions` →
+  `200 {"cleared": n}` (`HttpClearedSuppressions`); UI label stays
+  **"Clear skips"**.
+- **Button lives in the deck view's More sheet** (`more_buttons.rs`), not the
+  Add screen's filter sheet as originally planned — it's a rare action (owner
+  call), so it's tucked with Clone/Export/Delete. It flushes pending skips
+  before clearing so the buffer window can't re-suppress.
 
 **What this builds, in one sentence:** left-swipes become durable per deck (the
 server stops re-serving them, with a "Clear skips" escape hatch), and the same
