@@ -10,6 +10,8 @@ Items here are candidates to weight and promote into the backlog once prioritize
 
 First source: **Reddit r/mtg launch thread, 2026-06-28** (45K views, ~300 signups). Add later sources as new sections.
 
+Second source: **App Store review, 2026-07-02** (5-star "Awesome app" by Mr.K): "Hoping that new features include saving what cards you've been through between sessions." Maps directly to #11 (swipe memory, built that same day, ships in 1.2.2) — skips and removals persist per deck; adds and maybes were already durable (deck/maybeboard). Independent validation of the P1 call.
+
 ---
 
 ## Shipped so far
@@ -73,7 +75,7 @@ Marked ✅ in the tables below; numbers kept stable (plans/commits reference the
 
 | # | Feature | Impact | Effort | Priority | Notes |
 |---|---------|--------|--------|----------|-------|
-| 11 | Persist skipped cards per deck across sessions | High | M | ✅ Built (2026-07-02, on main awaiting release) | Skips **and deliberate removals** persist server-side (`deck_card_suppressions`); the deck-aware search stops serving them, with a "Clear skips" button in the deck view's More sheet. Design + as-built notes: [`../plans/swipe_memory.md`](../plans/swipe_memory.md). Mark shipped once the release is out. |
+| 11 | Persist skipped cards per deck across sessions | High | M | ✅ Built (2026-07-02, on main awaiting release) | Skips **and deliberate removals** persist server-side (`deck_card_suppressions`); the deck-aware search stops serving them, with a "Clear skips" button in the deck view's More sheet. Design + as-built notes: [`../plans/swipe_memory.md`](../plans/swipe_memory.md). Requested a second time via App Store review 2026-07-02 (see sources above). Mark shipped once the release is out. |
 | 12 | Easy access to deck view / card count / mana curve while building | Med | S–M | P2 | Stats should be one tap away mid-swipe. |
 
 ## Tags
