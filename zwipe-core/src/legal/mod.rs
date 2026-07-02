@@ -12,7 +12,7 @@
 //! its own contact line. Inline `https://` links work in both apps for free.
 
 /// When the privacy policy was last revised, shown in each app's header.
-pub const PRIVACY_LAST_UPDATED: &str = "June 2026";
+pub const PRIVACY_LAST_UPDATED: &str = "July 2026";
 
 /// The privacy policy body as an HTML fragment — headings, paragraphs, lists, and
 /// inline `https://` links. Rendered via `dangerous_inner_html` in both apps. The
@@ -23,9 +23,9 @@ pub const PRIVACY_POLICY_HTML: &str = r#"<h2>Overview</h2>
 <h2>Data We Collect</h2>
 <ul>
 <li><strong>Account data</strong>: email address, username, and a hashed password (never stored in plaintext).</li>
-<li><strong>Deck data</strong>: the decks and card selections you create within the app.</li>
+<li><strong>Deck data</strong>: the decks and card selections you create within the app, including cards you skip or remove per deck so they stop being suggested for that deck (you can clear this anytime from the deck's More menu).</li>
 <li><strong>Session data</strong>: authentication tokens stored securely on your device.</li>
-<li><strong>Usage analytics</strong>: how you interact with the app, including swiping activity, used in aggregate to improve the experience.</li>
+<li><strong>Usage activity</strong>: how you interact with the app, including swiping, searches, and card decisions (adds, skips, maybes, removals). This is kept both in aggregate and per account, so the app can improve overall and personalize your experience.</li>
 </ul>
 <p>We do not collect location data or device identifiers, or any data beyond what is required to operate and improve the app.</p>
 
@@ -34,7 +34,8 @@ pub const PRIVACY_POLICY_HTML: &str = r#"<h2>Overview</h2>
 <li>To authenticate your account and maintain sessions.</li>
 <li>To store and sync your decks across devices.</li>
 <li>To send transactional emails (email verification, password reset).</li>
-<li>To analyze swiping and usage patterns in aggregate so we can improve the app.</li>
+<li>To remember which cards you've skipped or removed for a deck so we stop suggesting them there.</li>
+<li>To analyze swiping and usage patterns, in aggregate and per account, so we can improve the app and personalize card suggestions.</li>
 </ul>
 <p>We do not sell, share, or use your data for advertising.</p>
 
