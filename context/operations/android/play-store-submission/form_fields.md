@@ -153,7 +153,7 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.2.2 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
+| Version (client) | 1.2.3 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
@@ -161,7 +161,7 @@ TODO — complete the Data safety form. Starter facts to declare:
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
 
-**1.2.2:**
+**1.2.3:**
 
 - Zwipe now remembers your skips: cards you swipe left on stay out of that deck's suggestions, even after you close the app. Removed cards stay out too.
 - Changed your mind? Clear a deck's skips anytime from its More menu.

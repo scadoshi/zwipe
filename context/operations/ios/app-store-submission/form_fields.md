@@ -39,7 +39,7 @@ Built for players who want a fast, focused mobile experience — not another clu
 
 ---
 
-## What's New in This Version (1.2.2)
+## What's New in This Version (1.2.3)
 
 - Zwipe now remembers your skips: cards you swipe left on stay out of that deck's suggestions, even after you close the app. Cards you deliberately remove from a deck stay out too.
 - Changed your mind? Clear a deck's skips anytime from its More menu.
