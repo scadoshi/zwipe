@@ -10,7 +10,7 @@ Items here are candidates to weight and promote into the backlog once prioritize
 
 First source: **Reddit r/mtg launch thread, 2026-06-28** (45K views, ~300 signups). Add later sources as new sections.
 
-Second source: **App Store review, 2026-07-02** (5-star "Awesome app" by Mr.K): "Hoping that new features include saving what cards you've been through between sessions." Maps directly to #11 (swipe memory, built that same day, ships in 1.2.2) — skips and removals persist per deck; adds and maybes were already durable (deck/maybeboard). Independent validation of the P1 call.
+Second source: **App Store review, 2026-07-02** (5-star "Awesome app" by Mr.K): "Hoping that new features include saving what cards you've been through between sessions." Maps directly to #11 (swipe memory, built that same day, ships in 1.2.3) — skips and removals persist per deck; adds and maybes were already durable (deck/maybeboard). Independent validation of the P1 call.
 
 ---
 

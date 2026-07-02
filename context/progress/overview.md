@@ -109,14 +109,18 @@ Build 15 shipped over build 14 with: `Email` strict newtype across the workspace
 
 ---
 
-## On main, unreleased — swipe memory, CardFilter split, deck-list alphabetical default (2026-07-02)
+## On main, unreleased — 1.2.3 staged: swipe memory, CardFilter split, deck-list alphabetical default (2026-07-02)
 
-Rides the next release (server + client together; server auto-deploys first on
-push). Commits `1ff1e398`, `09d39a20`, `9a55a0c5` (CardFilter split + alpha
-sort), `c9906303`/`122984fa` (swipe memory server/client), `2df42ddc` (profile
-System section showing the client version), `b1ee1b11` (privacy policy:
-discloses per-account usage activity + deck skip memory, last-updated July
-2026), `816fb35e` (em dash sweep: zite copy + displayed description strings).
+Rides **release 1.2.3** (iOS build 56 / Android versionCode 17, both pending;
+version bumped + What's New written for both stores in `63d6a87a`/`c1f207f4` —
+1.2.2 was skipped for the better number). Server auto-deploys first on push.
+Commits `1ff1e398`, `09d39a20`, `9a55a0c5` (CardFilter split + alpha sort),
+`c9906303`/`122984fa` (swipe memory server/client), `2df42ddc` (profile System
+section showing the client version), `e03ce142` (email verification actions
+moved to their own Verification profile row; refresh icon replaces "Check
+again"), `b1ee1b11` (privacy policy: discloses per-account usage activity +
+deck skip memory, last-updated July 2026), `816fb35e` (em dash sweep: zite
+copy + displayed description strings).
 
 - **Swipe memory (FR #11, plan executed — `plans/swipe_memory.md`).** Left-swipes
   and deliberate removals are now durable per deck: a **`deck_card_suppressions`**
