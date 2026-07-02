@@ -8,6 +8,7 @@ use std::future::Future;
 use zwipe_core::domain::card::{Card, search_card::card_filter::CardQuery};
 use crate::domain::deck::models::{
     deck::{
+        clear_deck_suppressions::ClearDeckSuppressionsError,
         clone_deck::CloneDeckError,
         create_deck_profile::CreateDeckProfileError,
         delete_deck::DeleteDeckError,
@@ -30,6 +31,7 @@ use zwipe_core::domain::deck::{
     Deck, DeckCard, DeckName,
     deck_profile::DeckProfile,
     requests::{
+        clear_deck_suppressions::ClearDeckSuppressions,
         clone_deck::CloneDeck,
         create_deck_card::CreateDeckCard,
         create_deck_profile::CreateDeckProfile,
@@ -147,13 +149,21 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
 
     /// Deletes every card on `board` whose oracle_id is not in `keep_oracle_ids`.
     /// Used by replace-mode imports to make a board exactly match the imported
-    /// list. Callers must have verified deck ownership first.
+    /// list. Callers must have verified deck ownership first. Bulk deletes do
+    /// NOT suppress — importing a new list isn't a per-card rejection.
     fn delete_deck_cards_not_in(
         &self,
         deck_id: uuid::Uuid,
         board: &str,
         keep_oracle_ids: &[uuid::Uuid],
     ) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
+
+    /// Deletes a deck's entire suppression set (skips + removals), returning
+    /// the number of rows removed. Ownership-checked.
+    fn clear_deck_suppressions(
+        &self,
+        request: &ClearDeckSuppressions,
+    ) -> impl Future<Output = Result<u64, ClearDeckSuppressionsError>> + Send;
 
     // ========
     //  clone
@@ -264,6 +274,13 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         &self,
         request: &DeleteDeckCard,
     ) -> impl Future<Output = Result<(), DeleteDeckCardError>> + Send;
+
+    /// Clears a deck's suppression set (skipped/removed cards come back into
+    /// the swipe pool) with authorization check. Returns rows removed.
+    fn clear_deck_suppressions(
+        &self,
+        request: &ClearDeckSuppressions,
+    ) -> impl Future<Output = Result<u64, ClearDeckSuppressionsError>> + Send;
 
     /// Imports cards from a plain-text decklist with authorization check.
     fn import_deck_cards(

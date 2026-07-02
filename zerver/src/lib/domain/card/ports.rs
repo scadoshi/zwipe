@@ -107,6 +107,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = Result<Vec<ScryfallData>, SearchScryfallDataError>> + Send;
 
     /// `search_scryfall_data` plus deck-aware extras: oracle_id exclusion,
+    /// suppression filtering (skipped/removed cards for `deck_id`),
     /// synergy-score default ordering, and (when `synergy_only`) constraining
     /// results to the commander's synergy pool. With `synergy_only` set and a
     /// score map present, the result set is the synergistic cards only, sorted
@@ -114,6 +115,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     fn search_scryfall_data_deck_aware(
         &self,
         request: &CardQuery,
+        deck_id: Option<uuid::Uuid>,
         exclude_oracle_ids: &[uuid::Uuid],
         synergy_scores: Option<&serde_json::Value>,
         synergy_only: bool,
@@ -217,14 +219,17 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
     /// `search_cards` with deck awareness: rows whose oracle_id is in
-    /// `exclude_oracle_ids` are omitted, and when `synergy_scores` is given
-    /// (lowercased card name → score) results are ordered by score descending
-    /// with unscored cards last. With `synergy_only`, results are also
-    /// constrained to the cards present in the score map (membership), then
-    /// sorted by the filter's `order_by` within that set.
+    /// `exclude_oracle_ids` are omitted, the deck's suppression set (skipped
+    /// / removed cards) is filtered out when `deck_id` is given, and when
+    /// `synergy_scores` is given (lowercased card name → score) results are
+    /// ordered by score descending with unscored cards last. With
+    /// `synergy_only`, results are also constrained to the cards present in
+    /// the score map (membership), then sorted by the filter's `order_by`
+    /// within that set.
     fn search_cards_deck_aware(
         &self,
         request: &CardQuery,
+        deck_id: Option<uuid::Uuid>,
         exclude_oracle_ids: &[uuid::Uuid],
         synergy_scores: Option<&serde_json::Value>,
         synergy_only: bool,

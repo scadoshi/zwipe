@@ -13,6 +13,7 @@ use crate::domain::{
     deck::{
         models::{
             deck::{
+                clear_deck_suppressions::ClearDeckSuppressionsError,
                 clone_deck::CloneDeckError,
                 create_deck_profile::CreateDeckProfileError,
                 delete_deck::DeleteDeckError,
@@ -37,6 +38,7 @@ use zwipe_core::domain::deck::{
     Board, Deck, DeckCard, DeckEntry, ImportMode,
     deck_profile::DeckProfile,
     requests::{
+        clear_deck_suppressions::ClearDeckSuppressions,
         clone_deck::CloneDeck,
         create_deck_card::CreateDeckCard,
         create_deck_profile::CreateDeckProfile,
@@ -328,7 +330,13 @@ where
 
         let cards = self
             .card_repo
-            .search_cards_deck_aware(filter, &exclude_oracle_ids, synergy_scores.as_ref(), synergy_only)
+            .search_cards_deck_aware(
+                filter,
+                Some(deck_profile.id),
+                &exclude_oracle_ids,
+                synergy_scores.as_ref(),
+                synergy_only,
+            )
             .await?;
         // Synergy was requested but the commander's cache wasn't available (cold
         // / still computing), so the search fell back to the full pool. Surfaced
@@ -393,6 +401,13 @@ where
     async fn delete_deck_card(&self, request: &DeleteDeckCard) -> Result<(), DeleteDeckCardError> {
         let _deck_profile = self.get_deck_profile(&request.into()).await?;
         self.deck_repo.delete_deck_card(request).await
+    }
+
+    async fn clear_deck_suppressions(
+        &self,
+        request: &ClearDeckSuppressions,
+    ) -> Result<u64, ClearDeckSuppressionsError> {
+        self.deck_repo.clear_deck_suppressions(request).await
     }
 
     async fn import_deck_cards(

@@ -143,6 +143,10 @@ pub fn clone_deck_route(source_deck_id: Uuid) -> String {
     format!("/api/deck/{}/clone", source_deck_id)
 }
 
+pub fn clear_deck_suppressions_route(deck_id: Uuid) -> String {
+    format!("/api/deck/{}/suppressions", deck_id)
+}
+
 pub fn import_archidekt_deck_route(deck_id: Uuid) -> String {
     format!("/api/deck/{}/import/archidekt", deck_id)
 }

@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT lc.oracle_id, lc.color_identity, cp.mechanical_categories\n                   FROM latest_cards lc\n                   JOIN card_profiles cp ON cp.scryfall_data_id = lc.id\n                   WHERE lc.oracle_id = ANY($1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "oracle_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "color_identity",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 2,
+        "name": "mechanical_categories",
+        "type_info": "Jsonb"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "e3356d370c1d21aa320afe8544bd031d2af27070805e21ff8863bc8d9b224766"
+}

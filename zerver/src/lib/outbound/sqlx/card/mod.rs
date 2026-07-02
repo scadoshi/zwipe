@@ -189,17 +189,18 @@ impl CardRepository for MyPostgres {
         &self,
         request: &CardQuery,
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
-        self.search_scryfall_data_deck_aware(request, &[], None, false)
+        self.search_scryfall_data_deck_aware(request, None, &[], None, false)
             .await
     }
 
     /// `search_scryfall_data` plus the deck-aware extras: oracle_id exclusion,
-    /// synergy-score default ordering, and (when `synergy_only`) a membership
-    /// constraint to the commander's synergy pool. The plain search is this with
-    /// no extras.
+    /// suppression filtering for `deck_id` (skipped/removed cards), synergy-score
+    /// default ordering, and (when `synergy_only`) a membership constraint to
+    /// the commander's synergy pool. The plain search is this with no extras.
     async fn search_scryfall_data_deck_aware(
         &self,
         request: &CardQuery,
+        deck_id: Option<uuid::Uuid>,
         exclude_oracle_ids: &[uuid::Uuid],
         synergy_scores: Option<&serde_json::Value>,
         synergy_only: bool,
@@ -720,6 +721,17 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated(")))");
         }
 
+        // Suppression filtering: the deck's skipped/removed cards never come
+        // back through the deck-aware search (Clear skips is the escape
+        // hatch). NOT EXISTS rather than a bind array — the set can be
+        // thousands of rows. Null-oracle printings pass, matching the
+        // exclusion clause above.
+        if let Some(deck_id) = deck_id {
+            sep.push("NOT EXISTS (SELECT 1 FROM deck_card_suppressions dcs WHERE dcs.deck_id = ");
+            sep.push_bind_unseparated(deck_id);
+            sep.push_unseparated(" AND dcs.oracle_id = latest_cards.oracle_id)");
+        }
+
         // Synergy ON: constrain to the commander's synergy pool (membership).
         // Same per-row jsonb probe the synergy ORDER BY uses; the user's sort, if
         // any, then applies within this set. Skipped when no score map (cold
@@ -1068,6 +1080,7 @@ impl CardRepository for MyPostgres {
     async fn search_cards_deck_aware(
         &self,
         request: &CardQuery,
+        deck_id: Option<uuid::Uuid>,
         exclude_oracle_ids: &[uuid::Uuid],
         synergy_scores: Option<&serde_json::Value>,
         synergy_only: bool,
@@ -1075,6 +1088,7 @@ impl CardRepository for MyPostgres {
         let scryfall_data = self
             .search_scryfall_data_deck_aware(
                 request,
+                deck_id,
                 exclude_oracle_ids,
                 synergy_scores,
                 synergy_only,

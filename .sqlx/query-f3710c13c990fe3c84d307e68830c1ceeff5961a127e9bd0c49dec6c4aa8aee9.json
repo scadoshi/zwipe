@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "DELETE FROM deck_cards WHERE deck_id = $1 AND scryfall_data_id = $2",
+  "query": "DELETE FROM deck_card_suppressions WHERE deck_id = $1 AND oracle_id = $2",
   "describe": {
     "columns": [],
     "parameters": {
@@ -11,5 +11,5 @@
     },
     "nullable": []
   },
-  "hash": "f6eb363e93be31e8aefb97de2bdc4a1870869ed7c9a881a38f31fb800f6cc2f6"
+  "hash": "f3710c13c990fe3c84d307e68830c1ceeff5961a127e9bd0c49dec6c4aa8aee9"
 }

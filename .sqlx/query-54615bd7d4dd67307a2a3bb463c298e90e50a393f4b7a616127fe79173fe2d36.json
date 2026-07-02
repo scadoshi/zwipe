@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM deck_card_suppressions\n                   WHERE deck_id = $1 AND oracle_id IN (\n                       SELECT oracle_id FROM deck_card_suppressions\n                       WHERE deck_id = $1\n                       ORDER BY suppressed_at DESC\n                       OFFSET $2\n                   )",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "54615bd7d4dd67307a2a3bb463c298e90e50a393f4b7a616127fe79173fe2d36"
+}

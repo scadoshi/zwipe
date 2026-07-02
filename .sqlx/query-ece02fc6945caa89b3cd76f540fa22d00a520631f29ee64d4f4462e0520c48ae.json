@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO user_week_signal\n                   (user_id, week_start, swipes_right, swipes_left, swipes_up, swipes_down, searches, added, skipped, maybed, removed)\n               VALUES ($1, (date_trunc('week', now() AT TIME ZONE 'utc'))::date, $2, $3, $4, $5, $6, $7, $8, $9, $10)\n               ON CONFLICT (user_id, week_start) DO UPDATE SET\n                   swipes_right = user_week_signal.swipes_right + EXCLUDED.swipes_right,\n                   swipes_left  = user_week_signal.swipes_left  + EXCLUDED.swipes_left,\n                   swipes_up    = user_week_signal.swipes_up    + EXCLUDED.swipes_up,\n                   swipes_down  = user_week_signal.swipes_down  + EXCLUDED.swipes_down,\n                   searches     = user_week_signal.searches     + EXCLUDED.searches,\n                   added        = user_week_signal.added        + EXCLUDED.added,\n                   skipped      = user_week_signal.skipped      + EXCLUDED.skipped,\n                   maybed       = user_week_signal.maybed       + EXCLUDED.maybed,\n                   removed      = user_week_signal.removed      + EXCLUDED.removed",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ece02fc6945caa89b3cd76f540fa22d00a520631f29ee64d4f4462e0520c48ae"
+}

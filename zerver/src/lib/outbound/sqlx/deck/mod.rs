@@ -11,6 +11,7 @@ use crate::{
     domain::deck::{
         models::{
             deck::{
+                clear_deck_suppressions::ClearDeckSuppressionsError,
                 clone_deck::CloneDeckError,
                 create_deck_profile::CreateDeckProfileError,
                 delete_deck::DeleteDeckError,
@@ -40,6 +41,7 @@ use zwipe_core::domain::deck::{
     DeckCard, DeckName, DeckOtherTag, DeckTag,
     deck_profile::DeckProfile,
     requests::{
+        clear_deck_suppressions::ClearDeckSuppressions,
         create_deck_card::CreateDeckCard,
         create_deck_profile::CreateDeckProfile,
         delete_deck::DeleteDeck,
@@ -135,6 +137,15 @@ impl DeckRepository for Postgres {
             request.board.display_name()
         )
         .fetch_one(&mut *tx)
+        .await?;
+        // Adding a card cancels any suppression on it (e.g. undoing a removal
+        // re-adds the card — the "doesn't fit" signal no longer holds).
+        query!(
+            "DELETE FROM deck_card_suppressions WHERE deck_id = $1 AND oracle_id = $2",
+            request.deck_id,
+            request.oracle_id,
+        )
+        .execute(&mut *tx)
         .await?;
         let deck_card: DeckCard = database_deck_card.try_into()?;
         tx.commit().await?;
@@ -435,6 +446,28 @@ impl DeckRepository for Postgres {
         Ok(())
     }
 
+    async fn clear_deck_suppressions(
+        &self,
+        request: &ClearDeckSuppressions,
+    ) -> Result<u64, ClearDeckSuppressionsError> {
+        if !request
+            .user_id
+            .owns_deck(request.deck_id, &self.pool)
+            .await
+            .map_err(|e| ClearDeckSuppressionsError::Database(e.into()))?
+        {
+            return Err(ClearDeckSuppressionsError::Forbidden);
+        }
+        let result = query!(
+            "DELETE FROM deck_card_suppressions WHERE deck_id = $1",
+            request.deck_id,
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|e| ClearDeckSuppressionsError::Database(e.into()))?;
+        Ok(result.rows_affected())
+    }
+
     async fn delete_deck_card(&self, request: &DeleteDeckCard) -> Result<(), DeleteDeckCardError> {
         if !request
             .user_id
@@ -444,16 +477,31 @@ impl DeckRepository for Postgres {
             return Err(DeleteDeckCardError::Forbidden);
         }
         let mut tx = self.pool.begin().await?;
-        let result = query!(
-            "DELETE FROM deck_cards WHERE deck_id = $1 AND scryfall_data_id = $2",
+        let deleted = query!(
+            "DELETE FROM deck_cards WHERE deck_id = $1 AND scryfall_data_id = $2
+             RETURNING oracle_id",
             request.deck_id,
             request.scryfall_data_id
         )
+        .fetch_optional(&mut *tx)
+        .await?;
+        let Some(deleted) = deleted else {
+            return Err(DeleteDeckCardError::NotFound);
+        };
+        // A deliberate single-card removal is a "doesn't fit" signal: suppress
+        // the card so the deck-aware search stops re-serving it. Bulk deletes
+        // (replace-mode imports) intentionally don't do this.
+        query!(
+            r#"INSERT INTO deck_card_suppressions (deck_id, oracle_id, source)
+               VALUES ($1, $2, 'removal')
+               ON CONFLICT (deck_id, oracle_id) DO UPDATE SET
+                   source = EXCLUDED.source,
+                   suppressed_at = now()"#,
+            request.deck_id,
+            deleted.oracle_id,
+        )
         .execute(&mut *tx)
         .await?;
-        if result.rows_affected() == 0 {
-            return Err(DeleteDeckCardError::NotFound);
-        }
         tx.commit().await?;
         Ok(())
     }

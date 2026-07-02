@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO user_week_facet_signal (user_id, week_start, facet, key, added)\n                       VALUES ($1, (date_trunc('week', now() AT TIME ZONE 'utc'))::date, $2, $3, $4)\n                       ON CONFLICT (user_id, week_start, facet, key) DO UPDATE SET\n                           added = user_week_facet_signal.added + EXCLUDED.added",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b95c25e39b256478a367217df5e60412afba5cf08333a6e2c495b83f7dd26d1b"
+}

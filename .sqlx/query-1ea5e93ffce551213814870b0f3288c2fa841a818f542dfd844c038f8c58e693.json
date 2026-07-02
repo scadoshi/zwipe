@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO deck_card_suppressions (deck_id, oracle_id, source)\n                       SELECT $1, unnest($2::uuid[]), 'skip'\n                       ON CONFLICT (deck_id, oracle_id) DO UPDATE SET\n                           source = EXCLUDED.source,\n                           suppressed_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1ea5e93ffce551213814870b0f3288c2fa841a818f542dfd844c038f8c58e693"
+}

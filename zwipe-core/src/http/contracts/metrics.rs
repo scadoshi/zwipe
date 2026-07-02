@@ -26,6 +26,10 @@ pub struct HttpUsageBatch {
     /// that omit the field still deserialize (backward compatible).
     #[serde(default)]
     pub signals: Vec<CardSignalDelta>,
+    /// Per-deck skip/unskip oracle-id deltas (Add-screen left swipes).
+    /// `#[serde(default)]` keeps older clients compatible.
+    #[serde(default)]
+    pub deck_skips: Vec<DeckSkipDelta>,
 }
 
 /// One `(commander, card)` signal delta accumulated over a flush window.
@@ -51,6 +55,25 @@ pub struct CardSignalDelta {
     pub removed: u32,
 }
 
+/// Per-deck skip deltas accumulated over a flush window.
+///
+/// Skips are keyed by **oracle id** so a skip covers every printing. `skipped`
+/// carries new left-swipes; `unskipped` carries undos of skips that had
+/// already flushed (a pre-flush undo simply drops the pending entry
+/// client-side and never reaches the wire). Ingest writes these into the
+/// deck's suppression set (`source = 'skip'`) after verifying ownership;
+/// removal suppressions never ride this contract — the server records them
+/// directly on the delete-card endpoint.
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+pub struct DeckSkipDelta {
+    /// Deck the skips belong to (ownership is verified at ingest).
+    pub deck_id: Uuid,
+    /// Oracle ids left-swiped since the last flush.
+    pub skipped: Vec<Uuid>,
+    /// Oracle ids whose skip was undone after it had already flushed.
+    pub unskipped: Vec<Uuid>,
+}
+
 impl HttpUsageBatch {
     /// Maximum accepted value per counter per flush.
     ///
@@ -66,9 +89,16 @@ impl HttpUsageBatch {
     /// caps an untrusted client from sending a runaway upsert set.
     pub const MAX_SIGNALS_PER_FLUSH: usize = 1_000;
 
+    /// Maximum accepted number of per-deck skip deltas per flush. A flush
+    /// window realistically touches one deck; this caps an untrusted client
+    /// from fanning writes across arbitrary decks.
+    pub const MAX_SKIP_DECKS_PER_FLUSH: usize = 50;
+
     /// Returns a copy with every counter clamped to [`Self::MAX_PER_FLUSH`], the
-    /// signal list truncated to [`Self::MAX_SIGNALS_PER_FLUSH`], and each
-    /// signal's tallies clamped per field.
+    /// signal list truncated to [`Self::MAX_SIGNALS_PER_FLUSH`], each signal's
+    /// tallies clamped per field, and the deck-skip deltas truncated to
+    /// [`Self::MAX_SKIP_DECKS_PER_FLUSH`] decks of at most
+    /// [`Self::MAX_SIGNALS_PER_FLUSH`] ids per list.
     #[must_use]
     pub fn clamped(&self) -> Self {
         Self {
@@ -82,6 +112,12 @@ impl HttpUsageBatch {
                 .iter()
                 .take(Self::MAX_SIGNALS_PER_FLUSH)
                 .map(CardSignalDelta::clamped)
+                .collect(),
+            deck_skips: self
+                .deck_skips
+                .iter()
+                .take(Self::MAX_SKIP_DECKS_PER_FLUSH)
+                .map(DeckSkipDelta::clamped)
                 .collect(),
         }
     }
@@ -103,9 +139,32 @@ impl CardSignalDelta {
     }
 }
 
+impl DeckSkipDelta {
+    /// Returns a copy with each id list truncated to
+    /// [`HttpUsageBatch::MAX_SIGNALS_PER_FLUSH`].
+    #[must_use]
+    pub fn clamped(&self) -> Self {
+        Self {
+            deck_id: self.deck_id,
+            skipped: self
+                .skipped
+                .iter()
+                .copied()
+                .take(HttpUsageBatch::MAX_SIGNALS_PER_FLUSH)
+                .collect(),
+            unskipped: self
+                .unskipped
+                .iter()
+                .copied()
+                .take(HttpUsageBatch::MAX_SIGNALS_PER_FLUSH)
+                .collect(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{CardSignalDelta, HttpUsageBatch};
+    use super::{CardSignalDelta, DeckSkipDelta, HttpUsageBatch};
     use uuid::Uuid;
 
     #[test]
@@ -117,6 +176,7 @@ mod tests {
             swipes_down: 0,
             searches: u32::MAX,
             signals: Vec::new(),
+            deck_skips: Vec::new(),
         }
         .clamped();
         assert_eq!(clamped.swipes_right, HttpUsageBatch::MAX_PER_FLUSH);
@@ -151,11 +211,33 @@ mod tests {
 
     #[test]
     fn batch_deserializes_without_signals_field() {
-        // An older client omits `signals`; must still parse (→ empty).
+        // An older client omits `signals` and `deck_skips`; must still parse (→ empty).
         let json = r#"{"swipes_right":2,"swipes_left":1,"swipes_up":0,"swipes_down":0,"searches":3}"#;
         let batch: HttpUsageBatch = serde_json::from_str(json).unwrap();
         assert!(batch.signals.is_empty());
+        assert!(batch.deck_skips.is_empty());
         assert_eq!(batch.swipes_right, 2);
+    }
+
+    #[test]
+    fn clamped_truncates_deck_skip_deltas_and_id_lists() {
+        let delta = DeckSkipDelta {
+            deck_id: Uuid::nil(),
+            skipped: vec![Uuid::nil(); HttpUsageBatch::MAX_SIGNALS_PER_FLUSH + 7],
+            unskipped: vec![Uuid::nil(); 3],
+        };
+        let batch = HttpUsageBatch {
+            deck_skips: vec![delta; HttpUsageBatch::MAX_SKIP_DECKS_PER_FLUSH + 2],
+            ..Default::default()
+        }
+        .clamped();
+        assert_eq!(
+            batch.deck_skips.len(),
+            HttpUsageBatch::MAX_SKIP_DECKS_PER_FLUSH
+        );
+        let first = batch.deck_skips.first().unwrap();
+        assert_eq!(first.skipped.len(), HttpUsageBatch::MAX_SIGNALS_PER_FLUSH);
+        assert_eq!(first.unskipped.len(), 3);
     }
 }
 
