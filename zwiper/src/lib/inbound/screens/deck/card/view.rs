@@ -37,7 +37,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::{
     Card,
     search_card::{
-        card_filter::builder::CardQueryBuilder,
+        card_filter::{builder::CardQueryBuilder, card_sort_key::CardSortKey},
         cards::{Cards, sort_deck_entries},
         group_cards::{CardGroup, GroupByOption, GroupCards},
     },
@@ -327,8 +327,10 @@ pub fn View(deck_id: Uuid) -> Element {
             }
         };
 
+        // No sort chosen -> alphabetical, so the deck list always has a stable,
+        // scannable order (applies to tokens/maybeboard/sideboard below too).
         let mut filtered: Vec<Card> = Cards::from(filtered)
-            .sorted(builder.sort(), builder.ascending())
+            .sorted(builder.sort().unwrap_or(CardSortKey::Name), builder.ascending())
             .into();
 
         if !lands_visible {
@@ -668,7 +670,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         {
                             let sorted_tokens: Option<Vec<Card>> = tokens_resource().and_then(|r| r.ok()).map(|t| {
                                 let b = filter_builder.peek();
-                                Cards::from(t).sorted(b.sort(), b.ascending()).into()
+                                Cards::from(t).sorted(b.sort().unwrap_or(CardSortKey::Name), b.ascending()).into()
                             });
                             rsx! {
                                 if let Some(tokens) = sorted_tokens {
@@ -699,7 +701,7 @@ pub fn View(deck_id: Uuid) -> Element {
                             .collect();
                         {
                             let b = filter_builder.peek();
-                            sort_deck_entries(&mut mb_entries, b.sort(), b.ascending());
+                            sort_deck_entries(&mut mb_entries, b.sort().unwrap_or(CardSortKey::Name), b.ascending());
                         }
                         let mb_count = mb_entries.len();
                         rsx! {
@@ -743,7 +745,7 @@ pub fn View(deck_id: Uuid) -> Element {
                             .collect();
                         {
                             let b = filter_builder.peek();
-                            sort_deck_entries(&mut sb_entries, b.sort(), b.ascending());
+                            sort_deck_entries(&mut sb_entries, b.sort().unwrap_or(CardSortKey::Name), b.ascending());
                         }
                         let sb_count = sb_entries.len();
                         rsx! {
