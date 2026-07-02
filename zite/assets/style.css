@@ -305,6 +305,10 @@ nav {
            content-sized and pinned right by the desktop justify-content */
         grid-template-columns: minmax(0, 1fr);
         flex-basis: 100%;
+        /* bleed through the nav's side padding so the divider rules run
+           edge to edge; the inner re-adds the inset for content */
+        margin-left: -1.5rem;
+        margin-right: -1.5rem;
         opacity: 0;
         visibility: hidden;
         margin-top: 0;
@@ -339,6 +343,8 @@ nav {
         gap: 1rem;
         overflow: hidden;
         min-height: 0;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
     }
     .nav-panel .nav-links {
         flex-direction: column;
@@ -366,6 +372,10 @@ nav {
         padding-top: 0.75rem;
         border-top: 1px solid var(--border-primary);
         height: auto;
+        /* bleed to the panel edges so this divider also runs edge to edge
+           (stays inside the inner's padding box, so overflow won't clip it) */
+        margin-left: -1.5rem;
+        margin-right: -1.5rem;
     }
     .nav-panel .theme-select-trigger,
     .nav-panel .mode-toggle {
