@@ -109,10 +109,31 @@ Build 15 shipped over build 14 with: `Email` strict newtype across the workspace
 
 ---
 
-## On main, unreleased — CardFilter split + deck-list alphabetical default (2026-07-02)
+## On main, unreleased — swipe memory, CardFilter split, deck-list alphabetical default (2026-07-02)
 
 Rides the next release (server + client together; server auto-deploys first on
-push). Commits `1ff1e398`, `09d39a20`, `9a55a0c5`.
+push). Commits `1ff1e398`, `09d39a20`, `9a55a0c5` + the swipe-memory batch.
+
+- **Swipe memory (FR #11, plan executed — `plans/swipe_memory.md`).** Left-swipes
+  and deliberate removals are now durable per deck: a **`deck_card_suppressions`**
+  set (`(deck_id, oracle_id)` PK, `source` = `'skip' | 'removal'` as provenance,
+  5,000/deck cap evicting oldest) that the deck-aware search filters with
+  `NOT EXISTS` — suppressed cards stop being served the moment the flush lands.
+  Skips ride `HttpUsageBatch.deck_skips` (`DeckSkipDelta`, `#[serde(default)]`,
+  old clients unaffected); removals are recorded **server-side** in
+  `delete_deck_card` (single-card path only — bulk import deletes don't
+  suppress), and re-adding a card cancels its suppression. Escape hatch:
+  `DELETE /api/deck/{id}/suppressions` behind a **"Clear skips"** button in the
+  deck view's More sheet (rare action, kept out of the swipe flow). Same
+  ingest also starts the per-user analytics
+  substrate — **`user_card_signal`** (user × commander × card counters),
+  **`user_week_signal`** + **`user_week_facet_signal`** (ISO-week scalars and
+  category/color facets for future weekly badges) — all FK-cascaded on account
+  deletion, filling from existing 1.2.0+ clients as soon as the server deploys.
+  Client half (skip buffering with pre/post-flush undo, flush-before-refresh,
+  the Clear button) rides the next app release. Verified end-to-end locally:
+  ingest, filtering, unskip vs removal precedence, cap eviction, ownership
+  checks, clear, cascades.
 
 - **CardFilter split (plan executed, doc removed).** The dual-use `CardFilter`
   became three types in zwipe-core: **`CardCriteria`** (the ~50 predicate fields

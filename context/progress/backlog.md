@@ -27,12 +27,11 @@ plus a badge-history/stats page. The recap doubles as a **shareable card**
   (hipster/meta). Lifetime volume badges are computable **today** from
   `user_lifetime_counters` / `user_daily_activity` / `user_events`. Rule: only
   add a counter when a named consumer exists.
-- **Data prerequisite: weekly windowing.** Lifetime counters can't answer "this
-  week." At signal ingest (the flush already carries card-level deltas), also
-  bump `user_week_signal (user_id, iso_week, counters)` — swipes by direction,
-  accepts by category/color, decks touched. No new wire, no client change; one
-  row per active user per week. Design this in when the per-user signal ships
-  so weekly history accrues from day one.
+- **Data prerequisite: weekly windowing — ✅ BUILT (2026-07-02, on main).**
+  Ingest now bumps `user_week_signal` (directional swipes, searches,
+  added/skipped/maybed/removed per ISO week) and `user_week_facet_signal`
+  (accepts by mechanical category and color identity). One row per active user
+  per week; history accrues from the moment the server deploys.
 - **Badge job**: week-close cron (zervice pattern) computes 1–3 badges per
   active user (v1: threshold rules + priority order, cap 3, ≥1 for any
   activity) into `user_week_badges (user_id, week, badges)`.
@@ -41,8 +40,9 @@ plus a badge-history/stats page. The recap doubles as a **shareable card**
   visibility, moderation, blocking) and another privacy-posture change — the
   private recap + share card ships first and stands alone.
 
-Related: `plans/swipe_memory.md` (the flush-ingest surface all of this rides on)
-and the planned per-user `user_card_signal` collection.
+Related: `plans/swipe_memory.md` (the flush-ingest surface all of this rides
+on, executed 2026-07-02) and the now-live per-user `user_card_signal`
+collection.
 
 ---
 

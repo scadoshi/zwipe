@@ -20,9 +20,12 @@ Plus [`CLAUDE.md`](CLAUDE.md) — the authoritative rules/instructions for AI as
 
 ## Current focus
 
-**On main, unreleased (2026-07-02):** the **CardFilter split** — `CardCriteria`
+**On main, unreleased (2026-07-02):** **swipe memory** (FR #11 — per-deck
+skip/removal suppressions the server stops serving, "Clear skips" escape hatch,
+plus per-user + weekly signal tables that start filling from existing clients
+on deploy; `plans/swipe_memory.md`), the **CardFilter split** — `CardCriteria`
 (shared predicate) + `CardQuery` (bounded server search, wire JSON unchanged) +
-`Cards` (in-memory collection, no limit by construction) — plus the deck cards
+`Cards` (in-memory collection, no limit by construction) — and the deck cards
 screen defaulting to **alphabetical order**. Unpushed (push auto-deploys the
 server); the client half rides the next release. See the
 [`progress/overview.md`](progress/overview.md) top entry.
