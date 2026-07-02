@@ -31,7 +31,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_core::domain::card::scryfall_data::colors::Colors;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
-use zwipe_core::domain::card::search_card::card_filter::order_by_option::OrderByOption;
+use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_SWIPE_SELECT;
 
@@ -94,7 +94,7 @@ impl SwipeMode {
 fn mode_filter(mode: &SwipeMode, mut builder: CardFilterBuilder, offset: u32) -> CardFilterBuilder {
     mode.apply(&mut builder);
     if builder.order_by().is_none() {
-        builder.set_order_by(OrderByOption::EdhrecRank);
+        builder.set_order_by(CardSortKey::EdhrecRank);
         builder.set_ascending(true);
     }
     builder.set_is_token(false);
@@ -123,7 +123,7 @@ pub(crate) fn SwipeSelect(
     // filter. Persists across open/close because this component stays mounted.
     let mut filter_builder = use_signal(|| {
         let mut b = CardFilterBuilder::new();
-        b.set_order_by(OrderByOption::EdhrecRank)
+        b.set_order_by(CardSortKey::EdhrecRank)
             .set_ascending(true);
         b
     });
@@ -284,7 +284,7 @@ pub(crate) fn SwipeSelect(
         filter_builder.write().clear();
         filter_builder
             .write()
-            .set_order_by(OrderByOption::EdhrecRank)
+            .set_order_by(CardSortKey::EdhrecRank)
             .set_ascending(true);
         filter_reset_counter.set(filter_reset_counter() + 1);
     };

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[allow(missing_docs)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum OrderByOption {
+pub enum CardSortKey {
     Name,
     Cmc,
     Power,
@@ -17,7 +17,7 @@ pub enum OrderByOption {
 }
 
 #[allow(missing_docs)]
-impl OrderByOption {
+impl CardSortKey {
     pub fn all() -> Vec<Self> {
         vec![
             Self::Name,
@@ -35,7 +35,7 @@ impl OrderByOption {
     }
 }
 
-impl std::fmt::Display for OrderByOption {
+impl std::fmt::Display for CardSortKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Name => write!(f, "Name"),

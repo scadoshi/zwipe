@@ -8,7 +8,7 @@
 //! Text filters (`set_name_contains`, etc.) treat empty strings as `None`
 //! to avoid ineffective filters.
 
-use super::{CardFilterBuilder, CardType, Colors, Format, OrderByOption, PriceCurrency};
+use super::{CardFilterBuilder, CardType, Colors, Format, CardSortKey, PriceCurrency};
 use crate::domain::card::scryfall_data::rarity::Rarities;
 
 impl CardFilterBuilder {
@@ -724,7 +724,7 @@ impl CardFilterBuilder {
     }
 
     /// Sets result ordering (name, CMC, rarity, etc.).
-    pub fn set_order_by(&mut self, order_by: OrderByOption) -> &mut Self {
+    pub fn set_order_by(&mut self, order_by: CardSortKey) -> &mut Self {
         self.order_by = Some(order_by);
         self
     }

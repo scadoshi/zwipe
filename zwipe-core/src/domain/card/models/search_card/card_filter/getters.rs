@@ -2,7 +2,7 @@ use crate::domain::{
     card::{
         scryfall_data::{colors::Colors, rarity::Rarities},
         search_card::{
-            card_filter::{price_currency::PriceCurrency, CardFilter, OrderByOption},
+            card_filter::{price_currency::PriceCurrency, CardFilter, CardSortKey},
             card_type::CardType,
         },
     },
@@ -260,7 +260,7 @@ impl CardFilter {
         self.offset
     }
 
-    pub fn order_by(&self) -> Option<OrderByOption> {
+    pub fn order_by(&self) -> Option<CardSortKey> {
         self.order_by
     }
 

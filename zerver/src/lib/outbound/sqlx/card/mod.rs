@@ -16,7 +16,7 @@ use zwipe_core::domain::card::{
     card_profile::CardProfile,
     scryfall_data::ScryfallData,
     search_card::{
-        card_filter::{CardFilter, order_by_option::OrderByOption},
+        card_filter::{CardFilter, card_sort_key::CardSortKey},
         filter_cards::PLAYABLE_LAYOUTS,
     },
 };
@@ -731,15 +731,15 @@ impl CardRepository for MyPostgres {
         // Filter out NULLs for sorted field
         if let Some(order_by) = request.order_by() {
             let null_filter = match order_by {
-                OrderByOption::Power => Some("power IS NOT NULL AND power ~ '^\\d+$'"),
-                OrderByOption::Toughness => Some("toughness IS NOT NULL AND toughness ~ '^\\d+$'"),
-                OrderByOption::PriceUsd => {
+                CardSortKey::Power => Some("power IS NOT NULL AND power ~ '^\\d+$'"),
+                CardSortKey::Toughness => Some("toughness IS NOT NULL AND toughness ~ '^\\d+$'"),
+                CardSortKey::PriceUsd => {
                     Some("prices->>'usd' IS NOT NULL AND prices->>'usd' != ''")
                 }
-                OrderByOption::PriceEur => {
+                CardSortKey::PriceEur => {
                     Some("prices->>'eur' IS NOT NULL AND prices->>'eur' != ''")
                 }
-                OrderByOption::PriceTix => {
+                CardSortKey::PriceTix => {
                     Some("prices->>'tix' IS NOT NULL AND prices->>'tix' != ''")
                 }
                 _ => None,
@@ -753,26 +753,26 @@ impl CardRepository for MyPostgres {
         if let Some(order_by) = request.order_by() {
             qb.push(" ORDER BY ");
             let col = match order_by {
-                OrderByOption::Name => "name",
-                OrderByOption::Cmc => "cmc",
-                OrderByOption::Power => "CAST(NULLIF(power, '') AS INT)",
-                OrderByOption::Toughness => "CAST(NULLIF(toughness, '') AS INT)",
-                OrderByOption::Rarity => "rarity",
-                OrderByOption::ReleasedAt => "released_at",
-                OrderByOption::PriceUsd => "(prices->>'usd')::NUMERIC",
-                OrderByOption::PriceEur => "(prices->>'eur')::NUMERIC",
-                OrderByOption::PriceTix => "(prices->>'tix')::NUMERIC",
-                OrderByOption::EdhrecRank => "edhrec_rank",
-                OrderByOption::Random => "RANDOM()",
+                CardSortKey::Name => "name",
+                CardSortKey::Cmc => "cmc",
+                CardSortKey::Power => "CAST(NULLIF(power, '') AS INT)",
+                CardSortKey::Toughness => "CAST(NULLIF(toughness, '') AS INT)",
+                CardSortKey::Rarity => "rarity",
+                CardSortKey::ReleasedAt => "released_at",
+                CardSortKey::PriceUsd => "(prices->>'usd')::NUMERIC",
+                CardSortKey::PriceEur => "(prices->>'eur')::NUMERIC",
+                CardSortKey::PriceTix => "(prices->>'tix')::NUMERIC",
+                CardSortKey::EdhrecRank => "edhrec_rank",
+                CardSortKey::Random => "RANDOM()",
             };
             qb.push(col);
-            if order_by != OrderByOption::Random {
+            if order_by != CardSortKey::Random {
                 qb.push(if request.ascending() { " ASC" } else { " DESC" });
             }
             // edhrec_rank is nullable (obscure/new cards lack a rank): keep them
             // but sort last in either direction, with a name tiebreak so paging
             // through the unranked tail stays stable.
-            if order_by == OrderByOption::EdhrecRank {
+            if order_by == CardSortKey::EdhrecRank {
                 qb.push(" NULLS LAST, name ASC");
             }
         } else if let Some(scores) = synergy_scores {

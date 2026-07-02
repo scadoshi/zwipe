@@ -25,7 +25,7 @@ pub mod error;
 /// Getter methods for accessing filter values.
 pub mod getters;
 /// Sort order options (name, CMC, rarity, etc.).
-pub mod order_by_option;
+pub mod card_sort_key;
 /// Currency selector for the price-range filter.
 pub mod price_currency;
 
@@ -33,7 +33,7 @@ use crate::domain::{
     card::{
         scryfall_data::{colors::Colors, rarity::Rarities},
         search_card::{
-            card_filter::{order_by_option::OrderByOption, price_currency::PriceCurrency},
+            card_filter::{card_sort_key::CardSortKey, price_currency::PriceCurrency},
             card_type::CardType,
         },
     },
@@ -134,7 +134,7 @@ pub struct CardFilter {
     limit: u32,
     #[serde(default)]
     offset: u32,
-    order_by: Option<OrderByOption>,
+    order_by: Option<CardSortKey>,
     #[serde(default = "default_ascending")]
     ascending: bool,
     /// Deck-aware search only: when true, constrain results to the commander's

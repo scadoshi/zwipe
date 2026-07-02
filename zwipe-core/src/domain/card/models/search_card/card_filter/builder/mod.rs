@@ -16,7 +16,7 @@ use crate::domain::{
         search_card::{
             card_filter::{
                 error::InvalidCardFilter, price_currency::PriceCurrency, strip_punctuation,
-                CardFilter, OrderByOption,
+                CardFilter, CardSortKey,
             },
             card_type::CardType,
         },
@@ -200,7 +200,7 @@ pub struct CardFilterBuilder {
     // config
     limit: u32,
     offset: u32,
-    order_by: Option<OrderByOption>,
+    order_by: Option<CardSortKey>,
     ascending: bool,
     synergy: bool,
 }
@@ -658,7 +658,7 @@ impl CardFilterBuilder {
     }
 
     /// Creates builder with specific result ordering (name, CMC, rarity, etc.).
-    pub fn with_order_by(order_by: OrderByOption) -> CardFilterBuilder {
+    pub fn with_order_by(order_by: CardSortKey) -> CardFilterBuilder {
         CardFilterBuilder {
             order_by: Some(order_by),
             ..CardFilterBuilder::default()

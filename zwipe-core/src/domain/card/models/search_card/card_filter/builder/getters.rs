@@ -6,7 +6,7 @@
 use crate::domain::{
     card::{
         scryfall_data::{colors::Colors, rarity::Rarities},
-        search_card::{card_filter::{builder::CardFilterBuilder, price_currency::PriceCurrency, OrderByOption}, card_type::CardType},
+        search_card::{card_filter::{builder::CardFilterBuilder, price_currency::PriceCurrency, CardSortKey}, card_type::CardType},
     },
     deck::Format,
 };
@@ -347,7 +347,7 @@ impl CardFilterBuilder {
     }
 
     /// Returns the order_by value.
-    pub fn order_by(&self) -> Option<OrderByOption> {
+    pub fn order_by(&self) -> Option<CardSortKey> {
         self.order_by
     }
 
