@@ -30,7 +30,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_core::domain::card::scryfall_data::colors::Colors;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_SWIPE_SELECT;
@@ -70,7 +70,7 @@ impl SwipeMode {
 
     /// Applies this mode's always-on constraint to the builder. Mirrors the
     /// per-field typeahead filters in `deck_fields.rs`.
-    fn apply(&self, builder: &mut CardFilterBuilder) {
+    fn apply(&self, builder: &mut CardQueryBuilder) {
         match self {
             Self::Commander(format) => {
                 builder.set_is_commander_in_format(*format);
@@ -91,10 +91,10 @@ impl SwipeMode {
 
 /// Layers the mode constraint, the EDHREC-order default, no-tokens, and
 /// pagination onto a user-built filter.
-fn mode_filter(mode: &SwipeMode, mut builder: CardFilterBuilder, offset: u32) -> CardFilterBuilder {
+fn mode_filter(mode: &SwipeMode, mut builder: CardQueryBuilder, offset: u32) -> CardQueryBuilder {
     mode.apply(&mut builder);
-    if builder.order_by().is_none() {
-        builder.set_order_by(CardSortKey::EdhrecRank);
+    if builder.sort().is_none() {
+        builder.set_sort(CardSortKey::EdhrecRank);
         builder.set_ascending(true);
     }
     builder.set_is_token(false);
@@ -122,8 +122,8 @@ pub(crate) fn SwipeSelect(
     // CardFilterSheet operates here without clobbering the app-wide add-screen
     // filter. Persists across open/close because this component stays mounted.
     let mut filter_builder = use_signal(|| {
-        let mut b = CardFilterBuilder::new();
-        b.set_order_by(CardSortKey::EdhrecRank)
+        let mut b = CardQueryBuilder::new();
+        b.set_sort(CardSortKey::EdhrecRank)
             .set_ascending(true);
         b
     });
@@ -284,7 +284,7 @@ pub(crate) fn SwipeSelect(
         filter_builder.write().clear();
         filter_builder
             .write()
-            .set_order_by(CardSortKey::EdhrecRank)
+            .set_sort(CardSortKey::EdhrecRank)
             .set_ascending(true);
         filter_reset_counter.set(filter_reset_counter() + 1);
     };

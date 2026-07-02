@@ -2,7 +2,7 @@ use crate::domain::{
     card::{
         scryfall_data::{colors::Colors, rarity::Rarities},
         search_card::{
-            card_filter::{price_currency::PriceCurrency, CardFilter, CardSortKey},
+            card_filter::{criteria::CardCriteria, price_currency::PriceCurrency},
             card_type::CardType,
         },
     },
@@ -10,7 +10,7 @@ use crate::domain::{
 };
 
 #[allow(missing_docs)]
-impl CardFilter {
+impl CardCriteria {
     // text
     pub fn name_contains(&self) -> Option<&str> {
         self.name_contains.as_deref()
@@ -251,25 +251,4 @@ impl CardFilter {
         self.artist_excludes_any.as_deref()
     }
 
-    // config
-    pub fn limit(&self) -> u32 {
-        self.limit
-    }
-
-    pub fn offset(&self) -> u32 {
-        self.offset
-    }
-
-    pub fn order_by(&self) -> Option<CardSortKey> {
-        self.order_by
-    }
-
-    pub fn ascending(&self) -> bool {
-        self.ascending
-    }
-
-    /// Deck-aware synergy membership mode (see [`CardFilter`] field docs).
-    pub fn synergy(&self) -> bool {
-        self.synergy
-    }
 }

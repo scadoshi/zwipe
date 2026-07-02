@@ -8,10 +8,10 @@
 //! Text filters (`set_name_contains`, etc.) treat empty strings as `None`
 //! to avoid ineffective filters.
 
-use super::{CardFilterBuilder, CardType, Colors, Format, CardSortKey, PriceCurrency};
+use super::{CardQueryBuilder, CardType, Colors, Format, CardSortKey, PriceCurrency};
 use crate::domain::card::scryfall_data::rarity::Rarities;
 
-impl CardFilterBuilder {
+impl CardQueryBuilder {
     // =================================
     // Text Filter Setters
     // =================================
@@ -724,14 +724,14 @@ impl CardFilterBuilder {
     }
 
     /// Sets result ordering (name, CMC, rarity, etc.).
-    pub fn set_order_by(&mut self, order_by: CardSortKey) -> &mut Self {
-        self.order_by = Some(order_by);
+    pub fn set_sort(&mut self, sort: CardSortKey) -> &mut Self {
+        self.sort = Some(sort);
         self
     }
 
-    /// Clears the order_by filter.
-    pub fn unset_order_by(&mut self) -> &mut Self {
-        self.order_by = None;
+    /// Clears the sort filter.
+    pub fn unset_sort(&mut self) -> &mut Self {
+        self.sort = None;
         self
     }
 
@@ -991,7 +991,7 @@ impl CardFilterBuilder {
             promo: self.promo,
             content_warning: self.content_warning,
             language: self.language.clone(),
-            order_by: self.order_by,
+            sort: self.sort,
             ascending: self.ascending,
             // Synergy is a mode flag, not a search criterion: clearing the filter
             // keeps it, and it never makes the filter "active" on its own.

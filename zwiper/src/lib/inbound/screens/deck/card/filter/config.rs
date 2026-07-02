@@ -2,12 +2,12 @@
 
 use crate::inbound::components::tri_toggle::TriToggle;
 use dioxus::prelude::*;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
 /// Configuration panel with language, reprint, and promo filters.
 #[component]
 pub fn Config() -> Element {
-    let filter_builder: Signal<CardFilterBuilder> = use_context();
+    let filter_builder: Signal<CardQueryBuilder> = use_context();
 
     rsx! {
         div { class: "flex-col gap-1",

@@ -1,6 +1,6 @@
 //! Deck-aware card search.
 //!
-//! Same `CardFilter` body as the plain search, but scoped to a deck: the
+//! Same `CardQuery` body as the plain search, but scoped to a deck: the
 //! server excludes cards already in the deck (any board, plus profile slots)
 //! and defaults to synergy ordering when no explicit sort is set.
 
@@ -11,7 +11,7 @@ use tracing::info;
 use uuid::Uuid;
 use zwipe::inbound::http::{ApiError, routes::search_deck_cards_route};
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::{Card, search_card::card_filter::CardFilter};
+use zwipe_core::domain::card::{Card, search_card::card_filter::CardQuery};
 
 /// Trait for deck-aware card search.
 #[allow(missing_docs)]
@@ -19,7 +19,7 @@ pub trait ClientSearchDeckCards {
     fn search_deck_cards(
         &self,
         deck_id: Uuid,
-        card_filter: &CardFilter,
+        card_filter: &CardQuery,
         session: &Session,
     ) -> impl Future<Output = Result<(Vec<Card>, bool), ApiError>> + Send;
 }
@@ -31,7 +31,7 @@ impl ClientSearchDeckCards for ZwipeClient {
     async fn search_deck_cards(
         &self,
         deck_id: Uuid,
-        card_filter: &CardFilter,
+        card_filter: &CardQuery,
         session: &Session,
     ) -> Result<(Vec<Card>, bool), ApiError> {
         let mut url = self.app_config.backend_url.clone();

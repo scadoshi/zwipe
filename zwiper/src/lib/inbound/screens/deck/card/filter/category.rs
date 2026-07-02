@@ -2,7 +2,7 @@
 
 use dioxus::prelude::*;
 use zwipe_core::domain::card::{
-    mechanical_category::MechanicalCategory, search_card::card_filter::builder::CardFilterBuilder,
+    mechanical_category::MechanicalCategory, search_card::card_filter::builder::CardQueryBuilder,
 };
 
 use super::match_mode::MatchMode;
@@ -10,7 +10,7 @@ use super::match_mode::MatchMode;
 /// Filter component for mechanical categories with separate include and exclude grids.
 #[component]
 pub fn Category() -> Element {
-    let mut filter_builder: Signal<CardFilterBuilder> = use_context();
+    let mut filter_builder: Signal<CardQueryBuilder> = use_context();
 
     let mode = use_memo(move || {
         let fb = filter_builder();

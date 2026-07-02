@@ -4,7 +4,7 @@ use super::deck_cards::{DeckCards, extract_sets};
 use crate::outbound::client::{ZwipeClient, card::get_sets::ClientGetSets};
 use dioxus::prelude::*;
 use zwipe::inbound::http::ApiError;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
 /// Whether the set filter is in include or exclude mode.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -29,7 +29,7 @@ impl IncludeExclude {
     }
 }
 
-fn read_sets(fb: &CardFilterBuilder, mode: IncludeExclude) -> Vec<String> {
+fn read_sets(fb: &CardQueryBuilder, mode: IncludeExclude) -> Vec<String> {
     match mode {
         IncludeExclude::Include => fb.set_equals_any().map(|v| v.to_vec()).unwrap_or_default(),
         IncludeExclude::Exclude => fb
@@ -39,7 +39,7 @@ fn read_sets(fb: &CardFilterBuilder, mode: IncludeExclude) -> Vec<String> {
     }
 }
 
-fn write_sets(fb: &mut CardFilterBuilder, mode: IncludeExclude, values: Vec<String>) {
+fn write_sets(fb: &mut CardQueryBuilder, mode: IncludeExclude, values: Vec<String>) {
     fb.unset_set_equals_any();
     fb.unset_set_excludes_any();
     if !values.is_empty() {
@@ -59,7 +59,7 @@ fn write_sets(fb: &mut CardFilterBuilder, mode: IncludeExclude, values: Vec<Stri
 pub fn Set() -> Element {
     let client: Signal<ZwipeClient> = use_context();
 
-    let mut filter_builder: Signal<CardFilterBuilder> = use_context();
+    let mut filter_builder: Signal<CardQueryBuilder> = use_context();
     let deck_ctx: Option<DeckCards> = try_use_context();
 
     let all_sets: Resource<Result<Vec<String>, ApiError>> = use_resource(move || async move {

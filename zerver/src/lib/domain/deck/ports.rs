@@ -5,7 +5,7 @@
 
 use std::future::Future;
 
-use zwipe_core::domain::card::{Card, search_card::card_filter::CardFilter};
+use zwipe_core::domain::card::{Card, search_card::card_filter::CardQuery};
 use crate::domain::deck::models::{
     deck::{
         clone_deck::CloneDeckError,
@@ -224,7 +224,7 @@ pub trait DeckService: Clone + Send + Sync + 'static {
     fn search_deck_cards(
         &self,
         request: &GetDeckProfile,
-        filter: &CardFilter,
+        filter: &CardQuery,
     ) -> impl Future<Output = Result<(Vec<Card>, bool), SearchDeckCardsError>> + Send;
 
     /// Retrieves all token cards produced by the cards in a deck.

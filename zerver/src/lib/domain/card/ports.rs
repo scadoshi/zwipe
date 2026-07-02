@@ -12,7 +12,7 @@ use zwipe_core::domain::card::{
     Card,
     card_profile::CardProfile,
     scryfall_data::ScryfallData,
-    search_card::card_filter::CardFilter,
+    search_card::card_filter::CardQuery,
 };
 use crate::{
     domain::card::{
@@ -103,7 +103,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// Searches for Scryfall data matching filter criteria.
     fn search_scryfall_data(
         &self,
-        request: &CardFilter,
+        request: &CardQuery,
     ) -> impl Future<Output = Result<Vec<ScryfallData>, SearchScryfallDataError>> + Send;
 
     /// `search_scryfall_data` plus deck-aware extras: oracle_id exclusion,
@@ -113,7 +113,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// by the filter's `order_by` (or by synergy score when no sort is given).
     fn search_scryfall_data_deck_aware(
         &self,
-        request: &CardFilter,
+        request: &CardQuery,
         exclude_oracle_ids: &[uuid::Uuid],
         synergy_scores: Option<&serde_json::Value>,
         synergy_only: bool,
@@ -140,7 +140,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// Searches for complete cards matching filter criteria.
     fn search_cards(
         &self,
-        request: &CardFilter,
+        request: &CardQuery,
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
     /// Retrieves all distinct artist names from card database.
@@ -224,7 +224,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// sorted by the filter's `order_by` within that set.
     fn search_cards_deck_aware(
         &self,
-        request: &CardFilter,
+        request: &CardQuery,
         exclude_oracle_ids: &[uuid::Uuid],
         synergy_scores: Option<&serde_json::Value>,
         synergy_only: bool,
@@ -336,7 +336,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
     /// Searches for complete cards matching filter criteria.
     fn search_cards(
         &self,
-        request: &CardFilter,
+        request: &CardQuery,
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
     /// Retrieves all distinct artist names from card database.

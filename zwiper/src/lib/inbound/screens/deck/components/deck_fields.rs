@@ -13,7 +13,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::{
     Card,
     search_card::{
-        card_filter::{builder::CardFilterBuilder, error::InvalidCardFilter},
+        card_filter::{builder::CardQueryBuilder, error::InvalidCardCriteria},
         commander_eligibility::{has_choose_a_background, partner_kind},
     },
 };
@@ -205,7 +205,7 @@ pub(crate) fn DeckFields(
             }
 
             if let Some(session) = session() {
-                let mut builder = CardFilterBuilder::with_name_contains(&query);
+                let mut builder = CardQueryBuilder::with_name_contains(&query);
                 if cmd_filter_on()
                     && let Some(fmt) = selected_format()
                 {
@@ -213,7 +213,7 @@ pub(crate) fn DeckFields(
                 }
                 builder.set_limit(5);
                 let Ok(card_filter) = builder.build() else {
-                    tracing::error!("{}", InvalidCardFilter::Empty.to_string());
+                    tracing::error!("{}", InvalidCardCriteria::Empty.to_string());
                     return;
                 };
                 usage_buffer().record_search();
@@ -256,7 +256,7 @@ pub(crate) fn DeckFields(
             }
 
             if let Some(session) = session() {
-                let mut builder = CardFilterBuilder::new();
+                let mut builder = CardQueryBuilder::new();
                 if !query.is_empty() {
                     builder.set_name_contains(&query);
                 }
@@ -307,7 +307,7 @@ pub(crate) fn DeckFields(
             }
 
             if let Some(session) = session() {
-                let mut builder = CardFilterBuilder::new();
+                let mut builder = CardQueryBuilder::new();
                 if !query.is_empty() {
                     builder.set_name_contains(&query);
                 }
@@ -358,7 +358,7 @@ pub(crate) fn DeckFields(
             }
 
             if let Some(session) = session() {
-                let mut builder = CardFilterBuilder::with_name_contains(&query);
+                let mut builder = CardQueryBuilder::with_name_contains(&query);
                 if spell_filter_on() {
                     builder.set_is_signature_spell(true);
                     // Also restrict to oathbreaker's color identity

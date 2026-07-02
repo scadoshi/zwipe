@@ -15,7 +15,7 @@ use dioxus::prelude::*;
 use std::time::Duration;
 use tokio::time::interval;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::{Card, search_card::card_filter::builder::CardFilterBuilder};
+use zwipe_core::domain::card::{Card, search_card::card_filter::builder::CardQueryBuilder};
 use zwipe_core::domain::user::models::theme::ThemeConfig;
 use zwipe_core::version::version_at_least;
 
@@ -87,13 +87,13 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     use_context_provider(|| client);
 
     // card search state - used by deck card screens
-    let filter_builder = use_signal(CardFilterBuilder::default);
+    let filter_builder = use_signal(CardQueryBuilder::default);
     use_context_provider(|| filter_builder);
 
     let cards = use_signal(Vec::<Card>::new);
     use_context_provider(|| cards);
 
-    let last_search_filter: Signal<Option<CardFilterBuilder>> = use_signal(|| None);
+    let last_search_filter: Signal<Option<CardQueryBuilder>> = use_signal(|| None);
     use_context_provider(|| last_search_filter);
 
     // Home flavor card — cached above the router with a TTL (see FlavorCard).

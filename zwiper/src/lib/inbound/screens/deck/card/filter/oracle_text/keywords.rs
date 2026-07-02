@@ -7,9 +7,9 @@ use super::super::{
 use crate::outbound::client::{ZwipeClient, card::get_keywords::ClientGetKeywords};
 use dioxus::prelude::*;
 use zwipe::inbound::http::ApiError;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
-fn read_keywords(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<String> {
+fn read_keywords(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
     match mode {
         MatchMode::Any => fb
             .keywords_contains_any()
@@ -22,7 +22,7 @@ fn read_keywords(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<String> {
     }
 }
 
-fn write_keywords(fb: &mut CardFilterBuilder, mode: MatchMode, values: Vec<String>) {
+fn write_keywords(fb: &mut CardQueryBuilder, mode: MatchMode, values: Vec<String>) {
     fb.unset_keywords_contains_any();
     fb.unset_keywords_contains_all();
     if !values.is_empty() {
@@ -37,13 +37,13 @@ fn write_keywords(fb: &mut CardFilterBuilder, mode: MatchMode, values: Vec<Strin
     }
 }
 
-fn read_excluded(fb: &CardFilterBuilder) -> Vec<String> {
+fn read_excluded(fb: &CardQueryBuilder) -> Vec<String> {
     fb.keywords_excludes()
         .map(|v| v.to_vec())
         .unwrap_or_default()
 }
 
-fn write_excluded(fb: &mut CardFilterBuilder, values: Vec<String>) {
+fn write_excluded(fb: &mut CardQueryBuilder, values: Vec<String>) {
     if values.is_empty() {
         fb.unset_keywords_excludes();
     } else {
@@ -55,7 +55,7 @@ fn write_excluded(fb: &mut CardFilterBuilder, values: Vec<String>) {
 /// Separate include and exclude sections, each with its own search.
 #[component]
 pub(crate) fn Keywords() -> Element {
-    let mut filter_builder: Signal<CardFilterBuilder> = use_context();
+    let mut filter_builder: Signal<CardQueryBuilder> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let filter_reset: Signal<u32> = use_context();
     let deck_ctx: Option<DeckCards> = try_use_context();

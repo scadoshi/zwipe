@@ -15,8 +15,11 @@ use crate::domain::{
         },
         search_card::{
             card_filter::{
-                error::InvalidCardFilter, price_currency::PriceCurrency, strip_punctuation,
-                CardFilter, CardSortKey,
+                criteria::CardCriteria,
+                error::InvalidCardCriteria,
+                price_currency::PriceCurrency,
+                query::{CardQuery, Limit},
+                strip_punctuation, CardSortKey,
             },
             card_type::CardType,
         },
@@ -34,7 +37,7 @@ fn check_include_exclude_clash<T: PartialEq + Debug>(
     field: &'static str,
     includes: &[Option<&[T]>],
     excludes: Option<&[T]>,
-) -> Result<(), InvalidCardFilter> {
+) -> Result<(), InvalidCardCriteria> {
     let Some(excludes) = excludes else {
         return Ok(());
     };
@@ -53,7 +56,7 @@ fn check_include_exclude_clash<T: PartialEq + Debug>(
         .map(|v| format!("{v:?}"))
         .collect::<Vec<_>>()
         .join(", ");
-    Err(InvalidCardFilter::Contradiction { field, values })
+    Err(InvalidCardCriteria::Contradiction { field, values })
 }
 
 /// Errors if a substring `contains` filter and its `not_contains` counterpart
@@ -66,14 +69,14 @@ fn check_contains_not_contains_clash(
     field: &'static str,
     contains: Option<&str>,
     not_contains: Option<&str>,
-) -> Result<(), InvalidCardFilter> {
+) -> Result<(), InvalidCardCriteria> {
     let (Some(contains), Some(not_contains)) = (contains, not_contains) else {
         return Ok(());
     };
     let contains = strip_punctuation(contains.trim()).to_lowercase();
     let not_contains = strip_punctuation(not_contains.trim()).to_lowercase();
     if !not_contains.is_empty() && contains.contains(&not_contains) {
-        return Err(InvalidCardFilter::Contradiction {
+        return Err(InvalidCardCriteria::Contradiction {
             field,
             values: not_contains,
         });
@@ -96,12 +99,12 @@ fn check_contains_not_contains_clash(
 ///
 /// **Quick constructor** - Use `with_*` methods for single-filter searches:
 /// ```rust,ignore
-/// let filter = CardFilterBuilder::with_name_contains("Lightning Bolt").build()?;
+/// let filter = CardQueryBuilder::with_name_contains("Lightning Bolt").build()?;
 /// ```
 ///
 /// **Fluent builder** - Chain `set_*` methods for complex searches:
 /// ```rust,ignore
-/// let filter = CardFilterBuilder::new()
+/// let filter = CardQueryBuilder::new()
 ///     .set_name_contains("Dragon")
 ///     .set_color_identity_within([Color::Red])
 ///     .set_cmc_range((4.0, 7.0))
@@ -124,7 +127,7 @@ fn check_contains_not_contains_clash(
 /// - `offset`: 0
 /// - `ascending`: `true`
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub struct CardFilterBuilder {
+pub struct CardQueryBuilder {
     // Combat stats
     // combat
     power_equals: Option<i32>,
@@ -200,12 +203,12 @@ pub struct CardFilterBuilder {
     // config
     limit: u32,
     offset: u32,
-    order_by: Option<CardSortKey>,
+    sort: Option<CardSortKey>,
     ascending: bool,
     synergy: bool,
 }
 
-impl Default for CardFilterBuilder {
+impl Default for CardQueryBuilder {
     fn default() -> Self {
         Self {
             power_equals: None,
@@ -266,14 +269,14 @@ impl Default for CardFilterBuilder {
             mechanical_categories_excludes: None,
             limit: 25,
             offset: 0,
-            order_by: None,
+            sort: None,
             ascending: true,
             synergy: false,
         }
     }
 }
 
-impl CardFilterBuilder {
+impl CardQueryBuilder {
     /// Creates a new filter builder with default values.
     ///
     /// Defaults: playable cards only, English, non-digital, non-promo, 25 result limit.
@@ -310,16 +313,16 @@ impl CardFilterBuilder {
     // Useful for single-filter searches.
 
     /// Creates builder with name filter (case-insensitive substring match).
-    pub fn with_name_contains(name_contains: impl Into<String>) -> CardFilterBuilder {
+    pub fn with_name_contains(name_contains: impl Into<String>) -> CardQueryBuilder {
         let s = name_contains.into();
-        CardFilterBuilder {
+        CardQueryBuilder {
             name_contains: if s.is_empty() { None } else { Some(s) },
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder matching any of the provided oracle text substrings (keyword abilities).
-    pub fn with_oracle_text_contains_any<I, S>(oracle_text_contains_any: I) -> CardFilterBuilder
+    pub fn with_oracle_text_contains_any<I, S>(oracle_text_contains_any: I) -> CardQueryBuilder
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
@@ -327,14 +330,14 @@ impl CardFilterBuilder {
         let v: Vec<String> = oracle_text_contains_any.into_iter()
             .map(|s| s.into())
             .collect();
-        CardFilterBuilder {
+        CardQueryBuilder {
             oracle_text_contains_any: if v.is_empty() { None } else { Some(v) },
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder requiring all provided oracle text substrings to be present (AND logic).
-    pub fn with_oracle_text_contains_all<I, S>(oracle_text_contains_all: I) -> CardFilterBuilder
+    pub fn with_oracle_text_contains_all<I, S>(oracle_text_contains_all: I) -> CardQueryBuilder
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
@@ -342,60 +345,60 @@ impl CardFilterBuilder {
         let v: Vec<String> = oracle_text_contains_all.into_iter()
             .map(|s| s.into())
             .collect();
-        CardFilterBuilder {
+        CardQueryBuilder {
             oracle_text_contains_all: if v.is_empty() { None } else { Some(v) },
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder matching any of the provided keywords (OR logic on keywords array).
-    pub fn with_keywords_contains_any<I, S>(keywords_contains_any: I) -> CardFilterBuilder
+    pub fn with_keywords_contains_any<I, S>(keywords_contains_any: I) -> CardQueryBuilder
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        CardFilterBuilder {
+        CardQueryBuilder {
             keywords_contains_any: Some(
                 keywords_contains_any.into_iter().map(Into::into).collect(),
             ),
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder requiring all provided keywords to be present (AND logic on keywords array).
-    pub fn with_keywords_contains_all<I, S>(keywords_contains_all: I) -> CardFilterBuilder
+    pub fn with_keywords_contains_all<I, S>(keywords_contains_all: I) -> CardQueryBuilder
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        CardFilterBuilder {
+        CardQueryBuilder {
             keywords_contains_all: Some(
                 keywords_contains_all.into_iter().map(Into::into).collect(),
             ),
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder matching cards legal in any of the provided formats (OR logic on legalities JSONB).
-    pub fn with_legalities_contains_any<I, S>(legalities_contains_any: I) -> CardFilterBuilder
+    pub fn with_legalities_contains_any<I, S>(legalities_contains_any: I) -> CardQueryBuilder
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        CardFilterBuilder {
+        CardQueryBuilder {
             legalities_contains_any: Some(
                 legalities_contains_any.into_iter().map(Into::into).collect(),
             ),
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder with oracle text filter (ability text substring match).
-    pub fn with_oracle_text_contains(oracle_text_contains: impl Into<String>) -> CardFilterBuilder {
+    pub fn with_oracle_text_contains(oracle_text_contains: impl Into<String>) -> CardQueryBuilder {
         let s = oracle_text_contains.into();
-        CardFilterBuilder {
+        CardQueryBuilder {
             oracle_text_contains: if s.is_empty() { None } else { Some(s) },
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
@@ -417,16 +420,16 @@ impl CardFilterBuilder {
     }
 
     /// Creates builder with type line filter (e.g., "Legendary Creature — Dragon").
-    pub fn with_type_line_contains(type_line_contains: impl Into<String>) -> CardFilterBuilder {
+    pub fn with_type_line_contains(type_line_contains: impl Into<String>) -> CardQueryBuilder {
         let s = type_line_contains.into();
-        CardFilterBuilder {
+        CardQueryBuilder {
             type_line_contains: if s.is_empty() { None } else { Some(s) },
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder matching any of the provided type line substrings.
-    pub fn with_type_line_contains_any<I, S>(type_line_contains_any: I) -> CardFilterBuilder
+    pub fn with_type_line_contains_any<I, S>(type_line_contains_any: I) -> CardQueryBuilder
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
@@ -434,246 +437,268 @@ impl CardFilterBuilder {
         let v: Vec<String> = type_line_contains_any.into_iter()
             .map(|s| s.into())
             .collect();
-        CardFilterBuilder {
+        CardQueryBuilder {
             type_line_contains_any: if v.is_empty() { None } else { Some(v) },
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder matching any of the provided card types (Creature, Instant, etc.).
-    pub fn with_card_type_contains_any<I>(card_type_contains_any: I) -> CardFilterBuilder
+    pub fn with_card_type_contains_any<I>(card_type_contains_any: I) -> CardQueryBuilder
     where
         I: IntoIterator<Item = CardType>,
     {
-        CardFilterBuilder {
+        CardQueryBuilder {
             card_type_contains_any: Some(card_type_contains_any.into_iter().collect()),
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder requiring all provided type line substrings to be present (AND logic).
-    pub fn with_type_line_contains_all<I, S>(type_line_contains_all: I) -> CardFilterBuilder
+    pub fn with_type_line_contains_all<I, S>(type_line_contains_all: I) -> CardQueryBuilder
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        CardFilterBuilder {
+        CardQueryBuilder {
             type_line_contains_all: Some(
                 type_line_contains_all.into_iter().map(Into::into).collect(),
             ),
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder requiring all provided card types to be present (AND logic).
-    pub fn with_card_type_contains_all<I>(card_type_contains_all: I) -> CardFilterBuilder
+    pub fn with_card_type_contains_all<I>(card_type_contains_all: I) -> CardQueryBuilder
     where
         I: IntoIterator<Item = CardType>,
     {
-        CardFilterBuilder {
+        CardQueryBuilder {
             card_type_contains_all: Some(card_type_contains_all.into_iter().collect()),
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder matching any of the provided set codes (e.g., "MH2", "ONE").
     pub fn with_set_contains(
         set_equals_any: impl IntoIterator<Item = impl Into<String>>,
-    ) -> CardFilterBuilder {
-        CardFilterBuilder {
+    ) -> CardQueryBuilder {
+        CardQueryBuilder {
             set_equals_any: Some(set_equals_any.into_iter().map(|x| x.into()).collect()),
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder matching any of the provided rarities.
-    pub fn with_rarity_equals_any(rarity_equals_any: Rarities) -> CardFilterBuilder {
+    pub fn with_rarity_equals_any(rarity_equals_any: Rarities) -> CardQueryBuilder {
         let rarity_equals_any = if rarity_equals_any.is_empty() {
             None
         } else {
             Some(rarity_equals_any)
         };
-        CardFilterBuilder {
+        CardQueryBuilder {
             rarity_equals_any,
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder with exact CMC (converted mana cost) filter.
-    pub fn with_cmc_equals(cmc_equals: f64) -> CardFilterBuilder {
-        CardFilterBuilder {
+    pub fn with_cmc_equals(cmc_equals: f64) -> CardQueryBuilder {
+        CardQueryBuilder {
             cmc_equals: Some(cmc_equals),
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder with CMC range filter (inclusive).
-    pub fn with_cmc_range(cmc_range: (f64, f64)) -> CardFilterBuilder {
-        CardFilterBuilder {
+    pub fn with_cmc_range(cmc_range: (f64, f64)) -> CardQueryBuilder {
+        CardQueryBuilder {
             cmc_range: Some(cmc_range),
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder matching exact color identity (e.g., exactly W+U, not mono-W).
-    pub fn with_color_identity_equals<I>(color_identity_equals: I) -> CardFilterBuilder
+    pub fn with_color_identity_equals<I>(color_identity_equals: I) -> CardQueryBuilder
     where
         I: IntoIterator<Item = Color>,
     {
-        CardFilterBuilder {
+        CardQueryBuilder {
             color_identity_equals: Some(color_identity_equals.into_iter().collect()),
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder matching cards within color identity (subset of provided colors).
     ///
     /// Example: `within([R, G])` matches mono-R, mono-G, R+G, and colorless.
-    pub fn with_color_identity_within<I>(color_identity_within: I) -> CardFilterBuilder
+    pub fn with_color_identity_within<I>(color_identity_within: I) -> CardQueryBuilder
     where
         I: IntoIterator<Item = Color>,
     {
-        CardFilterBuilder {
+        CardQueryBuilder {
             color_identity_within: Some(color_identity_within.into_iter().collect()),
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder matching cards that produce any of the listed mana colors (OR logic).
     ///
     /// Example: `with_produced_mana_contains_any(["R", "G"])` matches cards producing Red or Green.
-    pub fn with_produced_mana_contains_any<I, S>(produced_mana_contains_any: I) -> CardFilterBuilder
+    pub fn with_produced_mana_contains_any<I, S>(produced_mana_contains_any: I) -> CardQueryBuilder
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        CardFilterBuilder {
+        CardQueryBuilder {
             produced_mana_contains_any: Some(
                 produced_mana_contains_any
                     .into_iter()
                     .map(Into::into)
                     .collect(),
             ),
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder matching cards that produce all of the listed mana colors (AND logic).
     ///
     /// Example: `with_produced_mana_contains_all(["W", "U"])` matches cards producing both White and Blue.
-    pub fn with_produced_mana_contains_all<I, S>(produced_mana_contains_all: I) -> CardFilterBuilder
+    pub fn with_produced_mana_contains_all<I, S>(produced_mana_contains_all: I) -> CardQueryBuilder
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        CardFilterBuilder {
+        CardQueryBuilder {
             produced_mana_contains_all: Some(
                 produced_mana_contains_all
                     .into_iter()
                     .map(Into::into)
                     .collect(),
             ),
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder with exact power filter (creature combat stat).
-    pub fn with_power_equals(power_equals: i32) -> CardFilterBuilder {
-        CardFilterBuilder {
+    pub fn with_power_equals(power_equals: i32) -> CardQueryBuilder {
+        CardQueryBuilder {
             power_equals: Some(power_equals),
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder with power range filter (inclusive).
-    pub fn with_power_range(power_range: (i32, i32)) -> CardFilterBuilder {
-        CardFilterBuilder {
+    pub fn with_power_range(power_range: (i32, i32)) -> CardQueryBuilder {
+        CardQueryBuilder {
             power_range: Some(power_range),
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder with exact toughness filter.
-    pub fn with_toughness_equals(toughness_equals: i32) -> CardFilterBuilder {
-        CardFilterBuilder {
+    pub fn with_toughness_equals(toughness_equals: i32) -> CardQueryBuilder {
+        CardQueryBuilder {
             toughness_equals: Some(toughness_equals),
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder with toughness range filter (inclusive).
-    pub fn with_toughness_range(toughness_range: (i32, i32)) -> CardFilterBuilder {
-        CardFilterBuilder {
+    pub fn with_toughness_range(toughness_range: (i32, i32)) -> CardQueryBuilder {
+        CardQueryBuilder {
             toughness_range: Some(toughness_range),
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder filtering by token status (tokens vs. real cards).
-    pub fn with_is_token(is_token: bool) -> CardFilterBuilder {
-        CardFilterBuilder {
+    pub fn with_is_token(is_token: bool) -> CardQueryBuilder {
+        CardQueryBuilder {
             is_token: Some(is_token),
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder filtering by playability (excludes un-cards, silver-bordered).
-    pub fn with_is_playable(is_playable: bool) -> CardFilterBuilder {
-        CardFilterBuilder {
+    pub fn with_is_playable(is_playable: bool) -> CardQueryBuilder {
+        CardQueryBuilder {
             is_playable: Some(is_playable),
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder filtering by digital-only status (Arena/MTGO exclusives).
-    pub fn with_digital(digital: bool) -> CardFilterBuilder {
-        CardFilterBuilder {
+    pub fn with_digital(digital: bool) -> CardQueryBuilder {
+        CardQueryBuilder {
             digital: Some(digital),
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder filtering by oversized card status.
-    pub fn with_oversized(oversized: bool) -> CardFilterBuilder {
-        CardFilterBuilder {
+    pub fn with_oversized(oversized: bool) -> CardQueryBuilder {
+        CardQueryBuilder {
             oversized: Some(oversized),
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder filtering by promotional card status.
-    pub fn with_promo(promo: bool) -> CardFilterBuilder {
-        CardFilterBuilder {
+    pub fn with_promo(promo: bool) -> CardQueryBuilder {
+        CardQueryBuilder {
             promo: Some(promo),
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder filtering by content warning flag.
-    pub fn with_content_warning(content_warning: bool) -> CardFilterBuilder {
-        CardFilterBuilder {
+    pub fn with_content_warning(content_warning: bool) -> CardQueryBuilder {
+        CardQueryBuilder {
             content_warning: Some(content_warning),
-            ..CardFilterBuilder::default()
+            ..CardQueryBuilder::default()
         }
     }
 
     /// Creates builder with specific result ordering (name, CMC, rarity, etc.).
-    pub fn with_order_by(order_by: CardSortKey) -> CardFilterBuilder {
-        CardFilterBuilder {
-            order_by: Some(order_by),
-            ..CardFilterBuilder::default()
+    pub fn with_sort(sort: CardSortKey) -> CardQueryBuilder {
+        CardQueryBuilder {
+            sort: Some(sort),
+            ..CardQueryBuilder::default()
         }
     }
 
-    /// Builds the final `CardFilter` with validation.
+    /// Builds a [`CardQuery`] (the server search request) with validation.
+    ///
+    /// The builder's `limit` is clamped into a bounded [`Limit`] here — the
+    /// server path is the only one that can carry pagination at all.
     ///
     /// # Errors
     ///
-    /// Returns [`InvalidCardFilter::Empty`] if no search criteria are set
-    /// (only config fields like limit/offset are present).
-    pub fn build(&self) -> Result<CardFilter, InvalidCardFilter> {
+    /// Returns [`InvalidCardCriteria::Empty`] if no search criteria are set
+    /// (only config fields like limit/offset are present), or
+    /// [`InvalidCardCriteria::Contradiction`] for include/exclude clashes.
+    pub fn build(&self) -> Result<CardQuery, InvalidCardCriteria> {
+        Ok(CardQuery::new(
+            self.build_criteria()?,
+            Limit::new(self.limit),
+            self.offset,
+            self.sort,
+            self.ascending,
+            self.synergy,
+        ))
+    }
+
+    /// Builds bare [`CardCriteria`] for the in-memory path
+    /// ([`Cards`](crate::domain::card::search_card::cards::Cards) operations).
+    /// Same validation as [`build`](Self::build); no pagination or ordering.
+    ///
+    /// # Errors
+    ///
+    /// Same as [`build`](Self::build).
+    pub fn build_criteria(&self) -> Result<CardCriteria, InvalidCardCriteria> {
         if self.is_empty() {
-            return Err(InvalidCardFilter::Empty);
+            return Err(InvalidCardCriteria::Empty);
         }
 
         // Reject include/exclude contradictions: a value in both an include and
@@ -774,7 +799,7 @@ impl CardFilterBuilder {
             }).filter(|v: &Vec<String>| !v.is_empty())
         };
 
-        Ok(CardFilter {
+        Ok(CardCriteria {
             power_equals: self.power_equals,
             power_range: self.power_range,
             toughness_equals: self.toughness_equals,
@@ -831,11 +856,6 @@ impl CardFilterBuilder {
             mechanical_categories_contains_any: self.mechanical_categories_contains_any.clone(),
             mechanical_categories_contains_all: self.mechanical_categories_contains_all.clone(),
             mechanical_categories_excludes: self.mechanical_categories_excludes.clone(),
-            limit: self.limit,
-            offset: self.offset,
-            order_by: self.order_by,
-            ascending: self.ascending,
-            synergy: self.synergy,
         })
     }
 }
@@ -846,7 +866,7 @@ mod tests {
 
     #[test]
     fn exclude_only_is_not_empty() {
-        let mut builder = CardFilterBuilder::new();
+        let mut builder = CardQueryBuilder::new();
         builder.set_keywords_excludes(vec!["haste"]);
         assert!(!builder.is_empty(), "keywords_excludes alone should not be empty");
         assert!(builder.build().is_ok(), "keywords_excludes alone should build");
@@ -854,7 +874,7 @@ mod tests {
 
     #[test]
     fn include_and_exclude_builds() {
-        let mut builder = CardFilterBuilder::new();
+        let mut builder = CardQueryBuilder::new();
         builder.set_keywords_contains_any(vec!["flying"]);
         builder.set_keywords_excludes(vec!["haste"]);
         assert!(!builder.is_empty());
@@ -863,11 +883,11 @@ mod tests {
 
     #[test]
     fn card_type_include_exclude_clash_errors() {
-        let mut builder = CardFilterBuilder::new();
+        let mut builder = CardQueryBuilder::new();
         builder.set_card_type_contains_any(vec![CardType::Creature, CardType::Land]);
         builder.set_card_type_excludes_any(vec![CardType::Land]);
         assert!(
-            matches!(builder.build(), Err(InvalidCardFilter::Contradiction { field, .. }) if field == "card types"),
+            matches!(builder.build(), Err(InvalidCardCriteria::Contradiction { field, .. }) if field == "card types"),
             "including and excluding Land must be rejected",
         );
     }
@@ -875,7 +895,7 @@ mod tests {
     #[test]
     fn card_type_include_exclude_different_values_builds() {
         // Include creatures, exclude lands — different values, no clash.
-        let mut builder = CardFilterBuilder::new();
+        let mut builder = CardQueryBuilder::new();
         builder.set_card_type_contains_all(vec![CardType::Creature]);
         builder.set_card_type_excludes_any(vec![CardType::Land]);
         assert!(builder.build().is_ok());
@@ -883,22 +903,22 @@ mod tests {
 
     #[test]
     fn keyword_include_exclude_clash_errors() {
-        let mut builder = CardFilterBuilder::new();
+        let mut builder = CardQueryBuilder::new();
         builder.set_keywords_contains_any(vec!["flying"]);
         builder.set_keywords_excludes(vec!["flying"]);
         assert!(matches!(
             builder.build(),
-            Err(InvalidCardFilter::Contradiction { .. })
+            Err(InvalidCardCriteria::Contradiction { .. })
         ));
     }
 
     #[test]
     fn name_contains_and_not_contains_same_errors() {
-        let mut builder = CardFilterBuilder::new();
+        let mut builder = CardQueryBuilder::new();
         builder.set_name_contains("test");
         builder.set_name_not_contains("test");
         assert!(
-            matches!(builder.build(), Err(InvalidCardFilter::Contradiction { field, .. }) if field == "name"),
+            matches!(builder.build(), Err(InvalidCardCriteria::Contradiction { field, .. }) if field == "name"),
             "name contains + doesn't-contain the same term must be rejected",
         );
     }
@@ -907,18 +927,18 @@ mod tests {
     fn name_not_contains_substring_of_contains_errors() {
         // "contains test" already implies "contains tes", so excluding "tes"
         // matches zero cards.
-        let mut builder = CardFilterBuilder::new();
+        let mut builder = CardQueryBuilder::new();
         builder.set_name_contains("Test");
         builder.set_name_not_contains("tes");
         assert!(matches!(
             builder.build(),
-            Err(InvalidCardFilter::Contradiction { .. })
+            Err(InvalidCardCriteria::Contradiction { .. })
         ));
     }
 
     #[test]
     fn name_contains_and_not_contains_different_builds() {
-        let mut builder = CardFilterBuilder::new();
+        let mut builder = CardQueryBuilder::new();
         builder.set_name_contains("dragon");
         builder.set_name_not_contains("goblin");
         assert!(builder.build().is_ok());
@@ -928,7 +948,7 @@ mod tests {
     fn synergy_is_a_mode_not_a_criterion() {
         // Synergy alone must not make the filter "active" — it's a server-side
         // membership mode, not a search criterion.
-        let mut builder = CardFilterBuilder::new();
+        let mut builder = CardQueryBuilder::new();
         builder.set_synergy(true);
         assert!(builder.is_empty());
         assert!(builder.build().is_err());
@@ -936,7 +956,7 @@ mod tests {
 
     #[test]
     fn synergy_round_trips_through_build() {
-        let mut builder = CardFilterBuilder::with_name_contains("bolt");
+        let mut builder = CardQueryBuilder::with_name_contains("bolt");
         builder.set_synergy(true);
         assert!(builder.build().unwrap().synergy());
     }

@@ -1,7 +1,7 @@
 //! Produced mana filter component.
 
 use dioxus::prelude::*;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
 use super::super::match_mode::MatchMode;
 
@@ -15,7 +15,7 @@ const MANA_SYMBOLS: &[(&str, &str)] = &[
     ("C", "Colorless"),
 ];
 
-fn read_produced_mana(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<String> {
+fn read_produced_mana(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
     match mode {
         MatchMode::Any => fb
             .produced_mana_contains_any()
@@ -28,7 +28,7 @@ fn read_produced_mana(fb: &CardFilterBuilder, mode: MatchMode) -> Vec<String> {
     }
 }
 
-fn write_produced_mana(fb: &mut CardFilterBuilder, mode: MatchMode, values: Vec<String>) {
+fn write_produced_mana(fb: &mut CardQueryBuilder, mode: MatchMode, values: Vec<String>) {
     fb.unset_produced_mana_contains_any();
     fb.unset_produced_mana_contains_all();
     if !values.is_empty() {
@@ -43,13 +43,13 @@ fn write_produced_mana(fb: &mut CardFilterBuilder, mode: MatchMode, values: Vec<
     }
 }
 
-fn read_excluded(fb: &CardFilterBuilder) -> Vec<String> {
+fn read_excluded(fb: &CardQueryBuilder) -> Vec<String> {
     fb.produced_mana_excludes()
         .map(|v| v.to_vec())
         .unwrap_or_default()
 }
 
-fn write_excluded(fb: &mut CardFilterBuilder, values: Vec<String>) {
+fn write_excluded(fb: &mut CardQueryBuilder, values: Vec<String>) {
     if values.is_empty() {
         fb.unset_produced_mana_excludes();
     } else {
@@ -60,7 +60,7 @@ fn write_excluded(fb: &mut CardFilterBuilder, values: Vec<String>) {
 /// Produced mana filter with separate include and exclude chip grids.
 #[component]
 pub(crate) fn ProducedManaFilter() -> Element {
-    let mut filter_builder: Signal<CardFilterBuilder> = use_context();
+    let mut filter_builder: Signal<CardQueryBuilder> = use_context();
 
     let mut produced_mana_mode = use_signal(|| {
         if filter_builder().produced_mana_contains_all().is_some() {

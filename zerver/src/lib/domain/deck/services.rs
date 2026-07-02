@@ -3,7 +3,7 @@ use std::fmt::Debug;
 
 use uuid::Uuid;
 
-use zwipe_core::domain::card::{Card, search_card::card_filter::CardFilter};
+use zwipe_core::domain::card::{Card, search_card::card_filter::CardQuery};
 use crate::domain::{
     card::{
         models::synergy::SynergyPayload,
@@ -260,7 +260,7 @@ where
     async fn search_deck_cards(
         &self,
         request: &GetDeckProfile,
-        filter: &CardFilter,
+        filter: &CardQuery,
     ) -> Result<(Vec<Card>, bool), SearchDeckCardsError> {
         let deck_profile = self.deck_repo.get_deck_profile(request).await?;
         if request.user_id != deck_profile.user_id {
@@ -305,7 +305,7 @@ where
         // semantics (full pool) — which is also the cold-cache fallback for ON.
         let synergy_only = filter.synergy();
         let synergy_scores: Option<serde_json::Value> = match deck_profile.commander_id {
-            Some(commander_id) if synergy_only || filter.order_by().is_none() => self
+            Some(commander_id) if synergy_only || filter.sort().is_none() => self
                 .card_repo
                 .commander_synergy_payload(commander_id)
                 .await?

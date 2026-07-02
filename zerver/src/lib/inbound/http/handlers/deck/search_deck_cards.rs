@@ -14,7 +14,7 @@ use crate::{
 };
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::{
-    card::{Card, search_card::card_filter::CardFilter},
+    card::{Card, search_card::card_filter::CardQuery},
     deck::requests::get_deck_profile::GetDeckProfile,
 };
 #[cfg(feature = "zerver")]
@@ -39,7 +39,7 @@ impl From<SearchDeckCardsError> for ApiError {
     }
 }
 
-/// Deck-aware card search: same `CardFilter` body as the plain search, but
+/// Deck-aware card search: same `CardQuery` body as the plain search, but
 /// scoped to a deck — cards already in the deck (any board, plus profile
 /// slots) are excluded, and results default to synergy ordering when no
 /// explicit `order_by` is set.
@@ -48,7 +48,7 @@ pub async fn search_deck_cards<AS, US, HS, CS, DS>(
     user: AuthenticatedUser,
     State(state): State<AppState<AS, US, HS, CS, DS>>,
     Path(deck_id): Path<Uuid>,
-    Json(filter): Json<CardFilter>,
+    Json(filter): Json<CardQuery>,
 ) -> Result<(StatusCode, [(&'static str, &'static str); 1], Json<Vec<Card>>), ApiError>
 where
     AS: AuthService,

@@ -6,8 +6,8 @@ pub mod card_filter;
 pub mod commander_eligibility;
 /// Card type enum (Creature, Instant, Sorcery, etc.).
 pub mod card_type;
-/// In-memory card filtering trait for Vec<Card>.
-pub mod filter_cards;
+/// In-memory card collection (`Cards`) and deck-entry sorting.
+pub mod cards;
 /// In-memory card grouping trait for Vec<Card>.
 pub mod group_cards;
 /// Stop words for card text tokenization (shared with frontend).

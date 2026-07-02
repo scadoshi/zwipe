@@ -6,14 +6,14 @@ use std::future::Future;
 use tracing::info;
 use zwipe::inbound::http::{ApiError, routes::search_cards_route};
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::{Card, search_card::card_filter::CardFilter};
+use zwipe_core::domain::card::{Card, search_card::card_filter::CardQuery};
 
 /// Trait for searching cards with filter criteria.
 #[allow(missing_docs)]
 pub trait ClientSearchCards {
     fn search_cards(
         &self,
-        card_filter: &CardFilter,
+        card_filter: &CardQuery,
         session: &Session,
     ) -> impl Future<Output = Result<Vec<Card>, ApiError>> + Send;
 }
@@ -21,7 +21,7 @@ pub trait ClientSearchCards {
 impl ClientSearchCards for ZwipeClient {
     async fn search_cards(
         &self,
-        card_filter: &CardFilter,
+        card_filter: &CardQuery,
         session: &Session,
     ) -> Result<Vec<Card>, ApiError> {
         let mut url = self.app_config.backend_url.clone();

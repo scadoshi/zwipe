@@ -1,12 +1,12 @@
 //! Card name filter component.
 
 use dioxus::prelude::*;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
 /// Filter component for card name search.
 #[component]
 pub fn Name() -> Element {
-    let mut filter_builder: Signal<CardFilterBuilder> = use_context();
+    let mut filter_builder: Signal<CardQueryBuilder> = use_context();
 
     let name_value = filter_builder().name_contains().unwrap_or("").to_string();
 

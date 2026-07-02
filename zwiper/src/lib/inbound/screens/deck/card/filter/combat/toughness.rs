@@ -1,14 +1,14 @@
 //! Toughness filter sub-component.
 
 use dioxus::prelude::*;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 
 use super::super::filter_mode::FilterMode;
 
 /// Filter component for card toughness values.
 #[component]
 pub(crate) fn ToughnessFilter() -> Element {
-    let mut filter_builder: Signal<CardFilterBuilder> = use_context();
+    let mut filter_builder: Signal<CardQueryBuilder> = use_context();
 
     let mut toughness_mode = use_signal(|| {
         if filter_builder().toughness_range().is_some() {

@@ -15,8 +15,8 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardFilterBuilder;
-use zwipe_core::domain::card::search_card::card_filter::error::InvalidCardFilter;
+use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::card::search_card::card_filter::error::InvalidCardCriteria;
 use zwipe_core::domain::user::models::hints::HINT_FILTER;
 
 /// Newtype so `try_use_context` doesn't collide with other `Signal<bool>`
@@ -27,7 +27,7 @@ pub(crate) struct CollapseExpanded(pub(crate) Signal<bool>);
 
 /// Shared bottom-sheet filter accordion used by add, view, and remove card screens.
 ///
-/// Reads `Signal<CardFilterBuilder>` and `Signal<u32>` (filter_reset_counter) from context.
+/// Reads `Signal<CardQueryBuilder>` and `Signal<u32>` (filter_reset_counter) from context.
 #[component]
 pub(crate) fn CardFilterSheet(
     mut open: Signal<bool>,
@@ -36,7 +36,7 @@ pub(crate) fn CardFilterSheet(
     #[props(default = false)] validate_before_apply: bool,
     on_clear: Option<EventHandler>,
 ) -> Element {
-    let mut filter_builder: Signal<CardFilterBuilder> = use_context();
+    let mut filter_builder: Signal<CardQueryBuilder> = use_context();
     let mut filter_reset_counter: Signal<u32> = use_context();
     let should_collapse: Option<CollapseExpanded> = try_use_context::<CollapseExpanded>();
     let session: Signal<Option<Session>> = use_context();
@@ -82,7 +82,7 @@ pub(crate) fn CardFilterSheet(
         price_active,
     ) = if show_active_indicators {
         let fb = filter_builder();
-        let def = CardFilterBuilder::default();
+        let def = CardQueryBuilder::default();
         (
             fb.name_contains().is_some() || fb.name_not_contains().is_some(),
             fb.oracle_text_contains().is_some()
@@ -121,7 +121,7 @@ pub(crate) fn CardFilterSheet(
                 || fb.mechanical_categories_contains_all().is_some()
                 || fb.mechanical_categories_excludes().is_some(),
             fb.set_equals_any().is_some() || fb.set_excludes_any().is_some(),
-            fb.order_by().is_some(),
+            fb.sort().is_some(),
             fb.is_playable() != def.is_playable()
                 || fb.digital() != def.digital()
                 || fb.oversized() != def.oversized()
@@ -495,7 +495,7 @@ pub(crate) fn CardFilterSheet(
                                     class: "clear-btn",
                                     onclick: move |evt| {
                                         evt.stop_propagation();
-                                        filter_builder.write().unset_order_by();
+                                        filter_builder.write().unset_sort();
                                         bump_filter();
                                     },
                                     "\u{00d7}"
@@ -543,7 +543,7 @@ pub(crate) fn CardFilterSheet(
                         // Block contradictory filters (a value/term both included
                         // and excluded matches zero cards). Keep the sheet open so
                         // the user can fix the offending field.
-                        if let Err(InvalidCardFilter::Contradiction { field, .. }) =
+                        if let Err(InvalidCardCriteria::Contradiction { field, .. }) =
                             filter_builder.read().build()
                         {
                             toast.warning(
