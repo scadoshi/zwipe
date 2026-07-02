@@ -3,7 +3,7 @@ use crate::WEB_BASE;
 
 /// Per-route metadata: page title, description, canonical URL, and OG/Twitter
 /// tags. Rendered into `<head>` by Dioxus's document API. Picked up by SSG so
-/// the prerendered HTML carries these tags before any JS runs — which is the
+/// the prerendered HTML carries these tags before any JS runs, which is the
 /// whole point of the SSG pass for SEO and link unfurling.
 ///
 /// `path` should start with `/` and is appended to [`WEB_BASE`] for

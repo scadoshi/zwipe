@@ -9,7 +9,7 @@ use pages::{About, Android, Contribute, Discord, GuidePage, Guides, Home, Ios, P
 
 pub const API_BASE: &str = "https://api.zwipe.net";
 
-/// Public web base URL — centralized so a domain change is a single edit.
+/// Public web base URL, centralized so a domain change is a single edit.
 pub const WEB_BASE: &str = "https://zwipe.net";
 
 /// User-facing support email address.
@@ -90,8 +90,8 @@ fn App() -> Element {
     let theme = use_signal(ThemeConfig::default);
     use_context_provider(|| theme);
 
-    // Apply theme class to <body> so all CSS variable lookups — including
-    // body { background-color: var(--bg-primary) } — resolve from the theme.
+    // Apply theme class to <body> so all CSS variable lookups, including
+    // body { background-color: var(--bg-primary) }, resolve from the theme.
     use_effect(move || {
         let class = theme.read().css_class();
         spawn(async move {

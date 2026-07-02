@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 use crate::components::PageMeta;
 use crate::{Footer, Nav};
 
-// Source-material links — used inside the architecture diagram (Wikipedia-style refs).
+// Source-material links, used inside the architecture diagram (Wikipedia-style refs).
 const URL_ZWIPER: &str = "https://github.com/scadoshi/zwipe/tree/main/zwiper";
 const URL_ZITE: &str = "https://github.com/scadoshi/zwipe/tree/main/zite";
 const URL_ZERVER: &str = "https://github.com/scadoshi/zwipe/tree/main/zerver";

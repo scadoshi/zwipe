@@ -2,7 +2,7 @@
 //!
 //! Fetches `GET {API_BASE}/api/marketing/stats` during SSR. CF caches the
 //! API response at the edge (~2h TTL), GH Pages caches the rendered HTML,
-//! so cost-per-pageview is near zero. On error the strip hides itself —
+//! so cost-per-pageview is near zero. On error the strip hides itself;
 //! don't break the marketing page on a metrics outage.
 
 use crate::API_BASE;
