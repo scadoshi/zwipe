@@ -37,6 +37,10 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::models::hints::HINT_PROFILE;
 use zwipe_core::domain::user::models::theme::ThemeConfig;
 
+/// Client version baked in at compile time, shown at the bottom of the screen
+/// so users can report which build they're on.
+const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+
 /// User profile screen showing account details and management options.
 #[component]
 pub fn Profile() -> Element {
@@ -105,7 +109,7 @@ pub fn Profile() -> Element {
                     }
                 }
 
-                div { class: "screen-content centered content-enter",
+                div { class: "screen-content content-enter",
                     if let Some(s) = session().as_ref() {
                         div { class: "profile-sections",
 
@@ -203,6 +207,21 @@ pub fn Profile() -> Element {
                                             },
                                             "View"
                                         }
+                                    }
+                                }
+                            }
+
+                            div { class: "profile-list",
+
+                                div { class: "card-header",
+                                    span { class: "card-title", "System" }
+                                }
+
+                                div {
+                                    class: "profile-row",
+                                    span { class: "profile-row-label", "Version" }
+                                    div { class: "profile-row-value",
+                                        span { "v{APP_VERSION}" }
                                     }
                                 }
                             }
