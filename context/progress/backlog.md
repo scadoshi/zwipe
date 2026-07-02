@@ -9,7 +9,40 @@ Planned features and improvements for after App Store launch.
 - **Deck Migration — Archidekt SHIPPED (2026-06-10), Moxfield DENIED**: Archidekt URL import landed in 1.0.5 (see `context/plans/deck_import.md`). Moxfield support denied API access (2026-06-10) — policy excludes deckbuilding apps. They plan a scoped deck-export endpoint for such services (no ETA, announced via their help pages when live); periodically check their help pages and re-request access then. The text-paste importer covers Moxfield users meanwhile.
 - **recommander.cards integration — gated on a dedicated API key.** https://recommander.cards/ is a third-party card-suggestion engine we'd like Zwipe to consume for recommendation data. **Finding (2026-06-23): the public endpoint's rate limit is far too low to be viable — on the order of ~10 requests/hour.** Two ways it breaks: (1) all Zwipe traffic would funnel through our single backend, exhausting that hourly cap in seconds; (2) if instead clients called it directly, an IP-keyed limit collides for mobile users sharing a Wi-Fi network (same public IP), throttling each other. So the integration is **only viable with a dedicated API key carrying production-grade limits.** Until then, don't build against it (we already have our own recommendation data to fall back on). Outreach is in progress; specifics are kept out of this public repo (local notes only). (noted 2026-06-09; rate-limit constraint added 2026-06-23)
 - **Deck import atomicity (#7)** (deferred, low priority, needs test DB / testable frontend): replace-mode insert commits before the delete-not-in runs → a crash leaves a hybrid board; the limit check is also a separate read (concurrent-import TOCTOU). Chosen fix Option A: lock + limit-check + insert + reconcile in one tx (`apply_import_batch`). Full design in `context/plans/import_atomicity.md`. (noted 2026-06-19)
-- **Split `CardFilter` into `CardCriteria` + `CardQuery`** (deferred, needs testable frontend): `CardFilter` is dual-use — a server query spec (limit must be capped) and a client-side in-memory predicate (limit set to 10_000 to avoid truncation). The server-path DoS is already closed by a SQL clamp (`MAX_SEARCH_LIMIT=250`, commit `fe5324ac`); this is the proper de-dup of the over-loaded type. Full design + staged-rollout in `context/plans/card_filter_split.md`. (noted 2026-06-19)
+**Done & removed:** Split `CardFilter` into `CardCriteria` + `CardQuery` + `Cards` — executed 2026-07-02 (`09d39a20`), wire unchanged, on main awaiting the next release. Outcome in `overview.md`; plan doc deleted.
+
+---
+
+## Weekly Badges + Stats / Share Cards (gamification; pairs with future social)
+
+**Backlogged 2026-07-02.** A weekly retention loop: at week close, categorize each
+active user's week into **1–3 badges** ("Swipe King" volume, "The Controller"
+taste, "Ultimate Indecision" quirk), surfaced as a "Your week" recap on next open
+plus a badge-history/stats page. The recap doubles as a **shareable card**
+(Wrapped-style, terminal aesthetic) — viral value without social infrastructure.
+
+- **Derive, don't collect.** Almost every badge/stat is a *join*, not new
+  collection: per-user card signal × `mechanical_categories` (archetypes), ×
+  `color_identity`, × `cmc` (curve taste), × `prices` (budget), × `edhrec_rank`
+  (hipster/meta). Lifetime volume badges are computable **today** from
+  `user_lifetime_counters` / `user_daily_activity` / `user_events`. Rule: only
+  add a counter when a named consumer exists.
+- **Data prerequisite: weekly windowing.** Lifetime counters can't answer "this
+  week." At signal ingest (the flush already carries card-level deltas), also
+  bump `user_week_signal (user_id, iso_week, counters)` — swipes by direction,
+  accepts by category/color, decks touched. No new wire, no client change; one
+  row per active user per week. Design this in when the per-user signal ships
+  so weekly history accrues from day one.
+- **Badge job**: week-close cron (zervice pattern) computes 1–3 badges per
+  active user (v1: threshold rules + priority order, cap 3, ≥1 for any
+  activity) into `user_week_badges (user_id, week, badges)`.
+- **Social pairing (later)**: public profiles / leaderboards / seeing others'
+  badges is the natural extension, but it's a real subsystem (opt-in
+  visibility, moderation, blocking) and another privacy-posture change — the
+  private recap + share card ships first and stands alone.
+
+Related: `plans/swipe_memory.md` (the flush-ingest surface all of this rides on)
+and the planned per-user `user_card_signal` collection.
 
 ---
 

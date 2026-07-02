@@ -73,7 +73,7 @@ Marked ✅ in the tables below; numbers kept stable (plans/commits reference the
 
 | # | Feature | Impact | Effort | Priority | Notes |
 |---|---------|--------|--------|----------|-------|
-| 11 | Persist skipped cards per deck across sessions | High | M | P2 | Closing the app currently resets the skip pile — real gap in the core loop. |
+| 11 | Persist skipped cards per deck across sessions | High | M | **P1 (plan ready)** | Closing the app currently resets the skip pile — real gap in the core loop. Full executable plan: [`../plans/swipe_memory.md`](../plans/swipe_memory.md) (deck skips + per-user signal + weekly aggregates). |
 | 12 | Easy access to deck view / card count / mana curve while building | Med | S–M | P2 | Stats should be one tap away mid-swipe. |
 
 ## Tags
