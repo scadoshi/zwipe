@@ -14,7 +14,7 @@ Swipe to Build MTG Decks
 
 (170 character limit. Can be updated without a new submission — refresh this between releases to spotlight whatever's freshest.)
 
-Just shipped: draw-odds — see your chance of drawing a land, ramp, or removal in your opening hand or by any turn. Plus power levels, more tags, and a synergy toggle. Free, no ads.
+Just shipped: Zwipe remembers your skips. Cards you swipe away stay out of that deck's suggestions until you clear them. Plus alphabetical deck lists. Free, no ads.
 
 ---
 
@@ -36,6 +36,16 @@ Other tools:
 - Your decks sync across sessions and devices
 
 Built for players who want a fast, focused mobile experience — not another cluttered desktop tool squeezed onto a small screen.
+
+---
+
+## What's New in This Version (1.2.2)
+
+- Zwipe now remembers your skips: cards you swipe left on stay out of that deck's suggestions, even after you close the app. Cards you deliberately remove from a deck stay out too.
+- Changed your mind? Clear a deck's skips anytime from its More menu.
+- Your deck's card list now sorts alphabetically by default.
+- See which version you're on at the bottom of the Profile screen.
+- Privacy policy updated to describe how your activity personalizes suggestions.
 
 ---
 
