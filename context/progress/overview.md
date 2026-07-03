@@ -114,9 +114,11 @@ Build 15 shipped over build 14 with: `Email` strict newtype across the workspace
 **Supersedes 1.2.3, which was withdrawn from both stores before review started**
 — its release notes folded into 1.3.0 (`210b2d3e`). Server (skip/unskip
 endpoints) deployed to prod 2026-07-02 ahead of clients. Shipped as **iOS build
-58** / **Android versionCode 19**: builds 57/18 were submitted first, then
-re-submitted as 58/19 with the profile **About section** (`b78fd372` — website
-link + Privacy Policy + Version folded from the old Legal/System cards).
+59** / **Android versionCode 20**: builds 57/18 then 58/19 (the profile **About
+section**, `b78fd372`) were submitted first, then re-submitted as 59/20 adding
+the **filter-intent + Reset** batch (`65195250` — sort/synergy now serve, Reset
+returns each screen to its default, the filter dot tracks any real change, and
+the filter sheet collapses on close).
 
 - **Per-swipe durable skips (`92d4d39e`).** Skips no longer ride the 30s usage
   batch (which lost them to a quick app kill and dropped them on HTTP failure):
