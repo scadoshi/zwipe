@@ -20,5 +20,7 @@ pub mod get_deck_tokens;
 pub mod get_deck_profile;
 /// Deck-aware card search (exclusion + synergy ordering).
 pub mod search_deck_cards;
+/// Skip deck card operation (single durable suppression).
+pub mod skip_deck_card;
 /// Update deck profile operation.
 pub mod update_deck_profile;

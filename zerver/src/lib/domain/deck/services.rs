@@ -21,6 +21,7 @@ use crate::domain::{
                 get_deck_profile::GetDeckProfileError,
                 get_deck_tokens::GetDeckTokensError,
                 search_deck_cards::SearchDeckCardsError,
+                skip_deck_card::SkipDeckCardError,
                 update_deck_profile::UpdateDeckProfileError,
             },
             deck::import_archidekt::ArchidektCard,
@@ -47,6 +48,7 @@ use zwipe_core::domain::deck::{
         get_deck_profile::GetDeckProfile,
         get_deck_profiles::GetDeckProfiles,
         import_deck_cards::{ImportDeckCards, ImportDeckCardsResult, ImportedCard, UnresolvedCard},
+        skip_deck_card::SkipDeckCard,
         update_deck_card::UpdateDeckCard,
         update_deck_profile::UpdateDeckProfile,
     },
@@ -408,6 +410,14 @@ where
         request: &ClearDeckSuppressions,
     ) -> Result<u64, ClearDeckSuppressionsError> {
         self.deck_repo.clear_deck_suppressions(request).await
+    }
+
+    async fn skip_deck_card(&self, request: &SkipDeckCard) -> Result<(), SkipDeckCardError> {
+        self.deck_repo.skip_deck_card(request).await
+    }
+
+    async fn unskip_deck_card(&self, request: &SkipDeckCard) -> Result<(), SkipDeckCardError> {
+        self.deck_repo.unskip_deck_card(request).await
     }
 
     async fn import_deck_cards(

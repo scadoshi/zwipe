@@ -1,12 +1,12 @@
 //! In-memory swipe/search counters with snapshot-and-zero semantics.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use uuid::Uuid;
-use zwipe_core::http::contracts::metrics::{CardSignalDelta, DeckSkipDelta, HttpUsageBatch};
+use zwipe_core::http::contracts::metrics::{CardSignalDelta, HttpUsageBatch};
 
 use crate::inbound::components::interactions::swipe::direction::Direction;
 
@@ -25,15 +25,6 @@ struct UsageBufferInner {
     searches: AtomicU32,
     /// Per-`(commander, card)` keep/skip/maybe tallies from the add-card stack.
     signals: Mutex<HashMap<(Uuid, Uuid), CardTally>>,
-    /// Per-deck skip/unskip oracle-id sets from Add-screen left swipes.
-    deck_skips: Mutex<HashMap<Uuid, DeckSkipSet>>,
-}
-
-/// Pending skip/unskip oracle ids for one deck within a flush window.
-#[derive(Debug, Default)]
-struct DeckSkipSet {
-    skipped: HashSet<Uuid>,
-    unskipped: HashSet<Uuid>,
 }
 
 /// Add/skip/maybe/remove tally for one `(commander, card)` pair within a flush
@@ -110,37 +101,6 @@ impl UsageBuffer {
         }
     }
 
-    /// Records one Add-screen left swipe as a durable per-deck skip. No-op if
-    /// the card has no oracle id (it can't be suppressed across printings).
-    ///
-    /// A pending unskip for the same card is cancelled — re-skipping after an
-    /// already-flushed undo nets out to "skipped".
-    pub fn record_deck_skip(&self, deck_id: Uuid, oracle_id: Option<Uuid>) {
-        let Some(oracle_id) = oracle_id else {
-            return;
-        };
-        if let Ok(mut map) = self.inner.deck_skips.lock() {
-            let set = map.entry(deck_id).or_default();
-            set.unskipped.remove(&oracle_id);
-            set.skipped.insert(oracle_id);
-        }
-    }
-
-    /// Retracts a skip on undo. If the skip is still pending it is simply
-    /// dropped (never reaches the wire); if it already flushed, an unskip is
-    /// queued so the server deletes the suppression row.
-    pub fn retract_deck_skip(&self, deck_id: Uuid, oracle_id: Option<Uuid>) {
-        let Some(oracle_id) = oracle_id else {
-            return;
-        };
-        if let Ok(mut map) = self.inner.deck_skips.lock() {
-            let set = map.entry(deck_id).or_default();
-            if !set.skipped.remove(&oracle_id) {
-                set.unskipped.insert(oracle_id);
-            }
-        }
-    }
-
     /// Snapshots all counters into a batch and resets them to zero.
     ///
     /// Returns `None` when every counter is zero and no signals are buffered.
@@ -171,29 +131,7 @@ impl UsageBuffer {
             })
             .collect();
 
-        let deck_skips: Vec<DeckSkipDelta> = self
-            .inner
-            .deck_skips
-            .lock()
-            .map(|mut map| std::mem::take(&mut *map))
-            .unwrap_or_default()
-            .into_iter()
-            .filter(|(_, set)| !set.skipped.is_empty() || !set.unskipped.is_empty())
-            .map(|(deck_id, set)| DeckSkipDelta {
-                deck_id,
-                skipped: set.skipped.into_iter().collect(),
-                unskipped: set.unskipped.into_iter().collect(),
-            })
-            .collect();
-
-        if right == 0
-            && left == 0
-            && up == 0
-            && down == 0
-            && searches == 0
-            && signals.is_empty()
-            && deck_skips.is_empty()
-        {
+        if right == 0 && left == 0 && up == 0 && down == 0 && searches == 0 && signals.is_empty() {
             return None;
         }
 
@@ -203,8 +141,10 @@ impl UsageBuffer {
             swipes_up: up,
             swipes_down: down,
             searches,
+            // Durable skips post directly per swipe (skip_deck_card); the
+            // batch field remains for wire compat with the server.
+            deck_skips: Vec::new(),
             signals,
-            deck_skips,
         })
     }
 }
@@ -213,69 +153,22 @@ impl UsageBuffer {
 #[allow(clippy::unwrap_used)]
 mod tests {
     use super::UsageBuffer;
+    use crate::inbound::components::interactions::swipe::direction::Direction;
     use uuid::Uuid;
 
     #[test]
-    fn deck_skip_drains_once_and_resets() {
+    fn snapshot_drains_once_and_resets() {
         let buffer = UsageBuffer::new();
-        let deck = Uuid::new_v4();
+        let commander = Uuid::new_v4();
         let card = Uuid::new_v4();
 
-        buffer.record_deck_skip(deck, Some(card));
+        buffer.record_swipe(Direction::Left);
+        buffer.record_signal(Some(commander), Some(card), Direction::Left);
         let batch = buffer.snapshot_and_zero().unwrap();
-        assert_eq!(batch.deck_skips.len(), 1);
-        assert_eq!(batch.deck_skips.first().unwrap().deck_id, deck);
-        assert_eq!(batch.deck_skips.first().unwrap().skipped, vec![card]);
-        assert!(batch.deck_skips.first().unwrap().unskipped.is_empty());
+        assert_eq!(batch.swipes_left, 1);
+        assert_eq!(batch.signals.len(), 1);
+        assert!(batch.deck_skips.is_empty());
 
-        assert!(buffer.snapshot_and_zero().is_none());
-    }
-
-    #[test]
-    fn retract_before_flush_cancels_the_skip() {
-        let buffer = UsageBuffer::new();
-        let deck = Uuid::new_v4();
-        let card = Uuid::new_v4();
-
-        buffer.record_deck_skip(deck, Some(card));
-        buffer.retract_deck_skip(deck, Some(card));
-        assert!(buffer.snapshot_and_zero().is_none());
-    }
-
-    #[test]
-    fn retract_after_flush_queues_an_unskip() {
-        let buffer = UsageBuffer::new();
-        let deck = Uuid::new_v4();
-        let card = Uuid::new_v4();
-
-        buffer.record_deck_skip(deck, Some(card));
-        buffer.snapshot_and_zero().unwrap();
-
-        buffer.retract_deck_skip(deck, Some(card));
-        let batch = buffer.snapshot_and_zero().unwrap();
-        assert!(batch.deck_skips.first().unwrap().skipped.is_empty());
-        assert_eq!(batch.deck_skips.first().unwrap().unskipped, vec![card]);
-    }
-
-    #[test]
-    fn reskip_after_flushed_undo_nets_to_skipped() {
-        let buffer = UsageBuffer::new();
-        let deck = Uuid::new_v4();
-        let card = Uuid::new_v4();
-
-        // Undo of an already-flushed skip, then a fresh skip of the same card.
-        buffer.retract_deck_skip(deck, Some(card));
-        buffer.record_deck_skip(deck, Some(card));
-        let batch = buffer.snapshot_and_zero().unwrap();
-        assert_eq!(batch.deck_skips.first().unwrap().skipped, vec![card]);
-        assert!(batch.deck_skips.first().unwrap().unskipped.is_empty());
-    }
-
-    #[test]
-    fn missing_oracle_id_is_a_no_op() {
-        let buffer = UsageBuffer::new();
-        buffer.record_deck_skip(Uuid::new_v4(), None);
-        buffer.retract_deck_skip(Uuid::new_v4(), None);
         assert!(buffer.snapshot_and_zero().is_none());
     }
 }
