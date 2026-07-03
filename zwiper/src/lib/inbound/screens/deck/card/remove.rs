@@ -12,7 +12,10 @@ use crate::{
             telemetry::usage_buffer::UsageBuffer,
         },
         screens::deck::card::{
-            components::{action_history::SwipeAction, card_stack::use_card_stack},
+            components::{
+                action_history::{RemoveAction, StackAction},
+                card_stack::use_card_stack,
+            },
             filter::{card_filter_sheet::CardFilterSheet, deck_cards::DeckCards},
         },
     },
@@ -90,7 +93,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
     // What the swipe UI iterates over (may be a filtered subset of
     // `deck_entries`) — a cycling stack over the displayed cards.
-    let mut stack = use_card_stack();
+    let mut stack = use_card_stack::<RemoveAction>();
     // Guards filter effect from running before the deck has loaded
     let mut deck_loaded: Signal<bool> = use_signal(|| false);
     // Board filter state
@@ -350,10 +353,10 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
         // Play the enter animation from the direction the card originally
         // exited.
-        stack.prime_entering(action.exited().clone());
+        stack.prime_entering(action.exited());
 
         match action {
-            SwipeAction::Skip { .. } => {
+            RemoveAction::Keep => {
                 if !stack.retreat_wrapping() {
                     stack.cancel_entering();
                     return;
@@ -363,7 +366,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     ToastOptions::default().duration(Duration::from_millis(1500)),
                 );
             }
-            SwipeAction::Do { card, .. } => {
+            RemoveAction::Remove { card } => {
                 // Re-insert into displayed cards so the card reappears
                 let card = *card;
                 stack.insert_current(card.clone());
@@ -396,51 +399,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     }
                 });
             }
-            SwipeAction::Maybeboard { card, .. } => {
-                // Re-insert into displayed cards so the card reappears
-                let card = *card;
-                stack.insert_current(card.clone());
-
-                // Move back from maybeboard to active on the backend
-                let scryfall_data_id = card.scryfall_data.id;
-                let request = HttpUpdateDeckCard::new(None, Some("deck".to_string()));
-
-                spawn(async move {
-                    let session = match session.ensure_fresh(client).await {
-                        Ok(session) => session,
-                        Err(e) => {
-                            toast.error(e.to_user_message(), ToastOptions::default());
-                            stack.cancel_entering();
-                            return;
-                        }
-                    };
-
-                    match client()
-                        .update_deck_card(deck_id, scryfall_data_id, &request, &session)
-                        .await
-                    {
-                        Ok(_) => {
-                            // Flip the flag back in the source of truth
-                            if let Some(entry) = deck_entries
-                                .write()
-                                .iter_mut()
-                                .find(|e| e.card.scryfall_data.id == scryfall_data_id)
-                            {
-                                entry.deck_card.board = Board::Deck;
-                            }
-                            toast.success(
-                                "Undid maybeboard".to_string(),
-                                ToastOptions::default().duration(Duration::from_millis(1500)),
-                            );
-                        }
-                        Err(e) => {
-                            tracing::warn!("undo maybeboard (update deck card) failed: {e}");
-                            toast.error(format!("Failed to undo: {}", e), ToastOptions::default());
-                        }
-                    }
-                });
-            }
-            SwipeAction::MoveBoard { card, from, .. } => {
+            RemoveAction::MoveBoard { card, from, .. } => {
                 // Re-insert into displayed cards so the card reappears
                 let card = *card;
                 stack.insert_current(card.clone());
@@ -517,9 +476,9 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             cards: stack.window(),
                             config: swipe_config,
                             entering: stack.entering(),
-                            on_swipe_left: move |card: Card| {
+                            on_swipe_left: move |_card: Card| {
                                 usage_buffer().record_swipe(Direction::Left);
-                                stack.record(SwipeAction::Skip { card: Box::new(card), exited: Direction::Left });
+                                stack.record(RemoveAction::Keep);
                                 toast.info(
                                     "Skipped".to_string(),
                                     ToastOptions::default().duration(Duration::from_millis(1500)),
@@ -531,7 +490,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                 usage_buffer().record_swipe(Direction::Right);
                                 // Removal signal (delayed negative) keyed by commander + card.
                                 usage_buffer().record_removal(commander_oracle_id(), card.scryfall_data.oracle_id);
-                                stack.record(SwipeAction::Do { card: Box::new(card), exited: Direction::Right });
+                                stack.record(RemoveAction::Remove { card: Box::new(card) });
                                 delete_card_from_deck();
                                 toast.success(
                                     "Removed from deck".to_string(),
@@ -554,7 +513,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                     .map(|e| e.deck_card.board)
                                     .unwrap_or_default();
                                 let to = if from.is_maybeboard() { Board::Deck } else { Board::Maybeboard };
-                                stack.record(SwipeAction::MoveBoard { card: Box::new(card), exited: Direction::Up, from, to });
+                                stack.record(RemoveAction::MoveBoard { card: Box::new(card), from, to });
                                 move_card_to_board(to);
                                 let message = if to.is_maybeboard() { "Moved to maybeboard" } else { "Moved to main" };
                                 toast.info(message.to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));

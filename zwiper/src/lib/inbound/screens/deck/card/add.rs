@@ -13,7 +13,10 @@ use crate::{
         },
         screens::deck::card::{
             components::{
-                action_history::{CARDS_WARNING_THRESHOLD, MAX_CARDS_IN_STACK, SwipeAction},
+                action_history::{
+                    AddAction, CARDS_WARNING_THRESHOLD, MAX_CARDS_IN_STACK, MaybeboardAction,
+                    StackAction,
+                },
                 card_stack::{CardStack, use_card_stack},
             },
             filter::card_filter_sheet::CardFilterSheet,
@@ -108,7 +111,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut filter_builder: Signal<CardQueryBuilder> = use_context();
     // App-scoped search stack (cards, cursor, undo history, animation) —
     // survives navigation so re-entry resumes mid-stack.
-    let mut stack: CardStack = use_context();
+    let mut stack: CardStack<AddAction> = use_context();
     let mut last_search_filter: Signal<Option<CardQueryBuilder>> = use_context();
     let is_first_run = use_hook(|| std::cell::Cell::new(true));
 
@@ -146,7 +149,7 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut synergy_warming = use_signal(|| false);
     let mut mb_entries: Signal<Vec<DeckEntry>> = use_signal(Vec::new);
     // Screen-local maybeboard stack — a cycling view over `mb_entries`.
-    let mut mb_stack = use_card_stack();
+    let mut mb_stack = use_card_stack::<MaybeboardAction>();
 
     // Filters overlay at bottom of screen state
     let mut filters_overlay_open = use_signal(|| false);
@@ -386,10 +389,16 @@ pub fn Add(deck_id: Uuid) -> Element {
             return;
         }
 
+        // The cursor now sits on the very card the action committed — the
+        // linear stack never drops swiped cards, so the card is read back
+        // from the stack rather than stored in the history.
+        let Some(card) = stack.current() else {
+            stack.unwind_undo(action);
+            return;
+        };
+
         match action {
-            // Remove-screen-only variant; never pushed on this screen.
-            SwipeAction::MoveBoard { .. } => {}
-            SwipeAction::Skip { ref card, .. } => {
+            AddAction::Skip => {
                 // Delete the suppression row posted at swipe time.
                 if let Some(oracle_id) = card.scryfall_data.oracle_id {
                     spawn(async move {
@@ -411,7 +420,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     ToastOptions::default().duration(Duration::from_millis(1500)),
                 );
             }
-            SwipeAction::Do { ref card, .. } => {
+            AddAction::Add => {
                 // Need to delete from backend (undoing the add)
                 let card_id = card.scryfall_data.id;
                 let oracle_id = card.scryfall_data.oracle_id;
@@ -451,7 +460,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     }
                 });
             }
-            SwipeAction::Maybeboard { ref card, .. } => {
+            AddAction::Maybe => {
                 let card_id = card.scryfall_data.id;
                 let oracle_id = card.scryfall_data.oracle_id;
 
@@ -856,10 +865,10 @@ pub fn Add(deck_id: Uuid) -> Element {
             return;
         };
 
-        mb_stack.prime_entering(action.exited().clone());
+        mb_stack.prime_entering(action.exited());
 
         match action {
-            SwipeAction::Skip { .. } => {
+            MaybeboardAction::Skip => {
                 if !mb_stack.retreat_wrapping() {
                     mb_stack.cancel_entering();
                     return;
@@ -869,7 +878,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     ToastOptions::default().duration(Duration::from_millis(1500)),
                 );
             }
-            SwipeAction::Do { card, .. } => {
+            MaybeboardAction::Promote { card } => {
                 let card = *card;
                 mb_stack.insert_current(card.clone());
 
@@ -917,10 +926,6 @@ pub fn Add(deck_id: Uuid) -> Element {
                         }
                     }
                 });
-            }
-            SwipeAction::Maybeboard { .. } | SwipeAction::MoveBoard { .. } => {
-                // Shouldn't happen in maybeboard mode, but handle gracefully
-                toast.info("Nothing to undo".to_string(), ToastOptions::default());
             }
         }
     };
@@ -1017,14 +1022,14 @@ pub fn Add(deck_id: Uuid) -> Element {
                                             }
                                         });
                                     }
-                                    stack.record(SwipeAction::Skip { card: Box::new(card), exited: Direction::Left });
+                                    stack.record(AddAction::Skip);
                                     toast.info("Skipped".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                     advance_after_commit();
                                 },
                                 on_swipe_right: move |card: Card| {
                                     usage_buffer().record_swipe(Direction::Right);
                                     usage_buffer().record_signal(commander_oracle_id(), card.scryfall_data.oracle_id, Direction::Right);
-                                    stack.record(SwipeAction::Do { card: Box::new(card.clone()), exited: Direction::Right });
+                                    stack.record(AddAction::Add);
                                     let added_land = card.scryfall_data.is_land();
                                     let added_price = card_price(&card.scryfall_data, price_budget_currency()).unwrap_or(0.0);
                                     add_card_to_deck(card);
@@ -1072,7 +1077,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 on_swipe_up: move |card: Card| {
                                     usage_buffer().record_swipe(Direction::Up);
                                     usage_buffer().record_signal(commander_oracle_id(), card.scryfall_data.oracle_id, Direction::Up);
-                                    stack.record(SwipeAction::Maybeboard { card: Box::new(card.clone()), exited: Direction::Up });
+                                    stack.record(AddAction::Maybe);
                                     add_card_to_maybeboard(card);
                                     toast.info("Added to maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                     advance_after_commit();
@@ -1099,15 +1104,15 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 cards: mb_stack.window(),
                                 config: swipe_config,
                                 entering: mb_stack.entering(),
-                                on_swipe_left: move |card: Card| {
+                                on_swipe_left: move |_card: Card| {
                                     usage_buffer().record_swipe(Direction::Left);
-                                    mb_stack.record(SwipeAction::Skip { card: Box::new(card), exited: Direction::Left });
+                                    mb_stack.record(MaybeboardAction::Skip);
                                     toast.info("Skipped".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                     mb_stack.advance_wrapping();
                                 },
                                 on_swipe_right: move |card: Card| {
                                     usage_buffer().record_swipe(Direction::Right);
-                                    mb_stack.record(SwipeAction::Do { card: Box::new(card.clone()), exited: Direction::Right });
+                                    mb_stack.record(MaybeboardAction::Promote { card: Box::new(card.clone()) });
                                     mb_promote_to_deck(card);
                                     toast.success("Moved to deck".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                 },
