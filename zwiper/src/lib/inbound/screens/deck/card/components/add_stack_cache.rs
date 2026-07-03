@@ -13,7 +13,10 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use crate::inbound::screens::deck::card::components::action_history::AddAction;
 
 /// Most-recently-used decks kept parked; the oldest is evicted beyond this.
-const MAX_PARKED_DECKS: usize = 3;
+/// Matches the server's MAX_DECKS_PER_USER, so in practice every deck a user
+/// can own stays parked — trimmed parks are small (~80 cards) and the cache
+/// only ever holds decks visited this app session.
+const MAX_PARKED_DECKS: usize = 20;
 
 /// Swiped-past cards kept when parking — the undo depth after returning.
 const PARKED_BEHIND_CARDS: usize = 50;
