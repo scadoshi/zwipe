@@ -9,7 +9,7 @@ use crate::inbound::components::telemetry::{
     flush_loop::{spawn_usage_flusher, spawn_visibility_flusher}, usage_buffer::UsageBuffer,
 };
 use crate::inbound::screens::deck::card::components::{
-    action_history::AddAction, card_stack::use_card_stack,
+    action_history::AddAction, add_stack_cache::use_add_stack_cache, card_stack::use_card_stack,
 };
 use crate::outbound::client::version::get_min_client_version::ClientGetMinClientVersion;
 use crate::outbound::{client::ZwipeClient, session::Persist};
@@ -98,6 +98,11 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     // instead of re-serving already-swiped (and durably skipped) cards.
     let add_stack = use_card_stack::<AddAction>();
     use_context_provider(|| add_stack);
+
+    // Parked add stacks, one per deck (MRU-capped) — leaving the add screen
+    // parks the live stack here; returning to that deck restores it.
+    let add_stack_cache = use_add_stack_cache();
+    use_context_provider(|| add_stack_cache);
 
     let last_search_filter: Signal<Option<CardQueryBuilder>> = use_signal(|| None);
     use_context_provider(|| last_search_filter);

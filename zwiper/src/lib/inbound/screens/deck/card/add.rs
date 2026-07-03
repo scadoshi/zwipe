@@ -17,6 +17,7 @@ use crate::{
                     AddAction, CARDS_WARNING_THRESHOLD, MAX_CARDS_IN_STACK, MaybeboardAction,
                     StackAction,
                 },
+                add_stack_cache::{AddStackCache, ParkedStack},
                 card_stack::{CardStack, use_card_stack},
             },
             filter::card_filter_sheet::CardFilterSheet,
@@ -112,6 +113,9 @@ pub fn Add(deck_id: Uuid) -> Element {
     // App-scoped search stack (cards, cursor, undo history, animation) —
     // survives navigation so re-entry resumes mid-stack.
     let mut stack: CardStack<AddAction> = use_context();
+    // Parked stacks for other decks; this deck's parked entry (if any) is
+    // restored by the mount effect, and `use_drop` below parks on leave.
+    let mut stack_cache: AddStackCache = use_context();
     let mut last_search_filter: Signal<Option<CardQueryBuilder>> = use_context();
     let is_first_run = use_hook(|| std::cell::Cell::new(true));
 
@@ -188,6 +192,30 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut pagination_exhausted = use_signal(|| false);
 
     let mut is_loading_cards = use_signal(|| false);
+
+    // Park this deck's stack on leave so returning resumes mid-stack. Only a
+    // served stack parks — an empty one, or one with no recorded filter,
+    // refetches next time anyway.
+    use_drop(move || {
+        let Some(filter) = last_search_filter.peek().clone() else {
+            return;
+        };
+        if stack.peek_is_empty() {
+            return;
+        }
+        let (cards, index, history) = stack.park_state();
+        stack_cache.park(
+            deck_id,
+            ParkedStack {
+                cards,
+                index,
+                history,
+                filter,
+                offset: *current_offset.peek(),
+                exhausted: *pagination_exhausted.peek(),
+            },
+        );
+    });
 
     let current_card = move || stack.current();
 
@@ -293,28 +321,27 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     // Advance past the just-committed card. The stack fires its on_swipe_*
     // callbacks after the exit transition, so by now the card is off-screen.
+    // The cursor may land one past the end (empty window) — that keeps undo
+    // aligned with the swipe that just committed.
     let mut advance_after_commit = move || {
         let total = stack.len();
-        if stack.advance() {
-            if (CARDS_WARNING_THRESHOLD..MAX_CARDS_IN_STACK).contains(&total)
-                && total.is_multiple_of(100)
-            {
-                toast.info(
-                    "Approaching card limit, consider refreshing".to_string(),
-                    ToastOptions::default().duration(Duration::from_millis(2000)),
-                );
-            }
-            // Trigger a pagination prefetch when we're within the threshold.
-            if total > 0 && stack.index() + 1 >= total.saturating_sub(load_more_threshold) {
-                load_more_cards();
-            }
-        } else {
-            // At the end — try to load more, else inform the user.
-            if pagination_exhausted() {
-                toast.warning("End of results".to_string(), ToastOptions::default());
-            } else {
-                load_more_cards();
-            }
+        if !stack.advance() {
+            return;
+        }
+        if (CARDS_WARNING_THRESHOLD..MAX_CARDS_IN_STACK).contains(&total)
+            && total.is_multiple_of(100)
+        {
+            toast.info(
+                "Approaching card limit, consider refreshing".to_string(),
+                ToastOptions::default().duration(Duration::from_millis(2000)),
+            );
+        }
+        if stack.index() >= total && pagination_exhausted() {
+            // Past the last card with nothing left to fetch.
+            toast.warning("End of results".to_string(), ToastOptions::default());
+        } else if total > 0 && stack.index() + 1 >= total.saturating_sub(load_more_threshold) {
+            // Within the prefetch threshold — top the stack up.
+            load_more_cards();
         }
     };
 
@@ -683,23 +710,20 @@ pub fn Add(deck_id: Uuid) -> Element {
 
         if first {
             // ── Initial mount ─────────────────────────────────────────
-            // Preserve cards if the filter hasn't changed since last search.
-            let filter_unchanged = last_search_filter
-                .peek()
-                .as_ref()
-                .map(|prev| {
-                    let mut prev_b = prev.clone();
-                    prev_b.set_is_token(false);
-                    prev_b.set_limit(pagination_limit);
-                    prev_b.set_offset(0);
-                    prev_b == builder
-                })
-                .unwrap_or(false);
-
-            if filter_unchanged && !stack.peek_is_empty() {
-                // Restore pagination offset so load-more picks up from the right place.
-                current_offset.set(stack.peek_len() as u32);
-                return;
+            // Un-park this deck's stack if its filter still matches.
+            if let Some(parked) = stack_cache.take(deck_id) {
+                let mut prev_b = parked.filter.clone();
+                prev_b.set_is_token(false);
+                prev_b.set_limit(pagination_limit);
+                prev_b.set_offset(0);
+                if prev_b == builder && !parked.cards.is_empty() {
+                    current_offset.set(parked.offset);
+                    pagination_exhausted.set(parked.exhausted);
+                    last_search_filter.set(Some(parked.filter.clone()));
+                    stack.restore(parked.cards, parked.index, parked.history);
+                    return;
+                }
+                // Filter changed since parking — fall through to a fresh fetch.
             }
         }
 
@@ -708,7 +732,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         //   - explicit user action (refresh / apply filter), OR
         //   - initial mount with a different/new filter, OR
         //   - initial mount with no existing cards
-        stack.replace(Vec::new());
+        stack.reset();
         last_search_filter.set(None);
         current_offset.set(0);
         pagination_exhausted.set(false);
@@ -1210,7 +1234,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 return;
                             };
 
-                            stack.replace(Vec::new());
+                            stack.reset();
                             last_search_filter.set(None);
                             current_offset.set(0);
                             pagination_exhausted.set(false);
