@@ -234,16 +234,14 @@ pub fn ThemePicker() -> Element {
     let is_dark = theme.read().is_dark;
     // ALLOWED_THEMES is already alphabetical; filtering preserves that order
     // for the main group and pulls the color-blind themes into a bottom section.
-    let regular_themes: Vec<&str> = ALLOWED_THEMES
+    let regular_themes = ALLOWED_THEMES
         .iter()
         .copied()
-        .filter(|t| !COLORBLIND_THEMES.contains(t))
-        .collect();
-    let colorblind_themes: Vec<&str> = ALLOWED_THEMES
+        .filter(|t| !COLORBLIND_THEMES.contains(t));
+    let colorblind_themes = ALLOWED_THEMES
         .iter()
         .copied()
-        .filter(|t| COLORBLIND_THEMES.contains(t))
-        .collect();
+        .filter(|t| COLORBLIND_THEMES.contains(t));
     let select_class = if open() {
         "theme-select theme-select-open"
     } else {
