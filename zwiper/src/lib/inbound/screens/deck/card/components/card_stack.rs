@@ -67,11 +67,6 @@ impl<A: 'static> CardStack<A> {
         self.cards.peek().is_empty()
     }
 
-    /// `len` without subscribing the caller.
-    pub fn peek_len(&self) -> usize {
-        self.cards.peek().len()
-    }
-
     /// Cursor position (reactive read).
     pub fn index(&self) -> usize {
         (self.index)()
@@ -128,6 +123,34 @@ impl<A: 'static> CardStack<A> {
         self.entering.set(None);
     }
 
+    /// Clears everything: cards, cursor, history, animation.
+    pub fn reset(&mut self) {
+        self.cards.set(Vec::new());
+        self.index.set(0);
+        self.history.write().clear();
+        self.entering.set(None);
+    }
+
+    /// Snapshot for parking (peeked — no subscriptions).
+    pub fn park_state(&self) -> (Vec<Card>, usize, Vec<A>)
+    where
+        A: Clone,
+    {
+        (
+            self.cards.peek().clone(),
+            *self.index.peek(),
+            self.history.peek().clone(),
+        )
+    }
+
+    /// Restores a parked snapshot (un-park).
+    pub fn restore(&mut self, cards: Vec<Card>, index: usize, history: Vec<A>) {
+        self.index.set(index.min(cards.len()));
+        self.cards.set(cards);
+        self.history.set(history);
+        self.entering.set(None);
+    }
+
     /// Removes the card at the cursor; the next card slides into position
     /// (cursor unchanged). No-op when the cursor is past the end.
     pub fn remove_current(&mut self) {
@@ -145,11 +168,13 @@ impl<A: 'static> CardStack<A> {
 
     // ── cursor ───────────────────────────────────────────────────────────
 
-    /// Moves the cursor forward one card (linear stacks). Returns false at
-    /// the end of the list.
+    /// Moves the cursor forward one card (linear stacks). The cursor may land
+    /// one past the end: the just-swiped last card leaves the window and undo
+    /// stays aligned with the swipe that committed. Returns false only when
+    /// already past the end.
     pub fn advance(&mut self) -> bool {
         let next = (self.index)() + 1;
-        if next < self.cards.read().len() {
+        if next <= self.cards.read().len() {
             self.index.set(next);
             true
         } else {

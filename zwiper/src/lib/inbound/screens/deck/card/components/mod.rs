@@ -2,6 +2,8 @@
 
 /// Undo/redo action history for card swipe operations.
 pub(crate) mod action_history;
+/// Per-deck parking for the add screen's search stack.
+pub(crate) mod add_stack_cache;
 /// Card info display and skeleton components.
 pub(crate) mod card_info;
 /// Contained swipe-stack state (cards, cursor, history, enter animation).
