@@ -19,6 +19,7 @@ use crate::{
                 },
                 add_stack_cache::{AddStackCache, ParkedStack},
                 card_stack::{CardStack, use_card_stack},
+                flippable_card_image::reset_image_ease,
             },
             filter::card_filter_sheet::CardFilterSheet,
         },
@@ -745,6 +746,8 @@ pub fn Add(deck_id: Uuid) -> Element {
         //   - initial mount with a different/new filter, OR
         //   - initial mount with no existing cards
         stack.reset();
+        // Fresh results ease in again, even previously seen images.
+        reset_image_ease();
         last_search_filter.set(None);
         current_offset.set(0);
         pagination_exhausted.set(false);
@@ -1292,6 +1295,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             };
 
                             stack.reset();
+                            reset_image_ease();
                             last_search_filter.set(None);
                             current_offset.set(0);
                             pagination_exhausted.set(false);

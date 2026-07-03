@@ -1,7 +1,27 @@
 //! Card image with a built-in flip control for double-faced cards.
 
 use dioxus::prelude::*;
+use std::collections::HashSet;
+use std::sync::{Mutex, OnceLock};
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
+
+/// Image URLs whose bytes have already arrived once this session. These
+/// render instantly; only first-time loads play the ease-in. Keyed by URL
+/// (not component) because stack shifts recreate component instances, which
+/// would otherwise replay the fade on every already-cached image.
+fn seen_urls() -> &'static Mutex<HashSet<String>> {
+    static SEEN: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
+    SEEN.get_or_init(|| Mutex::new(HashSet::new()))
+}
+
+/// Forgets all seen URLs so every image's next render eases in again. Called
+/// on deliberate stack refreshes — the fade doubles as feedback that fresh
+/// results arrived.
+pub(crate) fn reset_image_ease() {
+    if let Ok(mut seen) = seen_urls().lock() {
+        seen.clear();
+    }
+}
 
 /// Renders a card image with a flip-icon overlay for cards that have multiple faces.
 ///
@@ -24,12 +44,22 @@ pub(crate) fn FlippableCardImage(
     flippable: bool,
 ) -> Element {
     let mut face_idx: Signal<usize> = use_signal(|| 0_usize);
+    // Bumped by the img's load event so the seen-URL check below re-runs.
+    let mut load_nudge: Signal<u32> = use_signal(|| 0);
+    let _ = load_nudge();
     let total = sd.read().face_count();
     let alt = sd.read().name.clone();
     let image_url: Option<String> = sd
         .read()
         .face_image_url(face_idx(), size)
         .map(str::to_owned);
+
+    let already_loaded = image_url.as_ref().is_some_and(|u| {
+        seen_urls()
+            .lock()
+            .map(|seen| seen.contains(u))
+            .unwrap_or(false)
+    });
 
     let flippable_class = if flippable && total > 1 {
         " flippable"
@@ -44,6 +74,13 @@ pub(crate) fn FlippableCardImage(
                     src: "{url}",
                     alt: "{alt}",
                     draggable,
+                    class: if already_loaded { "img-loaded" } else { "" },
+                    onload: move |_| {
+                        if let Ok(mut seen) = seen_urls().lock() {
+                            seen.insert(url.clone());
+                        }
+                        load_nudge += 1;
+                    },
                 }
             }
             if flippable && total > 1 {

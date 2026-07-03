@@ -263,6 +263,7 @@ pub(crate) fn CardSkeleton(#[props(default = false)] is_loading: bool) -> Elemen
                 }
             }
             div { class: "skeleton-info",
+                div { class: "skeleton-bar skeleton-bar-name" }
                 div { class: "skeleton-bar skeleton-bar-price" }
                 div { class: "skeleton-bar skeleton-bar-set" }
                 div { class: "skeleton-bar skeleton-bar-date" }
