@@ -39,13 +39,17 @@ Built for players who want a fast, focused mobile experience — not another clu
 
 ---
 
-## What's New in This Version (1.2.3)
+## What's New in This Version (1.3.0)
 
-- Zwipe now remembers your skips: cards you swipe left on stay out of that deck's suggestions, even after you close the app. Cards you deliberately remove from a deck stay out too.
+- Zwipe now remembers your skips: cards you swipe left on stay out of that deck's suggestions, saved the instant you swipe, even if you close the app right after. Cards you deliberately remove from a deck stay out too.
 - Changed your mind? Clear a deck's skips anytime from its More menu.
+- Every deck now remembers your place: leave the add screen, work on another deck, and come back to pick up right where you left off, undo history included.
+- Reached the end of your results? Swipe down on the empty stack to step back through your last swipes.
+- Cards you send to the maybeboard now show up there immediately.
 - Your deck's card list now sorts alphabetically by default.
 - See which version you're on at the bottom of the Profile screen.
 - Privacy policy updated to describe how your activity personalizes suggestions.
+- Extra polish: card images ease in as they load, and the card layout keeps consistent spacing on every screen size.
 
 ---
 
