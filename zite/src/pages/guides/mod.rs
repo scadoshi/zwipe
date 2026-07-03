@@ -28,11 +28,10 @@ fn swipe_class(dir: &str) -> &'static str {
 /// Renders body text, turning `backtick`-delimited tokens into highlighted
 /// keyword spans (filter names, option values, enum members, and the like).
 fn inline(text: &str) -> Element {
-    let parts: Vec<(bool, String)> = text
+    let parts = text
         .split('`')
         .enumerate()
-        .map(|(i, s)| (i % 2 == 1, s.to_string()))
-        .collect();
+        .map(|(i, s)| (i % 2 == 1, s.to_string()));
     rsx! {
         for (kw , s) in parts {
             if kw {
