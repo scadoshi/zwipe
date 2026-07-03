@@ -12,7 +12,7 @@ use crate::{
             telemetry::usage_buffer::UsageBuffer,
         },
         screens::deck::card::{
-            components::action_history::SwipeAction,
+            components::{action_history::SwipeAction, card_stack::use_card_stack},
             filter::{card_filter_sheet::CardFilterSheet, deck_cards::DeckCards},
         },
     },
@@ -64,13 +64,6 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
     let filter_builder: Signal<CardQueryBuilder> = use_context();
 
-    // When Some, the SwipeStack plays a keyframe entering from this direction
-    // on the next top card, and clears it on animationend. Set by undo.
-    let mut entering_direction: Signal<Option<Direction>> = use_signal(|| None);
-
-    // Local undo stack
-    let mut action_history: Signal<Vec<SwipeAction>> = use_signal(Vec::new);
-
     // Filter overlay state
     let mut filters_overlay_open = use_signal(|| false);
 
@@ -95,8 +88,9 @@ pub fn Remove(deck_id: Uuid) -> Element {
     let mut deck_cards_for_filter: Signal<Vec<Card>> = use_signal(Vec::new);
     use_context_provider(|| DeckCards(deck_cards_for_filter));
 
-    // What the swipe UI iterates over (may be a filtered subset)
-    let mut displayed_cards: Signal<Vec<Card>> = use_signal(Vec::new);
+    // What the swipe UI iterates over (may be a filtered subset of
+    // `deck_entries`) — a cycling stack over the displayed cards.
+    let mut stack = use_card_stack();
     // Guards filter effect from running before the deck has loaded
     let mut deck_loaded: Signal<bool> = use_signal(|| false);
     // Board filter state
@@ -113,8 +107,6 @@ pub fn Remove(deck_id: Uuid) -> Element {
     let mut price_budget: Signal<Option<f64>> = use_signal(|| None);
     let mut price_budget_currency: Signal<PriceCurrency> = use_signal(|| PriceCurrency::Usd);
 
-    let mut current_index = use_signal(|| 0_usize);
-
     // Swipe config — the stack owns its own SwipeState internally.
     // Thresholds tuned for responsive rapid swiping: a short drag (60px) OR
     // a quick flick (1.5 px/ms over the 10px minimum) commits.
@@ -129,14 +121,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
         1.5,
     );
 
-    let current_card = move || {
-        let cards = displayed_cards();
-        if cards.is_empty() {
-            return None;
-        }
-        let idx = current_index() % cards.len();
-        cards.get(idx).cloned()
-    };
+    let current_card = move || stack.current_wrapping();
 
     // Mainboard land count from the source of truth (quantity-aware, MDFC land
     // faces included via is_land). Recomputed each call so it never drifts.
@@ -271,8 +256,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
             .sorted(builder.sort(), builder.ascending())
             .into();
 
-        displayed_cards.set(filtered);
-        current_index.set(0);
+        stack.replace(filtered);
     });
 
     let delete_card_from_deck = move || {
@@ -330,29 +314,21 @@ pub fn Remove(deck_id: Uuid) -> Element {
 
     // Called at animation end to physically remove the card from both vecs.
     let mut remove_current_card = move || {
-        let idx = current_index();
-        let card_id = displayed_cards()
-            .get(idx)
-            .map(|c| c.card_profile.scryfall_data_id);
+        let card_id = stack.current().map(|c| c.card_profile.scryfall_data_id);
         if let Some(id) = card_id {
             deck_entries
                 .write()
                 .retain(|e| e.card.card_profile.scryfall_data_id != id);
-            if idx < displayed_cards.read().len() {
-                displayed_cards.write().remove(idx);
-            }
+            stack.remove_current();
         }
-        // current_index is unchanged — the next card slides into position
+        // The cursor is unchanged — the next card slides into position.
     };
 
     // Board-move counterpart of remove_current_card: the entry survives in
     // the source of truth with its new board (so the board chips stay
     // truthful without a refetch); only the displayed stack drops the card.
     let mut move_current_card_locally = move |to: Board| {
-        let idx = current_index();
-        let card_id = displayed_cards()
-            .get(idx)
-            .map(|c| c.card_profile.scryfall_data_id);
+        let card_id = stack.current().map(|c| c.card_profile.scryfall_data_id);
         if let Some(id) = card_id {
             if let Some(entry) = deck_entries
                 .write()
@@ -361,33 +337,27 @@ pub fn Remove(deck_id: Uuid) -> Element {
             {
                 entry.deck_card.board = to;
             }
-            if idx < displayed_cards.read().len() {
-                displayed_cards.write().remove(idx);
-            }
+            stack.remove_current();
         }
-        // current_index is unchanged — the next card slides into position
+        // The cursor is unchanged — the next card slides into position.
     };
 
     let mut undo_last_action = move || {
-        let Some(action) = action_history.write().pop() else {
+        let Some(action) = stack.pop_action() else {
             toast.info("Nothing to undo".to_string(), ToastOptions::default());
             return;
         };
 
-        // Ask the stack to play the enter animation from the direction the
-        // card originally exited.
-        entering_direction.set(Some(action.exited().clone()));
+        // Play the enter animation from the direction the card originally
+        // exited.
+        stack.prime_entering(action.exited().clone());
 
         match action {
             SwipeAction::Skip { .. } => {
-                let len = displayed_cards().len();
-                if len == 0 {
-                    entering_direction.set(None);
+                if !stack.retreat_wrapping() {
+                    stack.cancel_entering();
                     return;
                 }
-                let idx = current_index();
-                let prev = if idx == 0 { len - 1 } else { idx - 1 };
-                current_index.set(prev);
                 toast.info(
                     "Undid skip".to_string(),
                     ToastOptions::default().duration(Duration::from_millis(1500)),
@@ -396,8 +366,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
             SwipeAction::Do { card, .. } => {
                 // Re-insert into displayed cards so the card reappears
                 let card = *card;
-                let idx = current_index();
-                displayed_cards.write().insert(idx, card.clone());
+                stack.insert_current(card.clone());
 
                 // Restore on the backend
                 let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
@@ -406,7 +375,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         Ok(session) => session,
                         Err(e) => {
                             toast.error(e.to_user_message(), ToastOptions::default());
-                            entering_direction.set(None);
+                            stack.cancel_entering();
                             return;
                         }
                     };
@@ -430,8 +399,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
             SwipeAction::Maybeboard { card, .. } => {
                 // Re-insert into displayed cards so the card reappears
                 let card = *card;
-                let idx = current_index();
-                displayed_cards.write().insert(idx, card.clone());
+                stack.insert_current(card.clone());
 
                 // Move back from maybeboard to active on the backend
                 let scryfall_data_id = card.scryfall_data.id;
@@ -442,7 +410,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         Ok(session) => session,
                         Err(e) => {
                             toast.error(e.to_user_message(), ToastOptions::default());
-                            entering_direction.set(None);
+                            stack.cancel_entering();
                             return;
                         }
                     };
@@ -475,8 +443,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
             SwipeAction::MoveBoard { card, from, .. } => {
                 // Re-insert into displayed cards so the card reappears
                 let card = *card;
-                let idx = current_index();
-                displayed_cards.write().insert(idx, card.clone());
+                stack.insert_current(card.clone());
 
                 // Move back to the board it came from, server then local
                 let scryfall_data_id = card.scryfall_data.id;
@@ -487,7 +454,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                         Ok(session) => session,
                         Err(e) => {
                             toast.error(e.to_user_message(), ToastOptions::default());
-                            entering_direction.set(None);
+                            stack.cancel_entering();
                             return;
                         }
                     };
@@ -545,32 +512,26 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 }
 
                 div { class: "form-container",
-                    if !displayed_cards().is_empty() {
+                    if !stack.is_empty() {
                         SwipeStack {
-                            cards: {
-                                let all = displayed_cards();
-                                all.into_iter().skip(current_index()).take(crate::inbound::components::interactions::swipe::STACK_DEPTH).collect::<Vec<_>>()
-                            },
+                            cards: stack.window(),
                             config: swipe_config,
-                            entering: entering_direction,
+                            entering: stack.entering(),
                             on_swipe_left: move |card: Card| {
                                 usage_buffer().record_swipe(Direction::Left);
-                                action_history.write().push(SwipeAction::Skip { card: Box::new(card), exited: Direction::Left });
+                                stack.record(SwipeAction::Skip { card: Box::new(card), exited: Direction::Left });
                                 toast.info(
                                     "Skipped".to_string(),
                                     ToastOptions::default().duration(Duration::from_millis(1500)),
                                 );
-                                // Skip: advance circularly within displayed_cards
-                                let len = displayed_cards().len();
-                                if len > 0 {
-                                    current_index.set((current_index() + 1) % len);
-                                }
+                                // Skip: advance circularly within the stack
+                                stack.advance_wrapping();
                             },
                             on_swipe_right: move |card: Card| {
                                 usage_buffer().record_swipe(Direction::Right);
                                 // Removal signal (delayed negative) keyed by commander + card.
                                 usage_buffer().record_removal(commander_oracle_id(), card.scryfall_data.oracle_id);
-                                action_history.write().push(SwipeAction::Do { card: Box::new(card), exited: Direction::Right });
+                                stack.record(SwipeAction::Do { card: Box::new(card), exited: Direction::Right });
                                 delete_card_from_deck();
                                 toast.success(
                                     "Removed from deck".to_string(),
@@ -593,7 +554,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                                     .map(|e| e.deck_card.board)
                                     .unwrap_or_default();
                                 let to = if from.is_maybeboard() { Board::Deck } else { Board::Maybeboard };
-                                action_history.write().push(SwipeAction::MoveBoard { card: Box::new(card), exited: Direction::Up, from, to });
+                                stack.record(SwipeAction::MoveBoard { card: Box::new(card), exited: Direction::Up, from, to });
                                 move_card_to_board(to);
                                 let message = if to.is_maybeboard() { "Moved to maybeboard" } else { "Moved to main" };
                                 toast.info(message.to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
@@ -637,8 +598,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 button {
                     class: "util-btn",
                     onclick: move |_| {
-                        current_index.set(0);
-                        action_history.write().clear();
+                        stack.rewind();
                         if filter_builder.peek().sort() == Some(CardSortKey::Random) {
                             let current = *filter_reset_counter.peek();
                             filter_reset_counter.set(current + 1);

@@ -4,9 +4,7 @@ use crate::inbound::components::screen_header::ScreenHeader;
 use crate::{
     inbound::{
         components::{
-            auth::{
-                bouncer::Bouncer, ensure_session::EnsureFresh, session_upkeep::AddStackIndex,
-            },
+            auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
             hint_dialog::{
                 HintBullet, HintBullets, HintColored, HintDialog, HintLine, use_one_time_hint,
             },
@@ -14,8 +12,9 @@ use crate::{
             telemetry::{flush_loop::flush_once, usage_buffer::UsageBuffer},
         },
         screens::deck::card::{
-            components::action_history::{
-                CARDS_WARNING_THRESHOLD, MAX_CARDS_IN_STACK, SwipeAction,
+            components::{
+                action_history::{CARDS_WARNING_THRESHOLD, MAX_CARDS_IN_STACK, SwipeAction},
+                card_stack::{CardStack, use_card_stack},
             },
             filter::card_filter_sheet::CardFilterSheet,
         },
@@ -107,7 +106,9 @@ pub fn Add(deck_id: Uuid) -> Element {
     let navigator = use_navigator();
 
     let mut filter_builder: Signal<CardQueryBuilder> = use_context();
-    let mut cards: Signal<Vec<Card>> = use_context();
+    // App-scoped search stack (cards, cursor, undo history, animation) —
+    // survives navigation so re-entry resumes mid-stack.
+    let mut stack: CardStack = use_context();
     let mut last_search_filter: Signal<Option<CardQueryBuilder>> = use_context();
     let is_first_run = use_hook(|| std::cell::Cell::new(true));
 
@@ -115,10 +116,6 @@ pub fn Add(deck_id: Uuid) -> Element {
     // grayed "?" in the util bar reopens it on demand.
     let swipe_hint_open = use_one_time_hint(HINT_ADD_DECK_CARDS);
     let show_rules = use_signal(|| false);
-
-    // When Some, the SwipeStack plays a keyframe entering from this direction
-    // on the next top card, and clears it on animationend. Set by undo.
-    let mut entering_direction: Signal<Option<Direction>> = use_signal(|| None);
 
     let mut deck_cards_ids = use_signal(HashSet::<Uuid>::new);
     let mut deck_format: Signal<Option<Format>> = use_signal(|| None);
@@ -148,13 +145,8 @@ pub fn Add(deck_id: Uuid) -> Element {
     // (server fell back to the full pool); drives the inline "warming up" note.
     let mut synergy_warming = use_signal(|| false);
     let mut mb_entries: Signal<Vec<DeckEntry>> = use_signal(Vec::new);
-    let mut mb_displayed_cards: Signal<Vec<Card>> = use_signal(Vec::new);
-    let mut mb_current_index: Signal<usize> = use_signal(|| 0);
-    let mut mb_action_history: Signal<Vec<SwipeAction>> = use_signal(Vec::new);
-    let mut mb_entering_direction: Signal<Option<Direction>> = use_signal(|| None);
-
-    // Undo action history
-    let mut action_history: Signal<Vec<SwipeAction>> = use_signal(Vec::new);
+    // Screen-local maybeboard stack — a cycling view over `mb_entries`.
+    let mut mb_stack = use_card_stack();
 
     // Filters overlay at bottom of screen state
     let mut filters_overlay_open = use_signal(|| false);
@@ -183,10 +175,6 @@ pub fn Add(deck_id: Uuid) -> Element {
         }
     });
 
-    // Card iteration state — app-scoped beside `cards`, so re-entering the
-    // screen with an unchanged filter resumes at the same stack position.
-    let AddStackIndex(mut current_index) = use_context();
-
     // Pagination state
     let mut current_offset = use_signal(|| 0_u32);
     let mut is_loading_more = use_signal(|| false);
@@ -198,15 +186,12 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     let mut is_loading_cards = use_signal(|| false);
 
-    let current_card = move || {
-        let idx = current_index();
-        cards().get(idx).cloned()
-    };
+    let current_card = move || stack.current();
 
     // Load more cards with pagination and de-duplication
     let mut load_more_cards = move || {
         // Check if we've hit the card limit
-        let current_card_count = cards().len();
+        let current_card_count = stack.len();
         if current_card_count >= MAX_CARDS_IN_STACK {
             toast.warning(
                 "Card limit reached, please refresh to continue".to_string(),
@@ -244,7 +229,7 @@ pub fn Add(deck_id: Uuid) -> Element {
             match client().search_deck_cards(deck_id, &filter, &session).await {
                 Ok((new_cards, warming)) => {
                     synergy_warming.set(warming);
-                    let existing_cards = cards();
+                    let existing_cards = stack.cards();
                     let deck_ids = deck_cards_ids();
 
                     // Get existing card IDs for de-duplication
@@ -271,9 +256,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                     // Append unique cards to existing list
                     if !unique_new_cards.is_empty() {
-                        let mut updated_cards = existing_cards;
-                        updated_cards.extend(unique_new_cards);
-                        cards.set(updated_cards);
+                        stack.append(unique_new_cards);
 
                         // Update offset for next load
                         current_offset.set(current_offset() + pagination_limit);
@@ -308,9 +291,8 @@ pub fn Add(deck_id: Uuid) -> Element {
     // Advance past the just-committed card. The stack fires its on_swipe_*
     // callbacks after the exit transition, so by now the card is off-screen.
     let mut advance_after_commit = move || {
-        let total = cards().len();
-        if current_index() + 1 < total {
-            current_index.set(current_index() + 1);
+        let total = stack.len();
+        if stack.advance() {
             if (CARDS_WARNING_THRESHOLD..MAX_CARDS_IN_STACK).contains(&total)
                 && total.is_multiple_of(100)
             {
@@ -320,7 +302,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 );
             }
             // Trigger a pagination prefetch when we're within the threshold.
-            if total > 0 && current_index() + 1 >= total.saturating_sub(load_more_threshold) {
+            if total > 0 && stack.index() + 1 >= total.saturating_sub(load_more_threshold) {
                 load_more_cards();
             }
         } else {
@@ -391,23 +373,18 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     let mut undo_last_action = move || {
         // Pop last action from history
-        let Some(action) = action_history.write().pop() else {
+        let Some(action) = stack.pop_action() else {
             toast.info("Nothing to undo".to_string(), ToastOptions::default());
             return;
         };
 
-        // Can't undo if we're at the first card
-        if current_index() == 0 {
+        // Step back one card (primes the enter animation from the direction
+        // the card originally exited). Fails at the first card.
+        if !stack.step_back(&action) {
             toast.warning("No previous card".to_string(), ToastOptions::default());
-            action_history.write().push(action); // Put it back
+            stack.record(action); // Put it back
             return;
         }
-
-        // Go back one card — the previously-swiped card becomes the new top.
-        current_index.set(current_index() - 1);
-        // Ask the stack to play the enter animation from the direction the
-        // card originally exited.
-        entering_direction.set(Some(action.exited().clone()));
 
         match action {
             // Remove-screen-only variant; never pushed on this screen.
@@ -446,9 +423,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         Ok(session) => session,
                         Err(e) => {
                             toast.error(e.to_user_message(), ToastOptions::default());
-                            action_history.write().push(action); // Restore history
-                            current_index.set(current_index() + 1); // Restore index
-                            entering_direction.set(None);
+                            stack.unwind_undo(action); // Restore history + cursor
                             return;
                         }
                     };
@@ -485,9 +460,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         Ok(session) => session,
                         Err(e) => {
                             toast.error(e.to_user_message(), ToastOptions::default());
-                            action_history.write().push(action);
-                            current_index.set(current_index() + 1);
-                            entering_direction.set(None);
+                            stack.unwind_undo(action);
                             return;
                         }
                     };
@@ -538,8 +511,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 if let Some(colors) = deck_color_identity() {
                     filter_builder.write().set_color_identity_within(colors);
                 }
-                cards.set(vec![]);
-                current_index.set(0);
+                stack.replace(Vec::new());
                 toast.info("Filter cleared".to_string(), opts);
             }
         }
@@ -675,7 +647,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     // stack can be filled immediately — the deck-aware search
                     // serves the default filter synergy-ordered, 25 a page.
                     // A non-empty stack is a preserved session; leave it be.
-                    if cards.peek().is_empty() {
+                    if stack.peek_is_empty() {
                         let current = *filter_reset_counter.peek();
                         filter_reset_counter.set(current + 1);
                     }
@@ -715,9 +687,9 @@ pub fn Add(deck_id: Uuid) -> Element {
                 })
                 .unwrap_or(false);
 
-            if filter_unchanged && !cards.peek().is_empty() {
+            if filter_unchanged && !stack.peek_is_empty() {
                 // Restore pagination offset so load-more picks up from the right place.
-                current_offset.set(cards.peek().len() as u32);
+                current_offset.set(stack.peek_len() as u32);
                 return;
             }
         }
@@ -727,10 +699,9 @@ pub fn Add(deck_id: Uuid) -> Element {
         //   - explicit user action (refresh / apply filter), OR
         //   - initial mount with a different/new filter, OR
         //   - initial mount with no existing cards
-        cards.set(vec![]);
+        stack.replace(Vec::new());
         last_search_filter.set(None);
         current_offset.set(0);
-        current_index.set(0);
         pagination_exhausted.set(false);
 
         // Gate (Search mode, once the deck is loaded): only auto-serve a
@@ -787,7 +758,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 Ok((cards_from_search, warming)) => {
                     synergy_warming.set(warming);
                     let deck_ids = deck_cards_ids();
-                    cards.set(
+                    stack.replace(
                         cards_from_search
                             .into_iter()
                             .filter(|card| {
@@ -841,18 +812,10 @@ pub fn Add(deck_id: Uuid) -> Element {
         let filtered: Vec<Card> = Cards::from(filtered)
             .sorted(builder.sort(), builder.ascending())
             .into();
-        mb_displayed_cards.set(filtered);
-        mb_current_index.set(0);
+        mb_stack.replace(filtered);
     });
 
-    let mb_current_card = move || {
-        let cards = mb_displayed_cards();
-        if cards.is_empty() {
-            return None;
-        }
-        let idx = mb_current_index() % cards.len();
-        cards.get(idx).cloned()
-    };
+    let mb_current_card = move || mb_stack.current_wrapping();
 
     let mut mb_promote_to_deck = move |card: Card| {
         let scryfall_data_id = card.scryfall_data.id;
@@ -862,10 +825,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         mb_entries
             .write()
             .retain(|e| e.card.scryfall_data.id != scryfall_data_id);
-        let idx = mb_current_index();
-        if idx < mb_displayed_cards.read().len() {
-            mb_displayed_cards.write().remove(idx);
-        }
+        mb_stack.remove_current();
         // Also add to deck exclusion set so search mode won't show it
         if let Some(oid) = card.scryfall_data.oracle_id {
             deck_cards_ids.write().insert(oid);
@@ -891,23 +851,19 @@ pub fn Add(deck_id: Uuid) -> Element {
     };
 
     let mut mb_undo_last_action = move || {
-        let Some(action) = mb_action_history.write().pop() else {
+        let Some(action) = mb_stack.pop_action() else {
             toast.info("Nothing to undo".to_string(), ToastOptions::default());
             return;
         };
 
-        mb_entering_direction.set(Some(action.exited().clone()));
+        mb_stack.prime_entering(action.exited().clone());
 
         match action {
             SwipeAction::Skip { .. } => {
-                let len = mb_displayed_cards().len();
-                if len == 0 {
-                    mb_entering_direction.set(None);
+                if !mb_stack.retreat_wrapping() {
+                    mb_stack.cancel_entering();
                     return;
                 }
-                let idx = mb_current_index();
-                let prev = if idx == 0 { len - 1 } else { idx - 1 };
-                mb_current_index.set(prev);
                 toast.info(
                     "Undid skip".to_string(),
                     ToastOptions::default().duration(Duration::from_millis(1500)),
@@ -915,8 +871,7 @@ pub fn Add(deck_id: Uuid) -> Element {
             }
             SwipeAction::Do { card, .. } => {
                 let card = *card;
-                let idx = mb_current_index();
-                mb_displayed_cards.write().insert(idx, card.clone());
+                mb_stack.insert_current(card.clone());
 
                 let scryfall_data_id = card.scryfall_data.id;
                 let oracle_id = card.scryfall_data.oracle_id;
@@ -927,7 +882,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         Ok(session) => session,
                         Err(e) => {
                             toast.error(e.to_user_message(), ToastOptions::default());
-                            mb_entering_direction.set(None);
+                            mb_stack.cancel_entering();
                             return;
                         }
                     };
@@ -1010,8 +965,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                     }
 
                                     add_source.set(variant);
-                                    mb_current_index.set(0);
-                                    mb_action_history.write().clear();
+                                    mb_stack.rewind();
                                     let current = *filter_reset_counter.peek();
                                     filter_reset_counter.set(current + 1);
                                 },
@@ -1043,14 +997,11 @@ pub fn Add(deck_id: Uuid) -> Element {
                 div { class : "form-container",
                     if add_source() == AddSource::Search {
                         // Search mode (existing behavior)
-                        if !cards().is_empty() {
+                        if !stack.is_empty() {
                             SwipeStack {
-                                cards: {
-                                    let all = cards();
-                                    all.into_iter().skip(current_index()).take(crate::inbound::components::interactions::swipe::STACK_DEPTH).collect::<Vec<_>>()
-                                },
+                                cards: stack.window(),
                                 config: swipe_config,
-                                entering: entering_direction,
+                                entering: stack.entering(),
                                 on_swipe_left: move |card: Card| {
                                     usage_buffer().record_swipe(Direction::Left);
                                     usage_buffer().record_signal(commander_oracle_id(), card.scryfall_data.oracle_id, Direction::Left);
@@ -1066,14 +1017,14 @@ pub fn Add(deck_id: Uuid) -> Element {
                                             }
                                         });
                                     }
-                                    action_history.write().push(SwipeAction::Skip { card: Box::new(card), exited: Direction::Left });
+                                    stack.record(SwipeAction::Skip { card: Box::new(card), exited: Direction::Left });
                                     toast.info("Skipped".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                     advance_after_commit();
                                 },
                                 on_swipe_right: move |card: Card| {
                                     usage_buffer().record_swipe(Direction::Right);
                                     usage_buffer().record_signal(commander_oracle_id(), card.scryfall_data.oracle_id, Direction::Right);
-                                    action_history.write().push(SwipeAction::Do { card: Box::new(card.clone()), exited: Direction::Right });
+                                    stack.record(SwipeAction::Do { card: Box::new(card.clone()), exited: Direction::Right });
                                     let added_land = card.scryfall_data.is_land();
                                     let added_price = card_price(&card.scryfall_data, price_budget_currency()).unwrap_or(0.0);
                                     add_card_to_deck(card);
@@ -1121,7 +1072,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 on_swipe_up: move |card: Card| {
                                     usage_buffer().record_swipe(Direction::Up);
                                     usage_buffer().record_signal(commander_oracle_id(), card.scryfall_data.oracle_id, Direction::Up);
-                                    action_history.write().push(SwipeAction::Maybeboard { card: Box::new(card.clone()), exited: Direction::Up });
+                                    stack.record(SwipeAction::Maybeboard { card: Box::new(card.clone()), exited: Direction::Up });
                                     add_card_to_maybeboard(card);
                                     toast.info("Added to maybeboard".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                     advance_after_commit();
@@ -1143,26 +1094,20 @@ pub fn Add(deck_id: Uuid) -> Element {
                         }
                     } else {
                         // Maybeboard mode
-                        if !mb_displayed_cards().is_empty() {
+                        if !mb_stack.is_empty() {
                             SwipeStack {
-                                cards: {
-                                    let all = mb_displayed_cards();
-                                    all.into_iter().skip(mb_current_index()).take(crate::inbound::components::interactions::swipe::STACK_DEPTH).collect::<Vec<_>>()
-                                },
+                                cards: mb_stack.window(),
                                 config: swipe_config,
-                                entering: mb_entering_direction,
+                                entering: mb_stack.entering(),
                                 on_swipe_left: move |card: Card| {
                                     usage_buffer().record_swipe(Direction::Left);
-                                    mb_action_history.write().push(SwipeAction::Skip { card: Box::new(card), exited: Direction::Left });
+                                    mb_stack.record(SwipeAction::Skip { card: Box::new(card), exited: Direction::Left });
                                     toast.info("Skipped".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
-                                    let len = mb_displayed_cards().len();
-                                    if len > 0 {
-                                        mb_current_index.set((mb_current_index() + 1) % len);
-                                    }
+                                    mb_stack.advance_wrapping();
                                 },
                                 on_swipe_right: move |card: Card| {
                                     usage_buffer().record_swipe(Direction::Right);
-                                    mb_action_history.write().push(SwipeAction::Do { card: Box::new(card.clone()), exited: Direction::Right });
+                                    mb_stack.record(SwipeAction::Do { card: Box::new(card.clone()), exited: Direction::Right });
                                     mb_promote_to_deck(card);
                                     toast.success("Moved to deck".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                 },
@@ -1230,8 +1175,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                         .cloned()
                                         .collect();
                                     mb_entries.set(mb);
-                                    mb_current_index.set(0);
-                                    mb_action_history.write().clear();
+                                    mb_stack.rewind();
                                     let current = *filter_reset_counter.peek();
                                     filter_reset_counter.set(current + 1);
                                 }
@@ -1261,10 +1205,9 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 return;
                             };
 
-                            cards.set(vec![]);
+                            stack.replace(Vec::new());
                             last_search_filter.set(None);
                             current_offset.set(0);
-                            current_index.set(0);
                             pagination_exhausted.set(false);
                             is_loading_cards.set(true);
 
@@ -1280,7 +1223,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                     Ok((cards_from_search, warming)) => {
                                         synergy_warming.set(warming);
                                         let deck_ids = deck_cards_ids();
-                                        cards.set(
+                                        stack.replace(
                                             cards_from_search
                                                 .into_iter()
                                                 .filter(|card| {
