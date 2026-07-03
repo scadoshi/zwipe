@@ -1002,6 +1002,16 @@ button {
     flex: 1;
     min-height: 0;
     margin: 1rem auto 0.75rem auto;
+    animation: skeleton-enter 250ms ease;
+}
+
+@keyframes skeleton-enter {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 .skeleton-image {
@@ -1032,6 +1042,9 @@ button {
     animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+.skeleton-bar-name {
+    width: 35%;
+}
 .skeleton-bar-price {
     width: 60%;
 }
@@ -1414,6 +1427,9 @@ button {
 .swipe-stack-card {
     position: absolute;
     inset: 0;
+    /* Breathing room the card can never eat into: side gutters plus a
+       consistent gap from the source chips above and details below. */
+    padding: 0.75rem 1rem;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1841,7 +1857,9 @@ button {
 .flippable-card-wrapper.flippable {
 }
 
-/* Img owns its own sizing and rounding. Per-context max bounds below. */
+/* Img owns its own sizing and rounding. Per-context max bounds below.
+   Hidden until the bytes actually arrive (`onload` adds .img-loaded), then
+   eased in — otherwise slow loads pop in a fully-formed card. */
 .flippable-card-wrapper > img {
     grid-area: 1 / 1;
     display: block;
@@ -1849,12 +1867,41 @@ button {
     height: auto;
     max-width: calc(100vw - 2rem);
     border-radius: 1rem;
+    opacity: 0;
+    transition: opacity 250ms ease;
+}
+
+.flippable-card-wrapper > img.img-loaded {
+    opacity: 1;
 }
 
 /* Swipe stack (Add/Remove Deck Cards) */
 .flippable-card-wrapper.card-image > img {
     max-height: 55vh;
     box-shadow: var(--shadow-md);
+}
+
+/* Inside the swipe stack the image is bound to the padded card layer's
+   height, not the viewport, so it can't spill into the chip row above or
+   the details below on short screens. */
+.swipe-stack-card .flippable-card-wrapper.card-image {
+    height: 100%;
+    width: 100%;
+    min-height: 0;
+}
+
+.swipe-stack-card .flippable-card-wrapper.card-image > img {
+    max-height: min(55vh, 100%);
+    max-width: 100%;
+}
+
+/* DFC wrapper hugs the card's 5:7 bounds so the flip button anchors to the
+   image corner instead of the stretched layer. */
+.swipe-stack-card .flippable-card-wrapper.card-image.flippable {
+    height: auto;
+    aspect-ratio: 5 / 7;
+    max-height: 100%;
+    max-width: 100%;
 }
 
 /* Printing carousel + single-printing view */
@@ -1904,9 +1951,10 @@ button {
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
-    gap: 0.25rem;
+    gap: 0.2rem;
     font-size: 0.75rem;
     font-weight: 500;
+    line-height: 1.25;
     color: var(--accent-primary);
     padding: 0.5rem 1rem;
     align-self: flex-start;
