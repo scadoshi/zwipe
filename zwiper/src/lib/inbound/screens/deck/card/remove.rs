@@ -550,7 +550,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     class: "util-btn",
                     onclick: move |_| filters_overlay_open.set(true),
                     "Filter"
-                    if !filter_builder.read().is_empty() {
+                    if !filter_builder.read().is_empty() || filter_builder.read().sort().is_some() {
                         span { class: "filter-dot" }
                     }
                 }

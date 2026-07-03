@@ -224,6 +224,15 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     let current_card = move || stack.current();
 
+    // Lands drop out of the pool once the deck's land target is met. That auto
+    // exclusion is a default, not a user filter, so the dot ignores it (see the
+    // filter-dot condition below).
+    let lands_at_target = move || {
+        land_target()
+            .or_else(|| deck_format().and_then(|f| f.default_land_target()))
+            .is_some_and(|t| mainboard_land_count() >= t)
+    };
+
     // Load more cards with pagination and de-duplication
     let mut load_more_cards = move || {
         // Check if we've hit the card limit
@@ -536,20 +545,33 @@ pub fn Add(deck_id: Uuid) -> Element {
 
     let mut clear_filters = move || {
         let opts = ToastOptions::default().duration(Duration::from_millis(1500));
+        // Reset returns to the screen's default view. Synergy is a separate
+        // mode, not a filter, so it survives the reset (a commander deck lands
+        // back in synergy order). A lone sort counts as non-default, so Reset
+        // fires (and clears the sort) even when no card filter is set.
+        let synergy = filter_builder.peek().synergy();
+        let has_sort = filter_builder.peek().sort().is_some();
         if add_source() == AddSource::Maybeboard {
-            // Maybeboard mode: "cleared" means truly blank
-            if filter_builder.read().is_empty() {
-                toast.warning("Filter already cleared".to_string(), opts);
+            // Maybeboard default is a blank filter.
+            if filter_builder.read().is_empty() && !has_sort {
+                toast.warning("Filter already at default".to_string(), opts);
             } else {
                 filter_builder.write().clear();
+                filter_builder.write().set_synergy(synergy);
                 let current = *filter_reset_counter.peek();
                 filter_reset_counter.set(current + 1);
-                toast.info("Filter cleared".to_string(), opts);
+                toast.info("Filter reset".to_string(), opts);
             }
         } else {
-            // Search mode: "cleared" means only deck-context defaults
-            if filter_builder.read().is_empty_ignoring_deck_context() {
-                toast.warning("Filter already cleared".to_string(), opts);
+            // Search default is deck context (colors + legality) in synergy
+            // order, plus the automatic land exclusion once the land target is
+            // met. All of that is part of the default, so it's re-applied here
+            // and doesn't count toward "already at default".
+            let at_default = filter_builder
+                .read()
+                .is_empty_ignoring_deck_context_and_auto_lands(lands_at_target());
+            if at_default && !has_sort {
+                toast.warning("Filter already at default".to_string(), opts);
             } else {
                 filter_builder.write().clear();
                 if let Some(fmt) = deck_format() {
@@ -560,8 +582,13 @@ pub fn Add(deck_id: Uuid) -> Element {
                 if let Some(colors) = deck_color_identity() {
                     filter_builder.write().set_color_identity_within(colors);
                 }
+                filter_builder.write().set_synergy(synergy);
+                // Keep lands out if the deck is already at its land target.
+                if lands_at_target() {
+                    ensure_lands_excluded(filter_builder);
+                }
                 stack.replace(Vec::new());
-                toast.info("Filter cleared".to_string(), opts);
+                toast.info("Filter reset".to_string(), opts);
             }
         }
     };
@@ -754,17 +781,18 @@ pub fn Add(deck_id: Uuid) -> Element {
 
         // Gate (Search mode, once the deck is loaded): only auto-serve a
         // meaningful query. A commander format *with* a commander pulls
-        // synergy suggestions from cache; everything else needs a real user
-        // filter. Otherwise leave the stack empty and nudge the user to filter
-        // — an empty screen with no prompt reads as "no cards exist".
+        // synergy suggestions from cache; otherwise we need some intent (a
+        // filter, a sort, or synergy on). Only a truly blank query on a deck
+        // with no commander is left unserved, nudging the user to filter — an
+        // empty screen with no prompt reads as "no cards exist".
         if *deck_loaded.peek() && matches!(*add_source.peek(), AddSource::Search) {
             let is_commander_format = deck_format.peek().is_some_and(|f| f.has_commander());
             let has_commander = *deck_has_commander.peek();
-            let has_user_filter = !filter_builder.peek().is_empty_ignoring_deck_context();
+            let has_intent = filter_builder.peek().has_search_intent();
             let serve = if is_commander_format {
-                has_commander || has_user_filter
+                has_commander || has_intent
             } else {
-                has_user_filter
+                has_intent
             };
             if !serve {
                 toast.warning(
@@ -1239,7 +1267,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                     class: "util-btn",
                     onclick: move |_| filters_overlay_open.set(true),
                     "Filter"
-                    if !filter_builder.read().is_empty_ignoring_deck_context() {
+                    if !filter_builder.read().is_empty_ignoring_deck_context_and_auto_lands(lands_at_target()) || filter_builder.read().sort().is_some() {
                         span { class: "filter-dot" }
                     }
                 }
@@ -1282,7 +1310,7 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                             let Ok(filter) = builder.build() else {
                                 toast.warning(
-                                    "filter is empty".to_string(),
+                                    "Filter is empty".to_string(),
                                     ToastOptions::default().duration(Duration::from_millis(1500)),
                                 );
                                 return;

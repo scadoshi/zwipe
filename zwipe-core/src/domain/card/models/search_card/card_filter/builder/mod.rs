@@ -306,6 +306,41 @@ impl CardQueryBuilder {
         test.is_empty()
     }
 
+    /// Like [`is_empty_ignoring_deck_context`](Self::is_empty_ignoring_deck_context),
+    /// but also disregards an automatic `Land` type exclusion.
+    ///
+    /// The add screen excludes lands from the swipe pool once the deck's land
+    /// target is met — a default, not a user choice, so it should not read as
+    /// an active filter. Pass `lands_auto_excluded = true` when that default is
+    /// in effect (the target is met) so a lone `Land` exclude doesn't count.
+    pub fn is_empty_ignoring_deck_context_and_auto_lands(&self, lands_auto_excluded: bool) -> bool {
+        let mut test = self.clone();
+        test.unset_legalities_contains_any();
+        test.unset_color_identity_within();
+        if lands_auto_excluded
+            && let Some(excludes) = test.card_type_excludes_any()
+        {
+            let kept: Vec<CardType> =
+                excludes.iter().copied().filter(|t| *t != CardType::Land).collect();
+            test.set_card_type_excludes_any(kept);
+        }
+        test.is_empty()
+    }
+
+    /// True when the filter expresses something worth serving or re-running:
+    /// a real user filter (beyond the auto deck context), an explicit sort, or
+    /// synergy mode.
+    ///
+    /// This is the lenient gate for "should we serve / re-search," distinct
+    /// from [`is_empty`](Self::is_empty). Config-only prefs (playable,
+    /// language, currency, ...) and a bare deck-context filter (format legality
+    /// or commander colors) do not count on their own: alone they're the
+    /// unbounded full pool the add screen nudges the user past. A sort, or
+    /// synergy mode's bounded pool, is intent enough to serve and reorder.
+    pub fn has_search_intent(&self) -> bool {
+        !self.is_empty_ignoring_deck_context() || self.sort.is_some() || self.synergy
+    }
+
     // =================================
     // Quick Constructors (with_*)
     // =================================
@@ -675,8 +710,10 @@ impl CardQueryBuilder {
     ///
     /// # Errors
     ///
-    /// Returns [`InvalidCardCriteria::Empty`] if no search criteria are set
-    /// (only config fields like limit/offset are present), or
+    /// Returns [`InvalidCardCriteria::Empty`] only when there is nothing to run
+    /// at all — no criteria, no sort, and synergy off (the unbounded full pool
+    /// with no intent). A sort or synergy mode is enough to serve the pool
+    /// paginated and ordered. Also returns
     /// [`InvalidCardCriteria::Contradiction`] for include/exclude clashes.
     pub fn build(&self) -> Result<CardQuery, InvalidCardCriteria> {
         Ok(CardQuery::new(
@@ -697,7 +734,10 @@ impl CardQueryBuilder {
     ///
     /// Same as [`build`](Self::build).
     pub fn build_criteria(&self) -> Result<CardCriteria, InvalidCardCriteria> {
-        if self.is_empty() {
+        // Reject only the true firehose: no criteria, no sort, synergy off. An
+        // explicit sort or synergy mode is intent enough to serve all cards
+        // (paginated, ordered) — mirrors `has_search_intent`.
+        if self.is_empty() && self.sort.is_none() && !self.synergy {
             return Err(InvalidCardCriteria::Empty);
         }
 
@@ -882,6 +922,72 @@ mod tests {
     }
 
     #[test]
+    fn has_search_intent_counts_sort_and_synergy() {
+        // Bare builder (config only) is the firehose: no intent.
+        let bare = CardQueryBuilder::new();
+        assert!(!bare.has_search_intent());
+
+        // Deck context alone (format legality) is still the firehose.
+        let mut ctx = CardQueryBuilder::new();
+        ctx.set_legalities_contains_any(vec!["commander"]);
+        assert!(!ctx.has_search_intent());
+
+        // A sort is intent, even with no filter.
+        let mut sorted = CardQueryBuilder::new();
+        sorted.set_sort(CardSortKey::PriceUsd);
+        assert!(sorted.has_search_intent());
+
+        // Synergy mode is intent on its own, and stays intent alongside
+        // deck context (the video-5 "sort within synergy" case).
+        let mut synergy = CardQueryBuilder::new();
+        synergy.set_synergy(true);
+        assert!(synergy.has_search_intent());
+        synergy.set_legalities_contains_any(vec!["commander"]);
+        synergy.set_sort(CardSortKey::PriceUsd);
+        assert!(synergy.has_search_intent());
+
+        // A real user filter is intent, as before.
+        let mut named = CardQueryBuilder::new();
+        named.set_name_contains("bolt");
+        assert!(named.has_search_intent());
+    }
+
+    #[test]
+    fn build_allows_sort_or_synergy_only_but_not_true_firehose() {
+        // Truly blank (no criteria, no sort, synergy off) still errors Empty.
+        assert!(matches!(
+            CardQueryBuilder::new().build(),
+            Err(InvalidCardCriteria::Empty)
+        ));
+
+        // A sort with no filter builds — serves the full pool, ordered.
+        let mut sorted = CardQueryBuilder::new();
+        sorted.set_sort(CardSortKey::Name);
+        assert!(sorted.build().is_ok());
+
+        // Synergy mode with no filter builds too.
+        let mut synergy = CardQueryBuilder::new();
+        synergy.set_synergy(true);
+        assert!(synergy.build().is_ok());
+    }
+
+    #[test]
+    fn ignoring_auto_lands_strips_target_land_exclude() {
+        // Deck context + only an auto Land exclude reads as default (empty)
+        // when the land target is met, but as an active filter when it isn't.
+        let mut b = CardQueryBuilder::new();
+        b.set_legalities_contains_any(vec!["commander"]);
+        b.set_card_type_excludes_any(vec![CardType::Land]);
+        assert!(b.is_empty_ignoring_deck_context_and_auto_lands(true));
+        assert!(!b.is_empty_ignoring_deck_context_and_auto_lands(false));
+
+        // A real card-type exclude alongside Land still counts as active.
+        let mut b2 = CardQueryBuilder::new();
+        b2.set_card_type_excludes_any(vec![CardType::Land, CardType::Creature]);
+        assert!(!b2.is_empty_ignoring_deck_context_and_auto_lands(true));
+    }
+
+    #[test]
     fn card_type_include_exclude_clash_errors() {
         let mut builder = CardQueryBuilder::new();
         builder.set_card_type_contains_any(vec![CardType::Creature, CardType::Land]);
@@ -946,12 +1052,13 @@ mod tests {
 
     #[test]
     fn synergy_is_a_mode_not_a_criterion() {
-        // Synergy alone must not make the filter "active" — it's a server-side
-        // membership mode, not a search criterion.
+        // Synergy is not a search *criterion*: it never counts toward
+        // `is_empty` (a server-side membership mode, not a filter). But it is
+        // enough *intent* to build and serve the bounded synergy pool.
         let mut builder = CardQueryBuilder::new();
         builder.set_synergy(true);
         assert!(builder.is_empty());
-        assert!(builder.build().is_err());
+        assert!(builder.build().is_ok());
     }
 
     #[test]
