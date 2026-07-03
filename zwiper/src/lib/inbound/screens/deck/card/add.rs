@@ -158,6 +158,10 @@ pub fn Add(deck_id: Uuid) -> Element {
     // Filters overlay at bottom of screen state
     let mut filters_overlay_open = use_signal(|| false);
 
+    // Gesture start point for the end-of-stack skeleton, which accepts a
+    // down-swipe to undo back into the pile (no card, so no SwipeStack).
+    let mut end_swipe_start: Signal<Option<(f64, f64)>> = use_signal(|| None);
+
     // Reset counter for collapsing accordions and clearing search queries
     let mut filter_reset_counter: Signal<u32> = use_signal(|| 0);
     use_context_provider(|| filter_reset_counter);
@@ -388,10 +392,13 @@ pub fn Add(deck_id: Uuid) -> Element {
             };
 
             match client().create_deck_card(deck_id, &request, &session).await {
-                Ok(_) => {
+                Ok(deck_card) => {
                     if let Some(oid) = oracle_id {
                         deck_cards_ids.write().insert(oid);
                     }
+                    // Keep the maybeboard source in sync so switching to it
+                    // shows this card without a refetch.
+                    mb_entries.write().push(DeckEntry { card, deck_card });
                 }
                 Err(e) => {
                     tracing::warn!("add card to maybeboard failed: {e}");
@@ -506,6 +513,11 @@ pub fn Add(deck_id: Uuid) -> Element {
                             if let Some(oid) = oracle_id {
                                 deck_cards_ids.write().remove(&oid);
                             }
+                            // Mirror add_card_to_maybeboard's sync: the card
+                            // is off the maybeboard again.
+                            mb_entries
+                                .write()
+                                .retain(|e| e.card.scryfall_data.id != card_id);
                             toast.success(
                                 "Undid maybeboard".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
@@ -1026,7 +1038,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 div { class : "form-container",
                     if add_source() == AddSource::Search {
                         // Search mode (existing behavior)
-                        if !stack.is_empty() {
+                        if !stack.is_empty() && stack.index() < stack.len() {
                             SwipeStack {
                                 cards: stack.window(),
                                 config: swipe_config,
@@ -1115,6 +1127,51 @@ pub fn Add(deck_id: Uuid) -> Element {
                             if let Some(card) = current_card() {
                                 CardInfoDisplay { card: card.clone() }
                                 CardRulesDialog { open: show_rules, card }
+                            }
+                        } else if !stack.is_empty() {
+                            // Cursor sits one past the last card. A prefetch
+                            // may still be topping the stack up; a dry end
+                            // keeps the skeleton down-swipeable so undo leads
+                            // back into the pile.
+                            if is_loading_more() {
+                                CardSkeleton { is_loading: true }
+                            } else {
+                                div {
+                                    style: "display: flex; flex-direction: column; flex: 1; min-height: 0; width: 100%;",
+                                    ontouchstart: move |e: Event<TouchData>| {
+                                        if let Some(t) = e.touches().into_iter().next() {
+                                            let p = t.client_coordinates();
+                                            end_swipe_start.set(Some((p.x, p.y)));
+                                        }
+                                    },
+                                    ontouchend: move |e: Event<TouchData>| {
+                                        let Some((sx, sy)) = end_swipe_start() else {
+                                            return;
+                                        };
+                                        end_swipe_start.set(None);
+                                        if let Some(t) = e.touches_changed().into_iter().next() {
+                                            let p = t.client_coordinates();
+                                            if p.y - sy >= 60.0 && (p.y - sy).abs() > (p.x - sx).abs() {
+                                                undo_last_action();
+                                            }
+                                        }
+                                    },
+                                    onmousedown: move |e: Event<MouseData>| {
+                                        let p = e.client_coordinates();
+                                        end_swipe_start.set(Some((p.x, p.y)));
+                                    },
+                                    onmouseup: move |e: Event<MouseData>| {
+                                        let Some((sx, sy)) = end_swipe_start() else {
+                                            return;
+                                        };
+                                        end_swipe_start.set(None);
+                                        let p = e.client_coordinates();
+                                        if p.y - sy >= 60.0 && (p.y - sy).abs() > (p.x - sx).abs() {
+                                            undo_last_action();
+                                        }
+                                    },
+                                    CardSkeleton {}
+                                }
                             }
                         } else if is_loading_cards() {
                             CardSkeleton { is_loading: true }
