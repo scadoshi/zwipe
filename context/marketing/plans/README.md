@@ -18,7 +18,7 @@ add cards, Zwipe commander, import deck). Structure every video the same way:
 | # | File | Theme | Lead features | Priority |
 |---|------|-------|---------------|----------|
 | 1 | (done, external) | Basic functionality | Add cards, Zwipe commander, import deck | shipped |
-| 2 | [video_02_gets_out_of_your_way.md](video_02_gets_out_of_your_way.md) | It gets out of your way | Swipe memory + land auto-stop | **P1** |
+| 2 | [video_02_gets_out_of_your_way.md](video_02_gets_out_of_your_way.md) | It gets out of your way | Swipe memory + per-deck stack resume | **P1** |
 | 3 | [video_03_stops_when_youre_done.md](video_03_stops_when_youre_done.md) | Smart targeting | Land target, budget target, price filter | P2 |
 | 4 | [video_04_draw_odds.md](video_04_draw_odds.md) | Consistency math | Turn-by-turn draw odds | **P1** |
 | 5 | [video_05_synergy.md](video_05_synergy.md) | Synergy-aware swipes | Synergy ON/OFF toggle | P2 |
@@ -27,6 +27,7 @@ add cards, Zwipe commander, import deck). Structure every video the same way:
 
 **Ship order:** #2 and #4 first (freshest differentiators, thumb-stopping hooks).
 
-**Timing note:** video #2's swipe-memory *client UI* (durable skips, "Clear
-skips" button) ships with the release after 1.2.3. Film it against that build,
-not the current store version.
+**Timing note:** everything the slate needs is in **1.3.0** (iOS build 57 /
+Android versionCode 18, submitted 2026-07-02). Film video #2 against a 1.3.0
+build — per-swipe skips and per-deck stack resume are 1.3.0 features. Videos
+#3–#7 cover features shipped in 1.2.1 or earlier and work on any current build.
