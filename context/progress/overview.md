@@ -109,7 +109,38 @@ Build 15 shipped over build 14 with: `Email` strict newtype across the workspace
 
 ---
 
-## 1.2.3 — swipe memory, CardFilter split, deck-list alphabetical default (submitted 2026-07-02)
+## 1.3.0 — per-swipe skips, per-deck stack memory, CardStack refactor (submitted 2026-07-02)
+
+**Supersedes 1.2.3, which was withdrawn from both stores before review started**
+— its release notes folded into 1.3.0 (`210b2d3e`). Server (skip/unskip
+endpoints) deployed to prod 2026-07-02 ahead of clients; **iOS build 57**
+uploaded via Transporter and **Android versionCode 18** uploaded to the Alpha
+closed-testing track, both submitted for review 2026-07-02.
+
+- **Per-swipe durable skips (`92d4d39e`).** Skips no longer ride the 30s usage
+  batch (which lost them to a quick app kill and dropped them on HTTP failure):
+  `POST /deck/{id}/suppressions` fires on every left swipe and
+  `DELETE /deck/{id}/suppressions/{oracle_id}` on undo. Server batch ingest
+  kept for old clients; no migration.
+- **Per-deck stack memory (`9a10593c`, `cd1e39a8`, `93ca9e93`).** The add
+  screen's stack (cards, cursor, undo history) survives navigation and is
+  parked per deck (MRU cache, all 20 deck slots, behind-cursor trimmed to 50
+  on park), so every deck resumes exactly where its swiping left off.
+- **CardStack refactor (`d7cf0f9b`, `23996173`).** All three swipe stacks
+  (search, maybeboard, remove) run through one generic `CardStack<A>` with
+  per-stack action models (`AddAction` field-less — undo reads the card back
+  from the stack; `MaybeboardAction`/`RemoveAction` carry the card their
+  commit removes). Fixed the wrong-card undo at end of stack, stale maybeboard
+  entries after up-swipe adds, and the stuck empty end-of-stack state (now a
+  down-swipeable skeleton). In-session stack cap 1000 → 500.
+- **Polish (`ba8e476f`).** Card images ease in on first load and on stack
+  refresh, skeletons ease in, five-bar detail skeleton, card layer padding
+  bounds the image so it can't crowd the source chips on short screens,
+  tighter card-details line height.
+
+---
+
+## 1.2.3 — swipe memory, CardFilter split, deck-list alphabetical default (submitted 2026-07-02, withdrawn pre-review; shipped inside 1.3.0)
 
 **Server + zite deployed to prod 2026-07-02** (push `8a46a1a5`; the zite Pages
 deploy needed one re-run after a transient "Deployment failed, try again later"
