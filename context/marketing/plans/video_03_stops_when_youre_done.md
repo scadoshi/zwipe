@@ -1,8 +1,9 @@
 # Video 3 — The deck builder that stops when you're done
 
 **Theme:** Smart targeting keeps you on-plan without doing the math.
-**Priority:** P2. (If video #2 already used land auto-stop, lead this one on
-budget/price so they don't overlap.)
+**Priority:** P2. Video #2 dropped land auto-stop in its 1.3.0 rewrite (it leads
+on swipe memory now), so this video owns the full targeting story: budget,
+price filter, and land auto-stop together.
 **Hook line:** "Set a budget. It won't let you blow it."
 
 ## Beats (~20s)

@@ -26,3 +26,6 @@
 - Shipped in 1.2.0. Film against the current store build.
 - Premium-tier candidate: keep the framing "serious tool" not "gimmick."
 - Numbers must be real, straight from the app. Don't mock the percentages.
+- For beat 3 (add lands via swipe), use a deck that is under its land target or
+  has none set. Land auto-stop excludes lands from the swipe pool once the
+  target is met, so a maxed-out deck won't deal you lands to add on camera.
