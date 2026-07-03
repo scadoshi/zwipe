@@ -25,6 +25,7 @@ use crate::{
         },
     },
     outbound::client::{ZwipeClient, user::get_user::ClientGetUser},
+    outbound::open_url,
 };
 use change_email::ChangeEmailSheet;
 use change_password::ChangePasswordSheet;
@@ -40,6 +41,9 @@ use zwipe_core::domain::user::models::theme::ThemeConfig;
 /// Client version baked in at compile time, shown at the bottom of the screen
 /// so users can report which build they're on.
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+/// Marketing site, opened externally from the About section.
+const WEB_DOMAIN: &str = "https://zwipe.net";
 
 /// User profile screen showing account details and management options.
 #[component]
@@ -199,7 +203,19 @@ pub fn Profile() -> Element {
                             div { class: "profile-list",
 
                                 div { class: "card-header",
-                                    span { class: "card-title", "Legal" }
+                                    span { class: "card-title", "About" }
+                                }
+
+                                div {
+                                    class: "profile-row",
+                                    span { class: "profile-row-label", "Website" }
+                                    div { class: "profile-row-value",
+                                        button {
+                                            class: "util-btn",
+                                            onclick: move |_| open_url::open(WEB_DOMAIN),
+                                            "zwipe.net \u{2197}"
+                                        }
+                                    }
                                 }
 
                                 div {
@@ -214,13 +230,6 @@ pub fn Profile() -> Element {
                                             "View"
                                         }
                                     }
-                                }
-                            }
-
-                            div { class: "profile-list",
-
-                                div { class: "card-header",
-                                    span { class: "card-title", "System" }
                                 }
 
                                 div {
