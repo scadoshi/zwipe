@@ -195,17 +195,19 @@ the bundle → **Upload native debug symbols** (a zip containing
 
 ## History
 
-- **2026-07-02 — `1.3.0`, versionCode `18`** (per-swipe durable skips via the
+- **2026-07-02 — `1.3.0`, versionCode `19`** (per-swipe durable skips via the
   new skip/unskip endpoints; per-deck add-stack memory with MRU parking;
   CardStack refactor across the three swipe screens; image/skeleton ease-ins +
-  swipe-layout spacing; stack cap 1000 → 500. Supersedes 1.2.3/vc17, withdrawn
-  from review — release notes folded into 1.3.0). Built per this recipe —
-  `dx bundle` → `launcher-icons.sh` → gradle patch (compileSdk 36 / targetSdk
-  35 / versionCode 18) → `gradlew :app:bundleRelease` → jarsigner (0600
-  scratchpad password, deleted after). Artifact `zwipe-1.3.0.aab`, signed +
-  `jar verified`, uploaded to the Alpha closed-testing track. iOS counterpart:
-  build 57. Server (skip endpoints, no migration) deployed to prod first.
-  *R8/edge-to-edge emulator smoke test skipped again — first suspect if a
+  swipe-layout spacing; stack cap 1000 → 500; profile About section with the
+  website link. Supersedes 1.2.3/vc17, withdrawn from review — release notes
+  folded into 1.3.0). Built per this recipe — `dx bundle` → `launcher-icons.sh`
+  → gradle patch (compileSdk 36 / targetSdk 35 / versionCode 19) →
+  `gradlew :app:bundleRelease` → jarsigner (0600 scratchpad password, deleted
+  after). Artifact `zwipe-1.3.0-vc19.aab`, signed + `jar verified`, uploaded to
+  the Alpha closed-testing track. **vc18 was built and submitted first, then
+  superseded by vc19** (added the About section) before review completed. iOS
+  counterpart: build 58. Server (skip endpoints, no migration) deployed to prod
+  first. *R8/edge-to-edge emulator smoke test skipped again — first suspect if a
   tester device misbehaves.*
 
 - **2026-06-23 — first Android build (`1.0.9`).** targetSdk 35 (compiled against
