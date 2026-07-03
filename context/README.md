@@ -27,9 +27,10 @@ usage-batch path), **per-deck stack memory** (every deck's add stack resumes
 exactly where swiping left off, undo included — MRU parked per deck), the
 **CardStack refactor** (one generic stack type + per-stack action models
 across search/maybeboard/remove), and a visual polish pass (image/skeleton
-ease-ins, enforced swipe-layout spacing). Server deployed 2026-07-02;
-**iOS build 57** and **Android versionCode 18** in store review. See the
-[`progress/overview.md`](progress/overview.md) top entry.
+ease-ins, enforced swipe-layout spacing) plus a profile **About section**
+(website link + privacy + version). Server deployed 2026-07-02; **iOS build 58**
+and **Android versionCode 19** in store review (57/18 re-submitted as 58/19 with
+the About section). See the [`progress/overview.md`](progress/overview.md) top entry.
 
 **After this version:** short-form videos against the 1.3.0 build
 (`marketing/plans/` — #2 and #4 are both filmable now), track review (then
