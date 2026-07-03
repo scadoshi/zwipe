@@ -8,6 +8,7 @@ use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::telemetry::{
     flush_loop::{spawn_usage_flusher, spawn_visibility_flusher}, usage_buffer::UsageBuffer,
 };
+use crate::inbound::screens::deck::card::components::card_stack::use_card_stack;
 use crate::outbound::client::version::get_min_client_version::ClientGetMinClientVersion;
 use crate::outbound::{client::ZwipeClient, session::Persist};
 use chrono::{DateTime, Utc};
@@ -55,13 +56,6 @@ impl FlavorCard {
     }
 }
 
-/// Position in the cached add-screen swipe stack. Lives beside `cards` at app
-/// scope so re-entering the add screen resumes where the user left off instead
-/// of re-serving already-swiped (and durably skipped) cards from the top.
-/// Newtyped for the same reason as [`UpgradeRequired`].
-#[derive(Clone, Copy)]
-pub struct AddStackIndex(pub Signal<usize>);
-
 /// Min-version gate state — true when this build is below the server minimum.
 ///
 /// Newtype so `try_use_context` / `use_context` lookups can't collide with
@@ -97,14 +91,14 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     let filter_builder = use_signal(CardQueryBuilder::default);
     use_context_provider(|| filter_builder);
 
-    let cards = use_signal(Vec::<Card>::new);
-    use_context_provider(|| cards);
+    // The add screen's search stack (cards, cursor, undo history, animation)
+    // — app-scoped so leaving and re-entering the screen resumes mid-stack
+    // instead of re-serving already-swiped (and durably skipped) cards.
+    let add_stack = use_card_stack();
+    use_context_provider(|| add_stack);
 
     let last_search_filter: Signal<Option<CardQueryBuilder>> = use_signal(|| None);
     use_context_provider(|| last_search_filter);
-
-    let add_stack_index: Signal<usize> = use_signal(|| 0);
-    use_context_provider(|| AddStackIndex(add_stack_index));
 
     // Home flavor card — cached above the router with a TTL (see FlavorCard).
     let flavor_card: Signal<Option<FlavorCard>> = use_signal(|| None);

@@ -4,6 +4,8 @@
 pub(crate) mod action_history;
 /// Card info display and skeleton components.
 pub(crate) mod card_info;
+/// Contained swipe-stack state (cards, cursor, history, enter animation).
+pub(crate) mod card_stack;
 /// Expandable card row component.
 pub(crate) mod card_row;
 /// Card image with built-in flip control for double-faced cards.
