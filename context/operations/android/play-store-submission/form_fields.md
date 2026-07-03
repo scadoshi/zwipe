@@ -153,7 +153,7 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.2.3 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
+| Version (client) | 1.3.0 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
@@ -161,12 +161,14 @@ TODO — complete the Data safety form. Starter facts to declare:
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
 
-**1.2.3:**
+**1.3.0:**
 
-- Zwipe now remembers your skips: cards you swipe left on stay out of that deck's suggestions, even after you close the app. Removed cards stay out too.
-- Changed your mind? Clear a deck's skips anytime from its More menu.
-- Deck card lists now sort alphabetically by default.
-- See your app version at the bottom of the Profile screen.
+- Zwipe now remembers your skips: swipe left and the card stays out of that deck, saved instantly, even if you close the app. Clear skips anytime from the deck's More menu.
+- Every deck remembers your place: come back and pick up right where you left off, undo included.
+- At the end of your results, swipe down to step back through your last swipes.
+- Maybeboard adds show up immediately.
+- Deck card lists sort alphabetically by default.
+- See your app version on the Profile screen.
 
 **1.2.1:**
 
