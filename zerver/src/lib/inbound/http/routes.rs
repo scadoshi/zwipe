@@ -31,7 +31,9 @@ use crate::inbound::http::handlers::{
         create_deck_profile::create_deck_profile, delete_deck::delete_deck, get_deck::get_deck,
         get_deck_profile::get_deck_profile, get_deck_profiles::get_deck_profiles,
         get_deck_tokens::get_deck_tokens, import_archidekt::import_archidekt_deck,
-        search_deck_cards::search_deck_cards, update_deck_profile::update_deck_profile,
+        search_deck_cards::search_deck_cards,
+        skip_deck_card::{skip_deck_card, unskip_deck_card},
+        update_deck_profile::update_deck_profile,
     },
     deck_card::{
         create_deck_card::create_deck_card, delete_deck_card::delete_deck_card,
@@ -411,7 +413,14 @@ where
                             get(get_deck).put(update_deck_profile).delete(delete_deck),
                         )
                         .route("/{deck_id}/clone", post(clone_deck))
-                        .route("/{deck_id}/suppressions", delete(clear_deck_suppressions))
+                        .route(
+                            "/{deck_id}/suppressions",
+                            delete(clear_deck_suppressions).post(skip_deck_card),
+                        )
+                        .route(
+                            "/{deck_id}/suppressions/{oracle_id}",
+                            delete(unskip_deck_card),
+                        )
                         .route("/{deck_id}/tokens", get(get_deck_tokens))
                         .nest(
                             "/{deck_id}/card",

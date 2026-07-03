@@ -17,6 +17,7 @@ use crate::domain::deck::models::{
         get_deck_tokens::GetDeckTokensError,
         import_archidekt::ArchidektCard,
         search_deck_cards::SearchDeckCardsError,
+        skip_deck_card::SkipDeckCardError,
         update_deck_profile::UpdateDeckProfileError,
     },
     deck_card::{
@@ -40,6 +41,7 @@ use zwipe_core::domain::deck::{
         get_deck_profile::GetDeckProfile,
         get_deck_profiles::GetDeckProfiles,
         import_deck_cards::{ImportDeckCards, ImportDeckCardsResult},
+        skip_deck_card::SkipDeckCard,
         update_deck_card::UpdateDeckCard,
         update_deck_profile::UpdateDeckProfile,
     },
@@ -165,6 +167,19 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
         request: &ClearDeckSuppressions,
     ) -> impl Future<Output = Result<u64, ClearDeckSuppressionsError>> + Send;
 
+    /// Upserts a single skip suppression for a deck. Ownership-checked.
+    fn skip_deck_card(
+        &self,
+        request: &SkipDeckCard,
+    ) -> impl Future<Output = Result<(), SkipDeckCardError>> + Send;
+
+    /// Deletes a single skip-sourced suppression (undo). Removal suppressions
+    /// are untouched. Ownership-checked.
+    fn unskip_deck_card(
+        &self,
+        request: &SkipDeckCard,
+    ) -> impl Future<Output = Result<(), SkipDeckCardError>> + Send;
+
     // ========
     //  clone
     // ========
@@ -281,6 +296,19 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         &self,
         request: &ClearDeckSuppressions,
     ) -> impl Future<Output = Result<u64, ClearDeckSuppressionsError>> + Send;
+
+    /// Suppresses a single card for a deck (durable skip) with authorization
+    /// check.
+    fn skip_deck_card(
+        &self,
+        request: &SkipDeckCard,
+    ) -> impl Future<Output = Result<(), SkipDeckCardError>> + Send;
+
+    /// Removes a single skip suppression (undo) with authorization check.
+    fn unskip_deck_card(
+        &self,
+        request: &SkipDeckCard,
+    ) -> impl Future<Output = Result<(), SkipDeckCardError>> + Send;
 
     /// Imports cards from a plain-text decklist with authorization check.
     fn import_deck_cards(

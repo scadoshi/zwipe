@@ -21,7 +21,10 @@ use crate::{
     outbound::client::{
         ZwipeClient,
         card::get_card::ClientGetCard,
-        deck::{get_deck::ClientGetDeck, search_deck_cards::ClientSearchDeckCards},
+        deck::{
+            get_deck::ClientGetDeck, search_deck_cards::ClientSearchDeckCards,
+            skip_deck_card::ClientSkipDeckCard,
+        },
         deck_card::{
             create_deck_card::ClientCreateDeckCard, delete_deck_card::ClientDeleteDeckCard,
             update_deck_card::ClientUpdateDeckCard,
@@ -407,9 +410,22 @@ pub fn Add(deck_id: Uuid) -> Element {
             // Remove-screen-only variant; never pushed on this screen.
             SwipeAction::MoveBoard { .. } => {}
             SwipeAction::Skip { ref card, .. } => {
-                // Cancel the durable skip: dropped if still pending, or an
-                // unskip is queued if it already flushed.
-                usage_buffer().retract_deck_skip(deck_id, card.scryfall_data.oracle_id);
+                // Delete the suppression row posted at swipe time.
+                if let Some(oracle_id) = card.scryfall_data.oracle_id {
+                    spawn(async move {
+                        let session = match session.ensure_fresh(client).await {
+                            Ok(session) => session,
+                            Err(e) => {
+                                toast.error(e.to_user_message(), ToastOptions::default());
+                                return;
+                            }
+                        };
+                        if let Err(e) = client().unskip_deck_card(deck_id, oracle_id, &session).await {
+                            tracing::warn!("undo skip (unskip) failed: {e}");
+                            toast.error(format!("Failed to undo skip: {}", e), ToastOptions::default());
+                        }
+                    });
+                }
                 toast.info(
                     "Undid skip".to_string(),
                     ToastOptions::default().duration(Duration::from_millis(1500)),
@@ -761,8 +777,8 @@ pub fn Add(deck_id: Uuid) -> Element {
 
         usage_buffer().record_search();
         spawn(async move {
-            // Push pending skips to the server before the refetch so
-            // just-skipped cards can't ride back in on the new page.
+            // Flush buffered usage (signals feed synergy ordering) before the
+            // refetch. Skips post directly at swipe time.
             flush_once(&usage_buffer(), &client, &session_signal).await;
             match client().search_deck_cards(deck_id, &filter, &session).await {
                 Ok((cards_from_search, warming)) => {
@@ -1035,7 +1051,18 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 on_swipe_left: move |card: Card| {
                                     usage_buffer().record_swipe(Direction::Left);
                                     usage_buffer().record_signal(commander_oracle_id(), card.scryfall_data.oracle_id, Direction::Left);
-                                    usage_buffer().record_deck_skip(deck_id, card.scryfall_data.oracle_id);
+                                    // Post the durable skip immediately — a buffered
+                                    // skip is lost to a quick app kill.
+                                    if let Some(oracle_id) = card.scryfall_data.oracle_id {
+                                        spawn(async move {
+                                            let Ok(session) = session.ensure_fresh(client).await else {
+                                                return;
+                                            };
+                                            if let Err(e) = client().skip_deck_card(deck_id, oracle_id, &session).await {
+                                                tracing::warn!("skip post failed: {e}");
+                                            }
+                                        });
+                                    }
                                     action_history.write().push(SwipeAction::Skip { card: Box::new(card), exited: Direction::Left });
                                     toast.info("Skipped".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                                     advance_after_commit();
@@ -1242,8 +1269,9 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                             usage_buffer().record_search();
                             spawn(async move {
-                                // Flush pending skips before the refetch so the
-                                // refreshed stack can't re-serve them.
+                                // Flush buffered usage (signals feed synergy
+                                // ordering) before the refetch. Skips post
+                                // directly at swipe time.
                                 flush_once(&usage_buffer(), &client, &session_signal).await;
                                 match client().search_deck_cards(deck_id, &filter, &session).await {
                                     Ok((cards_from_search, warming)) => {

@@ -20,5 +20,7 @@ pub mod get_deck_profile;
 pub mod get_deck_profiles;
 /// Deck-aware card search handler (exclusion + synergy ordering).
 pub mod search_deck_cards;
+/// Single-card skip/unskip suppression handlers.
+pub mod skip_deck_card;
 /// Deck metadata update handler.
 pub mod update_deck_profile;

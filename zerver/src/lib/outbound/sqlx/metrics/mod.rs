@@ -21,9 +21,7 @@ fn db(err: sqlx::Error) -> MetricsError {
     MetricsError::Database(err.into())
 }
 
-/// Per-deck ceiling on suppression rows, enforced at ingest by evicting the
-/// oldest `suppressed_at` beyond it.
-const MAX_SUPPRESSIONS_PER_DECK: i64 = 5_000;
+use crate::outbound::sqlx::deck::MAX_SUPPRESSIONS_PER_DECK;
 
 impl MetricsRepository for Postgres {
     async fn apply_usage(

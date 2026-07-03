@@ -23,5 +23,7 @@ pub mod get_deck_tokens;
 pub mod import_archidekt_deck;
 /// Deck-aware card search (server-side exclusion + synergy default order).
 pub mod search_deck_cards;
+/// Post a single durable skip (and its undo) for a deck.
+pub mod skip_deck_card;
 /// Update deck profile metadata.
 pub mod update_deck_profile;

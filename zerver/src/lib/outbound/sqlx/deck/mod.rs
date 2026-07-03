@@ -16,6 +16,7 @@ use crate::{
                 create_deck_profile::CreateDeckProfileError,
                 delete_deck::DeleteDeckError,
                 get_deck_profile::GetDeckProfileError,
+                skip_deck_card::SkipDeckCardError,
                 update_deck_profile::UpdateDeckProfileError,
             },
             deck_card::{
@@ -49,11 +50,16 @@ use zwipe_core::domain::deck::{
         get_deck_profile::GetDeckProfile,
         get_deck_profiles::GetDeckProfiles,
         import_deck_cards::ImportDeckCards,
+        skip_deck_card::SkipDeckCard,
         update_deck_card::UpdateDeckCard,
         update_deck_profile::UpdateDeckProfile,
     },
 };
 use sqlx::{QueryBuilder, query, query_as};
+
+/// Per-deck ceiling on suppression rows, enforced at ingest by evicting the
+/// oldest `suppressed_at` beyond it.
+pub(crate) const MAX_SUPPRESSIONS_PER_DECK: i64 = 5_000;
 
 /// Serializes deck tags to a JSONB array of snake_case strings for storage.
 fn deck_tags_to_json(tags: &[DeckTag]) -> serde_json::Value {
@@ -466,6 +472,74 @@ impl DeckRepository for Postgres {
         .await
         .map_err(|e| ClearDeckSuppressionsError::Database(e.into()))?;
         Ok(result.rows_affected())
+    }
+
+    async fn skip_deck_card(&self, request: &SkipDeckCard) -> Result<(), SkipDeckCardError> {
+        if !request
+            .user_id
+            .owns_deck(request.deck_id, &self.pool)
+            .await
+            .map_err(|e| SkipDeckCardError::Database(e.into()))?
+        {
+            return Err(SkipDeckCardError::Forbidden);
+        }
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| SkipDeckCardError::Database(e.into()))?;
+        query!(
+            r#"INSERT INTO deck_card_suppressions (deck_id, oracle_id, source)
+               VALUES ($1, $2, 'skip')
+               ON CONFLICT (deck_id, oracle_id) DO UPDATE SET
+                   source = EXCLUDED.source,
+                   suppressed_at = now()"#,
+            request.deck_id,
+            request.oracle_id,
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| SkipDeckCardError::Database(e.into()))?;
+        query!(
+            r#"DELETE FROM deck_card_suppressions
+               WHERE deck_id = $1 AND oracle_id IN (
+                   SELECT oracle_id FROM deck_card_suppressions
+                   WHERE deck_id = $1
+                   ORDER BY suppressed_at DESC
+                   OFFSET $2
+               )"#,
+            request.deck_id,
+            MAX_SUPPRESSIONS_PER_DECK,
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| SkipDeckCardError::Database(e.into()))?;
+        tx.commit()
+            .await
+            .map_err(|e| SkipDeckCardError::Database(e.into()))?;
+        Ok(())
+    }
+
+    async fn unskip_deck_card(&self, request: &SkipDeckCard) -> Result<(), SkipDeckCardError> {
+        if !request
+            .user_id
+            .owns_deck(request.deck_id, &self.pool)
+            .await
+            .map_err(|e| SkipDeckCardError::Database(e.into()))?
+        {
+            return Err(SkipDeckCardError::Forbidden);
+        }
+        // Only skip-sourced rows: an undo must not erase a removal suppression.
+        query!(
+            r#"DELETE FROM deck_card_suppressions
+               WHERE deck_id = $1 AND oracle_id = $2 AND source = 'skip'"#,
+            request.deck_id,
+            request.oracle_id,
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|e| SkipDeckCardError::Database(e.into()))?;
+        Ok(())
     }
 
     async fn delete_deck_card(&self, request: &DeleteDeckCard) -> Result<(), DeleteDeckCardError> {

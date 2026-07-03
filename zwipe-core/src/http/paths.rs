@@ -147,6 +147,14 @@ pub fn clear_deck_suppressions_route(deck_id: Uuid) -> String {
     format!("/api/deck/{}/suppressions", deck_id)
 }
 
+pub fn skip_deck_card_route(deck_id: Uuid) -> String {
+    format!("/api/deck/{}/suppressions", deck_id)
+}
+
+pub fn unskip_deck_card_route(deck_id: Uuid, oracle_id: Uuid) -> String {
+    format!("/api/deck/{}/suppressions/{}", deck_id, oracle_id)
+}
+
 pub fn import_archidekt_deck_route(deck_id: Uuid) -> String {
     format!("/api/deck/{}/import/archidekt", deck_id)
 }

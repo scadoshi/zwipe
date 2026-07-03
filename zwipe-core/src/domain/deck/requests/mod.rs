@@ -8,6 +8,7 @@ pub mod get_deck_card;
 pub mod get_deck_profile;
 pub mod get_deck_profiles;
 pub mod import_deck_cards;
+pub mod skip_deck_card;
 pub mod update_deck_card;
 pub mod update_deck_profile;
 
@@ -23,5 +24,6 @@ pub use get_deck_profiles::{GetDeckProfiles, InvalidGetDeckProfiles};
 pub use import_deck_cards::{
     ImportDeckCards, ImportDeckCardsResult, ImportLine, ImportedCard, UnresolvedCard,
 };
+pub use skip_deck_card::{InvalidSkipDeckCard, SkipDeckCard};
 pub use update_deck_card::{InvalidUpdateDeckCard, UpdateDeckCard};
 pub use update_deck_profile::{InvalidUpdateDeckProfile, UpdateDeckProfile};

@@ -389,6 +389,13 @@ pub struct HttpClearedSuppressions {
     pub cleared: u64,
 }
 
+/// Skip-card request body (POST a single durable suppression).
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct HttpSkipDeckCard {
+    /// Oracle id of the card to suppress for this deck.
+    pub oracle_id: Uuid,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

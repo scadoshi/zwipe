@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM deck_card_suppressions\n               WHERE deck_id = $1 AND oracle_id = $2 AND source = 'skip'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "08d735682632a4e43588d8c2d6fb0309455c13991148e35f33e6496f27e6a141"
+}
