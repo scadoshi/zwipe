@@ -195,6 +195,14 @@ the bundle → **Upload native debug symbols** (a zip containing
 
 ## History
 
+- **2026-07-03 — `1.3.0`, versionCode `20`** (filter-intent + Reset batch:
+  sort/synergy-only searches now serve, `Reset` returns each screen to its
+  default view, the filter dot tracks any real filter or sort, and the filter
+  sheet collapses its sections on close. Supersedes vc19). Built per this recipe
+  (gradle patch versionCode 20). Artifact `zwipe-1.3.0-vc20.aab`, signed +
+  `jar verified`, uploaded to the Alpha track. iOS counterpart: build 59. No
+  server change. *R8/edge-to-edge emulator smoke test skipped again.*
+
 - **2026-07-02 — `1.3.0`, versionCode `19`** (per-swipe durable skips via the
   new skip/unskip endpoints; per-deck add-stack memory with MRU parking;
   CardStack refactor across the three swipe screens; image/skeleton ease-ins +

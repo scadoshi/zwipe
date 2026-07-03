@@ -28,9 +28,10 @@ exactly where swiping left off, undo included — MRU parked per deck), the
 **CardStack refactor** (one generic stack type + per-stack action models
 across search/maybeboard/remove), and a visual polish pass (image/skeleton
 ease-ins, enforced swipe-layout spacing) plus a profile **About section**
-(website link + privacy + version). Server deployed 2026-07-02; **iOS build 58**
-and **Android versionCode 19** in store review (57/18 re-submitted as 58/19 with
-the About section). See the [`progress/overview.md`](progress/overview.md) top entry.
+(website link + privacy + version) and a **filter-intent + Reset** pass
+(sort/synergy serve, Reset-to-default, accurate filter dot). Server deployed
+2026-07-02; **iOS build 59** and **Android versionCode 20** in store review
+(57/18 → 58/19 → 59/20). See the [`progress/overview.md`](progress/overview.md) top entry.
 
 **After this version:** short-form videos against the 1.3.0 build
 (`marketing/plans/` — #2 and #4 are both filmable now), track review (then
