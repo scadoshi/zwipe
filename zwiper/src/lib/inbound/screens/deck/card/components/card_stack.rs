@@ -4,7 +4,7 @@
 use dioxus::prelude::*;
 
 use crate::inbound::components::interactions::swipe::{STACK_DEPTH, direction::Direction};
-use crate::inbound::screens::deck::card::components::action_history::SwipeAction;
+use crate::inbound::screens::deck::card::components::action_history::StackAction;
 use zwipe_core::domain::card::Card;
 
 /// A swipeable card stack: the fetched cards, the top-card cursor, the undo
@@ -15,18 +15,27 @@ use zwipe_core::domain::card::Card;
 /// search source) move forward through a paginated list, while cycling stacks
 /// (maybeboard source, remove screen) wrap around a fixed list and mutate it
 /// in place. The `*_wrapping` methods serve the latter.
-#[derive(Clone, Copy)]
-pub struct CardStack {
+pub struct CardStack<A: 'static> {
     cards: Signal<Vec<Card>>,
     index: Signal<usize>,
-    history: Signal<Vec<SwipeAction>>,
+    history: Signal<Vec<A>>,
     entering: Signal<Option<Direction>>,
 }
+
+// Manual impls: `derive` would demand `A: Copy`, but the handle is Copy
+// regardless of the action type (all fields are signals).
+impl<A: 'static> Clone for CardStack<A> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<A: 'static> Copy for CardStack<A> {}
 
 /// Creates a stack owned by the calling component (screen-local stacks). The
 /// add screen's search stack is instead created in `spawn_upkeeper` and
 /// provided as context, so it outlives the screen.
-pub fn use_card_stack() -> CardStack {
+pub fn use_card_stack<A: 'static>() -> CardStack<A> {
     CardStack {
         cards: use_signal(Vec::new),
         index: use_signal(|| 0),
@@ -35,7 +44,7 @@ pub fn use_card_stack() -> CardStack {
     }
 }
 
-impl CardStack {
+impl<A: 'static> CardStack<A> {
     // ── reads ────────────────────────────────────────────────────────────
 
     /// Clones the full card list (reactive read).
@@ -171,31 +180,18 @@ impl CardStack {
     // ── history + animation ──────────────────────────────────────────────
 
     /// Pushes a committed swipe onto the undo history.
-    pub fn record(&mut self, action: SwipeAction) {
+    pub fn record(&mut self, action: A) {
         self.history.write().push(action);
     }
 
     /// Pops the most recent swipe, or None when there's nothing to undo.
-    pub fn pop_action(&mut self) -> Option<SwipeAction> {
+    pub fn pop_action(&mut self) -> Option<A> {
         self.history.write().pop()
-    }
-
-    /// Linear undo cursor move: steps back one and primes the enter animation
-    /// from the action's exit direction. Returns false at the first card —
-    /// callers should `record` the action back.
-    pub fn step_back(&mut self, action: &SwipeAction) -> bool {
-        let idx = (self.index)();
-        if idx == 0 {
-            return false;
-        }
-        self.index.set(idx - 1);
-        self.entering.set(Some(action.exited().clone()));
-        true
     }
 
     /// Reverses a `step_back` after a failed async undo: re-records the
     /// action, restores the cursor, cancels the primed animation.
-    pub fn unwind_undo(&mut self, action: SwipeAction) {
+    pub fn unwind_undo(&mut self, action: A) {
         self.history.write().push(action);
         self.index.set((self.index)() + 1);
         self.entering.set(None);
@@ -209,5 +205,20 @@ impl CardStack {
     /// Cancels a primed enter animation (aborted undo).
     pub fn cancel_entering(&mut self) {
         self.entering.set(None);
+    }
+}
+
+impl<A: StackAction + 'static> CardStack<A> {
+    /// Linear undo cursor move: steps back one and primes the enter animation
+    /// from the action's exit direction. Returns false at the first card —
+    /// callers should `record` the action back.
+    pub fn step_back(&mut self, action: &A) -> bool {
+        let idx = (self.index)();
+        if idx == 0 {
+            return false;
+        }
+        self.index.set(idx - 1);
+        self.entering.set(Some(action.exited()));
+        true
     }
 }

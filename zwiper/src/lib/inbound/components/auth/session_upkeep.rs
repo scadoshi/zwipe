@@ -8,7 +8,9 @@ use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::telemetry::{
     flush_loop::{spawn_usage_flusher, spawn_visibility_flusher}, usage_buffer::UsageBuffer,
 };
-use crate::inbound::screens::deck::card::components::card_stack::use_card_stack;
+use crate::inbound::screens::deck::card::components::{
+    action_history::AddAction, card_stack::use_card_stack,
+};
 use crate::outbound::client::version::get_min_client_version::ClientGetMinClientVersion;
 use crate::outbound::{client::ZwipeClient, session::Persist};
 use chrono::{DateTime, Utc};
@@ -94,7 +96,7 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     // The add screen's search stack (cards, cursor, undo history, animation)
     // — app-scoped so leaving and re-entering the screen resumes mid-stack
     // instead of re-serving already-swiped (and durably skipped) cards.
-    let add_stack = use_card_stack();
+    let add_stack = use_card_stack::<AddAction>();
     use_context_provider(|| add_stack);
 
     let last_search_filter: Signal<Option<CardQueryBuilder>> = use_signal(|| None);
