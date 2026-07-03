@@ -42,7 +42,6 @@ pub(crate) fn CardFilterSheet(
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let toast = use_toast();
-    let mut accordion_key = use_signal(|| 0u32);
 
     // Filter explainer: the "?" reopens it; it also auto-opens once per account
     // the first time the sheet is opened (gated, since this component stays
@@ -170,8 +169,12 @@ pub(crate) fn CardFilterSheet(
             }
 
             div { class: "modal-content",
+                // Mounted only while the sheet is open, so every section starts
+                // collapsed on reopen. The modal stays in the DOM (hidden via
+                // CSS) and Dioxus won't remount on a key change alone, so this
+                // conditional render is what actually resets the accordion.
+                if open() {
                 Accordion {
-                    key: "{accordion_key()}",
                     id: "filter-accordion",
                     allow_multiple_open: false,
                     collapsible: true,
@@ -534,6 +537,7 @@ pub(crate) fn CardFilterSheet(
                         AccordionContent { Config {} }
                     }
                 }
+                }
             }
 
             div { class: "util-bar",
@@ -552,12 +556,13 @@ pub(crate) fn CardFilterSheet(
                             );
                             return;
                         }
-                        if validate_before_apply && filter_builder.read().is_empty_ignoring_deck_context() {
+                        if validate_before_apply && !filter_builder.read().has_search_intent() {
                             toast.warning("Filter is empty".to_string(), ToastOptions::default().duration(Duration::from_millis(1500)));
                         } else {
                             bump_filter();
                         }
-                        accordion_key.set(accordion_key() + 1);
+                        // The sheet closing collapses the accordion (see the
+                        // open/close effect above), so it reopens tidy.
                         open.set(false);
                     },
                     "Apply"
@@ -571,12 +576,12 @@ pub(crate) fn CardFilterSheet(
                             filter_builder.write().clear();
                             bump_filter();
                             toast.info(
-                                "Filter cleared".to_string(),
+                                "Filter reset".to_string(),
                                 ToastOptions::default().duration(Duration::from_millis(1500)),
                             );
                         }
                     },
-                    "Clear"
+                    "Reset"
                 }
             }
         }
@@ -597,8 +602,8 @@ pub(crate) fn CardFilterSheet(
                     "Tap "
                     HintColored { color: "--accent-secondary", "Apply" }
                     " to use it or "
-                    HintColored { color: "--accent-secondary", "Clear" }
-                    " to empty it. Your filter sticks as you move between screens."
+                    HintColored { color: "--accent-secondary", "Reset" }
+                    " to return to this screen's default view. Your filter sticks as you move between screens."
                 }
             }
         }

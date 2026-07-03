@@ -381,7 +381,10 @@ pub(crate) fn SwipeSelect(
                         class: "util-btn",
                         onclick: move |_| filters_overlay_open.set(true),
                         "Filter"
-                        if !filter_builder.read().is_empty() {
+                        // EDHREC order is this screen's default sort, so it
+                        // doesn't count; only a user filter or a different sort
+                        // lights the dot.
+                        if !filter_builder.read().is_empty() || filter_builder.read().sort() != Some(CardSortKey::EdhrecRank) {
                             span { class: "filter-dot" }
                         }
                     }
