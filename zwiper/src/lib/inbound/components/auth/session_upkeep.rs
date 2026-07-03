@@ -55,6 +55,13 @@ impl FlavorCard {
     }
 }
 
+/// Position in the cached add-screen swipe stack. Lives beside `cards` at app
+/// scope so re-entering the add screen resumes where the user left off instead
+/// of re-serving already-swiped (and durably skipped) cards from the top.
+/// Newtyped for the same reason as [`UpgradeRequired`].
+#[derive(Clone, Copy)]
+pub struct AddStackIndex(pub Signal<usize>);
+
 /// Min-version gate state — true when this build is below the server minimum.
 ///
 /// Newtype so `try_use_context` / `use_context` lookups can't collide with
@@ -95,6 +102,9 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
 
     let last_search_filter: Signal<Option<CardQueryBuilder>> = use_signal(|| None);
     use_context_provider(|| last_search_filter);
+
+    let add_stack_index: Signal<usize> = use_signal(|| 0);
+    use_context_provider(|| AddStackIndex(add_stack_index));
 
     // Home flavor card — cached above the router with a TTL (see FlavorCard).
     let flavor_card: Signal<Option<FlavorCard>> = use_signal(|| None);

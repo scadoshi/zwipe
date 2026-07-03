@@ -4,7 +4,9 @@ use crate::inbound::components::screen_header::ScreenHeader;
 use crate::{
     inbound::{
         components::{
-            auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+            auth::{
+                bouncer::Bouncer, ensure_session::EnsureFresh, session_upkeep::AddStackIndex,
+            },
             hint_dialog::{
                 HintBullet, HintBullets, HintColored, HintDialog, HintLine, use_one_time_hint,
             },
@@ -181,8 +183,9 @@ pub fn Add(deck_id: Uuid) -> Element {
         }
     });
 
-    // Card iteration state
-    let mut current_index = use_signal(|| 0_usize);
+    // Card iteration state — app-scoped beside `cards`, so re-entering the
+    // screen with an unchanged filter resumes at the same stack position.
+    let AddStackIndex(mut current_index) = use_context();
 
     // Pagination state
     let mut current_offset = use_signal(|| 0_u32);
