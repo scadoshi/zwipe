@@ -20,21 +20,23 @@ Plus [`CLAUDE.md`](CLAUDE.md) — the authoritative rules/instructions for AI as
 
 ## Current focus
 
-**Latest — 1.2.3, submitted 2026-07-02:** **swipe memory** (FR #11 — per-deck
-skip/removal suppressions the server stops serving, "Clear skips" in the deck
-More sheet, plus per-user + weekly signal tables now collecting in prod;
-`plans/swipe_memory.md`), the **CardFilter split** (`CardCriteria` + `CardQuery`
-+ `Cards`, wire JSON unchanged), **alphabetical deck lists**, a profile
-System/version row, the email-verification row rework, and an updated privacy
-policy (per-account activity disclosed). Server + zite deployed 2026-07-02;
-**iOS build 56** and **Android versionCode 17** in store review. 1.2.2 was
-skipped. See the [`progress/overview.md`](progress/overview.md) top entry.
+**Latest — 1.3.0, submitted 2026-07-02:** supersedes 1.2.3 (withdrawn from
+both stores pre-review; its swipe-memory feature set ships here). Adds
+**per-swipe durable skips** (dedicated skip/unskip endpoints replace the lossy
+usage-batch path), **per-deck stack memory** (every deck's add stack resumes
+exactly where swiping left off, undo included — MRU parked per deck), the
+**CardStack refactor** (one generic stack type + per-stack action models
+across search/maybeboard/remove), and a visual polish pass (image/skeleton
+ease-ins, enforced swipe-layout spacing). Server deployed 2026-07-02;
+**iOS build 57** and **Android versionCode 18** in store review. See the
+[`progress/overview.md`](progress/overview.md) top entry.
 
-**After this version:** track 1.2.3 review (then bump `MIN_CLIENT_VERSION`),
-keep the closed-testing 14-day clock running, privacy follow-ups (store
-data-safety labels + notification email), suggestion-signal **Phase 3
-(ranking)** — now with per-user data accruing — and draw-odds **Phase 4
-(premium gating)**.
+**After this version:** short-form videos against the 1.3.0 build
+(`marketing/plans/` — #2 and #4 are both filmable now), track review (then
+bump `MIN_CLIENT_VERSION`), keep the closed-testing 14-day clock running,
+privacy follow-ups (store data-safety labels + notification email),
+suggestion-signal **Phase 3 (ranking)**, and draw-odds **Phase 4 (premium
+gating)**.
 
 See [`progress/overview.md`](progress/overview.md) for the high-level state,
 [`progress/feature_requests.md`](progress/feature_requests.md) for the weighted
