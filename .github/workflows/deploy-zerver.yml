@@ -40,12 +40,15 @@ jobs:
 
       # Fail fast if the committed .sqlx offline data has drifted from the
       # (just-migrated) prod schema — the exact failure mode of 2026-07-05.
+      # Exclude the GUI crates: --check compiles crates to find their queries,
+      # zwiper's Linux desktop deps (glib/GTK) don't exist on the headless VPS,
+      # and only zerver has queries anyway (broke the 2026-07-06 deploy).
       - name: Verify offline query data
         run: |
           set -a
           source ~/zwipe/.env
           set +a
-          cargo sqlx prepare --workspace --check
+          cargo sqlx prepare --workspace --check -- --workspace --exclude zwiper --exclude zite
 
       - name: Build
         env:
