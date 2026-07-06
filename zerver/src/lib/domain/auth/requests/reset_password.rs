@@ -31,10 +31,7 @@ impl ResetPassword {
     ///
     /// Returns [`ResetPasswordError::InvalidPassword`] if the password fails policy,
     /// or [`ResetPasswordError::Database`] if hashing fails.
-    pub fn new(
-        token: String,
-        new_password: impl AsRef<str>,
-    ) -> Result<Self, ResetPasswordError> {
+    pub fn new(token: String, new_password: impl AsRef<str>) -> Result<Self, ResetPasswordError> {
         use crate::domain::auth::models::password::{HashedPassword, Password};
 
         let password = Password::new(new_password)

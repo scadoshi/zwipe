@@ -11,19 +11,14 @@ use crate::{
     domain::deck::{
         models::{
             deck::{
-                clear_deck_suppressions::ClearDeckSuppressionsError,
-                clone_deck::CloneDeckError,
-                create_deck_profile::CreateDeckProfileError,
-                delete_deck::DeleteDeckError,
-                get_deck_profile::GetDeckProfileError,
-                skip_deck_card::SkipDeckCardError,
+                clear_deck_suppressions::ClearDeckSuppressionsError, clone_deck::CloneDeckError,
+                create_deck_profile::CreateDeckProfileError, delete_deck::DeleteDeckError,
+                get_deck_profile::GetDeckProfileError, skip_deck_card::SkipDeckCardError,
                 update_deck_profile::UpdateDeckProfileError,
             },
             deck_card::{
-                create_deck_card::CreateDeckCardError,
-                delete_deck_card::DeleteDeckCardError,
-                get_deck_card::GetDeckCardError,
-                import_deck_cards::ImportDeckCardsError,
+                create_deck_card::CreateDeckCardError, delete_deck_card::DeleteDeckCardError,
+                get_deck_card::GetDeckCardError, import_deck_cards::ImportDeckCardsError,
                 update_deck_card::UpdateDeckCardError,
             },
         },
@@ -38,24 +33,19 @@ use crate::{
         postgres::Postgres,
     },
 };
+use sqlx::{QueryBuilder, query, query_as};
 use zwipe_core::domain::deck::{
     DeckCard, DeckName, DeckOtherTag, DeckTag,
     deck_profile::DeckProfile,
     requests::{
-        clear_deck_suppressions::ClearDeckSuppressions,
-        create_deck_card::CreateDeckCard,
-        create_deck_profile::CreateDeckProfile,
-        delete_deck::DeleteDeck,
-        delete_deck_card::DeleteDeckCard,
-        get_deck_profile::GetDeckProfile,
-        get_deck_profiles::GetDeckProfiles,
-        import_deck_cards::ImportDeckCards,
-        skip_deck_card::SkipDeckCard,
-        update_deck_card::UpdateDeckCard,
+        clear_deck_suppressions::ClearDeckSuppressions, create_deck_card::CreateDeckCard,
+        create_deck_profile::CreateDeckProfile, delete_deck::DeleteDeck,
+        delete_deck_card::DeleteDeckCard, get_deck_profile::GetDeckProfile,
+        get_deck_profiles::GetDeckProfiles, import_deck_cards::ImportDeckCards,
+        skip_deck_card::SkipDeckCard, update_deck_card::UpdateDeckCard,
         update_deck_profile::UpdateDeckProfile,
     },
 };
-use sqlx::{QueryBuilder, query, query_as};
 
 /// Per-deck ceiling on suppression rows, enforced at ingest by evicting the
 /// oldest `suppressed_at` beyond it.
@@ -359,10 +349,12 @@ impl DeckRepository for Postgres {
                 .push_bind_unseparated(deck_other_tags_to_json(other_tags));
         }
         if let Some(land_target) = &request.land_target {
-            sep.push("land_target = ").push_bind_unseparated(*land_target);
+            sep.push("land_target = ")
+                .push_bind_unseparated(*land_target);
         }
         if let Some(price_target) = &request.price_target {
-            sep.push("price_target = ").push_bind_unseparated(*price_target);
+            sep.push("price_target = ")
+                .push_bind_unseparated(*price_target);
         }
         if let Some(price_target_currency) = &request.price_target_currency {
             sep.push("price_target_currency = ")
@@ -403,18 +395,19 @@ impl DeckRepository for Postgres {
             return Err(UpdateDeckCardError::Forbidden);
         }
         let mut tx = self.pool.begin().await?;
-        let mut qb: QueryBuilder<'_, sqlx::Postgres> =
-            QueryBuilder::new("UPDATE deck_cards SET ");
+        let mut qb: QueryBuilder<'_, sqlx::Postgres> = QueryBuilder::new("UPDATE deck_cards SET ");
         let mut sep = qb.separated(", ");
         if let Some(update_quantity) = &request.update_quantity {
             sep.push("quantity = quantity + ")
                 .push_bind_unseparated(**update_quantity);
         }
         if let Some(board) = &request.board {
-            sep.push("board = ").push_bind_unseparated(board.display_name().to_string());
+            sep.push("board = ")
+                .push_bind_unseparated(board.display_name().to_string());
         }
         if let Some(new_id) = request.new_scryfall_data_id {
-            sep.push("scryfall_data_id = ").push_bind_unseparated(new_id);
+            sep.push("scryfall_data_id = ")
+                .push_bind_unseparated(new_id);
         }
         let now = chrono::Utc::now();
         sep.push("updated_at = ").push_bind_unseparated(now);
@@ -423,8 +416,7 @@ impl DeckRepository for Postgres {
             .push(" AND scryfall_data_id = ")
             .push_bind(request.scryfall_data_id)
             .push(" RETURNING deck_id::TEXT, scryfall_data_id::TEXT, oracle_id::TEXT, quantity, board");
-        let database_deck_card: DatabaseDeckCard =
-            qb.build_query_as().fetch_one(&mut *tx).await?;
+        let database_deck_card: DatabaseDeckCard = qb.build_query_as().fetch_one(&mut *tx).await?;
         let deck_card: DeckCard = database_deck_card.try_into()?;
         tx.commit().await?;
         Ok(deck_card)
@@ -601,15 +593,19 @@ impl DeckRepository for Postgres {
             .begin()
             .await
             .map_err(|e| ImportDeckCardsError::Database(e.into()))?;
-        let mut qb: QueryBuilder<'_, sqlx::Postgres> =
-            QueryBuilder::new("INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board) ");
-        qb.push_values(cards, |mut b, (scryfall_data_id, oracle_id, quantity, board)| {
-            b.push_bind(request.deck_id)
-                .push_bind(scryfall_data_id)
-                .push_bind(oracle_id)
-                .push_bind(quantity)
-                .push_bind(board);
-        });
+        let mut qb: QueryBuilder<'_, sqlx::Postgres> = QueryBuilder::new(
+            "INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board) ",
+        );
+        qb.push_values(
+            cards,
+            |mut b, (scryfall_data_id, oracle_id, quantity, board)| {
+                b.push_bind(request.deck_id)
+                    .push_bind(scryfall_data_id)
+                    .push_bind(oracle_id)
+                    .push_bind(quantity)
+                    .push_bind(board);
+            },
+        );
         qb.push(
             " ON CONFLICT (deck_id, oracle_id) DO UPDATE SET quantity = EXCLUDED.quantity, board = EXCLUDED.board RETURNING deck_id::TEXT, scryfall_data_id::TEXT, oracle_id::TEXT, quantity, board",
         );

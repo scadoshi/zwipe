@@ -1,9 +1,9 @@
-use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use crate::inbound::external::scryfall::planeswalker::{Planeswalker, SCRYFALL_API_BASE};
 use anyhow::Context;
 use reqwest::Client;
 use serde::Deserialize;
 use serde_json::Value;
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
 
 /// Scryfall bulk data metadata response (contains the download URI).
 #[derive(Deserialize, Debug)]

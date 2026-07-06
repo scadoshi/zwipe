@@ -1,9 +1,9 @@
 #[cfg(feature = "zerver")]
-use zwipe_core::domain::card::scryfall_data::ScryfallData;
-#[cfg(feature = "zerver")]
 use thiserror::Error;
 #[cfg(feature = "zerver")]
 use uuid::Uuid;
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
 
 // ========
 //  errors
@@ -62,7 +62,6 @@ impl GetCardProfile {
     pub fn new(id: &str) -> Result<Self, uuid::Error> {
         Ok(Self(Uuid::try_parse(id)?))
     }
-
 }
 
 #[cfg(feature = "zerver")]

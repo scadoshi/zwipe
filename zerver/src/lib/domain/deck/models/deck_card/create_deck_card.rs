@@ -2,7 +2,6 @@
 //!
 //! Re-exported from `zwipe_core`. Service-layer error type remains here.
 
-
 #[cfg(feature = "zerver")]
 use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
 #[cfg(feature = "zerver")]

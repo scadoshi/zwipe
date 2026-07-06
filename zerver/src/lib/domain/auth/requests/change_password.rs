@@ -28,13 +28,12 @@
 //! )?;
 //! ```
 
-use zwipe_core::domain::auth::password::InvalidPassword;
 use thiserror::Error;
+use zwipe_core::domain::auth::password::InvalidPassword;
 
 #[cfg(feature = "zerver")]
 use crate::domain::auth::{
-    models::password::HashedPassword,
-    requests::authenticate_user::AuthenticateUserError,
+    models::password::HashedPassword, requests::authenticate_user::AuthenticateUserError,
 };
 #[cfg(feature = "zerver")]
 use uuid::Uuid;

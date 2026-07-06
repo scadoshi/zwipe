@@ -16,11 +16,14 @@ pub mod password;
 #[cfg(feature = "zerver")]
 use crate::domain::auth::models::password::HashedPassword;
 #[cfg(feature = "zerver")]
-use zwipe_core::domain::{user::{username::Username, User}, Email};
-#[cfg(feature = "zerver")]
 use chrono::{DateTime, Utc};
 #[cfg(feature = "zerver")]
 use uuid::Uuid;
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::{
+    Email,
+    user::{User, username::Username},
+};
 
 #[cfg(feature = "zerver")]
 /// User entity with password hash for authentication operations.
@@ -71,10 +74,10 @@ mod tests {
     #[test]
     fn test_user_from_user_with_password_hash_drops_password() {
         use crate::domain::auth::models::password::{HashedPassword, Password};
-        use zwipe_core::domain::user::username::Username;
-        use zwipe_core::domain::Email;
         use std::str::FromStr;
         use uuid::Uuid;
+        use zwipe_core::domain::Email;
+        use zwipe_core::domain::user::username::Username;
 
         let id = Uuid::new_v4();
         let username = Username::new("alice").unwrap();

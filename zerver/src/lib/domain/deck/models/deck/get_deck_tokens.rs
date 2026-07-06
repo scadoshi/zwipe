@@ -5,8 +5,7 @@
 
 #[cfg(feature = "zerver")]
 use crate::domain::{
-    card::requests::get_card::GetCardError,
-    deck::models::deck::get_deck::GetDeckError,
+    card::requests::get_card::GetCardError, deck::models::deck::get_deck::GetDeckError,
 };
 #[cfg(feature = "zerver")]
 use thiserror::Error;

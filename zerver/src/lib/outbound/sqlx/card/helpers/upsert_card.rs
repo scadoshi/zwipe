@@ -8,12 +8,10 @@
 //!
 //! All operations work within existing transactions (caller commits).
 
-use zwipe_core::domain::card::{Card, card_profile::CardProfile, scryfall_data::ScryfallData};
 use crate::domain::card::models::helpers::SleeveScryfallData;
 use crate::domain::card::models::zervice_metrics::{ErrorMetrics, ZerviceMetrics};
 use crate::domain::card::requests::{
-    create_card::CreateCardError,
-    get_scryfall_data::ScryfallDataIds,
+    create_card::CreateCardError, get_scryfall_data::ScryfallDataIds,
 };
 use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
 use crate::outbound::sqlx::card::helpers::scryfall_data_fields::{
@@ -23,6 +21,7 @@ use crate::outbound::sqlx::card::models::DatabaseScryfallData;
 use sqlx::QueryBuilder;
 use sqlx::{PgTransaction, query_as};
 use std::future::Future;
+use zwipe_core::domain::card::{Card, card_profile::CardProfile, scryfall_data::ScryfallData};
 
 /// Postgres error substring used to filter noise from card-by-card fallback retries.
 ///
@@ -38,7 +37,6 @@ const POSTGRES_TX_ABORT_MESSAGE: &str = "current transaction is aborted";
 fn is_token(scryfall_data: &ScryfallData) -> bool {
     scryfall_data.layout == "token"
 }
-
 
 // ===========
 //  insertion
@@ -144,9 +142,8 @@ impl BulkUpsertWithTx for &[ScryfallData] {
             .map(ScryfallData::try_from)
             .collect::<Result<_, _>>()
             .map_err(CreateCardError::ScryfallDataFromDb)?;
-        let mut card_profile_query_builder = QueryBuilder::new(
-            "INSERT INTO card_profiles (scryfall_data_id, is_token) VALUES",
-        );
+        let mut card_profile_query_builder =
+            QueryBuilder::new("INSERT INTO card_profiles (scryfall_data_id, is_token) VALUES");
         for (i, scryfall_data) in database_scryfall_data.iter().enumerate() {
             if i > 0 {
                 card_profile_query_builder.push(",");
@@ -161,7 +158,9 @@ impl BulkUpsertWithTx for &[ScryfallData] {
         }
         card_profile_query_builder
             .push(" ON CONFLICT (scryfall_data_id) DO UPDATE SET updated_at = NOW(), is_token = EXCLUDED.is_token ");
-        card_profile_query_builder.push(" RETURNING scryfall_data_id, is_token, mechanical_categories, created_at, updated_at;");
+        card_profile_query_builder.push(
+            " RETURNING scryfall_data_id, is_token, mechanical_categories, created_at, updated_at;",
+        );
         let card_profiles: Vec<CardProfile> = card_profile_query_builder
             .build_query_as::<DatabaseCardProfile>()
             .fetch_all(&mut **tx)

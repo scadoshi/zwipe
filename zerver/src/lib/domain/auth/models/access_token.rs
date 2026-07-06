@@ -7,12 +7,9 @@
 
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::auth::models::access_token::{
-    AccessToken, Jwt, UserClaims,
-    InvalidJwt as CoreInvalidJwt,
+    AccessToken, InvalidJwt as CoreInvalidJwt, Jwt, UserClaims,
 };
 
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::user::User;
 #[cfg(feature = "zerver")]
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 #[cfg(feature = "zerver")]
@@ -21,6 +18,8 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 #[cfg(feature = "zerver")]
 use thiserror::Error;
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::user::User;
 
 // ========
 //  errors
@@ -141,10 +140,7 @@ pub trait AccessTokenExt {
 
 #[cfg(feature = "zerver")]
 impl AccessTokenExt for AccessToken {
-    fn generate(
-        user: &User,
-        secret: &JwtSecret,
-    ) -> Result<AccessToken, InvalidJwt> {
+    fn generate(user: &User, secret: &JwtSecret) -> Result<AccessToken, InvalidJwt> {
         use chrono::{Duration, Utc};
 
         let issued_at = Utc::now();
@@ -200,9 +196,9 @@ impl<'de> Deserialize<'de> for InvalidJwt {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use zwipe_core::domain::Email;
     use std::str::FromStr;
     use uuid::Uuid;
+    use zwipe_core::domain::Email;
     use zwipe_core::domain::user::username::Username;
 
     // ========================

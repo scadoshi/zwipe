@@ -3,27 +3,21 @@
 use crate::{
     domain::deck::models::{
         deck::{
-            create_deck_profile::CreateDeckProfileError,
-            delete_deck::DeleteDeckError,
-            get_deck_profile::GetDeckProfileError,
-            update_deck_profile::UpdateDeckProfileError,
+            create_deck_profile::CreateDeckProfileError, delete_deck::DeleteDeckError,
+            get_deck_profile::GetDeckProfileError, update_deck_profile::UpdateDeckProfileError,
         },
         deck_card::{
-            create_deck_card::CreateDeckCardError,
-            delete_deck_card::DeleteDeckCardError,
-            get_deck_card::GetDeckCardError,
-            update_deck_card::UpdateDeckCardError,
+            create_deck_card::CreateDeckCardError, delete_deck_card::DeleteDeckCardError,
+            get_deck_card::GetDeckCardError, update_deck_card::UpdateDeckCardError,
         },
     },
     outbound::sqlx::postgres::IsConstraintViolation,
 };
+use thiserror::Error;
 use zwipe_core::domain::deck::{
-    board::InvalidBoard,
-    deck_name::InvalidDeckname,
-    format::InvalidFormat,
+    board::InvalidBoard, deck_name::InvalidDeckname, format::InvalidFormat,
     quantity::InvalidQuantity,
 };
-use thiserror::Error;
 
 /// Errors from converting a database deck profile row into domain types.
 #[derive(Debug, Error)]

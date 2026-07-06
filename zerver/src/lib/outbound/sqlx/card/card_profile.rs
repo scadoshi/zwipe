@@ -1,12 +1,11 @@
 //! Database-to-domain conversion for card profiles.
 
-use zwipe_core::domain::card::{
-    card_profile::CardProfile,
-    mechanical_category::MechanicalCategory,
-};
 use chrono::{DateTime, Utc};
 use sqlx_macros::FromRow;
 use uuid::Uuid;
+use zwipe_core::domain::card::{
+    card_profile::CardProfile, mechanical_category::MechanicalCategory,
+};
 
 /// Raw database card profile record (unvalidated data from PostgreSQL).
 #[derive(Debug, Clone, FromRow)]

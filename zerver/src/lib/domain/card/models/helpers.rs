@@ -1,9 +1,9 @@
 #[cfg(feature = "zerver")]
-use zwipe_core::domain::card::{Card, card_profile::CardProfile, scryfall_data::ScryfallData};
-#[cfg(feature = "zerver")]
 use std::collections::HashMap;
 #[cfg(feature = "zerver")]
 use uuid::Uuid;
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::card::{Card, card_profile::CardProfile, scryfall_data::ScryfallData};
 
 #[cfg(feature = "zerver")]
 /// Extension trait to combine Scryfall data with card profiles into complete Card objects.
@@ -62,11 +62,7 @@ impl SleeveCardProfile for Vec<CardProfile> {
         // Iterate over scryfall_data to preserve DB sort order
         scryfall_data
             .into_iter()
-            .filter_map(|sfd| {
-                profile_map
-                    .remove(&sfd.id)
-                    .map(|cp| Card::new(cp, sfd))
-            })
+            .filter_map(|sfd| profile_map.remove(&sfd.id).map(|cp| Card::new(cp, sfd)))
             .collect::<Vec<Card>>()
     }
 }

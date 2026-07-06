@@ -22,22 +22,19 @@ use crate::domain::{
             verify_email::{VerifyEmail, VerifyEmailError},
         },
     },
-    email::{
-        models::SendEmail,
-        ports::EmailSender,
-    },
+    email::{models::SendEmail, ports::EmailSender},
     user::ports::UserRepository,
 };
 use anyhow::anyhow;
-use zwipe_core::domain::{
-    auth::models::{access_token::AccessToken, session::Session},
-    user::{preferences::UserPreferences, User},
-};
 use chrono::{Duration, Utc};
 use rand::Rng;
 use sha2::Digest;
 use std::sync::LazyLock;
 use uuid::Uuid;
+use zwipe_core::domain::{
+    auth::models::{access_token::AccessToken, session::Session},
+    user::{User, preferences::UserPreferences},
+};
 
 /// A throwaway Argon2 hash used to equalize login timing for non-existent
 /// accounts. Generated lazily with the same default Argon2 params as real
@@ -213,7 +210,10 @@ where
             .map_err(|e| RegisterUserError::FailedAccessToken(anyhow!("{e}")))?;
 
         // Fire-and-forget: don't fail registration if email sending fails.
-        if let Err(e) = self.send_verification_email(user.id, user.email.as_ref()).await {
+        if let Err(e) = self
+            .send_verification_email(user.id, user.email.as_ref())
+            .await
+        {
             tracing::error!(event = "verification_email_failed", user_id = %user.id, error = %e);
         }
 
@@ -229,21 +229,24 @@ where
         &self,
         request: &AuthenticateUser,
     ) -> Result<Session, AuthenticateUserError> {
-        let user_with_password_hash: UserWithPasswordHash =
-            match self.auth_repo.get_user_with_password_hash(request).await {
-                Ok(user) => user,
-                Err(AuthenticateUserError::UserNotFound) => {
-                    // Equalize timing with the wrong-password path: run an Argon2
-                    // verify against a dummy hash so a non-existent account isn't
-                    // measurably faster to reject (prevents username/email
-                    // enumeration via response timing). Result is discarded — it
-                    // never matches.
-                    let _ = TIMING_EQUALIZER_HASH.verify(&request.password);
-                    tracing::warn!(event = "login_failure", reason = "user_not_found", identifier = %request.identifier);
-                    return Err(AuthenticateUserError::UserNotFound);
-                }
-                Err(e) => return Err(e),
-            };
+        let user_with_password_hash: UserWithPasswordHash = match self
+            .auth_repo
+            .get_user_with_password_hash(request)
+            .await
+        {
+            Ok(user) => user,
+            Err(AuthenticateUserError::UserNotFound) => {
+                // Equalize timing with the wrong-password path: run an Argon2
+                // verify against a dummy hash so a non-existent account isn't
+                // measurably faster to reject (prevents username/email
+                // enumeration via response timing). Result is discarded — it
+                // never matches.
+                let _ = TIMING_EQUALIZER_HASH.verify(&request.password);
+                tracing::warn!(event = "login_failure", reason = "user_not_found", identifier = %request.identifier);
+                return Err(AuthenticateUserError::UserNotFound);
+            }
+            Err(e) => return Err(e),
+        };
 
         // Check lockout before Argon2 — avoids expensive hashing for locked accounts.
         if let Some(until) = user_with_password_hash.lockout_until
@@ -270,7 +273,11 @@ where
         self.auth_repo.reset_failed_attempts(user.id).await?;
         tracing::info!(event = "login_success", identifier = %request.identifier);
 
-        let preferences = self.user_repo.get_preferences(user.id).await.unwrap_or_default();
+        let preferences = self
+            .user_repo
+            .get_preferences(user.id)
+            .await
+            .unwrap_or_default();
 
         let access_token = AccessToken::generate(&user, &self.jwt_secret)
             .map_err(|e| AuthenticateUserError::FailedAccessToken(anyhow!("{e}")))?;
@@ -287,13 +294,22 @@ where
 
     async fn create_session(&self, request: &CreateSession) -> Result<Session, CreateSessionError> {
         let user = self.user_repo.get_user(request.user_id).await?;
-        let preferences = self.user_repo.get_preferences(request.user_id).await.unwrap_or_default();
+        let preferences = self
+            .user_repo
+            .get_preferences(request.user_id)
+            .await
+            .unwrap_or_default();
 
         let refresh_token = self.auth_repo.create_refresh_token(request.user_id).await?;
 
         let access_token = AccessToken::generate(&user, self.jwt_secret())?;
 
-        let session = Session { user, access_token, refresh_token, preferences };
+        let session = Session {
+            user,
+            access_token,
+            refresh_token,
+            preferences,
+        };
 
         Ok(session)
     }
@@ -303,13 +319,22 @@ where
         request: &RefreshSession,
     ) -> Result<Session, RefreshSessionError> {
         let user = self.user_repo.get_user(request.user_id).await?;
-        let preferences = self.user_repo.get_preferences(request.user_id).await.unwrap_or_default();
+        let preferences = self
+            .user_repo
+            .get_preferences(request.user_id)
+            .await
+            .unwrap_or_default();
 
         let refresh_token = self.auth_repo.use_refresh_token(request).await?;
 
         let access_token = AccessToken::generate(&user, self.jwt_secret())?;
 
-        let session = Session { user, access_token, refresh_token, preferences };
+        let session = Session {
+            user,
+            access_token,
+            refresh_token,
+            preferences,
+        };
 
         Ok(session)
     }
@@ -361,9 +386,14 @@ where
         Ok(user)
     }
 
-    async fn change_password_and_revoke_sessions(&self, request: &ChangePassword) -> Result<(), ChangePasswordError> {
+    async fn change_password_and_revoke_sessions(
+        &self,
+        request: &ChangePassword,
+    ) -> Result<(), ChangePasswordError> {
         let user = self.verify_password(&request.into()).await?;
-        self.auth_repo.change_password_and_revoke_sessions(request).await?;
+        self.auth_repo
+            .change_password_and_revoke_sessions(request)
+            .await?;
 
         let html = include_str!("email_templates/password_changed.html").to_string();
         self.send_change_notification(
@@ -398,7 +428,9 @@ where
         user_id: Uuid,
         to_email: &str,
     ) -> Result<(), anyhow::Error> {
-        self.auth_repo.delete_email_verification_tokens(user_id).await?;
+        self.auth_repo
+            .delete_email_verification_tokens(user_id)
+            .await?;
 
         let (raw, hash) = generate_hex_token();
         let expires_at = Utc::now() + Duration::hours(24);
@@ -409,8 +441,7 @@ where
             .map_err(|e| anyhow!("{e}"))?;
 
         let link = format!("{}/verify/{raw}", self.web_base_url);
-        let html = include_str!("email_templates/verify_email.html")
-            .replace("{link}", &link);
+        let html = include_str!("email_templates/verify_email.html").replace("{link}", &link);
 
         self.email_sender
             .send_email(SendEmail {
@@ -449,7 +480,11 @@ where
             }
         };
 
-        if self.auth_repo.is_password_reset_on_cooldown(user_id).await? {
+        if self
+            .auth_repo
+            .is_password_reset_on_cooldown(user_id)
+            .await?
+        {
             tracing::debug!(event = "password_reset_cooldown", user_id = %user_id);
             return Ok(());
         }
@@ -464,8 +499,7 @@ where
             .await?;
 
         let link = format!("{}/reset/{raw}", self.web_base_url);
-        let html = include_str!("email_templates/reset_password.html")
-            .replace("{link}", &link);
+        let html = include_str!("email_templates/reset_password.html").replace("{link}", &link);
 
         if let Err(e) = self
             .email_sender
@@ -483,7 +517,10 @@ where
         Ok(())
     }
 
-    async fn reset_password(&self, request: &ResetPassword) -> Result<uuid::Uuid, ResetPasswordError> {
+    async fn reset_password(
+        &self,
+        request: &ResetPassword,
+    ) -> Result<uuid::Uuid, ResetPasswordError> {
         let hash = hex::encode(sha2::Sha256::digest(request.token.as_bytes()));
         let user_id = self.auth_repo.use_password_reset_token(&hash).await?;
         self.auth_repo
