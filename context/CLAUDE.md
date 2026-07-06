@@ -58,6 +58,11 @@ dx build --release --platform desktop
 cargo sqlx prepare --workspace
 # Commit the generated .sqlx/ directory — CI builds use it instead of a live DB
 ```
+The workspace-root `.sqlx/` is the ONLY offline-data directory. Never create a
+crate-local `zerver/.sqlx/` (i.e., never run `cargo sqlx prepare` from inside
+`zerver/` without `--workspace`) — the macros prefer it over the root and a stale
+copy shadows correct data (broke the 2026-07-05 deploy; details in
+`operations/infrastructure/cicd.md`).
 
 ## Architecture
 

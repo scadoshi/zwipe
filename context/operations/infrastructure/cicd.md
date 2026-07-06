@@ -24,8 +24,9 @@ Also has `workflow_dispatch` for manual runs from the GitHub Actions tab.
 2. Installs stable Rust toolchain (cached)
 3. Restores cargo cache (fast subsequent builds)
 4. Runs SQLx migrations (`set -a && source ~/zwipe/.env` to export `DATABASE_URL`, then `cargo sqlx migrate run`)
-5. Builds `zerver` and `zervice` in release mode (`SQLX_OFFLINE=true`)
-6. Stops zerver, copies binaries to `~/zwipe/`, starts zerver
+5. Verifies the committed `.sqlx/` matches the just-migrated schema (`cargo sqlx prepare --workspace --check`) — fails fast with "query data is stale" instead of E0308 soup mid-build
+6. Builds `zerver` and `zervice` in release mode (`SQLX_OFFLINE=true`)
+7. Stops zerver, copies binaries to `~/zwipe/`, starts zerver
 
 No Tailscale, no SSH keys, no SCP — the runner is already on the server.
 Migrations run before the build so new tables exist before the new binary starts.
@@ -163,6 +164,15 @@ cargo sqlx prepare --workspace
 git add .sqlx/
 git commit -m "Update sqlx offline cache"
 ```
+
+**One `.sqlx` directory only — the workspace root.** The macros prefer a crate-local
+`zerver/.sqlx/` over the root one if it exists, and `prepare --workspace` never
+refreshes a crate-local copy. A stale `zerver/.sqlx/` (leftover from an early
+per-crate prepare) shadowed the root data and broke the 2026-07-05 deploy — the
+first release to change an *existing* query's column types in place (daily-activity
+BIGINT). Removed in `6556209d`; never run `cargo sqlx prepare` from inside `zerver/`
+without `--workspace`. The verify step (workflow step 5) now catches any
+offline-data drift before the build.
 
 **Prerequisite**: `sqlx-cli` must be installed on the server (see `server.md` setup
 checklist).
