@@ -20,19 +20,22 @@ Plus [`CLAUDE.md`](CLAUDE.md) — the authoritative rules/instructions for AI as
 
 ## Current focus
 
-**Latest — 1.3.1, built 2026-07-05 (ship pending):** first **pre-registration
-funnel instrumentation** — anonymous, PII-free session events (`app_opened`,
-`register_viewed`, `register_submitted`) posted to a new unauthenticated
-endpoint, so install→register drop-off becomes a query instead of a guess.
-Rides with the server-side **service type-erasure** refactor (`AppState` and
-all handlers drop their generic params; no behavior change) and a
-`user_daily_activity` BIGINT widening. **iOS build 60** / **Android vc21**
-signed and ready; server (two additive migrations) deploys first, then store
-upload. See the [`progress/overview.md`](progress/overview.md) top entry.
+**Latest — 1.3.2, server-only, LIVE 2026-07-06:** **adaptive serve
+ordering** — the default synergy stack now blends the scraped base with
+Zwipe's own swipe signal (net add-rate: adds full credit, maybes half,
+removals negative, skips as denominator drag) plus per-(deck, day) seeded
+jitter. Different decks serve different orders, the same deck stays stable
+within a day, tomorrow drifts, and crowd favorites rise as signal accrues.
+Direct response to user feedback about repetitive serving. See the
+[`progress/overview.md`](progress/overview.md) top entry and
+[`plans/suggestion_signal.md`](plans/suggestion_signal.md) (Phase 3c remains,
+data-gated).
 
-**Before that — 1.3.0, submitted 2026-07-02:** per-swipe durable skips,
-per-deck stack memory, the CardStack refactor, profile About section, and the
-filter-intent + Reset pass (iOS build 59 / Android vc20, in store review).
+**In review — 1.3.1 (iOS build 60 / Android vc21, submitted 2026-07-06):**
+pre-registration funnel instrumentation (anonymous, PII-free session events →
+install→register drop-off becomes a query; the numbers gate the
+sign-in-with-Google decision), plus the server-side type-erasure refactor and
+daily-activity BIGINT widening. 1.3.0 (build 59 / vc20) also still in review.
 
 **After this version:** short-form videos against the 1.3.x build
 (`marketing/plans/` — #2 and #4 are both filmable now), track review (then

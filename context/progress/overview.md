@@ -109,7 +109,46 @@ Build 15 shipped over build 14 with: `Email` strict newtype across the workspace
 
 ---
 
-## 1.3.1 — anonymous funnel metrics, service type-erasure (built 2026-07-05, ship pending)
+## 1.3.2 — adaptive serve ordering: signal + jitter (server-only, LIVE 2026-07-06)
+
+The most consequential read-path change since synergy shipped: **what card the
+swipe stack serves next is now shaped by Zwipe's own users**, not just the
+scraped synergy base. Triggered by direct user feedback (Reddit DM: the stack
+served "consistently in the same pattern and sequence" every session).
+
+- **The formula** (`4e67c366`…`c62a7dde`, `search_scryfall_data_deck_aware`):
+  `base synergy score + W_SIGNAL·(shrunk pooled net-rate − global rate) +
+  W_JITTER·seeded noise / sqrt(shown+1)`. Base is the control (zero dials =
+  old ordering byte-for-byte, verified rank-for-rank on dev). The signal term
+  re-ranks by revealed user taste — net-rate = `(added + 0.5·maybed −
+  removed) / shown`, so skips drag as denominator, maybes count as half an
+  add, removals take credit back. The jitter term is deterministic per
+  (card, deck, day): different decks serve differently, the same deck stays
+  stable within a day (parked stacks and undo unaffected), tomorrow drifts,
+  and the noise shrinks as a card accrues impressions — exploration converts
+  itself into earned ranking as data grows.
+- **Infrastructure**: `card_signal_rollup` matview (zervice nightly refresh),
+  three doc-commented dials in `outbound/sqlx/card/mod.rs`. Explicit sorts,
+  synergy-ON membership, and Zwipe-select are untouched. Perf: ~0 ms added
+  (jitter is one int hash per row inside the existing ORDER BY pass).
+- **Live-verified on prod** via the API with fresh Krenko decks: same deck
+  twice = identical; two decks = 77 of the top-100 positions differ; the
+  genuinely elite head (score gaps > the ±0.04 swing) stays put by
+  construction. `W_JITTER` raised 0.01 → 0.04 after the first live test left
+  the top 7 pinned.
+- Build caught two real bugs pre-deploy: NULL `oracle_id` would have NULLed
+  the sort key and floated 80 cards to the top of every stack; and anchoring
+  unscored cards at 0 would have jumped them above negative-scored synergy
+  entries. Full design + baselines: [`../plans/suggestion_signal.md`](../plans/suggestion_signal.md).
+
+Also in the 1.3.2 window: zite demo videos refreshed for the 1.3.x screens
+(plus a new import-and-stats demo), and the deploy pipeline hardened twice —
+the `.sqlx` verify step added, then scoped past the GUI crates (headless
+runner lacks glib; see `operations/infrastructure/cicd.md`).
+
+---
+
+## 1.3.1 — anonymous funnel metrics, service type-erasure (submitted 2026-07-06, in review)
 
 First instrumentation of the **pre-registration funnel** — the question it
 answers: where do people drop between installing and registering?
