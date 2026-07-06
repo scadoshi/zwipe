@@ -15,7 +15,7 @@ use crate::domain::metrics::{
     ports::MetricsRepository,
 };
 use crate::outbound::sqlx::postgres::Postgres;
-use zwipe_core::http::contracts::metrics::HttpUsageBatch;
+use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpUsageBatch};
 
 fn db(err: sqlx::Error) -> MetricsError {
     MetricsError::Database(err.into())
@@ -24,16 +24,10 @@ fn db(err: sqlx::Error) -> MetricsError {
 use crate::outbound::sqlx::deck::MAX_SUPPRESSIONS_PER_DECK;
 
 impl MetricsRepository for Postgres {
-    async fn apply_usage(
-        &self,
-        user_id: Uuid,
-        batch: &HttpUsageBatch,
-    ) -> Result<(), MetricsError> {
+    async fn apply_usage(&self, user_id: Uuid, batch: &HttpUsageBatch) -> Result<(), MetricsError> {
         // Clamp untrusted counts before they touch any counter: stops a client
-        // inflating lifetime / marketing totals, and bounds the values so the
-        // i32 casts below (daily_activity INTEGER columns) can't wrap negative
-        // or overflow the per-day accumulation. (A BIGINT migration on
-        // user_daily_activity would decouple this from the clamp entirely.)
+        // inflating lifetime / marketing totals, and bounds the i32 casts for
+        // the weekly INTEGER columns. Lifetime and daily counters are BIGINT.
         let batch = batch.clamped();
 
         let r = batch.swipes_right as i64;
@@ -64,12 +58,6 @@ impl MetricsRepository for Postgres {
         .await
         .map_err(db)?;
 
-        let r32 = batch.swipes_right as i32;
-        let l32 = batch.swipes_left as i32;
-        let u32 = batch.swipes_up as i32;
-        let d32 = batch.swipes_down as i32;
-        let s32 = batch.searches as i32;
-
         query!(
             r#"INSERT INTO user_daily_activity
                    (user_id, day, swipes_right, swipes_left, swipes_up, swipes_down, searches)
@@ -81,15 +69,21 @@ impl MetricsRepository for Postgres {
                    swipes_down  = user_daily_activity.swipes_down  + EXCLUDED.swipes_down,
                    searches     = user_daily_activity.searches     + EXCLUDED.searches"#,
             user_id,
-            r32,
-            l32,
-            u32,
-            d32,
-            s32,
+            r,
+            l,
+            u,
+            d,
+            s,
         )
         .execute(&mut *tx)
         .await
         .map_err(db)?;
+
+        let r32 = batch.swipes_right as i32;
+        let l32 = batch.swipes_left as i32;
+        let u32 = batch.swipes_up as i32;
+        let d32 = batch.swipes_down as i32;
+        let s32 = batch.searches as i32;
 
         // First-party suggestion signal: aggregate per-(commander, card) tallies.
         // Pure aggregate — no user_id. Clamped above, so the list is bounded and
@@ -261,13 +255,10 @@ impl MetricsRepository for Postgres {
         // failing the whole batch. Unskips only clear skip-sourced rows so an
         // undo can't erase a removal suppression.
         for delta in &batch.deck_skips {
-            let owner = query!(
-                r#"SELECT user_id FROM decks WHERE id = $1"#,
-                delta.deck_id,
-            )
-            .fetch_optional(&mut *tx)
-            .await
-            .map_err(db)?;
+            let owner = query!(r#"SELECT user_id FROM decks WHERE id = $1"#, delta.deck_id,)
+                .fetch_optional(&mut *tx)
+                .await
+                .map_err(db)?;
             if owner.map(|row| row.user_id) != Some(user_id) {
                 continue;
             }
@@ -382,17 +373,31 @@ impl MetricsRepository for Postgres {
         Ok(())
     }
 
-    async fn record_audit(
-        &self,
-        user_id: Uuid,
-        action: AuditAction,
-    ) -> Result<(), MetricsError> {
+    async fn record_audit(&self, user_id: Uuid, action: AuditAction) -> Result<(), MetricsError> {
         let action_str = action.as_str();
         query!(
             r#"INSERT INTO user_audit_log (user_id, action)
                VALUES ($1, $2)"#,
             user_id,
             action_str,
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(db)?;
+        Ok(())
+    }
+
+    async fn record_anonymous_event(
+        &self,
+        session_id: Uuid,
+        kind: AnonymousEventKind,
+    ) -> Result<(), MetricsError> {
+        let kind_str = kind.as_str();
+        query!(
+            r#"INSERT INTO anonymous_events (session_id, kind)
+               VALUES ($1, $2)"#,
+            session_id,
+            kind_str,
         )
         .execute(&self.pool)
         .await

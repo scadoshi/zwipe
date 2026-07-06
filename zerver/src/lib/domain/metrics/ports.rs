@@ -1,7 +1,7 @@
 //! Port traits for metrics persistence.
 
+use crate::domain::BoxFuture;
 use std::future::Future;
-use std::pin::Pin;
 use uuid::Uuid;
 
 use crate::domain::metrics::models::{
@@ -10,7 +10,7 @@ use crate::domain::metrics::models::{
     lifetime_counters::LifetimeCounters,
     public_metrics::PublicMetrics,
 };
-use zwipe_core::http::contracts::metrics::HttpUsageBatch;
+use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpUsageBatch};
 
 /// Database port for metrics writes and reads.
 pub trait MetricsRepository: Clone + Send + Sync + 'static {
@@ -54,6 +54,13 @@ pub trait MetricsRepository: Clone + Send + Sync + 'static {
         action: AuditAction,
     ) -> impl Future<Output = Result<(), MetricsError>> + Send;
 
+    /// Appends a pre-auth funnel event row keyed by the client session id.
+    fn record_anonymous_event(
+        &self,
+        session_id: Uuid,
+        kind: AnonymousEventKind,
+    ) -> impl Future<Output = Result<(), MetricsError>> + Send;
+
     /// Fetches lifetime counters for a user.
     fn lifetime_counters(
         &self,
@@ -69,9 +76,7 @@ pub trait MetricsRepository: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = Result<bool, MetricsError>> + Send;
 
     /// Aggregates lifetime counters across every user. Used for public stats.
-    fn public_metrics(
-        &self,
-    ) -> impl Future<Output = Result<PublicMetrics, MetricsError>> + Send;
+    fn public_metrics(&self) -> impl Future<Output = Result<PublicMetrics, MetricsError>> + Send;
 
     /// Stamps `users.last_active_at` to now.
     fn touch_last_active(
@@ -118,6 +123,13 @@ pub trait MetricsService: Clone + Send + Sync + 'static {
         action: AuditAction,
     ) -> impl Future<Output = Result<(), MetricsError>> + Send;
 
+    /// Records a pre-auth funnel event from an unauthenticated client.
+    fn record_anonymous_event(
+        &self,
+        session_id: Uuid,
+        kind: AnonymousEventKind,
+    ) -> impl Future<Output = Result<(), MetricsError>> + Send;
+
     /// Initializes the lifetime row for a new user (idempotent).
     fn insert_lifetime_row(
         &self,
@@ -144,9 +156,7 @@ pub trait MetricsService: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = Result<bool, MetricsError>> + Send;
 
     /// Aggregates app-wide totals across every user.
-    fn public_metrics(
-        &self,
-    ) -> impl Future<Output = Result<PublicMetrics, MetricsError>> + Send;
+    fn public_metrics(&self) -> impl Future<Output = Result<PublicMetrics, MetricsError>> + Send;
 
     /// Stamps `users.last_active_at` to now.
     fn touch_last_active(
@@ -170,13 +180,13 @@ pub trait ErasedMetricsService: Send + Sync + 'static {
         &'a self,
         user_id: Uuid,
         batch: &'a HttpUsageBatch,
-    ) -> Pin<Box<dyn Future<Output = Result<(), MetricsError>> + Send + 'a>>;
+    ) -> BoxFuture<'a, Result<(), MetricsError>>;
 
     /// See [`MetricsService::lifetime_counters`].
     fn lifetime_counters<'a>(
         &'a self,
         user_id: Uuid,
-    ) -> Pin<Box<dyn Future<Output = Result<LifetimeCounters, MetricsError>> + Send + 'a>>;
+    ) -> BoxFuture<'a, Result<LifetimeCounters, MetricsError>>;
 
     /// See [`MetricsService::record_event`].
     fn record_event<'a>(
@@ -184,55 +194,54 @@ pub trait ErasedMetricsService: Send + Sync + 'static {
         user_id: Uuid,
         kind: EventKind,
         deck_id: Option<Uuid>,
-    ) -> Pin<Box<dyn Future<Output = Result<(), MetricsError>> + Send + 'a>>;
+    ) -> BoxFuture<'a, Result<(), MetricsError>>;
 
     /// See [`MetricsService::record_audit`].
     fn record_audit<'a>(
         &'a self,
         user_id: Uuid,
         action: AuditAction,
-    ) -> Pin<Box<dyn Future<Output = Result<(), MetricsError>> + Send + 'a>>;
+    ) -> BoxFuture<'a, Result<(), MetricsError>>;
+
+    /// See [`MetricsService::record_anonymous_event`].
+    fn record_anonymous_event<'a>(
+        &'a self,
+        session_id: Uuid,
+        kind: AnonymousEventKind,
+    ) -> BoxFuture<'a, Result<(), MetricsError>>;
 
     /// See [`MetricsService::insert_lifetime_row`].
-    fn insert_lifetime_row<'a>(
-        &'a self,
-        user_id: Uuid,
-    ) -> Pin<Box<dyn Future<Output = Result<(), MetricsError>> + Send + 'a>>;
+    fn insert_lifetime_row<'a>(&'a self, user_id: Uuid) -> BoxFuture<'a, Result<(), MetricsError>>;
 
     /// See [`MetricsService::increment_decks_created`].
     fn increment_decks_created<'a>(
         &'a self,
         user_id: Uuid,
-    ) -> Pin<Box<dyn Future<Output = Result<(), MetricsError>> + Send + 'a>>;
+    ) -> BoxFuture<'a, Result<(), MetricsError>>;
 
     /// See [`MetricsService::increment_decks_completed`].
     fn increment_decks_completed<'a>(
         &'a self,
         user_id: Uuid,
-    ) -> Pin<Box<dyn Future<Output = Result<(), MetricsError>> + Send + 'a>>;
+    ) -> BoxFuture<'a, Result<(), MetricsError>>;
 
     /// See [`MetricsService::mark_deck_first_completed`].
     fn mark_deck_first_completed<'a>(
         &'a self,
         deck_id: Uuid,
-    ) -> Pin<Box<dyn Future<Output = Result<bool, MetricsError>> + Send + 'a>>;
+    ) -> BoxFuture<'a, Result<bool, MetricsError>>;
 
     /// See [`MetricsService::public_metrics`].
-    fn public_metrics<'a>(
-        &'a self,
-    ) -> Pin<Box<dyn Future<Output = Result<PublicMetrics, MetricsError>> + Send + 'a>>;
+    fn public_metrics<'a>(&'a self) -> BoxFuture<'a, Result<PublicMetrics, MetricsError>>;
 
     /// See [`MetricsService::touch_last_active`].
-    fn touch_last_active<'a>(
-        &'a self,
-        user_id: Uuid,
-    ) -> Pin<Box<dyn Future<Output = Result<(), MetricsError>> + Send + 'a>>;
+    fn touch_last_active<'a>(&'a self, user_id: Uuid) -> BoxFuture<'a, Result<(), MetricsError>>;
 
     /// See [`MetricsService::mark_user_first_swiped`].
     fn mark_user_first_swiped<'a>(
         &'a self,
         user_id: Uuid,
-    ) -> Pin<Box<dyn Future<Output = Result<bool, MetricsError>> + Send + 'a>>;
+    ) -> BoxFuture<'a, Result<bool, MetricsError>>;
 }
 
 impl<T> ErasedMetricsService for T
@@ -243,14 +252,14 @@ where
         &'a self,
         user_id: Uuid,
         batch: &'a HttpUsageBatch,
-    ) -> Pin<Box<dyn Future<Output = Result<(), MetricsError>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Result<(), MetricsError>> {
         Box::pin(MetricsService::apply_usage(self, user_id, batch))
     }
 
     fn lifetime_counters<'a>(
         &'a self,
         user_id: Uuid,
-    ) -> Pin<Box<dyn Future<Output = Result<LifetimeCounters, MetricsError>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Result<LifetimeCounters, MetricsError>> {
         Box::pin(MetricsService::lifetime_counters(self, user_id))
     }
 
@@ -259,7 +268,7 @@ where
         user_id: Uuid,
         kind: EventKind,
         deck_id: Option<Uuid>,
-    ) -> Pin<Box<dyn Future<Output = Result<(), MetricsError>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Result<(), MetricsError>> {
         Box::pin(MetricsService::record_event(self, user_id, kind, deck_id))
     }
 
@@ -267,55 +276,57 @@ where
         &'a self,
         user_id: Uuid,
         action: AuditAction,
-    ) -> Pin<Box<dyn Future<Output = Result<(), MetricsError>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Result<(), MetricsError>> {
         Box::pin(MetricsService::record_audit(self, user_id, action))
     }
 
-    fn insert_lifetime_row<'a>(
+    fn record_anonymous_event<'a>(
         &'a self,
-        user_id: Uuid,
-    ) -> Pin<Box<dyn Future<Output = Result<(), MetricsError>> + Send + 'a>> {
+        session_id: Uuid,
+        kind: AnonymousEventKind,
+    ) -> BoxFuture<'a, Result<(), MetricsError>> {
+        Box::pin(MetricsService::record_anonymous_event(
+            self, session_id, kind,
+        ))
+    }
+
+    fn insert_lifetime_row<'a>(&'a self, user_id: Uuid) -> BoxFuture<'a, Result<(), MetricsError>> {
         Box::pin(MetricsService::insert_lifetime_row(self, user_id))
     }
 
     fn increment_decks_created<'a>(
         &'a self,
         user_id: Uuid,
-    ) -> Pin<Box<dyn Future<Output = Result<(), MetricsError>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Result<(), MetricsError>> {
         Box::pin(MetricsService::increment_decks_created(self, user_id))
     }
 
     fn increment_decks_completed<'a>(
         &'a self,
         user_id: Uuid,
-    ) -> Pin<Box<dyn Future<Output = Result<(), MetricsError>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Result<(), MetricsError>> {
         Box::pin(MetricsService::increment_decks_completed(self, user_id))
     }
 
     fn mark_deck_first_completed<'a>(
         &'a self,
         deck_id: Uuid,
-    ) -> Pin<Box<dyn Future<Output = Result<bool, MetricsError>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Result<bool, MetricsError>> {
         Box::pin(MetricsService::mark_deck_first_completed(self, deck_id))
     }
 
-    fn public_metrics<'a>(
-        &'a self,
-    ) -> Pin<Box<dyn Future<Output = Result<PublicMetrics, MetricsError>> + Send + 'a>> {
+    fn public_metrics<'a>(&'a self) -> BoxFuture<'a, Result<PublicMetrics, MetricsError>> {
         Box::pin(MetricsService::public_metrics(self))
     }
 
-    fn touch_last_active<'a>(
-        &'a self,
-        user_id: Uuid,
-    ) -> Pin<Box<dyn Future<Output = Result<(), MetricsError>> + Send + 'a>> {
+    fn touch_last_active<'a>(&'a self, user_id: Uuid) -> BoxFuture<'a, Result<(), MetricsError>> {
         Box::pin(MetricsService::touch_last_active(self, user_id))
     }
 
     fn mark_user_first_swiped<'a>(
         &'a self,
         user_id: Uuid,
-    ) -> Pin<Box<dyn Future<Output = Result<bool, MetricsError>> + Send + 'a>> {
+    ) -> BoxFuture<'a, Result<bool, MetricsError>> {
         Box::pin(MetricsService::mark_user_first_swiped(self, user_id))
     }
 }

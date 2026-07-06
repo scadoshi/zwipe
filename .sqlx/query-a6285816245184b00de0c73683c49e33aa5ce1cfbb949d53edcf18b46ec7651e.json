@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO anonymous_events (session_id, kind)\n               VALUES ($1, $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a6285816245184b00de0c73683c49e33aa5ce1cfbb949d53edcf18b46ec7651e"
+}

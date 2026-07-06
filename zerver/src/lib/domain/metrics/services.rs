@@ -11,7 +11,7 @@ use crate::domain::metrics::{
     },
     ports::{MetricsRepository, MetricsService},
 };
-use zwipe_core::http::contracts::metrics::HttpUsageBatch;
+use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpUsageBatch};
 
 /// Default metrics service.
 #[derive(Debug, Clone)]
@@ -33,11 +33,7 @@ where
 }
 
 impl<R: MetricsRepository> MetricsService for Service<R> {
-    async fn apply_usage(
-        &self,
-        user_id: Uuid,
-        batch: &HttpUsageBatch,
-    ) -> Result<(), MetricsError> {
+    async fn apply_usage(&self, user_id: Uuid, batch: &HttpUsageBatch) -> Result<(), MetricsError> {
         self.repo.apply_usage(user_id, batch).await
     }
 
@@ -54,12 +50,16 @@ impl<R: MetricsRepository> MetricsService for Service<R> {
         self.repo.record_event(user_id, kind, deck_id).await
     }
 
-    async fn record_audit(
-        &self,
-        user_id: Uuid,
-        action: AuditAction,
-    ) -> Result<(), MetricsError> {
+    async fn record_audit(&self, user_id: Uuid, action: AuditAction) -> Result<(), MetricsError> {
         self.repo.record_audit(user_id, action).await
+    }
+
+    async fn record_anonymous_event(
+        &self,
+        session_id: Uuid,
+        kind: AnonymousEventKind,
+    ) -> Result<(), MetricsError> {
+        self.repo.record_anonymous_event(session_id, kind).await
     }
 
     async fn insert_lifetime_row(&self, user_id: Uuid) -> Result<(), MetricsError> {

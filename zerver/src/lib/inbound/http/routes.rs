@@ -42,7 +42,7 @@ use crate::inbound::http::handlers::{
     health::{are_server_and_database_running, is_server_running, root},
     metrics::{
         get_my_metrics::get_my_metrics, get_public_metrics::get_public_metrics,
-        record_usage::record_usage,
+        record_anonymous_event::record_anonymous_event, record_usage::record_usage,
     },
     user::{
         get_preferences::get_preferences, get_user::get_user, mark_hint_shown::mark_hint_shown,
@@ -175,6 +175,17 @@ pub fn public_routes() -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
+    // 10 req / min per IP — pre-auth funnel events. A legitimate session
+    // fires a handful ever (app opened, register viewed/submitted); this is
+    // an unauthenticated write, so keep the row-spam ceiling low.
+    let anonymous_event_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(6))
+            .burst_size(10)
+            .key_extractor(CfConnectingIpKeyExtractor)
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
     // 30 req / 2s per IP — health checks. Generous for frequent polling
     // (manual curls, uptime monitors) while capping unauthenticated floods,
     // notably /health/database which pings Postgres.
@@ -254,6 +265,12 @@ pub fn public_routes() -> Router<AppState> {
                     Router::new()
                         .route("/min-version", get(get_min_client_version))
                         .layer(GovernorLayer::new(public_client_config)),
+                )
+                .nest(
+                    "/metrics",
+                    Router::new()
+                        .route("/anonymous", post(record_anonymous_event))
+                        .layer(GovernorLayer::new(anonymous_event_config)),
                 ),
         )
 }
