@@ -11,17 +11,8 @@ pub mod models;
 /// Sync metrics JSONB codecs and database model.
 pub mod zervice_metrics;
 
-use zwipe_core::domain::card::{
-    Card,
-    card_profile::CardProfile,
-    scryfall_data::ScryfallData,
-    search_card::card_filter::{
-        CardQuery, card_sort_key::CardSortKey, criteria::PLAYABLE_LAYOUTS,
-    },
-};
 use crate::domain::card::models::{
-    helpers::SleeveCardProfile,
-    search_card::error::SearchCardsError,
+    helpers::SleeveCardProfile, search_card::error::SearchCardsError,
     zervice_metrics::ZerviceMetrics,
 };
 use crate::domain::card::requests::{
@@ -48,6 +39,12 @@ use crate::{
     outbound::sqlx::card::helpers::upsert_card::{
         BatchUpsertWithTx, BulkUpsertWithTx, SingleUpsertWithTx,
     },
+};
+use zwipe_core::domain::card::{
+    Card,
+    card_profile::CardProfile,
+    scryfall_data::ScryfallData,
+    search_card::card_filter::{CardQuery, card_sort_key::CardSortKey, criteria::PLAYABLE_LAYOUTS},
 };
 use zwipe_core::domain::deck::Format;
 
@@ -687,9 +684,7 @@ impl CardRepository for MyPostgres {
         }
 
         if let Some(true) = criteria.is_signature_spell() {
-            sep.push(
-                "(type_line ILIKE '%Instant%' OR type_line ILIKE '%Sorcery%')",
-            );
+            sep.push("(type_line ILIKE '%Instant%' OR type_line ILIKE '%Sorcery%')");
         }
 
         // mechanical category filters
@@ -1054,13 +1049,12 @@ impl CardRepository for MyPostgres {
             return Ok(vec![]);
         }
         let lowered: Vec<String> = names.iter().map(|n| n.to_lowercase()).collect();
-        let db_rows: Vec<DatabaseScryfallData> = query_as(
-            "SELECT * FROM latest_cards WHERE LOWER(name) = ANY($1)",
-        )
-        .bind(&lowered)
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| SearchScryfallDataError::Database(e.into()))?;
+        let db_rows: Vec<DatabaseScryfallData> =
+            query_as("SELECT * FROM latest_cards WHERE LOWER(name) = ANY($1)")
+                .bind(&lowered)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| SearchScryfallDataError::Database(e.into()))?;
         let scryfall_data: Vec<ScryfallData> = db_rows
             .into_iter()
             .map(ScryfallData::try_from)
@@ -1143,13 +1137,17 @@ impl CardRepository for MyPostgres {
             return Ok(vec![]);
         }
         let scryfall_data_ids: ScryfallDataIds = ids.iter().copied().collect();
-        self.get_cards(&scryfall_data_ids).await
+        self.get_cards(&scryfall_data_ids)
+            .await
             .map_err(|e| anyhow::anyhow!("failed to fetch card batch: {e}"))
     }
 
     async fn update_mechanical_categories(
         &self,
-        updates: &[(uuid::Uuid, Vec<zwipe_core::domain::card::mechanical_category::MechanicalCategory>)],
+        updates: &[(
+            uuid::Uuid,
+            Vec<zwipe_core::domain::card::mechanical_category::MechanicalCategory>,
+        )],
     ) -> Result<(), anyhow::Error> {
         if updates.is_empty() {
             return Ok(());

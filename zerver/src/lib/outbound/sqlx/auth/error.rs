@@ -2,21 +2,16 @@
 
 use crate::{
     domain::auth::requests::{
-        authenticate_user::AuthenticateUserError,
-        change_email::ChangeEmailError,
-        change_username::ChangeUsernameError,
-        create_session::CreateSessionError,
-        delete_expired_sessions::DeleteExpiredSessionsError,
-        delete_user::DeleteUserError,
-        enforce_session_maximum::EnforceSessionMaximumError,
-        refresh_session::RefreshSessionError,
-        register_user::RegisterUserError,
-        revoke_sessions::RevokeSessionsError,
+        authenticate_user::AuthenticateUserError, change_email::ChangeEmailError,
+        change_username::ChangeUsernameError, create_session::CreateSessionError,
+        delete_expired_sessions::DeleteExpiredSessionsError, delete_user::DeleteUserError,
+        enforce_session_maximum::EnforceSessionMaximumError, refresh_session::RefreshSessionError,
+        register_user::RegisterUserError, revoke_sessions::RevokeSessionsError,
     },
     outbound::sqlx::{postgres::IsConstraintViolation, user::error::IntoUserError},
 };
-use zwipe_core::domain::{user::username::InvalidUsername, InvalidEmail};
 use thiserror::Error;
+use zwipe_core::domain::{InvalidEmail, user::username::InvalidUsername};
 
 /// Errors from converting a database user-with-password-hash row into domain types.
 #[derive(Debug, Error)]

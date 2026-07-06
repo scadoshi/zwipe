@@ -1,17 +1,7 @@
 use crate::inbound::external::scryfall::bulk::BulkEndpoint;
-use zwipe_core::domain::card::{
-    Card,
-    card_profile::CardProfile,
-    mechanical_category::classify_by_heuristics,
-    scryfall_data::ScryfallData,
-    search_card::card_filter::CardQuery,
-};
 use crate::{
     domain::card::{
-        models::{
-            search_card::error::SearchCardsError,
-            zervice_metrics::ZerviceMetrics,
-        },
+        models::{search_card::error::SearchCardsError, zervice_metrics::ZerviceMetrics},
         ports::{CardRepository, CardService},
         requests::{
             create_card::CreateCardError,
@@ -29,6 +19,10 @@ use crate::{
     outbound::sqlx::card::helpers::scryfall_data_fields::scryfall_data_field_count,
 };
 use chrono::{DateTime, Utc};
+use zwipe_core::domain::card::{
+    Card, card_profile::CardProfile, mechanical_category::classify_by_heuristics,
+    scryfall_data::ScryfallData, search_card::card_filter::CardQuery,
+};
 
 /// PostgreSQL parameter limit per query (~65k parameters).
 ///

@@ -26,9 +26,9 @@
 
 #[cfg(feature = "zerver")]
 use crate::domain::auth::requests::authenticate_user::AuthenticateUserError;
-use zwipe_core::domain::user::username::{InvalidUsername, Username};
 use thiserror::Error;
 use uuid::Uuid;
+use zwipe_core::domain::user::username::{InvalidUsername, Username};
 
 /// Errors that can occur while constructing a [`ChangeUsername`] request.
 #[derive(Debug, Error)]

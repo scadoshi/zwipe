@@ -1,11 +1,11 @@
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::card::{card_profile::CardProfile, scryfall_data::ScryfallData};
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::deck::DeckCard;
 use serde::Deserialize;
 #[cfg(feature = "zerver")]
 use thiserror::Error;
 use uuid::Uuid;
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::card::{card_profile::CardProfile, scryfall_data::ScryfallData};
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::deck::DeckCard;
 
 #[cfg(feature = "zerver")]
 /// Errors that can occur when retrieving Scryfall data.
@@ -42,7 +42,6 @@ impl GetScryfallData {
     pub fn new(id: &str) -> Result<Self, uuid::Error> {
         Ok(Self(Uuid::try_parse(id)?))
     }
-
 }
 
 impl std::ops::Deref for GetScryfallData {

@@ -1,7 +1,7 @@
+use std::sync::Arc;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::{Layer, layer::SubscriberExt, util::SubscriberInitExt};
-use std::sync::Arc;
 use zwipe::config::Config;
 use zwipe::domain::{auth, card, deck, health, metrics, user};
 use zwipe::inbound::http::{HttpServer, HttpServerConfig};
@@ -26,9 +26,8 @@ async fn run() -> anyhow::Result<()> {
     // when unset/invalid we fall back to the directive string loaded via Config (which
     // came from .env). Either way directives like "info,sqlx=warn,zwipe=debug" work.
     // Filters aren't Clone, so we build one per subscriber layer via this closure.
-    let env_filter = || {
-        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(&config.rust_log))
-    };
+    let env_filter =
+        || EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(&config.rust_log));
 
     std::fs::create_dir_all(&config.log_dir)
         .map_err(|e| anyhow::anyhow!("failed to create log directory: {e}"))?;

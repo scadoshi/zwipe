@@ -23,7 +23,6 @@ pub enum GetCardError {
     GetCardProfileError(#[from] GetCardProfileError),
 }
 
-
 /// Errors when constructing a batch card retrieval request.
 #[cfg(feature = "zerver")]
 #[derive(Debug, Error)]

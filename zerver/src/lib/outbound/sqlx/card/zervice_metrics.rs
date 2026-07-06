@@ -4,12 +4,12 @@
 //! same pattern as the Scryfall data codecs.
 
 use chrono::{DateTime, Utc};
-use sqlx::{encode::IsNull, types::JsonValue, Decode, Encode, Postgres, Type};
+use sqlx::{Decode, Encode, Postgres, Type, encode::IsNull, types::JsonValue};
 use sqlx_macros::FromRow;
 use uuid::Uuid;
 
 use crate::domain::card::models::zervice_metrics::{
-    ErrorMetrics, ZerviceMetrics, SyncStatus, VecErrorMetrics,
+    ErrorMetrics, SyncStatus, VecErrorMetrics, ZerviceMetrics,
 };
 
 impl TryFrom<ErrorMetrics> for JsonValue {

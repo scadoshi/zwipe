@@ -296,7 +296,10 @@ mod tests {
     #[test]
     fn test_authenticate_user_new_rejects_empty_identifier() {
         let result = AuthenticateUser::new("", "SecurePass123!");
-        assert!(matches!(result, Err(InvalidAuthenticateUser::MissingIdentifier)));
+        assert!(matches!(
+            result,
+            Err(InvalidAuthenticateUser::MissingIdentifier)
+        ));
     }
 
     #[test]

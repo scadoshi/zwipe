@@ -3,10 +3,10 @@
 //! Provides utilities for binding all 88 Scryfall card fields to SQLx query builders,
 //! enabling efficient bulk insert/update operations.
 
-use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use sqlx::Postgres;
 use sqlx::QueryBuilder;
 use sqlx::types::Json;
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
 
 /// Every [`ScryfallData`] field name, line-separated for SQL generation.
 ///

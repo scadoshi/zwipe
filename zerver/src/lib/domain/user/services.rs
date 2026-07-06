@@ -11,10 +11,10 @@ use crate::domain::user::{
     ports::{UserRepository, UserService},
 };
 use zwipe_core::domain::user::{
+    User,
     models::hints::MarkHintShown,
     preferences::{UpdatePreferences, UserPreferences},
     requests::get_user::GetUser,
-    User,
 };
 
 /// User service implementation handling user data retrieval operations.

@@ -5,13 +5,13 @@
 //! - **cast** = send the request
 //! - **tutor** = search for a card
 
-use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use anyhow::Context;
 use reqwest::{
-    header::{ACCEPT, USER_AGENT},
     Client, RequestBuilder, Response,
+    header::{ACCEPT, USER_AGENT},
 };
 use serde::Deserialize;
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
 
 // ==============================
 //  equip onto scryfall requests

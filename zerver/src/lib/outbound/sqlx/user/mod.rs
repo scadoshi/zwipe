@@ -13,14 +13,14 @@ use crate::domain::user::{
     },
     ports::UserRepository,
 };
-use zwipe_core::domain::user::{
-    models::hints::MarkHintShown,
-    preferences::{UpdatePreferences, UserPreferences},
-    User,
-};
 use crate::outbound::sqlx::{postgres::Postgres, user::models::DatabaseUser};
 use sqlx::query_as;
 use uuid::Uuid;
+use zwipe_core::domain::user::{
+    User,
+    models::hints::MarkHintShown,
+    preferences::{UpdatePreferences, UserPreferences},
+};
 
 /// Raw database preferences record.
 #[derive(Debug, Clone, sqlx::FromRow)]
@@ -80,11 +80,11 @@ impl UserRepository for Postgres {
             other => MarkHintShownError::Database(other.into()),
         })?;
 
-        let user: User = database_user
-            .try_into()
-            .map_err(|e: crate::outbound::sqlx::user::error::IntoUserError| {
+        let user: User = database_user.try_into().map_err(
+            |e: crate::outbound::sqlx::user::error::IntoUserError| {
                 MarkHintShownError::UserFromDb(anyhow::anyhow!(e))
-            })?;
+            },
+        )?;
 
         Ok(user)
     }

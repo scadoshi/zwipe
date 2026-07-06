@@ -1,17 +1,11 @@
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::EnvFilter;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Layer};
+use tracing_subscriber::{Layer, layer::SubscriberExt, util::SubscriberInitExt};
 use zwipe::{
     config::Config,
     domain::{
-        auth::{
-            ports::AuthService,
-            services::Service as AuthService_,
-        },
-        card::{
-            ports::CardService,
-            services::Service as CardService_,
-        },
+        auth::{ports::AuthService, services::Service as AuthService_},
+        card::{ports::CardService, services::Service as CardService_},
     },
     inbound::external::scryfall::bulk::BulkEndpoint,
     outbound::{resend::Resend, sqlx::postgres::Postgres},
@@ -26,9 +20,8 @@ async fn main() -> anyhow::Result<()> {
 
     // See zerver.rs for the rationale — RUST_LOG from the process env wins; otherwise
     // we use the directive string from Config. Per-layer because EnvFilter isn't Clone.
-    let env_filter = || {
-        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(&config.rust_log))
-    };
+    let env_filter =
+        || EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(&config.rust_log));
 
     std::fs::create_dir_all(&config.log_dir)
         .map_err(|e| anyhow::anyhow!("failed to create log directory: {e}"))?;
@@ -54,11 +47,17 @@ async fn main() -> anyhow::Result<()> {
                 .with_filter(env_filter()),
         )
         .init();
-    let recategorize = args.iter().any(|a| a == "--recategorize" || a == "-rc" || a == "--rc");
+    let recategorize = args
+        .iter()
+        .any(|a| a == "--recategorize" || a == "-rc" || a == "--rc");
     tracing::info!(
         "zervice running v{}{}",
         env!("CARGO_PKG_VERSION"),
-        if recategorize { " [--recategorize]" } else { "" }
+        if recategorize {
+            " [--recategorize]"
+        } else {
+            ""
+        }
     );
 
     let db = Postgres::new(&config.database_url).await?;
@@ -73,7 +72,9 @@ async fn main() -> anyhow::Result<()> {
         config.support_email_address,
     );
 
-    card_service.scryfall_sync(BulkEndpoint::DefaultCards).await?;
+    card_service
+        .scryfall_sync(BulkEndpoint::DefaultCards)
+        .await?;
 
     if recategorize {
         tracing::info!("clearing all categories for recategorization");

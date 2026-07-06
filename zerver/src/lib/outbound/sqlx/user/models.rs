@@ -3,7 +3,10 @@ use sqlx_macros::FromRow;
 use uuid::Uuid;
 
 use crate::outbound::sqlx::user::error::IntoUserError;
-use zwipe_core::domain::{user::{username::Username, User}, Email};
+use zwipe_core::domain::{
+    Email,
+    user::{User, username::Username},
+};
 
 /// raw database user record
 /// (unvalidated data from `PostgreSQL`)

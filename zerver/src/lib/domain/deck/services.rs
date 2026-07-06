@@ -3,38 +3,30 @@ use std::fmt::Debug;
 
 use uuid::Uuid;
 
-use zwipe_core::domain::card::{Card, search_card::card_filter::CardQuery};
 use crate::domain::{
     card::{
-        models::synergy::SynergyPayload,
+        models::synergy::SynergyPayload, ports::CardRepository,
         requests::get_scryfall_data::ScryfallDataIds,
-        ports::CardRepository,
     },
     deck::{
         models::{
-            deck::{
-                clear_deck_suppressions::ClearDeckSuppressionsError,
-                clone_deck::CloneDeckError,
-                create_deck_profile::CreateDeckProfileError,
-                delete_deck::DeleteDeckError,
-                get_deck::GetDeckError,
-                get_deck_profile::GetDeckProfileError,
-                get_deck_tokens::GetDeckTokensError,
-                search_deck_cards::SearchDeckCardsError,
-                skip_deck_card::SkipDeckCardError,
-                update_deck_profile::UpdateDeckProfileError,
-            },
             deck::import_archidekt::ArchidektCard,
+            deck::{
+                clear_deck_suppressions::ClearDeckSuppressionsError, clone_deck::CloneDeckError,
+                create_deck_profile::CreateDeckProfileError, delete_deck::DeleteDeckError,
+                get_deck::GetDeckError, get_deck_profile::GetDeckProfileError,
+                get_deck_tokens::GetDeckTokensError, search_deck_cards::SearchDeckCardsError,
+                skip_deck_card::SkipDeckCardError, update_deck_profile::UpdateDeckProfileError,
+            },
             deck_card::{
-                create_deck_card::CreateDeckCardError,
-                delete_deck_card::DeleteDeckCardError,
-                import_deck_cards::ImportDeckCardsError,
-                update_deck_card::UpdateDeckCardError,
+                create_deck_card::CreateDeckCardError, delete_deck_card::DeleteDeckCardError,
+                import_deck_cards::ImportDeckCardsError, update_deck_card::UpdateDeckCardError,
             },
         },
         ports::{DeckRepository, DeckService},
     },
 };
+use zwipe_core::domain::card::{Card, search_card::card_filter::CardQuery};
 use zwipe_core::domain::deck::{
     Board, Deck, DeckCard, DeckEntry, ImportMode,
     deck_profile::DeckProfile,
@@ -241,10 +233,18 @@ where
             HashMap::new()
         };
 
-        let commander_card = deck_profile.commander_id.and_then(|id| cz_cards.get(&id).cloned());
-        let partner_card = deck_profile.partner_commander_id.and_then(|id| cz_cards.get(&id).cloned());
-        let background_card = deck_profile.background_id.and_then(|id| cz_cards.get(&id).cloned());
-        let spell_card = deck_profile.signature_spell_id.and_then(|id| cz_cards.get(&id).cloned());
+        let commander_card = deck_profile
+            .commander_id
+            .and_then(|id| cz_cards.get(&id).cloned());
+        let partner_card = deck_profile
+            .partner_commander_id
+            .and_then(|id| cz_cards.get(&id).cloned());
+        let background_card = deck_profile
+            .background_id
+            .and_then(|id| cz_cards.get(&id).cloned());
+        let spell_card = deck_profile
+            .signature_spell_id
+            .and_then(|id| cz_cards.get(&id).cloned());
 
         let command_zone = zwipe_core::domain::deck::validate_deck::DeckCommandZone {
             commander: commander_card.as_ref(),
@@ -460,17 +460,18 @@ where
         .into_iter()
         .flatten()
         .collect();
-        let additional_oracle_ids: std::collections::HashSet<Uuid> = if additional_scryfall_ids.is_empty() {
-            std::collections::HashSet::new()
-        } else {
-            self.card_repo
-                .get_multiple_scryfall_data(&additional_scryfall_ids)
-                .await
-                .map_err(|e| ImportDeckCardsError::Database(e.into()))?
-                .into_iter()
-                .filter_map(|sd| sd.oracle_id)
-                .collect()
-        };
+        let additional_oracle_ids: std::collections::HashSet<Uuid> =
+            if additional_scryfall_ids.is_empty() {
+                std::collections::HashSet::new()
+            } else {
+                self.card_repo
+                    .get_multiple_scryfall_data(&additional_scryfall_ids)
+                    .await
+                    .map_err(|e| ImportDeckCardsError::Database(e.into()))?
+                    .into_iter()
+                    .filter_map(|sd| sd.oracle_id)
+                    .collect()
+            };
 
         // Classify lines, deduplicating by oracle_id (summing quantities).
         // Tuple: (scryfall_id, oracle_id, quantity, name, is_basic_land, board)
@@ -501,7 +502,14 @@ where
                     .entry(oracle_id)
                     .and_modify(|(_, _, qty, _, _, _)| *qty += line.quantity)
                     .or_insert_with(|| {
-                        (scryfall_id, oracle_id, line.quantity, card.scryfall_data.name.clone(), is_basic_land, board)
+                        (
+                            scryfall_id,
+                            oracle_id,
+                            line.quantity,
+                            card.scryfall_data.name.clone(),
+                            is_basic_land,
+                            board,
+                        )
                     });
             } else {
                 unresolved.push(UnresolvedCard {
@@ -512,8 +520,10 @@ where
         }
 
         // Build batch insert data: (scryfall_data_id, oracle_id, quantity, board)
-        let batch: Vec<(Uuid, Uuid, i32, String)> =
-            insert_map.values().map(|(sid, oid, qty, _, _, board)| (*sid, *oid, *qty, board.clone())).collect();
+        let batch: Vec<(Uuid, Uuid, i32, String)> = insert_map
+            .values()
+            .map(|(sid, oid, qty, _, _, board)| (*sid, *oid, *qty, board.clone()))
+            .collect();
 
         // Check card limit before inserting. The limit counts the deck board
         // only. In replace mode a board present in the import becomes exactly
@@ -560,14 +570,19 @@ where
         }
 
         // Bulk insert
-        let _deck_cards = self.deck_repo.bulk_create_deck_cards(request, &batch).await?;
+        let _deck_cards = self
+            .deck_repo
+            .bulk_create_deck_cards(request, &batch)
+            .await?;
 
         // Replace mode: make each board present in the import exactly match
         // the imported list by removing its other cards. Boards absent from
         // the import are left alone, so an empty paste never wipes anything.
         if request.mode.is_replace() {
-            let boards: std::collections::HashSet<&str> =
-                batch.iter().map(|(_, _, _, board)| board.as_str()).collect();
+            let boards: std::collections::HashSet<&str> = batch
+                .iter()
+                .map(|(_, _, _, board)| board.as_str())
+                .collect();
             for board in boards {
                 let keep: Vec<Uuid> = batch
                     .iter()
@@ -584,7 +599,10 @@ where
         // Build imported list from insert_map
         let imported: Vec<ImportedCard> = insert_map
             .into_values()
-            .map(|(_, _, qty, name, _, _)| ImportedCard { name, quantity: qty })
+            .map(|(_, _, qty, name, _, _)| ImportedCard {
+                name,
+                quantity: qty,
+            })
             .collect();
 
         Ok(ImportDeckCardsResult {
@@ -668,9 +686,12 @@ where
         let by_name: HashMap<String, (Uuid, Uuid)> = name_matches
             .iter()
             .filter_map(|c| {
-                c.scryfall_data
-                    .oracle_id
-                    .map(|oracle| (c.scryfall_data.name.to_lowercase(), (c.scryfall_data.id, oracle)))
+                c.scryfall_data.oracle_id.map(|oracle| {
+                    (
+                        c.scryfall_data.name.to_lowercase(),
+                        (c.scryfall_data.id, oracle),
+                    )
+                })
             })
             .collect();
 
@@ -720,7 +741,11 @@ where
             .map_err(ImportDeckCardsError::Database)?;
         let import_total: i64 = batch.iter().map(|(_, _, qty, _)| i64::from(*qty)).sum();
         let post_import_total = if mode.is_replace() {
-            if board == Board::Deck { import_total } else { card_count }
+            if board == Board::Deck {
+                import_total
+            } else {
+                card_count
+            }
         } else {
             let import_oracle_ids: Vec<Uuid> = insert_map.keys().copied().collect();
             let overlap_qty = self
@@ -752,7 +777,9 @@ where
                 email_verified,
                 mode,
             };
-            self.deck_repo.bulk_create_deck_cards(&carrier, &batch).await?;
+            self.deck_repo
+                .bulk_create_deck_cards(&carrier, &batch)
+                .await?;
         }
 
         // Replace mode: the board becomes exactly the imported list. Skipped
@@ -767,7 +794,10 @@ where
 
         let imported: Vec<ImportedCard> = insert_map
             .into_values()
-            .map(|(_, qty, name)| ImportedCard { name, quantity: qty })
+            .map(|(_, qty, name)| ImportedCard {
+                name,
+                quantity: qty,
+            })
             .collect();
 
         Ok(ImportDeckCardsResult {
