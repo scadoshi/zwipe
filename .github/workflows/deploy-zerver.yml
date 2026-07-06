@@ -38,6 +38,15 @@ jobs:
           set +a
           cargo sqlx migrate run --source zerver/migrations
 
+      # Fail fast if the committed .sqlx offline data has drifted from the
+      # (just-migrated) prod schema — the exact failure mode of 2026-07-05.
+      - name: Verify offline query data
+        run: |
+          set -a
+          source ~/zwipe/.env
+          set +a
+          cargo sqlx prepare --workspace --check
+
       - name: Build
         env:
           SQLX_OFFLINE: true
