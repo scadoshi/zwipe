@@ -1,29 +1,20 @@
 //! Get tokens produced by a deck's cards.
 
 #[cfg(feature = "zerver")]
-use zwipe_core::domain::card::Card;
-#[cfg(feature = "zerver")]
 use crate::{
-    domain::{
-        auth::ports::AuthService,
-        card::ports::CardService,
-        deck::{
-            models::deck::get_deck_tokens::GetDeckTokensError,
-            ports::DeckService,
-        },
-        health::ports::HealthService,
-        user::ports::UserService,
-    },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState},
+    domain::deck::models::deck::get_deck_tokens::GetDeckTokensError,
+    inbound::http::{ApiError, AppState, middleware::AuthenticatedUser},
 };
 #[cfg(feature = "zerver")]
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 #[cfg(feature = "zerver")]
 use uuid::Uuid;
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::card::Card;
 
 #[cfg(feature = "zerver")]
 impl From<GetDeckTokensError> for ApiError {
@@ -37,18 +28,11 @@ impl From<GetDeckTokensError> for ApiError {
 
 /// Returns all token cards produced by the cards in a deck.
 #[cfg(feature = "zerver")]
-pub async fn get_deck_tokens<AS, US, HS, CS, DS>(
+pub async fn get_deck_tokens(
     user: AuthenticatedUser,
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    State(state): State<AppState>,
     Path(deck_id): Path<Uuid>,
-) -> Result<(StatusCode, Json<Vec<Card>>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<(StatusCode, Json<Vec<Card>>), ApiError> {
     use zwipe_core::domain::deck::requests::get_deck_profile::GetDeckProfile;
 
     let request = GetDeckProfile::new(user.id, deck_id);

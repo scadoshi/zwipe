@@ -1,27 +1,18 @@
 #[cfg(feature = "zerver")]
 use crate::{
-    domain::{
-        auth::ports::AuthService,
-        card::ports::CardService,
-        deck::{
-            models::deck::get_deck::GetDeckError,
-            ports::DeckService,
-        },
-        health::ports::HealthService,
-        user::ports::UserService,
-    },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState},
+    domain::deck::models::deck::get_deck::GetDeckError,
+    inbound::http::{ApiError, AppState, middleware::AuthenticatedUser},
 };
 #[cfg(feature = "zerver")]
-use zwipe_core::domain::deck::Deck;
-#[cfg(feature = "zerver")]
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 #[cfg(feature = "zerver")]
 use uuid::Uuid;
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::deck::Deck;
 
 #[cfg(feature = "zerver")]
 impl From<GetDeckError> for ApiError {
@@ -37,18 +28,11 @@ impl From<GetDeckError> for ApiError {
 
 /// Returns the full deck including all cards (not just metadata like `get_deck_profile`).
 #[cfg(feature = "zerver")]
-pub async fn get_deck<AS, US, HS, CS, DS>(
+pub async fn get_deck(
     user: AuthenticatedUser,
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    State(state): State<AppState>,
     Path(deck_id): Path<Uuid>,
-) -> Result<(StatusCode, Json<Deck>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<(StatusCode, Json<Deck>), ApiError> {
     use zwipe_core::domain::deck::requests::get_deck_profile::GetDeckProfile;
 
     let request = GetDeckProfile::new(user.id, deck_id);

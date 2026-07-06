@@ -1,24 +1,18 @@
 #[cfg(feature = "zerver")]
 use crate::domain::auth::requests::refresh_session::RefreshSession;
 #[cfg(feature = "zerver")]
-use zwipe_core::domain::auth::models::session::Session;
-#[cfg(feature = "zerver")]
 use crate::{
     domain::{
-        auth::{
-            ports::AuthService,
-            requests::refresh_session::{InvalidRefreshSession, RefreshSessionError},
-        },
-        card::ports::CardService,
-        deck::ports::DeckService,
-        health::ports::HealthService,
+        auth::requests::refresh_session::{InvalidRefreshSession, RefreshSessionError},
         metrics::models::kinds::{AuditAction, EventKind},
-        user::{models::get_user::GetUserError, ports::UserService},
+        user::models::get_user::GetUserError,
     },
     inbound::http::{ApiError, AppState, Log500},
 };
 #[cfg(feature = "zerver")]
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{Json, extract::State, http::StatusCode};
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::auth::models::session::Session;
 #[cfg(feature = "zerver")]
 use zwipe_core::http::contracts::auth::HttpRefreshSession;
 
@@ -75,17 +69,10 @@ impl TryFrom<HttpRefreshSession> for RefreshSession {
 
 /// Rotates a refresh token, consuming the old one and issuing a new session.
 #[cfg(feature = "zerver")]
-pub async fn refresh_session<AS, US, HS, CS, DS>(
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+pub async fn refresh_session(
+    State(state): State<AppState>,
     Json(body): Json<HttpRefreshSession>,
-) -> Result<(StatusCode, Json<Session>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<(StatusCode, Json<Session>), ApiError> {
     let request = RefreshSession::new(&body.user_id, &body.refresh_token)?;
 
     let session = state
@@ -102,7 +89,10 @@ where
         .last_active_cache
         .insert(user_id, std::time::Instant::now());
     tokio::spawn(async move {
-        if let Err(e) = metrics.record_event(user_id, EventKind::Refresh, None).await {
+        if let Err(e) = metrics
+            .record_event(user_id, EventKind::Refresh, None)
+            .await
+        {
             tracing::warn!(error = ?e, "metrics: record refresh event failed");
         }
         if let Err(e) = metrics.record_audit(user_id, AuditAction::Refresh).await {

@@ -1,21 +1,12 @@
 #[cfg(feature = "zerver")]
-use crate::{
-    domain::{
-        auth::ports::AuthService,
-        card::ports::CardService,
-        deck::ports::DeckService,
-        health::ports::HealthService,
-        user::ports::UserService,
-    },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState},
-};
+use crate::inbound::http::{ApiError, AppState, middleware::AuthenticatedUser};
+#[cfg(feature = "zerver")]
+use axum::{Json, extract::State, http::StatusCode};
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::deck::{
     deck_profile::DeckProfile,
     requests::get_deck_profiles::{GetDeckProfiles, InvalidGetDeckProfiles},
 };
-#[cfg(feature = "zerver")]
-use axum::{extract::State, http::StatusCode, Json};
 
 #[cfg(feature = "zerver")]
 impl From<InvalidGetDeckProfiles> for ApiError {
@@ -30,17 +21,10 @@ impl From<InvalidGetDeckProfiles> for ApiError {
 
 /// Returns all deck profiles for the authenticated user.
 #[cfg(feature = "zerver")]
-pub async fn get_deck_profiles<AS, US, HS, CS, DS>(
+pub async fn get_deck_profiles(
     user: AuthenticatedUser,
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
-) -> Result<(StatusCode, Json<Vec<DeckProfile>>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+    State(state): State<AppState>,
+) -> Result<(StatusCode, Json<Vec<DeckProfile>>), ApiError> {
     let request = GetDeckProfiles::new(user.id);
     state
         .deck_service

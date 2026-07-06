@@ -1,18 +1,12 @@
 #[cfg(feature = "zerver")]
 use crate::{
-    domain::{
-        auth::ports::AuthService,
-        card::ports::CardService,
-        deck::ports::DeckService,
-        health::ports::HealthService,
-        user::{models::get_user::GetUserError, ports::UserService},
-    },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+    domain::user::models::get_user::GetUserError,
+    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
 };
 #[cfg(feature = "zerver")]
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{Json, extract::State, http::StatusCode};
 #[cfg(feature = "zerver")]
-use zwipe_core::domain::user::{requests::get_user::GetUser, User};
+use zwipe_core::domain::user::{User, requests::get_user::GetUser};
 
 #[cfg(feature = "zerver")]
 impl From<GetUserError> for ApiError {
@@ -34,17 +28,10 @@ impl From<AuthenticatedUser> for GetUser {
 
 /// Returns the authenticated user's own profile (identity from JWT, no path params).
 #[cfg(feature = "zerver")]
-pub async fn get_user<AS, US, HS, CS, DS>(
+pub async fn get_user(
     user: AuthenticatedUser,
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
-) -> Result<(StatusCode, Json<User>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+    State(state): State<AppState>,
+) -> Result<(StatusCode, Json<User>), ApiError> {
     let request = GetUser::from(user);
 
     state

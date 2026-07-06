@@ -4,16 +4,16 @@
 pub mod get_artists;
 /// Single card lookup handler.
 pub mod get_card;
-/// All printings of a card by oracle ID.
-pub mod get_printings;
 /// Distinct card type names handler.
 pub mod get_card_types;
 /// Distinct keyword ability names handler.
 pub mod get_keywords;
-/// Distinct oracle text word names handler.
-pub mod get_oracle_words;
 /// Distinct language names handler.
 pub mod get_languages;
+/// Distinct oracle text word names handler.
+pub mod get_oracle_words;
+/// All printings of a card by oracle ID.
+pub mod get_printings;
 /// Distinct set names handler.
 pub mod get_sets;
 /// Card search handler.

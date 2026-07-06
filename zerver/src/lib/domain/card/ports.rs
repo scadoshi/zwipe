@@ -4,22 +4,14 @@
 //! All card data originates from the Scryfall API and is synced to the local database
 //! for fast querying.
 
+use crate::domain::BoxFuture;
 use std::future::Future;
 
 use chrono::{DateTime, Utc};
 
-use zwipe_core::domain::card::{
-    Card,
-    card_profile::CardProfile,
-    scryfall_data::ScryfallData,
-    search_card::card_filter::CardQuery,
-};
 use crate::{
     domain::card::{
-        models::{
-            search_card::error::SearchCardsError,
-            zervice_metrics::ZerviceMetrics,
-        },
+        models::{search_card::error::SearchCardsError, zervice_metrics::ZerviceMetrics},
         requests::{
             create_card::CreateCardError,
             get_artists::GetArtistsError,
@@ -36,6 +28,10 @@ use crate::{
         },
     },
     inbound::external::scryfall::bulk::BulkEndpoint,
+};
+use zwipe_core::domain::card::{
+    Card, card_profile::CardProfile, scryfall_data::ScryfallData,
+    search_card::card_filter::CardQuery,
 };
 
 /// Database port for MTG card operations.
@@ -150,12 +146,10 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
 
     /// Retrieves all distinct card types from card database.
     fn get_card_types(&self)
-        -> impl Future<Output = Result<Vec<String>, GetCardTypesError>> + Send;
+    -> impl Future<Output = Result<Vec<String>, GetCardTypesError>> + Send;
 
     /// Retrieves all distinct keyword abilities from card database.
-    fn get_keywords(
-        &self,
-    ) -> impl Future<Output = Result<Vec<String>, GetKeywordsError>> + Send;
+    fn get_keywords(&self) -> impl Future<Output = Result<Vec<String>, GetKeywordsError>> + Send;
 
     /// Retrieves all distinct normalized words from oracle text.
     fn get_oracle_words(
@@ -261,13 +255,14 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// Updates mechanical_categories for a batch of cards.
     fn update_mechanical_categories(
         &self,
-        updates: &[(uuid::Uuid, Vec<zwipe_core::domain::card::mechanical_category::MechanicalCategory>)],
+        updates: &[(
+            uuid::Uuid,
+            Vec<zwipe_core::domain::card::mechanical_category::MechanicalCategory>,
+        )],
     ) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
 
     /// Clears all mechanical_categories (resets to empty array).
-    fn clear_all_categories(
-        &self,
-    ) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
+    fn clear_all_categories(&self) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
 }
 
 /// Service port for MTG card business logic.
@@ -298,7 +293,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
     fn upsert(
         &self,
         scryfall_data: ScryfallData,
-    ) -> impl Future<Output = Result<Card, CreateCardError>>;
+    ) -> impl Future<Output = Result<Card, CreateCardError>> + Send;
 
     /// Syncs database with Scryfall bulk data.
     fn scryfall_sync(
@@ -308,7 +303,10 @@ pub trait CardService: Clone + Send + Sync + 'static {
 
     /// Classifies cards with empty mechanical_categories using heuristics.
     /// Returns (classified_count, total_untagged_count).
-    fn classify_untagged_cards(&self, batch_size: usize) -> impl Future<Output = anyhow::Result<(u32, u32)>> + Send;
+    fn classify_untagged_cards(
+        &self,
+        batch_size: usize,
+    ) -> impl Future<Output = anyhow::Result<(u32, u32)>> + Send;
 
     /// Clears all mechanical_categories (for --reclassify).
     fn clear_all_categories(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
@@ -349,12 +347,10 @@ pub trait CardService: Clone + Send + Sync + 'static {
 
     /// Retrieves all distinct card types from card database.
     fn get_card_types(&self)
-        -> impl Future<Output = Result<Vec<String>, GetCardTypesError>> + Send;
+    -> impl Future<Output = Result<Vec<String>, GetCardTypesError>> + Send;
 
     /// Retrieves all distinct keyword abilities from card database.
-    fn get_keywords(
-        &self,
-    ) -> impl Future<Output = Result<Vec<String>, GetKeywordsError>> + Send;
+    fn get_keywords(&self) -> impl Future<Output = Result<Vec<String>, GetKeywordsError>> + Send;
 
     /// Retrieves all distinct normalized words from oracle text.
     fn get_oracle_words(
@@ -416,5 +412,236 @@ pub trait CardService: Clone + Send + Sync + 'static {
         &self,
         names: &[String],
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
+}
 
+/// Object-safe wrapper used by `AppState` so the concrete service type stays
+/// out of the generic parameter list. Auto-implemented for any `CardService`.
+pub trait ErasedCardService: Send + Sync + 'static {
+    /// See [`CardService::upsert`].
+    fn upsert<'a>(
+        &'a self,
+        scryfall_data: ScryfallData,
+    ) -> BoxFuture<'a, Result<Card, CreateCardError>>;
+
+    /// See [`CardService::scryfall_sync`].
+    fn scryfall_sync<'a>(
+        &'a self,
+        bulk_endpoint: BulkEndpoint,
+    ) -> BoxFuture<'a, anyhow::Result<ZerviceMetrics>>;
+
+    /// See [`CardService::classify_untagged_cards`].
+    fn classify_untagged_cards<'a>(
+        &'a self,
+        batch_size: usize,
+    ) -> BoxFuture<'a, anyhow::Result<(u32, u32)>>;
+
+    /// See [`CardService::clear_all_categories`].
+    fn clear_all_categories<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>>;
+
+    /// See [`CardService::refresh_latest_cards`].
+    fn refresh_latest_cards<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>>;
+
+    /// See [`CardService::get_card`].
+    fn get_card<'a>(
+        &'a self,
+        request: &'a GetScryfallData,
+    ) -> BoxFuture<'a, Result<Card, GetCardError>>;
+
+    /// See [`CardService::get_cards`].
+    fn get_cards<'a>(
+        &'a self,
+        request: &'a ScryfallDataIds,
+    ) -> BoxFuture<'a, Result<Vec<Card>, GetCardError>>;
+
+    /// See [`CardService::get_printings`].
+    fn get_printings<'a>(
+        &'a self,
+        oracle_id: uuid::Uuid,
+    ) -> BoxFuture<'a, Result<Vec<Card>, GetCardError>>;
+
+    /// See [`CardService::search_cards`].
+    fn search_cards<'a>(
+        &'a self,
+        request: &'a CardQuery,
+    ) -> BoxFuture<'a, Result<Vec<Card>, SearchCardsError>>;
+
+    /// See [`CardService::get_artists`].
+    fn get_artists<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetArtistsError>>;
+
+    /// See [`CardService::get_card_types`].
+    fn get_card_types<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetCardTypesError>>;
+
+    /// See [`CardService::get_keywords`].
+    fn get_keywords<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetKeywordsError>>;
+
+    /// See [`CardService::get_oracle_words`].
+    fn get_oracle_words<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetOracleWordsError>>;
+
+    /// See [`CardService::get_sets`].
+    fn get_sets<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetSetsError>>;
+
+    /// See [`CardService::get_languages`].
+    fn get_languages<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetLanguagesError>>;
+
+    /// See [`CardService::get_card_profile_with_id`].
+    fn get_card_profile_with_id<'a>(
+        &'a self,
+        request: &'a GetCardProfile,
+    ) -> BoxFuture<'a, Result<CardProfile, GetCardProfileError>>;
+
+    /// See [`CardService::get_card_profile_with_scryfall_data_id`].
+    fn get_card_profile_with_scryfall_data_id<'a>(
+        &'a self,
+        request: &'a GetScryfallData,
+    ) -> BoxFuture<'a, Result<CardProfile, GetCardProfileError>>;
+
+    /// See [`CardService::get_card_profiles_with_ids`].
+    fn get_card_profiles_with_ids<'a>(
+        &'a self,
+        request: &'a CardProfileIds,
+    ) -> BoxFuture<'a, Result<Vec<CardProfile>, GetCardProfileError>>;
+
+    /// See [`CardService::get_card_profiles_with_scryfall_data_ids`].
+    fn get_card_profiles_with_scryfall_data_ids<'a>(
+        &'a self,
+        request: &'a ScryfallDataIds,
+    ) -> BoxFuture<'a, Result<Vec<CardProfile>, GetCardProfileError>>;
+
+    /// See [`CardService::get_last_sync_date`].
+    fn get_last_sync_date<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<Option<DateTime<Utc>>>>;
+
+    /// See [`CardService::find_cards_by_exact_names`].
+    fn find_cards_by_exact_names<'a>(
+        &'a self,
+        names: &'a [String],
+    ) -> BoxFuture<'a, Result<Vec<Card>, SearchCardsError>>;
+}
+
+impl<T> ErasedCardService for T
+where
+    T: CardService,
+{
+    fn upsert<'a>(
+        &'a self,
+        scryfall_data: ScryfallData,
+    ) -> BoxFuture<'a, Result<Card, CreateCardError>> {
+        Box::pin(CardService::upsert(self, scryfall_data))
+    }
+
+    fn scryfall_sync<'a>(
+        &'a self,
+        bulk_endpoint: BulkEndpoint,
+    ) -> BoxFuture<'a, anyhow::Result<ZerviceMetrics>> {
+        Box::pin(CardService::scryfall_sync(self, bulk_endpoint))
+    }
+
+    fn classify_untagged_cards<'a>(
+        &'a self,
+        batch_size: usize,
+    ) -> BoxFuture<'a, anyhow::Result<(u32, u32)>> {
+        Box::pin(CardService::classify_untagged_cards(self, batch_size))
+    }
+
+    fn clear_all_categories<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>> {
+        Box::pin(CardService::clear_all_categories(self))
+    }
+
+    fn refresh_latest_cards<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>> {
+        Box::pin(CardService::refresh_latest_cards(self))
+    }
+
+    fn get_card<'a>(
+        &'a self,
+        request: &'a GetScryfallData,
+    ) -> BoxFuture<'a, Result<Card, GetCardError>> {
+        Box::pin(CardService::get_card(self, request))
+    }
+
+    fn get_cards<'a>(
+        &'a self,
+        request: &'a ScryfallDataIds,
+    ) -> BoxFuture<'a, Result<Vec<Card>, GetCardError>> {
+        Box::pin(CardService::get_cards(self, request))
+    }
+
+    fn get_printings<'a>(
+        &'a self,
+        oracle_id: uuid::Uuid,
+    ) -> BoxFuture<'a, Result<Vec<Card>, GetCardError>> {
+        Box::pin(CardService::get_printings(self, oracle_id))
+    }
+
+    fn search_cards<'a>(
+        &'a self,
+        request: &'a CardQuery,
+    ) -> BoxFuture<'a, Result<Vec<Card>, SearchCardsError>> {
+        Box::pin(CardService::search_cards(self, request))
+    }
+
+    fn get_artists<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetArtistsError>> {
+        Box::pin(CardService::get_artists(self))
+    }
+
+    fn get_card_types<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetCardTypesError>> {
+        Box::pin(CardService::get_card_types(self))
+    }
+
+    fn get_keywords<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetKeywordsError>> {
+        Box::pin(CardService::get_keywords(self))
+    }
+
+    fn get_oracle_words<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetOracleWordsError>> {
+        Box::pin(CardService::get_oracle_words(self))
+    }
+
+    fn get_sets<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetSetsError>> {
+        Box::pin(CardService::get_sets(self))
+    }
+
+    fn get_languages<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetLanguagesError>> {
+        Box::pin(CardService::get_languages(self))
+    }
+
+    fn get_card_profile_with_id<'a>(
+        &'a self,
+        request: &'a GetCardProfile,
+    ) -> BoxFuture<'a, Result<CardProfile, GetCardProfileError>> {
+        Box::pin(CardService::get_card_profile_with_id(self, request))
+    }
+
+    fn get_card_profile_with_scryfall_data_id<'a>(
+        &'a self,
+        request: &'a GetScryfallData,
+    ) -> BoxFuture<'a, Result<CardProfile, GetCardProfileError>> {
+        Box::pin(CardService::get_card_profile_with_scryfall_data_id(
+            self, request,
+        ))
+    }
+
+    fn get_card_profiles_with_ids<'a>(
+        &'a self,
+        request: &'a CardProfileIds,
+    ) -> BoxFuture<'a, Result<Vec<CardProfile>, GetCardProfileError>> {
+        Box::pin(CardService::get_card_profiles_with_ids(self, request))
+    }
+
+    fn get_card_profiles_with_scryfall_data_ids<'a>(
+        &'a self,
+        request: &'a ScryfallDataIds,
+    ) -> BoxFuture<'a, Result<Vec<CardProfile>, GetCardProfileError>> {
+        Box::pin(CardService::get_card_profiles_with_scryfall_data_ids(
+            self, request,
+        ))
+    }
+
+    fn get_last_sync_date<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<Option<DateTime<Utc>>>> {
+        Box::pin(CardService::get_last_sync_date(self))
+    }
+
+    fn find_cards_by_exact_names<'a>(
+        &'a self,
+        names: &'a [String],
+    ) -> BoxFuture<'a, Result<Vec<Card>, SearchCardsError>> {
+        Box::pin(CardService::find_cards_by_exact_names(self, names))
+    }
 }

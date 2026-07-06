@@ -6,17 +6,8 @@ use axum::{
 
 #[cfg(feature = "zerver")]
 use crate::{
-    domain::{
-        auth::ports::AuthService,
-        card::ports::CardService,
-        deck::{
-            models::deck::delete_deck::DeleteDeckError,
-            ports::DeckService,
-        },
-        health::ports::HealthService,
-        user::ports::UserService,
-    },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+    domain::deck::models::deck::delete_deck::DeleteDeckError,
+    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
 };
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::deck::requests::delete_deck::{DeleteDeck, InvalidDeleteDeck};
@@ -48,18 +39,11 @@ impl From<InvalidDeleteDeck> for ApiError {
 
 /// Deletes a deck after ownership verification.
 #[cfg(feature = "zerver")]
-pub async fn delete_deck<AS, US, HS, CS, DS>(
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+pub async fn delete_deck(
+    State(state): State<AppState>,
     Path(deck_id): Path<String>,
     user: AuthenticatedUser,
-) -> Result<StatusCode, ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<StatusCode, ApiError> {
     let request = DeleteDeck::new(user.id, &deck_id)?;
 
     state

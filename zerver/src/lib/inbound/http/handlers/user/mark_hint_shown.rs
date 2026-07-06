@@ -2,21 +2,15 @@
 
 #[cfg(feature = "zerver")]
 use crate::{
-    domain::{
-        auth::ports::AuthService,
-        card::ports::CardService,
-        deck::ports::DeckService,
-        health::ports::HealthService,
-        user::{models::hints::MarkHintShownError, ports::UserService},
-    },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+    domain::user::models::hints::MarkHintShownError,
+    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
 };
 #[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::user::{
-    models::hints::{InvalidHintKey, MarkHintShown},
     User,
+    models::hints::{InvalidHintKey, MarkHintShown},
 };
 #[cfg(feature = "zerver")]
 use zwipe_core::http::contracts::user::HttpMarkHintShown;
@@ -43,18 +37,11 @@ impl From<MarkHintShownError> for ApiError {
 /// Idempotent: marking an already-shown hint is a no-op. Responds with the
 /// updated user so the client can sync its session in place.
 #[cfg(feature = "zerver")]
-pub async fn mark_hint_shown<AS, US, HS, CS, DS>(
+pub async fn mark_hint_shown(
     user: AuthenticatedUser,
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    State(state): State<AppState>,
     Json(body): Json<HttpMarkHintShown>,
-) -> Result<(StatusCode, Json<User>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<(StatusCode, Json<User>), ApiError> {
     let request = MarkHintShown::new(user.id, &body.hint).map_err(ApiError::from)?;
 
     state

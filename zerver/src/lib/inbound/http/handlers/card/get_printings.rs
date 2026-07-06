@@ -1,36 +1,20 @@
 #[cfg(feature = "zerver")]
-use zwipe_core::domain::card::Card;
-#[cfg(feature = "zerver")]
-use crate::{
-    domain::{
-        auth::ports::AuthService,
-        card::ports::CardService,
-        deck::ports::DeckService,
-        health::ports::HealthService,
-        user::ports::UserService,
-    },
-    inbound::http::{ApiError, AppState},
-};
+use crate::inbound::http::{ApiError, AppState};
 #[cfg(feature = "zerver")]
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::card::Card;
 
 /// Returns all printings of a card by oracle ID, ordered by release date.
 #[cfg(feature = "zerver")]
-pub async fn get_printings<AS, US, HS, CS, DS>(
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+pub async fn get_printings(
+    State(state): State<AppState>,
     Path(oracle_id): Path<String>,
-) -> Result<(StatusCode, Json<Vec<Card>>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<(StatusCode, Json<Vec<Card>>), ApiError> {
     let oracle_id = uuid::Uuid::try_parse(&oracle_id)
         .map_err(|e| ApiError::UnprocessableEntity(format!("invalid oracle id: {}", e)))?;
     state

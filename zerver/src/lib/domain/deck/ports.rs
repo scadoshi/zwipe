@@ -3,31 +3,25 @@
 //! This module defines the interfaces (ports) for deck management in hexagonal architecture.
 //! Decks are collections of Magic: The Gathering cards with metadata like name, commander, and copy limits.
 
+use crate::domain::BoxFuture;
 use std::future::Future;
 
-use zwipe_core::domain::card::{Card, search_card::card_filter::CardQuery};
 use crate::domain::deck::models::{
     deck::{
-        clear_deck_suppressions::ClearDeckSuppressionsError,
-        clone_deck::CloneDeckError,
-        create_deck_profile::CreateDeckProfileError,
-        delete_deck::DeleteDeckError,
-        get_deck::GetDeckError,
-        get_deck_profile::GetDeckProfileError,
-        get_deck_tokens::GetDeckTokensError,
-        import_archidekt::ArchidektCard,
-        search_deck_cards::SearchDeckCardsError,
-        skip_deck_card::SkipDeckCardError,
+        clear_deck_suppressions::ClearDeckSuppressionsError, clone_deck::CloneDeckError,
+        create_deck_profile::CreateDeckProfileError, delete_deck::DeleteDeckError,
+        get_deck::GetDeckError, get_deck_profile::GetDeckProfileError,
+        get_deck_tokens::GetDeckTokensError, import_archidekt::ArchidektCard,
+        search_deck_cards::SearchDeckCardsError, skip_deck_card::SkipDeckCardError,
         update_deck_profile::UpdateDeckProfileError,
     },
     deck_card::{
-        create_deck_card::CreateDeckCardError,
-        delete_deck_card::DeleteDeckCardError,
-        get_deck_card::GetDeckCardError,
-        import_deck_cards::ImportDeckCardsError,
+        create_deck_card::CreateDeckCardError, delete_deck_card::DeleteDeckCardError,
+        get_deck_card::GetDeckCardError, import_deck_cards::ImportDeckCardsError,
         update_deck_card::UpdateDeckCardError,
     },
 };
+use zwipe_core::domain::card::{Card, search_card::card_filter::CardQuery};
 use zwipe_core::domain::deck::{
     Deck, DeckCard, DeckName,
     deck_profile::DeckProfile,
@@ -343,4 +337,254 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         &self,
         request: &CloneDeck,
     ) -> impl Future<Output = Result<uuid::Uuid, CloneDeckError>> + Send;
+}
+
+/// Object-safe wrapper used by `AppState` so the concrete service type stays
+/// out of the generic parameter list. Auto-implemented for any `DeckService`.
+pub trait ErasedDeckService: Send + Sync + 'static {
+    /// See [`DeckService::create_deck_profile`].
+    fn create_deck_profile<'a>(
+        &'a self,
+        request: &'a CreateDeckProfile,
+    ) -> BoxFuture<'a, Result<DeckProfile, CreateDeckProfileError>>;
+
+    /// See [`DeckService::create_deck_card`].
+    fn create_deck_card<'a>(
+        &'a self,
+        request: &'a CreateDeckCard,
+    ) -> BoxFuture<'a, Result<DeckCard, CreateDeckCardError>>;
+
+    /// See [`DeckService::get_deck_profile`].
+    fn get_deck_profile<'a>(
+        &'a self,
+        request: &'a GetDeckProfile,
+    ) -> BoxFuture<'a, Result<DeckProfile, GetDeckProfileError>>;
+
+    /// See [`DeckService::get_deck_profiles`].
+    fn get_deck_profiles<'a>(
+        &'a self,
+        request: &'a GetDeckProfiles,
+    ) -> BoxFuture<'a, Result<Vec<DeckProfile>, GetDeckProfileError>>;
+
+    /// See [`DeckService::get_deck`].
+    fn get_deck<'a>(
+        &'a self,
+        request: &'a GetDeckProfile,
+    ) -> BoxFuture<'a, Result<Deck, GetDeckError>>;
+
+    /// See [`DeckService::search_deck_cards`].
+    fn search_deck_cards<'a>(
+        &'a self,
+        request: &'a GetDeckProfile,
+        filter: &'a CardQuery,
+    ) -> BoxFuture<'a, Result<(Vec<Card>, bool), SearchDeckCardsError>>;
+
+    /// See [`DeckService::get_deck_tokens`].
+    fn get_deck_tokens<'a>(
+        &'a self,
+        request: &'a GetDeckProfile,
+    ) -> BoxFuture<'a, Result<Vec<Card>, GetDeckTokensError>>;
+
+    /// See [`DeckService::update_deck_profile`].
+    fn update_deck_profile<'a>(
+        &'a self,
+        request: &'a UpdateDeckProfile,
+    ) -> BoxFuture<'a, Result<DeckProfile, UpdateDeckProfileError>>;
+
+    /// See [`DeckService::update_deck_card`].
+    fn update_deck_card<'a>(
+        &'a self,
+        request: &'a UpdateDeckCard,
+    ) -> BoxFuture<'a, Result<DeckCard, UpdateDeckCardError>>;
+
+    /// See [`DeckService::delete_deck`].
+    fn delete_deck<'a>(
+        &'a self,
+        request: &'a DeleteDeck,
+    ) -> BoxFuture<'a, Result<(), DeleteDeckError>>;
+
+    /// See [`DeckService::delete_deck_card`].
+    fn delete_deck_card<'a>(
+        &'a self,
+        request: &'a DeleteDeckCard,
+    ) -> BoxFuture<'a, Result<(), DeleteDeckCardError>>;
+
+    /// See [`DeckService::clear_deck_suppressions`].
+    fn clear_deck_suppressions<'a>(
+        &'a self,
+        request: &'a ClearDeckSuppressions,
+    ) -> BoxFuture<'a, Result<u64, ClearDeckSuppressionsError>>;
+
+    /// See [`DeckService::skip_deck_card`].
+    fn skip_deck_card<'a>(
+        &'a self,
+        request: &'a SkipDeckCard,
+    ) -> BoxFuture<'a, Result<(), SkipDeckCardError>>;
+
+    /// See [`DeckService::unskip_deck_card`].
+    fn unskip_deck_card<'a>(
+        &'a self,
+        request: &'a SkipDeckCard,
+    ) -> BoxFuture<'a, Result<(), SkipDeckCardError>>;
+
+    /// See [`DeckService::import_deck_cards`].
+    fn import_deck_cards<'a>(
+        &'a self,
+        request: &'a ImportDeckCards,
+    ) -> BoxFuture<'a, Result<ImportDeckCardsResult, ImportDeckCardsError>>;
+
+    /// See [`DeckService::import_archidekt_deck`].
+    fn import_archidekt_deck<'a>(
+        &'a self,
+        user_id: uuid::Uuid,
+        deck_id: uuid::Uuid,
+        cards: &'a [ArchidektCard],
+        board: zwipe_core::domain::deck::Board,
+        email_verified: bool,
+        mode: zwipe_core::domain::deck::ImportMode,
+    ) -> BoxFuture<'a, Result<ImportDeckCardsResult, ImportDeckCardsError>>;
+
+    /// See [`DeckService::clone_deck`].
+    fn clone_deck<'a>(
+        &'a self,
+        request: &'a CloneDeck,
+    ) -> BoxFuture<'a, Result<uuid::Uuid, CloneDeckError>>;
+}
+
+impl<T> ErasedDeckService for T
+where
+    T: DeckService,
+{
+    fn create_deck_profile<'a>(
+        &'a self,
+        request: &'a CreateDeckProfile,
+    ) -> BoxFuture<'a, Result<DeckProfile, CreateDeckProfileError>> {
+        Box::pin(DeckService::create_deck_profile(self, request))
+    }
+
+    fn create_deck_card<'a>(
+        &'a self,
+        request: &'a CreateDeckCard,
+    ) -> BoxFuture<'a, Result<DeckCard, CreateDeckCardError>> {
+        Box::pin(DeckService::create_deck_card(self, request))
+    }
+
+    fn get_deck_profile<'a>(
+        &'a self,
+        request: &'a GetDeckProfile,
+    ) -> BoxFuture<'a, Result<DeckProfile, GetDeckProfileError>> {
+        Box::pin(DeckService::get_deck_profile(self, request))
+    }
+
+    fn get_deck_profiles<'a>(
+        &'a self,
+        request: &'a GetDeckProfiles,
+    ) -> BoxFuture<'a, Result<Vec<DeckProfile>, GetDeckProfileError>> {
+        Box::pin(DeckService::get_deck_profiles(self, request))
+    }
+
+    fn get_deck<'a>(
+        &'a self,
+        request: &'a GetDeckProfile,
+    ) -> BoxFuture<'a, Result<Deck, GetDeckError>> {
+        Box::pin(DeckService::get_deck(self, request))
+    }
+
+    fn search_deck_cards<'a>(
+        &'a self,
+        request: &'a GetDeckProfile,
+        filter: &'a CardQuery,
+    ) -> BoxFuture<'a, Result<(Vec<Card>, bool), SearchDeckCardsError>> {
+        Box::pin(DeckService::search_deck_cards(self, request, filter))
+    }
+
+    fn get_deck_tokens<'a>(
+        &'a self,
+        request: &'a GetDeckProfile,
+    ) -> BoxFuture<'a, Result<Vec<Card>, GetDeckTokensError>> {
+        Box::pin(DeckService::get_deck_tokens(self, request))
+    }
+
+    fn update_deck_profile<'a>(
+        &'a self,
+        request: &'a UpdateDeckProfile,
+    ) -> BoxFuture<'a, Result<DeckProfile, UpdateDeckProfileError>> {
+        Box::pin(DeckService::update_deck_profile(self, request))
+    }
+
+    fn update_deck_card<'a>(
+        &'a self,
+        request: &'a UpdateDeckCard,
+    ) -> BoxFuture<'a, Result<DeckCard, UpdateDeckCardError>> {
+        Box::pin(DeckService::update_deck_card(self, request))
+    }
+
+    fn delete_deck<'a>(
+        &'a self,
+        request: &'a DeleteDeck,
+    ) -> BoxFuture<'a, Result<(), DeleteDeckError>> {
+        Box::pin(DeckService::delete_deck(self, request))
+    }
+
+    fn delete_deck_card<'a>(
+        &'a self,
+        request: &'a DeleteDeckCard,
+    ) -> BoxFuture<'a, Result<(), DeleteDeckCardError>> {
+        Box::pin(DeckService::delete_deck_card(self, request))
+    }
+
+    fn clear_deck_suppressions<'a>(
+        &'a self,
+        request: &'a ClearDeckSuppressions,
+    ) -> BoxFuture<'a, Result<u64, ClearDeckSuppressionsError>> {
+        Box::pin(DeckService::clear_deck_suppressions(self, request))
+    }
+
+    fn skip_deck_card<'a>(
+        &'a self,
+        request: &'a SkipDeckCard,
+    ) -> BoxFuture<'a, Result<(), SkipDeckCardError>> {
+        Box::pin(DeckService::skip_deck_card(self, request))
+    }
+
+    fn unskip_deck_card<'a>(
+        &'a self,
+        request: &'a SkipDeckCard,
+    ) -> BoxFuture<'a, Result<(), SkipDeckCardError>> {
+        Box::pin(DeckService::unskip_deck_card(self, request))
+    }
+
+    fn import_deck_cards<'a>(
+        &'a self,
+        request: &'a ImportDeckCards,
+    ) -> BoxFuture<'a, Result<ImportDeckCardsResult, ImportDeckCardsError>> {
+        Box::pin(DeckService::import_deck_cards(self, request))
+    }
+
+    fn import_archidekt_deck<'a>(
+        &'a self,
+        user_id: uuid::Uuid,
+        deck_id: uuid::Uuid,
+        cards: &'a [ArchidektCard],
+        board: zwipe_core::domain::deck::Board,
+        email_verified: bool,
+        mode: zwipe_core::domain::deck::ImportMode,
+    ) -> BoxFuture<'a, Result<ImportDeckCardsResult, ImportDeckCardsError>> {
+        Box::pin(DeckService::import_archidekt_deck(
+            self,
+            user_id,
+            deck_id,
+            cards,
+            board,
+            email_verified,
+            mode,
+        ))
+    }
+
+    fn clone_deck<'a>(
+        &'a self,
+        request: &'a CloneDeck,
+    ) -> BoxFuture<'a, Result<uuid::Uuid, CloneDeckError>> {
+        Box::pin(DeckService::clone_deck(self, request))
+    }
 }

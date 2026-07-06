@@ -1,21 +1,12 @@
 #[cfg(feature = "zerver")]
-use zwipe_core::domain::card::{Card, search_card::card_filter::CardQuery};
-#[cfg(feature = "zerver")]
 use crate::{
-    domain::{
-        auth::ports::AuthService,
-        card::{
-            models::search_card::error::SearchCardsError,
-            ports::CardService,
-        },
-        deck::ports::DeckService,
-        health::ports::HealthService,
-        user::ports::UserService,
-    },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+    domain::card::models::search_card::error::SearchCardsError,
+    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
 };
 #[cfg(feature = "zerver")]
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{Json, extract::State, http::StatusCode};
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::card::{Card, search_card::card_filter::CardQuery};
 
 #[cfg(feature = "zerver")]
 impl From<SearchCardsError> for ApiError {
@@ -26,18 +17,11 @@ impl From<SearchCardsError> for ApiError {
 
 /// Searches cards using a `CardQuery` deserialized from the JSON body.
 #[cfg(feature = "zerver")]
-pub async fn search_cards<AS, US, HS, CS, DS>(
+pub async fn search_cards(
     _: AuthenticatedUser,
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    State(state): State<AppState>,
     Json(body): Json<CardQuery>,
-) -> Result<(StatusCode, Json<Vec<Card>>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<(StatusCode, Json<Vec<Card>>), ApiError> {
     state
         .card_service
         .search_cards(&body)

@@ -1,22 +1,15 @@
 #[cfg(feature = "zerver")]
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{Json, extract::State, http::StatusCode};
 #[cfg(feature = "zerver")]
 use zwipe_core::http::contracts::auth::HttpChangeEmail;
 
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
-        auth::{
-            requests::change_email::{ChangeEmail, ChangeEmailError, InvalidChangeEmail},
-            ports::AuthService,
-        },
-        card::ports::CardService,
-        deck::ports::DeckService,
-        health::ports::HealthService,
+        auth::requests::change_email::{ChangeEmail, ChangeEmailError, InvalidChangeEmail},
         metrics::models::kinds::AuditAction,
-        user::ports::UserService,
     },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
 };
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::user::User;
@@ -50,18 +43,11 @@ impl From<InvalidChangeEmail> for ApiError {
 
 /// Changes the user's email after verifying the password.
 #[cfg(feature = "zerver")]
-pub async fn change_email<AS, US, HS, CS, DS>(
+pub async fn change_email(
     user: AuthenticatedUser,
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    State(state): State<AppState>,
     Json(body): Json<HttpChangeEmail>,
-) -> Result<(StatusCode, Json<User>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<(StatusCode, Json<User>), ApiError> {
     let request = ChangeEmail::new(user.id, &body.email, &body.password)?;
 
     let updated_user = state

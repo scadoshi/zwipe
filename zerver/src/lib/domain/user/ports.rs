@@ -11,6 +11,7 @@
 //!
 //! This separation keeps authentication logic isolated from user data access.
 
+use crate::domain::BoxFuture;
 use std::future::Future;
 use uuid::Uuid;
 
@@ -20,10 +21,10 @@ use crate::domain::user::models::{
     preferences::{GetPreferencesError, UpdatePreferencesError},
 };
 use zwipe_core::domain::user::{
+    User,
     models::hints::MarkHintShown,
     preferences::{UpdatePreferences, UserPreferences},
     requests::get_user::GetUser,
-    User,
 };
 
 /// Database port for user profile operations.
@@ -94,4 +95,59 @@ pub trait UserService: Clone + Send + Sync + 'static {
         &self,
         request: &MarkHintShown,
     ) -> impl Future<Output = Result<User, MarkHintShownError>> + Send;
+}
+
+/// Object-safe wrapper used by `AppState` so the concrete service type stays
+/// out of the generic parameter list. Auto-implemented for any `UserService`.
+pub trait ErasedUserService: Send + Sync + 'static {
+    /// See [`UserService::get_user`].
+    fn get_user<'a>(&'a self, request: &'a GetUser) -> BoxFuture<'a, Result<User, GetUserError>>;
+
+    /// See [`UserService::get_preferences`].
+    fn get_preferences<'a>(
+        &'a self,
+        user_id: Uuid,
+    ) -> BoxFuture<'a, Result<UserPreferences, GetPreferencesError>>;
+
+    /// See [`UserService::update_preferences`].
+    fn update_preferences<'a>(
+        &'a self,
+        request: &'a UpdatePreferences,
+    ) -> BoxFuture<'a, Result<UserPreferences, UpdatePreferencesError>>;
+
+    /// See [`UserService::mark_hint_shown`].
+    fn mark_hint_shown<'a>(
+        &'a self,
+        request: &'a MarkHintShown,
+    ) -> BoxFuture<'a, Result<User, MarkHintShownError>>;
+}
+
+impl<T> ErasedUserService for T
+where
+    T: UserService,
+{
+    fn get_user<'a>(&'a self, request: &'a GetUser) -> BoxFuture<'a, Result<User, GetUserError>> {
+        Box::pin(UserService::get_user(self, request))
+    }
+
+    fn get_preferences<'a>(
+        &'a self,
+        user_id: Uuid,
+    ) -> BoxFuture<'a, Result<UserPreferences, GetPreferencesError>> {
+        Box::pin(UserService::get_preferences(self, user_id))
+    }
+
+    fn update_preferences<'a>(
+        &'a self,
+        request: &'a UpdatePreferences,
+    ) -> BoxFuture<'a, Result<UserPreferences, UpdatePreferencesError>> {
+        Box::pin(UserService::update_preferences(self, request))
+    }
+
+    fn mark_hint_shown<'a>(
+        &'a self,
+        request: &'a MarkHintShown,
+    ) -> BoxFuture<'a, Result<User, MarkHintShownError>> {
+        Box::pin(UserService::mark_hint_shown(self, request))
+    }
 }

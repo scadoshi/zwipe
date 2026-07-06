@@ -11,20 +11,17 @@ pub mod routes;
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
-        auth::ports::AuthService, card::ports::CardService, deck::ports::DeckService,
-        health::ports::HealthService, metrics::ports::ErasedMetricsService,
-        user::ports::UserService,
+        auth::ports::{AuthService, ErasedAuthService},
+        card::ports::{CardService, ErasedCardService},
+        deck::ports::{DeckService, ErasedDeckService},
+        health::ports::{ErasedHealthService, HealthService},
+        metrics::ports::ErasedMetricsService,
+        user::ports::{ErasedUserService, UserService},
     },
     inbound::http::routes::{private_routes, public_routes},
 };
 #[cfg(feature = "zerver")]
 use anyhow::{Context, anyhow};
-#[cfg(feature = "zerver")]
-use dashmap::DashMap;
-#[cfg(feature = "zerver")]
-use std::time::Instant;
-#[cfg(feature = "zerver")]
-use uuid::Uuid;
 #[cfg(feature = "zerver")]
 use axum::{
     extract::Request,
@@ -33,12 +30,16 @@ use axum::{
     response::{IntoResponse, Response},
 };
 #[cfg(feature = "zerver")]
+use dashmap::DashMap;
+#[cfg(feature = "zerver")]
 use std::sync::Arc;
+#[cfg(feature = "zerver")]
+use std::time::Duration;
+#[cfg(feature = "zerver")]
+use std::time::Instant;
 use thiserror::Error;
 #[cfg(feature = "zerver")]
 use tokio::net;
-#[cfg(feature = "zerver")]
-use std::time::Duration;
 #[cfg(feature = "zerver")]
 use tower_http::{
     catch_panic::CatchPanicLayer,
@@ -48,6 +49,8 @@ use tower_http::{
     request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer},
     timeout::TimeoutLayer,
 };
+#[cfg(feature = "zerver")]
+use uuid::Uuid;
 
 // =======
 //  error
@@ -225,23 +228,18 @@ pub struct HttpServerConfig<'a> {
 
 /// Shared application state holding all service implementations.
 ///
-/// Generic over five service traits so handlers can be tested with mock implementations.
+/// Services are held as type-erased trait objects (see the `ErasedXService`
+/// twins in each domain's ports) so handlers stay free of generic parameters;
+/// mock implementations still satisfy the fields via the blanket impls.
 #[cfg(feature = "zerver")]
 #[derive(Clone)]
 #[allow(missing_docs)]
-pub struct AppState<AS, US, HS, CS, DS>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
-    pub auth_service: Arc<AS>,
-    pub user_service: Arc<US>,
-    pub health_service: Arc<HS>,
-    pub card_service: Arc<CS>,
-    pub deck_service: Arc<DS>,
+pub struct AppState {
+    pub auth_service: Arc<dyn ErasedAuthService>,
+    pub user_service: Arc<dyn ErasedUserService>,
+    pub health_service: Arc<dyn ErasedHealthService>,
+    pub card_service: Arc<dyn ErasedCardService>,
+    pub deck_service: Arc<dyn ErasedDeckService>,
     pub metrics_service: Arc<dyn ErasedMetricsService>,
     /// Per-user debounce cache for `users.last_active_at` bumps.
     pub last_active_cache: Arc<DashMap<Uuid, Instant>>,

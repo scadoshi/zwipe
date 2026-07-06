@@ -1,30 +1,20 @@
 #[cfg(feature = "zerver")]
 use crate::{
-    domain::{
-        auth::ports::AuthService,
-        card::ports::CardService,
-        deck::{
-            models::deck::get_deck_profile::GetDeckProfileError,
-            ports::DeckService,
-        },
-        health::ports::HealthService,
-        user::ports::UserService,
-    },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState},
-};
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::deck::{
-    deck_profile::DeckProfile,
-    requests::get_deck_profile::GetDeckProfile,
+    domain::deck::models::deck::get_deck_profile::GetDeckProfileError,
+    inbound::http::{ApiError, AppState, middleware::AuthenticatedUser},
 };
 #[cfg(feature = "zerver")]
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 #[cfg(feature = "zerver")]
 use uuid::Uuid;
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::deck::{
+    deck_profile::DeckProfile, requests::get_deck_profile::GetDeckProfile,
+};
 
 #[cfg(feature = "zerver")]
 impl From<GetDeckProfileError> for ApiError {
@@ -44,18 +34,11 @@ impl From<GetDeckProfileError> for ApiError {
 
 /// Returns deck metadata with ownership verification.
 #[cfg(feature = "zerver")]
-pub async fn get_deck_profile<AS, US, HS, CS, DS>(
+pub async fn get_deck_profile(
     user: AuthenticatedUser,
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    State(state): State<AppState>,
     Path(deck_id): Path<Uuid>,
-) -> Result<(StatusCode, Json<DeckProfile>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<(StatusCode, Json<DeckProfile>), ApiError> {
     let request = GetDeckProfile::new(user.id, deck_id);
 
     state

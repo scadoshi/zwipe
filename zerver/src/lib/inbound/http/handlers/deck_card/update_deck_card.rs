@@ -1,27 +1,18 @@
 #[cfg(feature = "zerver")]
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 #[cfg(feature = "zerver")]
 use zwipe_core::http::contracts::deck_card::HttpUpdateDeckCard;
 
 #[cfg(feature = "zerver")]
 use crate::{
-    domain::{
-        auth::ports::AuthService,
-        card::ports::CardService,
-        deck::{
-            models::deck_card::update_deck_card::UpdateDeckCardError,
-            ports::DeckService,
-        },
-        health::ports::HealthService,
-        user::ports::UserService,
-    },
+    domain::deck::models::deck_card::update_deck_card::UpdateDeckCardError,
     inbound::http::{
-        handlers::metrics::check_completion::check_deck_completion,
-        middleware::AuthenticatedUser, ApiError, AppState, Log500,
+        ApiError, AppState, Log500, handlers::metrics::check_completion::check_deck_completion,
+        middleware::AuthenticatedUser,
     },
 };
 #[cfg(feature = "zerver")]
@@ -34,9 +25,9 @@ use zwipe_core::domain::deck::{
 impl From<UpdateDeckCardError> for ApiError {
     fn from(value: UpdateDeckCardError) -> Self {
         match value {
-            UpdateDeckCardError::QuantityUnderflow => Self::UnprocessableEntity(
-                "resulting quantity cannot be zero or less".to_string(),
-            ),
+            UpdateDeckCardError::QuantityUnderflow => {
+                Self::UnprocessableEntity("resulting quantity cannot be zero or less".to_string())
+            }
             UpdateDeckCardError::NotFound => {
                 Self::UnprocessableEntity("deck card not found".to_string())
             }
@@ -75,21 +66,26 @@ impl From<InvalidUpdateDeckCard> for ApiError {
 
 /// Updates a card's quantity, board, and/or printing.
 #[cfg(feature = "zerver")]
-pub async fn update_deck_card<AS, US, HS, CS, DS>(
+pub async fn update_deck_card(
     user: AuthenticatedUser,
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    State(state): State<AppState>,
     Path((deck_id, scryfall_data_id)): Path<(String, String)>,
     Json(body): Json<HttpUpdateDeckCard>,
-) -> Result<(StatusCode, Json<DeckCard>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
-    let board = body.board.as_deref().map(zwipe_core::domain::deck::Board::try_from).transpose().map_err(|_| ApiError::UnprocessableEntity("invalid board value".to_string()))?;
-    let request = UpdateDeckCard::new(user.id, &deck_id, &scryfall_data_id, body.update_quantity, board, body.scryfall_data_id.as_deref())?;
+) -> Result<(StatusCode, Json<DeckCard>), ApiError> {
+    let board = body
+        .board
+        .as_deref()
+        .map(zwipe_core::domain::deck::Board::try_from)
+        .transpose()
+        .map_err(|_| ApiError::UnprocessableEntity("invalid board value".to_string()))?;
+    let request = UpdateDeckCard::new(
+        user.id,
+        &deck_id,
+        &scryfall_data_id,
+        body.update_quantity,
+        board,
+        body.scryfall_data_id.as_deref(),
+    )?;
 
     let deck_card = state
         .deck_service

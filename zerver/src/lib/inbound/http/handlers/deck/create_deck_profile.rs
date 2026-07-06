@@ -1,29 +1,22 @@
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
-        auth::ports::AuthService,
-        card::ports::CardService,
-        deck::{
-            models::deck::create_deck_profile::CreateDeckProfileError,
-            ports::DeckService,
-        },
-        health::ports::HealthService,
+        deck::models::deck::create_deck_profile::CreateDeckProfileError,
         metrics::models::kinds::EventKind,
-        user::ports::UserService,
     },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
 };
+#[cfg(feature = "zerver")]
+use axum::{Json, extract::State, http::StatusCode};
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::deck::{
     deck_profile::DeckProfile,
     requests::create_deck_profile::{CreateDeckProfile, InvalidCreateDeckProfile},
 };
 #[cfg(feature = "zerver")]
-use axum::{extract::State, http::StatusCode, Json};
+use zwipe_core::domain::user::requests::get_user::GetUser;
 #[cfg(feature = "zerver")]
 use zwipe_core::http::contracts::deck::HttpCreateDeckProfile;
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::user::requests::get_user::GetUser;
 
 #[cfg(feature = "zerver")]
 impl From<CreateDeckProfileError> for ApiError {
@@ -35,9 +28,9 @@ impl From<CreateDeckProfileError> for ApiError {
             CreateDeckProfileError::LimitReached => {
                 Self::UnprocessableEntity("deck limit reached".to_string())
             }
-            CreateDeckProfileError::UnverifiedLimitReached => {
-                Self::UnprocessableEntity("deck limit reached, verify your email to unlock more".to_string())
-            }
+            CreateDeckProfileError::UnverifiedLimitReached => Self::UnprocessableEntity(
+                "deck limit reached, verify your email to unlock more".to_string(),
+            ),
             CreateDeckProfileError::Database(e) => e.log_500(),
             CreateDeckProfileError::DeckFromDb(e) => e.log_500(),
         }
@@ -75,18 +68,11 @@ impl From<InvalidCreateDeckProfile> for ApiError {
 
 /// Creates a new deck for the authenticated user.
 #[cfg(feature = "zerver")]
-pub async fn create_deck_profile<AS, US, HS, CS, DS>(
+pub async fn create_deck_profile(
     user: AuthenticatedUser,
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    State(state): State<AppState>,
     Json(body): Json<HttpCreateDeckProfile>,
-) -> Result<(StatusCode, Json<DeckProfile>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<(StatusCode, Json<DeckProfile>), ApiError> {
     let db_user = state.user_service.get_user(&GetUser::from(user.id)).await?;
     let email_verified = db_user.email_verified_at.is_some();
     let request = CreateDeckProfile::builder(body.name, user.id, email_verified)

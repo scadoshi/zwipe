@@ -1,24 +1,17 @@
 #[cfg(feature = "zerver")]
-use axum::{extract::State, http::StatusCode, Json};
-#[cfg(feature = "zerver")]
-use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
+use axum::{Json, extract::State, http::StatusCode};
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::auth::models::session::Session;
+#[cfg(feature = "zerver")]
+use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
 
 #[cfg(feature = "zerver")]
 use crate::domain::auth::requests::authenticate_user::AuthenticateUser;
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
-        auth::{
-            ports::AuthService,
-            requests::authenticate_user::{AuthenticateUserError, InvalidAuthenticateUser},
-        },
-        card::ports::CardService,
-        deck::ports::DeckService,
-        health::ports::HealthService,
+        auth::requests::authenticate_user::{AuthenticateUserError, InvalidAuthenticateUser},
         metrics::models::kinds::{AuditAction, EventKind},
-        user::ports::UserService,
     },
     inbound::http::{ApiError, AppState, Log500},
 };
@@ -64,17 +57,10 @@ impl TryFrom<HttpAuthenticateUser> for AuthenticateUser {
 
 /// Authenticates a user by email or username and returns a session.
 #[cfg(feature = "zerver")]
-pub async fn authenticate_user<AS, US, HS, CS, DS>(
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+pub async fn authenticate_user(
+    State(state): State<AppState>,
     Json(body): Json<HttpAuthenticateUser>,
-) -> Result<(StatusCode, Json<Session>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<(StatusCode, Json<Session>), ApiError> {
     let request = AuthenticateUser::new(&body.identifier, &body.password)?;
 
     let session = state

@@ -3,11 +3,6 @@
 #[cfg(feature = "zerver")]
 use crate::domain::auth::models::access_token::JwtSecret;
 #[cfg(feature = "zerver")]
-use crate::domain::{
-    auth::ports::AuthService, card::ports::CardService, deck::ports::DeckService,
-    health::ports::HealthService, user::ports::UserService,
-};
-#[cfg(feature = "zerver")]
 use crate::inbound::http::AppState;
 #[cfg(feature = "zerver")]
 use crate::inbound::http::handlers::{
@@ -22,15 +17,20 @@ use crate::inbound::http::handlers::{
     card::{
         get_artists::get_artists, get_card::get_card, get_card_types::get_card_types,
         get_keywords::get_keywords, get_languages::get_languages,
-        get_oracle_words::get_oracle_words, get_printings::get_printings,
-        get_sets::get_sets, search_card::search_cards,
+        get_oracle_words::get_oracle_words, get_printings::get_printings, get_sets::get_sets,
+        search_card::search_cards,
     },
     client::get_min_client_version,
     deck::{
-        clear_deck_suppressions::clear_deck_suppressions, clone_deck::clone_deck,
-        create_deck_profile::create_deck_profile, delete_deck::delete_deck, get_deck::get_deck,
-        get_deck_profile::get_deck_profile, get_deck_profiles::get_deck_profiles,
-        get_deck_tokens::get_deck_tokens, import_archidekt::import_archidekt_deck,
+        clear_deck_suppressions::clear_deck_suppressions,
+        clone_deck::clone_deck,
+        create_deck_profile::create_deck_profile,
+        delete_deck::delete_deck,
+        get_deck::get_deck,
+        get_deck_profile::get_deck_profile,
+        get_deck_profiles::get_deck_profiles,
+        get_deck_tokens::get_deck_tokens,
+        import_archidekt::import_archidekt_deck,
         search_deck_cards::search_deck_cards,
         skip_deck_card::{skip_deck_card, unskip_deck_card},
         update_deck_profile::update_deck_profile,
@@ -45,8 +45,8 @@ use crate::inbound::http::handlers::{
         record_usage::record_usage,
     },
     user::{
-        get_preferences::get_preferences, get_user::get_user,
-        mark_hint_shown::mark_hint_shown, update_preferences::update_preferences,
+        get_preferences::get_preferences, get_user::get_user, mark_hint_shown::mark_hint_shown,
+        update_preferences::update_preferences,
     },
 };
 #[cfg(feature = "zerver")]
@@ -56,16 +56,14 @@ use axum::Router;
 #[cfg(feature = "zerver")]
 use axum::routing::{delete, get, post, put};
 #[cfg(feature = "zerver")]
-use std::{sync::Arc, time::Duration};
-#[cfg(feature = "zerver")]
-use tower_governor::{
-    GovernorLayer, errors::GovernorError, governor::GovernorConfigBuilder,
-};
-#[cfg(feature = "zerver")]
 use axum::{
     body::Body,
     http::{Response, StatusCode},
 };
+#[cfg(feature = "zerver")]
+use std::{sync::Arc, time::Duration};
+#[cfg(feature = "zerver")]
+use tower_governor::{GovernorLayer, errors::GovernorError, governor::GovernorConfigBuilder};
 
 /// Rate-limit error handler for the routes keyed by user id
 /// (`UserIdKeyExtractor`).
@@ -101,14 +99,7 @@ pub use zwipe_core::http::paths::*;
 /// Routes that don't require authentication.
 #[cfg(feature = "zerver")]
 #[allow(clippy::expect_used)]
-pub fn public_routes<AS, US, HS, CS, DS>() -> Router<AppState<AS, US, HS, CS, DS>>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+pub fn public_routes() -> Router<AppState> {
     // 5 req / 30s — tight limit, brute-force target
     let login_config = Arc::new(
         GovernorConfigBuilder::default()
@@ -270,16 +261,7 @@ where
 /// Routes that require `AuthenticatedUser` (JWT Bearer token).
 #[cfg(feature = "zerver")]
 #[allow(clippy::expect_used)]
-pub fn private_routes<AS, US, HS, CS, DS>(
-    jwt_secret: JwtSecret,
-) -> Router<AppState<AS, US, HS, CS, DS>>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
     // 500 req / 5min (~1.67/s avg) — generous for swiping, keyed by user ID
     let private_config = Arc::new(
         GovernorConfigBuilder::default()
@@ -333,15 +315,13 @@ where
             Router::new()
                 .nest(
                     "/auth",
-                    Router::new()
-                        .route("/logout", post(revoke_sessions))
-                        .route(
-                            "/resend-verification",
-                            post(resend_verification).layer(
-                                GovernorLayer::new(resend_verification_config)
-                                    .error_handler(unauthorized_on_missing_key),
-                            ),
+                    Router::new().route("/logout", post(revoke_sessions)).route(
+                        "/resend-verification",
+                        post(resend_verification).layer(
+                            GovernorLayer::new(resend_verification_config)
+                                .error_handler(unauthorized_on_missing_key),
                         ),
+                    ),
                 )
                 .nest(
                     "/user",
@@ -349,27 +329,24 @@ where
                         .route("/", get(get_user))
                         .route(
                             "/change-password",
-                            put(change_password)
-                                .layer(
-                                    GovernorLayer::new(Arc::clone(&sensitive_config))
-                                        .error_handler(unauthorized_on_missing_key),
-                                ),
+                            put(change_password).layer(
+                                GovernorLayer::new(Arc::clone(&sensitive_config))
+                                    .error_handler(unauthorized_on_missing_key),
+                            ),
                         )
                         .route(
                             "/change-username",
-                            put(change_username)
-                                .layer(
-                                    GovernorLayer::new(Arc::clone(&sensitive_config))
-                                        .error_handler(unauthorized_on_missing_key),
-                                ),
+                            put(change_username).layer(
+                                GovernorLayer::new(Arc::clone(&sensitive_config))
+                                    .error_handler(unauthorized_on_missing_key),
+                            ),
                         )
                         .route(
                             "/change-email",
-                            put(change_email)
-                                .layer(
-                                    GovernorLayer::new(Arc::clone(&sensitive_config))
-                                        .error_handler(unauthorized_on_missing_key),
-                                ),
+                            put(change_email).layer(
+                                GovernorLayer::new(Arc::clone(&sensitive_config))
+                                    .error_handler(unauthorized_on_missing_key),
+                            ),
                         )
                         .route(
                             "/delete-user",

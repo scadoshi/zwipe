@@ -1,31 +1,27 @@
 #[cfg(feature = "zerver")]
 use crate::inbound::http::Log500;
 #[cfg(feature = "zerver")]
-use axum::{extract::State, http::StatusCode, Json};
-#[cfg(feature = "zerver")]
-use zwipe_core::http::contracts::auth::HttpRegisterUser;
-#[cfg(feature = "zerver")]
-use zwipe_core::domain::auth::models::session::Session;
-#[cfg(feature = "zerver")]
 use crate::{
     domain::{
         auth::{
             models::access_token::InvalidJwt,
-            ports::AuthService,
             requests::{
                 create_session::CreateSessionError,
                 enforce_session_maximum::EnforceSessionMaximumError,
                 register_user::{InvalidRegisterUser, RegisterUser, RegisterUserError},
             },
         },
-        card::ports::CardService,
-        deck::ports::DeckService,
-        health::ports::HealthService,
         metrics::models::kinds::EventKind,
-        user::{models::get_user::GetUserError, ports::UserService},
+        user::models::get_user::GetUserError,
     },
     inbound::http::{ApiError, AppState},
 };
+#[cfg(feature = "zerver")]
+use axum::{Json, extract::State, http::StatusCode};
+#[cfg(feature = "zerver")]
+use zwipe_core::domain::auth::models::session::Session;
+#[cfg(feature = "zerver")]
+use zwipe_core::http::contracts::auth::HttpRegisterUser;
 
 #[cfg(feature = "zerver")]
 impl From<EnforceSessionMaximumError> for ApiError {
@@ -105,17 +101,10 @@ impl TryFrom<HttpRegisterUser> for RegisterUser {
 
 /// Registers a new user and returns a session (auto-login).
 #[cfg(feature = "zerver")]
-pub async fn register_user<AS, US, HS, CS, DS>(
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+pub async fn register_user(
+    State(state): State<AppState>,
     Json(body): Json<HttpRegisterUser>,
-) -> Result<(StatusCode, Json<Session>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<(StatusCode, Json<Session>), ApiError> {
     let request = RegisterUser::new(&body.username, &body.email, &body.password)?;
     tracing::info!(event = "register", username = %body.username);
     let session = state
@@ -130,7 +119,10 @@ where
         if let Err(e) = metrics.insert_lifetime_row(user_id).await {
             tracing::warn!(error = ?e, "metrics: insert_lifetime_row failed");
         }
-        if let Err(e) = metrics.record_event(user_id, EventKind::Register, None).await {
+        if let Err(e) = metrics
+            .record_event(user_id, EventKind::Register, None)
+            .await
+        {
             tracing::warn!(error = ?e, "metrics: record register event failed");
         }
     });

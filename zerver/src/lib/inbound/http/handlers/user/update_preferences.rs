@@ -2,24 +2,15 @@
 
 #[cfg(feature = "zerver")]
 use crate::{
-    domain::{
-        auth::ports::AuthService,
-        card::ports::CardService,
-        deck::ports::DeckService,
-        health::ports::HealthService,
-        user::{
-            models::preferences::{InvalidUpdatePreferences, UpdatePreferencesError},
-            ports::UserService,
-        },
-    },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+    domain::user::models::preferences::{InvalidUpdatePreferences, UpdatePreferencesError},
+    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
 };
 #[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
 #[cfg(feature = "zerver")]
-use zwipe_core::http::contracts::user::HttpUpdatePreferences;
-#[cfg(feature = "zerver")]
 use zwipe_core::domain::user::preferences::{UpdatePreferences, UserPreferences};
+#[cfg(feature = "zerver")]
+use zwipe_core::http::contracts::user::HttpUpdatePreferences;
 
 #[cfg(feature = "zerver")]
 impl From<InvalidUpdatePreferences> for ApiError {
@@ -40,21 +31,13 @@ impl From<UpdatePreferencesError> for ApiError {
 
 /// Updates the authenticated user's display preferences.
 #[cfg(feature = "zerver")]
-pub async fn update_preferences<AS, US, HS, CS, DS>(
+pub async fn update_preferences(
     user: AuthenticatedUser,
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    State(state): State<AppState>,
     Json(body): Json<HttpUpdatePreferences>,
-) -> Result<(StatusCode, Json<UserPreferences>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
-    let request =
-        UpdatePreferences::new(user.id, body.theme.as_deref(), body.dark_mode)
-            .map_err(ApiError::from)?;
+) -> Result<(StatusCode, Json<UserPreferences>), ApiError> {
+    let request = UpdatePreferences::new(user.id, body.theme.as_deref(), body.dark_mode)
+        .map_err(ApiError::from)?;
 
     state
         .user_service

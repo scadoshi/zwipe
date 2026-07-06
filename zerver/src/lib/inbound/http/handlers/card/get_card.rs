@@ -1,18 +1,9 @@
 #[cfg(feature = "zerver")]
 use crate::{
-    domain::{
-        auth::ports::AuthService,
-        card::{
-            ports::CardService,
-            requests::{
-                get_card::GetCardError,
-                get_card_profile::GetCardProfileError,
-                get_scryfall_data::{GetScryfallData, GetScryfallDataError},
-            },
-        },
-        deck::ports::DeckService,
-        health::ports::HealthService,
-        user::ports::UserService,
+    domain::card::requests::{
+        get_card::GetCardError,
+        get_card_profile::GetCardProfileError,
+        get_scryfall_data::{GetScryfallData, GetScryfallDataError},
     },
     inbound::http::{ApiError, AppState, Log500},
 };
@@ -58,17 +49,10 @@ impl From<GetCardError> for ApiError {
 
 /// Returns a single card by Scryfall data ID.
 #[cfg(feature = "zerver")]
-pub async fn get_card<AS, US, HS, CS, DS>(
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+pub async fn get_card(
+    State(state): State<AppState>,
     Path(scryfall_data_id): Path<String>,
-) -> Result<(StatusCode, Json<Card>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<(StatusCode, Json<Card>), ApiError> {
     let request = GetScryfallData::new(&scryfall_data_id)?;
     state
         .card_service

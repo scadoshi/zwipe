@@ -1,16 +1,10 @@
 #[cfg(feature = "zerver")]
 use crate::{
-    domain::{
-        auth::ports::AuthService,
-        card::{ports::CardService, requests::get_keywords::GetKeywordsError},
-        deck::ports::DeckService,
-        health::ports::HealthService,
-        user::ports::UserService,
-    },
+    domain::card::requests::get_keywords::GetKeywordsError,
     inbound::http::{ApiError, AppState, Log500},
 };
 #[cfg(feature = "zerver")]
-use axum::{extract::State, Json};
+use axum::{Json, extract::State};
 #[cfg(feature = "zerver")]
 use reqwest::StatusCode;
 
@@ -25,16 +19,9 @@ impl From<GetKeywordsError> for ApiError {
 
 /// Returns distinct keyword ability names.
 #[cfg(feature = "zerver")]
-pub async fn get_keywords<AS, US, HS, CS, DS>(
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
-) -> Result<(StatusCode, Json<Vec<String>>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+pub async fn get_keywords(
+    State(state): State<AppState>,
+) -> Result<(StatusCode, Json<Vec<String>>), ApiError> {
     state
         .card_service
         .get_keywords()

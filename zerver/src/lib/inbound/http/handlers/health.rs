@@ -1,16 +1,10 @@
 #[cfg(feature = "zerver")]
-use crate::{
-    domain::{
-        auth::ports::AuthService, card::ports::CardService, deck::ports::DeckService,
-        health::ports::HealthService, user::ports::UserService,
-    },
-    inbound::http::AppState,
-};
+use crate::inbound::http::AppState;
 #[cfg(feature = "zerver")]
-use axum::{extract::State, Json};
+use axum::{Json, extract::State};
 use chrono::Utc;
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 // ======
 //  root
@@ -74,16 +68,7 @@ pub async fn is_server_running() -> Json<Value> {
 
 /// Pings the database and reports connectivity status.
 #[cfg(feature = "zerver")]
-pub async fn are_server_and_database_running<AS, US, HS, CS, DS>(
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
-) -> Json<Value>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+pub async fn are_server_and_database_running(State(state): State<AppState>) -> Json<Value> {
     let result = match state.health_service.check_database().await {
         Ok(_) => "healthy",
         // add more errors here if we check other things in the future
