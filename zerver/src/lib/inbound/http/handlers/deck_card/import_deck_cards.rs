@@ -2,34 +2,27 @@
 
 #[cfg(feature = "zerver")]
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 #[cfg(feature = "zerver")]
-use zwipe_core::http::contracts::deck_card::HttpImportDeckCards;
-#[cfg(feature = "zerver")]
 use zwipe_core::domain::user::requests::get_user::GetUser;
+#[cfg(feature = "zerver")]
+use zwipe_core::http::contracts::deck_card::HttpImportDeckCards;
 
 #[cfg(feature = "zerver")]
 use crate::{
-    domain::{
-        auth::ports::AuthService,
-        card::ports::CardService,
-        deck::{
-            models::deck_card::import_deck_cards::ImportDeckCardsError,
-            ports::DeckService,
-        },
-        health::ports::HealthService,
-        user::ports::UserService,
-    },
+    domain::deck::models::deck_card::import_deck_cards::ImportDeckCardsError,
     inbound::http::{
-        handlers::metrics::check_completion::check_deck_completion,
-        middleware::AuthenticatedUser, ApiError, AppState, Log500,
+        ApiError, AppState, Log500, handlers::metrics::check_completion::check_deck_completion,
+        middleware::AuthenticatedUser,
     },
 };
 #[cfg(feature = "zerver")]
-use zwipe_core::domain::deck::requests::import_deck_cards::{ImportDeckCards, ImportDeckCardsResult};
+use zwipe_core::domain::deck::requests::import_deck_cards::{
+    ImportDeckCards, ImportDeckCardsResult,
+};
 
 #[cfg(feature = "zerver")]
 impl From<ImportDeckCardsError> for ApiError {
@@ -42,9 +35,9 @@ impl From<ImportDeckCardsError> for ApiError {
             ImportDeckCardsError::LimitReached => {
                 Self::UnprocessableEntity("card limit reached".to_string())
             }
-            ImportDeckCardsError::UnverifiedLimitReached => {
-                Self::UnprocessableEntity("card limit reached, verify your email to unlock more".to_string())
-            }
+            ImportDeckCardsError::UnverifiedLimitReached => Self::UnprocessableEntity(
+                "card limit reached, verify your email to unlock more".to_string(),
+            ),
             ImportDeckCardsError::Database(e) => e.log_500(),
         }
     }
@@ -52,28 +45,29 @@ impl From<ImportDeckCardsError> for ApiError {
 
 /// Imports cards from plain-text decklist into a deck.
 #[cfg(feature = "zerver")]
-pub async fn import_deck_cards<AS, US, HS, CS, DS>(
+pub async fn import_deck_cards(
     user: AuthenticatedUser,
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    State(state): State<AppState>,
     Path(deck_id): Path<String>,
     Json(body): Json<HttpImportDeckCards>,
-) -> Result<(StatusCode, Json<ImportDeckCardsResult>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<(StatusCode, Json<ImportDeckCardsResult>), ApiError> {
     let deck_id = uuid::Uuid::try_parse(&deck_id)?;
     let db_user = state.user_service.get_user(&GetUser::from(user.id)).await?;
     let email_verified = db_user.email_verified_at.is_some();
-    let board_override = body.board
+    let board_override = body
+        .board
         .as_deref()
         .map(zwipe_core::domain::deck::Board::try_from)
         .transpose()
         .map_err(|_| ApiError::UnprocessableEntity("invalid board value".to_string()))?;
-    let request = ImportDeckCards::parse(user.id, deck_id, &body.text, email_verified, board_override, body.mode);
+    let request = ImportDeckCards::parse(
+        user.id,
+        deck_id,
+        &body.text,
+        email_verified,
+        board_override,
+        body.mode,
+    );
 
     let result = state
         .deck_service

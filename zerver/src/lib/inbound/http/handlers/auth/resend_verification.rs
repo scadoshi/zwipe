@@ -2,16 +2,7 @@
 use axum::{extract::State, http::StatusCode};
 
 #[cfg(feature = "zerver")]
-use crate::{
-    domain::{
-        auth::ports::AuthService,
-        card::ports::CardService,
-        deck::ports::DeckService,
-        health::ports::HealthService,
-        user::ports::UserService,
-    },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState},
-};
+use crate::inbound::http::{ApiError, AppState, middleware::AuthenticatedUser};
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::user::requests::get_user::GetUser;
 
@@ -19,17 +10,10 @@ use zwipe_core::domain::user::requests::get_user::GetUser;
 ///
 /// Returns `422` if the email is already verified.
 #[cfg(feature = "zerver")]
-pub async fn resend_verification<AS, US, HS, CS, DS>(
+pub async fn resend_verification(
     user: AuthenticatedUser,
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
-) -> Result<StatusCode, ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+    State(state): State<AppState>,
+) -> Result<StatusCode, ApiError> {
     let profile = state
         .user_service
         .get_user(&GetUser::from(user.id))

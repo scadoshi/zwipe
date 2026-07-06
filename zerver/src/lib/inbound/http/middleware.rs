@@ -2,16 +2,7 @@
 
 #[cfg(feature = "zerver")]
 use crate::{
-    domain::{
-        auth::{
-            models::access_token::{JwtSecret, JwtValidate},
-            ports::AuthService,
-        },
-        card::ports::CardService,
-        deck::ports::DeckService,
-        health::ports::HealthService,
-        user::ports::UserService,
-    },
+    domain::auth::models::access_token::{JwtSecret, JwtValidate},
     inbound::http::AppState,
 };
 #[cfg(feature = "zerver")]
@@ -176,18 +167,11 @@ const LAST_ACTIVE_DEBOUNCE: Duration = Duration::from_secs(60);
 /// adds latency to the request path. The debounce cache is in-memory and
 /// lost on restart, which is fine: the first request after a restart writes.
 #[cfg(feature = "zerver")]
-pub async fn track_last_active<AS, US, HS, CS, DS>(
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+pub async fn track_last_active(
+    State(state): State<AppState>,
     request: Request,
     next: Next,
-) -> Response
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Response {
     let user_id = request
         .headers()
         .get(AUTHORIZATION)
@@ -217,18 +201,11 @@ where
 }
 
 #[cfg(feature = "zerver")]
-impl<AS, US, HS, CS, DS> FromRequestParts<AppState<AS, US, HS, CS, DS>> for AuthenticatedUser
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+impl FromRequestParts<AppState> for AuthenticatedUser {
     type Rejection = StatusCode;
     async fn from_request_parts(
         parts: &mut Parts,
-        state: &AppState<AS, US, HS, CS, DS>,
+        state: &AppState,
     ) -> Result<Self, Self::Rejection> {
         let TypedHeader(Authorization(bearer)) =
             TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)

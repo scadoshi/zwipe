@@ -1,20 +1,13 @@
 #[cfg(feature = "zerver")]
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{Json, extract::State, http::StatusCode};
 #[cfg(feature = "zerver")]
 use zwipe_core::http::contracts::auth::HttpResetPassword;
 
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
-        auth::{
-            requests::reset_password::{ResetPassword, ResetPasswordError},
-            ports::AuthService,
-        },
-        card::ports::CardService,
-        deck::ports::DeckService,
-        health::ports::HealthService,
+        auth::requests::reset_password::{ResetPassword, ResetPasswordError},
         metrics::models::kinds::AuditAction,
-        user::ports::UserService,
     },
     inbound::http::{ApiError, AppState, Log500},
 };
@@ -36,17 +29,10 @@ impl From<ResetPasswordError> for ApiError {
 ///
 /// Revokes all existing sessions after a successful reset.
 #[cfg(feature = "zerver")]
-pub async fn reset_password<AS, US, HS, CS, DS>(
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+pub async fn reset_password(
+    State(state): State<AppState>,
     Json(body): Json<HttpResetPassword>,
-) -> Result<StatusCode, ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<StatusCode, ApiError> {
     let request = ResetPassword::new(body.token, &body.new_password)?;
     let user_id = state
         .auth_service
@@ -56,7 +42,10 @@ where
 
     let metrics = std::sync::Arc::clone(&state.metrics_service);
     tokio::spawn(async move {
-        if let Err(e) = metrics.record_audit(user_id, AuditAction::PasswordChanged).await {
+        if let Err(e) = metrics
+            .record_audit(user_id, AuditAction::PasswordChanged)
+            .await
+        {
             tracing::warn!(error = ?e, "metrics: audit password reset failed");
         }
     });

@@ -2,14 +2,8 @@
 
 #[cfg(feature = "zerver")]
 use crate::{
-    domain::{
-        auth::ports::AuthService,
-        card::ports::CardService,
-        deck::ports::DeckService,
-        health::ports::HealthService,
-        user::{models::preferences::GetPreferencesError, ports::UserService},
-    },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+    domain::user::models::preferences::GetPreferencesError,
+    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
 };
 #[cfg(feature = "zerver")]
 use axum::{Json, extract::State, http::StatusCode};
@@ -27,17 +21,10 @@ impl From<GetPreferencesError> for ApiError {
 
 /// Returns the authenticated user's display preferences.
 #[cfg(feature = "zerver")]
-pub async fn get_preferences<AS, US, HS, CS, DS>(
+pub async fn get_preferences(
     user: AuthenticatedUser,
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
-) -> Result<(StatusCode, Json<UserPreferences>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+    State(state): State<AppState>,
+) -> Result<(StatusCode, Json<UserPreferences>), ApiError> {
     state
         .user_service
         .get_preferences(user.id)

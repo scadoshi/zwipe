@@ -1,35 +1,26 @@
 #[cfg(feature = "zerver")]
 use crate::{
-    domain::{
-        auth::ports::AuthService,
-        card::ports::CardService,
-        deck::{
-            models::deck::update_deck_profile::UpdateDeckProfileError,
-            ports::DeckService,
-        },
-        health::ports::HealthService,
-        user::ports::UserService,
-    },
+    domain::deck::models::deck::update_deck_profile::UpdateDeckProfileError,
     inbound::http::{
-        handlers::metrics::check_completion::check_deck_completion,
-        middleware::AuthenticatedUser, ApiError, AppState, Log500,
+        ApiError, AppState, Log500, handlers::metrics::check_completion::check_deck_completion,
+        middleware::AuthenticatedUser,
     },
 };
+#[cfg(feature = "zerver")]
+use axum::{
+    Json,
+    extract::{Path, State},
+    http::StatusCode,
+};
+#[cfg(feature = "zerver")]
+use uuid::Uuid;
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::deck::{
     deck_profile::DeckProfile,
     requests::update_deck_profile::{InvalidUpdateDeckProfile, UpdateDeckProfile},
 };
 #[cfg(feature = "zerver")]
-use axum::{
-    extract::{Path, State},
-    http::StatusCode,
-    Json,
-};
-#[cfg(feature = "zerver")]
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
-#[cfg(feature = "zerver")]
-use uuid::Uuid;
 
 #[cfg(feature = "zerver")]
 impl From<UpdateDeckProfileError> for ApiError {
@@ -85,27 +76,17 @@ impl From<InvalidUpdateDeckProfile> for ApiError {
 
 /// Updates deck metadata with ownership verification.
 #[cfg(feature = "zerver")]
-pub async fn update_deck_profile<AS, US, HS, CS, DS>(
+pub async fn update_deck_profile(
     user: AuthenticatedUser,
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    State(state): State<AppState>,
     Path(deck_id): Path<Uuid>,
     Json(body): Json<HttpUpdateDeckProfile>,
-) -> Result<(StatusCode, Json<DeckProfile>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<(StatusCode, Json<DeckProfile>), ApiError> {
     let format_raw: Option<Option<String>> = body.format.into_option();
-    let format_option: Option<Option<&str>> = format_raw
-        .as_ref()
-        .map(|opt| opt.as_deref());
+    let format_option: Option<Option<&str>> = format_raw.as_ref().map(|opt| opt.as_deref());
     let power_level_raw: Option<Option<String>> = body.power_level.into_option();
-    let power_level_option: Option<Option<&str>> = power_level_raw
-        .as_ref()
-        .map(|opt| opt.as_deref());
+    let power_level_option: Option<Option<&str>> =
+        power_level_raw.as_ref().map(|opt| opt.as_deref());
     let request = UpdateDeckProfile::builder(deck_id, user.id)
         .name(body.name.as_deref())
         .commander_id(body.commander_id.into_option())

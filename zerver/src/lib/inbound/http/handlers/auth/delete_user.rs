@@ -1,22 +1,13 @@
 #[cfg(feature = "zerver")]
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{Json, extract::State, http::StatusCode};
 #[cfg(feature = "zerver")]
 use zwipe_core::http::contracts::auth::HttpDeleteUser;
 
 use crate::{domain::auth::requests::delete_user::InvalidDeleteUser, inbound::http::ApiError};
 #[cfg(feature = "zerver")]
 use crate::{
-    domain::{
-        auth::{
-            ports::AuthService,
-            requests::delete_user::{DeleteUser, DeleteUserError},
-        },
-        card::ports::CardService,
-        deck::ports::DeckService,
-        health::ports::HealthService,
-        user::ports::UserService,
-    },
-    inbound::http::{middleware::AuthenticatedUser, AppState, Log500},
+    domain::auth::requests::delete_user::{DeleteUser, DeleteUserError},
+    inbound::http::{AppState, Log500, middleware::AuthenticatedUser},
 };
 
 #[cfg(feature = "zerver")]
@@ -45,18 +36,11 @@ impl From<InvalidDeleteUser> for ApiError {
 
 /// Deletes the user's account and all associated data after password verification.
 #[cfg(feature = "zerver")]
-pub async fn delete_user<AS, US, HS, CS, DS>(
+pub async fn delete_user(
     user: AuthenticatedUser,
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    State(state): State<AppState>,
     Json(body): Json<HttpDeleteUser>,
-) -> Result<StatusCode, ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<StatusCode, ApiError> {
     let request = DeleteUser::new(user.id, &body.password)?;
 
     state

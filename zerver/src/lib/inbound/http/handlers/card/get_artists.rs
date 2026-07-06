@@ -1,12 +1,6 @@
 #[cfg(feature = "zerver")]
 use crate::{
-    domain::{
-        auth::ports::AuthService,
-        card::{ports::CardService, requests::get_artists::GetArtistsError},
-        deck::ports::DeckService,
-        health::ports::HealthService,
-        user::ports::UserService,
-    },
+    domain::card::requests::get_artists::GetArtistsError,
     inbound::http::{ApiError, AppState, Log500},
 };
 #[cfg(feature = "zerver")]
@@ -25,16 +19,9 @@ impl From<GetArtistsError> for ApiError {
 
 /// Returns distinct artist names.
 #[cfg(feature = "zerver")]
-pub async fn get_artists<AS, US, HS, CS, DS>(
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
-) -> Result<(StatusCode, Json<Vec<String>>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+pub async fn get_artists(
+    State(state): State<AppState>,
+) -> Result<(StatusCode, Json<Vec<String>>), ApiError> {
     state
         .card_service
         .get_artists()

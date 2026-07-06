@@ -1,29 +1,19 @@
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
-        auth::ports::AuthService,
-        card::ports::CardService,
-        deck::{
-            models::deck::{
-                clone_deck::CloneDeckError,
-                get_deck_profile::GetDeckProfileError,
-            },
-            ports::DeckService,
-        },
-        health::ports::HealthService,
+        deck::models::deck::{clone_deck::CloneDeckError, get_deck_profile::GetDeckProfileError},
         metrics::models::kinds::EventKind,
-        user::ports::UserService,
     },
     inbound::http::{
-        handlers::metrics::check_completion::check_deck_completion,
-        middleware::AuthenticatedUser, ApiError, AppState, Log500,
+        ApiError, AppState, Log500, handlers::metrics::check_completion::check_deck_completion,
+        middleware::AuthenticatedUser,
     },
 };
 #[cfg(feature = "zerver")]
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 #[cfg(feature = "zerver")]
 use uuid::Uuid;
@@ -42,12 +32,12 @@ impl From<CloneDeckError> for ApiError {
             CloneDeckError::Forbidden => {
                 Self::Forbidden("cannot clone another user's deck".to_string())
             }
-            CloneDeckError::Duplicate => Self::UnprocessableEntity(
-                "a deck with that name already exists".to_string(),
-            ),
-            CloneDeckError::LimitReached => Self::UnprocessableEntity(
-                "deck limit reached".to_string(),
-            ),
+            CloneDeckError::Duplicate => {
+                Self::UnprocessableEntity("a deck with that name already exists".to_string())
+            }
+            CloneDeckError::LimitReached => {
+                Self::UnprocessableEntity("deck limit reached".to_string())
+            }
             CloneDeckError::UnverifiedLimitReached => Self::UnprocessableEntity(
                 "deck limit reached, verify your email to unlock more".to_string(),
             ),
@@ -87,19 +77,12 @@ impl From<InvalidCloneDeck> for ApiError {
 /// from the JSON body. The response contains only the new deck's id —
 /// the client navigates to the deck view which loads the full aggregate.
 #[cfg(feature = "zerver")]
-pub async fn clone_deck<AS, US, HS, CS, DS>(
+pub async fn clone_deck(
     user: AuthenticatedUser,
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    State(state): State<AppState>,
     Path(source_deck_id): Path<Uuid>,
     Json(body): Json<HttpCloneDeck>,
-) -> Result<(StatusCode, Json<HttpClonedDeck>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<(StatusCode, Json<HttpClonedDeck>), ApiError> {
     // Fetch email_verified the same way create_deck_profile does (handler line 71).
     let db_user = state.user_service.get_user(&GetUser::from(user.id)).await?;
     let email_verified = db_user.email_verified_at.is_some();
@@ -132,6 +115,8 @@ where
 
     Ok((
         StatusCode::CREATED,
-        Json(HttpClonedDeck { deck_id: new_deck_id }),
+        Json(HttpClonedDeck {
+            deck_id: new_deck_id,
+        }),
     ))
 }

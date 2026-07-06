@@ -1,16 +1,10 @@
 #[cfg(feature = "zerver")]
 use crate::{
-    domain::{
-        auth::ports::AuthService,
-        card::{ports::CardService, requests::get_card_types::GetCardTypesError},
-        deck::ports::DeckService,
-        health::ports::HealthService,
-        user::ports::UserService,
-    },
+    domain::card::requests::get_card_types::GetCardTypesError,
     inbound::http::{ApiError, AppState, Log500},
 };
 #[cfg(feature = "zerver")]
-use axum::{extract::State, Json};
+use axum::{Json, extract::State};
 #[cfg(feature = "zerver")]
 use reqwest::StatusCode;
 
@@ -25,16 +19,9 @@ impl From<GetCardTypesError> for ApiError {
 
 /// Returns distinct card type names.
 #[cfg(feature = "zerver")]
-pub async fn get_card_types<AS, US, HS, CS, DS>(
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
-) -> Result<(StatusCode, Json<Vec<String>>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+pub async fn get_card_types(
+    State(state): State<AppState>,
+) -> Result<(StatusCode, Json<Vec<String>>), ApiError> {
     state
         .card_service
         .get_card_types()

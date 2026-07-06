@@ -12,21 +12,19 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::domain::{
-    deck::ports::DeckService,
+    deck::ports::ErasedDeckService,
     metrics::{models::kinds::EventKind, ports::ErasedMetricsService},
 };
 use zwipe_core::domain::deck::requests::get_deck_profile::GetDeckProfile;
 
 /// Runs the deck-completion check after a mutation. Logs but does not return
 /// errors — callers spawn this off the request path.
-pub async fn check_deck_completion<DS>(
-    deck_service: Arc<DS>,
+pub async fn check_deck_completion(
+    deck_service: Arc<dyn ErasedDeckService>,
     metrics: Arc<dyn ErasedMetricsService>,
     user_id: Uuid,
     deck_id: Uuid,
-) where
-    DS: DeckService,
-{
+) {
     let request = GetDeckProfile::new(user_id, deck_id);
     let deck = match deck_service.get_deck(&request).await {
         Ok(d) => d,

@@ -9,9 +9,9 @@
 
 #[cfg(feature = "zerver")]
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 #[cfg(feature = "zerver")]
 use uuid::Uuid;
@@ -25,16 +25,9 @@ use zwipe_core::http::contracts::deck::HttpImportArchidektDeck;
 
 #[cfg(feature = "zerver")]
 use crate::{
-    domain::{
-        auth::ports::AuthService,
-        card::ports::CardService,
-        deck::ports::DeckService,
-        health::ports::HealthService,
-        user::ports::UserService,
-    },
     inbound::http::{
-        handlers::metrics::check_completion::check_deck_completion,
-        middleware::AuthenticatedUser, ApiError, AppState, Log500,
+        ApiError, AppState, Log500, handlers::metrics::check_completion::check_deck_completion,
+        middleware::AuthenticatedUser,
     },
     outbound::archidekt::{ArchidektClient, ArchidektError},
 };
@@ -59,21 +52,16 @@ impl From<ArchidektError> for ApiError {
 /// Imports an Archidekt deck's cards into an existing deck owned by the
 /// authenticated user.
 #[cfg(feature = "zerver")]
-pub async fn import_archidekt_deck<AS, US, HS, CS, DS>(
+pub async fn import_archidekt_deck(
     user: AuthenticatedUser,
     Path(deck_id): Path<Uuid>,
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    State(state): State<AppState>,
     Json(body): Json<HttpImportArchidektDeck>,
-) -> Result<(StatusCode, Json<ImportDeckCardsResult>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<(StatusCode, Json<ImportDeckCardsResult>), ApiError> {
     let archidekt_id = ArchidektClient::extract_deck_id(&body.url).ok_or_else(|| {
-        ApiError::UnprocessableEntity("could not parse an archidekt deck id from the url".to_string())
+        ApiError::UnprocessableEntity(
+            "could not parse an archidekt deck id from the url".to_string(),
+        )
     })?;
     let board = body
         .board
@@ -99,7 +87,12 @@ where
     // Fire-and-forget metrics: check whether the import completed the deck.
     let deck_service = std::sync::Arc::clone(&state.deck_service);
     let metrics = std::sync::Arc::clone(&state.metrics_service);
-    tokio::spawn(check_deck_completion(deck_service, metrics, user.id, deck_id));
+    tokio::spawn(check_deck_completion(
+        deck_service,
+        metrics,
+        user.id,
+        deck_id,
+    ));
 
     Ok((StatusCode::OK, Json(result)))
 }

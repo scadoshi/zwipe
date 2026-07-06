@@ -6,17 +6,8 @@ use axum::{
 
 #[cfg(feature = "zerver")]
 use crate::{
-    domain::{
-        auth::ports::AuthService,
-        card::ports::CardService,
-        deck::{
-            models::deck::clear_deck_suppressions::ClearDeckSuppressionsError,
-            ports::DeckService,
-        },
-        health::ports::HealthService,
-        user::ports::UserService,
-    },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+    domain::deck::models::deck::clear_deck_suppressions::ClearDeckSuppressionsError,
+    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
 };
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::deck::requests::clear_deck_suppressions::{
@@ -51,18 +42,11 @@ impl From<InvalidClearDeckSuppressions> for ApiError {
 /// Clears a deck's suppression set (skipped/removed cards) after ownership
 /// verification, returning the number of rows removed.
 #[cfg(feature = "zerver")]
-pub async fn clear_deck_suppressions<AS, US, HS, CS, DS>(
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+pub async fn clear_deck_suppressions(
+    State(state): State<AppState>,
     Path(deck_id): Path<String>,
     user: AuthenticatedUser,
-) -> Result<Json<HttpClearedSuppressions>, ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<Json<HttpClearedSuppressions>, ApiError> {
     let request = ClearDeckSuppressions::new(user.id, &deck_id)?;
 
     let cleared = state

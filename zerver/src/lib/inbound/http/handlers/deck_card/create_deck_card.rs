@@ -1,29 +1,20 @@
 #[cfg(feature = "zerver")]
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
-    Json,
 };
 #[cfg(feature = "zerver")]
-use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
-#[cfg(feature = "zerver")]
 use zwipe_core::domain::user::requests::get_user::GetUser;
+#[cfg(feature = "zerver")]
+use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
 
 #[cfg(feature = "zerver")]
 use crate::{
-    domain::{
-        auth::ports::AuthService,
-        card::ports::CardService,
-        deck::{
-            models::deck_card::create_deck_card::CreateDeckCardError,
-            ports::DeckService,
-        },
-        health::ports::HealthService,
-        user::ports::UserService,
-    },
+    domain::deck::models::deck_card::create_deck_card::CreateDeckCardError,
     inbound::http::{
-        handlers::metrics::check_completion::check_deck_completion,
-        middleware::AuthenticatedUser, ApiError, AppState, Log500,
+        ApiError, AppState, Log500, handlers::metrics::check_completion::check_deck_completion,
+        middleware::AuthenticatedUser,
     },
 };
 #[cfg(feature = "zerver")]
@@ -45,9 +36,9 @@ impl From<CreateDeckCardError> for ApiError {
             CreateDeckCardError::LimitReached => {
                 Self::UnprocessableEntity("card limit reached".to_string())
             }
-            CreateDeckCardError::UnverifiedLimitReached => {
-                Self::UnprocessableEntity("card limit reached, verify your email to unlock more".to_string())
-            }
+            CreateDeckCardError::UnverifiedLimitReached => Self::UnprocessableEntity(
+                "card limit reached, verify your email to unlock more".to_string(),
+            ),
             CreateDeckCardError::Database(e) => e.log_500(),
             CreateDeckCardError::DeckCardFromDb(e) => e.log_500(),
             CreateDeckCardError::GetDeckProfileError(e) => ApiError::from(e),
@@ -80,23 +71,29 @@ impl From<InvalidCreateDeckCard> for ApiError {
 
 /// Adds a card to a deck with the specified quantity.
 #[cfg(feature = "zerver")]
-pub async fn create_deck_card<AS, US, HS, CS, DS>(
+pub async fn create_deck_card(
     user: AuthenticatedUser,
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    State(state): State<AppState>,
     Path(deck_id): Path<String>,
     Json(body): Json<HttpCreateDeckCard>,
-) -> Result<(StatusCode, Json<DeckCard>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<(StatusCode, Json<DeckCard>), ApiError> {
     let db_user = state.user_service.get_user(&GetUser::from(user.id)).await?;
     let email_verified = db_user.email_verified_at.is_some();
-    let board = body.board.as_deref().map(zwipe_core::domain::deck::Board::try_from).transpose().map_err(|_| ApiError::UnprocessableEntity("invalid board value".to_string()))?;
-    let request = CreateDeckCard::new(user.id, &deck_id, &body.scryfall_data_id, &body.oracle_id, body.quantity, board, email_verified)?;
+    let board = body
+        .board
+        .as_deref()
+        .map(zwipe_core::domain::deck::Board::try_from)
+        .transpose()
+        .map_err(|_| ApiError::UnprocessableEntity("invalid board value".to_string()))?;
+    let request = CreateDeckCard::new(
+        user.id,
+        &deck_id,
+        &body.scryfall_data_id,
+        &body.oracle_id,
+        body.quantity,
+        board,
+        email_verified,
+    )?;
 
     let deck_card = state
         .deck_service

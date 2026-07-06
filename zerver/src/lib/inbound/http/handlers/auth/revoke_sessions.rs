@@ -4,17 +4,10 @@ use axum::{extract::State, http::StatusCode};
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
-        auth::{
-            requests::revoke_sessions::{RevokeSessions, RevokeSessionsError},
-            ports::AuthService,
-        },
-        card::ports::CardService,
-        deck::ports::DeckService,
-        health::ports::HealthService,
+        auth::requests::revoke_sessions::{RevokeSessions, RevokeSessionsError},
         metrics::models::kinds::{AuditAction, EventKind},
-        user::ports::UserService,
     },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
 };
 
 #[cfg(feature = "zerver")]
@@ -28,17 +21,10 @@ impl From<RevokeSessionsError> for ApiError {
 
 /// Revokes all sessions for the authenticated user (logs out all devices).
 #[cfg(feature = "zerver")]
-pub async fn revoke_sessions<AS, US, HS, CS, DS>(
+pub async fn revoke_sessions(
     user: AuthenticatedUser,
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
-) -> Result<StatusCode, ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+    State(state): State<AppState>,
+) -> Result<StatusCode, ApiError> {
     state
         .auth_service
         .revoke_sessions(&RevokeSessions::new(user.id))

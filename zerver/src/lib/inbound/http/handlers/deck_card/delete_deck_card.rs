@@ -6,19 +6,10 @@ use axum::{
 
 #[cfg(feature = "zerver")]
 use crate::{
-    domain::{
-        auth::ports::AuthService,
-        card::ports::CardService,
-        deck::{
-            models::deck_card::delete_deck_card::DeleteDeckCardError,
-            ports::DeckService,
-        },
-        health::ports::HealthService,
-        user::ports::UserService,
-    },
+    domain::deck::models::deck_card::delete_deck_card::DeleteDeckCardError,
     inbound::http::{
-        handlers::metrics::check_completion::check_deck_completion,
-        middleware::AuthenticatedUser, ApiError, AppState, Log500,
+        ApiError, AppState, Log500, handlers::metrics::check_completion::check_deck_completion,
+        middleware::AuthenticatedUser,
     },
 };
 #[cfg(feature = "zerver")]
@@ -56,18 +47,11 @@ impl From<InvalidDeleteDeckCard> for ApiError {
 
 /// Removes a card from a deck.
 #[cfg(feature = "zerver")]
-pub async fn delete_deck_card<AS, US, HS, CS, DS>(
+pub async fn delete_deck_card(
     user: AuthenticatedUser,
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    State(state): State<AppState>,
     Path((deck_id, scryfall_data_id)): Path<(String, String)>,
-) -> Result<StatusCode, ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<StatusCode, ApiError> {
     let request = DeleteDeckCard::new(user.id, &deck_id, &scryfall_data_id)?;
 
     state

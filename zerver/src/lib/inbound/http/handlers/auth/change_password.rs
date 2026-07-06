@@ -1,22 +1,17 @@
 #[cfg(feature = "zerver")]
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{Json, extract::State, http::StatusCode};
 #[cfg(feature = "zerver")]
 use zwipe_core::http::contracts::auth::HttpChangePassword;
 
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
-        auth::{
-            requests::change_password::{ChangePassword, ChangePasswordError, InvalidChangePassword},
-            ports::AuthService,
+        auth::requests::change_password::{
+            ChangePassword, ChangePasswordError, InvalidChangePassword,
         },
-        card::ports::CardService,
-        deck::ports::DeckService,
-        health::ports::HealthService,
         metrics::models::kinds::AuditAction,
-        user::ports::UserService,
     },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
 };
 
 #[cfg(feature = "zerver")]
@@ -49,18 +44,11 @@ impl From<InvalidChangePassword> for ApiError {
 
 /// Changes the user's password after verifying the current one.
 #[cfg(feature = "zerver")]
-pub async fn change_password<AS, US, HS, CS, DS>(
+pub async fn change_password(
     user: AuthenticatedUser,
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    State(state): State<AppState>,
     Json(body): Json<HttpChangePassword>,
-) -> Result<(StatusCode, Json<()>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<(StatusCode, Json<()>), ApiError> {
     let request = ChangePassword::new(user.id, &body.current_password, &body.new_password)?;
 
     state
@@ -72,7 +60,10 @@ where
     let metrics = std::sync::Arc::clone(&state.metrics_service);
     let uid = user.id;
     tokio::spawn(async move {
-        if let Err(e) = metrics.record_audit(uid, AuditAction::PasswordChanged).await {
+        if let Err(e) = metrics
+            .record_audit(uid, AuditAction::PasswordChanged)
+            .await
+        {
             tracing::warn!(error = ?e, "metrics: audit password change failed");
         }
     });

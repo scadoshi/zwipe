@@ -68,6 +68,24 @@ Zerver files for extracted types become one-liners: `pub use zwipe_core::domain:
 
 ---
 
+## Type-Erased Services: AppState Holds `Arc<dyn ErasedXService>`
+
+**Decided: 2026-07-05.**
+
+`AppState` holds every service as a trait object (`Arc<dyn ErasedAuthService>`, etc.) instead of being generic over five service traits. Each domain's `ports.rs` defines two service traits: the real one (`XService`, RPITIT-style `-> impl Future<...> + Send` methods) and an object-safe twin (`ErasedXService`, same methods returning `BoxFuture<'a, T>` — the alias in `domain/mod.rs`), plus a blanket `impl<T: XService> ErasedXService for T` whose bodies are one-line `Box::pin(XService::method(self, args))` forwards.
+
+**Why the twin exists at all:** RPITIT traits are not object-safe — each implementor returns a differently-sized anonymous future, and a vtable needs one fixed signature, so `dyn XService` cannot compile. The twin's boxed-future signatures are uniform (a fat pointer), making it object-safe by construction. The blanket impl performs the erasure at the one point where the concrete type (and thus the future's size) is still known.
+
+**Why erased over generic:** before this, `AppState<AS, US, HS, CS, DS>` threaded five type params through 104 signature sites across ~50 files — every handler carried a 5-line where-clause before its first real line. Now handlers take `State(state): State<AppState>` with zero ceremony. Call sites are unchanged (`state.card_service.search(...)`); mocks still satisfy the fields via the blanket impls.
+
+**The steady-state trade:** a new service method costs one extra write (the twin signature + `Box::pin` forward, compiler-checked, mindless); a new handler costs zero ceremony (was ~12 lines of bounds). Since endpoints usually add one of each, the per-feature cost is a wash — the payoff was the one-time 104-site cleanup and the permanent reading-cost win in handlers. The repo-trait/service-trait split predates and is independent of this (that's the hexagonal seam, not an erasure cost).
+
+**Runtime cost:** one heap allocation (`Box::pin`) + one vtable jump per service call — noise next to the Postgres round-trip every call performs.
+
+**When to revisit:** if hand-writing twins ever becomes a real tax (e.g., many service methods that never get handlers), the `dynosaur` crate generates exactly this pattern from the RPITIT trait via proc-macro. Hand-written was chosen for readability and one fewer proc-macro dep. The metrics domain pioneered the pattern (it was added after the original five and erasing it avoided touching every signature); the other five followed on 2026-07-05.
+
+---
+
 ## Database Adapter Pattern: No Custom SQLx Impls on Domain Types
 
 **Decided: 2026-04-02.**

@@ -1,19 +1,12 @@
 #[cfg(feature = "zerver")]
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{Json, extract::State, http::StatusCode};
 #[cfg(feature = "zerver")]
 use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
 
 #[cfg(feature = "zerver")]
 use crate::{
-    domain::{
-        auth::{
-            requests::request_password_reset::{RequestPasswordReset, RequestPasswordResetError},
-            ports::AuthService,
-        },
-        card::ports::CardService,
-        deck::ports::DeckService,
-        health::ports::HealthService,
-        user::ports::UserService,
+    domain::auth::requests::request_password_reset::{
+        RequestPasswordReset, RequestPasswordResetError,
     },
     inbound::http::{ApiError, AppState, Log500},
 };
@@ -32,17 +25,10 @@ impl From<RequestPasswordResetError> for ApiError {
 /// Always returns `200 OK` regardless of whether the email is registered,
 /// to prevent email enumeration attacks.
 #[cfg(feature = "zerver")]
-pub async fn request_password_reset<AS, US, HS, CS, DS>(
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+pub async fn request_password_reset(
+    State(state): State<AppState>,
     Json(body): Json<HttpRequestPasswordReset>,
-) -> Result<StatusCode, ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<StatusCode, ApiError> {
     let request = RequestPasswordReset { email: body.email };
     state
         .auth_service

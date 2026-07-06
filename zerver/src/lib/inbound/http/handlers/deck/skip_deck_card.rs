@@ -7,13 +7,7 @@ use axum::{
 
 #[cfg(feature = "zerver")]
 use crate::{
-    domain::{
-        auth::ports::AuthService,
-        card::ports::CardService,
-        deck::{models::deck::skip_deck_card::SkipDeckCardError, ports::DeckService},
-        health::ports::HealthService,
-        user::ports::UserService,
-    },
+    domain::deck::models::deck::skip_deck_card::SkipDeckCardError,
     inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
 };
 #[cfg(feature = "zerver")]
@@ -50,19 +44,12 @@ impl From<InvalidSkipDeckCard> for ApiError {
 /// Suppresses a single card for a deck (durable skip) after ownership
 /// verification.
 #[cfg(feature = "zerver")]
-pub async fn skip_deck_card<AS, US, HS, CS, DS>(
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+pub async fn skip_deck_card(
+    State(state): State<AppState>,
     Path(deck_id): Path<String>,
     user: AuthenticatedUser,
     Json(body): Json<HttpSkipDeckCard>,
-) -> Result<StatusCode, ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<StatusCode, ApiError> {
     let request = SkipDeckCard::new(user.id, &deck_id, body.oracle_id)?;
 
     state
@@ -76,18 +63,11 @@ where
 
 /// Removes a single skip suppression (undo) after ownership verification.
 #[cfg(feature = "zerver")]
-pub async fn unskip_deck_card<AS, US, HS, CS, DS>(
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+pub async fn unskip_deck_card(
+    State(state): State<AppState>,
     Path((deck_id, oracle_id)): Path<(String, String)>,
     user: AuthenticatedUser,
-) -> Result<StatusCode, ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<StatusCode, ApiError> {
     let request = SkipDeckCard::from_path(user.id, &deck_id, &oracle_id)?;
 
     state

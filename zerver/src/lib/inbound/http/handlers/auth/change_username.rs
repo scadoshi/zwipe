@@ -1,24 +1,19 @@
 #[cfg(feature = "zerver")]
 use crate::{
     domain::{
-        auth::{
-            ports::AuthService,
-            requests::change_username::{ChangeUsername, ChangeUsernameError, InvalidChangeUsername},
+        auth::requests::change_username::{
+            ChangeUsername, ChangeUsernameError, InvalidChangeUsername,
         },
-        card::ports::CardService,
-        deck::ports::DeckService,
-        health::ports::HealthService,
         metrics::models::kinds::AuditAction,
-        user::ports::UserService,
     },
-    inbound::http::{middleware::AuthenticatedUser, ApiError, AppState, Log500},
+    inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
 };
 #[cfg(feature = "zerver")]
-use axum::{extract::State, http::StatusCode, Json};
-#[cfg(feature = "zerver")]
-use zwipe_core::http::contracts::auth::HttpChangeUsername;
+use axum::{Json, extract::State, http::StatusCode};
 #[cfg(feature = "zerver")]
 use zwipe_core::domain::user::User;
+#[cfg(feature = "zerver")]
+use zwipe_core::http::contracts::auth::HttpChangeUsername;
 
 #[cfg(feature = "zerver")]
 impl From<ChangeUsernameError> for ApiError {
@@ -50,18 +45,11 @@ impl From<InvalidChangeUsername> for ApiError {
 
 /// Changes the user's username after verifying the password.
 #[cfg(feature = "zerver")]
-pub async fn change_username<AS, US, HS, CS, DS>(
+pub async fn change_username(
     user: AuthenticatedUser,
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    State(state): State<AppState>,
     Json(body): Json<HttpChangeUsername>,
-) -> Result<(StatusCode, Json<User>), ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<(StatusCode, Json<User>), ApiError> {
     let request = ChangeUsername::new(user.id, &body.new_username, &body.password)?;
 
     let updated = state
@@ -73,7 +61,10 @@ where
     let metrics = std::sync::Arc::clone(&state.metrics_service);
     let uid = user.id;
     tokio::spawn(async move {
-        if let Err(e) = metrics.record_audit(uid, AuditAction::UsernameChanged).await {
+        if let Err(e) = metrics
+            .record_audit(uid, AuditAction::UsernameChanged)
+            .await
+        {
             tracing::warn!(error = ?e, "metrics: audit username change failed");
         }
     });

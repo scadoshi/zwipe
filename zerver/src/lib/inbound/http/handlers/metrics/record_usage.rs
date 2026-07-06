@@ -1,12 +1,7 @@
 use axum::{Json, extract::State, http::StatusCode};
 
 use crate::{
-    domain::{
-        auth::ports::AuthService, card::ports::CardService, deck::ports::DeckService,
-        health::ports::HealthService,
-        metrics::models::{errors::MetricsError, kinds::EventKind},
-        user::ports::UserService,
-    },
+    domain::metrics::models::{errors::MetricsError, kinds::EventKind},
     inbound::http::{ApiError, AppState, Log500, middleware::AuthenticatedUser},
 };
 use zwipe_core::http::contracts::metrics::HttpUsageBatch;
@@ -21,26 +16,18 @@ impl From<MetricsError> for ApiError {
 }
 
 /// Increments lifetime and daily counters for the caller by the batch values.
-pub async fn record_usage<AS, US, HS, CS, DS>(
+pub async fn record_usage(
     user: AuthenticatedUser,
-    State(state): State<AppState<AS, US, HS, CS, DS>>,
+    State(state): State<AppState>,
     Json(batch): Json<HttpUsageBatch>,
-) -> Result<StatusCode, ApiError>
-where
-    AS: AuthService,
-    US: UserService,
-    HS: HealthService,
-    CS: CardService,
-    DS: DeckService,
-{
+) -> Result<StatusCode, ApiError> {
     state
         .metrics_service
         .apply_usage(user.id, &batch)
         .await
         .map_err(ApiError::from)?;
 
-    let swiped =
-        batch.swipes_right + batch.swipes_left + batch.swipes_up + batch.swipes_down > 0;
+    let swiped = batch.swipes_right + batch.swipes_left + batch.swipes_up + batch.swipes_down > 0;
     if swiped {
         let user_id = user.id;
         let metrics = std::sync::Arc::clone(&state.metrics_service);
