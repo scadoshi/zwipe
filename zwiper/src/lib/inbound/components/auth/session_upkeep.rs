@@ -6,7 +6,9 @@
 
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::telemetry::{
-    flush_loop::{spawn_usage_flusher, spawn_visibility_flusher}, usage_buffer::UsageBuffer,
+    anonymous::record_anonymous_event,
+    flush_loop::{spawn_usage_flusher, spawn_visibility_flusher},
+    usage_buffer::UsageBuffer,
 };
 use crate::inbound::screens::deck::card::components::{
     action_history::AddAction, add_stack_cache::use_add_stack_cache, card_stack::use_card_stack,
@@ -20,6 +22,7 @@ use tokio::time::interval;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::{Card, search_card::card_filter::builder::CardQueryBuilder};
 use zwipe_core::domain::user::models::theme::ThemeConfig;
+use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 use zwipe_core::version::version_at_least;
 
 /// The running app version, baked in at compile time (matches
@@ -132,6 +135,12 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     use_hook(|| {
         spawn_usage_flusher(usage_buffer.peek().clone(), client, session);
         spawn_visibility_flusher(usage_buffer.peek().clone(), client, session);
+
+        // Pre-auth funnel: a logged-out launch is the top of the register
+        // funnel. Logged-in launches are already covered by last_active_at.
+        if session.peek().is_none() {
+            record_anonymous_event(client, AnonymousEventKind::AppOpened);
+        }
     });
 
     // Min-version gate — flipped true when the server says this build is too

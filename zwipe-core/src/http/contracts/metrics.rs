@@ -4,6 +4,47 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+/// Pre-auth funnel event kinds accepted by the anonymous ingest endpoint.
+///
+/// A closed set shared by client and server: an unknown kind fails
+/// deserialization instead of landing as a stray string. The client only
+/// fires these while unauthenticated — once a user exists, the sparse
+/// `user_events` log takes over (registration success is its `register` row).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AnonymousEventKind {
+    /// App launched with no authenticated session.
+    AppOpened,
+    /// Register screen viewed.
+    RegisterViewed,
+    /// Register form submitted (success or not).
+    RegisterSubmitted,
+}
+
+impl AnonymousEventKind {
+    /// String form stored in the `anonymous_events.kind` column.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            AnonymousEventKind::AppOpened => "app_opened",
+            AnonymousEventKind::RegisterViewed => "register_viewed",
+            AnonymousEventKind::RegisterSubmitted => "register_submitted",
+        }
+    }
+}
+
+/// One pre-auth funnel event posted by an unauthenticated client.
+///
+/// `session_id` is a random UUID the client generates per install/launch —
+/// it carries no identity and exists only so funnel steps from the same
+/// session can be counted once (distinct sessions per kind).
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct HttpAnonymousEvent {
+    /// Random client-generated session id (no PII, not an account id).
+    pub session_id: Uuid,
+    /// Which funnel step occurred.
+    pub kind: AnonymousEventKind,
+}
+
 /// Batched usage counters posted by the client.
 ///
 /// The client buffers counts in memory and flushes periodically (every ~30s
@@ -79,8 +120,8 @@ impl HttpUsageBatch {
     ///
     /// The client buffers only ~30s of activity before flushing, so legitimate
     /// values are tiny (tens). This caps untrusted input so a client can't
-    /// inflate the lifetime / public-marketing totals, and keeps each day's
-    /// accumulation comfortably within the daily-activity `INTEGER` columns
+    /// inflate the lifetime / public-marketing totals, and keeps each week's
+    /// accumulation comfortably within the weekly-signal `INTEGER` columns
     /// even at the endpoint's request rate limit.
     pub const MAX_PER_FLUSH: u32 = 10_000;
 
@@ -164,8 +205,38 @@ impl DeckSkipDelta {
 
 #[cfg(test)]
 mod tests {
-    use super::{CardSignalDelta, DeckSkipDelta, HttpUsageBatch};
+    use super::{
+        AnonymousEventKind, CardSignalDelta, DeckSkipDelta, HttpAnonymousEvent, HttpUsageBatch,
+    };
     use uuid::Uuid;
+
+    #[test]
+    fn anonymous_kind_wire_form_matches_db_string() {
+        // The serde wire form and as_str (the anonymous_events.kind column
+        // value) must never diverge, or funnel GROUP BYs would split a kind
+        // into two spellings.
+        for kind in [
+            AnonymousEventKind::AppOpened,
+            AnonymousEventKind::RegisterViewed,
+            AnonymousEventKind::RegisterSubmitted,
+        ] {
+            let wire = serde_json::to_string(&kind).unwrap();
+            assert_eq!(wire, format!("\"{}\"", kind.as_str()));
+            let back: AnonymousEventKind = serde_json::from_str(&wire).unwrap();
+            assert_eq!(back, kind);
+        }
+    }
+
+    #[test]
+    fn anonymous_event_parses_and_rejects_unknown_kind() {
+        let json = r#"{"session_id":"00000000-0000-0000-0000-000000000000","kind":"register_viewed"}"#;
+        let event: HttpAnonymousEvent = serde_json::from_str(json).unwrap();
+        assert_eq!(event.kind, AnonymousEventKind::RegisterViewed);
+        assert_eq!(event.session_id, Uuid::nil());
+
+        let bad = r#"{"session_id":"00000000-0000-0000-0000-000000000000","kind":"totally_fake"}"#;
+        assert!(serde_json::from_str::<HttpAnonymousEvent>(bad).is_err());
+    }
 
     #[test]
     fn clamped_caps_each_field_and_leaves_small_ones() {

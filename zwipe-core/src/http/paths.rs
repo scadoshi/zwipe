@@ -183,6 +183,10 @@ pub fn record_usage_route() -> String {
     "/api/metrics/usage".to_string()
 }
 
+pub fn record_anonymous_event_route() -> String {
+    "/api/metrics/anonymous".to_string()
+}
+
 pub fn get_my_metrics_route() -> String {
     "/api/user/metrics".to_string()
 }

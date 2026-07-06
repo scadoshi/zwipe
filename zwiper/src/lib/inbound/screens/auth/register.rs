@@ -1,6 +1,7 @@
 //! New user registration screen.
 
 use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::telemetry::anonymous::record_anonymous_event;
 use crate::{
     domain::error::UserFacing,
     inbound::{components::fields::text_input::TextInput, router::Router},
@@ -15,6 +16,7 @@ use std::time::Duration;
 use zwipe::domain::auth::models::password::Password;
 use zwipe_core::domain::{Email, auth::models::session::Session, logo, user::username::Username};
 use zwipe_core::http::contracts::auth::HttpRegisterUser;
+use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 
 /// Registration form screen for creating new user accounts.
 #[component]
@@ -23,6 +25,10 @@ pub fn Register() -> Element {
 
     let mut session: Signal<Option<Session>> = use_context();
     let auth_client: Signal<ZwipeClient> = use_context();
+
+    // Funnel: register screen reached (once per mount; distinct-session
+    // counting on the server dedupes revisits).
+    use_hook(|| record_anonymous_event(auth_client, AnonymousEventKind::RegisterViewed));
 
     let logo = logo::ZWIPE;
 
@@ -83,6 +89,11 @@ pub fn Register() -> Element {
             return;
         }
         is_loading.set(true);
+
+        // Funnel: a validated submit is going to the server (success or not —
+        // registration success itself lands in user_events).
+        record_anonymous_event(auth_client, AnonymousEventKind::RegisterSubmitted);
+
         let email = email().trim().to_string();
         let request = HttpRegisterUser::new(&username(), &email, &password());
         spawn(async move {
