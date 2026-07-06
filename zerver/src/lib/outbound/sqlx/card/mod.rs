@@ -75,8 +75,11 @@ const W_SIGNAL: f64 = 0.15;
 
 /// Amplitude of the exploration jitter before uncertainty damping. Seeded
 /// per (card, deck, day): different decks serve differently, the same deck
-/// stays stable within a day, and tomorrow drifts.
-const W_JITTER: f64 = 0.01;
+/// stays stable within a day, and tomorrow drifts. 0.04 (±0.02 swing) makes
+/// the stack head visibly vary per deck — top gaps run 0.005–0.044, so most
+/// adjacent pairs can swap while true standouts hold (raised from 0.01 after
+/// the 2026-07-06 live Krenko test left the top 7 pinned).
+const W_JITTER: f64 = 0.04;
 
 /// Shrinkage pseudo-count: impressions a card needs before its own add-rate
 /// outweighs the global prior.
