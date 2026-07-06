@@ -87,6 +87,9 @@ async fn main() -> anyhow::Result<()> {
     card_service.refresh_latest_cards().await?;
     tracing::info!("latest_cards materialized view refreshed");
 
+    card_service.refresh_card_signal_rollup().await?;
+    tracing::info!("card_signal_rollup materialized view refreshed");
+
     auth_service.delete_expired_sessions().await?;
 
     tracing::info!("zervice completed");

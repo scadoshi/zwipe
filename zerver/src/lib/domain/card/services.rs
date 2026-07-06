@@ -135,6 +135,10 @@ impl<R: CardRepository> CardService for Service<R> {
         self.repo.refresh_latest_cards().await
     }
 
+    async fn refresh_card_signal_rollup(&self) -> anyhow::Result<()> {
+        self.repo.refresh_card_signal_rollup().await
+    }
+
     // =====
     //  get
     // =====

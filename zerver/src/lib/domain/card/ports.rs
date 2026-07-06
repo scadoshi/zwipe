@@ -80,6 +80,10 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// membership (e.g., after Scryfall sync + classification).
     fn refresh_latest_cards(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
 
+    /// Refreshes the `card_signal_rollup` materialized view (pooled per-card
+    /// suggestion signal feeding the default synergy ordering).
+    fn refresh_card_signal_rollup(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
+
     // =====
     //  get
     // =====
@@ -314,6 +318,9 @@ pub trait CardService: Clone + Send + Sync + 'static {
     /// Refreshes the latest_cards materialized view after data changes.
     fn refresh_latest_cards(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
 
+    /// Refreshes the card_signal_rollup materialized view (nightly, zervice).
+    fn refresh_card_signal_rollup(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
+
     // =====
     //  get
     // =====
@@ -441,6 +448,9 @@ pub trait ErasedCardService: Send + Sync + 'static {
     /// See [`CardService::refresh_latest_cards`].
     fn refresh_latest_cards<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>>;
 
+    /// See [`CardService::refresh_card_signal_rollup`].
+    fn refresh_card_signal_rollup<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>>;
+
     /// See [`CardService::get_card`].
     fn get_card<'a>(
         &'a self,
@@ -544,6 +554,10 @@ where
 
     fn clear_all_categories<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>> {
         Box::pin(CardService::clear_all_categories(self))
+    }
+
+    fn refresh_card_signal_rollup<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>> {
+        Box::pin(CardService::refresh_card_signal_rollup(self))
     }
 
     fn refresh_latest_cards<'a>(&'a self) -> BoxFuture<'a, anyhow::Result<()>> {

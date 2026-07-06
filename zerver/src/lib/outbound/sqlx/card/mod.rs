@@ -62,6 +62,34 @@ use sqlx::{QueryBuilder, query_builder::Separated};
 /// filtering with much larger limits, but that path never reaches this query.
 const MAX_SEARCH_LIMIT: u32 = 250;
 
+// Default-synergy-ordering dials (context/plans/suggestion_signal.md,
+// Phase 3a+3b). Both at 0.0 reproduces the pre-signal ordering exactly —
+// that's the revert lever. Units are synergy-score points: scores span
+// roughly -0.6..1.0 with ~0.002 between neighboring cards (measured
+// 2026-07-06), so W_JITTER swaps nearby cards without crossing tiers and
+// W_SIGNAL lets a proven card climb or sink meaningfully.
+
+/// Weight of the pooled add-rate term (centered on the global rate, so a
+/// card with no data contributes exactly zero).
+const W_SIGNAL: f64 = 0.15;
+
+/// Amplitude of the exploration jitter before uncertainty damping. Seeded
+/// per (card, deck, day): different decks serve differently, the same deck
+/// stays stable within a day, and tomorrow drifts.
+const W_JITTER: f64 = 0.01;
+
+/// Shrinkage pseudo-count: impressions a card needs before its own add-rate
+/// outweighs the global prior.
+const SHRINK_K: f64 = 10.0;
+
+/// Base score for cards absent from the commander's synergy map. Sits below
+/// the scoreless-list floor (-10, see `SynergyPayload::into_scores`) so the
+/// unscored tail stays below every scored card — at zero dials this exactly
+/// reproduces the old `NULLS LAST` ordering. Signal and jitter still shuffle
+/// the tail internally; letting strong signal lift tail cards into the scored
+/// region is a deliberate future retune (raise this anchor), not v1.
+const UNSCORED_ANCHOR: f64 = -10.5;
+
 impl CardRepository for MyPostgres {
     // ========
     //  create
@@ -145,6 +173,14 @@ impl CardRepository for MyPostgres {
         Ok(())
     }
 
+    async fn refresh_card_signal_rollup(&self) -> anyhow::Result<()> {
+        sqlx::query("REFRESH MATERIALIZED VIEW card_signal_rollup")
+            .execute(&self.pool)
+            .await
+            .context("failed to refresh card_signal_rollup materialized view")?;
+        Ok(())
+    }
+
     // =====
     //  get
     // =====
@@ -205,11 +241,22 @@ impl CardRepository for MyPostgres {
         // WHERE clauses read the predicate fields; LIMIT/OFFSET/ORDER BY read
         // the query config — the CardCriteria/CardQuery split, mirrored here.
         let criteria = request.criteria();
-        let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new(
+        // Default synergy ordering (no explicit sort, score map present) gets
+        // the signal + jitter terms, which need the pooled rollup and the
+        // global rate in scope; every other path keeps the plain FROM.
+        let signal_ordering = request.sort().is_none() && synergy_scores.is_some();
+        let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new(if signal_ordering {
             "SELECT latest_cards.* FROM latest_cards
              JOIN card_profiles ON latest_cards.id = card_profiles.scryfall_data_id
-             WHERE ",
-        );
+             LEFT JOIN card_signal_rollup sig ON sig.card_oracle_id = latest_cards.oracle_id
+             CROSS JOIN (SELECT COALESCE(SUM(net) / NULLIF(SUM(shown), 0), 0) AS rate
+                         FROM card_signal_rollup) g
+             WHERE "
+        } else {
+            "SELECT latest_cards.* FROM latest_cards
+             JOIN card_profiles ON latest_cards.id = card_profiles.scryfall_data_id
+             WHERE "
+        });
         let mut sep: Separated<Postgres, &'static str> = qb.separated(" AND ");
         // Seed an always-true clause so the baked `WHERE` is valid even when no
         // filter conditions are pushed (e.g. an empty filter). It also lets every
@@ -785,11 +832,41 @@ impl CardRepository for MyPostgres {
                 qb.push(" NULLS LAST, name ASC");
             }
         } else if let Some(scores) = synergy_scores {
-            // Synergy default ordering: score map is jsonb {lowercased name -> score}.
-            // Unscored cards sort last (NULLS LAST), name tiebreak keeps pagination stable.
-            qb.push(" ORDER BY (");
+            // Default synergy ordering: base + signal + jitter
+            // (context/plans/suggestion_signal.md, Phase 3a+3b).
+            //   base:   the commander's synergy score, jsonb {lower(name) -> score}.
+            //           Unscored cards anchor below the scored floor (see
+            //           UNSCORED_ANCHOR) — same standing as the old NULLS LAST,
+            //           but the tail can now shuffle internally.
+            //   signal: pooled net-rate ((added + 0.5*maybed - removed) / shown),
+            //           shrunk toward and centered on the global rate — a card
+            //           with no impressions contributes exactly zero.
+            //   jitter: hash of (card, deck, day), normalized to [0,1) then
+            //           centered so randomness can't systematically inflate,
+            //           damped by 1/sqrt(shown + 1) so unknown cards explore
+            //           while well-measured cards settle.
+            qb.push(" ORDER BY (COALESCE((");
             qb.push_bind(scores.clone());
-            qb.push(" ->> LOWER(name))::float8 DESC NULLS LAST, name ASC");
+            qb.push(format!(" ->> LOWER(name))::float8, {UNSCORED_ANCHOR})"));
+            qb.push(format!(
+                " + {W_SIGNAL} * ((COALESCE(sig.net, 0) + {SHRINK_K} * g.rate) \
+                   / (COALESCE(sig.shown, 0) + {SHRINK_K}) - g.rate)"
+            ));
+            if let Some(deck_id) = deck_id {
+                let seed = format!("{deck_id}:{}", Utc::now().date_naive());
+                // COALESCE the oracle_id: it is nullable, and NULL || seed
+                // would NULL the whole sort key, floating those rows to the
+                // top under DESC (caught by the dev harness, 2026-07-06).
+                qb.push(format!(
+                    " + {W_JITTER} * (((hashtext(COALESCE(latest_cards.oracle_id::text, '') || "
+                ));
+                qb.push_bind(seed);
+                qb.push(
+                    ") % 1000 + 1000) % 1000)::float8 / 1000.0 - 0.5) \
+                     / sqrt(COALESCE(sig.shown, 0) + 1.0)",
+                );
+            }
+            qb.push(") DESC, name ASC");
         }
 
         qb.push(" LIMIT ");
