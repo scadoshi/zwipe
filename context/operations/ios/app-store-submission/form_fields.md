@@ -39,6 +39,13 @@ Built for players who want a fast, focused mobile experience — not another clu
 
 ---
 
+## What's New in This Version (1.3.1)
+
+- Under-the-hood improvements: anonymous, PII-free app health signals help us spot and fix rough edges faster. No account or gameplay data involved.
+- Small internal cleanups to keep swiping fast and stable.
+
+---
+
 ## What's New in This Version (1.3.0)
 
 - Zwipe now remembers your skips: cards you swipe left on stay out of that deck's suggestions, saved the instant you swipe, even if you close the app right after. Cards you deliberately remove from a deck stay out too.

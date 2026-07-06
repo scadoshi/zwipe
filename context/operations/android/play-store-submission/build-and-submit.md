@@ -195,6 +195,17 @@ the bundle → **Upload native debug symbols** (a zip containing
 
 ## History
 
+- **2026-07-05 — `1.3.1`, versionCode `21`** (pre-auth funnel telemetry: the
+  client posts anonymous session events — app_opened, register_viewed,
+  register_submitted — to the new `/api/metrics/anonymous` endpoint; plus the
+  server-side AppState type-erasure refactor, no behavior change). Built per
+  this recipe — `dx bundle` → `launcher-icons.sh` → gradle patch (compileSdk 36 /
+  targetSdk 35 / versionCode 21) → `gradlew :app:bundleRelease` → jarsigner
+  (0600 scratchpad password, deleted after). Artifact `zwipe-1.3.1-vc21.aab`,
+  signed + `jar verified`. iOS counterpart: build 60. Server (anonymous_events +
+  daily-activity BIGINT migrations) must deploy to prod before rollout.
+  *R8/edge-to-edge emulator smoke test skipped again.*
+
 - **2026-07-03 — `1.3.0`, versionCode `20`** (filter-intent + Reset batch:
   sort/synergy-only searches now serve, `Reset` returns each screen to its
   default view, the filter dot tracks any real filter or sort, and the filter
