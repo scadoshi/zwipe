@@ -148,7 +148,10 @@ future release.
 **Units (measured on prod, 2026-07-06):** synergy scores (max-per-name over
 `payload->lists[].cards[].synergy`, floor −10 for scoreless) span −0.62..1.00,
 median 0.064, ~267 cards/commander → typical neighbor gap ≈ 0.002. Sizing:
-`W_JITTER ≈ 0.01` (swaps neighbors, never tiers), `W_SIGNAL ≈ 0.15–0.2` on the
+`W_JITTER = 0.04` (±0.02 swing: the stack *head* visibly varies per deck —
+head gaps run 0.005–0.044, so most adjacent pairs can swap while standouts
+hold; raised from 0.01 after the 2026-07-06 live test left the top 7 pinned,
+defeating the point of the variety fix), `W_SIGNAL ≈ 0.15–0.2` on the
 *centered* rate (`shrunk_rate − global_rate`, so a neutral card moves zero),
 `SHRINK_K = 10`.
 
