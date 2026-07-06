@@ -24,7 +24,7 @@ Also has `workflow_dispatch` for manual runs from the GitHub Actions tab.
 2. Installs stable Rust toolchain (cached)
 3. Restores cargo cache (fast subsequent builds)
 4. Runs SQLx migrations (`set -a && source ~/zwipe/.env` to export `DATABASE_URL`, then `cargo sqlx migrate run`)
-5. Verifies the committed `.sqlx/` matches the just-migrated schema (`cargo sqlx prepare --workspace --check`) — fails fast with "query data is stale" instead of E0308 soup mid-build
+5. Verifies the committed `.sqlx/` matches the just-migrated schema (`cargo sqlx prepare --workspace --check -- --workspace --exclude zwiper --exclude zite`) — fails fast with "query data is stale" instead of E0308 soup mid-build. The GUI crates are excluded because `--check` compiles crates to find their queries, and zwiper's Linux desktop deps (glib/GTK via pkg-config) don't exist on the headless VPS — this failed the first two verify runs (2026-07-06) before being scoped; only zerver has queries anyway
 6. Builds `zerver` and `zervice` in release mode (`SQLX_OFFLINE=true`)
 7. Stops zerver, copies binaries to `~/zwipe/`, starts zerver
 

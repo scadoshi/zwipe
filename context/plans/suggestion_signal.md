@@ -1,8 +1,10 @@
 # First-Party Suggestion Signal
 
-**Status: Phases 1 + 2 SHIPPED (deployed with the 1.2.0 server batch,
-2026-06-30) — `commander_card_signal` collecting in prod. Phase 3 (ranking)
-remains.** Two refinements landed
+**Status: Phases 1 + 2 SHIPPED (2026-06-30, collecting in prod). Phases
+3a + 3b SHIPPED 2026-07-06 (server 1.3.2, live-verified: same deck stable,
+different decks diverge, 77 of top-100 positions vary between two Krenko
+decks at `W_JITTER = 0.04`). Phase 3c (pair-level term) remains, gated on
+pair-depth — re-run the readiness queries first.** Two refinements landed
 beyond the original plan: the right-swipe column is named **`added`** (not
 `kept`) to pair with **`removed`** — a new column capturing a *deliberate
 removal* from a deck (Remove-screen right-swipe + deck-cards `[-]`-to-zero), a
