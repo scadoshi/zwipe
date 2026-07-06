@@ -109,6 +109,33 @@ Build 15 shipped over build 14 with: `Email` strict newtype across the workspace
 
 ---
 
+## 1.3.1 — anonymous funnel metrics, service type-erasure (built 2026-07-05, ship pending)
+
+First instrumentation of the **pre-registration funnel** — the question it
+answers: where do people drop between installing and registering?
+
+- **Anonymous funnel events (`4e67c366`).** New `anonymous_events` table +
+  unauthenticated `POST /api/metrics/anonymous` (IP rate-limited; kinds are a
+  closed `AnonymousEventKind` enum shared via zwipe-core, so unknown kinds fail
+  at deserialization). Client fires `app_opened` (logged-out launch),
+  `register_viewed` (Register mount), `register_submitted` (validated submit),
+  keyed by a per-launch in-memory session UUID — no PII, fire-and-forget.
+  Funnel reads as `COUNT(DISTINCT session_id) GROUP BY kind` vs. the `register`
+  rows already in `user_events`. Also widened `user_daily_activity` counters to
+  BIGINT (the usage clamp is now purely anti-abuse). Related: `zcripts/`
+  metrics scripts (pulse, funnel, signal).
+- **Service type-erasure (`8d9bae05`).** All five remaining services follow the
+  metrics pattern: `ErasedXService` twins (via the `BoxFuture` alias) let
+  `AppState` drop its five generic params; every handler is now
+  `State<AppState>` with zero bounds. No behavior change. Rationale recorded in
+  [`../architecture/decisions.md`](../architecture/decisions.md).
+
+**iOS build 60 / Android vc21** built + signed 2026-07-05; server (two additive
+migrations) deploys before stores roll out. Store notes kept deliberately
+low-key ("anonymous, PII-free app health signals").
+
+---
+
 ## 1.3.0 — per-swipe skips, per-deck stack memory, CardStack refactor (submitted 2026-07-02)
 
 **Supersedes 1.2.3, which was withdrawn from both stores before review started**
