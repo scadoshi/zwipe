@@ -20,22 +20,24 @@ Plus [`CLAUDE.md`](CLAUDE.md) — the authoritative rules/instructions for AI as
 
 ## Current focus
 
-**Latest — 1.3.0, submitted 2026-07-02:** supersedes 1.2.3 (withdrawn from
-both stores pre-review; its swipe-memory feature set ships here). Adds
-**per-swipe durable skips** (dedicated skip/unskip endpoints replace the lossy
-usage-batch path), **per-deck stack memory** (every deck's add stack resumes
-exactly where swiping left off, undo included — MRU parked per deck), the
-**CardStack refactor** (one generic stack type + per-stack action models
-across search/maybeboard/remove), and a visual polish pass (image/skeleton
-ease-ins, enforced swipe-layout spacing) plus a profile **About section**
-(website link + privacy + version) and a **filter-intent + Reset** pass
-(sort/synergy serve, Reset-to-default, accurate filter dot). Server deployed
-2026-07-02; **iOS build 59** and **Android versionCode 20** in store review
-(57/18 → 58/19 → 59/20). See the [`progress/overview.md`](progress/overview.md) top entry.
+**Latest — 1.3.1, built 2026-07-05 (ship pending):** first **pre-registration
+funnel instrumentation** — anonymous, PII-free session events (`app_opened`,
+`register_viewed`, `register_submitted`) posted to a new unauthenticated
+endpoint, so install→register drop-off becomes a query instead of a guess.
+Rides with the server-side **service type-erasure** refactor (`AppState` and
+all handlers drop their generic params; no behavior change) and a
+`user_daily_activity` BIGINT widening. **iOS build 60** / **Android vc21**
+signed and ready; server (two additive migrations) deploys first, then store
+upload. See the [`progress/overview.md`](progress/overview.md) top entry.
 
-**After this version:** short-form videos against the 1.3.0 build
+**Before that — 1.3.0, submitted 2026-07-02:** per-swipe durable skips,
+per-deck stack memory, the CardStack refactor, profile About section, and the
+filter-intent + Reset pass (iOS build 59 / Android vc20, in store review).
+
+**After this version:** short-form videos against the 1.3.x build
 (`marketing/plans/` — #2 and #4 are both filmable now), track review (then
 bump `MIN_CLIENT_VERSION`), keep the closed-testing 14-day clock running,
+watch the new funnel numbers (they gate the sign-in-with-Google decision),
 privacy follow-ups (store data-safety labels + notification email),
 suggestion-signal **Phase 3 (ranking)**, and draw-odds **Phase 4 (premium
 gating)**.
