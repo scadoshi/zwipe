@@ -77,14 +77,20 @@ const DEMO_DECK_CARDS_VIEW: Asset = asset!("/assets/demo/2_deck_cards.mp4");
 const DEMO_ADD_DECK_CARDS: Asset = asset!("/assets/demo/3_add_deck_cards.mp4");
 const DEMO_FILTER: Asset = asset!("/assets/demo/4_filter.mp4");
 const DEMO_PROFILE: Asset = asset!("/assets/demo/5_profile.mp4");
+const DEMO_IMPORT_DECK_STATS: Asset = asset!("/assets/demo/6_import_deck_stats.mp4");
 
 #[component]
 pub fn Home() -> Element {
     let demos: Vec<(Asset, &'static str, &'static str)> = vec![
         (
             DEMO_CREATE_DECK,
-            "Create a deck and import a decklist from a link",
-            "Demo: Create & Import",
+            "Create a deck and pick your commander",
+            "Demo: Create a Deck",
+        ),
+        (
+            DEMO_IMPORT_DECK_STATS,
+            "Import a decklist from a link, then check your deck's stats",
+            "Demo: Import & Stats",
         ),
         (
             DEMO_DECK_CARDS_VIEW,
@@ -93,7 +99,7 @@ pub fn Home() -> Element {
         ),
         (
             DEMO_ADD_DECK_CARDS,
-            "Swipe cards into your deck",
+            "Swipe cards out of your deck, then swipe new ones in",
             "Demo: Swipe to Build",
         ),
         (
