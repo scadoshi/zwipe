@@ -75,10 +75,10 @@ const W_SIGNAL: f64 = 0.15;
 /// Band size for the default-ordering shuffle: cards ranked by
 /// (base + signal) score are cut into hands of this many, bands served in
 /// strict order, position within a band purely the (card, deck, day) hash.
-/// 20 ≈ "the first screen deals from the commander's top twenty" — cast-level
-/// variety per deck per day without a band-2 card ever leading band 1.
-/// 1 = pure score ordering (no shuffle).
-const BAND_SIZE: i64 = 20;
+/// 25 matches the client page size, so each page is exactly one shuffled
+/// hand — cast-level variety per deck per day without a band-2 card ever
+/// leading band 1. 1 = pure score ordering (no shuffle).
+const BAND_SIZE: i64 = 25;
 
 /// Shrinkage pseudo-count: impressions a card needs before its own add-rate
 /// outweighs the global prior.
