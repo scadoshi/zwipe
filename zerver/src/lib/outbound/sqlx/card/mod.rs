@@ -79,7 +79,7 @@ const W_SIGNAL: f64 = 0.15;
 /// the stack head visibly vary per deck — top gaps run 0.005–0.044, so most
 /// adjacent pairs can swap while true standouts hold (raised from 0.01 after
 /// the 2026-07-06 live Krenko test left the top 7 pinned).
-const W_JITTER: f64 = 0.04;
+const W_JITTER: f64 = 0.08;
 
 /// Shrinkage pseudo-count: impressions a card needs before its own add-rate
 /// outweighs the global prior.
