@@ -234,7 +234,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         synergy_only: bool,
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
-    /// First-class commander search (context/plans/commander_select_ordering.md):
+    /// First-class commander search (context/archive/commander_select_ordering.md):
     /// results ordered by decks-helmed popularity, banded + wildcarded per user
     /// per day (deck-independent), with token/emblem printings excluded so a
     /// same-named token is never offered as a commander. An explicit sort in
@@ -361,7 +361,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
         request: &CardQuery,
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
-    /// Searches for commanders (context/plans/commander_select_ordering.md):
+    /// Searches for commanders (context/archive/commander_select_ordering.md):
     /// popularity-ordered, banded + wildcarded per user per day, token-free.
     fn search_commanders(
         &self,

@@ -3,7 +3,7 @@
 //! Same `CardQuery` body as the plain search, but the server orders by
 //! decks-helmed popularity, banded + wildcarded per user per day, with
 //! token/emblem printings excluded. An explicit sort in the filter still
-//! wins. (context/plans/commander_select_ordering.md)
+//! wins. (context/archive/commander_select_ordering.md)
 
 use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;

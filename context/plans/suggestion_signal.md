@@ -154,7 +154,7 @@ volume warrants), so only the jitter hash is runtime. Worst-case pool
 Caveat: Zwipe-select sends an explicit `EdhrecRank` sort from the client, so
 server-only jitter (3a) varies the 99 but not commander-select — planned fix
 (plus a true commander-popularity base to replace `edhrec_rank` there):
-[`commander_select_ordering.md`](commander_select_ordering.md).
+[`commander_select_ordering.md`](../archive/commander_select_ordering.md).
 
 **Units (measured on prod, 2026-07-06):** synergy scores (max-per-name over
 `payload->lists[].cards[].synergy`, floor −10 for scoreless) span −0.62..1.00,

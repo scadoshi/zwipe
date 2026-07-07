@@ -1,7 +1,7 @@
 # Commander-select signal — first-party impression + selection counts
 
 **Status: PLANNED (2026-07-07). Fast-follow to
-[`commander_select_ordering.md`](commander_select_ordering.md): the select
+[`commander_select_ordering.md`](../archive/commander_select_ordering.md): the select
 branch must be live first (its §3 client change shipped) so commanders
 actually get served through it and impressions accrue. Entirely zwipe-side —
 client instrumentation + a zerver store + a zerver read. Unlike
@@ -12,7 +12,7 @@ commanders Zwipe users are *shown* and which they *select*, so the select
 serve can (1) weight its wildcard deep-slice toward least-shown commanders
 and (2) carry a mild first-party popularity term on top of the EDHREC base.
 
-**Why now:** the select ordering ([`commander_select_ordering.md`](commander_select_ordering.md))
+**Why now:** the select ordering ([`commander_select_ordering.md`](../archive/commander_select_ordering.md))
 and its wildcard both work today, but the wildcard deep-slice falls back to
 the (deck, day) shuffle alone — there is no select-impression signal to
 weight by. Every existing signal table (`commander_card_signal`,
@@ -175,4 +175,4 @@ involved — contrast `commander_popularity`, where zynergy owns population.
 - Surprise scoring for commanders — the wildcard_slot follow-on ("center the
   signal on a rank-bucket expectation") applies here too once select
   impressions exist: a deep commander that overperforms its EDHREC rank when
-  shown is a promotion candidate. See [`wildcard_slot/overview.md`](wildcard_slot/overview.md).
+  shown is a promotion candidate. See [`wildcard_slot/overview.md`](../archive/wildcard_slot/overview.md).

@@ -91,7 +91,7 @@ impl SwipeMode {
 /// Layers the mode constraint, no-tokens, and pagination onto a user-built
 /// filter. No default sort is pinned: a sortless filter reaches the server as
 /// sortless, so the deck-aware search serves its popularity-based, banded,
-/// wildcard ordering (context/plans/commander_select_ordering.md). An explicit
+/// wildcard ordering (context/archive/commander_select_ordering.md). An explicit
 /// user sort still flows through untouched.
 fn mode_filter(mode: &SwipeMode, mut builder: CardQueryBuilder, offset: u32) -> CardQueryBuilder {
     mode.apply(&mut builder);
@@ -119,7 +119,7 @@ pub(crate) fn SwipeSelect(
     // Local filter context (its own builder) so the shared CardFilterSheet
     // operates here without clobbering the app-wide add-screen filter. Starts
     // sortless: the server's popularity ordering is the default
-    // (context/plans/commander_select_ordering.md). Persists across open/close
+    // (context/archive/commander_select_ordering.md). Persists across open/close
     // because this component stays mounted.
     let mut filter_builder = use_signal(CardQueryBuilder::new);
     use_context_provider(|| filter_builder);
