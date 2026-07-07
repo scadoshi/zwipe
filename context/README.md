@@ -21,13 +21,13 @@ Plus [`CLAUDE.md`](CLAUDE.md) — the authoritative rules/instructions for AI as
 ## Current focus
 
 **Latest — 1.3.2, server-only, LIVE 2026-07-06:** **adaptive serve
-ordering** — the default synergy stack now blends the scraped base with
+ordering** — the default synergy stack scores cards by the scraped base plus
 Zwipe's own swipe signal (net add-rate: adds full credit, maybes half,
-removals negative, skips as denominator drag) plus per-(deck, day) seeded
-jitter. Different decks serve different orders, the same deck stays stable
-within a day, tomorrow drifts, and crowd favorites rise as signal accrues.
-Direct response to user feedback about repetitive serving. See the
-[`progress/overview.md`](progress/overview.md) top entry and
+removals negative, skips as denominator drag), then deals them in **bands of
+20** shuffled per (deck, day). A different opening hand per deck per day, the
+same deck stable within a day, and crowd favorites break into the opening
+hand as signal accrues. Direct response to user feedback about repetitive
+serving. See the [`progress/overview.md`](progress/overview.md) top entry and
 [`plans/suggestion_signal.md`](plans/suggestion_signal.md) (Phase 3c remains,
 data-gated).
 

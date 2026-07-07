@@ -109,33 +109,34 @@ Build 15 shipped over build 14 with: `Email` strict newtype across the workspace
 
 ---
 
-## 1.3.2 — adaptive serve ordering: signal + jitter (server-only, LIVE 2026-07-06)
+## 1.3.2 — adaptive serve ordering: signal + band shuffle (server-only, LIVE 2026-07-06)
 
 The most consequential read-path change since synergy shipped: **what card the
 swipe stack serves next is now shaped by Zwipe's own users**, not just the
 scraped synergy base. Triggered by direct user feedback (Reddit DM: the stack
 served "consistently in the same pattern and sequence" every session).
 
-- **The formula** (`4e67c366`…`c62a7dde`, `search_scryfall_data_deck_aware`):
-  `base synergy score + W_SIGNAL·(shrunk pooled net-rate − global rate) +
-  W_JITTER·seeded noise / sqrt(shown+1)`. Base is the control (zero dials =
-  old ordering byte-for-byte, verified rank-for-rank on dev). The signal term
-  re-ranks by revealed user taste — net-rate = `(added + 0.5·maybed −
-  removed) / shown`, so skips drag as denominator, maybes count as half an
-  add, removals take credit back. The jitter term is deterministic per
-  (card, deck, day): different decks serve differently, the same deck stays
-  stable within a day (parked stacks and undo unaffected), tomorrow drifts,
-  and the noise shrinks as a card accrues impressions — exploration converts
-  itself into earned ranking as data grows.
+- **The mechanism** (`4e67c366`…`677ffe25`, `search_scryfall_data_deck_aware`):
+  cards are scored `base synergy score + W_SIGNAL·(shrunk pooled net-rate −
+  global rate)`, ranked, then cut into **bands of 20**; bands serve in strict
+  order and position *within* a band is purely a (card, deck, day) hash. A
+  different opening hand per deck per day; the same deck stays stable within
+  a day (parked stacks and undo unaffected); a band-2 card can never lead
+  band 1. The signal term re-ranks by revealed user taste — net-rate =
+  `(added + 0.5·maybed − removed) / shown`, so skips drag as denominator,
+  maybes count half, removals take credit back — and reads as band
+  *migration*: a crowd favorite breaks into the opening hand.
+  `BAND_SIZE = 1` + `W_SIGNAL = 0` reverts to pure score order.
+- **The lesson that shaped it**: v1 used score-jitter (`W_JITTER` 0.01 → 0.04
+  → 0.08 across three live Krenko tests). Every test proved the order changed
+  (77 of top-100 positions differed between decks) yet it read as "the same" —
+  score-preserving noise permutes positions but never rotates the visible
+  *cast*, and the cast is what humans perceive. Perceived variety required
+  the band design.
 - **Infrastructure**: `card_signal_rollup` matview (zervice nightly refresh),
-  three doc-commented dials in `outbound/sqlx/card/mod.rs`. Explicit sorts,
-  synergy-ON membership, and Zwipe-select are untouched. Perf: ~0 ms added
-  (jitter is one int hash per row inside the existing ORDER BY pass).
-- **Live-verified on prod** via the API with fresh Krenko decks: same deck
-  twice = identical; two decks = 77 of the top-100 positions differ; the
-  genuinely elite head (score gaps > the ±0.04 swing) stays put by
-  construction. `W_JITTER` raised 0.01 → 0.04 after the first live test left
-  the top 7 pinned.
+  doc-commented dials in `outbound/sqlx/card/mod.rs`. Explicit sorts,
+  synergy-ON membership, and Zwipe-select are untouched. Perf: ~150 ms on the
+  31.7k-row firehose worst case (window sort), far less on real filtered pools.
 - Build caught two real bugs pre-deploy: NULL `oracle_id` would have NULLed
   the sort key and floated 80 cards to the top of every stack; and anchoring
   unscored cards at 0 would have jumped them above negative-scored synergy
