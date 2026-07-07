@@ -20,7 +20,7 @@ use crate::inbound::screens::deck::card::components::card_info::{
     CardInfoDisplay, CardRulesDialog, CardSkeleton, RulesButton,
 };
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
-use crate::outbound::client::{ZwipeClient, card::search_cards::ClientSearchCards};
+use crate::outbound::client::{ZwipeClient, card::search_commanders::ClientSearchCommanders};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::collections::HashSet;
@@ -31,7 +31,6 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_core::domain::card::scryfall_data::colors::Colors;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::models::hints::HINT_SWIPE_SELECT;
 
@@ -89,14 +88,13 @@ impl SwipeMode {
     }
 }
 
-/// Layers the mode constraint, the EDHREC-order default, no-tokens, and
-/// pagination onto a user-built filter.
+/// Layers the mode constraint, no-tokens, and pagination onto a user-built
+/// filter. No default sort is pinned: a sortless filter reaches the server as
+/// sortless, so the deck-aware search serves its popularity-based, banded,
+/// wildcard ordering (context/plans/commander_select_ordering.md). An explicit
+/// user sort still flows through untouched.
 fn mode_filter(mode: &SwipeMode, mut builder: CardQueryBuilder, offset: u32) -> CardQueryBuilder {
     mode.apply(&mut builder);
-    if builder.sort().is_none() {
-        builder.set_sort(CardSortKey::EdhrecRank);
-        builder.set_ascending(true);
-    }
     builder.set_is_token(false);
     builder.set_limit(PAGE);
     builder.set_offset(offset);
@@ -118,15 +116,12 @@ pub(crate) fn SwipeSelect(
     let usage_buffer: Signal<UsageBuffer> = use_context();
     let toast = use_toast();
 
-    // Local filter context (seeded for EDHREC order) so the shared
-    // CardFilterSheet operates here without clobbering the app-wide add-screen
-    // filter. Persists across open/close because this component stays mounted.
-    let mut filter_builder = use_signal(|| {
-        let mut b = CardQueryBuilder::new();
-        b.set_sort(CardSortKey::EdhrecRank)
-            .set_ascending(true);
-        b
-    });
+    // Local filter context (its own builder) so the shared CardFilterSheet
+    // operates here without clobbering the app-wide add-screen filter. Starts
+    // sortless: the server's popularity ordering is the default
+    // (context/plans/commander_select_ordering.md). Persists across open/close
+    // because this component stays mounted.
+    let mut filter_builder = use_signal(CardQueryBuilder::new);
     use_context_provider(|| filter_builder);
     let mut filter_reset_counter = use_signal(|| 0u32);
     use_context_provider(|| filter_reset_counter);
@@ -184,7 +179,7 @@ pub(crate) fn SwipeSelect(
         is_loading_cards.set(true);
         usage_buffer().record_search();
         spawn(async move {
-            match client().search_cards(&filter, &session).await {
+            match client().search_commanders(&filter, &session).await {
                 Ok(found) => {
                     let page: Vec<Card> = found
                         .into_iter()
@@ -225,7 +220,7 @@ pub(crate) fn SwipeSelect(
                 is_loading_more.set(false);
                 return;
             };
-            match client().search_cards(&filter, &session).await {
+            match client().search_commanders(&filter, &session).await {
                 Ok(found) => {
                     let seen: HashSet<Uuid> =
                         cards.peek().iter().map(|c| c.scryfall_data.id).collect();
@@ -278,14 +273,11 @@ pub(crate) fn SwipeSelect(
         }
     };
 
-    // Reset every user-set filter back to the default (all colors, EDHREC order)
-    // and re-search. The mode constraint is re-applied on the next fetch.
+    // Reset every user-set filter back to the default (all colors, the
+    // backend's popularity order) and re-search. The mode constraint is
+    // re-applied on the next fetch.
     let mut clear_filter = move || {
         filter_builder.write().clear();
-        filter_builder
-            .write()
-            .set_sort(CardSortKey::EdhrecRank)
-            .set_ascending(true);
         filter_reset_counter.set(filter_reset_counter() + 1);
     };
 
@@ -381,10 +373,9 @@ pub(crate) fn SwipeSelect(
                         class: "util-btn",
                         onclick: move |_| filters_overlay_open.set(true),
                         "Filter"
-                        // EDHREC order is this screen's default sort, so it
-                        // doesn't count; only a user filter or a different sort
-                        // lights the dot.
-                        if !filter_builder.read().is_empty() || filter_builder.read().sort() != Some(CardSortKey::EdhrecRank) {
+                        // Popularity order is this screen's default (no sort),
+                        // so any user filter or any explicit sort lights the dot.
+                        if !filter_builder.read().is_empty() || filter_builder.read().sort().is_some() {
                             span { class: "filter-dot" }
                         }
                     }
