@@ -119,6 +119,7 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         exclude_oracle_ids: &[uuid::Uuid],
         synergy_scores: Option<&serde_json::Value>,
         synergy_only: bool,
+        commander_seed: Option<String>,
     ) -> impl Future<Output = Result<Vec<ScryfallData>, SearchScryfallDataError>> + Send;
 
     /// Retrieves complete card by Scryfall ID.
@@ -231,6 +232,17 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         exclude_oracle_ids: &[uuid::Uuid],
         synergy_scores: Option<&serde_json::Value>,
         synergy_only: bool,
+    ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
+
+    /// First-class commander search (context/plans/commander_select_ordering.md):
+    /// results ordered by decks-helmed popularity, banded + wildcarded per user
+    /// per day (deck-independent), with token/emblem printings excluded so a
+    /// same-named token is never offered as a commander. An explicit sort in
+    /// `request` still wins.
+    fn search_commanders(
+        &self,
+        request: &CardQuery,
+        user_id: uuid::Uuid,
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
     /// Fetches the cached synergy payload for a commander by **printing** id
@@ -347,6 +359,14 @@ pub trait CardService: Clone + Send + Sync + 'static {
     fn search_cards(
         &self,
         request: &CardQuery,
+    ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
+
+    /// Searches for commanders (context/plans/commander_select_ordering.md):
+    /// popularity-ordered, banded + wildcarded per user per day, token-free.
+    fn search_commanders(
+        &self,
+        request: &CardQuery,
+        user_id: uuid::Uuid,
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
     /// Retrieves all distinct artist names from card database.
@@ -475,6 +495,13 @@ pub trait ErasedCardService: Send + Sync + 'static {
         request: &'a CardQuery,
     ) -> BoxFuture<'a, Result<Vec<Card>, SearchCardsError>>;
 
+    /// See [`CardService::search_commanders`].
+    fn search_commanders<'a>(
+        &'a self,
+        request: &'a CardQuery,
+        user_id: uuid::Uuid,
+    ) -> BoxFuture<'a, Result<Vec<Card>, SearchCardsError>>;
+
     /// See [`CardService::get_artists`].
     fn get_artists<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetArtistsError>>;
 
@@ -590,6 +617,14 @@ where
         request: &'a CardQuery,
     ) -> BoxFuture<'a, Result<Vec<Card>, SearchCardsError>> {
         Box::pin(CardService::search_cards(self, request))
+    }
+
+    fn search_commanders<'a>(
+        &'a self,
+        request: &'a CardQuery,
+        user_id: uuid::Uuid,
+    ) -> BoxFuture<'a, Result<Vec<Card>, SearchCardsError>> {
+        Box::pin(CardService::search_commanders(self, request, user_id))
     }
 
     fn get_artists<'a>(&'a self) -> BoxFuture<'a, Result<Vec<String>, GetArtistsError>> {

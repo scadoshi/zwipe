@@ -87,6 +87,10 @@ pub fn search_cards_route() -> String {
     "/api/card/search".to_string()
 }
 
+pub fn search_commanders_route() -> String {
+    "/api/card/search/commanders".to_string()
+}
+
 pub fn get_artists_route() -> String {
     "api/card/artists".to_string()
 }

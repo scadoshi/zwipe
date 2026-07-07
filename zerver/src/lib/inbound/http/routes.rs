@@ -18,7 +18,7 @@ use crate::inbound::http::handlers::{
         get_artists::get_artists, get_card::get_card, get_card_types::get_card_types,
         get_keywords::get_keywords, get_languages::get_languages,
         get_oracle_words::get_oracle_words, get_printings::get_printings, get_sets::get_sets,
-        search_card::search_cards,
+        search_card::search_cards, search_commanders::search_commanders,
     },
     client::get_min_client_version,
     deck::{
@@ -378,13 +378,24 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                 )
                 .nest(
                     "/card",
-                    Router::new().route(
-                        "/search",
-                        post(search_cards).layer(
-                            GovernorLayer::new(card_search_config)
-                                .error_handler(unauthorized_on_missing_key),
+                    Router::new()
+                        .route(
+                            "/search",
+                            post(search_cards).layer(
+                                GovernorLayer::new(Arc::clone(&card_search_config))
+                                    .error_handler(unauthorized_on_missing_key),
+                            ),
+                        )
+                        // Commander search shares the card-search budget: it's the
+                        // same user behavior (typing in a select screen), just a
+                        // dedicated serving path.
+                        .route(
+                            "/search/commanders",
+                            post(search_commanders).layer(
+                                GovernorLayer::new(card_search_config)
+                                    .error_handler(unauthorized_on_missing_key),
+                            ),
                         ),
-                    ),
                 )
                 .nest(
                     "/metrics",

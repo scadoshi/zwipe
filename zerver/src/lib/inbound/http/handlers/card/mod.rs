@@ -18,3 +18,5 @@ pub mod get_printings;
 pub mod get_sets;
 /// Card search handler.
 pub mod search_card;
+/// Commander search handler (popularity-ordered, banded, wildcarded).
+pub mod search_commanders;

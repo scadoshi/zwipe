@@ -1,8 +1,47 @@
 # Commander select — true popularity base + fresh ordering
 
-**Status: PLANNED (2026-07-06, revised same day: popularity base promoted
-from optional upgrade to first leg). Server legs shippable once the table
-has data; the client leg rides the next release (1.4.0 batch).**
+**Status: BUILT 2026-07-07, dev-verified end-to-end. Architecture evolved
+during build (owner call): commander search became a FIRST-CLASS endpoint
+(`POST /api/card/search/commanders`) instead of piggybacking the deck-aware
+search — see "As-built" below. Server + migration ready to deploy (migration
+first, then re-run `zcripts/synergy-worker/setup-role.sh` on prod, then the
+worker's first sweep populates); the client leg (swipe_select → new
+endpoint, sort pin removed) rides the next release.**
+
+## As-built (2026-07-07)
+
+- **Dedicated endpoint**, not the deck-aware search: `POST
+  /api/card/search/commanders` (authed, shares the card-search governor
+  budget). The create flow has no deck yet, so the shuffle seed is
+  **`{user_id}:{date}`** — per-user-per-day, deck-independent, mirroring the
+  synergy serve's `{deck_id}:{date}`.
+- **Engine**: `search_scryfall_data_deck_aware` gained `commander_seed:
+  Option<String>`. When set → commander-select mode: token/emblem exclusion
+  always applies; popularity base + banding + wildcard apply when no
+  explicit sort (explicit sorts stay exact). All other callers pass `None`,
+  byte-identical behavior.
+- **Stack**: repo `search_commanders(request, user_id)` → CardService +
+  ErasedCardService + blanket impl → handler
+  (`handlers/card/search_commanders.rs`) → route → core path helper
+  (`search_commanders_route()`) → zwiper client
+  (`client/card/search_commanders.rs`) → `swipe_select.rs` (both fetch
+  sites; EdhrecRank pin + import removed; filter-dot check now
+  `sort().is_some()`). All four SwipeSelect modes
+  (Commander/Partner/Background/SignatureSpell) route through it.
+- **One trap fixed during build**: `commander_popularity`'s `name`/
+  `oracle_id` columns made shared filters ambiguous under a plain join —
+  the join is an aliased subquery exposing only `pop_decks`
+  (`POPULARITY_JOIN` const). Any future join to this table must alias
+  likewise.
+- **Dev E2E (2026-07-07, live 3,325-row table)**: page 1 = true popularity
+  head (Edgar Markov, Y'shtola, Yuriko, Atraxa, Krenko; zero 99-staples),
+  deterministic; The Ur-Dragon led page 2 (band-1 spillover — the
+  consumption-aligned 24-per-page math, nothing skipped); wildcards at
+  index 17 were deep cuts, different per page and per user; second user =
+  same band pool, different order, different wildcard; explicit `Name` sort
+  exact; partner mode popularity-ordered; plain `/api/card/search`
+  unaffected; token exclusion verified at SQL level (0 leaked). Clippy
+  clean, 108 zerver tests pass, sqlx offline check green.
 
 **What this builds, in one sentence:** Zwipe-select stops serving the same
 `edhrec_rank` list on every open — commanders get ordered by how many decks
@@ -54,6 +93,27 @@ within the table; rows refresh on the worker's cadence (weeks-stale is
 fine, popularity moves slowly). Population mechanics, source, cadence, and
 seeding: the worker repo's plan (`zynergy` → `context/plans/commander-popularity.md`).
 
+**Read side keys on `oracle_id`, so name-resolution is entirely the worker's
+problem (verified 2026-07-07 first live sweep).** The worker's name→oracle_id
+step hit two systematic classes the "expect a handful of split cards"
+estimate understated — DFC commanders (EDHREC names the front face,
+`scryfall_data` stores `A // B`; ~582 legendary DFCs) and same-name tokens
+(216 commander names have a token sharing the name under a different
+`oracle_id`). Both are fixed worker-side (front-face fallback tier; exclude
+`token`/`double_faced_token`/`emblem` layouts). We inherit none of it: the
+join is on the resolved `oracle_id`, never on name. Partner/Background combo
+rows (`A // B`, ~3,202) are correctly skipped — they can't map to one
+`oracle_id`, and each partner is ranked individually, so every *selectable*
+single-card commander is still covered.
+
+**One consistency requirement §2 must honor:** the popularity table excludes
+token/emblem `oracle_id`s, so zerver's commander candidate pool must exclude
+the same layouts. Measured 2026-07-07: 37 `token`/`double_faced_token`
+legendary-creature rows sit in `latest_cards` today and could be offered as
+commanders — a pre-existing gap, but fold the `layout NOT IN
+('token','double_faced_token','emblem')` filter into the candidate query when
+building the branch so serving and popularity agree on what a commander is.
+
 ## 2. Server — third ORDER BY branch
 
 `search_scryfall_data_deck_aware` (`outbound/sqlx/card/mod.rs` ~810): the
@@ -72,9 +132,17 @@ pins a sort). Fill it:
 - Band shuffle on top, exactly the synergy branch's machinery: when
   `deck_id` is present, `row_number()` over the base ordering, bands of
   `BAND_SIZE`, in-band order `hashtext(COALESCE(oracle_id::text,'') ||
-  seed)` with the same `deck_id:date` seed. Extract the banding wrapper
-  into a shared closure/helper rather than duplicating it — two branches
-  now band, only their score expression differs. No deck → pure base order.
+  seed)` with the same `deck_id:date` seed. No deck → pure base order.
+  **Post-wildcard note (2026-07-07):** the wildcard slot landed and already
+  extracted `push_score(qb, scores)` and a `pool` CTE, but neither is a drop-in
+  here — `push_score` emits the synergy base+signal expression, whereas this
+  branch bands over `pop.decks` (a different column, and no `synergy_scores` in
+  this path). This is a **new terminal branch** in the ORDER BY chain (today
+  `sort → wildcard → synergy → nothing`; fill the `nothing`), with its own
+  inline banding over `pop.decks DESC NULLS LAST, edhrec_rank ASC NULLS LAST,
+  name ASC`. If the row_number→/BAND_SIZE→hash wrapper is worth sharing across
+  the synergy and popularity branches, extract it as a helper then — but don't
+  route through `push_score`; the score expressions genuinely differ.
 - Perf: the popularity join is a few-thousand-row PK lookup, noise next to
   the measured window-sort cost (~150 ms worst-case firehose, real pools
   far smaller).
@@ -123,7 +191,10 @@ commander_popularity` is a valid emergency switch-off).
 
 ## Later
 
-- Signal term for select (which commanders get *added* after being shown —
-  `commander_card_signal` doesn't capture this today; separate decision).
+- First-party select signal (which commanders get *selected* after being
+  shown — no signal table captures this today). Now its own focused plan:
+  [`commander_select_signal.md`](commander_select_signal.md). Primary payoff
+  is real least-shown weighting for the wildcard deep-slice, which currently
+  falls back to shuffle-only.
 - Recency-windowed popularity (last year vs all time) if the worker ever
   provides it — schema would gain a column, ordering unchanged.
