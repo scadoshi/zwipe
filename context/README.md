@@ -20,16 +20,22 @@ Plus [`CLAUDE.md`](CLAUDE.md) — the authoritative rules/instructions for AI as
 
 ## Current focus
 
-**Latest — 1.3.2, server-only, LIVE 2026-07-06:** **adaptive serve
-ordering** — the default synergy stack scores cards by the scraped base plus
-Zwipe's own swipe signal (net add-rate: adds full credit, maybes half,
-removals negative, skips as denominator drag), then deals them in **bands of
-25** (one page = one hand) shuffled per (deck, day). A different opening hand per deck per day, the
-same deck stable within a day, and crowd favorites break into the opening
-hand as signal accrues. Direct response to user feedback about repetitive
-serving. See the [`progress/overview.md`](progress/overview.md) top entry and
+**Latest — serve-path arc complete (server-only, LIVE 2026-07-07):** three
+ships in two days. (1) **Adaptive serve ordering** (1.3.2): the default
+synergy stack scores cards by the scraped base plus Zwipe's own swipe
+signal, dealt in bands of 25 shuffled per (deck, day) — a different opening
+hand per deck per day. (2) **Wildcard slot**: each hand reserves one card
+from beyond the 500-card horizon (least-shown first), so the deep pool
+finally accrues impressions. (3) **Commander popularity pipeline**: a new
+`commander_popularity` table (decks-*helmed*, worker-swept weekly, 3,325
+commanders) behind a first-class `POST /api/card/search/commanders` —
+replacing `edhrec_rank` as the select base (it ranks 99-staples above The
+Ur-Dragon). The endpoint is live but dormant: the Zwipe-select client leg is
+on main and rides the next store build. See the
+[`progress/overview.md`](progress/overview.md) top entries;
 [`plans/suggestion_signal.md`](plans/suggestion_signal.md) (Phase 3c remains,
-data-gated).
+data-gated) and [`plans/commander_select_signal.md`](plans/commander_select_signal.md)
+are the follow-ons.
 
 **In review — 1.3.1 (iOS build 60 / Android vc21, submitted 2026-07-06):**
 pre-registration funnel instrumentation (anonymous, PII-free session events →

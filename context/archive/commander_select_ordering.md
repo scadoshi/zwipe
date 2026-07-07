@@ -1,12 +1,15 @@
 # Commander select — true popularity base + fresh ordering
 
-**Status: BUILT 2026-07-07, dev-verified end-to-end. Architecture evolved
-during build (owner call): commander search became a FIRST-CLASS endpoint
-(`POST /api/card/search/commanders`) instead of piggybacking the deck-aware
-search — see "As-built" below. Server + migration ready to deploy (migration
-first, then re-run `zcripts/synergy-worker/setup-role.sh` on prod, then the
-worker's first sweep populates); the client leg (swipe_select → new
-endpoint, sort pin removed) rides the next release.**
+**Status: LIVE on prod 2026-07-07 (`b10c3c7f` server, zynergy 1.1.0 worker;
+archived same day). The full pipeline is running: migration deployed,
+worker role granted, first sweep wrote 3,325 commanders (Ur-Dragon 48,535 on
+top), endpoint `POST /api/card/search/commanders` live and dormant. The
+client leg (`d212e93b`, swipe_select → new endpoint, sort pin removed) is on
+main and rides the next store build — until then shipped clients keep the
+old ordering. Architecture evolved during build (owner call): commander
+search became a FIRST-CLASS endpoint instead of piggybacking the deck-aware
+search — see "As-built" below. Fast-follow:
+[`../plans/commander_select_signal.md`](../plans/commander_select_signal.md).**
 
 ## As-built (2026-07-07)
 

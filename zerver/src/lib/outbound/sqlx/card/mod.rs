@@ -92,7 +92,7 @@ const SHRINK_K: f64 = 10.0;
 /// region is a deliberate future retune (raise this anchor), not v1.
 const UNSCORED_ANCHOR: f64 = -10.5;
 
-// Wildcard slot dials (context/plans/wildcard_slot/).
+// Wildcard slot dials (context/archive/wildcard_slot/).
 
 /// Wildcard slots per page: positions reserved for cards drawn from beyond
 /// the reachable horizon (rank > DEEP_POOL_FLOOR), least-shown first, so the
@@ -115,7 +115,7 @@ const WILDCARD_POSITION: usize = 17;
 /// name, then id for a stable tiebreak. Shared by the wildcard CTE's
 /// `row_number()` and the non-wildcard banded ORDER BY. Absent popularity rows
 /// sort last, so an empty table degrades to pure `edhrec_rank` — the revert
-/// lever. (context/plans/commander_select_ordering.md §2.)
+/// lever. (context/archive/commander_select_ordering.md §2.)
 const POPULARITY_RANK: &str = "pop.pop_decks DESC NULLS LAST, latest_cards.edhrec_rank ASC NULLS LAST, latest_cards.name ASC, latest_cards.id";
 
 /// The popularity join, aliased so it exposes only `pop_decks` — never a bare
@@ -266,7 +266,7 @@ impl CardRepository for MyPostgres {
     /// the commander's synergy pool. The plain search is this with no extras.
     ///
     /// `commander_seed` switches the engine into commander-select mode
-    /// (context/plans/commander_select_ordering.md): decks-helmed popularity
+    /// (context/archive/commander_select_ordering.md): decks-helmed popularity
     /// ordering, banded + wildcarded by that caller-supplied seed (typically
     /// `{user_id}:{date}` — no deck required), and token/emblem printings
     /// excluded from the candidate pool. Exposed as `search_commanders`; every
@@ -293,7 +293,7 @@ impl CardRepository for MyPostgres {
         // an explicit sort (an explicit sort still wins, as everywhere).
         let commander_select = commander_seed.is_some();
         let popularity_ordering = commander_select && request.sort().is_none();
-        // Wildcard serving (context/plans/wildcard_slot/): the banded serve
+        // Wildcard serving (context/archive/wildcard_slot/): the banded serve
         // reserves WILDCARD_SLOTS per page for deep-pool probes. It needs the
         // ranked pool twice (band + deep slice), so the query becomes a CTE.
         // Synergy seeds by deck; commander-select seeds by `commander_seed`.
@@ -414,7 +414,7 @@ impl CardRepository for MyPostgres {
         // card's oracle_id and excludes these layouts, so serving must agree —
         // otherwise a same-named token could be offered as a commander and would
         // never join a real deck. Applies to every commander search, even one
-        // with an explicit sort. (context/plans/commander_select_ordering.md §1.)
+        // with an explicit sort. (context/archive/commander_select_ordering.md §1.)
         if commander_select {
             sep.push("latest_cards.layout NOT IN ('token', 'double_faced_token', 'emblem')");
         }
@@ -988,7 +988,7 @@ impl CardRepository for MyPostgres {
             }
         } else if wildcard_serving {
             // Close the pool CTE and take two slices of it
-            // (context/plans/wildcard_slot/server.md):
+            // (context/archive/wildcard_slot/server.md):
             //   band slice: the normal banded page, WILDCARD_SLOTS narrower.
             //         Offsets are consumption-aligned (page_index * band
             //         width), so no ranked card is ever skipped between
@@ -1399,7 +1399,7 @@ impl CardRepository for MyPostgres {
         Ok(cards)
     }
 
-    /// First-class commander search (context/plans/commander_select_ordering.md):
+    /// First-class commander search (context/archive/commander_select_ordering.md):
     /// decks-helmed popularity ordering, banded + wildcarded per user per day
     /// (no deck required), token/emblem printings excluded. An explicit sort in
     /// `request` still wins; the pool is always token-free. The shuffle seed is

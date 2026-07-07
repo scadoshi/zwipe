@@ -1,6 +1,6 @@
 # Wildcard slot — exposure floor for deep cards
 
-**Status: BUILT 2026-07-07, dev-verified end-to-end, on main pending deploy.
+**Status: LIVE on prod 2026-07-07 (`859ffe04`; archived same day).
 Server-only; no client change, no migration, no `.sqlx` change. Two as-built
 deltas from the original sketch (offset math, determinism sort) — see
 [`server.md`](server.md) "As-built deltas".**

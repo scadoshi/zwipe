@@ -109,6 +109,41 @@ Build 15 shipped over build 14 with: `Email` strict newtype across the workspace
 
 ---
 
+## Wildcard slot + commander popularity pipeline (server-only, LIVE 2026-07-07)
+
+Two serve-path features shipped and deployed the day after the band shuffle,
+completing the "fresh serving" arc. Server-only — live for all users now,
+except the Zwipe-select client leg which is on main and rides the next store
+build.
+
+- **Wildcard slot** (`859ffe04`): every 25-card hand the default 99-serve
+  deals reserves one slot for a card from beyond the reachable horizon
+  (rank > 500, the client stack cap) — least-shown first, walking deeper
+  each page, suppressions/filters respected, spliced to position 17. The
+  deep pool was structurally unmeasurable before this (rank 501+ could never
+  accrue an impression); users experience it as a spicy off-list card per
+  hand, the signal tables experience it as coverage. `WILDCARD_SLOTS = 0`
+  reverts. Build found that Postgres doesn't guarantee UNION ALL order and
+  that the plan's offset math would have skipped one ranked card per page —
+  both fixed (as-built notes in [`../archive/wildcard_slot/server.md`](../archive/wildcard_slot/server.md)).
+- **Commander popularity pipeline** (`b10c3c7f` + zynergy `1.1.0`): measured
+  that `edhrec_rank` is the wrong base for commander select — it ranks decks
+  *containing* a card, so 99-staples (Ragavan, Toski) topped the pool while
+  The Ur-Dragon sat behind 281 legends. New `commander_popularity` table
+  (decks-*helmed* per commander; worker sweeps weekly, 3,325 commanders live
+  on prod, Ur-Dragon 48,535 on top) behind a first-class endpoint
+  `POST /api/card/search/commanders`: popularity base with `edhrec_rank`
+  fallback, bands of 25 + wildcard seeded `{user_id}:{date}` (deck-independent,
+  works in the create flow), token/emblem layouts excluded from the candidate
+  pool. Worker-side resolution survived two silent-failure traps (DFC
+  front-face names, 216 same-name tokens). Endpoint is live and dormant;
+  the client leg (`d212e93b`, Zwipe-select drops its pinned sort) ships with
+  the next build. As-built:
+  [`../archive/commander_select_ordering.md`](../archive/commander_select_ordering.md);
+  fast-follow: [`../plans/commander_select_signal.md`](../plans/commander_select_signal.md).
+
+---
+
 ## 1.3.2 — adaptive serve ordering: signal + band shuffle (server-only, LIVE 2026-07-06)
 
 The most consequential read-path change since synergy shipped: **what card the

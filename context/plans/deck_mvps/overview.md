@@ -44,5 +44,5 @@ feed the strongest per-card signal the system collects.
    with the badges backlog item).
 
 Related: [`../suggestion_signal.md`](../suggestion_signal.md) (the ordering
-this feeds), [`../wildcard_slot/`](../wildcard_slot/overview.md) (exposure
+this feeds), [`../../archive/wildcard_slot/`](../../archive/wildcard_slot/overview.md) (exposure
 for deep cards; MVPs are the confirmation layer on what wildcards surface).
