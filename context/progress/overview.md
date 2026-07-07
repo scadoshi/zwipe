@@ -150,6 +150,16 @@ build.
   partner's load resolved before the commander's (phantom "Save changes" on
   every open of a partner deck) — the clear now fires only on genuine
   commander transitions.
+- **Deck MVPs phase 1** (`abaaec0e`, client + server): each deck gets a
+  3-slot MVP podium — star the cards that define the deck. `deck_cards.mvp_at`
+  is the vesting clock (signal counts a star after 3 days, phase 2); cap and
+  mainboard rule enforced in the update tx ("This deck already has 3 MVPs"
+  toasts verbatim); re-star keeps the original clock; board moves off
+  mainboard clear the star; clone inherits. UI: gold star indicator on
+  starred rows only + Star/Unstar in the expanded row (outline-star-on-every-
+  row was tried and rejected as noise). Phases 2 (W_MVP signal weight) and 3
+  (deck steering) are server-only follow-ups, deliberately after stars
+  accrue: [`../plans/deck_mvps/`](../plans/deck_mvps/overview.md).
 
 ---
 

@@ -31,7 +31,9 @@ finally accrues impressions. (3) **Commander popularity pipeline**: a new
 commanders) behind a first-class `POST /api/card/search/commanders` —
 replacing `edhrec_rank` as the select base (it ranks 99-staples above The
 Ur-Dragon). The endpoint is live but dormant: the Zwipe-select client leg is
-on main and rides the next store build. See the
+on main and rides the next store build — as do partner autofill (`2ba57c15`)
+and Deck MVPs phase 1 (`abaaec0e`, star up to three cards per deck), making
+the pending 1.4.0 batch substantial (details: `progress/todo.md` Next Up). See the
 [`progress/overview.md`](progress/overview.md) top entries;
 [`plans/suggestion_signal.md`](plans/suggestion_signal.md) (Phase 3c remains,
 data-gated) and [`plans/commander_select_signal.md`](plans/commander_select_signal.md)
