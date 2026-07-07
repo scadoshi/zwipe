@@ -1,6 +1,6 @@
 //! Create new deck screen.
 
-use super::components::deck_fields::{DeckFields, DeckFieldsHint};
+use super::components::deck_fields::{DeckFields, DeckFieldsHint, autofill_named_partner};
 use super::components::format_select::FormatSelect;
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
 use super::components::tag_select::TagSelect;
@@ -183,6 +183,15 @@ pub fn CreateDeck() -> Element {
                 mode: commander_mode,
                 on_select: move |card: Card| {
                     commander_display.set(card.scryfall_data.name.clone());
+                    autofill_named_partner(
+                        &card,
+                        auth_client,
+                        session,
+                        commander,
+                        partner_commander,
+                        partner_commander_display,
+                        toast,
+                    );
                     commander.set(Some(card));
                     show_commander_swipe.set(false);
                 },

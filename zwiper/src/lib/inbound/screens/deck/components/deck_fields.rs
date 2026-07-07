@@ -7,14 +7,16 @@ use crate::{
     outbound::client::{ZwipeClient, card::search_cards::ClientSearchCards},
 };
 use dioxus::prelude::*;
+use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
 use std::time::Duration;
 use tokio::time::sleep;
+use uuid::Uuid;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::{
     Card,
     search_card::{
         card_filter::{builder::CardQueryBuilder, error::InvalidCardCriteria},
-        commander_eligibility::{has_choose_a_background, partner_kind},
+        commander_eligibility::{PartnerKind, has_choose_a_background, partner_kind},
     },
 };
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
@@ -24,6 +26,81 @@ use zwipe_core::domain::deck::{
 
 /// Upper bound for the land-target stepper — no deck runs more lands than this.
 const MAX_LAND_TARGET: i32 = 100;
+
+/// "Partner with [Name]" names exactly one legal partner, so a commander pick
+/// fills the partner slot automatically: fetch the named mate and set it, with
+/// a toast so the user knows something automatic happened. Generic Partner /
+/// Friends forever / Doctor's companion pair freely and are untouched.
+///
+/// Call this only from explicit commander selections (typeahead click, Zwipe
+/// select) — never from the commander-change effect, which also fires on
+/// edit-screen load and would toast on every open of a partner deck. The
+/// commander-change clear effect runs before this fetch returns, so the fill
+/// lands on a freshly cleared slot; the completion guard bails if the user
+/// changed commander again (or somehow set a partner) in the meantime.
+pub(crate) fn autofill_named_partner(
+    selected: &Card,
+    client: Signal<ZwipeClient>,
+    session: Signal<Option<Session>>,
+    commander: Signal<Option<Card>>,
+    mut partner_commander: Signal<Option<Card>>,
+    mut partner_commander_display: Signal<String>,
+    toast: Toasts,
+) {
+    let Some(PartnerKind::Named(mate)) = partner_kind(selected) else {
+        return;
+    };
+    let selected_id = selected.scryfall_data.id;
+    spawn(async move {
+        let Some(session) = session.peek().clone() else {
+            return;
+        };
+        let mut builder = CardQueryBuilder::with_name_contains(&mate);
+        builder.set_limit(5);
+        let Ok(filter) = builder.build() else {
+            return;
+        };
+        match client().search_cards(&filter, &session).await {
+            Ok(cards) => {
+                // Exact full-name match first — the front-face tier is only a
+                // fallback for mates that exist solely as a DFC, and must not
+                // pick a reversible `A // A` printing over the real card.
+                let exact = cards
+                    .iter()
+                    .position(|c| c.scryfall_data.name.eq_ignore_ascii_case(&mate));
+                let front_face = || {
+                    cards.iter().position(|c| {
+                        c.scryfall_data
+                            .name
+                            .split(" // ")
+                            .next()
+                            .is_some_and(|front| front.trim().eq_ignore_ascii_case(&mate))
+                    })
+                };
+                let Some(found) = exact.or_else(front_face).and_then(|i| cards.into_iter().nth(i))
+                else {
+                    tracing::warn!("partner autofill: no exact match for {mate}");
+                    return;
+                };
+                let commander_unchanged = commander
+                    .peek()
+                    .as_ref()
+                    .is_some_and(|c| c.scryfall_data.id == selected_id);
+                if !commander_unchanged || partner_commander.peek().is_some() {
+                    return;
+                }
+                let name = found.scryfall_data.name.clone();
+                partner_commander_display.set(name.clone());
+                partner_commander.set(Some(found));
+                toast.info(
+                    format!("Partner found and selected: {name}"),
+                    ToastOptions::default().duration(Duration::from_millis(2500)),
+                );
+            }
+            Err(e) => tracing::warn!("partner autofill search failed: {e}"),
+        }
+    });
+}
 
 /// Format chip selector and card search inputs with debounced dropdowns.
 ///
@@ -67,6 +144,7 @@ pub(crate) fn DeckFields(
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let usage_buffer: Signal<UsageBuffer> = use_context();
+    let toast = use_toast();
 
     // Deck name inline validation — mirrors the auth/profile per-field pattern:
     // show the error under the field as the user types (after first input), so a
@@ -166,9 +244,22 @@ pub(crate) fn DeckFields(
         spell_filter_on.set(true);
     });
 
-    // Commander change → clear partner and background (they depend on commander's abilities)
+    // Commander change → clear partner and background (they depend on the
+    // commander's abilities). Guarded by the previous commander's id: the edit
+    // screen loads commander and partner through independent racing resources,
+    // so the None → Some transition of the initial load must NOT clear — if
+    // the partner resolved first, the commander's arrival would wipe it (the
+    // field showed empty + a phantom "Save changes" on every edit open of a
+    // partner deck). A genuine change is Some → Some(other) or Some → None;
+    // re-setting the same commander also keeps the partner.
+    let mut prev_commander_id = use_signal(|| Option::<Uuid>::None);
     use_effect(move || {
-        let _ = commander();
+        let current = commander().map(|c| c.scryfall_data.id);
+        let previous = *prev_commander_id.peek();
+        prev_commander_id.set(current);
+        if previous.is_none() || previous == current {
+            return;
+        }
         partner_commander.set(None);
         partner_commander_display.set(String::new());
         partner_search_query.set(String::new());
@@ -477,6 +568,15 @@ pub(crate) fn DeckFields(
                                         commander.set(Some(card.clone()));
                                         commander_display.set(card.scryfall_data.name.clone());
                                         cmd_show_dropdown.set(false);
+                                        autofill_named_partner(
+                                            &card,
+                                            client,
+                                            session,
+                                            commander,
+                                            partner_commander,
+                                            partner_commander_display,
+                                            toast,
+                                        );
                                     },
                                     { card.scryfall_data.name.clone() }
                                 }
