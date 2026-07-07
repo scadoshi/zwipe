@@ -20,7 +20,7 @@ pub enum InvalidUpdateDeckCard {
     #[error(transparent)]
     UpdateQuantity(InvalidUpdateQuanity),
     /// No fields provided to update.
-    #[error("at least one of update_quantity, board, or scryfall_data_id must be provided")]
+    #[error("at least one of update_quantity, board, scryfall_data_id, or mvp must be provided")]
     NothingToUpdate,
 }
 
@@ -48,12 +48,15 @@ pub struct UpdateDeckCard {
     pub board: Option<Board>,
     /// Change the selected printing to this Scryfall data ID. `None` = no change.
     pub new_scryfall_data_id: Option<Uuid>,
+    /// Star (true) or unstar (false) the card as a deck MVP. `None` = no change.
+    pub mvp: Option<bool>,
 }
 
 impl UpdateDeckCard {
     /// Creates a new deck card update request with validation.
     ///
-    /// At least one of `update_quantity`, `board`, or `new_scryfall_data_id` must be `Some`.
+    /// At least one of `update_quantity`, `board`, `new_scryfall_data_id`, or
+    /// `mvp` must be `Some`.
     pub fn new(
         user_id: Uuid,
         deck_id: &str,
@@ -61,6 +64,7 @@ impl UpdateDeckCard {
         update_quantity: Option<i32>,
         board: Option<Board>,
         new_scryfall_data_id: Option<&str>,
+        mvp: Option<bool>,
     ) -> Result<Self, InvalidUpdateDeckCard> {
         let deck_id = Uuid::try_parse(deck_id).map_err(InvalidUpdateDeckCard::DeckId)?;
         let scryfall_data_id =
@@ -74,7 +78,11 @@ impl UpdateDeckCard {
             .map(|s| Uuid::try_parse(s).map_err(InvalidUpdateDeckCard::NewScryfallDataId))
             .transpose()?;
 
-        if update_quantity.is_none() && board.is_none() && new_scryfall_data_id.is_none() {
+        if update_quantity.is_none()
+            && board.is_none()
+            && new_scryfall_data_id.is_none()
+            && mvp.is_none()
+        {
             return Err(InvalidUpdateDeckCard::NothingToUpdate);
         }
 
@@ -85,6 +93,7 @@ impl UpdateDeckCard {
             update_quantity,
             board,
             new_scryfall_data_id,
+            mvp,
         })
     }
 }

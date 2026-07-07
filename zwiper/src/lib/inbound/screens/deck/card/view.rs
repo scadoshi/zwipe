@@ -45,7 +45,7 @@ use zwipe_core::domain::card::{
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics::{budget_tier, mainboard_total_price};
 use zwipe_core::domain::deck::{Board, DeckEntry, quantity::Quantity};
-use zwipe_core::domain::user::models::hints::HINT_DECK_CARDS;
+use zwipe_core::domain::user::models::hints::{HINT_DECK_CARDS, HINT_DECK_MVPS};
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::contracts::deck_card::HttpUpdateDeckCard;
 use zwipe_core::http::helpers::Opdate;
@@ -148,11 +148,23 @@ pub fn View(deck_id: Uuid) -> Element {
     // deck actually has cards. An empty list has nothing to tap, so the
     // hint waits for a later visit instead of burning its one showing.
     let deck_cards_hint_open = use_signal(|| false);
+    let deck_mvps_hint_open = use_signal(|| false);
     let mut deck_cards_hint_fired = use_signal(|| false);
     use_effect(move || {
         if !deck_entries.read().is_empty() && !*deck_cards_hint_fired.peek() {
             deck_cards_hint_fired.set(true);
+            // MVP hint goes only to users who already saw the deck-cards
+            // hint (i.e. existing users after the update) — new users learn
+            // the star from that hint's bullet, and stacking two dialogs on
+            // one visit would bury both.
+            let deck_cards_seen = session
+                .peek()
+                .as_ref()
+                .is_none_or(|s| s.user.has_seen_hint(HINT_DECK_CARDS));
             open_and_record_hint(HINT_DECK_CARDS, session, client, deck_cards_hint_open);
+            if deck_cards_seen {
+                open_and_record_hint(HINT_DECK_MVPS, session, client, deck_mvps_hint_open);
+            }
         }
     });
 
@@ -556,6 +568,67 @@ pub fn View(deck_id: Uuid) -> Element {
         );
     };
 
+    // Star/unstar a deck MVP (context/plans/deck_mvps/): optimistic flip, the
+    // server is the referee for the 3-per-deck cap (its 422 message shows
+    // verbatim) and owns the real vesting clock, which the success arm adopts.
+    let mut toggle_mvp = move |card_id: Uuid, currently_mvp: bool| {
+        let target = !currently_mvp;
+        let old_mvp_at = deck_entries
+            .peek()
+            .iter()
+            .find(|e| e.card.scryfall_data.id == card_id)
+            .and_then(|e| e.deck_card.mvp_at);
+        if let Some(entry) = deck_entries
+            .write()
+            .iter_mut()
+            .find(|e| e.card.scryfall_data.id == card_id)
+        {
+            entry.deck_card.mvp_at = target.then(chrono::Utc::now);
+        }
+        let current = *filter_reset_counter.peek();
+        filter_reset_counter.set(current + 1);
+
+        let request = HttpUpdateDeckCard::with_mvp(target);
+        spawn(async move {
+            let session = match session.ensure_fresh(client).await {
+                Ok(session) => session,
+                Err(e) => {
+                    toast.error(e.to_user_message(), ToastOptions::default());
+                    return;
+                }
+            };
+
+            match client()
+                .update_deck_card(deck_id, card_id, &request, &session)
+                .await
+            {
+                Ok(updated) => {
+                    // Adopt the server's timestamp — the vesting clock.
+                    if let Some(entry) = deck_entries
+                        .write()
+                        .iter_mut()
+                        .find(|e| e.card.scryfall_data.id == card_id)
+                    {
+                        entry.deck_card.mvp_at = updated.mvp_at;
+                    }
+                }
+                Err(e) => {
+                    toast.error(e.to_user_message(), ToastOptions::default());
+                    // Rollback
+                    if let Some(entry) = deck_entries
+                        .write()
+                        .iter_mut()
+                        .find(|e| e.card.scryfall_data.id == card_id)
+                    {
+                        entry.deck_card.mvp_at = old_mvp_at;
+                    }
+                    let current = *filter_reset_counter.peek();
+                    filter_reset_counter.set(current + 1);
+                }
+            }
+        });
+    };
+
     rsx! {
         Bouncer {
             div { class: "screen",
@@ -883,6 +956,9 @@ pub fn View(deck_id: Uuid) -> Element {
                                     let card_board = deck_entries.peek().iter()
                                         .find(|e| e.card.scryfall_data.id == card_id)
                                         .map(|e| e.deck_card.board);
+                                    let is_mvp = deck_entries.peek().iter()
+                                        .find(|e| e.card.scryfall_data.id == card_id)
+                                        .is_some_and(|e| e.deck_card.mvp_at.is_some());
                                     rsx! {
                                         CardRow {
                                             card: card.clone(),
@@ -898,6 +974,8 @@ pub fn View(deck_id: Uuid) -> Element {
                                                 printing_sheet_card.set(Some(card));
                                                 printing_sheet_open.set(true);
                                             },
+                                            mvp: Some(is_mvp),
+                                            on_toggle_mvp: move |_| toggle_mvp(card_id, is_mvp),
                                         }
                                     }
                                 }
@@ -992,6 +1070,18 @@ pub fn View(deck_id: Uuid) -> Element {
                         HintKey { "Show" }
                         " reveals lands, tokens, and the command zone."
                     }
+                    HintBullet {
+                        HintKey { "★" }
+                        " marks a deck MVP. Star up to three cards that define this deck."
+                    }
+                }
+            }
+
+            HintDialog {
+                open: deck_mvps_hint_open,
+                title: "Deck MVPs",
+                HintLine {
+                    "Star up to three MVPs: the cards that define this deck. Zwipe will lean your suggestions toward them."
                 }
             }
 

@@ -905,6 +905,7 @@ mod tests {
                 oracle_id: Uuid::new_v4(),
                 quantity: Quantity::one(),
                 board: Board::Deck,
+                mvp_at: None,
             },
             card: make_card(name),
         };

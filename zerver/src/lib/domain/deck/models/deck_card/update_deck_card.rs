@@ -17,6 +17,12 @@ pub enum UpdateDeckCardError {
     /// Delta would result in quantity ≤ 0 (use delete to remove card entirely).
     #[error("resulting quantity cannot be zero or less")]
     QuantityUnderflow,
+    /// Starring would exceed the 3-MVP podium for this deck.
+    #[error("deck already has 3 MVPs")]
+    MvpCapReached,
+    /// Only mainboard cards can be MVPs.
+    #[error("only mainboard cards can be MVPs")]
+    MvpNotMainboard,
     /// Database operation failed.
     #[error(transparent)]
     Database(anyhow::Error),

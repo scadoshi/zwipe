@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) AS \"count!\" FROM deck_cards\n                   WHERE deck_id = $1 AND board = 'deck' AND mvp_at IS NOT NULL\n                     AND scryfall_data_id != $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "57a6c2b389a51674d7a0acc05fc68760e50348d6b384b4023371e1467c884a84"
+}
