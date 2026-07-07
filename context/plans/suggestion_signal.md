@@ -7,7 +7,7 @@ Live Krenko tests proved jitter permutes positions (77 of top-100 differed
 between decks) but never rotates the visible *cast* — the same fifteen
 goblins in lightly different order reads as "the same" to a human, including
 the owner. Band shuffle: cards ranked by (base + signal) are cut into
-`BAND_SIZE = 20` hands; bands serve in strict order, position within a band
+`BAND_SIZE = 25` hands (matches the client page size: each page is one shuffled hand); bands serve in strict order, position within a band
 is purely the (card, deck, day) hash. A different opening hand per deck per
 day; a band-2 card can never lead band 1; `BAND_SIZE = 1` + `W_SIGNAL = 0`
 reverts to pure score order. Signal now reads as band *migration* (a proven

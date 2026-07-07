@@ -118,7 +118,7 @@ served "consistently in the same pattern and sequence" every session).
 
 - **The mechanism** (`4e67c366`…`677ffe25`, `search_scryfall_data_deck_aware`):
   cards are scored `base synergy score + W_SIGNAL·(shrunk pooled net-rate −
-  global rate)`, ranked, then cut into **bands of 20**; bands serve in strict
+  global rate)`, ranked, then cut into **bands of 25** (one page = one hand); bands serve in strict
   order and position *within* a band is purely a (card, deck, day) hash. A
   different opening hand per deck per day; the same deck stays stable within
   a day (parked stacks and undo unaffected); a band-2 card can never lead
