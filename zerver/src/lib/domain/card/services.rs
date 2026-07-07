@@ -158,6 +158,14 @@ impl<R: CardRepository> CardService for Service<R> {
         self.repo.search_cards(request).await
     }
 
+    async fn search_commanders(
+        &self,
+        request: &CardQuery,
+        user_id: uuid::Uuid,
+    ) -> Result<Vec<Card>, SearchCardsError> {
+        self.repo.search_commanders(request, user_id).await
+    }
+
     async fn get_artists(&self) -> Result<Vec<String>, GetArtistsError> {
         self.repo.get_artists().await
     }

@@ -5,10 +5,11 @@ set -euo pipefail
 #
 # the worker (separate private service) shares zwipe's database but should
 # only ever touch:
-#   synergy_requests   read/write/delete  (its own work queue)
-#   commander_synergy  read/insert/update (the cache it fills; upsert = insert+update)
-#   decks              read-only          (demand discovery)
-#   scryfall_data      read-only          (commander identity resolution)
+#   synergy_requests      read/write/delete  (its own work queue)
+#   commander_synergy     read/insert/update (the cache it fills; upsert = insert+update)
+#   commander_popularity  read/insert/update (decks-helmed table it fills; upsert)
+#   decks                 read-only          (demand discovery)
+#   scryfall_data         read-only          (commander identity resolution)
 # nothing else — no users, sessions, deck_cards, etc. a compromised or buggy
 # worker cannot read accounts or touch deck contents.
 #
@@ -39,9 +40,9 @@ fi
 run() { $PSQL -d "$DB" -v ON_ERROR_STOP=1 "$@"; }
 
 echo "checking synergy tables exist in '$DB'..."
-MISSING=$(run -tAc "SELECT 2 - count(*) FROM pg_tables WHERE schemaname = 'public' AND tablename IN ('synergy_requests', 'commander_synergy')")
+MISSING=$(run -tAc "SELECT 3 - count(*) FROM pg_tables WHERE schemaname = 'public' AND tablename IN ('synergy_requests', 'commander_synergy', 'commander_popularity')")
 if [[ "$MISSING" != "0" ]]; then
-    echo "error: synergy tables missing — run the migration first (zerver/migrations/20260611120000_create_synergy_tables.sql)"
+    echo "error: synergy tables missing — run the migrations first (zerver/migrations/20260611120000_create_synergy_tables.sql and 20260707000000_create_commander_popularity.sql)"
     exit 1
 fi
 
@@ -69,6 +70,8 @@ REVOKE ALL ON ALL TABLES IN SCHEMA public FROM $ROLE;
 GRANT SELECT, INSERT, UPDATE, DELETE ON synergy_requests TO $ROLE;
 -- the cache it fills (upsert needs insert + update; never delete)
 GRANT SELECT, INSERT, UPDATE ON commander_synergy TO $ROLE;
+-- the decks-helmed popularity table it fills (same upsert shape; never delete)
+GRANT SELECT, INSERT, UPDATE ON commander_popularity TO $ROLE;
 -- demand discovery + identity resolution, strictly read-only
 GRANT SELECT ON decks, scryfall_data TO $ROLE;
 SQL

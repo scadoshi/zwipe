@@ -109,6 +109,21 @@ const DEEP_POOL_FLOOR: i64 = 500;
 /// hand, early enough to be reliably seen before the page is exhausted.
 const WILDCARD_POSITION: usize = 17;
 
+/// Base ranking for the commander-select ordering: decks-helmed popularity
+/// first (`commander_popularity`, written by the synergy worker), then
+/// `edhrec_rank` as the fallback for commanders the table doesn't cover, then
+/// name, then id for a stable tiebreak. Shared by the wildcard CTE's
+/// `row_number()` and the non-wildcard banded ORDER BY. Absent popularity rows
+/// sort last, so an empty table degrades to pure `edhrec_rank` — the revert
+/// lever. (context/plans/commander_select_ordering.md §2.)
+const POPULARITY_RANK: &str = "pop.pop_decks DESC NULLS LAST, latest_cards.edhrec_rank ASC NULLS LAST, latest_cards.name ASC, latest_cards.id";
+
+/// The popularity join, aliased so it exposes only `pop_decks` — never a bare
+/// `name`/`oracle_id`/`decks`, which would collide with `latest_cards` and the
+/// shared WHERE filters (name search, exclude-oracle_ids) and make those
+/// columns ambiguous. Keyed on the real card's oracle_id.
+const POPULARITY_JOIN: &str = "LEFT JOIN (SELECT oracle_id AS pop_oracle_id, decks AS pop_decks FROM commander_popularity) pop ON pop.pop_oracle_id = latest_cards.oracle_id";
+
 impl CardRepository for MyPostgres {
     // ========
     //  create
@@ -241,7 +256,7 @@ impl CardRepository for MyPostgres {
         &self,
         request: &CardQuery,
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
-        self.search_scryfall_data_deck_aware(request, None, &[], None, false)
+        self.search_scryfall_data_deck_aware(request, None, &[], None, false, None)
             .await
     }
 
@@ -249,6 +264,13 @@ impl CardRepository for MyPostgres {
     /// suppression filtering for `deck_id` (skipped/removed cards), synergy-score
     /// default ordering, and (when `synergy_only`) a membership constraint to
     /// the commander's synergy pool. The plain search is this with no extras.
+    ///
+    /// `commander_seed` switches the engine into commander-select mode
+    /// (context/plans/commander_select_ordering.md): decks-helmed popularity
+    /// ordering, banded + wildcarded by that caller-supplied seed (typically
+    /// `{user_id}:{date}` — no deck required), and token/emblem printings
+    /// excluded from the candidate pool. Exposed as `search_commanders`; every
+    /// other caller passes `None` and is unaffected.
     async fn search_scryfall_data_deck_aware(
         &self,
         request: &CardQuery,
@@ -256,6 +278,7 @@ impl CardRepository for MyPostgres {
         exclude_oracle_ids: &[uuid::Uuid],
         synergy_scores: Option<&serde_json::Value>,
         synergy_only: bool,
+        commander_seed: Option<String>,
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
         // WHERE clauses read the predicate fields; LIMIT/OFFSET/ORDER BY read
         // the query config — the CardCriteria/CardQuery split, mirrored here.
@@ -264,11 +287,18 @@ impl CardRepository for MyPostgres {
         // the signal + jitter terms, which need the pooled rollup and the
         // global rate in scope; every other path keeps the plain FROM.
         let signal_ordering = request.sort().is_none() && synergy_scores.is_some();
-        // Wildcard serving (context/plans/wildcard_slot/): the banded default
-        // serve reserves WILDCARD_SLOTS per page for deep-pool probes. It
-        // needs the ranked pool twice (band slice + deep slice), so the query
-        // becomes a CTE; the seed requires a deck.
-        let wildcard_serving = signal_ordering && WILDCARD_SLOTS > 0 && deck_id.is_some();
+        // Commander-select mode: caller (search_commanders) supplied a shuffle
+        // seed. Token/emblem exclusion applies whenever this is set; popularity
+        // ordering + banding + wildcard apply only when the user hasn't pinned
+        // an explicit sort (an explicit sort still wins, as everywhere).
+        let commander_select = commander_seed.is_some();
+        let popularity_ordering = commander_select && request.sort().is_none();
+        // Wildcard serving (context/plans/wildcard_slot/): the banded serve
+        // reserves WILDCARD_SLOTS per page for deep-pool probes. It needs the
+        // ranked pool twice (band + deep slice), so the query becomes a CTE.
+        // Synergy seeds by deck; commander-select seeds by `commander_seed`.
+        let wildcard_serving = WILDCARD_SLOTS > 0
+            && ((signal_ordering && deck_id.is_some()) || popularity_ordering);
         // The (base + signal) score expression, shared by the wildcard CTE
         // header and the plain signal ORDER BY below:
         //   base: the commander's synergy score (unscored cards anchor below
@@ -284,46 +314,93 @@ impl CardRepository for MyPostgres {
                    / (COALESCE(sig.shown, 0) + {SHRINK_K}) - g.rate)"
             ));
         };
-        let mut qb: QueryBuilder<'_, Postgres> = match (synergy_scores, deck_id) {
-            (Some(scores), Some(deck_id)) if wildcard_serving => {
-                // Rank + shuffle + exposure computed once in the CTE; the two
-                // slices at the end of the builder page it two ways. The
-                // predicate pushes below land inside the CTE, so filters,
-                // legality, and suppressions bound both slices.
-                let seed = format!("{deck_id}:{}", Utc::now().date_naive());
-                let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new(
-                    "WITH pool AS (SELECT latest_cards.*, row_number() OVER (ORDER BY ",
-                );
-                push_score(&mut qb, scores);
-                qb.push(
-                    " DESC, name ASC, latest_cards.id) AS rn, \
+        // Banding/wildcard shuffle seed: synergy serves seed by deck+day,
+        // commander-select by the caller's `commander_seed` (user+day, no deck).
+        let band_seed: Option<String> = if popularity_ordering {
+            commander_seed.clone()
+        } else if signal_ordering {
+            deck_id.map(|d| format!("{d}:{}", Utc::now().date_naive()))
+        } else {
+            None
+        };
+        let mut qb: QueryBuilder<'_, Postgres> = if wildcard_serving
+            && signal_ordering
+            && let (Some(scores), Some(seed)) = (synergy_scores, band_seed.clone())
+        {
+            // Synergy wildcard CTE: rank + shuffle + exposure computed once; the
+            // two slices at the end page it two ways. The predicate pushes below
+            // land inside the CTE, so filters, legality, and suppressions bound
+            // both slices.
+            let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new(
+                "WITH pool AS (SELECT latest_cards.*, row_number() OVER (ORDER BY ",
+            );
+            push_score(&mut qb, scores);
+            qb.push(
+                " DESC, name ASC, latest_cards.id) AS rn, \
                      hashtext(COALESCE(latest_cards.oracle_id::text, '') || ",
-                );
-                qb.push_bind(seed);
-                qb.push(
-                    ") AS shuffle, COALESCE(sig.shown, 0) AS pool_shown
+            );
+            qb.push_bind(seed);
+            qb.push(
+                ") AS shuffle, COALESCE(sig.shown, 0) AS pool_shown
              FROM latest_cards
              JOIN card_profiles ON latest_cards.id = card_profiles.scryfall_data_id
              LEFT JOIN card_signal_rollup sig ON sig.card_oracle_id = latest_cards.oracle_id
              CROSS JOIN (SELECT COALESCE(SUM(net) / NULLIF(SUM(shown), 0), 0) AS rate
                          FROM card_signal_rollup) g
              WHERE ",
-                );
-                qb
-            }
-            _ if signal_ordering => QueryBuilder::new(
+            );
+            qb
+        } else if wildcard_serving
+            && popularity_ordering
+            && let Some(seed) = band_seed.clone()
+        {
+            // Commander-select wildcard CTE: same banded-pool + deep-probe
+            // machinery as the synergy arm, ranked by decks-helmed popularity
+            // instead of synergy score. No select-impression signal exists yet
+            // (every signal table keys on the 99-serve's commander+card pairs),
+            // so the deep slice orders by the daily shuffle alone — pool_shown is
+            // a constant 0. The popularity join is 1:1 (PK on oracle_id).
+            let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new(
+                "WITH pool AS (SELECT latest_cards.*, row_number() OVER (ORDER BY ",
+            );
+            qb.push(POPULARITY_RANK);
+            qb.push(
+                ") AS rn, \
+                     hashtext(COALESCE(latest_cards.oracle_id::text, '') || ",
+            );
+            qb.push_bind(seed);
+            qb.push(format!(
+                ") AS shuffle, 0 AS pool_shown
+             FROM latest_cards
+             JOIN card_profiles ON latest_cards.id = card_profiles.scryfall_data_id
+             {POPULARITY_JOIN}
+             WHERE "
+            ));
+            qb
+        } else if signal_ordering {
+            QueryBuilder::new(
                 "SELECT latest_cards.* FROM latest_cards
              JOIN card_profiles ON latest_cards.id = card_profiles.scryfall_data_id
              LEFT JOIN card_signal_rollup sig ON sig.card_oracle_id = latest_cards.oracle_id
              CROSS JOIN (SELECT COALESCE(SUM(net) / NULLIF(SUM(shown), 0), 0) AS rate
                          FROM card_signal_rollup) g
              WHERE ",
-            ),
-            _ => QueryBuilder::new(
+            )
+        } else if popularity_ordering {
+            // Non-wildcard commander-select (WILDCARD_SLOTS = 0 revert lever):
+            // popularity join for the banded ORDER BY below, no deep-probe CTE.
+            QueryBuilder::new(format!(
+                "SELECT latest_cards.* FROM latest_cards
+             JOIN card_profiles ON latest_cards.id = card_profiles.scryfall_data_id
+             {POPULARITY_JOIN}
+             WHERE "
+            ))
+        } else {
+            QueryBuilder::new(
                 "SELECT latest_cards.* FROM latest_cards
              JOIN card_profiles ON latest_cards.id = card_profiles.scryfall_data_id
              WHERE ",
-            ),
+            )
         };
         let mut sep: Separated<Postgres, &'static str> = qb.separated(" AND ");
         // Seed an always-true clause so the baked `WHERE` is valid even when no
@@ -331,6 +408,16 @@ impl CardRepository for MyPostgres {
         // real condition below rely on the `AND` separator: the first real push
         // becomes the second element, so it is correctly prefixed with ` AND `.
         sep.push("TRUE");
+
+        // Commander-select candidate pool must exclude token/emblem printings.
+        // The popularity table (written by the synergy worker) keys on the real
+        // card's oracle_id and excludes these layouts, so serving must agree —
+        // otherwise a same-named token could be offered as a commander and would
+        // never join a real deck. Applies to every commander search, even one
+        // with an explicit sort. (context/plans/commander_select_ordering.md §1.)
+        if commander_select {
+            sep.push("latest_cards.layout NOT IN ('token', 'double_faced_token', 'emblem')");
+        }
 
         // Strip punctuation from DB columns for punctuation-insensitive text search.
         // The query values are already stripped by CardQueryBuilder setters.
@@ -968,6 +1055,19 @@ impl CardRepository for MyPostgres {
                 push_score(&mut qb, scores);
                 qb.push(" DESC, name ASC");
             }
+        } else if popularity_ordering {
+            // Commander-select without a wildcard (WILDCARD_SLOTS = 0): band
+            // shuffle over the decks-helmed popularity base, same machinery as
+            // the synergy branch above with POPULARITY_RANK as the score.
+            // band_seed is guaranteed present (popularity_ordering requires it).
+            if let Some(seed) = band_seed.clone() {
+                qb.push(" ORDER BY (row_number() OVER (ORDER BY ");
+                qb.push(POPULARITY_RANK);
+                qb.push(format!(") - 1) / {BAND_SIZE}, "));
+                qb.push("hashtext(COALESCE(latest_cards.oracle_id::text, '') || ");
+                qb.push_bind(seed);
+                qb.push("), latest_cards.name ASC");
+            }
         }
 
         // The wildcard CTE carries per-slice LIMIT/OFFSET above.
@@ -1285,7 +1385,33 @@ impl CardRepository for MyPostgres {
                 exclude_oracle_ids,
                 synergy_scores,
                 synergy_only,
+                None,
             )
+            .await?;
+        if scryfall_data.is_empty() {
+            return Ok(vec![]);
+        }
+        let scryfall_data_ids: ScryfallDataIds = scryfall_data.as_slice().into();
+        let card_profiles = self
+            .get_card_profiles_with_scryfall_data_ids(&scryfall_data_ids)
+            .await?;
+        let cards = card_profiles.sleeve(scryfall_data);
+        Ok(cards)
+    }
+
+    /// First-class commander search (context/plans/commander_select_ordering.md):
+    /// decks-helmed popularity ordering, banded + wildcarded per user per day
+    /// (no deck required), token/emblem printings excluded. An explicit sort in
+    /// `request` still wins; the pool is always token-free. The shuffle seed is
+    /// `{user_id}:{date}`, mirroring the synergy serve's `{deck_id}:{date}`.
+    async fn search_commanders(
+        &self,
+        request: &CardQuery,
+        user_id: uuid::Uuid,
+    ) -> Result<Vec<Card>, SearchCardsError> {
+        let seed = format!("{user_id}:{}", Utc::now().date_naive());
+        let scryfall_data = self
+            .search_scryfall_data_deck_aware(request, None, &[], None, false, Some(seed))
             .await?;
         if scryfall_data.is_empty() {
             return Ok(vec![]);
