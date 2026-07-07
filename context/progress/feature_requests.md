@@ -42,7 +42,7 @@ Marked ✅ in the tables below; numbers kept stable (plans/commits reference the
 
 | # | Feature | Impact | Effort | Priority | Notes |
 |---|---------|--------|--------|----------|-------|
-| 1 | Live drag indicators — screen edge glows red (left) / green (right), text hint past threshold; extend to undo + maybe | High | S | **P1** (parked) | Cheapest high-delight win. Cue works on `feat/qol-drag-indicators`; visual style undecided, parked pending complaints. Fixes "I kept forgetting which way and had to undo." |
+| 1 | Live drag indicators — screen edge glows red (left) / green (right), text hint past threshold; extend to undo + maybe | High | S | **P1** (parked) | Cheapest high-delight win. Cue works on `feat/qol-drag-indicators`; visual style undecided, parked pending complaints. Plan: [`../plans/drag_indicators.md`](../plans/drag_indicators.md). Fixes "I kept forgetting which way and had to undo." |
 | 2 | "Just inspire me" mode — swipe with no commander/tags set, pure discovery | High | M | P2 | Most on-brand with the "Tinder" framing. |
 | 3 | Head-to-head "which is better" — pick 1 of 2 same-category cards (two ramp pieces, etc.) | Med | M | P3 | A distinct mode, not a replacement for the one-at-a-time flow. |
 
@@ -75,8 +75,8 @@ Marked ✅ in the tables below; numbers kept stable (plans/commits reference the
 
 | # | Feature | Impact | Effort | Priority | Notes |
 |---|---------|--------|--------|----------|-------|
-| 11 | Persist skipped cards per deck across sessions | High | M | ✅ Built (server live; 1.3.0 in store review) | Skips **and deliberate removals** persist server-side (`deck_card_suppressions`); the deck-aware search stops serving them, with a "Clear skips" button in the deck view's More sheet. Design + as-built notes: [`../plans/swipe_memory.md`](../plans/swipe_memory.md). Requested a second time via App Store review 2026-07-02 (see sources above). Mark shipped once the release is out. |
-| 12 | Easy access to deck view / card count / mana curve while building | Med | S–M | P2 | Stats should be one tap away mid-swipe. |
+| 11 | Persist skipped cards per deck across sessions | High | M | ✅ Built (server live; 1.3.0 in store review) | Skips **and deliberate removals** persist server-side (`deck_card_suppressions`); the deck-aware search stops serving them, with a "Clear skips" button in the deck view's More sheet. Design + as-built notes: [`../archive/swipe_memory.md`](../archive/swipe_memory.md). Requested a second time via App Store review 2026-07-02 (see sources above). Mark shipped once the release is out. |
+| 12 | Easy access to deck view / card count / mana curve while building | Med | S–M | P2 | Stats should be one tap away mid-swipe. Approach settled: util-bar button on Add/Remove → bottom sheet reusing the deck stats panel (design in [`../archive/qol_bundle.md`](../archive/qol_bundle.md) §D). |
 
 ## Tags
 

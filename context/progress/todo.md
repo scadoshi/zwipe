@@ -142,7 +142,7 @@ Once wasm compiles, build the authenticated experience into zite:
 
 ## Web/Zite Polish
 
-- [ ] **SEO guides — a guide for every page of the app (DEFERRED, plan ready).** Long-form, indexable how-to guides on `zwipe.net` (one per feature/screen) plus MTG-topic guides, to capture organic search and funnel to downloads. Prerendered via zite's SSG; no CMS. Needs a full app read-through before writing so guides are accurate. Full blueprint + page inventory + tech approach: [`../plans/seo_guides.md`](../plans/seo_guides.md).
+- [ ] **Guides SEO leftovers.** The guides knowledge base shipped (12 guides live under `/guides`), which retired the SEO-guides plan (now [`../archive/seo_guides.md`](../archive/seo_guides.md)). Still unshipped from it: (1) **guide routes are missing from `zite/build.rs` ROUTES**, so none of the guide pages land in `sitemap.xml` — five-line fix, do this one; (2) Article/HowTo JSON-LD per guide; (3) demand-first MTG-topic guides ("best mobile MTG deck builder", "how to build a Commander deck on your phone") that ride search volume rather than app screens.
 - [ ] **Increase `Z` logo size on zwipe.net** — current ASCII logo reads small; bump scale or font-size on the landing hero.
 
 **SEO batch shipped 2026-06-30 (zite):** OG/Twitter share image (`context/marketing/og_default.html` → `zite/assets/og-default.png`, the tag was pointing at a missing file), keyword-rich home `<title>` + a semantic `<h1>`, `MobileApplication` JSON-LD (4.8/4 rating — bump when it moves), App Store testimonials strip, a "Free on iOS & Android. No ads." line, and a `build.rs`-generated `sitemap.xml` (now includes `/download/ios`). `Dioxus.toml` fallback title cased to "Zwipe".
@@ -186,7 +186,7 @@ Phases 1+2 shipped (see archive). ~73% classification rate today; refinement tar
 
 ## Testing
 
-- **Integration tests** — SQLx repository tests require a real PostgreSQL instance. Unit test phase complete (308+ tests, ~100 in zwipe-core). Remaining gap: outbound adapters have no coverage.
+- [ ] **Integration tests — PLANNED 2026-07-06, full plan at [`../plans/integration_tests/`](../plans/integration_tests/overview.md).** External audit confirmed the gap: zero coverage on sqlx repos, HTTP handlers, and most domain services; no CI test run at all. Decisions settled: `#[sqlx::test]` harness (fresh DB per test), both HTTP-level and repo-level coverage, plus a GitHub Actions test workflow (non-gating on deploy). Build in slices: harness + auth flow first, then deck lifecycle, then card serving (replaces the throwaway band-shuffle dev harness with permanent regression tests).
 
 ---
 

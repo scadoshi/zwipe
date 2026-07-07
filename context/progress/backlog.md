@@ -15,6 +15,10 @@ Planned features and improvements for after App Store launch.
 
 ## Weekly Badges + Stats / Share Cards (gamification; pairs with future social)
 
+**Promoted to a full plan 2026-07-06: [`../plans/social_features/`](../plans/social_features/overview.md)
+(weekly badges + owner-curated featured decks with MVPs). The plan carries
+these decisions forward; this section stays as the original rationale.**
+
 **Backlogged 2026-07-02.** A weekly retention loop: at week close, categorize each
 active user's week into **1–3 badges** ("Swipe King" volume, "The Controller"
 taste, "Ultimate Indecision" quirk), surfaced as a "Your week" recap on next open
@@ -40,7 +44,7 @@ plus a badge-history/stats page. The recap doubles as a **shareable card**
   visibility, moderation, blocking) and another privacy-posture change — the
   private recap + share card ships first and stands alone.
 
-Related: `plans/swipe_memory.md` (the flush-ingest surface all of this rides
+Related: `archive/swipe_memory.md` (the flush-ingest surface all of this rides
 on, executed 2026-07-02) and the now-live per-user `user_card_signal`
 collection.
 

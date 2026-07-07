@@ -227,7 +227,7 @@ again"), `b1ee1b11` (privacy policy: discloses per-account usage activity +
 deck skip memory, last-updated July 2026), `816fb35e` (em dash sweep: zite
 copy + displayed description strings).
 
-- **Swipe memory (FR #11, plan executed — `plans/swipe_memory.md`).** Left-swipes
+- **Swipe memory (FR #11, plan executed — `archive/swipe_memory.md`).** Left-swipes
   and deliberate removals are now durable per deck: a **`deck_card_suppressions`**
   set (`(deck_id, oracle_id)` PK, `source` = `'skip' | 'removal'` as provenance,
   5,000/deck cap evicting oldest) that the deck-aware search filters with
