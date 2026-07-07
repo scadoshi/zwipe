@@ -92,6 +92,23 @@ const SHRINK_K: f64 = 10.0;
 /// region is a deliberate future retune (raise this anchor), not v1.
 const UNSCORED_ANCHOR: f64 = -10.5;
 
+// Wildcard slot dials (context/plans/wildcard_slot/).
+
+/// Wildcard slots per page: positions reserved for cards drawn from beyond
+/// the reachable horizon (rank > DEEP_POOL_FLOOR), least-shown first, so the
+/// deep pool accrues impressions at all. 0 reverts to pure band serving.
+const WILDCARD_SLOTS: i64 = 1;
+
+/// The reachable horizon: mirrors the client add-stack hard cap (zwiper
+/// `MAX_CARDS_IN_STACK`, action_history.rs — zerver can't import it). Cards
+/// ranked past this are structurally unreachable by band pagination within a
+/// session, so no signal can ever accrue for them without the wildcard probe.
+const DEEP_POOL_FLOOR: i64 = 500;
+
+/// 0-based in-page index where a wildcard lands: deep enough not to lead the
+/// hand, early enough to be reliably seen before the page is exhausted.
+const WILDCARD_POSITION: usize = 17;
+
 impl CardRepository for MyPostgres {
     // ========
     //  create
@@ -247,18 +264,67 @@ impl CardRepository for MyPostgres {
         // the signal + jitter terms, which need the pooled rollup and the
         // global rate in scope; every other path keeps the plain FROM.
         let signal_ordering = request.sort().is_none() && synergy_scores.is_some();
-        let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new(if signal_ordering {
-            "SELECT latest_cards.* FROM latest_cards
+        // Wildcard serving (context/plans/wildcard_slot/): the banded default
+        // serve reserves WILDCARD_SLOTS per page for deep-pool probes. It
+        // needs the ranked pool twice (band slice + deep slice), so the query
+        // becomes a CTE; the seed requires a deck.
+        let wildcard_serving = signal_ordering && WILDCARD_SLOTS > 0 && deck_id.is_some();
+        // The (base + signal) score expression, shared by the wildcard CTE
+        // header and the plain signal ORDER BY below:
+        //   base: the commander's synergy score (unscored cards anchor below
+        //         the scored floor, see UNSCORED_ANCHOR)
+        //   signal: the pooled net-rate, shrunk toward and centered on the
+        //         global rate — a card with no impressions adds zero.
+        let push_score = |qb: &mut QueryBuilder<'_, Postgres>, scores: &serde_json::Value| {
+            qb.push("COALESCE((");
+            qb.push_bind(scores.clone());
+            qb.push(format!(" ->> LOWER(name))::float8, {UNSCORED_ANCHOR})"));
+            qb.push(format!(
+                " + {W_SIGNAL} * ((COALESCE(sig.net, 0) + {SHRINK_K} * g.rate) \
+                   / (COALESCE(sig.shown, 0) + {SHRINK_K}) - g.rate)"
+            ));
+        };
+        let mut qb: QueryBuilder<'_, Postgres> = match (synergy_scores, deck_id) {
+            (Some(scores), Some(deck_id)) if wildcard_serving => {
+                // Rank + shuffle + exposure computed once in the CTE; the two
+                // slices at the end of the builder page it two ways. The
+                // predicate pushes below land inside the CTE, so filters,
+                // legality, and suppressions bound both slices.
+                let seed = format!("{deck_id}:{}", Utc::now().date_naive());
+                let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new(
+                    "WITH pool AS (SELECT latest_cards.*, row_number() OVER (ORDER BY ",
+                );
+                push_score(&mut qb, scores);
+                qb.push(
+                    " DESC, name ASC, latest_cards.id) AS rn, \
+                     hashtext(COALESCE(latest_cards.oracle_id::text, '') || ",
+                );
+                qb.push_bind(seed);
+                qb.push(
+                    ") AS shuffle, COALESCE(sig.shown, 0) AS pool_shown
+             FROM latest_cards
              JOIN card_profiles ON latest_cards.id = card_profiles.scryfall_data_id
              LEFT JOIN card_signal_rollup sig ON sig.card_oracle_id = latest_cards.oracle_id
              CROSS JOIN (SELECT COALESCE(SUM(net) / NULLIF(SUM(shown), 0), 0) AS rate
                          FROM card_signal_rollup) g
-             WHERE "
-        } else {
-            "SELECT latest_cards.* FROM latest_cards
+             WHERE ",
+                );
+                qb
+            }
+            _ if signal_ordering => QueryBuilder::new(
+                "SELECT latest_cards.* FROM latest_cards
              JOIN card_profiles ON latest_cards.id = card_profiles.scryfall_data_id
-             WHERE "
-        });
+             LEFT JOIN card_signal_rollup sig ON sig.card_oracle_id = latest_cards.oracle_id
+             CROSS JOIN (SELECT COALESCE(SUM(net) / NULLIF(SUM(shown), 0), 0) AS rate
+                         FROM card_signal_rollup) g
+             WHERE ",
+            ),
+            _ => QueryBuilder::new(
+                "SELECT latest_cards.* FROM latest_cards
+             JOIN card_profiles ON latest_cards.id = card_profiles.scryfall_data_id
+             WHERE ",
+            ),
+        };
         let mut sep: Separated<Postgres, &'static str> = qb.separated(" AND ");
         // Seed an always-true clause so the baked `WHERE` is valid even when no
         // filter conditions are pushed (e.g. an empty filter). It also lets every
@@ -833,6 +899,41 @@ impl CardRepository for MyPostgres {
             if order_by == CardSortKey::EdhrecRank {
                 qb.push(" NULLS LAST, name ASC");
             }
+        } else if wildcard_serving {
+            // Close the pool CTE and take two slices of it
+            // (context/plans/wildcard_slot/server.md):
+            //   band slice: the normal banded page, WILDCARD_SLOTS narrower.
+            //         Offsets are consumption-aligned (page_index * band
+            //         width), so no ranked card is ever skipped between
+            //         pages — the client advances by its page size but
+            //         dedups by id, so the server owns the math here.
+            //   deep slice: the probe — cards beyond the reachable horizon,
+            //         least-shown first, then the daily shuffle; pages walk
+            //         the deep list so a probe never repeats within a day.
+            //         A pool that never reaches the horizon (tight filters,
+            //         synergy ON) yields an empty slice and pure band
+            //         serving, automatically.
+            // The outer ORDER BY re-sorts deterministically (UNION ALL order
+            // is not guaranteed): band cards in band order, probes last —
+            // the Rust splice below lifts them to WILDCARD_POSITION.
+            let limit = i64::from(request.limit().min(MAX_SEARCH_LIMIT));
+            let band_limit = (limit - WILDCARD_SLOTS).max(1);
+            let page_index = i64::from(request.offset().min(i32::MAX as u32)) / limit.max(1);
+            qb.push(format!(
+                ") SELECT * FROM ((SELECT *, 0 AS slice FROM pool \
+                 ORDER BY (rn - 1) / {BAND_SIZE}, shuffle, name ASC LIMIT "
+            ));
+            qb.push_bind(band_limit);
+            qb.push(" OFFSET ");
+            qb.push_bind(page_index * band_limit);
+            qb.push(format!(
+                ") UNION ALL (SELECT *, 1 AS slice FROM pool WHERE rn > {DEEP_POOL_FLOOR} \
+                 ORDER BY pool_shown ASC, shuffle LIMIT {WILDCARD_SLOTS} OFFSET "
+            ));
+            qb.push_bind(page_index * WILDCARD_SLOTS);
+            qb.push(format!(
+                ")) AS combined ORDER BY slice ASC, (rn - 1) / {BAND_SIZE}, shuffle, name ASC"
+            ));
         } else if let Some(scores) = synergy_scores {
             // Default synergy ordering: band shuffle over (base + signal)
             // (context/plans/suggestion_signal.md, Phase 3a+3b band revision).
@@ -848,20 +949,11 @@ impl CardRepository for MyPostgres {
             //          and replaced: it permutes positions but never rotates
             //          the visible cast, which reads as "same order"
             //          (2026-07-06 live Krenko tests at 0.01/0.04/0.08).
-            let score = |qb: &mut QueryBuilder<'_, Postgres>| {
-                qb.push("COALESCE((");
-                qb.push_bind(scores.clone());
-                qb.push(format!(" ->> LOWER(name))::float8, {UNSCORED_ANCHOR})"));
-                qb.push(format!(
-                    " + {W_SIGNAL} * ((COALESCE(sig.net, 0) + {SHRINK_K} * g.rate) \
-                       / (COALESCE(sig.shown, 0) + {SHRINK_K}) - g.rate)"
-                ));
-            };
             qb.push(" ORDER BY ");
             if let Some(deck_id) = deck_id {
                 let seed = format!("{deck_id}:{}", Utc::now().date_naive());
                 qb.push("(row_number() OVER (ORDER BY ");
-                score(&mut qb);
+                push_score(&mut qb, scores);
                 qb.push(format!(
                     " DESC, name ASC, latest_cards.id) - 1) / {BAND_SIZE}, "
                 ));
@@ -873,25 +965,46 @@ impl CardRepository for MyPostgres {
                 qb.push("), name ASC");
             } else {
                 // No deck to seed by (plain search): pure score ordering.
-                score(&mut qb);
+                push_score(&mut qb, scores);
                 qb.push(" DESC, name ASC");
             }
         }
 
-        qb.push(" LIMIT ");
-        qb.push_bind(request.limit().min(MAX_SEARCH_LIMIT) as i32);
+        // The wildcard CTE carries per-slice LIMIT/OFFSET above.
+        if !wildcard_serving {
+            qb.push(" LIMIT ");
+            qb.push_bind(request.limit().min(MAX_SEARCH_LIMIT) as i32);
 
-        // Guard the u32->i32 cast: a value above i32::MAX wraps negative, and
-        // Postgres rejects a negative OFFSET (errors the whole query).
-        qb.push(" OFFSET ");
-        qb.push_bind(request.offset().min(i32::MAX as u32) as i32);
+            // Guard the u32->i32 cast: a value above i32::MAX wraps negative, and
+            // Postgres rejects a negative OFFSET (errors the whole query).
+            qb.push(" OFFSET ");
+            qb.push_bind(request.offset().min(i32::MAX as u32) as i32);
+        }
 
         let db_rows: Vec<DatabaseScryfallData> = qb.build_query_as().fetch_all(&self.pool).await?;
-        let scryfall_data: Vec<ScryfallData> = db_rows
+        let mut scryfall_data: Vec<ScryfallData> = db_rows
             .into_iter()
             .map(ScryfallData::try_from)
             .collect::<Result<_, _>>()
             .map_err(SearchScryfallDataError::Database)?;
+
+        // Wildcard splice: the outer ORDER BY sorts probes after the band
+        // page, so any rows past the band width are wildcards — lift them to
+        // a fixed mid-hand position. A short band page (pool exhausted) can
+        // hide a probe inside the band width; it then simply serves at the
+        // tail, which is fine.
+        if wildcard_serving {
+            let band_limit = (request.limit().min(MAX_SEARCH_LIMIT) as usize)
+                .saturating_sub(WILDCARD_SLOTS as usize)
+                .max(1);
+            if scryfall_data.len() > band_limit {
+                let wildcards = scryfall_data.split_off(band_limit);
+                for wildcard in wildcards {
+                    let position = WILDCARD_POSITION.min(scryfall_data.len());
+                    scryfall_data.insert(position, wildcard);
+                }
+            }
+        }
         Ok(scryfall_data)
     }
 
