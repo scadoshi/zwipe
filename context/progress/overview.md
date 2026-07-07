@@ -141,6 +141,15 @@ build.
   the next build. As-built:
   [`../archive/commander_select_ordering.md`](../archive/commander_select_ordering.md);
   fast-follow: [`../plans/commander_select_signal.md`](../plans/commander_select_signal.md).
+- **Partner autofill + edit-load fix** (`2ba57c15`, client, rides the next
+  build): picking a "Partner with [Name]" commander auto-fills its named mate
+  with a toast — exactly one legal pairing exists, so swiping for it made no
+  sense (52 of 56 such cards resolve; the joke/choose-any ones correctly fall
+  through to manual). Also fixed a pre-existing edit-screen race: the
+  commander-change clear effect could wipe a saved partner on entry when the
+  partner's load resolved before the commander's (phantom "Save changes" on
+  every open of a partner deck) — the clear now fires only on genuine
+  commander transitions.
 
 ---
 
