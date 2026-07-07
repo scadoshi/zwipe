@@ -11,8 +11,10 @@ C — per-field validation errors (red outline + message, via `TextInput`'s
 change-password / forgot-password); E — browse-all-tags hint dialog
 (`DeckTag::description()` written, tag picker hint live).
 
-**Remaining:** A (parked), D (not built) below — both still client-side, no
-server deploy or migration.
+**Status: ARCHIVED 2026-07-06.** B/C/E shipped; the two survivors moved out:
+A (drag indicators, parked) now lives at `plans/drag_indicators.md`, and D
+(deck stats while building) is tracked as feature request #12 with its
+settled approach noted there (design detail preserved in §D below).
 
 ---
 

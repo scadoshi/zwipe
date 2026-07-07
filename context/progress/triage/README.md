@@ -24,5 +24,6 @@ Logged 2026-06-29; to be built out / triaged the following day.
 - **viberank-growth-feedback** (Viberank outreach) — 2026-06-30. Acted on the
   SEO/marketing observations (SEO batch shipped in `zite`: OG share image, keyword
   title + `<h1>`, JSON-LD, testimonials, "Free/no ads" line, generated sitemap;
-  blog play planned in [`../../plans/seo_guides.md`](../../plans/seo_guides.md)).
+  blog play planned in [`../../archive/seo_guides.md`](../../archive/seo_guides.md),
+  since largely shipped as the zite guides knowledge base).
   Free viberank.dev submission done. Nothing left to decide.

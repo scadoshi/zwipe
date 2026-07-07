@@ -24,7 +24,7 @@ searches, signals) shares it. Server-first deploy still pending.
 
 > **Privacy posture superseded (2026-07-02).** This plan's "aggregate counts,
 > no per-user rows" stance described the app at the time. The swipe-memory
-> batch (`plans/swipe_memory.md`) deliberately added **per-user** collection —
+> batch (`archive/swipe_memory.md`) deliberately added **per-user** collection —
 > `user_card_signal` (user × commander × card) plus weekly tables — and the
 > privacy policy was updated to disclose per-account activity. The
 > `commander_card_signal` aggregate described below still exists and Phase 3
@@ -152,9 +152,9 @@ volume warrants), so only the jitter hash is runtime. Worst-case pool
 (31.7k commander-legal rows, full formula with an *inline* rollup join):
 29 ms → 35 ms; jitter alone is unmeasurable; matview takes the join to ~0.
 Caveat: Zwipe-select sends an explicit `EdhrecRank` sort from the client, so
-server-only jitter (3a) varies the 99 but not commander-select — that needs a
-small client change (omit the sort when it's the untouched default) in a
-future release.
+server-only jitter (3a) varies the 99 but not commander-select — planned fix
+(plus a true commander-popularity base to replace `edhrec_rank` there):
+[`commander_select_ordering.md`](commander_select_ordering.md).
 
 **Units (measured on prod, 2026-07-06):** synergy scores (max-per-name over
 `payload->lists[].cards[].synergy`, floor −10 for scoreless) span −0.62..1.00,
