@@ -4,6 +4,39 @@ One file: `zerver/src/lib/outbound/sqlx/card/mod.rs`, all inside
 `search_scryfall_data_deck_aware`'s signal-ordering branch (the only branch
 that changes; explicit sorts, synergy-ON membership, plain search untouched).
 
+## As-built deltas (2026-07-07)
+
+- **Consumption-aligned band offsets, not raw client offsets.** The sketch
+  below paged the band slice with the client's raw `OFFSET {offset}` while
+  serving only `limit − WILDCARD_SLOTS` band rows per page — that skips one
+  ranked card per page permanently. As built: `band_offset = page_index ×
+  band_limit` (`page_index = offset / limit`), so band rows are consumed
+  contiguously with no skips and no duplicates. Safe because the client
+  advances its offset by a fixed page size and dedups appended cards by id
+  (`add.rs` ~280–310); it never interprets a short page as exhaustion (only
+  a zero-new-unique page sets `pagination_exhausted`).
+- **Deterministic outer ORDER BY.** UNION ALL append order is not guaranteed
+  by Postgres, so the two slices carry a `slice` marker (0 = band, 1 = probe)
+  and the wrapper re-sorts `ORDER BY slice, (rn-1)/BAND_SIZE, shuffle, name`.
+  Probes therefore always arrive after the band page; the Rust splice lifts
+  any rows past `band_limit` to `WILDCARD_POSITION` (17). A short band page
+  (pool exhausted) can hide a probe inside the band width — it then serves
+  at the tail, which is fine.
+- **Score expression extracted.** The band branch's inline `score` closure
+  became a shared `push_score(qb, scores)` used by both the wildcard CTE
+  header and the non-wildcard signal ORDER BY.
+
+Dev verification (2026-07-07, Krenko deck, dev DB, full matrix passed):
+25-card deterministic pages (stable across server restarts, same day seed);
+page 1/2 zero overlap with distinct probes each page; probes confirmed
+absent from the pure first-500 (all three observed wildcards); creature
+filter respected by the probe; skipping the probe suppressed it and the
+next-least-shown deep card took the slot with band cards byte-identical;
+`WILDCARD_SLOTS = 0` reproduced pure band serving exactly (wildcard build's
+band cards == pure page prefix, in order). Debug-build request time 0.42s
+on the unfiltered ~30k pool (release + real filtered pools are far
+smaller/faster).
+
 ## Consts (next to the other dials)
 
 ```rust

@@ -1,7 +1,9 @@
 # Wildcard slot — exposure floor for deep cards
 
-**Status: PLANNED (2026-07-06). Not started. Server-only; no client change,
-no migration, no `.sqlx` change.**
+**Status: BUILT 2026-07-07, dev-verified end-to-end, on main pending deploy.
+Server-only; no client change, no migration, no `.sqlx` change. Two as-built
+deltas from the original sketch (offset math, determinism sort) — see
+[`server.md`](server.md) "As-built deltas".**
 
 **What this builds, in one sentence:** each 25-card hand the default ordering
 deals (see [`../suggestion_signal.md`](../suggestion_signal.md), band
