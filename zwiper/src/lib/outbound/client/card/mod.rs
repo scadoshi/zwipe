@@ -21,3 +21,5 @@ pub mod get_printings;
 pub mod get_sets;
 /// Search cards with filters.
 pub mod search_cards;
+/// Search commander candidates (popularity-ordered, banded, wildcarded).
+pub mod search_commanders;
