@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT deck_id, scryfall_data_id, oracle_id, quantity, board FROM deck_cards WHERE deck_id = $1",
+  "query": "SELECT deck_id, scryfall_data_id, oracle_id, quantity, board, mvp_at FROM deck_cards WHERE deck_id = $1",
   "describe": {
     "columns": [
       {
@@ -27,6 +27,11 @@
         "ordinal": 4,
         "name": "board",
         "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "mvp_at",
+        "type_info": "Timestamptz"
       }
     ],
     "parameters": {
@@ -39,8 +44,9 @@
       false,
       false,
       false,
-      false
+      false,
+      true
     ]
   },
-  "hash": "5cbc4a2d6ab3e69bb5971c2d9fc3b3b43f44f992d1fbd826e24c781ab3cce5ab"
+  "hash": "46b4a1d4f76e5b755daf3cf8acdabd45ecf991c8d293360a56229a8e22396577"
 }

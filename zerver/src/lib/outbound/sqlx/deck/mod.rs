@@ -33,9 +33,9 @@ use crate::{
         postgres::Postgres,
     },
 };
-use sqlx::{QueryBuilder, query, query_as};
+use sqlx::{QueryBuilder, query, query_as, query_scalar};
 use zwipe_core::domain::deck::{
-    DeckCard, DeckName, DeckOtherTag, DeckTag,
+    Board, DeckCard, DeckName, DeckOtherTag, DeckTag,
     deck_profile::DeckProfile,
     requests::{
         clear_deck_suppressions::ClearDeckSuppressions, create_deck_card::CreateDeckCard,
@@ -125,7 +125,7 @@ impl DeckRepository for Postgres {
         let mut tx = self.pool.begin().await?;
         let database_deck_card = query_as!(
             DatabaseDeckCard,
-            "INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board) VALUES ($1, $2, $3, $4, $5) RETURNING deck_id, scryfall_data_id, oracle_id, quantity, board",
+            "INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board) VALUES ($1, $2, $3, $4, $5) RETURNING deck_id, scryfall_data_id, oracle_id, quantity, board, mvp_at",
             request.deck_id,
             request.scryfall_data_id,
             request.oracle_id,
@@ -279,7 +279,7 @@ impl DeckRepository for Postgres {
         }
         let database_deck_cards = query_as!(
             DatabaseDeckCard,
-            "SELECT deck_id, scryfall_data_id, oracle_id, quantity, board FROM deck_cards WHERE deck_id = $1",
+            "SELECT deck_id, scryfall_data_id, oracle_id, quantity, board, mvp_at FROM deck_cards WHERE deck_id = $1",
             request.deck_id
         )
         .fetch_all(&self.pool)
@@ -380,9 +380,12 @@ impl DeckRepository for Postgres {
 
     /// Dynamically builds an `UPDATE` query for the provided fields.
     ///
-    /// Supports updating quantity (relative delta), board, and/or printing.
-    /// The database enforces a check constraint on `quantity`, so negative deltas
-    /// that would result in an invalid quantity surface as `QuantityUnderflow`.
+    /// Supports updating quantity (relative delta), board, printing, and/or
+    /// MVP star. The database enforces a check constraint on `quantity`, so
+    /// negative deltas that would result in an invalid quantity surface as
+    /// `QuantityUnderflow`. MVP rules (context/plans/deck_mvps/): mainboard
+    /// only, at most 3 per deck (checked in the tx), and moving a card off
+    /// the mainboard clears its star in the same UPDATE.
     async fn update_deck_card(
         &self,
         request: &UpdateDeckCard,
@@ -395,6 +398,42 @@ impl DeckRepository for Postgres {
             return Err(UpdateDeckCardError::Forbidden);
         }
         let mut tx = self.pool.begin().await?;
+        if request.mvp == Some(true) {
+            // Board rule: the star lands on the mainboard — either the board
+            // this request sets, or the row's current board when untouched.
+            let effective_board = match &request.board {
+                Some(board) => *board,
+                None => {
+                    let current: String = query_scalar!(
+                        "SELECT board FROM deck_cards WHERE deck_id = $1 AND scryfall_data_id = $2",
+                        request.deck_id,
+                        request.scryfall_data_id
+                    )
+                    .fetch_optional(&mut *tx)
+                    .await?
+                    .ok_or(UpdateDeckCardError::NotFound)?;
+                    Board::try_from(current.as_str())
+                        .map_err(|e| UpdateDeckCardError::Database(anyhow::anyhow!(e)))?
+                }
+            };
+            if effective_board != Board::Deck {
+                return Err(UpdateDeckCardError::MvpNotMainboard);
+            }
+            // Podium cap: at most 3 mainboard MVPs per deck, not counting
+            // this row (re-starring an existing MVP stays legal).
+            let starred = query_scalar!(
+                r#"SELECT count(*) AS "count!" FROM deck_cards
+                   WHERE deck_id = $1 AND board = 'deck' AND mvp_at IS NOT NULL
+                     AND scryfall_data_id != $2"#,
+                request.deck_id,
+                request.scryfall_data_id
+            )
+            .fetch_one(&mut *tx)
+            .await?;
+            if starred >= 3 {
+                return Err(UpdateDeckCardError::MvpCapReached);
+            }
+        }
         let mut qb: QueryBuilder<'_, sqlx::Postgres> = QueryBuilder::new("UPDATE deck_cards SET ");
         let mut sep = qb.separated(", ");
         if let Some(update_quantity) = &request.update_quantity {
@@ -409,13 +448,23 @@ impl DeckRepository for Postgres {
             sep.push("scryfall_data_id = ")
                 .push_bind_unseparated(new_id);
         }
+        if let Some(mvp) = request.mvp {
+            // COALESCE keeps the original vesting clock if a client re-sends
+            // true; false clears the star.
+            sep.push("mvp_at = CASE WHEN ")
+                .push_bind_unseparated(mvp)
+                .push_unseparated(" THEN COALESCE(mvp_at, now()) ELSE NULL END");
+        } else if request.board.as_ref().is_some_and(|b| *b != Board::Deck) {
+            // MVPs are mainboard-only: leaving the mainboard drops the star.
+            sep.push("mvp_at = NULL");
+        }
         let now = chrono::Utc::now();
         sep.push("updated_at = ").push_bind_unseparated(now);
         qb.push(" WHERE deck_id = ")
             .push_bind(request.deck_id)
             .push(" AND scryfall_data_id = ")
             .push_bind(request.scryfall_data_id)
-            .push(" RETURNING deck_id::TEXT, scryfall_data_id::TEXT, oracle_id::TEXT, quantity, board");
+            .push(" RETURNING deck_id::TEXT, scryfall_data_id::TEXT, oracle_id::TEXT, quantity, board, mvp_at");
         let database_deck_card: DatabaseDeckCard = qb.build_query_as().fetch_one(&mut *tx).await?;
         let deck_card: DeckCard = database_deck_card.try_into()?;
         tx.commit().await?;
@@ -607,7 +656,7 @@ impl DeckRepository for Postgres {
             },
         );
         qb.push(
-            " ON CONFLICT (deck_id, oracle_id) DO UPDATE SET quantity = EXCLUDED.quantity, board = EXCLUDED.board RETURNING deck_id::TEXT, scryfall_data_id::TEXT, oracle_id::TEXT, quantity, board",
+            " ON CONFLICT (deck_id, oracle_id) DO UPDATE SET quantity = EXCLUDED.quantity, board = EXCLUDED.board RETURNING deck_id::TEXT, scryfall_data_id::TEXT, oracle_id::TEXT, quantity, board, mvp_at",
         );
         let rows: Vec<DatabaseDeckCard> = qb
             .build_query_as()
@@ -672,8 +721,8 @@ impl DeckRepository for Postgres {
         //    scryfall_data_id / oracle_id verbatim. No Rust-side iteration.
         sqlx::query!(
             r#"
-            INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board)
-            SELECT $1, scryfall_data_id, oracle_id, quantity, board
+            INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board, mvp_at)
+            SELECT $1, scryfall_data_id, oracle_id, quantity, board, mvp_at
             FROM deck_cards
             WHERE deck_id = $2
             "#,

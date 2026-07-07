@@ -31,6 +31,13 @@ impl From<UpdateDeckCardError> for ApiError {
             UpdateDeckCardError::NotFound => {
                 Self::UnprocessableEntity("deck card not found".to_string())
             }
+            // Verbatim client-facing copy — the app shows this in a toast.
+            UpdateDeckCardError::MvpCapReached => {
+                Self::UnprocessableEntity("This deck already has 3 MVPs".to_string())
+            }
+            UpdateDeckCardError::MvpNotMainboard => Self::UnprocessableEntity(
+                "Only cards in the deck can be MVPs".to_string(),
+            ),
             UpdateDeckCardError::Database(e) => e.log_500(),
             UpdateDeckCardError::DeckCardFromDb(e) => e.log_500(),
             UpdateDeckCardError::GetDeckProfileError(e) => ApiError::from(e),
@@ -85,6 +92,7 @@ pub async fn update_deck_card(
         body.update_quantity,
         board,
         body.scryfall_data_id.as_deref(),
+        body.mvp,
     )?;
 
     let deck_card = state

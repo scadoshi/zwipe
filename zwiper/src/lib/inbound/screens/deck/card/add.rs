@@ -980,6 +980,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                     oracle_id: oracle_id.unwrap_or_default(),
                                     quantity: Quantity::one(),
                                     board: Board::Maybeboard,
+                                    mvp_at: None,
                                 },
                             });
                             toast.success(

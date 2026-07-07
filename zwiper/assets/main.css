@@ -2786,6 +2786,15 @@ button {
     font-weight: 400;
 }
 
+.card-row-mvp {
+    display: inline-block;
+    color: var(--color-warning);
+    font-size: 1.1rem;
+    margin-right: 0.3rem;
+    line-height: 1;
+    vertical-align: 0.02rem;
+}
+
 .card-row-cmc {
     text-align: center;
     color: var(--text-muted);

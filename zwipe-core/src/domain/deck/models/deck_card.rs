@@ -2,6 +2,7 @@
 
 use super::board::Board;
 use crate::domain::deck::Quantity;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -21,4 +22,10 @@ pub struct DeckCard {
     pub quantity: Quantity,
     /// Which board this card belongs to (deck, maybeboard, or sideboard).
     pub board: Board,
+    /// When this card was starred as a deck MVP; `None` = not an MVP.
+    /// The timestamp is the vesting clock (global signal counts a star after
+    /// 3 days). Mainboard-only; up to 3 per deck (enforced server-side).
+    /// `#[serde(default)]` so new clients parse old servers and vice versa.
+    #[serde(default)]
+    pub mvp_at: Option<DateTime<Utc>>,
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board) VALUES ($1, $2, $3, $4, $5) RETURNING deck_id, scryfall_data_id, oracle_id, quantity, board",
+  "query": "INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board) VALUES ($1, $2, $3, $4, $5) RETURNING deck_id, scryfall_data_id, oracle_id, quantity, board, mvp_at",
   "describe": {
     "columns": [
       {
@@ -27,6 +27,11 @@
         "ordinal": 4,
         "name": "board",
         "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "mvp_at",
+        "type_info": "Timestamptz"
       }
     ],
     "parameters": {
@@ -43,8 +48,9 @@
       false,
       false,
       false,
-      false
+      false,
+      true
     ]
   },
-  "hash": "39f828b9455e2325f2a220576c37aab77f9750e5eb909025fc60325c92bb7d12"
+  "hash": "f2e6446aa35edb42804c9e26a5bf56fd88ba076471f309320b214a5c0a46acd5"
 }

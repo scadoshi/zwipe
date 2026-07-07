@@ -45,6 +45,9 @@ pub struct HttpUpdateDeckCard {
     pub board: Option<String>,
     /// Change the selected printing (new Scryfall data ID).
     pub scryfall_data_id: Option<String>,
+    /// Star (true) or unstar (false) this card as a deck MVP. Absent = untouched.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mvp: Option<bool>,
 }
 
 impl HttpUpdateDeckCard {
@@ -54,6 +57,7 @@ impl HttpUpdateDeckCard {
             update_quantity,
             board,
             scryfall_data_id: None,
+            mvp: None,
         }
     }
 
@@ -63,6 +67,18 @@ impl HttpUpdateDeckCard {
             update_quantity: None,
             board: None,
             scryfall_data_id: Some(scryfall_data_id.to_string()),
+            mvp: None,
+        }
+    }
+
+    /// Creates an update request that stars (true) or unstars (false) the
+    /// card as a deck MVP.
+    pub fn with_mvp(mvp: bool) -> Self {
+        Self {
+            update_quantity: None,
+            board: None,
+            scryfall_data_id: None,
+            mvp: Some(mvp),
         }
     }
 }

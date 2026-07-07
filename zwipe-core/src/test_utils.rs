@@ -31,6 +31,7 @@ pub fn make_entry(name: &str, qty: i32) -> DeckEntry {
             oracle_id,
             quantity: Quantity::new(qty).unwrap(),
             board: Board::default(),
+            mvp_at: None,
         },
     }
 }

@@ -1,7 +1,17 @@
 # Deck MVPs — star the cards that define your deck
 
-**Status: PLANNED (2026-07-06). Not started. Client + server — 1.4.0
-candidate (first client-riding feature since 1.3.1).**
+**Status: Phase 1 BUILT 2026-07-07 (server steps 1–7 + client), API-verified
+end-to-end on dev, awaiting simulator pass. Phases 2 (signal weight) and 3
+(steering) remain server-only follow-ups. As-built deltas: export carries NO
+MVP marker (a trailing `*` would corrupt pastes into Archidekt/Moxfield —
+cross-tool safety won; MVPs travel via clone); the star renders inside the
+name cell (the row grid is fixed-width columns); the one-time `deck_mvps`
+hint fires only for users who already saw the deck-cards hint, and new users
+get a star bullet inside that hint instead (two dialogs on one visit would
+bury both). Dev E2E matrix: 3 stars OK, 4th → 422 "This deck already has 3
+MVPs" verbatim, maybeboard star → 422, re-star preserves the vesting clock,
+board move off mainboard clears the star and frees the cap, unstar clears,
+clone inherits MVPs with original timestamps.**
 
 **What this builds, in one sentence:** each deck gets three MVP slots — the
 user stars the cards that define the deck, the stars show at a glance in the

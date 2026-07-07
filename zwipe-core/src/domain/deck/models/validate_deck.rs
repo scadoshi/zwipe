@@ -587,6 +587,7 @@ mod tests {
                 oracle_id: card.scryfall_data.oracle_id.unwrap_or_default(),
                 quantity: Quantity::new(qty).unwrap(),
                 board: Board::Deck,
+                mvp_at: None,
             };
             DeckEntry { card, deck_card }
         }

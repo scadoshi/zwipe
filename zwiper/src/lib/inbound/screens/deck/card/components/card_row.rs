@@ -18,6 +18,10 @@ pub(crate) fn CardRow(
     on_move_to: Option<EventHandler<Board>>,
     current_board: Option<Board>,
     on_printing: Option<EventHandler<Card>>,
+    /// MVP star state: `Some(true)` filled, `Some(false)` outline, `None` = no
+    /// star rendered (non-mainboard rows, tokens, command zone).
+    mvp: Option<bool>,
+    on_toggle_mvp: Option<EventHandler<()>>,
 ) -> Element {
     let card_id = card.scryfall_data.id;
     let is_expanded = expanded_card() == Some(card_id);
@@ -79,7 +83,15 @@ pub(crate) fn CardRow(
                 },
                 span { class: "card-row-arrow", "▸" }
                 span { class: "card-row-qty", "{qty}" }
-                span { class: "card-row-name", "{name}" }
+                span { class: "card-row-name",
+                    // MVP star: indicator only, rendered solely on starred
+                    // rows (an outline star on every row is 97% noise) —
+                    // toggling lives on the expanded view's Star button.
+                    if mvp == Some(true) {
+                        span { class: "card-row-mvp", "★" }
+                    }
+                    "{name}"
+                }
                 span { class: "card-row-cmc", "{cmc_display}" }
                 span { class: "card-row-pt", "{pt_display}" }
                 span { class: "card-row-colors",
@@ -167,6 +179,16 @@ pub(crate) fn CardRow(
                                         "Printing"
                                     }
                                 }
+                            }
+                        }
+                        if let (Some(is_mvp), Some(handler)) = (mvp, on_toggle_mvp) {
+                            button {
+                                class: "qty-btn",
+                                onclick: move |evt| {
+                                    evt.stop_propagation();
+                                    handler.call(());
+                                },
+                                if is_mvp { "Unstar" } else { "Star" }
                             }
                         }
                     }
