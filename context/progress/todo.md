@@ -21,9 +21,15 @@ at `context/archive/complete_2026_q1.md`.
     auto-fills the named mate with a toast (52 of 56 such cards; the rest
     correctly fall through to manual). Includes the edit-load fix: racing
     commander/partner loads could wipe a saved partner on edit-screen entry.
+  - Deck MVPs phase 1 (`abaaec0e`): star up to three mainboard cards per
+    deck (gold star on starred rows, Star/Unstar in the expanded row, server
+    referees the cap, clone inherits). Server half deploys on next push
+    (additive migration); starring goes live with the build. Phases 2–3
+    (signal weight, steering) are server-only follow-ups once stars accrue:
+    [`../plans/deck_mvps/`](../plans/deck_mvps/overview.md).
   - Store What's New when it ships: commander picks lead with the
     community's most-built commanders, fresh order daily; partners that name
-    each other now pair automatically.
+    each other now pair automatically; star your deck's MVPs.
 - [ ] **Track 1.3.1 review (anonymous funnel metrics)** — iOS **build 60** + Android **vc21** submitted to both stores 2026-07-05, in review. Server deployed the same day (two additive migrations; first deploy attempt failed on a stale crate-local `zerver/.sqlx/` shadowing the workspace offline data — removed, and the workflow now verifies `.sqlx` against the migrated schema before building; see `operations/infrastructure/cicd.md`). Once clients roll out and data accrues, read the funnel with `zcripts` (distinct sessions per kind vs. `user_events.register`) — these numbers gate the sign-in-with-Google decision.
 - [ ] **Track 1.3.0 review on both stores** — iOS **build 59** + Android **versionCode 20** submitted 2026-07-03 (server skip/unskip endpoints deployed to prod first). 1.3.0 supersedes the withdrawn 1.2.3 and folds in: swipe memory (FR #11) now **per-swipe durable**, **per-deck stack memory**, the CardStack refactor, the profile **About section**, image/skeleton polish, and the **filter-intent + Reset** pass (sort/synergy-only searches serve, Reset returns each screen to its default, accurate filter dot, filter sheet collapses on close). Build progression: 57/18 → 58/19 (About) → 59/20 (filter/Reset). Once live, 1.3.0 becomes the floor for `MIN_CLIENT_VERSION` gating; mark FR #11 shipped. Per-change detail in `overview.md`. Marketing video plans (`marketing/plans/`) are refreshed for this build.
 - [ ] **Privacy follow-ups for per-user collection.** The policy text shipped 2026-07-02 (`b1ee1b11`, discloses per-account activity + deck skip memory). Remaining owner passes: update the App Store privacy "nutrition label" + Play data-safety form to reflect per-account analytics, and send the policy-change notification email to users.
