@@ -1,10 +1,19 @@
 # First-Party Suggestion Signal
 
 **Status: Phases 1 + 2 SHIPPED (2026-06-30, collecting in prod). Phases
-3a + 3b SHIPPED 2026-07-06 (server 1.3.2, live-verified: same deck stable,
-different decks diverge, 77 of top-100 positions vary between two Krenko
-decks at `W_JITTER = 0.04`). Phase 3c (pair-level term) remains, gated on
-pair-depth — re-run the readiness queries first.** Two refinements landed
+3a + 3b SHIPPED 2026-07-06 (server 1.3.2) — then REVISED the same day:
+score-jitter (`W_JITTER` 0.01 → 0.04 → 0.08) was replaced by a BAND SHUFFLE.
+Live Krenko tests proved jitter permutes positions (77 of top-100 differed
+between decks) but never rotates the visible *cast* — the same fifteen
+goblins in lightly different order reads as "the same" to a human, including
+the owner. Band shuffle: cards ranked by (base + signal) are cut into
+`BAND_SIZE = 20` hands; bands serve in strict order, position within a band
+is purely the (card, deck, day) hash. A different opening hand per deck per
+day; a band-2 card can never lead band 1; `BAND_SIZE = 1` + `W_SIGNAL = 0`
+reverts to pure score order. Signal now reads as band *migration* (a proven
+card breaks into the opening hand). Worst-case perf (31.7k-row firehose
+pool, window sort): ~150 ms vs 35 ms — real serves filter to far smaller
+pools; acceptable. Phase 3c (pair-level term) remains, gated on pair-depth.** Two refinements landed
 beyond the original plan: the right-swipe column is named **`added`** (not
 `kept`) to pair with **`removed`** — a new column capturing a *deliberate
 removal* from a deck (Remove-screen right-swipe + deck-cards `[-]`-to-zero), a

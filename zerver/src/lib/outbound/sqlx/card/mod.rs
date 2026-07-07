@@ -63,23 +63,22 @@ use sqlx::{QueryBuilder, query_builder::Separated};
 const MAX_SEARCH_LIMIT: u32 = 250;
 
 // Default-synergy-ordering dials (context/plans/suggestion_signal.md,
-// Phase 3a+3b). Both at 0.0 reproduces the pre-signal ordering exactly —
-// that's the revert lever. Units are synergy-score points: scores span
-// roughly -0.6..1.0 with ~0.002 between neighboring cards (measured
-// 2026-07-06), so W_JITTER swaps nearby cards without crossing tiers and
-// W_SIGNAL lets a proven card climb or sink meaningfully.
+// Phase 3a+3b band revision). `W_SIGNAL = 0.0` and `BAND_SIZE = 1` together
+// reproduce the pre-signal score ordering exactly — that's the revert lever.
 
 /// Weight of the pooled add-rate term (centered on the global rate, so a
-/// card with no data contributes exactly zero).
+/// card with no data contributes exactly zero). Units are synergy-score
+/// points (scores span roughly -0.6..1.0, measured 2026-07-06); enough to
+/// migrate a proven card across a band boundary over time.
 const W_SIGNAL: f64 = 0.15;
 
-/// Amplitude of the exploration jitter before uncertainty damping. Seeded
-/// per (card, deck, day): different decks serve differently, the same deck
-/// stays stable within a day, and tomorrow drifts. 0.04 (±0.02 swing) makes
-/// the stack head visibly vary per deck — top gaps run 0.005–0.044, so most
-/// adjacent pairs can swap while true standouts hold (raised from 0.01 after
-/// the 2026-07-06 live Krenko test left the top 7 pinned).
-const W_JITTER: f64 = 0.08;
+/// Band size for the default-ordering shuffle: cards ranked by
+/// (base + signal) score are cut into hands of this many, bands served in
+/// strict order, position within a band purely the (card, deck, day) hash.
+/// 20 ≈ "the first screen deals from the commander's top twenty" — cast-level
+/// variety per deck per day without a band-2 card ever leading band 1.
+/// 1 = pure score ordering (no shuffle).
+const BAND_SIZE: i64 = 20;
 
 /// Shrinkage pseudo-count: impressions a card needs before its own add-rate
 /// outweighs the global prior.
@@ -835,41 +834,48 @@ impl CardRepository for MyPostgres {
                 qb.push(" NULLS LAST, name ASC");
             }
         } else if let Some(scores) = synergy_scores {
-            // Default synergy ordering: base + signal + jitter
-            // (context/plans/suggestion_signal.md, Phase 3a+3b).
-            //   base:   the commander's synergy score, jsonb {lower(name) -> score}.
-            //           Unscored cards anchor below the scored floor (see
-            //           UNSCORED_ANCHOR) — same standing as the old NULLS LAST,
-            //           but the tail can now shuffle internally.
-            //   signal: pooled net-rate ((added + 0.5*maybed - removed) / shown),
-            //           shrunk toward and centered on the global rate — a card
-            //           with no impressions contributes exactly zero.
-            //   jitter: hash of (card, deck, day), normalized to [0,1) then
-            //           centered so randomness can't systematically inflate,
-            //           damped by 1/sqrt(shown + 1) so unknown cards explore
-            //           while well-measured cards settle.
-            qb.push(" ORDER BY (COALESCE((");
-            qb.push_bind(scores.clone());
-            qb.push(format!(" ->> LOWER(name))::float8, {UNSCORED_ANCHOR})"));
-            qb.push(format!(
-                " + {W_SIGNAL} * ((COALESCE(sig.net, 0) + {SHRINK_K} * g.rate) \
-                   / (COALESCE(sig.shown, 0) + {SHRINK_K}) - g.rate)"
-            ));
+            // Default synergy ordering: band shuffle over (base + signal)
+            // (context/plans/suggestion_signal.md, Phase 3a+3b band revision).
+            //   score: the commander's synergy score (unscored cards anchor
+            //          below the scored floor, see UNSCORED_ANCHOR) + the
+            //          pooled net-rate, shrunk toward and centered on the
+            //          global rate — a card with no impressions adds zero.
+            //   bands: cards ranked by score are cut into BAND_SIZE hands.
+            //          Bands stay in strict order; position *within* a band
+            //          is purely the (card, deck, day) hash — a different
+            //          opening hand per deck per day, while a band-2 card
+            //          can never lead band 1. Score-jitter was tried first
+            //          and replaced: it permutes positions but never rotates
+            //          the visible cast, which reads as "same order"
+            //          (2026-07-06 live Krenko tests at 0.01/0.04/0.08).
+            let score = |qb: &mut QueryBuilder<'_, Postgres>| {
+                qb.push("COALESCE((");
+                qb.push_bind(scores.clone());
+                qb.push(format!(" ->> LOWER(name))::float8, {UNSCORED_ANCHOR})"));
+                qb.push(format!(
+                    " + {W_SIGNAL} * ((COALESCE(sig.net, 0) + {SHRINK_K} * g.rate) \
+                       / (COALESCE(sig.shown, 0) + {SHRINK_K}) - g.rate)"
+                ));
+            };
+            qb.push(" ORDER BY ");
             if let Some(deck_id) = deck_id {
                 let seed = format!("{deck_id}:{}", Utc::now().date_naive());
-                // COALESCE the oracle_id: it is nullable, and NULL || seed
-                // would NULL the whole sort key, floating those rows to the
-                // top under DESC (caught by the dev harness, 2026-07-06).
+                qb.push("(row_number() OVER (ORDER BY ");
+                score(&mut qb);
                 qb.push(format!(
-                    " + {W_JITTER} * (((hashtext(COALESCE(latest_cards.oracle_id::text, '') || "
+                    " DESC, name ASC, latest_cards.id) - 1) / {BAND_SIZE}, "
                 ));
+                // COALESCE the oracle_id: it is nullable, and NULL || seed
+                // would NULL the shuffle key (caught by the dev harness,
+                // 2026-07-06).
+                qb.push("hashtext(COALESCE(latest_cards.oracle_id::text, '') || ");
                 qb.push_bind(seed);
-                qb.push(
-                    ") % 1000 + 1000) % 1000)::float8 / 1000.0 - 0.5) \
-                     / sqrt(COALESCE(sig.shown, 0) + 1.0)",
-                );
+                qb.push("), name ASC");
+            } else {
+                // No deck to seed by (plain search): pure score ordering.
+                score(&mut qb);
+                qb.push(" DESC, name ASC");
             }
-            qb.push(") DESC, name ASC");
         }
 
         qb.push(" LIMIT ");
