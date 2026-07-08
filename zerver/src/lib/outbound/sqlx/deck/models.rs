@@ -26,6 +26,7 @@ pub struct DatabaseDeckProfile {
     pub land_target: Option<i32>,
     pub price_target: Option<f64>,
     pub price_target_currency: Option<String>,
+    pub share_token: Option<Uuid>,
     pub user_id: Uuid,
     pub card_count: Option<i64>,
     pub commander_name: Option<String>,
@@ -87,6 +88,7 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
                 .price_target_currency
                 .as_deref()
                 .and_then(PriceCurrency::from_key),
+            share_token: value.share_token,
             user_id: value.user_id,
             card_count: value.card_count.unwrap_or(0),
             commander_name: value.commander_name,

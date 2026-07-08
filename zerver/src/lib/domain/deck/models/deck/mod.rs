@@ -20,6 +20,8 @@ pub mod get_deck_tokens;
 pub mod import_archidekt;
 /// Deck-aware card search (exclusion + synergy ordering).
 pub mod search_deck_cards;
+/// Deck share operations (share token create/revoke, public shared read).
+pub mod share_deck;
 /// Skip deck card operation (single durable suppression).
 pub mod skip_deck_card;
 /// Update deck profile operation.

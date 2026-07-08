@@ -564,6 +564,7 @@ mod tests {
             land_target: None,
             price_target: None,
             price_target_currency: None,
+            share_token: None,
             user_id: uuid::Uuid::new_v4(),
             card_count: 0,
             commander_name: None,

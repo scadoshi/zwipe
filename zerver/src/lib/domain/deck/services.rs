@@ -16,6 +16,7 @@ use crate::domain::{
                 create_deck_profile::CreateDeckProfileError, delete_deck::DeleteDeckError,
                 get_deck::GetDeckError, get_deck_profile::GetDeckProfileError,
                 get_deck_tokens::GetDeckTokensError, search_deck_cards::SearchDeckCardsError,
+                share_deck::{GetSharedDeckError, ShareDeckError, SharedDeck},
                 skip_deck_card::SkipDeckCardError, update_deck_profile::UpdateDeckProfileError,
             },
             deck_card::{
@@ -845,5 +846,86 @@ where
         self.deck_repo
             .clone_deck(request.source_deck_id, &request.new_name, request.user_id)
             .await
+    }
+
+    // =======
+    //  share
+    // =======
+    async fn share_deck(&self, request: &GetDeckProfile) -> Result<Uuid, ShareDeckError> {
+        self.get_deck_profile(request).await.map_err(|e| match e {
+            GetDeckProfileError::Forbidden => ShareDeckError::Forbidden,
+            GetDeckProfileError::NotFound => ShareDeckError::NotFound,
+            other => ShareDeckError::Database(other.into()),
+        })?;
+        self.deck_repo.set_share_token(request.deck_id).await
+    }
+
+    async fn unshare_deck(&self, request: &GetDeckProfile) -> Result<(), ShareDeckError> {
+        self.get_deck_profile(request).await.map_err(|e| match e {
+            GetDeckProfileError::Forbidden => ShareDeckError::Forbidden,
+            GetDeckProfileError::NotFound => ShareDeckError::NotFound,
+            other => ShareDeckError::Database(other.into()),
+        })?;
+        self.deck_repo.clear_share_token(request.deck_id).await
+    }
+
+    async fn get_shared_deck(&self, token: Uuid) -> Result<SharedDeck, GetSharedDeckError> {
+        // The token is the capability: resolving it yields the owner's id,
+        // which satisfies the ownership checks along the normal get_deck path.
+        let (deck_id, owner_id) = self
+            .deck_repo
+            .get_deck_id_by_share_token(token)
+            .await
+            .map_err(GetSharedDeckError::Database)?
+            .ok_or(GetSharedDeckError::NotFound)?;
+
+        let request = GetDeckProfile::new(owner_id, deck_id);
+        let deck = self.get_deck(&request).await?;
+
+        let cz_ids: ScryfallDataIds = [
+            deck.deck_profile.commander_id,
+            deck.deck_profile.partner_commander_id,
+            deck.deck_profile.background_id,
+            deck.deck_profile.signature_spell_id,
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+        let cz_cards: HashMap<Uuid, Card> = if cz_ids.is_empty() {
+            HashMap::new()
+        } else {
+            self.card_repo
+                .get_cards(&cz_ids)
+                .await
+                .map_err(|e| GetSharedDeckError::Database(e.into()))?
+                .into_iter()
+                .map(|c| (c.scryfall_data.id, c))
+                .collect()
+        };
+
+        let commander = deck
+            .deck_profile
+            .commander_id
+            .and_then(|id| cz_cards.get(&id).cloned());
+        let partner_commander = deck
+            .deck_profile
+            .partner_commander_id
+            .and_then(|id| cz_cards.get(&id).cloned());
+        let background = deck
+            .deck_profile
+            .background_id
+            .and_then(|id| cz_cards.get(&id).cloned());
+        let signature_spell = deck
+            .deck_profile
+            .signature_spell_id
+            .and_then(|id| cz_cards.get(&id).cloned());
+
+        Ok(SharedDeck {
+            deck,
+            commander,
+            partner_commander,
+            background,
+            signature_spell,
+        })
     }
 }

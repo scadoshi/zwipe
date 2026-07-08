@@ -147,6 +147,14 @@ pub fn clone_deck_route(source_deck_id: Uuid) -> String {
     format!("/api/deck/{}/clone", source_deck_id)
 }
 
+pub fn share_deck_route(deck_id: Uuid) -> String {
+    format!("/api/deck/{}/share", deck_id)
+}
+
+pub fn get_shared_deck_route(token: Uuid) -> String {
+    format!("/api/share/deck/{}", token)
+}
+
 pub fn clear_deck_suppressions_route(deck_id: Uuid) -> String {
     format!("/api/deck/{}/suppressions", deck_id)
 }

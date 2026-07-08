@@ -12,7 +12,9 @@ use crate::domain::deck::models::{
         create_deck_profile::CreateDeckProfileError, delete_deck::DeleteDeckError,
         get_deck::GetDeckError, get_deck_profile::GetDeckProfileError,
         get_deck_tokens::GetDeckTokensError, import_archidekt::ArchidektCard,
-        search_deck_cards::SearchDeckCardsError, skip_deck_card::SkipDeckCardError,
+        search_deck_cards::SearchDeckCardsError,
+        share_deck::{GetSharedDeckError, ShareDeckError, SharedDeck},
+        skip_deck_card::SkipDeckCardError,
         update_deck_profile::UpdateDeckProfileError,
     },
     deck_card::{
@@ -182,12 +184,38 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
     /// new deck owned by `owner_id` with the given `new_name`. Returns the
     /// new deck's id. The caller must have already verified `owner_id` owns
     /// `source_deck_id` — this method performs no authorization check.
+    /// `share_token` is deliberately not copied: clones start private.
     fn clone_deck(
         &self,
         source_deck_id: uuid::Uuid,
         new_name: &DeckName,
         owner_id: uuid::Uuid,
     ) -> impl Future<Output = Result<uuid::Uuid, CloneDeckError>> + Send;
+
+    // =======
+    //  share
+    // =======
+
+    /// Generates (or regenerates) the deck's share token and returns it.
+    /// The caller must have already verified ownership.
+    fn set_share_token(
+        &self,
+        deck_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<uuid::Uuid, ShareDeckError>> + Send;
+
+    /// Nulls the deck's share token (revokes the public link). The caller
+    /// must have already verified ownership.
+    fn clear_share_token(
+        &self,
+        deck_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<(), ShareDeckError>> + Send;
+
+    /// Resolves a share token to `(deck_id, owner_user_id)`, or `None` when
+    /// no deck carries this token (never shared, or sharing was stopped).
+    fn get_deck_id_by_share_token(
+        &self,
+        token: uuid::Uuid,
+    ) -> impl Future<Output = Result<Option<(uuid::Uuid, uuid::Uuid)>, anyhow::Error>> + Send;
 }
 
 /// Service port for deck building business logic.
@@ -337,6 +365,30 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         &self,
         request: &CloneDeck,
     ) -> impl Future<Output = Result<uuid::Uuid, CloneDeckError>> + Send;
+
+    // =======
+    //  share
+    // =======
+
+    /// Generates (or regenerates) the deck's share token with authorization
+    /// check. Returns the new token; any previous link dies with its token.
+    fn share_deck(
+        &self,
+        request: &GetDeckProfile,
+    ) -> impl Future<Output = Result<uuid::Uuid, ShareDeckError>> + Send;
+
+    /// Revokes the deck's share token with authorization check.
+    fn unshare_deck(
+        &self,
+        request: &GetDeckProfile,
+    ) -> impl Future<Output = Result<(), ShareDeckError>> + Send;
+
+    /// Resolves a share token to the full deck aggregate plus command zone
+    /// cards. **Unauthenticated**: possession of the token is the authority.
+    fn get_shared_deck(
+        &self,
+        token: uuid::Uuid,
+    ) -> impl Future<Output = Result<SharedDeck, GetSharedDeckError>> + Send;
 }
 
 /// Object-safe wrapper used by `AppState` so the concrete service type stays
@@ -449,6 +501,24 @@ pub trait ErasedDeckService: Send + Sync + 'static {
         &'a self,
         request: &'a CloneDeck,
     ) -> BoxFuture<'a, Result<uuid::Uuid, CloneDeckError>>;
+
+    /// See [`DeckService::share_deck`].
+    fn share_deck<'a>(
+        &'a self,
+        request: &'a GetDeckProfile,
+    ) -> BoxFuture<'a, Result<uuid::Uuid, ShareDeckError>>;
+
+    /// See [`DeckService::unshare_deck`].
+    fn unshare_deck<'a>(
+        &'a self,
+        request: &'a GetDeckProfile,
+    ) -> BoxFuture<'a, Result<(), ShareDeckError>>;
+
+    /// See [`DeckService::get_shared_deck`].
+    fn get_shared_deck(
+        &self,
+        token: uuid::Uuid,
+    ) -> BoxFuture<'_, Result<SharedDeck, GetSharedDeckError>>;
 }
 
 impl<T> ErasedDeckService for T
@@ -586,5 +656,26 @@ where
         request: &'a CloneDeck,
     ) -> BoxFuture<'a, Result<uuid::Uuid, CloneDeckError>> {
         Box::pin(DeckService::clone_deck(self, request))
+    }
+
+    fn share_deck<'a>(
+        &'a self,
+        request: &'a GetDeckProfile,
+    ) -> BoxFuture<'a, Result<uuid::Uuid, ShareDeckError>> {
+        Box::pin(DeckService::share_deck(self, request))
+    }
+
+    fn unshare_deck<'a>(
+        &'a self,
+        request: &'a GetDeckProfile,
+    ) -> BoxFuture<'a, Result<(), ShareDeckError>> {
+        Box::pin(DeckService::unshare_deck(self, request))
+    }
+
+    fn get_shared_deck(
+        &self,
+        token: uuid::Uuid,
+    ) -> BoxFuture<'_, Result<SharedDeck, GetSharedDeckError>> {
+        Box::pin(DeckService::get_shared_deck(self, token))
     }
 }
