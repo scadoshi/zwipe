@@ -585,10 +585,12 @@
     line-height: 1;
 }
 
-/* Pill look for nav items — anchors, and button-based items (e.g. a dropdown
-   trigger) opted in via .nav-link. */
-.nav-links a,
-.nav-links button.nav-link {
+/* Pill look for nav items — direct anchors, and button-based items (e.g. a
+   dropdown trigger) opted in via .nav-link. Child combinators on purpose:
+   anchors nested inside a composed widget (a dropdown's menu) are that
+   widget's business, not pills. */
+.nav-links > li > a,
+.nav-links > li > button.nav-link {
     display: inline-flex;
     align-items: center;
     box-sizing: border-box;
@@ -612,15 +614,15 @@
 }
 
 @media (hover: hover) {
-    .nav-links a:hover,
-    .nav-links button.nav-link:hover {
+    .nav-links > li > a:hover,
+    .nav-links > li > button.nav-link:hover {
         color: var(--accent-primary);
         border-color: var(--accent-primary);
     }
 }
 
-.nav-links a.active,
-.nav-links button.nav-link.active {
+.nav-links > li > a.active,
+.nav-links > li > button.nav-link.active {
     color: var(--accent-primary);
     border-color: var(--accent-primary);
 }
@@ -696,13 +698,24 @@
         width: 100%;
         height: auto;
     }
-    .nav-panel .nav-links a,
-    .nav-panel .nav-links button.nav-link {
+    /* Every direct panel link item stretches — including composed widgets
+       (e.g. a NavDropdown wrapper div) that tag enumeration would miss. */
+    .nav-panel .nav-links > li > * {
         width: 100%;
+    }
+    .nav-panel .nav-links > li > a,
+    .nav-panel .nav-links > li > button.nav-link {
         height: auto;
         text-align: center;
         font-size: 0.95rem;
         padding: 0.65rem 1rem;
+        justify-content: center;
+    }
+    /* A dropdown in the links slot stretches its trigger with its siblings;
+       scoping under .nav-links leaves the trailing-slot picker's compact
+       centered row alone. */
+    .nav-panel .nav-links .nav-dropdown-trigger {
+        width: 100%;
         justify-content: center;
     }
     /* ThemePicker as the panel's trailing item. */
@@ -840,7 +853,11 @@
     display: flex;
 }
 
-.nav-dropdown-item {
+/* Menu rows: buttons or anchors alike. The `a.…:visited` selector rides in
+   the color declarations so a host's global `a:visited` never recolors menu
+   items — consumers need zero overrides. */
+.nav-dropdown-item,
+a.nav-dropdown-item:visited {
     background: none;
     border: none;
     color: var(--text-muted);
@@ -855,13 +872,21 @@
         color 0.15s;
 }
 
-.nav-dropdown-item:hover {
+/* Anchor items (router links) match the button layout. */
+a.nav-dropdown-item {
+    display: block;
+    text-decoration: none;
+}
+
+.nav-dropdown-item:hover,
+a.nav-dropdown-item:visited:hover {
     background-color: var(--border-primary);
     color: var(--text-primary);
 }
 
 /* Accent-2 so the selection reads apart from the accent-1 subtitles. */
-.nav-dropdown-item.active {
+.nav-dropdown-item.active,
+a.nav-dropdown-item.active:visited {
     color: var(--accent-secondary);
 }
 
