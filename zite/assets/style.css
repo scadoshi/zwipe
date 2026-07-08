@@ -2424,7 +2424,13 @@ footer {
 /* The muted rule closing the expanded detail is the row's bottom boundary,
    so drop the row's own border to avoid a doubled line. */
 .card-row.expanded {
+    position: relative;
+    z-index: 2;
     border-bottom: none;
+    transform: scale(1.02);
+    border-radius: 0.4rem;
+    background-color: color-mix(in srgb, var(--accent-primary) 8%, var(--bg-primary));
+    box-shadow: var(--shadow-sm);
 }
 
 .card-row-compact {
