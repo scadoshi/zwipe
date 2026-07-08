@@ -2239,8 +2239,24 @@ footer {
 }
 
 .sd-cz-role {
-    font-size: 0.72rem;
-    color: var(--text-muted);
+    display: inline-block;
+    margin-top: 0.4rem;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.68rem;
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+}
+
+.sd-cz-role-zone {
+    color: var(--accent-secondary);
+    background-color: color-mix(in srgb, var(--accent-secondary) 12%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--accent-secondary) 35%, var(--bg-primary));
+}
+
+.sd-cz-role-mvp {
+    color: var(--accent-tertiary);
+    background-color: color-mix(in srgb, var(--accent-tertiary) 12%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--accent-tertiary) 35%, var(--bg-primary));
 }
 
 .sd-controls {
