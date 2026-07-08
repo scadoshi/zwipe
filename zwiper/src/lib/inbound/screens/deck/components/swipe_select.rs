@@ -326,8 +326,10 @@ pub(crate) fn SwipeSelect(
                             cards: window,
                             config: swipe_config,
                             entering,
-                            on_swipe_left: move |_card: Card| {
+                            on_swipe_left: move |card: Card| {
                                 usage_buffer().record_swipe(Direction::Left);
+                                usage_buffer()
+                                    .record_select_signal(card.scryfall_data.oracle_id, Direction::Left);
                                 advance();
                                 toast.info(
                                     "Skipped".to_string(),
@@ -336,6 +338,8 @@ pub(crate) fn SwipeSelect(
                             },
                             on_swipe_right: move |card: Card| {
                                 usage_buffer().record_swipe(Direction::Right);
+                                usage_buffer()
+                                    .record_select_signal(card.scryfall_data.oracle_id, Direction::Right);
                                 let mut label = noun.to_string();
                                 if let Some(first) = label.get_mut(..1) {
                                     first.make_ascii_uppercase();

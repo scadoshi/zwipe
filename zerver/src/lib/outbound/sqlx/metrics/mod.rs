@@ -141,6 +141,29 @@ impl MetricsRepository for Postgres {
             .map_err(db)?;
         }
 
+        // Commander-select signal: pooled shown/selected/skipped per candidate.
+        // Pure aggregate — no user_id, no per-user mirror (deliberately the
+        // lighter posture; see context/plans/commander_select_signal.md).
+        for sig in &batch.select_signals {
+            query!(
+                r#"INSERT INTO commander_select_signal
+                       (commander_oracle_id, shown, selected, skipped, updated_at)
+                   VALUES ($1, $2, $3, $4, NOW())
+                   ON CONFLICT (commander_oracle_id) DO UPDATE SET
+                       shown      = commander_select_signal.shown    + EXCLUDED.shown,
+                       selected   = commander_select_signal.selected + EXCLUDED.selected,
+                       skipped    = commander_select_signal.skipped  + EXCLUDED.skipped,
+                       updated_at = NOW()"#,
+                sig.commander_oracle_id,
+                sig.shown as i64,
+                sig.selected as i64,
+                sig.skipped as i64,
+            )
+            .execute(&mut *tx)
+            .await
+            .map_err(db)?;
+        }
+
         // Weekly scalar counters (ISO week, Monday UTC). Clamped inputs keep
         // the per-flush sums (≤1,000 signals × ≤10,000 each) well inside i32.
         let added_sum: i64 = batch.signals.iter().map(|s| s.added as i64).sum();
