@@ -1,6 +1,5 @@
+use crate::{Footer, Nav, components::PageMeta};
 use dioxus::prelude::*;
-use crate::components::PageMeta;
-use crate::{Footer, Nav};
 
 /// Public tester group: anyone can join, which makes them eligible for the
 /// closed test. The bare opt-in/store links below do nothing until you're a

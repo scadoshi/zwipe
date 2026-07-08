@@ -172,7 +172,10 @@ mod tests {
 
     #[test]
     fn display_matches_serde() {
-        assert_eq!(MechanicalCategory::GraveyardHate.to_string(), "graveyard_hate");
+        assert_eq!(
+            MechanicalCategory::GraveyardHate.to_string(),
+            "graveyard_hate"
+        );
         assert_eq!(MechanicalCategory::Ramp.to_string(), "ramp");
         assert_eq!(MechanicalCategory::Counterspell.to_string(), "counterspell");
     }
@@ -196,7 +199,10 @@ mod tests {
 
     #[test]
     fn display_name_readable() {
-        assert_eq!(MechanicalCategory::GraveyardHate.display_name(), "Graveyard Hate");
+        assert_eq!(
+            MechanicalCategory::GraveyardHate.display_name(),
+            "Graveyard Hate"
+        );
         assert_eq!(MechanicalCategory::Ramp.display_name(), "Ramp");
     }
 

@@ -1,8 +1,10 @@
 //! Card rarity filter component.
 
 use dioxus::prelude::*;
-use zwipe_core::domain::card::scryfall_data::rarity::Rarity as CardRarity;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::card::{
+    scryfall_data::rarity::Rarity as CardRarity,
+    search_card::card_filter::builder::CardQueryBuilder,
+};
 
 /// Whether the rarity filter is in include or exclude mode.
 #[derive(Debug, Clone, Copy, PartialEq)]

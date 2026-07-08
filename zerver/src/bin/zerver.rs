@@ -1,12 +1,12 @@
 use std::sync::Arc;
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
-use tracing_subscriber::EnvFilter;
-use tracing_subscriber::{Layer, layer::SubscriberExt, util::SubscriberInitExt};
-use zwipe::config::Config;
-use zwipe::domain::{auth, card, deck, health, metrics, user};
-use zwipe::inbound::http::{HttpServer, HttpServerConfig};
-use zwipe::outbound::resend::Resend;
-use zwipe::outbound::sqlx::postgres::Postgres;
+use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
+use zwipe::{
+    config::Config,
+    domain::{auth, card, deck, health, metrics, user},
+    inbound::http::{HttpServer, HttpServerConfig},
+    outbound::{resend::Resend, sqlx::postgres::Postgres},
+};
 use zwipe_core::domain::logo;
 
 #[tokio::main]

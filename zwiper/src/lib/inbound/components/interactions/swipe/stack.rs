@@ -19,16 +19,19 @@
 //! restored top card plays a keyframe animation entering from `dir`, then the
 //! stack clears the signal on `animationend`.
 
-use crate::inbound::components::interactions::swipe::{
-    axis::Axis, config::SwipeConfig, direction::Direction, onmouse::OnMouse, ontouch::OnTouch,
-    state::SwipeState,
+use crate::inbound::{
+    components::interactions::swipe::{
+        axis::Axis, config::SwipeConfig, direction::Direction, onmouse::OnMouse, ontouch::OnTouch,
+        state::SwipeState,
+    },
+    screens::deck::card::components::flippable_card_image::FlippableCardImage,
 };
-use crate::inbound::screens::deck::card::components::flippable_card_image::FlippableCardImage;
-use dioxus::html::geometry::euclid::{Point2D, UnknownUnit};
-use dioxus::prelude::*;
+use dioxus::{
+    html::geometry::euclid::{Point2D, UnknownUnit},
+    prelude::*,
+};
 use uuid::Uuid;
-use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::scryfall_data::ImageSize;
+use zwipe_core::domain::card::{Card, scryfall_data::ImageSize};
 
 type DeltaPoint = Point2D<f64, UnknownUnit>;
 

@@ -5,8 +5,10 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use zwipe::inbound::http::{ApiError, routes::change_email_route};
-use zwipe_core::domain::{auth::models::session::Session, user::User};
-use zwipe_core::http::contracts::auth::HttpChangeEmail;
+use zwipe_core::{
+    domain::{auth::models::session::Session, user::User},
+    http::contracts::auth::HttpChangeEmail,
+};
 
 /// Trait for updating user email addresses.
 #[allow(missing_docs)]

@@ -1,12 +1,14 @@
 //! Update deck profile operation.
 
-use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use crate::domain::deck::{
-    DeckName, DeckOtherTag, DeckTag, InvalidDeckname, InvalidDeckOtherTag, InvalidDeckTag,
-    InvalidPowerLevel, MAX_DECK_OTHER_TAGS, MAX_DECK_TAGS, PowerLevel,
-    deck_other_tag::parse_other_tags,
-    deck_tag::parse_tags,
-    format::{Format, InvalidFormat},
+use crate::domain::{
+    card::search_card::card_filter::price_currency::PriceCurrency,
+    deck::{
+        DeckName, DeckOtherTag, DeckTag, InvalidDeckOtherTag, InvalidDeckTag, InvalidDeckname,
+        InvalidPowerLevel, MAX_DECK_OTHER_TAGS, MAX_DECK_TAGS, PowerLevel,
+        deck_other_tag::parse_other_tags,
+        deck_tag::parse_tags,
+        format::{Format, InvalidFormat},
+    },
 };
 use thiserror::Error;
 use uuid::Uuid;

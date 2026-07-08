@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use std::fmt::Debug;
+use std::{collections::HashMap, fmt::Debug};
 
 use uuid::Uuid;
 
@@ -10,14 +9,19 @@ use crate::domain::{
     },
     deck::{
         models::{
-            deck::import_archidekt::ArchidektCard,
             deck::{
-                clear_deck_suppressions::ClearDeckSuppressionsError, clone_deck::CloneDeckError,
-                create_deck_profile::CreateDeckProfileError, delete_deck::DeleteDeckError,
-                get_deck::GetDeckError, get_deck_profile::GetDeckProfileError,
-                get_deck_tokens::GetDeckTokensError, search_deck_cards::SearchDeckCardsError,
+                clear_deck_suppressions::ClearDeckSuppressionsError,
+                clone_deck::CloneDeckError,
+                create_deck_profile::CreateDeckProfileError,
+                delete_deck::DeleteDeckError,
+                get_deck::GetDeckError,
+                get_deck_profile::GetDeckProfileError,
+                get_deck_tokens::GetDeckTokensError,
+                import_archidekt::ArchidektCard,
+                search_deck_cards::SearchDeckCardsError,
                 share_deck::{GetSharedDeckError, ShareDeckError, SharedDeck},
-                skip_deck_card::SkipDeckCardError, update_deck_profile::UpdateDeckProfileError,
+                skip_deck_card::SkipDeckCardError,
+                update_deck_profile::UpdateDeckProfileError,
             },
             deck_card::{
                 create_deck_card::CreateDeckCardError, delete_deck_card::DeleteDeckCardError,
@@ -27,23 +31,27 @@ use crate::domain::{
         ports::{DeckRepository, DeckService},
     },
 };
-use zwipe_core::domain::card::{Card, search_card::card_filter::CardQuery};
-use zwipe_core::domain::deck::{
-    Board, Deck, DeckCard, DeckEntry, ImportMode,
-    deck_profile::DeckProfile,
-    requests::{
-        clear_deck_suppressions::ClearDeckSuppressions,
-        clone_deck::CloneDeck,
-        create_deck_card::CreateDeckCard,
-        create_deck_profile::CreateDeckProfile,
-        delete_deck::DeleteDeck,
-        delete_deck_card::DeleteDeckCard,
-        get_deck_profile::GetDeckProfile,
-        get_deck_profiles::GetDeckProfiles,
-        import_deck_cards::{ImportDeckCards, ImportDeckCardsResult, ImportedCard, UnresolvedCard},
-        skip_deck_card::SkipDeckCard,
-        update_deck_card::UpdateDeckCard,
-        update_deck_profile::UpdateDeckProfile,
+use zwipe_core::domain::{
+    card::{Card, search_card::card_filter::CardQuery},
+    deck::{
+        Board, Deck, DeckCard, DeckEntry, ImportMode,
+        deck_profile::DeckProfile,
+        requests::{
+            clear_deck_suppressions::ClearDeckSuppressions,
+            clone_deck::CloneDeck,
+            create_deck_card::CreateDeckCard,
+            create_deck_profile::CreateDeckProfile,
+            delete_deck::DeleteDeck,
+            delete_deck_card::DeleteDeckCard,
+            get_deck_profile::GetDeckProfile,
+            get_deck_profiles::GetDeckProfiles,
+            import_deck_cards::{
+                ImportDeckCards, ImportDeckCardsResult, ImportedCard, UnresolvedCard,
+            },
+            skip_deck_card::SkipDeckCard,
+            update_deck_card::UpdateDeckCard,
+            update_deck_profile::UpdateDeckProfile,
+        },
     },
 };
 

@@ -1,4 +1,3 @@
-use crate::inbound::external::scryfall::bulk::BulkEndpoint;
 use crate::{
     domain::card::{
         models::{search_card::error::SearchCardsError, zervice_metrics::ZerviceMetrics},
@@ -16,6 +15,7 @@ use crate::{
             get_sets::GetSetsError,
         },
     },
+    inbound::external::scryfall::bulk::BulkEndpoint,
     outbound::sqlx::card::helpers::scryfall_data_fields::scryfall_data_field_count,
 };
 use chrono::{DateTime, Utc};

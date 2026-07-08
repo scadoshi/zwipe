@@ -4,8 +4,9 @@ use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use zwipe::inbound::http::ApiError;
-use zwipe_core::http::contracts::metrics::HttpAnonymousEvent;
-use zwipe_core::http::paths::record_anonymous_event_route;
+use zwipe_core::http::{
+    contracts::metrics::HttpAnonymousEvent, paths::record_anonymous_event_route,
+};
 
 /// Trait for posting a pre-auth funnel event.
 #[allow(missing_docs)]
@@ -17,10 +18,7 @@ pub trait ClientRecordAnonymousEvent {
 }
 
 impl ClientRecordAnonymousEvent for ZwipeClient {
-    async fn record_anonymous_event(
-        &self,
-        event: &HttpAnonymousEvent,
-    ) -> Result<(), ApiError> {
+    async fn record_anonymous_event(&self, event: &HttpAnonymousEvent) -> Result<(), ApiError> {
         let mut url = self.app_config.backend_url.clone();
         url.set_path(&record_anonymous_event_route());
 

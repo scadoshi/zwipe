@@ -4,10 +4,10 @@
 //! - **Access Token**: Short-lived JWT (24h) for authenticating API requests
 //! - **Refresh Token**: Long-lived token (14d) for obtaining new access tokens
 
-use crate::domain::auth::models::access_token::AccessToken;
-use crate::domain::auth::models::refresh_token::RefreshToken;
-use crate::domain::user::models::User;
-use crate::domain::user::models::preferences::UserPreferences;
+use crate::domain::{
+    auth::models::{access_token::AccessToken, refresh_token::RefreshToken},
+    user::models::{User, preferences::UserPreferences},
+};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 

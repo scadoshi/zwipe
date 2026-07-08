@@ -129,8 +129,10 @@ mod tests {
 
     #[test]
     fn display_names_unique() {
-        let names: std::collections::HashSet<_> =
-            DeckOtherTag::all().iter().map(|t| t.display_name()).collect();
+        let names: std::collections::HashSet<_> = DeckOtherTag::all()
+            .iter()
+            .map(|t| t.display_name())
+            .collect();
         assert_eq!(names.len(), DeckOtherTag::all().len());
     }
 }

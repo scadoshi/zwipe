@@ -1,16 +1,21 @@
-use crate::inbound::components::alert_dialog::{
-    AlertDialogActions, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
-    AlertDialogRoot, AlertDialogTitle,
+use crate::{
+    inbound::{
+        components::{
+            alert_dialog::{
+                AlertDialogActions, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+                AlertDialogRoot, AlertDialogTitle,
+            },
+            auth::ensure_session::EnsureFresh,
+        },
+        router::Router,
+    },
+    outbound::client::{ZwipeClient, deck::clone_deck::ClientCloneDeck},
 };
-use crate::inbound::components::auth::ensure_session::EnsureFresh;
-use crate::inbound::router::Router;
-use crate::outbound::client::{ZwipeClient, deck::clone_deck::ClientCloneDeck};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::http::contracts::deck::HttpCloneDeck;
+use zwipe_core::{domain::auth::models::session::Session, http::contracts::deck::HttpCloneDeck};
 
 /// Clone deck dialog — prompts for a new name, calls the clone endpoint,
 /// and navigates to the new deck on success.

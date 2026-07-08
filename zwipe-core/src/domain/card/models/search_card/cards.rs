@@ -17,11 +17,13 @@
 //!     .into();
 //! ```
 
-use crate::domain::card::{
-    Card,
-    search_card::card_filter::{card_sort_key::CardSortKey, criteria::CardCriteria},
+use crate::domain::{
+    card::{
+        Card,
+        search_card::card_filter::{card_sort_key::CardSortKey, criteria::CardCriteria},
+    },
+    deck::DeckEntry,
 };
-use crate::domain::deck::DeckEntry;
 use rand::seq::SliceRandom;
 
 /// A collection of cards already loaded in memory.
@@ -128,9 +130,7 @@ mod tests {
             prices::Prices,
             rarity::{Rarities, Rarity},
         },
-        search_card::card_filter::{
-            builder::CardQueryBuilder, card_sort_key::CardSortKey,
-        },
+        search_card::card_filter::{builder::CardQueryBuilder, card_sort_key::CardSortKey},
     };
     use chrono::NaiveDate;
     use uuid::Uuid;
@@ -390,8 +390,13 @@ mod tests {
         let mut sol_ring = make_card("Sol Ring");
         sol_ring.scryfall_data.produced_mana = Some(vec!["C".to_string()]);
         let mut birds = make_card("Birds of Paradise");
-        birds.scryfall_data.produced_mana =
-            Some(vec!["W".to_string(), "U".to_string(), "B".to_string(), "R".to_string(), "G".to_string()]);
+        birds.scryfall_data.produced_mana = Some(vec![
+            "W".to_string(),
+            "U".to_string(),
+            "B".to_string(),
+            "R".to_string(),
+            "G".to_string(),
+        ]);
         let forest = make_card("Forest");
         let filter = CardQueryBuilder::with_produced_mana_contains_any(["R", "G"])
             .build_criteria()
@@ -438,8 +443,13 @@ mod tests {
     #[test]
     fn test_produced_mana_contains_all_matches_when_all_colors_present() {
         let mut card = make_card("Birds of Paradise");
-        card.scryfall_data.produced_mana =
-            Some(vec!["W".to_string(), "U".to_string(), "B".to_string(), "R".to_string(), "G".to_string()]);
+        card.scryfall_data.produced_mana = Some(vec![
+            "W".to_string(),
+            "U".to_string(),
+            "B".to_string(),
+            "R".to_string(),
+            "G".to_string(),
+        ]);
         let filter = CardQueryBuilder::with_produced_mana_contains_all(["W", "U"])
             .build_criteria()
             .unwrap();
@@ -471,8 +481,13 @@ mod tests {
     #[test]
     fn test_produced_mana_contains_all_is_case_insensitive() {
         let mut card = make_card("Birds of Paradise");
-        card.scryfall_data.produced_mana =
-            Some(vec!["W".to_string(), "U".to_string(), "B".to_string(), "R".to_string(), "G".to_string()]);
+        card.scryfall_data.produced_mana = Some(vec![
+            "W".to_string(),
+            "U".to_string(),
+            "B".to_string(),
+            "R".to_string(),
+            "G".to_string(),
+        ]);
         let filter = CardQueryBuilder::with_produced_mana_contains_all(["w", "u"])
             .build_criteria()
             .unwrap();
@@ -485,7 +500,9 @@ mod tests {
     #[test]
     fn test_name_contains_case_insensitive() {
         let cards = vec![make_card("Lightning Bolt"), make_card("Forest")];
-        let filter = CardQueryBuilder::with_name_contains("lightning").build_criteria().unwrap();
+        let filter = CardQueryBuilder::with_name_contains("lightning")
+            .build_criteria()
+            .unwrap();
         let result = Cards::from(cards).matching(&filter);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].scryfall_data.name, "Lightning Bolt");
@@ -494,7 +511,9 @@ mod tests {
     #[test]
     fn test_name_contains_no_match() {
         let cards = vec![make_card("Forest")];
-        let filter = CardQueryBuilder::with_name_contains("bolt").build_criteria().unwrap();
+        let filter = CardQueryBuilder::with_name_contains("bolt")
+            .build_criteria()
+            .unwrap();
         let result = Cards::from(cards).matching(&filter);
         assert!(result.is_empty());
     }
@@ -502,7 +521,9 @@ mod tests {
     #[test]
     fn test_name_contains_ignores_punctuation() {
         let cards = vec![make_card("Akroma's Will"), make_card("Forest")];
-        let filter = CardQueryBuilder::with_name_contains("akromas will").build_criteria().unwrap();
+        let filter = CardQueryBuilder::with_name_contains("akromas will")
+            .build_criteria()
+            .unwrap();
         let result = Cards::from(cards).matching(&filter);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].scryfall_data.name, "Akroma's Will");
@@ -511,7 +532,9 @@ mod tests {
     #[test]
     fn test_name_contains_ignores_commas() {
         let cards = vec![make_card("Satya, Aetherflux Genius"), make_card("Forest")];
-        let filter = CardQueryBuilder::with_name_contains("satya aetherflux genius").build_criteria().unwrap();
+        let filter = CardQueryBuilder::with_name_contains("satya aetherflux genius")
+            .build_criteria()
+            .unwrap();
         let result = Cards::from(cards).matching(&filter);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].scryfall_data.name, "Satya, Aetherflux Genius");
@@ -520,7 +543,9 @@ mod tests {
     #[test]
     fn test_name_contains_trims_whitespace() {
         let cards = vec![make_card("Lightning Bolt")];
-        let filter = CardQueryBuilder::with_name_contains("  lightning bolt  ").build_criteria().unwrap();
+        let filter = CardQueryBuilder::with_name_contains("  lightning bolt  ")
+            .build_criteria()
+            .unwrap();
         let result = Cards::from(cards).matching(&filter);
         assert_eq!(result.len(), 1);
     }
@@ -528,8 +553,11 @@ mod tests {
     #[test]
     fn test_oracle_text_contains_ignores_punctuation() {
         let mut card = make_card("Test Card");
-        card.scryfall_data.oracle_text = Some("Target creature's controller loses 3 life.".to_string());
-        let filter = CardQueryBuilder::with_oracle_text_contains("creatures controller").build_criteria().unwrap();
+        card.scryfall_data.oracle_text =
+            Some("Target creature's controller loses 3 life.".to_string());
+        let filter = CardQueryBuilder::with_oracle_text_contains("creatures controller")
+            .build_criteria()
+            .unwrap();
         let result = Cards::from(vec![card]).matching(&filter);
         assert_eq!(result.len(), 1);
     }
@@ -539,7 +567,9 @@ mod tests {
         let mut bolt = make_card("Lightning Bolt");
         bolt.scryfall_data.oracle_text = Some("deal 3 damage to any target".to_string());
         let forest = make_card("Forest");
-        let filter = CardQueryBuilder::with_oracle_text_contains("3 damage").build_criteria().unwrap();
+        let filter = CardQueryBuilder::with_oracle_text_contains("3 damage")
+            .build_criteria()
+            .unwrap();
         let result = Cards::from(vec![bolt, forest]).matching(&filter);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].scryfall_data.name, "Lightning Bolt");
@@ -548,7 +578,9 @@ mod tests {
     #[test]
     fn test_oracle_text_contains_skips_none() {
         let card = make_card("Forest"); // oracle_text = None
-        let filter = CardQueryBuilder::with_oracle_text_contains("damage").build_criteria().unwrap();
+        let filter = CardQueryBuilder::with_oracle_text_contains("damage")
+            .build_criteria()
+            .unwrap();
         let result = Cards::from(vec![card]).matching(&filter);
         assert!(result.is_empty());
     }
@@ -673,7 +705,9 @@ mod tests {
         let mut with_flavor = make_card("Mox Pearl");
         with_flavor.scryfall_data.flavor_text = Some("Worth its weight".to_string());
         let without_flavor = make_card("Forest");
-        let filter = CardQueryBuilder::with_has_flavor_text(true).build_criteria().unwrap();
+        let filter = CardQueryBuilder::with_has_flavor_text(true)
+            .build_criteria()
+            .unwrap();
         let result = Cards::from(vec![with_flavor, without_flavor]).matching(&filter);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].scryfall_data.name, "Mox Pearl");
@@ -684,7 +718,9 @@ mod tests {
         let mut with_flavor = make_card("Mox Pearl");
         with_flavor.scryfall_data.flavor_text = Some("Worth its weight".to_string());
         let without_flavor = make_card("Forest");
-        let filter = CardQueryBuilder::with_has_flavor_text(false).build_criteria().unwrap();
+        let filter = CardQueryBuilder::with_has_flavor_text(false)
+            .build_criteria()
+            .unwrap();
         let result = Cards::from(vec![with_flavor, without_flavor]).matching(&filter);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].scryfall_data.name, "Forest");
@@ -695,7 +731,9 @@ mod tests {
         let mut dragon = make_card("Shivan Dragon");
         dragon.scryfall_data.type_line = Some("Legendary Creature — Dragon".to_string());
         let forest = make_card("Forest");
-        let filter = CardQueryBuilder::with_type_line_contains("Dragon").build_criteria().unwrap();
+        let filter = CardQueryBuilder::with_type_line_contains("Dragon")
+            .build_criteria()
+            .unwrap();
         let result = Cards::from(vec![dragon, forest]).matching(&filter);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].scryfall_data.name, "Shivan Dragon");
@@ -709,7 +747,9 @@ mod tests {
         bolt.scryfall_data.cmc = Some(1.0);
         let mut doom = make_card("Doom Blade");
         doom.scryfall_data.cmc = Some(2.0);
-        let filter = CardQueryBuilder::with_cmc_equals(1.0).build_criteria().unwrap();
+        let filter = CardQueryBuilder::with_cmc_equals(1.0)
+            .build_criteria()
+            .unwrap();
         let result = Cards::from(vec![bolt, doom]).matching(&filter);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].scryfall_data.name, "Lightning Bolt");
@@ -723,7 +763,9 @@ mod tests {
         b.scryfall_data.cmc = Some(3.0);
         let mut c = make_card("C");
         c.scryfall_data.cmc = Some(4.0);
-        let filter = CardQueryBuilder::with_cmc_range((2.0, 3.0)).build_criteria().unwrap();
+        let filter = CardQueryBuilder::with_cmc_range((2.0, 3.0))
+            .build_criteria()
+            .unwrap();
         let result = Cards::from(vec![a, b, c]).matching(&filter);
         assert_eq!(result.len(), 2);
     }
@@ -736,7 +778,9 @@ mod tests {
         red.scryfall_data.color_identity = Colors::from([Color::Red]);
         let mut rg = make_card("Gruul");
         rg.scryfall_data.color_identity = Colors::from([Color::Red, Color::Green]);
-        let filter = CardQueryBuilder::with_color_identity_equals([Color::Red]).build_criteria().unwrap();
+        let filter = CardQueryBuilder::with_color_identity_equals([Color::Red])
+            .build_criteria()
+            .unwrap();
         let result = Cards::from(vec![red, rg]).matching(&filter);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].scryfall_data.name, "Bolt");
@@ -749,7 +793,9 @@ mod tests {
         let mut rg = make_card("Gruul");
         rg.scryfall_data.color_identity = Colors::from([Color::Red, Color::Green]);
         // within Red only — Gruul has Green so it's excluded
-        let filter = CardQueryBuilder::with_color_identity_within([Color::Red]).build_criteria().unwrap();
+        let filter = CardQueryBuilder::with_color_identity_within([Color::Red])
+            .build_criteria()
+            .unwrap();
         let result = Cards::from(vec![mono_red, rg]).matching(&filter);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].scryfall_data.name, "Bolt");
@@ -763,7 +809,9 @@ mod tests {
         a.scryfall_data.power = Some("3".to_string());
         let mut b = make_card("5/5");
         b.scryfall_data.power = Some("5".to_string());
-        let filter = CardQueryBuilder::with_power_equals(3).build_criteria().unwrap();
+        let filter = CardQueryBuilder::with_power_equals(3)
+            .build_criteria()
+            .unwrap();
         let result = Cards::from(vec![a, b]).matching(&filter);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].scryfall_data.name, "3/3");
@@ -773,7 +821,9 @@ mod tests {
     fn test_non_numeric_power_excluded() {
         let mut star = make_card("Tarmogoyf");
         star.scryfall_data.power = Some("*".to_string());
-        let filter = CardQueryBuilder::with_power_equals(2).build_criteria().unwrap();
+        let filter = CardQueryBuilder::with_power_equals(2)
+            .build_criteria()
+            .unwrap();
         let result = Cards::from(vec![star]).matching(&filter);
         assert!(result.is_empty());
     }
@@ -786,15 +836,15 @@ mod tests {
         b.scryfall_data.toughness = Some("3".to_string());
         let mut c = make_card("C");
         c.scryfall_data.toughness = Some("5".to_string());
-        let filter = CardQueryBuilder::with_toughness_range((2, 4)).build_criteria().unwrap();
+        let filter = CardQueryBuilder::with_toughness_range((2, 4))
+            .build_criteria()
+            .unwrap();
         let result = Cards::from(vec![a, b, c]).matching(&filter);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].scryfall_data.name, "B");
     }
 
     // ── flags ─────────────────────────────────────────────────────────────────
-
-
 
     #[test]
     fn test_is_playable_filters_token_layout() {
@@ -803,10 +853,12 @@ mod tests {
         let regular = make_card("Forest");
         // Default builder has is_playable=Some(true); "token" is not in PLAYABLE_LAYOUTS
         let filter = {
-                let mut b = CardQueryBuilder::default();
-                b.set_legalities_contains_any(vec!["vintage".to_string()]);
-                b
-            }.build_criteria().unwrap();
+            let mut b = CardQueryBuilder::default();
+            b.set_legalities_contains_any(vec!["vintage".to_string()]);
+            b
+        }
+        .build_criteria()
+        .unwrap();
         let result = Cards::from(vec![token_card, regular]).matching(&filter);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].scryfall_data.name, "Forest");
@@ -850,7 +902,9 @@ mod tests {
         m21_card.scryfall_data.set_name = "m21".to_string();
         let mut mh2_card = make_card("MH2 Card");
         mh2_card.scryfall_data.set_name = "mh2".to_string();
-        let filter = CardQueryBuilder::with_set_contains(["mh2"]).build_criteria().unwrap();
+        let filter = CardQueryBuilder::with_set_contains(["mh2"])
+            .build_criteria()
+            .unwrap();
         let result = Cards::from(vec![m21_card, mh2_card]).matching(&filter);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].scryfall_data.name, "MH2 Card");

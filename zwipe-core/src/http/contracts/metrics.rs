@@ -273,7 +273,8 @@ mod tests {
 
     #[test]
     fn anonymous_event_parses_and_rejects_unknown_kind() {
-        let json = r#"{"session_id":"00000000-0000-0000-0000-000000000000","kind":"register_viewed"}"#;
+        let json =
+            r#"{"session_id":"00000000-0000-0000-0000-000000000000","kind":"register_viewed"}"#;
         let event: HttpAnonymousEvent = serde_json::from_str(json).unwrap();
         assert_eq!(event.kind, AnonymousEventKind::RegisterViewed);
         assert_eq!(event.session_id, Uuid::nil());
@@ -329,7 +330,8 @@ mod tests {
     fn batch_deserializes_without_signals_field() {
         // An older client omits `signals`, `deck_skips`, and `select_signals`;
         // must still parse (→ empty).
-        let json = r#"{"swipes_right":2,"swipes_left":1,"swipes_up":0,"swipes_down":0,"searches":3}"#;
+        let json =
+            r#"{"swipes_right":2,"swipes_left":1,"swipes_up":0,"swipes_down":0,"searches":3}"#;
         let batch: HttpUsageBatch = serde_json::from_str(json).unwrap();
         assert!(batch.signals.is_empty());
         assert!(batch.deck_skips.is_empty());

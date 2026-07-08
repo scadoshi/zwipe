@@ -5,16 +5,18 @@ use std::collections::HashMap;
 use sqlx::query;
 use uuid::Uuid;
 
-use crate::domain::metrics::{
-    models::{
-        errors::MetricsError,
-        kinds::{AuditAction, EventKind},
-        lifetime_counters::LifetimeCounters,
-        public_metrics::PublicMetrics,
+use crate::{
+    domain::metrics::{
+        models::{
+            errors::MetricsError,
+            kinds::{AuditAction, EventKind},
+            lifetime_counters::LifetimeCounters,
+            public_metrics::PublicMetrics,
+        },
+        ports::MetricsRepository,
     },
-    ports::MetricsRepository,
+    outbound::sqlx::postgres::Postgres,
 };
-use crate::outbound::sqlx::postgres::Postgres;
 use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpUsageBatch};
 
 fn db(err: sqlx::Error) -> MetricsError {

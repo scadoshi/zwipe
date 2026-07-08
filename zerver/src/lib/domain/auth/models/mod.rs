@@ -76,8 +76,7 @@ mod tests {
         use crate::domain::auth::models::password::{HashedPassword, Password};
         use std::str::FromStr;
         use uuid::Uuid;
-        use zwipe_core::domain::Email;
-        use zwipe_core::domain::user::username::Username;
+        use zwipe_core::domain::{Email, user::username::Username};
 
         let id = Uuid::new_v4();
         let username = Username::new("alice").unwrap();

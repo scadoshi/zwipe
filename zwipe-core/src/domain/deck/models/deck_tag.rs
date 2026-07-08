@@ -390,16 +390,24 @@ impl DeckTag {
     /// hint dialog.
     pub fn description(&self) -> &'static str {
         match self {
-            Self::Adventures => "Cast creatures' adventure halves first, then the creature later, for two-for-one value",
-            Self::Aggro => "Apply early pressure with cheap creatures to win before opponents stabilize",
+            Self::Adventures => {
+                "Cast creatures' adventure halves first, then the creature later, for two-for-one value"
+            }
+            Self::Aggro => {
+                "Apply early pressure with cheap creatures to win before opponents stabilize"
+            }
             Self::Aikido => "Turn opponents' own attacks and resources against them",
             Self::AlternateWincon => "Win through a card's alternate victory condition",
-            Self::Aristocrats => "Sacrifice your own creatures for value and incremental life drain",
+            Self::Aristocrats => {
+                "Sacrifice your own creatures for value and incremental life drain"
+            }
             Self::Artifacts => "Build the engine around artifacts and their synergies",
             Self::AttackTriggers => "Reward attacking with triggers that snowball each combat",
             Self::Auras => "Stack enchantment auras onto a creature to enlarge it",
             Self::BigMana => "Generate huge mana to power out oversized threats and X spells",
-            Self::Blink => "Flicker creatures out and back to reuse their enter-the-battlefield effects",
+            Self::Blink => {
+                "Flicker creatures out and back to reuse their enter-the-battlefield effects"
+            }
             Self::Blood => "Make Blood tokens to loot away cards and fuel payoffs",
             Self::Bounce => "Return permanents to hand to reset boards and reuse effects",
             Self::Burn => "Deal direct damage with spells to creatures or players",
@@ -409,7 +417,9 @@ impl DeckTag {
             Self::Clone => "Copy the best creatures and permanents on the battlefield",
             Self::Clues => "Investigate for Clue tokens to draw and trigger payoffs",
             Self::CoinFlips => "Flip coins and lean on coin-flip payoffs to win",
-            Self::Colorless => "Lean on colorless and devoid permanents with colorless-matters payoffs",
+            Self::Colorless => {
+                "Lean on colorless and devoid permanents with colorless-matters payoffs"
+            }
             Self::Combo => "Assemble two or more cards into a game-ending interaction",
             Self::CommanderMatters => "Reward casting and building around your commander",
             Self::Control => "Counter and remove threats, then win with late-game inevitability",
@@ -438,7 +448,9 @@ impl DeckTag {
             Self::Flying => "Win in the air with evasive flying creatures",
             Self::Food => "Make Food tokens to gain life and feed sacrifice value",
             Self::GlassCannon => "Win fast with little defense if the plan is disrupted",
-            Self::Goad => "Force opponents' creatures to attack each other and profit from the chaos",
+            Self::Goad => {
+                "Force opponents' creatures to attack each other and profit from the chaos"
+            }
             Self::GoodStuff => "Play the strongest standalone cards over tight synergy",
             Self::GoWide => "Flood the board with many creatures, then buff them all at once",
             Self::Graveyard => "Use the graveyard as a resource to recur and reuse cards",
@@ -461,8 +473,12 @@ impl DeckTag {
             Self::Mounts => "Saddle Mounts to turn them on for combat payoffs",
             Self::Multicolor => "Reward playing many colors and gold cards",
             Self::Mutate => "Stack mutating creatures into one body that piles up triggers",
-            Self::Outlaws => "Commit crimes with Assassins, Mercenaries, Pirates, Rogues, and Warlocks",
-            Self::Party => "Assemble a full party of Cleric, Rogue, Warrior, and Wizard for payoffs",
+            Self::Outlaws => {
+                "Commit crimes with Assassins, Mercenaries, Pirates, Rogues, and Warlocks"
+            }
+            Self::Party => {
+                "Assemble a full party of Cleric, Rogue, Warrior, and Wizard for payoffs"
+            }
             Self::Pillowfort => "Defend yourself with deterrents so attacks go elsewhere",
             Self::Ping => "Repeatedly deal 1 damage to pick off creatures and players",
             Self::Plot => "Plot spells on earlier turns to cast them for free later",

@@ -4,9 +4,10 @@ use crate::outbound::client::ZwipeClient;
 use reqwest::StatusCode;
 use std::future::Future;
 use zwipe::inbound::http::ApiError;
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::http::contracts::metrics::HttpUsageBatch;
-use zwipe_core::http::paths::record_usage_route;
+use zwipe_core::{
+    domain::auth::models::session::Session,
+    http::{contracts::metrics::HttpUsageBatch, paths::record_usage_route},
+};
 
 /// Trait for posting a batched usage update.
 #[allow(missing_docs)]

@@ -3,15 +3,19 @@
 //! Mirrors the SQL adapter's filtering logic exactly, so the same criteria
 //! applied against a local collection agree with a server-side search.
 
-use crate::domain::card::{
-    Card,
-    scryfall_data::legalities::LegalityKind,
-    search_card::{
-        card_filter::{criteria::CardCriteria, price_currency::PriceCurrency, strip_punctuation},
-        commander_eligibility::is_valid_commander,
+use crate::domain::{
+    card::{
+        Card,
+        scryfall_data::legalities::LegalityKind,
+        search_card::{
+            card_filter::{
+                criteria::CardCriteria, price_currency::PriceCurrency, strip_punctuation,
+            },
+            commander_eligibility::is_valid_commander,
+        },
     },
+    deck::Format,
 };
-use crate::domain::deck::Format;
 
 /// Layouts representing cards playable in Magic formats.
 ///
@@ -49,27 +53,36 @@ impl CardCriteria {
 
         // ── text ──────────────────────────────────────────────────────
         if let Some(q) = self.name_contains()
-            && !strip_punctuation(&sd.name).to_lowercase().contains(&q.to_lowercase())
+            && !strip_punctuation(&sd.name)
+                .to_lowercase()
+                .contains(&q.to_lowercase())
         {
             return false;
         }
 
         if let Some(q) = self.name_not_contains()
-            && strip_punctuation(&sd.name).to_lowercase().contains(&q.to_lowercase())
+            && strip_punctuation(&sd.name)
+                .to_lowercase()
+                .contains(&q.to_lowercase())
         {
             return false;
         }
 
         if let Some(q) = self.oracle_text_contains() {
             match &sd.oracle_text {
-                Some(text) if strip_punctuation(text).to_lowercase().contains(&q.to_lowercase()) => {}
+                Some(text)
+                    if strip_punctuation(text)
+                        .to_lowercase()
+                        .contains(&q.to_lowercase()) => {}
                 _ => return false,
             }
         }
 
         if let Some(q) = self.oracle_text_not_contains()
             && sd.oracle_text.as_ref().is_some_and(|text| {
-                strip_punctuation(text).to_lowercase().contains(&q.to_lowercase())
+                strip_punctuation(text)
+                    .to_lowercase()
+                    .contains(&q.to_lowercase())
             })
         {
             return false;
@@ -117,7 +130,9 @@ impl CardCriteria {
         // ── keywords ──────────────────────────────────────────────────
         if let Some(values) = self.keywords_contains_any() {
             let matches = match &sd.keywords {
-                Some(kw) => values.iter().any(|v| kw.iter().any(|k| k.eq_ignore_ascii_case(v))),
+                Some(kw) => values
+                    .iter()
+                    .any(|v| kw.iter().any(|k| k.eq_ignore_ascii_case(v))),
                 None => false,
             };
             if !matches {
@@ -127,7 +142,9 @@ impl CardCriteria {
 
         if let Some(values) = self.keywords_contains_all() {
             let matches = match &sd.keywords {
-                Some(kw) => values.iter().all(|v| kw.iter().any(|k| k.eq_ignore_ascii_case(v))),
+                Some(kw) => values
+                    .iter()
+                    .all(|v| kw.iter().any(|k| k.eq_ignore_ascii_case(v))),
                 None => false,
             };
             if !matches {
@@ -137,7 +154,9 @@ impl CardCriteria {
 
         if let Some(values) = self.keywords_excludes() {
             let excluded = match &sd.keywords {
-                Some(kw) => values.iter().any(|v| kw.iter().any(|k| k.eq_ignore_ascii_case(v))),
+                Some(kw) => values
+                    .iter()
+                    .any(|v| kw.iter().any(|k| k.eq_ignore_ascii_case(v))),
                 None => false,
             };
             if excluded {
@@ -147,11 +166,11 @@ impl CardCriteria {
 
         // ── mechanical categories ───────────────────────────────────
         if let Some(values) = self.mechanical_categories_contains_any() {
-            let matches = card
-                .card_profile
-                .mechanical_categories
-                .iter()
-                .any(|cat| values.iter().any(|v| cat.to_string().eq_ignore_ascii_case(v)));
+            let matches = card.card_profile.mechanical_categories.iter().any(|cat| {
+                values
+                    .iter()
+                    .any(|v| cat.to_string().eq_ignore_ascii_case(v))
+            });
             if !matches {
                 return false;
             }
@@ -170,11 +189,11 @@ impl CardCriteria {
         }
 
         if let Some(values) = self.mechanical_categories_excludes() {
-            let excluded = card
-                .card_profile
-                .mechanical_categories
-                .iter()
-                .any(|cat| values.iter().any(|v| cat.to_string().eq_ignore_ascii_case(v)));
+            let excluded = card.card_profile.mechanical_categories.iter().any(|cat| {
+                values
+                    .iter()
+                    .any(|v| cat.to_string().eq_ignore_ascii_case(v))
+            });
             if excluded {
                 return false;
             }
@@ -183,7 +202,9 @@ impl CardCriteria {
         // ── produced mana ────────────────────────────────────────────
         if let Some(values) = self.produced_mana_contains_any() {
             let matches = match &sd.produced_mana {
-                Some(pm) => values.iter().any(|v| pm.iter().any(|p| p.eq_ignore_ascii_case(v))),
+                Some(pm) => values
+                    .iter()
+                    .any(|v| pm.iter().any(|p| p.eq_ignore_ascii_case(v))),
                 None => false,
             };
             if !matches {
@@ -193,7 +214,9 @@ impl CardCriteria {
 
         if let Some(values) = self.produced_mana_contains_all() {
             let matches = match &sd.produced_mana {
-                Some(pm) => values.iter().all(|v| pm.iter().any(|p| p.eq_ignore_ascii_case(v))),
+                Some(pm) => values
+                    .iter()
+                    .all(|v| pm.iter().any(|p| p.eq_ignore_ascii_case(v))),
                 None => false,
             };
             if !matches {
@@ -203,7 +226,9 @@ impl CardCriteria {
 
         if let Some(values) = self.produced_mana_excludes() {
             let excluded = match &sd.produced_mana {
-                Some(pm) => values.iter().any(|v| pm.iter().any(|p| p.eq_ignore_ascii_case(v))),
+                Some(pm) => values
+                    .iter()
+                    .any(|v| pm.iter().any(|p| p.eq_ignore_ascii_case(v))),
                 None => false,
             };
             if excluded {
@@ -213,14 +238,19 @@ impl CardCriteria {
 
         if let Some(q) = self.flavor_text_contains() {
             match &sd.flavor_text {
-                Some(text) if strip_punctuation(text).to_lowercase().contains(&q.to_lowercase()) => {}
+                Some(text)
+                    if strip_punctuation(text)
+                        .to_lowercase()
+                        .contains(&q.to_lowercase()) => {}
                 _ => return false,
             }
         }
 
         if let Some(q) = self.flavor_text_not_contains()
             && sd.flavor_text.as_ref().is_some_and(|text| {
-                strip_punctuation(text).to_lowercase().contains(&q.to_lowercase())
+                strip_punctuation(text)
+                    .to_lowercase()
+                    .contains(&q.to_lowercase())
             })
         {
             return false;
@@ -240,14 +270,19 @@ impl CardCriteria {
         // ── types ─────────────────────────────────────────────────────
         if let Some(q) = self.type_line_contains() {
             match &sd.type_line {
-                Some(tl) if strip_punctuation(tl).to_lowercase().contains(&q.to_lowercase()) => {}
+                Some(tl)
+                    if strip_punctuation(tl)
+                        .to_lowercase()
+                        .contains(&q.to_lowercase()) => {}
                 _ => return false,
             }
         }
 
         if let Some(q) = self.type_line_not_contains()
             && sd.type_line.as_ref().is_some_and(|tl| {
-                strip_punctuation(tl).to_lowercase().contains(&q.to_lowercase())
+                strip_punctuation(tl)
+                    .to_lowercase()
+                    .contains(&q.to_lowercase())
             })
         {
             return false;
@@ -488,7 +523,6 @@ impl CardCriteria {
         }
 
         // ── flags ─────────────────────────────────────────────────────
-
 
         if let Some(val) = self.is_token()
             && cp.is_token != val

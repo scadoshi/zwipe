@@ -2,8 +2,10 @@
 
 use super::super::match_mode::MatchMode;
 use dioxus::prelude::*;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::card::search_card::card_type::{CardType, WithCardTypes};
+use zwipe_core::domain::card::search_card::{
+    card_filter::builder::CardQueryBuilder,
+    card_type::{CardType, WithCardTypes},
+};
 
 fn read_card_types(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<CardType> {
     match mode {

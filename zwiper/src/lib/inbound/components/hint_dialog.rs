@@ -5,13 +5,19 @@
 //! map on the user), then never again. Screens may keep a small "?" button
 //! that reopens it on demand.
 
-use crate::inbound::components::alert_dialog::{
-    AlertDialogAction, AlertDialogActions, AlertDialogContent, AlertDialogDescription,
-    AlertDialogRoot, AlertDialogTitle,
+use crate::{
+    inbound::components::{
+        alert_dialog::{
+            AlertDialogAction, AlertDialogActions, AlertDialogContent, AlertDialogDescription,
+            AlertDialogRoot, AlertDialogTitle,
+        },
+        auth::ensure_session::EnsureFresh,
+    },
+    outbound::{
+        client::{ZwipeClient, user::mark_hint_shown::ClientMarkHintShown},
+        session::Persist,
+    },
 };
-use crate::inbound::components::auth::ensure_session::EnsureFresh;
-use crate::outbound::client::user::mark_hint_shown::ClientMarkHintShown;
-use crate::outbound::{client::ZwipeClient, session::Persist};
 use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;
 

@@ -7,8 +7,7 @@
 
 use crate::API_BASE;
 use dioxus::prelude::*;
-use zwipe_core::http::contracts::metrics::HttpPublicMetrics;
-use zwipe_core::http::paths::public_metrics_route;
+use zwipe_core::http::{contracts::metrics::HttpPublicMetrics, paths::public_metrics_route};
 
 #[component]
 pub fn StatsStrip() -> Element {

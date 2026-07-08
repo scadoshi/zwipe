@@ -6,9 +6,10 @@ use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
 use zwipe::inbound::http::{ApiError, routes::update_deck_route};
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::deck::deck_profile::DeckProfile;
-use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
+use zwipe_core::{
+    domain::{auth::models::session::Session, deck::deck_profile::DeckProfile},
+    http::contracts::deck::HttpUpdateDeckProfile,
+};
 
 /// Trait for updating deck profile metadata.
 #[allow(missing_docs)]

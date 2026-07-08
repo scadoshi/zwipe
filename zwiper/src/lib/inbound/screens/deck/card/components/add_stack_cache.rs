@@ -7,8 +7,7 @@
 
 use dioxus::prelude::*;
 use uuid::Uuid;
-use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::card::{Card, search_card::card_filter::builder::CardQueryBuilder};
 
 use crate::inbound::screens::deck::card::components::action_history::AddAction;
 

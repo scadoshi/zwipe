@@ -26,10 +26,7 @@ pub fn classify_by_heuristics(card: &Card) -> Vec<MechanicalCategory> {
         .collect();
     let has_keyword = |kw: &str| keywords.iter().any(|k| k == kw);
     let cmc = sd.cmc.unwrap_or(0.0);
-    let has_produced_mana = sd
-        .produced_mana
-        .as_ref()
-        .is_some_and(|m| !m.is_empty());
+    let has_produced_mana = sd.produced_mana.as_ref().is_some_and(|m| !m.is_empty());
     let power_num: Option<i32> = sd.power.as_deref().and_then(|p| p.parse().ok());
 
     let mut cats = Vec::new();
@@ -66,7 +63,9 @@ pub fn classify_by_heuristics(card: &Card) -> Vec<MechanicalCategory> {
     // ========================================
     // Removal (single-target, NOT board wipes)
     // ========================================
-    if (oracle.contains("destroy target") || oracle.contains("exile target") || oracle.contains("deals") && oracle.contains("damage to target"))
+    if (oracle.contains("destroy target")
+        || oracle.contains("exile target")
+        || oracle.contains("deals") && oracle.contains("damage to target"))
         && !oracle.contains("destroy all")
         && !oracle.contains("exile all")
     {
@@ -76,7 +75,10 @@ pub fn classify_by_heuristics(card: &Card) -> Vec<MechanicalCategory> {
     // ========================================
     // Wipe (board wipes)
     // ========================================
-    if oracle.contains("destroy all") || oracle.contains("exile all") || WIPE_MINUS.is_match(&oracle) {
+    if oracle.contains("destroy all")
+        || oracle.contains("exile all")
+        || WIPE_MINUS.is_match(&oracle)
+    {
         cats.push(MechanicalCategory::Wipe);
     }
 
@@ -165,8 +167,8 @@ pub fn classify_by_heuristics(card: &Card) -> Vec<MechanicalCategory> {
     // ========================================
     // Burn
     // ========================================
-    if BURN.is_match(&oracle)
-        && !type_line.contains("creature") // exclude combat damage abilities
+    if BURN.is_match(&oracle) && !type_line.contains("creature")
+    // exclude combat damage abilities
     {
         cats.push(MechanicalCategory::Burn);
     }
@@ -261,40 +263,60 @@ pub fn classify_by_heuristics(card: &Card) -> Vec<MechanicalCategory> {
 mod patterns {
     use super::*;
 
-    pub static RAMP_LAND_SEARCH: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"search your library for .{0,20}(land|forest|island|swamp|mountain|plains)").expect("valid regex"));
+    pub static RAMP_LAND_SEARCH: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"search your library for .{0,20}(land|forest|island|swamp|mountain|plains)")
+            .expect("valid regex")
+    });
     pub static RAMP_ADD_MANA: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"add \{").expect("valid regex"));
     pub static DRAW_CARD: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"draw.{0,15}card").expect("valid regex"));
-    pub static WIPE_MINUS: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"(all|each) creatures?.{0,15}get.{0,10}-\d+/-\d+").expect("valid regex"));
+    pub static WIPE_MINUS: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(all|each) creatures?.{0,15}get.{0,10}-\d+/-\d+").expect("valid regex")
+    });
     pub static TOKEN_CREATE: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"create.{0,30}token").expect("valid regex"));
     pub static LIFEGAIN: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"gain.{0,10}life").expect("valid regex"));
-    pub static BLINK: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"exile.{0,80}return.{0,30}(to the battlefield|under)").expect("valid regex"));
-    pub static RECURSION: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"(return|put).{0,30}(from.{0,15}graveyard|graveyard.{0,15}(to|onto))").expect("valid regex"));
-    pub static MILL: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"(top|mill).{0,20}(card|mill).{0,15}(graveyard|mill)").expect("valid regex"));
+    pub static BLINK: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"exile.{0,80}return.{0,30}(to the battlefield|under)").expect("valid regex")
+    });
+    pub static RECURSION: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(return|put).{0,30}(from.{0,15}graveyard|graveyard.{0,15}(to|onto))")
+            .expect("valid regex")
+    });
+    pub static MILL: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(top|mill).{0,20}(card|mill).{0,15}(graveyard|mill)").expect("valid regex")
+    });
     pub static BURN: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"deals? \d+ damage to").expect("valid regex"));
-    pub static PUMP: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"(target|equipped|enchanted) creature.{0,15}gets? \+\d+/\+\d+").expect("valid regex"));
-    pub static COPY: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"(copy|copies).{0,20}(target|a) (spell|permanent|creature|artifact|enchantment)").expect("valid regex"));
-    pub static SACRIFICE: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"sacrifice (a|an|another|target) (creature|permanent|artifact|enchantment)").expect("valid regex"));
+    pub static PUMP: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(target|equipped|enchanted) creature.{0,15}gets? \+\d+/\+\d+")
+            .expect("valid regex")
+    });
+    pub static COPY: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(
+            r"(copy|copies).{0,20}(target|a) (spell|permanent|creature|artifact|enchantment)",
+        )
+        .expect("valid regex")
+    });
+    pub static SACRIFICE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"sacrifice (a|an|another|target) (creature|permanent|artifact|enchantment)")
+            .expect("valid regex")
+    });
     pub static STAX_CANT: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r"(opponents?|players?) can'?t").expect("valid regex"));
-    pub static STAX_EACH: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"(each|all) (player|opponent).{0,30}(sacrifice|discard|lose|pay)").expect("valid regex"));
-    pub static UNTAP: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"untap.{0,20}(target|all|each).{0,15}(land|creature|permanent|artifact)").expect("valid regex"));
-    pub static GRAVEYARD_HATE: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"exile.{0,30}(graveyard|all cards from)").expect("valid regex"));
+    pub static STAX_EACH: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(each|all) (player|opponent).{0,30}(sacrifice|discard|lose|pay)")
+            .expect("valid regex")
+    });
+    pub static UNTAP: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"untap.{0,20}(target|all|each).{0,15}(land|creature|permanent|artifact)")
+            .expect("valid regex")
+    });
+    pub static GRAVEYARD_HATE: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"exile.{0,30}(graveyard|all cards from)").expect("valid regex")
+    });
 }
 use patterns::*;
 
@@ -319,7 +341,11 @@ mod tests {
         card.scryfall_data.produced_mana = Some(vec!["C".to_string()]);
         card.scryfall_data.cmc = Some(1.0);
         let cats = classify_by_heuristics(&card);
-        assert!(cats.contains(&Ramp), "Sol Ring should be Ramp, got {:?}", cats);
+        assert!(
+            cats.contains(&Ramp),
+            "Sol Ring should be Ramp, got {:?}",
+            cats
+        );
     }
 
     #[test]
@@ -330,7 +356,11 @@ mod tests {
             "Instant",
         );
         let cats = classify_by_heuristics(&card);
-        assert!(cats.contains(&Removal), "StP should be Removal, got {:?}", cats);
+        assert!(
+            cats.contains(&Removal),
+            "StP should be Removal, got {:?}",
+            cats
+        );
     }
 
     #[test]
@@ -342,18 +372,21 @@ mod tests {
         );
         let cats = classify_by_heuristics(&card);
         assert!(cats.contains(&Wipe), "Wrath should be Wipe, got {:?}", cats);
-        assert!(!cats.contains(&Removal), "Wrath should not be single-target Removal");
+        assert!(
+            !cats.contains(&Removal),
+            "Wrath should not be single-target Removal"
+        );
     }
 
     #[test]
     fn counterspell_is_counterspell() {
-        let card = card_with_oracle(
-            "Counterspell",
-            "Counter target spell.",
-            "Instant",
-        );
+        let card = card_with_oracle("Counterspell", "Counter target spell.", "Instant");
         let cats = classify_by_heuristics(&card);
-        assert!(cats.contains(&Counterspell), "Counterspell should be Counterspell, got {:?}", cats);
+        assert!(
+            cats.contains(&Counterspell),
+            "Counterspell should be Counterspell, got {:?}",
+            cats
+        );
     }
 
     #[test]
@@ -364,7 +397,11 @@ mod tests {
             "Sorcery",
         );
         let cats = classify_by_heuristics(&card);
-        assert!(cats.contains(&Tutor), "Demonic Tutor should be Tutor, got {:?}", cats);
+        assert!(
+            cats.contains(&Tutor),
+            "Demonic Tutor should be Tutor, got {:?}",
+            cats
+        );
     }
 
     #[test]
@@ -386,7 +423,11 @@ mod tests {
             "Sorcery",
         );
         let cats = classify_by_heuristics(&card);
-        assert!(cats.contains(&Ramp), "Cultivate should be Ramp, got {:?}", cats);
+        assert!(
+            cats.contains(&Ramp),
+            "Cultivate should be Ramp, got {:?}",
+            cats
+        );
     }
 
     #[test]
@@ -397,7 +438,11 @@ mod tests {
             "Enchantment",
         );
         let cats = classify_by_heuristics(&card);
-        assert!(cats.contains(&Draw), "Rhystic Study should be Draw, got {:?}", cats);
+        assert!(
+            cats.contains(&Draw),
+            "Rhystic Study should be Draw, got {:?}",
+            cats
+        );
     }
 
     #[test]
@@ -409,7 +454,11 @@ mod tests {
             "Land",
         );
         let cats = classify_by_heuristics(&card);
-        assert!(cats.contains(&Counters), "Karn's Bastion should be Counters, got {:?}", cats);
+        assert!(
+            cats.contains(&Counters),
+            "Karn's Bastion should be Counters, got {:?}",
+            cats
+        );
     }
 
     #[test]
@@ -424,7 +473,11 @@ mod tests {
         card.scryfall_data.keywords = Some(vec!["Haste".to_string()]);
         // Power is 5, which is < 6 threshold, but let's test the anthem part
         let cats = classify_by_heuristics(&card);
-        assert!(cats.contains(&Anthem), "Craterhoof should be Anthem, got {:?}", cats);
+        assert!(
+            cats.contains(&Anthem),
+            "Craterhoof should be Anthem, got {:?}",
+            cats
+        );
     }
 
     #[test]
@@ -435,7 +488,11 @@ mod tests {
             "Sorcery",
         );
         let cats = classify_by_heuristics(&card);
-        assert!(cats.contains(&Recursion), "Reanimate should be Recursion, got {:?}", cats);
+        assert!(
+            cats.contains(&Recursion),
+            "Reanimate should be Recursion, got {:?}",
+            cats
+        );
     }
 
     #[test]
@@ -446,7 +503,11 @@ mod tests {
             "Enchantment",
         );
         let cats = classify_by_heuristics(&card);
-        assert!(cats.contains(&GraveyardHate), "RIP should be GraveyardHate, got {:?}", cats);
+        assert!(
+            cats.contains(&GraveyardHate),
+            "RIP should be GraveyardHate, got {:?}",
+            cats
+        );
     }
 
     #[test]
@@ -457,7 +518,11 @@ mod tests {
             "Creature — Elemental",
         );
         let cats = classify_by_heuristics(&card);
-        assert!(cats.contains(&Tokens), "Avenger should be Tokens, got {:?}", cats);
+        assert!(
+            cats.contains(&Tokens),
+            "Avenger should be Tokens, got {:?}",
+            cats
+        );
     }
 
     #[test]
@@ -468,7 +533,11 @@ mod tests {
             "Sorcery — Arcane",
         );
         let cats = classify_by_heuristics(&card);
-        assert!(cats.contains(&Ramp), "Kodama's Reach should be Ramp, got {:?}", cats);
+        assert!(
+            cats.contains(&Ramp),
+            "Kodama's Reach should be Ramp, got {:?}",
+            cats
+        );
     }
 
     #[test]
@@ -479,7 +548,11 @@ mod tests {
             "Legendary Enchantment Creature — God",
         );
         let cats = classify_by_heuristics(&card);
-        assert!(cats.contains(&Blink), "Thassa should be Blink, got {:?}", cats);
+        assert!(
+            cats.contains(&Blink),
+            "Thassa should be Blink, got {:?}",
+            cats
+        );
     }
 
     #[test]
@@ -494,6 +567,10 @@ mod tests {
         // cmc > 3, so won't match the low-cost mana producer rule
         // But it creates tokens, so should at least be Tokens
         let cats = classify_by_heuristics(&card);
-        assert!(cats.contains(&Tokens), "Smothering Tithe should be Tokens, got {:?}", cats);
+        assert!(
+            cats.contains(&Tokens),
+            "Smothering Tithe should be Tokens, got {:?}",
+            cats
+        );
     }
 }

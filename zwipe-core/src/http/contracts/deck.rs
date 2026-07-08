@@ -3,10 +3,13 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::domain::card::Card;
-use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use crate::domain::deck::{DeckEntry, DeckOtherTag, DeckTag, ImportMode, PowerLevel, format::Format};
-use crate::http::helpers::Opdate;
+use crate::{
+    domain::{
+        card::{Card, search_card::card_filter::price_currency::PriceCurrency},
+        deck::{DeckEntry, DeckOtherTag, DeckTag, ImportMode, PowerLevel, format::Format},
+    },
+    http::helpers::Opdate,
+};
 
 /// Request to import an Archidekt deck's cards into an existing deck.
 ///

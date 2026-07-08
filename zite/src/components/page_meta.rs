@@ -1,5 +1,5 @@
-use dioxus::prelude::*;
 use crate::WEB_BASE;
+use dioxus::prelude::*;
 
 /// Per-route metadata: page title, description, canonical URL, and OG/Twitter
 /// tags. Rendered into `<head>` by Dioxus's document API. Picked up by SSG so

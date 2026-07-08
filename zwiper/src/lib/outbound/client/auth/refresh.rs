@@ -5,8 +5,9 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use zwipe::inbound::http::{ApiError, routes::refresh_session_route};
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::http::contracts::auth::HttpRefreshSession;
+use zwipe_core::{
+    domain::auth::models::session::Session, http::contracts::auth::HttpRefreshSession,
+};
 
 /// Trait for refreshing access tokens using a refresh token.
 #[allow(missing_docs)]

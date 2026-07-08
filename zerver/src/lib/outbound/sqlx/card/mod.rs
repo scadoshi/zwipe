@@ -11,47 +11,55 @@ pub mod models;
 /// Sync metrics JSONB codecs and database model.
 pub mod zervice_metrics;
 
-use crate::domain::card::models::{
-    helpers::SleeveCardProfile, search_card::error::SearchCardsError,
-    zervice_metrics::ZerviceMetrics,
-};
-use crate::domain::card::requests::{
-    create_card::CreateCardError,
-    get_artists::GetArtistsError,
-    get_card::GetCardError,
-    get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
-    get_card_types::GetCardTypesError,
-    get_keywords::GetKeywordsError,
-    get_languages::GetLanguagesError,
-    get_oracle_words::GetOracleWordsError,
-    get_scryfall_data::{
-        GetScryfallData, GetScryfallDataError, ScryfallDataIds, SearchScryfallDataError,
-    },
-    get_sets::GetSetsError,
-};
-use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
-use crate::outbound::sqlx::card::helpers::upsert_card::BatchDeltaUpsertWithTx;
-use crate::outbound::sqlx::card::models::DatabaseScryfallData;
-use crate::outbound::sqlx::card::zervice_metrics::DatabaseZerviceMetrics;
-use crate::outbound::sqlx::postgres::Postgres as MyPostgres;
 use crate::{
-    domain::card::ports::CardRepository,
-    outbound::sqlx::card::helpers::upsert_card::{
-        BatchUpsertWithTx, BulkUpsertWithTx, SingleUpsertWithTx,
+    domain::card::{
+        models::{
+            helpers::SleeveCardProfile, search_card::error::SearchCardsError,
+            zervice_metrics::ZerviceMetrics,
+        },
+        ports::CardRepository,
+        requests::{
+            create_card::CreateCardError,
+            get_artists::GetArtistsError,
+            get_card::GetCardError,
+            get_card_profile::{CardProfileIds, GetCardProfile, GetCardProfileError},
+            get_card_types::GetCardTypesError,
+            get_keywords::GetKeywordsError,
+            get_languages::GetLanguagesError,
+            get_oracle_words::GetOracleWordsError,
+            get_scryfall_data::{
+                GetScryfallData, GetScryfallDataError, ScryfallDataIds, SearchScryfallDataError,
+            },
+            get_sets::GetSetsError,
+        },
+    },
+    outbound::sqlx::{
+        card::{
+            card_profile::DatabaseCardProfile,
+            helpers::upsert_card::{
+                BatchDeltaUpsertWithTx, BatchUpsertWithTx, BulkUpsertWithTx, SingleUpsertWithTx,
+            },
+            models::DatabaseScryfallData,
+            zervice_metrics::DatabaseZerviceMetrics,
+        },
+        postgres::Postgres as MyPostgres,
     },
 };
-use zwipe_core::domain::card::{
-    Card,
-    card_profile::CardProfile,
-    scryfall_data::ScryfallData,
-    search_card::card_filter::{CardQuery, card_sort_key::CardSortKey, criteria::PLAYABLE_LAYOUTS},
+use zwipe_core::domain::{
+    card::{
+        Card,
+        card_profile::CardProfile,
+        scryfall_data::ScryfallData,
+        search_card::card_filter::{
+            CardQuery, card_sort_key::CardSortKey, criteria::PLAYABLE_LAYOUTS,
+        },
+    },
+    deck::Format,
 };
-use zwipe_core::domain::deck::Format;
 
 use anyhow::Context;
 use chrono::{DateTime, Utc};
-use sqlx::{Postgres, query_as, query_scalar};
-use sqlx::{QueryBuilder, query_builder::Separated};
+use sqlx::{Postgres, QueryBuilder, query_as, query_builder::Separated, query_scalar};
 
 /// Hard ceiling on rows returned by a single card search.
 ///
@@ -304,8 +312,8 @@ impl CardRepository for MyPostgres {
         // reserves WILDCARD_SLOTS per page for deep-pool probes. It needs the
         // ranked pool twice (band + deep slice), so the query becomes a CTE.
         // Synergy seeds by deck; commander-select seeds by `commander_seed`.
-        let wildcard_serving = WILDCARD_SLOTS > 0
-            && ((signal_ordering && deck_id.is_some()) || popularity_ordering);
+        let wildcard_serving =
+            WILDCARD_SLOTS > 0 && ((signal_ordering && deck_id.is_some()) || popularity_ordering);
         // The (base + signal) score expression, shared by the wildcard CTE
         // header and the plain signal ORDER BY below:
         //   base: the commander's synergy score (unscored cards anchor below

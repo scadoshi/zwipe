@@ -21,9 +21,9 @@ pub fn open(url: &str) {
 // ============================================================================
 #[cfg(target_os = "ios")]
 mod platform {
-    use objc2::rc::Retained;
-    use objc2::runtime::NSObject;
-    use objc2::{Encode, Encoding, MainThreadMarker, class, msg_send};
+    use objc2::{
+        Encode, Encoding, MainThreadMarker, class, msg_send, rc::Retained, runtime::NSObject,
+    };
     use objc2_foundation::{NSDictionary, NSString, NSURL};
     use std::ffi::c_void;
 

@@ -125,7 +125,10 @@ mod tests {
     #[test]
     fn rejects_bad_keys() {
         let id = Uuid::new_v4();
-        assert_eq!(MarkHintShown::new(id, "").unwrap_err(), InvalidHintKey::Empty);
+        assert_eq!(
+            MarkHintShown::new(id, "").unwrap_err(),
+            InvalidHintKey::Empty
+        );
         assert_eq!(
             MarkHintShown::new(id, "   ").unwrap_err(),
             InvalidHintKey::Empty

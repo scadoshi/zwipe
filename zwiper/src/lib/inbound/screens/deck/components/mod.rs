@@ -8,14 +8,14 @@ pub(crate) mod collapsible_section;
 pub(crate) mod deck_charts;
 /// Shared deck name, format selector, and commander search for create/edit screens.
 pub(crate) mod deck_fields;
-/// Full-screen format picker with definitions.
-pub(crate) mod format_select;
 /// Deck profile info and warnings section for the view screen.
 pub(crate) mod deck_profile;
 /// Deck stats summary section for the view screen.
 pub(crate) mod deck_stats;
 /// Deck warnings section with remove buttons for card-specific warnings.
 pub(crate) mod deck_warnings;
+/// Full-screen format picker with definitions.
+pub(crate) mod format_select;
 /// Buy sheet and more actions bottom sheets for the view screen.
 pub(crate) mod more_buttons;
 /// Skeleton placeholders shown while deck data loads.

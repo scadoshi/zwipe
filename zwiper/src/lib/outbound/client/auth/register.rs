@@ -5,8 +5,7 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use zwipe::inbound::http::{ApiError, routes::register_route};
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::http::contracts::auth::HttpRegisterUser;
+use zwipe_core::{domain::auth::models::session::Session, http::contracts::auth::HttpRegisterUser};
 
 /// Trait for registering new user accounts.
 #[allow(missing_docs)]

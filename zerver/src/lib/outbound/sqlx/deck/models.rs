@@ -2,10 +2,12 @@ use sqlx_macros::FromRow;
 use uuid::Uuid;
 
 use crate::outbound::sqlx::deck::error::{IntoDeckCardError, IntoDeckProfileError};
-use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::{
-    Board, DeckCard, DeckOtherTag, DeckTag, PowerLevel, deck_name::DeckName,
-    deck_profile::DeckProfile, format::Format, quantity::Quantity,
+use zwipe_core::domain::{
+    card::search_card::card_filter::price_currency::PriceCurrency,
+    deck::{
+        Board, DeckCard, DeckOtherTag, DeckTag, PowerLevel, deck_name::DeckName,
+        deck_profile::DeckProfile, format::Format, quantity::Quantity,
+    },
 };
 
 /// raw database deck record

@@ -22,9 +22,7 @@ pub fn is_valid_commander(card: &Card, format: &Format) -> bool {
             let is_legendary = type_line.contains("Legendary");
             let is_creature = type_line.contains("Creature");
             let has_pt = sd.power.is_some() && sd.toughness.is_some();
-            let can_be_commander = oracle_text
-                .to_lowercase()
-                .contains("can be your commander");
+            let can_be_commander = oracle_text.to_lowercase().contains("can be your commander");
 
             (is_legendary && (is_creature || has_pt)) || can_be_commander
         }
@@ -190,8 +188,7 @@ pub fn is_signature_spell_in_color_identity(spell: &Card, oathbreaker: &Card) ->
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::card::scryfall_data::rarity::Rarity;
-    use crate::test_utils::make_card;
+    use crate::{domain::card::scryfall_data::rarity::Rarity, test_utils::make_card};
 
     #[test]
     fn legendary_creature_passes_commander() {
@@ -293,8 +290,7 @@ mod tests {
 
     fn make_partner(name: &str, keyword: &str) -> Card {
         let mut card = make_card(name);
-        card.scryfall_data.type_line =
-            Some("Legendary Creature — Human Warrior".to_string());
+        card.scryfall_data.type_line = Some("Legendary Creature — Human Warrior".to_string());
         card.scryfall_data.keywords = Some(vec![keyword.to_string()]);
         card
     }
@@ -315,10 +311,8 @@ mod tests {
     #[test]
     fn named_partner_detected() {
         let mut card = make_card("Brallin, Skyshark Rider");
-        card.scryfall_data.type_line =
-            Some("Legendary Creature — Human Shaman".to_string());
-        card.scryfall_data.oracle_text =
-            Some("Partner with Shabraz, the Skyshark".to_string());
+        card.scryfall_data.type_line = Some("Legendary Creature — Human Shaman".to_string());
+        card.scryfall_data.oracle_text = Some("Partner with Shabraz, the Skyshark".to_string());
         card.scryfall_data.keywords = Some(vec!["Partner with".to_string()]);
         assert_eq!(
             partner_kind(&card),
@@ -329,16 +323,12 @@ mod tests {
     #[test]
     fn named_partner_pair_valid() {
         let mut a = make_card("Brallin, Skyshark Rider");
-        a.scryfall_data.type_line =
-            Some("Legendary Creature — Human Shaman".to_string());
-        a.scryfall_data.oracle_text =
-            Some("Partner with Shabraz, the Skyshark".to_string());
+        a.scryfall_data.type_line = Some("Legendary Creature — Human Shaman".to_string());
+        a.scryfall_data.oracle_text = Some("Partner with Shabraz, the Skyshark".to_string());
 
         let mut b = make_card("Shabraz, the Skyshark");
-        b.scryfall_data.type_line =
-            Some("Legendary Creature — Shark Bird".to_string());
-        b.scryfall_data.oracle_text =
-            Some("Partner with Brallin, Skyshark Rider".to_string());
+        b.scryfall_data.type_line = Some("Legendary Creature — Shark Bird".to_string());
+        b.scryfall_data.oracle_text = Some("Partner with Brallin, Skyshark Rider".to_string());
 
         assert!(are_valid_partners(&a, &b));
     }
@@ -346,10 +336,8 @@ mod tests {
     #[test]
     fn named_partner_wrong_card_invalid() {
         let mut a = make_card("Brallin, Skyshark Rider");
-        a.scryfall_data.type_line =
-            Some("Legendary Creature — Human Shaman".to_string());
-        a.scryfall_data.oracle_text =
-            Some("Partner with Shabraz, the Skyshark".to_string());
+        a.scryfall_data.type_line = Some("Legendary Creature — Human Shaman".to_string());
+        a.scryfall_data.oracle_text = Some("Partner with Shabraz, the Skyshark".to_string());
 
         let b = make_partner("Kodama of the East Tree", "Partner");
         assert!(!are_valid_partners(&a, &b));
@@ -373,8 +361,7 @@ mod tests {
     fn doctors_companion_with_time_lord_doctor_valid() {
         let companion = make_partner("Jo Grant", "Doctor's companion");
         let mut doctor = make_card("The Fourth Doctor");
-        doctor.scryfall_data.type_line =
-            Some("Legendary Creature — Time Lord Doctor".to_string());
+        doctor.scryfall_data.type_line = Some("Legendary Creature — Time Lord Doctor".to_string());
         doctor.scryfall_data.keywords = Some(vec![]);
         assert!(are_valid_partners(&companion, &doctor));
     }
@@ -413,8 +400,7 @@ mod tests {
     #[test]
     fn background_card_detected() {
         let mut card = make_card("Criminal Past");
-        card.scryfall_data.type_line =
-            Some("Legendary Enchantment — Background".to_string());
+        card.scryfall_data.type_line = Some("Legendary Enchantment — Background".to_string());
         assert!(is_background_card(&card));
     }
 

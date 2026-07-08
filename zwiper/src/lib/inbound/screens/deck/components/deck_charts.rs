@@ -120,9 +120,12 @@ pub(crate) fn DrawOdds(deck_size: u32, buckets: Vec<(&'static str, u32)>) -> Ele
     // `{ let …; rsx! }` block inside the `for` (which confuses Dioxus node
     // diffing and drops the bar-width style on alternating turns); the keyed
     // loop below remounts changed rows.
-    let rows = buckets
-        .iter()
-        .map(|(label, k)| (*label, (p_at_least_one(deck_size, *k, draws) * 100.0).round() as u32));
+    let rows = buckets.iter().map(|(label, k)| {
+        (
+            *label,
+            (p_at_least_one(deck_size, *k, draws) * 100.0).round() as u32,
+        )
+    });
     rsx! {
         div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
             div { style: "display:flex;align-items:center;justify-content:center;gap:0.6rem;",

@@ -6,7 +6,10 @@
 use crate::domain::{
     card::{
         scryfall_data::{colors::Colors, rarity::Rarities},
-        search_card::{card_filter::{builder::CardQueryBuilder, price_currency::PriceCurrency, CardSortKey}, card_type::CardType},
+        search_card::{
+            card_filter::{CardSortKey, builder::CardQueryBuilder, price_currency::PriceCurrency},
+            card_type::CardType,
+        },
     },
     deck::Format,
 };

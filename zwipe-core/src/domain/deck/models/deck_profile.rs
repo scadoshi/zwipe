@@ -1,7 +1,9 @@
 //! Deck metadata (profile without cards).
 
-use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use crate::domain::deck::{DeckName, DeckOtherTag, DeckTag, PowerLevel, format::Format};
+use crate::domain::{
+    card::search_card::card_filter::price_currency::PriceCurrency,
+    deck::{DeckName, DeckOtherTag, DeckTag, PowerLevel, format::Format},
+};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

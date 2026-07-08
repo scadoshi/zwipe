@@ -179,7 +179,10 @@ mod tests {
 
     #[test]
     fn test_too_short() {
-        assert!(matches!(validate("Short1!"), Err(InvalidPassword::TooShort)));
+        assert!(matches!(
+            validate("Short1!"),
+            Err(InvalidPassword::TooShort)
+        ));
     }
 
     #[test]

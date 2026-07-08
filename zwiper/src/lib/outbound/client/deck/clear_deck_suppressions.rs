@@ -6,8 +6,9 @@ use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
 use zwipe::inbound::http::{ApiError, routes::clear_deck_suppressions_route};
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::http::contracts::deck::HttpClearedSuppressions;
+use zwipe_core::{
+    domain::auth::models::session::Session, http::contracts::deck::HttpClearedSuppressions,
+};
 
 /// Trait for clearing a deck's suppression set.
 #[allow(missing_docs)]

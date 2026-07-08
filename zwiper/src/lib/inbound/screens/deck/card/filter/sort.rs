@@ -1,8 +1,9 @@
 //! Sort order selection component.
 
 use dioxus::prelude::*;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
+use zwipe_core::domain::card::search_card::card_filter::{
+    builder::CardQueryBuilder, card_sort_key::CardSortKey,
+};
 
 /// Component for selecting card sort order and direction.
 #[component]

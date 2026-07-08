@@ -1,7 +1,6 @@
 //! Deck card operation HTTP request contracts.
 
-use crate::domain::card::scryfall_data::ScryfallData;
-use crate::domain::deck::ImportMode;
+use crate::domain::{card::scryfall_data::ScryfallData, deck::ImportMode};
 use serde::{Deserialize, Serialize};
 
 /// Add card to deck request body.
@@ -25,7 +24,10 @@ impl HttpCreateDeckCard {
     pub fn new(scryfall_data: &ScryfallData, quantity: i32, board: Option<String>) -> Self {
         Self {
             scryfall_data_id: scryfall_data.id.to_string(),
-            oracle_id: scryfall_data.oracle_id.map(|id| id.to_string()).unwrap_or_default(),
+            oracle_id: scryfall_data
+                .oracle_id
+                .map(|id| id.to_string())
+                .unwrap_or_default(),
             quantity,
             board,
         }

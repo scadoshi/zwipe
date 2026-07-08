@@ -1,8 +1,9 @@
 //! Card format filter component (legality + commander eligibility).
 
 use dioxus::prelude::*;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::deck::format::Format;
+use zwipe_core::domain::{
+    card::search_card::card_filter::builder::CardQueryBuilder, deck::format::Format,
+};
 
 /// Filter component for format legality and commander eligibility.
 #[component]

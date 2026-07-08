@@ -6,8 +6,10 @@ use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
 use zwipe::inbound::http::{ApiError, routes::clone_deck_route};
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::http::contracts::deck::{HttpCloneDeck, HttpClonedDeck};
+use zwipe_core::{
+    domain::auth::models::session::Session,
+    http::contracts::deck::{HttpCloneDeck, HttpClonedDeck},
+};
 
 /// Trait for cloning an existing deck into a new one with a caller-chosen name.
 #[allow(missing_docs)]

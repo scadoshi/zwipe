@@ -155,13 +155,29 @@ impl Format {
         match self {
             // 100-card singletons: the commander formats plus Gladiator
             // (no commander; 100-card minimum).
-            Self::Commander | Self::PauperCommander | Self::Duel | Self::Predh
-            | Self::Brawl | Self::HistoricBrawl | Self::Gladiator => Some(100),
+            Self::Commander
+            | Self::PauperCommander
+            | Self::Duel
+            | Self::Predh
+            | Self::Brawl
+            | Self::HistoricBrawl
+            | Self::Gladiator => Some(100),
             // 60-card formats: the 60-card singletons + open-pool constructed.
-            Self::StandardBrawl | Self::Oathbreaker
-            | Self::Standard | Self::Pioneer | Self::Modern | Self::Legacy | Self::Vintage
-            | Self::Pauper | Self::OldSchool | Self::Premodern | Self::Explorer
-            | Self::Alchemy | Self::Historic | Self::Timeless | Self::Future
+            Self::StandardBrawl
+            | Self::Oathbreaker
+            | Self::Standard
+            | Self::Pioneer
+            | Self::Modern
+            | Self::Legacy
+            | Self::Vintage
+            | Self::Pauper
+            | Self::OldSchool
+            | Self::Premodern
+            | Self::Explorer
+            | Self::Alchemy
+            | Self::Historic
+            | Self::Timeless
+            | Self::Future
             | Self::Penny => Some(60),
         }
     }
@@ -171,8 +187,12 @@ impl Format {
         match self {
             // Exactly-100 commander singleton formats. `Brawl` is Arena's
             // 100-card Brawl (formerly Historic Brawl, renamed Dec 2023).
-            Self::Commander | Self::PauperCommander | Self::Duel | Self::Predh
-            | Self::Brawl | Self::HistoricBrawl => Some(100),
+            Self::Commander
+            | Self::PauperCommander
+            | Self::Duel
+            | Self::Predh
+            | Self::Brawl
+            | Self::HistoricBrawl => Some(100),
             // Exactly-60 singleton formats.
             Self::StandardBrawl | Self::Oathbreaker => Some(60),
             // Gladiator (100-min, no cap) and open-pool constructed: no maximum.
@@ -195,8 +215,14 @@ impl Format {
     /// Maximum copies of a single non-basic-land card.
     pub fn copy_max(&self) -> u32 {
         match self {
-            Self::Commander | Self::Brawl | Self::StandardBrawl | Self::HistoricBrawl
-            | Self::PauperCommander | Self::Duel | Self::Predh | Self::Oathbreaker
+            Self::Commander
+            | Self::Brawl
+            | Self::StandardBrawl
+            | Self::HistoricBrawl
+            | Self::PauperCommander
+            | Self::Duel
+            | Self::Predh
+            | Self::Oathbreaker
             | Self::Gladiator => 1,
             _ => 4,
         }

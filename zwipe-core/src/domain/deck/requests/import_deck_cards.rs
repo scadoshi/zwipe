@@ -67,9 +67,18 @@ impl ImportDeckCards {
                 let header = trimmed.strip_prefix("//").map(|s| s.trim().to_lowercase());
                 if let Some(ref h) = header {
                     match h.as_str() {
-                        "sideboard" => { current_board = Board::Sideboard; continue; }
-                        "maybeboard" => { current_board = Board::Maybeboard; continue; }
-                        "deck" => { current_board = Board::Deck; continue; }
+                        "sideboard" => {
+                            current_board = Board::Sideboard;
+                            continue;
+                        }
+                        "maybeboard" => {
+                            current_board = Board::Maybeboard;
+                            continue;
+                        }
+                        "deck" => {
+                            current_board = Board::Deck;
+                            continue;
+                        }
                         // Skip other comment headers like "// Commander"
                         _ if !h.is_empty() => continue,
                         _ => {}
@@ -178,7 +187,8 @@ mod tests {
 
     #[test]
     fn archidekt_format_with_set_and_tags() {
-        let lines = parse_lines("1x Aether Hub (drc) 145 [Land]\n1x Dr. Madison Li (pip) 531 *F* [Draw]");
+        let lines =
+            parse_lines("1x Aether Hub (drc) 145 [Land]\n1x Dr. Madison Li (pip) 531 *F* [Draw]");
         assert_eq!(lines.len(), 2);
         assert_eq!(lines[0].quantity, 1);
         assert_eq!(lines[0].card_name, "Aether Hub");
@@ -222,10 +232,7 @@ mod tests {
 
     #[test]
     fn strip_metadata_with_brackets_only() {
-        assert_eq!(
-            strip_trailing_metadata("Aether Hub [Land]"),
-            "Aether Hub"
-        );
+        assert_eq!(strip_trailing_metadata("Aether Hub [Land]"), "Aether Hub");
     }
 
     #[test]
@@ -280,7 +287,15 @@ mod tests {
     #[test]
     fn board_override_forces_all_lines() {
         let text = "1 Sol Ring\n// Sideboard\n1 Rest in Peace\n// Deck\n1 Lightning Bolt";
-        let lines = ImportDeckCards::parse(Uuid::nil(), Uuid::nil(), text, false, Some(Board::Maybeboard), ImportMode::Add).lines;
+        let lines = ImportDeckCards::parse(
+            Uuid::nil(),
+            Uuid::nil(),
+            text,
+            false,
+            Some(Board::Maybeboard),
+            ImportMode::Add,
+        )
+        .lines;
         assert_eq!(lines.len(), 3);
         assert!(lines.iter().all(|l| l.board == Board::Maybeboard));
     }

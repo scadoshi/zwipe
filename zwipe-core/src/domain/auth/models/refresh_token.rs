@@ -210,7 +210,10 @@ mod tests {
     fn test_unvalidated_refresh_token_rejects_non_hex_characters() {
         let invalid = format!("{}z", "a".repeat(63));
         let result = UnvalidatedRefreshToken::from_str(&invalid);
-        assert!(matches!(result, Err(InvalidRefreshToken::InvalidCharacters)));
+        assert!(matches!(
+            result,
+            Err(InvalidRefreshToken::InvalidCharacters)
+        ));
     }
 
     #[test]

@@ -16,8 +16,9 @@ use crate::outbound::{
 use dioxus::prelude::*;
 use tokio::sync::{Mutex, oneshot};
 use zwipe::inbound::http::ApiError;
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::http::contracts::auth::HttpRefreshSession;
+use zwipe_core::{
+    domain::auth::models::session::Session, http::contracts::auth::HttpRefreshSession,
+};
 
 /// Process-wide single-flight lock — at most one refresh request in flight.
 /// Losers of the race wait for the winner's result instead of firing their own.
