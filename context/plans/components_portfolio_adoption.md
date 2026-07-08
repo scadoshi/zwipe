@@ -62,6 +62,31 @@ pipeline.
 The portfolio migrates to each piece as it lands (its stated commitment), which
 doubles as second-consumer verification.
 
+## Post-Pass-4 tweak round (portfolio review, all granted 2026-07-08)
+
+- **Bare `nav` selector scoped** to `.nav-wrapper nav` (base + breakpoint
+  rules) — a consumer's other semantic `<nav>` (breadcrumbs, TOC) no longer
+  inherits site-header layout. The one real defect of Pass 4.
+- **Pill styling covers button nav items**: `.nav-links button.nav-link`
+  joins the anchor selectors (base, hover, `.active`, panel-width) so e.g. a
+  dropdown trigger shares the pill without local duplication.
+- **Nav width is a variable**: `max-width: var(--nav-max-width, 60rem)` —
+  zite untouched, the portfolio matches its 760px column with one variable.
+- **CSS cascade order documented** (lib.rs crate docs): `THEMES_CSS` →
+  `COMPONENTS_CSS` → site CSS. Both workspace apps already load in this order.
+- **Page weight note:** `components.css` ships whole — a consumer carries
+  every component's rules even for components it doesn't render (as zwiper
+  does with the nav shell). It's a few KB of inert CSS; not worth a split
+  today, revisit only if the file grows an order of magnitude.
+- **Version tags:** git-dep consumers should pin `rev = "…"` for
+  reproducibility until the maintainers start tagging (`zwipe-components-vX`)
+  or publish to crates.io; tags are cheap and can start whenever the first
+  external pin lands.
+
+Consuming before the repo is pushed: a local `git = "file:///…/zwipe"` dep
+against committed history works for same-machine development; flip to the
+GitHub URL once pushed (required for any other machine or CI).
+
 Related: [`zwipe_components.md`](zwipe_components.md) (crate plan + roadmap),
 memory note `project-components-crates-io` (crates.io constraints if that day
 comes).
