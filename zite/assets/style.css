@@ -2604,13 +2604,6 @@ footer {
     line-height: 1.4;
 }
 
-/* Inline mana/tap/energy glyphs inside oracle text. */
-.oracle-sym {
-    font-size: 0.85em;
-    vertical-align: -0.05em;
-    margin: 0 0.04em;
-}
-
 /* Card-style drop shadow under mana glyphs. mana-font's own ms-shadow offset
    is em-based and sub-pixel at our sizes, so use a slightly larger one. */
 .oracle-sym.ms-cost,
@@ -2645,63 +2638,14 @@ footer {
     background-color: var(--bg-primary);
 }
 
-/* Keyword abilities (Flying, Trample, …) with a tap-to-reveal reminder. */
-.keyword-section {
-    margin-bottom: 0.5rem;
-}
-
-.keyword-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.keyword-chip {
-    padding: 0.15rem 0.5rem;
-    border: 1px solid var(--accent-primary);
-    border-radius: 0.4rem;
+/* Keyword chips come from zwipe-components (components.css); this page runs
+   its card text a notch smaller than the app, so size just the text here. */
+.shared-deck .keyword-chip {
     font-size: 0.7rem;
-    color: var(--accent-primary);
-    background-color: var(--bg-primary);
-    cursor: pointer;
-    transition:
-        background-color 0.15s ease,
-        color 0.15s ease;
 }
 
-.keyword-chip.active {
-    color: var(--bg-primary);
-    background-color: var(--accent-primary);
-}
-
-.keyword-reveal {
-    display: grid;
-    grid-template-rows: 0fr;
-    opacity: 0;
-    transition:
-        grid-template-rows 0.2s ease,
-        opacity 0.2s ease;
-}
-
-.keyword-reveal.open {
-    grid-template-rows: 1fr;
-    opacity: 1;
-}
-
-.keyword-reveal-inner {
-    overflow: hidden;
-    min-height: 0;
-}
-
-.keyword-reveal-text {
-    margin: 0.35rem 0 0;
-    padding: 0.35rem 0.5rem;
-    border-left: 2px solid var(--accent-tertiary);
-    border-radius: 0.25rem;
-    background-color: var(--bg-primary);
+.shared-deck .keyword-reveal-text {
     font-size: 0.7rem;
-    line-height: 1.4;
-    color: var(--accent-tertiary);
 }
 
 .sd-cta {

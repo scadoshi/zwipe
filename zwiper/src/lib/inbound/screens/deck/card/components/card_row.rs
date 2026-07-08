@@ -1,6 +1,6 @@
-use super::{keyword_chips::KeywordChips, oracle_text::OracleText};
 use dioxus::prelude::*;
 use uuid::Uuid;
+use zwipe_components::{KeywordChips, OracleText};
 use zwipe_core::domain::{
     card::{
         Card,

@@ -2,12 +2,11 @@ use crate::{API_BASE, Footer, Nav, Route, components::PageMeta};
 use dioxus::prelude::*;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
-use zwipe_components::Chip;
+use zwipe_components::{Chip, KeywordChips, OracleText};
 use zwipe_core::{
     domain::{
         card::{
             Card,
-            keyword::keyword_reminder,
             scryfall_data::{ImageSize, colors::Color},
             search_card::{
                 card_filter::{
@@ -31,120 +30,6 @@ enum FetchError {
     NotShared,
     /// Anything else — worth a retry.
     Network(String),
-}
-
-/// A parsed slice of oracle/mana-cost text.
-enum Segment {
-    /// Literal text (newlines preserved by the container's `white-space`).
-    Text(String),
-    /// A Mana-font class suffix, e.g. `u`, `tap`, `e`, `wu`, `2w`.
-    Symbol(String),
-}
-
-/// Splits oracle text into literal runs and `{...}` symbol tokens.
-fn parse(text: &str) -> Vec<Segment> {
-    let mut out = Vec::new();
-    let mut buf = String::new();
-    let mut rest = text;
-    while let Some(open) = rest.find('{') {
-        buf.push_str(&rest[..open]);
-        let after = &rest[open + 1..];
-        if let Some(close) = after.find('}') {
-            if !buf.is_empty() {
-                out.push(Segment::Text(std::mem::take(&mut buf)));
-            }
-            out.push(Segment::Symbol(symbol_class(&after[..close])));
-            rest = &after[close + 1..];
-        } else {
-            // Unterminated brace: keep the remainder as literal text.
-            buf.push_str(&rest[open..]);
-            rest = "";
-        }
-    }
-    buf.push_str(rest);
-    if !buf.is_empty() {
-        out.push(Segment::Text(buf));
-    }
-    out
-}
-
-/// Maps a Scryfall symbol body (no braces) to a Mana-font class suffix:
-/// lowercase, slashes dropped (`W/U` -> `wu`), with the tap/untap specials.
-fn symbol_class(sym: &str) -> String {
-    let s = sym.to_ascii_lowercase().replace('/', "");
-    match s.as_str() {
-        "t" => "tap".to_string(),
-        "q" => "untap".to_string(),
-        _ => s,
-    }
-}
-
-/// Oracle text with mana/tap/energy/etc. symbols rendered as glyphs.
-/// Mirrors the app's `OracleText` so cards read identically here.
-#[component]
-fn OracleText(text: String, class: String) -> Element {
-    // Scryfall separates abilities with a single newline, which reads cramped.
-    // Double them so each ability gets a blank line between it and the next.
-    let text = text.replace('\n', "\n\n");
-    rsx! {
-        p { class: "{class}",
-            for (i, seg) in parse(&text).into_iter().enumerate() {
-                match seg {
-                    Segment::Text(t) => rsx! { span { key: "{i}", "{t}" } },
-                    Segment::Symbol(c) => rsx! { i { key: "{i}", class: "ms ms-{c} ms-cost ms-shadow oracle-sym" } },
-                }
-            }
-        }
-    }
-}
-
-/// Tappable keyword chips with a shared inline reminder area, same behavior
-/// as the app's deck-cards screen.
-#[component]
-fn KeywordChips(keywords: Vec<String>) -> Element {
-    let mut open = use_signal(|| None::<usize>);
-
-    let items: Vec<(String, &'static str)> = keywords
-        .iter()
-        .map(|k| (k.clone(), keyword_reminder(k)))
-        .collect();
-
-    let open_idx = open();
-    let reveal_text = open_idx.and_then(|i| items.get(i)).map(|(_, r)| *r);
-    let reveal_class = if reveal_text.is_some() {
-        "keyword-reveal open"
-    } else {
-        "keyword-reveal"
-    };
-
-    rsx! {
-        div { class: "keyword-section",
-            div { class: "keyword-chips",
-                for (i , (name , _)) in items.iter().enumerate() {
-                    button {
-                        key: "{i}",
-                        class: if open_idx == Some(i) { "keyword-chip active" } else { "keyword-chip" },
-                        onclick: move |evt| {
-                            evt.stop_propagation();
-                            if open() == Some(i) {
-                                open.set(None);
-                            } else {
-                                open.set(Some(i));
-                            }
-                        },
-                        "{name}"
-                    }
-                }
-            }
-            div { class: "{reveal_class}",
-                div { class: "keyword-reveal-inner",
-                    if let Some(text) = reveal_text {
-                        p { class: "keyword-reveal-text", "{text}" }
-                    }
-                }
-            }
-        }
-    }
 }
 
 /// A card in the top-left hover-preview stack. The stack holds up to 5, newest
@@ -368,7 +253,7 @@ fn CardRow(
                 }
                 // Muted rule renders only with the actions, so an actionless card
                 // never stacks it on the accent rule below.
-                if let Some(url) = overlay_url.clone() {
+                if let Some(url) = overlay_url {
                     hr { class: "card-row-rule card-row-rule-muted" }
                     div { class: "card-row-actions",
                         div { class: "card-action-row",

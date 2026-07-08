@@ -1,10 +1,9 @@
-use super::{keyword_chips::KeywordChips, oracle_text::OracleText};
 use crate::inbound::components::alert_dialog::{
     AlertDialogAction, AlertDialogActions, AlertDialogContent, AlertDialogDescription,
     AlertDialogRoot, AlertDialogTitle,
 };
 use dioxus::prelude::*;
-use zwipe_components::{Button, ButtonVariant};
+use zwipe_components::{Button, ButtonVariant, KeywordChips, OracleText};
 use zwipe_core::domain::card::Card;
 
 /// One card face's rules text, extracted for display. Single-faced cards yield
