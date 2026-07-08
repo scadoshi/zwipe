@@ -10,34 +10,24 @@ at `context/archive/complete_2026_q1.md`.
 
 ## Next Up
 
-- [ ] **Next store build carries the pending client batch** (all on main, no
-  extra work — rides whatever ships next):
-  - Zwipe-select client leg (`d212e93b`): drops the pinned Rank sort, serves
-    from `POST /api/card/search/commanders` — popularity-based, banded,
-    wildcarded; live server-side since 2026-07-07 with 3,325 commanders
-    swept. As-built: [`../archive/commander_select_ordering.md`](../archive/commander_select_ordering.md);
-    fast-follow: [`../archive/commander_select_signal.md`](../archive/commander_select_signal.md).
-  - Commander-select signal ingest (built 2026-07-07, with the ordering leg's
-    fast-follow): the select screen tallies shown/selected/skipped per
-    candidate into the usage batch; server upserts the pooled
-    `commander_select_signal` aggregate (no user_id) and the wildcard deep
-    slice serves least-shown first (dormant until counts accrue). Server half
-    (migration + ingest + consumer) deploys on next push, ahead of the client
-    per the server-first rule. Consumer B (popularity term) deliberately
-    later: [`../archive/commander_select_signal.md`](../archive/commander_select_signal.md).
-  - Partner autofill (`2ba57c15`): picking a "Partner with [Name]" commander
-    auto-fills the named mate with a toast (52 of 56 such cards; the rest
-    correctly fall through to manual). Includes the edit-load fix: racing
-    commander/partner loads could wipe a saved partner on edit-screen entry.
-  - Deck MVPs phase 1 (`abaaec0e`): star up to three mainboard cards per
-    deck (gold star on starred rows, Star/Unstar in the expanded row, server
-    referees the cap, clone inherits). Server half deploys on next push
-    (additive migration); starring goes live with the build. Phases 2–3
-    (signal weight, steering) are server-only follow-ups once stars accrue:
-    [`../plans/deck_mvps/`](../plans/deck_mvps/overview.md).
-  - Store What's New when it ships: commander picks lead with the
-    community's most-built commanders, fresh order daily; partners that name
-    each other now pair automatically; star your deck's MVPs.
+- [ ] **1.4.0 LIVE on the App Store (2026-07-08); track the Android side** — the
+  feature batch: Zwipe-select popularity ordering (client leg), commander-select
+  signal ingest, partner autofill, Deck MVPs phase 1, deck share links. Server
+  halves (three additive migrations) deployed to prod first, verified against
+  live clients. Store copy staged in both `form_fields.md` files; What's New:
+  commander picks lead with the community's most-built commanders, fresh order
+  daily; partners that name each other pair automatically; star your deck's
+  MVPs; share any deck with a link. iOS cleared review and is distributed;
+  confirm the vc22 closed-testing rollout on Play.
+
+- [ ] **Next store build carries the 2026-07-08 zwiper polish batch** (all on
+  main; ships as **1.4.1** — or **1.5.0** if new functionality lands first,
+  per the owner's versioning rule 2026-07-08): land-target auto-filter leak fix, skeleton
+  realignment (deck list tag tiles, full edit-deck form, collapsed stat
+  sections, spinner-free search), expanded card-row emphasis + DFC front-face
+  mana cost (via the shared `CardRow`), `card-action-*` class rename, shared
+  site constants (About/store links now debug-gated via
+  `zwipe_core::domain::site`).
 - [ ] **Track 1.3.1 review (anonymous funnel metrics)** — iOS **build 60** + Android **vc21** submitted to both stores 2026-07-05, in review. Server deployed the same day (two additive migrations; first deploy attempt failed on a stale crate-local `zerver/.sqlx/` shadowing the workspace offline data — removed, and the workflow now verifies `.sqlx` against the migrated schema before building; see `operations/infrastructure/cicd.md`). Once clients roll out and data accrues, read the funnel with `zcripts` (distinct sessions per kind vs. `user_events.register`) — these numbers gate the sign-in-with-Google decision.
 - [ ] **Track 1.3.0 review on both stores** — iOS **build 59** + Android **versionCode 20** submitted 2026-07-03 (server skip/unskip endpoints deployed to prod first). 1.3.0 supersedes the withdrawn 1.2.3 and folds in: swipe memory (FR #11) now **per-swipe durable**, **per-deck stack memory**, the CardStack refactor, the profile **About section**, image/skeleton polish, and the **filter-intent + Reset** pass (sort/synergy-only searches serve, Reset returns each screen to its default, accurate filter dot, filter sheet collapses on close). Build progression: 57/18 → 58/19 (About) → 59/20 (filter/Reset). Once live, 1.3.0 becomes the floor for `MIN_CLIENT_VERSION` gating; mark FR #11 shipped. Per-change detail in `overview.md`. Marketing video plans (`marketing/plans/`) are refreshed for this build.
 - [ ] **Privacy follow-ups for per-user collection.** The policy text shipped 2026-07-02 (`b1ee1b11`, discloses per-account activity + deck skip memory). Remaining owner passes: update the App Store privacy "nutrition label" + Play data-safety form to reflect per-account analytics, and send the policy-change notification email to users.

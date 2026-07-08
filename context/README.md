@@ -20,38 +20,39 @@ Plus [`CLAUDE.md`](CLAUDE.md) — the authoritative rules/instructions for AI as
 
 ## Current focus
 
-**Latest — serve-path arc complete (server-only, LIVE 2026-07-07):** three
-ships in two days. (1) **Adaptive serve ordering** (1.3.2): the default
-synergy stack scores cards by the scraped base plus Zwipe's own swipe
-signal, dealt in bands of 25 shuffled per (deck, day) — a different opening
-hand per deck per day. (2) **Wildcard slot**: each hand reserves one card
-from beyond the 500-card horizon (least-shown first), so the deep pool
-finally accrues impressions. (3) **Commander popularity pipeline**: a new
-`commander_popularity` table (decks-*helmed*, worker-swept weekly, 3,325
-commanders) behind a first-class `POST /api/card/search/commanders` —
-replacing `edhrec_rank` as the select base (it ranks 99-staples above The
-Ur-Dragon). The endpoint is live but dormant: the Zwipe-select client leg is
-on main and rides the next store build — as do partner autofill (`2ba57c15`)
-and Deck MVPs phase 1 (`abaaec0e`, star up to three cards per deck), making
-the pending 1.4.0 batch substantial (details: `progress/todo.md` Next Up). See the
-[`progress/overview.md`](progress/overview.md) top entries;
-[`plans/suggestion_signal.md`](plans/suggestion_signal.md) (Phase 3c remains,
-data-gated) and [`archive/commander_select_signal.md`](archive/commander_select_signal.md)
-(§1-3 shipped; §4 Consumer B is the remaining data-gated retune) are the follow-ons.
+**Latest — shared-components arc + portfolio adoption (2026-07-08):**
+`zwipe-components` grew from 3 to 10 components in a day (`CardRow`,
+`ThemePicker`, `NavDropdown`, `NavBar`, `PageMeta`, `OracleText`,
+`KeywordChips` joined Button/Chip/ActionBar), now owns `themes.css`, and
+exports `COMPONENTS_CSS`/`THEMES_CSS` for external consumers — because the
+owner's **portfolio site became the crate's first external consumer** via a
+GitHub git dependency (~760 duplicated lines deleted there; crates.io
+declined). Same day: `zwipe_core::domain::site` centralized all base
+URL/contact constants across app/site/server, zite shipped a polish batch
+(ghost skeletons, featured-row role tags, dead-end not-shared screen,
+guides sitemap + Article JSON-LD), and zwiper banked polish for the next
+build (skeleton realignment, land-target filter-leak fix, DFC mana-cost
+fallback). Details:
+[`plans/components_portfolio_adoption.md`](plans/components_portfolio_adoption.md)
+and the [`progress/overview.md`](progress/overview.md) top entries.
 
-**In review — 1.3.1 (iOS build 60 / Android vc21, submitted 2026-07-06):**
-pre-registration funnel instrumentation (anonymous, PII-free session events →
-install→register drop-off becomes a query; the numbers gate the
-sign-in-with-Google decision), plus the server-side type-erasure refactor and
-daily-activity BIGINT widening. 1.3.0 (build 59 / vc20) also still in review.
+**1.4.0 LIVE on the App Store (2026-07-08; iOS build 61 / Android vc22):** the feature batch
+— Zwipe-select popularity ordering, commander-select signal ingest, partner
+autofill, Deck MVPs phase 1, deck share links. Server halves (three additive
+migrations) deployed to prod first and verified against live clients. 1.3.0
+(build 59 / vc20) and 1.3.1 (build 60 / vc21) superseded; the next build
+carries the 2026-07-08 zwiper polish as **1.4.1** (or **1.5.0** if new
+functionality lands first). Serve-path follow-ons
+remain data-gated: [`plans/suggestion_signal.md`](plans/suggestion_signal.md)
+(Phase 3c) and [`archive/commander_select_signal.md`](archive/commander_select_signal.md)
+(§4 Consumer B).
 
-**After this version:** short-form videos against the 1.3.x build
-(`marketing/plans/` — #2 and #4 are both filmable now), track review (then
-bump `MIN_CLIENT_VERSION`), keep the closed-testing 14-day clock running,
-watch the new funnel numbers (they gate the sign-in-with-Google decision),
-privacy follow-ups (store data-safety labels + notification email),
-suggestion-signal **Phase 3 (ranking)**, and draw-odds **Phase 4 (premium
-gating)**.
+**After this:** short-form videos (`marketing/plans/` — the share/MVP/
+commander videos are filmable now against 1.4.0), review tracking (then bump
+`MIN_CLIENT_VERSION`), keep the closed-testing 14-day clock running, watch
+the funnel numbers (they gate the sign-in-with-Google decision), privacy
+follow-ups (store data-safety labels + notification email), and draw-odds
+**Phase 4 (premium gating)**.
 
 See [`progress/overview.md`](progress/overview.md) for the high-level state,
 [`progress/feature_requests.md`](progress/feature_requests.md) for the weighted
