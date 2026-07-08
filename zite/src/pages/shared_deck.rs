@@ -810,8 +810,6 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                         value: "{name_filter}",
                         oninput: move |evt| name_filter.set(evt.value()),
                     }
-                }
-                div { class: "sd-control-row",
                     for card_type in [
                         CardType::Creature, CardType::Instant, CardType::Sorcery,
                         CardType::Artifact, CardType::Enchantment,
