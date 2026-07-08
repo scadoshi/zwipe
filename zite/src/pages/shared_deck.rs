@@ -147,6 +147,28 @@ fn KeywordChips(keywords: Vec<String>) -> Element {
     }
 }
 
+/// A card in the top-left hover-preview stack. The stack holds up to 5, newest
+/// first; each card has its own timer and fades out on its own.
+#[derive(Clone, PartialEq)]
+struct PreviewCard {
+    /// Monotonic id, unique per hover (so the same card hovered twice stacks).
+    id: u64,
+    url: String,
+    /// True once the card's timer has fired and it's playing its exit fade.
+    leaving: bool,
+}
+
+/// Browser `setTimeout` as a future. No-op off wasm (the server render never
+/// hovers, so this never actually runs there); the `.await` only exists on
+/// wasm, hence the allow.
+#[allow(clippy::unused_async)]
+async fn sleep_ms(ms: u32) {
+    #[cfg(target_arch = "wasm32")]
+    gloo_timers::future::TimeoutFuture::new(ms).await;
+    #[cfg(not(target_arch = "wasm32"))]
+    let _ = ms;
+}
+
 /// A card's displayable mana cost, falling back to the front face for
 /// double-faced layouts whose top-level cost is absent.
 fn display_mana_cost(card: &Card) -> String {
@@ -174,7 +196,9 @@ fn CommandZoneCard(card: Card, role: String) -> Element {
                 img { class: "sd-cz-image", src: "{url}", alt: "{name}", loading: "lazy" }
             }
             div { class: "sd-cz-name", "{name}" }
-            div { class: "sd-cz-role", "{role}" }
+            if !role.is_empty() {
+                div { class: "sd-cz-role", "{role}" }
+            }
         }
     }
 }
@@ -183,10 +207,23 @@ fn CommandZoneCard(card: Card, role: String) -> Element {
 /// that expands/collapses to the same detail (cost, type, rarity, keywords,
 /// oracle text, stats) — minus the app's edit actions.
 #[component]
-fn CardRow(card: Card, qty: i32, mvp: bool, mut expanded_card: Signal<Option<Uuid>>) -> Element {
+fn CardRow(
+    card: Card,
+    qty: i32,
+    mvp: bool,
+    mut expanded_card: Signal<Option<Uuid>>,
+    mut preview_stack: Signal<Vec<PreviewCard>>,
+    mut preview_next_id: Signal<u64>,
+) -> Element {
     let card_id = card.scryfall_data.id;
     let is_expanded = expanded_card() == Some(card_id);
+    // This row's live stack entry id (while the cursor is on it); the leave
+    // handler times it out. `None` when the row isn't hovered.
+    let mut my_preview_id = use_signal(|| None::<u64>);
     let sd = &card.scryfall_data;
+    // Full-size art shown in the pinned hover preview (desktop). Front face for
+    // double-faced layouts.
+    let hover_image = sd.primary_image_url(ImageSize::Normal).map(str::to_string);
 
     let name = sd.name.clone();
     let cmc_display = sd
@@ -230,6 +267,38 @@ fn CardRow(card: Card, qty: i32, mvp: bool, mut expanded_card: Signal<Option<Uui
 
             div {
                 class: "card-row-compact",
+                onmouseenter: move |_| {
+                    let Some(url) = hover_image.clone() else {
+                        return;
+                    };
+                    // Push onto the top of the stack (newest first), cap at 5.
+                    // No timer yet: the card is held as long as the cursor stays
+                    // on the row — the leave handler starts its 2s countdown.
+                    let id = preview_next_id();
+                    preview_next_id.set(id + 1);
+                    my_preview_id.set(Some(id));
+                    preview_stack.with_mut(|s| {
+                        s.insert(0, PreviewCard { id, url, leaving: false });
+                        s.truncate(5);
+                    });
+                },
+                onmouseleave: move |_| {
+                    let Some(id) = my_preview_id() else {
+                        return;
+                    };
+                    my_preview_id.set(None);
+                    // Now the card's 2s life runs; then a short fade-out, then drop.
+                    spawn(async move {
+                        sleep_ms(2000).await;
+                        preview_stack.with_mut(|s| {
+                            if let Some(c) = s.iter_mut().find(|c| c.id == id) {
+                                c.leaving = true;
+                            }
+                        });
+                        sleep_ms(400).await;
+                        preview_stack.with_mut(|s| s.retain(|c| c.id != id));
+                    });
+                },
                 onclick: move |_| {
                     if expanded_card() == Some(card_id) {
                         expanded_card.set(None);
@@ -295,40 +364,43 @@ fn CardRow(card: Card, qty: i32, mvp: bool, mut expanded_card: Signal<Option<Uui
     }
 }
 
-/// `[-] value [+]` stepper for the mana value bounds. `None` = no bound;
-/// stepping below zero clears the bound again.
+/// Loading placeholder in the shape of the loaded deck: a featured card row,
+/// the controls panel, and grouped card columns. Pulses while the fetch runs.
 #[component]
-fn MvStepper(label: String, mut value: Signal<Option<u32>>) -> Element {
+fn SharedDeckSkeleton() -> Element {
     rsx! {
-        div { class: "sd-mv-stepper",
-            span { class: "sd-mv-label", "{label}" }
-            button {
-                class: "sd-mv-btn",
-                onclick: move |_| {
-                    let next = match value() {
-                        Some(0) | None => None,
-                        Some(v) => Some(v - 1),
-                    };
-                    value.set(next);
-                },
-                "-"
-            }
-            span { class: "sd-mv-value",
-                match value() {
-                    Some(v) => rsx! { "{v}" },
-                    None => rsx! { "Any" },
+        div { class: "shared-deck content-enter",
+            header { class: "sd-header",
+                div { class: "sk sk-title" }
+                div { class: "sd-header-meta",
+                    for i in 0..4 {
+                        div { key: "{i}", class: "sk sk-chip" }
+                    }
                 }
             }
-            button {
-                class: "sd-mv-btn",
-                onclick: move |_| {
-                    let next = match value() {
-                        None => Some(0),
-                        Some(v) => Some((v + 1).min(20)),
-                    };
-                    value.set(next);
-                },
-                "+"
+            section { class: "sd-featured",
+                for i in 0..4 {
+                    div { key: "{i}", class: "sd-cz-card",
+                        div { class: "sk sk-card" }
+                        div { class: "sk sk-line sk-line-name" }
+                        div { class: "sk sk-line sk-line-role" }
+                    }
+                }
+            }
+            div { class: "sk sk-controls" }
+            section { class: "sd-groups",
+                for g in 0..3 {
+                    div { key: "{g}", class: "sd-group",
+                        div { class: "sd-group-header",
+                            div { class: "sk sk-line sk-group-title" }
+                        }
+                        for r in 0..6 {
+                            div { class: "card-row", key: "{r}",
+                                div { class: "sk sk-row" }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -368,10 +440,7 @@ pub fn SharedDeck(token: String) -> Element {
                     description: "A Magic: The Gathering deck shared from Zwipe.".to_string(),
                     path: "/deck".to_string(),
                 }
-                div { class: "form-page content-enter",
-                    h1 { "Loading deck" }
-                    div { class: "spinner-row", div { class: "spinner" } }
-                }
+                SharedDeckSkeleton {}
             },
             Some(Err(FetchError::NotShared)) => rsx! {
                 PageMeta {
@@ -414,11 +483,16 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     let mut name_filter = use_signal(String::new);
     let mut selected_types = use_signal(Vec::<CardType>::new);
     let mut selected_colors = use_signal(Vec::<Color>::new);
-    let mana_min: Signal<Option<u32>> = use_signal(|| None);
-    let mana_max: Signal<Option<u32>> = use_signal(|| None);
-    let mut show_lands = use_signal(|| true);
+    // Lands hidden by default (they dominate the list and add little to a
+    // read-through); the Lands toggle brings them in.
+    let mut show_lands = use_signal(|| false);
     let mut show_command_zone = use_signal(|| true);
     let expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
+    // Full-art hover-preview stack pinned top-left (desktop). Each hovered row
+    // pushes a card on top; each card fades out on its own 2s timer. Never set
+    // on touch devices (no mouseenter), so it simply stays empty there.
+    let preview_stack: Signal<Vec<PreviewCard>> = use_signal(Vec::new);
+    let preview_next_id: Signal<u64> = use_signal(|| 0);
 
     // Mainboard only: the maybeboard is scratch space, not the deck statement.
     let mainboard: Vec<&DeckEntry> = deck
@@ -439,6 +513,18 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
         .filter(|e| e.deck_card.mvp_at.is_some())
         .map(|e| e.deck_card.scryfall_data_id)
         .collect();
+    // Starred cards, oldest star first (the vesting clock), for the featured
+    // MVP row — the deck's personality statement.
+    let mut mvp_entries: Vec<&DeckEntry> = mainboard
+        .iter()
+        .copied()
+        .filter(|e| e.deck_card.mvp_at.is_some())
+        .collect();
+    mvp_entries.sort_by_key(|e| e.deck_card.mvp_at);
+    let mvp_cards: Vec<Card> = mvp_entries.iter().map(|e| e.card.clone()).collect();
+    // A format with a signature spell is Oathbreaker: the "commander" is the
+    // oathbreaker planeswalker.
+    let is_oathbreaker = deck.format.as_ref().is_some_and(|f| f.has_signature_spell());
 
     let price = mainboard_total_price(&deck.entries, PriceCurrency::Usd);
 
@@ -494,12 +580,6 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     if !selected_colors().is_empty() {
         builder.set_color_identity_within(selected_colors().into_iter().collect());
     }
-    if mana_min().is_some() || mana_max().is_some() {
-        builder.set_cmc_range((
-            f64::from(mana_min().unwrap_or(0)),
-            f64::from(mana_max().unwrap_or(1000)),
-        ));
-    }
     let filtered: Vec<Card> = if builder.is_empty() {
         cards
     } else {
@@ -510,12 +590,87 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     };
     let filtered: Vec<Card> = Cards::from(filtered).sorted(CardSortKey::Name, true).into();
     let groups = filtered.group_by(group_option());
+    let no_matching = groups.is_empty();
+
+    // Flatten command zone + type groups into one ordered section list, then
+    // greedily balance them into independent columns. CSS multi-column would
+    // reflow the whole layout when a card expands (shifting groups between
+    // columns); independent flex columns let a column just grow taller.
+    let mut sections: Vec<(String, Vec<Card>)> = Vec::new();
+    if show_command_zone() {
+        let mut cz: Vec<Card> = Vec::new();
+        if let Some(c) = &deck.commander {
+            cz.push(c.clone());
+        }
+        if let Some(c) = &deck.partner_commander {
+            cz.push(c.clone());
+        }
+        if !cz.is_empty() {
+            let header = if is_oathbreaker {
+                "Oathbreaker"
+            } else if deck.partner_commander.is_some() {
+                "Commanders"
+            } else {
+                "Commander"
+            };
+            sections.push((header.to_string(), cz));
+        }
+        if let Some(c) = &deck.background {
+            sections.push(("Background".to_string(), vec![c.clone()]));
+        }
+        if let Some(c) = &deck.signature_spell {
+            sections.push(("Signature spell".to_string(), vec![c.clone()]));
+        }
+    }
+    for group in groups {
+        let qty: i64 = group
+            .cards
+            .iter()
+            .map(|c| i64::from(*qty_by_id.get(&c.scryfall_data.id).unwrap_or(&1)))
+            .sum();
+        sections.push((format!("{} ({})", group.label, qty), group.cards));
+    }
+
+    const COLS: usize = 3;
+    let mut columns: Vec<Vec<(String, Vec<Card>)>> = vec![Vec::new(); COLS];
+    let mut heights = [0usize; COLS];
+    for (header, cards) in sections {
+        let h = cards.len() + 2;
+        // Assign to the currently shortest column.
+        let ci = heights
+            .iter()
+            .enumerate()
+            .min_by_key(|(_, x)| **x)
+            .map(|(i, _)| i)
+            .unwrap_or(0);
+        if let Some(height) = heights.get_mut(ci) {
+            *height += h;
+        }
+        if let Some(col) = columns.get_mut(ci) {
+            col.push((header, cards));
+        }
+    }
 
     rsx! {
         PageMeta {
             title: deck.name.clone(),
             description: "A Magic: The Gathering deck shared from Zwipe.".to_string(),
             path: "/deck".to_string(),
+        }
+        // Pinned full-art preview stack, top-left, populated by row hover. Sits
+        // in the wide-screen left gutter; empty on touch (no mouseenter) and
+        // hidden below the gutter width so it never overlaps the content.
+        if !preview_stack().is_empty() {
+            div { class: "sd-hover-stack",
+                for (i, card) in preview_stack().into_iter().enumerate() {
+                    div {
+                        key: "{card.id}",
+                        class: if card.leaving { "sd-preview-card leaving" } else { "sd-preview-card" },
+                        style: "top: calc({i} * 2.6rem); z-index: {200 - i};",
+                        img { src: "{card.url}", alt: "Card preview" }
+                    }
+                }
+            }
         }
         div { class: "shared-deck content-enter",
             header { class: "sd-header",
@@ -543,12 +698,19 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                 }
             }
 
-            if show_command_zone()
-                && (deck.commander.is_some() || deck.partner_commander.is_some()
-                    || deck.background.is_some() || deck.signature_spell.is_some()) {
-                section { class: "sd-command-zone",
+            // Featured row: the command zone and the deck MVPs together on one
+            // line, each card labeled underneath — the deck's identity at a
+            // glance. Always pinned at the top (the Command zone toggle only
+            // governs list inclusion below, like the app).
+            if deck.commander.is_some() || deck.partner_commander.is_some()
+                || deck.background.is_some() || deck.signature_spell.is_some()
+                || !mvp_cards.is_empty() {
+                section { class: "sd-featured",
                     if let Some(card) = deck.commander.clone() {
-                        CommandZoneCard { card, role: "Commander".to_string() }
+                        CommandZoneCard {
+                            card,
+                            role: if is_oathbreaker { "Oathbreaker".to_string() } else { "Commander".to_string() },
+                        }
                     }
                     if let Some(card) = deck.partner_commander.clone() {
                         CommandZoneCard { card, role: "Partner".to_string() }
@@ -558,6 +720,9 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                     }
                     if let Some(card) = deck.signature_spell.clone() {
                         CommandZoneCard { card, role: "Signature spell".to_string() }
+                    }
+                    for card in mvp_cards.iter().cloned() {
+                        CommandZoneCard { card, role: "MVP".to_string() }
                     }
                 }
             }
@@ -596,8 +761,6 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                         value: "{name_filter}",
                         oninput: move |evt| name_filter.set(evt.value()),
                     }
-                    MvStepper { label: "Min MV".to_string(), value: mana_min }
-                    MvStepper { label: "Max MV".to_string(), value: mana_max }
                 }
                 div { class: "sd-control-row",
                     for card_type in [
@@ -639,27 +802,26 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                 }
             }
 
-            if groups.is_empty() {
-                p { class: "sd-empty", "No cards match these filters." }
+            if no_matching {
+                p { class: "sd-empty", "No cards found" }
             }
-            section { class: "sd-groups",
-                for group in groups {
-                    div { class: "sd-group", key: "{group.label}",
-                        div { class: "sd-group-header",
-                            {
-                                let group_qty: i64 = group.cards.iter()
-                                    .map(|c| i64::from(*qty_by_id.get(&c.scryfall_data.id).unwrap_or(&1)))
-                                    .sum();
-                                rsx! { "{group.label} ({group_qty})" }
-                            }
-                        }
-                        for card in group.cards {
-                            CardRow {
-                                key: "{card.scryfall_data.id}",
-                                qty: *qty_by_id.get(&card.scryfall_data.id).unwrap_or(&1),
-                                mvp: mvp_ids.contains(&card.scryfall_data.id),
-                                card,
-                                expanded_card,
+            section { class: "sd-columns",
+                for (ci, col) in columns.into_iter().enumerate() {
+                    div { class: "sd-column", key: "{ci}",
+                        for (header, cards) in col {
+                            div { class: "sd-group", key: "{header}",
+                                div { class: "sd-group-header", "{header}" }
+                                for card in cards {
+                                    CardRow {
+                                        key: "{card.scryfall_data.id}",
+                                        qty: *qty_by_id.get(&card.scryfall_data.id).unwrap_or(&1),
+                                        mvp: mvp_ids.contains(&card.scryfall_data.id),
+                                        card,
+                                        expanded_card,
+                                        preview_stack,
+                                        preview_next_id,
+                                    }
+                                }
                             }
                         }
                     }
