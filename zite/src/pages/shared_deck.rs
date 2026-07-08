@@ -174,17 +174,10 @@ fn SharedDeckSkeleton() -> Element {
             }
             div { class: "sk sk-controls" }
             section { class: "sd-groups",
+                // Ghost card-list groups: like every other skeleton piece,
+                // just big translucent boxes — no chrome, no inner structure.
                 for g in 0..3 {
-                    div { key: "{g}", class: "sd-group",
-                        div { class: "sd-group-header",
-                            div { class: "sk sk-line sk-group-title" }
-                        }
-                        for r in 0..6 {
-                            div { class: "card-row", key: "{r}",
-                                div { class: "sk sk-row" }
-                            }
-                        }
-                    }
+                    div { key: "{g}", class: "sk sk-group" }
                 }
             }
         }
