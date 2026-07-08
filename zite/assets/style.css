@@ -2003,7 +2003,7 @@ footer {
     padding: 0.5rem 1rem 0.25rem;
 }
 
-.card-row-actions .qty-row {
+.card-row-actions .card-action-row {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -2011,7 +2011,7 @@ footer {
     margin-top: 0.5rem;
 }
 
-.card-row-actions .qty-btn {
+.card-row-actions .card-action-btn {
     padding: 0.2rem 0.6rem;
     font: inherit;
     font-size: 0.85rem;
@@ -2027,7 +2027,7 @@ footer {
 }
 
 @media (hover: hover) {
-    .card-row-actions .qty-btn:hover {
+    .card-row-actions .card-action-btn:hover {
         border-color: var(--accent-primary);
         color: var(--accent-primary);
     }
