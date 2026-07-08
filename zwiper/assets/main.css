@@ -2634,7 +2634,10 @@ button {
 .card-row {
     padding: 0.5rem 1rem;
     border-bottom: 1px solid var(--border-secondary);
-    transition: background-color 0.15s ease;
+    transition:
+        background-color 0.15s ease,
+        transform 0.12s ease,
+        box-shadow 0.12s ease;
     overflow: hidden;
     min-width: 0;
 }
@@ -2646,7 +2649,13 @@ button {
 /* The accent rule below the buttons is the expanded row's bottom boundary, so
    drop the row's own border to avoid a doubled line. */
 .card-row.expanded {
+    position: relative;
+    z-index: 2;
     border-bottom: none;
+    transform: scale(1.02);
+    border-radius: 0.4rem;
+    background-color: color-mix(in srgb, var(--accent-primary) 8%, var(--bg-primary));
+    box-shadow: var(--shadow-sm);
 }
 
 .card-row-compact {
@@ -2760,12 +2769,17 @@ button {
    wrapper already reaches the row edges, so no negative margin needed here. */
 .card-row-rule {
     border: none;
-    border-top: 1px solid var(--accent-secondary);
+    border-top: 1px solid var(--border-secondary);
     margin: 0.5rem 0 0 0;
 }
 
-/* Plain separator between the detail and the action buttons (still inside the
-   accent-framed area). */
+/* Emphasis (scale + shadow + tint) marks the expanded row, so the accent
+   bottom rule is redundant — hide it. Top + muted stay as neutral separators. */
+.card-row-rule-bottom {
+    display: none;
+}
+
+/* Plain separator between the detail and the action buttons. */
 .card-row-rule-muted {
     border-top-color: var(--border-secondary);
 }
