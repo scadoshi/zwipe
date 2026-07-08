@@ -1034,8 +1034,13 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                                     match variant {
                                         AddSource::Maybeboard => {
-                                            // If filter is just deck-context defaults, blank it
-                                            if filter_builder.read().is_empty_ignoring_deck_context() {
+                                            // If filter is just the Search defaults (deck context
+                                            // plus the automatic land exclusion), blank it —
+                                            // Maybeboard's default is a blank filter.
+                                            if filter_builder
+                                                .read()
+                                                .is_empty_ignoring_deck_context_and_auto_lands(lands_at_target())
+                                            {
                                                 filter_builder.write().clear();
                                             }
                                         }
@@ -1272,8 +1277,15 @@ pub fn Add(deck_id: Uuid) -> Element {
                 Button {
                     variant: ButtonVariant::Util,
                     onclick: move |_| {
-                        // Clear auto-populated defaults so view/remove screens start fresh
-                        if filter_builder.read().is_empty_ignoring_deck_context() {
+                        // Clear auto-populated defaults so view/remove screens
+                        // start fresh. The automatic land exclusion (land
+                        // target met) is part of this screen's default too —
+                        // without counting it, the exclude-lands filter leaked
+                        // into the Cards screen.
+                        if filter_builder
+                            .read()
+                            .is_empty_ignoring_deck_context_and_auto_lands(lands_at_target())
+                        {
                             filter_builder.write().clear();
                         }
                         navigator.go_back();
