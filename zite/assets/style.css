@@ -2332,7 +2332,7 @@ footer {
     font-size: 0.82rem;
     padding: 0.35rem 0.7rem;
     box-shadow: var(--shadow-sm);
-    flex: 1 1 12rem;
+    flex: 0 1 11rem;
     min-width: 0;
     transition: border-color 0.15s;
 }
@@ -2534,8 +2534,15 @@ footer {
 /* Dividers framing the expanded detail. */
 .card-row-rule {
     border: none;
-    border-top: 1px solid var(--accent-secondary);
+    border-top: 1px solid var(--border-secondary);
     margin: 0.5rem 0 0 0;
+}
+
+/* Emphasis (scale + shadow + tint) marks the expanded row, so the accent
+   bottom rule is redundant — hide it. The top + muted rules stay as neutral
+   (non-accent) separators. */
+.card-row-rule-bottom {
+    display: none;
 }
 
 .card-row-rule-muted {
@@ -2561,7 +2568,7 @@ footer {
 
 .card-detail-name {
     margin: 0;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     color: var(--accent-primary);
     word-break: break-word;
     white-space: normal;
@@ -2590,6 +2597,7 @@ footer {
 
 .card-detail-oracle {
     margin: 0 0 0.5rem;
+    font-size: 0.72rem;
     white-space: pre-wrap;
     word-wrap: break-word;
     overflow-wrap: break-word;
@@ -2632,7 +2640,7 @@ footer {
     padding: 0.15rem 0.5rem;
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--text-muted);
     background-color: var(--bg-primary);
 }
@@ -2652,7 +2660,7 @@ footer {
     padding: 0.15rem 0.5rem;
     border: 1px solid var(--accent-primary);
     border-radius: 0.4rem;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--accent-primary);
     background-color: var(--bg-primary);
     cursor: pointer;
@@ -2691,7 +2699,7 @@ footer {
     border-left: 2px solid var(--accent-tertiary);
     border-radius: 0.25rem;
     background-color: var(--bg-primary);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     line-height: 1.4;
     color: var(--accent-tertiary);
 }
