@@ -1,13 +1,16 @@
-//! Site-style theme picker: a dropdown of every allowed theme (color-blind
-//! themes grouped in their own bottom section) plus a dark/light mode toggle.
+//! Site-style theme picker: a [`NavDropdown`] of every allowed theme
+//! (color-blind themes grouped in their own bottom section) plus a dark/light
+//! mode toggle.
 //!
-//! Authored in zite and lifted here verbatim (the canonical copy per the
+//! Authored in zite and lifted here (the canonical copy per the
 //! portfolio-adoption ruling); the host passes its `Signal<ThemeConfig>` in,
 //! so how the theme is provided (context, prop drilling) and applied (body
 //! class, wrapper div) stays the host's business.
 
 use dioxus::prelude::*;
 use zwipe_core::domain::user::{models::theme::ThemeConfig, preferences::ALLOWED_THEMES};
+
+use crate::NavDropdown;
 
 /// Themes shown in their own bottom section of the picker. Mirrors the app's
 /// preferences sheet (zwiper) so every surface groups these identically.
@@ -49,61 +52,40 @@ pub fn ThemePicker(theme: Signal<ThemeConfig>) -> Element {
         .iter()
         .copied()
         .filter(|t| COLORBLIND_THEMES.contains(t));
-    let select_class = if open() {
-        "theme-select theme-select-open"
-    } else {
-        "theme-select"
-    };
 
     rsx! {
-        if open() {
-            div {
-                class: "theme-backdrop",
-                onclick: move |_| open.set(false),
-            }
-        }
         div { class: "theme-switcher",
-            div { class: "{select_class}",
-                button {
-                    class: "theme-select-trigger",
-                    aria_expanded: "{open()}",
-                    onclick: move |evt| {
-                        evt.stop_propagation();
-                        let next = !open();
-                        open.set(next);
-                    },
-                    "{display_theme_name(&current)} ▾"
-                }
-                div { class: "theme-select-content",
-                    div { class: "theme-select-label", "Themes" }
-                    for name in regular_themes {
-                        button {
-                            class: if current == *name { "theme-option active" } else { "theme-option" },
-                            onclick: move |_| {
-                                let dark = theme.read().is_dark;
-                                theme.set(ThemeConfig {
-                                    name: name.to_string(),
-                                    is_dark: dark,
-                                });
-                                open.set(false);
-                            },
-                            "{display_theme_name(name)}"
-                        }
+            NavDropdown {
+                open,
+                label: display_theme_name(&current),
+                div { class: "nav-dropdown-label", "Themes" }
+                for name in regular_themes {
+                    button {
+                        class: if current == *name { "nav-dropdown-item active" } else { "nav-dropdown-item" },
+                        onclick: move |_| {
+                            let dark = theme.read().is_dark;
+                            theme.set(ThemeConfig {
+                                name: name.to_string(),
+                                is_dark: dark,
+                            });
+                            open.set(false);
+                        },
+                        "{display_theme_name(name)}"
                     }
-                    div { class: "theme-select-label", "Color blind" }
-                    for name in colorblind_themes {
-                        button {
-                            class: if current == *name { "theme-option active" } else { "theme-option" },
-                            onclick: move |_| {
-                                let dark = theme.read().is_dark;
-                                theme.set(ThemeConfig {
-                                    name: name.to_string(),
-                                    is_dark: dark,
-                                });
-                                open.set(false);
-                            },
-                            "{display_theme_name(name)}"
-                        }
+                }
+                div { class: "nav-dropdown-label", "Color blind" }
+                for name in colorblind_themes {
+                    button {
+                        class: if current == *name { "nav-dropdown-item active" } else { "nav-dropdown-item" },
+                        onclick: move |_| {
+                            let dark = theme.read().is_dark;
+                            theme.set(ThemeConfig {
+                                name: name.to_string(),
+                                is_dark: dark,
+                            });
+                            open.set(false);
+                        },
+                        "{display_theme_name(name)}"
                     }
                 }
             }

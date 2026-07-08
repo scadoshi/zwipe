@@ -87,6 +87,19 @@ Consuming before the repo is pushed: a local `git = "file:///…/zwipe"` dep
 against committed history works for same-machine development; flip to the
 GitHub URL once pushed (required for any other machine or CI).
 
+## NavDropdown (portfolio follow-up request, shipped 2026-07-08)
+
+The portfolio's Projects menu was fighting the crate's `.nav-links a` pill
+rule with ~25 lines of counter-rules. Granted by extracting the widget the
+crate already had: `ThemePicker`'s dropdown became the generic
+`NavDropdown { open, label, children }` (trigger pill + floating menu +
+click-away backdrop + hover bridge + the in-panel position trick), with the
+CSS generalized `theme-select-*` → `nav-dropdown-*` (`.nav-dropdown-item`,
+`.nav-dropdown-label`, `.nav-dropdown-item.active`). `ThemePicker` is now
+built on it — first consumer proves the extraction. The portfolio should
+replace its hand-rolled dropdown + counter-rules with `NavDropdown` and its
+item/label classes.
+
 Related: [`zwipe_components.md`](zwipe_components.md) (crate plan + roadmap),
 memory note `project-components-crates-io` (crates.io constraints if that day
 comes).

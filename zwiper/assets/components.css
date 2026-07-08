@@ -719,20 +719,20 @@
         margin-left: -1.5rem;
         margin-right: -1.5rem;
     }
-    .nav-panel .theme-select-trigger,
+    .nav-panel .nav-dropdown-trigger,
     .nav-panel .mode-toggle {
         height: auto;
         font-size: 0.95rem;
         padding: 0.55rem 1rem;
     }
-    /* Make .theme-select static so the open dropdown's containing block is the
-       relative <nav> (inside the sticky .nav-wrapper) rather than .theme-select.
+    /* Make .nav-dropdown static so the open dropdown's containing block is the
+       relative <nav> (inside the sticky .nav-wrapper) rather than .nav-dropdown.
        That keeps it pinned to the sticky nav while scrolling, and escapes the
        panel's overflow:hidden clip since nav isn't a descendant of that clip. */
-    .nav-panel .theme-select {
+    .nav-panel .nav-dropdown {
         position: static;
     }
-    .nav-panel .theme-select-content {
+    .nav-panel .nav-dropdown-content {
         position: absolute;
         top: auto;
         right: auto;
@@ -743,7 +743,11 @@
     }
 }
 
-/* ---- ThemePicker (zwipe_components::ThemePicker) ---- */
+/* ---- NavDropdown (zwipe_components::NavDropdown) +
+        ThemePicker (zwipe_components::ThemePicker) ----
+   The dropdown (trigger pill, floating menu, backdrop, hover bridge) is the
+   generic component; .theme-switcher and .mode-toggle are the picker's own
+   additions on top of it. */
 
 .theme-switcher {
     display: flex;
@@ -753,9 +757,9 @@
     line-height: 1;
 }
 
-/* Pill look shared by the trigger and the mode toggle — self-contained so the
-   picker renders correctly outside any particular nav's button styling. */
-.theme-select-trigger,
+/* Pill look shared by the dropdown trigger and the mode toggle — self-contained
+   so both render correctly outside any particular nav's button styling. */
+.nav-dropdown-trigger,
 .mode-toggle {
     display: inline-flex;
     align-items: center;
@@ -779,24 +783,24 @@
 }
 
 @media (hover: hover) {
-    .theme-select-trigger:hover,
+    .nav-dropdown-trigger:hover,
     .mode-toggle:hover {
         color: var(--accent-primary);
         border-color: var(--accent-primary);
     }
 }
 
-.theme-select {
+.nav-dropdown {
     position: relative;
 }
 
-.theme-select-trigger {
+.nav-dropdown-trigger {
     user-select: none;
     position: relative;
     z-index: 200;
 }
 
-.theme-backdrop {
+.nav-dropdown-backdrop {
     position: fixed;
     inset: 0;
     z-index: 150;
@@ -805,7 +809,7 @@
 
 /* Invisible hover bridge so the dropdown doesn't close while the cursor
    travels from the trigger to the menu. */
-.theme-select::after {
+.nav-dropdown::after {
     content: "";
     position: absolute;
     top: 100%;
@@ -814,7 +818,7 @@
     height: 0.5rem;
 }
 
-.theme-select-content {
+.nav-dropdown-content {
     display: none;
     position: absolute;
     top: 100%;
@@ -832,11 +836,11 @@
     box-shadow: var(--shadow-md);
 }
 
-.theme-select-open .theme-select-content {
+.nav-dropdown-open .nav-dropdown-content {
     display: flex;
 }
 
-.theme-option {
+.nav-dropdown-item {
     background: none;
     border: none;
     color: var(--text-muted);
@@ -851,19 +855,19 @@
         color 0.15s;
 }
 
-.theme-option:hover {
+.nav-dropdown-item:hover {
     background-color: var(--border-primary);
     color: var(--text-primary);
 }
 
 /* Accent-2 so the selection reads apart from the accent-1 subtitles. */
-.theme-option.active {
+.nav-dropdown-item.active {
     color: var(--accent-secondary);
 }
 
 /* Section subtitles ("Themes" / "Color blind") that group the picker. The
    gap above each later section carries the separation (no divider line). */
-.theme-select-label {
+.nav-dropdown-label {
     margin-top: 0.85rem;
     padding: 0.4rem 1rem 0.25rem;
     color: var(--accent-primary);
@@ -872,7 +876,7 @@
 }
 
 /* The first subtitle sits flush at the top of the menu. */
-.theme-select-content > .theme-select-label:first-child {
+.nav-dropdown-content > .nav-dropdown-label:first-child {
     margin-top: 0;
     padding-top: 0;
 }
