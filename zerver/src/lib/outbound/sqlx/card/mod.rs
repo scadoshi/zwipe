@@ -124,6 +124,13 @@ const POPULARITY_RANK: &str = "pop.pop_decks DESC NULLS LAST, latest_cards.edhre
 /// columns ambiguous. Keyed on the real card's oracle_id.
 const POPULARITY_JOIN: &str = "LEFT JOIN (SELECT oracle_id AS pop_oracle_id, decks AS pop_decks FROM commander_popularity) pop ON pop.pop_oracle_id = latest_cards.oracle_id";
 
+/// First-party select-signal join for the commander-select wildcard's
+/// least-shown deep slice, aliased for the same ambiguity reason as
+/// [`POPULARITY_JOIN`]. An absent row COALESCEs to 0 impressions, so an empty
+/// table leaves the deep slice on the daily shuffle alone — the dormant-until-
+/// data-accrues behavior (context/plans/commander_select_signal.md §3).
+const SELECT_SIGNAL_JOIN: &str = "LEFT JOIN (SELECT commander_oracle_id AS sel_oid, shown AS sel_shown FROM commander_select_signal) sel ON sel.sel_oid = latest_cards.oracle_id";
+
 impl CardRepository for MyPostgres {
     // ========
     //  create
@@ -356,10 +363,13 @@ impl CardRepository for MyPostgres {
         {
             // Commander-select wildcard CTE: same banded-pool + deep-probe
             // machinery as the synergy arm, ranked by decks-helmed popularity
-            // instead of synergy score. No select-impression signal exists yet
-            // (every signal table keys on the 99-serve's commander+card pairs),
-            // so the deep slice orders by the daily shuffle alone — pool_shown is
-            // a constant 0. The popularity join is 1:1 (PK on oracle_id).
+            // instead of synergy score. The deep slice orders least-shown first
+            // using the first-party select signal; with no signal rows yet the
+            // COALESCE floors every pool_shown to 0 and the ordering collapses
+            // to the daily shuffle alone — byte-identical to the pre-signal
+            // behavior (context/plans/commander_select_signal.md §3). Both
+            // joins are 1:1 (PK on oracle_id) and aliased so no bare
+            // `name`/`oracle_id` collides with the shared WHERE filters.
             let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new(
                 "WITH pool AS (SELECT latest_cards.*, row_number() OVER (ORDER BY ",
             );
@@ -370,10 +380,11 @@ impl CardRepository for MyPostgres {
             );
             qb.push_bind(seed);
             qb.push(format!(
-                ") AS shuffle, 0 AS pool_shown
+                ") AS shuffle, COALESCE(sel.sel_shown, 0) AS pool_shown
              FROM latest_cards
              JOIN card_profiles ON latest_cards.id = card_profiles.scryfall_data_id
              {POPULARITY_JOIN}
+             {SELECT_SIGNAL_JOIN}
              WHERE "
             ));
             qb

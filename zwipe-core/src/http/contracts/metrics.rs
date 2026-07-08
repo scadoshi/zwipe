@@ -71,6 +71,11 @@ pub struct HttpUsageBatch {
     /// `#[serde(default)]` keeps older clients compatible.
     #[serde(default)]
     pub deck_skips: Vec<DeckSkipDelta>,
+    /// Per-commander shown/selected/skipped tallies from the Zwipe-select
+    /// screen. Aggregate-only, no user identity. `#[serde(default)]` keeps
+    /// older clients compatible.
+    #[serde(default)]
+    pub select_signals: Vec<CommanderSelectDelta>,
 }
 
 /// One `(commander, card)` signal delta accumulated over a flush window.
@@ -94,6 +99,25 @@ pub struct CardSignalDelta {
     pub maybed: u32,
     /// Deliberate removals from a deck (a delayed negative).
     pub removed: u32,
+}
+
+/// One commander-select signal delta accumulated over a flush window.
+///
+/// Keyed by the **shown candidate's** oracle id (the card swiped on the
+/// Zwipe-select screen), unlike [`CardSignalDelta`] whose lead key is the
+/// deck's commander. `shown` is the impression denominator — the client
+/// sends `selected + skipped` (down-swipe undo is not a decision and is
+/// excluded).
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+pub struct CommanderSelectDelta {
+    /// Oracle id of the command-zone candidate that was swiped.
+    pub commander_oracle_id: Uuid,
+    /// Times the candidate was shown for a decision (select-stack impressions).
+    pub shown: u32,
+    /// Right swipes (picked into the command zone).
+    pub selected: u32,
+    /// Left swipes (passed).
+    pub skipped: u32,
 }
 
 /// Per-deck skip deltas accumulated over a flush window.
@@ -160,6 +184,25 @@ impl HttpUsageBatch {
                 .take(Self::MAX_SKIP_DECKS_PER_FLUSH)
                 .map(DeckSkipDelta::clamped)
                 .collect(),
+            select_signals: self
+                .select_signals
+                .iter()
+                .take(Self::MAX_SIGNALS_PER_FLUSH)
+                .map(CommanderSelectDelta::clamped)
+                .collect(),
+        }
+    }
+}
+
+impl CommanderSelectDelta {
+    /// Returns a copy with each tally clamped to [`HttpUsageBatch::MAX_PER_FLUSH`].
+    #[must_use]
+    pub fn clamped(&self) -> Self {
+        Self {
+            commander_oracle_id: self.commander_oracle_id,
+            shown: self.shown.min(HttpUsageBatch::MAX_PER_FLUSH),
+            selected: self.selected.min(HttpUsageBatch::MAX_PER_FLUSH),
+            skipped: self.skipped.min(HttpUsageBatch::MAX_PER_FLUSH),
         }
     }
 }
@@ -206,7 +249,8 @@ impl DeckSkipDelta {
 #[cfg(test)]
 mod tests {
     use super::{
-        AnonymousEventKind, CardSignalDelta, DeckSkipDelta, HttpAnonymousEvent, HttpUsageBatch,
+        AnonymousEventKind, CardSignalDelta, CommanderSelectDelta, DeckSkipDelta,
+        HttpAnonymousEvent, HttpUsageBatch,
     };
     use uuid::Uuid;
 
@@ -248,6 +292,7 @@ mod tests {
             searches: u32::MAX,
             signals: Vec::new(),
             deck_skips: Vec::new(),
+            select_signals: Vec::new(),
         }
         .clamped();
         assert_eq!(clamped.swipes_right, HttpUsageBatch::MAX_PER_FLUSH);
@@ -282,12 +327,37 @@ mod tests {
 
     #[test]
     fn batch_deserializes_without_signals_field() {
-        // An older client omits `signals` and `deck_skips`; must still parse (→ empty).
+        // An older client omits `signals`, `deck_skips`, and `select_signals`;
+        // must still parse (→ empty).
         let json = r#"{"swipes_right":2,"swipes_left":1,"swipes_up":0,"swipes_down":0,"searches":3}"#;
         let batch: HttpUsageBatch = serde_json::from_str(json).unwrap();
         assert!(batch.signals.is_empty());
         assert!(batch.deck_skips.is_empty());
+        assert!(batch.select_signals.is_empty());
         assert_eq!(batch.swipes_right, 2);
+    }
+
+    #[test]
+    fn clamped_truncates_select_signal_list_and_caps_tallies() {
+        let delta = CommanderSelectDelta {
+            commander_oracle_id: Uuid::nil(),
+            shown: u32::MAX,
+            selected: 2,
+            skipped: HttpUsageBatch::MAX_PER_FLUSH + 1,
+        };
+        let batch = HttpUsageBatch {
+            select_signals: vec![delta; HttpUsageBatch::MAX_SIGNALS_PER_FLUSH + 5],
+            ..Default::default()
+        }
+        .clamped();
+        assert_eq!(
+            batch.select_signals.len(),
+            HttpUsageBatch::MAX_SIGNALS_PER_FLUSH
+        );
+        let first = batch.select_signals.first().unwrap();
+        assert_eq!(first.shown, HttpUsageBatch::MAX_PER_FLUSH);
+        assert_eq!(first.selected, 2);
+        assert_eq!(first.skipped, HttpUsageBatch::MAX_PER_FLUSH);
     }
 
     #[test]

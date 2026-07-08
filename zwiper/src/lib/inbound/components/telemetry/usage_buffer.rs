@@ -6,7 +6,7 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use uuid::Uuid;
-use zwipe_core::http::contracts::metrics::{CardSignalDelta, HttpUsageBatch};
+use zwipe_core::http::contracts::metrics::{CardSignalDelta, CommanderSelectDelta, HttpUsageBatch};
 
 use crate::inbound::components::interactions::swipe::direction::Direction;
 
@@ -25,6 +25,9 @@ struct UsageBufferInner {
     searches: AtomicU32,
     /// Per-`(commander, card)` keep/skip/maybe tallies from the add-card stack.
     signals: Mutex<HashMap<(Uuid, Uuid), CardTally>>,
+    /// Per-candidate select/skip tallies from the Zwipe-select screen, keyed
+    /// by the shown card's oracle id.
+    select_signals: Mutex<HashMap<Uuid, SelectTally>>,
 }
 
 /// Add/skip/maybe/remove tally for one `(commander, card)` pair within a flush
@@ -35,6 +38,13 @@ struct CardTally {
     skipped: u32,
     maybed: u32,
     removed: u32,
+}
+
+/// Select/skip tally for one command-zone candidate within a flush window.
+#[derive(Debug, Default, Clone, Copy)]
+struct SelectTally {
+    selected: u32,
+    skipped: u32,
 }
 
 impl UsageBuffer {
@@ -85,6 +95,27 @@ impl UsageBuffer {
         }
     }
 
+    /// Records one Zwipe-select swipe as a per-candidate select signal, keyed
+    /// by the shown card's oracle id.
+    ///
+    /// Only `Right` (selected) and `Left` (skipped) express a decision; `Down`
+    /// (undo) and `Up` (unused on that screen) are ignored. No-op if the card
+    /// has no oracle id.
+    pub fn record_select_signal(&self, card_oracle_id: Option<Uuid>, direction: Direction) {
+        let Some(card) = card_oracle_id else {
+            return;
+        };
+        let Ok(mut map) = self.inner.select_signals.lock() else {
+            return;
+        };
+        let tally = map.entry(card).or_default();
+        match direction {
+            Direction::Right => tally.selected += 1,
+            Direction::Left => tally.skipped += 1,
+            Direction::Up | Direction::Down => {}
+        }
+    }
+
     /// Records one deliberate removal of a `(commander, card)` from a deck — a
     /// delayed negative signal, distinct from an add-stack skip. No-op if either
     /// oracle id is missing.
@@ -131,7 +162,29 @@ impl UsageBuffer {
             })
             .collect();
 
-        if right == 0 && left == 0 && up == 0 && down == 0 && searches == 0 && signals.is_empty() {
+        let select_signals: Vec<CommanderSelectDelta> = self
+            .inner
+            .select_signals
+            .lock()
+            .map(|mut map| std::mem::take(&mut *map))
+            .unwrap_or_default()
+            .into_iter()
+            .map(|(card, t)| CommanderSelectDelta {
+                commander_oracle_id: card,
+                shown: t.selected + t.skipped,
+                selected: t.selected,
+                skipped: t.skipped,
+            })
+            .collect();
+
+        if right == 0
+            && left == 0
+            && up == 0
+            && down == 0
+            && searches == 0
+            && signals.is_empty()
+            && select_signals.is_empty()
+        {
             return None;
         }
 
@@ -145,6 +198,7 @@ impl UsageBuffer {
             // batch field remains for wire compat with the server.
             deck_skips: Vec::new(),
             signals,
+            select_signals,
         })
     }
 }
@@ -168,6 +222,29 @@ mod tests {
         assert_eq!(batch.swipes_left, 1);
         assert_eq!(batch.signals.len(), 1);
         assert!(batch.deck_skips.is_empty());
+
+        assert!(buffer.snapshot_and_zero().is_none());
+    }
+
+    #[test]
+    fn select_signal_tallies_and_derives_shown() {
+        let buffer = UsageBuffer::new();
+        let card = Uuid::new_v4();
+
+        buffer.record_select_signal(Some(card), Direction::Left);
+        buffer.record_select_signal(Some(card), Direction::Left);
+        buffer.record_select_signal(Some(card), Direction::Right);
+        // Undo and missing-oracle-id swipes contribute nothing.
+        buffer.record_select_signal(Some(card), Direction::Down);
+        buffer.record_select_signal(None, Direction::Right);
+
+        let batch = buffer.snapshot_and_zero().unwrap();
+        assert_eq!(batch.select_signals.len(), 1);
+        let delta = batch.select_signals.first().unwrap();
+        assert_eq!(delta.commander_oracle_id, card);
+        assert_eq!(delta.selected, 1);
+        assert_eq!(delta.skipped, 2);
+        assert_eq!(delta.shown, 3);
 
         assert!(buffer.snapshot_and_zero().is_none());
     }
