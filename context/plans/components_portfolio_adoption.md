@@ -50,7 +50,14 @@ pipeline.
    rule, a no-op for zite whose pages always pass descriptive titles). zite
    keeps a thin local `PageMeta` wrapper baking in its `SiteMeta`, so page
    call sites are untouched.
-4. **Nav shell** (most API design); migrate zite.
+4. ✅ **Nav shell (shipped 2026-07-08).** `NavBar { open, brand, persistent,
+   links, trailing }`: the crate owns the structure (sticky wrapper, hamburger
+   toggle, collapsing panel, `ul.nav-links` + link-pill CSS, the 60rem
+   breakpoint block including the picker-in-panel overrides); the host owns
+   the content and the `open` signal (so its link `onclick`s close the panel).
+   `BRAND_RESET_JS` (scroll-to-top + logo animation restart) is exported for
+   brand links. zite keeps only its specifics: the ASCII `.nav-logo`, the
+   `.nav-stores-persistent` CTAs, and `.store-link` styling.
 
 The portfolio migrates to each piece as it lands (its stated commitment), which
 doubles as second-consumer verification.
