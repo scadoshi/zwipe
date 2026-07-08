@@ -8,21 +8,10 @@ use pages::{
     Verify,
 };
 
-/// Debug builds (dx serve) talk to a local dev zerver so pages that fetch
-/// (shared deck, verify, reset) are testable without touching prod.
-#[cfg(debug_assertions)]
-pub const API_BASE: &str = "http://localhost:3000";
-#[cfg(not(debug_assertions))]
-pub const API_BASE: &str = "https://api.zwipe.net";
-
-/// Public web base URL, centralized so a domain change is a single edit.
-pub const WEB_BASE: &str = "https://zwipe.net";
-
-/// User-facing support email address.
-pub const SUPPORT_EMAIL: &str = "support@zwipe.net";
-
-/// Discord community invite link.
-pub const DISCORD_URL: &str = "https://discord.gg/s2UReqUUeg";
+// Base URLs + contact points live in zwipe-core's `site` module (shared with
+// zwiper and zerver so they can't drift); re-exported so pages keep importing
+// them from crate root. Debug builds resolve the URLs to the local dev servers.
+pub use zwipe_core::domain::site::{API_BASE, DISCORD_URL, SUPPORT_EMAIL, WEB_BASE};
 
 const THEMES: Asset = asset!("/assets/themes.css");
 const COMPONENTS: Asset = asset!("/assets/components.css");

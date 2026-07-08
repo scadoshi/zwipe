@@ -8,7 +8,7 @@
 
 mod content;
 
-use crate::{Footer, Nav, Route, components::PageMeta};
+use crate::{Footer, Nav, Route, WEB_BASE, components::PageMeta};
 use content::{Block, GUIDES};
 use dioxus::prelude::*;
 
@@ -138,8 +138,26 @@ pub fn GuidePage(slug: String) -> Element {
         };
     };
 
+    // Article JSON-LD for rich results: headline/description/section straight
+    // from the guide, with Zwipe as the publisher.
+    let json_ld = serde_json::json!({
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": g.title,
+        "description": g.summary,
+        "articleSection": g.category,
+        "url": format!("{WEB_BASE}/guides/{}", g.slug),
+        "publisher": {
+            "@type": "Organization",
+            "name": "Zwipe",
+            "url": WEB_BASE,
+        },
+    })
+    .to_string();
+
     rsx! {
         PageMeta { title: "{g.title}", description: "{g.summary}", path: "/guides/{g.slug}" }
+        document::Script { r#type: "application/ld+json", "{json_ld}" }
         Nav {}
         div { class: "page content-enter guide-page",
             div { class: "section panel",

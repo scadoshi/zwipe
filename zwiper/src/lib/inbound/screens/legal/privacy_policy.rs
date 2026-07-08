@@ -9,10 +9,8 @@
 use crate::{inbound::components::screen_header::ScreenHeader, outbound::open_url};
 use dioxus::prelude::*;
 use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_core::domain::site::{DISCORD_URL, SUPPORT_EMAIL};
 use zwipe_core::legal::{PRIVACY_LAST_UPDATED, PRIVACY_POLICY_HTML};
-
-const SUPPORT_EMAIL: &str = "support@zwipe.net";
-const DISCORD_URL: &str = "https://discord.gg/s2UReqUUeg";
 
 /// Full privacy policy, reachable from the Profile screen.
 #[component]

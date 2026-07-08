@@ -1,6 +1,8 @@
 #![allow(clippy::expect_used)]
 
-/// Public base URL — must match `WEB_BASE` in `src/main.rs`.
+/// Public base URL — must match the release `WEB_BASE` in zwipe-core's
+/// `domain::site` (build scripts can't import the lib, so this is the one
+/// mirrored literal).
 const WEB_BASE: &str = "https://zwipe.net";
 
 /// Every prerendered, indexable route with its sitemap hints. Kept here as the

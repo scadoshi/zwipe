@@ -41,15 +41,13 @@ use preferences::{PreferencesSheet, display_theme_name};
 use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::domain::{
     auth::models::session::Session,
+    site::WEB_BASE,
     user::models::{hints::HINT_PROFILE, theme::ThemeConfig},
 };
 
 /// Client version baked in at compile time, shown at the bottom of the screen
 /// so users can report which build they're on.
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
-
-/// Marketing site, opened externally from the About section.
-const WEB_DOMAIN: &str = "https://zwipe.net";
 
 /// User profile screen showing account details and management options.
 #[component]
@@ -218,7 +216,7 @@ pub fn Profile() -> Element {
                                     div { class: "profile-row-value",
                                         Button {
                                             variant: ButtonVariant::Util,
-                                            onclick: move |_| open_url::open(WEB_DOMAIN),
+                                            onclick: move |_| open_url::open(WEB_BASE),
                                             "zwipe.net \u{2197}"
                                         }
                                     }
