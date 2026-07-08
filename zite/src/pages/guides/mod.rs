@@ -141,7 +141,7 @@ pub fn GuidePage(slug: String) -> Element {
     rsx! {
         PageMeta { title: "{g.title}", description: "{g.summary}", path: "/guides/{g.slug}" }
         Nav {}
-        div { class: "page content-enter",
+        div { class: "page content-enter guide-page",
             div { class: "section panel",
                 div { class: "guide-breadcrumb",
                     Link { to: Route::Guides {}, "Guides" }
@@ -155,16 +155,6 @@ pub fn GuidePage(slug: String) -> Element {
             div { class: "guide-content section panel",
                 for b in g.blocks.iter() {
                     {render_block(b)}
-                }
-                div { class: "guide-cta",
-                    a {
-                        class: "store-link",
-                        href: "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",
-                        target: "_blank",
-                        rel: "noopener",
-                        "Get Zwipe on the App Store ↗"
-                    }
-                    Link { to: Route::Android {}, class: "store-link", "Get it on Google Play ↗" }
                 }
             }
         }

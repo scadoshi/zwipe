@@ -107,6 +107,14 @@ a:hover {
     padding: 0 1.5rem 5rem;
 }
 
+.page.guide-page {
+    padding-bottom: 1rem;
+}
+
+.guide-page + footer {
+    margin-top: 0;
+}
+
 /* ==================
         nav
  ==================== */
@@ -1547,26 +1555,6 @@ code {
     margin: 1rem 0;
 }
 
-.guide-related {
-    margin-top: 2rem;
-    margin-left: -1.5rem;
-    margin-right: -1.5rem;
-    padding-top: 1.5rem;
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-    border-top: 1px solid var(--border-secondary);
-}
-
-.guide-related-heading {
-    font-size: 1rem;
-    color: var(--accent-tertiary);
-    margin: 0;
-}
-
-.guide-related .card-grid {
-    margin-top: 1rem;
-}
-
 /* ==================
         theme switcher
  ==================== */
@@ -1715,10 +1703,22 @@ footer {
     border: 0;
 }
 
-.swipe-add { color: var(--color-success); font-weight: 600; }
-.swipe-skip { color: var(--color-error); font-weight: 600; }
-.swipe-maybe { color: var(--color-warning); font-weight: 600; }
-.swipe-undo { color: var(--accent-tertiary); font-weight: 600; }
+.swipe-add {
+    color: var(--color-success);
+    font-weight: 600;
+}
+.swipe-skip {
+    color: var(--color-error);
+    font-weight: 600;
+}
+.swipe-maybe {
+    color: var(--color-warning);
+    font-weight: 600;
+}
+.swipe-undo {
+    color: var(--accent-tertiary);
+    font-weight: 600;
+}
 
 .hero-chips {
     display: flex;
@@ -1740,7 +1740,11 @@ footer {
 
 .chip-value {
     color: var(--accent-primary);
-    background-color: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+    background-color: color-mix(
+        in srgb,
+        var(--accent-primary) 12%,
+        transparent
+    );
     border-color: color-mix(in srgb, var(--accent-primary) 40%, transparent);
 }
 
@@ -2013,45 +2017,94 @@ footer {
     border-radius: 0.6rem;
     font-size: 0.75rem;
     color: var(--accent-primary);
-    background-color: color-mix(in srgb, var(--accent-primary) 12%, var(--bg-primary));
-    border: 1px solid color-mix(in srgb, var(--accent-primary) 35%, var(--bg-primary));
+    background-color: color-mix(
+        in srgb,
+        var(--accent-primary) 12%,
+        var(--bg-primary)
+    );
+    border: 1px solid
+        color-mix(in srgb, var(--accent-primary) 35%, var(--bg-primary));
 }
 
 .sd-header-meta .stat-chip-format {
     color: var(--accent-secondary);
-    background-color: color-mix(in srgb, var(--accent-secondary) 12%, var(--bg-primary));
-    border-color: color-mix(in srgb, var(--accent-secondary) 35%, var(--bg-primary));
+    background-color: color-mix(
+        in srgb,
+        var(--accent-secondary) 12%,
+        var(--bg-primary)
+    );
+    border-color: color-mix(
+        in srgb,
+        var(--accent-secondary) 35%,
+        var(--bg-primary)
+    );
 }
 
 .sd-header-meta .stat-chip-power {
     color: var(--color-success);
-    background-color: color-mix(in srgb, var(--color-success) 12%, var(--bg-primary));
-    border-color: color-mix(in srgb, var(--color-success) 35%, var(--bg-primary));
+    background-color: color-mix(
+        in srgb,
+        var(--color-success) 12%,
+        var(--bg-primary)
+    );
+    border-color: color-mix(
+        in srgb,
+        var(--color-success) 35%,
+        var(--bg-primary)
+    );
 }
 
 .sd-header-meta .stat-chip-zone {
     color: var(--accent-tertiary);
-    background-color: color-mix(in srgb, var(--accent-tertiary) 12%, var(--bg-primary));
-    border-color: color-mix(in srgb, var(--accent-tertiary) 35%, var(--bg-primary));
+    background-color: color-mix(
+        in srgb,
+        var(--accent-tertiary) 12%,
+        var(--bg-primary)
+    );
+    border-color: color-mix(
+        in srgb,
+        var(--accent-tertiary) 35%,
+        var(--bg-primary)
+    );
 }
 
 .sd-header-meta .stat-chip-tag {
     color: var(--text-muted);
-    background-color: color-mix(in srgb, var(--text-muted) 12%, var(--bg-primary));
+    background-color: color-mix(
+        in srgb,
+        var(--text-muted) 12%,
+        var(--bg-primary)
+    );
     border-color: color-mix(in srgb, var(--text-muted) 30%, var(--bg-primary));
 }
 
 .sd-header-meta .stat-chip-other {
     color: var(--accent-primary);
-    background-color: color-mix(in srgb, var(--accent-primary) 12%, var(--bg-primary));
-    border-color: color-mix(in srgb, var(--accent-primary) 35%, var(--bg-primary));
+    background-color: color-mix(
+        in srgb,
+        var(--accent-primary) 12%,
+        var(--bg-primary)
+    );
+    border-color: color-mix(
+        in srgb,
+        var(--accent-primary) 35%,
+        var(--bg-primary)
+    );
 }
 
 /* Price chip: money reads green in every theme. */
 .sd-header-meta .stat-chip-price {
     color: var(--color-success);
-    background-color: color-mix(in srgb, var(--color-success) 12%, var(--bg-primary));
-    border-color: color-mix(in srgb, var(--color-success) 35%, var(--bg-primary));
+    background-color: color-mix(
+        in srgb,
+        var(--color-success) 12%,
+        var(--bg-primary)
+    );
+    border-color: color-mix(
+        in srgb,
+        var(--color-success) 35%,
+        var(--bg-primary)
+    );
 }
 
 /* Featured row: command zone + MVPs on one line, each labeled. nowrap with the
@@ -2149,7 +2202,11 @@ footer {
 }
 
 .sd-chip-color.active {
-    background-color: color-mix(in srgb, var(--accent-secondary) 12%, transparent);
+    background-color: color-mix(
+        in srgb,
+        var(--accent-secondary) 12%,
+        transparent
+    );
 }
 
 .sd-filter-input {
@@ -2517,7 +2574,11 @@ footer {
 }
 
 .sd-cta-link:hover {
-    background-color: color-mix(in srgb, var(--accent-primary) 10%, transparent);
+    background-color: color-mix(
+        in srgb,
+        var(--accent-primary) 10%,
+        transparent
+    );
     color: var(--accent-primary);
 }
 
