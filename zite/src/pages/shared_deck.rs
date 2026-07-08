@@ -1,4 +1,4 @@
-use crate::{API_BASE, Footer, Nav, Route, components::PageMeta};
+use crate::{API_BASE, Footer, Nav, components::PageMeta};
 use dioxus::prelude::*;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
@@ -233,12 +233,17 @@ pub fn SharedDeck(token: String) -> Element {
                     description: "A Magic: The Gathering deck shared from Zwipe.".to_string(),
                     path: "/deck".to_string(),
                 }
+                // Inform-and-stop alert, formatted like the app's
+                // update-required screen; deliberately a dead end (the nav is
+                // right there for anyone who wants to explore).
                 div { class: "form-page content-enter",
-                    h1 { "This deck is no longer shared" }
-                    p { class: "subtitle",
-                        "The owner may have stopped sharing it, or the link may be incomplete."
+                    span { class: "sd-alert-title", "Deck not shared" }
+                    hr {
+                        style: "border: none; border-top: 1px solid var(--border-secondary); margin: 0.75rem -2rem;",
                     }
-                    Link { to: Route::Home {}, class: "sd-cta-link", "Explore Zwipe" }
+                    p { class: "subtitle", style: "text-align: center; margin-bottom: 0;",
+                        "This deck is no longer shared. The owner may have stopped sharing it, or the link may be incomplete."
+                    }
                 }
             },
             Some(Err(FetchError::Network(e))) => rsx! {
