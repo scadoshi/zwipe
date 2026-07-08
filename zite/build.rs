@@ -12,10 +12,29 @@ const ROUTES: &[(&str, &str, &str)] = &[
     ("/", "weekly", "1.0"),
     ("/download/ios", "weekly", "0.9"),
     ("/download/android", "weekly", "0.9"),
+    ("/guides", "weekly", "0.8"),
     ("/about", "monthly", "0.7"),
     ("/contribute", "monthly", "0.6"),
     ("/discord", "monthly", "0.5"),
     ("/privacy", "yearly", "0.3"),
+];
+
+/// Guide article slugs, each rendered at `/guides/<slug>` by `GuidePage`.
+/// Keep in sync with `GUIDES` in `src/pages/guides/content.rs`.
+const GUIDE_SLUGS: &[&str] = &[
+    "getting-started",
+    "swipe-to-build",
+    "remove-cards",
+    "swipe-memory",
+    "filtering",
+    "synergy",
+    "commander-and-formats",
+    "budgeting",
+    "land-targets",
+    "deck-tags",
+    "deck-mvps",
+    "deck-stats",
+    "import-export",
 ];
 
 fn main() {
@@ -45,6 +64,13 @@ fn generate_sitemap() {
             "  <url>\n    <loc>{WEB_BASE}{path}</loc>\n    \
              <changefreq>{changefreq}</changefreq>\n    \
              <priority>{priority}</priority>\n  </url>\n",
+        ));
+    }
+    for slug in GUIDE_SLUGS {
+        xml.push_str(&format!(
+            "  <url>\n    <loc>{WEB_BASE}/guides/{slug}</loc>\n    \
+             <changefreq>monthly</changefreq>\n    \
+             <priority>0.6</priority>\n  </url>\n",
         ));
     }
     xml.push_str("</urlset>\n");
