@@ -109,6 +109,56 @@ Build 15 shipped over build 14 with: `Email` strict newtype across the workspace
 
 ---
 
+## zwipe-components buildout + portfolio adoption, frontend polish day (2026-07-08)
+
+A full shared-components arc in one day, driven by the portfolio site
+(scottyfermo.com) arriving as the crate's first external consumer:
+
+- **The crate grew from 3 components to 10**: `OracleText`, `KeywordChips`,
+  `CardRow` (one row for the app's deck-cards screen and zite's shared-deck
+  page — every action an `Option` callback, hover hooks for zite's desktop
+  preview; both hosts are thin wrappers, zero call-site churn), `ThemePicker`,
+  `NavDropdown` (extracted from the picker, which now consumes it),
+  `NavBar` (slotted shell: brand/persistent/links/trailing), and `PageMeta`
+  (parameterized by `SiteMeta`). The crate owns `themes.css` (the `shared/`
+  dir is gone) and exports `COMPONENTS_CSS`/`THEMES_CSS` consts for
+  consumers outside the workspace.
+- **Portfolio consumes via GitHub git dependency** (~760 duplicated lines
+  deleted on their side; crates.io considered and declined — rulings +
+  round-2 selector fixes in
+  [`../plans/components_portfolio_adoption.md`](../plans/components_portfolio_adoption.md)).
+- **Shared site constants**: `zwipe_core::domain::site` (`WEB_BASE`/`API_BASE`
+  debug-gated to local dev servers, `SUPPORT_EMAIL`, `DISCORD_URL`) replaced
+  seven scattered consts across app/site/server; zerver env defaults now
+  reference them.
+- **zite polish (deployed)**: shared-deck ghost skeletons + featured-row role
+  tags + expanded-row emphasis + mobile Image overlay, dead-end "Deck not
+  shared" alert screen, guides in `sitemap.xml` + per-guide Article JSON-LD.
+- **zwiper polish (rides the next build)**: skeleton realignment across five
+  screens (per-screen consistency rule: zite ghosts, app element-like),
+  land-target auto-filter leak fix, `card-action-*` class rename, DFC
+  front-face mana cost in the expanded detail, expanded-row emphasis.
+
+CI note: `deploy-zite` now watches `zwipe-components/` (replaced the removed
+`shared/`).
+
+---
+
+## 1.4.0 — the feature batch (LIVE on the App Store 2026-07-08; iOS build 61 / Android vc22)
+
+The pending client batch left main in one build: **Zwipe-select popularity
+ordering** (client leg of the commander pipeline), **commander-select signal
+ingest**, **partner autofill** (+ edit-load race fix), **Deck MVPs phase 1**
+(star up to three cards), **deck share links** (More sheet → public
+`zwipe.net/deck/{token}` page). Workspace version bumped 1.3.2 → 1.4.0.
+Artifacts: `Zwipe.ipa` (build 61, via Transporter) and `zwipe-1.4.0-vc22.aab`
+(signed, R8/edge-to-edge smoke-tested on Pixel_9a — first smoke test in
+several releases). Server halves (three additive migrations) deployed to prod
+first, verified against live 1.3.x clients. Store copy in the two
+`form_fields.md` files. Cleared Apple review and distributed 2026-07-08.
+
+---
+
 ## Wildcard slot + commander popularity pipeline (server-only, LIVE 2026-07-07)
 
 Two serve-path features shipped and deployed the day after the band shuffle,
