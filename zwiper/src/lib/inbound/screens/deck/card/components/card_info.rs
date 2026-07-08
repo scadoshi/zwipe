@@ -1,10 +1,10 @@
-use super::keyword_chips::KeywordChips;
-use super::oracle_text::OracleText;
+use super::{keyword_chips::KeywordChips, oracle_text::OracleText};
 use crate::inbound::components::alert_dialog::{
     AlertDialogAction, AlertDialogActions, AlertDialogContent, AlertDialogDescription,
     AlertDialogRoot, AlertDialogTitle,
 };
 use dioxus::prelude::*;
+use zwipe_components::{Button, ButtonVariant};
 use zwipe_core::domain::card::Card;
 
 /// One card face's rules text, extracted for display. Single-faced cards yield
@@ -127,8 +127,9 @@ pub(crate) fn CardInfoDisplay(card: Card) -> Element {
 #[component]
 pub(crate) fn RulesButton(open: Signal<bool>) -> Element {
     rsx! {
-        button {
-            class: "util-btn util-btn-eye",
+        Button {
+            variant: ButtonVariant::Util,
+            class: "util-btn-eye",
             onclick: move |_| open.set(!open()),
             svg {
                 class: "eye-icon",

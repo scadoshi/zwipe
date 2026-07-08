@@ -1,10 +1,12 @@
 //! Deck list screen.
 
-use crate::inbound::components::screen_header::ScreenHeader;
 use crate::{
     inbound::{
-        components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
-        components::hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey},
+        components::{
+            auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+            hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey},
+            screen_header::ScreenHeader,
+        },
         router::Router,
         screens::deck::components::skeletons::DeckListSkeleton,
     },
@@ -16,8 +18,8 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe::inbound::http::ApiError;
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::deck::deck_profile::DeckProfile;
+use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_core::domain::{auth::models::session::Session, deck::deck_profile::DeckProfile};
 
 /// Screen displaying all user's decks with navigation to view/edit.
 #[component]
@@ -183,16 +185,16 @@ pub fn DeckList() -> Element {
                 }
             }
 
-            div { class: "util-bar",
-                button {
-                    class: "util-btn",
+            ActionBar {
+                Button {
+                    variant: ButtonVariant::Util,
                     onclick: move |_| {
                         navigator.push(Router::Home {});
                     },
                     "Back"
                 }
-                button {
-                    class: "util-btn",
+                Button {
+                    variant: ButtonVariant::Util,
                     onclick: move |_| {
                         // Proactive guard: unverified users are limited to 1 deck.
                         // The backend enforces this too, but we surface it here first.

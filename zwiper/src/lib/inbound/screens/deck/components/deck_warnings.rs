@@ -1,14 +1,19 @@
 //! Deck warnings section with action buttons for card-specific warnings.
 
-use crate::inbound::router::Router;
-use crate::outbound::client::{ZwipeClient, deck_card::delete_deck_card::ClientDeleteDeckCard};
+use crate::{
+    inbound::router::Router,
+    outbound::client::{ZwipeClient, deck_card::delete_deck_card::ClientDeleteDeckCard},
+};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
 use zwipe::inbound::http::ApiError;
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::deck::deck_warning::{DeckWarning, WarningAction};
+use zwipe_components::{Button, ButtonVariant};
+use zwipe_core::domain::{
+    auth::models::session::Session,
+    deck::deck_warning::{DeckWarning, WarningAction},
+};
 
 #[component]
 pub(crate) fn DeckWarnings(
@@ -40,16 +45,16 @@ pub(crate) fn DeckWarnings(
                     if is_below_min_cards(warning) {
                         span {
                             style: "display: flex; gap: 0.5rem;",
-                            button {
-                                class: "btn-xs",
+                            Button {
+                                variant: ButtonVariant::Small,
                                 style: "color: var(--color-warning); border-color: var(--border-warning); margin-bottom: 0;",
                                 onclick: move |_| {
                                     navigator.push(Router::AddDeckCard { deck_id });
                                 },
                                 "Add cards"
                             }
-                            button {
-                                class: "btn-xs",
+                            Button {
+                                variant: ButtonVariant::Small,
                                 style: "color: var(--color-warning); border-color: var(--border-warning); margin-bottom: 0;",
                                 onclick: move |_| {
                                     navigator.push(Router::ImportDeck { deck_id });
@@ -67,8 +72,8 @@ pub(crate) fn DeckWarnings(
                                 Some(WarningAction::FixQuantity(n)) => {
                                     let target_qty = *n;
                                     rsx! {
-                                        button {
-                                            class: "btn-xs",
+                                        Button {
+                                            variant: ButtonVariant::Small,
                                             style: "color: var(--color-warning); border-color: var(--border-warning); margin-bottom: 0;",
                                             onclick: move |_| {
                                                 on_fix_quantity((card_id, target_qty));
@@ -79,8 +84,8 @@ pub(crate) fn DeckWarnings(
                                 }
                                 Some(WarningAction::ClearCommander) => {
                                     rsx! {
-                                        button {
-                                            class: "btn-xs",
+                                        Button {
+                                            variant: ButtonVariant::Small,
                                             style: "color: var(--color-warning); border-color: var(--border-warning); margin-bottom: 0;",
                                             onclick: move |_| {
                                                 on_clear_commander(());
@@ -91,8 +96,8 @@ pub(crate) fn DeckWarnings(
                                 }
                                 _ => {
                                     rsx! {
-                                        button {
-                                            class: "btn-xs",
+                                        Button {
+                                            variant: ButtonVariant::Small,
                                             style: "color: var(--color-warning); border-color: var(--border-warning); margin-bottom: 0;",
                                             onclick: move |_| {
                                                 let on_remove = on_remove;

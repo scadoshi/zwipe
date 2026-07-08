@@ -1,10 +1,14 @@
 //! New user registration screen.
 
-use crate::inbound::components::screen_header::ScreenHeader;
-use crate::inbound::components::telemetry::anonymous::record_anonymous_event;
 use crate::{
     domain::error::UserFacing,
-    inbound::{components::fields::text_input::TextInput, router::Router},
+    inbound::{
+        components::{
+            fields::text_input::TextInput, screen_header::ScreenHeader,
+            telemetry::anonymous::record_anonymous_event,
+        },
+        router::Router,
+    },
     outbound::{
         client::{ZwipeClient, auth::register::ClientRegister},
         session::Persist,
@@ -14,9 +18,11 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe::domain::auth::models::password::Password;
-use zwipe_core::domain::{Email, auth::models::session::Session, logo, user::username::Username};
-use zwipe_core::http::contracts::auth::HttpRegisterUser;
-use zwipe_core::http::contracts::metrics::AnonymousEventKind;
+use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_core::{
+    domain::{Email, auth::models::session::Session, logo, user::username::Username},
+    http::contracts::{auth::HttpRegisterUser, metrics::AnonymousEventKind},
+};
 
 /// Registration form screen for creating new user accounts.
 #[component]
@@ -191,15 +197,15 @@ pub fn Register() -> Element {
                 }
             }
         }
-        div { class: "util-bar",
-            button {
-                class: "util-btn",
+        ActionBar {
+            Button {
+                variant: ButtonVariant::Util,
                 disabled: is_loading(),
                 onclick: move |_| navigator.go_back(),
                 "Back to login"
             }
-            button {
-                class: "util-btn",
+            Button {
+                variant: ButtonVariant::Util,
                 disabled: is_loading(),
                 onclick : move |_| attempt_submit(),
                 if is_loading() { "Creating..." } else { "Create profile" }

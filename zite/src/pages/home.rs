@@ -1,5 +1,7 @@
-use crate::components::{PageMeta, StatsStrip};
-use crate::{Footer, Nav};
+use crate::{
+    Footer, Nav,
+    components::{PageMeta, StatsStrip},
+};
 use dioxus::prelude::*;
 
 const LOGO_ASCII: &str = zwipe_core::domain::logo::ZWIPE;
@@ -146,10 +148,10 @@ pub fn Home() -> Element {
                     " to undo."
                 }
                 div { class: "hero-chips",
-                    span { class: "chip chip-value", "Free" }
-                    span { class: "chip chip-value", "No ads" }
-                    span { class: "chip chip-plat", "iOS" }
-                    span { class: "chip chip-plat", "Android" }
+                    span { class: "hero-chip chip-value", "Free" }
+                    span { class: "hero-chip chip-value", "No ads" }
+                    span { class: "hero-chip chip-plat", "iOS" }
+                    span { class: "hero-chip chip-plat", "Android" }
                 }
                 StatsStrip {}
             }

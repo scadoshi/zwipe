@@ -9,8 +9,11 @@ use crate::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
-use zwipe_core::domain::{auth::models::session::Session, user::username::Username};
-use zwipe_core::http::contracts::auth::HttpChangeUsername;
+use zwipe_components::{Button, ButtonVariant};
+use zwipe_core::{
+    domain::{auth::models::session::Session, user::username::Username},
+    http::contracts::auth::HttpChangeUsername,
+};
 
 /// Bottom sheet for updating the user's username.
 #[component]
@@ -138,14 +141,14 @@ pub fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
             open,
             title: "Change username".to_string(),
             footer: rsx! {
-                button {
-                    class: "util-btn",
+                Button {
+                    variant: ButtonVariant::Util,
                     disabled: is_loading(),
                     onclick: move |_| open.set(false),
                     "Back"
                 }
-                button {
-                    class: "util-btn",
+                Button {
+                    variant: ButtonVariant::Util,
                     disabled: is_loading(),
                     onclick: move |_| attempt_submit(),
                     if is_loading() { "Saving..." } else { "Save changes" }

@@ -1,14 +1,14 @@
 use super::components::card_info::{CardInfoDisplay, CardRulesDialog, CardSkeleton, RulesButton};
-use crate::inbound::components::chip::Chip;
-use crate::inbound::components::screen_header::ScreenHeader;
 use crate::{
     inbound::{
         components::{
             auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+            chip::Chip,
             hint_dialog::{
                 HintBullet, HintBullets, HintColored, HintDialog, HintLine, use_one_time_hint,
             },
             interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
+            screen_header::ScreenHeader,
             telemetry::{flush_loop::flush_once, usage_buffer::UsageBuffer},
         },
         screens::deck::card::{
@@ -39,30 +39,33 @@ use crate::{
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::collections::HashSet;
-use std::time::Duration;
+use std::{collections::HashSet, time::Duration};
 use uuid::Uuid;
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::deck_metrics::{budget_tier, card_price, mainboard_total_price};
-use zwipe_core::domain::deck::{Board, DeckEntry, format::Format};
-use zwipe_core::domain::user::models::hints::HINT_ADD_DECK_CARDS;
-use zwipe_core::domain::{
-    card::{
-        Card,
-        scryfall_data::{
-            ImageSize,
-            colors::{Color, Colors},
+use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_core::{
+    domain::{
+        auth::models::session::Session,
+        card::{
+            Card,
+            scryfall_data::{
+                ImageSize,
+                colors::{Color, Colors},
+            },
+            search_card::{
+                card_filter::{builder::CardQueryBuilder, price_currency::PriceCurrency},
+                card_type::CardType,
+                cards::Cards,
+            },
         },
-        search_card::{
-            card_filter::builder::CardQueryBuilder,
-            card_type::CardType,
-            cards::Cards,
+        deck::{
+            Board, DeckEntry, Quantity,
+            deck_metrics::{budget_tier, card_price, mainboard_total_price},
+            format::Format,
         },
+        user::models::hints::HINT_ADD_DECK_CARDS,
     },
-    deck::Quantity,
+    http::contracts::deck_card::{HttpCreateDeckCard, HttpUpdateDeckCard},
 };
-use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpUpdateDeckCard};
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 enum AddSource {
@@ -91,11 +94,17 @@ fn ensure_lands_excluded(mut filter_builder: Signal<CardQueryBuilder>) {
     // Drop Land from any include list — including and excluding Land at once
     // matches nothing. Setting an empty vec clears the filter.
     if let Some(includes) = contains_any {
-        let kept: Vec<CardType> = includes.into_iter().filter(|t| *t != CardType::Land).collect();
+        let kept: Vec<CardType> = includes
+            .into_iter()
+            .filter(|t| *t != CardType::Land)
+            .collect();
         fb.set_card_type_contains_any(kept);
     }
     if let Some(includes) = contains_all {
-        let kept: Vec<CardType> = includes.into_iter().filter(|t| *t != CardType::Land).collect();
+        let kept: Vec<CardType> = includes
+            .into_iter()
+            .filter(|t| *t != CardType::Land)
+            .collect();
         fb.set_card_type_contains_all(kept);
     }
 
@@ -453,9 +462,15 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 return;
                             }
                         };
-                        if let Err(e) = client().unskip_deck_card(deck_id, oracle_id, &session).await {
+                        if let Err(e) = client()
+                            .unskip_deck_card(deck_id, oracle_id, &session)
+                            .await
+                        {
                             tracing::warn!("undo skip (unskip) failed: {e}");
-                            toast.error(format!("Failed to undo skip: {}", e), ToastOptions::default());
+                            toast.error(
+                                format!("Failed to undo skip: {}", e),
+                                ToastOptions::default(),
+                            );
                         }
                     });
                 }
@@ -469,7 +484,8 @@ pub fn Add(deck_id: Uuid) -> Element {
                 let card_id = card.scryfall_data.id;
                 let oracle_id = card.scryfall_data.oracle_id;
                 let was_land = card.scryfall_data.is_land();
-                let was_price = card_price(&card.scryfall_data, price_budget_currency()).unwrap_or(0.0);
+                let was_price =
+                    card_price(&card.scryfall_data, price_budget_currency()).unwrap_or(0.0);
 
                 spawn(async move {
                     let session = match session.ensure_fresh(client).await {
@@ -678,10 +694,11 @@ pub fn Add(deck_id: Uuid) -> Element {
                     // or the format default), start with lands excluded from the
                     // swipe pool. The auto-serve reset below re-fetches, so no
                     // separate counter bump is needed here.
-                    let effective_target = deck
-                        .deck_profile
-                        .land_target
-                        .or_else(|| deck.deck_profile.format.and_then(|f| f.default_land_target()));
+                    let effective_target = deck.deck_profile.land_target.or_else(|| {
+                        deck.deck_profile
+                            .format
+                            .and_then(|f| f.default_land_target())
+                    });
                     if let Some(t) = effective_target
                         && land_count >= t
                     {
@@ -1251,10 +1268,9 @@ pub fn Add(deck_id: Uuid) -> Element {
                 }
             }
 
-            div {
-                class: "util-bar",
-                button {
-                    class: "util-btn",
+            ActionBar {
+                Button {
+                    variant: ButtonVariant::Util,
                     onclick: move |_| {
                         // Clear auto-populated defaults so view/remove screens start fresh
                         if filter_builder.read().is_empty_ignoring_deck_context() {
@@ -1264,16 +1280,16 @@ pub fn Add(deck_id: Uuid) -> Element {
                     },
                     "Back"
                 }
-                button {
-                    class: "util-btn",
+                Button {
+                    variant: ButtonVariant::Util,
                     onclick: move |_| filters_overlay_open.set(true),
                     "Filter"
                     if !filter_builder.read().is_empty_ignoring_deck_context_and_auto_lands(lands_at_target()) || filter_builder.read().sort().is_some() {
                         span { class: "filter-dot" }
                     }
                 }
-                button {
-                    class: "util-btn",
+                Button {
+                    variant: ButtonVariant::Util,
                     onclick: move |_| {
                         if add_source() == AddSource::Maybeboard {
                             // Maybeboard mode: re-fetch deck to reload maybeboard entries

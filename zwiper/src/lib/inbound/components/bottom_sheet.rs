@@ -3,6 +3,7 @@
 use dioxus::prelude::*;
 use std::time::Duration;
 use tokio::time::sleep;
+use zwipe_components::{ActionBar, Button, ButtonVariant};
 
 /// A slide-up bottom sheet with backdrop, title, content slot, and footer.
 ///
@@ -65,12 +66,12 @@ pub fn BottomSheet(
                     {children}
                 }
             }
-            div { class: "util-bar",
+            ActionBar {
                 if let Some(f) = footer {
                     {f}
                 } else {
-                    button {
-                        class: "util-btn",
+                    Button {
+                        variant: ButtonVariant::Util,
                         onclick: move |_| open.set(false),
                         "Close"
                     }

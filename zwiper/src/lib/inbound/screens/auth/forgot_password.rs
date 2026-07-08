@@ -1,15 +1,17 @@
 //! Forgot password screen.
 
-use crate::inbound::components::screen_header::ScreenHeader;
 use crate::{
-    inbound::components::fields::text_input::TextInput,
+    inbound::components::{fields::text_input::TextInput, screen_header::ScreenHeader},
     outbound::client::{ZwipeClient, auth::forgot_password::ClientForgotPassword},
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
-use zwipe_core::domain::{Email, logo};
-use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
+use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_core::{
+    domain::{Email, logo},
+    http::contracts::auth::HttpRequestPasswordReset,
+};
 
 /// Forgot password screen for initiating a password reset.
 #[component]
@@ -92,15 +94,15 @@ pub fn ForgotPassword() -> Element {
                     }
                 }
             }
-            div { class: "util-bar",
-                button {
-                    class: "util-btn",
+            ActionBar {
+                Button {
+                    variant: ButtonVariant::Util,
                     onclick: move |_| navigator.go_back(),
                     "Back to login"
                 }
                 if !submission_success() {
-                    button {
-                        class: "util-btn",
+                    Button {
+                        variant: ButtonVariant::Util,
                         onclick: move |_| attempt_submit(),
                         "Send reset link"
                     }

@@ -1,19 +1,23 @@
-use super::components::card_row::CardRow;
-use super::components::image_preview::ImagePreview;
-use super::components::printing_sheet::PrintingSheet;
-use crate::inbound::components::chip::Chip;
-use crate::inbound::components::screen_header::ScreenHeader;
-use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
-use crate::inbound::screens::deck::components::skeletons::DeckCardListSkeleton;
+use super::components::{
+    card_row::CardRow, image_preview::ImagePreview, printing_sheet::PrintingSheet,
+};
 use crate::{
     inbound::{
-        components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
-        components::hint_dialog::{
-            HintBullet, HintBullets, HintDialog, HintKey, HintLine, open_and_record_hint,
+        components::{
+            auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+            chip::Chip,
+            hint_dialog::{
+                HintBullet, HintBullets, HintDialog, HintKey, HintLine, open_and_record_hint,
+            },
+            screen_header::ScreenHeader,
+            telemetry::usage_buffer::UsageBuffer,
         },
-        screens::deck::card::filter::{
-            card_filter_sheet::{CardFilterSheet, CollapseExpanded},
-            deck_cards::DeckCards,
+        screens::deck::{
+            card::filter::{
+                card_filter_sheet::{CardFilterSheet, CollapseExpanded},
+                deck_cards::DeckCards,
+            },
+            components::skeletons::DeckCardListSkeleton,
         },
     },
     outbound::client::{
@@ -33,22 +37,33 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
 use zwipe::inbound::http::ApiError;
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::{
-    Card,
-    search_card::{
-        card_filter::{builder::CardQueryBuilder, card_sort_key::CardSortKey},
-        cards::{Cards, sort_deck_entries},
-        group_cards::{CardGroup, GroupByOption, GroupCards},
+use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_core::{
+    domain::{
+        auth::models::session::Session,
+        card::{
+            Card,
+            search_card::{
+                card_filter::{
+                    builder::CardQueryBuilder, card_sort_key::CardSortKey,
+                    price_currency::PriceCurrency,
+                },
+                cards::{Cards, sort_deck_entries},
+                group_cards::{CardGroup, GroupByOption, GroupCards},
+            },
+        },
+        deck::{
+            Board, DeckEntry,
+            deck_metrics::{budget_tier, mainboard_total_price},
+            quantity::Quantity,
+        },
+        user::models::hints::{HINT_DECK_CARDS, HINT_DECK_MVPS},
+    },
+    http::{
+        contracts::{deck::HttpUpdateDeckProfile, deck_card::HttpUpdateDeckCard},
+        helpers::Opdate,
     },
 };
-use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::deck_metrics::{budget_tier, mainboard_total_price};
-use zwipe_core::domain::deck::{Board, DeckEntry, quantity::Quantity};
-use zwipe_core::domain::user::models::hints::{HINT_DECK_CARDS, HINT_DECK_MVPS};
-use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
-use zwipe_core::http::contracts::deck_card::HttpUpdateDeckCard;
-use zwipe_core::http::helpers::Opdate;
 
 /// Identifies which command zone slot a card occupies for printing updates.
 #[derive(Clone, Copy)]
@@ -325,8 +340,7 @@ pub fn View(deck_id: Uuid) -> Element {
         } else {
             match builder.build_criteria() {
                 Ok(criteria) => {
-                    let filtered: Vec<Card> =
-                        Cards::from(active_cards).matching(&criteria).into();
+                    let filtered: Vec<Card> = Cards::from(active_cards).matching(&criteria).into();
                     (
                         filtered,
                         filter_pinned(cmd, &criteria),
@@ -342,7 +356,10 @@ pub fn View(deck_id: Uuid) -> Element {
         // No sort chosen -> alphabetical, so the deck list always has a stable,
         // scannable order (applies to tokens/maybeboard/sideboard below too).
         let mut filtered: Vec<Card> = Cards::from(filtered)
-            .sorted(builder.sort().unwrap_or(CardSortKey::Name), builder.ascending())
+            .sorted(
+                builder.sort().unwrap_or(CardSortKey::Name),
+                builder.ascending(),
+            )
             .into();
 
         if !lands_visible {
@@ -392,9 +409,8 @@ pub fn View(deck_id: Uuid) -> Element {
     };
 
     // Mainboard total in the budget currency from the source of truth.
-    let total_price = move || -> f64 {
-        mainboard_total_price(&deck_entries.peek(), price_budget_currency())
-    };
+    let total_price =
+        move || -> f64 { mainboard_total_price(&deck_entries.peek(), price_budget_currency()) };
 
     // Toast once when a qty change raises the deck into a new budget tier
     // (50/75/100%). Higher-tier only, so it never re-fires.
@@ -434,7 +450,10 @@ pub fn View(deck_id: Uuid) -> Element {
                 .iter()
                 .find(|e| e.card.scryfall_data.id == card_id)
                 .and_then(|e| e.card.scryfall_data.oracle_id);
-            let commander_oracle_id = commander_card.peek().as_ref().and_then(|c| c.scryfall_data.oracle_id);
+            let commander_oracle_id = commander_card
+                .peek()
+                .as_ref()
+                .and_then(|c| c.scryfall_data.oracle_id);
             usage_buffer().record_removal(commander_oracle_id, card_oracle_id);
 
             // Optimistic: remove from entries
@@ -993,28 +1012,28 @@ pub fn View(deck_id: Uuid) -> Element {
                 }
             }
 
-            div { class: "util-bar",
-                button {
-                    class: "util-btn",
+            ActionBar {
+                Button {
+                    variant: ButtonVariant::Util,
                     onclick: move |_| navigator.go_back(),
                     "Back"
                 }
-                button {
-                    class: "util-btn",
+                Button {
+                    variant: ButtonVariant::Util,
                     onclick: move |_| {
                         navigator.push(crate::inbound::router::Router::AddDeckCard { deck_id });
                     },
                     "Add"
                 }
-                button {
-                    class: "util-btn",
+                Button {
+                    variant: ButtonVariant::Util,
                     onclick: move |_| {
                         navigator.push(crate::inbound::router::Router::RemoveDeckCard { deck_id });
                     },
                     "Remove"
                 }
-                button {
-                    class: "util-btn",
+                Button {
+                    variant: ButtonVariant::Util,
                     onclick: move |_| filters_overlay_open.set(true),
                     "Filter"
                     if !filter_builder.read().is_empty() || filter_builder.read().sort().is_some() {
@@ -1022,8 +1041,9 @@ pub fn View(deck_id: Uuid) -> Element {
                     }
                 }
                 if !filter_builder.read().is_empty() {
-                    button {
-                        class: "util-btn util-btn-clear",
+                    Button {
+                        variant: ButtonVariant::Util,
+                        class: "util-btn-clear",
                         onclick: move |_| {
                             filter_builder.write().clear();
                             should_collapse_expanded.set(true);

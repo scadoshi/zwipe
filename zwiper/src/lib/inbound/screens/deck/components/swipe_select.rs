@@ -8,31 +8,40 @@
 //! full [`CardFilterSheet`]. Swipe **left** to skip, **right** to choose,
 //! **down** to undo; up does nothing.
 
-use crate::inbound::components::hint_dialog::{
-    HintBullet, HintBullets, HintColored, HintDialog, HintLine, open_and_record_hint,
+use crate::{
+    inbound::{
+        components::{
+            hint_dialog::{
+                HintBullet, HintBullets, HintColored, HintDialog, HintLine, open_and_record_hint,
+            },
+            interactions::swipe::{
+                STACK_DEPTH, SwipeStack, config::SwipeConfig, direction::Direction,
+            },
+            screen_header::ScreenHeader,
+            telemetry::usage_buffer::UsageBuffer,
+        },
+        screens::deck::card::{
+            components::card_info::{CardInfoDisplay, CardRulesDialog, CardSkeleton, RulesButton},
+            filter::card_filter_sheet::CardFilterSheet,
+        },
+    },
+    outbound::client::{ZwipeClient, card::search_commanders::ClientSearchCommanders},
 };
-use crate::inbound::components::interactions::swipe::{
-    STACK_DEPTH, SwipeStack, config::SwipeConfig, direction::Direction,
-};
-use crate::inbound::components::screen_header::ScreenHeader;
-use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
-use crate::inbound::screens::deck::card::components::card_info::{
-    CardInfoDisplay, CardRulesDialog, CardSkeleton, RulesButton,
-};
-use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
-use crate::outbound::client::{ZwipeClient, card::search_commanders::ClientSearchCommanders};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use std::collections::HashSet;
-use std::time::Duration;
+use std::{collections::HashSet, time::Duration};
 use uuid::Uuid;
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::scryfall_data::ImageSize;
-use zwipe_core::domain::card::scryfall_data::colors::Colors;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::deck::format::Format;
-use zwipe_core::domain::user::models::hints::HINT_SWIPE_SELECT;
+use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_core::domain::{
+    auth::models::session::Session,
+    card::{
+        Card,
+        scryfall_data::{ImageSize, colors::Colors},
+        search_card::card_filter::builder::CardQueryBuilder,
+    },
+    deck::format::Format,
+    user::models::hints::HINT_SWIPE_SELECT,
+};
 
 /// Cards fetched per page (matches the backend default).
 const PAGE: u32 = 25;
@@ -367,14 +376,14 @@ pub(crate) fn SwipeSelect(
                     }
                 }
 
-                div { class: "util-bar",
-                    button {
-                        class: "util-btn",
+                ActionBar {
+                    Button {
+                        variant: ButtonVariant::Util,
                         onclick: move |_| on_close.call(()),
                         "Back"
                     }
-                    button {
-                        class: "util-btn",
+                    Button {
+                        variant: ButtonVariant::Util,
                         onclick: move |_| filters_overlay_open.set(true),
                         "Filter"
                         // Popularity order is this screen's default (no sort),
@@ -383,8 +392,8 @@ pub(crate) fn SwipeSelect(
                             span { class: "filter-dot" }
                         }
                     }
-                    button {
-                        class: "util-btn",
+                    Button {
+                        variant: ButtonVariant::Util,
                         onclick: move |_| refresh(),
                         "Refresh"
                     }

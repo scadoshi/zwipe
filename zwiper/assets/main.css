@@ -537,23 +537,7 @@ button {
   utilities - utility bar
   ========================= */
 
-.util-bar {
-    flex-shrink: 0;
-    border-top: 1px solid var(--border-secondary);
-    background-color: var(--bg-primary);
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    padding-bottom: 1rem;
-    padding-top: 1rem;
-
-    /* Force GPU acceleration to fix iOS keyboard repositioning bug */
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
-}
+/* .util-bar (ActionBar) moved to the shared components.css (zwipe-components). */
 
 /* =====================
   utilities - overflow
@@ -591,28 +575,7 @@ button {
   common components - buttons
  ============================= */
 
-.btn {
-    width: 100%;
-    padding: 1rem;
-    background-color: var(--bg-primary);
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--border-primary);
-    border-radius: 1rem;
-    color: var(--text-primary);
-    font-family: "JetBrains Mono", monospace;
-    font-size: 1rem;
-    font-weight: 400;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    margin-bottom: 2rem;
-}
-
-.btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-}
-
+/* .btn / .btn:disabled (Button Primary) moved to the shared components.css. */
 .btn-sm {
     padding: 0.5rem 1rem;
     font-size: 0.8rem;
@@ -625,22 +588,8 @@ button {
     width: 48%;
 }
 
-.util-btn {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.8rem;
-    border-radius: 0.5rem;
-    width: auto;
-    margin: 0;
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-primary);
-    color: var(--text-primary);
-    font-family: "JetBrains Mono", monospace;
-    font-weight: 400;
-    cursor: pointer;
-    transition: all 0.1s ease;
-    white-space: nowrap;
-}
-
+/* .util-btn (Button Util) moved to the shared components.css. Its modifiers
+   (.util-btn-eye, .util-btn-clear, .page-header-*) stay here. */
 .filter-dot {
     width: 6px;
     height: 6px;
@@ -710,24 +659,9 @@ button {
     align-self: stretch;
 }
 
-.util-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-}
-
+/* .util-btn:disabled and .btn-danger/.util-btn-danger moved to components.css. */
 .util-btn-clear {
     animation: row-enter 0.2s ease-out both;
-}
-
-.btn-danger {
-    border-color: var(--color-error);
-    color: var(--color-error);
-}
-
-.util-btn-danger {
-    border-color: var(--color-error);
-    color: var(--color-error);
 }
 
 /* ===========================
@@ -2044,25 +1978,8 @@ button {
   unified chip system
  =========================== */
 
-.chip {
-    display: inline-block;
-    padding: 0.3rem 0.6rem;
-    border: 1px solid var(--border-primary);
-    border-radius: 0.6rem;
-    font-size: 0.75rem;
-    color: var(--text-primary);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    background-color: var(--bg-primary);
-    box-shadow: var(--shadow-sm);
-}
-
-.chip.selected {
-    border-color: var(--accent-secondary);
-    color: var(--accent-secondary);
-}
-
-.chip .ms,
+/* .chip / .chip.selected / .chip .ms moved to the shared components.css
+   (zwipe-components). .chip-xs keeps its own glyph sizing here. */
 .chip-xs .ms {
     font-size: 1.1rem;
     vertical-align: middle;
@@ -2414,26 +2331,7 @@ button {
        (label just shifts left a touch). Label-only rows still center fine. */
 }
 
-.btn-xs {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.75rem;
-    border-radius: 0.5rem;
-    margin-bottom: 0.5rem;
-    width: auto;
-    background: none;
-    border: 1px solid var(--accent-secondary);
-    color: var(--accent-secondary);
-    font-family: "JetBrains Mono", monospace;
-    font-weight: 400;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.btn-xs:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-}
+/* .btn-xs / .btn-xs:disabled (Button Small) moved to the shared components.css. */
 
 .type-box-compact {
     padding: 0.25rem 0.5rem;

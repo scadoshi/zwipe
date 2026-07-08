@@ -1,16 +1,20 @@
 //! User preferences screen for theme and dark mode selection.
 
 use crate::{
-    inbound::components::auth::ensure_session::EnsureFresh,
-    inbound::components::bottom_sheet::BottomSheet,
+    inbound::components::{auth::ensure_session::EnsureFresh, bottom_sheet::BottomSheet},
     outbound::client::{ZwipeClient, user::preferences::ClientUpdatePreferences},
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
-use zwipe_core::domain::user::models::theme::ThemeConfig;
-use zwipe_core::domain::{auth::models::session::Session, user::preferences::ALLOWED_THEMES};
-use zwipe_core::http::contracts::user::HttpUpdatePreferences;
+use zwipe_components::{Button, ButtonVariant};
+use zwipe_core::{
+    domain::{
+        auth::models::session::Session,
+        user::{models::theme::ThemeConfig, preferences::ALLOWED_THEMES},
+    },
+    http::contracts::user::HttpUpdatePreferences,
+};
 
 /// Capitalize each word of a theme slug for display ("tokyo-night" → "Tokyo Night").
 pub(crate) fn display_theme_name(slug: &str) -> String {
@@ -153,16 +157,16 @@ pub fn PreferencesSheet(mut open: Signal<bool>) -> Element {
             title: "Preferences".to_string(),
             on_dismiss: move |_| { theme_config.set(original_theme()); },
             footer: rsx! {
-                button {
-                    class: "util-btn",
+                Button {
+                    variant: ButtonVariant::Util,
                     onclick: move |_| {
                         theme_config.set(original_theme());
                         open.set(false);
                     },
                     "Back"
                 }
-                button {
-                    class: "util-btn",
+                Button {
+                    variant: ButtonVariant::Util,
                     onclick: move |_| save(),
                     "Save"
                 }

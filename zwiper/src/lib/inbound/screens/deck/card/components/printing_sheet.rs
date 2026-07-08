@@ -1,17 +1,21 @@
 //! Bottom sheet for browsing and selecting card printings.
 
-use super::card_info::{CardInfoDisplay, PrintingSheetSkeleton};
-use super::flippable_card_image::FlippableCardImage;
-use crate::inbound::components::interactions::carousel::Carousel;
-use crate::inbound::components::interactions::carousel::dots::CarouselDots;
-use crate::inbound::components::interactions::carousel::state::CarouselState;
-use crate::outbound::client::{ZwipeClient, card::get_printings::ClientGetPrintings};
+use super::{
+    card_info::{CardInfoDisplay, PrintingSheetSkeleton},
+    flippable_card_image::FlippableCardImage,
+};
+use crate::{
+    inbound::components::interactions::carousel::{
+        Carousel, dots::CarouselDots, state::CarouselState,
+    },
+    outbound::client::{ZwipeClient, card::get_printings::ClientGetPrintings},
+};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::scryfall_data::ImageSize;
+use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_core::domain::card::{Card, scryfall_data::ImageSize};
 
 /// Bottom sheet for browsing all printings of a card and selecting one.
 #[component]
@@ -158,9 +162,9 @@ pub(crate) fn PrintingSheet(
                 }
             }
 
-            div { class: "util-bar",
-                button {
-                    class: "util-btn",
+            ActionBar {
+                Button {
+                    variant: ButtonVariant::Util,
                     onclick: move |_| {
                         if has_changed {
                             toast.info(
@@ -177,8 +181,8 @@ pub(crate) fn PrintingSheet(
                     if let Some(new_card) = visible_card {
                         {
                             rsx! {
-                                button {
-                                    class: "util-btn",
+                                Button {
+                                    variant: ButtonVariant::Util,
                                     onclick: move |_| {
                                         on_save(new_card.clone());
                                         toast.info(

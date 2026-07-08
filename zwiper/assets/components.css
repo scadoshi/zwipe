@@ -1,0 +1,133 @@
+/* Shared component styles for the Zwipe surfaces.
+ *
+ * Copied into each app's asset bundle at build time (see the app build.rs,
+ * mirroring shared/themes.css) and linked after themes. Rules reference theme
+ * CSS variables only — never color literals — so a component resolves to
+ * whichever theme the host app has active.
+ *
+ * This is the single source of truth for the shared components' look; the
+ * matching rules are removed from the apps' own stylesheets as call sites
+ * migrate to the components. */
+
+/* ---- Chip (zwipe_components::Chip) ---- */
+
+.chip {
+    display: inline-block;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.6rem;
+    font-size: 0.75rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.chip.selected {
+    border-color: var(--accent-secondary);
+    color: var(--accent-secondary);
+}
+
+/* Mana glyphs inside a chip (color-identity filter chips). */
+.chip .ms {
+    font-size: 1.1rem;
+    vertical-align: middle;
+}
+
+/* ---- Button (zwipe_components::Button) ---- */
+
+/* Primary: full-width form/dialog button. */
+.btn {
+    width: 100%;
+    padding: 1rem;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-primary);
+    border-radius: 1rem;
+    color: var(--text-primary);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 1rem;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 2rem;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Small: compact inline button. */
+.btn-xs {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.75rem;
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+    width: auto;
+    background: none;
+    border: 1px solid var(--accent-secondary);
+    color: var(--accent-secondary);
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-xs:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Util: compact action-bar button. */
+.util-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    border-radius: 0.5rem;
+    width: auto;
+    margin: 0;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-primary);
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    white-space: nowrap;
+}
+
+.util-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Danger modifier (destructive actions), shared by .btn/.btn-xs and .util-btn. */
+.btn-danger,
+.util-btn-danger {
+    border-color: var(--color-error);
+    color: var(--color-error);
+}
+
+/* ---- ActionBar (zwipe_components::ActionBar) ---- */
+
+.util-bar {
+    flex-shrink: 0;
+    border-top: 1px solid var(--border-secondary);
+    background-color: var(--bg-primary);
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding-bottom: 1rem;
+    padding-top: 1rem;
+
+    /* Force GPU acceleration to fix iOS keyboard repositioning bug */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+}

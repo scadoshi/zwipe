@@ -24,6 +24,14 @@ fn main() {
         .expect("failed to copy shared/themes.css into zite/assets/");
     println!("cargo:rerun-if-changed=../shared/themes.css");
 
+    // Copy the shared component styles (zwipe-components) the same way.
+    std::fs::copy(
+        "../zwipe-components/assets/components.css",
+        "assets/components.css",
+    )
+    .expect("failed to copy zwipe-components/assets/components.css into zite/assets/");
+    println!("cargo:rerun-if-changed=../zwipe-components/assets/components.css");
+
     generate_sitemap();
 }
 

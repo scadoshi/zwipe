@@ -1,15 +1,19 @@
 //! Edit deck screen.
 
-use super::components::deck_fields::{DeckFields, DeckFieldsHint, autofill_named_partner};
-use super::components::format_select::FormatSelect;
-use super::components::tag_select::TagSelect;
-use super::components::skeletons::EditDeckSkeleton;
-use super::components::swipe_select::{SwipeMode, SwipeSelect};
-use crate::inbound::components::screen_header::ScreenHeader;
+use super::components::{
+    deck_fields::{DeckFields, DeckFieldsHint, autofill_named_partner},
+    format_select::FormatSelect,
+    skeletons::EditDeckSkeleton,
+    swipe_select::{SwipeMode, SwipeSelect},
+    tag_select::TagSelect,
+};
 use crate::{
     inbound::{
-        components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
-        components::hint_dialog::use_one_time_hint,
+        components::{
+            auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+            hint_dialog::use_one_time_hint,
+            screen_header::ScreenHeader,
+        },
         router::Router,
     },
     outbound::client::{
@@ -23,16 +27,19 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
 use zwipe::inbound::http::ApiError;
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::{
-    Deck, DeckName, DeckOtherTag, DeckTag, PowerLevel, deck_profile::DeckProfile, format::Format,
-    requests::update_deck_profile::InvalidUpdateDeckProfile,
+use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_core::{
+    domain::{
+        auth::models::session::Session,
+        card::{Card, search_card::card_filter::price_currency::PriceCurrency},
+        deck::{
+            Deck, DeckName, DeckOtherTag, DeckTag, PowerLevel, deck_profile::DeckProfile,
+            format::Format, requests::update_deck_profile::InvalidUpdateDeckProfile,
+        },
+        user::models::hints::HINT_EDIT_DECK,
+    },
+    http::{contracts::deck::HttpUpdateDeckProfile, helpers::Opdate},
 };
-use zwipe_core::domain::user::models::hints::HINT_EDIT_DECK;
-use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
-use zwipe_core::http::helpers::Opdate;
 
 /// Screen for editing a deck with name and settings.
 #[component]
@@ -83,7 +90,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let mut original_tags: Signal<Vec<DeckTag>> = use_signal(Vec::new);
     let mut original_land_target: Signal<Option<i32>> = use_signal(|| None);
     let mut original_price_target: Signal<String> = use_signal(String::new);
-    let mut original_price_target_currency: Signal<PriceCurrency> = use_signal(|| PriceCurrency::Usd);
+    let mut original_price_target_currency: Signal<PriceCurrency> =
+        use_signal(|| PriceCurrency::Usd);
     let mut original_power_level: Signal<Option<PowerLevel>> = use_signal(|| None);
     let mut original_other_tags: Signal<Vec<DeckOtherTag>> = use_signal(Vec::new);
     let mut original_partner: Signal<Option<Card>> = use_signal(|| None);
@@ -336,7 +344,10 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     });
     let price_target_update = use_memo(move || {
         let cur: Option<f64> = price_target().parse().ok().filter(|v: &f64| *v > 0.0);
-        let orig: Option<f64> = original_price_target().parse().ok().filter(|v: &f64| *v > 0.0);
+        let orig: Option<f64> = original_price_target()
+            .parse()
+            .ok()
+            .filter(|v: &f64| *v > 0.0);
         if cur != orig {
             // Empty/zero parses to `None` → clears the budget.
             Opdate::Set(cur)
@@ -500,9 +511,9 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 }
             }
 
-            div { class: "util-bar",
-                button {
-                    class: "util-btn",
+            ActionBar {
+                Button {
+                    variant: ButtonVariant::Util,
                     disabled: is_saving(),
                     onclick: move |_| {
                         navigator.push(Router::ViewDeck { deck_id });
@@ -510,8 +521,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                     "Back"
                 }
                 if has_made_changes() {
-                    button {
-                        class: "util-btn",
+                    Button {
+                        variant: ButtonVariant::Util,
                         disabled: is_saving(),
                         onclick : move |_| attempt_submit(),
                             if is_saving() { "Saving..." } else { "Save changes" }

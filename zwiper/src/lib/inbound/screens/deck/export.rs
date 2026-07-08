@@ -1,13 +1,13 @@
 //! Export deck as plain-text decklist screen.
 
-use crate::inbound::components::chip::Chip;
-use crate::inbound::components::hint_dialog::{
-    HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint,
-};
-use crate::inbound::components::screen_header::ScreenHeader;
 use crate::{
     inbound::{
-        components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+        components::{
+            auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+            chip::Chip,
+            hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
+            screen_header::ScreenHeader,
+        },
         router::Router,
     },
     outbound::client::{ZwipeClient, deck::get_deck::ClientGetDeck},
@@ -17,9 +17,10 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
 use zwipe::inbound::http::ApiError;
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::deck::Deck;
-use zwipe_core::domain::user::models::hints::HINT_EXPORT;
+use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_core::domain::{
+    auth::models::session::Session, deck::Deck, user::models::hints::HINT_EXPORT,
+};
 
 #[component]
 pub fn ExportDeck(deck_id: Uuid) -> Element {
@@ -218,16 +219,16 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                     }
                 }
 
-                div { class: "util-bar",
-                    button {
-                        class: "util-btn",
+                ActionBar {
+                    Button {
+                        variant: ButtonVariant::Util,
                         onclick: move |_| {
                             navigator.push(Router::ViewDeck { deck_id });
                         },
                         "Back"
                     }
-                    button {
-                        class: "util-btn",
+                    Button {
+                        variant: ButtonVariant::Util,
                         onclick: move |_| {
                             if let Some(text) = export_text() {
                                 let js = format!(

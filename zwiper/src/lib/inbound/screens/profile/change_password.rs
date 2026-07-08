@@ -16,8 +16,10 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe::domain::auth::models::password::Password;
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::http::contracts::auth::HttpChangePassword;
+use zwipe_components::{Button, ButtonVariant};
+use zwipe_core::{
+    domain::auth::models::session::Session, http::contracts::auth::HttpChangePassword,
+};
 
 /// Bottom sheet for updating the user's password.
 #[component]
@@ -134,14 +136,14 @@ pub fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
             open,
             title: "Change password".to_string(),
             footer: rsx! {
-                button {
-                    class: "util-btn",
+                Button {
+                    variant: ButtonVariant::Util,
                     disabled: is_loading(),
                     onclick: move |_| open.set(false),
                     "Back"
                 }
-                button {
-                    class: "util-btn",
+                Button {
+                    variant: ButtonVariant::Util,
                     disabled: is_loading(),
                     onclick: move |_| {
                         submit_attempted.set(true);

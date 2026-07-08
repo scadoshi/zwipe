@@ -1,16 +1,20 @@
 //! Change email bottom sheet.
 
-use crate::domain::error::UserFacing;
-use crate::inbound::components::auth::ensure_session::EnsureFresh;
-use crate::inbound::components::bottom_sheet::BottomSheet;
-use crate::inbound::components::fields::text_input::TextInput;
-use crate::outbound::client::ZwipeClient;
-use crate::outbound::client::user::change_email::ClientChangeEmail;
+use crate::{
+    domain::error::UserFacing,
+    inbound::components::{
+        auth::ensure_session::EnsureFresh, bottom_sheet::BottomSheet, fields::text_input::TextInput,
+    },
+    outbound::client::{ZwipeClient, user::change_email::ClientChangeEmail},
+};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
-use zwipe_core::domain::{Email, auth::models::session::Session};
-use zwipe_core::http::contracts::auth::HttpChangeEmail;
+use zwipe_components::{Button, ButtonVariant};
+use zwipe_core::{
+    domain::{Email, auth::models::session::Session},
+    http::contracts::auth::HttpChangeEmail,
+};
 
 /// Bottom sheet for updating the user's email address.
 #[component]
@@ -138,14 +142,14 @@ pub fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
             open,
             title: "Change email".to_string(),
             footer: rsx! {
-                button {
-                    class: "util-btn",
+                Button {
+                    variant: ButtonVariant::Util,
                     disabled: is_loading(),
                     onclick: move |_| open.set(false),
                     "Back"
                 }
-                button {
-                    class: "util-btn",
+                Button {
+                    variant: ButtonVariant::Util,
                     disabled: is_loading(),
                     onclick: move |_| attempt_submit(),
                     if is_loading() { "Saving..." } else { "Save changes" }

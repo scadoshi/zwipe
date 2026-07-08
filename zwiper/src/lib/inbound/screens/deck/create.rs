@@ -1,14 +1,18 @@
 //! Create new deck screen.
 
-use super::components::deck_fields::{DeckFields, DeckFieldsHint, autofill_named_partner};
-use super::components::format_select::FormatSelect;
-use super::components::swipe_select::{SwipeMode, SwipeSelect};
-use super::components::tag_select::TagSelect;
-use crate::inbound::components::screen_header::ScreenHeader;
+use super::components::{
+    deck_fields::{DeckFields, DeckFieldsHint, autofill_named_partner},
+    format_select::FormatSelect,
+    swipe_select::{SwipeMode, SwipeSelect},
+    tag_select::TagSelect,
+};
 use crate::{
     inbound::{
-        components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
-        components::hint_dialog::use_one_time_hint,
+        components::{
+            auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+            hint_dialog::use_one_time_hint,
+            screen_header::ScreenHeader,
+        },
         router::Router,
     },
     outbound::client::{ZwipeClient, deck::create_deck::ClientCreateDeck},
@@ -16,12 +20,16 @@ use crate::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::{DeckName, DeckOtherTag, DeckTag, PowerLevel, format::Format};
-use zwipe_core::domain::user::models::hints::HINT_CREATE_DECK;
-use zwipe_core::http::contracts::deck::HttpCreateDeckProfile;
+use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_core::{
+    domain::{
+        auth::models::session::Session,
+        card::{Card, search_card::card_filter::price_currency::PriceCurrency},
+        deck::{DeckName, DeckOtherTag, DeckTag, PowerLevel, format::Format},
+        user::models::hints::HINT_CREATE_DECK,
+    },
+    http::contracts::deck::HttpCreateDeckProfile,
+};
 
 /// Screen for creating a new deck with name and settings.
 #[component]
@@ -164,14 +172,15 @@ pub fn CreateDeck() -> Element {
                 }
             }
 
-            div { class: "util-bar",
-                button {
-                    class: "util-btn",
+            ActionBar {
+                Button {
+                    variant: ButtonVariant::Util,
                     disabled: is_saving(),
                     onclick: move |_| navigator.go_back(),
                     "Back"
                 }
-                button { class : "util-btn",
+                Button {
+                    variant: ButtonVariant::Util,
                     disabled: is_saving(),
                     onclick : move |_| attempt_submit(),
                     if is_saving() { "Saving..." } else { "Save" }

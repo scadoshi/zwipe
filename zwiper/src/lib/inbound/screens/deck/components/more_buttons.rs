@@ -1,18 +1,26 @@
-use crate::inbound::components::alert_dialog::{
-    AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
-    AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
+use crate::{
+    inbound::{
+        components::{
+            alert_dialog::{
+                AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
+                AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
+            },
+            auth::ensure_session::EnsureFresh,
+            bottom_sheet::BottomSheet,
+            telemetry::{flush_loop::flush_once, usage_buffer::UsageBuffer},
+        },
+        router::Router,
+    },
+    outbound::client::{
+        ZwipeClient,
+        deck::{clear_deck_suppressions::ClientClearDeckSuppressions, share_deck::ClientShareDeck},
+    },
 };
-use crate::inbound::components::auth::ensure_session::EnsureFresh;
-use crate::inbound::components::bottom_sheet::BottomSheet;
-use crate::inbound::components::telemetry::{flush_loop::flush_once, usage_buffer::UsageBuffer};
-use crate::inbound::router::Router;
-use crate::outbound::client::ZwipeClient;
-use crate::outbound::client::deck::clear_deck_suppressions::ClientClearDeckSuppressions;
-use crate::outbound::client::deck::share_deck::ClientShareDeck;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
+use zwipe_components::Button;
 use zwipe_core::domain::auth::models::session::Session;
 
 /// Public web base URL. A shared deck lives at `{WEB_DOMAIN}/deck/{token}`.
@@ -253,16 +261,14 @@ pub(crate) fn MoreButtons(
         }
 
         BottomSheet { open: show_more_sheet, title: "More actions",
-            button {
-                class: "btn",
+            Button {
                 onclick: move |_| {
                     show_more_sheet.set(false);
                     navigator.push(Router::ImportDeck { deck_id });
                 },
                 "Import cards"
             }
-            button {
-                class: "btn",
+            Button {
                 disabled: !has_cards,
                 onclick: move |_| {
                     show_more_sheet.set(false);
@@ -270,8 +276,7 @@ pub(crate) fn MoreButtons(
                 },
                 "Export cards"
             }
-            button {
-                class: "btn",
+            Button {
                 disabled: !has_cards,
                 onclick: move |_| {
                     show_more_sheet.set(false);
@@ -279,30 +284,28 @@ pub(crate) fn MoreButtons(
                 },
                 "Buy deck"
             }
-            button {
-                class: "btn",
+            Button {
                 onclick: move |_| {
                     show_more_sheet.set(false);
                     show_clone_dialog.set(true);
                 },
                 "Clone deck"
             }
-            button {
-                class: "btn",
+            Button {
                 onclick: move |_| {
                     show_share_dialog.set(true);
                 },
                 "Share deck"
             }
-            button {
-                class: "btn btn-danger",
+            Button {
+                danger: true,
                 onclick: move |_| {
                     show_clear_skips_dialog.set(true);
                 },
                 "Clear skips"
             }
-            button {
-                class: "btn btn-danger",
+            Button {
+                danger: true,
                 onclick: move |_| {
                     show_delete_dialog.set(true);
                 },

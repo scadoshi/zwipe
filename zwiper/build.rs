@@ -10,6 +10,14 @@ fn main() {
         .expect("failed to copy shared/themes.css into zwiper/assets/");
     println!("cargo:rerun-if-changed=../shared/themes.css");
 
+    // Copy the shared component styles (zwipe-components) the same way.
+    std::fs::copy(
+        "../zwipe-components/assets/components.css",
+        "assets/components.css",
+    )
+    .expect("failed to copy zwipe-components/assets/components.css into zwiper/assets/");
+    println!("cargo:rerun-if-changed=../zwipe-components/assets/components.css");
+
     dotenvy::dotenv().expect("failed to load .env");
 
     let backend_url = std::env::var(BACKEND_URL_KEY)

@@ -1,8 +1,7 @@
 use dioxus::prelude::*;
 use dioxus_primitives::toast::ToastProvider;
 use tracing_subscriber::EnvFilter;
-use zwipe_core::domain::logo;
-use zwipe_core::domain::user::models::theme::ThemeConfig;
+use zwipe_core::domain::{logo, user::models::theme::ThemeConfig};
 use zwiper::{
     config::Config,
     inbound::{
@@ -13,6 +12,7 @@ use zwiper::{
 
 const FAVICON: Asset = asset!("/assets/favicon/favicon.ico");
 const THEMES_CSS: Asset = asset!("/assets/themes.css");
+const COMPONENTS_CSS: Asset = asset!("/assets/components.css");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
 const ACCORDION_CSS: Asset = asset!("/assets/accordion.css");
 const ALERT_DIALOG_CSS: Asset = asset!("/assets/alert-dialog.css");
@@ -97,6 +97,7 @@ fn App() -> Element {
             )}
         }
         document::Link { rel: "stylesheet", href: THEMES_CSS }
+        document::Link { rel: "stylesheet", href: COMPONENTS_CSS }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: ACCORDION_CSS }
         document::Link { rel: "stylesheet", href: ALERT_DIALOG_CSS }

@@ -2,14 +2,14 @@
 //! replace mode. Both sources import into the selected board of this deck and
 //! share the same result shape.
 
-use crate::inbound::components::chip::Chip;
-use crate::inbound::components::hint_dialog::{
-    HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint,
-};
-use crate::inbound::components::screen_header::ScreenHeader;
 use crate::{
     inbound::{
-        components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+        components::{
+            auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+            chip::Chip,
+            hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
+            screen_header::ScreenHeader,
+        },
         router::Router,
     },
     outbound::client::{
@@ -21,10 +21,12 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::deck::ImportMode;
-use zwipe_core::domain::deck::requests::import_deck_cards::ImportDeckCardsResult;
-use zwipe_core::domain::user::models::hints::HINT_IMPORT;
+use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_core::domain::{
+    auth::models::session::Session,
+    deck::{ImportMode, requests::import_deck_cards::ImportDeckCardsResult},
+    user::models::hints::HINT_IMPORT,
+};
 
 /// Which import source is active.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -254,16 +256,16 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                     }
                 }
 
-                div { class: "util-bar",
-                    button {
-                        class: "util-btn",
+                ActionBar {
+                    Button {
+                        variant: ButtonVariant::Util,
                         onclick: move |_| {
                             navigator.push(Router::ViewDeck { deck_id });
                         },
                         "Back"
                     }
-                    button {
-                        class: "util-btn",
+                    Button {
+                        variant: ButtonVariant::Util,
                         disabled: loading() || match source() {
                             ImportSource::Text => text().trim().is_empty(),
                             ImportSource::Archidekt => url().trim().is_empty(),

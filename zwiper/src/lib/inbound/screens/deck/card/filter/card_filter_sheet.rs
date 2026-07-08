@@ -1,23 +1,27 @@
-use crate::inbound::{
-    components::accordion::{Accordion, AccordionContent, AccordionItem, AccordionTrigger},
-    components::hint_dialog::{
-        HintBullet, HintBullets, HintColored, HintDialog, open_and_record_hint,
+use crate::{
+    inbound::{
+        components::{
+            accordion::{Accordion, AccordionContent, AccordionItem, AccordionTrigger},
+            hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog, open_and_record_hint},
+        },
+        screens::deck::card::filter::{
+            artist::Artist, category::Category, combat::Combat, config::Config,
+            flavor_text::FlavorText, format::FormatFilter, mana::Mana, name::Name,
+            oracle_text::OracleText, price::PriceFilter, rarity::Rarity, set::Set, sort::Sort,
+            types::Types,
+        },
     },
-    screens::deck::card::filter::{
-        artist::Artist, category::Category, combat::Combat, config::Config,
-        flavor_text::FlavorText, format::FormatFilter, mana::Mana, name::Name,
-        oracle_text::OracleText, price::PriceFilter, rarity::Rarity, set::Set, sort::Sort,
-        types::Types,
-    },
+    outbound::client::ZwipeClient,
 };
-use crate::outbound::client::ZwipeClient;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::card::search_card::card_filter::error::InvalidCardCriteria;
-use zwipe_core::domain::user::models::hints::HINT_FILTER;
+use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_core::domain::{
+    auth::models::session::Session,
+    card::search_card::card_filter::{builder::CardQueryBuilder, error::InvalidCardCriteria},
+    user::models::hints::HINT_FILTER,
+};
 
 /// Newtype so `try_use_context` doesn't collide with other `Signal<bool>`
 /// contexts — a bare `Signal<bool>` lookup here once grabbed the root
@@ -160,8 +164,8 @@ pub(crate) fn CardFilterSheet(
 
             div { class: "modal-header", style: "position: relative;",
                 span { style: "font-size: 1rem; color: var(--accent-tertiary);", "Filter" }
-                button {
-                    class: "util-btn",
+                Button {
+                    variant: ButtonVariant::Util,
                     style: "position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); opacity: 0.55; padding: 0.2rem 0.6rem;",
                     onclick: move |_| hint_open.set(true),
                     "?"
@@ -540,9 +544,9 @@ pub(crate) fn CardFilterSheet(
                 }
             }
 
-            div { class: "util-bar",
-                button {
-                    class: "util-btn",
+            ActionBar {
+                Button {
+                    variant: ButtonVariant::Util,
                     onclick: move |_| {
                         // Block contradictory filters (a value/term both included
                         // and excluded matches zero cards). Keep the sheet open so
@@ -567,8 +571,8 @@ pub(crate) fn CardFilterSheet(
                     },
                     "Apply"
                 }
-                button {
-                    class: "util-btn",
+                Button {
+                    variant: ButtonVariant::Util,
                     onclick: move |_| {
                         if let Some(handler) = &on_clear {
                             handler.call(());

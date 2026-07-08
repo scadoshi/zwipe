@@ -6,9 +6,12 @@
 //! and clearing are reported through callbacks so the form can run its
 //! command-zone cascade (clearing commander and signature spell on a change).
 
-use crate::inbound::components::hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog};
-use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::{
+    hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog},
+    screen_header::ScreenHeader,
+};
 use dioxus::prelude::*;
+use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::domain::deck::format::Format;
 
 /// Deck size summary, e.g. "100 cards, singleton" or "60+ cards, up to 4 copies".
@@ -141,9 +144,9 @@ pub(crate) fn FormatSelect(
                     }
                 }
 
-                div { class: "util-bar",
-                    button {
-                        class: "util-btn",
+                ActionBar {
+                    Button {
+                        variant: ButtonVariant::Util,
                         onclick: move |_| on_close.call(()),
                         "Done"
                     }
