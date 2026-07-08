@@ -173,7 +173,7 @@ Once wasm compiles, build the authenticated experience into zite:
 ## zwiper — Open Follow-ups
 
 - [ ] **SQL-vs-predicate parity test** — build a `CardCriteria` with every field populated and assert that the backend SQL adapter and `CardCriteria::matches` accept/reject the same fixture set (needs a test Postgres). Would catch the "field exists end-to-end except in the frontend predicate" pattern that hid the commander and legality bugs (fixed in 1.0.2). *Narrowed 2026-07-02 by the CardFilter split:* the predicate now lives on the same `CardCriteria` type the query flattens (wire round-trip is tested), but `matches` still mirrors the SQL by hand — this fixture parity check is the remaining gap.
-- [ ] **Investigate Delver not showing in existing deck after MDFC fix landed** — observed 2026-06-06 on an airplane (slow wifi may be a factor): a deck containing `Delver of Secrets` returned zero rows from `SELECT ... WHERE scryfall_data.name ILIKE 'delver of secrets'`. Card and combination definitely existed before. Fresh deck testing worked fine, so probably state-specific. Could be the migration's deck-card remap pointed the old reference at a row that no longer exists, OR the connection was timing out and the join silently returned empty. Worth re-running the query off airplane wifi first; if it still returns zero, dig into the remap audit.
+- [x] **Delver not showing in existing deck — RESOLVED (confirmed 2026-07-08).** The 2026-06-06 airplane observation never reproduced afterward; card serves correctly in existing decks today. Most likely the slow connection returning an empty join at the time.
 
 ---
 
