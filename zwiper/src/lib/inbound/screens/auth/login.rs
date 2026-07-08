@@ -1,8 +1,10 @@
 //! User login screen.
 
-use crate::inbound::components::screen_header::ScreenHeader;
 use crate::{
-    inbound::{components::fields::text_input::TextInput, router::Router},
+    inbound::{
+        components::{fields::text_input::TextInput, screen_header::ScreenHeader},
+        router::Router,
+    },
     outbound::{
         client::{ZwipeClient, auth::login::ClientLogin},
         session::Persist,
@@ -12,9 +14,16 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use zwipe::domain::auth::models::password::Password;
-use zwipe_core::domain::user::models::theme::ThemeConfig;
-use zwipe_core::domain::{Email, auth::models::session::Session, logo, user::username::Username};
-use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
+use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_core::{
+    domain::{
+        Email,
+        auth::models::session::Session,
+        logo,
+        user::{models::theme::ThemeConfig, username::Username},
+    },
+    http::contracts::auth::HttpAuthenticateUser,
+};
 
 /// Login form screen for user authentication.
 #[component]
@@ -95,24 +104,23 @@ pub fn Login() -> Element {
                 }
             }
         }
-        div {
-            class: "util-bar",
-            button {
-                class: "util-btn",
+        ActionBar {
+            Button {
+                variant: ButtonVariant::Util,
                 disabled: is_loading(),
                 onclick: move |_| attempt_submit(),
                 if is_loading() { "Logging in..." } else { "Log in" }
             },
-            button {
-                class : "util-btn",
+            Button {
+                variant: ButtonVariant::Util,
                 disabled: is_loading(),
                 onclick: move |_| {
                 navigator.push(Router::Register {});
                 },
                 "Create profile"
             }
-            button {
-                class: "util-btn",
+            Button {
+                variant: ButtonVariant::Util,
                 disabled: is_loading(),
                 onclick: move |_| { navigator.push(Router::ForgotPassword {}); },
                 "Forgot password"

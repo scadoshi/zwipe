@@ -1,14 +1,14 @@
 use super::components::card_info::{CardInfoDisplay, CardRulesDialog, CardSkeleton, RulesButton};
-use crate::inbound::components::chip::Chip;
-use crate::inbound::components::screen_header::ScreenHeader;
 use crate::{
     inbound::{
         components::{
             auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+            chip::Chip,
             hint_dialog::{
                 HintBullet, HintBullets, HintColored, HintDialog, HintLine, use_one_time_hint,
             },
             interactions::swipe::{SwipeStack, config::SwipeConfig, direction::Direction},
+            screen_header::ScreenHeader,
             telemetry::usage_buffer::UsageBuffer,
         },
         screens::deck::card::{
@@ -33,19 +33,28 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::{
-    Card,
-    search_card::{
-        card_filter::{builder::CardQueryBuilder, card_sort_key::CardSortKey},
-        cards::Cards,
+use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_core::{
+    domain::{
+        auth::models::session::Session,
+        card::{
+            Card,
+            search_card::{
+                card_filter::{
+                    builder::CardQueryBuilder, card_sort_key::CardSortKey,
+                    price_currency::PriceCurrency,
+                },
+                cards::Cards,
+            },
+        },
+        deck::{
+            Board, DeckEntry,
+            deck_metrics::{budget_tier, mainboard_total_price},
+        },
+        user::models::hints::HINT_REMOVE_DECK_CARDS,
     },
+    http::contracts::deck_card::{HttpCreateDeckCard, HttpUpdateDeckCard},
 };
-use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::deck_metrics::{budget_tier, mainboard_total_price};
-use zwipe_core::domain::deck::{Board, DeckEntry};
-use zwipe_core::domain::user::models::hints::HINT_REMOVE_DECK_CARDS;
-use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpUpdateDeckCard};
 
 /// Board filter for the remove screen.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
@@ -151,9 +160,8 @@ pub fn Remove(deck_id: Uuid) -> Element {
     };
 
     // Mainboard total in the budget currency from the source of truth.
-    let total_price = move || -> f64 {
-        mainboard_total_price(&deck_entries.peek(), price_budget_currency())
-    };
+    let total_price =
+        move || -> f64 { mainboard_total_price(&deck_entries.peek(), price_budget_currency()) };
 
     // Toast when a change raises the deck into a higher budget band (50/75/100%),
     // reporting the exact percentage. Compares the band before/after, so it fires
@@ -540,22 +548,22 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 }
             }
 
-            div { class: "util-bar",
-                button {
-                    class: "util-btn",
+            ActionBar {
+                Button {
+                    variant: ButtonVariant::Util,
                     onclick: move |_| navigator.go_back(),
                     "Back"
                 }
-                button {
-                    class: "util-btn",
+                Button {
+                    variant: ButtonVariant::Util,
                     onclick: move |_| filters_overlay_open.set(true),
                     "Filter"
                     if !filter_builder.read().is_empty() || filter_builder.read().sort().is_some() {
                         span { class: "filter-dot" }
                     }
                 }
-                button {
-                    class: "util-btn",
+                Button {
+                    variant: ButtonVariant::Util,
                     onclick: move |_| {
                         stack.rewind();
                         if filter_builder.peek().sort() == Some(CardSortKey::Random) {

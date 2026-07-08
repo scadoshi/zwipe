@@ -6,9 +6,9 @@
 //! team: email a problem report or join the Discord. The report email is
 //! pre-filled with the app version and platform so every report self-documents.
 
-use crate::inbound::components::bottom_sheet::BottomSheet;
-use crate::outbound::open_url;
+use crate::{inbound::components::bottom_sheet::BottomSheet, outbound::open_url};
 use dioxus::prelude::*;
+use zwipe_components::Button;
 
 /// User-facing support email. Same in every build, so a const (not env).
 const SUPPORT_EMAIL: &str = "support@zwipe.net";
@@ -64,8 +64,7 @@ pub fn SupportButton() -> Element {
             // A plain `<a href="mailto:">` does nothing on mobile: the webview's
             // navigation handler hands it to `webbrowser`, which rejects
             // non-http(s) URLs. Open it through the OS ourselves instead.
-            button {
-                class: "btn",
+            Button {
                 onclick: move |_| {
                     open_url::open(&mailto);
                     open.set(false);

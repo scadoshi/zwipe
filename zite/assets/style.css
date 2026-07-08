@@ -1715,7 +1715,9 @@ footer {
     margin-top: 0.75rem;
 }
 
-.chip {
+/* Home hero spec labels (Free / No ads / iOS / Android). Renamed from `.chip`
+   so the interactive `.chip` in the shared components.css doesn't collide. */
+.hero-chip {
     padding: 0.2rem 0.6rem;
     border-radius: 0.6rem;
     font-family: "JetBrains Mono", monospace;

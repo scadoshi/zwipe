@@ -1,11 +1,12 @@
-use dioxus::document::eval;
-use dioxus::prelude::*;
-use zwipe_core::domain::user::models::theme::ThemeConfig;
-use zwipe_core::domain::user::preferences::ALLOWED_THEMES;
+use dioxus::{document::eval, prelude::*};
+use zwipe_core::domain::user::{models::theme::ThemeConfig, preferences::ALLOWED_THEMES};
 
 mod components;
 mod pages;
-use pages::{About, Android, Contribute, Discord, GuidePage, Guides, Home, Ios, Privacy, Reset, SharedDeck, Verify};
+use pages::{
+    About, Android, Contribute, Discord, GuidePage, Guides, Home, Ios, Privacy, Reset, SharedDeck,
+    Verify,
+};
 
 /// Debug builds (dx serve) talk to a local dev zerver so pages that fetch
 /// (shared deck, verify, reset) are testable without touching prod.
@@ -24,6 +25,7 @@ pub const SUPPORT_EMAIL: &str = "support@zwipe.net";
 pub const DISCORD_URL: &str = "https://discord.gg/s2UReqUUeg";
 
 const THEMES: Asset = asset!("/assets/themes.css");
+const COMPONENTS: Asset = asset!("/assets/components.css");
 const STYLE: Asset = asset!("/assets/style.css");
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const FAVICON_16: Asset = asset!("/assets/favicon-16x16.png");
@@ -127,6 +129,7 @@ fn App() -> Element {
         document::Link { rel: "apple-touch-icon", href: APPLE_TOUCH_ICON }
         document::Link { rel: "manifest", href: MANIFEST }
         document::Stylesheet { href: THEMES }
+        document::Stylesheet { href: COMPONENTS }
         document::Stylesheet { href: STYLE }
         Router::<Route> {}
     }

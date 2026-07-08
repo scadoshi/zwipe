@@ -1,23 +1,28 @@
-use crate::components::PageMeta;
-use crate::{API_BASE, Footer, Nav, Route};
+use crate::{API_BASE, Footer, Nav, Route, components::PageMeta};
 use dioxus::prelude::*;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
-use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::keyword::keyword_reminder;
-use zwipe_core::domain::card::scryfall_data::ImageSize;
-use zwipe_core::domain::card::scryfall_data::colors::Color;
-use zwipe_core::domain::card::search_card::{
-    card_filter::{
-        builder::CardQueryBuilder, card_sort_key::CardSortKey, price_currency::PriceCurrency,
+use zwipe_components::Chip;
+use zwipe_core::{
+    domain::{
+        card::{
+            Card,
+            keyword::keyword_reminder,
+            scryfall_data::{ImageSize, colors::Color},
+            search_card::{
+                card_filter::{
+                    builder::CardQueryBuilder, card_sort_key::CardSortKey,
+                    price_currency::PriceCurrency,
+                },
+                card_type::CardType,
+                cards::Cards,
+                group_cards::{GroupByOption, GroupCards},
+            },
+        },
+        deck::{Board, DeckEntry, deck_metrics::mainboard_total_price},
     },
-    card_type::CardType,
-    cards::Cards,
-    group_cards::{GroupByOption, GroupCards},
+    http::contracts::deck::HttpSharedDeck,
 };
-use zwipe_core::domain::deck::deck_metrics::mainboard_total_price;
-use zwipe_core::domain::deck::{Board, DeckEntry};
-use zwipe_core::http::contracts::deck::HttpSharedDeck;
 
 /// How a shared-deck fetch can fail, from the reader's point of view.
 #[derive(Clone, PartialEq)]
@@ -561,9 +566,9 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                 div { class: "sd-control-row",
                     span { class: "sd-control-label", "Group by:" }
                     for option in GroupByOption::all() {
-                        button {
+                        Chip {
                             key: "{option}",
-                            class: if group_option() == option { "sd-chip active" } else { "sd-chip" },
+                            selected: group_option() == option,
                             onclick: move |_| group_option.set(option),
                             "{option}"
                         }
@@ -571,13 +576,13 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                 }
                 div { class: "sd-control-row",
                     span { class: "sd-control-label", "Show:" }
-                    button {
-                        class: if show_lands() { "sd-chip active" } else { "sd-chip" },
+                    Chip {
+                        selected: show_lands(),
                         onclick: move |_| show_lands.set(!show_lands()),
                         "Lands"
                     }
-                    button {
-                        class: if show_command_zone() { "sd-chip active" } else { "sd-chip" },
+                    Chip {
+                        selected: show_command_zone(),
                         onclick: move |_| show_command_zone.set(!show_command_zone()),
                         "Command zone"
                     }
@@ -600,9 +605,9 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                         CardType::Artifact, CardType::Enchantment,
                         CardType::Planeswalker, CardType::Land,
                     ] {
-                        button {
+                        Chip {
                             key: "{card_type}",
-                            class: if selected_types().contains(&card_type) { "sd-chip active" } else { "sd-chip" },
+                            selected: selected_types().contains(&card_type),
                             onclick: move |_| {
                                 let mut current = selected_types();
                                 match current.iter().position(|t| *t == card_type) {

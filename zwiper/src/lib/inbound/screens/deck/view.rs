@@ -1,35 +1,38 @@
-use super::components::clone_deck_dialog::CloneDeckDialog;
-use super::components::collapsible_section::CollapsibleSection;
-use super::components::deck_charts::{
-    DeckCharts, DrawOdds, ManaBalanceRow, ManaCurve, ManaFulfillment,
+use super::components::{
+    clone_deck_dialog::CloneDeckDialog,
+    collapsible_section::CollapsibleSection,
+    deck_charts::{DeckCharts, DrawOdds, ManaBalanceRow, ManaCurve, ManaFulfillment},
+    deck_profile::DeckProfileSection,
+    deck_stats::DeckStats,
+    deck_warnings::DeckWarnings,
+    more_buttons::MoreButtons,
+    skeletons::{DeckProfileSkeleton, DeckStatsSkeleton},
 };
-use super::components::deck_profile::DeckProfileSection;
-use super::components::deck_stats::DeckStats;
-use super::components::deck_warnings::DeckWarnings;
-use super::components::more_buttons::MoreButtons;
-use super::components::skeletons::{DeckProfileSkeleton, DeckStatsSkeleton};
-use crate::inbound::components::alert_dialog::{
-    AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
-    AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
-};
-use crate::inbound::components::screen_header::ScreenHeader;
 use crate::{
     inbound::{
-        components::auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
-        components::hint_dialog::{
-            HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint,
+        components::{
+            alert_dialog::{
+                AlertDialogAction, AlertDialogActions, AlertDialogCancel, AlertDialogContent,
+                AlertDialogDescription, AlertDialogRoot, AlertDialogTitle,
+            },
+            auth::{bouncer::Bouncer, ensure_session::EnsureFresh},
+            hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
+            screen_header::ScreenHeader,
         },
         router::Router,
     },
-    outbound::buy_links,
-    outbound::client::{
-        ZwipeClient,
-        card::get_card::ClientGetCard,
-        deck::{
-            delete_deck::ClientDeleteDeck, get_deck::ClientGetDeck,
-            get_deck_profile::ClientGetDeckProfile, update_deck_profile::ClientUpdateDeckProfile,
+    outbound::{
+        buy_links,
+        client::{
+            ZwipeClient,
+            card::get_card::ClientGetCard,
+            deck::{
+                delete_deck::ClientDeleteDeck, get_deck::ClientGetDeck,
+                get_deck_profile::ClientGetDeckProfile,
+                update_deck_profile::ClientUpdateDeckProfile,
+            },
+            deck_card::update_deck_card::ClientUpdateDeckCard,
         },
-        deck_card::update_deck_card::ClientUpdateDeckCard,
     },
 };
 use dioxus::prelude::*;
@@ -37,15 +40,22 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
 use zwipe::inbound::http::ApiError;
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::Card;
-use zwipe_core::domain::deck::{
-    DeckEntry, deck_metrics::DeckMetrics, deck_profile::DeckProfile, deck_warning::DeckWarning,
+use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_core::{
+    domain::{
+        auth::models::session::Session,
+        card::Card,
+        deck::{
+            DeckEntry, deck_metrics::DeckMetrics, deck_profile::DeckProfile,
+            deck_warning::DeckWarning,
+        },
+        user::models::hints::HINT_FIRST_DECK,
+    },
+    http::{
+        contracts::{deck::HttpUpdateDeckProfile, deck_card::HttpUpdateDeckCard},
+        helpers::Opdate,
+    },
 };
-use zwipe_core::domain::user::models::hints::HINT_FIRST_DECK;
-use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
-use zwipe_core::http::contracts::deck_card::HttpUpdateDeckCard;
-use zwipe_core::http::helpers::Opdate;
 
 type DeckResult = Result<(Vec<DeckEntry>, Vec<DeckWarning>), ApiError>;
 
@@ -513,30 +523,30 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     }
                 }
 
-            div { class: "util-bar content-enter-delayed",
-                button {
-                    class: "util-btn",
+            ActionBar { class: "content-enter-delayed",
+                Button {
+                    variant: ButtonVariant::Util,
                     onclick: move |_| {
                         navigator.push(Router::DeckList {});
                     },
                     "Back"
                 }
-                button {
-                    class: "util-btn",
+                Button {
+                    variant: ButtonVariant::Util,
                     onclick: move |_| {
                         navigator.push(Router::EditDeck { deck_id });
                     },
                     "Edit"
                 }
-                button {
-                    class: "util-btn",
+                Button {
+                    variant: ButtonVariant::Util,
                     onclick: move |_| {
                         navigator.push(Router::ViewDeckCard { deck_id });
                     },
                     "Cards"
                 }
-                button {
-                    class: "util-btn",
+                Button {
+                    variant: ButtonVariant::Util,
                     onclick: move |_| show_more_sheet.set(true),
                     "More"
                 }

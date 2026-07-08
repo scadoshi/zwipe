@@ -8,6 +8,7 @@
 
 use crate::inbound::components::support::SupportButton;
 use dioxus::prelude::*;
+use zwipe_components::{Button, ButtonVariant};
 
 /// Centered page title flanked by the always-present "!" help button (left) and
 /// an optional "?" hint trigger (right).
@@ -20,8 +21,9 @@ pub fn ScreenHeader(title: String, hint: Option<Signal<bool>>) -> Element {
             SupportButton {}
             h2 { "{title}" }
             if let Some(mut hint) = hint {
-                button {
-                    class: "util-btn page-header-corner",
+                Button {
+                    variant: ButtonVariant::Util,
+                    class: "page-header-corner",
                     onclick: move |_| hint.set(true),
                     "?"
                 }

@@ -16,6 +16,7 @@ path = "src/lib/lib.rs"
 [dependencies]
 zerver = { path = "../zerver", default-features = false }
 zwipe-core = { path = "../zwipe-core" }
+zwipe-components = { path = "../zwipe-components" }
 dioxus = { version = "0.7.9", features = ["router"] }
 reqwest = { workspace = true }
 serde_json = { workspace = true }

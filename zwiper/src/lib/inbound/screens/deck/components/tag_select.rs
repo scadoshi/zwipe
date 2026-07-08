@@ -7,11 +7,14 @@
 //! at the top, so users learn what a tag does while picking it. The search box
 //! filters the grid by name for quick jumps.
 
-use crate::inbound::components::hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog};
-use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::{
+    hint_dialog::{HintBullet, HintBullets, HintColored, HintDialog},
+    screen_header::ScreenHeader,
+};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
+use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::domain::deck::{DeckTag, MAX_DECK_TAGS};
 
 /// In-place tag picker. Toggled by `open`; mutates `selected_tags` directly.
@@ -121,9 +124,9 @@ pub(crate) fn TagSelect(
                     }
                 }
 
-                div { class: "util-bar",
-                    button {
-                        class: "util-btn",
+                ActionBar {
+                    Button {
+                        variant: ButtonVariant::Util,
                         onclick: move |_| on_close.call(()),
                         "Done"
                     }

@@ -1,14 +1,17 @@
 //! Home/landing page screen.
 
-use crate::inbound::components::logout_dialog::LogoutDialog;
-use crate::inbound::components::screen_header::ScreenHeader;
-use crate::inbound::router::Router;
-use crate::inbound::screens::deck::card::components::image_preview::ImagePreview;
 use crate::{
-    inbound::components::auth::bouncer::Bouncer,
-    inbound::components::auth::session_upkeep::FlavorCard,
-    inbound::components::hint_dialog::{
-        HintBullet, HintBullets, HintColored, HintDialog, HintKey, use_one_time_hint,
+    inbound::{
+        components::{
+            auth::{bouncer::Bouncer, session_upkeep::FlavorCard},
+            hint_dialog::{
+                HintBullet, HintBullets, HintColored, HintDialog, HintKey, use_one_time_hint,
+            },
+            logout_dialog::LogoutDialog,
+            screen_header::ScreenHeader,
+        },
+        router::Router,
+        screens::deck::card::components::image_preview::ImagePreview,
     },
     outbound::client::{
         ZwipeClient,
@@ -19,14 +22,16 @@ use crate::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::scryfall_data::ScryfallData;
-use zwipe_core::domain::card::search_card::card_filter::{
-    builder::CardQueryBuilder, card_sort_key::CardSortKey,
+use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_core::domain::{
+    auth::models::session::Session,
+    card::{
+        scryfall_data::ScryfallData,
+        search_card::card_filter::{builder::CardQueryBuilder, card_sort_key::CardSortKey},
+    },
+    logo,
+    user::models::{hints::HINT_FIRST_LOGIN, theme::ThemeConfig},
 };
-use zwipe_core::domain::logo;
-use zwipe_core::domain::user::models::hints::HINT_FIRST_LOGIN;
-use zwipe_core::domain::user::models::theme::ThemeConfig;
 
 /// Home screen with navigation to main app features.
 #[component]
@@ -224,19 +229,20 @@ pub fn Home() -> Element {
 
             ImagePreview { card: preview_card, dismissing: preview_dismissing }
 
-            div { class: "util-bar",
-                button { class : "util-btn",
+            ActionBar {
+                Button { variant: ButtonVariant::Util,
                     onclick : move |_| {
                         navigator.push(Router::DeckList {} );
                     }, "Decks"
                 }
-                button { class : "util-btn",
+                Button { variant: ButtonVariant::Util,
                     onclick : move |_| {
                         navigator.push(Router::Profile {} );
                     }, "Profile"
                 }
-                button {
-                    class: "util-btn util-btn-danger",
+                Button {
+                    variant: ButtonVariant::Util,
+                    danger: true,
                     onclick: move |_| show_logout_dialog.set(true),
                     "Log out"
                 }

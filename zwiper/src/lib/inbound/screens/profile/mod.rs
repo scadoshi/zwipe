@@ -13,30 +13,36 @@ mod components;
 /// User preferences bottom sheet.
 pub mod preferences;
 
-use crate::inbound::components::bottom_sheet::BottomSheet;
-use crate::inbound::components::logout_dialog::LogoutDialog;
-use crate::inbound::components::screen_header::ScreenHeader;
-use crate::inbound::router::Router;
 use crate::{
     inbound::{
-        components::auth::bouncer::Bouncer,
-        components::hint_dialog::{
-            HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint,
+        components::{
+            auth::bouncer::Bouncer,
+            bottom_sheet::BottomSheet,
+            hint_dialog::{HintBullet, HintBullets, HintDialog, HintKey, use_one_time_hint},
+            logout_dialog::LogoutDialog,
+            screen_header::ScreenHeader,
         },
+        router::Router,
     },
-    outbound::client::{ZwipeClient, user::get_user::ClientGetUser},
-    outbound::open_url,
+    outbound::{
+        client::{ZwipeClient, user::get_user::ClientGetUser},
+        open_url,
+    },
 };
 use change_email::ChangeEmailSheet;
 use change_password::ChangePasswordSheet;
 use change_username::ChangeUsernameSheet;
-use components::delete_account_dialog::DeleteAccountDialog;
-use components::email_verification::{EmailVerification, VerificationActions};
+use components::{
+    delete_account_dialog::DeleteAccountDialog,
+    email_verification::{EmailVerification, VerificationActions},
+};
 use dioxus::prelude::*;
 use preferences::{PreferencesSheet, display_theme_name};
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::user::models::hints::HINT_PROFILE;
-use zwipe_core::domain::user::models::theme::ThemeConfig;
+use zwipe_components::{ActionBar, Button, ButtonVariant};
+use zwipe_core::domain::{
+    auth::models::session::Session,
+    user::models::{hints::HINT_PROFILE, theme::ThemeConfig},
+};
 
 /// Client version baked in at compile time, shown at the bottom of the screen
 /// so users can report which build they're on.
@@ -128,8 +134,8 @@ pub fn Profile() -> Element {
                                     span { class: "profile-row-label", "Username" }
                                     div { class: "profile-row-value",
                                         span { { s.user.username.to_string() } }
-                                        button {
-                                            class: "util-btn",
+                                        Button {
+                                            variant: ButtonVariant::Util,
                                             onclick: move |_| change_username_open.set(true),
                                             "Change"
                                         }
@@ -163,8 +169,8 @@ pub fn Profile() -> Element {
                                     span { class: "profile-row-label", "Password" }
                                     div { class: "profile-row-value",
                                         span { "•••••••" }
-                                        button {
-                                            class: "util-btn",
+                                        Button {
+                                            variant: ButtonVariant::Util,
                                             onclick: move |_| change_password_open.set(true),
                                             "Change"
                                         }
@@ -176,8 +182,8 @@ pub fn Profile() -> Element {
 
                                 div { class: "card-header",
                                     span { class: "card-title", "Preferences" }
-                                    button {
-                                        class: "util-btn",
+                                    Button {
+                                        variant: ButtonVariant::Util,
                                         onclick: move |_| preferences_open.set(true),
                                         "Change"
                                     }
@@ -210,8 +216,8 @@ pub fn Profile() -> Element {
                                     class: "profile-row",
                                     span { class: "profile-row-label", "Website" }
                                     div { class: "profile-row-value",
-                                        button {
-                                            class: "util-btn",
+                                        Button {
+                                            variant: ButtonVariant::Util,
                                             onclick: move |_| open_url::open(WEB_DOMAIN),
                                             "zwipe.net \u{2197}"
                                         }
@@ -222,8 +228,8 @@ pub fn Profile() -> Element {
                                     class: "profile-row",
                                     span { class: "profile-row-label", "Privacy Policy" }
                                     div { class: "profile-row-value",
-                                        button {
-                                            class: "util-btn",
+                                        Button {
+                                            variant: ButtonVariant::Util,
                                             onclick: move |_| {
                                                 navigator.push(Router::PrivacyPolicy {});
                                             },
@@ -244,27 +250,28 @@ pub fn Profile() -> Element {
                     }
                 }
 
-                div { class: "util-bar",
-                    button {
-                        class: "util-btn",
+                ActionBar {
+                    Button {
+                        variant: ButtonVariant::Util,
                         onclick: move |_| navigator.go_back(),
                         "Back"
                     }
-                    button {
-                        class: "util-btn util-btn-danger",
+                    Button {
+                        variant: ButtonVariant::Util,
+                        danger: true,
                         onclick: move |_| show_logout_dialog.set(true),
                         "Log out"
                     }
-                    button {
-                        class: "util-btn",
+                    Button {
+                        variant: ButtonVariant::Util,
                         onclick: move |_| show_more_sheet.set(true),
                         "More"
                     }
                 }
 
                 BottomSheet { open: show_more_sheet, title: "More".to_string(),
-                    button {
-                        class: "btn btn-danger",
+                    Button {
+                        danger: true,
                         onclick: move |_| show_delete_dialog.set(true),
                         "Delete account"
                     }

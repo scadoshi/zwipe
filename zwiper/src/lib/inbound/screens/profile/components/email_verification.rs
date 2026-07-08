@@ -1,13 +1,16 @@
-use crate::inbound::components::auth::ensure_session::EnsureFresh;
-use crate::outbound::client::{
-    ZwipeClient, auth::resend_verification::ClientResendEmailVerification,
-    user::get_user::ClientGetUser,
+use crate::{
+    inbound::components::auth::ensure_session::EnsureFresh,
+    outbound::client::{
+        ZwipeClient, auth::resend_verification::ClientResendEmailVerification,
+        user::get_user::ClientGetUser,
+    },
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use tokio::time::sleep;
 use zwipe::inbound::http::ApiError;
+use zwipe_components::{Button, ButtonVariant};
 use zwipe_core::domain::auth::models::session::Session;
 
 /// Seconds before another resend is allowed. Mirrors the server's dedicated
@@ -31,8 +34,8 @@ pub(crate) fn EmailVerification(
         } else {
             span { class: "badge-unverified", "Unverified" }
         }
-        button {
-            class: "util-btn",
+        Button {
+            variant: ButtonVariant::Util,
             onclick: move |_| on_change.call(()),
             "Change"
         }
@@ -53,10 +56,10 @@ pub(crate) fn VerificationActions() -> Element {
     let mut cooldown = use_signal(|| 0u32);
 
     rsx! {
-        button {
-            class: "util-btn",
+        Button {
+            variant: ButtonVariant::Util,
             disabled: is_resending() || cooldown() > 0,
-            onclick: move |evt| {
+            onclick: move |evt: MouseEvent| {
                 evt.stop_propagation();
                 is_resending.set(true);
                 // Optimistic: grey out for the full window right away so
@@ -116,10 +119,11 @@ pub(crate) fn VerificationActions() -> Element {
                 "Resend"
             }
         }
-        button {
-            class: "util-btn util-btn-eye",
+        Button {
+            variant: ButtonVariant::Util,
+            class: "util-btn-eye",
             disabled: is_checking(),
-            onclick: move |evt| {
+            onclick: move |evt: MouseEvent| {
                 evt.stop_propagation();
                 is_checking.set(true);
                 spawn(async move {

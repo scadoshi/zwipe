@@ -6,9 +6,9 @@
 //! support contact line uses [`open_url::open`] because a raw `mailto:` anchor
 //! silently fails inside the mobile webview.
 
-use crate::inbound::components::screen_header::ScreenHeader;
-use crate::outbound::open_url;
+use crate::{inbound::components::screen_header::ScreenHeader, outbound::open_url};
 use dioxus::prelude::*;
+use zwipe_components::{ActionBar, Button, ButtonVariant};
 use zwipe_core::legal::{PRIVACY_LAST_UPDATED, PRIVACY_POLICY_HTML};
 
 const SUPPORT_EMAIL: &str = "support@zwipe.net";
@@ -47,9 +47,9 @@ pub fn PrivacyPolicy() -> Element {
                 }
             }
 
-            div { class: "util-bar",
-                button {
-                    class: "util-btn",
+            ActionBar {
+                Button {
+                    variant: ButtonVariant::Util,
                     onclick: move |_| navigator.go_back(),
                     "Back"
                 }
