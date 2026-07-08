@@ -23,6 +23,8 @@ pub mod get_deck_tokens;
 pub mod import_archidekt_deck;
 /// Deck-aware card search (server-side exclusion + synergy default order).
 pub mod search_deck_cards;
+/// Share / unshare a deck (public link token management).
+pub mod share_deck;
 /// Post a single durable skip (and its undo) for a deck.
 pub mod skip_deck_card;
 /// Update deck profile metadata.
