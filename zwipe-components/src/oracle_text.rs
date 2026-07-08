@@ -51,7 +51,7 @@ fn symbol_class(sym: &str) -> String {
 
 /// Oracle text with mana/tap/energy/etc. symbols rendered as glyphs.
 #[component]
-pub(crate) fn OracleText(text: String, class: String) -> Element {
+pub fn OracleText(text: String, class: String) -> Element {
     // Scryfall separates abilities with a single newline, which reads cramped.
     // Double them so each ability gets a blank line between it and the next.
     let text = text.replace('\n', "\n\n");

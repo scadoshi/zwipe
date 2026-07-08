@@ -10,7 +10,7 @@ use zwipe_core::domain::card::keyword::keyword_reminder;
 
 /// Tappable keyword chips with a shared inline reminder area.
 #[component]
-pub(crate) fn KeywordChips(keywords: Vec<String>) -> Element {
+pub fn KeywordChips(keywords: Vec<String>) -> Element {
     let mut open = use_signal(|| None::<usize>);
 
     let items: Vec<(String, &'static str)> = keywords

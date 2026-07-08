@@ -13,7 +13,11 @@
 mod action_bar;
 mod button;
 mod chip;
+mod keyword_chips;
+mod oracle_text;
 
 pub use action_bar::ActionBar;
 pub use button::{Button, ButtonVariant};
 pub use chip::Chip;
+pub use keyword_chips::KeywordChips;
+pub use oracle_text::OracleText;

@@ -151,12 +151,19 @@ second consumer appears over doing it speculatively.
   plumbing stay.
 
 **Domain-shaped components (later, high value):**
-- `CardRow` / `ManaCost` / keyword chips — zite's shared-deck page *already
-  re-implements* these from the app (see `zite/src/pages/shared_deck.rs`).
-  Lifting the app's versions into the crate dedupes that and keeps card
-  rendering identical across app and site. They need `zwipe-core` card types
-  (the crate already depends on core). Prime candidates once the button/primitive
-  layer has settled.
+- ✅ **`OracleText` + `KeywordChips` — moved 2026-07-08.** Both were verbatim
+  duplicates between the app and zite's shared-deck page; now single copies in
+  the crate, with `.oracle-sym` + `.keyword-*` rules lifted into
+  `components.css`. Zite keeps its smaller text as `.shared-deck`-scoped
+  font-size overrides. The `.ms-cost` sizing/shadow combo rules stayed in the
+  apps (they belong to the `card-detail-*` family below).
+- `CardRow` / `ManaCost` — zite's shared-deck page still re-implements
+  `CardRow` (see `zite/src/pages/shared_deck.rs`). The app's version is already
+  callback-shaped (`on_qty_change`/`on_printing`/`on_toggle_mvp`/`on_move_to`
+  are `Option` props), so the split is close: unify on optional actions +
+  zite's hover-preview/Image extras, and lift the duplicated
+  `card-row-*`/`card-detail-*` CSS family with it. The 2026-07-08 polish pass
+  had to make every edit twice — that's the payoff case.
 
 **End goal:** a web Zwipe (zwiper already has a `web` feature), the portfolio,
 and zite all render the same components — one product across many surfaces. Grow
