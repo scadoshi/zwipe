@@ -53,10 +53,11 @@ feed the strongest per-card signal the system collects.
 2. **Signal weight** (server-only, later) — [`server.md`](server.md) step 8.
 3. **Deck steering** (server-only, later) — [`server.md`](server.md) step 9.
 4. **Artifacts** — MVPs on shared deck pages / weekly share cards (pairs
-   with the badges backlog item). **Shared-deck-page stars SHIPPED 2026-07-07**
-   with the deck share page (`d8f7dd4e`): the share payload already carried
-   `mvp_at`, so starred cards render the same warning-gold ★ there. Weekly
-   share cards remain.
+   with the badges backlog item). **Shipped on the shared deck page 2026-07-07**
+   (`d8f7dd4e` + `e5ed5e33`): the payload already carried `mvp_at`, so starred
+   cards render the warning-gold ★ inline, and the page opens with a featured
+   row of the commander + the MVPs as full art (each labeled) — the personality
+   statement this plan envisioned. Weekly share cards remain.
 
 Related: [`../suggestion_signal.md`](../suggestion_signal.md) (the ordering
 this feeds), [`../../archive/wildcard_slot/`](../../archive/wildcard_slot/overview.md) (exposure
