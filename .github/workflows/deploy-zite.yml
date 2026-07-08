@@ -6,7 +6,7 @@ on:
     paths:
       - 'zite/**'
       - 'zwipe-core/**'
-      - 'shared/**'
+      - 'zwipe-components/**'
       - '.github/workflows/deploy-zite.yml'
   workflow_dispatch:
 
