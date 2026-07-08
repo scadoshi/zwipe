@@ -10,6 +10,11 @@
 //! [`COMPONENTS_CSS`] / [`THEMES_CSS`] string constants to inline via
 //! `document::Style`.
 //!
+//! **CSS cascade order matters:** load themes first, then components, then the
+//! site's own stylesheet — `THEMES_CSS` → `COMPONENTS_CSS` → site CSS — so
+//! component rules resolve theme variables and site rules can override
+//! component defaults at equal specificity.
+//!
 //! These components deliberately depend only on base `dioxus` (no platform
 //! features) and `zwipe-core`, so any Dioxus target can consume them.
 
