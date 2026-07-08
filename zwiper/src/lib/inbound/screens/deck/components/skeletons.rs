@@ -22,16 +22,13 @@ fn SkeletonInfoList(rows: usize) -> Element {
 pub(crate) fn DeckStatsSkeleton() -> Element {
     rsx! {
         div { class: "skeleton-stats",
+            // Stats opens expanded; the sections below it (Distributions,
+            // Mana, Draw odds) start collapsed — header-only boxes.
             SkeletonInfoList { rows: 5 }
-            div { class: "skeleton-chart-box",
-                div { class: "skeleton-bar skeleton-section-label" }
-                hr { class: "box-rule" }
-                div { class: "skeleton-block skeleton-block-chart" }
-            }
-            div { class: "skeleton-chart-box",
-                div { class: "skeleton-bar skeleton-section-label" }
-                hr { class: "box-rule" }
-                div { class: "skeleton-block skeleton-block-chart" }
+            for i in 0..3 {
+                div { key: "{i}", class: "skeleton-chart-box",
+                    div { class: "skeleton-bar skeleton-section-label" }
+                }
             }
         }
     }
@@ -64,15 +61,67 @@ pub(crate) fn DeckCardListSkeleton() -> Element {
 }
 
 #[component]
-pub(crate) fn EditDeckSkeleton(#[props(default = 3)] fields: usize) -> Element {
+pub(crate) fn EditDeckSkeleton() -> Element {
     rsx! {
         div { class: "skeleton-edit-deck",
-            for i in 0..fields {
+            // Deck name / Format / Commander: label + input.
+            for i in 0..3 {
                 div { key: "{i}", class: "skeleton-edit-deck-field",
                     div { class: "skeleton-bar skeleton-edit-deck-label" }
                     div { class: "skeleton-edit-deck-input",
                         div { class: "skeleton-bar skeleton-edit-deck-value" }
                     }
+                }
+            }
+            // Tags: label + bordered box of chips.
+            div { class: "skeleton-edit-deck-field",
+                div { class: "skeleton-bar skeleton-edit-deck-label" }
+                div { class: "skeleton-edit-deck-chipbox",
+                    div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
+                    div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                    div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
+                    div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                }
+            }
+            // Power level: label + the five wrapped picker chips.
+            div { class: "skeleton-edit-deck-field",
+                div { class: "skeleton-bar skeleton-edit-deck-label" }
+                div { class: "skeleton-edit-deck-chips",
+                    for i in 0..5 {
+                        div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
+                    }
+                }
+            }
+            // Other tags: label + five chips of varying sizes.
+            div { class: "skeleton-edit-deck-field",
+                div { class: "skeleton-bar skeleton-edit-deck-label" }
+                div { class: "skeleton-edit-deck-chips",
+                    div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
+                    div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                    div { class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
+                    div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                    div { class: "skeleton-bar skeleton-chip skeleton-chip-xl" }
+                }
+            }
+            // Land target: label + the -/value/+ stepper row.
+            div { class: "skeleton-edit-deck-field",
+                div { class: "skeleton-bar skeleton-edit-deck-label" }
+                div { class: "skeleton-edit-deck-chips",
+                    for i in 0..3 {
+                        div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                    }
+                }
+            }
+            // Price target: label + currency chips + the target input.
+            div { class: "skeleton-edit-deck-field",
+                div { class: "skeleton-bar skeleton-edit-deck-label" }
+                div { class: "skeleton-edit-deck-chips",
+                    for i in 0..3 {
+                        div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                    }
+                }
+                div { class: "skeleton-edit-deck-input",
+                    div { class: "skeleton-bar skeleton-edit-deck-value" }
                 }
             }
         }
@@ -89,14 +138,27 @@ pub(crate) fn DeckProfileSkeleton() -> Element {
 }
 
 #[component]
-pub(crate) fn DeckListSkeleton(#[props(default = 5)] rows: usize) -> Element {
+pub(crate) fn DeckListSkeleton() -> Element {
+    // Three varied ghost tiles — different tag counts and widths so the list
+    // reads like real mixed decks (the xl chip stands in for a commander name).
+    const TILES: &[&[&str]] = &[
+        &["md", "lg", "xl", "sm", "md", "sm"],
+        &["md", "xl", "sm"],
+        &["lg", "md", "sm", "md"],
+    ];
     rsx! {
         div { class: "skeleton-deck-list",
-            for i in 0..rows {
+            for (i , chips) in TILES.iter().enumerate() {
                 div { key: "{i}", class: "skeleton-deck-list-item",
-                    div { class: "skeleton-bar skeleton-deck-list-title" }
-                    div { class: "skeleton-bar skeleton-deck-list-meta" }
-                    div { class: "skeleton-bar skeleton-deck-list-meta skeleton-deck-list-meta-2" }
+                    div { class: "skeleton-deck-list-head",
+                        div { class: "skeleton-bar skeleton-deck-list-title" }
+                        div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
+                    }
+                    div { class: "skeleton-deck-list-tags",
+                        for (j , size) in chips.iter().enumerate() {
+                            div { key: "{j}", class: "skeleton-bar skeleton-chip skeleton-chip-{size}" }
+                        }
+                    }
                 }
             }
         }

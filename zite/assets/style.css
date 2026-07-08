@@ -1589,15 +1589,11 @@ footer {
     margin-bottom: 1.75rem;
 }
 
-.sk-group-title {
-    width: 8rem;
-    height: 0.95rem;
-    margin: 0;
-}
-
-.sk-row {
-    width: 70%;
-    height: 0.9rem;
+/* Ghost card-list group: one plain box, same language as the card shapes. */
+.sk-group {
+    height: 15rem;
+    border-radius: 1rem;
+    margin-bottom: 1.75rem;
 }
 
 /* Pinned card-art preview, top-left. Only shown on hover (desktop); the left

@@ -1027,17 +1027,6 @@ button {
     height: 0.65rem;
 }
 
-.skeleton-block {
-    border-radius: 0.4rem;
-    background-color: var(--border-muted);
-    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-.skeleton-block-chart {
-    width: 100%;
-    height: 6rem;
-}
-
 /* Deck card list skeleton (deck cards screen) */
 .skeleton-card-list {
     display: flex;
@@ -1185,6 +1174,27 @@ button {
     height: 0.7rem;
 }
 
+/* Tags box: input-like bordered container with wrapped chip placeholders. */
+.skeleton-edit-deck-chipbox {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Bare chip rows (power level, other tags) — centered like the real pickers. */
+.skeleton-edit-deck-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
 /* Deck profile skeleton */
 .skeleton-profile {
     display: flex;
@@ -1323,20 +1333,39 @@ button {
     box-shadow: var(--shadow-sm);
 }
 
+.skeleton-deck-list-head {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
 .skeleton-deck-list-title {
-    width: 50%;
-    height: 0.9rem;
+    width: 6rem;
+    height: 1rem;
 }
 
-/* Two meta lines: the real deck subtitle ("100 cards | Commander | …") wraps to
-   roughly two lines, so the skeleton mirrors that with a full + a partial bar. */
-.skeleton-deck-list-meta {
-    width: 85%;
-    height: 0.65rem;
+.skeleton-deck-list-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
-.skeleton-deck-list-meta-2 {
-    width: 50%;
+/* Width variants so tag rows read like real mixed-length tags (xl stands in
+   for a commander name). Base chip look comes from .skeleton-chip above. */
+.skeleton-chip-sm {
+    width: 4rem;
+}
+
+.skeleton-chip-md {
+    width: 5.5rem;
+}
+
+.skeleton-chip-lg {
+    width: 7rem;
+}
+
+.skeleton-chip-xl {
+    width: 11rem;
 }
 
 /* ===========================

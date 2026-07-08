@@ -255,10 +255,11 @@ pub(crate) fn PrintingSheetSkeleton() -> Element {
 pub(crate) fn CardSkeleton(#[props(default = false)] is_loading: bool) -> Element {
     rsx! {
         div { class: "skeleton-card",
+            // While a search is in flight the image area stays a plain ghost
+            // block (no spinner); "No cards" only when a finished search is
+            // genuinely empty.
             div { class: "skeleton-image",
-                if is_loading {
-                    div { class: "spinner" }
-                } else {
+                if !is_loading {
                     "No cards"
                 }
             }
