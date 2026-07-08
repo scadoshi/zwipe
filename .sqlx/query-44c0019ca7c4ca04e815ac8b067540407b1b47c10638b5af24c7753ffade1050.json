@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE decks SET share_token = gen_random_uuid(), updated_at = now()\n               WHERE id = $1\n               RETURNING share_token AS \"share_token!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "share_token!",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "44c0019ca7c4ca04e815ac8b067540407b1b47c10638b5af24c7753ffade1050"
+}

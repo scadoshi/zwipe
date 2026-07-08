@@ -40,6 +40,10 @@ pub struct DeckProfile {
     pub price_target: Option<f64>,
     /// Currency for `price_target`. `None` falls back to USD.
     pub price_target_currency: Option<PriceCurrency>,
+    /// Public share link token. `None` = private (default). `#[serde(default)]`
+    /// so an older client reading a payload without it parses to `None`.
+    #[serde(default)]
+    pub share_token: Option<Uuid>,
     /// Owner of this deck (for authorization).
     pub user_id: Uuid,
     /// Total number of cards in the deck (sum of quantities).

@@ -13,8 +13,8 @@ use crate::{
             deck::{
                 clear_deck_suppressions::ClearDeckSuppressionsError, clone_deck::CloneDeckError,
                 create_deck_profile::CreateDeckProfileError, delete_deck::DeleteDeckError,
-                get_deck_profile::GetDeckProfileError, skip_deck_card::SkipDeckCardError,
-                update_deck_profile::UpdateDeckProfileError,
+                get_deck_profile::GetDeckProfileError, share_deck::ShareDeckError,
+                skip_deck_card::SkipDeckCardError, update_deck_profile::UpdateDeckProfileError,
             },
             deck_card::{
                 create_deck_card::CreateDeckCardError, delete_deck_card::DeleteDeckCardError,
@@ -84,7 +84,7 @@ impl DeckRepository for Postgres {
             DatabaseDeckProfile,
             r#"INSERT INTO decks (name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags, power_level, other_tags, land_target, price_target, price_target_currency, user_id)
                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-               RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags as "tags?", power_level, other_tags as "other_tags?", land_target, price_target, price_target_currency, user_id,
+               RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags as "tags?", power_level, other_tags as "other_tags?", land_target, price_target, price_target_currency, share_token, user_id,
                          0::bigint as "card_count",
                          (SELECT sd.name FROM scryfall_data sd WHERE sd.id = commander_id) as "commander_name?",
                          (SELECT sd.name FROM scryfall_data sd WHERE sd.id = partner_commander_id) as "partner_commander_name?",
@@ -213,7 +213,7 @@ impl DeckRepository for Postgres {
         let database_deck_profile = query_as!(
             DatabaseDeckProfile,
             r#"SELECT d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,
-                      d.format, d.tags as "tags?", d.power_level, d.other_tags as "other_tags?", d.land_target, d.price_target, d.price_target_currency, d.user_id,
+                      d.format, d.tags as "tags?", d.power_level, d.other_tags as "other_tags?", d.land_target, d.price_target, d.price_target_currency, d.share_token, d.user_id,
                       COALESCE(SUM(dc.quantity) FILTER (WHERE dc.board = 'deck'), 0) as "card_count",
                       sd.name as "commander_name?",
                       (SELECT s2.name FROM scryfall_data s2 WHERE s2.id = d.partner_commander_id) as "partner_commander_name?",
@@ -224,7 +224,7 @@ impl DeckRepository for Postgres {
                LEFT JOIN scryfall_data sd ON d.commander_id = sd.id
                WHERE d.id = $1
                GROUP BY d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,
-                        d.format, d.land_target, d.price_target, d.price_target_currency, d.user_id, sd.name"#,
+                        d.format, d.land_target, d.price_target, d.price_target_currency, d.share_token, d.user_id, sd.name"#,
             request.deck_id
         )
         .fetch_one(&self.pool)
@@ -243,7 +243,7 @@ impl DeckRepository for Postgres {
         let database_deck_profiles = query_as!(
             DatabaseDeckProfile,
             r#"SELECT d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,
-                      d.format, d.tags as "tags?", d.power_level, d.other_tags as "other_tags?", d.land_target, d.price_target, d.price_target_currency, d.user_id,
+                      d.format, d.tags as "tags?", d.power_level, d.other_tags as "other_tags?", d.land_target, d.price_target, d.price_target_currency, d.share_token, d.user_id,
                       COALESCE(SUM(dc.quantity) FILTER (WHERE dc.board = 'deck'), 0) as "card_count",
                       sd.name as "commander_name?",
                       (SELECT s2.name FROM scryfall_data s2 WHERE s2.id = d.partner_commander_id) as "partner_commander_name?",
@@ -254,7 +254,7 @@ impl DeckRepository for Postgres {
                LEFT JOIN scryfall_data sd ON d.commander_id = sd.id
                WHERE d.user_id = $1
                GROUP BY d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,
-                        d.format, d.land_target, d.price_target, d.price_target_currency, d.user_id, sd.name"#,
+                        d.format, d.land_target, d.price_target, d.price_target_currency, d.share_token, d.user_id, sd.name"#,
             request.user_id
         )
         .fetch_all(&self.pool)
@@ -365,7 +365,7 @@ impl DeckRepository for Postgres {
 
         qb.push(" WHERE id = ")
             .push_bind(request.deck_id)
-            .push(r#" RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags, power_level, other_tags, land_target, price_target, price_target_currency, user_id,
+            .push(r#" RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags, power_level, other_tags, land_target, price_target, price_target_currency, share_token, user_id,
                        (SELECT COALESCE(SUM(dc.quantity) FILTER (WHERE dc.board = 'deck'), 0) FROM deck_cards dc WHERE dc.deck_id = decks.id) as card_count,
                        (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.commander_id) as commander_name,
                        (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.partner_commander_id) as partner_commander_name,
@@ -734,5 +734,50 @@ impl DeckRepository for Postgres {
 
         tx.commit().await?;
         Ok(new_deck_id)
+    }
+
+    // =======
+    //  share
+    // =======
+    async fn set_share_token(&self, deck_id: uuid::Uuid) -> Result<uuid::Uuid, ShareDeckError> {
+        // Always regenerates: re-sharing rotates the token so old links die.
+        let token = query_scalar!(
+            r#"UPDATE decks SET share_token = gen_random_uuid(), updated_at = now()
+               WHERE id = $1
+               RETURNING share_token AS "share_token!""#,
+            deck_id
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| ShareDeckError::Database(e.into()))?
+        .ok_or(ShareDeckError::NotFound)?;
+        Ok(token)
+    }
+
+    async fn clear_share_token(&self, deck_id: uuid::Uuid) -> Result<(), ShareDeckError> {
+        let result = query!(
+            "UPDATE decks SET share_token = NULL, updated_at = now() WHERE id = $1",
+            deck_id
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|e| ShareDeckError::Database(e.into()))?;
+        if result.rows_affected() == 0 {
+            return Err(ShareDeckError::NotFound);
+        }
+        Ok(())
+    }
+
+    async fn get_deck_id_by_share_token(
+        &self,
+        token: uuid::Uuid,
+    ) -> Result<Option<(uuid::Uuid, uuid::Uuid)>, anyhow::Error> {
+        let row = query!(
+            "SELECT id, user_id FROM decks WHERE share_token = $1",
+            token
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+        Ok(row.map(|r| (r.id, r.user_id)))
     }
 }

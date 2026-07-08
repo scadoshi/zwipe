@@ -30,8 +30,10 @@ use crate::inbound::http::handlers::{
         get_deck_profile::get_deck_profile,
         get_deck_profiles::get_deck_profiles,
         get_deck_tokens::get_deck_tokens,
+        get_shared_deck::get_shared_deck,
         import_archidekt::import_archidekt_deck,
         search_deck_cards::search_deck_cards,
+        share_deck::{share_deck, unshare_deck},
         skip_deck_card::{skip_deck_card, unskip_deck_card},
         update_deck_profile::update_deck_profile,
     },
@@ -186,6 +188,16 @@ pub fn public_routes() -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
+    // 30 req / 2s per IP — public shared-deck reads. A page load fetches once
+    // and CF may cache briefly; this guards origin against token scanning.
+    let public_share_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(2))
+            .burst_size(30)
+            .key_extractor(CfConnectingIpKeyExtractor)
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
     // 30 req / 2s per IP — health checks. Generous for frequent polling
     // (manual curls, uptime monitors) while capping unauthenticated floods,
     // notably /health/database which pings Postgres.
@@ -271,6 +283,12 @@ pub fn public_routes() -> Router<AppState> {
                     Router::new()
                         .route("/anonymous", post(record_anonymous_event))
                         .layer(GovernorLayer::new(anonymous_event_config)),
+                )
+                .nest(
+                    "/share",
+                    Router::new()
+                        .route("/deck/{token}", get(get_shared_deck))
+                        .layer(GovernorLayer::new(public_share_config)),
                 ),
         )
 }
@@ -418,6 +436,7 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                             get(get_deck).put(update_deck_profile).delete(delete_deck),
                         )
                         .route("/{deck_id}/clone", post(clone_deck))
+                        .route("/{deck_id}/share", post(share_deck).delete(unshare_deck))
                         .route(
                             "/{deck_id}/suppressions",
                             delete(clear_deck_suppressions).post(skip_deck_card),

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO decks (name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags, power_level, other_tags, land_target, price_target, price_target_currency, user_id)\n               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)\n               RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags as \"tags?\", power_level, other_tags as \"other_tags?\", land_target, price_target, price_target_currency, user_id,\n                         0::bigint as \"card_count\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = commander_id) as \"commander_name?\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = partner_commander_id) as \"partner_commander_name?\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = background_id) as \"background_name?\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = signature_spell_id) as \"signature_spell_name?\"",
+  "query": "INSERT INTO decks (name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags, power_level, other_tags, land_target, price_target, price_target_currency, user_id)\n               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)\n               RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags as \"tags?\", power_level, other_tags as \"other_tags?\", land_target, price_target, price_target_currency, share_token, user_id,\n                         0::bigint as \"card_count\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = commander_id) as \"commander_name?\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = partner_commander_id) as \"partner_commander_name?\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = background_id) as \"background_name?\",\n                         (SELECT sd.name FROM scryfall_data sd WHERE sd.id = signature_spell_id) as \"signature_spell_name?\"",
   "describe": {
     "columns": [
       {
@@ -70,31 +70,36 @@
       },
       {
         "ordinal": 13,
-        "name": "user_id",
+        "name": "share_token",
         "type_info": "Uuid"
       },
       {
         "ordinal": 14,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 15,
         "name": "card_count",
         "type_info": "Int8"
       },
       {
-        "ordinal": 15,
+        "ordinal": 16,
         "name": "commander_name?",
         "type_info": "Text"
       },
       {
-        "ordinal": 16,
+        "ordinal": 17,
         "name": "partner_commander_name?",
         "type_info": "Text"
       },
       {
-        "ordinal": 17,
+        "ordinal": 18,
         "name": "background_name?",
         "type_info": "Text"
       },
       {
-        "ordinal": 18,
+        "ordinal": 19,
         "name": "signature_spell_name?",
         "type_info": "Text"
       }
@@ -130,6 +135,7 @@
       true,
       true,
       true,
+      true,
       false,
       null,
       null,
@@ -138,5 +144,5 @@
       null
     ]
   },
-  "hash": "f204dcec44d9bb36c6f8c2b7420bd3c540d3ffc48a412413accf27431c854b3b"
+  "hash": "80229f014a9ba69ff768beffee98a58049a3d75ba9de08b554214fa5938162a6"
 }

@@ -3,8 +3,9 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::domain::card::Card;
 use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use crate::domain::deck::ImportMode;
+use crate::domain::deck::{DeckEntry, DeckOtherTag, DeckTag, ImportMode, PowerLevel, format::Format};
 use crate::http::helpers::Opdate;
 
 /// Request to import an Archidekt deck's cards into an existing deck.
@@ -394,6 +395,47 @@ pub struct HttpClearedSuppressions {
 pub struct HttpSkipDeckCard {
     /// Oracle id of the card to suppress for this deck.
     pub oracle_id: Uuid,
+}
+
+/// Share-deck response body (POST `/api/deck/{deck_id}/share`).
+///
+/// The token is the capability: the client builds the public URL from it.
+/// Re-sharing regenerates the token, so old links die.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct HttpDeckShareToken {
+    /// The deck's live share token.
+    pub share_token: Uuid,
+}
+
+/// Public shared-deck response body (GET `/api/share/deck/{token}`).
+///
+/// Deliberately carries **no user identity** — no username, user id, or
+/// email. The page shows a deck, not an account.
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct HttpSharedDeck {
+    /// Deck display name.
+    pub name: String,
+    /// Deck format, if set.
+    pub format: Option<Format>,
+    /// Power level (WotC bracket), if set.
+    #[serde(default)]
+    pub power_level: Option<PowerLevel>,
+    /// Deck archetype/strategy tags.
+    #[serde(default)]
+    pub tags: Vec<DeckTag>,
+    /// Secondary, non-gameplay labels (Budget, Jank, …).
+    #[serde(default)]
+    pub other_tags: Vec<DeckOtherTag>,
+    /// Commander card, if set.
+    pub commander: Option<Card>,
+    /// Partner commander card, if set.
+    pub partner_commander: Option<Card>,
+    /// Background enchantment card, if set.
+    pub background: Option<Card>,
+    /// Signature spell card, if set.
+    pub signature_spell: Option<Card>,
+    /// Card entries, same payload shape as the private deck GET.
+    pub entries: Vec<DeckEntry>,
 }
 
 #[cfg(test)]
