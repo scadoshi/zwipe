@@ -140,7 +140,7 @@ build.
   the client leg (`d212e93b`, Zwipe-select drops its pinned sort) ships with
   the next build. As-built:
   [`../archive/commander_select_ordering.md`](../archive/commander_select_ordering.md);
-  fast-follow: [`../plans/commander_select_signal.md`](../plans/commander_select_signal.md).
+  fast-follow: [`../archive/commander_select_signal.md`](../archive/commander_select_signal.md).
 - **Partner autofill + edit-load fix** (`2ba57c15`, client, rides the next
   build): picking a "Partner with [Name]" commander auto-fills its named mate
   with a toast — exactly one legal pairing exists, so swiping for it made no

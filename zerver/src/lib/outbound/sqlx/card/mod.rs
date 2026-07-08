@@ -136,7 +136,7 @@ const POPULARITY_JOIN: &str = "LEFT JOIN (SELECT oracle_id AS pop_oracle_id, dec
 /// least-shown deep slice, aliased for the same ambiguity reason as
 /// [`POPULARITY_JOIN`]. An absent row COALESCEs to 0 impressions, so an empty
 /// table leaves the deep slice on the daily shuffle alone — the dormant-until-
-/// data-accrues behavior (context/plans/commander_select_signal.md §3).
+/// data-accrues behavior (context/archive/commander_select_signal.md §3).
 const SELECT_SIGNAL_JOIN: &str = "LEFT JOIN (SELECT commander_oracle_id AS sel_oid, shown AS sel_shown FROM commander_select_signal) sel ON sel.sel_oid = latest_cards.oracle_id";
 
 impl CardRepository for MyPostgres {
@@ -375,7 +375,7 @@ impl CardRepository for MyPostgres {
             // using the first-party select signal; with no signal rows yet the
             // COALESCE floors every pool_shown to 0 and the ordering collapses
             // to the daily shuffle alone — byte-identical to the pre-signal
-            // behavior (context/plans/commander_select_signal.md §3). Both
+            // behavior (context/archive/commander_select_signal.md §3). Both
             // joins are 1:1 (PK on oracle_id) and aliased so no bare
             // `name`/`oracle_id` collides with the shared WHERE filters.
             let mut qb: QueryBuilder<'_, Postgres> = QueryBuilder::new(

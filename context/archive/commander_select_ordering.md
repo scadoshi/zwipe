@@ -9,7 +9,7 @@ main and rides the next store build — until then shipped clients keep the
 old ordering. Architecture evolved during build (owner call): commander
 search became a FIRST-CLASS endpoint instead of piggybacking the deck-aware
 search — see "As-built" below. Fast-follow:
-[`../plans/commander_select_signal.md`](../plans/commander_select_signal.md).**
+[`commander_select_signal.md`](commander_select_signal.md).**
 
 ## As-built (2026-07-07)
 
