@@ -253,8 +253,6 @@ nav {
 }
 
 .nav-links a,
-.theme-select-trigger,
-.mode-toggle,
 .store-link,
 .nav-links a.store-link {
     display: inline-flex;
@@ -280,9 +278,7 @@ nav {
 }
 
 @media (hover: hover) {
-    .nav-links a:hover,
-    .theme-select-trigger:hover,
-    .mode-toggle:hover {
+    .nav-links a:hover {
         color: var(--accent-primary);
         border-color: var(--accent-primary);
     }
@@ -1559,110 +1555,9 @@ code {
         theme switcher
  ==================== */
 
-.theme-switcher {
-    display: flex;
-    gap: 0.75rem;
-    align-items: center;
-    height: 1.85rem;
-    line-height: 1;
-}
-
-.theme-select {
-    position: relative;
-}
-
-.theme-select-trigger {
-    cursor: pointer;
-    user-select: none;
-    position: relative;
-    z-index: 200;
-}
-
-.theme-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 150;
-    background: transparent;
-}
-
-/* Invisible hover bridge so the dropdown doesn't close while the cursor
-   travels from the trigger to the menu. */
-.theme-select::after {
-    content: "";
-    position: absolute;
-    top: 100%;
-    left: 0;
-    width: 100%;
-    height: 0.5rem;
-}
-
-.theme-select-content {
-    display: none;
-    position: absolute;
-    top: 100%;
-    right: 0;
-    margin-top: 0.5rem;
-    background: var(--bg-primary);
-    border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
-    min-width: 11rem;
-    padding: 0.5rem 0;
-    z-index: 200;
-    flex-direction: column;
-    max-height: 70vh;
-    overflow-y: auto;
-    box-shadow: var(--shadow-md);
-}
-
-.theme-select-open .theme-select-content {
-    display: flex;
-}
-
-.theme-option {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    font-family: inherit;
-    font-size: 0.85rem;
-    padding: 0.4rem 1rem;
-    text-align: left;
-    cursor: pointer;
-    width: 100%;
-    transition:
-        background-color 0.15s,
-        color 0.15s;
-}
-
-.theme-option:hover {
-    background-color: var(--border-primary);
-    color: var(--text-primary);
-}
-
-.theme-option.active {
-    color: var(--accent-primary);
-}
-
-/* Section subtitles ("Themes" / "Color blind") that group the picker,
-   mirroring the app's .pref-section-label grouping. */
-.theme-select-label {
-    margin-top: 0.4rem;
-    padding: 0.4rem 1rem 0.25rem;
-    border-top: 1px solid var(--border-primary);
-    color: var(--accent-primary);
-    font-size: 0.65rem;
-    letter-spacing: 0.1em;
-}
-
-/* The first subtitle sits at the top of the menu — no divider above it. */
-.theme-select-content > .theme-select-label:first-child {
-    margin-top: 0;
-    padding-top: 0;
-    border-top: none;
-}
-
-.mode-toggle {
-    cursor: pointer;
-}
+/* The theme picker itself (switcher, dropdown, mode toggle) lives in
+   zwipe-components (components.css); only nav-context overrides remain here
+   (see the nav-panel rules above). */
 
 /* ==================
         footer

@@ -18,12 +18,17 @@ mod button;
 mod chip;
 mod keyword_chips;
 mod oracle_text;
+mod theme_picker;
 
 pub use action_bar::ActionBar;
 pub use button::{Button, ButtonVariant};
 pub use chip::Chip;
 pub use keyword_chips::KeywordChips;
 pub use oracle_text::OracleText;
+pub use theme_picker::ThemePicker;
+// The theme domain types live in zwipe-core (user preferences persist them
+// server-side); re-exported here so UI consumers have one import path.
+pub use zwipe_core::domain::user::{models::theme::ThemeConfig, preferences::ALLOWED_THEMES};
 
 /// The shared component rules, for consumers outside this workspace.
 pub const COMPONENTS_CSS: &str = include_str!("../assets/components.css");
