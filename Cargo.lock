@@ -8645,7 +8645,7 @@ dependencies = [
 
 [[package]]
 name = "zerver"
-version = "1.3.2"
+version = "1.4.0"
 dependencies = [
  "anyhow",
  "argon2",
@@ -8683,7 +8683,7 @@ dependencies = [
 
 [[package]]
 name = "zite"
-version = "1.3.2"
+version = "1.4.0"
 dependencies = [
  "dioxus",
  "getrandom 0.4.2",
@@ -8729,7 +8729,7 @@ dependencies = [
 
 [[package]]
 name = "zwipe-components"
-version = "1.3.2"
+version = "1.4.0"
 dependencies = [
  "dioxus",
  "zwipe-core",
@@ -8737,7 +8737,7 @@ dependencies = [
 
 [[package]]
 name = "zwipe-core"
-version = "1.3.2"
+version = "1.4.0"
 dependencies = [
  "chrono",
  "email_address",
@@ -8755,7 +8755,7 @@ dependencies = [
 
 [[package]]
 name = "zwiper"
-version = "1.3.2"
+version = "1.4.0"
 dependencies = [
  "anyhow",
  "chrono",
