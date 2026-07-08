@@ -2396,9 +2396,25 @@ footer {
 .card-row {
     padding: 0.5rem 1rem;
     border-bottom: 1px solid var(--border-secondary);
-    transition: background-color 0.15s ease;
+    transition:
+        background-color 0.15s ease,
+        transform 0.12s ease,
+        box-shadow 0.12s ease;
     overflow: hidden;
     min-width: 0;
+}
+
+/* Mouse-only: nudge a collapsed row up in size + shadow on hover so it reads
+   as clickable and stands out from its neighbors. */
+@media (hover: hover) {
+    .card-row:not(.expanded):hover {
+        position: relative;
+        z-index: 2;
+        transform: scale(1.02);
+        border-radius: 0.4rem;
+        background-color: color-mix(in srgb, var(--accent-primary) 8%, var(--bg-primary));
+        box-shadow: var(--shadow-sm);
+    }
 }
 
 .card-row:last-child {
