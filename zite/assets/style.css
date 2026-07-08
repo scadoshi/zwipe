@@ -1306,7 +1306,9 @@ code {
 
 .form-page {
     max-width: 25rem;
-    margin: 3.75rem auto 0;
+    /* bottom margin auto absorbs the free space in the flex column, pinning a
+       following footer to the bottom without stretching this card. */
+    margin: 3.75rem auto auto;
     padding: 2rem;
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
@@ -1545,13 +1547,24 @@ code {
     margin: 1rem 0;
 }
 
-.guide-cta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
+.guide-related {
     margin-top: 2rem;
+    margin-left: -1.5rem;
+    margin-right: -1.5rem;
     padding-top: 1.5rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
     border-top: 1px solid var(--border-secondary);
+}
+
+.guide-related-heading {
+    font-size: 1rem;
+    color: var(--accent-tertiary);
+    margin: 0;
+}
+
+.guide-related .card-grid {
+    margin-top: 1rem;
 }
 
 /* ==================
@@ -1824,8 +1837,157 @@ footer {
 
 .shared-deck {
     max-width: 74rem;
+    width: 100%;
     margin: 0 auto;
     padding: 1.5rem 1.25rem 3rem;
+    /* Grow to fill between nav and footer so the footer stays pinned to the
+       bottom regardless of deck length (matches the loading/error state). */
+    flex: 1 0 auto;
+}
+
+/* ---- loading skeleton (deck-shaped placeholders) ---- */
+@keyframes sk-pulse {
+    0%,
+    100% {
+        opacity: 0.5;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+.sk {
+    background: color-mix(in srgb, var(--text-primary) 9%, transparent);
+    border-radius: 0.4rem;
+    animation: sk-pulse 1.4s ease-in-out infinite;
+}
+
+.sk-title {
+    width: 12rem;
+    height: 1.7rem;
+    border-radius: 0.5rem;
+    margin-bottom: 0.6rem;
+}
+
+.sk-chip {
+    width: 5rem;
+    height: 1.5rem;
+    border-radius: 0.4rem;
+}
+
+/* Vary the widths so the skeleton reads like real deck tags, not uniform pills. */
+.sd-header-meta .sk-chip:nth-child(1) {
+    width: 5.5rem;
+}
+.sd-header-meta .sk-chip:nth-child(2) {
+    width: 7rem;
+}
+.sd-header-meta .sk-chip:nth-child(3) {
+    width: 4rem;
+}
+.sd-header-meta .sk-chip:nth-child(4) {
+    width: 6rem;
+}
+
+.sk-card {
+    width: 100%;
+    aspect-ratio: 5 / 7;
+    border-radius: 4.75% / 3.5%;
+}
+
+.sk-line {
+    height: 0.7rem;
+    margin: 0.45rem auto 0;
+    border-radius: 0.3rem;
+}
+
+.sk-line-name {
+    width: 80%;
+}
+
+.sk-line-role {
+    width: 45%;
+}
+
+.sk-controls {
+    height: 12rem;
+    border-radius: 1rem;
+    margin-bottom: 1.75rem;
+}
+
+.sk-group-title {
+    width: 8rem;
+    height: 0.95rem;
+    margin: 0;
+}
+
+.sk-row {
+    width: 70%;
+    height: 0.9rem;
+}
+
+/* Pinned card-art preview, top-left. Only shown on hover (desktop); the left
+   gutter exists only when the viewport is wider than the content, so hide it
+   below that width to avoid overlapping the deck. */
+/* Stack of up to 5 hovered cards. Newest sits on top (front); older cards
+   cascade down behind it, each peeking below the one above. Absolute children
+   inside a fixed, zero-size anchor. */
+.sd-hover-stack {
+    position: fixed;
+    top: 5.5rem;
+    left: 1.5rem;
+    width: 15rem;
+    z-index: 50;
+    pointer-events: none;
+}
+
+.sd-preview-card {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    filter: drop-shadow(0 0.4rem 1rem rgba(0, 0, 0, 0.6));
+    /* Newcomer drops in from above (portfolio's banner-slide-in). */
+    animation: sd-preview-in 0.35s ease-out both;
+}
+
+.sd-preview-card img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 4.75% / 3.5%;
+}
+
+/* Leaver fades out downward. */
+.sd-preview-card.leaving {
+    animation: sd-preview-out 0.4s ease forwards;
+}
+
+@keyframes sd-preview-in {
+    from {
+        opacity: 0;
+        transform: translateY(-40px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes sd-preview-out {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(28px);
+    }
+}
+
+@media (max-width: 1100px) {
+    .sd-hover-stack {
+        display: none;
+    }
 }
 
 .sd-header h1 {
@@ -1892,16 +2054,20 @@ footer {
     border-color: color-mix(in srgb, var(--color-success) 35%, var(--bg-primary));
 }
 
-.sd-command-zone {
+/* Featured row: command zone + MVPs on one line, each labeled. nowrap with the
+   cards sharing the width so they shrink together instead of wrapping. */
+.sd-featured {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: center;
     gap: 1.25rem;
     margin-bottom: 1.75rem;
 }
 
 .sd-cz-card {
-    width: clamp(9rem, 24vw, 13rem);
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 13rem;
     text-align: center;
 }
 
@@ -1986,48 +2152,6 @@ footer {
     background-color: color-mix(in srgb, var(--accent-secondary) 12%, transparent);
 }
 
-/* [-] value [+] stepper for the mana value bounds. */
-.sd-mv-stepper {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-}
-
-.sd-mv-label {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    white-space: nowrap;
-}
-
-.sd-mv-btn {
-    border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    font-family: "JetBrains Mono", monospace;
-    font-size: 0.8rem;
-    line-height: 1;
-    width: 1.6rem;
-    height: 1.6rem;
-    box-shadow: var(--shadow-sm);
-    cursor: pointer;
-    transition:
-        color 0.15s,
-        border-color 0.15s;
-}
-
-.sd-mv-btn:hover {
-    border-color: var(--accent-secondary);
-    color: var(--accent-secondary);
-}
-
-.sd-mv-value {
-    font-size: 0.78rem;
-    color: var(--text-primary);
-    min-width: 2rem;
-    text-align: center;
-}
-
 .sd-filter-input {
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
@@ -2053,15 +2177,29 @@ footer {
     margin-bottom: 1rem;
 }
 
-/* Archidekt-style density: multi-column on wide screens, single column on
-   phones — column-width handles both without a media query. */
-.sd-groups {
-    column-width: 19rem;
-    column-gap: 1.25rem;
+/* Independent columns (not CSS multi-column): each column is its own vertical
+   stack, so expanding a card grows only that column and the page extends
+   downward — no cross-column reflow/jump. Collapses to one column on phones. */
+.sd-columns {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.25rem;
+}
+
+.sd-column {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+@media (max-width: 800px) {
+    .sd-columns {
+        flex-direction: column;
+    }
 }
 
 .sd-group {
-    break-inside: avoid;
     border: 1px solid var(--border-secondary);
     border-radius: 1rem;
     background-color: var(--bg-primary);
@@ -2413,7 +2551,16 @@ footer {
         font-size: 1.3rem;
     }
 
-    .sd-cz-card {
-        width: clamp(7.5rem, 40vw, 10rem);
+    /* Tighter gap so the one-line featured row keeps room for the cards. */
+    .sd-featured {
+        gap: 0.5rem;
+    }
+
+    .sd-cz-name {
+        font-size: 0.7rem;
+    }
+
+    .sd-cz-role {
+        font-size: 0.62rem;
     }
 }
