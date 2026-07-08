@@ -195,6 +195,22 @@ the bundle → **Upload native debug symbols** (a zip containing
 
 ## History
 
+- **2026-07-07 — `1.4.0`, versionCode `22`** (feature batch: commander picks now
+  lead with the community's most-built commanders in a fresh daily order
+  (Zwipe-select popularity ordering + wildcard deep slice), partners that name
+  each other auto-pair, Deck MVPs phase 1 (star up to three cards per deck), and
+  share-a-deck public links from the More sheet; commander-select signal ingest
+  ships dormant. First minor bump since 1.3.x; workspace version bumped 1.3.2 →
+  1.4.0). Built per this recipe — `dx bundle` → `launcher-icons.sh` → gradle
+  patch (compileSdk 36 / targetSdk 35 / versionCode 22) → `gradlew
+  :app:bundleRelease` → jarsigner (0600 scratchpad password, deleted after).
+  Artifact `zwipe-1.4.0-vc22.aab`, signed + `jar verified`. **R8/edge-to-edge
+  smoke test run this round** (Pixel_9a): app launches clean (no
+  `libmain.so`/R8 crash, no FATAL), login + bottom action bar clear of the
+  status/nav bars. iOS counterpart: build 61. Server halves (commander
+  popularity endpoint already live 2026-07-07; commander-select-signal + Deck
+  MVPs additive migrations) deploy to prod before rollout.
+
 - **2026-07-05 — `1.3.1`, versionCode `21`** (pre-auth funnel telemetry: the
   client posts anonymous session events — app_opened, register_viewed,
   register_submitted — to the new `/api/metrics/anonymous` endpoint; plus the
