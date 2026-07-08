@@ -138,19 +138,19 @@ pub(crate) fn CardRow(
                 }
                 hr { class: "card-row-rule card-row-rule-muted" }
                 div { class: "card-row-actions",
-                    div { class: "qty-row",
+                    div { class: "card-action-row",
                         if let Some(handler) = on_qty_change {
                             button {
-                                class: "qty-btn",
+                                class: "card-action-btn",
                                 onclick: move |evt| {
                                     evt.stop_propagation();
                                     handler.call(-1);
                                 },
                                 "-"
                             }
-                            span { class: "qty-label", "{qty}" }
+                            span { class: "card-action-count", "{qty}" }
                             button {
-                                class: "qty-btn",
+                                class: "card-action-btn",
                                 onclick: move |evt| {
                                     evt.stop_propagation();
                                     handler.call(1);
@@ -160,7 +160,7 @@ pub(crate) fn CardRow(
                         }
                         if has_image {
                             button {
-                                class: "qty-btn",
+                                class: "card-action-btn",
                                 onclick: move |evt| {
                                     evt.stop_propagation();
                                     preview_card.set(Some(scryfall_data_for_preview.clone()));
@@ -174,7 +174,7 @@ pub(crate) fn CardRow(
                                 let card_clone = card.clone();
                                 rsx! {
                                     button {
-                                        class: "qty-btn",
+                                        class: "card-action-btn",
                                         onclick: move |evt| {
                                             evt.stop_propagation();
                                             handler.call(card_clone.clone());
@@ -186,7 +186,7 @@ pub(crate) fn CardRow(
                         }
                         if let (Some(is_mvp), Some(handler)) = (mvp, on_toggle_mvp) {
                             button {
-                                class: "qty-btn",
+                                class: "card-action-btn",
                                 onclick: move |evt| {
                                     evt.stop_propagation();
                                     handler.call(());
@@ -196,17 +196,17 @@ pub(crate) fn CardRow(
                         }
                     }
                     if let Some(handler) = on_move_to {
-                        div { class: "qty-row",
+                        div { class: "card-action-row",
                             match current_board.unwrap_or(Board::Deck) {
                                 Board::Deck => rsx! {
                                     button {
-                                        class: "qty-btn",
+                                        class: "card-action-btn",
                                         style: "white-space:nowrap;",
                                         onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Maybeboard); },
                                         "To maybeboard"
                                     }
                                     button {
-                                        class: "qty-btn",
+                                        class: "card-action-btn",
                                         style: "white-space:nowrap;",
                                         onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Sideboard); },
                                         "To sideboard"
@@ -214,13 +214,13 @@ pub(crate) fn CardRow(
                                 },
                                 Board::Maybeboard => rsx! {
                                     button {
-                                        class: "qty-btn",
+                                        class: "card-action-btn",
                                         style: "white-space:nowrap;",
                                         onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Deck); },
                                         "To mainboard"
                                     }
                                     button {
-                                        class: "qty-btn",
+                                        class: "card-action-btn",
                                         style: "white-space:nowrap;",
                                         onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Sideboard); },
                                         "To sideboard"
@@ -228,13 +228,13 @@ pub(crate) fn CardRow(
                                 },
                                 Board::Sideboard => rsx! {
                                     button {
-                                        class: "qty-btn",
+                                        class: "card-action-btn",
                                         style: "white-space:nowrap;",
                                         onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Deck); },
                                         "To mainboard"
                                     }
                                     button {
-                                        class: "qty-btn",
+                                        class: "card-action-btn",
                                         style: "white-space:nowrap;",
                                         onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Maybeboard); },
                                         "To maybeboard"

@@ -371,9 +371,9 @@ fn CardRow(
                 if let Some(url) = overlay_url.clone() {
                     hr { class: "card-row-rule card-row-rule-muted" }
                     div { class: "card-row-actions",
-                        div { class: "qty-row",
+                        div { class: "card-action-row",
                             button {
-                                class: "qty-btn",
+                                class: "card-action-btn",
                                 onclick: move |evt| {
                                     evt.stop_propagation();
                                     overlay_image.set(Some(url.clone()));
