@@ -3,13 +3,12 @@
 //! router — deliberately no dismiss affordance.
 
 use dioxus::prelude::*;
+use zwipe_core::domain::site::WEB_BASE;
 
 // Both platforms route through the site's /download/* so the destination is
 // controlled from the site (a push) and never needs an app update. zite handles
 // the actual redirect: ios -> App Store; android -> Play (a "pending" landing
-// page until the public listing exists). The domain is centralized here so a
-// future domain change is a single edit.
-const WEB_DOMAIN: &str = "https://zwipe.net";
+// page until the public listing exists).
 
 #[cfg(target_os = "android")]
 const STORE_PATH: &str = "/download/android";
@@ -47,7 +46,7 @@ pub fn UpdateRequired() -> Element {
                     }
                     a {
                         class: "btn",
-                        href: "{WEB_DOMAIN}{STORE_PATH}",
+                        href: "{WEB_BASE}{STORE_PATH}",
                         target: "_blank",
                         style: "text-decoration: none; display: block; margin-top: 1rem;",
                         "{STORE_LABEL} ↗"

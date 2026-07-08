@@ -21,15 +21,7 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
 use uuid::Uuid;
 use zwipe_components::Button;
-use zwipe_core::domain::auth::models::session::Session;
-
-/// Public web base URL. A shared deck lives at `{WEB_DOMAIN}/deck/{token}`.
-/// Debug builds point at a local zite dev server so share links minted against
-/// a local dev zerver are openable end-to-end without touching prod.
-#[cfg(debug_assertions)]
-const WEB_DOMAIN: &str = "http://localhost:8080";
-#[cfg(not(debug_assertions))]
-const WEB_DOMAIN: &str = "https://zwipe.net";
+use zwipe_core::domain::{auth::models::session::Session, site::WEB_BASE};
 
 #[component]
 pub(crate) fn MoreButtons(
@@ -56,7 +48,7 @@ pub(crate) fn MoreButtons(
     // Copies a shared-deck link to the clipboard and toasts. The token is a
     // UUID, so it needs no escaping, but we serialize for safety anyway.
     let copy_link = move |token: Uuid| {
-        let url = format!("{WEB_DOMAIN}/deck/{token}");
+        let url = format!("{WEB_BASE}/deck/{token}");
         let js = format!(
             "navigator.clipboard.writeText({})",
             serde_json::to_string(&url).unwrap_or_default()

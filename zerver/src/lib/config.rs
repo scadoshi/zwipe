@@ -47,14 +47,16 @@ const MIN_CLIENT_VERSION_DEFAULT: &str = "0.0.0";
 /// Environment variable key for the public web base URL (email verify/reset links).
 const WEB_BASE_URL_KEY: &str = "WEB_BASE_URL";
 
-/// Default public web base URL.
-const WEB_BASE_URL_DEFAULT: &str = "https://zwipe.net";
+/// Default public web base URL — the shared `site` constant (debug builds
+/// resolve to the local zite dev server, so locally logged verification/reset
+/// links open end-to-end); the env var overrides it either way.
+const WEB_BASE_URL_DEFAULT: &str = zwipe_core::domain::site::WEB_BASE;
 
 /// Environment variable key for the user-facing support email address.
 const SUPPORT_EMAIL_ADDRESS_KEY: &str = "SUPPORT_EMAIL_ADDRESS";
 
 /// Default user-facing support email address.
-const SUPPORT_EMAIL_ADDRESS_DEFAULT: &str = "support@zwipe.net";
+const SUPPORT_EMAIL_ADDRESS_DEFAULT: &str = zwipe_core::domain::site::SUPPORT_EMAIL;
 
 /// Application configuration loaded from environment variables.
 ///

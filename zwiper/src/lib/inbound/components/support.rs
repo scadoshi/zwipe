@@ -9,11 +9,8 @@
 use crate::{inbound::components::bottom_sheet::BottomSheet, outbound::open_url};
 use dioxus::prelude::*;
 use zwipe_components::Button;
+use zwipe_core::domain::site::{DISCORD_URL, SUPPORT_EMAIL};
 
-/// User-facing support email. Same in every build, so a const (not env).
-const SUPPORT_EMAIL: &str = "support@zwipe.net";
-/// Discord community invite.
-const DISCORD_URL: &str = "https://discord.gg/s2UReqUUeg";
 /// App version, baked at compile time.
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
