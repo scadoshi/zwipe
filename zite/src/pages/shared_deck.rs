@@ -2,7 +2,7 @@ use crate::{API_BASE, Footer, Nav, Route, components::PageMeta};
 use dioxus::prelude::*;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
-use zwipe_components::{Chip, KeywordChips, OracleText};
+use zwipe_components::{CardRow as SharedCardRow, Chip};
 use zwipe_core::{
     domain::{
         card::{
@@ -54,22 +54,6 @@ async fn sleep_ms(ms: u32) {
     let _ = ms;
 }
 
-/// A card's displayable mana cost, falling back to the front face for
-/// double-faced layouts whose top-level cost is absent.
-fn display_mana_cost(card: &Card) -> String {
-    if let Some(cost) = &card.scryfall_data.mana_cost
-        && !cost.is_empty()
-    {
-        return cost.clone();
-    }
-    card.scryfall_data
-        .card_faces
-        .as_ref()
-        .and_then(|faces| faces.first())
-        .map(|face| face.mana_cost.clone())
-        .unwrap_or_default()
-}
-
 /// One pinned command zone card: image (when available) above name + role.
 #[component]
 fn CommandZoneCard(card: Card, role: String) -> Element {
@@ -91,23 +75,21 @@ fn CommandZoneCard(card: Card, role: String) -> Element {
     }
 }
 
-/// Read-only card row mirroring the app's deck-cards row: compact grid line
-/// that expands/collapses to the same detail (cost, type, rarity, keywords,
-/// oracle text, stats) — minus the app's edit actions.
+/// Read-only wrapper over the shared [`SharedCardRow`]: wires zite's desktop
+/// hover-preview stack and the mobile tap-to-open image overlay, passing no
+/// edit callbacks (this page has none).
 #[component]
 fn CardRow(
     card: Card,
     qty: i32,
     mvp: bool,
-    mut expanded_card: Signal<Option<Uuid>>,
+    expanded_card: Signal<Option<Uuid>>,
     mut preview_stack: Signal<Vec<PreviewCard>>,
     mut preview_next_id: Signal<u64>,
     /// Tap-to-open full-art overlay target (mobile only). Set to this card's art
-    /// when the in-detail "View image" button is tapped.
+    /// when the in-detail "Image" button is tapped.
     mut overlay_image: Signal<Option<String>>,
 ) -> Element {
-    let card_id = card.scryfall_data.id;
-    let is_expanded = expanded_card() == Some(card_id);
     // This row's live stack entry id (while the cursor is on it); the leave
     // handler times it out. `None` when the row isn't hovered.
     let mut my_preview_id = use_signal(|| None::<u64>);
@@ -119,158 +101,50 @@ fn CardRow(
     // unavailable). Mirrors the app's fullscreen ImagePreview (ImageSize::Large).
     let overlay_url = sd.primary_image_url(ImageSize::Large).map(str::to_string);
 
-    let name = sd.name.clone();
-    let cmc_display = sd
-        .cmc
-        .map(|c| {
-            let floored = c.floor() as i64;
-            if c == c.floor() {
-                format!("{floored}")
-            } else {
-                format!("{c}")
-            }
-        })
-        .unwrap_or_default();
-    let pt_display = match (&sd.power, &sd.toughness) {
-        (Some(p), Some(t)) => format!("{p}/{t}"),
-        _ => String::new(),
-    };
-    // Color identity is an unordered set; sort to canonical WUBRG order.
-    let mut colors = sd.color_identity.iter().copied().collect::<Vec<_>>();
-    colors.sort();
-    let color_codes = colors
-        .iter()
-        .map(|c| c.to_short_name().to_lowercase())
-        .collect::<Vec<_>>();
-    let type_line = sd.type_line.clone().unwrap_or_default();
-    let keywords = sd.keywords.clone().unwrap_or_default();
-    let oracle_text = sd.oracle_text.clone().unwrap_or_default();
-    let mana_cost = display_mana_cost(&card);
-    let loyalty_display = sd.loyalty.clone().unwrap_or_default();
-    let rarity_name = sd.rarity.to_long_name();
-    let collapse_class = if is_expanded {
-        "card-row-collapse open"
-    } else {
-        "card-row-collapse"
-    };
-
     rsx! {
-        div {
-            key: "{card_id}",
-            class: if is_expanded { "card-row expanded" } else { "card-row" },
-
-            div {
-                class: "card-row-compact",
-                onmouseenter: move |_| {
-                    let Some(url) = hover_image.clone() else {
-                        return;
-                    };
-                    // Push onto the top of the stack (newest first), cap at 5.
-                    // No timer yet: the card is held as long as the cursor stays
-                    // on the row — the leave handler starts its 2s countdown.
-                    let id = preview_next_id();
-                    preview_next_id.set(id + 1);
-                    my_preview_id.set(Some(id));
+        SharedCardRow {
+            card,
+            qty,
+            expanded_card,
+            // Star indicator on starred rows only; no Star button (read-only).
+            mvp: mvp.then_some(true),
+            on_image: move |()| {
+                if let Some(url) = overlay_url.clone() {
+                    overlay_image.set(Some(url));
+                }
+            },
+            on_hover_enter: move |()| {
+                let Some(url) = hover_image.clone() else {
+                    return;
+                };
+                // Push onto the top of the stack (newest first), cap at 5.
+                // No timer yet: the card is held as long as the cursor stays
+                // on the row — the leave handler starts its 2s countdown.
+                let id = preview_next_id();
+                preview_next_id.set(id + 1);
+                my_preview_id.set(Some(id));
+                preview_stack.with_mut(|s| {
+                    s.insert(0, PreviewCard { id, url, leaving: false });
+                    s.truncate(5);
+                });
+            },
+            on_hover_leave: move |()| {
+                let Some(id) = my_preview_id() else {
+                    return;
+                };
+                my_preview_id.set(None);
+                // Now the card's 2s life runs; then a short fade-out, then drop.
+                spawn(async move {
+                    sleep_ms(2000).await;
                     preview_stack.with_mut(|s| {
-                        s.insert(0, PreviewCard { id, url, leaving: false });
-                        s.truncate(5);
+                        if let Some(c) = s.iter_mut().find(|c| c.id == id) {
+                            c.leaving = true;
+                        }
                     });
-                },
-                onmouseleave: move |_| {
-                    let Some(id) = my_preview_id() else {
-                        return;
-                    };
-                    my_preview_id.set(None);
-                    // Now the card's 2s life runs; then a short fade-out, then drop.
-                    spawn(async move {
-                        sleep_ms(2000).await;
-                        preview_stack.with_mut(|s| {
-                            if let Some(c) = s.iter_mut().find(|c| c.id == id) {
-                                c.leaving = true;
-                            }
-                        });
-                        sleep_ms(400).await;
-                        preview_stack.with_mut(|s| s.retain(|c| c.id != id));
-                    });
-                },
-                onclick: move |_| {
-                    if expanded_card() == Some(card_id) {
-                        expanded_card.set(None);
-                    } else {
-                        expanded_card.set(Some(card_id));
-                    }
-                },
-                span { class: "card-row-arrow", "▸" }
-                span { class: "card-row-qty", "{qty}" }
-                span { class: "card-row-name",
-                    // MVP star: indicator on starred rows only, matching the
-                    // app's deck-cards screen.
-                    if mvp {
-                        span { class: "card-row-mvp", "★" }
-                    }
-                    "{name}"
-                }
-                span { class: "card-row-cmc", "{cmc_display}" }
-                span { class: "card-row-pt", "{pt_display}" }
-                span { class: "card-row-colors",
-                    for code in color_codes.iter() {
-                        i { key: "{code}", class: "ms ms-{code} ms-cost ms-shadow" }
-                    }
-                }
-            }
-
-            div { class: "{collapse_class}",
-                div { class: "card-row-collapse-inner",
-                hr { class: "card-row-rule" }
-                div { class: "card-row-detail",
-                    div { class: "card-detail-head",
-                        p { class: "card-detail-name", "{name}" }
-                        if !mana_cost.is_empty() {
-                            OracleText { text: mana_cost, class: "card-detail-cost".to_string() }
-                        }
-                    }
-                    div { class: "card-detail-meta",
-                        if !type_line.is_empty() {
-                            span { class: "detail-chip", "{type_line}" }
-                        }
-                        span { class: "detail-chip", "{rarity_name}" }
-                    }
-                    if !keywords.is_empty() {
-                        KeywordChips { keywords }
-                    }
-                    if !oracle_text.is_empty() {
-                        OracleText { text: oracle_text, class: "card-detail-oracle".to_string() }
-                    }
-                    if !pt_display.is_empty() {
-                        div { class: "card-detail-stats",
-                            span { class: "detail-chip", "{pt_display}" }
-                        }
-                    } else if !loyalty_display.is_empty() {
-                        div { class: "card-detail-stats",
-                            span { class: "detail-chip", "Loyalty {loyalty_display}" }
-                        }
-                    }
-                }
-                // Muted rule renders only with the actions, so an actionless card
-                // never stacks it on the accent rule below.
-                if let Some(url) = overlay_url {
-                    hr { class: "card-row-rule card-row-rule-muted" }
-                    div { class: "card-row-actions",
-                        div { class: "card-action-row",
-                            button {
-                                class: "card-action-btn",
-                                onclick: move |evt| {
-                                    evt.stop_propagation();
-                                    overlay_image.set(Some(url.clone()));
-                                },
-                                "Image"
-                            }
-                        }
-                    }
-                }
-                hr { class: "card-row-rule card-row-rule-bottom" }
-                }
-            }
+                    sleep_ms(400).await;
+                    preview_stack.with_mut(|s| s.retain(|c| c.id != id));
+                });
+            },
         }
     }
 }

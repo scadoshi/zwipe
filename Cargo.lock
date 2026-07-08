@@ -8732,6 +8732,7 @@ name = "zwipe-components"
 version = "1.4.0"
 dependencies = [
  "dioxus",
+ "uuid",
  "zwipe-core",
 ]
 

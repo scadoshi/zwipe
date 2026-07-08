@@ -20,6 +20,7 @@
 
 mod action_bar;
 mod button;
+mod card_row;
 mod chip;
 mod keyword_chips;
 mod nav_bar;
@@ -29,6 +30,7 @@ mod theme_picker;
 
 pub use action_bar::ActionBar;
 pub use button::{Button, ButtonVariant};
+pub use card_row::CardRow;
 pub use chip::Chip;
 pub use keyword_chips::KeywordChips;
 pub use nav_bar::{BRAND_RESET_JS, NavBar};

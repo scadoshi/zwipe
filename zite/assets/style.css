@@ -1668,43 +1668,23 @@ footer {
    card_row. On the read-only shared page the only action is Image, and it is
    shown only at hamburger width — above that the desktop hover preview covers
    it, so the whole row stays hidden. */
-.card-row-actions {
+/* The expanded row's actions and muted separator come from zwipe-components;
+   on this read-only page they only carry the mobile Image button, so both
+   show only at hamburger width — desktop uses the hover preview instead. */
+.card-row-actions,
+.card-row-rule-muted {
     display: none;
-    padding: 0.5rem 1rem 0.25rem;
 }
 
-.card-row-actions .card-action-row {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-}
-
-.card-row-actions .card-action-btn {
-    padding: 0.2rem 0.6rem;
-    font: inherit;
-    font-size: 0.85rem;
-    line-height: 1;
-    border-radius: 0.4rem;
-    border: 1px solid var(--border-primary);
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    cursor: pointer;
-    transition:
-        border-color 0.15s,
-        color 0.15s;
-}
-
-@media (hover: hover) {
-    .card-row-actions .card-action-btn:hover {
-        border-color: var(--accent-primary);
-        color: var(--accent-primary);
-    }
+.card-row-rule-muted {
+    margin-top: 0;
 }
 
 @media (max-width: 60rem) {
     .card-row-actions {
+        display: block;
+    }
+    .card-row-rule-muted {
         display: block;
     }
 }
@@ -2058,24 +2038,9 @@ footer {
     color: var(--accent-tertiary);
 }
 
-/* =========================
-   card rows — ported from the app's deck-cards screen so shared decks read
-   and behave identically (tap to expand, eased collapse, same detail).
- =========================== */
-
-.card-row {
-    padding: 0.5rem 1rem;
-    border-bottom: 1px solid var(--border-secondary);
-    transition:
-        background-color 0.15s ease,
-        transform 0.12s ease,
-        box-shadow 0.12s ease;
-    overflow: hidden;
-    min-width: 0;
-}
-
-/* Mouse-only: nudge a collapsed row up in size + shadow on hover so it reads
-   as clickable and stands out from its neighbors. */
+/* Card rows come from zwipe-components (components.css); zite-only additions
+   below: a mouse-hover cue (this is the one surface with a pointer) and
+   slightly smaller detail text than the app. */
 @media (hover: hover) {
     .card-row:not(.expanded):hover {
         position: relative;
@@ -2087,229 +2052,18 @@ footer {
     }
 }
 
-.card-row:last-child {
-    border-bottom: none;
-}
-
-/* The muted rule closing the expanded detail is the row's bottom boundary,
-   so drop the row's own border to avoid a doubled line. */
-.card-row.expanded {
-    position: relative;
-    z-index: 2;
-    border-bottom: none;
-    transform: scale(1.02);
-    border-radius: 0.4rem;
-    background-color: color-mix(in srgb, var(--accent-primary) 8%, var(--bg-primary));
-    box-shadow: var(--shadow-sm);
-}
-
-.card-row-compact {
-    display: grid;
-    grid-template-columns: 1.2rem 1.5rem 1fr 2rem 3rem auto;
-    align-items: center;
-    gap: 0.25rem;
-    font-size: 0.8rem;
-    cursor: pointer;
-}
-
-/* Disclosure chevron at the left of each row; rotates to point down when the
-   row is expanded. */
-.card-row-arrow {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.2rem;
-    height: 1.2rem;
-    color: var(--text-muted);
-    font-size: 1.2rem;
-    line-height: 1;
-    transform-origin: center;
-    transition: transform 0.2s ease;
-}
-
-.card-row.expanded .card-row-arrow {
-    transform: rotate(90deg);
-}
-
-.card-row-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-weight: 400;
-}
-
-/* Deck MVP star before the card name, same as the app. */
-.card-row-mvp {
-    display: inline-block;
-    color: var(--color-warning);
-    font-size: 1.1rem;
-    margin-right: 0.3rem;
-    line-height: 1;
-    vertical-align: 0.02rem;
-}
-
-.card-row-cmc,
-.card-row-pt,
-.card-row-qty {
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 0.75rem;
-}
-
-.card-row-colors {
-    text-align: right;
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    white-space: nowrap;
-}
-
-.card-row-colors .ms {
-    font-size: 0.8rem;
-    margin-left: 1px;
-}
-
-.card-row-detail {
-    padding: 0.5rem 1rem 0.25rem;
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    max-width: 100%;
-}
-
-/* Always-mounted wrapper for the expanded card detail. Eases open/closed via
-   the grid-template-rows 0fr<->1fr technique so the row shifts smoothly
-   instead of popping. Pulled out by the row's 1rem padding so it spans full
-   width; the inner clips the content as it collapses. */
-.card-row-collapse {
-    display: grid;
-    grid-template-rows: 0fr;
-    opacity: 0;
-    margin: 0 -1rem;
-    pointer-events: none;
-    transition:
-        grid-template-rows 0.22s ease,
-        opacity 0.22s ease;
-}
-
-.card-row-collapse.open {
-    grid-template-rows: 1fr;
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.card-row-collapse-inner {
-    overflow: hidden;
-    min-height: 0;
-}
-
-/* Dividers framing the expanded detail. */
-.card-row-rule {
-    border: none;
-    border-top: 1px solid var(--border-secondary);
-    margin: 0.5rem 0 0 0;
-}
-
-/* Emphasis (scale + shadow + tint) marks the expanded row, so the accent
-   bottom rule is redundant — hide it. The top + muted rules stay as neutral
-   (non-accent) separators. */
-.card-row-rule-bottom {
-    display: none;
-}
-
-.card-row-rule-muted {
-    display: none;
-    border-top-color: var(--border-secondary);
-    margin-top: 0;
-}
-
-@media (max-width: 60rem) {
-    .card-row-rule-muted {
-        display: block;
-    }
-}
-
-/* Name + mana cost header inside an expanded card row. */
-.card-detail-head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.5rem;
-    margin-bottom: 0.35rem;
-}
-
 .card-detail-name {
-    margin: 0;
     font-size: 0.8rem;
-    color: var(--accent-primary);
-    word-break: break-word;
-    white-space: normal;
-}
-
-.card-detail-cost {
-    margin: 0;
-    flex-shrink: 0;
-    white-space: nowrap;
-}
-
-.card-detail-cost .ms {
-    font-size: 0.8rem;
-    vertical-align: baseline;
-}
-
-/* Roomier grey circle around the number, closer to a real card. Applied to
-   the mana cost, oracle-text symbols, and compact-row color pips alike. */
-.card-detail-cost .ms-cost,
-.oracle-sym.ms-cost,
-.card-row-colors .ms-cost {
-    width: 1.5em;
-    height: 1.5em;
-    line-height: 1.5em;
 }
 
 .card-detail-oracle {
-    margin: 0 0 0.5rem;
     font-size: 0.72rem;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    line-height: 1.4;
 }
 
-/* Card-style drop shadow under mana glyphs. mana-font's own ms-shadow offset
-   is em-based and sub-pixel at our sizes, so use a slightly larger one. */
-.oracle-sym.ms-cost,
-.card-detail-cost .ms-cost,
-.card-row-colors .ms-cost {
-    box-shadow: -0.5px 1.5px 1px rgba(0, 0, 0, 0.6);
-}
-
-.card-detail-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-    color: var(--text-muted);
-}
-
-/* Power/toughness (or loyalty) pinned bottom-right of the detail. */
-.card-detail-stats {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 0.5rem;
-}
-
-/* Non-interactive info chip (type line, rarity) in an expanded card row. */
 .detail-chip {
-    display: inline-block;
-    padding: 0.15rem 0.5rem;
-    border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
     font-size: 0.7rem;
-    color: var(--text-muted);
-    background-color: var(--bg-primary);
 }
 
-/* Keyword chips come from zwipe-components (components.css); this page runs
-   its card text a notch smaller than the app, so size just the text here. */
 .shared-deck .keyword-chip {
     font-size: 0.7rem;
 }

@@ -14,4 +14,5 @@ path = "src/lib.rs"
 # feature — each consuming app (zwiper, zite) enables its own web/mobile/
 # fullstack, and cargo unifies; sharing components must not force a platform.
 dioxus = { version = "0.7.9" }
+uuid.workspace = true
 zwipe-core = { path = "../zwipe-core" }
