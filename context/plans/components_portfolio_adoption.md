@@ -35,9 +35,14 @@ pipeline.
    moved to `zwipe-components/assets/themes.css` (the `shared/` dir is gone);
    both apps' `build.rs` copy from the crate; `COMPONENTS_CSS` / `THEMES_CSS`
    `include_str!` constants exported for external consumers.
-2. **Theme re-exports + `ThemePicker`.** Re-export `ThemeConfig` + the theme
-   list from the crate; lift zite's `ThemePicker` (canonical, per the
-   reconciliation ruling) + its CSS into the crate; migrate zite.
+2. ✅ **Theme re-exports + `ThemePicker` (shipped 2026-07-08).** The crate
+   re-exports `ThemeConfig` + `ALLOWED_THEMES` (one import path for UI
+   consumers) and owns `ThemePicker` — zite's version verbatim, except the
+   host now passes its `Signal<ThemeConfig>` as a prop instead of the
+   component reaching for context, so any provider/apply strategy works. The
+   picker CSS moved to `components.css` with a self-contained pill look for
+   the trigger/mode-toggle (zite had styled those via its nav group selector);
+   zite keeps only its `.nav-panel .theme-*` context overrides (Pass 4 scope).
 3. **`PageMeta`** with site-config props; migrate zite.
 4. **Nav shell** (most API design); migrate zite.
 
