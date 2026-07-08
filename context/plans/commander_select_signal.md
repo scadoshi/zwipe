@@ -1,6 +1,12 @@
 # Commander-select signal — first-party impression + selection counts
 
-**Status: PLANNED (2026-07-07). Fast-follow to
+**Status: BUILT 2026-07-07 (§1 migration + §2 ingest + §3 Consumer A), on main
+pending deploy. Server-first: the migration/ingest ride the next server deploy;
+the client instrumentation (select-screen tallies in `UsageBuffer`) rides the
+1.4.0 store build alongside the select-serve client leg, so collection starts
+the day the new serve reaches users. Consumer A ships dormant (empty table
+COALESCEs to the shuffle-only baseline). §4 Consumer B remains deliberately
+unbuilt — a later retune gated on coverage. Fast-follow to
 [`commander_select_ordering.md`](../archive/commander_select_ordering.md): the select
 branch must be live first (its §3 client change shipped) so commanders
 actually get served through it and impressions accrue. Entirely zwipe-side —
