@@ -1,9 +1,11 @@
 # Featured decks — owner-curated showcase with MVPs
 
-**Depends on:** [`deck_share_page`](../deck_share_page/overview.md) (share
-tokens + the zite deck page these link to) and, for the full effect,
-[`deck_mvps`](../deck_mvps/overview.md) (the stars shown on each tile).
-Shippable with placeholder-less tiles before MVPs exist; better after.
+**Depends on:** [`deck_share_page`](../../archive/deck_share_page/overview.md)
+(share tokens + the zite deck page these link to) and, for the full effect,
+[`deck_mvps`](../deck_mvps/overview.md) (the stars shown on each tile). **Both
+SHIPPED 2026-07-07**, so this is now buildable: `decks.share_token` exists, the
+public `/deck/:token` zite page is live (and already renders the featured MVP
+row this showcase reuses), and MVP stars are on it.
 
 ## 1. Migration — `zerver/migrations/<ts>_add_deck_featured_at.sql`
 

@@ -1,7 +1,8 @@
 # Social features — weekly badges + featured decks
 
 **Status: PLANNED (2026-07-06). Not started. Two independent legs; badges
-buildable now, featured decks after the share page + MVPs ship.**
+buildable now. The featured-decks prerequisites — the deck share page and Deck
+MVPs — both SHIPPED 2026-07-07, so that leg is now unblocked too.**
 
 **What this builds, in one sentence:** a weekly "Your week" recap that awards
 each active user 1–3 personality badges computed from the signal already
@@ -39,7 +40,7 @@ Share Cards" backlog entry (design decisions carried over).
 |---|---|---|---|
 | Badge tables, rules, week-close job, recap endpoint | [`badges_server.md`](badges_server.md) | nothing (substrate live) | anytime, server-only |
 | "Your week" recap + badge history in the app | [`badges_client.md`](badges_client.md) | badges server | 1.4.x client batch |
-| Featured decks: flag, public endpoint, zite showcase | [`featured_decks.md`](featured_decks.md) | [`deck_share_page`](../deck_share_page/overview.md) + [`deck_mvps`](../deck_mvps/overview.md) | after both |
+| Featured decks: flag, public endpoint, zite showcase | [`featured_decks.md`](featured_decks.md) | [`deck_share_page`](../../archive/deck_share_page/overview.md) + [`deck_mvps`](../deck_mvps/overview.md) | unblocked (both shipped 2026-07-07) |
 
 ## Sequencing
 
