@@ -14,7 +14,7 @@ This doc is the maintainer ruling and the landing plan.
 
 | Request | Ruling |
 |---|---|
-| Public/git-dep consumption | **Granted trivially** — the repo is already public; `zwipe-components = { git = "https://github.com/scadoshi/zwipe" }` works today (the internal `path` dep on zwipe-core resolves inside the fetched repo). crates.io is a later option and would require publishing zwipe-core too. |
+| Public/git-dep consumption | **Granted trivially** — the repo is already public; `zwipe-components = { git = "https://github.com/scadoshi/zwipe" }` works today (the internal `path` dep on zwipe-core resolves inside the fetched repo). **Owner ruling 2026-07-08 (final): git dep is the mechanism — crates.io declined** (a round-2 amendment briefly asked for it; reversed same day). Revisit only if a consumer outside the owner's own repos appears. |
 | `domain` feature gate | **Declined.** `ThemeConfig` stays in zwipe-core (below), so theme consumers pull core transitively regardless — and core is small and pure (serde/uuid/chrono; no sqlx/tokio). A gate adds maintenance for ~no win. Revisit only if core compile time ever bothers a consumer. |
 | Move `ThemeConfig` out of zwipe-core | **Declined as asked, granted in effect.** `ThemeConfig` is a persisted user-preference domain type — zerver stores it, so it must stay in core (a UI crate dep on the server, or core→components re-export, would break the dependency graph / core purity). Instead **zwipe-components re-exports it** (`pub use`), giving consumers one import path with the same ergonomics. |
 | `themes.css` into the crate | **Granted** — done in Pass 1. |
