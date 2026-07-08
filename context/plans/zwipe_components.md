@@ -169,6 +169,12 @@ second consumer appears over doing it speculatively.
 and zite all render the same components — one product across many surfaces. Grow
 the crate toward that as real second-consumers appear.
 
+**The portfolio showed up (2026-07-08):** it filed a formal adoption request
+(themes, ThemePicker, PageMeta, nav shell). Rulings + landing plan:
+[`components_portfolio_adoption.md`](components_portfolio_adoption.md). Pass 1
+(themes.css owned by the crate, `COMPONENTS_CSS`/`THEMES_CSS` exports for
+external consumers) shipped same day.
+
 ## Risks / notes
 
 - **Concurrency.** This is a tree-wide, ~30-file sweep — high collision risk

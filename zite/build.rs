@@ -38,10 +38,11 @@ const GUIDE_SLUGS: &[&str] = &[
 ];
 
 fn main() {
-    // Copy shared themes into assets so asset!() can find them
-    std::fs::copy("../shared/themes.css", "assets/themes.css")
-        .expect("failed to copy shared/themes.css into zite/assets/");
-    println!("cargo:rerun-if-changed=../shared/themes.css");
+    // Copy the shared themes (zwipe-components owns them) into assets so
+    // asset!() can find them.
+    std::fs::copy("../zwipe-components/assets/themes.css", "assets/themes.css")
+        .expect("failed to copy zwipe-components/assets/themes.css into zite/assets/");
+    println!("cargo:rerun-if-changed=../zwipe-components/assets/themes.css");
 
     // Copy the shared component styles (zwipe-components) the same way.
     std::fs::copy(

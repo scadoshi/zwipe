@@ -2,10 +2,13 @@
 //!
 //! `zwiper` (the app) and `zite` (the marketing/site) both depend on this crate
 //! so buttons, chips, and action bars look and behave identically across them.
-//! Styling ships alongside as `assets/components.css`, which each app copies
-//! into its own asset bundle at build time (mirroring `shared/themes.css`);
-//! the rules reference theme CSS variables, so components resolve to whichever
-//! theme the host app has active.
+//! Styling ships alongside: `assets/components.css` (the components' rules) and
+//! `assets/themes.css` (the theme palettes those rules resolve against). The
+//! workspace apps copy both into their own asset bundles at build time;
+//! external consumers (e.g. the portfolio site, via a git dependency) can't
+//! reach the crate's files by path, so the same CSS is also exported as the
+//! [`COMPONENTS_CSS`] / [`THEMES_CSS`] string constants to inline via
+//! `document::Style`.
 //!
 //! These components deliberately depend only on base `dioxus` (no platform
 //! features) and `zwipe-core`, so any Dioxus target can consume them.
@@ -21,3 +24,9 @@ pub use button::{Button, ButtonVariant};
 pub use chip::Chip;
 pub use keyword_chips::KeywordChips;
 pub use oracle_text::OracleText;
+
+/// The shared component rules, for consumers outside this workspace.
+pub const COMPONENTS_CSS: &str = include_str!("../assets/components.css");
+/// The shared theme palettes (14 themes, dark + light), for consumers outside
+/// this workspace.
+pub const THEMES_CSS: &str = include_str!("../assets/themes.css");
