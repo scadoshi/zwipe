@@ -1,7 +1,10 @@
 # Commander-select signal — first-party impression + selection counts
 
-**Status: BUILT 2026-07-07 (§1 migration + §2 ingest + §3 Consumer A), on main
-pending deploy. Server-first: the migration/ingest ride the next server deploy;
+**Status: §1-3 SHIPPED TO MAIN 2026-07-07 (`aa10a5be` feat + `fb30e371` docs;
+archived 2026-07-07). §4 Consumer B (first-party popularity term) remains
+deliberately unbuilt: a data-gated retune, weight 0 until select coverage is
+real — this doc is its spec. Server-first: the migration/ingest ride the next
+server deploy;
 the client instrumentation (select-screen tallies in `UsageBuffer`) rides the
 1.4.0 store build alongside the select-serve client leg, so collection starts
 the day the new serve reaches users. Consumer A ships dormant (empty table
@@ -59,7 +62,7 @@ Migration in `zerver/migrations/`. Pooled aggregate, one row per commander,
 -- `shown` is the impression denominator (client-derived as selected + skipped);
 -- `selected` is a right-swipe pick as the deck's commander; `skipped` is a
 -- left-swipe pass. Read by the select serve (wildcard least-shown weighting +
--- optional popularity term). See context/plans/commander_select_signal.md.
+-- optional popularity term). See context/archive/commander_select_signal.md.
 CREATE TABLE commander_select_signal (
     commander_oracle_id UUID        NOT NULL PRIMARY KEY,
     shown               BIGINT      NOT NULL DEFAULT 0,

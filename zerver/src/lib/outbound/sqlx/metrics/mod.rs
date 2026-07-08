@@ -145,7 +145,7 @@ impl MetricsRepository for Postgres {
 
         // Commander-select signal: pooled shown/selected/skipped per candidate.
         // Pure aggregate — no user_id, no per-user mirror (deliberately the
-        // lighter posture; see context/plans/commander_select_signal.md).
+        // lighter posture; see context/archive/commander_select_signal.md).
         for sig in &batch.select_signals {
             query!(
                 r#"INSERT INTO commander_select_signal

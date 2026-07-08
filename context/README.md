@@ -36,8 +36,8 @@ and Deck MVPs phase 1 (`abaaec0e`, star up to three cards per deck), making
 the pending 1.4.0 batch substantial (details: `progress/todo.md` Next Up). See the
 [`progress/overview.md`](progress/overview.md) top entries;
 [`plans/suggestion_signal.md`](plans/suggestion_signal.md) (Phase 3c remains,
-data-gated) and [`plans/commander_select_signal.md`](plans/commander_select_signal.md)
-are the follow-ons.
+data-gated) and [`archive/commander_select_signal.md`](archive/commander_select_signal.md)
+(§1-3 shipped; §4 Consumer B is the remaining data-gated retune) are the follow-ons.
 
 **In review — 1.3.1 (iOS build 60 / Android vc21, submitted 2026-07-06):**
 pre-registration funnel instrumentation (anonymous, PII-free session events →
