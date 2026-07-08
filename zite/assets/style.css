@@ -2078,27 +2078,24 @@ footer {
     margin-top: 2.25rem;
 }
 
-.sd-cta-link {
-    border: 1px solid var(--accent-primary);
-    border-radius: 0.4rem;
-    color: var(--accent-primary);
-    background-color: var(--bg-primary);
-    padding: 0.6rem 1.5rem;
-    font-size: 0.9rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-decoration: none;
-    box-shadow: var(--shadow-sm);
-    transition: border-color 0.15s;
+/* Dead-end alert title on the not-shared screen: red, centered, pulsing. */
+.sd-alert-title {
+    display: block;
+    color: #ff3030;
+    font-weight: bold;
+    text-transform: uppercase;
+    text-align: center;
+    animation: sd-alert-pulse 1.6s ease-in-out infinite;
 }
 
-.sd-cta-link:hover {
-    background-color: color-mix(
-        in srgb,
-        var(--accent-primary) 10%,
-        transparent
-    );
-    color: var(--accent-primary);
+@keyframes sd-alert-pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.45;
+    }
 }
 
 .sd-retry {
