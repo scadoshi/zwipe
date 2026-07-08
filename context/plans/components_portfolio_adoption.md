@@ -43,7 +43,13 @@ pipeline.
    picker CSS moved to `components.css` with a self-contained pill look for
    the trigger/mode-toggle (zite had styled those via its nav group selector);
    zite keeps only its `.nav-panel .theme-*` context overrides (Pass 4 scope).
-3. **`PageMeta`** with site-config props; migrate zite.
+3. ✅ **`PageMeta` (shipped 2026-07-08).** Crate owns the head-meta component,
+   parameterized by a `SiteMeta` config (`base_url`, `site_name`, optional
+   `og_image_path`; the Twitter card type follows from image presence, and a
+   title equal to the bare site name renders unsuffixed — the portfolio's home
+   rule, a no-op for zite whose pages always pass descriptive titles). zite
+   keeps a thin local `PageMeta` wrapper baking in its `SiteMeta`, so page
+   call sites are untouched.
 4. **Nav shell** (most API design); migrate zite.
 
 The portfolio migrates to each piece as it lands (its stated commitment), which
