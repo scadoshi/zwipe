@@ -224,3 +224,11 @@ Phases 1+2 shipped (see archive). ~73% classification rate today; refinement tar
 - **keyring 3 → 4** (zwiper) — major bump. Used for iOS Keychain on `apple-native`. Needs on-device test before merging; don't ship blind.
 - **GitHub Actions Node.js 20 deprecation** — forced to Node.js 24 on June 2, 2026. All workflows already on latest major versions. No action needed — monitor for v5 releases.
 - **Pin other git deps** (optional follow-up) — `dioxus-primitives` is now pinned to rev `02801f27` (commit `b40d2019`). Audit remaining workspace deps: `grep "git = " **/Cargo.toml`. Currently no other floating git deps, but worth a periodic check.
+
+---
+
+## Ad-hoc issues (noted 2026-07-07)
+
+- [ ] **Align the zite shared-deck loading skeleton.** Some skeleton blocks read as outlined boxes (the group / deck-profile-shaped elements inherit the real `.sd-group` / `.card-row` borders), others are just filled bars (the featured card shapes) — inconsistent. Make the skeleton pieces visually consistent (either all outlined placeholders or all plain filled blocks).
+- [ ] **zwiper: land-target auto-filter leaks from Add into the Cards screen.** When a deck hits its land target, the Add screen auto-applies a filter that excludes the Land type. Leaving Add back to the Cards screen then persists that exclude-lands filter into Cards. The plain "Default" case (land target not yet reached) already avoids this — on the way back it recognizes the filter as that screen's default and doesn't carry it over. The land-target-triggered variant isn't recognized as default, so it leaks. Make the auto-applied land-target filter count as the screen's default so it doesn't persist across screens.
+- [ ] **zwiper: independent, per-screen, per-deck filter persistence.** Build each swipe screen's filter state to persist independently — Add context, Remove context, and Cards context each remember their own filter (so a filter set on Add survives a trip to Remove and back, and vice versa). Also key persistence per deck (remember filters separately across decks — cap high, ~10-20 or effectively limitless; perf shouldn't be a concern). Net effect: the app "remembers your session" per area and per deck. More caching is acceptable here.
