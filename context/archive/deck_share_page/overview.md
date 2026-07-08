@@ -1,7 +1,24 @@
 # Deck share page — a public URL for any deck
 
-**Status: PLANNED (2026-07-06). Not started. Server + zite shippable
-anytime; the share button is client (1.4.0 batch).**
+**Status: SHIPPED 2026-07-07 (`985dde3e` server, `d8f7dd4e` zite, `f3b1d17a`
+client). All three legs landed the same day: the `share_token` migration +
+owner-checked POST/DELETE `/api/deck/{id}/share` + public IP-limited GET
+`/api/share/deck/{token}` (identity-stripped, clone stays private); the zite
+`/deck/:token` page reusing core GroupCards + in-memory filtering, with
+app-parity card rows (tap-to-expand, keyword reveals, mana glyphs), the
+deck-list stat chips, and MVP stars; and the app's Share action in a single
+More-sheet dialog (create/copy/stop). As-built deltas: the page shows all
+deck-list tags (power level, command zone, archetype/other tags) plus a green
+price chip, not just format/count; the "Built with Zwipe" CTA was dropped;
+Show-lands and Show-command-zone toggles + Min/Max MV steppers were added to the
+control panel; debug builds point at localhost and skip the SSG incremental
+cache so dynamic routes serve under `dx serve`; a `darkreader-lock` meta was
+added (Dark Reader was flattening the themed palette to black).**
+
+**Remaining (tracked in 1.4.0 release prep, NOT blockers):** a server test
+asserting a cloned shared deck's `share_token IS NULL` (behavior verified by
+hand, no formal test yet); the "Sharing your deck" zite guide section; the
+What's New line. OG link-preview cards stay out (SPA limitation, see "Later").
 
 **What this builds, in one sentence:** an owner taps "Share deck" and gets a
 `https://zwipe.net/deck/{token}` link that renders the deck as a clean
