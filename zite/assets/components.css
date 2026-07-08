@@ -588,23 +588,23 @@
     color: var(--text-primary);
 }
 
+/* Accent-2 so the selection reads apart from the accent-1 subtitles. */
 .theme-option.active {
-    color: var(--accent-primary);
+    color: var(--accent-secondary);
 }
 
-/* Section subtitles ("Themes" / "Color blind") that group the picker. */
+/* Section subtitles ("Themes" / "Color blind") that group the picker. The
+   gap above each later section carries the separation (no divider line). */
 .theme-select-label {
-    margin-top: 0.4rem;
+    margin-top: 0.85rem;
     padding: 0.4rem 1rem 0.25rem;
-    border-top: 1px solid var(--border-primary);
     color: var(--accent-primary);
     font-size: 0.65rem;
     letter-spacing: 0.1em;
 }
 
-/* The first subtitle sits at the top of the menu — no divider above it. */
+/* The first subtitle sits flush at the top of the menu. */
 .theme-select-content > .theme-select-label:first-child {
     margin-top: 0;
     padding-top: 0;
-    border-top: none;
 }
