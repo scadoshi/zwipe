@@ -441,6 +441,17 @@ where
             .map_err(|e| anyhow!("{e}"))?;
 
         let link = format!("{}/verify/{raw}", self.web_base_url);
+        // Dev convenience: surface the link + raw token in the server log so a
+        // developer can verify an email without a working email provider. Debug
+        // builds only — a release build never logs a live verification token.
+        #[cfg(debug_assertions)]
+        tracing::warn!(
+            event = "dev_email_verification",
+            %user_id,
+            verify_link = %link,
+            raw_token = %raw,
+            "DEV ONLY: email verification link (or POST the raw_token to /api/auth/verify-email)"
+        );
         let html = include_str!("email_templates/verify_email.html").replace("{link}", &link);
 
         self.email_sender
@@ -499,6 +510,16 @@ where
             .await?;
 
         let link = format!("{}/reset/{raw}", self.web_base_url);
+        // Dev convenience: same as verification — surface the reset link + token
+        // so password reset is testable without an email provider. Debug only.
+        #[cfg(debug_assertions)]
+        tracing::warn!(
+            event = "dev_password_reset",
+            %user_id,
+            reset_link = %link,
+            raw_token = %raw,
+            "DEV ONLY: password reset link (or POST the raw_token to /api/auth/reset-password)"
+        );
         let html = include_str!("email_templates/reset_password.html").replace("{link}", &link);
 
         if let Err(e) = self
