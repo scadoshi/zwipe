@@ -17,6 +17,14 @@ at `context/archive/complete_2026_q1.md`.
     wildcarded; live server-side since 2026-07-07 with 3,325 commanders
     swept. As-built: [`../archive/commander_select_ordering.md`](../archive/commander_select_ordering.md);
     fast-follow: [`../plans/commander_select_signal.md`](../plans/commander_select_signal.md).
+  - Commander-select signal ingest (built 2026-07-07, with the ordering leg's
+    fast-follow): the select screen tallies shown/selected/skipped per
+    candidate into the usage batch; server upserts the pooled
+    `commander_select_signal` aggregate (no user_id) and the wildcard deep
+    slice serves least-shown first (dormant until counts accrue). Server half
+    (migration + ingest + consumer) deploys on next push, ahead of the client
+    per the server-first rule. Consumer B (popularity term) deliberately
+    later: [`../plans/commander_select_signal.md`](../plans/commander_select_signal.md).
   - Partner autofill (`2ba57c15`): picking a "Partner with [Name]" commander
     auto-fills the named mate with a toast (52 of 56 such cards; the rest
     correctly fall through to manual). Includes the edit-load fix: racing
