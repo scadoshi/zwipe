@@ -5,8 +5,13 @@ use zwipe_core::domain::user::preferences::ALLOWED_THEMES;
 
 mod components;
 mod pages;
-use pages::{About, Android, Contribute, Discord, GuidePage, Guides, Home, Ios, Privacy, Reset, Verify};
+use pages::{About, Android, Contribute, Discord, GuidePage, Guides, Home, Ios, Privacy, Reset, SharedDeck, Verify};
 
+/// Debug builds (dx serve) talk to a local dev zerver so pages that fetch
+/// (shared deck, verify, reset) are testable without touching prod.
+#[cfg(debug_assertions)]
+pub const API_BASE: &str = "http://localhost:3000";
+#[cfg(not(debug_assertions))]
 pub const API_BASE: &str = "https://api.zwipe.net";
 
 /// Public web base URL, centralized so a domain change is a single edit.
@@ -48,6 +53,8 @@ enum Route {
     Ios {},
     #[route("/privacy")]
     Privacy {},
+    #[route("/deck/:token")]
+    SharedDeck { token: String },
     #[route("/verify/:token")]
     Verify { token: String },
     #[route("/reset/:token")]
@@ -57,8 +64,16 @@ enum Route {
 fn main() {
     dioxus::LaunchBuilder::new()
         .with_cfg(server_only! {
-            dioxus::server::ServeConfig::builder()
-                .incremental(
+            {
+                let config = dioxus::server::ServeConfig::builder();
+                // The incremental cache exists for `dx build --ssg` (release):
+                // it snapshots each prerendered route to public/<route>/. Under
+                // `dx serve` it instead caches dynamic routes to disk on first
+                // hit and 404s cache misses (with a broken trailing-slash
+                // redirect on hits), so debug builds skip it and SSR every
+                // request fresh.
+                #[cfg(not(debug_assertions))]
+                let config = config.incremental(
                     dioxus::server::IncrementalRendererConfig::new()
                         .static_dir(
                             std::env::current_exe()
@@ -68,8 +83,9 @@ fn main() {
                                 .join("public")
                         )
                         .clear_cache(false)
-                )
-                .enable_out_of_order_streaming()
+                );
+                config.enable_out_of_order_streaming()
+            }
         })
         .launch(App);
 }
@@ -101,6 +117,10 @@ fn App() -> Element {
 
     rsx! {
         document::Meta { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" }
+        // Tells Dark Reader to leave the site alone: theming is first-class
+        // here (user-picked theme + dark/light), and Dark Reader's dynamic
+        // mode mangles the color-mix()/var() palette into monochrome.
+        document::Meta { name: "darkreader-lock" }
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "icon", r#type: "image/png", sizes: "16x16", href: FAVICON_16 }
         document::Link { rel: "icon", r#type: "image/png", sizes: "32x32", href: FAVICON_32 }

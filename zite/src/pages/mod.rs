@@ -7,6 +7,7 @@ mod home;
 mod ios;
 mod privacy;
 mod reset;
+mod shared_deck;
 mod verify;
 
 pub use about::About;
@@ -18,4 +19,5 @@ pub use home::Home;
 pub use ios::Ios;
 pub use privacy::Privacy;
 pub use reset::Reset;
+pub use shared_deck::SharedDeck;
 pub use verify::Verify;

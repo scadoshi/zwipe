@@ -8678,6 +8678,7 @@ dependencies = [
  "reqwest",
  "serde",
  "tokio",
+ "uuid",
  "web-sys",
  "zwipe-core",
 ]
