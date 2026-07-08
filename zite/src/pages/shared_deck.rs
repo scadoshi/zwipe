@@ -197,7 +197,10 @@ fn CommandZoneCard(card: Card, role: String) -> Element {
             }
             div { class: "sd-cz-name", "{name}" }
             if !role.is_empty() {
-                div { class: "sd-cz-role", "{role}" }
+                div {
+                    class: if role == "MVP" { "sd-cz-role sd-cz-role-mvp" } else { "sd-cz-role sd-cz-role-zone" },
+                    "{role}"
+                }
             }
         }
     }
