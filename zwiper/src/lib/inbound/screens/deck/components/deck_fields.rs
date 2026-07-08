@@ -11,17 +11,19 @@ use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
 use std::time::Duration;
 use tokio::time::sleep;
 use uuid::Uuid;
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::{
-    Card,
-    search_card::{
-        card_filter::{builder::CardQueryBuilder, error::InvalidCardCriteria},
-        commander_eligibility::{PartnerKind, has_choose_a_background, partner_kind},
+use zwipe_core::domain::{
+    auth::models::session::Session,
+    card::{
+        Card,
+        search_card::{
+            card_filter::{
+                builder::CardQueryBuilder, error::InvalidCardCriteria,
+                price_currency::PriceCurrency,
+            },
+            commander_eligibility::{PartnerKind, has_choose_a_background, partner_kind},
+        },
     },
-};
-use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::{
-    DeckName, DeckOtherTag, DeckTag, MAX_DECK_TAGS, PowerLevel, format::Format,
+    deck::{DeckName, DeckOtherTag, DeckTag, MAX_DECK_TAGS, PowerLevel, format::Format},
 };
 
 /// Upper bound for the land-target stepper — no deck runs more lands than this.
@@ -77,7 +79,9 @@ pub(crate) fn autofill_named_partner(
                             .is_some_and(|front| front.trim().eq_ignore_ascii_case(&mate))
                     })
                 };
-                let Some(found) = exact.or_else(front_face).and_then(|i| cards.into_iter().nth(i))
+                let Some(found) = exact
+                    .or_else(front_face)
+                    .and_then(|i| cards.into_iter().nth(i))
                 else {
                     tracing::warn!("partner autofill: no exact match for {mate}");
                     return;
@@ -162,7 +166,6 @@ pub(crate) fn DeckFields(
             }
         }
     });
-
 
     // ========================================
     // Commander search state

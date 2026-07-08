@@ -8,10 +8,14 @@ use std::future::Future;
 
 use crate::domain::deck::models::{
     deck::{
-        clear_deck_suppressions::ClearDeckSuppressionsError, clone_deck::CloneDeckError,
-        create_deck_profile::CreateDeckProfileError, delete_deck::DeleteDeckError,
-        get_deck::GetDeckError, get_deck_profile::GetDeckProfileError,
-        get_deck_tokens::GetDeckTokensError, import_archidekt::ArchidektCard,
+        clear_deck_suppressions::ClearDeckSuppressionsError,
+        clone_deck::CloneDeckError,
+        create_deck_profile::CreateDeckProfileError,
+        delete_deck::DeleteDeckError,
+        get_deck::GetDeckError,
+        get_deck_profile::GetDeckProfileError,
+        get_deck_tokens::GetDeckTokensError,
+        import_archidekt::ArchidektCard,
         search_deck_cards::SearchDeckCardsError,
         share_deck::{GetSharedDeckError, ShareDeckError, SharedDeck},
         skip_deck_card::SkipDeckCardError,
@@ -23,23 +27,25 @@ use crate::domain::deck::models::{
         update_deck_card::UpdateDeckCardError,
     },
 };
-use zwipe_core::domain::card::{Card, search_card::card_filter::CardQuery};
-use zwipe_core::domain::deck::{
-    Deck, DeckCard, DeckName,
-    deck_profile::DeckProfile,
-    requests::{
-        clear_deck_suppressions::ClearDeckSuppressions,
-        clone_deck::CloneDeck,
-        create_deck_card::CreateDeckCard,
-        create_deck_profile::CreateDeckProfile,
-        delete_deck::DeleteDeck,
-        delete_deck_card::DeleteDeckCard,
-        get_deck_profile::GetDeckProfile,
-        get_deck_profiles::GetDeckProfiles,
-        import_deck_cards::{ImportDeckCards, ImportDeckCardsResult},
-        skip_deck_card::SkipDeckCard,
-        update_deck_card::UpdateDeckCard,
-        update_deck_profile::UpdateDeckProfile,
+use zwipe_core::domain::{
+    card::{Card, search_card::card_filter::CardQuery},
+    deck::{
+        Deck, DeckCard, DeckName,
+        deck_profile::DeckProfile,
+        requests::{
+            clear_deck_suppressions::ClearDeckSuppressions,
+            clone_deck::CloneDeck,
+            create_deck_card::CreateDeckCard,
+            create_deck_profile::CreateDeckProfile,
+            delete_deck::DeleteDeck,
+            delete_deck_card::DeleteDeckCard,
+            get_deck_profile::GetDeckProfile,
+            get_deck_profiles::GetDeckProfiles,
+            import_deck_cards::{ImportDeckCards, ImportDeckCardsResult},
+            skip_deck_card::SkipDeckCard,
+            update_deck_card::UpdateDeckCard,
+            update_deck_profile::UpdateDeckProfile,
+        },
     },
 };
 

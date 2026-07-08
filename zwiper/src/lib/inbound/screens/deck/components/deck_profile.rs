@@ -1,6 +1,5 @@
 use dioxus::prelude::*;
-use zwipe_core::domain::card::Card;
-use zwipe_core::domain::deck::deck_profile::DeckProfile;
+use zwipe_core::domain::{card::Card, deck::deck_profile::DeckProfile};
 
 #[component]
 pub(crate) fn DeckProfileSection(deck_profile: DeckProfile, commander: Option<Card>) -> Element {

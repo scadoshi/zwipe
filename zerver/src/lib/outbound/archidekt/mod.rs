@@ -11,8 +11,7 @@
 
 use crate::domain::deck::models::deck::import_archidekt::ArchidektCard;
 use serde::{Deserialize, Deserializer};
-use std::collections::HashSet;
-use std::time::Duration;
+use std::{collections::HashSet, time::Duration};
 use thiserror::Error;
 use uuid::Uuid;
 

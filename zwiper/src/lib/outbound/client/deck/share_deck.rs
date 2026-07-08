@@ -6,8 +6,9 @@ use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
 use zwipe::inbound::http::{ApiError, routes::share_deck_route};
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::http::contracts::deck::HttpDeckShareToken;
+use zwipe_core::{
+    domain::auth::models::session::Session, http::contracts::deck::HttpDeckShareToken,
+};
 
 /// Trait for creating and revoking a deck's public share link.
 #[allow(missing_docs)]

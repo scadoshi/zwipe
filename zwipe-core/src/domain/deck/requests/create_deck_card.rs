@@ -60,8 +60,7 @@ impl CreateDeckCard {
         let deck_id = Uuid::try_parse(deck_id).map_err(InvalidCreateDeckCard::DeckId)?;
         let scryfall_data_id =
             Uuid::try_parse(scryfall_data_id).map_err(InvalidCreateDeckCard::ScryfallDataId)?;
-        let oracle_id =
-            Uuid::try_parse(oracle_id).map_err(InvalidCreateDeckCard::OracleId)?;
+        let oracle_id = Uuid::try_parse(oracle_id).map_err(InvalidCreateDeckCard::OracleId)?;
         let quantity = Quantity::new(quantity)?;
 
         Ok(Self {

@@ -43,7 +43,6 @@ pub struct ScryfallData {
     // Core Card Fields
     // ==================
     // Basic card identification and platform-specific IDs
-
     /// This card's Arena ID, if any. A large percentage of cards are not available on Arena and do not have this ID.
     pub arena_id: Option<i32>,
 
@@ -97,7 +96,6 @@ pub struct ScryfallData {
     // Gameplay Fields
     // ==================
     // Properties relevant to game rules and deck building
-
     /// If this card relates to other cards, an array with Related Card Objects.
     pub all_parts: Option<AllParts>,
 
@@ -171,7 +169,6 @@ pub struct ScryfallData {
     // Print Fields
     // ==================
     // Properties unique to this specific printing
-
     /// The name of the illustrator of this card.
     pub artist: Option<String>,
 

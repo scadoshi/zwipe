@@ -9,8 +9,7 @@ use zwipe::inbound::http::{
     ApiError,
     routes::{skip_deck_card_route, unskip_deck_card_route},
 };
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::http::contracts::deck::HttpSkipDeckCard;
+use zwipe_core::{domain::auth::models::session::Session, http::contracts::deck::HttpSkipDeckCard};
 
 /// Trait for posting and undoing a single deck-card skip.
 #[allow(missing_docs)]

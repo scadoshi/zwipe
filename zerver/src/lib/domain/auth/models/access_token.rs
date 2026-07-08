@@ -198,8 +198,7 @@ mod tests {
     use super::*;
     use std::str::FromStr;
     use uuid::Uuid;
-    use zwipe_core::domain::Email;
-    use zwipe_core::domain::user::username::Username;
+    use zwipe_core::domain::{Email, user::username::Username};
 
     // ========================
     //  `JwtSecret` tests

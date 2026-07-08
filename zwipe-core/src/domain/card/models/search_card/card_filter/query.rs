@@ -213,7 +213,9 @@ mod tests {
 
     #[test]
     fn unset_criteria_are_omitted_from_the_wire() {
-        let query = CardQueryBuilder::with_name_contains("bolt").build().unwrap();
+        let query = CardQueryBuilder::with_name_contains("bolt")
+            .build()
+            .unwrap();
         let value = serde_json::to_value(&query).unwrap();
         let obj = value.as_object().unwrap();
         assert!(!obj.contains_key("cmc_range"));

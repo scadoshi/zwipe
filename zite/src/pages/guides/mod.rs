@@ -8,8 +8,7 @@
 
 mod content;
 
-use crate::components::PageMeta;
-use crate::{Footer, Nav, Route};
+use crate::{Footer, Nav, Route, components::PageMeta};
 use content::{Block, GUIDES};
 use dioxus::prelude::*;
 

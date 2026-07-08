@@ -5,15 +5,18 @@
 
 use crate::domain::{
     card::{
+        Card,
         scryfall_data::legalities::LegalityKind,
         search_card::commander_eligibility::{
             are_valid_partners, has_choose_a_background, is_background_card,
             is_signature_spell_in_color_identity, is_valid_commander,
             is_valid_signature_spell_type, partner_kind,
         },
-        Card,
     },
-    deck::{deck::DeckEntry, deck_metrics::mainboard_total_price, DeckProfile, DeckWarning, Format, WarningAction},
+    deck::{
+        DeckProfile, DeckWarning, Format, WarningAction, deck::DeckEntry,
+        deck_metrics::mainboard_total_price,
+    },
 };
 
 /// Cards in the command zone (stored on the profile, not in deck_cards).
@@ -228,7 +231,9 @@ fn check_copy_limits(format: &Format, entries: &[DeckEntry], warnings: &mut Vec<
             warnings.push(DeckWarning::with_action(
                 format!(
                     "{} exceeds copy limit ({}/{})",
-                    entry.card.scryfall_data.name.to_lowercase(), qty, max
+                    entry.card.scryfall_data.name.to_lowercase(),
+                    qty,
+                    max
                 ),
                 entry.card.scryfall_data.id,
                 WarningAction::FixQuantity(max as i32),
@@ -248,7 +253,10 @@ fn check_color_identity(
     }
 
     // Resolve commander oracle_id from command zone (always populated by get_deck)
-    let Some(commander_oid) = command_zone.commander.and_then(|c| c.scryfall_data.oracle_id) else {
+    let Some(commander_oid) = command_zone
+        .commander
+        .and_then(|c| c.scryfall_data.oracle_id)
+    else {
         return;
     };
 
@@ -257,7 +265,11 @@ fn check_color_identity(
         .iter()
         .find(|e| e.card.scryfall_data.oracle_id == Some(commander_oid))
         .map(|e| &e.card.scryfall_data.color_identity)
-        .or_else(|| command_zone.commander.map(|c| &c.scryfall_data.color_identity));
+        .or_else(|| {
+            command_zone
+                .commander
+                .map(|c| &c.scryfall_data.color_identity)
+        });
 
     let Some(base_colors) = commander_identity else {
         return;
@@ -283,8 +295,12 @@ fn check_color_identity(
     }
 
     // Collect command zone oracle_ids to skip in color identity checks
-    let partner_oid = command_zone.partner_commander.and_then(|c| c.scryfall_data.oracle_id);
-    let bg_oid = command_zone.background.and_then(|c| c.scryfall_data.oracle_id);
+    let partner_oid = command_zone
+        .partner_commander
+        .and_then(|c| c.scryfall_data.oracle_id);
+    let bg_oid = command_zone
+        .background
+        .and_then(|c| c.scryfall_data.oracle_id);
 
     for entry in entries {
         if entry.card.scryfall_data.oracle_id == Some(commander_oid) {
@@ -442,11 +458,7 @@ fn check_background_validity(
     }
 }
 
-fn check_sideboard_limits(
-    format: &Format,
-    entries: &[DeckEntry],
-    warnings: &mut Vec<DeckWarning>,
-) {
+fn check_sideboard_limits(format: &Format, entries: &[DeckEntry], warnings: &mut Vec<DeckWarning>) {
     let sideboard_count: u32 = entries
         .iter()
         .filter(|e| e.deck_card.board.is_sideboard())
@@ -576,8 +588,10 @@ mod tests {
 
     mod land_target {
         use super::*;
-        use crate::domain::deck::{Board, DeckCard, Quantity};
-        use crate::test_utils::make_card;
+        use crate::{
+            domain::deck::{Board, DeckCard, Quantity},
+            test_utils::make_card,
+        };
 
         fn land_entry(name: &str, qty: i32) -> DeckEntry {
             let mut card = make_card(name);
@@ -623,8 +637,7 @@ mod tests {
 
     mod commander_eligibility {
         use super::*;
-        use crate::domain::card::scryfall_data::rarity::Rarity;
-        use crate::test_utils::make_card;
+        use crate::{domain::card::scryfall_data::rarity::Rarity, test_utils::make_card};
 
         #[test]
         fn valid_legendary_creature_no_warning() {
@@ -674,8 +687,7 @@ mod tests {
         #[test]
         fn planeswalker_as_brawl_commander_no_warning() {
             let mut card = make_card("Teferi, Hero of Dominaria");
-            card.scryfall_data.type_line =
-                Some("Legendary Planeswalker — Teferi".to_string());
+            card.scryfall_data.type_line = Some("Legendary Planeswalker — Teferi".to_string());
             let commander_id = card.scryfall_data.id;
 
             let mut profile = test_profile(Some(Format::Brawl));
@@ -697,8 +709,7 @@ mod tests {
         #[test]
         fn planeswalker_as_commander_format_warns() {
             let mut card = make_card("Teferi, Hero of Dominaria");
-            card.scryfall_data.type_line =
-                Some("Legendary Planeswalker — Teferi".to_string());
+            card.scryfall_data.type_line = Some("Legendary Planeswalker — Teferi".to_string());
             let commander_id = card.scryfall_data.id;
 
             let mut profile = test_profile(Some(Format::Commander));
@@ -793,14 +804,15 @@ mod tests {
 
     mod color_identity {
         use super::*;
-        use crate::domain::card::scryfall_data::colors::{Color, Colors};
-        use crate::test_utils::{make_card, make_entry};
+        use crate::{
+            domain::card::scryfall_data::colors::{Color, Colors},
+            test_utils::{make_card, make_entry},
+        };
 
         #[test]
         fn card_outside_commander_color_identity_warns() {
             let mut commander = make_card("Omnath, Locus of Creation");
-            commander.scryfall_data.type_line =
-                Some("Legendary Creature — Elemental".to_string());
+            commander.scryfall_data.type_line = Some("Legendary Creature — Elemental".to_string());
             commander.scryfall_data.color_identity =
                 Colors::from([Color::Red, Color::Green, Color::White, Color::Blue]);
 
@@ -827,8 +839,7 @@ mod tests {
         #[test]
         fn card_within_commander_color_identity_no_warning() {
             let mut commander = make_card("Omnath, Locus of Creation");
-            commander.scryfall_data.type_line =
-                Some("Legendary Creature — Elemental".to_string());
+            commander.scryfall_data.type_line = Some("Legendary Creature — Elemental".to_string());
             commander.scryfall_data.color_identity =
                 Colors::from([Color::Red, Color::Green, Color::White, Color::Blue]);
 
@@ -893,14 +904,12 @@ mod tests {
             let mut commander = make_card("Tymna the Weaver");
             commander.scryfall_data.type_line =
                 Some("Legendary Creature — Human Cleric".to_string());
-            commander.scryfall_data.color_identity =
-                Colors::from([Color::White, Color::Black]);
+            commander.scryfall_data.color_identity = Colors::from([Color::White, Color::Black]);
 
             let mut partner = make_card("Thrasios, Triton Hero");
             partner.scryfall_data.type_line =
                 Some("Legendary Creature — Merfolk Wizard".to_string());
-            partner.scryfall_data.color_identity =
-                Colors::from([Color::Green, Color::Blue]);
+            partner.scryfall_data.color_identity = Colors::from([Color::Green, Color::Blue]);
 
             let mut profile = test_profile(Some(Format::Commander));
             profile.commander_id = Some(commander.scryfall_data.id);

@@ -8,18 +8,23 @@
 //!
 //! All operations work within existing transactions (caller commits).
 
-use crate::domain::card::models::helpers::SleeveScryfallData;
-use crate::domain::card::models::zervice_metrics::{ErrorMetrics, ZerviceMetrics};
-use crate::domain::card::requests::{
-    create_card::CreateCardError, get_scryfall_data::ScryfallDataIds,
+use crate::{
+    domain::card::{
+        models::{
+            helpers::SleeveScryfallData,
+            zervice_metrics::{ErrorMetrics, ZerviceMetrics},
+        },
+        requests::{create_card::CreateCardError, get_scryfall_data::ScryfallDataIds},
+    },
+    outbound::sqlx::card::{
+        card_profile::DatabaseCardProfile,
+        helpers::scryfall_data_fields::{
+            BindCards, BindScryfallDataFields, bulk_upsert_conflict_fields, scryfall_data_fields,
+        },
+        models::DatabaseScryfallData,
+    },
 };
-use crate::outbound::sqlx::card::card_profile::DatabaseCardProfile;
-use crate::outbound::sqlx::card::helpers::scryfall_data_fields::{
-    BindCards, BindScryfallDataFields, bulk_upsert_conflict_fields, scryfall_data_fields,
-};
-use crate::outbound::sqlx::card::models::DatabaseScryfallData;
-use sqlx::QueryBuilder;
-use sqlx::{PgTransaction, query_as};
+use sqlx::{PgTransaction, QueryBuilder, query_as};
 use std::future::Future;
 use zwipe_core::domain::card::{Card, card_profile::CardProfile, scryfall_data::ScryfallData};
 

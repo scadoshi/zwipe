@@ -1,9 +1,12 @@
 //! In-memory swipe/search counters with snapshot-and-zero semantics.
 
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::sync::Mutex;
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::{
+    collections::HashMap,
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicU32, Ordering},
+    },
+};
 
 use uuid::Uuid;
 use zwipe_core::http::contracts::metrics::{CardSignalDelta, CommanderSelectDelta, HttpUsageBatch};
@@ -119,11 +122,7 @@ impl UsageBuffer {
     /// Records one deliberate removal of a `(commander, card)` from a deck — a
     /// delayed negative signal, distinct from an add-stack skip. No-op if either
     /// oracle id is missing.
-    pub fn record_removal(
-        &self,
-        commander_oracle_id: Option<Uuid>,
-        card_oracle_id: Option<Uuid>,
-    ) {
+    pub fn record_removal(&self, commander_oracle_id: Option<Uuid>, card_oracle_id: Option<Uuid>) {
         let (Some(commander), Some(card)) = (commander_oracle_id, card_oracle_id) else {
             return;
         };

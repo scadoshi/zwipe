@@ -3,8 +3,9 @@
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use std::time::Duration;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use zwipe_core::domain::card::search_card::card_filter::{
+    builder::CardQueryBuilder, price_currency::PriceCurrency,
+};
 
 /// Price filter sub-component: USD/EUR/TIX chips + min/max bounds.
 #[component]

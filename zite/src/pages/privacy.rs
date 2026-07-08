@@ -1,7 +1,6 @@
+use crate::{DISCORD_URL, Footer, Nav, SUPPORT_EMAIL, components::PageMeta};
 use dioxus::prelude::*;
 use zwipe_core::legal::{PRIVACY_LAST_UPDATED, PRIVACY_POLICY_HTML};
-use crate::components::PageMeta;
-use crate::{Footer, Nav, DISCORD_URL, SUPPORT_EMAIL};
 
 #[component]
 pub fn Privacy() -> Element {

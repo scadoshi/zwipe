@@ -10,8 +10,10 @@ use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
 use zwipe::inbound::http::{ApiError, routes::search_deck_cards_route};
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::{Card, search_card::card_filter::CardQuery};
+use zwipe_core::domain::{
+    auth::models::session::Session,
+    card::{Card, search_card::card_filter::CardQuery},
+};
 
 /// Trait for deck-aware card search.
 #[allow(missing_docs)]

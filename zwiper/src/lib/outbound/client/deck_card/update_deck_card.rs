@@ -6,9 +6,10 @@ use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
 use zwipe::inbound::http::{ApiError, routes::update_deck_card_route};
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::deck::deck_card::DeckCard;
-use zwipe_core::http::contracts::deck_card::HttpUpdateDeckCard;
+use zwipe_core::{
+    domain::{auth::models::session::Session, deck::deck_card::DeckCard},
+    http::contracts::deck_card::HttpUpdateDeckCard,
+};
 
 /// Trait for updating card quantity in a deck.
 #[allow(missing_docs)]

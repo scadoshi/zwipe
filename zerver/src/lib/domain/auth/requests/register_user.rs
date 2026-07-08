@@ -60,9 +60,11 @@ use crate::domain::auth::models::password::Password;
 #[cfg(feature = "zerver")]
 use crate::domain::auth::requests::create_session::CreateSessionError;
 use thiserror::Error;
-use zwipe_core::domain::auth::password::InvalidPassword;
-use zwipe_core::domain::user::username::{InvalidUsername, Username};
-use zwipe_core::domain::{Email, InvalidEmail};
+use zwipe_core::domain::{
+    Email, InvalidEmail,
+    auth::password::InvalidPassword,
+    user::username::{InvalidUsername, Username},
+};
 
 #[cfg(feature = "zerver")]
 /// Errors that can occur during user registration.

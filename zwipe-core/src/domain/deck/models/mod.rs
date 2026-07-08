@@ -32,4 +32,4 @@ pub use format::{Format, InvalidFormat};
 pub use import_mode::ImportMode;
 pub use power_level::{InvalidPowerLevel, PowerLevel};
 pub use quantity::{InvalidQuantity, InvalidUpdateQuanity, Quantity, UpdateQuantity};
-pub use validate_deck::{validate_deck, DeckCommandZone};
+pub use validate_deck::{DeckCommandZone, validate_deck};

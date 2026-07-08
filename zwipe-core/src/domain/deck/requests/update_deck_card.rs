@@ -70,9 +70,7 @@ impl UpdateDeckCard {
         let scryfall_data_id =
             Uuid::try_parse(scryfall_data_id).map_err(InvalidUpdateDeckCard::ScryfallDataId)?;
 
-        let update_quantity = update_quantity
-            .map(UpdateQuantity::new)
-            .transpose()?;
+        let update_quantity = update_quantity.map(UpdateQuantity::new).transpose()?;
 
         let new_scryfall_data_id = new_scryfall_data_id
             .map(|s| Uuid::try_parse(s).map_err(InvalidUpdateDeckCard::NewScryfallDataId))

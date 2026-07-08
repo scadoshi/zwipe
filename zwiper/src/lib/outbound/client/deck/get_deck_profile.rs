@@ -6,8 +6,7 @@ use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
 use zwipe::inbound::http::{ApiError, routes::get_deck_profile_route};
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::deck::deck_profile::DeckProfile;
+use zwipe_core::domain::{auth::models::session::Session, deck::deck_profile::DeckProfile};
 
 /// Trait for fetching deck metadata without cards.
 #[allow(missing_docs)]

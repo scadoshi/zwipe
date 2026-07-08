@@ -250,5 +250,4 @@ impl CardCriteria {
     pub fn artist_excludes_any(&self) -> Option<&[String]> {
         self.artist_excludes_any.as_deref()
     }
-
 }

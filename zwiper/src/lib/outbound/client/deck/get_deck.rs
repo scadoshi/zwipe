@@ -6,8 +6,7 @@ use std::future::Future;
 use tracing::info;
 use uuid::Uuid;
 use zwipe::inbound::http::{ApiError, routes::get_deck_route};
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::deck::Deck;
+use zwipe_core::domain::{auth::models::session::Session, deck::Deck};
 
 /// Trait for fetching a complete deck with all cards.
 #[allow(missing_docs)]

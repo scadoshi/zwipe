@@ -5,10 +5,12 @@ use std::time::Duration;
 use dioxus::prelude::{ReadableExt, Signal, document, spawn};
 use tokio::time::interval;
 
-use crate::inbound::components::auth::ensure_session::EnsureFresh;
-use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
-use crate::outbound::client::ZwipeClient;
-use crate::outbound::client::metrics::record_usage::ClientRecordUsage;
+use crate::{
+    inbound::components::{
+        auth::ensure_session::EnsureFresh, telemetry::usage_buffer::UsageBuffer,
+    },
+    outbound::client::{ZwipeClient, metrics::record_usage::ClientRecordUsage},
+};
 use zwipe_core::domain::auth::models::session::Session;
 
 /// Interval between automatic flushes when the app is foregrounded.

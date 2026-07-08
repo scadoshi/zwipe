@@ -7,32 +7,41 @@ pub mod helpers;
 /// Database-to-domain auth model conversions.
 pub mod models;
 
-use crate::domain::auth::models::UserWithPasswordHash;
-use crate::domain::auth::models::password::HashedPassword;
-use crate::domain::auth::ports::AuthRepository;
-use crate::domain::auth::requests::{
-    authenticate_user::{AuthenticateUser, AuthenticateUserError},
-    change_email::{ChangeEmail, ChangeEmailError},
-    change_password::{ChangePassword, ChangePasswordError},
-    change_username::{ChangeUsername, ChangeUsernameError},
-    create_session::CreateSessionError,
-    delete_expired_sessions::DeleteExpiredSessionsError,
-    delete_user::{DeleteUser, DeleteUserError},
-    refresh_session::{RefreshSession, RefreshSessionError},
-    register_user::{RegisterUser, RegisterUserError},
-    reset_password::ResetPasswordError,
-    revoke_sessions::RevokeSessionsError,
-    verify_email::VerifyEmailError,
+use crate::{
+    domain::auth::{
+        models::{UserWithPasswordHash, password::HashedPassword},
+        ports::AuthRepository,
+        requests::{
+            authenticate_user::{AuthenticateUser, AuthenticateUserError},
+            change_email::{ChangeEmail, ChangeEmailError},
+            change_password::{ChangePassword, ChangePasswordError},
+            change_username::{ChangeUsername, ChangeUsernameError},
+            create_session::CreateSessionError,
+            delete_expired_sessions::DeleteExpiredSessionsError,
+            delete_user::{DeleteUser, DeleteUserError},
+            refresh_session::{RefreshSession, RefreshSessionError},
+            register_user::{RegisterUser, RegisterUserError},
+            reset_password::ResetPasswordError,
+            revoke_sessions::RevokeSessionsError,
+            verify_email::VerifyEmailError,
+        },
+    },
+    outbound::sqlx::{
+        auth::{
+            helpers::TxHelper,
+            models::{DatabaseRefreshToken, DatabaseUserWithPasswordHash},
+        },
+        postgres::Postgres,
+        user::models::DatabaseUser,
+    },
 };
-use crate::outbound::sqlx::auth::helpers::TxHelper;
-use crate::outbound::sqlx::auth::models::{DatabaseRefreshToken, DatabaseUserWithPasswordHash};
-use crate::outbound::sqlx::postgres::Postgres;
-use crate::outbound::sqlx::user::models::DatabaseUser;
 use chrono::{DateTime, Utc};
 use sqlx::{query, query_as, query_scalar};
 use uuid::Uuid;
-use zwipe_core::domain::auth::models::refresh_token::{RefreshToken, Sha256Hash};
-use zwipe_core::domain::user::User;
+use zwipe_core::domain::{
+    auth::models::refresh_token::{RefreshToken, Sha256Hash},
+    user::User,
+};
 
 impl AuthRepository for Postgres {
     // ========

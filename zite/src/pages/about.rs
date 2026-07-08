@@ -1,6 +1,5 @@
+use crate::{Footer, Nav, components::PageMeta};
 use dioxus::prelude::*;
-use crate::components::PageMeta;
-use crate::{Footer, Nav};
 
 // Source-material links, used inside the architecture diagram (Wikipedia-style refs).
 const URL_ZWIPER: &str = "https://github.com/scadoshi/zwipe/tree/main/zwiper";
@@ -14,8 +13,7 @@ const URL_TOKIO: &str = "https://tokio.rs";
 const URL_SQLX: &str = "https://github.com/launchbadge/sqlx";
 const URL_POSTGRES: &str = "https://www.postgresql.org";
 const URL_SCRYFALL: &str = "https://scryfall.com/docs/api";
-const URL_MECHANICAL_CATEGORY: &str =
-    "https://github.com/scadoshi/zwipe/tree/main/zwipe-core/src/domain/card/models/mechanical_category";
+const URL_MECHANICAL_CATEGORY: &str = "https://github.com/scadoshi/zwipe/tree/main/zwipe-core/src/domain/card/models/mechanical_category";
 
 #[component]
 pub fn About() -> Element {

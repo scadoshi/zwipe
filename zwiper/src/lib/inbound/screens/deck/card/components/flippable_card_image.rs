@@ -1,8 +1,10 @@
 //! Card image with a built-in flip control for double-faced cards.
 
 use dioxus::prelude::*;
-use std::collections::HashSet;
-use std::sync::{Mutex, OnceLock};
+use std::{
+    collections::HashSet,
+    sync::{Mutex, OnceLock},
+};
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 
 /// Image URLs whose bytes have already arrived once this session. These

@@ -8,7 +8,7 @@
 //! Text filters (`set_name_contains`, etc.) treat empty strings as `None`
 //! to avoid ineffective filters.
 
-use super::{CardQueryBuilder, CardType, Colors, Format, CardSortKey, PriceCurrency};
+use super::{CardQueryBuilder, CardSortKey, CardType, Colors, Format, PriceCurrency};
 use crate::domain::card::scryfall_data::rarity::Rarities;
 
 impl CardQueryBuilder {
@@ -46,15 +46,13 @@ impl CardQueryBuilder {
     }
 
     /// Sets filter matching any of multiple oracle text substrings. Empty vec = None.
-    pub fn set_oracle_text_contains_any<I, S>(
-        &mut self,
-        oracle_text_contains_any: I,
-    ) -> &mut Self
+    pub fn set_oracle_text_contains_any<I, S>(&mut self, oracle_text_contains_any: I) -> &mut Self
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = oracle_text_contains_any.into_iter()
+        let v: Vec<String> = oracle_text_contains_any
+            .into_iter()
             .map(|s| s.into())
             .collect();
         self.oracle_text_contains_any = if v.is_empty() { None } else { Some(v) };
@@ -68,15 +66,13 @@ impl CardQueryBuilder {
     }
 
     /// Sets filter requiring all of multiple oracle text substrings to be present. Empty vec = None.
-    pub fn set_oracle_text_contains_all<I, S>(
-        &mut self,
-        oracle_text_contains_all: I,
-    ) -> &mut Self
+    pub fn set_oracle_text_contains_all<I, S>(&mut self, oracle_text_contains_all: I) -> &mut Self
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = oracle_text_contains_all.into_iter()
+        let v: Vec<String> = oracle_text_contains_all
+            .into_iter()
             .map(|s| s.into())
             .collect();
         self.oracle_text_contains_all = if v.is_empty() { None } else { Some(v) };
@@ -94,15 +90,13 @@ impl CardQueryBuilder {
     // =================================
 
     /// Sets filter matching any of multiple keywords (OR logic). Empty vec = None.
-    pub fn set_keywords_contains_any<I, S>(
-        &mut self,
-        keywords_contains_any: I,
-    ) -> &mut Self
+    pub fn set_keywords_contains_any<I, S>(&mut self, keywords_contains_any: I) -> &mut Self
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = keywords_contains_any.into_iter()
+        let v: Vec<String> = keywords_contains_any
+            .into_iter()
             .map(|s| s.into())
             .filter(|s| !s.is_empty())
             .collect();
@@ -117,15 +111,13 @@ impl CardQueryBuilder {
     }
 
     /// Sets filter requiring all keywords to be present (AND logic). Empty vec = None.
-    pub fn set_keywords_contains_all<I, S>(
-        &mut self,
-        keywords_contains_all: I,
-    ) -> &mut Self
+    pub fn set_keywords_contains_all<I, S>(&mut self, keywords_contains_all: I) -> &mut Self
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = keywords_contains_all.into_iter()
+        let v: Vec<String> = keywords_contains_all
+            .into_iter()
             .map(|s| s.into())
             .filter(|s| !s.is_empty())
             .collect();
@@ -189,7 +181,8 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = type_line_contains_any.into_iter()
+        let v: Vec<String> = type_line_contains_any
+            .into_iter()
             .map(|s| s.into())
             .collect();
         self.type_line_contains_any = if v.is_empty() { None } else { Some(v) };
@@ -224,7 +217,8 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = type_line_contains_all.into_iter()
+        let v: Vec<String> = type_line_contains_all
+            .into_iter()
             .map(|s| s.into())
             .collect();
         self.type_line_contains_all = if v.is_empty() { None } else { Some(v) };
@@ -262,7 +256,8 @@ impl CardQueryBuilder {
         &mut self,
         set_equals_any: impl IntoIterator<Item = impl Into<String>>,
     ) -> &mut Self {
-        let s: Vec<String> = set_equals_any.into_iter()
+        let s: Vec<String> = set_equals_any
+            .into_iter()
             .map(|x| x.into())
             .filter(|s| !s.is_empty())
             .collect();
@@ -281,7 +276,8 @@ impl CardQueryBuilder {
         &mut self,
         artist_equals_any: impl IntoIterator<Item = impl Into<String>>,
     ) -> &mut Self {
-        let s: Vec<String> = artist_equals_any.into_iter()
+        let s: Vec<String> = artist_equals_any
+            .into_iter()
             .map(|x| x.into())
             .filter(|s| !s.is_empty())
             .collect();
@@ -594,15 +590,15 @@ impl CardQueryBuilder {
     // =================================
 
     /// Sets filter matching cards legal in any of the provided formats. Empty vec = None.
-    pub fn set_legalities_contains_any<I, S>(
-        &mut self,
-        legalities_contains_any: I,
-    ) -> &mut Self
+    pub fn set_legalities_contains_any<I, S>(&mut self, legalities_contains_any: I) -> &mut Self
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = legalities_contains_any.into_iter().map(Into::into).collect();
+        let v: Vec<String> = legalities_contains_any
+            .into_iter()
+            .map(Into::into)
+            .collect();
         self.legalities_contains_any = if v.is_empty() { None } else { Some(v) };
         self
     }
@@ -767,7 +763,10 @@ impl CardQueryBuilder {
     }
 
     /// Sets oracle text not-contains filter (punctuation-insensitive). Empty strings = None.
-    pub fn set_oracle_text_not_contains(&mut self, oracle_text_not_contains: impl Into<String>) -> &mut Self {
+    pub fn set_oracle_text_not_contains(
+        &mut self,
+        oracle_text_not_contains: impl Into<String>,
+    ) -> &mut Self {
         let s = oracle_text_not_contains.into();
         self.oracle_text_not_contains = if s.is_empty() { None } else { Some(s) };
         self
@@ -785,7 +784,8 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = oracle_text_excludes_any.into_iter()
+        let v: Vec<String> = oracle_text_excludes_any
+            .into_iter()
             .map(|s| s.into())
             .collect();
         self.oracle_text_excludes_any = if v.is_empty() { None } else { Some(v) };
@@ -804,7 +804,8 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = keywords_excludes.into_iter()
+        let v: Vec<String> = keywords_excludes
+            .into_iter()
             .map(|s| s.into().trim().to_string())
             .filter(|s| !s.is_empty())
             .collect();
@@ -819,7 +820,10 @@ impl CardQueryBuilder {
     }
 
     /// Sets flavor text not-contains filter (punctuation-insensitive). Empty strings = None.
-    pub fn set_flavor_text_not_contains(&mut self, flavor_text_not_contains: impl Into<String>) -> &mut Self {
+    pub fn set_flavor_text_not_contains(
+        &mut self,
+        flavor_text_not_contains: impl Into<String>,
+    ) -> &mut Self {
         let s = flavor_text_not_contains.into();
         self.flavor_text_not_contains = if s.is_empty() { None } else { Some(s) };
         self
@@ -832,7 +836,10 @@ impl CardQueryBuilder {
     }
 
     /// Sets type line not-contains filter (punctuation-insensitive). Empty strings = None.
-    pub fn set_type_line_not_contains(&mut self, type_line_not_contains: impl Into<String>) -> &mut Self {
+    pub fn set_type_line_not_contains(
+        &mut self,
+        type_line_not_contains: impl Into<String>,
+    ) -> &mut Self {
         let s = type_line_not_contains.into();
         self.type_line_not_contains = if s.is_empty() { None } else { Some(s) };
         self
@@ -850,7 +857,8 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = type_line_excludes_any.into_iter()
+        let v: Vec<String> = type_line_excludes_any
+            .into_iter()
             .map(|s| s.into())
             .collect();
         self.type_line_excludes_any = if v.is_empty() { None } else { Some(v) };
@@ -880,12 +888,16 @@ impl CardQueryBuilder {
     }
 
     /// Sets mechanical categories excludes filter ("has none of these categories").
-    pub fn set_mechanical_categories_excludes<I, S>(&mut self, mechanical_categories_excludes: I) -> &mut Self
+    pub fn set_mechanical_categories_excludes<I, S>(
+        &mut self,
+        mechanical_categories_excludes: I,
+    ) -> &mut Self
     where
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = mechanical_categories_excludes.into_iter()
+        let v: Vec<String> = mechanical_categories_excludes
+            .into_iter()
             .map(|s| s.into().trim().to_string())
             .filter(|s| !s.is_empty())
             .collect();
@@ -905,7 +917,8 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = produced_mana_excludes.into_iter()
+        let v: Vec<String> = produced_mana_excludes
+            .into_iter()
             .map(|s| s.into().trim().to_string())
             .filter(|s| !s.is_empty())
             .collect();
@@ -940,7 +953,8 @@ impl CardQueryBuilder {
         &mut self,
         set_excludes_any: impl IntoIterator<Item = impl Into<String>>,
     ) -> &mut Self {
-        let s: Vec<String> = set_excludes_any.into_iter()
+        let s: Vec<String> = set_excludes_any
+            .into_iter()
             .map(|x| x.into().trim().to_string())
             .filter(|s| !s.is_empty())
             .collect();
@@ -959,7 +973,8 @@ impl CardQueryBuilder {
         &mut self,
         artist_excludes_any: impl IntoIterator<Item = impl Into<String>>,
     ) -> &mut Self {
-        let s: Vec<String> = artist_excludes_any.into_iter()
+        let s: Vec<String> = artist_excludes_any
+            .into_iter()
             .map(|x| x.into().trim().to_string())
             .filter(|s| !s.is_empty())
             .collect();

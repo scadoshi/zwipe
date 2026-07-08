@@ -46,7 +46,11 @@ pub struct Deck {
 
 impl Deck {
     /// Creates a new deck from profile, entries, and warnings.
-    pub fn new(deck_profile: DeckProfile, entries: Vec<DeckEntry>, warnings: Vec<DeckWarning>) -> Self {
+    pub fn new(
+        deck_profile: DeckProfile,
+        entries: Vec<DeckEntry>,
+        warnings: Vec<DeckWarning>,
+    ) -> Self {
         Self {
             deck_profile,
             entries,

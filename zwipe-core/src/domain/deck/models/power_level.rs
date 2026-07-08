@@ -106,8 +106,10 @@ mod tests {
 
     #[test]
     fn try_from_valid_and_invalid() {
-        assert_eq!(PowerLevel::try_from("optimized").unwrap(), PowerLevel::Optimized);
+        assert_eq!(
+            PowerLevel::try_from("optimized").unwrap(),
+            PowerLevel::Optimized
+        );
         assert!(PowerLevel::try_from("not_a_bracket").is_err());
     }
-
 }

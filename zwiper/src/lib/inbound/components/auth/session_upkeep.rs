@@ -4,26 +4,39 @@
 //! [`EnsureFresh`] helper, and initializes the app-wide Dioxus context
 //! (session, client, card search state, theme, telemetry buffer).
 
-use crate::inbound::components::auth::ensure_session::EnsureFresh;
-use crate::inbound::components::telemetry::{
-    anonymous::record_anonymous_event,
-    flush_loop::{spawn_usage_flusher, spawn_visibility_flusher},
-    usage_buffer::UsageBuffer,
+use crate::{
+    inbound::{
+        components::{
+            auth::ensure_session::EnsureFresh,
+            telemetry::{
+                anonymous::record_anonymous_event,
+                flush_loop::{spawn_usage_flusher, spawn_visibility_flusher},
+                usage_buffer::UsageBuffer,
+            },
+        },
+        screens::deck::card::components::{
+            action_history::AddAction, add_stack_cache::use_add_stack_cache,
+            card_stack::use_card_stack,
+        },
+    },
+    outbound::{
+        client::{ZwipeClient, version::get_min_client_version::ClientGetMinClientVersion},
+        session::Persist,
+    },
 };
-use crate::inbound::screens::deck::card::components::{
-    action_history::AddAction, add_stack_cache::use_add_stack_cache, card_stack::use_card_stack,
-};
-use crate::outbound::client::version::get_min_client_version::ClientGetMinClientVersion;
-use crate::outbound::{client::ZwipeClient, session::Persist};
 use chrono::{DateTime, Utc};
 use dioxus::prelude::*;
 use std::time::Duration;
 use tokio::time::interval;
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::{Card, search_card::card_filter::builder::CardQueryBuilder};
-use zwipe_core::domain::user::models::theme::ThemeConfig;
-use zwipe_core::http::contracts::metrics::AnonymousEventKind;
-use zwipe_core::version::version_at_least;
+use zwipe_core::{
+    domain::{
+        auth::models::session::Session,
+        card::{Card, search_card::card_filter::builder::CardQueryBuilder},
+        user::models::theme::ThemeConfig,
+    },
+    http::contracts::metrics::AnonymousEventKind,
+    version::version_at_least,
+};
 
 /// The running app version, baked in at compile time (matches
 /// CFBundleShortVersionString since 1.0.3).

@@ -5,8 +5,7 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use zwipe::inbound::http::{ApiError, routes::get_deck_profiles_route};
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::deck::deck_profile::DeckProfile;
+use zwipe_core::domain::{auth::models::session::Session, deck::deck_profile::DeckProfile};
 
 /// Trait for fetching all deck profiles for the authenticated user.
 #[allow(missing_docs)]

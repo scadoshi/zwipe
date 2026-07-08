@@ -442,8 +442,10 @@ fn classify_color(card: &Card) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::card::scryfall_data::colors::{Color, Colors};
-    use crate::test_utils::make_entry;
+    use crate::{
+        domain::card::scryfall_data::colors::{Color, Colors},
+        test_utils::make_entry,
+    };
 
     #[test]
     fn empty_deck() {

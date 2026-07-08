@@ -3,8 +3,10 @@
 
 use dioxus::prelude::*;
 
-use crate::inbound::components::interactions::swipe::{STACK_DEPTH, direction::Direction};
-use crate::inbound::screens::deck::card::components::action_history::StackAction;
+use crate::inbound::{
+    components::interactions::swipe::{STACK_DEPTH, direction::Direction},
+    screens::deck::card::components::action_history::StackAction,
+};
 use zwipe_core::domain::card::Card;
 
 /// A swipeable card stack: the fetched cards, the top-card cursor, the undo

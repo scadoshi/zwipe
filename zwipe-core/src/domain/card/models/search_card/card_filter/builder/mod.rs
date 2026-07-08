@@ -15,11 +15,12 @@ use crate::domain::{
         },
         search_card::{
             card_filter::{
+                CardSortKey,
                 criteria::CardCriteria,
                 error::InvalidCardCriteria,
                 price_currency::PriceCurrency,
                 query::{CardQuery, Limit},
-                strip_punctuation, CardSortKey,
+                strip_punctuation,
             },
             card_type::CardType,
         },
@@ -317,11 +318,12 @@ impl CardQueryBuilder {
         let mut test = self.clone();
         test.unset_legalities_contains_any();
         test.unset_color_identity_within();
-        if lands_auto_excluded
-            && let Some(excludes) = test.card_type_excludes_any()
-        {
-            let kept: Vec<CardType> =
-                excludes.iter().copied().filter(|t| *t != CardType::Land).collect();
+        if lands_auto_excluded && let Some(excludes) = test.card_type_excludes_any() {
+            let kept: Vec<CardType> = excludes
+                .iter()
+                .copied()
+                .filter(|t| *t != CardType::Land)
+                .collect();
             test.set_card_type_excludes_any(kept);
         }
         test.is_empty()
@@ -362,7 +364,8 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = oracle_text_contains_any.into_iter()
+        let v: Vec<String> = oracle_text_contains_any
+            .into_iter()
             .map(|s| s.into())
             .collect();
         CardQueryBuilder {
@@ -377,7 +380,8 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = oracle_text_contains_all.into_iter()
+        let v: Vec<String> = oracle_text_contains_all
+            .into_iter()
             .map(|s| s.into())
             .collect();
         CardQueryBuilder {
@@ -422,7 +426,10 @@ impl CardQueryBuilder {
     {
         CardQueryBuilder {
             legalities_contains_any: Some(
-                legalities_contains_any.into_iter().map(Into::into).collect(),
+                legalities_contains_any
+                    .into_iter()
+                    .map(Into::into)
+                    .collect(),
             ),
             ..CardQueryBuilder::default()
         }
@@ -469,7 +476,8 @@ impl CardQueryBuilder {
         I: IntoIterator<Item = S>,
         S: Into<String>,
     {
-        let v: Vec<String> = type_line_contains_any.into_iter()
+        let v: Vec<String> = type_line_contains_any
+            .into_iter()
             .map(|s| s.into())
             .collect();
         CardQueryBuilder {
@@ -748,27 +756,42 @@ impl CardQueryBuilder {
         let rarity_excludes = self.rarity_excludes_any.as_ref().map(|r| &r[..]);
         check_include_exclude_clash(
             "card types",
-            &[self.card_type_contains_any.as_deref(), self.card_type_contains_all.as_deref()],
+            &[
+                self.card_type_contains_any.as_deref(),
+                self.card_type_contains_all.as_deref(),
+            ],
             self.card_type_excludes_any.as_deref(),
         )?;
         check_include_exclude_clash(
             "type line",
-            &[self.type_line_contains_any.as_deref(), self.type_line_contains_all.as_deref()],
+            &[
+                self.type_line_contains_any.as_deref(),
+                self.type_line_contains_all.as_deref(),
+            ],
             self.type_line_excludes_any.as_deref(),
         )?;
         check_include_exclude_clash(
             "oracle text",
-            &[self.oracle_text_contains_any.as_deref(), self.oracle_text_contains_all.as_deref()],
+            &[
+                self.oracle_text_contains_any.as_deref(),
+                self.oracle_text_contains_all.as_deref(),
+            ],
             self.oracle_text_excludes_any.as_deref(),
         )?;
         check_include_exclude_clash(
             "keywords",
-            &[self.keywords_contains_any.as_deref(), self.keywords_contains_all.as_deref()],
+            &[
+                self.keywords_contains_any.as_deref(),
+                self.keywords_contains_all.as_deref(),
+            ],
             self.keywords_excludes.as_deref(),
         )?;
         check_include_exclude_clash(
             "produced mana",
-            &[self.produced_mana_contains_any.as_deref(), self.produced_mana_contains_all.as_deref()],
+            &[
+                self.produced_mana_contains_any.as_deref(),
+                self.produced_mana_contains_all.as_deref(),
+            ],
             self.produced_mana_excludes.as_deref(),
         )?;
         check_include_exclude_clash(
@@ -822,21 +845,30 @@ impl CardQueryBuilder {
                 .filter(|v| !v.is_empty())
         };
         let clean_vec = |v: &Option<Vec<String>>| -> Option<Vec<String>> {
-            v.as_ref().map(|vec| {
-                vec.iter()
-                    .map(|s| strip_punctuation(s.trim()))
-                    .filter(|s| !s.is_empty())
-                    .collect()
-            }).filter(|v: &Vec<String>| !v.is_empty())
+            v.as_ref()
+                .map(|vec| {
+                    vec.iter()
+                        .map(|s| strip_punctuation(s.trim()))
+                        .filter(|s| !s.is_empty())
+                        .collect()
+                })
+                .filter(|v: &Vec<String>| !v.is_empty())
         };
         // Trim only (no punctuation stripping) for exact-match fields.
         let trim = |s: &Option<String>| -> Option<String> {
-            s.as_ref().map(|v| v.trim().to_string()).filter(|v| !v.is_empty())
+            s.as_ref()
+                .map(|v| v.trim().to_string())
+                .filter(|v| !v.is_empty())
         };
         let trim_vec = |v: &Option<Vec<String>>| -> Option<Vec<String>> {
-            v.as_ref().map(|vec| {
-                vec.iter().map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect()
-            }).filter(|v: &Vec<String>| !v.is_empty())
+            v.as_ref()
+                .map(|vec| {
+                    vec.iter()
+                        .map(|s| s.trim().to_string())
+                        .filter(|s| !s.is_empty())
+                        .collect()
+                })
+                .filter(|v: &Vec<String>| !v.is_empty())
         };
 
         Ok(CardCriteria {
@@ -908,8 +940,14 @@ mod tests {
     fn exclude_only_is_not_empty() {
         let mut builder = CardQueryBuilder::new();
         builder.set_keywords_excludes(vec!["haste"]);
-        assert!(!builder.is_empty(), "keywords_excludes alone should not be empty");
-        assert!(builder.build().is_ok(), "keywords_excludes alone should build");
+        assert!(
+            !builder.is_empty(),
+            "keywords_excludes alone should not be empty"
+        );
+        assert!(
+            builder.build().is_ok(),
+            "keywords_excludes alone should build"
+        );
     }
 
     #[test]

@@ -30,8 +30,8 @@ use std::time::{Duration, Instant};
 #[cfg(feature = "zerver")]
 use tower_governor::{GovernorError, key_extractor::KeyExtractor};
 use uuid::Uuid;
-use zwipe_core::domain::Email;
 use zwipe_core::domain::{
+    Email,
     auth::models::access_token::{Jwt, UserClaims},
     user::username::Username,
 };

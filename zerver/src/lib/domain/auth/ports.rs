@@ -3,23 +3,25 @@
 //! This module defines the interfaces (ports) for authentication in hexagonal architecture.
 //! These traits decouple the domain logic from infrastructure concerns (database, HTTP, etc.).
 
-use crate::domain::BoxFuture;
-use crate::domain::auth::{
-    models::{UserWithPasswordHash, access_token::JwtSecret},
-    requests::{
-        authenticate_user::{AuthenticateUser, AuthenticateUserError},
-        change_email::{ChangeEmail, ChangeEmailError},
-        change_password::{ChangePassword, ChangePasswordError},
-        change_username::{ChangeUsername, ChangeUsernameError},
-        create_session::{CreateSession, CreateSessionError},
-        delete_expired_sessions::DeleteExpiredSessionsError,
-        delete_user::{DeleteUser, DeleteUserError},
-        refresh_session::{RefreshSession, RefreshSessionError},
-        register_user::{RegisterUser, RegisterUserError},
-        request_password_reset::{RequestPasswordReset, RequestPasswordResetError},
-        reset_password::{ResetPassword, ResetPasswordError},
-        revoke_sessions::{RevokeSessions, RevokeSessionsError},
-        verify_email::{VerifyEmail, VerifyEmailError},
+use crate::domain::{
+    BoxFuture,
+    auth::{
+        models::{UserWithPasswordHash, access_token::JwtSecret},
+        requests::{
+            authenticate_user::{AuthenticateUser, AuthenticateUserError},
+            change_email::{ChangeEmail, ChangeEmailError},
+            change_password::{ChangePassword, ChangePasswordError},
+            change_username::{ChangeUsername, ChangeUsernameError},
+            create_session::{CreateSession, CreateSessionError},
+            delete_expired_sessions::DeleteExpiredSessionsError,
+            delete_user::{DeleteUser, DeleteUserError},
+            refresh_session::{RefreshSession, RefreshSessionError},
+            register_user::{RegisterUser, RegisterUserError},
+            request_password_reset::{RequestPasswordReset, RequestPasswordResetError},
+            reset_password::{ResetPassword, ResetPasswordError},
+            revoke_sessions::{RevokeSessions, RevokeSessionsError},
+            verify_email::{VerifyEmail, VerifyEmailError},
+        },
     },
 };
 use chrono::{DateTime, Utc};

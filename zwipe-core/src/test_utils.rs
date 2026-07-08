@@ -2,17 +2,13 @@
 
 use crate::domain::{
     card::{
+        Card,
         card_profile::CardProfile,
         scryfall_data::{
-            colors::Colors,
-            legalities::Legalities,
-            prices::Prices,
-            rarity::Rarity,
-            ScryfallData,
+            ScryfallData, colors::Colors, legalities::Legalities, prices::Prices, rarity::Rarity,
         },
-        Card,
     },
-    deck::{deck::DeckEntry, quantity::Quantity, Board, DeckCard},
+    deck::{Board, DeckCard, deck::DeckEntry, quantity::Quantity},
 };
 use chrono::NaiveDate;
 use uuid::Uuid;

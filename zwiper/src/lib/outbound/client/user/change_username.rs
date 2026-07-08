@@ -5,8 +5,10 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use zwipe::inbound::http::{ApiError, routes::change_username_route};
-use zwipe_core::domain::{auth::models::session::Session, user::User};
-use zwipe_core::http::contracts::auth::HttpChangeUsername;
+use zwipe_core::{
+    domain::{auth::models::session::Session, user::User},
+    http::contracts::auth::HttpChangeUsername,
+};
 
 /// Trait for updating usernames.
 #[allow(missing_docs)]

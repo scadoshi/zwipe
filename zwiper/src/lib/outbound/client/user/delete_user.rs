@@ -5,8 +5,7 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use zwipe::inbound::http::{ApiError, routes::delete_user_route};
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::http::contracts::auth::HttpDeleteUser;
+use zwipe_core::{domain::auth::models::session::Session, http::contracts::auth::HttpDeleteUser};
 
 /// Trait for deleting user accounts.
 #[allow(missing_docs)]

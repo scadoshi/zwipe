@@ -5,8 +5,10 @@ use reqwest::StatusCode;
 use std::future::Future;
 use tracing::info;
 use zwipe::inbound::http::{ApiError, routes::search_cards_route};
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::{Card, search_card::card_filter::CardQuery};
+use zwipe_core::domain::{
+    auth::models::session::Session,
+    card::{Card, search_card::card_filter::CardQuery},
+};
 
 /// Trait for searching cards with filter criteria.
 #[allow(missing_docs)]

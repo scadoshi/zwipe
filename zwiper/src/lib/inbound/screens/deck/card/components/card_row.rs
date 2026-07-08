@@ -1,10 +1,13 @@
-use super::keyword_chips::KeywordChips;
-use super::oracle_text::OracleText;
+use super::{keyword_chips::KeywordChips, oracle_text::OracleText};
 use dioxus::prelude::*;
 use uuid::Uuid;
-use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
-use zwipe_core::domain::deck::Board;
+use zwipe_core::domain::{
+    card::{
+        Card,
+        scryfall_data::{ImageSize, ScryfallData},
+    },
+    deck::Board,
+};
 
 /// Expandable card row with compact view and optional quantity controls.
 #[component]

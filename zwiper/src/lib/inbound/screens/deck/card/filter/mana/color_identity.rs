@@ -1,8 +1,9 @@
 //! Color identity filter component.
 
 use dioxus::prelude::*;
-use zwipe_core::domain::card::scryfall_data::colors::Color;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::card::{
+    scryfall_data::colors::Color, search_card::card_filter::builder::CardQueryBuilder,
+};
 
 use super::super::filter_mode::FilterMode;
 

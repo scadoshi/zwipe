@@ -133,7 +133,6 @@ impl Username {
 
         Ok(Self(trimmed.to_string()))
     }
-
 }
 
 impl Deref for Username {

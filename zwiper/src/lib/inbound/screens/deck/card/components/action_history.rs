@@ -7,8 +7,7 @@
 //! swipe commits, so those variants keep the only surviving copy.
 
 use crate::inbound::components::interactions::swipe::direction::Direction;
-use zwipe_core::domain::card::Card;
-use zwipe_core::domain::deck::Board;
+use zwipe_core::domain::{card::Card, deck::Board};
 
 /// Behavior every stack action shares: which way the card exited, so undo
 /// can animate it re-entering from the same side.

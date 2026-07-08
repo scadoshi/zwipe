@@ -1,6 +1,5 @@
+use crate::{DISCORD_URL, Footer, Nav, components::PageMeta};
 use dioxus::prelude::*;
-use crate::components::PageMeta;
-use crate::{Footer, Nav, DISCORD_URL};
 
 #[component]
 pub fn Discord() -> Element {
