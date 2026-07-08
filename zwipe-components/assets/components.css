@@ -1,9 +1,10 @@
 /* Shared component styles for the Zwipe surfaces.
  *
- * Copied into each app's asset bundle at build time (see the app build.rs,
- * mirroring shared/themes.css) and linked after themes. Rules reference theme
- * CSS variables only — never color literals — so a component resolves to
- * whichever theme the host app has active.
+ * Copied into each workspace app's asset bundle at build time (see the app
+ * build.rs, same pipeline as this crate's themes.css) and linked after themes.
+ * External consumers inline it via the crate's COMPONENTS_CSS constant
+ * instead. Rules reference theme CSS variables only — never color literals —
+ * so a component resolves to whichever theme the host app has active.
  *
  * This is the single source of truth for the shared components' look; the
  * matching rules are removed from the apps' own stylesheets as call sites
