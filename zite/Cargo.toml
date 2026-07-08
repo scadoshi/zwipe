@@ -20,6 +20,7 @@ server = ["dioxus/server", "dep:tokio"]
 zwipe-core = { path = "../zwipe-core" }
 dioxus = { version = "0.7.9", features = ["router", "fullstack"] }
 serde = { workspace = true }
+uuid = { workspace = true }
 
 # Server feature pulls tokio in. Client (wasm) doesn't need it.
 tokio = { workspace = true, optional = true }

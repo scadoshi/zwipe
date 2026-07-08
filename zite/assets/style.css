@@ -1,5 +1,6 @@
 @import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/400.css");
 @import url("https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/700.css");
+@import url("https://cdn.jsdelivr.net/npm/mana-font@latest/css/mana.css");
 
 /* ==================
         base
@@ -21,17 +22,40 @@ body {
     min-height: 100vh;
     max-width: 100vw;
     touch-action: manipulation;
+    /* No elastic overscroll: rubber-banding slides the sticky nav/footer with
+       the content while the fixed grid stays put, flashing grid above the
+       header (and below the footer). */
+    overscroll-behavior: none;
 }
 
 /* Derived tokens live on body because the theme class is applied there, so
    color-mix() resolves against the active theme's --bg-primary / --text-primary.
-   The grid is painted on exactly one element (body) so seams never double-line;
-   nav, footer, and panels paint solid on top and mask it in their footprint. */
+   The sink color fills the whole page (including overscroll); the grid itself
+   is painted by the fixed pseudo-element below. */
 body {
     --grid-line: color-mix(in srgb, var(--text-primary) 4%, transparent);
     --grid-size: 28px;
     --bg-sink: color-mix(in srgb, var(--bg-primary), #000 15%);
     background-color: var(--bg-sink);
+    /* Own stacking context so the fixed ::before below paints above this
+       background (without it, z-index: -1 drops behind the body background
+       and the grid disappears) while staying below all content. */
+    isolation: isolate;
+}
+
+/* Pinned grid: a viewport-fixed layer behind all content, so scrolling moves
+   the elements over a stationary grid instead of dragging the grid with them.
+   A fixed pseudo-element is used rather than `background-attachment: fixed`
+   because that keyword is unreliable on mobile (iOS scales it to the full
+   document height and scroll-janks). One element still paints the grid, so
+   seams never double-line; nav, footer, and panels paint solid on top and
+   mask it in their footprint. */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
     background-image:
         linear-gradient(var(--grid-line) 1px, transparent 1px),
         linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
@@ -1790,4 +1814,604 @@ footer {
     font-size: 0.78rem;
     color: var(--text-primary);
     opacity: 0.7;
+}
+
+/* ==================
+    shared deck page
+ ==================== */
+
+.shared-deck {
+    max-width: 74rem;
+    margin: 0 auto;
+    padding: 1.5rem 1.25rem 3rem;
+}
+
+.sd-header h1 {
+    font-size: 1.6rem;
+    letter-spacing: 0.02em;
+    margin-bottom: 0.5rem;
+}
+
+.sd-header-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Deck stat chips — mirror the app's deck-list tile tags (same class names,
+   same theme variables) so the shared page reads as the same product. Tints
+   mix with --bg-primary rather than transparent so the chips stay opaque and
+   the page grid never shows through them. */
+.sd-header-meta .stat-chip {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.6rem;
+    font-size: 0.75rem;
+    color: var(--accent-primary);
+    background-color: color-mix(in srgb, var(--accent-primary) 12%, var(--bg-primary));
+    border: 1px solid color-mix(in srgb, var(--accent-primary) 35%, var(--bg-primary));
+}
+
+.sd-header-meta .stat-chip-format {
+    color: var(--accent-secondary);
+    background-color: color-mix(in srgb, var(--accent-secondary) 12%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--accent-secondary) 35%, var(--bg-primary));
+}
+
+.sd-header-meta .stat-chip-power {
+    color: var(--color-success);
+    background-color: color-mix(in srgb, var(--color-success) 12%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--color-success) 35%, var(--bg-primary));
+}
+
+.sd-header-meta .stat-chip-zone {
+    color: var(--accent-tertiary);
+    background-color: color-mix(in srgb, var(--accent-tertiary) 12%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--accent-tertiary) 35%, var(--bg-primary));
+}
+
+.sd-header-meta .stat-chip-tag {
+    color: var(--text-muted);
+    background-color: color-mix(in srgb, var(--text-muted) 12%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--text-muted) 30%, var(--bg-primary));
+}
+
+.sd-header-meta .stat-chip-other {
+    color: var(--accent-primary);
+    background-color: color-mix(in srgb, var(--accent-primary) 12%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--accent-primary) 35%, var(--bg-primary));
+}
+
+/* Price chip: money reads green in every theme. */
+.sd-header-meta .stat-chip-price {
+    color: var(--color-success);
+    background-color: color-mix(in srgb, var(--color-success) 12%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--color-success) 35%, var(--bg-primary));
+}
+
+.sd-command-zone {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.25rem;
+    margin-bottom: 1.75rem;
+}
+
+.sd-cz-card {
+    width: clamp(9rem, 24vw, 13rem);
+    text-align: center;
+}
+
+.sd-cz-image {
+    width: 100%;
+    height: auto;
+    border-radius: 4.75% / 3.5%;
+    border: 1px solid var(--border-secondary);
+    box-shadow: var(--shadow-md);
+    display: block;
+}
+
+.sd-cz-name {
+    margin-top: 0.55rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.sd-cz-role {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+.sd-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    margin-bottom: 1.75rem;
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    padding: 1.25rem;
+}
+
+.sd-control-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Row labels match the app's chip-row-label (accent-tertiary). */
+.sd-control-label {
+    font-size: 0.75rem;
+    color: var(--accent-tertiary);
+    white-space: nowrap;
+    margin-right: 0.25rem;
+}
+
+.sd-chip {
+    border: 1px solid var(--border-primary);
+    border-radius: 0.6rem;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.75rem;
+    padding: 0.3rem 0.6rem;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* Selected state mirrors the app's .chip.selected: accent-secondary. */
+.sd-chip.active {
+    border-color: var(--accent-secondary);
+    color: var(--accent-secondary);
+}
+
+.sd-chip-color {
+    padding: 0.25rem 0.5rem;
+    line-height: 1;
+}
+
+.sd-chip-color .ms {
+    font-size: 1.1rem;
+    vertical-align: middle;
+}
+
+.sd-chip-color.active {
+    background-color: color-mix(in srgb, var(--accent-secondary) 12%, transparent);
+}
+
+/* [-] value [+] stepper for the mana value bounds. */
+.sd-mv-stepper {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.sd-mv-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.sd-mv-btn {
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.8rem;
+    line-height: 1;
+    width: 1.6rem;
+    height: 1.6rem;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition:
+        color 0.15s,
+        border-color 0.15s;
+}
+
+.sd-mv-btn:hover {
+    border-color: var(--accent-secondary);
+    color: var(--accent-secondary);
+}
+
+.sd-mv-value {
+    font-size: 0.78rem;
+    color: var(--text-primary);
+    min-width: 2rem;
+    text-align: center;
+}
+
+.sd-filter-input {
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.82rem;
+    padding: 0.35rem 0.7rem;
+    box-shadow: var(--shadow-sm);
+    flex: 1 1 12rem;
+    min-width: 0;
+    transition: border-color 0.15s;
+}
+
+.sd-filter-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.sd-empty {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+/* Archidekt-style density: multi-column on wide screens, single column on
+   phones — column-width handles both without a media query. */
+.sd-groups {
+    column-width: 19rem;
+    column-gap: 1.25rem;
+}
+
+.sd-group {
+    break-inside: avoid;
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+}
+
+/* Matches the app's .card-group-header (accent-tertiary). */
+.sd-group-header {
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border-secondary);
+    color: var(--accent-tertiary);
+}
+
+/* =========================
+   card rows — ported from the app's deck-cards screen so shared decks read
+   and behave identically (tap to expand, eased collapse, same detail).
+ =========================== */
+
+.card-row {
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--border-secondary);
+    transition: background-color 0.15s ease;
+    overflow: hidden;
+    min-width: 0;
+}
+
+.card-row:last-child {
+    border-bottom: none;
+}
+
+/* The muted rule closing the expanded detail is the row's bottom boundary,
+   so drop the row's own border to avoid a doubled line. */
+.card-row.expanded {
+    border-bottom: none;
+}
+
+.card-row-compact {
+    display: grid;
+    grid-template-columns: 1.2rem 1.5rem 1fr 2rem 3rem auto;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+/* Disclosure chevron at the left of each row; rotates to point down when the
+   row is expanded. */
+.card-row-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.2rem;
+    height: 1.2rem;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    line-height: 1;
+    transform-origin: center;
+    transition: transform 0.2s ease;
+}
+
+.card-row.expanded .card-row-arrow {
+    transform: rotate(90deg);
+}
+
+.card-row-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 400;
+}
+
+/* Deck MVP star before the card name, same as the app. */
+.card-row-mvp {
+    display: inline-block;
+    color: var(--color-warning);
+    font-size: 1.1rem;
+    margin-right: 0.3rem;
+    line-height: 1;
+    vertical-align: 0.02rem;
+}
+
+.card-row-cmc,
+.card-row-pt,
+.card-row-qty {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
+.card-row-colors {
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.card-row-colors .ms {
+    font-size: 0.8rem;
+    margin-left: 1px;
+}
+
+.card-row-detail {
+    padding: 0.5rem 1rem 0.25rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    max-width: 100%;
+}
+
+/* Always-mounted wrapper for the expanded card detail. Eases open/closed via
+   the grid-template-rows 0fr<->1fr technique so the row shifts smoothly
+   instead of popping. Pulled out by the row's 1rem padding so it spans full
+   width; the inner clips the content as it collapses. */
+.card-row-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    margin: 0 -1rem;
+    pointer-events: none;
+    transition:
+        grid-template-rows 0.22s ease,
+        opacity 0.22s ease;
+}
+
+.card-row-collapse.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.card-row-collapse-inner {
+    overflow: hidden;
+    min-height: 0;
+}
+
+/* Dividers framing the expanded detail. */
+.card-row-rule {
+    border: none;
+    border-top: 1px solid var(--accent-secondary);
+    margin: 0.5rem 0 0 0;
+}
+
+.card-row-rule-muted {
+    border-top-color: var(--border-secondary);
+    margin-top: 0;
+}
+
+/* Name + mana cost header inside an expanded card row. */
+.card-detail-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+}
+
+.card-detail-name {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--accent-primary);
+    word-break: break-word;
+    white-space: normal;
+}
+
+.card-detail-cost {
+    margin: 0;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.card-detail-cost .ms {
+    font-size: 0.8rem;
+    vertical-align: baseline;
+}
+
+/* Roomier grey circle around the number, closer to a real card. Applied to
+   the mana cost, oracle-text symbols, and compact-row color pips alike. */
+.card-detail-cost .ms-cost,
+.oracle-sym.ms-cost,
+.card-row-colors .ms-cost {
+    width: 1.5em;
+    height: 1.5em;
+    line-height: 1.5em;
+}
+
+.card-detail-oracle {
+    margin: 0 0 0.5rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.4;
+}
+
+/* Inline mana/tap/energy glyphs inside oracle text. */
+.oracle-sym {
+    font-size: 0.85em;
+    vertical-align: -0.05em;
+    margin: 0 0.04em;
+}
+
+/* Card-style drop shadow under mana glyphs. mana-font's own ms-shadow offset
+   is em-based and sub-pixel at our sizes, so use a slightly larger one. */
+.oracle-sym.ms-cost,
+.card-detail-cost .ms-cost,
+.card-row-colors .ms-cost {
+    box-shadow: -0.5px 1.5px 1px rgba(0, 0, 0, 0.6);
+}
+
+.card-detail-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-muted);
+}
+
+/* Power/toughness (or loyalty) pinned bottom-right of the detail. */
+.card-detail-stats {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.5rem;
+}
+
+/* Non-interactive info chip (type line, rarity) in an expanded card row. */
+.detail-chip {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    background-color: var(--bg-primary);
+}
+
+/* Keyword abilities (Flying, Trample, …) with a tap-to-reveal reminder. */
+.keyword-section {
+    margin-bottom: 0.5rem;
+}
+
+.keyword-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.keyword-chip {
+    padding: 0.15rem 0.5rem;
+    border: 1px solid var(--accent-primary);
+    border-radius: 0.4rem;
+    font-size: 0.75rem;
+    color: var(--accent-primary);
+    background-color: var(--bg-primary);
+    cursor: pointer;
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
+}
+
+.keyword-chip.active {
+    color: var(--bg-primary);
+    background-color: var(--accent-primary);
+}
+
+.keyword-reveal {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition:
+        grid-template-rows 0.2s ease,
+        opacity 0.2s ease;
+}
+
+.keyword-reveal.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+}
+
+.keyword-reveal-inner {
+    overflow: hidden;
+    min-height: 0;
+}
+
+.keyword-reveal-text {
+    margin: 0.35rem 0 0;
+    padding: 0.35rem 0.5rem;
+    border-left: 2px solid var(--accent-tertiary);
+    border-radius: 0.25rem;
+    background-color: var(--bg-primary);
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--accent-tertiary);
+}
+
+.sd-cta {
+    display: flex;
+    justify-content: center;
+    margin-top: 2.25rem;
+}
+
+.sd-cta-link {
+    border: 1px solid var(--accent-primary);
+    border-radius: 0.4rem;
+    color: var(--accent-primary);
+    background-color: var(--bg-primary);
+    padding: 0.6rem 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.15s;
+}
+
+.sd-cta-link:hover {
+    background-color: color-mix(in srgb, var(--accent-primary) 10%, transparent);
+    color: var(--accent-primary);
+}
+
+.sd-retry {
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.85rem;
+    padding: 0.45rem 1.3rem;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    margin-top: 1rem;
+    transition:
+        color 0.15s,
+        border-color 0.15s;
+}
+
+.sd-retry:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+@media (max-width: 640px) {
+    .shared-deck {
+        padding: 1rem 0.85rem 2.5rem;
+    }
+
+    .sd-header h1 {
+        font-size: 1.3rem;
+    }
+
+    .sd-cz-card {
+        width: clamp(7.5rem, 40vw, 10rem);
+    }
 }
