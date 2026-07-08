@@ -157,13 +157,17 @@ second consumer appears over doing it speculatively.
   `components.css`. Zite keeps its smaller text as `.shared-deck`-scoped
   font-size overrides. The `.ms-cost` sizing/shadow combo rules stayed in the
   apps (they belong to the `card-detail-*` family below).
-- `CardRow` / `ManaCost` — zite's shared-deck page still re-implements
-  `CardRow` (see `zite/src/pages/shared_deck.rs`). The app's version is already
-  callback-shaped (`on_qty_change`/`on_printing`/`on_toggle_mvp`/`on_move_to`
-  are `Option` props), so the split is close: unify on optional actions +
-  zite's hover-preview/Image extras, and lift the duplicated
-  `card-row-*`/`card-detail-*` CSS family with it. The 2026-07-08 polish pass
-  had to make every edit twice — that's the payoff case.
+- ✅ **`CardRow` — moved 2026-07-08.** One shared row for the app's deck-cards
+  screen and zite's shared-deck page: every action is an `Option` callback
+  (`on_qty_change`/`on_image`/`on_printing`/`on_toggle_mvp`/`on_move_to`), plus
+  `on_hover_enter`/`on_hover_leave` for zite's desktop preview; the muted rule
+  + actions block render only when an action will. Both hosts keep thin
+  wrappers (the app wires its ImagePreview signals into `on_image`; zite wires
+  the hover stack + mobile overlay) so no call site changed. The
+  `card-row-*`/`card-detail-*`/`card-action-*` CSS family lives in
+  `components.css`; the app keeps only `.card-row-header`, zite keeps its
+  hover cue + mobile actions-gating + smaller text sizes. Bonus: the app
+  gained zite's DFC front-face mana-cost fallback in the detail header.
 
 **End goal:** a web Zwipe (zwiper already has a `web` feature), the portfolio,
 and zite all render the same components — one product across many surfaces. Grow
