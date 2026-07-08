@@ -1,5 +1,5 @@
 use dioxus::{document::eval, prelude::*};
-use zwipe_components::{ThemeConfig, ThemePicker};
+use zwipe_components::{BRAND_RESET_JS, NavBar, ThemeConfig, ThemePicker};
 
 mod components;
 mod pages;
@@ -139,94 +139,65 @@ fn App() -> Element {
 pub fn Nav() -> Element {
     let theme: Signal<ThemeConfig> = use_context();
     let mut open = use_signal(|| false);
-    let panel_class = if open() {
-        "nav-panel nav-panel-open"
-    } else {
-        "nav-panel"
-    };
-    let toggle_class = if open() {
-        "nav-toggle nav-toggle-open"
-    } else {
-        "nav-toggle"
-    };
     rsx! {
-        div { class: "nav-wrapper",
-        nav {
-            Link {
-                to: Route::Home {},
-                class: "nav-brand",
-                onclick: move |_| {
-                    open.set(false);
-                    spawn(async {
-                        let _ = eval(r#"
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                            const el = document.querySelector('.logo');
-                            if (el) {
-                                el.style.animation = 'none';
-                                void el.offsetHeight;
-                                el.style.animation = '';
-                            }
-                        "#).await;
-                    });
-                },
-                span { class: "nav-logo", "{Z_LOGO}" }
-            }
-            div { class: "nav-stores-persistent",
-                a {
-                    class: "store-link",
-                    href: "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",
-                    target: "_blank",
-                    rel: "noopener",
-                    "App Store ↗"
+        NavBar {
+            open,
+            brand: rsx! {
+                Link {
+                    to: Route::Home {},
+                    class: "nav-brand",
+                    onclick: move |_| {
+                        open.set(false);
+                        spawn(async {
+                            let _ = eval(BRAND_RESET_JS).await;
+                        });
+                    },
+                    span { class: "nav-logo", "{Z_LOGO}" }
                 }
-                Link { to: Route::Android {}, class: "store-link", "Play Store ↗" }
-            }
-            button {
-                class: "{toggle_class}",
-                aria_label: "Toggle navigation menu",
-                aria_expanded: "{open()}",
-                onclick: move |_| {
-                    let next = !open();
-                    open.set(next);
-                },
-                span { class: "nav-toggle-bar" }
-                span { class: "nav-toggle-bar" }
-                span { class: "nav-toggle-bar" }
-            }
-            div { class: "{panel_class}",
-                div { class: "nav-panel-inner",
-                ul { class: "nav-links",
-                    li {
-                        Link { to: Route::Guides {}, onclick: move |_| open.set(false), "Guides" }
+            },
+            persistent: rsx! {
+                div { class: "nav-stores-persistent",
+                    a {
+                        class: "store-link",
+                        href: "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",
+                        target: "_blank",
+                        rel: "noopener",
+                        "App Store ↗"
                     }
-                    li {
-                        Link { to: Route::About {}, onclick: move |_| open.set(false), "About" }
-                    }
-                    li {
-                        Link { to: Route::Contribute {}, onclick: move |_| open.set(false), "Contribute" }
-                    }
-                    li {
-                        Link { to: Route::Discord {}, onclick: move |_| open.set(false), "Discord" }
-                    }
-                    li { class: "nav-link-store",
-                        a {
-                            class: "store-link",
-                            href: "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",
-                            target: "_blank",
-                            rel: "noopener",
-                            onclick: move |_| open.set(false),
-                            "App Store ↗"
-                        }
-                    }
-                    li { class: "nav-link-store",
-                        Link { to: Route::Android {}, class: "store-link", onclick: move |_| open.set(false), "Play Store ↗" }
+                    Link { to: Route::Android {}, class: "store-link", "Play Store ↗" }
+                }
+            },
+            links: rsx! {
+                li {
+                    Link { to: Route::Guides {}, onclick: move |_| open.set(false), "Guides" }
+                }
+                li {
+                    Link { to: Route::About {}, onclick: move |_| open.set(false), "About" }
+                }
+                li {
+                    Link { to: Route::Contribute {}, onclick: move |_| open.set(false), "Contribute" }
+                }
+                li {
+                    Link { to: Route::Discord {}, onclick: move |_| open.set(false), "Discord" }
+                }
+                li { class: "nav-link-store",
+                    a {
+                        class: "store-link",
+                        href: "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",
+                        target: "_blank",
+                        rel: "noopener",
+                        onclick: move |_| open.set(false),
+                        "App Store ↗"
                     }
                 }
+                li { class: "nav-link-store",
+                    Link { to: Route::Android {}, class: "store-link", onclick: move |_| open.set(false), "Play Store ↗" }
+                }
+            },
+            trailing: rsx! {
                 ThemePicker { theme }
-                } // nav-panel-inner
-            }
+            },
         }
-        } // nav-wrapper
     }
 }
 
