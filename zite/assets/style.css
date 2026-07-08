@@ -1994,6 +1994,94 @@ footer {
     }
 }
 
+/* Actions row at the bottom of an expanded card, mirroring the app's
+   card_row. On the read-only shared page the only action is Image, and it is
+   shown only at hamburger width — above that the desktop hover preview covers
+   it, so the whole row stays hidden. */
+.card-row-actions {
+    display: none;
+    padding: 0.5rem 1rem 0.25rem;
+}
+
+.card-row-actions .qty-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.card-row-actions .qty-btn {
+    padding: 0.2rem 0.6rem;
+    font: inherit;
+    font-size: 0.85rem;
+    line-height: 1;
+    border-radius: 0.4rem;
+    border: 1px solid var(--border-primary);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition:
+        border-color 0.15s,
+        color 0.15s;
+}
+
+@media (hover: hover) {
+    .card-row-actions .qty-btn:hover {
+        border-color: var(--accent-primary);
+        color: var(--accent-primary);
+    }
+}
+
+@media (max-width: 60rem) {
+    .card-row-actions {
+        display: block;
+    }
+}
+
+.sd-image-overlay-backdrop {
+    position: fixed;
+    inset: 0;
+    background: var(--bg-overlay, rgba(0, 0, 0, 0.78));
+    z-index: 200;
+}
+
+.sd-image-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    z-index: 202;
+    cursor: pointer;
+}
+
+.sd-image-overlay-img {
+    max-width: min(28rem, 92vw);
+    max-height: 92vh;
+    width: auto;
+    height: auto;
+    border-radius: 4.75% / 3.5%;
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.6);
+    animation: sd-preview-in 0.3s ease-out both;
+}
+
+.sd-image-overlay.dismissing .sd-image-overlay-img {
+    animation: sd-image-out 0.2s ease-in both;
+}
+
+@keyframes sd-image-out {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-40px);
+    }
+}
+
 .sd-header h1 {
     font-size: 1.6rem;
     letter-spacing: 0.02em;
@@ -2403,8 +2491,15 @@ footer {
 }
 
 .card-row-rule-muted {
+    display: none;
     border-top-color: var(--border-secondary);
     margin-top: 0;
+}
+
+@media (max-width: 60rem) {
+    .card-row-rule-muted {
+        display: block;
+    }
 }
 
 /* Name + mana cost header inside an expanded card row. */

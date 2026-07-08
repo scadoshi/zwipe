@@ -214,6 +214,9 @@ fn CardRow(
     mut expanded_card: Signal<Option<Uuid>>,
     mut preview_stack: Signal<Vec<PreviewCard>>,
     mut preview_next_id: Signal<u64>,
+    /// Tap-to-open full-art overlay target (mobile only). Set to this card's art
+    /// when the in-detail "View image" button is tapped.
+    mut overlay_image: Signal<Option<String>>,
 ) -> Element {
     let card_id = card.scryfall_data.id;
     let is_expanded = expanded_card() == Some(card_id);
@@ -224,6 +227,9 @@ fn CardRow(
     // Full-size art shown in the pinned hover preview (desktop). Front face for
     // double-faced layouts.
     let hover_image = sd.primary_image_url(ImageSize::Normal).map(str::to_string);
+    // Larger art for the tap-to-open overlay (mobile, where hover is
+    // unavailable). Mirrors the app's fullscreen ImagePreview (ImageSize::Large).
+    let overlay_url = sd.primary_image_url(ImageSize::Large).map(str::to_string);
 
     let name = sd.name.clone();
     let cmc_display = sd
@@ -357,7 +363,24 @@ fn CardRow(
                         }
                     }
                 }
-                hr { class: "card-row-rule card-row-rule-muted" }
+                // Muted rule renders only with the actions, so an actionless card
+                // never stacks it on the accent rule below.
+                if let Some(url) = overlay_url.clone() {
+                    hr { class: "card-row-rule card-row-rule-muted" }
+                    div { class: "card-row-actions",
+                        div { class: "qty-row",
+                            button {
+                                class: "qty-btn",
+                                onclick: move |evt| {
+                                    evt.stop_propagation();
+                                    overlay_image.set(Some(url.clone()));
+                                },
+                                "Image"
+                            }
+                        }
+                    }
+                }
+                hr { class: "card-row-rule card-row-rule-bottom" }
                 }
             }
         }
@@ -493,6 +516,10 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     // on touch devices (no mouseenter), so it simply stays empty there.
     let preview_stack: Signal<Vec<PreviewCard>> = use_signal(Vec::new);
     let preview_next_id: Signal<u64> = use_signal(|| 0);
+    // Tap-to-open full-art overlay for touch/hamburger-width screens (no hover).
+    // Holds the art URL; a short dismiss fade mirrors the app's ImagePreview.
+    let mut overlay_image: Signal<Option<String>> = use_signal(|| None);
+    let mut overlay_dismissing = use_signal(|| false);
 
     // Mainboard only: the maybeboard is scratch space, not the deck statement.
     let mainboard: Vec<&DeckEntry> = deck
@@ -672,6 +699,25 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                 }
             }
         }
+        // Tap-to-open full-art overlay (mobile). Mirrors the app's ImagePreview:
+        // a dimmed backdrop with the card art, tap anywhere to dismiss.
+        if overlay_image().is_some() || overlay_dismissing() {
+            div { class: "sd-image-overlay-backdrop" }
+            div {
+                class: if overlay_dismissing() { "sd-image-overlay dismissing" } else { "sd-image-overlay" },
+                onclick: move |_| {
+                    overlay_dismissing.set(true);
+                    spawn(async move {
+                        sleep_ms(200).await;
+                        overlay_image.set(None);
+                        overlay_dismissing.set(false);
+                    });
+                },
+                if let Some(url) = overlay_image() {
+                    img { class: "sd-image-overlay-img", src: "{url}", alt: "Card image" }
+                }
+            }
+        }
         div { class: "shared-deck content-enter",
             header { class: "sd-header",
                 h1 { "{deck.name}" }
@@ -820,6 +866,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                                         expanded_card,
                                         preview_stack,
                                         preview_next_id,
+                                        overlay_image,
                                     }
                                 }
                             }
