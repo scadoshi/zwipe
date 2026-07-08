@@ -18,6 +18,7 @@ mod button;
 mod chip;
 mod keyword_chips;
 mod oracle_text;
+mod page_meta;
 mod theme_picker;
 
 pub use action_bar::ActionBar;
@@ -25,6 +26,7 @@ pub use button::{Button, ButtonVariant};
 pub use chip::Chip;
 pub use keyword_chips::KeywordChips;
 pub use oracle_text::OracleText;
+pub use page_meta::{PageMeta, SiteMeta};
 pub use theme_picker::ThemePicker;
 // The theme domain types live in zwipe-core (user preferences persist them
 // server-side); re-exported here so UI consumers have one import path.
