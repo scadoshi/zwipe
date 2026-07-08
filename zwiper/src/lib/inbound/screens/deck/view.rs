@@ -122,6 +122,15 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let mut show_more_sheet = use_signal(|| false);
     let mut show_delete_dialog = use_signal(|| false);
     let show_clone_dialog = use_signal(|| false);
+    // Live share-link state, seeded from the loaded profile and driven by the
+    // More sheet's Share / Stop-sharing actions so the buttons reflect reality
+    // without a round-trip re-fetch.
+    let mut share_token = use_signal(|| None::<Uuid>);
+    use_effect(move || {
+        if let Some(Ok(p)) = &*deck_profile_resource.read() {
+            share_token.set(p.share_token);
+        }
+    });
     let attempt_delete = move || {
         spawn(async move {
             let session = match session.ensure_fresh(client).await {
@@ -561,6 +570,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 show_more_sheet: show_more_sheet,
                 show_delete_dialog: show_delete_dialog,
                 show_clone_dialog: show_clone_dialog,
+                share_token: share_token,
                 has_cards: metrics.is_some(),
                 tcg_url: tcg_url,
                 ck_url: ck_url,
@@ -582,7 +592,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     HintBullet {
                         "Tap "
                         HintKey { "Cards" }
-                        " to browse your deck's cards"
+                        " to browse your deck's cards, and to add or remove cards"
                     }
                     HintBullet {
                         "Tap "
@@ -592,7 +602,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     HintBullet {
                         "Tap "
                         HintKey { "More" }
-                        " to add, remove, import, export, clone, buy, or delete the deck"
+                        " to import, export, clone, buy, share, or delete the deck"
                     }
                     HintBullet {
                         "Cards you skip or remove stay out of the add stack for this deck. "
