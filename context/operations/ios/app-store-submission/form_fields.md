@@ -14,7 +14,7 @@ Swipe to Build MTG Decks
 
 (170 character limit. Can be updated without a new submission — refresh this between releases to spotlight whatever's freshest.)
 
-Just shipped: Zwipe remembers your skips. Cards you swipe away stay out of that deck's suggestions until you clear them. Plus alphabetical deck lists. Free, no ads.
+Just shipped: pick your commander from the community's most-built, star your deck's MVPs, and auto-pair partners. Plus share any deck with a link. Free, no ads.
 
 ---
 
@@ -36,6 +36,15 @@ Other tools:
 - Your decks sync across sessions and devices
 
 Built for players who want a fast, focused mobile experience — not another cluttered desktop tool squeezed onto a small screen.
+
+---
+
+## What's New in This Version (1.4.0)
+
+- Pick your commander by popularity: the commander picker now leads with the community's most-built commanders, in a fresh order each day, so you start from what people are actually building.
+- Partners that name each other now pair automatically: choose one and Zwipe fills in its partner for you.
+- Star your deck's MVPs: mark up to three standout cards in any deck so your key pieces stand out at a glance, on the deck list and while you build.
+- Share your deck: send a public link to any deck straight from its More menu, and anyone can open it on the web to see your list.
 
 ---
 
@@ -195,7 +204,7 @@ MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading ca
 |-------|-------|
 | Support URL | https://zwipe.net |
 | Marketing URL | https://zwipe.net |
-| Version | 1.2.0 |
+| Version | 1.4.0 |
 | Copyright | 2026 Scotty Fermo |
 | Routing App Coverage File | (leave empty) |
 

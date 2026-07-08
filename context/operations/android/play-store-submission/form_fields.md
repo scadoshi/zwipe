@@ -153,13 +153,20 @@ TODO — complete the Data safety form. Starter facts to declare:
 | Field | Value |
 |-------|-------|
 | Track | Internal testing first → Closed/Production |
-| Version (client) | 1.3.1 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
+| Version (client) | 1.4.0 (`CARGO_PKG_VERSION`, aligns with the min-version gate) |
 | Signing | Play App Signing (let Google manage the app signing key; upload key generated at build) |
 | Copyright | 2026 Scotty Fermo |
 
 ### Release notes (What's new — max 500 chars, store-visible)
 
 Keep generic per the copycat note at the top (no "Commander", "Planeswalker", etc.).
+
+**1.4.0:**
+
+- Pick your deck's leader by popularity: the picker now leads with the community's most-built choices, in a fresh order each day.
+- Partners that name each other now pair automatically.
+- Star your deck's MVPs: mark up to three standout cards per deck, shown on your deck list and while you build.
+- Share your deck: send a public link from its More menu, viewable on the web.
 
 **1.3.1:**
 
