@@ -279,6 +279,9 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "Partner and Background appear only when your commander supports them. Oathbreaker needs a signature spell within the planeswalker's colors.",
             ),
+            Block::Note(
+                "Some partners name a specific mate (\"Partner with [Name]\"). Pick one and Zwipe fills in the named partner for you.",
+            ),
             Block::H2("Color identity"),
             Block::P(
                 "In commander formats, your deck's colors come from the commander (plus partner and background). The add screen stays inside those colors, and anything off-color is flagged in warnings.",
@@ -353,6 +356,36 @@ pub static GUIDES: &[Guide] = &[
             Block::H2("How many"),
             Block::P(
                 "Up to five tags per deck (shown as N/5), from one flat alphabetical list. Tags are only ever added, never renamed, so old ones keep working.",
+            ),
+        ],
+    },
+    Guide {
+        slug: "deck-mvps",
+        title: "Star your deck's MVPs",
+        summary: "Star up to three cards that define a deck. Stars show at a glance, steer that deck's suggestions, and travel when you clone.",
+        category: "Decks",
+        blocks: &[
+            Block::Lead(
+                "Every deck has a few cards that define it. Star up to three of them as MVPs, and Zwipe leans that deck's suggestions toward what you starred.",
+            ),
+            Block::H2("Star a card"),
+            Block::P(
+                "In a deck's card list, tap a card to expand its row, then tap Star. A gold ★ shows on the row so your MVPs read at a glance, and Unstar frees the slot.",
+            ),
+            Block::H2("Three per deck"),
+            Block::P(
+                "Each deck holds three MVP slots. Once three are starred, Zwipe turns down a fourth (\"This deck already has 3 MVPs\"), so promoting a new one means unstarring one first. The cap is the point: it keeps your MVPs to the cards that truly define the deck, not a wish list.",
+            ),
+            Block::H2("What a star does"),
+            Block::P(
+                "Beyond marking the card in the list, your MVPs tell Zwipe what this deck is about, so it leans this deck's suggestions toward them. Stars are per deck, so what defines one deck never colors another.",
+            ),
+            Block::H2("Removing and cloning"),
+            Block::P(
+                "Removing a card, or moving it off the mainboard, clears its star and frees the slot. Cloning a deck carries its MVPs along. Exported decklists leave stars out, since a marker would break pastes into other apps, so MVPs travel by clone rather than by export.",
+            ),
+            Block::Note(
+                "Your MVPs also headline your shared deck page, featured up top alongside the command zone.",
             ),
         ],
     },
