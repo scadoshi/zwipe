@@ -49,6 +49,26 @@ pub fn BackHandlerLayout() -> Element {
         });
     }
 
+    // Android: the patched MainActivity intercepts the OS back (gesture + button)
+    // and dispatches a `zwipe:back` DOM event; we route it to the router, and
+    // exit the app (finish the Activity) from a root screen. Inert until that
+    // native patch is in place (see zcripts/android/back-handler patch).
+    #[cfg(all(target_os = "android", feature = "mobile"))]
+    {
+        let nav = use_navigator();
+        use_future(move || async move {
+            let mut eval =
+                document::eval("window.addEventListener('zwipe:back', () => dioxus.send(1));");
+            while eval.recv::<i32>().await.is_ok() {
+                if nav.can_go_back() {
+                    nav.go_back();
+                } else {
+                    android::finish_activity();
+                }
+            }
+        });
+    }
+
     rsx! {
         Outlet::<Router> {}
     }
@@ -125,5 +145,30 @@ mod ios {
         // A gesture recognizer keeps only a weak reference to its target; leak
         // ours so it outlives this call (one target per app launch).
         std::mem::forget(target);
+    }
+}
+
+/// Android app exit: finish the Activity when back is pressed at a root screen.
+/// Same JNI + ndk-context pattern as `outbound/open_url.rs`.
+#[cfg(all(target_os = "android", feature = "mobile"))]
+mod android {
+    use jni::objects::JObject;
+
+    /// Finish the current Activity (exit the app), logging on failure.
+    pub fn finish_activity() {
+        if let Err(e) = try_finish() {
+            tracing::error!("edge-back: failed to finish activity: {e}");
+        }
+    }
+
+    fn try_finish() -> anyhow::Result<()> {
+        let ctx = ndk_context::android_context();
+        // SAFETY: ndk-context guarantees a valid JavaVM and Activity jobject.
+        let vm = unsafe { jni::JavaVM::from_raw(ctx.vm().cast()) }?;
+        let mut env = vm.attach_current_thread()?;
+        let activity = unsafe { JObject::from_raw(ctx.context().cast()) };
+        // activity.finish();
+        env.call_method(&activity, "finish", "()V", &[])?;
+        Ok(())
     }
 }

@@ -1,8 +1,9 @@
 # Edge back-swipe / hardware-back navigation (Android + iOS)
 
-**Status: iOS SHIPPED-READY 2026-07-09 (device-tested, instant). Android next.
-Premise corrected below — the original "unify via browser History API" idea does
-NOT apply to mobile.**
+**Status: iOS + Android SHIPPED-READY 2026-07-09 (both device/emulator-tested,
+instant). Premise corrected below — the original "unify via browser History API"
+idea does NOT apply to mobile. Each platform ended up with its own native bridge
+into one shared decision (`go_back` vs. exit); see the platform sections.**
 
 **One sentence:** the OS back intent (Android hardware/gesture back, iOS
 left-edge swipe) should call the Dioxus router's `go_back()` when there's
@@ -43,58 +44,47 @@ default build feature `mobile`. wry issue
 button listener", opened 2025-06) is **still open** — wry does not forward the
 Android back press. So upstream won't save us short-term; watch that issue.
 
-## The one shared piece (both platforms funnel here)
+## The shared decision (both platforms funnel here)
 
-A single app-scoped Rust listener that turns a "back intent" into router action,
-reusing the **exact `document::eval` bridge idiom already in the codebase**
-(`components/telemetry/flush_loop.rs:47-58` registers JS listeners and pumps
-events to Rust via `dioxus.send(...)` + `eval.recv().await`):
+Both platforms end at the same Rust logic, keyed on `Navigator::can_go_back()`:
+**if there's router history, `go_back()`; else exit (Android) / no-op (iOS).**
+They differ only in how the OS back intent *reaches* that logic — iOS via an
+objc2 channel, Android via a `zwipe:back` DOM event through the `document::eval`
+bridge (`flush_loop.rs`'s `dioxus.send` + `eval.recv().await` idiom). All in
+`components/navigation/back_handler.rs` under a `BackHandlerLayout` that wraps
+every route (so it lives inside the router context and `use_navigator()`
+resolves).
 
-```rust
-// mounted once near the Router (e.g. in App / a BackHandler component)
-let nav = use_navigator();
-use_future(move || async move {
-    let mut eval = document::eval(
-        "window.addEventListener('zwipe:back', () => dioxus.send(true));");
-    while eval.recv::<bool>().await.is_ok() {
-        if nav.can_go_back() { nav.go_back(); }
-        else { /* root: Android -> finish via JNI; iOS -> no-op */ }
-    }
-});
-```
+## Android — SHIPPED (MainActivity patch → JS event)
 
-`Navigator::can_go_back()` gates root behavior. The remaining work is
-**platform-specific: how does the OS back intent dispatch `zwipe:back` (or
-otherwise reach this listener)?** The two platforms differ.
+**Why a native patch is unavoidable:** wry's `WryActivity` (an
+`AppCompatActivity`) handles only the hardware **button** in `onKeyDown`, gated
+on `mWebView.canGoBack()` — always false for us (SPA, no WebView history) — and
+the **edge-swipe gesture** never reaches `onKeyDown` at all; it goes through the
+Activity's back dispatcher straight to the default `finish()`. tao *does* surface
+`KEYCODE_BACK` as `Key::BrowserBack` to the event loop, but that's the button
+path only, not the gesture. So catching the gesture requires Activity code.
 
-## Android
+**What shipped:** `zcripts/android/back-handler.sh` overwrites the dx-generated
+`MainActivity.kt` (trivially `class MainActivity : WryActivity()`) with an
+override that registers an `OnBackPressedCallback` on the **unified**
+`onBackPressedDispatcher` — which catches **both** the gesture and the button —
+and dispatches `window.dispatchEvent(new Event('zwipe:back'))` into the WebView
+(reference captured via the overridable `onWebViewCreate`). The Rust listener
+(`back_handler.rs`, `#[cfg(target_os = "android")]`) receives it and either
+`go_back()`s or, at a root screen, finishes the Activity via JNI (`jni` +
+`ndk-context`, same idiom as `outbound/open_url.rs`) to exit.
 
-**Problem:** intercept the OS back before wry finishes the Activity, and route
-it to the listener above.
-
-- **No native source is checked in.** The Activity is dx's stock
-  `dev.dioxus.main.MainActivity`, and `dx bundle` **regenerates the whole
-  Gradle project every time** (it already needs post-bundle patches for
-  `targetSdk`/`versionCode` and `launcher-icons.sh` for the icons). So any
-  Kotlin change must ride a **post-bundle patch script**, mirroring
-  `zcripts/android/launcher-icons.sh`.
-- **Likely approach (NativePHP pattern):** patch `MainActivity` so its back
-  callback runs
-  `webView.evaluateJavascript("window.dispatchEvent(new Event('zwipe:back'))")`
-  instead of `finish()`. The Rust listener consumes it; at root (`!can_go_back`)
-  Rust exits the app via the **existing JNI bridge** (`jni 0.21` +
-  `ndk-context 0.1` are already deps, used for session storage / intents) by
-  calling `Activity.finish()`.
-- **Spike question #1 (decides everything):** does wry 0.53's Android Activity
-  already forward back to `webView.goBack()` when the WebView `canGoBack()`? If
-  it does, a **pure-JS solution needs no native patch**: mirror each router
-  nav into WebView history with `history.pushState`, and the system back pops
-  it and fires `popstate` → `go_back()`. The bug report ("closes the app")
-  suggests it does *not* forward, but confirm by reading wry 0.53 Android source
-  / a 10-line pushState test before committing to the patch route.
-- **Watch out:** R8 minification is on in release and can strip WebView/JNI
-  classes; the patch must survive it. And the patch must re-apply on every
-  bundle (script it, don't hand-edit).
+**Build integration (critical):** `dx` **regenerates `MainActivity.kt` on every
+`dx bundle`/`dx serve`/`dx build`**, so the patch must run *after* the last dx
+invocation and *before* the Gradle build — the same post-`dx bundle` window as
+`launcher-icons.sh`. Documented in
+[`../operations/android/play-store-submission/build-and-submit.md`](../operations/android/play-store-submission/build-and-submit.md).
+Dev-loop gotcha: you can't verify via plain `dx serve` (it rebuilds and wipes the
+patch); build through Gradle yourself after patching (`dx build` → `back-handler.sh`
+→ `./gradlew :app:assembleDebug` → `adb install`). If `:app:compileDebugKotlin`
+reports `UP-TO-DATE`, the patch didn't take (dx ran after it). R8 keeps the
+callback/`evaluateJavascript` (both are used), but smoke-test the release build.
 
 ## iOS — SHIPPED (custom recognizer)
 
@@ -141,24 +131,14 @@ starts to bother.
   same as the on-screen Back button, so persistence is unaffected. Good: the
   gesture should feel identical to tapping Back.
 
-## Remaining work (Android)
-
-1. ~~iOS~~ — **DONE** (custom recognizer, see above).
-2. **Android wry-forwarding probe** — determine whether wry forwards the OS back
-   to the WebView (read source or a pushState test). Result picks the Android
-   path (pure-JS `popstate` vs. a MainActivity patch that dispatches `zwipe:back`
-   / bridges to Rust).
-3. **Android implementation** — whichever path #2 selects; if the patch route,
-   write the post-bundle script alongside `launcher-icons.sh` and document it in
-   `operations/android/play-store-submission/build-and-submit.md`. Add root-screen
-   exit (JNI `finish()` via the existing `jni`/`ndk-context` bridge) since Android
-   should close from a root screen, unlike iOS.
-
-## Scope / notes
+## Follow-ups / notes
 
 - App-only (zwiper). zite (real browser) already has working browser back.
-- Test on a **physical Android device** (gesture is OS-level; emulator differs)
-  and a physical iPhone.
-- Lands in a future store build (1.4.1+). Not blocking the current build.
-- If wry #1564 lands upstream before we build Android, prefer the native-forward
-  API over the patch script.
+- Both verified 2026-07-09: iOS on a physical iPhone, Android on the Pixel_9a
+  emulator (back arrow + edge swipe navigate back mid-stack, exit at root).
+- Ships in the next store build (1.4.1+). The Android release AAB **must** run
+  `back-handler.sh` in the build pipeline or it ships without the fix.
+- Open refinements (not blocking): iOS interactive slide animation (parked, see
+  above); Android "double-back-to-exit" instead of immediate finish at root.
+- If wry [#1564](https://github.com/tauri-apps/wry/issues/1564) lands a
+  native-forward API upstream, reconsider replacing the Android Kotlin patch.
