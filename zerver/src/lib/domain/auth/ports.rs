@@ -28,7 +28,7 @@ use chrono::{DateTime, Utc};
 use std::future::Future;
 use uuid::Uuid;
 use zwipe_core::domain::{
-    auth::models::{refresh_token::RefreshToken, session::Session},
+    auth::models::{platform::ClientPlatform, refresh_token::RefreshToken, session::Session},
     user::User,
 };
 
@@ -56,10 +56,12 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
 
     /// Creates a new refresh token for an existing user (new session).
     ///
-    /// Generates and stores a new refresh token for the specified user ID.
+    /// Generates and stores a new refresh token for the specified user ID,
+    /// tagged with the client `platform` (`None` if unknown/not reported).
     fn create_refresh_token(
         &self,
         request: Uuid,
+        platform: Option<ClientPlatform>,
     ) -> impl Future<Output = Result<RefreshToken, CreateSessionError>> + Send;
 
     /// Exchanges a refresh token for a new one (token rotation).

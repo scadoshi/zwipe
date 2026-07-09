@@ -51,4 +51,6 @@ pub struct DatabaseRefreshToken {
     pub user_id: Uuid,
     pub expires_at: DateTime<Utc>,
     pub revoked: bool,
+    /// Client platform string (`ios`/`android`/`desktop`/`web`), NULL if unknown.
+    pub platform: Option<String>,
 }

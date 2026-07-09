@@ -61,7 +61,8 @@ pub async fn authenticate_user(
     State(state): State<AppState>,
     Json(body): Json<HttpAuthenticateUser>,
 ) -> Result<(StatusCode, Json<Session>), ApiError> {
-    let request = AuthenticateUser::new(&body.identifier, &body.password)?;
+    let mut request = AuthenticateUser::new(&body.identifier, &body.password)?;
+    request.platform = body.platform;
 
     let session = state
         .auth_service
