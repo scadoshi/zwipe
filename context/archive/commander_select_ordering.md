@@ -188,7 +188,7 @@ commander_popularity` is a valid emergency switch-off).
 - Dev-server end-to-end before commit (house rule): two decks, same day →
   different select hands; same deck twice → stable; explicit Rank sort →
   exact old ordering; known-popular commanders lead band 1.
-- Integration harness (once [`integration_tests/`](integration_tests/overview.md)
+- Integration harness (once [`integration-tests/`](integration-tests/overview.md)
   exists): seeded `commander_popularity` rows outrank higher-edhrec_rank
   commanders; NULL-popularity falls back; band determinism per (deck, day).
 

@@ -181,7 +181,7 @@ involved — contrast `commander_popularity`, where zynergy owns population.
   have a "maybe"?).
 - Recency: raw lifetime counts drift stale as the meta moves; a windowed or
   decayed variant could come later (schema gains a column, math unchanged).
-- Surprise scoring for commanders — the wildcard_slot follow-on ("center the
+- Surprise scoring for commanders — the wildcard-slot follow-on ("center the
   signal on a rank-bucket expectation") applies here too once select
   impressions exist: a deep commander that overperforms its EDHREC rank when
-  shown is a promotion candidate. See [`wildcard_slot/overview.md`](../archive/wildcard_slot/overview.md).
+  shown is a promotion candidate. See [`wildcard-slot/overview.md`](../archive/wildcard-slot/overview.md).

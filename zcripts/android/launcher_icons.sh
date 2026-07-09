@@ -6,7 +6,7 @@
 # this AFTER `dx bundle` and BEFORE the Gradle repackage. See
 # context/operations/android/play-store-submission/build-and-submit.md.
 #
-# Usage: zcripts/android/launcher-icons.sh [RES_DIR]
+# Usage: zcripts/android/launcher_icons.sh [RES_DIR]
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"

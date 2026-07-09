@@ -38,7 +38,7 @@ the MVPs, which is what's shipped.)
   already reaches the shared page.
 - **Do not claim steering yet.** MVP-weighted serve ordering (the deck leaning
   its own suggestions toward the MVPs) is a later server-only phase
-  ([`../../plans/deck_mvps/overview.md`](../../plans/deck_mvps/overview.md)
+  ([`../../plans/deck-mvps/overview.md`](../../plans/deck-mvps/overview.md)
   phases 2–3). Once it's live, a follow-up video can add the "and it tunes your
   suggestions" beat.
 - Copy for reference: cap message "This deck already has 3 MVPs".

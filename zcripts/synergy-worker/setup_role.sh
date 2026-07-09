@@ -14,7 +14,7 @@ set -euo pipefail
 # worker cannot read accounts or touch deck contents.
 #
 # usage:
-#   ./setup-role.sh [database] [role]
+#   ./setup_role.sh [database] [role]
 #     database  defaults to zwipe (prod). dev: pass your dev db name (e.g. zerver)
 #     role      defaults to synergy_worker
 #

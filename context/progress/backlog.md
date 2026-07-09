@@ -15,7 +15,7 @@ Planned features and improvements for after App Store launch.
 
 ## Weekly Badges + Stats / Share Cards (gamification; pairs with future social)
 
-**Promoted to a full plan 2026-07-06: [`../plans/social_features/`](../plans/social_features/overview.md)
+**Promoted to a full plan 2026-07-06: [`../plans/social-features/`](../plans/social-features/overview.md)
 (weekly badges + owner-curated featured decks with MVPs). The plan carries
 these decisions forward; this section stays as the original rationale.**
 

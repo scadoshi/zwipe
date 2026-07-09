@@ -40,7 +40,7 @@ Share Cards" backlog entry (design decisions carried over).
 |---|---|---|---|
 | Badge tables, rules, week-close job, recap endpoint | [`badges_server.md`](badges_server.md) | nothing (substrate live) | anytime, server-only |
 | "Your week" recap + badge history in the app | [`badges_client.md`](badges_client.md) | badges server | 1.4.x client batch |
-| Featured decks: flag, public endpoint, zite showcase | [`featured_decks.md`](featured_decks.md) | [`deck_share_page`](../../archive/deck_share_page/overview.md) + [`deck_mvps`](../deck_mvps/overview.md) | unblocked (both shipped 2026-07-07) |
+| Featured decks: flag, public endpoint, zite showcase | [`featured_decks.md`](featured_decks.md) | [`deck-share-page`](../../archive/deck-share-page/overview.md) + [`deck-mvps`](../deck-mvps/overview.md) | unblocked (both shipped 2026-07-07) |
 
 ## Sequencing
 

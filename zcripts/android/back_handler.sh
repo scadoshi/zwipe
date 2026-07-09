@@ -12,11 +12,11 @@
 #
 # dx REGENERATES MainActivity.kt on every `dx bundle`, so run this AFTER
 # `dx bundle` and BEFORE the Gradle repackage — the same window as
-# launcher-icons.sh. See
+# launcher_icons.sh. See
 # context/operations/android/play-store-submission/build-and-submit.md and
 # context/plans/back_swipe_gesture.md.
 #
-# Usage: zcripts/android/back-handler.sh [MAIN_ACTIVITY_KT]
+# Usage: zcripts/android/back_handler.sh [MAIN_ACTIVITY_KT]
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"

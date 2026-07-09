@@ -77,7 +77,7 @@ root, commit.
 
 Unit: badge rules (given counter rows → expected badges, priority, cap,
 fallback) live next to the rules. Integration (once
-[`integration_tests`](../integration_tests/overview.md) harness exists):
+[`integration_tests`](../integration-tests/overview.md) harness exists):
 seed two users' week signal → run job → assert rows; idempotency (second
 run adds nothing); recap endpoint shape.
 
